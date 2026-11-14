@@ -1375,6 +1375,85 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /**
+     * An address-only Save keeps the decoder type another door changed meanwhile; changing both writes both.
+     *
+     * MUTATION: give `writeNameAndAddress` the chosen decoder whenever the identity changed, in
+     * `LocomotiveTab.decoderToWrite`, and this fails.
+     */
+    @Test
+    public void testAnAddressOnlySaveKeepsADecoderASyncChanged() throws Exception
+    {
+        open(0);
+
+        model.changeLocAddress(NAME, 40, Locomotive.decoderType.DCC);
+
+        saveTyped(null, "50");
+
+        assertEquals(loc.getAddress(), 50, "the typed address was not written");
+        assertEquals(loc.getDecoderType(), Locomotive.decoderType.DCC, "the address-only Save put the old decoder type back");
+
+        open(0);
+
+        saveTyped(Locomotive.decoderType.MFX, "3421");
+
+        assertEquals(loc.getAddress(), 3421);
+        assertEquals(loc.getDecoderType(), Locomotive.decoderType.MFX, "a changed decoder type was not written");
+    }
+
+    /**
+     * The same-address check follows the decoder type the Save will write: a member that shares the typed address only
+     * under the type a sync gave the train meanwhile still refuses an address-only Save.
+     *
+     * MUTATION: use `chosenDecoder()` in `LocomotiveTab.warnAboutTheSameAddress`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheSameAddressCheckUsesTheDecoderASyncChanged() throws Exception
+    {
+        loc.setLinkedLocomotives(java.util.Collections.singletonMap(OTHER, 1.0));
+        open(0);
+
+        model.changeLocAddress(NAME, 40, Locomotive.decoderType.DCC);
+        model.changeLocAddress(OTHER, 50, Locomotive.decoderType.DCC);
+
+        SettingsWindow.type("settings.address", "50");
+
+        refusedOverTheConsist("an address shared with a member under the new type was not refused");
+        assertEquals(loc.getAddress(), 40, "the refused Save changed the address");
+    }
+
+    /**
+     * A year an import filled while the window was open survives a Save of the notes text beside it.
+     *
+     * MUTATION: write all four fields in `LocomotiveNotesPanel.apply` whenever one is dirty, and this fails.
+     */
+    @Test
+    public void testANotesSaveKeepsAYearAnImportFilledMeanwhile() throws Exception
+    {
+        loc.setStructuredNotes(0, 1970, "LS Railway", "first notes");
+
+        open(0);
+
+        loc.setStructuredNotes(1955, 1970, "LS Railway", "first notes");
+
+        typeArea("notes.text", "second notes");
+        saveTyped(null, "3401");
+
+        assertEquals(loc.getStructuredNotes().getStartYear(), 1955, "the import's start year was written back empty");
+        assertEquals(loc.getStructuredNotes().getNotes(), "second notes");
+    }
+
+    /** Picks the decoder type when given one, types the address, and Saves. */
+    private static void saveTyped(Locomotive.decoderType type, String address) throws Exception
+    {
+        if (type != null) decoder(type);
+
+        SettingsWindow.type("settings.address", address);
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "the Save did not go through");
+    }
+
+    /**
      * With the power off and a stored speed, a change of address or decoder is refused at Save, as the old door would
      * refuse it, while a name saves; at speed zero the address saves.
      *

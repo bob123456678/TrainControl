@@ -4,17 +4,23 @@ import org.traincontrol.util.I18n;
 import org.traincontrol.base.LayoutDiagram;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.automationui.TileGraph.Direction;
@@ -24,6 +30,8 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.Util;
+import org.json.JSONException;
+import org.traincontrol.automation.Layout;
 
 /**
  * What the diagram cannot say: names, stations, lengths, directions, and where the locomotives go.  Geometry is
@@ -227,7 +235,7 @@ public class AutonomyCompanionStore
      * turns away; an empty list clears the station's entry.
      */
     private static void putList(Map<TileKey, List<TileKey>> into, TileKey station, List<TileKey> given,
-        java.util.function.Predicate<TileKey> refused)
+        Predicate<TileKey> refused)
     {
         if (station == null) return;
 
@@ -386,8 +394,8 @@ public class AutonomyCompanionStore
     {
         int highest = 0;
 
-        for (java.util.Collection<String> ids
-            : java.util.Arrays.asList(pageNamesWhenWritten.keySet(), pageIdToName.keySet()))
+        for (Collection<String> ids
+            : Arrays.asList(pageNamesWhenWritten.keySet(), pageIdToName.keySet()))
         {
             for (String id : ids)
             {
@@ -406,9 +414,9 @@ public class AutonomyCompanionStore
     }
 
     /** The known page names not in `loaded`.  A caller with an incomplete picture must save but not prune (OB-068). */
-    public java.util.List<String> pagesNotLoaded(java.util.Collection<String> loaded)
+    public List<String> pagesNotLoaded(Collection<String> loaded)
     {
-        java.util.List<String> missing = new ArrayList<>();
+        List<String> missing = new ArrayList<>();
 
         if (loaded == null) return missing;
 
@@ -433,7 +441,7 @@ public class AutonomyCompanionStore
      * Drops everything held for pages the operator said are gone for good (FR-018), never inferred (OB-067); returns
      * the count.
      */
-    public int forgetHeldPages(java.util.Collection<String> goneByName)
+    public int forgetHeldPages(Collection<String> goneByName)
     {
         if (goneByName == null || goneByName.isEmpty()) return 0;
 
@@ -575,7 +583,7 @@ public class AutonomyCompanionStore
         {
             root = new JSONObject(contents);
         }
-        catch (org.json.JSONException e)
+        catch (JSONException e)
         {
             throw new IOException(String.valueOf(e.getMessage()), e);
         }
@@ -605,7 +613,7 @@ public class AutonomyCompanionStore
                     configuration = new JSONObject(
                         new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
                 }
-                catch (org.json.JSONException e)
+                catch (JSONException e)
                 {
                     // Named, as an IOException, so the user learns which file is unreadable.
                     throw new IOException(
@@ -759,9 +767,9 @@ public class AutonomyCompanionStore
     }
 
     /** Every square with a length recorded (FR-069), in the order they were measured. */
-    public java.util.List<TileKey> tilesWithALength()
+    public List<TileKey> tilesWithALength()
     {
-        java.util.List<TileKey> out = new java.util.ArrayList<>();
+        List<TileKey> out = new ArrayList<>();
 
         for (Map.Entry<TileKey, Integer> each : tileLengths.entrySet())
         {
@@ -1056,7 +1064,7 @@ public class AutonomyCompanionStore
     }
 
     /** Applies a change to the pre-edit note, if one reads, and writes it back when the change says it changed. */
-    private void rewriteTheUnfinishedEditNote(java.util.function.Predicate<JSONObject> change)
+    void rewriteTheUnfinishedEditNote(Predicate<JSONObject> change)
     {
         if (!beforeEditFile().isFile()) return;
 
@@ -1079,7 +1087,7 @@ public class AutonomyCompanionStore
             return;
         }
 
-        try (java.io.FileOutputStream out = new java.io.FileOutputStream(beforeEditFile()))
+        try (FileOutputStream out = new FileOutputStream(beforeEditFile()))
         {
             out.write(bytes);
 
@@ -1212,12 +1220,11 @@ public class AutonomyCompanionStore
      */
     public static void repairLocomotiveInPausedList(JSONObject globals, String from, String to)
     {
-        org.json.JSONArray list = globals == null ? null
-            : globals.optJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+        JSONArray list = globals == null ? null : globals.optJSONArray(Layout.PAUSED_LOCOMOTIVES);
 
         if (list == null) return;
 
-        java.util.Set<String> names = new java.util.TreeSet<>();
+        Set<String> names = new java.util.TreeSet<>();
 
         boolean named = false;
 
@@ -1237,8 +1244,8 @@ public class AutonomyCompanionStore
 
         if (!named) return;
 
-        if (names.isEmpty()) globals.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
-        else globals.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(names));
+        if (names.isEmpty()) globals.remove(Layout.PAUSED_LOCOMOTIVES);
+        else globals.put(Layout.PAUSED_LOCOMOTIVES, new JSONArray(names));
     }
 
     /**
@@ -1253,11 +1260,11 @@ public class AutonomyCompanionStore
 
         if (globals == null || !globals.has("timetable")) return;
 
-        org.json.JSONArray timetable = globals.optJSONArray("timetable");
+        JSONArray timetable = globals.optJSONArray("timetable");
 
         if (timetable == null) return;
 
-        org.json.JSONArray kept = new org.json.JSONArray();
+        JSONArray kept = new JSONArray();
 
         for (int at = 0; at < timetable.length(); at++)
         {
@@ -2104,8 +2111,7 @@ public class AutonomyCompanionStore
         }
 
         // AND the names made from the page's name (timetable legs, a train's road): an unnamed square is "page x,y".
-        final java.util.regex.Pattern made = java.util.regex.Pattern.compile("^" + java.util.regex.Pattern.quote(from)
-            + " (\\d+,\\d+)( \\(.*)?$");
+        final Pattern made = Pattern.compile("^" + Pattern.quote(from) + " (\\d+,\\d+)( \\(.*)?$");
 
         for (JSONObject configuration : configurations.values())
         {
@@ -2189,12 +2195,12 @@ public class AutonomyCompanionStore
      * Squares built over, whose setup is about track that is gone: paste, copy and palette drops (moveTiles covers
      * moves).
      */
-    public void forgetTiles(java.util.Collection<TileKey> tiles)
+    public void forgetTiles(Collection<TileKey> tiles)
     {
         moveTiles(null, tiles);
     }
 
-    private static Set<TileKey> asKeys(java.util.Collection<TileKey> tiles)
+    private static Set<TileKey> asKeys(Collection<TileKey> tiles)
     {
         Set<TileKey> keys = new LinkedHashSet<>();
 
@@ -2225,7 +2231,7 @@ public class AutonomyCompanionStore
      * One diagram edit: what moved and what was built over (either may be null) in one call, so no caller gets the
      * ORDER wrong.
      */
-    public boolean moveTiles(Map<TileKey, TileKey> moves, java.util.Collection<TileKey> builtOver)
+    public boolean moveTiles(Map<TileKey, TileKey> moves, Collection<TileKey> builtOver)
     {
         Map<TileKey, TileKey> byKey = new LinkedHashMap<>();
 
@@ -2408,7 +2414,7 @@ public class AutonomyCompanionStore
     }
 
     /** Adds the squares of `from` on this page to `into`, read from a copy of `from`. */
-    private static void addOnPage(java.util.Collection<TileKey> from, String page, Set<TileKey> into)
+    private static void addOnPage(Collection<TileKey> from, String page, Set<TileKey> into)
     {
         for (TileKey key : new ArrayList<>(from)) if (isOnPage(key, page)) into.add(key);
     }
@@ -2513,7 +2519,7 @@ public class AutonomyCompanionStore
     private static void putBackEitherEnd(Map<TileKey, TileKey> into, String page,
         Map<TileKey, TileKey> was)
     {
-        for (java.util.Iterator<Map.Entry<TileKey, TileKey>> pairs = into.entrySet().iterator();
+        for (Iterator<Map.Entry<TileKey, TileKey>> pairs = into.entrySet().iterator();
             pairs.hasNext();)
         {
             Map.Entry<TileKey, TileKey> pair = pairs.next();
@@ -2532,7 +2538,7 @@ public class AutonomyCompanionStore
     private static void putBackEitherEnd(Map<TileKey, List<TileKey>> into, String page,
         Map<TileKey, List<TileKey>> was, boolean lists)
     {
-        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
+        for (Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
             = into.entrySet().iterator(); pairs.hasNext();)
         {
             Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
@@ -2559,7 +2565,7 @@ public class AutonomyCompanionStore
     private static <K extends SquareKeyed<K>, T> void putBack(Map<K, T> into, String page,
         Map<K, T> was)
     {
-        for (java.util.Iterator<K> keys = into.keySet().iterator(); keys.hasNext();)
+        for (Iterator<K> keys = into.keySet().iterator(); keys.hasNext();)
         {
             if (isOnPage(keys.next().square(), page)) keys.remove();
         }
@@ -2569,7 +2575,7 @@ public class AutonomyCompanionStore
 
     private static void putMembersBack(Set<TileKey> into, String page, Set<TileKey> was)
     {
-        for (java.util.Iterator<TileKey> keys = into.iterator(); keys.hasNext();)
+        for (Iterator<TileKey> keys = into.iterator(); keys.hasNext();)
         {
             if (isOnPage(keys.next(), page)) keys.remove();
         }
@@ -2598,7 +2604,7 @@ public class AutonomyCompanionStore
      */
     private void putPairedMembersBack(Set<TileKey> into, String page, Set<TileKey> was)
     {
-        for (java.util.Iterator<TileKey> keys = into.iterator(); keys.hasNext();)
+        for (Iterator<TileKey> keys = into.iterator(); keys.hasNext();)
         {
             TileKey key = keys.next();
 
@@ -2997,7 +3003,7 @@ public class AutonomyCompanionStore
      * written back after the real one, reverting edits to it: anything added to save() has to be added here.
      */
     private static final Set<String> KNOWN_SHARED_NOT_A_COLLECTION =
-        new LinkedHashSet<>(java.util.Arrays.asList("version", "activeConfiguration", "pages"));
+        new LinkedHashSet<>(Arrays.asList("version", "activeConfiguration", "pages"));
 
     /**
      * Every shared field name this build understands, by its name in the FILE; anything else was written by a NEWER
@@ -3059,7 +3065,7 @@ public class AutonomyCompanionStore
         fields.put("excludedPages", Held.PAGE_LIST);
         fields.put("keptDespiteRepeats", Held.PAGE_LIST);
 
-        return java.util.Collections.unmodifiableMap(fields);
+        return Collections.unmodifiableMap(fields);
     }
 
     /**
@@ -3388,7 +3394,7 @@ public class AutonomyCompanionStore
         {
             boolean any = false;
 
-            for (java.util.Iterator<DirectionKey> keys = map.keySet().iterator(); keys.hasNext();)
+            for (Iterator<DirectionKey> keys = map.keySet().iterator(); keys.hasNext();)
             {
                 if (squares.contains(keys.next().square()))
                 {
@@ -3472,7 +3478,7 @@ public class AutonomyCompanionStore
             }
 
             // And anything pointing AT a gone square; no arriving exception, as a vacated square is never in this set.
-            for (java.util.Iterator<Map.Entry<TileKey, TileKey>> pairs = map.entrySet().iterator();
+            for (Iterator<Map.Entry<TileKey, TileKey>> pairs = map.entrySet().iterator();
                 pairs.hasNext();)
             {
                 if (squares.contains(pairs.next().getValue()))
@@ -3771,7 +3777,7 @@ public class AutonomyCompanionStore
         // saved work.  So it is overwritten with the current setup IN PLACE, not through writeAtomically (its move
         // needs the DELETE access that just failed); a torn write fails unfinishedEdit's shape check and is kept and
         // reported.
-        try (java.io.FileOutputStream out = new java.io.FileOutputStream(was))
+        try (FileOutputStream out = new FileOutputStream(was))
         {
             out.write(snapshotSetup().toString(2).getBytes(StandardCharsets.UTF_8));
 
@@ -4386,11 +4392,11 @@ public class AutonomyCompanionStore
      * `dropped` each; true if anything went.  A NEW list each time.
      */
     private static boolean dropPointers(Map<TileKey, List<TileKey>> map,
-        java.util.function.Predicate<TileKey> gone, java.util.function.Consumer<TileKey> dropped)
+        Predicate<TileKey> gone, java.util.function.Consumer<TileKey> dropped)
     {
         boolean any = false;
 
-        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
+        for (Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
             = map.entrySet().iterator(); pairs.hasNext();)
         {
             Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
@@ -4559,7 +4565,7 @@ public class AutonomyCompanionStore
 
         for (int i = 0; table != null && i < table.length(); i++) kept.add(table.get(i));
 
-        java.util.Set<Object> broughtBack = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        Set<Object> broughtBack = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
         for (int i = 0; i < aside.length(); i++)
         {

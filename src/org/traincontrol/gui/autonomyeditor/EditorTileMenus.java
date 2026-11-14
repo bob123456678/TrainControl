@@ -1,6 +1,8 @@
 package org.traincontrol.gui.autonomyeditor;
 
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
@@ -8,6 +10,15 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
+import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
+import org.traincontrol.automationui.TilePorts;
+import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
+import javax.swing.ButtonGroup;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+import javax.swing.JRadioButtonMenuItem;
 
 /**
  * The autonomy editor's right-click menus for a square: the tile menu, the text-square menu, and the items about a
@@ -24,11 +35,11 @@ final class EditorTileMenus
     static final class FacingFacts
     {
         final String standing;
-        final java.util.List<org.traincontrol.automationui.TilePorts.Side> facings;
-        final org.traincontrol.automationui.TilePorts.Side recorded;
+        final List<TilePorts.Side> facings;
+        final TilePorts.Side recorded;
 
-        FacingFacts(String standing, java.util.List<org.traincontrol.automationui.TilePorts.Side> facings,
-            org.traincontrol.automationui.TilePorts.Side recorded)
+        FacingFacts(String standing, List<TilePorts.Side> facings,
+            TilePorts.Side recorded)
         {
             this.standing = standing;
             this.facings = facings;
@@ -39,13 +50,13 @@ final class EditorTileMenus
          * Nothing ticked where no facing is known; a square holding one facing knows it, the only copy being where the
          * train stands.
          */
-        boolean isTicked(org.traincontrol.automationui.TilePorts.Side facing)
+        boolean isTicked(TilePorts.Side facing)
         {
             return facing == current();
         }
 
         /** The facing the train has: the recorded one, else the only one offered, else null. */
-        org.traincontrol.automationui.TilePorts.Side current()
+        TilePorts.Side current()
         {
             return recorded != null ? recorded : facings.size() == 1 ? facings.get(0) : null;
         }
@@ -54,11 +65,11 @@ final class EditorTileMenus
     /** A square's arrived-from question: the sides offered, the side recorded, one recorded the track has not. */
     static final class ArrivedFacts
     {
-        final java.util.List<String> sides;
+        final List<String> sides;
         final String recorded;
         final String recordedButGone;
 
-        ArrivedFacts(java.util.List<String> sides, String recorded, String recordedButGone)
+        ArrivedFacts(List<String> sides, String recorded, String recordedButGone)
         {
             this.sides = sides;
             this.recorded = recorded;
@@ -69,10 +80,10 @@ final class EditorTileMenus
     /** A square's tail question: the roads offered, and the one recorded. */
     static final class TailFacts
     {
-        final java.util.List<TailCrossedPrompt.Choice> choices;
+        final List<TailCrossedPrompt.Choice> choices;
         final TailCrossedPrompt.Choice ticked;
 
-        TailFacts(java.util.List<TailCrossedPrompt.Choice> choices, TailCrossedPrompt.Choice ticked)
+        TailFacts(List<TailCrossedPrompt.Choice> choices, TailCrossedPrompt.Choice ticked)
         {
             this.choices = choices;
             this.ticked = ticked;
@@ -92,7 +103,7 @@ final class EditorTileMenus
      * @param component what is drawn there, or null to read it off the page
      * @return the menu, or null where this square has nothing to offer
      */
-    javax.swing.JPopupMenu buildTileMenu(TileKey tile, LayoutDiagramComponent component)
+    JPopupMenu buildTileMenu(TileKey tile, LayoutDiagramComponent component)
     {
         if (tile == null || editor.session == null || editor.session.getGraph() == null) return null;
 
@@ -116,7 +127,7 @@ final class EditorTileMenus
         {
             editor.say(editor.hint, I18n.t("autosetup.ui.infoTileIgnored"));
 
-            javax.swing.JPopupMenu only = new javax.swing.JPopupMenu();
+            JPopupMenu only = new JPopupMenu();
 
             // AND TAKING A CAPTION OFF, which the setup check names wherever it sits - on a page left out of
             // autonomy too (OB-341).
@@ -147,7 +158,7 @@ final class EditorTileMenus
 
         editor.rememberIfStation(target);
 
-        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+        JPopupMenu menu = new JPopupMenu();
 
         boolean isPoint = editor.session.getReducer() != null
             && editor.session.getReducer().getPoints().containsKey(target);
@@ -161,7 +172,7 @@ final class EditorTileMenus
 
             // The square's window, right under its name whether or not a train stands here (OB-437), every setting of
             // the square being in it (FR-111), which a key opens too.
-            javax.swing.JMenuItem settings = settingsItem(target);
+            JMenuItem settings = settingsItem(target);
 
             if (!editor.menuOnly) TrainControlUI.showShortcut(settings, AutonomyEditorPanel.SETTINGS_KEY);
 
@@ -187,14 +198,14 @@ final class EditorTileMenus
 
                 menu.addSeparator();
 
-                javax.swing.JMenuItem train = trainItem(target);
+                JMenuItem train = trainItem(target);
 
                 // Change Train at... first, Place a Locomotive Here... last; an empty group's divider goes in tidy()
                 boolean placesOne = trainStanding(target) == null;
 
                 if (train != null && !placesOne) menu.add(train);
 
-                javax.swing.JMenuItem placeSelected = placeSelectedItem(target, trainStanding(target));
+                JMenuItem placeSelected = placeSelectedItem(target, trainStanding(target));
 
                 if (placeSelected != null) menu.add(placeSelected);
 
@@ -218,12 +229,12 @@ final class EditorTileMenus
 
         // Everything about where trains may run, under one heading: each item is a different sentence about the same
         // subject.
-        javax.swing.JMenu connections = new javax.swing.JMenu(I18n.t("autosetup.ui.menuConnections"));
+        JMenu connections = new JMenu(I18n.t("autosetup.ui.menuConnections"));
 
         // Headed, because there are four kinds of thing in here once a square has several arms
         editor.title(connections, I18n.t("autosetup.ui.menuDepartHeading"));
 
-        Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = editor.session.getRoutes(target);
+        Map<RouteId, TilePorts.Route> routes = editor.session.getRoutes(target);
 
         // A link has no direction of its own, by decision: the track either side governs which way trains may run.  Its
         // one route is a stub (the same side twice), so offering the four answers would be a setting that silently does
@@ -238,8 +249,7 @@ final class EditorTileMenus
             // switch they are the whole of its settings (OB-351).
             if (many)
             {
-                final java.util.List<org.traincontrol.automationui.TilePorts.Side> arms =
-                    AutonomyEditorPanel.armsOf(routes);
+                final List<TilePorts.Side> arms = AutonomyEditorPanel.armsOf(routes);
 
                 int mask = editor.armMask(target, routes, arms);
 
@@ -247,7 +257,7 @@ final class EditorTileMenus
 
                 for (int i = 0; i < arms.size(); i++)
                 {
-                    final org.traincontrol.automationui.TilePorts.Side arm = arms.get(i);
+                    final TilePorts.Side arm = arms.get(i);
 
                     connections.add(editor.toggle(I18n.f("autosetup.ui.menuArm", String.valueOf(arm)),
                         "autosetup.ui.hintArms", (mask & (1 << i)) != 0,
@@ -263,9 +273,9 @@ final class EditorTileMenus
             // not show.  A crossing's or double curve's roads end at arms of their own, so each road's submenu stays.
             boolean byArmsOnly = many && editor.session.getGraph().sharesAnArm(target);
 
-            for (Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> entry : routes.entrySet())
+            for (Map.Entry<RouteId, TilePorts.Route> entry : routes.entrySet())
             {
-                org.traincontrol.automationui.TilePorts.Route route = entry.getValue();
+                TilePorts.Route route = entry.getValue();
 
                 if (byArmsOnly) break;
 
@@ -273,11 +283,11 @@ final class EditorTileMenus
                 if (many)
                 {
                     // no font set: submenus inherit the look and feel's, as the editor's own do
-                    javax.swing.JMenu branch = new javax.swing.JMenu(
+                    JMenu branch = new JMenu(
                         I18n.f("autosetup.ui.menuBranch",
                             String.valueOf(route.getA()), String.valueOf(route.getB())));
 
-                    for (javax.swing.JMenuItem option : editor.directionItems(target, entry.getKey(), route))
+                    for (JMenuItem option : editor.directionItems(target, entry.getKey(), route))
                     {
                         branch.add(option);
                     }
@@ -286,7 +296,7 @@ final class EditorTileMenus
                 }
                 else
                 {
-                    for (javax.swing.JMenuItem option : editor.directionItems(target, entry.getKey(), route))
+                    for (JMenuItem option : editor.directionItems(target, entry.getKey(), route))
                     {
                         connections.add(option);
                     }
@@ -295,8 +305,7 @@ final class EditorTileMenus
 
             if (many)
             {
-                javax.swing.JMenu all = new javax.swing.JMenu(
-                    I18n.t("autosetup.ui.menuAllBranches"));
+                JMenu all = new JMenu(I18n.t("autosetup.ui.menuAllBranches"));
 
                 all.add(editor.item(I18n.t("autosetup.ui.menuRouteBoth"),
                     () -> editor.setAllBranches(target, Direction.BOTH)));
@@ -381,7 +390,7 @@ final class EditorTileMenus
         // question, so there is one.
         if (editor.offersALength(tile))
         {
-            javax.swing.JMenuItem lengthItem = editor.item(I18n.t("autosetup.ui.menuSetLength"),
+            JMenuItem lengthItem = editor.item(I18n.t("autosetup.ui.menuSetLength"),
                 () -> editor.applyLength(editor.squareTheLengthWouldGoOn(tile)));
 
             // OB-214: the item shows Control+E, where Control+E does it
@@ -428,9 +437,9 @@ final class EditorTileMenus
     }
 
     /** Station Settings..., for a square's menu on either surface. */
-    javax.swing.JMenuItem settingsItem(final TileKey target)
+    JMenuItem settingsItem(final TileKey target)
     {
-        javax.swing.JMenuItem item = new javax.swing.JMenuItem(I18n.t("autosetup.ui.menuStationSettings"));
+        JMenuItem item = new JMenuItem(I18n.t("autosetup.ui.menuStationSettings"));
 
         item.addActionListener(e -> editor.openStationSettings(target));
 
@@ -441,9 +450,9 @@ final class EditorTileMenus
      * Place Bramley, for the locomotive selected on the main window; null where none is selected, it already stands
      * here (on the railway, as the Train at item reads it), the square is no station, or a run holds the setup (MT-914).
      */
-    private javax.swing.JMenuItem placeSelectedItem(final TileKey target, String standing)
+    private JMenuItem placeSelectedItem(final TileKey target, String standing)
     {
-        org.traincontrol.gui.TrainControlUI main = editor.parentWindow();
+        TrainControlUI main = editor.parentWindow();
 
         org.traincontrol.base.Locomotive selected = main == null ? null : main.getActiveLoc();
 
@@ -459,13 +468,13 @@ final class EditorTileMenus
     }
 
     /** Change Train at Bramley..., or Place a Locomotive Here... on an empty station; null on an empty non-station. */
-    javax.swing.JMenuItem trainItem(final TileKey target)
+    JMenuItem trainItem(final TileKey target)
     {
         final String standing = trainStanding(target);
 
         if (standing == null && !editor.session.getStore().isStation(target)) return null;
 
-        javax.swing.JMenuItem item = new javax.swing.JMenuItem(standing == null ? I18n.t("autosetup.ui.menuPlaceHere")
+        JMenuItem item = new JMenuItem(standing == null ? I18n.t("autosetup.ui.menuPlaceHere")
             : I18n.f("autosetup.ui.menuChangeTrainAt", editor.describeTile(target)));
 
         item.addActionListener(e -> editor.openTrainTab(target));
@@ -474,12 +483,12 @@ final class EditorTileMenus
     }
 
     /** The text-square menu, built and handed back.  See buildTileMenu. */
-    private javax.swing.JPopupMenu buildTextMenu(final TileKey tile,
+    private JPopupMenu buildTextMenu(final TileKey tile,
         final LayoutDiagramComponent component)
     {
         editor.menuTarget = tile;
 
-        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+        JPopupMenu menu = new JPopupMenu();
 
         String label = component == null || component.getLabel() == null ? "" : component.getLabel();
 
@@ -515,7 +524,7 @@ final class EditorTileMenus
      * @param stopOnly only the item that stops showing it, for a square that may not be given a caption but has one
      * (OB-341)
      */
-    private void addCaptionItems(javax.swing.JPopupMenu menu, final TileKey tile,
+    private void addCaptionItems(JPopupMenu menu, final TileKey tile,
         final LayoutDiagramComponent component, String label, TileKey captioned, boolean stopOnly)
     {
         boolean mine = label.trim().isEmpty() || captioned != null;
@@ -535,7 +544,7 @@ final class EditorTileMenus
         // Not on a square that may not carry one: it can only be taken off there (OB-341)
         if (!stopOnly)
         {
-            javax.swing.JMenuItem name = editor.item(
+            JMenuItem name = editor.item(
                 showsItself ? I18n.t("autosetup.ui.menuStationShowsItself")
                     : showing == null || aStationSquare ? I18n.t("autosetup.ui.menuShowStationHere")
                     : I18n.t("autosetup.ui.menuShowStationHereNamed"),
@@ -574,12 +583,11 @@ final class EditorTileMenus
     {
         if (target == null || editor.locomotiveAt(target) == null) return null;
 
-        org.traincontrol.automation.Layout running =
-            editor.runningLayout == null ? null : editor.runningLayout.get();
+        Layout running = editor.runningLayout == null ? null : editor.runningLayout.get();
 
         if (running == null) return null;
 
-        org.traincontrol.automation.Point point = editor.pointOnTheLayout(running, target);
+        Point point = editor.pointOnTheLayout(running, target);
 
         if (point == null) return null;
 
@@ -593,9 +601,9 @@ final class EditorTileMenus
         // THE BUILD'S SIDES, which the model reads as well (OB-182): the entry side travels in the configuration, and
         // `Layout.entrySideOf` is what both the arrival write and the tail walk consult, so offering it here stores a
         // value they can match.
-        java.util.List<String> sides = new java.util.ArrayList<>(
+        List<String> sides = new ArrayList<>(
             // UNBARRED (OB-204): this records where a train CAME FROM, which a side nothing may arrive by is not.
-            org.traincontrol.gui.autonomy.ArrivalSidePrompt.sidesOf(editor.session.unbarredArrivalSides(target)));
+            ArrivalSidePrompt.sidesOf(editor.session.unbarredArrivalSides(target)));
 
         final String recorded = editor.session.getArrivedFrom(target);
 
@@ -616,25 +624,25 @@ final class EditorTileMenus
      * offers it where one click cannot (`changeArrivedFromItem`).
      * @return the menu, or null when no train is standing here
      */
-    javax.swing.JMenu buildArrivedFromMenu(final TileKey target)
+    JMenu buildArrivedFromMenu(final TileKey target)
     {
         ArrivedFacts facts = arrivedFacts(target);
 
         if (facts == null) return null;
 
-        final java.util.List<String> sides = facts.sides;
+        final List<String> sides = facts.sides;
         final String recorded = facts.recorded;
         final String recordedButGone = facts.recordedButGone;
 
-        javax.swing.JMenu menu = new javax.swing.JMenu(changeArrivedFromLabel(recorded));
+        JMenu menu = new JMenu(changeArrivedFromLabel(recorded));
 
         menu.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintArrivedFrom")));
 
-        javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
+        ButtonGroup group = new ButtonGroup();
 
         for (final String side : sides)
         {
-            menu.add(editor.radio(group, org.traincontrol.gui.autonomy.ArrivalSidePrompt.labelFor(side),
+            menu.add(editor.radio(group, ArrivalSidePrompt.labelFor(side),
                 "autosetup.ui.hintArrivedFrom",
                 side.equals(recorded),
                 () -> setArrivedFrom(target, side)));
@@ -642,9 +650,9 @@ final class EditorTileMenus
 
         if (recordedButGone != null)
         {
-            javax.swing.JRadioButtonMenuItem gone = new javax.swing.JRadioButtonMenuItem(
+            JRadioButtonMenuItem gone = new JRadioButtonMenuItem(
                 I18n.f("autosetup.ui.arrivedFromNotOnTrack",
-                    org.traincontrol.gui.autonomy.ArrivalSidePrompt.labelFor(recordedButGone)), true);
+                    ArrivalSidePrompt.labelFor(recordedButGone)), true);
 
             // Not in the group, and not enabled: it is a statement about the square, not a choice.
             gone.setEnabled(false);
@@ -674,11 +682,11 @@ final class EditorTileMenus
         editor.setupChanged();
 
         // The running layout too: what blocks track is the Point, so a diagram changed over an old railway value is a defect.
-        org.traincontrol.automation.Layout now = editor.runningLayout == null ? null : editor.runningLayout.get();
+        Layout now = editor.runningLayout == null ? null : editor.runningLayout.get();
 
         if (now != null)
         {
-            org.traincontrol.automation.Point on = editor.pointOnTheLayout(now, target);
+            Point on = editor.pointOnTheLayout(now, target);
 
             if (on != null) on.setArrivedFrom(side);
 
@@ -694,8 +702,7 @@ final class EditorTileMenus
     {
         if (target == null) return null;
 
-        org.traincontrol.automation.Layout showing =
-            editor.runningLayout == null ? null : editor.runningLayout.get();
+        Layout showing = editor.runningLayout == null ? null : editor.runningLayout.get();
 
         String onTheRailway = editor.session == null ? null : editor.session.trainOnTheRailway(target, showing);
 
@@ -703,7 +710,7 @@ final class EditorTileMenus
     }
 
     /** The one door of a facing chosen by hand, from the menu or Station Settings' Train tab. */
-    void chooseFacing(final TileKey target, final org.traincontrol.automationui.TilePorts.Side facing)
+    void chooseFacing(final TileKey target, final TilePorts.Side facing)
     {
         editor.session.setFacingAndMove(target, facing);
 
@@ -717,20 +724,17 @@ final class EditorTileMenus
 
         if (standing == null) return null;
 
-        org.traincontrol.automation.Layout showing =
-            editor.runningLayout == null ? null : editor.runningLayout.get();
+        Layout showing = editor.runningLayout == null ? null : editor.runningLayout.get();
 
-        final java.util.List<org.traincontrol.automationui.TilePorts.Side> facings =
-            new java.util.ArrayList<>(editor.session.facingChoices(target));
+        final List<TilePorts.Side> facings = new ArrayList<>(editor.session.facingChoices(target));
 
         // WHAT THE RAILWAY SAYS, and only then what the file says (OB-181): the station label reads which COPY of the square the
         // train stands on, which on a split square IS its direction, while the stored facing is written only when somebody places
         // a train by hand.  The file is the fallback: an empty square has no train whose direction this could be.
-        org.traincontrol.automationui.TilePorts.Side facingOnTheRailway =
-            editor.session.facingOnTheRailway(target, showing);
+        TilePorts.Side facingOnTheRailway = editor.session.facingOnTheRailway(target, showing);
 
         // NOT ONE THE TRACK DOES NOT RUN (OB-348), which the caption does not show and the icon cannot be drawn along
-        final org.traincontrol.automationui.TilePorts.Side recorded =
+        final TilePorts.Side recorded =
             facingOnTheRailway != null ? facingOnTheRailway : editor.session.recordedFacingAlongTheTrack(target);
 
         // And whatever is actually recorded, even when this square cannot hold it (OB-177): the radios are ticked by
@@ -747,24 +751,24 @@ final class EditorTileMenus
      * there is a choice, how far back the tail reaches.  Built once, here, for both surfaces (OB-348).
      * @return whether a locomotive stands here, so anything was added
      */
-    boolean addFacingItems(javax.swing.JPopupMenu menu, final TileKey target)
+    boolean addFacingItems(JPopupMenu menu, final TileKey target)
     {
         final FacingFacts facts = facingFacts(target);
 
         if (facts == null) return false;
 
-        javax.swing.JMenuItem direction = changeDirectionItem(target, facts);
+        JMenuItem direction = changeDirectionItem(target, facts);
 
         if (direction != null) menu.add(direction);
 
         // Where no track leads out, the grayed item's reason is all there is to say (OB-347).
         if (facts.facings.isEmpty()) return true;
 
-        javax.swing.JMenuItem arrived = changeArrivedFromItem(target);
+        JMenuItem arrived = changeArrivedFromItem(target);
 
         if (arrived != null) menu.add(arrived);
 
-        javax.swing.JMenu tail = tailCrossedMenu(target, facts.standing);
+        JMenu tail = tailCrossedMenu(target, facts.standing);
 
         if (tail != null) menu.add(tail);
 
@@ -776,11 +780,11 @@ final class EditorTileMenus
      * diagram's menu where the track allows one facing, and the radios where there is no single other.  A facing has
      * to be one the BUILD can hold.
      */
-    private javax.swing.JMenuItem changeDirectionItem(final TileKey target, final FacingFacts facts)
+    private JMenuItem changeDirectionItem(final TileKey target, final FacingFacts facts)
     {
-        final java.util.List<org.traincontrol.automationui.TilePorts.Side> facings = facts.facings;
+        final List<TilePorts.Side> facings = facts.facings;
 
-        final org.traincontrol.automationui.TilePorts.Side now = facts.current();
+        final TilePorts.Side now = facts.current();
 
         String label = now == null ? I18n.t("autosetup.ui.menuChangeDirectionUnknown")
             : I18n.f("autosetup.ui.menuChangeDirection", AutonomyEditorPanel.menuSide(now.name()));
@@ -794,19 +798,19 @@ final class EditorTileMenus
 
         if (now != null && facings.size() == 2)
         {
-            final org.traincontrol.automationui.TilePorts.Side other = facings.get(facings.get(0) == now ? 1 : 0);
+            final TilePorts.Side other = facings.get(facings.get(0) == now ? 1 : 0);
 
             // The railway too, not only the setup: `setFacingAndMove` stands the train on the copy facing the new way.
             return editor.radio(null, label, "autosetup.ui.hintFacing", false, () -> chooseFacing(target, other));
         }
 
-        javax.swing.JMenu list = new javax.swing.JMenu(label);
+        JMenu list = new JMenu(label);
 
         list.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintFacing")));
 
-        javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
+        ButtonGroup group = new ButtonGroup();
 
-        for (final org.traincontrol.automationui.TilePorts.Side facing : facings)
+        for (final TilePorts.Side facing : facings)
         {
             list.add(editor.radio(group, I18n.t("autosetup.ui.facing" + facing.name()), "autosetup.ui.hintFacing",
                 facts.isTicked(facing), () -> chooseFacing(target, facing)));
@@ -821,7 +825,7 @@ final class EditorTileMenus
      * @return the item, or null when no train stands here on the railway, or on the track diagram's menu where the track
      * has one side
      */
-    private javax.swing.JMenuItem changeArrivedFromItem(final TileKey target)
+    private JMenuItem changeArrivedFromItem(final TileKey target)
     {
         ArrivedFacts facts = arrivedFacts(target);
 
@@ -854,9 +858,9 @@ final class EditorTileMenus
     }
 
     /** A grayed item whose tooltip says why, which FR-168's setting leaves on. */
-    private static javax.swing.JMenuItem grayed(String label, String reasonKey)
+    private static JMenuItem grayed(String label, String reasonKey)
     {
-        javax.swing.JMenuItem item = new javax.swing.JMenuItem(label);
+        JMenuItem item = new JMenuItem(label);
 
         item.setEnabled(false);
         item.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t(reasonKey)));
@@ -873,9 +877,9 @@ final class EditorTileMenus
     /** The same, putting why there is no question, in words, in `why[0]` where there is none (OB-429). */
     TailFacts tailFacts(final TileKey target, final String[] why)
     {
-        org.traincontrol.automation.Layout running = editor.runningLayout == null ? null : editor.runningLayout.get();
+        Layout running = editor.runningLayout == null ? null : editor.runningLayout.get();
 
-        org.traincontrol.automation.Point point = running == null ? null : editor.pointOnTheLayout(running, target);
+        Point point = running == null ? null : editor.pointOnTheLayout(running, target);
 
         if (point == null || point.getCurrentLocomotive() == null)
         {
@@ -900,7 +904,7 @@ final class EditorTileMenus
 
         if (why[0] != null) return null;
 
-        java.util.List<TailCrossedPrompt.Choice> choices =
+        List<TailCrossedPrompt.Choice> choices =
             TailCrossedPrompt.choicesFor(running, point, side, length, editor.session::baseNameOf);
 
         return new TailFacts(choices, TailCrossedPrompt.recordedChoice(choices, point.getArrivedAlong()));
@@ -911,7 +915,7 @@ final class EditorTileMenus
      * finds two roads back (MT-477).
      * @return the submenu, or null where there is no choice
      */
-    private javax.swing.JMenu tailCrossedMenu(final TileKey target, String standing)
+    private JMenu tailCrossedMenu(final TileKey target, String standing)
     {
         TailFacts facts = tailFacts(target);
 
@@ -919,11 +923,11 @@ final class EditorTileMenus
 
         TailCrossedPrompt.Choice ticked = facts.ticked;
 
-        javax.swing.JMenu menu = new javax.swing.JMenu(I18n.f("autosetup.ui.menuTailCrossedGroup", standing));
+        JMenu menu = new JMenu(I18n.f("autosetup.ui.menuTailCrossedGroup", standing));
 
         menu.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintTailCrossed")));
 
-        javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
+        ButtonGroup group = new ButtonGroup();
 
         for (final TailCrossedPrompt.Choice choice : facts.choices)
         {

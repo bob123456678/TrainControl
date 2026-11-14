@@ -7,6 +7,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Arc2D;
+import java.awt.geom.Area;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Path2D;
+import java.awt.geom.Rectangle2D;
+import java.awt.geom.RoundRectangle2D;
 import javax.swing.Icon;
 
 /**
@@ -203,7 +210,7 @@ public final class RowIcons
                 {
                     for (int row = -1; row <= 1; row++)
                     {
-                        g.fill(new java.awt.geom.Ellipse2D.Float(width / 2f + column * 2.5f - 1.1f,
+                        g.fill(new Ellipse2D.Float(width / 2f + column * 2.5f - 1.1f,
                             height / 2f + row * 4f - 1.1f, 2.2f, 2.2f));
                     }
                 }
@@ -327,7 +334,7 @@ public final class RowIcons
                     g.scale(-1, 1);
                 }
 
-                java.awt.geom.Path2D.Float hook = new java.awt.geom.Path2D.Float();
+                Path2D.Float hook = new Path2D.Float();
 
                 hook.moveTo(width * 0.32f, height * 0.38f);
                 hook.lineTo(width * 0.58f, height * 0.38f);
@@ -338,7 +345,7 @@ public final class RowIcons
                 g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g.draw(hook);
 
-                java.awt.geom.Path2D.Float head = new java.awt.geom.Path2D.Float();
+                Path2D.Float head = new Path2D.Float();
 
                 head.moveTo(width * 0.08f, height * 0.38f);
                 head.lineTo(width * 0.38f, height * 0.16f);
@@ -380,7 +387,7 @@ public final class RowIcons
                 // Strokes left where they are drawn: the default nudges the edge half a pixel off the mark's middle
                 g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
-                java.awt.geom.Path2D.Float triangle = new java.awt.geom.Path2D.Float();
+                Path2D.Float triangle = new Path2D.Float();
 
                 triangle.moveTo(width / 2f, 1f);
                 triangle.lineTo(width - 1f, height - 1.5f);
@@ -400,8 +407,8 @@ public final class RowIcons
                 int bar = dot - 1 - (height - 4) / 3;
 
                 g.setColor(new Color(40, 30, 0));
-                g.fill(new java.awt.geom.RoundRectangle2D.Float(left, bar, 2, dot - 1 - bar, 1, 1));
-                g.fill(new java.awt.geom.RoundRectangle2D.Float(left, dot, 2, 2, 1, 1));
+                g.fill(new RoundRectangle2D.Float(left, bar, 2, dot - 1 - bar, 1, 1));
+                g.fill(new RoundRectangle2D.Float(left, dot, 2, 2, 1, 1));
             }
         };
     }
@@ -409,13 +416,10 @@ public final class RowIcons
     /** A wrench, head to the upper right, for the mark that opens a row to be edited (FR-164). */
     public static Icon wrench(final int size, final Color colour)
     {
-        java.awt.geom.Area shape = new java.awt.geom.Area(
-            new java.awt.geom.Ellipse2D.Float(-3.3f, -7.8f, 6.6f, 6.6f));
+        Area shape = new Area(new Ellipse2D.Float(-3.3f, -7.8f, 6.6f, 6.6f));
 
-        shape.add(new java.awt.geom.Area(
-            new java.awt.geom.RoundRectangle2D.Float(-1.35f, -5f, 2.7f, 12.5f, 2.7f, 2.7f)));
-        shape.subtract(new java.awt.geom.Area(
-            new java.awt.geom.Rectangle2D.Float(-1.3f, -8.5f, 2.6f, 4.4f)));
+        shape.add(new Area(new RoundRectangle2D.Float(-1.35f, -5f, 2.7f, 12.5f, 2.7f, 2.7f)));
+        shape.subtract(new Area(new Rectangle2D.Float(-1.3f, -8.5f, 2.6f, 4.4f)));
 
         return turned(size, colour, shape);
     }
@@ -431,7 +435,7 @@ public final class RowIcons
             @Override
             void draw(Graphics2D g, int width, int height)
             {
-                java.awt.geom.AffineTransform turn = new java.awt.geom.AffineTransform();
+                AffineTransform turn = new AffineTransform();
 
                 turn.translate(width / 2.0, height / 2.0);
                 turn.scale(width / 13.0, height / 13.0);
@@ -453,18 +457,17 @@ public final class RowIcons
     public static Icon pencil(final int size, final Color colour)
     {
         // Tip down: the body, the tip cut from it, and a gap where the eraser is set off
-        java.awt.geom.Area shape = new java.awt.geom.Area(
-            new java.awt.geom.RoundRectangle2D.Float(-2f, -6.5f, 4f, 10f, 1.6f, 1.6f));
+        Area shape = new Area(new RoundRectangle2D.Float(-2f, -6.5f, 4f, 10f, 1.6f, 1.6f));
 
-        java.awt.geom.Path2D.Float tip = new java.awt.geom.Path2D.Float();
+        Path2D.Float tip = new Path2D.Float();
 
         tip.moveTo(-2f, 3f);
         tip.lineTo(2f, 3f);
         tip.lineTo(0f, 6.8f);
         tip.closePath();
 
-        shape.add(new java.awt.geom.Area(tip));
-        shape.subtract(new java.awt.geom.Area(new java.awt.geom.Rectangle2D.Float(-2.2f, -4.6f, 4.4f, 0.9f)));
+        shape.add(new Area(tip));
+        shape.subtract(new Area(new Rectangle2D.Float(-2.2f, -4.6f, 4.4f, 0.9f)));
 
         return turned(size, colour, shape);
     }
@@ -505,13 +508,13 @@ public final class RowIcons
                     // Pure strokes: normalizing snaps each turn's ring to whole pixels and it wobbles (OB-458)
                     g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
-                    g.draw(new java.awt.geom.Arc2D.Float(inset, inset, width - 2 * inset, height - 2 * inset, -phase, 270,
-                        java.awt.geom.Arc2D.OPEN));
+                    g.draw(new Arc2D.Float(inset, inset, width - 2 * inset, height - 2 * inset, -phase, 270,
+                        Arc2D.OPEN));
 
                     return;
                 }
 
-                java.awt.geom.Path2D.Float triangle = new java.awt.geom.Path2D.Float();
+                Path2D.Float triangle = new Path2D.Float();
 
                 triangle.moveTo(width * 0.24f, height * 0.14f);
                 triangle.lineTo(width * 0.84f, height * 0.5f);
@@ -542,14 +545,13 @@ public final class RowIcons
                 g.setStroke(new BasicStroke(Math.max(1.5f, width / 9f), BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
 
                 // Counterclockwise from the upper left round to 12 o'clock, where the head takes over
-                g.draw(new java.awt.geom.Arc2D.Float(centre - radius, centre - radius, 2 * radius, 2 * radius, 168, 282,
-                    java.awt.geom.Arc2D.OPEN));
+                g.draw(new Arc2D.Float(centre - radius, centre - radius, 2 * radius, 2 * radius, 168, 282, Arc2D.OPEN));
 
                 // The head at 12 o'clock pointing straight left along the tangent; its base straddles the ring's end,
                 // square to it
                 float px = centre;
                 float py = centre - radius;
-                java.awt.geom.Path2D.Float head = new java.awt.geom.Path2D.Float();
+                Path2D.Float head = new Path2D.Float();
 
                 head.moveTo(px - 0.20f * width, py);
                 head.lineTo(px, py + 0.17f * width);

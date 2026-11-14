@@ -3,7 +3,10 @@ package org.traincontrol.gui.layouteditor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.traincontrol.base.LayoutDiagramComponent;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph;
 
 /**
  * The track editor's undo and redo: taking a snapshot of the page and of its station captions before an edit, and
@@ -28,9 +31,9 @@ final class LayoutEditorUndo
      *
      * @return caption square to station square, or an empty map when there is no setup to ask
      */
-    private java.util.Map<String, Object> captionSnapshot()
+    private Map<String, Object> captionSnapshot()
     {
-        org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
+        AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
         return autonomy == null
             ? new java.util.LinkedHashMap<String, Object>()
@@ -43,11 +46,11 @@ final class LayoutEditorUndo
      * @param captions a snapshot, or null to do nothing - a null means the stacks disagreed, and
      *        leaving the captions alone is a better answer than clearing them
      */
-    private void restoreCaptions(java.util.Map<String, Object> captions)
+    private void restoreCaptions(Map<String, Object> captions)
     {
         if (captions == null) return;
 
-        org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
+        AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
         if (autonomy == null) return;
 
@@ -79,13 +82,13 @@ final class LayoutEditorUndo
      */
     private void forgetCaptionsOutsideThePage()
     {
-        org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
+        AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
         if (autonomy == null) return;
 
-        java.util.List<org.traincontrol.automationui.TileGraph.TileKey> gone = new java.util.ArrayList<>();
+        List<TileGraph.TileKey> gone = new ArrayList<>();
 
-        for (org.traincontrol.automationui.TileGraph.TileKey tile
+        for (TileGraph.TileKey tile
             : autonomy.captionsOnPage(this.editor.layout.getName()).keySet())
         {
             if (tile.getX() >= this.editor.layout.getSx() || tile.getY() >= this.editor.layout.getSy()
@@ -97,7 +100,7 @@ final class LayoutEditorUndo
 
         boolean changed = false;
 
-        for (org.traincontrol.automationui.TileGraph.TileKey tile : gone) changed |= autonomy.forgetCaptionsAt(tile);
+        for (TileGraph.TileKey tile : gone) changed |= autonomy.forgetCaptionsAt(tile);
 
         if (changed) this.editor.rememberAutonomy(autonomy);
     }
@@ -185,9 +188,9 @@ final class LayoutEditorUndo
                 // The names on the squares travel with the squares.  A caption belongs to the SETUP rather than the tile
                 // (so a rename does not rewrite every page) and does not ride the component snapshot, but this editor moves
                 // and deletes captions as it moves and deletes tiles, so Ctrl+Z must restore them too.
-                java.util.Map<String, Object> captionsBefore = captionSnapshot();
+                Map<String, Object> captionsBefore = captionSnapshot();
 
-                java.util.Map<String, Object> captionsToRestore =
+                Map<String, Object> captionsToRestore =
                     this.editor.previousCaptions.isEmpty() ? null : this.editor.previousCaptions.pop();
 
                 this.editor.previousCaptionsRedo.push(captionsBefore);
@@ -233,9 +236,9 @@ final class LayoutEditorUndo
                 this.editor.previousLayoutComponents.push(deepCopyLayout());
 
                 // The captions go forward with it, exactly as they came back
-                java.util.Map<String, Object> captionsBefore = captionSnapshot();
+                Map<String, Object> captionsBefore = captionSnapshot();
 
-java.util.Map<String, Object> captionsToRestore = this.editor.previousCaptionsRedo.isEmpty()
+Map<String, Object> captionsToRestore = this.editor.previousCaptionsRedo.isEmpty()
                     ? null : this.editor.previousCaptionsRedo.pop();
 
                 this.editor.previousCaptions.push(captionsBefore);

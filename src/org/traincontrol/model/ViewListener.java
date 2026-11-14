@@ -98,6 +98,7 @@ public interface ViewListener
     public void stopAllLocs();
     public int syncWithCS2();
     public boolean wasLastSyncPartial();
+    public String getLastSyncError();
     public List<String> getLayoutList();
     public List<String> getLayoutListByName();
     public String getPageNameForId(int id);

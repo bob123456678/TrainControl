@@ -4,11 +4,14 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -722,7 +725,7 @@ public class TileGraph
             TileKey tile = pair.getKey();
             TileKey partner = pair.getValue();
 
-            for (RouteId routeId : new java.util.ArrayList<>(getRoutes(tile).keySet()))
+            for (RouteId routeId : new ArrayList<>(getRoutes(tile).keySet()))
             {
                 RouteId across = crossingRouteOnPartner(tile, routeId);
 
@@ -1601,7 +1604,7 @@ public class TileGraph
 
             Route route = firstRoad(tile);
 
-            java.util.LinkedList<TileKey> chain = new java.util.LinkedList<>();
+            LinkedList<TileKey> chain = new LinkedList<>();
             chain.add(tile);
             seen.add(tile);
 
@@ -1657,7 +1660,7 @@ public class TileGraph
      * Extends a chain out of one side of a tile while the track stays plain (`append` adds to the end, else the front);
      * returns where it stops.
      */
-    private TileKey walk(java.util.LinkedList<TileKey> chain, TileKey from, Side side,
+    private TileKey walk(LinkedList<TileKey> chain, TileKey from, Side side,
         Set<TileKey> seen, boolean append)
     {
         TileKey here = from;
@@ -1953,7 +1956,7 @@ public class TileGraph
         // Walked as (square, entry side), not squares: a square can carry two tracks (a crossing, a double curve), and
         // a route is usable only if it touches the entry side, as in the reducer.
         Map<String, Step> cameFrom = new LinkedHashMap<>();
-        java.util.ArrayDeque<Step> frontier = new java.util.ArrayDeque<>();
+        ArrayDeque<Step> frontier = new ArrayDeque<>();
 
         // The first square has no entry side, so every route on it is open.
         Step first = new Step(from, null);
@@ -2002,8 +2005,8 @@ public class TileGraph
 
         if (start == null) return reached;
 
-        Set<String> seen = new java.util.HashSet<>();
-        java.util.ArrayDeque<Step> frontier = new java.util.ArrayDeque<>();
+        Set<String> seen = new HashSet<>();
+        ArrayDeque<Step> frontier = new ArrayDeque<>();
 
         frontier.add(start);
 
@@ -2041,8 +2044,8 @@ public class TileGraph
 
         if (start == null) return true;
 
-        Set<String> seen = new java.util.HashSet<>();
-        java.util.ArrayDeque<Step> frontier = new java.util.ArrayDeque<>();
+        Set<String> seen = new HashSet<>();
+        ArrayDeque<Step> frontier = new ArrayDeque<>();
 
         frontier.add(start);
 
@@ -2073,7 +2076,7 @@ public class TileGraph
         if (start == null) return null;
 
         Map<String, Step> cameFrom = new HashMap<>();
-        java.util.ArrayDeque<Step> frontier = new java.util.ArrayDeque<>();
+        ArrayDeque<Step> frontier = new ArrayDeque<>();
 
         cameFrom.put(start.key(), null);
         frontier.add(start);

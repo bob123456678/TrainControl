@@ -1,6 +1,7 @@
 package org.traincontrol.gui.autonomyeditor;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -25,6 +26,7 @@ import org.traincontrol.gui.InfoMark;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
@@ -78,9 +80,9 @@ final class TrainTab extends StationWindowBase.RoomyPanel
         train = window.new Choice(at -> pressTrain())
         {
             @Override
-            public java.awt.Dimension getPreferredSize()
+            public Dimension getPreferredSize()
             {
-                java.awt.Dimension asked = super.getPreferredSize();
+                Dimension asked = super.getPreferredSize();
 
                 asked.width = Math.min(asked.width, TRAIN_WIDTH);
 
@@ -96,7 +98,7 @@ final class TrainTab extends StationWindowBase.RoomyPanel
 
         settings.setName("train.settings");
         settings.putClientProperty("JButton.buttonType", "toolBarButton");
-        settings.setFont(org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT);
+        settings.setFont(UiStyle.BUTTON_FONT);
         settings.setFocusable(false);
         settings.addActionListener(e -> pressSettings());
 
@@ -137,7 +139,7 @@ final class TrainTab extends StationWindowBase.RoomyPanel
             layout.setConstraints(own, c);
         }
 
-        setBorder(BorderFactory.createEmptyBorder(StationWindowBase.PAD, 0, 0, 0));
+        setBorder(StationWindowBase.CONTENT_MARGIN);
 
         add(form, BorderLayout.NORTH);
     }
@@ -286,14 +288,14 @@ final class TrainTab extends StationWindowBase.RoomyPanel
     {
         for (final String side : facts.sides)
         {
-            arrived.add(choice("train.arrived." + side, org.traincontrol.gui.autonomy.ArrivalSidePrompt.labelFor(side),
+            arrived.add(choice("train.arrived." + side, ArrivalSidePrompt.labelFor(side),
                 group, side.equals(facts.recorded), !readOnly, () -> editor.tileMenus.setArrivedFrom(window.tile, side)));
         }
 
         if (facts.recordedButGone == null) return;
 
         JRadioButton gone = choice("train.arrived.gone", I18n.f("autosetup.ui.arrivedFromNotOnTrack",
-            org.traincontrol.gui.autonomy.ArrivalSidePrompt.labelFor(facts.recordedButGone)), new ButtonGroup(), true,
+            ArrivalSidePrompt.labelFor(facts.recordedButGone)), new ButtonGroup(), true,
             false, null);
 
         gone.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintArrivedFromNotOnTrack")));
@@ -321,7 +323,7 @@ final class TrainTab extends StationWindowBase.RoomyPanel
 
         pick.setName("train.tailPick");
         pick.putClientProperty("JButton.buttonType", "toolBarButton");
-        pick.setFont(org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT);
+        pick.setFont(UiStyle.BUTTON_FONT);
         pick.setFocusable(false);
         pick.setEnabled(!readOnly);
         pick.addActionListener(e ->

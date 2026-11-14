@@ -784,6 +784,63 @@ public class testStationSettingsWindow
     }
 
     /**
+     * One station's tabs run edge to edge, under the banners, while the several-squares view keeps its margin (OB-461).
+     *
+     * MUTATION: have `StationSettingsWindow.showForHowMany` leave `StationWindowBase.CONTENT_MARGIN` on `middle` for one
+     * station, and the tabs start `PAD` in from the edge and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testOneStationsTabsRunEdgeToEdgeAndSeveralKeepTheirMargin() throws Exception
+    {
+        TileKey first = aStation();
+        StationSettingsWindow window = StationDoors.open(panel, first);
+        javax.swing.JTabbedPane tabs = StationDoors.part(window, "station.tabs", javax.swing.JTabbedPane.class);
+
+        int[] box = Components.onTheEventThread(() -> edges(window, tabs));
+
+        assertEquals(box[0], 0, "the tabs do not reach the window's left edge");
+        assertEquals(box[1], box[2], "the tabs do not reach the window's right edge");
+        assertEquals(box[3], 0, "the tabs sit under a gap below the banners");
+
+        Components.onTheEventThread(() ->
+        {
+            try
+            {
+                Reflect.method(StationSettingsWindow.class, "aimAt", List.class)
+                    .invoke(window, Arrays.asList(first, aSecondStation(first)));
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new AssertionError(e);
+            }
+
+            return null;
+        });
+
+        Components.settle();
+
+        assertTrue(Components.onTheEventThread(() -> tabs.getParent() == null), "precondition: the window is not about several");
+
+        javax.swing.JComponent columns = (javax.swing.JComponent) Reflect.get(StationSettingsWindow.class, window, "columns");
+        int[] several = Components.onTheEventThread(() -> edges(window, columns));
+
+        assertEquals(several[0], 10, "the several-squares view lost its margin on the left");
+        assertEquals(several[2] - several[1], 10, "the several-squares view lost its margin on the right");
+
+        StationDoors.close(window);
+    }
+
+    /** The part's left and right edges, the content's width, and the part's top below the middle's top, in the content's frame. */
+    private static int[] edges(StationSettingsWindow window, java.awt.Component part)
+    {
+        java.awt.Container root = window.getContentPane();
+        java.awt.Point at = javax.swing.SwingUtilities.convertPoint(part, 0, 0, root);
+        java.awt.Component middle = root.getComponent(1);
+
+        return new int[] {at.x, at.x + part.getWidth(), root.getWidth(), at.y - middle.getY()};
+    }
+
+    /**
      * Done pressed on the Train tab while the Settings tab holds a refused value brings the Settings tab forward, so the
      * reason the window stays open is on screen.
      *

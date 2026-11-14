@@ -102,13 +102,11 @@ public class testTheHomeLabelIsDrawnOnce
 
         // The operator's own railway, COPIED: the frozen `live-snapshot` (OB-111), never written in place.  It carries
         // a doubly captioned station, and reading the live folder made a sibling class red when his trains moved.
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        model = support.TestStation.simulatedInDebug();
-
-        javax.swing.SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 

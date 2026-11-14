@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.model.ViewListener;
+import org.traincontrol.util.Util;
 
 /**
  * Renaming, duplicating and blanking a layout page, as one operation that can be run without a window.
@@ -51,13 +52,13 @@ public class LayoutPageEdit
     {
         if (layoutList == null || name == null) return null;
 
-        String wanted = org.traincontrol.util.Util.sanitizeFilename(name);
+        String wanted = Util.sanitizeFilename(name);
 
         for (String page : layoutList)
         {
             if (page == null || page.equals(except)) continue;
 
-            if (org.traincontrol.util.Util.sanitizeFilename(page).equalsIgnoreCase(wanted)) return page;
+            if (Util.sanitizeFilename(page).equalsIgnoreCase(wanted)) return page;
         }
 
         return null;
@@ -201,8 +202,7 @@ public class LayoutPageEdit
                 if (session == null)
                 {
                     // No session: rewrite the file itself, which writes nothing unless the setup is already there.
-                    AutonomyCompanionStore.renamePageOnDisk(new java.io.File(layoutPath),
-                        currentLayout, newLayoutName);
+                    AutonomyCompanionStore.renamePageOnDisk(new java.io.File(layoutPath), currentLayout, newLayoutName);
                 }
                 else if (session.exists())
                 {

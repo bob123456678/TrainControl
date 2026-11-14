@@ -39,10 +39,9 @@ import support.Reflect;
  * counter never resets - any single failure would therefore be caught.  DEBUG_SIMULATE_PACKETS is on so
  * the Central Station echoes are simulated, which is what advances each accessory's actuation count.
  *
- * The frozen layout (test/autonomy_sanity.json) is a larger version of test/sample_autonomy.json:
- * three departure stations plus an arrival station, four switches and three signals, three locomotives,
- * and 0-1s action delays so trains cycle quickly.  The switches are commanded to different positions on
- * different routes, so they toggle constantly as the trains move around.
+ * The frozen layout (test/autonomy_sanity_forks.json) is a ring of two forks with six stations, so two trains are
+ * routinely out at once, with three locomotives and 0-1s action delays so trains cycle quickly.  The switches are
+ * commanded to different positions on different routes, so they toggle constantly as the trains move around.
  */
 public class testAutonomySimulationSanity
 {
@@ -62,7 +61,7 @@ public class testAutonomySimulationSanity
 
     // How long to run, and how sensitively to sample locomotive positions.
     private static final long RUN_MS = 120_000;
-    private static final long POLL_MS = 500;
+    private static final long POLL_MS = 100;
 
     // Minimum activity a genuine one-minute run must produce.
     // FIVE, not twenty.  This is a time-boxed simulation, so the count measures how loaded the machine is as much as
@@ -71,6 +70,7 @@ public class testAutonomySimulationSanity
     // it as well as twenty without going red under load.
     private static final int MIN_TOTAL_ACTUATIONS = 5;
     private static final int MIN_STATION_CHANGES_PER_LOC = 3;
+    private static final int MIN_POLLS_WITH_TWO_TRAINS = 20;
 
     // These addresses (1-7 MM2) are exactly what a real layout occupies, and
     // MarklinControlStation.newAccessory carries over whatever actuation count already sits at the
@@ -512,7 +512,7 @@ public class testAutonomySimulationSanity
     private static void loadSanityFixture() throws Exception
     {
         String json = new BufferedReader(new InputStreamReader(
-                testAutonomySimulationSanity.class.getResource("/autonomy_sanity.json").openStream()))
+                testAutonomySimulationSanity.class.getResource("/autonomy_sanity_forks.json").openStream()))
                 .lines().collect(Collectors.joining("\n"));
 
         model.parseAuto(json);
@@ -566,6 +566,8 @@ public class testAutonomySimulationSanity
 
         boolean sawActivity = false;
 
+        support.TrackWatch watch = new support.TrackWatch(layout);
+
         // Soak, confirming no warning ever fires.
         long deadline = System.currentTimeMillis() + RUN_MS;
 
@@ -588,6 +590,10 @@ public class testAutonomySimulationSanity
                     + "(failures="
                     + layout.getPathValidationFailureCount() + ")");
 
+            // No two trains on one track (support.TrackWatch).  MUTATION: cap trains out at one in Layout.isPathClear
+            // (`trainsUnderway() >= 1`) and the floor after the loop fails.
+            watch.poll();
+
             Thread.sleep(POLL_MS);
         }
 
@@ -601,6 +607,8 @@ public class testAutonomySimulationSanity
         {
             Thread.sleep(100);
         }
+
+        watch.requireOverlap(MIN_POLLS_WITH_TWO_TRAINS);
 
         // The run must not have been vacuous.
         assertTrue(sawActivity, "The simulated autonomy should have executed at least one path");

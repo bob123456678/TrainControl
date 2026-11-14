@@ -3,6 +3,7 @@ package org.traincontrol.gui.locomotive;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
@@ -28,6 +29,7 @@ import javax.swing.JSlider;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 
@@ -101,7 +103,7 @@ public class LocIconCropDialog extends JDialog
         controls.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
         JPanel zoomRow = new JPanel(new BorderLayout(8, 0));
-        zoomRow.add(org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.cropZoom")), BorderLayout.WEST);
+        zoomRow.add(UiStyle.label(I18n.t("loc.ui.cropZoom")), BorderLayout.WEST);
 
         // Integer ticks over a continuous zoom: the slider's own resolution is the only quantization,
         // and a thousand steps is finer than the pixel it moves the picture by.
@@ -109,7 +111,7 @@ public class LocIconCropDialog extends JDialog
         zoom.setToolTipText(I18n.t("loc.ui.tooltip.cropZoom"));
         zoomRow.add(zoom, BorderLayout.CENTER);
 
-        JButton reset = org.traincontrol.gui.widgets.UiStyle.button(new JButton(I18n.t("loc.ui.cropReset")));
+        JButton reset = UiStyle.button(new JButton(I18n.t("loc.ui.cropReset")));
         reset.setToolTipText(I18n.t("loc.ui.tooltip.cropReset"));
         zoomRow.add(reset, BorderLayout.EAST);
 
@@ -118,8 +120,8 @@ public class LocIconCropDialog extends JDialog
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         buttons.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
-        JButton ok = org.traincontrol.gui.widgets.UiStyle.button(new JButton(I18n.t("ui.ok")));
-        JButton cancel = org.traincontrol.gui.widgets.UiStyle.button(new JButton(I18n.t("ui.cancel")));
+        JButton ok = UiStyle.button(new JButton(I18n.t("ui.ok")));
+        JButton cancel = UiStyle.button(new JButton(I18n.t("ui.cancel")));
 
         buttons.add(cancel);
         buttons.add(Box.createHorizontalStrut(2));
@@ -361,7 +363,7 @@ public class LocIconCropDialog extends JDialog
             setOpaque(true);
 
             // The only thing that says the picture can be dragged before the user tries it.
-            setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.MOVE_CURSOR));
+            setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
 
             // Wide enough to show the whole crop window at a useful size without being taller than a
             // laptop screen once the buttons and the instruction line are added underneath.
@@ -429,7 +431,7 @@ public class LocIconCropDialog extends JDialog
                 @Override
                 public void mouseMoved(MouseEvent e)
                 {
-                    setCursor(java.awt.Cursor.getPredefinedCursor(
+                    setCursor(Cursor.getPredefinedCursor(
                         CropPanel.cursorFor(CropPanel.this.grabAt(e.getX(), e.getY()))));
                 }
             });
@@ -457,19 +459,19 @@ public class LocIconCropDialog extends JDialog
         /** The pointer shape for whatever is under it (`grabAt`'s result), as a java.awt.Cursor constant. */
         private static int cursorFor(String grabbed)
         {
-            if (grabbed == null || "pan".equals(grabbed)) return java.awt.Cursor.MOVE_CURSOR;
+            if (grabbed == null || "pan".equals(grabbed)) return Cursor.MOVE_CURSOR;
 
             switch (grabbed)
             {
-                case "N": return java.awt.Cursor.N_RESIZE_CURSOR;
-                case "S": return java.awt.Cursor.S_RESIZE_CURSOR;
-                case "E": return java.awt.Cursor.E_RESIZE_CURSOR;
-                case "W": return java.awt.Cursor.W_RESIZE_CURSOR;
-                case "NE": return java.awt.Cursor.NE_RESIZE_CURSOR;
-                case "NW": return java.awt.Cursor.NW_RESIZE_CURSOR;
-                case "SE": return java.awt.Cursor.SE_RESIZE_CURSOR;
-                case "SW": return java.awt.Cursor.SW_RESIZE_CURSOR;
-                default: return java.awt.Cursor.MOVE_CURSOR;
+                case "N": return Cursor.N_RESIZE_CURSOR;
+                case "S": return Cursor.S_RESIZE_CURSOR;
+                case "E": return Cursor.E_RESIZE_CURSOR;
+                case "W": return Cursor.W_RESIZE_CURSOR;
+                case "NE": return Cursor.NE_RESIZE_CURSOR;
+                case "NW": return Cursor.NW_RESIZE_CURSOR;
+                case "SE": return Cursor.SE_RESIZE_CURSOR;
+                case "SW": return Cursor.SW_RESIZE_CURSOR;
+                default: return Cursor.MOVE_CURSOR;
             }
         }
 
@@ -1043,12 +1045,11 @@ public class LocIconCropDialog extends JDialog
 
             BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
-            java.awt.Graphics2D g = out.createGraphics();
+            Graphics2D g = out.createGraphics();
 
             try
             {
-                g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
-                    java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
                 g.setColor(Color.WHITE);
                 g.fillRect(0, 0, width, height);
@@ -1123,7 +1124,7 @@ public class LocIconCropDialog extends JDialog
             BufferedImage padded = new BufferedImage(this.outWidth, this.outHeight,
                 BufferedImage.TYPE_INT_ARGB);
 
-            java.awt.Graphics2D g = padded.createGraphics();
+            Graphics2D g = padded.createGraphics();
 
             try
             {
@@ -1144,7 +1145,7 @@ public class LocIconCropDialog extends JDialog
         }
 
         /** The picture being cropped, as it was handed in, for a test that needs to know its size. */
-        public java.awt.image.BufferedImage source()
+        public BufferedImage source()
         {
             return this.source;
         }

@@ -331,15 +331,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
         System.err.print("Exception in thread \"" + thread.getName() + "\" ");
         error.printStackTrace();
 
-        String said = I18n.f("error.uncaughtInThread", thread.getName(), error);
-        MarklinControlStation station = MarklinControlStation.reporter;
-
-        if (station != null) station.log(said);
-        else MarklinControlStation.log.warning(said);
+        logThroughLatest(I18n.f("error.uncaughtInThread", thread.getName(), error));
     };
 
-    /** The station started last, which `THREAD_ERRORS` reports through. */
+    /** The station started last, which `THREAD_ERRORS` and `logThroughLatest` report through. */
     private static volatile MarklinControlStation reporter;
+
+    /** Writes a line to the log of the station started last, or to the Logger alone when none has started. */
+    public static void logThroughLatest(String message)
+    {
+        MarklinControlStation station = reporter;
+
+        if (station != null) station.log(message);
+        else log.warning(message);
+    }
 
     private static ExecutorService messageProcessor(final String name)
     {
@@ -523,7 +528,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Re-reads the track diagrams from wherever they are configured to come from - a local folder when
      * one is set, the Central Station otherwise - reverting to the Central Station if the local folder
-     * cannot be read.
+     * cannot be read.  The station's diagram is not read while the station's type is unknown, as the type decides which
+     * protocol a CS3 tile at an address with two takes; a local folder is read either way.
      *
      * Not a full sync, which also re-imports every route and locomotive: slow and side-effecting (routes are deleted
      * and re-added, addresses and function types adopted), none of it wanted after renaming a page.
@@ -563,6 +569,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 catch (Exception e)
                 {
                     this.log(e);
+
+                    // The folder is tried again at the next sync, by when the type may be known
+                    requireTheTypeKnown();
                    
                     this.logf("layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
                     TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
@@ -574,6 +583,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {      
                 if (this.layoutDB.getItemNames().isEmpty())
                 {
+                    requireTheTypeKnown();
+
                     syncLayouts();
                 }  
             }
@@ -745,8 +756,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // true to prefer the local file
             accs = parser.getMagList(true);
         }
-        catch (Exception e)
+        catch (java.io.FileNotFoundException none)
         {
+            // Only a missing list means none; any other failure fails here, before anything is cleared, as the tiles
+            // would otherwise all be built as MM2
             if (isDebug())
             {
                 this.logf("layout.noDCC");
@@ -778,7 +791,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         if (actuallyRead == 0 && (couldNotBeRead > 0 || namedByTheIndex > 0))
         {
-            throw new Exception(I18n.f("layout.errorNoPageCouldBeRead",
+            throw new PlainFailure(I18n.f("layout.errorNoPageCouldBeRead",
                 Math.max(couldNotBeRead, namedByTheIndex)));
         }
 
@@ -1440,7 +1453,22 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /** What the last sync failed with, in words, or null when it did not fail. */
     private volatile String lastSyncError = null;
 
+    /** What the last sync's type detection failed with; null when the type is known or there is no device file. */
+    private volatile Exception stationTypeUnknown = null;
+
+    /** Whether any sync this session read the station's type, so that `isCS3` is not a guess. */
+    private volatile boolean typeLearned = false;
+
+    /** Withholds the station's diagram while its type was never learned, as the type decides the tiles' protocols. */
+    private void requireTheTypeKnown() throws Exception
+    {
+        final Exception unknown = this.stationTypeUnknown;
+
+        if (unknown != null && !this.typeLearned) throw unknown;
+    }
+
     /** What the last sync failed with (OB-338), or null when it did not fail. */
+    @Override
     public String getLastSyncError()
     {
         return this.lastSyncError;
@@ -1550,13 +1578,51 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return !simulate && !connected;
     }
 
-    /** A failure in a few words: what kind it was, and what it said. */
+    /** A failure whose message is already fit for the user to read. */
+    private static final class PlainFailure extends IOException
+    {
+        PlainFailure(String message)
+        {
+            super(message);
+        }
+    }
+
+    private static final java.util.regex.Pattern HTTP_REFUSAL = java.util.regex.Pattern.compile(
+        "Server returned HTTP response code: (\\d+) for URL: (\\S+)");
+
+    /** The file a URL or path names, without its folders, query or the system's remark after it. */
+    private static String fileName(String where)
+    {
+        String name = where.replaceAll(" \\(.*$", "").replaceAll("\\?.*$", "");
+
+        return name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
+    }
+
+    /** A failed sync in a plain sentence, by the kind of failure; the log has the exception itself. */
     private static String describe(Exception failure)
     {
-        String said = failure.getMessage();
-        String kind = failure.getClass().getSimpleName();
+        final String said = failure.getMessage() == null ? "" : failure.getMessage().trim();
+        final java.util.regex.Matcher refused = HTTP_REFUSAL.matcher(said);
 
-        return said == null || said.trim().isEmpty() ? kind : kind + ": " + said.trim();
+        if (failure instanceof PlainFailure && !said.isEmpty()) return said;
+
+        if (failure instanceof CS2File.CutOffException)
+            return I18n.f("sync.failedCutOff", fileName(((CS2File.CutOffException) failure).url));
+
+        if (failure instanceof java.io.FileNotFoundException) return I18n.f("sync.failedMissing", fileName(said));
+
+        if (refused.find()) return I18n.f("sync.failedRefused", fileName(refused.group(2)), refused.group(1));
+
+        if (failure instanceof java.net.ConnectException || failure instanceof java.net.NoRouteToHostException
+            || failure instanceof java.net.UnknownHostException
+            || (failure instanceof java.net.SocketTimeoutException && said.toLowerCase().contains("connect")))
+            return I18n.t("sync.failedNoAnswer");
+
+        if (failure instanceof java.net.SocketException || failure instanceof java.io.InterruptedIOException
+            || failure instanceof java.io.EOFException)
+            return I18n.t("sync.failedInterrupted");
+
+        return I18n.t("sync.failedUnreadable");
     }
 
     /**
@@ -1588,31 +1654,42 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                 if (before > 0)
                 {
-                    throw new IOException("Simulated sync failure for testing (traincontrol.failFirstSyncs), " + (before - 1) + " more to come");
+                    throw new PlainFailure("Simulated sync failure for testing (traincontrol.failFirstSyncs), " + (before - 1) + " more to come");
                 }
             }
 
-            // Is this a CS2 or CS3?
+            // Is this a CS2 or CS3?  A device file that is not found leaves the type as it was; any other failure fails
+            // the sync, after a local folder's diagram and before anything else is read
+            this.stationTypeUnknown = null;
+
             try
             {
                 this.isCS3 = CS2File.isCS3(CS2File.getDeviceInfoURL(cs2Address()));
+                this.typeLearned = true;
                 this.logf("log.csTypeDetectionResult", (this.isCS3 ? "CS3" : "CS2"));
             }
             catch (Exception e)
             {
                 this.logf("log.csTypeDetectionError", e.toString());
+
+                if (!(e instanceof java.io.FileNotFoundException)) this.stationTypeUnknown = e;
             }
                                        
             // Import layout
             this.syncLayoutsFromConfiguredSource();
-            
+
+            final Exception unknown = this.stationTypeUnknown;
+
+            if (unknown != null) throw unknown;
+
             // Import routes
             List<MarklinRoute> parsedRoutes;
 
             if (this.isCS3)
             {
-                // The firmware is read once for the whole sync, by the parser (OB-403, FR-170).  A CS3 answer that cannot
-                // be read leaves the routes, or the locomotives below, as they are, and the sync goes on (FR-169).
+                // The firmware is read once for the whole sync, by the parser (OB-403, FR-170).  A CS3 answer that arrives
+                // but cannot be read leaves the routes, or the locomotives below, as they are, and the sync goes on
+                // (FR-169); one that fails to arrive fails the sync.
                 try
                 {
                     parsedRoutes = fileParser.parseRoutesCS3();

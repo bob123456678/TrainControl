@@ -383,7 +383,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
     }
 
     /** What the Edit Linked Page item shows: the page's name, or why there is none. */
-    private static String linkLabel(org.traincontrol.base.LayoutDiagramComponent link)
+    private static String linkLabel(LayoutDiagramComponent link)
     {
         if (link.getLinkPageName() != null) return link.getLinkPageName();
 

@@ -2,18 +2,32 @@ package org.traincontrol.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Rectangle;
+import java.awt.event.FocusEvent;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -22,17 +36,24 @@ import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.event.DocumentListener;
 import javax.swing.plaf.basic.BasicHTML;
+import javax.swing.text.DefaultFormatter;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
 import javax.swing.text.View;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.TabIcons;
 import org.traincontrol.gui.widgets.UiStyle;
+import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 
 /**
@@ -128,7 +149,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** Under the lock strip, when the warning triangle was clicked: who else has this address and decoder (OB-417). */
     private final JPanel sharedStrip = new JPanel(new BorderLayout());
     private final JLabel sharedText = new JLabel();
-    private java.util.List<String> sharers = java.util.Collections.emptyList();
+    private List<String> sharers = Collections.emptyList();
     private boolean sharedOpen;
 
     private final JButton save = footerButton(I18n.t("loc.ui.settingsSave"), "settings.save");
@@ -154,7 +175,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     private int least;
 
     /** Asks the rule again every second while the window is open: a run starting or stopping raises no single event. */
-    private final javax.swing.Timer watch = new javax.swing.Timer(1000, e -> refresh());
+    private final Timer watch = new Timer(1000, e -> refresh());
 
     LocomotiveSettingsFrame(TrainControlUI main)
     {
@@ -194,7 +215,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         closeShared.setName("settings.sharedClose");
         closeShared.setToolTipText(I18n.t("autosetup.ui.stationClose"));
         closeShared.setFocusable(false);
-        closeShared.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        closeShared.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         closeShared.setForeground(STRIP_TEXT);
         closeShared.putClientProperty("JButton.buttonType", "toolBarButton");
         closeShared.addActionListener(e -> showShared(false));
@@ -322,7 +343,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     {
         tabs.removeAll();
 
-        sharers = java.util.Collections.emptyList();
+        sharers = Collections.emptyList();
         sharedOpen = false;
         sharedStrip.setVisible(false);
 
@@ -386,9 +407,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /** Puts what the window shows between the strips and the footer: the tab strip, or Add's one page. */
-    private void showInTheMiddle(java.awt.Component what)
+    private void showInTheMiddle(Component what)
     {
-        java.awt.Component now = ((BorderLayout) content.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+        Component now = ((BorderLayout) content.getLayout()).getLayoutComponent(BorderLayout.CENTER);
 
         if (now == what) return;
 
@@ -404,7 +425,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /** What the tab found: every other locomotive at the typed address and decoder.  None puts the strip away. */
-    private void setSharers(java.util.List<String> names)
+    private void setSharers(List<String> names)
     {
         sharers = names;
 
@@ -434,7 +455,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         int after = sharedOpen ? sharedStrip.getPreferredSize().height : 0;
 
-        if (isShowing() && (getExtendedState() & java.awt.Frame.MAXIMIZED_BOTH) == 0 && before != after)
+        if (isShowing() && (getExtendedState() & Frame.MAXIMIZED_BOTH) == 0 && before != after)
         {
             setSize(getWidth(), getHeight() + after - before);
         }
@@ -477,19 +498,19 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     {
         int buttons = adding ? 0 : functionsTab.buttonRowWidth() + getWidth() - functionsTab.getWidth();
 
-        setMinimumSize(new java.awt.Dimension(Math.max(buttons, least), 0));
+        setMinimumSize(new Dimension(Math.max(buttons, least), 0));
     }
 
     /** How wide the tab strip is with every tab on one row: it is laid out once wide enough for them, then put back. */
     private int tabsOnOneRow()
     {
-        java.awt.Rectangle was = tabs.getBounds();
+        Rectangle was = tabs.getBounds();
 
         tabs.setSize(Short.MAX_VALUE, Math.max(was.height, 1));
         tabs.doLayout();
 
-        java.awt.Rectangle first = tabs.getBoundsAt(0);
-        java.awt.Rectangle last = tabs.getBoundsAt(tabs.getTabCount() - 1);
+        Rectangle first = tabs.getBoundsAt(0);
+        Rectangle last = tabs.getBoundsAt(tabs.getTabCount() - 1);
 
         tabs.setBounds(was);
         tabs.doLayout();
@@ -587,7 +608,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     /** Out of the taskbar and in front: a door opened it, or its question is about to ask over it. */
     void bringBack()
     {
-        setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
+        setExtendedState(getExtendedState() & ~Frame.ICONIFIED);
         setVisible(true);
         toFront();
     }
@@ -714,7 +735,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         if (members && main.locomotiveActions.refuseMultiUnitEdit(this, loc, multiUnitTab.chosen().keySet())) return false;
 
         // A Central Station multi-unit takes no members: changeLocAddress's refusal, asked before anything is written
-        if (members && !multiUnitTab.chosen().isEmpty() && locomotiveTab.chosenDecoder() == decoderType.MULTI_UNIT)
+        if (members && !multiUnitTab.chosen().isEmpty() && locomotiveTab.decoderToWrite() == decoderType.MULTI_UNIT)
         {
             JOptionPane.showMessageDialog(this, I18n.t("loc.changeToMultiUnitNotAllowed"));
 
@@ -745,7 +766,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         // Only what the operator changed from the loaded values: another door may have changed the rest since
         if (identity && !main.locomotiveActions.writeNameAndAddress(this, loc,
             locomotiveTab.nameChanged() ? locomotiveTab.name.getText() : null,
-            address, locomotiveTab.chosenDecoder()))
+            address, locomotiveTab.decoderToWrite()))
         {
             return false;
         }
@@ -767,7 +788,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             main.repaintLoc(true, null);
 
-            if (reset) new Thread(() -> main.syncWithCS2()).start();
+            if (reset) new Thread(() -> main.syncAfterAnEdit()).start();
         }
 
         if (notesTab.panel.isDirty()) notesTab.panel.apply(loc);
@@ -787,7 +808,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     {
         final Locomotive target = loc;
 
-        if (target == null || isDirty() && !settleUnsaved()) return;
+        if (target == null || RunGates.refuseALinkOrSyncWhileEditorOpen(main, this)) return;
+
+        if (isDirty() && !settleUnsaved()) return;
 
         main.syncLocomotive(target, () -> afterSync(target));
     }
@@ -826,9 +849,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         {
             javax.swing.JFormattedTextField field = ((JSpinner.DefaultEditor) spinner.getEditor()).getTextField();
 
-            if (field.getFormatter() instanceof javax.swing.text.DefaultFormatter)
+            if (field.getFormatter() instanceof DefaultFormatter)
             {
-                ((javax.swing.text.DefaultFormatter) field.getFormatter()).setCommitsOnValidEdit(true);
+                ((DefaultFormatter) field.getFormatter()).setCommitsOnValidEdit(true);
             }
         }
 
@@ -877,7 +900,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             decoder.setRenderer(new javax.swing.DefaultListCellRenderer()
             {
                 @Override
-                public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index,
+                public Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index,
                     boolean selected, boolean focus)
                 {
                     return super.getListCellRendererComponent(list,
@@ -918,7 +941,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             address.getDocument().addDocumentListener(tell);
 
             // Digits, or hex, and six characters at most
-            address.addKeyListener(new java.awt.event.KeyAdapter()
+            address.addKeyListener(new KeyAdapter()
             {
                 @Override
                 public void keyReleased(KeyEvent e)
@@ -931,7 +954,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             {
                 if (!adding)
                 {
-                    int count = org.traincontrol.marklin.MarklinLocomotive.getMaxNumF(chosenDecoder());
+                    int count = MarklinLocomotive.getMaxNumF(chosenDecoder());
 
                     functionsTab.showCount(count);
                     autonomyTab.showCount(count);
@@ -944,7 +967,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             // Add Locomotive's limit on a new name; a rename is refused at Save instead
             if (adding)
             {
-                name.addKeyListener(new java.awt.event.KeyAdapter()
+                name.addKeyListener(new KeyAdapter()
                 {
                     @Override
                     public void keyReleased(KeyEvent e)
@@ -976,7 +999,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             trash.setToolTipText(I18n.t("loc.ui.menuDeleteFromDatabase"));
             trash.setFocusable(false);
-            trash.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+            trash.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             trash.setBorderPainted(false);
             trash.setContentAreaFilled(false);
             trash.addActionListener(e -> delete());
@@ -1008,7 +1031,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 JPanel syncRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
                 syncRow.setOpaque(false);
                 syncRow.add(sync);
-                syncRow.add(javax.swing.Box.createHorizontalStrut(4));
+                syncRow.add(Box.createHorizontalStrut(4));
                 syncRow.add(InfoMark.label(I18n.t("loc.ui.settingsSyncHint")));
 
                 JPanel pictureColumn = new JPanel(new BorderLayout(0, 6));
@@ -1112,9 +1135,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             JPanel speedRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
             speedRow.setOpaque(false);
             speedRow.add(speed);
-            speedRow.add(javax.swing.Box.createHorizontalStrut(4));
+            speedRow.add(Box.createHorizontalStrut(4));
             speedRow.add(new JLabel("%"));
-            speedRow.add(javax.swing.Box.createHorizontalStrut(8));
+            speedRow.add(Box.createHorizontalStrut(8));
             speedRow.add(InfoMark.label(I18n.t("loc.ui.settingsPresetSpeedHint")));
             add(speedRow, gbc);
 
@@ -1147,10 +1170,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 + I18n.t("loc.ui.settingsPictureNote") + "</html>";
         }
 
-        private void mark(JLabel mark, String tip, java.util.function.Consumer<MouseEvent> doThis)
+        private void mark(JLabel mark, String tip, Consumer<MouseEvent> doThis)
         {
             mark.setToolTipText(tip);
-            mark.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+            mark.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             mark.addMouseListener(Listen.released(e ->
             {
                 if (!mark.isVisible() || !moveAllowed()) return;
@@ -1187,13 +1210,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         /** A warning, not a refusal: the model allows two locomotives at one address. */
         private void warnAboutTheSameAddress()
         {
-            java.util.List<String> also = new java.util.ArrayList<>();
+            List<String> also = new java.util.ArrayList<>();
 
             try
             {
-                decoderType type = (decoderType) decoder.getSelectedItem();
-                int typed = org.traincontrol.util.Conversion.parseTypedAddress(address.getText().trim(),
-                    type == decoderType.MFX);
+                decoderType type = decoderToWrite();
+                int typed = Conversion.parseTypedAddress(address.getText().trim(), type == decoderType.MFX);
 
                 for (Locomotive other : main.getModel().getLocomotives())
                 {
@@ -1211,8 +1233,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             sameAddress.setIcon(also.isEmpty() ? null : RowIcons.warning(16));
             sameAddress.setToolTipText(also.isEmpty() ? null : org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel
                 .wrapped(I18n.f("loc.ui.settingsAlsoUsedBy", String.join(", ", also))));
-            sameAddress.setCursor(java.awt.Cursor.getPredefinedCursor(
-                also.isEmpty() ? java.awt.Cursor.DEFAULT_CURSOR : java.awt.Cursor.HAND_CURSOR));
+            sameAddress.setCursor(Cursor.getPredefinedCursor(
+                also.isEmpty() ? Cursor.DEFAULT_CURSOR : Cursor.HAND_CURSOR));
 
             setSharers(also);
         }
@@ -1233,8 +1255,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             {
                 try
                 {
-                    return Math.abs(org.traincontrol.util.Conversion.parseTypedAddress(address.getText().trim(),
-                        chosenDecoder() == decoderType.MFX));
+                    return Math.abs(Conversion.parseTypedAddress(address.getText().trim(),
+                        decoderToWrite() == decoderType.MFX));
                 }
                 catch (NumberFormatException blankOrNotANumber)
                 {
@@ -1244,7 +1266,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             private Object ifValid(int value)
             {
-                return org.traincontrol.marklin.MarklinLocomotive.validateNewAddress(chosenDecoder(), value) ? (Object) value : null;
+                return MarklinLocomotive.validateNewAddress(decoderToWrite(), value) ? (Object) value : null;
             }
 
             @Override public Object getValue() { return typed(); }
@@ -1292,6 +1314,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             return decoder.getSelectedItem() != loadedDecoder ? Integer.toString(loc.getAddress()) : null;
         }
 
+        /** The decoder type to write: the chosen one when adding or changed, else the locomotive's own (a sync may have changed it). */
+        decoderType decoderToWrite()
+        {
+            return adding || decoder.getSelectedItem() != loadedDecoder ? chosenDecoder() : loc.getDecoderType();
+        }
+
         boolean identityChanged()
         {
             return !name.getText().equals(loadedName) || !address.getText().equals(loadedAddress)
@@ -1328,14 +1356,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             String url = loc.getImageURL();
 
             // Loaded again only when the locomotive's picture has changed: this is told of every repaint
-            if (!java.util.Objects.equals(url, shownPicture))
+            if (!Objects.equals(url, shownPicture))
             {
                 shownPicture = url;
 
                 if (url == null || url.isEmpty())
                 {
                     // The application's stand-in, as the locomotive buttons and the database show it (FR-054)
-                    picture.setIcon(new javax.swing.ImageIcon(
+                    picture.setIcon(new ImageIcon(
                         org.traincontrol.gui.locomotive.LocomotivePlaceholder.image(PICTURE_WIDTH - 2)));
                 }
                 else
@@ -1346,11 +1374,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
                     main.getImageLoader().execute(() ->
                     {
-                        javax.swing.ImageIcon loaded = null;
+                        ImageIcon loaded = null;
 
                         try
                         {
-                            loaded = new javax.swing.ImageIcon(main.getLocImageMaxHeight(url, PICTURE_WIDTH - 2, PICTURE_HEIGHT - 2));
+                            loaded = new ImageIcon(main.getLocImageMaxHeight(url, PICTURE_WIDTH - 2, PICTURE_HEIGHT - 2));
                         }
                         catch (Exception e)
                         {
@@ -1358,7 +1386,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                             main.getModel().logf("loc.ui.errorImageLoad", url);
                         }
 
-                        final javax.swing.ImageIcon shown = loaded;
+                        final ImageIcon shown = loaded;
 
                         SwingUtilities.invokeLater(() ->
                         {
@@ -1452,13 +1480,13 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
          * bundle's sentence marks the link with {2}, so it works in every language.  Clicking it, or Enter or Space,
          * closes this window as its X does (asking about unsaved changes) and opens the multi-unit's Multi-Unit tab.
          */
-        private javax.swing.JTextPane partOfNote(Locomotive parent)
+        private JTextPane partOfNote(Locomotive parent)
         {
             final String mark = String.valueOf((char) 0xE000);
             final String name = parent.getName();
             final String said = I18n.f("loc.ui.settingsPartOfMultiUnit", loc.getName(), name, mark);
             final int from = said.indexOf(mark);
-            final javax.swing.JTextPane note = new javax.swing.JTextPane();
+            final JTextPane note = new JTextPane();
             final Runnable open = () ->
             {
                 // The unit may have changed since the tab was built: then the tab is built again, not followed
@@ -1481,15 +1509,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             note.setFont(new JLabel().getFont());
             note.setText(said.replace(mark, name));
 
-            final java.util.function.Consumer<Boolean> style = focused ->
+            final Consumer<Boolean> style = focused ->
             {
-                javax.swing.text.SimpleAttributeSet link = new javax.swing.text.SimpleAttributeSet();
+                SimpleAttributeSet link = new SimpleAttributeSet();
                 Color blue = javax.swing.UIManager.getColor("Component.linkColor");
 
-                javax.swing.text.StyleConstants.setForeground(link, blue != null ? blue : new Color(0, 102, 204));
-                javax.swing.text.StyleConstants.setUnderline(link, true);
+                StyleConstants.setForeground(link, blue != null ? blue : new Color(0, 102, 204));
+                StyleConstants.setUnderline(link, true);
 
-                if (focused) javax.swing.text.StyleConstants.setBackground(link, new Color(220, 232, 247));
+                if (focused) StyleConstants.setBackground(link, new Color(220, 232, 247));
 
                 note.getStyledDocument().setCharacterAttributes(from, name.length(), link, true);
             };
@@ -1501,7 +1529,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 try
                 {
                     int pos = note.viewToModel(at);
-                    java.awt.Rectangle line = pos < 0 ? null : note.modelToView(Math.min(pos, note.getDocument().getLength()));
+                    Rectangle line = pos < 0 ? null : note.modelToView(Math.min(pos, note.getDocument().getLength()));
 
                     return line != null && pos >= from && pos < from + name.length() && at.y >= line.y
                         && at.y < line.y + line.height;
@@ -1517,8 +1545,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 @Override
                 public void mouseMoved(MouseEvent e)
                 {
-                    note.setCursor(java.awt.Cursor.getPredefinedCursor(onLink.test(e.getPoint())
-                        ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.TEXT_CURSOR));
+                    note.setCursor(Cursor.getPredefinedCursor(onLink.test(e.getPoint())
+                        ? Cursor.HAND_CURSOR : Cursor.TEXT_CURSOR));
                 }
             });
             note.addMouseListener(Listen.released(e ->
@@ -1528,13 +1556,13 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             note.addFocusListener(new java.awt.event.FocusAdapter()
             {
                 @Override
-                public void focusGained(java.awt.event.FocusEvent e)
+                public void focusGained(FocusEvent e)
                 {
                     style.accept(true);
                 }
 
                 @Override
-                public void focusLost(java.awt.event.FocusEvent e)
+                public void focusLost(FocusEvent e)
                 {
                     style.accept(false);
                 }
@@ -1542,7 +1570,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             for (String key : new String[] { "ENTER", "SPACE" })
             {
-                note.getInputMap().put(javax.swing.KeyStroke.getKeyStroke(key), "openTheMultiUnit");
+                note.getInputMap().put(KeyStroke.getKeyStroke(key), "openTheMultiUnit");
             }
 
             note.getActionMap().put("openTheMultiUnit", new javax.swing.AbstractAction()
@@ -1562,7 +1590,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             return members != null && members.isDirty();
         }
 
-        java.util.Map<String, Double> chosen()
+        Map<String, Double> chosen()
         {
             return members == null ? new java.util.HashMap<>() : members.chosen();
         }
@@ -1587,8 +1615,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         final JSpinner length = typedAtOnce(new JSpinner(new SpinnerNumberModel(loadedLength, 0,
             Math.max(TrainControlUI.ROUTE_TRAIN_LENGTH_MAX, loadedLength), 1)));
-        final javax.swing.JCheckBox reversible = new javax.swing.JCheckBox(I18n.t("loc.ui.settingsReversibleBox"));
-        final javax.swing.JCheckBox active = new javax.swing.JCheckBox(I18n.t("autosetup.ui.trainMayBeMoved"));
+        final JCheckBox reversible = new JCheckBox(I18n.t("loc.ui.settingsReversibleBox"));
+        final JCheckBox active = new JCheckBox(I18n.t("autosetup.ui.trainMayBeMoved"));
         final JComboBox<String> departure = functionChoices(loadedDeparture);
         final JComboBox<String> arrival = functionChoices(loadedArrival);
 
@@ -1716,14 +1744,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         boolean isDirty()
         {
             return lengthValue() != loadedLength || reversible.isSelected() != loadedReversible
-                || !java.util.Objects.equals(function(departure), loadedDeparture)
-                || !java.util.Objects.equals(function(arrival), loadedArrival) || active.isSelected() != loadedActive;
+                || !Objects.equals(function(departure), loadedDeparture)
+                || !Objects.equals(function(arrival), loadedArrival) || active.isSelected() != loadedActive;
         }
 
         /** Writes what changed onto the train, and into the setup's copies of it under `Point.toJSON`'s keys. */
         void apply()
         {
-            java.util.Map<String, Object> stored = new java.util.LinkedHashMap<>();
+            Map<String, Object> stored = new java.util.LinkedHashMap<>();
 
             if (lengthValue() != loadedLength)
             {
@@ -1739,14 +1767,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 stored.put("reversible", reversible.isSelected());
             }
 
-            if (!java.util.Objects.equals(function(departure), loadedDeparture))
+            if (!Objects.equals(function(departure), loadedDeparture))
             {
                 loc.setDepartureFunc(function(departure));
 
                 stored.put("departureFunc", loc.getDepartureFunc());
             }
 
-            if (!java.util.Objects.equals(function(arrival), loadedArrival))
+            if (!Objects.equals(function(arrival), loadedArrival))
             {
                 loc.setArrivalFunc(function(arrival));
 
@@ -1769,7 +1797,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     }
 
     /** For tests: where each part of the window is. */
-    public javax.swing.JTabbedPane tabsForTest()
+    public JTabbedPane tabsForTest()
     {
         return tabs;
     }

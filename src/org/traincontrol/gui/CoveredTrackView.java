@@ -1,5 +1,10 @@
 package org.traincontrol.gui;
 
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import org.traincontrol.automationui.TileGraph;
+
 /**
  * The marks a standing train puts on the track diagram, worked out on `CoveredTrackRenderer` and never on the event
  * thread (OB-192), coalesced so the last ask always lands, with a bounded wait for them to have landed.  The marks, the
@@ -60,18 +65,13 @@ final class CoveredTrackView extends SettledQuestion
     {
         TrainControlUI.CoveredTrackAsk ask = this.ui.coveredTrackSubject;
 
-        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> found =
-            java.util.Collections.emptyMap();
+        Map<TileGraph.TileKey, Set<TileGraph.RouteId>> found = Collections.emptyMap();
 
-        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> greyed = java.util.Collections.emptyMap();
+        Map<TileGraph.TileKey, Set<TileGraph.RouteId>> greyed = Collections.emptyMap();
 
-        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> was = this.ui.coveredTrack;
+        Map<TileGraph.TileKey, Set<TileGraph.RouteId>> was = this.ui.coveredTrack;
 
-        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-            java.util.Set<org.traincontrol.automationui.TileGraph.RouteId>> wasBlocked = this.ui.blockedTrack;
+        Map<TileGraph.TileKey, Set<TileGraph.RouteId>> wasBlocked = this.ui.blockedTrack;
 
         try
         {
@@ -90,8 +90,8 @@ final class CoveredTrackView extends SettledQuestion
         {
             // NOTHING MARKED rather than a broken diagram.  A picture nobody can read is worse
             // than a protection nobody can see.
-            found = java.util.Collections.emptyMap();
-            greyed = java.util.Collections.emptyMap();
+            found = Collections.emptyMap();
+            greyed = Collections.emptyMap();
         }
 
         this.ui.coveredTrack = found;

@@ -18,6 +18,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
+import javax.swing.JWindow;
+import javax.swing.SwingUtilities;
 
 /**
  * Swaps a new TrainControl jar in for the old one once TrainControl has closed, then starts it again (FR-125).
@@ -319,7 +323,7 @@ public final class JarUpdater
 
         Log log = new Log(new File(request.jar.getParentFile(), LOG_NAME));
 
-        final javax.swing.JWindow[] window = {showTheWindow(request.windowText)};
+        final JWindow[] window = {showTheWindow(request.windowText)};
 
         try
         {
@@ -776,23 +780,23 @@ public final class JarUpdater
      * A small undecorated window saying the update is under way (FR-125).  None on a headless system or if Swing cannot
      * make one: nothing about the update may depend on it.
      */
-    private static javax.swing.JWindow showTheWindow(final String text)
+    private static JWindow showTheWindow(final String text)
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) return null;
 
         try
         {
-            final javax.swing.JWindow[] made = new javax.swing.JWindow[1];
+            final JWindow[] made = new JWindow[1];
 
-            javax.swing.SwingUtilities.invokeAndWait(() ->
+            SwingUtilities.invokeAndWait(() ->
             {
-                javax.swing.JLabel label = new javax.swing.JLabel(text);
+                JLabel label = new JLabel(text);
 
-                label.setBorder(javax.swing.BorderFactory.createCompoundBorder(
-                    javax.swing.BorderFactory.createLineBorder(java.awt.Color.GRAY),
-                    javax.swing.BorderFactory.createEmptyBorder(16, 28, 16, 28)));
+                label.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(java.awt.Color.GRAY),
+                    BorderFactory.createEmptyBorder(16, 28, 16, 28)));
 
-                javax.swing.JWindow window = new javax.swing.JWindow();
+                JWindow window = new JWindow();
 
                 window.getContentPane().add(label);
                 window.pack();
@@ -811,13 +815,13 @@ public final class JarUpdater
     }
 
     /** Closes the window, if there is one. */
-    private static void closeTheWindow(final javax.swing.JWindow window)
+    private static void closeTheWindow(final JWindow window)
     {
         if (window == null) return;
 
         try
         {
-            javax.swing.SwingUtilities.invokeLater(window::dispose);
+            SwingUtilities.invokeLater(window::dispose);
         }
         catch (RuntimeException | Error e)
         {

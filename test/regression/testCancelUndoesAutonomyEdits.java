@@ -48,13 +48,11 @@ public class testCancelUndoesAutonomyEdits
     {
         Display.needed("the editor and its Cancel button need a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -262,6 +260,84 @@ public class testCancelUndoesAutonomyEdits
 
             assertEquals(directions(session), edited, "Save did not keep the arrow in the setup");
             assertEquals(directions(fromDisk()), edited, "Save did not keep the arrow in the file");
+        }
+        finally
+        {
+            if (answerer != null) answerer.stop();
+
+            dispose(editor);
+
+            session.restoreSetup(asFound);
+        }
+    }
+
+    /**
+     * A length typed for a selection is one edit to Cancel, which puts every square back: the selection's squares are
+     * written in one re-derivation, still inside the setup the editor opened on.
+     *
+     * MUTATION: have `discardAutonomyWork` skip `restoreSetup` when the window has its opening snapshot, and this fails.
+     */
+    @Test
+    public void testCancelPutsBackALengthGivenToASelection() throws Exception
+    {
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        final List<TileKey> picked = new ArrayList<>();
+
+        for (TileKey tile : session.getGraph().getTiles().keySet())
+        {
+            if (PAGE.equals(tile.getPage()) && session.getRoutes(tile).size() == 1 && session.canCarryDirection(tile)
+                && !org.traincontrol.automationui.TilePorts.hasPortal(session.getGraph().getTiles().get(tile).getType()))
+            {
+                picked.add(tile);
+            }
+
+            if (picked.size() == 2) break;
+        }
+
+        assertEquals(picked.size(), 2, "precondition: no two plain track squares on " + PAGE);
+
+        final Map<TileKey, Integer> before = new LinkedHashMap<>();
+
+        for (TileKey square : picked) before.put(square, session.getStore().getTileLength(square));
+
+        final LayoutEditor editor = opened();
+
+        Answerer answerer = null;
+
+        try
+        {
+            final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = editor.getAutonomyPanel();
+
+            // Picked out with a shift-click, and the length typed
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (TileKey square : picked) panel.tileClicked(square, null, true);
+
+                panel.applyLengthAnswer(picked.get(1), 37);
+            });
+
+            Components.drain(8);
+
+            for (TileKey square : picked)
+            {
+                assertEquals(session.getStore().getTileLength(square), 37, "precondition: " + square
+                    + " did not get the length typed for the selection");
+            }
+
+            answerer = Answerer.start(String.valueOf(TrainControlUI.YES_NO_OPTS[0]));
+
+            cancel(editor);
+
+            answerer.stop();
+
+            Components.drain(8);
+
+            for (TileKey square : picked)
+            {
+                assertEquals(session.getStore().getTileLength(square), (int) before.get(square), "Cancel did not put"
+                    + " back " + square + "'s length after a length was typed for a selection holding it");
+            }
         }
         finally
         {
@@ -691,13 +767,7 @@ public class testCancelUndoesAutonomyEdits
         {
             java.nio.file.Files.write(note.toPath(), written.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-            AutonomySession restarted = new AutonomySession(sandbox.getFolder());
-
-            List<LayoutDiagram> onDisk = new ArrayList<>();
-
-            for (String name : model.getLayoutList()) onDisk.add(model.getLayout(name));
-
-            restarted.open(onDisk);
+            AutonomySession restarted = fromDisk();
 
             assertNotNull(restarted.getStore().unfinishedEdit(), "precondition: the note failed the shape check, so it is"
                 + " refused before anything reads it and this is not the case GSP-C4 is about");
@@ -731,6 +801,74 @@ public class testCancelUndoesAutonomyEdits
         }
         finally
         {
+            java.nio.file.Files.deleteIfExists(note.toPath());
+        }
+    }
+
+    /**
+     * The crash note puts each train back where the editor opened it, turned as often as it was turned since: the
+     * editor moves a train and it is reversed there, and after a restart it stands on its old square turned round, as
+     * its decoder runs.
+     *
+     * MUTATION: leave the note out of `AutonomySession.turned`, and the train comes back facing as at opening.
+     */
+    @Test
+    public void testACrashRevertKeepsATurnMadeAfterAMove() throws Exception
+    {
+        java.io.File note = new java.io.File(sandbox.getFolder(), "config/autonomy/setup-before-edit.json");
+
+        assertFalse(note.exists(), "precondition: a pre-edit note is in the sandbox already");
+
+        TileKey placed = null;
+        TileKey empty = null;
+
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (session.facingChoices(tile).size() != 2) continue;
+
+            if (session.getLocomotiveNameAt(tile) != null && session.getFacing(tile) != null) placed = tile;
+            else if (session.getLocomotiveNameAt(tile) == null && session.getStore().isStation(tile)) empty = tile;
+        }
+
+        assertNotNull(placed, "precondition: no placed train on a square with two facings");
+        assertNotNull(empty, "precondition: no empty station with two facings");
+
+        final TileKey square = placed;
+        final String name = session.getLocomotiveNameAt(square);
+        final org.json.JSONObject opened = session.snapshotSetup();
+        final org.traincontrol.automationui.TilePorts.Side before = session.getFacing(square);
+        final org.traincontrol.automationui.TilePorts.Side turned = session.facingChoices(square).get(0) == before
+            ? session.facingChoices(square).get(1) : session.facingChoices(square).get(0);
+
+        try
+        {
+            // As an editor opening takes it, with the build the note goes back to
+            assertTrue(session.beginEditSession(), "precondition: the crash note was not written");
+
+            session.placeLocomotive(empty, name);
+            session.setFacing(empty, session.facingChoices(empty).get(0));
+
+            assertEquals(session.flipFacing(name, null), empty, "precondition: " + name + " was not turned on "
+                + empty);
+
+            // And counted, as `TrainControlUI.followTheTurn` counts every reversal it follows
+            session.turned(name);
+
+            assertTrue(session.saveQuietly(), "precondition: the setup was not written");
+
+            AutonomySession restarted = fromDisk();
+
+            assertTrue(restarted.revertUnfinishedEdit(), "precondition: the crash note was not put back");
+            assertEquals(restarted.getLocomotiveNameAt(square) + " facing " + restarted.getFacing(square),
+                name + " facing " + turned, "after a restart, " + name + " moved to " + empty + " and reversed there"
+                + " came back to " + square + " facing as at opening (" + before + ")");
+        }
+        finally
+        {
+            session.restoreSetup(opened);
+
+            session.endEditSession();
+
             java.nio.file.Files.deleteIfExists(note.toPath());
         }
     }

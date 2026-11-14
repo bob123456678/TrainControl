@@ -8,6 +8,7 @@ import java.util.Set;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
+import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.util.I18n;
 
 /**
@@ -96,7 +97,7 @@ public class ArrivalSidePrompt
      */
     public static String forPlacement(Layout layout, Point at, String facing, boolean mayReverse,
         Component parent,
-        List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
+        List<TilePorts.Side> arrivalSides)
     {
         // AND THE QUESTION, on the squares where the assumption does not hold, asked through `wouldAsk`: the paste door
         // reads that same predicate to tell a dismissal from the other two nulls, so they agree by construction.
@@ -121,7 +122,7 @@ public class ArrivalSidePrompt
      * value.
      */
     public static String suggestedFor(Layout layout, Point at, String facing, boolean mayReverse,
-        List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
+        List<TilePorts.Side> arrivalSides)
     {
         List<String> sides = choicesFor(layout, at, arrivalSides);
 
@@ -147,7 +148,7 @@ public class ArrivalSidePrompt
      * Never null, in a stable order.
      */
     public static List<String> choicesFor(Layout layout, Point at,
-        List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
+        List<TilePorts.Side> arrivalSides)
     {
         if (layout == null || at == null) return new ArrayList<>();
 
@@ -196,7 +197,7 @@ public class ArrivalSidePrompt
      * `forPlacement` reaches `ask`, rather than inferring it from a null.
      */
     public static boolean wouldAsk(Layout layout, Point at, boolean mayReverse,
-        List<org.traincontrol.automationui.TilePorts.Side> arrivalSides)
+        List<TilePorts.Side> arrivalSides)
     {
         if (!mayReverse) return false;
 
@@ -296,13 +297,13 @@ public class ArrivalSidePrompt
      * leaving north and curving east gives "E" while the metal leaves by "N"); the builder already knows the answer
      * (`arrivalSides` to `StationIndex` to `AutonomyBuilder.arrivalSidesOf`).
      */
-    public static List<String> sidesOf(List<org.traincontrol.automationui.TilePorts.Side> sides)
+    public static List<String> sidesOf(List<TilePorts.Side> sides)
     {
         Set<String> out = new LinkedHashSet<>();
 
         if (sides != null)
         {
-            for (org.traincontrol.automationui.TilePorts.Side side : sides)
+            for (TilePorts.Side side : sides)
             {
                 if (side != null) out.add(side.name());
             }

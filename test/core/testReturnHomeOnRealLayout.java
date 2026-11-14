@@ -57,6 +57,9 @@ public class testReturnHomeOnRealLayout
     private static final int RUN_MIN_SECONDS = 4;
     private static final int RUN_MAX_SECONDS = 9;
 
+    /** Polls, over all rounds, that must have seen two trains out at once. */
+    private static final int MIN_POLLS_WITH_TWO_TRAINS = 3;
+
     /** Long enough for any single path to finish; short enough that a hang fails instead of hanging. */
     private static final long SETTLE_TIMEOUT_MS = 60000;
 
@@ -257,12 +260,30 @@ public class testReturnHomeOnRealLayout
         // MUTATION this catches: make Layout.planReturnToHome() always return a plan with isPossible() == false.
         int meaningfulRounds = 0;
 
+        support.TrackWatch watch = new support.TrackWatch(layout);
+
         for (int round = 1; round <= ROUNDS; round++)
         {
             int seconds = RUN_MIN_SECONDS + RANDOM.nextInt(RUN_MAX_SECONDS - RUN_MIN_SECONDS + 1);
 
             layout.runLocomotives();
-            Thread.sleep(seconds * 1000L);
+
+            // The same wait, polled: no two trains may hold one track meanwhile (see support.TrackWatch).
+            long until = System.currentTimeMillis() + seconds * 1000L;
+
+            while (System.currentTimeMillis() < until)
+            {
+                try
+                {
+                    watch.poll();
+                }
+                catch (AssertionError clash)
+                {
+                    throw new AssertionError("round " + round + ": " + clash.getMessage() + andTheSeed(), clash);
+                }
+
+                Thread.sleep(250);
+            }
 
             // The graceful stop: trains finish the path they are on rather than halting mid-section
             layout.stopLocomotives();
@@ -303,12 +324,117 @@ public class testReturnHomeOnRealLayout
                 + ", started from " + arrangement + andTheSeed());
         }
 
+        // MUTATION: cap trains out at one in Layout.isPathClear (`trainsUnderway() >= 1`) and this fails.
+        try
+        {
+            watch.requireOverlap(MIN_POLLS_WITH_TWO_TRAINS);
+        }
+        catch (AssertionError tooFew)
+        {
+            throw new AssertionError(tooFew.getMessage() + andTheSeed(), tooFew);
+        }
+
         // The floor: if every round happened to land at home, planReturnToHome() and
         // executeTimetable() were never exercised and this test proved nothing about either of them,
         // however green it reads.  Re-running with a different seed is the escape hatch if this trips.
         assertTrue(meaningfulRounds > 0,
             "every one of the " + ROUNDS + " rounds finished already home by chance, so the planner "
             + "was never actually asked for a plan" + andTheSeed());
+    }
+
+    /**
+     * The watch the run above leans on does see a clash: two trains handed one edge, and two handed edges that lock each
+     * other, are each named, and so is one headed for the square the other stands on; two handed edges that share nothing
+     * pass.  Without this the run's claim cannot be told from a watch that never fires.
+     *
+     * MUTATION: drop the `t.getLockEdges().contains(e)` test from `TrackWatch.sharing` and the lock-edge case fails; delete
+     * the two `getCurrentLocomotive()` tests from `TrackWatch.clash` and the standing-train case fails.
+     */
+    @Test
+    public void testTheTrackWatchSeesTwoTrainsOnOneTrack() throws Exception
+    {
+        Layout layout = load();
+
+        List<Locomotive> trains = new ArrayList<>(layout.getLocomotivesToRun());
+
+        assertTrue(trains.size() >= 2, "precondition: the layout puts two trains out");
+
+        Edge locker = null;
+        Edge locked = null;
+        Edge apart = null;
+
+        for (Edge e : layout.getEdges())
+        {
+            if (locker == null && !e.getLockEdges().isEmpty())
+            {
+                locker = e;
+                locked = e.getLockEdges().get(0);
+            }
+        }
+
+        assertNotNull(locker, "precondition: the layout has an edge that locks another");
+
+        for (Edge e : layout.getEdges())
+        {
+            if (e != locker && e != locked && !locker.getLockEdges().contains(e) && !e.getLockEdges().contains(locker)
+                && !locked.getLockEdges().contains(e) && !e.getLockEdges().contains(locked)) apart = e;
+        }
+
+        assertNotNull(apart, "precondition: the layout has an edge unrelated to the locking pair");
+
+        Locomotive a = trains.get(0);
+        Locomotive b = trains.get(1);
+        support.TrackWatch watch = new support.TrackWatch(layout);
+
+        try
+        {
+            assertSees(layout, watch, a, locker, b, locker, true);
+            assertSees(layout, watch, a, locker, b, locked, true);
+            assertSees(layout, watch, a, locker, b, apart, false);
+
+            // The second train stands on the first's destination, holding track that is unrelated to the first's
+            locker.getEnd().setLocomotive(b);
+
+            assertSees(layout, watch, a, locker, b, apart, true);
+        }
+        finally
+        {
+            locker.getEnd().setLocomotive(null);
+            layout.getActiveLocomotives().remove(a);
+            layout.getActiveLocomotives().remove(b);
+        }
+    }
+
+    /** Hands each train one edge and says whether the watch objects. */
+    private static void assertSees(Layout layout, support.TrackWatch watch, Locomotive a, Edge ea, Locomotive b, Edge eb,
+        boolean clash) throws Exception
+    {
+        layout.getActiveLocomotives().put(a, new ArrayList<>(java.util.Collections.singletonList(ea)));
+        layout.getActiveLocomotives().put(b, new ArrayList<>(java.util.Collections.singletonList(eb)));
+
+        String objection = null;
+
+        try
+        {
+            watch.poll();
+        }
+        catch (AssertionError e)
+        {
+            objection = String.valueOf(e.getMessage());
+        }
+
+        if (!clash)
+        {
+            assertNull(objection, "the watch objected to trains that share nothing");
+        }
+        else
+        {
+            assertNotNull(objection, "the watch missed " + a.getName() + " on " + ea.getName() + " and " + b.getName()
+                + " on " + eb.getName());
+
+            assertTrue(objection.contains(a.getName()) && objection.contains(b.getName()),
+                "the watch did not name both trains: " + objection);
+        }
     }
 
     /**

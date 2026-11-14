@@ -1,5 +1,7 @@
 package org.traincontrol.gui;
 
+import java.awt.Component;
+import java.awt.Dimension;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,6 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +22,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.LayoutPageEdit;
 import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.util.I18n;
@@ -49,7 +57,7 @@ final class LayoutFileActions
      * @throws java.io.IOException if the index cannot be written, which is the caller's to report
      */
     void writeIndexAndKeepLinksAimed(List<String> layoutList, Map<String, String> renamed,
-        java.util.Collection<String> keepAbsent) throws java.io.IOException
+        Collection<String> keepAbsent) throws IOException
     {
         // The rule is in LayoutDiagram, because LayoutPageEdit writes this index too.
         for (LayoutDiagram changed : LayoutDiagram.writeIndexAndKeepLinksAimed(
@@ -194,7 +202,10 @@ final class LayoutFileActions
         // the session under moving trains.
         if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
 
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        // Nor under an open editor, whose Cancel would put trains back on a railway that is gone.
+        if (this.ui.refuseWhileEditorOpen()) return;
+
+        SwingUtilities.invokeLater(() ->
         {
             JOptionPane.showMessageDialog(
                 this.ui,
@@ -231,7 +242,7 @@ final class LayoutFileActions
      */
     void combineLinkedPages(final LayoutEditor editor)
     {
-        final java.awt.Component over = editor == null ? this.ui : editor;
+        final Component over = editor == null ? this.ui : editor;
 
         // The same rule as deleting and renaming: this writes a new page and rebuilds the session.
         if (this.ui.refuseWhileARunHoldsTheSetup(over)) return;
@@ -265,8 +276,7 @@ final class LayoutFileActions
 
         // And no other page's file: a character a file name cannot hold comes to the same file as a page with an
         // underscore there.
-        String usesThatFile = org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.ui.getModel().getLayoutList(),
-            combined, null);
+        String usesThatFile = LayoutPageEdit.pageUsingTheFileOf(this.ui.getModel().getLayoutList(), combined, null);
 
         if (usesThatFile != null)
         {
@@ -285,7 +295,7 @@ final class LayoutFileActions
 
         // The ceiling, asked before anything is made, and not in `fillCombinedPage`, which runs after the page is
         // written and indexed.
-        java.awt.Dimension wouldBe = combinedSize(pages);
+        Dimension wouldBe = combinedSize(pages);
 
         if (wouldBe.height > LayoutEditor.MAX_SIZE || wouldBe.width > LayoutEditor.MAX_SIZE)
         {
@@ -301,9 +311,9 @@ final class LayoutFileActions
     }
 
     /** The combined page's size: the widest source page, and every height plus a blank row between. */
-    private java.awt.Dimension combinedSize(List<String> pages)
+    private Dimension combinedSize(List<String> pages)
     {
-        java.awt.Dimension size = new java.awt.Dimension();
+        Dimension size = new Dimension();
 
         for (String each : pages)
         {
@@ -334,7 +344,7 @@ final class LayoutFileActions
             {
                 // Asked before the new page is written (FR-018), as the delete path does: a Cancel at the index write
                 // would leave a page nothing references.
-                java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
+                Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
                     this.ui.getModel().getLayoutList(), null, null, editor == null ? this.ui : editor);
 
                 if (keepAbsent == null) return;
@@ -352,7 +362,7 @@ final class LayoutFileActions
                 // Excluded before the pages are re-read, so no build sees it as a page to walk.  Only a setup that
                 // already exists: the lazy getter would create one (and write setup.json) on a layout without
                 // autonomy; excludeRepeatedSensorPages shuts a combined page when a setup is first created.
-                org.traincontrol.automationui.AutonomySession session = this.ui.autonomySession();
+                AutonomySession session = this.ui.autonomySession();
 
                 if (session != null)
                 {
@@ -371,7 +381,7 @@ final class LayoutFileActions
 
                 fillCombinedPage(combined, pages);
 
-                javax.swing.SwingUtilities.invokeLater(() -> this.ui.layoutEditingComplete(() ->
+                SwingUtilities.invokeLater(() -> this.ui.layoutEditingComplete(() ->
                 {
                     this.ui.layoutList().setSelectedItem(combined);
                     this.ui.repaintLayout();
@@ -385,7 +395,7 @@ final class LayoutFileActions
             {
                 this.ui.getModel().log(ex);
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                     JOptionPane.showMessageDialog(editor == null ? this.ui : editor,
                         I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())));
             }
@@ -394,7 +404,7 @@ final class LayoutFileActions
                 if (editor != null && !arriving) editor.arriveOn(null);
 
                 // Posted after the hand-over above, so `layoutEditingComplete` has counted its own before this one goes
-                javax.swing.SwingUtilities.invokeLater(() -> this.ui.refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1)));
+                SwingUtilities.invokeLater(() -> this.ui.refreshesUnderWay.updateAndGet(n -> Math.max(0, n - 1)));
             }
         }).start();
     }
@@ -431,9 +441,9 @@ final class LayoutFileActions
     private static List<String> sorted(List<String> pages)
     {
         List<String> out = new ArrayList<>(pages);
-        java.util.Comparator<String> letters = Util::byLetters;
+        Comparator<String> letters = Util::byLetters;
 
-        out.sort(letters.thenComparing(java.util.Comparator.naturalOrder()));
+        out.sort(letters.thenComparing(Comparator.naturalOrder()));
 
         return out.equals(pages) ? null : out;
     }
@@ -466,7 +476,7 @@ final class LayoutFileActions
 
             this.ui.captureRunningLayout();
 
-            java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
+            Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
                 this.ui.getModel().getLayoutList(), null, null, from == null ? this.ui : from);
 
             if (keepAbsent == null) return false;
@@ -486,7 +496,7 @@ final class LayoutFileActions
      */
     private boolean refusedAsAPageEdit(LayoutEditor from)
     {
-        final java.awt.Component over = from == null ? this.ui : from;
+        final Component over = from == null ? this.ui : from;
 
         // Not while an editor holds the diagram: the edit ends in layoutEditingComplete, which rebuilds the autonomy
         // session from pages just replaced, so under an open editor a second editor opens on the same diagram.
@@ -523,7 +533,7 @@ final class LayoutFileActions
     /** The same, with the layout editor arriving on `editorShows` (null: the page it left) and the main window on `show`. */
     private void runPageEdit(final LayoutEditor from, final String show, final String editorShows, final PageEdit edit)
     {
-        final java.awt.Component over = from == null ? this.ui : from;
+        final Component over = from == null ? this.ui : from;
 
         final Runnable work = () ->
         {
@@ -544,7 +554,7 @@ final class LayoutFileActions
                         // The editor's arrival selects its page in the main window; this lands after it
                         if (from != null)
                         {
-                            javax.swing.SwingUtilities.invokeLater(() -> this.ui.layoutList().setSelectedItem(show));
+                            SwingUtilities.invokeLater(() -> this.ui.layoutList().setSelectedItem(show));
                         }
                     });
 
@@ -562,7 +572,7 @@ final class LayoutFileActions
             }
         };
 
-        if (from == null) javax.swing.SwingUtilities.invokeLater(work);
+        if (from == null) SwingUtilities.invokeLater(work);
         else from.stepOutFor(work);
     }
 
@@ -573,7 +583,7 @@ final class LayoutFileActions
     void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank,
         final LayoutEditor from)
     {
-        final java.awt.Component over = from == null ? this.ui : from;
+        final Component over = from == null ? this.ui : from;
 
         // Refused at the entry, as by the end the page is written.
         if (refusedAsAPageEdit(from)) return;
@@ -592,7 +602,7 @@ final class LayoutFileActions
 
         // NOR ONE WHOSE FILE ANOTHER PAGE USES: a name differing only in case, or in a character a file name cannot
         // hold, is written to that page's file.  A page renamed to its own name in another case keeps its own file.
-        String usesThatFile = org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.ui.getModel().getLayoutList(),
+        String usesThatFile = LayoutPageEdit.pageUsingTheFileOf(this.ui.getModel().getLayoutList(),
             newLayoutName, rename ? this.ui.layoutList().getSelectedItem().toString() : null);
 
         if (usesThatFile != null)
@@ -615,16 +625,16 @@ final class LayoutFileActions
 
             // A rename makes the old name absent by construction, so it is told about that and
             // asks only about the rest (FR-018).
-            java.util.Map<String, String> renaming = new java.util.LinkedHashMap<>();
+            Map<String, String> renaming = new java.util.LinkedHashMap<>();
 
             if (rename) renaming.put(currentLayout, newLayoutName);
 
-            java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
+            Collection<String> keepAbsent = this.ui.settleTheAbsentPages(
                 this.ui.getModel().getLayoutList(), renaming, null, over);
 
             if (keepAbsent == null) return false;
 
-            org.traincontrol.automationui.LayoutPageEdit.renameOrDuplicate(
+            LayoutPageEdit.renameOrDuplicate(
                 this.ui.getModel().getLayoutList(), this.ui.getModel().getLayout(currentLayout),
                 this.ui.localLayoutPath(), currentLayout, newLayoutName,
                 rename, duplicate, blank, this.ui.autonomySession(), this.ui.getModel(), keepAbsent);
@@ -638,10 +648,12 @@ final class LayoutFileActions
      */
     void downloadCSLayoutMenuItemActionPerformed()
     {
+        // The download switches the layout, which an open editor must not see.
+        if (this.ui.refuseWhileEditorOpen()) return;
 
         if (!this.ui.isLocalLayout() && !this.ui.getModel().getLayoutList().isEmpty())
         {
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 JOptionPane.showMessageDialog(
                     this.ui,
@@ -723,7 +735,7 @@ final class LayoutFileActions
      */
     private List<String> pagesLinkedFrom(String from)
     {
-        List<String> out = new java.util.ArrayList<>();
+        List<String> out = new ArrayList<>();
 
         out.add(from);
 
@@ -738,7 +750,7 @@ final class LayoutFileActions
         {
             for (int x = 0; x < page.getSx(); x++)
             {
-                org.traincontrol.base.LayoutDiagramComponent tile = page.getComponent(x, y);
+                LayoutDiagramComponent tile = page.getComponent(x, y);
 
                 if (tile == null || !tile.isLink()) continue;
 
@@ -770,7 +782,7 @@ final class LayoutFileActions
 
         if (made == null) throw new Exception(I18n.f("layout.ui.errorLayoutPageDoesNotExist", name));
 
-        java.awt.Dimension size = combinedSize(pages);
+        Dimension size = combinedSize(pages);
 
         int width = size.width;
         int height = size.height;
@@ -800,12 +812,11 @@ final class LayoutFileActions
             {
                 for (int x = 0; x < page.getSx(); x++)
                 {
-                    org.traincontrol.base.LayoutDiagramComponent tile = page.getComponent(x, y);
+                    LayoutDiagramComponent tile = page.getComponent(x, y);
 
                     if (tile == null) continue;
 
-                    org.traincontrol.base.LayoutDiagramComponent copy =
-                        new org.traincontrol.base.LayoutDiagramComponent(tile);
+                    LayoutDiagramComponent copy = new LayoutDiagramComponent(tile);
 
                     copy.setX(x);
                     copy.setY(y + top);
@@ -814,7 +825,7 @@ final class LayoutFileActions
                     // station label would name a station not on it, and a "Point:" label would be migrated into the
                     // setup.  The user's own text stays.
                     if (copy.getLabel() != null && copy.getLabel().startsWith(
-                        org.traincontrol.automationui.AutonomySession.STATION_LABEL_PREFIX))
+                        AutonomySession.STATION_LABEL_PREFIX))
                     {
                         copy.setLabel("");
                     }

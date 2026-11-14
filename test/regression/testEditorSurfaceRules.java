@@ -50,8 +50,9 @@ public class testEditorSurfaceRules
         String source = SourceOf.declaration("    private javax.swing.JMenuItem changeDirectionItem(")
             .replaceAll("\\s+", " ");
 
-        assertTrue(SourceOf.declaration("    boolean addFacingItems(javax.swing.JPopupMenu menu, final TileKey target)")
-            .replaceAll("\\s+", " ").contains("if (facts == null) return false; javax.swing.JMenuItem direction ="
+        assertTrue(SourceOf.plain(SourceOf.declaration(
+                "    boolean addFacingItems(javax.swing.JPopupMenu menu, final TileKey target)"))
+            .replaceAll("\\s+", " ").contains("if (facts == null) return false; JMenuItem direction ="
                 + " changeDirectionItem(target, facts); if (direction != null) menu.add(direction);"),
             "Change Direction is not added wherever a train stands, so a square with nothing to choose shows no item"
             + " rather than the reason (FR-181)");
@@ -1083,7 +1084,7 @@ public class testEditorSurfaceRules
             "the arrival side is still added as its own submenu as well, so there are two doors"
             + " again and only one of them is on the diagram");
 
-        assertFalse(code.contains("javax.swing.JMenu tailMenu = buildArrivedFromMenu(target);"),
+        assertEquals(SourceOf.occurrences("javax.swing.JMenu tailMenu = buildArrivedFromMenu(target);"), 0,
             "the editor still builds a separate tail submenu, which is the arrangement that gave the"
             + " editor a setting the viewer did not have");
     }
@@ -1239,9 +1240,9 @@ public class testEditorSurfaceRules
     @Test
     public void testAHoverAsksTheGridSettingOncePerPass() throws Exception
     {
-        String pass = codeOf("    void clearBordersFromChildren(JPanel panel)");
+        String pass = SourceOf.plain(codeOf("    void clearBordersFromChildren(JPanel panel)"));
 
-        int loop = pass.indexOf("for (java.awt.Component component : panel.getComponents())");
+        int loop = pass.indexOf("for (Component component : panel.getComponents())");
 
         assertTrue(loop > 0, "the border pass no longer loops over the panel's squares, so this checked nothing");
 
@@ -2459,7 +2460,8 @@ public class testEditorSurfaceRules
     public void testTheBlockedPointsPickerCarriesAndNamesWhatIsStored() throws Exception
     {
         // The whole method, comments blanked so a rule is proved by the code and not the prose about it.
-        String body = SourceOf.withoutComments(memberOf("final class EditorPrompts", "    void promptBlockingPoints("));
+        String body = SourceOf.plain(SourceOf.withoutComments(memberOf("final class EditorPrompts",
+            "    void promptBlockingPoints(")));
 
         // What is stored is read before the offer is built, because it decides the offer.  The left term is proved
         // present first: indexOf answers -1 for an absent needle.
@@ -2500,8 +2502,8 @@ public class testEditorSurfaceRules
             + "from before that was refused - and without it those entries cannot be removed by "
             + "anybody, ever (FSR-C5)");
 
-        assertTrue(body.contains("new javax.swing.JCheckBox(\n                editor.describeTile(tile)")
-                || body.contains("new javax.swing.JCheckBox(editor.describeTile(tile)"),
+        assertTrue(body.contains("new JCheckBox(\n                editor.describeTile(tile)")
+                || body.contains("new JCheckBox(editor.describeTile(tile)"),
             "the check boxes are labelled with something other than describeTile.  The loop above "
             + "exists to offer squares that have LOST their name, and getPointName is a plain map "
             + "lookup that returns null for exactly those - so the box drawn for one renders with no "

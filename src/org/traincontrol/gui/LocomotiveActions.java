@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -25,6 +26,7 @@ import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.Route;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
+import org.traincontrol.base.RouteCommand;
 
 /**
  * The locomotive operations behind the locomotive buttons' menus and the keyboard's shortcuts: jumping to a
@@ -97,7 +99,7 @@ final class LocomotiveActions
 
                 // Routes store locomotives by name in a comma-separated text format, so a name with a comma would
                 // re-parse as a different locomotive; the route editor's two doors ask the same rule.
-                if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
+                if (!RouteCommand.isNameUsable(newName))
                 {
                     JOptionPane.showMessageDialog(source, I18n.t("loc.ui.errorLocomotiveNameUnusable"));
                     return false;
@@ -124,6 +126,8 @@ final class LocomotiveActions
 
                 if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
                 {
+                    if (RunGates.refuseALinkOrSyncWhileEditorOpen(this.ui, source)) return false;
+
                     // A new address or decoder is not written under a train with a stored speed, power on or off
                     if (LocomotiveSettings.hasSpeed(this.ui, l))
                     {
@@ -183,8 +187,8 @@ final class LocomotiveActions
 
     /**
      * The refusals a multi-unit edit meets, in today's order: not while autonomy runs, nor while a route drives the
-     * multi-unit or a member (OB-287), since a multi-unit's commands drive its members.  `newMembers` is null before
-     * they are chosen; true when it refused (and said so).
+     * multi-unit or a member (OB-287), since a multi-unit's commands drive its members; nor a new member while an editor
+     * is open.  `newMembers` is null before they are chosen; true when it refused (and said so).
      */
     boolean refuseMultiUnitEdit(Component source, Locomotive l, java.util.Collection<String> newMembers)
     {
@@ -194,7 +198,10 @@ final class LocomotiveActions
             return true;
         }
 
-        java.util.Set<String> involved = new java.util.LinkedHashSet<>();
+        if (newMembers != null && !l.getLinkedLocomotiveNames().keySet().containsAll(newMembers)
+            && RunGates.refuseALinkOrSyncWhileEditorOpen(this.ui, source)) return true;
+
+        Set<String> involved = new java.util.LinkedHashSet<>();
 
         involved.add(l.getName());
         involved.addAll(l.getLinkedLocomotiveNames().keySet());
@@ -280,7 +287,7 @@ final class LocomotiveActions
         }
 
         // A name is born usable too (MT-270): routes store locomotives by name, comma-separated
-        if (!org.traincontrol.base.RouteCommand.isNameUsable(locName))
+        if (!RouteCommand.isNameUsable(locName))
         {
             JOptionPane.showMessageDialog(source, I18n.t("loc.ui.errorLocomotiveNameUnusable"));
             return null;
@@ -312,7 +319,7 @@ final class LocomotiveActions
     /** Writes every address more than one locomotive shares to the log, MFX and the rest apart. */
     void reportDuplicates()
     {
-        Map<Integer, java.util.Set<Locomotive>> locs = this.ui.getModel().getDuplicateLocAddresses();
+        Map<Integer, Set<Locomotive>> locs = this.ui.getModel().getDuplicateLocAddresses();
 
         if (!locs.isEmpty())
         {
@@ -334,7 +341,7 @@ final class LocomotiveActions
     }
 
     /** The report's lines for each shared address, of MFX locomotives or of the rest. */
-    private void logShared(Map<Integer, java.util.Set<Locomotive>> locs, List<Integer> addresses, boolean mfx)
+    private void logShared(Map<Integer, Set<Locomotive>> locs, List<Integer> addresses, boolean mfx)
     {
         for (Integer addr : addresses)
         {
@@ -646,7 +653,7 @@ final class LocomotiveActions
 
                 // Every PAGE of mappings, not only the one on screen: a button mapped on another page would keep a
                 // reference to a locomotive no longer in the database, on a button that still drives real hardware.
-                for (java.util.HashMap<javax.swing.JButton, Locomotive> page : this.ui.locMapping)
+                for (java.util.HashMap<JButton, Locomotive> page : this.ui.locMapping)
                 {
                     for (JButton key : new LinkedList<>(page.keySet()))
                     {

@@ -167,7 +167,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     {
         // The constructor's first gates, so a gather never takes the railway's monitor for
         // a menu that will not draw it.
-        if (ui == null || current == null || ui.isLayoutEditorOpen()) return null;
+        if (ui == null || current == null || ui.anEditorIsOpenOrOnItsWay()) return null;
 
         // ASKED ONCE, NOT BUILT: this runs on a worker, and Unload can clear the model between asking whether
         // there is a railway and asking for it
@@ -258,7 +258,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         // Nothing here while an editor has the diagram: it holds its own unsaved copy of the setup, so anything done
         // from this menu would be overwritten.  Says so, and offers the way there.
-        if (ui.isLayoutEditorOpen())
+        if (ui.anEditorIsOpenOrOnItsWay())
         {
             menuItem = new JMenuItem(I18n.t("autosetup.ui.menuEditorIsOpen"));
             menuItem.setEnabled(false);

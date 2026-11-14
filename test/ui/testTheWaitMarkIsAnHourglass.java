@@ -253,7 +253,7 @@ public class testTheWaitMarkIsAnHourglass
             // What the panel's own helper must answer for each.  CODE ONLY: the fix's javadoc describes the mistake.
             String panelSource = SourceOf.allCode();
 
-            assertTrue(panelSource.contains("if (anchor instanceof java.awt.Window) return"),
+            assertTrue(SourceOf.occurrences("if (anchor instanceof java.awt.Window) return") > 0,
                 "the panel asks getWindowAncestor for something that may already BE the window, so "
                 + "it gets null and the signal dialog falls back to centring - which is MT-182");
 

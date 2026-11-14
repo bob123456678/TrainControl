@@ -2591,7 +2591,7 @@ public class testNoSetupEditWhileARouteRuns
             {
                 java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-                support.DialogWatch.until(going::get, 100, dialog ->
+                support.DialogWatch.until(going::get, 25, dialog ->
                 {
                     final JOptionPane pane = Components.inside(dialog.getContentPane(), JOptionPane.class);
 
@@ -2623,18 +2623,37 @@ public class testNoSetupEditWhileARouteRuns
             thread.start();
         }
 
-        /** How many questions have been asked so far, once the last has had time to be seen. */
+        /** Waits for the event thread, and for every question on screen to have been seen and closed. */
+        private void quiet()
+        {
+            Components.settle();
+
+            Components.waitFor(() -> Components.onTheEventThread(() -> java.util.Arrays.stream(java.awt.Window.getWindows())
+                .noneMatch(window -> window instanceof javax.swing.JDialog && window.isShowing()
+                    && (Components.inside(((javax.swing.JDialog) window).getContentPane(), JOptionPane.class) != null
+                    || Components.inside(((javax.swing.JDialog) window).getContentPane(),
+                    javax.swing.JFileChooser.class) != null))), 5000);
+        }
+
+        /** How many questions have been asked so far, every one on screen having been seen. */
         int count() throws Exception
         {
-            Thread.sleep(300);
+            quiet();
 
             return said.size();
         }
 
-        /** What was asked since then, once the last has had time to be seen. */
+        /**
+         * What was asked since then: every question on screen is seen and closed, then a short wait for one a worker
+         * thread posts late.
+         */
         List<String> since(int from) throws Exception
         {
-            Thread.sleep(400);
+            quiet();
+
+            Thread.sleep(150);
+
+            quiet();
 
             synchronized (said)
             {

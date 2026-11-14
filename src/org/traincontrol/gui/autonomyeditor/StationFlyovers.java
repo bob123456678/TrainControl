@@ -64,7 +64,7 @@ final class StationFlyovers
             return nowThenChange(I18n.f("autosetup.ui.flyArriveAllNow", String.join(", ", all)), I18n.t("autosetup.ui.flyArriveAllChange"));
         }
 
-        java.util.List<String> shut = new java.util.ArrayList<>(all);
+        List<String> shut = new java.util.ArrayList<>(all);
 
         shut.removeAll(open);
 

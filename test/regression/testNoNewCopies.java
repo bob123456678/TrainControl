@@ -1,7 +1,10 @@
 package regression;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -11,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import support.CopyScan;
@@ -29,8 +33,11 @@ public class testNoNewCopies
     /** The groups as they stand.  Never raise it. */
     private static final int GROUPS_ALLOWED = 84;
 
-    /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 208188;
+    /**
+     * The tokens standing in a second or later copy in `test/`, summed over its groups: an upper bound, so a commit that
+     * removes copies need not touch it.  Never raise it; `docs/tools/codesize.py` prints the figure now, to lower it to.
+     */
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 204629;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
@@ -149,24 +156,110 @@ public class testNoNewCopies
             }
         });
 
-        StringBuilder largest = new StringBuilder();
+        if (copied <= TEST_COPIED_TOKENS_ALLOWED) return;
 
-        for (int i = 0; i < Math.min(5, found.size()); i++)
+        Set<String> changed = changedFiles();
+
+        Map<String, CopyScan.Group> largest = new LinkedHashMap<>();
+
+        for (int i = 0; i < found.size(); i++)
         {
-            List<String> places = found.get(i).places;
+            CopyScan.Group g = found.get(i);
 
-            largest.append("\n  ").append(found.get(i).entry()).append(" in ")
-                .append(places.subList(0, Math.min(6, places.size()))).append(places.size() > 6 ? " ..." : "");
+            List<String> places = g.places;
+
+            if (i < 5 || touches(g, changed))
+            {
+                largest.put(g.entry() + " in " + places.subList(0, Math.min(6, places.size()))
+                    + (places.size() > 6 ? " ..." : ""), g);
+            }
         }
 
-        assertFalse(copied > TEST_COPIED_TOKENS_ALLOWED, "test copies rose: " + copied + " tokens stand in a second"
-            + " copy, against " + TEST_COPIED_TOKENS_ALLOWED + " pinned.  The largest groups:" + largest + "\nA claim's"
-            + " own set-up may stay written in it; shared steps belong in a helper (test/support, or the class).  Do not"
-            + " raise TEST_COPIED_TOKENS_ALLOWED.");
+        fail("test copies rose: " + copied + " tokens stand in a second copy, against " + TEST_COPIED_TOKENS_ALLOWED
+            + " pinned.  The groups with a copy in a file changed on this branch, then the largest:" + "\n" + "  "
+            + mineFirst(largest, changed) + "\n" + "A claim's own set-up may stay written in it; shared steps belong in a"
+            + " helper (test/support, or the class).  Do not raise TEST_COPIED_TOKENS_ALLOWED.");
+    }
 
-        assertFalse(copied < TEST_COPIED_TOKENS_ALLOWED, "test copies fell to " + copied + " tokens, fewer than the "
-            + TEST_COPIED_TOKENS_ALLOWED + " pinned.  Lower TEST_COPIED_TOKENS_ALLOWED to " + copied
-            + " so the gain is kept.");
+    private static Set<String> changedNames;
+
+    /** The base names of the files this branch changed against dev, untracked ones too; empty when git cannot say. */
+    private static synchronized Set<String> changedFiles()
+    {
+        if (changedNames != null) return changedNames;
+
+        changedNames = new HashSet<>();
+
+        String[][] asks = {{"diff", "--name-only", "dev"}, {"diff", "--name-only", "HEAD"},
+            {"ls-files", "--others", "--exclude-standard"}};
+
+        for (int i = 0; i < asks.length; i++)
+        {
+            try
+            {
+                File out = File.createTempFile("copies-git", ".txt");
+
+                try
+                {
+                    List<String> command = new ArrayList<>(Arrays.asList("git"));
+
+                    command.addAll(Arrays.asList(asks[i]));
+
+                    Process process = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(out).start();
+
+                    process.getOutputStream().close();
+
+                    if (!process.waitFor(30, TimeUnit.SECONDS))
+                    {
+                        process.destroyForcibly();
+                    }
+                    else if (process.exitValue() == 0)
+                    {
+                        for (String line : Files.readAllLines(out.toPath(), StandardCharsets.UTF_8))
+                        {
+                            changedNames.add(line.substring(line.lastIndexOf('/') + 1));
+                        }
+
+                        if (i == 0) i++;  // dev named the whole branch; HEAD would add nothing
+                    }
+                }
+                finally
+                {
+                    out.delete();
+                }
+            }
+            catch (Exception e)
+            {
+                // no git: the groups then come in the scan's order
+            }
+        }
+
+        return changedNames;
+    }
+
+    private static boolean touches(CopyScan.Group g, Set<String> changed)
+    {
+        for (String place : g.places) if (changed.contains(place.substring(0, place.indexOf(':')))) return true;
+
+        return false;
+    }
+
+    /** The listed groups, those with a copy in one of the `changed` files first and marked, then the rest. */
+    static String mineFirst(Map<String, CopyScan.Group> lines, Set<String> changed)
+    {
+        List<String> mine = new ArrayList<>();
+        List<String> rest = new ArrayList<>();
+
+        for (Map.Entry<String, CopyScan.Group> e : lines.entrySet())
+        {
+            boolean here = touches(e.getValue(), changed);
+
+            (here ? mine : rest).add((here ? "(in a file you changed) " : "") + e.getKey());
+        }
+
+        mine.addAll(rest);
+
+        return String.join("\n  ", mine);
     }
 
     /**
@@ -206,7 +299,7 @@ public class testNoNewCopies
             now.get(g.key()).add(g);
         }
 
-        List<String> rose = new ArrayList<>();
+        Map<String, CopyScan.Group> rose = new LinkedHashMap<>();
         List<String> fell = new ArrayList<>();
 
         Set<String> keys = new TreeSet<>(now.keySet());
@@ -234,7 +327,7 @@ public class testNoNewCopies
             {
                 if (i >= was.size())
                 {
-                    rose.add("NEW " + here.get(i).entry() + " in " + here.get(i).places);
+                    rose.put("NEW " + here.get(i).entry() + " in " + here.get(i).places, here.get(i));
                 }
                 else if (i >= here.size())
                 {
@@ -242,7 +335,8 @@ public class testNoNewCopies
                 }
                 else if (here.get(i).tokens > was.get(i))
                 {
-                    rose.add("GREW from " + was.get(i) + ": " + here.get(i).entry() + " in " + here.get(i).places);
+                    rose.put("GREW from " + was.get(i) + ": " + here.get(i).entry() + " in " + here.get(i).places,
+                        here.get(i));
                 }
                 else if (here.get(i).tokens < was.get(i))
                 {
@@ -251,9 +345,12 @@ public class testNoNewCopies
             }
         }
 
-        assertTrue(rose.isEmpty() && found.size() <= GROUPS_ALLOWED,
-            "copies: there are " + found.size() + " groups of 60 or more copied tokens, against " + GROUPS_ALLOWED
-            + " pinned.  These are new or longer than pinned:\n  " + String.join("\n  ", rose) + "\n" + ADVICE);
+        if (!rose.isEmpty() || found.size() > GROUPS_ALLOWED)
+        {
+            fail("copies: there are " + found.size() + " groups of 60 or more copied tokens, against " + GROUPS_ALLOWED
+                + " pinned.  These are new or longer than pinned, those with a copy in a file changed on this branch"
+                + " first:" + "\n" + "  " + mineFirst(rose, changedFiles()) + "\n" + ADVICE);
+        }
 
         assertTrue(fell.isEmpty() && found.size() == GROUPS_ALLOWED,
             "copies: " + found.size() + " groups remain, fewer than the " + GROUPS_ALLOWED + " recorded.  Lower "
@@ -294,6 +391,35 @@ public class testNoNewCopies
         shorter.put("org/x/two/B.java", source("two", "B", "omega", 2, 8, ""));
 
         assertEquals(CopyScan.scan(shorter).size(), 0, "a run under 60 tokens is not a copy");
+    }
+
+    /**
+     * The failure message names first the group with a copy in a file the branch changed.
+     *
+     * MUTATION: listing the groups in scan order, not changed ones first, fails this.
+     */
+    @Test
+    public void testTheMessageNamesTheChangedFilesGroupFirst()
+    {
+        Map<String, String> sources = new LinkedHashMap<>();
+
+        for (String c : new String[] {"A", "B", "C", "D"})
+        {
+            String text = source(c.toLowerCase(), c, c, 1, 12, "");
+
+            sources.put(c + ".java", c.compareTo("C") < 0 ? text : text.replace(" + ", " - "));
+        }
+
+        Map<String, CopyScan.Group> lines = new LinkedHashMap<>();
+
+        for (CopyScan.Group g : CopyScan.scan(sources)) lines.put("NEW " + g.entry() + " in " + g.places, g);
+
+        assertEquals(lines.size(), 2, "two groups of copies");
+
+        String text = mineFirst(lines, new HashSet<>(Arrays.asList("D.java")));
+
+        assertTrue(text.startsWith("(in a file you changed) NEW C:1,D:1"), "the changed file's group first: " + text);
+        assertTrue(text.contains("\n  NEW A:1,B:1"), "then the other: " + text);
     }
 
     /** A class with one method of `statements` statements of 6 tokens each, and 6 more around them. */

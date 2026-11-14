@@ -3,6 +3,7 @@ package org.traincontrol.automationui;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagramComponent;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -385,7 +386,7 @@ public class GraphReducer
      *        destination hop is refused; the START is exempt, as in the build.
      */
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
-        Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred)
+        Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred)
     {
         return findPath(from, to, mayTurn, mustTurn, barred, Collections.<TileKey>emptySet());
     }
@@ -401,7 +402,7 @@ public class GraphReducer
      * @return the path, or null when there is none
      */
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
-        Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
+        Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
     {
         return findPath(from, to, mayTurn, mustTurn, barred, closed, null);
     }
@@ -413,7 +414,7 @@ public class GraphReducer
      *        to start facing every way
      */
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
-        Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred, Set<TileKey> closed,
+        Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed,
         Set<Side> startArrivals)
     {
         if (!points.containsKey(from) || !points.containsKey(to)) return null;
@@ -428,7 +429,7 @@ public class GraphReducer
         Map<String, TileKey> tileOf = new LinkedHashMap<>();
         Map<String, Side> sideOf = new LinkedHashMap<>();
 
-        java.util.ArrayDeque<String> frontier = new java.util.ArrayDeque<>();
+        ArrayDeque<String> frontier = new ArrayDeque<>();
 
         for (Side arrival : startArrivals == null ? Collections.<Side>singleton(null) : startArrivals)
         {
@@ -515,7 +516,7 @@ public class GraphReducer
      * Whether a square refuses trains arriving by a given side (OB-120), as `AutonomyBuilder.arrivalAllowed` does.  A
      * null side is the starting square, never barred.
      */
-    private boolean refusesArrival(java.util.Map<TileKey, Set<Side>> barred, TileKey tile, Side by)
+    private boolean refusesArrival(Map<TileKey, Set<Side>> barred, TileKey tile, Side by)
     {
         if (by == null || barred == null || barred.isEmpty()) return false;
 
@@ -530,7 +531,7 @@ public class GraphReducer
      */
     private Set<Side> onwardSides(TileKey tile, Side arrival)
     {
-        Set<Side> out = new java.util.LinkedHashSet<>();
+        Set<Side> out = new LinkedHashSet<>();
 
         for (TileGraph.Exit exit : graph.exits(tile, arrival))
         {

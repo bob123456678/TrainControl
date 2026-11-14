@@ -41,13 +41,11 @@ public class testTheAutonomyMenuLinksItsDocumentation
         Display.needed("the menu is part of the window, and the window needs a display");
 
         // BEFORE init, which opens whatever the layout preference names (OB-111).
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("single-switch");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         for (int pass = 0; pass < 8; pass++) SwingUtilities.invokeAndWait(() -> { });
     }

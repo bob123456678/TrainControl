@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.IdentityHashMap;
+import java.util.Objects;
 import org.traincontrol.base.Locomotive;
 
 /**
@@ -110,19 +112,19 @@ public final class HomeStaging
      * `coveredAtStart` is the railway before the plan.  Set before every expansion: greedy keeps it as it goes, A*
      * rebuilds it from the chain of moves.
      */
-    private Map<Locomotive, List<Edge>> movedAlong = new java.util.HashMap<>();
+    private Map<Locomotive, List<Edge>> movedAlong = new HashMap<>();
 
     /** A train's body at a square, by the square, the train and the road the plan moved it along (OB-294). */
     private final Map<List<Object>, Map<String, Integer>> bodies = new HashMap<>();
 
     /** What the greedy pass left in `movedAlong`, for A* to start from. */
-    private Map<Locomotive, List<Edge>> greedyMovedAlong = new java.util.HashMap<>();
+    private Map<Locomotive, List<Edge>> greedyMovedAlong = new HashMap<>();
 
     /** The covering each moved train would leave, by train and route, so a route is walked once per search. */
-    private final Map<List<Edge>, Map<Edge, Locomotive>> coveredByAMove = new java.util.IdentityHashMap<>();
+    private final Map<List<Edge>, Map<Edge, Locomotive>> coveredByAMove = new IdentityHashMap<>();
 
     /** The same, in places. */
-    private final Map<List<Edge>, Map<String, Locomotive>> placesByAMove = new java.util.IdentityHashMap<>();
+    private final Map<List<Edge>, Map<String, Locomotive>> placesByAMove = new IdentityHashMap<>();
 
 
     /** Stations with zero incoming edges - hand-staged launch pads; see snapshot. */
@@ -222,7 +224,7 @@ public final class HomeStaging
         Set<Locomotive> paused = new HashSet<>();
         List<Locomotive> pausedAway = new ArrayList<>();
 
-        for (Locomotive l : new java.util.LinkedHashSet<>(occupancy.values()))
+        for (Locomotive l : new LinkedHashSet<>(occupancy.values()))
         {
             if (!l.isAutonomyPaused()) continue;
 
@@ -459,7 +461,7 @@ public final class HomeStaging
         List<Locomotive> unreachable = new ArrayList<>();
 
         // One sentence per fact, per locomotive, for the log (FR-078).
-        Map<Locomotive, List<String>> reasons = new java.util.LinkedHashMap<>();
+        Map<Locomotive, List<String>> reasons = new LinkedHashMap<>();
 
         for (Locomotive l : this.start.values())
         {
@@ -676,7 +678,7 @@ public final class HomeStaging
 
         if (misplaced(state) == 0) return plan;
 
-        Map<Locomotive, List<Edge>> greedyRoutes = new java.util.HashMap<>(this.movedAlong);
+        Map<Locomotive, List<Edge>> greedyRoutes = new HashMap<>(this.movedAlong);
 
         // A SHARE OF THE BUDGET EACH (OB-230): shortest plan from the railway as it stands, from where greedy stopped,
         // then any plan; thirds if greedy moved something, else halves (the first two would search the same state).
@@ -686,7 +688,7 @@ public final class HomeStaging
 
         // From the railway as it stands first (OB-413): when it finishes it is the shortest plan, at a fraction of the
         // cost of searching from greedy's arrangement.
-        this.greedyMovedAlong = new java.util.HashMap<>();
+        this.greedyMovedAlong = new HashMap<>();
 
         List<Move> fromTheStart = astar(new LinkedHashMap<>(this.start), share, 1);
 
@@ -699,7 +701,7 @@ public final class HomeStaging
 
             List<Move> rest = astar(state, 2 * share, 1);
 
-            this.greedyMovedAlong = new java.util.HashMap<>();
+            this.greedyMovedAlong = new HashMap<>();
 
             if (rest != null)
             {
@@ -723,7 +725,7 @@ public final class HomeStaging
         List<Move> plan = new ArrayList<>();
 
         // Nothing has moved yet (OB-228).
-        this.movedAlong = new java.util.HashMap<>();
+        this.movedAlong = new HashMap<>();
 
         boolean progress = true;
 
@@ -773,7 +775,7 @@ public final class HomeStaging
         // The routes each arrangement's moved trains came by, kept with it: the same squares with different tails are
         // different arrangements (parked the short way a train lies across the run another needs).
         Map<String, Map<Locomotive, List<Edge>>> routesOf = new HashMap<>();
-        Map<Locomotive, List<Edge>> startRoutes = new java.util.HashMap<>(this.greedyMovedAlong);
+        Map<Locomotive, List<Edge>> startRoutes = new HashMap<>(this.greedyMovedAlong);
 
         String startKey = tailKey(from, startRoutes);
 
@@ -881,7 +883,7 @@ public final class HomeStaging
                     Map<Point, Locomotive> next = new LinkedHashMap<>(current);
                     apply(next, l, to);
 
-                    Map<Locomotive, List<Edge>> nextRoutes = new java.util.HashMap<>(this.movedAlong);
+                    Map<Locomotive, List<Edge>> nextRoutes = new HashMap<>(this.movedAlong);
 
                     nextRoutes.put(l, path);
 
@@ -994,9 +996,9 @@ public final class HomeStaging
             // By name, not as the railway shuffles them: `Layout.getNeighbors` shuffles deliberately and this returns
             // the FIRST clear route, so a plan would be READY on one press and NO_PLAN_FOUND on the next.  Ordered
             // here, as getNeighbors is shared by every tier.
-            List<Edge> outward = new java.util.ArrayList<>(this.layout.getNeighbors(current.at));
+            List<Edge> outward = new ArrayList<>(this.layout.getNeighbors(current.at));
 
-            java.util.Collections.sort(outward, (one, two) -> one.getName().compareTo(two.getName()));
+            Collections.sort(outward, (one, two) -> one.getName().compareTo(two.getName()));
 
             for (Edge e : outward)
             {
@@ -1264,7 +1266,7 @@ public final class HomeStaging
     private static boolean liesAcross(Edge edge, Locomotive train, Map<Edge, Locomotive> covered,
         Map<String, Locomotive> places)
     {
-        if (places == null) places = java.util.Collections.emptyMap();
+        if (places == null) places = Collections.emptyMap();
 
         if (covered.containsKey(edge)) return true;
 
@@ -1498,7 +1500,7 @@ public final class HomeStaging
         // AS THE SEARCH BEGINS: nothing moved yet, so no train carries a route that brought it here
         Map<Locomotive, List<Edge>> was = this.movedAlong;
 
-        this.movedAlong = new java.util.HashMap<>();
+        this.movedAlong = new HashMap<>();
 
         try
         {
@@ -1607,7 +1609,7 @@ public final class HomeStaging
      */
     private Map<Locomotive, List<String>> whatCanBeSeen()
     {
-        Map<Locomotive, List<String>> out = new java.util.LinkedHashMap<>();
+        Map<Locomotive, List<String>> out = new LinkedHashMap<>();
 
         for (Locomotive l : this.start.values())
         {
@@ -1666,7 +1668,7 @@ public final class HomeStaging
 
         for (Point copy : all)
         {
-            if (java.util.Objects.equals(copy.getCopyFacing(), home.getCopyFacing())) facing.add(copy);
+            if (Objects.equals(copy.getCopyFacing(), home.getCopyFacing())) facing.add(copy);
         }
 
         return facing.isEmpty() ? all : facing;
@@ -1782,7 +1784,7 @@ public final class HomeStaging
         if (track.getS88() != null)
         {
             for (Point sibling : this.pointsBySensor.getOrDefault(track.getS88(),
-                java.util.Collections.<Point>emptyList()))
+                Collections.<Point>emptyList()))
             {
                 // A copy that is both a block sibling and a sensor sibling is asked once.
                 if (!sibling.equals(track) && !out.contains(sibling)) out.add(sibling);
@@ -1886,7 +1888,7 @@ public final class HomeStaging
 
         // A home set facing a way (OB-282) is met only by a copy facing that way; not the same arrival side, which
         // includes the turning twin.
-        return !home.isHomeFacingFixed() || java.util.Objects.equals(home.getCopyFacing(), where.getCopyFacing());
+        return !home.isHomeFacingFixed() || Objects.equals(home.getCopyFacing(), where.getCopyFacing());
     }
 
     /** Whether the run turns a train round when a leg ends here (`ALWAYS_REVERSE`: a terminus or reversing point). */

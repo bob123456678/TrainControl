@@ -103,6 +103,20 @@ public class LayoutPopupUI extends PositionAwareJFrame
         return this.grid != null && this.grid.captionsAreAsBuilt();
     }
 
+    /** The grid on screen, or null before the first drawing. */
+    LayoutGrid grid()
+    {
+        return this.grid;
+    }
+
+    /** Whether the model holds this window's page as a new object: a sync from a local folder reads every page again. */
+    boolean showsAPageReadAgain()
+    {
+        LayoutDiagram now = this.parent.getModel().getLayout(this.layout.getName());
+
+        return now != null && now != this.layout;
+    }
+
     public String getLayoutTitle()
     {
         return this.layout.getName();

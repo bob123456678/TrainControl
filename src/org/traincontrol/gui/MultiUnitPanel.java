@@ -1,5 +1,7 @@
 package org.traincontrol.gui;
 
+import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -13,7 +15,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
@@ -22,6 +26,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 
 /**
@@ -34,9 +39,8 @@ final class MultiUnitPanel extends JPanel
     private final boolean readOnly;
     private final JPanel scrollPanel = new JPanel(new GridBagLayout());
     private final JPanel headingPanel = new JPanel(new GridBagLayout());
-    private final JPanel top = new JPanel(new java.awt.BorderLayout(6, 0));
-    private final JLabel filterLabel = org.traincontrol.gui.widgets.UiStyle.label(
-        org.traincontrol.gui.widgets.UiStyle.withoutColon(I18n.t("loc.ui.filterList")));
+    private final JPanel top = new JPanel(new BorderLayout(6, 0));
+    private final JLabel filterLabel = UiStyle.label(UiStyle.withoutColon(I18n.t("loc.ui.filterList")));
     private final JTextField filterField = new JTextField();
     private final List<JPanel> rowPanels = new ArrayList<>();
     private final JScrollPane scrollPane = new JScrollPane(scrollPanel);
@@ -82,24 +86,23 @@ final class MultiUnitPanel extends JPanel
         gbc.weightx = 1;
 
         top.setOpaque(false);
-        top.add(filterLabel, java.awt.BorderLayout.WEST);
-        top.add(filterField, java.awt.BorderLayout.CENTER);
+        top.add(filterLabel, BorderLayout.WEST);
+        top.add(filterField, BorderLayout.CENTER);
         add(top, gbc);
 
-        JLabel nameLabel = org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.labelLocomotiveName"));
+        JLabel nameLabel = UiStyle.label(I18n.t("loc.ui.labelLocomotiveName"));
 
-        JLabel multiplierLabel = org.traincontrol.gui.widgets.UiStyle.label(
-            I18n.t("loc.ui.labelSpeedMultiplierPercent"));
+        JLabel multiplierLabel = UiStyle.label(I18n.t("loc.ui.labelSpeedMultiplierPercent"));
         multiplierLabel.setToolTipText(I18n.t("loc.ui.tooltip.adjustRelativeSpeed"));
 
-        JLabel reverseLabel = org.traincontrol.gui.widgets.UiStyle.label(I18n.t("loc.ui.labelReverse"));
+        JLabel reverseLabel = UiStyle.label(I18n.t("loc.ui.labelReverse"));
         reverseLabel.setToolTipText(I18n.t("loc.ui.tooltip.swapDirection"));
 
         // A check box paints its box inside its own left inset: the headings over the two box columns start there too
         int box = new JCheckBox().getInsets().left;
 
-        nameLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, box, 0, 0));
-        reverseLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, box, 0, 0));
+        nameLabel.setBorder(BorderFactory.createEmptyBorder(0, box, 0, 0));
+        reverseLabel.setBorder(BorderFactory.createEmptyBorder(0, box, 0, 0));
 
         // Reverse is as wide as its heading, in every row, so the heading starts at the boxes and the window's least width
         // counts no empty room beside them
@@ -144,7 +147,7 @@ final class MultiUnitPanel extends JPanel
     /** Says what the list is for, as an (i) at the end of the filter's row. */
     void setNote(String note)
     {
-        top.add(org.traincontrol.gui.InfoMark.label(note), java.awt.BorderLayout.EAST);
+        top.add(InfoMark.label(note), BorderLayout.EAST);
     }
 
     /** How many pixels wider the list must be to show every column beside its scroll bar (negative: to spare). */
@@ -160,8 +163,8 @@ final class MultiUnitPanel extends JPanel
      * Lays out a heading or a row in the same four columns: name, slider, its value, Reverse.  A null `value` lets the
      * slider's column take the value's room.
      */
-    private void columns(JPanel panel, java.awt.Component name, java.awt.Component slider,
-        java.awt.Component value, java.awt.Component reverse)
+    private void columns(JPanel panel, Component name, Component slider,
+        Component value, Component reverse)
     {
         GridBagConstraints c = new GridBagConstraints();
 
@@ -282,7 +285,7 @@ final class MultiUnitPanel extends JPanel
     /** Lays out the heading and the rows that match the filter, or says none do. */
     private void render()
     {
-        String text = filterField.getText().toLowerCase(java.util.Locale.ROOT);
+        String text = filterField.getText().toLowerCase(Locale.ROOT);
 
         scrollPanel.removeAll();
 
@@ -302,7 +305,7 @@ final class MultiUnitPanel extends JPanel
         {
             JCheckBox checkBox = (JCheckBox) rowPanel.getComponent(0);
 
-            if (checkBox.getText().toLowerCase(java.util.Locale.ROOT).contains(text))
+            if (checkBox.getText().toLowerCase(Locale.ROOT).contains(text))
             {
                 scrollGbc.gridy++;
                 scrollPanel.add(rowPanel, scrollGbc);

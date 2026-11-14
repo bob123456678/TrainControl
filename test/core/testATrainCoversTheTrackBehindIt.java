@@ -973,7 +973,8 @@ public class testATrainCoversTheTrackBehindIt
         String ui = SourceOf.declaration("    void repaintTheWashWhereItChanged(");
 
         // Both marks are compared by one helper, asked once for each.
-        String diff = SourceOf.declaration("java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> squaresWhoseRoadsChanged(");
+        String diff = SourceOf.plain(SourceOf.declaration(
+            "java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> squaresWhoseRoadsChanged("));
 
         assertTrue(ui.contains("changed = squaresWhoseRoadsChanged(before, now)"),
             "the covered squares are no longer compared road by road, so a train that moves leaves its line behind");
@@ -991,7 +992,7 @@ public class testATrainCoversTheTrackBehindIt
 
         // AND THE GRAY IS DIFFED IN THE SAME PASS, both directions, BY ROAD (OB-208): a double curve on a covered edge
         // fades only its arc, so a square can stay gray while what it fades changes; compared as the line is.
-        assertTrue(diff.contains("new java.util.HashSet<>(was.keySet())"),
+        assertTrue(diff.contains("new HashSet<>(was.keySet())"),
             "the grey diff no longer starts from the old set, so a square that has stopped being blocked"
             + " is not redrawn - the grey stays on track nothing blocks, on every square once a train moves");
 

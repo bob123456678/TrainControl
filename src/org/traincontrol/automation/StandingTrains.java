@@ -206,7 +206,7 @@ final class StandingTrains
      */
     private List<Edge> whatItHasDriven(List<Edge> path, Point head)
     {
-        List<Edge> driven = new java.util.ArrayList<>();
+        List<Edge> driven = new ArrayList<>();
 
         if (head == null) return driven;
 
@@ -227,7 +227,7 @@ final class StandingTrains
         }
 
         // NO COPY OF IT MATCHED BY IDENTITY, so ask by place - the later match, as `cameFromAlong` does.
-        List<Edge> byPlace = new java.util.ArrayList<>();
+        List<Edge> byPlace = new ArrayList<>();
 
         for (int at = 0; at < path.size(); at++)
         {
@@ -235,14 +235,14 @@ final class StandingTrains
 
             if (leg.getStart() == null || leg.getEnd() == null) break;
 
-            if (leg.getEnd().isSamePlaceAs(head)) byPlace = new java.util.ArrayList<>(path.subList(0, at + 1));
+            if (leg.getEnd().isSamePlaceAs(head)) byPlace = new ArrayList<>(path.subList(0, at + 1));
         }
 
         if (!byPlace.isEmpty()) return byPlace;
 
         // The head is not on the path (a milestone from an earlier run, or a replaced path): nothing can be said about
         // its way, so the caller keeps what the Point itself records.
-        return new java.util.ArrayList<>();
+        return new ArrayList<>();
     }
 
     /**

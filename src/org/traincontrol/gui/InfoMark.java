@@ -4,6 +4,8 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.ToolTipManager;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 
 /**
  * The "there is a reason, hover me" mark, for any window: an image rather than a character, as U+24D8 has no glyph in
@@ -35,9 +37,8 @@ public final class InfoMark
 
         try
         {
-            java.awt.image.BufferedImage read = javax.imageio.ImageIO.read(url);
-            java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(read.getWidth(), read.getHeight(),
-                java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            BufferedImage read = javax.imageio.ImageIO.read(url);
+            BufferedImage out = new BufferedImage(read.getWidth(), read.getHeight(), BufferedImage.TYPE_INT_ARGB);
 
             int[] pixels = read.getRGB(0, 0, read.getWidth(), read.getHeight(), null, 0, read.getWidth());
 
@@ -81,7 +82,7 @@ public final class InfoMark
         mark.addMouseListener(new java.awt.event.MouseAdapter()
         {
             @Override
-            public void mouseEntered(java.awt.event.MouseEvent e)
+            public void mouseEntered(MouseEvent e)
             {
                 if (hovered == null) normal = ToolTipManager.sharedInstance().getDismissDelay();
 
@@ -90,14 +91,14 @@ public final class InfoMark
             }
 
             @Override
-            public void mouseExited(java.awt.event.MouseEvent e)
+            public void mouseExited(MouseEvent e)
             {
                 leave(mark);
             }
 
             // Later, as Swing's own press handler hides the tooltip and may run after this one
             @Override
-            public void mousePressed(java.awt.event.MouseEvent e)
+            public void mousePressed(MouseEvent e)
             {
                 javax.swing.SwingUtilities.invokeLater(() -> showNow(mark, e.getX(), e.getY()));
             }
@@ -125,7 +126,7 @@ public final class InfoMark
 
         try
         {
-            tips.mouseMoved(new java.awt.event.MouseEvent(mark, java.awt.event.MouseEvent.MOUSE_MOVED,
+            tips.mouseMoved(new MouseEvent(mark, MouseEvent.MOUSE_MOVED,
                 System.currentTimeMillis(), 0, x, y, 0, false));
         }
         finally

@@ -11,6 +11,8 @@ import java.awt.event.MouseMotionAdapter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.swing.BorderFactory;
@@ -140,6 +142,19 @@ public final class LayoutLabel extends JLabel
         return this.spacer;
     }
 
+    /** A whole square before its picture is in: a picture still decoding leaves a blank, not a column closed up. */
+    @Override
+    public java.awt.Dimension getPreferredSize()
+    {
+        java.awt.Dimension shown = super.getPreferredSize();
+        java.awt.Insets border = getInsets();
+
+        if (isPreferredSizeSet()) return shown;
+
+        return new java.awt.Dimension(Math.max(shown.width, size + border.left + border.right),
+            Math.max(shown.height, size + border.top + border.bottom));
+    }
+
     public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit)
     {
         this(c, parent, size, tcUI, edit, null);
@@ -156,14 +171,9 @@ public final class LayoutLabel extends JLabel
         this.edit = edit;
         
         this.setSize(size, size);
-        // This will ensure that long text labels don't mess up the grid layout - no longer needed when using gridbaglayout
-        /*this.setMinimumSize(new Dimension(size, size));
-        this.setPreferredSize(new Dimension(size, size));
-        this.setMaximumSize(new Dimension(size, size));*/
         this.setForeground(Color.white);
         
         COUNT_CONSTRUCTED.incrementAndGet();
-        this.setImage(false);
         
         // Edit mode callback
         if (edit)
@@ -552,6 +562,9 @@ public final class LayoutLabel extends JLabel
         {
             this.setIcon(new EmptyIcon(size, size)); 
         }
+
+        // Last: a picture already decoded goes up at once, over the blank stand-in above.
+        this.setImage(false);
     }
     
     /**
@@ -677,28 +690,16 @@ public final class LayoutLabel extends JLabel
                 // resting).
                 if (!update) this.tcUI.tileDecodeStarted();
 
-                // Decode/scale off the EDT, cache it, then run the (now cache-hit) Swing work on the EDT.
-                this.tcUI.getTileImageLoader().submit(() ->
+                // Then the (now cache-hit) Swing work on the EDT, failed decode or not: an uncounted tile would keep
+                // the diagram waiting forever.
+                decodeOnce(this.component, size, edit, this.tcUI).whenComplete((img, failed) ->
                 {
                     try
                     {
-                        Image img = this.component.getImage(size, edit);
-
-                        if (img != null)
-                        {
-                            imageCache.putIfAbsent(key, img);
-                        }
-                    }
-                    catch (IOException ex)
-                    {
-                        this.tcUI.getModel().log(ex.getMessage());
+                        setImageOnEDT(update);
                     }
                     finally
                     {
-                        // In a finally: a tile that fails to decode still has to stop being counted, or the diagram
-                        // waits for it forever.
-                        setImageOnEDT(update);
-
                         if (!update) this.tcUI.tileDecodeFinished();
                     }
                 });
@@ -708,6 +709,86 @@ public final class LayoutLabel extends JLabel
         }
 
         setImageOnEDT(update);
+    }
+
+    /** One icon per picture, shared by every square showing it; event thread only. */
+    private static final Map<Image, ImageIcon> ICONS = new java.util.WeakHashMap<>();
+
+    /** The decodes under way, by cache key: two hundred straight squares wait on one decode. */
+    private static final Map<String, CompletableFuture<Void>> DECODING = new ConcurrentHashMap<>();
+
+    /**
+     * Puts the picture `c` draws at `size` in the image cache, off the event thread, unless it is there or on its way;
+     * completes when that is settled, failed or not (a failure is logged).
+     */
+    static CompletableFuture<Void> decodeOnce(LayoutDiagramComponent c, int size, boolean edit, TrainControlUI tcUI)
+    {
+        // The state read once: decoded from the square at decode time, a sensor cleared meanwhile would leave its clear
+        // picture under the occupied key for the session.
+        final String name = c.getImageName(size, edit);
+        final String key = c.getImageKey(name, size);
+
+        return DECODING.computeIfAbsent(key, k -> CompletableFuture.runAsync(() ->
+        {
+            try
+            {
+                if (TrainControlUI.getImageCache().get(k) == null)
+                {
+                    Image img = c.getImage(name, size);
+
+                    if (img != null) TrainControlUI.getImageCache().putIfAbsent(k, img);
+                }
+            }
+            catch (IOException ex)
+            {
+                tcUI.getModel().log(ex.getMessage());
+            }
+            finally
+            {
+                // After the cache has it: a square asking in between finds it there or finds this decode.
+                DECODING.remove(k);
+            }
+        }, tcUI.getTileImageLoader()));
+    }
+
+    /**
+     * Puts every picture the main window shows of `page` at `size` in the image cache; completes when they are in.  A
+     * page being reloaded or edited meanwhile completes at once: its squares decode what they miss as they are drawn.
+     */
+    static CompletableFuture<Void> decodePage(org.traincontrol.base.LayoutDiagram page, int size, TrainControlUI tcUI)
+    {
+        java.util.List<CompletableFuture<Void>> pending = new java.util.ArrayList<>();
+
+        try
+        {
+            for (LayoutDiagramComponent c : page.getAll())
+            {
+                if (!c.isText() && TrainControlUI.getImageCache().get(c.getImageKey(size, false)) == null)
+                {
+                    pending.add(decodeOnce(c, size, false, tcUI));
+                }
+            }
+        }
+        catch (RuntimeException pageChanged)
+        {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return CompletableFuture.allOf(pending.toArray(new CompletableFuture<?>[0]));
+    }
+
+    /** Decodes every picture the pages show at `size` ahead of their first draw, off the event thread. */
+    static void warmUp(TrainControlUI tcUI, int size)
+    {
+        tcUI.getTileImageLoader().execute(() ->
+        {
+            for (String name : tcUI.getModel().getLayoutList())
+            {
+                org.traincontrol.base.LayoutDiagram page = tcUI.getModel().getLayout(name);
+
+                if (page != null) decodePage(page, size, tcUI);
+            }
+        });
     }
 
     /**
@@ -722,7 +803,10 @@ public final class LayoutLabel extends JLabel
     private void setImageOnEDT(boolean update)
     {
         COUNT_APPLIED.incrementAndGet();
-        javax.swing.SwingUtilities.invokeLater(() ->
+
+        // At once on the event thread, so a window built there paints its pictures with its first paint; a picture
+        // that was still decoding arrives from the pool and is posted.
+        Runnable apply = () ->
         {
             if (this.component != null)
             {            
@@ -736,17 +820,20 @@ public final class LayoutLabel extends JLabel
                 }
                 else
                 {
+                    // One reading of the state names the key, the picture and what `updateImage` compares with
+                    final String shown = this.component.getImageName(size, edit);
+
                     try
                     {
                         // Cache icons in memory to speed up rendering
                         Map<String,Image> imageCache = TrainControlUI.getImageCache();
-                        String key = this.component.getImageKey(size, edit);
+                        String key = this.component.getImageKey(shown, size);
                         
                         Image img;
                         
                         if (!imageCache.containsKey(key))
                         {
-                            img = this.component.getImage(size, edit);
+                            img = this.component.getImage(shown, size);
 
                             // The cache is a ConcurrentHashMap, which rejects null values.
                             // getImage() never returns null today (it throws instead), but guard
@@ -762,9 +849,7 @@ public final class LayoutLabel extends JLabel
                         }
                         
                         boolean hadIcon = (this.getIcon() != null);
-                        lastIcon = new javax.swing.ImageIcon(
-                            img
-                        );
+                        lastIcon = ICONS.computeIfAbsent(img, ImageIcon::new);
 
                         // A flash that is up is given up whenever the picture is replaced: its timer holds the icon it
                         // captured and would draw the tile as it was.
@@ -827,7 +912,7 @@ public final class LayoutLabel extends JLabel
                         this.tcUI.getModel().log(ex.getMessage());
                     }
 
-                    this.imageName = component.getImageName(size, edit);
+                    this.imageName = shown;
                 }
                 
                 if (update)
@@ -851,7 +936,10 @@ public final class LayoutLabel extends JLabel
                     }
                 }
             }
-        });
+        };
+
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) apply.run();
+        else javax.swing.SwingUtilities.invokeLater(apply);
     }
     
     /**
@@ -1832,6 +1920,15 @@ public final class LayoutLabel extends JLabel
         return annotation == null ? null : annotation.trackCentreOf(overlay.trainSides(), getWidth(), getHeight());
     }
 
+
+    /**
+     * Reads the state again once the grid has registered this square for its device's changes, where the picture went
+     * up in the constructor: a change in between reached neither.
+     */
+    void readAgainOnceRegistered()
+    {
+        if (this.imageName != null) updateImage(false);
+    }
 
     /** Refreshes the tile's image. */
     public void updateImage(boolean highlight)

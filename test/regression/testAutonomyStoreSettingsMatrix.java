@@ -17,7 +17,9 @@ import java.util.function.BiFunction;
 import static org.testng.Assert.*;
 import org.json.JSONObject;
 import org.testng.annotations.Test;
+import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.AutonomyCompanionStore;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -361,6 +363,97 @@ public class testAutonomyStoreSettingsMatrix
 
                 assertEquals(setting.read.apply(reloaded, was), expected,
                     setting + " was not written to the file, or was not read back from it");
+            }
+            finally
+            {
+                Trees.delete(folder);
+            }
+        }
+    }
+
+    /** A non-default value for every key of a station's setup, by key; facing and homeFacing live outside the constant. */
+    public static final Map<String, Object> STATION_KEY_VALUES = new LinkedHashMap<>();
+
+    static
+    {
+        STATION_KEY_VALUES.put("loc", new JSONObject().put("name", "BR 218"));
+        STATION_KEY_VALUES.put("active", false);
+        STATION_KEY_VALUES.put("maxTrainLength", 7);
+        STATION_KEY_VALUES.put("speedMultiplier", 0.5);
+        STATION_KEY_VALUES.put("priority", 3);
+        STATION_KEY_VALUES.put("home", "BR 232");
+        STATION_KEY_VALUES.put("excludedLocs", new org.json.JSONArray().put("BR 03"));
+        STATION_KEY_VALUES.put("excludedLocsMode", "only");
+        STATION_KEY_VALUES.put("arrivedFrom", "N");
+        STATION_KEY_VALUES.put("arrivedAlong", new org.json.JSONArray().put(new org.json.JSONArray().put("a rail")));
+        STATION_KEY_VALUES.put(AutonomyBuilder.FACING, "W");
+        STATION_KEY_VALUES.put(AutonomyBuilder.HOME_FACING, "W");
+    }
+
+    /** Every per-station key the session captures, plus facing and homeFacing, read off the session's own list. */
+    @SuppressWarnings("unchecked")
+    public static Set<String> stationKeys() throws Exception
+    {
+        Field constant = AutonomySession.class.getDeclaredField("POINT_OPERATIONAL_KEYS");
+
+        constant.setAccessible(true);
+
+        Set<String> keys = new LinkedHashSet<>((List<String>) constant.get(null));
+
+        keys.add(AutonomyBuilder.FACING);
+        keys.add(AutonomyBuilder.HOME_FACING);
+
+        return keys;
+    }
+
+    /**
+     * Every per-station key `AutonomySession` captures (and facing and homeFacing) is written to the file and read back,
+     * one row each, the rows driven by the session's own list: a key added there without a row here fails.
+     *
+     * MUTATION: adding a key to `AutonomySession.POINT_OPERATIONAL_KEYS` with no row fails this; so does a store that
+     * writes or reads a configuration's `points` object without its stations' settings.
+     */
+    @Test
+    public void testEveryStationKeySurvivesASaveAndLoad() throws Exception
+    {
+        Set<String> keys = stationKeys();
+
+        for (String key : keys)
+        {
+            assertTrue(STATION_KEY_VALUES.containsKey(key), "the station key '" + key + "' has no row in "
+                + "STATION_KEY_VALUES: add a non-default value for it so that its save and load is checked");
+        }
+
+        TileKey was = at(4, 4);
+
+        for (String key : keys)
+        {
+            File folder = Files.createTempDirectory("tc-matrix-station").toFile();
+
+            try
+            {
+                AutonomyCompanionStore store = new AutonomyCompanionStore(folder);
+
+                store.setPageIds(pageIds());
+                store.createConfiguration(CONFIGURATION, null);
+                store.setActiveConfiguration(CONFIGURATION);
+
+                configurationPoints(store).put(was.toString(), new JSONObject().put(key, STATION_KEY_VALUES.get(key)));
+
+                store.save();
+
+                AutonomyCompanionStore reloaded = new AutonomyCompanionStore(folder);
+
+                reloaded.setPageIds(pageIds());
+                reloaded.load();
+
+                JSONObject points = reloaded.getConfiguration(CONFIGURATION).optJSONObject("points");
+                JSONObject point = points == null ? null : points.optJSONObject(was.toString());
+
+                assertNotNull(point, "the station's setup was not read back at all: " + key);
+                assertTrue(point.has(key), "the station key '" + key + "' was not written to the file, or not read back");
+                assertEquals(String.valueOf(point.get(key)), String.valueOf(STATION_KEY_VALUES.get(key)),
+                    "the station key '" + key + "' came back changed");
             }
             finally
             {

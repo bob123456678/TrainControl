@@ -38,13 +38,11 @@ public class testTheDiagramCeiling
     {
         Display.needed("the layout editor needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("single-switch");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
     }
 
     @AfterClass(alwaysRun = true)

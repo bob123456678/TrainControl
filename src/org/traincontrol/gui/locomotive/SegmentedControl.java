@@ -17,6 +17,7 @@ import javax.swing.JToggleButton;
 import javax.swing.UIManager;
 import javax.swing.plaf.basic.BasicGraphicsUtils;
 import org.traincontrol.util.ImageUtil;
+import org.traincontrol.gui.widgets.UiStyle;
 
 /**
  * Toggle buttons drawn as one rounded outline with a thin divider between segments, the chosen segment filled with the
@@ -132,7 +133,7 @@ public class SegmentedControl extends JPanel
         {
             super.updateUI();
 
-            setFont(org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT);
+            setFont(UiStyle.BUTTON_FONT);
             setBorder(null);
             setContentAreaFilled(false);
             setOpaque(false);
@@ -144,7 +145,7 @@ public class SegmentedControl extends JPanel
         {
             FontMetrics fm = getFontMetrics(getFont());
 
-            return new Dimension(fm.stringWidth(getText()) + 32, org.traincontrol.gui.widgets.UiStyle.button(new JButton(getText())).getPreferredSize().height);
+            return new Dimension(fm.stringWidth(getText()) + 32, UiStyle.button(new JButton(getText())).getPreferredSize().height);
         }
 
         @Override

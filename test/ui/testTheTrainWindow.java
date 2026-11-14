@@ -116,10 +116,16 @@ public class testTheTrainWindow
 
     private static TileKey anEmptyStationBut(TileKey not)
     {
+        return anEmptyStationWhere(each -> !each.equals(not));
+    }
+
+    /** An empty station on this page that passes the test. */
+    private static TileKey anEmptyStationWhere(java.util.function.Predicate<TileKey> also)
+    {
         for (TileKey each : session.getReducer().getPoints().keySet())
         {
             if (PAGE.equals(each.getPage()) && session.getStore().isStation(each) && session.getLocomotiveNameAt(each) == null
-                && !each.equals(not))
+                && also.test(each))
             {
                 return each;
             }
@@ -3070,8 +3076,8 @@ public class testTheTrainWindow
      * Cancel after placing over another train brings the station back as it was, as after a drop onto a train: the
      * displaced train is back in the setup and on the railway, and the placed one is off both (OB-416).
      *
-     * MUTATION: drop `rememberWhereTheyStand(named)` from `AutonomyEditorPanel.placeLocomotive`, and the displaced train
-     * ends nowhere and this fails.
+     * MUTATION: pass null for `railwayAsPictured()` in `LayoutEditor.discardAutonomyWork`, and the placed train stays on
+     * the railway and this fails.
      */
     @Test(timeOut = 180000)
     public void testCancelAfterPlacingOverAnotherTrainPutsTheStationBack() throws Exception
@@ -3114,7 +3120,7 @@ public class testTheTrainWindow
      * then Cancel, stands Z where the railway had it, not on its old setup square, which would leave the square reading
      * free under a standing train; X stays where the run left it (OB-416).
      *
-     * MUTATION: pass no `railwayBeforeTheEdit()` from `LayoutEditor.discardAutonomyWork` to the rebuild, and Z goes back
+     * MUTATION: pass no `railwayAsPictured()` from `LayoutEditor.discardAutonomyWork` to the rebuild, and Z goes back
      * to its old setup square.
      */
     @Test(timeOut = 240000)
@@ -3124,11 +3130,11 @@ public class testTheTrainWindow
     }
 
     /**
-     * The same where the run starts and ends with the editor open: Cancel goes by where the railway had Z when Place
-     * lifted it, not when the editor opened (OB-416).
+     * The same where the railway moves the trains with the editor open, which no real door can (D114): Cancel stands
+     * every train back where the railway had it when the editor opened, before the simulated run.
      *
-     * MUTATION: record where the trains stand when the editor opens instead of in `rememberWhereTheyStand`, and Z goes
-     * back to where it stood before the run.
+     * MUTATION: call `pictureTheRailway()` at the top of `LayoutEditor.discardAutonomyWork`, and X stays where the
+     * simulated run left it.
      */
     @Test(timeOut = 240000)
     public void testCancelAfterARunWithTheEditorOpenPutsTheRailwaysTrainBack() throws Exception
@@ -3155,7 +3161,7 @@ public class testTheTrainWindow
     /**
      * The same through None on the editor's Train tab, which lifts Z: Cancel stands it where the railway had it (OB-416).
      *
-     * MUTATION: pass no `railwayBeforeTheEdit()` from `LayoutEditor.discardAutonomyWork` to the rebuild, and Z goes back
+     * MUTATION: pass no `railwayAsPictured()` from `LayoutEditor.discardAutonomyWork` to the rebuild, and Z goes back
      * to its old setup square.
      */
     @Test(timeOut = 240000)
@@ -3176,15 +3182,14 @@ public class testTheTrainWindow
     }
 
     /**
-     * A train the editor's Place moved, which the railway then moved on to a third station as a run with the editor
-     * open does, stays where the railway has it at Cancel: where a train is is a fact, and standing it back where it was
-     * before the Place would leave the third station reading free under it.
+     * A train the editor's Place moved, which the railway then moved on to a third station, goes back at Cancel where it
+     * stood when the editor opened.  No real door moves a train while the editor is open (D114), so this simulates it.
      *
-     * MUTATION: return the whole record from `AutonomyEditorPanel.railwayBeforeTheEdit`, and the train goes back to
-     * where it stood before the Place.
+     * MUTATION: call `pictureTheRailway()` at the top of `LayoutEditor.discardAutonomyWork`, and the train stays on the
+     * third station.
      */
     @Test(timeOut = 240000)
-    public void testCancelLeavesATrainTheRailwayMovedSinceThePlace() throws Exception
+    public void testCancelPutsBackATrainTheRailwayMovedSinceThePlace() throws Exception
     {
         AutonomyEditorPanel panel = theEditorsPanel();
 
@@ -3201,17 +3206,7 @@ public class testTheTrainWindow
 
         try
         {
-            makeActive(name);
-
-            JMenuItem place = placeItemOn(panel, empty, name);
-
-            assertNotNull(place, "precondition: no Place " + name);
-
-            Components.onTheEventThread(() -> { place.doClick(); return null; });
-
-            assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> empty.equals(session.getStationIndex()
-                .squareOf(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name))))), 20000),
-                "precondition: Place did not move " + name + " on the railway");
+            placeFromTheMenu(panel, empty, name);
 
             final org.traincontrol.automation.Point third = aFreeCopyOf(anEmptyStationBut(square));
 
@@ -3226,8 +3221,8 @@ public class testTheTrainWindow
 
             org.traincontrol.automation.Point now = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
 
-            assertEquals(now == null ? null : now.getName(), third.getName(), "Cancel stood " + name
-                + " back where it was before the Place, though the railway had moved it on since");
+            assertEquals(now == null ? null : now.getName(), copy.getName(), "Cancel did not stand " + name
+                + " back where it stood when the editor opened");
         }
         finally
         {
@@ -3241,8 +3236,8 @@ public class testTheTrainWindow
      * The same through Clear All Locomotives: Cancel stands each lifted train where the railway had it, not on its old
      * setup square (OB-416).
      *
-     * MUTATION: drop `rememberWhereTheyStand(lifted)` from `AutonomyEditorPanel.clearAllPlacements`, and Z goes back to
-     * its old setup square.
+     * MUTATION: pass no `railwayAsPictured()` from `LayoutEditor.discardAutonomyWork` to the rebuild, and Z goes back
+     * to its old setup square.
      */
     @Test(timeOut = 240000)
     public void testCancelAfterARunAndClearAllPutsTheRailwaysTrainsBack() throws Exception
@@ -3260,8 +3255,8 @@ public class testTheTrainWindow
      * Place All Trains at Their Homes, then Cancel, stands every train back where the railway had it: the homed ones
      * too, which the door's rebuild stood on their homes (OB-416).
      *
-     * MUTATION: drop the `rememberWhereTheyStand` calls from `AutonomyEditorPanel.placeEveryTrainAtHome`, and the homed
-     * trains stay on their homes.
+     * MUTATION: pass null for `railwayAsPictured()` in `LayoutEditor.discardAutonomyWork`, and the homed trains stay on
+     * their homes.
      */
     @Test(timeOut = 240000)
     public void testCancelAfterPlaceAllAtHomePutsEveryTrainBack() throws Exception
@@ -3287,6 +3282,512 @@ public class testTheTrainWindow
         cancelTheEditor();
 
         assertEquals(standingNow(), before, "Cancel after Place All at Home left trains moved on the railway");
+    }
+
+    /** The editor's Place of this train on the square, from its menu, waited on until the railway has it there. */
+    private static void placeFromTheMenu(AutonomyEditorPanel panel, TileKey square, String name) throws Exception
+    {
+        makeActive(name);
+
+        JMenuItem place = placeItemOn(panel, square, name);
+
+        assertNotNull(place, "precondition: no Place " + name);
+
+        Components.onTheEventThread(() -> { place.doClick(); return null; });
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> square.equals(session.getStationIndex()
+            .squareOf(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name))))), 20000),
+            "precondition: Place did not move " + name + " on the railway");
+    }
+
+    /** Takes these trains off the railway alone, so none a claim stood there outlives it. */
+    private static void offTheRailway(java.util.Collection<String> trains)
+    {
+        Components.onTheEventThread(() ->
+        {
+            for (String each : trains)
+            {
+                org.traincontrol.automation.Point at = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(each));
+
+                if (at != null) model.getAutoLayout().moveLocomotive(null, at.getName(), false);
+            }
+
+            return null;
+        });
+
+        Components.settle();
+    }
+
+    /** The three ways an edit is thrown away: Cancel, a page switch's Discard, the exit's Discard. */
+    private static final String[] DISCARDS = {"Cancel", "a page switch's Discard", "the exit's Discard"};
+
+    /** Throws the edit away the given way (`DISCARDS`), answering yes, and closes the editor. */
+    private void discard(int how) throws Exception
+    {
+        java.util.List<String> asked = leave(how);
+
+        if (how > 0) assertEquals(asked.size(), 1, "precondition: " + DISCARDS[how] + " asked " + asked);
+    }
+
+    /** Leaves the editor the given way (`DISCARDS`), answering yes or Discard, and closes it; returns what it asked. */
+    private java.util.List<String> leave(int how) throws Exception
+    {
+        if (how == 0)
+        {
+            String asked = cancelTheEditor();
+
+            return asked == null ? java.util.Collections.<String>emptyList()
+                : java.util.Collections.singletonList(asked);
+        }
+
+        final LayoutEditor closing = editor;
+        final java.lang.reflect.Method settle = Reflect.method(LayoutEditor.class, "settleUnsavedWork");
+        java.util.List<String> asked;
+
+        try (support.Answering answering = support.Answering.start(
+            message -> support.Answering.press(I18n.t("layout.ui.switchDiscard"))))
+        {
+            assertTrue(Components.onTheEventThread(() -> how == 1 ? (Boolean) settle.invoke(closing)
+                : closing.maySettleBeforeExit()), DISCARDS[how] + " did not go ahead");
+
+            asked = new java.util.ArrayList<>(answering.asked());
+        }
+
+        support.FrozenEditor.dispose(closing);
+
+        editor = null;
+
+        Components.settle();
+
+        return asked;
+    }
+
+    /** Where a train stands and faces on the railway, and the setup's facing on that square. */
+    private static String standingAndFacing(String name)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automation.Point at = model.getAutoLayout().getLocomotiveLocation(
+                model.getLocByName(name));
+            TileKey sq = at == null ? null : session.getStationIndex().squareOf(at.getName());
+
+            return "on " + sq + " facing " + session.facingOf(name, model.getAutoLayout()) + ", setup facing "
+                + (sq == null ? null : session.getFacing(sq));
+        });
+    }
+
+    /** The other way a train on this square could face, from the way it faces on the railway now. */
+    private static org.traincontrol.automationui.TilePorts.Side theOtherWay(TileKey square)
+    {
+        org.traincontrol.automationui.TilePorts.Side now = session.facingOnTheRailway(square, model.getAutoLayout());
+
+        for (org.traincontrol.automationui.TilePorts.Side c : session.facingChoices(square)) if (c != now) return c;
+
+        throw new AssertionError("precondition: " + square + " has no other facing");
+    }
+
+    /** Calls one of the editor's square menu doors (`EditorTileMenus`) on a square, as its item does, and waits. */
+    private static void throughTheTileMenus(AutonomyEditorPanel panel, String door, Class<?> type, TileKey square,
+        Object value) throws Exception
+    {
+        final Object menus = Reflect.get(AutonomyEditorPanel.class, panel, "tileMenus");
+        final java.lang.reflect.Method call = Reflect.method(menus.getClass(), door, TileKey.class, type);
+
+        Components.onTheEventThread(() -> { call.invoke(menus, square, value); return null; });
+
+        Components.settle();
+    }
+
+    /** The editor's Facing door, turning the train on this square to `way`; asserts it turned on the railway. */
+    private static void faceFromTheMenu(AutonomyEditorPanel panel, TileKey square, String name,
+        org.traincontrol.automationui.TilePorts.Side way) throws Exception
+    {
+        final String before = copyOf(name);
+
+        throughTheTileMenus(panel, "chooseFacing", org.traincontrol.automationui.TilePorts.Side.class, square, way);
+
+        assertFalse(before.equals(copyOf(name)), "precondition: the Facing door did not turn " + name
+            + " on the railway");
+    }
+
+    /**
+     * The editor's Facing door alone, then Cancel or either Discard: nothing is asked and the train keeps the facing it
+     * has, on the railway and in the setup, as Cancel never changes which way a train faces.
+     *
+     * MUTATION: compare `autonomyAsOpened` itself in `LayoutEditor.hasUnsavedAutonomyWork`, and each door asks and
+     * turns it back.
+     */
+    @Test(timeOut = 400000)
+    public void testCancelOrDiscardKeepsAFacingChangeAndAsksNothing() throws Exception
+    {
+        forEachWayOutWithATrainThatCanTurn((how, panel, square, name, copyBefore) ->
+        {
+            faceFromTheMenu(panel, square, name, theOtherWay(square));
+
+            final String turned = standingAndFacing(name);
+
+            java.util.List<String> asked = leave(how);
+
+            assertEquals(asked, java.util.Collections.emptyList(), DISCARDS[how] + " after only a facing change of "
+                + name + " asked");
+            assertEquals(standingAndFacing(name), turned, DISCARDS[how] + " after a facing change turned " + name
+                + " back (it stood on " + copyBefore + " at opening)");
+        });
+    }
+
+    /** A claim's body, run once for each way out (`DISCARDS`). */
+    private interface WayOut
+    {
+        void run(int how, AutonomyEditorPanel panel, TileKey square, String name, String copyBefore) throws Exception;
+    }
+
+    /** Runs a body for each way out on a train that can turn, in a fresh editor; railway and setup put back after. */
+    private void forEachWayOutWithATrainThatCanTurn(WayOut body) throws Exception
+    {
+        for (int how = 0; how < DISCARDS.length; how++)
+        {
+            AutonomyEditorPanel panel = theEditorsPanel();
+            TileKey square = aTrainThatCanTurn();
+            String name = session.getLocomotiveNameAt(square);
+            String copyBefore = copyOf(name);
+
+            try
+            {
+                body.run(how, panel, square, name, copyBefore);
+            }
+            finally
+            {
+                standBack(name, copyBefore, null, null, null);
+
+                support.FrozenEditor.putBack(ui, session, asOpened);
+            }
+        }
+    }
+
+    /**
+     * The editor's Came In By door sets the side on the railway as well as in the setup; Cancel puts both back (D114).
+     * The snapshot has no station a standing train could have come into from two sides, so a plain sensor is made one.
+     *
+     * MUTATION: pass null for `railwayAsPictured()` in `LayoutEditor.discardAutonomyWork`, and the new side stays.
+     */
+    @Test(timeOut = 240000)
+    public void testCancelAfterAnArrivalSideChangePutsItBack() throws Exception
+    {
+        TileKey two = null;
+
+        for (TileKey each : session.getReducer().getPoints().keySet())
+        {
+            if (!PAGE.equals(each.getPage()) || session.getStore().isStation(each) || session.getLocomotiveNameAt(each) != null)
+            {
+                continue;
+            }
+
+            final TileKey sq = each;
+
+            Components.onTheEventThread(() -> { session.setStation(sq, true); ui.rebuildRunningLayoutFromSetup(); return null; });
+
+            Components.settle();
+
+            if (session.unbarredArrivalSides(each).size() >= 2 && aFreeCopyOf(each) != null)
+            {
+                two = each;
+                break;
+            }
+
+            Components.onTheEventThread(() -> { session.setStation(sq, false); return null; });
+        }
+
+        assertNotNull(two, "precondition: no plain sensor on " + PAGE + " makes a station with two sides");
+
+        final TileKey square = two;
+        final String name = aTrainNotPlaced();
+        final java.util.List<org.traincontrol.automationui.TilePorts.Side> sides = session.unbarredArrivalSides(square);
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                session.placeLocomotive(square, name);
+                session.setArrivedFrom(square, sides.get(0).name());
+                ui.rebuildRunningLayoutFromSetup();
+
+                return null;
+            });
+
+            Components.settle();
+
+            org.traincontrol.automation.Point on = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
+
+            assertNotNull(on, "precondition: " + name + " was not put on " + square);
+
+            final String before = "railway " + on.getArrivedFrom() + ", setup " + session.getArrivedFrom(square);
+            String other = null;
+
+            for (org.traincontrol.automationui.TilePorts.Side each : sides)
+            {
+                if (!each.name().equals(on.getArrivedFrom())) other = each.name();
+            }
+
+            final String side = other;
+
+            throughTheTileMenus(theEditorsPanel(), "setArrivedFrom", String.class, square, side);
+
+            assertEquals(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)).getArrivedFrom(), side,
+                "precondition: the side door did not reach the railway");
+
+            cancelTheEditor();
+
+            org.traincontrol.automation.Point now = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
+
+            assertEquals("railway " + (now == null ? null : now.getArrivedFrom()) + ", setup " + session.getArrivedFrom(square),
+                before, "Cancel after setting " + name + "'s side on " + square + " to " + side + " did not put it back");
+        }
+        finally
+        {
+            offTheRailway(java.util.Collections.singleton(name));
+        }
+    }
+
+    /**
+     * A train placed in the editor and then renamed goes back where it stood at Cancel and either Discard: the picture
+     * holds the locomotive, not its name (D114).
+     *
+     * MUTATION: key `LayoutEditor.railwayAsOpened` by name and look it up by the name now in `railwayAsPictured`, and the
+     * renamed train stays where it was placed.
+     */
+    @Test(timeOut = 400000)
+    public void testCancelOrDiscardAfterPlacingARenamedTrainPutsItBack() throws Exception
+    {
+        for (int how = 0; how < DISCARDS.length; how++)
+        {
+            AutonomyEditorPanel panel = theEditorsPanel();
+
+            final TileKey square = aSquareWithATrain();
+            final String name = session.getLocomotiveNameAt(square);
+            final String renamed = name + " D114";
+            final org.traincontrol.automation.Point copy = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
+            final TileKey empty = anEmptyStation();
+
+            assertNotNull(copy, "precondition: " + name + " stands nowhere on the railway");
+
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+            // The main window's editor, as Edit opens it, so the rename reaches its Cancel snapshot
+            final Object openBefore = Reflect.get(TrainControlUI.class, ui, "openEditor");
+
+            Reflect.set(TrainControlUI.class, ui, "openEditor", editor);
+
+            try
+            {
+                placeFromTheMenu(panel, empty, name);
+
+                Components.settle();
+
+                SwingUtilities.invokeAndWait(() -> assertTrue(model.renameLoc(name, renamed), "precondition: rename refused"));
+
+                Components.settle();
+
+                discard(how);
+
+                org.traincontrol.automation.Point now = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(renamed));
+
+                TileKey inSetup = null;
+
+                for (Map.Entry<TileKey, String> each : session.placementsAutonomyWillWrite().entrySet())
+                {
+                    if (renamed.equals(each.getValue())) inSetup = each.getKey();
+                }
+
+                assertEquals("setup " + inSetup + ", railway " + (now == null ? null : now.getName()),
+                    "setup " + square + ", railway " + copy.getName(), DISCARDS[how] + " after Place and a rename of "
+                    + renamed + " with the editor open did not put it back");
+            }
+            finally
+            {
+                org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+                Reflect.set(TrainControlUI.class, ui, "openEditor", openBefore);
+
+                if (model.getLocByName(renamed) != null) SwingUtilities.invokeAndWait(() -> model.renameLoc(renamed, name));
+
+                Components.settle();
+
+                standBack(name, copy.getName(), null, null, null);
+
+                support.FrozenEditor.putBack(ui, session, asOpened);
+            }
+        }
+    }
+
+    /**
+     * A train placed in the editor and then deleted is left out of Cancel, even where a new locomotive takes its name
+     * meanwhile: every other train stands back where it stood, and nothing is written or stood under that name (D114).
+     *
+     * MUTATION: drop the `getLocByName(name) == each.getKey()` test from `LayoutEditor.railwayAsPictured`, and the new
+     * locomotive is stood where the deleted one stood when the editor opened.
+     */
+    @Test(timeOut = 240000)
+    public void testCancelAfterPlacingADeletedTrainPutsTheOthersBack() throws Exception
+    {
+        final String name = "D114 deleted meanwhile";
+        final TileKey first = anEmptyStation();
+        final TileKey second = anEmptyStationBut(first);
+
+        final Object openBefore = Reflect.get(TrainControlUI.class, ui, "openEditor");
+
+        Components.onTheEventThread(() -> model.newMM2Locomotive(name, 79));
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            Components.onTheEventThread(() -> { session.placeLocomotive(first, name); ui.rebuildRunningLayoutFromSetup(); return null; });
+
+            Components.settle();
+
+            assertNotNull(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)),
+                "precondition: " + name + " was not put on " + first);
+
+            final Map<String, String> others = standingNow();
+
+            others.remove(name);
+
+            AutonomyEditorPanel panel = theEditorsPanel();
+
+            // The main window's editor, as Edit opens it, so the delete reaches its Cancel snapshot
+            Reflect.set(TrainControlUI.class, ui, "openEditor", editor);
+
+            placeFromTheMenu(panel, second, name);
+
+            Components.settle();
+
+            SwingUtilities.invokeAndWait(() -> assertTrue(model.deleteLoc(name), "precondition: delete refused"));
+
+            Components.onTheEventThread(() -> model.newMM2Locomotive(name, 79));
+
+            Components.settle();
+
+            cancelTheEditor();
+
+            assertFalse(session.placementsAutonomyWillWrite().containsValue(name), "Cancel wrote the deleted " + name
+                + " back into the setup");
+            assertFalse(standingNow().containsKey(name), "Cancel stood the deleted " + name + " on the railway");
+            assertEquals(standingNow(), others, "Cancel after placing a train deleted meanwhile moved the others");
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            Reflect.set(TrainControlUI.class, ui, "openEditor", openBefore);
+
+            if (model.getLocByName(name) != null) SwingUtilities.invokeAndWait(() -> model.deleteLoc(name));
+
+            Components.settle();
+        }
+    }
+
+    /**
+     * Where the edit moved trains, Cancel's question and the switch's add one sentence naming the trains a discard
+     * stands back, five by name and then "and N more"; Cancel then stands them all back (D114).
+     *
+     * MUTATION: return `question` at the top of `LayoutEditor.withTheTrainsMovingBack`, and neither question names them.
+     */
+    @Test(timeOut = 240000)
+    public void testTheDiscardQuestionsNameTheTrainsThatGoBack() throws Exception
+    {
+        // More than five trains placed, as the editor would
+        final java.util.List<String> extras = new java.util.ArrayList<>();
+
+        try
+        {
+            for (TileKey empty = anEmptyStation(); session.placementsAutonomyWillWrite().size() < 7; empty = anEmptyStation())
+            {
+                final TileKey square = empty;
+                final String extra = aTrainOffTheRailway();
+
+                extras.add(extra);
+
+                Components.onTheEventThread(() -> { session.placeLocomotive(square, extra); ui.rebuildRunningLayoutFromSetup();
+                    return null; });
+
+                Components.settle();
+            }
+
+            discardQuestionsNameTheTrainsThatGoBack();
+        }
+        finally
+        {
+            offTheRailway(extras);
+        }
+    }
+
+    private void discardQuestionsNameTheTrainsThatGoBack() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final Map<String, String> before = standingNow();
+
+        bulkDoor(panel, "clearAllPlacements", () -> !before.equals(standingNow()), "the railway did not follow Clear All");
+
+        Map<String, String> now = standingNow();
+        java.util.List<String> moved = new java.util.ArrayList<>();
+
+        for (String train : new java.util.TreeSet<>(before.keySet())) if (!before.get(train).equals(now.get(train))) moved.add(train);
+
+        assertTrue(moved.size() > 5, "precondition: Clear All moved only " + moved);
+
+        String names = I18n.f("autolayout.ui.routeNamesAndMore", String.join(", ", moved.subList(0, 5)), moved.size() - 5);
+        String sentence = "\n\n" + I18n.f("autosetup.ui.trainsGoBackOnDiscard", names);
+
+        assertEquals(switchQuestion(), I18n.t("layout.ui.confirmSwitchWithUnsavedWork") + sentence,
+            "the switch's question does not name the trains a Discard moves back");
+        assertEquals(cancelTheEditor(), I18n.t("autosetup.ui.confirmExitWithoutSaving") + sentence,
+            "Cancel's question does not name the trains it moves back");
+        assertEquals(standingNow(), before, "Cancel after Clear All left trains moved on the railway");
+    }
+
+    /**
+     * Where the edit moved no train, Cancel's question and the switch's are word for word as before (D114), after an
+     * edit the railway is rebuilt for.
+     *
+     * MUTATION: drop `if (moving.isEmpty()) return question;` from `LayoutEditor.withTheTrainsMovingBack`, and both gain
+     * a sentence naming no train.
+     */
+    @Test(timeOut = 240000)
+    public void testTheDiscardQuestionsAreUnchangedWhereNoTrainMoved() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final TileKey empty = anEmptyStation();
+        final java.lang.reflect.Method changed = Reflect.method(AutonomyEditorPanel.class, "setupChanged");
+        final Map<String, String> before = standingNow();
+
+        Components.onTheEventThread(() -> { session.setPointProperty(empty, "active", false); changed.invoke(panel); return null; });
+
+        Components.settle();
+
+        assertEquals(standingNow(), before, "precondition: shutting an empty station moved a train");
+
+        assertEquals(switchQuestion(), I18n.t("layout.ui.confirmSwitchWithUnsavedWork"),
+            "the switch's question changed with no train moved");
+        assertEquals(cancelTheEditor(), I18n.t("autosetup.ui.confirmExitWithoutSaving"),
+            "Cancel's question changed with no train moved");
+    }
+
+    /** The question a page switch asks about the unsaved work, answered Cancel so nothing happens. */
+    private String switchQuestion() throws Exception
+    {
+        final java.lang.reflect.Method settle = Reflect.method(LayoutEditor.class, "settleUnsavedWork");
+
+        try (support.Answering answering = support.Answering.start(
+            message -> support.Answering.press(I18n.t("layout.ui.switchCancel"))))
+        {
+            assertFalse(Components.onTheEventThread(() -> (Boolean) settle.invoke(editor)), "the switch went ahead");
+
+            assertEquals(answering.asked().size(), 1, "precondition: the switch asked nothing");
+
+            return answering.asked().get(0);
+        }
     }
 
     /** One of the editor's bulk doors, answered Yes, waited on until `done`. */
@@ -3330,7 +3831,7 @@ public class testTheTrainWindow
     /**
      * As after a run, moves a square's setup train X on to an empty station and stands another placed train Z on its
      * copy, the railway alone told, with the editor open or before it opens; uses the door, Cancels, and asserts both
-     * stand as before.
+     * stand as they did when the editor opened.
      */
     private void cancelAfterARun(boolean editorOpen, AfterARunDoor door) throws Exception
     {
@@ -3369,10 +3870,11 @@ public class testTheTrainWindow
             org.traincontrol.automation.Point broughtNow = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(brought));
             org.traincontrol.automation.Point setupNow = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(setupTrain));
 
-            assertEquals(broughtNow == null ? null : broughtNow.getName(), copyName, "Cancel after a run did not put "
-                + brought + " back where it stood before the edit");
-            assertEquals(setupNow == null ? null : setupNow.getName(), other.getName(), "Cancel after a run moved "
-                + setupTrain + " from where the run left it");
+            // Where the railway had them when the editor opened: after the run, or before it where it ran meanwhile
+            assertEquals(broughtNow == null ? null : broughtNow.getName(), editorOpen ? broughtWas.getName() : copyName,
+                "Cancel after a run did not put " + brought + " back where it stood when the editor opened");
+            assertEquals(setupNow == null ? null : setupNow.getName(), editorOpen ? copyName : other.getName(),
+                "Cancel after a run did not put " + setupTrain + " back where it stood when the editor opened");
         }
         finally
         {
@@ -3408,12 +3910,14 @@ public class testTheTrainWindow
         cancelTheEditor();
     }
 
-    /** Cancel on the editor, answering Yes to throwing the edits away. */
-    private void cancelTheEditor() throws Exception
+    /** Cancel on the editor, answering Yes to throwing the edits away; returns what it asked, or null. */
+    private String cancelTheEditor() throws Exception
     {
         final LayoutEditor closing = editor;
 
         final java.lang.reflect.Method exit = Reflect.method(LayoutEditor.class, "confirmExit");
+
+        String asked;
 
         try (support.Answering answering = support.Answering.start(message -> support.Answering.press(AskingWindows.YES)))
         {
@@ -3430,11 +3934,15 @@ public class testTheTrainWindow
             });
 
             assertTrue(Components.waitFor(() -> !closing.isDisplayable(), 20000), "Cancel did not close the editor");
+
+            asked = answering.asked().isEmpty() ? null : answering.asked().get(0);
         }
 
         Components.settle();
 
         editor = null;
+
+        return asked;
     }
 
     /** A door that places the named train on Tunnel; returns the window it left open, or null. */
@@ -3718,8 +4226,8 @@ public class testTheTrainWindow
      * station is as the editor opened it, in the setup and on the railway, and the train, which stood nowhere, stands
      * nowhere again with nothing of the placement left on the railway's copies of the square.
      *
-     * MUTATION: put `if (named.size() > 1)` before `rememberWhereTheyStand(named)` in
-     * `AutonomyEditorPanel.placeLocomotive`, and the train stays on the station and this fails.
+     * MUTATION: leave out of `LayoutEditor.railwayAsPictured` the trains the picture lacks, and the train stays on the
+     * station and this fails.
      */
     @Test(timeOut = 180000)
     public void testCancelAfterPlacingOnAnEmptyStationPutsItBack() throws Exception
@@ -3764,8 +4272,8 @@ public class testTheTrainWindow
      * its own after Cancel, come in by the same side with its tail along the same road, in the setup and on the railway
      * (MT-914): a train of 5 on Tunnel from the north, its tail on TunnelPre, as a first editor left it.
      *
-     * MUTATION: put `if (named.size() > 1)` before `rememberWhereTheyStand(named)` in
-     * `AutonomyEditorPanel.placeLocomotive`, and the train stays on the empty station and this fails.
+     * MUTATION: pass null for `railwayAsPictured()` in `LayoutEditor.discardAutonomyWork`, and the train stays on the
+     * empty station and this fails.
      */
     @Test(timeOut = 240000)
     public void testCancelPutsAPlacedTrainBackWithItsSideAndTail() throws Exception
@@ -3946,5 +4454,1077 @@ public class testTheTrainWindow
 
             return out.toString();
         });
+    }
+
+    /** A standing train on this page that the setup has there too, on a square with two facings. */
+    private static TileKey aTrainThatCanTurn()
+    {
+        for (Map.Entry<TileKey, String> each : session.trainsWhereTheyStand().entrySet())
+        {
+            TileKey sq = each.getKey();
+
+            if (PAGE.equals(sq.getPage()) && each.getValue().equals(session.getLocomotiveNameAt(sq))
+                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(each.getValue())) != null
+                && session.facingChoices(sq).size() == 2) return sq;
+        }
+
+        throw new AssertionError("precondition: no standing train with two facings on " + PAGE);
+    }
+
+    /** A reversal on the throttle or the handset, followed as its echo is (`followTheTurn`); asserts it turned. */
+    private static void reverse(String name, String copyBefore) throws Exception
+    {
+        assertNotNull(followed(name), "precondition: followTheTurn turned nothing");
+
+        assertFalse(copyOf(name).equals(copyBefore), "precondition: the reversal did not turn " + name + " on the railway");
+    }
+
+    /** A reversal followed as its echo is (`followTheTurn`), written or not; the square it was written on, or null. */
+    private static Object followed(String name) throws Exception
+    {
+        final java.lang.reflect.Method follow = Reflect.method(TrainControlUI.class, "followTheTurn", String.class);
+        final Object written = Components.onTheEventThread(() -> follow.invoke(ui, name));
+
+        Components.settle();
+
+        return written;
+    }
+
+    /** The railway's copy this train stands on, or null. */
+    private static String copyOf(String name)
+    {
+        org.traincontrol.automation.Point at = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
+
+        return at == null ? null : at.getName();
+    }
+
+    /**
+     * A reversal on the throttle followed while the editor is open is the train's, not the editor's work: with nothing
+     * edited Cancel asks nothing, and the train stays turned on the railway, in the setup and in the crash note.
+     *
+     * MUTATION: compare `autonomyAsOpened` itself in `LayoutEditor.hasUnsavedAutonomyWork`, and Cancel asks and turns
+     * it back.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelAsksNothingAfterOnlyAThrottleTurn() throws Exception
+    {
+        theEditorsPanel();
+
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+
+        try
+        {
+            reverse(name, copyBefore);
+
+            final String turned = copyOf(name);
+            final Object facing = session.getFacing(square);
+            final org.json.JSONObject note = session.getStore().unfinishedEdit();
+
+            assertNotNull(note, "precondition: no crash note while the editor is open");
+            assertEquals(note.getJSONObject("configurations").getJSONObject(session.getStore().getActiveConfiguration())
+                .getJSONObject("points").getJSONObject(square.toString()).opt("facing"), String.valueOf(facing),
+                "the crash note would turn " + name + " back after a restart");
+
+            String asked = cancelTheEditor();
+
+            assertNull(asked, "Cancel after only a throttle reversal of " + name + " asked about unsaved work");
+            assertEquals("railway " + copyOf(name) + ", setup facing " + session.getFacing(square),
+                "railway " + turned + ", setup facing " + facing, "Cancel turned " + name + " back on " + square);
+        }
+        finally
+        {
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * Cancel after an edit throws the edit away but keeps a reversal followed meanwhile, on the railway and in the setup,
+     * so the train faces the way its decoder runs; the question does not name it as going back.
+     *
+     * MUTATION: return an empty set from `LayoutEditor.trainsTurnedSince`, and Cancel turns it back.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelKeepsAThrottleTurnMadeWhileOpen() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+        final String unplaced = aTrainNotPlaced();
+        final TileKey empty = anEmptyStation();
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            // An edit, so Cancel has something to throw away
+            placeFromTheMenu(panel, empty, unplaced);
+
+            Components.settle();
+
+            reverse(name, copyBefore);
+
+            final String turned = copyOf(name);
+            final Object facing = session.getFacing(square);
+
+            String asked = cancelTheEditor();
+
+            assertNotNull(asked, "precondition: Cancel did not ask about the placement");
+            assertFalse(asked.contains(name), "the question names " + name + " as going back: " + asked);
+            assertEquals("railway " + copyOf(name) + ", setup facing " + session.getFacing(square),
+                "railway " + turned + ", setup facing " + facing, "Cancel after an edit turned " + name + " back on "
+                + square + " (before the reversal: " + copyBefore + ")");
+            assertNull(copyOf(unplaced), "precondition: Cancel kept the placement of " + unplaced);
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            offTheRailway(java.util.Collections.singleton(unplaced));
+
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * The editor moves a train, the throttle then reverses it, then Cancel or either Discard: the train goes back to
+     * the square it stood on when the editor opened, turned round from the way it faced there, as its decoder now runs,
+     * on the railway and in the setup; the question names it, for the move.
+     *
+     * MUTATION: return an empty set from `LayoutEditor.trainsTurnedSince`, and it goes back facing as at opening.
+     */
+    @Test(timeOut = 400000)
+    public void testADiscardPutsAMovedTrainBackFacingTheWayItWasTurned() throws Exception
+    {
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            forEachWayOutWithATrainThatCanTurn((how, panel, square, name, copyBefore) ->
+            {
+                final TileKey elsewhere = anEmptyStationWhere(each -> session.trainsWhereTheyStand().get(each) == null
+                    && session.facingChoices(each).size() == 2);
+                final org.traincontrol.automationui.TilePorts.Side way = theOtherWay(square);
+
+                placeFromTheMenu(panel, elsewhere, name);
+
+                Components.settle();
+
+                reverse(name, copyOf(name));
+
+                java.util.List<String> asked = leave(how);
+
+                if (how == 0)
+                {
+                    String expected = I18n.t("autosetup.ui.confirmExitWithoutSaving") + "\n\n"
+                        + I18n.f("autosetup.ui.trainsGoBackOnDiscard", name);
+
+                    assertEquals(asked, java.util.Collections.singletonList(expected), "Cancel's question does not"
+                        + " name " + name + " alone as going back");
+                }
+                else
+                {
+                    assertEquals(asked.size(), 1, "precondition: " + DISCARDS[how] + " asked " + asked);
+                }
+
+                assertEquals(standingAndFacing(name), "on " + square + " facing " + way + ", setup facing " + way,
+                    DISCARDS[how] + " after the editor moved " + name + " to " + elsewhere + " and the throttle"
+                    + " reversed it there did not put it back turned round (it stood on " + copyBefore + ")");
+            });
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+        }
+    }
+
+    /**
+     * The editor's Facing door turns a train, the throttle then reverses it, Cancel: nothing is asked, and the train
+     * keeps the facing it has now, as both turns are kept.
+     *
+     * MUTATION: leave the `turned(name)` call out of `AutonomySession.setFacingAndMove`, and Cancel turns it round.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelKeepsTheFacingAfterAFacingChangeAndAThrottleTurn() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+
+        try
+        {
+            faceFromTheMenu(panel, square, name, theOtherWay(square));
+
+            reverse(name, copyOf(name));
+
+            final String now = standingAndFacing(name);
+
+            assertNull(cancelTheEditor(), "Cancel asked after a facing change of " + name + " and a reversal");
+            assertEquals(standingAndFacing(name), now, "Cancel changed the facing of " + name);
+        }
+        finally
+        {
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /** An edit of a train in the editor, before its reversal. */
+    private interface EditOfTheTrain
+    {
+        void run(AutonomyEditorPanel panel, TileKey square, String name) throws Exception;
+    }
+
+    /**
+     * The editor edits a train, the throttle then reverses it (followed whether or not it can be written where the
+     * editor put it), Cancel: the train goes back to the square it stood on at opening turned round, on the railway and
+     * in the setup, as its decoder now runs.
+     */
+    private void cancelKeepsATurnAfter(EditOfTheTrain edit) throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+        final org.traincontrol.automationui.TilePorts.Side way = theOtherWay(square);
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            edit.run(panel, square, name);
+
+            Components.settle();
+
+            final String edited = standingAndFacing(name);
+            final Object written = followed(name);
+
+            assertNotNull(cancelTheEditor(), "precondition: Cancel did not ask about the edit");
+            assertEquals(standingAndFacing(name), "on " + square + " facing " + way + ", setup facing " + way,
+                "Cancel after the editor left " + name + " " + edited + " and the throttle reversed it (written on "
+                + written + ") did not put it back turned round (it stood on " + copyBefore + ")");
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * The editor lifts a train, the throttle reverses it, Cancel: it goes back turned round, though no square held it
+     * when it was reversed.
+     *
+     * MUTATION: in `TrainControlUI.followTheTurn`, count the turn only where `flipFacing` wrote one, and it goes back
+     * facing as at opening.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelKeepsATurnOfATrainTheEditorLifted() throws Exception
+    {
+        final java.lang.reflect.Method remove = Reflect.method(AutonomyEditorPanel.class, "removeLocomotive",
+            TileKey.class);
+
+        cancelKeepsATurnAfter((panel, square, name) -> Components.onTheEventThread(() -> remove.invoke(panel, square)));
+    }
+
+    /**
+     * The editor moves a train onto a station with one facing, the throttle reverses it, Cancel: it goes back turned
+     * round, though it could not be turned where it stood.
+     *
+     * MUTATION: in `TrainControlUI.followTheTurn`, count the turn only where `flipFacing` wrote one, and it goes back
+     * facing as at opening.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelKeepsATurnOfATrainMovedWhereItCannotTurn() throws Exception
+    {
+        cancelKeepsATurnAfter((panel, square, name) -> placeFromTheMenu(panel, anEmptyStationWhere(each
+            -> session.trainsWhereTheyStand().get(each) == null && session.facingChoices(each).size() == 1), name));
+    }
+
+    /**
+     * The throttle reverses a train, it is then renamed, Cancel: nothing is asked, and it keeps the turn on the railway
+     * and in the setup, as the turn is the locomotive's whatever it is called.
+     *
+     * MUTATION: in `AutonomySession.turnKey`, key by the name alone, and Cancel asks and turns it back.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelKeepsATurnOfATrainRenamedSince() throws Exception
+    {
+        theEditorsPanel();
+
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String renamed = name + " renamed";
+        final String copyBefore = copyOf(name);
+        final Object openBefore = Reflect.get(TrainControlUI.class, ui, "openEditor");
+
+        // As the Edit menu registers it, so the rename reaches its snapshots
+        Reflect.set(TrainControlUI.class, ui, "openEditor", editor);
+
+        try
+        {
+            reverse(name, copyBefore);
+
+            final String turned = standingAndFacing(name);
+
+            SwingUtilities.invokeAndWait(() -> assertTrue(model.renameLoc(name, renamed), "precondition: rename refused"));
+
+            Components.settle();
+
+            assertNull(cancelTheEditor(), "Cancel after a reversal of " + name + " and its rename asked about unsaved"
+                + " work");
+            assertEquals(standingAndFacing(renamed), turned, "Cancel turned " + name + " back after its rename");
+        }
+        finally
+        {
+            Reflect.set(TrainControlUI.class, ui, "openEditor", openBefore);
+
+            if (model.getLocByName(renamed) != null) SwingUtilities.invokeAndWait(() -> model.renameLoc(renamed, name));
+
+            Components.settle();
+
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /** The track editor on this page, as the Edit menu opens it. */
+    private LayoutEditor theTrackEditor() throws Exception
+    {
+        final org.traincontrol.base.LayoutDiagram diagram = model.getLayout(PAGE);
+
+        editor = Components.onTheEventThread(() ->
+        {
+            LayoutEditor built = new LayoutEditor(diagram, 30, ui, 0);
+
+            built.render();
+
+            return built;
+        });
+
+        Components.settle();
+
+        return editor;
+    }
+
+    /**
+     * Ctrl+Z in the track editor puts back the page's setup as it was before the edit, but a train turned on the
+     * throttle meanwhile keeps its facing.
+     *
+     * MUTATION: drop the turning loop at the end of `AutonomySession.restorePage`, and Ctrl+Z turns it back.
+     */
+    @Test(timeOut = 300000)
+    public void testTheTrackEditorsUndoKeepsAThrottleTurn() throws Exception
+    {
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+        final LayoutEditor open = theTrackEditor();
+        final java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
+
+        try
+        {
+            Components.onTheEventThread(() -> { snapshot.invoke(open); return null; });
+
+            reverse(name, copyBefore);
+
+            final String turned = standingAndFacing(name);
+
+            Components.onTheEventThread(() -> { open.undo(); return null; });
+
+            Components.settle();
+
+            assertEquals(standingAndFacing(name), turned, "Ctrl+Z in the track editor turned " + name + " back");
+        }
+        finally
+        {
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /** A standing train that can turn (`aTrainThatCanTurn`), with what a claim about its turn puts back after. */
+    private static final class Turnable
+    {
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+        final org.traincontrol.automationui.TilePorts.Side way = theOtherWay(square);
+        final org.traincontrol.base.LayoutDiagramComponent tile = model.getLayout(PAGE).getComponent(square.getX(),
+            square.getY());
+
+        /** Where it stands and faces once turned round on its square (`standingAndFacing`). */
+        String turnedRound()
+        {
+            return "on " + square + " facing " + way + ", setup facing " + way;
+        }
+
+        /** Its tile, railway and setup as they were. */
+        void putBack()
+        {
+            putTheSquareBack(square, tile);
+
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /** A track edit of the square a train stands on, in the open track editor. */
+    private interface TrackEdit
+    {
+        void run(LayoutEditor open, TileKey square) throws Exception;
+    }
+
+    /** A track edit as the editor's gestures make one: the undo point, the change, and the setup written if it changed. */
+    private static void asATrackEdit(LayoutEditor open, java.util.concurrent.Callable<Boolean> change) throws Exception
+    {
+        final java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
+        final java.lang.reflect.Method remember = Reflect.method(LayoutEditor.class, "rememberAutonomy",
+            AutonomySession.class);
+
+        Components.onTheEventThread(() ->
+        {
+            snapshot.invoke(open);
+
+            if (change.call()) remember.invoke(open, session);
+
+            return null;
+        });
+
+        Components.settle();
+    }
+
+    /** As the track editor's Delete does for one square (`LayoutEditorSelection.delete`): the tile and its record go. */
+    private static void deleteTheSquare(LayoutEditor open, TileKey square) throws Exception
+    {
+        asATrackEdit(open, () ->
+        {
+            model.getLayout(PAGE).addComponent(null, square.getX(), square.getY());
+
+            return session.forgetTiles(java.util.Collections.singletonList(square));
+        });
+    }
+
+    /**
+     * As the track editor's move of a picked square does (`LayoutEditorSelection.moveSelection`): the tile and its record
+     * onto an empty square beside it.
+     */
+    private static void moveTheSquare(LayoutEditor open, TileKey square) throws Exception
+    {
+        final org.traincontrol.base.LayoutDiagram diagram = model.getLayout(PAGE);
+        TileKey empty = null;
+
+        for (int[] step : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}})
+        {
+            int x = square.getX() + step[0];
+            int y = square.getY() + step[1];
+
+            if (empty == null && x >= 0 && y >= 0 && x < diagram.getSx() && y < diagram.getSy()
+                && diagram.getComponent(x, y) == null) empty = new TileKey(PAGE, x, y);
+        }
+
+        assertNotNull(empty, "precondition: no empty square beside " + square);
+
+        final TileKey onto = empty;
+
+        asATrackEdit(open, () ->
+        {
+            org.traincontrol.base.LayoutDiagramComponent moved = new org.traincontrol.base.LayoutDiagramComponent(
+                diagram.getComponent(square.getX(), square.getY()));
+
+            diagram.addComponent(null, square.getX(), square.getY());
+
+            moved.setX(onto.getX());
+            moved.setY(onto.getY());
+
+            diagram.addComponent(moved, onto.getX(), onto.getY());
+
+            session.moveTile(square, onto);
+
+            return true;
+        });
+    }
+
+    /** The page's tile back on its square where a claim left it out, and the session built from it again. */
+    private static void putTheSquareBack(TileKey square, org.traincontrol.base.LayoutDiagramComponent tile)
+    {
+        Components.onTheEventThread(() ->
+        {
+            org.traincontrol.base.LayoutDiagram diagram = model.getLayout(PAGE);
+
+            if (diagram.getComponent(square.getX(), square.getY()) == null)
+            {
+                diagram.addComponent(tile, square.getX(), square.getY());
+
+                session.rebuild();
+            }
+
+            return null;
+        });
+
+        Components.settle();
+    }
+
+    /**
+     * A track edit takes the square from under a standing train, the throttle then reverses it (counted, though nothing
+     * can be written where no square holds it), Ctrl+Z: the train is on its square again turned round, on the railway
+     * and in the setup, as its decoder runs.
+     */
+    private void theTrackEditorsUndoKeepsATurnAfter(TrackEdit edit) throws Exception
+    {
+        final Turnable train = new Turnable();
+        final LayoutEditor open = theTrackEditor();
+
+        try
+        {
+            edit.run(open, train.square);
+
+            final Object written = followed(train.name);
+
+            Components.onTheEventThread(() -> { open.undo(); return null; });
+
+            Components.settle();
+
+            assertEquals(standingAndFacing(train.name), train.turnedRound(), "Ctrl+Z after a track edit of the square"
+                + " under " + train.name + " and a reversal (written on " + written + ") did not put it back turned round"
+                + " (it stood on " + train.copyBefore + ")");
+        }
+        finally
+        {
+            train.putBack();
+        }
+    }
+
+    /**
+     * The track editor deletes the square under a train, the throttle reverses it, Ctrl+Z: it is back turned round.
+     *
+     * MUTATION: in `AutonomySession.restorePage`, turn the trains before `touched()`, and Ctrl+Z puts it back facing as
+     * before.
+     */
+    @Test(timeOut = 300000)
+    public void testTheTrackEditorsUndoKeepsATurnOfATrainWhoseSquareWasDeleted() throws Exception
+    {
+        theTrackEditorsUndoKeepsATurnAfter(testTheTrainWindow::deleteTheSquare);
+    }
+
+    /**
+     * The track editor moves the station square under a train, the throttle reverses it, Ctrl+Z: it is back on the
+     * square it stood on, turned round.
+     *
+     * MUTATION: in `AutonomySession.restorePage`, turn the trains before `touched()`, and Ctrl+Z puts it back facing as
+     * before.
+     */
+    @Test(timeOut = 300000)
+    public void testTheTrackEditorsUndoKeepsATurnOfATrainWhoseSquareWasMoved() throws Exception
+    {
+        theTrackEditorsUndoKeepsATurnAfter(testTheTrainWindow::moveTheSquare);
+    }
+
+    /** Leaves the track editor without saving the given way (`DISCARDS`), answering the question with throwing away. */
+    private void leaveTheTrackEditor(int how, LayoutEditor open) throws Exception
+    {
+        if (how == 0)
+        {
+            assertNotNull(cancelTheEditor(), "precondition: Cancel did not ask about the track edit");
+
+            return;
+        }
+
+        try (support.Answering answering = support.Answering.start(
+            message -> support.Answering.press(I18n.t("layout.ui.switchDiscard"))))
+        {
+            if (how == 1)
+            {
+                final java.lang.reflect.Method leaveFor = Reflect.method(LayoutEditor.class, "leaveFor", String.class,
+                    boolean.class);
+
+                Components.onTheEventThread(() -> leaveFor.invoke(open, PAGE, false));
+            }
+            else
+            {
+                assertTrue(Components.onTheEventThread(() -> open.maySettleBeforeExit()), "the exit's question refused");
+
+                Components.onTheEventThread(() -> { open.completeExitDiscard(); return null; });
+            }
+
+            assertEquals(answering.asked().size(), 1, "precondition: " + DISCARDS[how] + " asked " + answering.asked());
+        }
+
+        // The switch's arrival waits for the pages read again
+        if (how == 2) support.FrozenEditor.dispose(open);
+    }
+
+    /** Waits for the pages to be read again after a track edit ends (`layoutEditingComplete`); takes up its session. */
+    private static void reloaded(AutonomySession was) throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicInteger underWay = (java.util.concurrent.atomic.AtomicInteger)
+            Reflect.get(TrainControlUI.class, ui, "refreshesUnderWay");
+
+        assertTrue(Components.waitFor(() -> underWay.get() == 0 && Components.onTheEventThread(() ->
+        {
+            Object now = Reflect.get(TrainControlUI.class, ui, "autonomySession");
+
+            return now != null && now != was;
+        }), 60000), "precondition: the pages were not read again after the track editor");
+
+        Components.settle();
+
+        session = Components.onTheEventThread(() -> ui.getAutonomySession());
+    }
+
+    /** The facing the setup on disk records on a square, as a restart reads it. */
+    private static String facingOnDisk(TileKey square) throws Exception
+    {
+        org.traincontrol.automationui.AutonomyCompanionStore store
+            = new org.traincontrol.automationui.AutonomyCompanionStore(sandbox.getFolder());
+
+        store.load();
+
+        org.json.JSONObject point = store.getConfiguration(store.getActiveConfiguration()).getJSONObject("points")
+            .optJSONObject(square.toString());
+
+        return point == null ? null : point.optString("facing", null);
+    }
+
+    /**
+     * The track editor deletes the square under a standing train, the throttle reverses it, then Cancel, a page switch's
+     * Discard or the exit's Discard: the edit is thrown away but the turn kept.
+     *
+     * MUTATION: in `LayoutEditor.undoAutonomyEdits`, restore `autonomyAsOpened` itself and stand the railway as pictured
+     * unturned (`railwayAsPictured(false)`), and each door puts it back facing as before.
+     */
+    @Test(timeOut = 600000)
+    public void testTheTrackEditorsDiscardsKeepATurnOfATrainWhoseSquareWasDeleted() throws Exception
+    {
+        theTrackEditorsDiscardsKeepATurnAfter(testTheTrainWindow::deleteTheSquare);
+    }
+
+    /**
+     * The same where the track edit leaves the train's square alone, so the reversal is written as it happens.
+     *
+     * MUTATION: in `LayoutEditor.undoAutonomyEdits`, restore `autonomyAsOpened` itself and stand the railway as pictured
+     * unturned (`railwayAsPictured(false)`), and each door turns it back.
+     */
+    @Test(timeOut = 600000)
+    public void testTheTrackEditorsDiscardsKeepAThrottleTurn() throws Exception
+    {
+        theTrackEditorsDiscardsKeepATurnAfter((open, square) -> asATrackEdit(open, () -> false));
+    }
+
+    /**
+     * A track edit, the throttle reverses the train on the square edited, then Cancel, a page switch's Discard or the
+     * exit's Discard: the edit is thrown away but the turn kept, on the railway and in the setup the pages read again
+     * build, and on disk where the exit leaves it.
+     */
+    private void theTrackEditorsDiscardsKeepATurnAfter(TrackEdit edit) throws Exception
+    {
+        for (int how = 0; how < DISCARDS.length; how++)
+        {
+            final Turnable train = new Turnable();
+            final AutonomySession was = session;
+            final LayoutEditor open = theTrackEditor();
+
+            try
+            {
+                edit.run(open, train.square);
+
+                followed(train.name);
+
+                leaveTheTrackEditor(how, open);
+
+                if (how == 2)
+                {
+                    assertEquals(facingOnDisk(train.square), train.way.name(), "the exit's Discard after a track edit of"
+                        + " the square under " + train.name + " and a reversal left it on disk facing as before");
+
+                    // As the restart reads the pages
+                    Components.onTheEventThread(() -> { ui.layoutEditingComplete(); return null; });
+                }
+
+                reloaded(was);
+
+                assertEquals(standingAndFacing(train.name), train.turnedRound(), DISCARDS[how] + " after a track edit of"
+                    + " the square under " + train.name + " and a reversal did not keep the turn (it stood on "
+                    + train.copyBefore + ")");
+            }
+            finally
+            {
+                support.FrozenEditor.dispose(open);
+
+                editor = null;
+
+                train.putBack();
+            }
+        }
+    }
+
+    /**
+     * The track editor deletes the square under a standing train and the throttle reverses it: the crash note turns it
+     * by the build as the edit began, so a restart's revert puts it on its square turned round, as Cancel would.
+     *
+     * MUTATION: in `AutonomySession.turned`, turn the note by `choicesWhereTrainsStand()`, and the note keeps it facing
+     * as before.
+     */
+    @Test(timeOut = 300000)
+    public void testTheCrashNoteKeepsATurnOfATrainWhoseSquareTheTrackEditorDeleted() throws Exception
+    {
+        final Turnable train = new Turnable();
+
+        try
+        {
+            deleteTheSquare(theTrackEditor(), train.square);
+
+            followed(train.name);
+
+            org.json.JSONObject note = Components.onTheEventThread(() -> session.getStore().unfinishedEdit());
+
+            assertNotNull(note, "precondition: the track editor wrote no crash note");
+
+            org.json.JSONObject point = note.getJSONObject("configurations")
+                .getJSONObject(session.getStore().getActiveConfiguration()).getJSONObject("points")
+                .getJSONObject(train.square.toString());
+
+            assertEquals(point.optString("facing", null), train.way.name(), "the crash note after the track editor"
+                + " deleted the square under " + train.name + " and the throttle reversed it keeps it facing as before");
+        }
+        finally
+        {
+            train.putBack();
+        }
+    }
+
+    /**
+     * The editor lifts a train, the throttle reverses it, Place puts it back on its square, Save: it stands turned
+     * round, on the railway and in the setup, as its decoder runs.
+     *
+     * MUTATION: leave `headingOfALiftedTrain` out of `AutonomyEditorPanel.placeLocomotive`, and Save keeps another
+     * facing.
+     */
+    @Test(timeOut = 300000)
+    public void testATrainPlacedBackAfterATurnWhileLiftedIsSavedTurned() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final Turnable train = new Turnable();
+        final java.lang.reflect.Method remove = Reflect.method(AutonomyEditorPanel.class, "removeLocomotive",
+            TileKey.class);
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            Components.onTheEventThread(() -> remove.invoke(panel, train.square));
+
+            Components.settle();
+
+            assertNull(followed(train.name), "precondition: the reversal of the lifted " + train.name + " was written");
+
+            placeFromTheMenu(panel, train.square, train.name);
+
+            Components.settle();
+
+            final String placed = standingAndFacing(train.name);
+
+            saveTheEditor();
+
+            assertEquals(standingAndFacing(train.name), train.turnedRound(), "Save after " + train.name + " was lifted,"
+                + " reversed and placed back (" + placed + ") did not keep the turn (it stood on " + train.copyBefore
+                + ")");
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            train.putBack();
+        }
+    }
+
+    /**
+     * A turn the railway made on arrival and wrote into the setup only once the editor is open (`faceTheWayItCameIn`,
+     * retried while idle) is no turn since the editor opened: no train runs with an editor open, so the railway turned
+     * it before, and Edit's fold and picture already have it so.  The write is saved, as a followed turn is, so Cancel
+     * asks nothing, and it keeps the train as it stands.
+     *
+     * MUTATION: call `turned(locomotive)` at the end of `AutonomySession.faceTheWayItCameIn`, and Cancel asks and turns
+     * it back.
+     */
+    @Test(timeOut = 300000)
+    public void testAnArrivalTurnWrittenWithTheEditorOpenIsKeptByCancel() throws Exception
+    {
+        final Turnable train = new Turnable();
+        final java.lang.reflect.Method fold = Reflect.method(TrainControlUI.class, "captureRunningLayout");
+
+        try
+        {
+            // The railway turned it on arrival: on the copy facing the other way, in by that side
+            Components.onTheEventThread(() ->
+            {
+                org.traincontrol.automation.Layout railway = model.getAutoLayout();
+                org.traincontrol.automation.Point turnedOn = session.copyFacing(train.square, train.way, railway);
+
+                railway.moveLocomotive(null, train.copyBefore, false);
+
+                // Onto a barred copy too, as a turn on arrival can leave it on one
+                assertTrue(railway.moveLocomotive(train.name, turnedOn.getName(), false, true), "precondition: "
+                    + train.name + " could not be stood on " + turnedOn.getName());
+
+                turnedOn.setArrivedFrom(train.way.name());
+
+                return null;
+            });
+
+            // Edit's fold, before the editor takes its picture, once what the railway's change posted has run
+            Components.settle();
+
+            Components.onTheEventThread(() -> fold.invoke(ui));
+
+            theEditorsPanel();
+
+            // The write still owed, retried once the editor is open (owed only now, or an idle refresh before the
+            // editor opened would write it first)
+            Components.onTheEventThread(() ->
+            {
+                model.getAutoLayout().restoreReversalsOnArrival(java.util.Collections.singletonMap(train.name,
+                    copyOf(train.name)));
+
+                ui.reconcileFacingWhenIdle();
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertTrue(Components.onTheEventThread(() -> model.getAutoLayout().takeReversalsOnArrival().isEmpty()),
+                "precondition: the turn owed on arrival was not written with the editor open");
+
+            final String turned = standingAndFacing(train.name);
+
+            assertEquals(turned, train.turnedRound(), "precondition: the arrival did not turn " + train.name);
+            assertNull(cancelTheEditor(), "Cancel asked after only an arrival turn was written");
+            assertEquals(standingAndFacing(train.name), turned, "Cancel turned " + train.name + " back after an arrival"
+                + " turn was written with the editor open");
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> model.getAutoLayout().takeReversalsOnArrival());
+
+            train.putBack();
+        }
+    }
+
+    /** What was said after this, each question answered with its first button. */
+    private static java.util.List<String> saidAfter(java.util.concurrent.Callable<?> doThis) throws Exception
+    {
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(0)))
+        {
+            doThis.call();
+
+            answering.awaitAsked(1, 8000);
+
+            Components.settle();
+
+            return answering.asked();
+        }
+    }
+
+    /**
+     * The refusal every link, address change and sync meets while an editor is open; the key where the bundle lacks it,
+     * so a run on older code shows what was said instead.
+     */
+    private static java.util.List<String> refusedForTheEditor()
+    {
+        String key = "loc.ui.errorEditorOpenNoLinkOrSync";
+
+        try
+        {
+            return java.util.Collections.singletonList(I18n.t(key));
+        }
+        catch (java.util.MissingResourceException none)
+        {
+            return java.util.Collections.singletonList(key);
+        }
+    }
+
+    /** Opens Locomotive Settings on this train's tab. */
+    private static void settingsOf(String name, LocomotiveSettingsFrame.Tab tab) throws Exception
+    {
+        assertTrue(support.SettingsWindow.open(ui, model.getLocByName(name), tab, null), "precondition: Settings did not open");
+        assertNotNull(support.SettingsWindow.awaited(), "precondition: Settings is not on screen");
+    }
+
+    /**
+     * Locomotive Settings refuses a multi-unit link while the editor is open, before anything is written, and stays
+     * open with the tick: the link would take the member off the railway, and Cancel would then lift the head.
+     *
+     * MUTATION: leave the open-editor question out of `LocomotiveActions.refuseMultiUnitEdit`, and the link is made.
+     */
+    @Test(timeOut = 300000)
+    public void testALinkIsRefusedWhileTheEditorIsOpen() throws Exception
+    {
+        java.util.List<String> standing = new java.util.ArrayList<>();
+
+        for (Map.Entry<TileKey, String> each : session.trainsWhereTheyStand().entrySet())
+        {
+            Locomotive loc = model.getLocByName(each.getValue());
+
+            if (PAGE.equals(each.getKey().getPage()) && model.getAutoLayout().getLocomotiveLocation(loc) != null
+                && loc.getLinkedLocomotiveNames().isEmpty() && model.isLocLinkedToOthers(loc) == null
+                && !standing.contains(each.getValue())) standing.add(each.getValue());
+        }
+
+        assertTrue(standing.size() >= 2, "precondition: fewer than two standing unlinked trains on " + PAGE);
+
+        final String head = standing.get(0);
+        final String member = standing.get(1);
+        final String headCopy = copyOf(head);
+        final org.traincontrol.automation.Point memberWas = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(member));
+
+        theEditorsPanel();
+
+        try
+        {
+            settingsOf(head, LocomotiveSettingsFrame.Tab.MULTI_UNIT);
+
+            support.SettingsWindow.tickMember(member);
+
+            java.util.List<String> said = saidAfter(() -> { Components.press(support.SettingsWindow.save()); return null; });
+
+            assertTrue(model.getLocByName(head).getLinkedLocomotiveNames().isEmpty(), "Save with the editor open linked "
+                + member + " to " + head + ", saying " + said);
+            assertNotNull(copyOf(member), "the refused Save took " + member + " off the railway");
+            assertEquals(said, refusedForTheEditor(), "linking " + member + " to " + head + " with the editor open was not refused");
+            assertNotNull(support.SettingsWindow.showing(), "the refused Save closed the window");
+            assertTrue(Components.onTheEventThread(support.SettingsWindow.save()::isEnabled), "the refused Save dropped the tick");
+        }
+        finally
+        {
+            support.SettingsWindow.closeIfOpen();
+
+            Components.onTheEventThread(() -> model.getLocByName(head).setLinkedLocomotives(new java.util.HashMap<>()));
+
+            standBack(head, headCopy, member, memberWas, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * Locomotive Settings refuses a new address while the editor is open, before anything is written, and stays open
+     * with what was typed: an address equal to another train's would take one off the railway.
+     *
+     * MUTATION: leave the open-editor question out of `LocomotiveActions.writeNameAndAddress`, and the address is written.
+     */
+    @Test(timeOut = 300000)
+    public void testAnAddressChangeIsRefusedWhileTheEditorIsOpen() throws Exception
+    {
+        final String name = session.getLocomotiveNameAt(aSquareWithATrain());
+        final Locomotive loc = model.getLocByName(name);
+        final int address = loc.getAddress();
+        final Locomotive.decoderType type = loc.getDecoderType();
+
+        String free = null;
+
+        for (int a = 1; free == null; a++)
+        {
+            final int at = a;
+
+            if (org.traincontrol.marklin.MarklinLocomotive.validateNewAddress(type, at)
+                && model.getLocomotives().stream().noneMatch(l -> l.getAddress() == at)) free = Integer.toString(at);
+        }
+
+        final String typed = free;
+
+        theEditorsPanel();
+
+        try
+        {
+            settingsOf(name, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+
+            support.SettingsWindow.type("settings.address", typed);
+
+            java.util.List<String> said = saidAfter(() -> { Components.press(support.SettingsWindow.save()); return null; });
+
+            assertEquals(loc.getAddress(), address, "Save with the editor open wrote a new address for " + name + ", saying "
+                + said);
+            assertEquals(said, refusedForTheEditor(), "a new address for " + name + " with the editor open was not refused");
+            assertNotNull(support.SettingsWindow.showing(), "the refused Save closed the window");
+            assertEquals(support.SettingsWindow.text("settings.address"), typed, "the refused Save dropped the typing");
+        }
+        finally
+        {
+            support.SettingsWindow.closeIfOpen();
+
+            if (loc.getAddress() != address || loc.getDecoderType() != type) model.changeLocAddress(name, address, type);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * A Central Station sync is refused while the editor is open, by the main window's Sync, by Locomotive Settings' Sync
+     * button, and by the sync every other door runs through: a sync can take a standing train off the railway.
+     *
+     * MUTATION: leave the open-editor question out of `TrainControlUI.syncWithCS2`, and its own door syncs.
+     */
+    @Test(timeOut = 300000)
+    public void testASyncIsRefusedWhileTheEditorIsOpen() throws Exception
+    {
+        final String name = session.getLocomotiveNameAt(aSquareWithATrain());
+        final Object simulated = Reflect.get(MarklinControlStation.class, model, "simulation");
+        final boolean on = model.getNetworkCommState();
+
+        theEditorsPanel();
+
+        try
+        {
+            assertEquals(saidAfter(() -> { SwingUtilities.invokeLater(() -> ui.doSync(ui)); return null; }),
+                refusedForTheEditor(), "the main window's Sync with the editor open was not refused");
+
+            // The button is lit only with a station connected
+            Reflect.set(MarklinControlStation.class, model, "simulation", false);
+            model.setNetworkCommState(true);
+
+            settingsOf(name, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+
+            final javax.swing.JButton sync = support.SettingsWindow.part("settings.sync", javax.swing.JButton.class);
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(sync::isEnabled), 8000), "precondition: Sync stayed gray");
+            assertEquals(saidAfter(() -> { Components.press(sync); return null; }), refusedForTheEditor(),
+                "Locomotive Settings' Sync with the editor open was not refused");
+
+            support.SettingsWindow.closeIfOpen();
+
+            Reflect.set(MarklinControlStation.class, model, "simulation", simulated);
+            model.setNetworkCommState(on);
+
+            assertEquals(saidAfter(() -> ui.syncWithCS2()), refusedForTheEditor(),
+                "the sync the other doors run through was not refused with the editor open");
+        }
+        finally
+        {
+            support.SettingsWindow.closeIfOpen();
+
+            Reflect.set(MarklinControlStation.class, model, "simulation", simulated);
+            model.setNetworkCommState(on);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
     }
 }

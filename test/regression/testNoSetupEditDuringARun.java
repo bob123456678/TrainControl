@@ -31,6 +31,7 @@ import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
 import static regression.testTheImportDoorReadsAnOldFile.pointsHeldBy;
 import static regression.testTheImportDoorReadsAnOldFile.putTheFolderBack;
 import static regression.testTheImportDoorReadsAnOldFile.startAnsweringYes;
+import support.Components;
 import support.Reflect;
 import support.Settle;
 
@@ -1324,13 +1325,11 @@ public class testNoSetupEditDuringARun
 
             SwingUtilities.invokeLater(() -> window.openAutonomyEditor(at, Collections.<TileKey>emptyList()));
 
-            long until = System.currentTimeMillis() + 15000;
+            // Start has decided once the trains run or the editor's refusal has been said; a hang ends at the bound
+            final String editorsWords = I18n.t("autosetup.ui.menuEditorOpen");
 
-            while (!(ui.isLayoutEditorOpen() && ui.getModel().isAutonomyRunning())
-                && System.currentTimeMillis() < until)
-            {
-                Thread.sleep(200);
-            }
+            assertTrue(Components.waitFor(() -> ui.getModel().isAutonomyRunning() || asked.contains(editorsWords),
+                15000), "Start neither ran nor was refused: asked " + asked);
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 

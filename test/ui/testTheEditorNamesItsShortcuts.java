@@ -219,44 +219,33 @@ public class testTheEditorNamesItsShortcuts
 
         assertNotNull(first, "precondition: the start-up resume loaded no configuration, so there is none to name");
 
+        // The class's own editor closed too: Stop Using Autonomy refuses while any editor is open, and the unload
+        // rebuilds the session it was built on.  Run last, nothing after this uses it.
+        SwingUtilities.invokeAndWait(() -> editor.dispose());
+
         // [0] the track editor, [1] the autonomy editor
         final LayoutEditor[] open = new LayoutEditor[2];
 
-        SwingUtilities.invokeAndWait(() ->
-        {
-            open[0] = new LayoutEditor(page, 30, ui, 0);
-            open[0].render();
-            open[1] = new LayoutEditor(page, 30, ui, 0);
-            open[1].render();
-            open[1].setAutonomyMode(ui.getAutonomySession());
-        });
+        open[1] = anAutonomyEditor();
+        open[0] = aTrackEditor();
+
+        settleTheEditor();
 
         try
         {
-            settleTheEditor();
-
             assertTrue(open[1].isAutonomyMode(), "precondition: the second editor is not the autonomy editor");
 
             // OPENED WITH IT LOADED: named from the start
             assertTitles(open, first, first, "of editors opened with " + first + " loaded");
 
-            // UNLOADED: the track editor's title is today's, and the autonomy editor still names what it edits
-            unloadAutonomy();
-
-            assertEquals(ui.getAutonomySession().getStore().getActiveConfiguration(), first, "precondition: unloading"
-                + " left a different configuration chosen than " + first);
+            // UNLOADED, with the editors closed first as Stop Using Autonomy requires: the track editor's title is
+            // today's, and the autonomy editor names what it edits
+            unloadAutonomy(open, first);
 
             assertTitles(open, null, first, "after " + first + " was unloaded");
 
             // AN AUTONOMY EDITOR OPENED NOW, with it chosen and not loaded: it names what it edits from the start
-            final LayoutEditor[] late = new LayoutEditor[1];
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                late[0] = new LayoutEditor(page, 30, ui, 0);
-                late[0].render();
-                late[0].setAutonomyMode(ui.getAutonomySession());
-            });
+            final LayoutEditor[] late = {anAutonomyEditor()};
 
             try
             {
@@ -304,11 +293,9 @@ public class testTheEditorNamesItsShortcuts
 
             assertTitles(open, renamed, renamed, "after " + other + " was renamed");
 
-            // UNLOADED again: the track editor's title is today's, the autonomy editor's names what it edits
-            unloadAutonomy();
-
-            assertEquals(ui.getAutonomySession().getStore().getActiveConfiguration(), renamed, "precondition: unloading"
-                + " left a different configuration chosen than " + renamed);
+            // UNLOADED again, editors closed first: the track editor's title is today's, the autonomy editor's names
+            // what it edits
+            unloadAutonomy(open, renamed);
 
             assertTitles(open, null, renamed, "after autonomy was unloaded");
         }
@@ -346,10 +333,20 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Stops using autonomy, the way the Autonomy menu does, and lets the window settle.
+     * Stops using autonomy, the way the Autonomy menu does, with the editors closed first as it requires, then opens
+     * them again and lets the window settle.
+     *
+     * @param open the editors, replaced by the reopened ones
+     * @param chosen the configuration the setup must still have chosen afterward
      */
-    private static void unloadAutonomy() throws Exception
+    private static void unloadAutonomy(LayoutEditor[] open, String chosen) throws Exception
     {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            open[0].dispose();
+            open[1].dispose();
+        });
+
         final boolean[] unloaded = new boolean[1];
 
         SwingUtilities.invokeAndWait(() -> unloaded[0] = ui.unloadAutonomy());
@@ -359,6 +356,14 @@ public class testTheEditorNamesItsShortcuts
         assertTrue(unloaded[0], "precondition: Stop Using Autonomy was declined");
 
         assertNull(ui.getActiveDiagramConfiguration(), "precondition: a configuration is still loaded");
+
+        assertEquals(ui.getAutonomySession().getStore().getActiveConfiguration(), chosen, "precondition: unloading"
+            + " left a different configuration chosen than " + chosen);
+
+        open[1] = anAutonomyEditor();
+        open[0] = aTrackEditor();
+
+        settleTheEditor();
     }
 
     /**
@@ -3328,7 +3333,7 @@ public class testTheEditorNamesItsShortcuts
         {
             built[0] = new LayoutEditor(page, 30, ui, 0);
             built[0].render();
-            built[0].setAutonomyMode(session);
+            built[0].setAutonomyMode(ui.getAutonomySession());
         });
 
         return built[0];

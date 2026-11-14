@@ -20,13 +20,16 @@ What it reports, for src/ and test/ separately:
   - the N largest files (default 10);
   - the message bundle's keys, and the pins the guards hold at that revision (testNoNewCopies' copy groups and copied
     test tokens, testCommentsStayLean's long blocks), so a copy or comment trend needs no test run; "-" where that
-    revision's guard held no such pin.
+    revision's guard held no such pin.  Under them, what the copy scan finds in the working tree now (it compiles
+    test/support/CopyScan.java), so a pin is lowered to a printed figure, never probed for.
 """
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from statistics import median
 
 AREAS = ("src", "test")
@@ -305,6 +308,27 @@ def report(now, base, packages):
                 print(f"  {p:<44}{nf:>5} {nl:>8,}")
 
 
+def scan_now(root_dir):
+    """(src groups, test copied tokens) the copy scan finds in the working tree, or None where it cannot run."""
+    javac = os.environ.get("TC_JAVAC", "C:/Program Files/Java/jdk1.8.0_361/bin/javac")
+    out = os.path.join(tempfile.gettempdir(), "codesize-copyscan-%d" % os.getpid())
+
+    def run(*cmd):
+        return subprocess.run(cmd, cwd=root_dir, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True).stdout
+
+    try:
+        os.makedirs(out)
+        run(javac, "-nowarn", "-encoding", "UTF-8", "-d", out, "test/support/CopyScan.java")
+
+        scan = lambda *a: re.search(rb"(\d+) clusters, (\d+) duplicated", run("java", "-cp", out, "support.CopyScan", *a))
+
+        return int(scan("src").group(1)), int(scan("test", "all").group(2))
+    except (OSError, subprocess.CalledProcessError, AttributeError):
+        return None
+    finally:
+        shutil.rmtree(out, ignore_errors=True)
+
+
 def selftest():
     sample = "\n".join([
         "package a;",                         # code
@@ -346,6 +370,11 @@ def main():
     os.chdir(root())
 
     report(measure(a.ref, a.top), measure(a.vs, a.top) if a.vs else None, a.packages)
+
+    now = scan_now(root())
+
+    if now:
+        print(f"\ncopy scan of the working tree now: {now[0]} src groups, {now[1]:,} copied test tokens")
 
 
 if __name__ == "__main__":

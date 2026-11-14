@@ -899,14 +899,15 @@ public class testLayoutTiles
         // Long enough for the overlay, the highlight duration, and the scheduled restore
         deadline = System.currentTimeMillis() + 8000;
 
-        while (onEdt.get() < 3 && System.currentTimeMillis() < deadline)
+        while (onEdt.get() < 2 && System.currentTimeMillis() < deadline)
         {
             Thread.sleep(20);
         }
 
-        // The refreshed icon, the highlight overlay, and the restore afterwards
-        assertTrue(onEdt.get() >= 3,
-            "expected the refresh, the highlight and the restore (saw " + onEdt.get() + ")");
+        // The highlight overlay and the restore afterwards; the refresh to the same picture sets the one icon every
+        // square of that picture shares, which is no change.
+        assertTrue(onEdt.get() >= 2,
+            "expected the highlight and the restore (saw " + onEdt.get() + ")");
 
         assertEquals(offEdt.get(), 0,
             "no icon change may be applied to a Swing component off the EDT");

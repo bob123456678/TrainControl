@@ -543,14 +543,20 @@ public class testTheActiveTickPausesATrain
             + (expectedToPause ? "pause " : "set going ") + who.getName());
     }
 
-    /** The rebuild a tick or a tool asks for has been done, and the Auto tab's cards built again. */
-    private static void settleTheRebuild() throws Exception
+    /**
+     * What the status panels' worker and the event thread have queued for each other has run: the worker searches, the
+     * event thread draws and may queue the next search, so each is waited for in turn until a round finds both idle.
+     */
+    private static void settleTheRenderer() throws Exception
     {
-        for (int turn = 0; turn < 10; turn++)
-        {
-            Thread.sleep(50);
+        java.util.concurrent.ExecutorService worker = (java.util.concurrent.ExecutorService) Reflect.get(
+            TrainControlUI.class, ui, "AutonomyRenderer");
 
-            Components.drain(1);
+        for (int round = 0; round < 3; round++)
+        {
+            worker.submit(() -> { }).get(20, java.util.concurrent.TimeUnit.SECONDS);
+
+            Components.drain(2);
         }
     }
 
@@ -562,7 +568,7 @@ public class testTheActiveTickPausesATrain
     {
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        settleTheRebuild();
+        settleTheRenderer();
     }
 
     /**
@@ -735,7 +741,7 @@ public class testTheActiveTickPausesATrain
 
             clickTheEditorsTick(panel, label);
 
-            settleTheRebuild();
+            settleTheRenderer();
 
             assertTrue(train.isAutonomyPaused(), "precondition: unticking " + label + " in the editor did not pause "
                 + HIS_TRAIN);
@@ -750,7 +756,7 @@ public class testTheActiveTickPausesATrain
 
             clickTheEditorsTick(panel, label);
 
-            settleTheRebuild();
+            settleTheRenderer();
 
             assertFalse(train.isAutonomyPaused(), "precondition: ticking " + label + " in the editor did not set "
                 + HIS_TRAIN + " going");
@@ -1083,7 +1089,7 @@ public class testTheActiveTickPausesATrain
 
             editor = null;
 
-            settleTheRebuild();
+            settleTheRenderer();
 
             assertPausedEverywhere(card, true, "after the editor's Cancel put the setup it opened with back");
         }
@@ -1162,7 +1168,7 @@ public class testTheActiveTickPausesATrain
 
             editor = null;
 
-            settleTheRebuild();
+            settleTheRenderer();
 
             assertEquals(railway().getMinDelay(), moved, "the setting moved on the Auto tab while the editor was open went"
                 + " back with the editor's Cancel (OB-343)");
@@ -1221,7 +1227,7 @@ public class testTheActiveTickPausesATrain
 
             editor = null;
 
-            settleTheRebuild();
+            settleTheRenderer();
 
             assertFalse(train.isAutonomyPaused(), "the tick made in the editor, whose rebuild was refused, was kept by the"
                 + " editor's Cancel (OB-343)");
@@ -1272,7 +1278,7 @@ public class testTheActiveTickPausesATrain
 
             editor = null;
 
-            settleTheRebuild();
+            settleTheRenderer();
 
             assertFalse(train.isAutonomyPaused(), "the editor's own tick of " + HIS_TRAIN + " was kept by its Cancel, taken"
                 + " back into the setup with the card's pause of " + CARD_TRAIN + " (OB-343)");
@@ -1340,7 +1346,7 @@ public class testTheActiveTickPausesATrain
 
             editor = null;
 
-            settleTheRebuild();
+            settleTheRenderer();
 
             assertTrue(train.isAutonomyPaused(), HIS_TRAIN + ", which the setup had paused, came out running after the editor's"
                 + " Cancel (OB-343)");
@@ -1400,7 +1406,7 @@ public class testTheActiveTickPausesATrain
 
             editor = null;
 
-            settleTheRebuild();
+            settleTheRenderer();
 
             for (String name : standing)
             {
@@ -1462,7 +1468,7 @@ public class testTheActiveTickPausesATrain
 
             editor = null;
 
-            settleTheRebuild();
+            settleTheRenderer();
 
             after.on(model.getLocByName(CARD_TRAIN));
         }
@@ -1494,7 +1500,7 @@ public class testTheActiveTickPausesATrain
 
         click(tick);
 
-        settleTheRebuild();
+        settleTheRenderer();
     }
 
     /**
@@ -1833,7 +1839,7 @@ public class testTheActiveTickPausesATrain
 
             editor = null;
 
-            settleTheRebuild();
+            settleTheRenderer();
 
             assertFalse(card.isAutonomyPaused(), CARD_TRAIN + ", set going by its card and renamed with the editor open, came out"
                 + " paused after the editor's Cancel (OB-343)");
@@ -1881,7 +1887,7 @@ public class testTheActiveTickPausesATrain
 
             editor = null;
 
-            settleTheRebuild();
+            settleTheRenderer();
 
             assertTrue(card.isAutonomyPaused(), CARD_TRAIN + ", paused by its card and renamed with the editor open, came out"
                 + " running after the editor's Cancel (OB-343)");
@@ -1933,7 +1939,7 @@ public class testTheActiveTickPausesATrain
 
             editor = null;
 
-            settleTheRebuild();
+            settleTheRenderer();
 
             assertFalse(session.getPausedLocomotives().contains(doomed), "Cancel wrote the name of a locomotive that was deleted"
                 + " back into the setup's list of the paused: " + session.getPausedLocomotives());
@@ -1990,7 +1996,7 @@ public class testTheActiveTickPausesATrain
     {
         clickTheEditorsTick(editorsPanel(editor), label);
 
-        settleTheRebuild();
+        settleTheRenderer();
     }
 
     /** The track diagram's right-click on BottomMainB, and the tick `label` on it clicked. */
@@ -2022,7 +2028,7 @@ public class testTheActiveTickPausesATrain
 
         click(tool);
 
-        settleTheRebuild();
+        settleTheRenderer();
     }
 
     /**
@@ -2465,12 +2471,7 @@ public class testTheActiveTickPausesATrain
             Components.drain(1);
         }
 
-        for (int turn = 0; turn < 8; turn++)
-        {
-            Thread.sleep(100);
-
-            Components.drain(1);
-        }
+        settleTheRenderer();
     }
 
     /** The whole tab built again, as a placement builds it. */

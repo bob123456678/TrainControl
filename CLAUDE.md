@@ -78,13 +78,15 @@ Not: `// OB-271 (2026-09-14): Adam reported ... Round 112 found ...; RSA61-B2 wi
   `testJavadocsAreAttached`; a `synchronized` member, `testNothingOnTheEventThreadTakesTheRailwaysMonitor`.  The full
   battery is the orchestrator's.
 - Tools in `docs/tools/`, each documented in its header:
-  - `affected.py <base> [<head>]` prints the classes a change should run, for `TC_CLASSES`.
+  - `affected.py <base> [<head>]` prints the classes a change should run, for `TC_CLASSES`; `--guards` prints only its
+    bookkeeping and pairing classes, the guard set that runs at every merge, small fix or not.
   - `newtest.py [--write] <pkg.Class>` does a new test class's bookkeeping (`build.xml`, census, "Used by"; see
     `test/README.md`).  A new test class must be in `build.xml`.
   - `redgreen.sh (--base <commit> | --patch <file>) <claim>...` runs a claim red on the old code or a mutation,
     then green.
   - `env.sh <worktree>` sets up a worktree's `LocDB.data` and scratch folder and prints its `TC_SCRATCH`.
-  - `codesize.py [<ref>] [--vs <base>] [--packages]` reports net lines and the guard pins, at a revision or between two.
+  - `codesize.py [<ref>] [--vs <base>] [--packages]` reports net lines and the guard pins, at a revision or between two, and the copy
+    scan's figures now (lower a copy pin to those).
 - **Find a test by its claim, then read only its lines.**  `py -3 docs/tools/claims.py <words>` (or `--id OB-123`,
   `--class <testClass>`, `--uses <ProductionClass>`) prints `test/<path>:<first>-<last>  Class.method  ids` for each
   matching @Test method; read that range (and the ranges of the helpers it calls, which `--class` lists), never a whole

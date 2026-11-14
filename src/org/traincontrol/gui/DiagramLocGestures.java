@@ -1,8 +1,16 @@
 package org.traincontrol.gui;
 
 import java.awt.event.KeyEvent;
+import java.util.Map;
 import javax.swing.JOptionPane;
+import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph;
+import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.autonomy.ArrivalSidePrompt;
+import org.traincontrol.gui.autonomy.FacingPrompt;
 import org.traincontrol.util.I18n;
 
 /** The diagram's keyboard gestures: cutting, pasting and clearing a train on a square, and writing its turns. */
@@ -22,12 +30,12 @@ final class DiagramLocGestures
      * @param onPage the page the square is actually on
      * @return the station's square, or null when there is nothing there to act on
      */
-    org.traincontrol.automationui.TileGraph.TileKey autonomyStationAt(
+    TileGraph.TileKey autonomyStationAt(
         String onPage, int x, int y)
     {
         if (ui.autonomyOverlayToggle == null || !ui.autonomyOverlayToggle.isOverlayShown()) return null;
 
-        org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+        AutonomySession session = ui.getAutonomySession();
 
         if (session == null || ui.getActiveDiagramConfiguration() == null) return null;
 
@@ -39,8 +47,7 @@ final class DiagramLocGestures
 
         if (ui.isPageExcludedFromAutonomy(page)) return null;
 
-        org.traincontrol.automationui.TileGraph.TileKey tile =
-            new org.traincontrol.automationui.TileGraph.TileKey(page, x, y);
+        TileGraph.TileKey tile = new TileGraph.TileKey(page, x, y);
 
         if (!session.getStore().isStation(tile)) return null;
 
@@ -58,12 +65,12 @@ final class DiagramLocGestures
      *
      * @return whether the train now stands on that square in the setup
      */
-    boolean dropByPaste(Locomotive train, org.traincontrol.automationui.TileGraph.TileKey to)
+    boolean dropByPaste(Locomotive train, TileGraph.TileKey to)
     {
         Locomotive cutWas = ui.cutLocomotive;
-        org.traincontrol.automationui.TilePorts.Side facingWas = ui.cutFacing;
+        TilePorts.Side facingWas = ui.cutFacing;
         String fromWas = ui.cutFrom;
-        org.traincontrol.automationui.TileGraph.TileKey hoveredWas = hoveredDiagramTile;
+        TileGraph.TileKey hoveredWas = hoveredDiagramTile;
 
         ui.cutLocomotive = train;
         ui.cutFacing = null;
@@ -87,19 +94,18 @@ final class DiagramLocGestures
             hoveredDiagramTile = hoveredWas;
         }
 
-        org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+        AutonomySession session = ui.getAutonomySession();
 
         return session != null && train.getName().equals(session.getLocomotiveNameAt(to));
     }
 
     /** The diagram square under the pointer, or null: no cursor or selection exists, so this says what a key means. */
-    private volatile org.traincontrol.automationui.TileGraph.TileKey hoveredDiagramTile;
+    private volatile TileGraph.TileKey hoveredDiagramTile;
 
     /** Sets the hovered square; page is null when the pointer has left the diagram. */
     void setHoveredDiagramTile(String page, int x, int y)
     {
-        hoveredDiagramTile = page == null || x < 0 || y < 0
-            ? null : new org.traincontrol.automationui.TileGraph.TileKey(page, x, y);
+        hoveredDiagramTile = page == null || x < 0 || y < 0 ? null : new TileGraph.TileKey(page, x, y);
     }
 
     /**
@@ -110,7 +116,7 @@ final class DiagramLocGestures
      */
     boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)
     {
-        org.traincontrol.automationui.TileGraph.TileKey over = hoveredDiagramTile;
+        TileGraph.TileKey over = hoveredDiagramTile;
 
         // No square under the pointer, or no autonomy at all: the keys mean the buttons.
         if (over == null || !ui.getModel().hasAutoLayout()) return false;
@@ -140,16 +146,15 @@ final class DiagramLocGestures
         }
 
         // The square under the pointer, or the station its LABEL is about: pointing at the name is pointing at it.
-        org.traincontrol.automationui.TileGraph.TileKey aimed = over;
+        TileGraph.TileKey aimed = over;
 
-        org.traincontrol.automation.Point point = ui.getAutonomyPointForTile(aimed);
+        Point point = ui.getAutonomyPointForTile(aimed);
 
         if (point == null)
         {
-            org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+            AutonomySession session = ui.getAutonomySession();
 
-            org.traincontrol.automationui.TileGraph.TileKey captioned =
-                session == null ? null : session.getCaptionTarget(over);
+            TileGraph.TileKey captioned = session == null ? null : session.getCaptionTarget(over);
 
             if (captioned != null)
             {
@@ -174,7 +179,7 @@ final class DiagramLocGestures
             if (placing == null) return true;
 
             // A train is only ever placed at a station (OB-365): said before the facing and tail questions.
-            org.traincontrol.automationui.AutonomySession onto = ui.getAutonomySession();
+            AutonomySession onto = ui.getAutonomySession();
 
             if (onto == null || !onto.getStore().isStation(aimed))
             {
@@ -204,7 +209,7 @@ final class DiagramLocGestures
 
             // Walked from the square it was cut from, first (OB-270): the cut heading is a compass heading, and a
             // route that loops round arrives the other way.  The cut heading stands only where no route reaches it.
-            org.traincontrol.automationui.TilePorts.Side walkedFromTheCut =
+            TilePorts.Side walkedFromTheCut =
                 placing == ui.cutLocomotive && stillLifted && ui.cutFrom != null
                     && ui.getAutonomySession() != null && ui.getModel() != null
                 ? ui.getAutonomySession().facingByPathFrom(ui.getModel().getAutoLayout(), ui.cutFrom, aimed) : null;
@@ -222,7 +227,7 @@ final class DiagramLocGestures
 
             // Where its tail is, asked BEFORE anything moves: a dismissed prompt refuses the placement and leaves the
             // train on the clipboard, unlike the other two nulls `forPlacement` answers.
-            ui.tailAtTheLanding = org.traincontrol.gui.autonomy.ArrivalSidePrompt.forPlacement(
+            ui.tailAtTheLanding = ArrivalSidePrompt.forPlacement(
                 ui.getModel() == null ? null : ui.getModel().getAutoLayout(), point,
                 ui.facingAtTheLanding == null ? null : ui.facingAtTheLanding.name(),
             // The build's sides, which the model reads too (OB-182): the geometric answer names where the neighboring
@@ -230,7 +235,7 @@ final class DiagramLocGestures
                 mayTurnHere(aimed) && !dropping, ui.dialogParent(),
                 ui.getAutonomySession() == null ? null : ui.getAutonomySession().unbarredArrivalSides(aimed));
 
-            if (!dropping && ui.tailAtTheLanding == null && org.traincontrol.gui.autonomy.ArrivalSidePrompt.wouldAsk(
+            if (!dropping && ui.tailAtTheLanding == null && ArrivalSidePrompt.wouldAsk(
                 ui.getModel() == null ? null : ui.getModel().getAutoLayout(), point,
                 mayTurnHere(aimed), ui.getAutonomySession() == null
                     ? null : ui.getAutonomySession().unbarredArrivalSides(aimed)))
@@ -244,13 +249,12 @@ final class DiagramLocGestures
 
             if (mayTurnHere(aimed) && ui.getAutonomySession() != null)
             {
-                java.util.Collection<org.traincontrol.automationui.TilePorts.Side> canHold =
-                    ui.getAutonomySession().facingsFor(aimed).values();
+                java.util.Collection<TilePorts.Side> canHold = ui.getAutonomySession().facingsFor(aimed).values();
 
-                if (!dropping && org.traincontrol.gui.autonomy.FacingPrompt.wouldAsk(canHold))
+                if (!dropping && FacingPrompt.wouldAsk(canHold))
                 {
                     // Named as the square: a copy's name states a heading, which is what this asks.
-                    ui.facingChosenAtTheLanding = org.traincontrol.gui.autonomy.FacingPrompt.forPlacement(
+                    ui.facingChosenAtTheLanding = FacingPrompt.forPlacement(
                         canHold, ui.facingAtTheLanding, ui.getAutonomySession().baseNameOf(point.getName()),
                         ui.dialogParent());
 
@@ -261,8 +265,7 @@ final class DiagramLocGestures
             // The train goes onto the copy that faces that way (MT-394): direction is which copy a train stands on.
             if (ui.facingChosenAtTheLanding != null)
             {
-                org.traincontrol.automation.Point facingThatWay =
-                    copyFacing(aimed, ui.facingChosenAtTheLanding);
+                Point facingThatWay = copyFacing(aimed, ui.facingChosenAtTheLanding);
 
                 if (facingThatWay != null) point = facingThatWay;
             }
@@ -270,11 +273,11 @@ final class DiagramLocGestures
             {
                 // Where nobody was asked, the heading the rule arrives at (OB-270): `point` is any copy, so the
                 // train could stand on the opposite-facing copy while the setup recorded the walk's heading.
-                org.traincontrol.automationui.TilePorts.Side intended =
-                    org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
+                TilePorts.Side intended =
+                    AutonomySession.facingAfterAPaste(
                         placeableFacings(aimed), ui.facingAtTheLanding, point.getName());
 
-                org.traincontrol.automation.Point facingThatWay = !anyWayOut
+                Point facingThatWay = !anyWayOut
                     ? ui.getAutonomySession().copyWithNoFacing(aimed, ui.getModel().getAutoLayout())
                     : copyFacing(aimed, intended);
 
@@ -284,9 +287,9 @@ final class DiagramLocGestures
             // The railway's answer decides here too: `isAutonomyBusy()` does not catch a target that is not a
             // destination, and the clipboard was cleared for a move that did not happen.  What the train had on the
             // railway, before this paste moves it: the tail question's keep-or-drop is decided from these.
-            org.traincontrol.automation.Point wasOn = null;
+            Point wasOn = null;
 
-            for (org.traincontrol.automation.Point each : ui.getModel().getAutoLayout().getPoints())
+            for (Point each : ui.getModel().getAutoLayout().getPoints())
             {
                 if (each.getCurrentLocomotive() == placing) wasOn = each;
             }
@@ -348,16 +351,16 @@ final class DiagramLocGestures
      * @param tile the square
      * @return true when trains may turn there
      */
-    private boolean mayTurnHere(org.traincontrol.automationui.TileGraph.TileKey tile)
+    private boolean mayTurnHere(TileGraph.TileKey tile)
     {
         return ui.getAutonomySession() != null && tile != null
             && ui.getAutonomySession().mayTurnTiles().contains(tile);
     }
 
     /** The copy of a square a train facing this way stands on, preferring one that does not turn it; null if none. */
-    private org.traincontrol.automation.Point copyFacing(
-        org.traincontrol.automationui.TileGraph.TileKey square,
-        org.traincontrol.automationui.TilePorts.Side facing)
+    private Point copyFacing(
+        TileGraph.TileKey square,
+        TilePorts.Side facing)
     {
         if (square == null || facing == null || ui.getAutonomySession() == null
             || ui.getModel() == null || !ui.getModel().hasAutoLayout())
@@ -370,20 +373,21 @@ final class DiagramLocGestures
     }
 
     /** Writes the turns made at destinations into the setup, keeping those it could not; null `session` writes none. */
-    private void writeTheTurns(org.traincontrol.automation.Layout built,
-        org.traincontrol.automationui.AutonomySession session)
+    private void writeTheTurns(Layout built,
+        AutonomySession session)
     {
         // Forgotten only once written, so a turn that never reached the graph is put back.
-        java.util.Map<String, String> turnedRound = built.takeReversalsOnArrival();
+        Map<String, String> turnedRound = built.takeReversalsOnArrival();
+        boolean wrote = false;
 
         try
         {
             if (session != null)
             {
-                for (java.util.Iterator<java.util.Map.Entry<String, String>> pending
+                for (java.util.Iterator<Map.Entry<String, String>> pending
                     = turnedRound.entrySet().iterator(); pending.hasNext();)
                 {
-                    java.util.Map.Entry<String, String> turned = pending.next();
+                    Map.Entry<String, String> turned = pending.next();
 
                     // The way it came in, not the setup's stored facing, which is stale now (a run moves trains
                     // and writes nothing back; OB-190).  A train turned around faces the way it came in.
@@ -395,8 +399,17 @@ final class DiagramLocGestures
                     }
 
                     pending.remove();
+
+                    wrote = true;
                 }
+
+                // Saved with an editor open, as a followed turn is: the railway's, not the editor's work to ask about
+                if (wrote && ui.anEditorWindow() != null) session.saveWithoutReconciling();
             }
+        }
+        catch (java.io.IOException notSaved)
+        {
+            if (ui.getModel() != null) ui.getModel().log(notSaved);
         }
         finally
         {
@@ -429,7 +442,7 @@ final class DiagramLocGestures
         {
             if (ui.getModel() == null || !ui.getModel().hasAutoLayout()) return;
 
-            org.traincontrol.automation.Layout built = ui.getModel().getAutoLayout();
+            Layout built = ui.getModel().getAutoLayout();
 
             // ONLY WHEN NOTHING IS RUNNING, which is the whole of the rule.  A train part way through
             // a journey is MEANT to disagree with the graph: it is between two copies.
@@ -437,13 +450,13 @@ final class DiagramLocGestures
 
             // What the railway turned around at its destination is written to the graph before the baseline is leveled,
             // or a manual "no, turn" there is invisible and the next dispatch offers paths for the wrong heading.
-            org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+            AutonomySession session = ui.getAutonomySession();
 
             writeTheTurns(built, session);
 
-            for (org.traincontrol.automation.Point point : built.getPoints())
+            for (Point point : built.getPoints())
             {
-                org.traincontrol.base.Locomotive loc = point.getCurrentLocomotive();
+                Locomotive loc = point.getCurrentLocomotive();
 
                 if (loc == null || loc.getName() == null) continue;
 
@@ -463,10 +476,10 @@ final class DiagramLocGestures
      * Writes a square's occupant into the autonomy setup, after the layout has been changed.
      */
 
-    private void rememberPlacement(org.traincontrol.automation.Point point,
-        org.traincontrol.automationui.TileGraph.TileKey tile)
+    private void rememberPlacement(Point point,
+        TileGraph.TileKey tile)
     {
-        org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+        AutonomySession session = ui.getAutonomySession();
 
         if (session == null) return;
 
@@ -486,17 +499,17 @@ final class DiagramLocGestures
             final java.util.List<org.traincontrol.automation.Edge> roadBefore = ui.roadBeforeTheLanding;
             final boolean sameSquareAsBefore = tile.equals(ui.squareBeforeTheLanding);
             final String sideBefore = ui.sideBeforeTheLanding;
-            final org.traincontrol.automationui.TilePorts.Side facingChosen = ui.facingChosenAtTheLanding;
-            final org.traincontrol.automationui.TilePorts.Side facingFound = ui.facingAtTheLanding;
+            final TilePorts.Side facingChosen = ui.facingChosenAtTheLanding;
+            final TilePorts.Side facingFound = ui.facingAtTheLanding;
 
             // The landing copy's side is not the train's heading (read before the move into `facingAtTheLanding`).  The
             // operator's answer wins, else `facingAfterAPaste` over the copies a train may stand on (OB-270).  Written
             // before the tail question.
             session.setFacing(tile, facingChosen != null ? facingChosen
-                : org.traincontrol.automationui.AutonomySession.facingAfterAPaste(
+                : AutonomySession.facingAfterAPaste(
                     placeableFacings(tile), facingFound, point.getName()));
 
-            setupStands = org.traincontrol.gui.TailCrossedPrompt.recordTheTail(session, tile, ui.getModel().getAutoLayout(),
+            setupStands = TailCrossedPrompt.recordTheTail(session, tile, ui.getModel().getAutoLayout(),
                 point, tail, point.getCurrentLocomotive().getName(), roadBefore, sameSquareAsBefore, sideBefore, ui,
                 ui, ui::noteIfTheSetupWasNotTidied);
         }
@@ -520,8 +533,8 @@ final class DiagramLocGestures
      * The copies of a square a train may be put down on, with their facings, by name in build order (OB-270): those
      * it could leave (OB-284), so a paste never saves a facing the train is not standing in.
      */
-    private java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> placeableFacings(
-        org.traincontrol.automationui.TileGraph.TileKey square)
+    private Map<String, TilePorts.Side> placeableFacings(
+        TileGraph.TileKey square)
     {
         if (square == null || ui.getAutonomySession() == null || ui.getModel() == null || !ui.getModel().hasAutoLayout())
         {

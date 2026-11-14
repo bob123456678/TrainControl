@@ -10,7 +10,9 @@ import java.awt.RenderingHints;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.Area;
 import java.awt.geom.RoundRectangle2D;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
+import javax.accessibility.AccessibleRole;
 import javax.swing.JComponent;
 import javax.swing.UIManager;
 import org.traincontrol.util.I18n;
@@ -262,7 +264,7 @@ public class CurrentKeyRow extends JComponent
         @Override
         public int hashCode()
         {
-            return java.util.Objects.hash(key, page, name, decoderType, address, showNumber);
+            return Objects.hash(key, page, name, decoderType, address, showNumber);
         }
 
         @Override
@@ -376,9 +378,9 @@ public class CurrentKeyRow extends JComponent
             accessibleContext = new AccessibleJComponent()
             {
                 @Override
-                public javax.accessibility.AccessibleRole getAccessibleRole()
+                public AccessibleRole getAccessibleRole()
                 {
-                    return javax.accessibility.AccessibleRole.LABEL;
+                    return AccessibleRole.LABEL;
                 }
             };
         }
@@ -425,7 +427,7 @@ public class CurrentKeyRow extends JComponent
      */
     public void setContent(Content content)
     {
-        if (java.util.Objects.equals(this.content, content)) return;
+        if (Objects.equals(this.content, content)) return;
 
         this.content = content;
 

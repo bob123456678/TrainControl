@@ -1,27 +1,45 @@
 package org.traincontrol.gui.layouteditor;
 
+import java.awt.AWTEvent;
+import java.awt.AlphaComposite;
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.Toolkit;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
@@ -33,6 +51,28 @@ import javax.swing.JTextField;
 import javax.swing.JWindow;
 import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.GroupLayout;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JList;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JToggleButton;
+import javax.swing.JToolTip;
+import javax.swing.KeyStroke;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.border.EmptyBorder;
+import javax.swing.event.PopupMenuEvent;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagram;
@@ -47,6 +87,14 @@ import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.util.I18n;
+import org.json.JSONObject;
+import org.traincontrol.automationui.AutonomyCompanionStore;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph;
+import org.traincontrol.automationui.TilePorts;
+import org.traincontrol.base.Locomotive;
+import org.traincontrol.base.TileSelection;
+import org.traincontrol.gui.widgets.UiStyle;
 
 /**
  * Track diagram editor
@@ -124,7 +172,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * The grip's mark, a yellow wash and a four-way arrow: a Border, the only thing painted after the opaque tile; it
      * reserves no space.
      */
-    private static final class SelectionGrip implements javax.swing.border.Border
+    private static final class SelectionGrip implements Border
     {
         @Override
         public boolean isBorderOpaque()
@@ -133,32 +181,29 @@ public class LayoutEditor extends PositionAwareJFrame
         }
 
         @Override
-        public java.awt.Insets getBorderInsets(java.awt.Component on)
+        public Insets getBorderInsets(Component on)
         {
             // Nothing: drawn over the tile
-            return new java.awt.Insets(0, 0, 0, 0);
+            return new Insets(0, 0, 0, 0);
         }
 
         @Override
-        public void paintBorder(java.awt.Component on, java.awt.Graphics g, int x, int y,
+        public void paintBorder(Component on, Graphics g, int x, int y,
             int width, int height)
         {
-            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+            Graphics2D g2 = (Graphics2D) g.create();
 
             try
             {
-                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-                    java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
                 // Translucent, so the track still reads
-                g2.setComposite(java.awt.AlphaComposite.getInstance(
-                    java.awt.AlphaComposite.SRC_OVER, 0.55f));
+                g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.55f));
 
                 g2.setColor(HANDLE_FILL);
                 g2.fillRect(x, y, width, height);
 
-                g2.setComposite(java.awt.AlphaComposite.getInstance(
-                    java.awt.AlphaComposite.SRC_OVER, 1f));
+                g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
 
                 arrows(g2, x, y, width, height);
             }
@@ -168,7 +213,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
 
-        private void arrows(java.awt.Graphics2D g, int x, int y, int width, int height)
+        private void arrows(Graphics2D g, int x, int y, int width, int height)
         {
             int middleX = x + width / 2;
             int middleY = y + height / 2;
@@ -177,9 +222,8 @@ public class LayoutEditor extends PositionAwareJFrame
             int reach = Math.max(4, Math.min(width, height) / 2 - 3);
             int head = Math.max(2, reach / 3);
 
-            g.setColor(java.awt.Color.BLACK);
-            g.setStroke(new java.awt.BasicStroke(Math.max(1.6f, reach / 6f),
-                java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+            g.setColor(Color.BLACK);
+            g.setStroke(new BasicStroke(Math.max(1.6f, reach / 6f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
             g.drawLine(middleX - reach, middleY, middleX + reach, middleY);
             g.drawLine(middleX, middleY - reach, middleX, middleY + reach);
@@ -190,7 +234,7 @@ public class LayoutEditor extends PositionAwareJFrame
             head(g, middleX, middleY + reach, head, 0, 1);
         }
 
-        private void head(java.awt.Graphics2D g, int tipX, int tipY, int size, int dx, int dy)
+        private void head(Graphics2D g, int tipX, int tipY, int size, int dx, int dy)
         {
             int[] xs = {tipX, tipX - dx * size - dy * size, tipX - dx * size + dy * size};
             int[] ys = {tipY, tipY - dy * size - dx * size, tipY - dy * size + dx * size};
@@ -205,8 +249,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * A state, not a key held, so a group can be dragged with both hands free.  Shift-click picks and unpicks, Escape
      * lets go; the geometry is TileSelection's.
      */
-    final org.traincontrol.base.TileSelection selection =
-        new org.traincontrol.base.TileSelection();
+    final TileSelection selection = new TileSelection();
 
     /** True while a drag that began on a picked square is in progress. */
     private boolean groupDragging = false;
@@ -223,19 +266,17 @@ public class LayoutEditor extends PositionAwareJFrame
     private boolean selectMode = false;
 
     /** The rectangle being dragged out now, apart from the real selection so letting go elsewhere changes nothing. */
-    private final org.traincontrol.base.TileSelection previewSelection =
-        new org.traincontrol.base.TileSelection();
+    private final TileSelection previewSelection = new TileSelection();
 
     /** Where the dragged group would land, outlined, or empty when nothing is dragged. */
-    private final org.traincontrol.base.TileSelection landingSelection =
-        new org.traincontrol.base.TileSelection();
+    private final TileSelection landingSelection = new TileSelection();
 
     /**
      * What a group copy took: one entry per square of the BOUNDING BOX, holes included.
      *
      * A piece of railway with holes is not what the user pointed at, and pasting it would show old tiles through them.
      */
-    java.util.List<CarriedTile> groupClipboard;
+    List<CarriedTile> groupClipboard;
 
     /**
      * One square of a copied group, by its offset from the top left of what was copied.
@@ -255,7 +296,7 @@ public class LayoutEditor extends PositionAwareJFrame
     }
     
     /** Where each carried tile came from, for moving a cut's setup; recorded by a copy too, to keep one shape. */
-    java.util.List<org.traincontrol.automationui.TileGraph.TileKey> clipboardOrigins;
+    List<TileGraph.TileKey> clipboardOrigins;
 
     /**
      * Whether the clipboard was CUT: a cut's setup follows the track, a copy's stays.  Cleared after one paste, or a
@@ -267,16 +308,16 @@ public class LayoutEditor extends PositionAwareJFrame
      * The squares a cut actually emptied, the picked ones, not the clipboard's bounding box: only these may have their
      * setup moved.
      */
-    java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> clipboardCutSquares;
+    Set<TileGraph.TileKey> clipboardCutSquares;
 
     /**
      * The cut squares that held a tile, so `emptyCutOrigins` tells an undone cut from an outstanding one (an empty
      * square is empty either way).
      */
-    java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> clipboardCutHadTiles;
+    Set<TileGraph.TileKey> clipboardCutHadTiles;
 
     /** The generated `newComponents`, for `LayoutEditorSelection`. */
-    javax.swing.JPanel newComponents()
+    JPanel newComponents()
     {
         return this.newComponents;
     }
@@ -301,15 +342,39 @@ public class LayoutEditor extends PositionAwareJFrame
      * The captions, one snapshot per component snapshot, pushed and popped together: a caption is the setup's, not the
      * tile's.  This page's only, so an undo touches nothing elsewhere.
      */
-    Deque<java.util.Map<String, Object>> previousCaptions = new ConcurrentLinkedDeque<>();
+    Deque<Map<String, Object>> previousCaptions = new ConcurrentLinkedDeque<>();
 
-    Deque<java.util.Map<String, Object>> previousCaptionsRedo = new ConcurrentLinkedDeque<>();
+    Deque<Map<String, Object>> previousCaptionsRedo = new ConcurrentLinkedDeque<>();
 
     /** Undo and redo (FR-136). */
     private final LayoutEditorUndo undoOps = new LayoutEditorUndo(this);
 
     /** The setup as this window opened, for Cancel; null with no session, cleared once the edits are kept. */
-    private org.json.JSONObject autonomyAsOpened;
+    private JSONObject autonomyAsOpened;
+
+    /**
+     * Where each train stood on the railway when this window opened or last saved (`TrainControlUI.whereTheTrainsAre`),
+     * by locomotive so a rename keeps it: Cancel and every Discard stand the trains back so.
+     */
+    private final Map<Locomotive, String[]> railwayAsOpened = new java.util.IdentityHashMap<>();
+
+    /**
+     * The session's `turnsSoFar` as the picture was taken: a discard keeps the turns made since, as Cancel never
+     * changes which way a train faces.
+     */
+    private Map<Object, Integer> turnsAsOpened;
+
+    /**
+     * The facing choices where each train stood as the picture was taken (`choicesWhereTrainsStand`): the build a
+     * discard restores, which an edit since may have changed.
+     */
+    private Map<TileGraph.TileKey, List<TilePorts.Side>> choicesAsOpened = java.util.Collections.emptyMap();
+
+    /** Each pictured place turned round, by that build (`turnedRound`). */
+    private final Map<Locomotive, String[]> turnedAsOpened = new java.util.IdentityHashMap<>();
+
+    /** How many trains the discard question names before "and N more". */
+    private static final int TRAINS_NAMED = 5;
 
     /**
      * Whether the last `settleUnsavedWork` ended in Discard; its true answer also means nothing to settle, and undoing
@@ -318,7 +383,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private boolean settledByDiscarding;
 
     /** The session the disk undo note was written through, so dispose can give it back. */
-    private org.traincontrol.automationui.AutonomySession autonomySessionForTheNote;
+    private AutonomySession autonomySessionForTheNote;
 
     /**
      * Follows a locomotive's rename into the snapshot Cancel would put back, or a restored name missing from the
@@ -328,20 +393,17 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void autonomyLocomotiveRenamed(String from, String to)
     {
-        org.traincontrol.automationui.AutonomyCompanionStore
-            .repairLocomotiveInSetup(this.autonomyAsOpened, from, to);
+        AutonomyCompanionStore.repairLocomotiveInSetup(this.autonomyAsOpened, from, to);
 
         // And every undo snapshot, as restoring one writes and saves the page's point properties.
-        for (java.util.Map<String, Object> was : this.previousCaptions)
+        for (Map<String, Object> was : this.previousCaptions)
         {
-            org.traincontrol.automationui.AutonomyCompanionStore
-                .repairLocomotiveInPageSnapshot(was, from, to);
+            AutonomyCompanionStore.repairLocomotiveInPageSnapshot(was, from, to);
         }
 
-        for (java.util.Map<String, Object> was : this.previousCaptionsRedo)
+        for (Map<String, Object> was : this.previousCaptionsRedo)
         {
-            org.traincontrol.automationui.AutonomyCompanionStore
-                .repairLocomotiveInPageSnapshot(was, from, to);
+            AutonomyCompanionStore.repairLocomotiveInPageSnapshot(was, from, to);
         }
     }
 
@@ -351,17 +413,15 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void autonomyRecordUpdated(String locomotive, String key, Object value)
     {
-        org.traincontrol.automationui.AutonomyCompanionStore
-            .updateRecordInSetup(this.autonomyAsOpened, locomotive, key, value);
+        AutonomyCompanionStore.updateRecordInSetup(this.autonomyAsOpened, locomotive, key, value);
 
-        java.util.List<java.util.Map<String, Object>> held = new java.util.ArrayList<>(this.previousCaptions);
+        List<Map<String, Object>> held = new ArrayList<>(this.previousCaptions);
 
         held.addAll(this.previousCaptionsRedo);
 
-        for (java.util.Map<String, Object> was : held)
+        for (Map<String, Object> was : held)
         {
-            org.traincontrol.automationui.AutonomyCompanionStore
-                .updateRecordInPageSnapshot(was, locomotive, key, value);
+            AutonomyCompanionStore.updateRecordInPageSnapshot(was, locomotive, key, value);
         }
     }
 
@@ -370,13 +430,143 @@ public class LayoutEditor extends PositionAwareJFrame
      * editor open), always together: a page or mode switch moves both.
      * @param live the session to snapshot, or null when there is none
      */
-    private void takeTheUndoPoint(org.traincontrol.automationui.AutonomySession live)
+    private void takeTheUndoPoint(AutonomySession live)
     {
         this.autonomyAsOpened = live == null ? null : live.snapshotSetup();
 
         this.autonomySessionForTheNote = live;
 
         if (live != null) live.beginEditSession();
+
+        pictureTheRailway(live);
+    }
+
+    /** Takes `railwayAsOpened` and `turnsAsOpened` again. */
+    private void pictureTheRailway(AutonomySession live)
+    {
+        this.turnsAsOpened = live == null ? null : live.turnsSoFar();
+
+        this.choicesAsOpened = live == null ? java.util.Collections.emptyMap() : live.choicesWhereTrainsStand();
+
+        this.railwayAsOpened.clear();
+        this.turnedAsOpened.clear();
+
+        for (Map.Entry<String, String[]> each : railwayNow().entrySet())
+        {
+            Locomotive loc = parent.getModel().getLocByName(each.getKey());
+
+            if (loc != null) this.railwayAsOpened.put(loc, each.getValue());
+
+            if (loc != null && live != null) this.turnedAsOpened.put(loc, turnedRound(each.getValue(), live));
+        }
+    }
+
+    /** Where the railway has each train now, by name (`TrainControlUI.whereTheTrainsAre`). */
+    private Map<String, String[]> railwayNow()
+    {
+        return TrainControlUI.whereTheTrainsAre(parent == null || parent.getModel() == null
+            ? null : parent.getModel().getAutoLayoutIfLoaded());
+    }
+
+    /**
+     * The picture by each train's name now, a deleted one left out, and null for a train the railway has now and had
+     * not then, which the restored setup then places.  With `keepingTheTurns`, a train turned since faces the other way
+     * there, by the build as pictured.
+     */
+    private Map<String, String[]> railwayAsPictured(boolean keepingTheTurns)
+    {
+        Map<String, String[]> back = new java.util.TreeMap<>();
+        Set<String> turned = keepingTheTurns ? trainsTurnedSince(parent.getAutonomySession())
+            : java.util.Collections.<String>emptySet();
+
+        for (String now : railwayNow().keySet()) back.put(now, null);
+
+        for (Map.Entry<Locomotive, String[]> each : this.railwayAsOpened.entrySet())
+        {
+            String name = each.getKey().getName();
+
+            if (parent.getModel().getLocByName(name) != each.getKey()) continue;
+
+            back.put(name, turned.contains(name) ? this.turnedAsOpened.getOrDefault(each.getKey(), each.getValue())
+                : each.getValue());
+        }
+
+        return back;
+    }
+
+    /** The trains turned an odd number of times since the picture, by name (`AutonomySession.turnedSince`). */
+    private Set<String> trainsTurnedSince(AutonomySession autonomy)
+    {
+        return autonomy == null ? java.util.Collections.<String>emptySet() : autonomy.turnedSince(this.turnsAsOpened);
+    }
+
+    /** A pictured place on the copy of its square facing the other way, or as pictured where the square has none. */
+    private String[] turnedRound(String[] was, AutonomySession autonomy)
+    {
+        TilePorts.Side facing = null;
+
+        for (TilePorts.Side side : TilePorts.Side.values()) if (side.name().equals(was[4])) facing = side;
+
+        TileGraph.TileKey square = was[3] == null ? null : AutonomyCompanionStore.parseTileKey(was[3]);
+        TilePorts.Side other = autonomy.theOtherFacing(square, facing);
+        Point copy = other == null ? null
+            : autonomy.copyFacing(square, other, parent.getModel().getAutoLayoutIfLoaded());
+
+        if (copy == null) return was;
+
+        String[] turned = was.clone();
+
+        turned[0] = copy.getName();
+        turned[4] = other.name();
+
+        return turned;
+    }
+
+    /** The setup as this window opened it, each train turned since turned there too, by the build as pictured. */
+    private JSONObject asOpenedKeepingTheTurns(AutonomySession autonomy)
+    {
+        return autonomy.withTheseTrainsTurned(this.autonomyAsOpened, trainsTurnedSince(autonomy), this.choicesAsOpened);
+    }
+
+    /** The question, with a sentence naming the trains a discard moves; word for word where there are none. */
+    private String withTheTrainsMovingBack(String question)
+    {
+        Map<String, String[]> now = railwayNow();
+        List<String> moving = new ArrayList<>();
+
+        for (Map.Entry<String, String[]> was : railwayAsPictured(true).entrySet())
+        {
+            // Not a train deleted meanwhile, which only stands on the railway until the rebuild
+            if (parent.getModel().getLocByName(was.getKey()) != null
+                && !java.util.Objects.equals(placeOf(was.getValue()), placeOf(now.get(was.getKey()))))
+            {
+                moving.add(was.getKey());
+            }
+        }
+
+        if (moving.isEmpty()) return question;
+
+        String names = String.join(", ", moving.subList(0, Math.min(TRAINS_NAMED, moving.size())));
+
+        if (moving.size() > TRAINS_NAMED)
+        {
+            names = I18n.f("autolayout.ui.routeNamesAndMore", names, moving.size() - TRAINS_NAMED);
+        }
+
+        return question + "\n\n" + I18n.f("autosetup.ui.trainsGoBackOnDiscard", names);
+    }
+
+    /** A place `whereTheTrainsAre` read, by squares rather than Point names, which a station's rename changes. */
+    private static List<Object> placeOf(String[] at)
+    {
+        if (at == null) return null;
+
+        Set<String> road = new java.util.TreeSet<>();
+        JSONObject squares = at[5] == null ? new JSONObject() : new JSONObject(at[5]);
+
+        for (String point : squares.keySet()) road.add(String.valueOf(squares.get(point)));
+
+        return java.util.Arrays.asList(at[3] == null ? at[0] : at[3], at[4], at[1], road);
     }
 
     /**
@@ -388,7 +578,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         this.trainDrag.abandon();
 
-        java.awt.Toolkit.getDefaultToolkit().removeAWTEventListener(this.pointerWatch);
+        Toolkit.getDefaultToolkit().removeAWTEventListener(this.pointerWatch);
 
         if (this.autonomySessionForTheNote != null)
         {
@@ -425,25 +615,27 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (autonomyPanel.isDirty()) return true;
 
-        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+        AutonomySession autonomy = parent.getAutonomySession();
 
         return this.autonomyAsOpened != null && autonomy != null
-            && (autonomy.aGestureOvertookTheRailwaysPause() || !this.autonomyAsOpened.similar(autonomy.snapshotSetup()));
+            && (autonomy.aGestureOvertookTheRailwaysPause()
+                || !asOpenedKeepingTheTurns(autonomy).similar(autonomy.snapshotSetup()));
     }
 
     /**
      * Throws away this window's autonomy edits, putting the opening setup back in memory and on disk (MT-406), as the
-     * per-gesture save already wrote them.  Lifted, dragged and placed trains go back where the railway had them.
+     * per-gesture save already wrote them, and every train back where `railwayAsOpened` has it, keeping its turns.
      * @return null when it worked, or the reason it did not
      */
     private String discardAutonomyWork()
     {
-        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+        AutonomySession autonomy = parent.getAutonomySession();
 
         String failed;
 
-        // Asked of the edit, before it is thrown away
-        java.util.Map<String, String[]> standingBefore = autonomyPanel.railwayBeforeTheEdit();
+        // By the names now, read before the setup is restored
+        Map<String, String[]> standingBefore = railwayAsPictured(false);
+        Set<String> turned = trainsTurnedSince(autonomy);
 
         if (this.autonomyAsOpened == null || autonomy == null) failed = autonomyPanel.discardEdits();
         else if (!autonomy.restoreSetup(this.autonomyAsOpened)) failed = I18n.t("autosetup.log.restoreFailedAfterCancel");
@@ -451,28 +643,61 @@ public class LayoutEditor extends PositionAwareJFrame
 
         // The railway follows at once, before the window goes, or a fold in between would write the discarded edit
         // back.  Declines while autonomy runs.
-        if (failed == null && autonomy != null) parent.rebuildRunningLayoutFromSetup(standingBefore);
+        if (failed == null && autonomy != null)
+        {
+            Object before = parent.getModel().getAutoLayoutIfLoaded();
+
+            parent.rebuildRunningLayoutFromSetup(standingBefore);
+
+            org.traincontrol.automation.Layout rebuilt = parent.getModel().getAutoLayoutIfLoaded();
+
+            turnAgain(autonomy, turned, rebuilt != before ? rebuilt : null);
+        }
 
         return failed;
     }
 
-    /** Puts the setup back as the window opened it, with the page re-read beside it, as both halves undo together. */
+    /**
+     * Puts the setup back as the window opened it, with the page re-read beside it, as both halves undo together; each
+     * train turned since turned by the build as pictured, which the pages read again restore (the edited one may lack
+     * the train's square), and stood so on the railway, whose facing the reset's fold writes over the setup's.
+     */
     private void undoAutonomyEdits()
     {
         if (this.autonomyAsOpened == null) return;
 
-        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+        AutonomySession autonomy = parent.getAutonomySession();
+        Map<String, String[]> standing = railwayAsPictured(true);
 
-        if (autonomy != null && !autonomy.restoreSetup(this.autonomyAsOpened)
-            && parent.getModel() != null)
+        if (autonomy != null && !autonomy.restoreSetup(asOpenedKeepingTheTurns(autonomy)) && parent.getModel() != null)
         {
             parent.getModel().logf("autosetup.log.restoreFailedAfterCancel");
+        }
+        else if (autonomy != null)
+        {
+            parent.standTheTrainsBack(standing);
         }
 
         this.autonomyAsOpened = null;
     }
 
-    void rememberAutonomy(org.traincontrol.automationui.AutonomySession autonomy)
+    /**
+     * Turns each train turned since the picture where the restored setup, and the railway if given (one stood back as
+     * pictured), now has it, by the restored build, and saves: a discard keeps every turn, written or not.
+     */
+    private void turnAgain(AutonomySession autonomy, Set<String> trains,
+        org.traincontrol.automation.Layout railway)
+    {
+        if (trains.isEmpty()) return;
+
+        for (String train : trains) autonomy.flipFacing(train, railway);
+
+        rememberAutonomy(autonomy);
+
+        parent.autonomySetupChanged();
+    }
+
+    void rememberAutonomy(AutonomySession autonomy)
     {
         if (autonomy == null) return;
 
@@ -520,16 +745,16 @@ public class LayoutEditor extends PositionAwareJFrame
         initComponents();
 
         // Bold 12 like every other button; the designer drew these at 11.
-        org.traincontrol.gui.widgets.UiStyle.button(saveButton);
-        org.traincontrol.gui.widgets.UiStyle.button(cancelButton);
+        UiStyle.button(saveButton);
+        UiStyle.button(cancelButton);
 
         // After the layout has settled, so the content's height is the new one (OB-399).
-        addComponentListener(new java.awt.event.ComponentAdapter()
+        addComponentListener(new ComponentAdapter()
         {
             @Override
-            public void componentResized(java.awt.event.ComponentEvent e)
+            public void componentResized(ComponentEvent e)
             {
-                javax.swing.SwingUtilities.invokeLater(() -> sizeTheFindings());
+                SwingUtilities.invokeLater(() -> sizeTheFindings());
             }
         });
 
@@ -547,8 +772,7 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             // The setup as it stands, before anything here touches it: gestures write it as they go, so Cancel needs
             // this snapshot.
-            org.traincontrol.automationui.AutonomySession opened = ui == null
-                ? null : ui.getAutonomySession();
+            AutonomySession opened = ui == null ? null : ui.getAutonomySession();
 
             takeTheUndoPoint(opened);
         
@@ -571,7 +795,7 @@ public class LayoutEditor extends PositionAwareJFrame
             showDiagramSize();
 
         // The pointer, watched wherever it arrives; removed in dispose
-            java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(this.pointerWatch, java.awt.AWTEvent.MOUSE_EVENT_MASK);
+            Toolkit.getDefaultToolkit().addAWTEventListener(this.pointerWatch, AWTEvent.MOUSE_EVENT_MASK);
         }
         catch (RuntimeException | Error failed)
         {
@@ -609,7 +833,7 @@ public class LayoutEditor extends PositionAwareJFrame
         gbc.gridx = 0; // Starting column
         gbc.gridy = 0; // Starting row
         gbc.anchor = GridBagConstraints.NORTH; // Anchor to top
-        gbc.insets = new java.awt.Insets(2, 2, 2, 2); // Top, left, bottom, right padding
+        gbc.insets = new Insets(2, 2, 2, 2); // Top, left, bottom, right padding
 
         int cols = 3;
         
@@ -759,8 +983,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // The palette.
         if (x < 0 || y < 0) return null;
 
-        return this.parent.autonomyStationNameAt(
-            new org.traincontrol.automationui.TileGraph.TileKey(this.layout.getName(), x, y));
+        return this.parent.autonomyStationNameAt(new TileGraph.TileKey(this.layout.getName(), x, y));
     }
 
     /**
@@ -776,7 +999,7 @@ public class LayoutEditor extends PositionAwareJFrame
         int y = getY(label);
 
         boolean turns = autonomyPanel != null && x >= 0 && y >= 0 && autonomyPanel.clickChangesDirections(
-            new org.traincontrol.automationui.TileGraph.TileKey(this.layout.getName(), x, y));
+            new TileGraph.TileKey(this.layout.getName(), x, y));
 
         label.setCursor(turns ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
 
@@ -798,7 +1021,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * page left behind is forgotten, not merely refused.
      * @return the square, or null when the pointer is over none this window can answer about
      */
-    public org.traincontrol.automationui.TileGraph.TileKey hoveredSquare()
+    public TileGraph.TileKey hoveredSquare()
     {
         LayoutLabel over = autonomyHover;
 
@@ -815,13 +1038,13 @@ public class LayoutEditor extends PositionAwareJFrame
             return null;
         }
 
-        return new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), x, y);
+        return new TileGraph.TileKey(layout.getName(), x, y);
     }
 
     /** A Control shortcut's prompt, given `hoveredSquare` where there is one and an autonomy panel to ask. */
-    private void onTheHoveredSquare(java.util.function.Consumer<org.traincontrol.automationui.TileGraph.TileKey> prompt)
+    private void onTheHoveredSquare(Consumer<TileGraph.TileKey> prompt)
     {
-        org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
+        TileGraph.TileKey over = hoveredSquare();
 
         if (over != null && autonomyPanel != null) prompt.accept(over);
     }
@@ -841,7 +1064,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // pointer settles.
             showWhatAClickDoes(label);
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 this.clearBordersFromChildren(this.grid.getContainer());
                 this.highlightLabel(label, COMPONENT_BORDER_HOVERED_COLOR);
@@ -919,7 +1142,7 @@ public class LayoutEditor extends PositionAwareJFrame
                     label.setCursor(null);
                 }
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     this.clearBordersFromChildren(this.grid.getContainer());
                     this.highlightLabel(label, COMPONENT_BORDER_HOVERED_COLOR);
@@ -1095,7 +1318,7 @@ public class LayoutEditor extends PositionAwareJFrame
         this.groupDragging = true;
 
         // The tiles themselves, not a count: the eye checks the shape against the gap.
-        javax.swing.Icon carried = selectionPreview();
+        Icon carried = selectionPreview();
 
         ghostLabel = carried == null
             ? new JLabel(I18n.f("layout.ui.dragGroup", this.selection.size())) : new JLabel(carried);
@@ -1114,7 +1337,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * The picked squares as one picture laid out as on the diagram, scaled down for a large group.
      * @return the picture, or null where there is nothing to draw
      */
-    private javax.swing.Icon selectionPreview()
+    private Icon selectionPreview()
     {
         int[] bounds = this.selection.bounds();
 
@@ -1127,18 +1350,17 @@ public class LayoutEditor extends PositionAwareJFrame
 
         int cell = Math.max(4, (int) Math.round(size * scale));
 
-        java.awt.image.BufferedImage picture = new java.awt.image.BufferedImage(
+        BufferedImage picture = new BufferedImage(
             Math.max(1, across * cell), Math.max(1, down * cell),
-            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            BufferedImage.TYPE_INT_ARGB);
 
-        java.awt.Graphics2D g = picture.createGraphics();
+        Graphics2D g = picture.createGraphics();
 
         try
         {
-            g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
-                java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
-            for (org.traincontrol.base.TileSelection.At at : this.selection.all())
+            for (TileSelection.At at : this.selection.all())
             {
                 LayoutLabel from = grid.getValueAt(at.getX(), at.getY());
 
@@ -1148,12 +1370,12 @@ public class LayoutEditor extends PositionAwareJFrame
                 int y = (at.getY() - bounds[1]) * cell;
 
                 // Through an image: an ImageIcon paints at its own size and would spill over
-                java.awt.image.BufferedImage one = new java.awt.image.BufferedImage(
+                BufferedImage one = new BufferedImage(
                     Math.max(1, from.getIcon().getIconWidth()),
                     Math.max(1, from.getIcon().getIconHeight()),
-                    java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                    BufferedImage.TYPE_INT_ARGB);
 
-                java.awt.Graphics2D oneG = one.createGraphics();
+                Graphics2D oneG = one.createGraphics();
 
                 try
                 {
@@ -1172,7 +1394,7 @@ public class LayoutEditor extends PositionAwareJFrame
             g.dispose();
         }
 
-        return new javax.swing.ImageIcon(picture);
+        return new ImageIcon(picture);
     }
 
     /** The longest side a dragged group is drawn at, in pixels, so it does not hide the diagram. */
@@ -1198,7 +1420,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.landingSelection.clear();
 
-                for (org.traincontrol.base.TileSelection.At at
+                for (TileSelection.At at
                     : this.selection.movedBy(getX(over) - getX(this.dragSource),
                         getY(over) - getY(this.dragSource)))
                 {
@@ -1331,18 +1553,18 @@ public class LayoutEditor extends PositionAwareJFrame
     private AutonomyEditorPanel autonomyPanel;
 
     // The diagram with the findings beneath, once fitted; kept so a second call does not stack a copy.
-    private javax.swing.JPanel autonomyFindings;
+    private JPanel autonomyFindings;
 
     private AutonomyBanner autonomyBanner;
 
     // The column holding Addresses and the lengths toggle in autonomy mode
-    private javax.swing.JPanel autonomyVisibility;
+    private JPanel autonomyVisibility;
 
     /**
      * Turns autonomy setup on or off, without layout.setEdit(), so labels and text stay as when trains run.
      * @param session the setup to edit, or null to go back to editing the diagram
      */
-    public void setAutonomyMode(org.traincontrol.automationui.AutonomySession session)
+    public void setAutonomyMode(AutonomySession session)
     {
         // Resizing the page is editing the diagram, so its buttons go with the palette; Toggle Visibility stays.
         if (this.diagramSize != null) this.diagramSize.setVisible(session == null);
@@ -1373,10 +1595,9 @@ public class LayoutEditor extends PositionAwareJFrame
             sizeTheDiagram();
 
             // The Addresses box back where the form had it
-            if (autonomyVisibility != null && formPane.getLayout() instanceof javax.swing.GroupLayout)
+            if (autonomyVisibility != null && formPane.getLayout() instanceof GroupLayout)
             {
-                ((javax.swing.GroupLayout) formPane.getLayout())
-                    .replace(autonomyVisibility, this.showAddressCheckbox);
+                ((GroupLayout) formPane.getLayout()).replace(autonomyVisibility, this.showAddressCheckbox);
 
                 autonomyVisibility = null;
             }
@@ -1387,10 +1608,9 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 if (this.jScrollPane1.getParent() != null) this.jScrollPane1.getParent().remove(this.jScrollPane1);
 
-                if (formPane.getLayout() instanceof javax.swing.GroupLayout)
+                if (formPane.getLayout() instanceof GroupLayout)
                 {
-                    ((javax.swing.GroupLayout) formPane.getLayout())
-                        .replace(autonomyFindings, this.jScrollPane1);
+                    ((GroupLayout) formPane.getLayout()).replace(autonomyFindings, this.jScrollPane1);
                 }
 
                 autonomyFindings = null;
@@ -1436,17 +1656,17 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 refreshGrid();
 
-                javax.swing.SwingUtilities.invokeLater(() -> refreshAutonomyAnnotations());
+                SwingUtilities.invokeLater(() -> refreshAutonomyAnnotations());
             });
 
             // And the light door (OB-185): only the arrows re-set, no flashing rebuild.
             autonomyPanel.setOnAnnotationsChanged(() -> refreshAutonomyAnnotations());
 
-            autonomyPanel.setOnReveal(new java.util.function.Consumer<
-                org.traincontrol.automationui.TileGraph.TileKey>()
+            autonomyPanel.setOnReveal(new Consumer<
+                TileGraph.TileKey>()
             {
                 @Override
-                public void accept(org.traincontrol.automationui.TileGraph.TileKey tile)
+                public void accept(TileGraph.TileKey tile)
                 {
                     reveal(tile);
                 }
@@ -1454,11 +1674,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // A finding on another page: close and reopen on that page, as the editor is built around one diagram.
             // Nothing is lost, as every edit is already in the shared session.
-            autonomyPanel.setOnJumpToPage(new java.util.function.Consumer<
-                org.traincontrol.automationui.TileGraph.TileKey>()
+            autonomyPanel.setOnJumpToPage(new Consumer<
+                TileGraph.TileKey>()
             {
                 @Override
-                public void accept(org.traincontrol.automationui.TileGraph.TileKey tile)
+                public void accept(TileGraph.TileKey tile)
                 {
                     layout.setEdit(false);
 
@@ -1493,29 +1713,28 @@ public class LayoutEditor extends PositionAwareJFrame
             });
 
             // A link's other end: the same close-and-reopen, but it asks first, as the user chose to leave.
-            autonomyPanel.setOnJumpToLink(new java.util.function.Consumer<
-                org.traincontrol.automationui.TileGraph.TileKey>()
+            autonomyPanel.setOnJumpToLink(new Consumer<
+                TileGraph.TileKey>()
             {
                 @Override
-                public void accept(org.traincontrol.automationui.TileGraph.TileKey tile)
+                public void accept(TileGraph.TileKey tile)
                 {
                     jumpToSquare(tile);
                 }
             });
 
-            autonomyPanel.setLocomotiveNames(new java.util.function.Supplier<java.util.List<String>>()
+            autonomyPanel.setLocomotiveNames(new java.util.function.Supplier<List<String>>()
             {
                 @Override
-                public java.util.List<String> get()
+                public List<String> get()
                 {
-                    return parent.getModel() == null
-                        ? new java.util.ArrayList<String>() : parent.getModel().getLocList();
+                    return parent.getModel() == null ? new ArrayList<String>() : parent.getModel().getLocList();
                 }
             });
 
             this.newComponents.removeAll();
-            this.newComponents.setLayout(new java.awt.BorderLayout());
-            this.newComponents.add(autonomyPanel, java.awt.BorderLayout.CENTER);
+            this.newComponents.setLayout(new BorderLayout());
+            this.newComponents.add(autonomyPanel, BorderLayout.CENTER);
 
             autonomyBanner = new AutonomyBanner();
 
@@ -1527,72 +1746,66 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // The lengths toggle under Addresses: GroupLayout can replace a component, so Addresses is swapped for a
             // column holding both.
-            if (formPane.getLayout() instanceof javax.swing.GroupLayout)
+            if (formPane.getLayout() instanceof GroupLayout)
             {
-                javax.swing.JPanel visibility = new javax.swing.JPanel();
-                visibility.setLayout(new javax.swing.BoxLayout(visibility,
-                    javax.swing.BoxLayout.Y_AXIS));
+                JPanel visibility = new JPanel();
+                visibility.setLayout(new BoxLayout(visibility, BoxLayout.Y_AXIS));
                 visibility.setOpaque(false);
 
-                ((javax.swing.GroupLayout) formPane.getLayout())
-                    .replace(this.showAddressCheckbox, visibility);
+                ((GroupLayout) formPane.getLayout()).replace(this.showAddressCheckbox, visibility);
 
-                this.showAddressCheckbox.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-                autonomyPanel.getShowLengths().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                this.showAddressCheckbox.setAlignmentX(Component.LEFT_ALIGNMENT);
+                autonomyPanel.getShowLengths().setAlignmentX(Component.LEFT_ALIGNMENT);
 
                 visibility.add(this.showAddressCheckbox);
 
                 // The form's gap, or the two would read as one control.
-                visibility.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
+                visibility.add(Box.createVerticalStrut(CHECKBOX_GAP));
 
                 visibility.add(autonomyPanel.getShowLengths());
 
                 // Under Track Lengths, at the same gap as every other pair: one subject, not one control.
-                visibility.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
+                visibility.add(Box.createVerticalStrut(CHECKBOX_GAP));
 
-                autonomyPanel.getShowUnmeasured().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                autonomyPanel.getShowUnmeasured().setAlignmentX(Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowUnmeasured());
 
                 // And the trains (FR-119), a subject of their own
-                visibility.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
+                visibility.add(Box.createVerticalStrut(CHECKBOX_GAP));
 
-                autonomyPanel.getShowTrains().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                autonomyPanel.getShowTrains().setAlignmentX(Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowTrains());
 
                 // And the diagram's text (FR-133, OB-312)
-                visibility.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
+                visibility.add(Box.createVerticalStrut(CHECKBOX_GAP));
 
-                autonomyPanel.getShowTextLabels().setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                autonomyPanel.getShowTextLabels().setAlignmentX(Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowTextLabels());
 
                 // What the captions say, as one choice (FR-061), in jLabel1's heading style.
-                javax.swing.JLabel captionsLabel =
-                    new javax.swing.JLabel(I18n.t("autosetup.ui.captionsHeading"));
+                JLabel captionsLabel = new JLabel(I18n.t("autosetup.ui.captionsHeading"));
                 captionsLabel.setFont(this.jLabel1.getFont());
                 captionsLabel.setForeground(this.jLabel1.getForeground());
-                captionsLabel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-                captionsLabel.setBorder(
-                    javax.swing.BorderFactory.createEmptyBorder(HEADING_GAP + 6, 0, HEADING_GAP, 0));
+                captionsLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                captionsLabel.setBorder(BorderFactory.createEmptyBorder(HEADING_GAP + 6, 0, HEADING_GAP, 0));
 
                 visibility.add(captionsLabel);
 
-                javax.swing.JComboBox<String> captionChoice = autonomyPanel.getCaptionChoice();
-                captionChoice.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                JComboBox<String> captionChoice = autonomyPanel.getCaptionChoice();
+                captionChoice.setAlignmentX(Component.LEFT_ALIGNMENT);
 
                 visibility.add(captionChoice);
-                javax.swing.JLabel directionsLabel =
-                    new javax.swing.JLabel(I18n.t("autosetup.ui.labelDirections"));
+                JLabel directionsLabel = new JLabel(I18n.t("autosetup.ui.labelDirections"));
                 directionsLabel.setFont(this.jLabel1.getFont());
                 directionsLabel.setForeground(this.jLabel1.getForeground());
-                directionsLabel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                directionsLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
                 // The form's air under a heading (HEADING_GAP)
-                directionsLabel.setBorder(
-                    javax.swing.BorderFactory.createEmptyBorder(HEADING_GAP + 6, 0, HEADING_GAP, 0));
+                directionsLabel.setBorder(BorderFactory.createEmptyBorder(HEADING_GAP + 6, 0, HEADING_GAP, 0));
 
                 visibility.add(directionsLabel);
 
-                javax.swing.JComboBox<String> choice = autonomyPanel.getShowDirections();
-                choice.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                JComboBox<String> choice = autonomyPanel.getShowDirections();
+                choice.setAlignmentX(Component.LEFT_ALIGNMENT);
 
                 visibility.add(choice);
 
@@ -1603,15 +1816,15 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 autonomyPanel.setColumnWidth(column);
 
-                captionChoice.setPreferredSize(new java.awt.Dimension(column, 24));
-                captionChoice.setMinimumSize(new java.awt.Dimension(column, captionChoice.getMinimumSize().height));
-                captionChoice.setMaximumSize(new java.awt.Dimension(column, 24));
+                captionChoice.setPreferredSize(new Dimension(column, 24));
+                captionChoice.setMinimumSize(new Dimension(column, captionChoice.getMinimumSize().height));
+                captionChoice.setMaximumSize(new Dimension(column, 24));
 
                 // The Station Labels box's width in every language (OB-368): a long phrase clips, the popup shows it.
                 // Minimum width too (OB-375): GroupLayout never lays the column narrower than a child's minimum, which
                 // a combo takes from its widest phrase.  The height is left as it was.
                 choice.setPreferredSize(captionChoice.getPreferredSize());
-                choice.setMinimumSize(new java.awt.Dimension(captionChoice.getPreferredSize().width,
+                choice.setMinimumSize(new Dimension(captionChoice.getPreferredSize().width,
                     choice.getMinimumSize().height));
                 choice.setMaximumSize(captionChoice.getMaximumSize());
 
@@ -1640,45 +1853,44 @@ public class LayoutEditor extends PositionAwareJFrame
             // pane for a panel of grid and list.
             if (autonomyFindings == null)
             {
-                javax.swing.JPanel stack = new javax.swing.JPanel(new BorderLayout());
+                JPanel stack = new JPanel(new BorderLayout());
                 stack.setOpaque(false);
 
                 // Guarded as the two above: all reach for the generated form's layout.
-                if (formPane.getLayout() instanceof javax.swing.GroupLayout)
+                if (formPane.getLayout() instanceof GroupLayout)
                 {
-                    ((javax.swing.GroupLayout) formPane.getLayout())
-                        .replace(this.jScrollPane1, stack);
+                    ((GroupLayout) formPane.getLayout()).replace(this.jScrollPane1, stack);
                 }
 
                 // The notices float over the diagram, which keeps its size (OB-366)
                 stack.add(autonomyBanner.floatOver(this.jScrollPane1), BorderLayout.CENTER);
 
                 // Its height below the diagram, for as long as it shows
-                autonomyBanner.addComponentListener(new java.awt.event.ComponentAdapter()
+                autonomyBanner.addComponentListener(new ComponentAdapter()
                 {
                     @Override
-                    public void componentResized(java.awt.event.ComponentEvent e)
+                    public void componentResized(ComponentEvent e)
                     {
                         sizeTheDiagram();
                     }
 
                     @Override
-                    public void componentShown(java.awt.event.ComponentEvent e)
+                    public void componentShown(ComponentEvent e)
                     {
                         sizeTheDiagram();
                     }
 
                     @Override
-                    public void componentHidden(java.awt.event.ComponentEvent e)
+                    public void componentHidden(ComponentEvent e)
                     {
                         sizeTheDiagram();
                     }
                 });
 
-                javax.swing.JPanel foot = new javax.swing.JPanel(new BorderLayout());
+                JPanel foot = new JPanel(new BorderLayout());
                 foot.setOpaque(false);
 
-                javax.swing.JComponent list = autonomyPanel.getFindingsBox();
+                JComponent list = autonomyPanel.getFindingsBox();
 
                 if (list != null) foot.add(list, BorderLayout.CENTER);
 
@@ -1693,18 +1905,22 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // Said in the title; posted, as render()'s own invokeLater would overwrite it.
-            javax.swing.SwingUtilities.invokeLater(() -> setTitle(titleFor(true)));
+            SwingUtilities.invokeLater(() -> setTitle(titleFor(true)));
 
-            // Drawn again: render() built the grid before this mode was known.
-            javax.swing.SwingUtilities.invokeLater(() ->
+            // The remembered caption mode, now the panel has a window (MT-292), before the grid is drawn.
+            autonomyPanel.applyRememberedCaptionMode();
+
+            // Drawn again only over a grid drawn before this mode was known.  On opening and on a page switch the grid
+            // is built after this, once, in this mode.
+            if (grid != null)
             {
-                // The remembered caption mode, now the panel has a window (MT-292), before the redraw.
-                autonomyPanel.applyRememberedCaptionMode();
+                SwingUtilities.invokeLater(() ->
+                {
+                    refreshGrid();
 
-                refreshGrid();
-
-                javax.swing.SwingUtilities.invokeLater(() -> refreshAutonomyAnnotations());
-            });
+                    SwingUtilities.invokeLater(() -> refreshAutonomyAnnotations());
+                });
+            }
         }
 
         this.newComponents.revalidate();
@@ -1741,7 +1957,7 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /** Scrolls a square into view and flashes it, for a finding or a prompt. */
-    public void reveal(org.traincontrol.automationui.TileGraph.TileKey tile)
+    public void reveal(TileGraph.TileKey tile)
     {
         reveal(tile, 0);
     }
@@ -1751,7 +1967,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private static final int REVEAL_WAIT_MS = 50;
 
     /** A square of a window that has just opened has no picture yet, and a flash needs one: wait for it (FR-055). */
-    private void reveal(final org.traincontrol.automationui.TileGraph.TileKey tile, final int tried)
+    private void reveal(final TileGraph.TileKey tile, final int tried)
     {
         if (grid == null || tile == null || !layout.getName().equals(tile.getPage())) return;
 
@@ -1759,11 +1975,11 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (label == null) return;
 
-        label.scrollRectToVisible(new java.awt.Rectangle(0, 0, label.getWidth(), label.getHeight()));
+        label.scrollRectToVisible(new Rectangle(0, 0, label.getWidth(), label.getHeight()));
 
         if (label.getIcon() == null && tried < REVEAL_TRIES && isDisplayable())
         {
-            javax.swing.Timer wait = new javax.swing.Timer(REVEAL_WAIT_MS, e -> reveal(tile, tried + 1));
+            Timer wait = new Timer(REVEAL_WAIT_MS, e -> reveal(tile, tried + 1));
 
             wait.setRepeats(false);
             wait.start();
@@ -1827,7 +2043,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 grid.getValueAt(x, y).setAutonomyAnnotation(!active ? null
                     : autonomyPanel.annotationFor(
-                        new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), x, y)));
+                        new TileGraph.TileKey(layout.getName(), x, y)));
             }
         }
 
@@ -1878,7 +2094,7 @@ public class LayoutEditor extends PositionAwareJFrame
         boolean near = e.getPoint().distance(pressed.getWidth() / 2.0, pressed.getHeight() / 2.0) <= reach;
 
         return near && autonomyPanel.locomotiveAt(
-            new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), x, y)) != null ? pressed : null;
+            new TileGraph.TileKey(layout.getName(), x, y)) != null ? pressed : null;
     }
 
     /**
@@ -1902,7 +2118,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 LayoutLabel square = grid.getValueAt(x, y);
 
                 if (square.getParent() != null && square.trainDrawnAt(
-                    javax.swing.SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), square)))
+                    SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), square)))
                 {
                     return square;
                 }
@@ -1925,18 +2141,17 @@ public class LayoutEditor extends PositionAwareJFrame
         if (isAutonomyMode())
         {
             // A train clicked is its station (OB-354)
-            LayoutLabel train = javax.swing.SwingUtilities.isRightMouseButton(e) ? null : trainClicked(e);
+            LayoutLabel train = SwingUtilities.isRightMouseButton(e) ? null : trainClicked(e);
 
             int x = getX(train != null ? train : label);
             int y = getY(train != null ? train : label);
 
             if (x >= 0 && y >= 0)
             {
-                org.traincontrol.automationui.TileGraph.TileKey tile =
-                    new org.traincontrol.automationui.TileGraph.TileKey(layout.getName(), x, y);
+                TileGraph.TileKey tile = new TileGraph.TileKey(layout.getName(), x, y);
 
                 // Right-click opens the menu and must not run the tool too.
-                if (javax.swing.SwingUtilities.isRightMouseButton(e))
+                if (SwingUtilities.isRightMouseButton(e))
                 {
                     autonomyPanel.tileRightClicked(tile, layout.getComponent(x, y),
                         label, e.getX(), e.getY());
@@ -1962,7 +2177,7 @@ public class LayoutEditor extends PositionAwareJFrame
         }
 
         // Shift-click toggles a square's pick, before anything that would change the diagram.
-        if (e.isShiftDown() && javax.swing.SwingUtilities.isLeftMouseButton(e))
+        if (e.isShiftDown() && SwingUtilities.isLeftMouseButton(e))
         {
             this.selection.toggle(getX(label), getY(label));
 
@@ -1994,7 +2209,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // Propagate the hover event.  Should be done for BUTTON3 at minimum
             receiveMoveEvent(e, label);
         
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 popup = menuFor(label, lc);
 
@@ -2059,13 +2274,13 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param y its row
      * @return the orientation to put it down in
      */
-    static int orientationThatJoins(org.traincontrol.base.LayoutDiagram layout, LayoutDiagramComponent placing, int x,
+    static int orientationThatJoins(LayoutDiagram layout, LayoutDiagramComponent placing, int x,
         int y)
     {
         int held = placing.getOrientation();
 
-        if (layout == null || !org.traincontrol.automationui.TilePorts.isRoutable(placing.getType())
-            || org.traincontrol.automationui.TilePorts.isTransparent(placing.getType())) return held;
+        if (layout == null || !TilePorts.isRoutable(placing.getType())
+            || TilePorts.isTransparent(placing.getType())) return held;
 
         int ways = LayoutDiagramComponent.getNumOrientations(placing.getType());
         int best = held;
@@ -2094,21 +2309,19 @@ public class LayoutEditor extends PositionAwareJFrame
      * How much track this tile meets this way round: 1000 if its switch's base is on track, 10 per road with every end
      * on track, 1 per side with an end that is.
      */
-    private static int joinScore(org.traincontrol.base.LayoutDiagram layout,
+    private static int joinScore(LayoutDiagram layout,
         LayoutDiagramComponent.componentType type, int orientation, int x, int y)
     {
-        org.traincontrol.automationui.TilePorts.Side toe =
-            org.traincontrol.automationui.TilePorts.deriveToe(type, orientation);
+        TilePorts.Side toe = TilePorts.deriveToe(type, orientation);
 
         int score = toe != null && meetsTrack(layout, x, y, toe) ? 1000 : 0;
 
-        java.util.Set<org.traincontrol.automationui.TilePorts.Side> met =
-            java.util.EnumSet.noneOf(org.traincontrol.automationui.TilePorts.Side.class);
+        Set<TilePorts.Side> met = java.util.EnumSet.noneOf(TilePorts.Side.class);
 
-        for (int state = 0; state < org.traincontrol.automationui.TilePorts.getStateCount(type); state++)
+        for (int state = 0; state < TilePorts.getStateCount(type); state++)
         {
-            for (org.traincontrol.automationui.TilePorts.Route road
-                : org.traincontrol.automationui.TilePorts.ports(type, orientation, state))
+            for (TilePorts.Route road
+                : TilePorts.ports(type, orientation, state))
             {
                 boolean a = meetsTrack(layout, x, y, road.getA());
                 boolean b = meetsTrack(layout, x, y, road.getB());
@@ -2124,24 +2337,22 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /** Whether the square beside this one, on this side, has a road reaching the edge between them. */
-    private static boolean meetsTrack(org.traincontrol.base.LayoutDiagram layout, int x, int y,
-        org.traincontrol.automationui.TilePorts.Side side)
+    private static boolean meetsTrack(LayoutDiagram layout, int x, int y,
+        TilePorts.Side side)
     {
-        int nx = x + (side == org.traincontrol.automationui.TilePorts.Side.E ? 1
-            : side == org.traincontrol.automationui.TilePorts.Side.W ? -1 : 0);
-        int ny = y + (side == org.traincontrol.automationui.TilePorts.Side.S ? 1
-            : side == org.traincontrol.automationui.TilePorts.Side.N ? -1 : 0);
+        int nx = x + (side == TilePorts.Side.E ? 1 : side == TilePorts.Side.W ? -1 : 0);
+        int ny = y + (side == TilePorts.Side.S ? 1 : side == TilePorts.Side.N ? -1 : 0);
 
         LayoutDiagramComponent beside = layout.getComponent(nx, ny);
 
         if (beside == null) return false;
 
-        org.traincontrol.automationui.TilePorts.Side back = side.opposite();
+        TilePorts.Side back = side.opposite();
 
-        for (int state = 0; state < org.traincontrol.automationui.TilePorts.getStateCount(beside.getType()); state++)
+        for (int state = 0; state < TilePorts.getStateCount(beside.getType()); state++)
         {
-            for (org.traincontrol.automationui.TilePorts.Route road
-                : org.traincontrol.automationui.TilePorts.ports(beside.getType(), beside.getOrientation(), state))
+            for (TilePorts.Route road
+                : TilePorts.ports(beside.getType(), beside.getOrientation(), state))
             {
                 if (road.touches(back)) return true;
             }
@@ -2185,7 +2396,7 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * The squares currently picked out.
      */
-    public org.traincontrol.base.TileSelection getSelection()
+    public TileSelection getSelection()
     {
         return this.selection;
     }
@@ -2215,7 +2426,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (hovered != null) this.highlightLabel(hovered, COMPONENT_BORDER_HOVERED_COLOR);
 
-        for (org.traincontrol.base.TileSelection.At at : this.selection.all())
+        for (TileSelection.At at : this.selection.all())
         {
             LayoutLabel label = this.grid.getValueAt(at.getX(), at.getY());
 
@@ -2223,7 +2434,7 @@ public class LayoutEditor extends PositionAwareJFrame
         }
 
         // The box being dragged, after, so a square already picked and inside it looks picked.
-        for (org.traincontrol.base.TileSelection.At at : this.previewSelection.all())
+        for (TileSelection.At at : this.previewSelection.all())
         {
             LayoutLabel label = this.grid.getValueAt(at.getX(), at.getY());
 
@@ -2231,7 +2442,7 @@ public class LayoutEditor extends PositionAwareJFrame
         }
 
         // And where a dragged group would land, in blue, last: the live answer.
-        for (org.traincontrol.base.TileSelection.At at : this.landingSelection.all())
+        for (TileSelection.At at : this.landingSelection.all())
         {
             LayoutLabel label = this.grid.getValueAt(at.getX(), at.getY());
 
@@ -2265,24 +2476,24 @@ public class LayoutEditor extends PositionAwareJFrame
     private LayoutLabel handleLabel;
 
     /** The key for Select by Dragging a Box (FR-107): M for marquee; the main window's Control+M never reaches it. */
-    public static final javax.swing.KeyStroke SELECT_BY_DRAGGING_KEY = control(KeyEvent.VK_M);
+    public static final KeyStroke SELECT_BY_DRAGGING_KEY = control(KeyEvent.VK_M);
 
     /** The keys the track editor's key handler acts on, which its right-click menu shows. */
-    public static final javax.swing.KeyStroke PASTE_KEY = control(KeyEvent.VK_V), CUT_KEY = control(KeyEvent.VK_X),
+    public static final KeyStroke PASTE_KEY = control(KeyEvent.VK_V), CUT_KEY = control(KeyEvent.VK_X),
         COPY_KEY = control(KeyEvent.VK_C), ROTATE_KEY = control(KeyEvent.VK_R), TEXT_KEY = control(KeyEvent.VK_T),
         ADDRESS_KEY = control(KeyEvent.VK_A), GROW_KEY = control(KeyEvent.VK_I), UNDO_KEY = control(KeyEvent.VK_Z),
-        REDO_KEY = control(KeyEvent.VK_Y), DELETE_KEY = javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0);
+        REDO_KEY = control(KeyEvent.VK_Y), DELETE_KEY = KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0);
 
-    private static javax.swing.KeyStroke control(int key)
+    private static KeyStroke control(int key)
     {
-        return javax.swing.KeyStroke.getKeyStroke(key, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+        return KeyStroke.getKeyStroke(key, InputEvent.CTRL_DOWN_MASK);
     }
 
     /** Whether a press is this key: its key, and Control when the key has it; other keys held do not matter. */
-    static boolean is(KeyEvent evt, javax.swing.KeyStroke key)
+    static boolean is(KeyEvent evt, KeyStroke key)
     {
         return evt.getKeyCode() == key.getKeyCode()
-            && (evt.isControlDown() || (key.getModifiers() & java.awt.event.InputEvent.CTRL_DOWN_MASK) == 0);
+            && (evt.isControlDown() || (key.getModifiers() & InputEvent.CTRL_DOWN_MASK) == 0);
     }
 
     /**
@@ -2674,10 +2885,10 @@ public class LayoutEditor extends PositionAwareJFrame
         return new javax.swing.border.AbstractBorder()
         {
             @Override
-            public void paintBorder(java.awt.Component c, java.awt.Graphics g,
+            public void paintBorder(Component c, Graphics g,
                 int x, int y, int w, int h)
             {
-                java.awt.Color was = g.getColor();
+                Color was = g.getColor();
 
                 g.setColor(color);
 
@@ -2690,13 +2901,13 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             @Override
-            public java.awt.Insets getBorderInsets(java.awt.Component c)
+            public Insets getBorderInsets(Component c)
             {
-                return new java.awt.Insets(0, 0, 0, 0);
+                return new Insets(0, 0, 0, 0);
             }
 
             @Override
-            public java.awt.Insets getBorderInsets(java.awt.Component c, java.awt.Insets insets)
+            public Insets getBorderInsets(Component c, Insets insets)
             {
                 insets.set(0, 0, 0, 0);
 
@@ -2711,9 +2922,9 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private void mountGridToggle()
     {
-        if (!(formPane.getLayout() instanceof javax.swing.GroupLayout)) return;
+        if (!(formPane.getLayout() instanceof GroupLayout)) return;
 
-        showGridCheckbox = new javax.swing.JCheckBox(I18n.t("layout.ui.grid"), showGrid());
+        showGridCheckbox = new JCheckBox(I18n.t("layout.ui.grid"), showGrid());
 
         showGridCheckbox.setFont(this.showTextCheckbox.getFont());
         showGridCheckbox.setFocusable(false);
@@ -2722,29 +2933,29 @@ public class LayoutEditor extends PositionAwareJFrame
 
         showGridCheckbox.addActionListener(e -> setShowGrid(showGridCheckbox.isSelected()));
 
-        javax.swing.JPanel column = new javax.swing.JPanel();
+        JPanel column = new JPanel();
 
-        column.setLayout(new javax.swing.BoxLayout(column, javax.swing.BoxLayout.Y_AXIS));
+        column.setLayout(new BoxLayout(column, BoxLayout.Y_AXIS));
         column.setOpaque(false);
 
-        ((javax.swing.GroupLayout) formPane.getLayout()).replace(this.showTextCheckbox, column);
+        ((GroupLayout) formPane.getLayout()).replace(this.showTextCheckbox, column);
 
-        this.showTextCheckbox.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
-        showGridCheckbox.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        this.showTextCheckbox.setAlignmentX(Component.LEFT_ALIGNMENT);
+        showGridCheckbox.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         column.add(this.showTextCheckbox);
 
-        gapUnderTextLabels = javax.swing.Box.createVerticalStrut(CHECKBOX_GAP);
+        gapUnderTextLabels = Box.createVerticalStrut(CHECKBOX_GAP);
         gapUnderTextLabels.setVisible(this.showTextCheckbox.isVisible());
 
         column.add(gapUnderTextLabels);
         column.add(showGridCheckbox);
     }
 
-    private javax.swing.JCheckBox showGridCheckbox;
+    private JCheckBox showGridCheckbox;
 
     /** The gap under Text Labels, hidden with it in the autonomy editor (OB-289). */
-    private java.awt.Component gapUnderTextLabels;
+    private Component gapUnderTextLabels;
 
     /**
      * Whether the editor draws its gray grid, on by default and remembered (FR-006); static, as the label asking has no
@@ -2803,7 +3014,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         this.pointerOnGrid = false;
 
-        javax.swing.SwingUtilities.invokeLater(this::drawTheOutlinesBack);
+        SwingUtilities.invokeLater(this::drawTheOutlinesBack);
     }
 
     /**
@@ -2819,9 +3030,9 @@ public class LayoutEditor extends PositionAwareJFrame
         JPanel squares = this.grid.getContainer();
 
         // From the square, or an address label on it that passed its exit on
-        java.awt.Component from = e.getComponent() != null ? e.getComponent() : label;
+        Component from = e.getComponent() != null ? e.getComponent() : label;
 
-        java.awt.Point to = javax.swing.SwingUtilities.convertPoint(from, e.getPoint(), squares);
+        java.awt.Point to = SwingUtilities.convertPoint(from, e.getPoint(), squares);
 
         // Onto a square (or something over one) and in view
         if (squares.contains(to) && squares.getVisibleRect().contains(to) && aSquareAt(squares, to)) return;
@@ -2837,11 +3048,11 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private static boolean aSquareAt(JPanel squares, java.awt.Point at)
     {
-        java.awt.Component top = squares.getComponentAt(at);
+        Component top = squares.getComponentAt(at);
 
         if (top instanceof LayoutLabel) return !((LayoutLabel) top).isSpacer();
 
-        for (java.awt.Component c : squares.getComponents())
+        for (Component c : squares.getComponents())
         {
             if (c instanceof LayoutLabel && !((LayoutLabel) c).isSpacer() && c.getBounds().contains(at)) return true;
         }
@@ -2855,15 +3066,15 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private static final class PointerWatch implements java.awt.event.AWTEventListener
     {
-        private final java.lang.ref.WeakReference<LayoutEditor> editor;
+        private final WeakReference<LayoutEditor> editor;
 
         PointerWatch(LayoutEditor editor)
         {
-            this.editor = new java.lang.ref.WeakReference<>(editor);
+            this.editor = new WeakReference<>(editor);
         }
 
         @Override
-        public void eventDispatched(java.awt.AWTEvent event)
+        public void eventDispatched(AWTEvent event)
         {
             if (event.getID() != MouseEvent.MOUSE_ENTERED) return;
 
@@ -2871,7 +3082,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             if (watching == null)
             {
-                java.awt.Toolkit.getDefaultToolkit().removeAWTEventListener(this);
+                Toolkit.getDefaultToolkit().removeAWTEventListener(this);
 
                 return;
             }
@@ -2894,20 +3105,20 @@ public class LayoutEditor extends PositionAwareJFrame
         menu.addPopupMenuListener(new javax.swing.event.PopupMenuListener()
         {
             @Override
-            public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e)
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e)
             {
             }
 
             @Override
-            public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e)
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e)
             {
-                javax.swing.SwingUtilities.invokeLater(LayoutEditor.this::askWhereThePointerIs);
+                SwingUtilities.invokeLater(LayoutEditor.this::askWhereThePointerIs);
             }
 
             @Override
-            public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e)
+            public void popupMenuCanceled(PopupMenuEvent e)
             {
-                javax.swing.SwingUtilities.invokeLater(LayoutEditor.this::askWhereThePointerIs);
+                SwingUtilities.invokeLater(LayoutEditor.this::askWhereThePointerIs);
             }
         });
 
@@ -2940,18 +3151,18 @@ public class LayoutEditor extends PositionAwareJFrame
      * menu or tooltip, which are about that square.
      * @param on what the pointer arrived on
      */
-    void pointerArrived(java.awt.Component on)
+    void pointerArrived(Component on)
     {
         if (!this.pointerOnGrid || isAutonomyMode() || this.grid == null || on == null) return;
 
         // This window or anything in it; the window's own entry is the pointer over a quiet part.
-        if (on != this && javax.swing.SwingUtilities.getWindowAncestor(on) != this) return;
+        if (on != this && SwingUtilities.getWindowAncestor(on) != this) return;
 
         if (this.popup != null && this.popup.isVisible()) return;
 
-        if (on instanceof javax.swing.JPopupMenu || on instanceof javax.swing.JToolTip
-            || javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JPopupMenu.class, on) != null
-            || javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JToolTip.class, on) != null) return;
+        if (on instanceof JPopupMenu || on instanceof JToolTip
+            || SwingUtilities.getAncestorOfClass(JPopupMenu.class, on) != null
+            || SwingUtilities.getAncestorOfClass(JToolTip.class, on) != null) return;
 
         if (on.getParent() == this.grid.getContainer() && !(on instanceof LayoutLabel && ((LayoutLabel) on).isSpacer()))
         {
@@ -2973,7 +3184,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (shot == null) return;
 
-        this.captionGhost = new JLabel(new javax.swing.ImageIcon(shot));
+        this.captionGhost = new JLabel(new ImageIcon(shot));
         this.captionGhost.setSize(this.captionGhost.getPreferredSize());
         this.captionGrab = new java.awt.Point(grabX, grabY);
 
@@ -2988,7 +3199,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (this.captionGhost == null || at == null) return;
 
-        java.awt.Rectangle was = this.captionGhost.getBounds();
+        Rectangle was = this.captionGhost.getBounds();
 
         this.captionGhost.setLocation(at.x - this.captionGrab.x, at.y - this.captionGrab.y);
 
@@ -3002,7 +3213,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (this.captionGhost == null) return;
 
-        java.awt.Rectangle was = this.captionGhost.getBounds();
+        Rectangle was = this.captionGhost.getBounds();
 
         getLayeredPane().remove(this.captionGhost);
 
@@ -3056,7 +3267,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * The border each tile wears, as a key (OB-157), since borders do not compare equal.  Weak, so a rebuilt grid takes
      * its records with it.
      */
-    private final java.util.Map<JLabel, String> borderState = new java.util.WeakHashMap<>();
+    private final Map<JLabel, String> borderState = new java.util.WeakHashMap<>();
 
     /**
      * Sets a tile's border unless it already wears that one (OB-157): setBorder always repaints, and this runs per
@@ -3122,7 +3333,7 @@ public class LayoutEditor extends PositionAwareJFrame
             final Border resting = restingBorder(palette, autonomy, grid);
             final String restingKey = "rest:" + palette + ":" + autonomy + ":" + grid;
 
-            for (java.awt.Component component : panel.getComponents())
+            for (Component component : panel.getComponents())
             {
                 if (component instanceof JLabel)
                 {
@@ -3146,7 +3357,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // And the picked squares, or a hover would hide a selection Delete still acts on.
             if (panel == this.grid.getContainer())
             {
-                for (org.traincontrol.base.TileSelection.At at : this.selection.all())
+                for (TileSelection.At at : this.selection.all())
                 {
                     LayoutLabel picked = this.grid.getValueAt(at.getX(), at.getY());
 
@@ -3321,7 +3532,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 redrawStarted = false;
 
                 // Execute the method logic
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     lock.lock();
                     try
@@ -3370,19 +3581,17 @@ public class LayoutEditor extends PositionAwareJFrame
     /** Tells the setup every square of this page has gone, in one call (`forgetBuiltOver` says why). */
     private void forgetWholePage()
     {
-        org.traincontrol.automationui.AutonomySession autonomy = parent.getAutonomySession();
+        AutonomySession autonomy = parent.getAutonomySession();
 
         if (autonomy == null) return;
 
-        java.util.List<org.traincontrol.automationui.TileGraph.TileKey> everywhere =
-            new java.util.ArrayList<>();
+        List<TileGraph.TileKey> everywhere = new ArrayList<>();
 
         for (int x = 0; x < layout.getSx(); x++)
         {
             for (int y = 0; y < layout.getSy(); y++)
             {
-                everywhere.add(new org.traincontrol.automationui.TileGraph.TileKey(
-                    layout.getName(), x, y));
+                everywhere.add(new TileGraph.TileKey(layout.getName(), x, y));
             }
         }
 
@@ -3461,6 +3670,23 @@ public class LayoutEditor extends PositionAwareJFrame
             grid.maxHeight + size + 2 * DIAGRAM_GAP + notice));
 
         this.ExtLayoutPanel.revalidate();
+    }
+
+    /** `drawGrid` for a window's arrival: a page it grows to the floor is drawn by that call, not again by the growing. */
+    private void drawGridOnce()
+    {
+        boolean was = pauseRepaint;
+
+        pauseRepaint = true;
+
+        try
+        {
+            drawGrid();
+        }
+        finally
+        {
+            pauseRepaint = was;
+        }
     }
 
     /**
@@ -3558,7 +3784,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         int sideways = sidebar == null ? 0 : sidebar.getPreferredSize().width;
 
-        java.awt.Rectangle usable = usableScreen();
+        Rectangle usable = usableScreen();
 
         this.setMinimumSize(new Dimension(
             // In proportion, Small to Large (FR-122)
@@ -3613,7 +3839,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (autonomyPanel == null) return;
 
-        java.awt.Container content = getContentPane();
+        Container content = getContentPane();
 
         int tall = content.getMinimumSize().height
             + (FINDINGS_ROWS_TALL - FINDINGS_ROWS_SHORT) * autonomyPanel.getFindingRowHeight();
@@ -3627,7 +3853,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private void keepTheAutonomyEditorOnTheScreen()
     {
-        java.awt.Rectangle usable = usableScreen();
+        Rectangle usable = usableScreen();
 
         if (!isAutonomyMode() || getHeight() <= usable.height || isMaximized()) return;
 
@@ -3664,7 +3890,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void render()
     {        
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
           try
           {
@@ -3677,7 +3903,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             mountSidebar();
 
-            drawGrid();
+            drawGridOnce();
 
             // The mode's own title (MT-669)
             setTitle(titleFor(isAutonomyMode()));
@@ -3745,7 +3971,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * is lost, as edits are in the shared session.
      * @param tile the square to open on
      */
-    public void jumpToSquare(org.traincontrol.automationui.TileGraph.TileKey tile)
+    public void jumpToSquare(TileGraph.TileKey tile)
     {
         if (tile == null) return;
 
@@ -3779,7 +4005,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             int result = JOptionPane.showOptionDialog(
                 this,
-                I18n.t("autosetup.ui.confirmExitWithoutSaving"),
+                withTheTrainsMovingBack(I18n.t("autosetup.ui.confirmExitWithoutSaving")),
                 I18n.t("layout.ui.dialogExitConfirmation"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.PLAIN_MESSAGE,
@@ -3827,9 +4053,9 @@ public class LayoutEditor extends PositionAwareJFrame
     public boolean maySettleBeforeExit()
     {
         // Restored and in front first (MT-703), or the exit waits on a hidden question
-        if ((getExtendedState() & java.awt.Frame.ICONIFIED) != 0)
+        if ((getExtendedState() & Frame.ICONIFIED) != 0)
         {
-            setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
+            setExtendedState(getExtendedState() & ~Frame.ICONIFIED);
         }
 
         toFront();
@@ -3881,7 +4107,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             int answer = JOptionPane.showOptionDialog(
                 this,
-                I18n.t(question),
+                isAutonomyMode() ? withTheTrainsMovingBack(I18n.t(question)) : I18n.t(question),
                 I18n.t("layout.ui.dialogSwitchConfirmation"),
                 JOptionPane.YES_NO_CANCEL_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
@@ -3949,7 +4175,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // Raised just before posting, or a throw before it would leave every switch refused.
             changingPage = true;
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 // Posted from a finally, as the other branch is, so a throw cannot leave the latch up.
                 try
@@ -3958,7 +4184,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
                 finally
                 {
-                    javax.swing.SwingUtilities.invokeLater(() -> arriveAt(page, autonomy));
+                    SwingUtilities.invokeLater(() -> arriveAt(page, autonomy));
                 }
             });
 
@@ -3970,9 +4196,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
         changingPage = true;
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
             parent.layoutEditingCompleteThen(() ->
-                javax.swing.SwingUtilities.invokeLater(() -> arriveAt(page, autonomy))));
+                SwingUtilities.invokeLater(() -> arriveAt(page, autonomy))));
     }
 
     /**
@@ -4006,7 +4232,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         final String to = page != null ? page : layout.getName();
 
-        javax.swing.SwingUtilities.invokeLater(() -> arriveAt(to, arrivalInAutonomy));
+        SwingUtilities.invokeLater(() -> arriveAt(to, arrivalInAutonomy));
     }
 
     /** Whether the page action `stepOutFor` began arrives in the setup editor. */
@@ -4055,12 +4281,11 @@ public class LayoutEditor extends PositionAwareJFrame
             boolean autonomy = wanted;
 
             // Still editable?  Asked again: it can change while a save dialog is up.
-            org.traincontrol.automationui.AutonomySession session =
-                autonomy ? parent.editableAutonomySession() : null;
+            AutonomySession session = autonomy ? parent.editableAutonomySession() : null;
 
             if (autonomy && session == null)
             {
-                javax.swing.JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNoSetupToEdit"));
+                JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.errorNoSetupToEdit"));
 
                 autonomy = false;
             }
@@ -4109,17 +4334,19 @@ public class LayoutEditor extends PositionAwareJFrame
             // The parts of render() about which diagram this is, not about being a window.
             layout.setEdit();
 
-            // Drawn next, before the mode is entered
-            if (session != null) takeTheSetupsTextLabels(arriving);
+            // The old page's diagram let go, so the mode is entered over none and the new page is built once, in it.
+            if (grid != null) grid.discard();
+
+            grid = null;
+
+            if (session != null) setAutonomyMode(session);
 
             mountSidebar();
 
-            drawGrid();
+            drawGridOnce();
 
             // The arriving mode's title from the start (MT-669), or the old mode's shows for a moment.
             setTitle(titleFor(session != null));
-
-            if (session != null) setAutonomyMode(session);
 
             // Remembered only when arrived at as asked: a fallback is no choice.
             if (autonomy == (session != null)) parent.rememberEditorChoice(session != null);
@@ -4187,9 +4414,11 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 if (!autonomyPanel.save()) return false;
 
-                org.traincontrol.automationui.AutonomySession saved = parent.getAutonomySession();
+                AutonomySession saved = parent.getAutonomySession();
 
                 this.autonomyAsOpened = saved == null ? null : saved.snapshotSetup();
+
+                pictureTheRailway(saved);
 
                 return true;
             }
@@ -4292,10 +4521,10 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (getJMenuBar() != null) return;
 
-        javax.swing.JMenu menu = new javax.swing.JMenu(I18n.t("layout.ui.menuTools"));
+        JMenu menu = new JMenu(I18n.t("layout.ui.menuTools"));
 
         // Acts on no page, so a Sort that changes nothing leaves the main window where it was
-        javax.swing.JMenuItem sort = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.sortPages"));
+        JMenuItem sort = new JMenuItem(I18n.t("ui.main.toolbar.sortPages"));
 
         sort.setFocusable(false);
         sort.addActionListener(e -> runPageAction(() -> parent.sortPagesFromTheEditor(this), false));
@@ -4303,7 +4532,7 @@ public class LayoutEditor extends PositionAwareJFrame
         menu.add(sort);
         menu.addSeparator();
 
-        javax.swing.JMenuItem combine = pageMenuItem("layout.ui.menuCombineLinkedPages",
+        JMenuItem combine = pageMenuItem("layout.ui.menuCombineLinkedPages",
             () -> parent.combinePagesFromTheEditor(this));
 
         combine.setToolTipText(I18n.t("layout.ui.tooltipCombineLinkedPages"));
@@ -4315,20 +4544,20 @@ public class LayoutEditor extends PositionAwareJFrame
         findPointSeparator = menu.getMenuComponent(menu.getMenuComponentCount() - 1);
 
         // Beside the page actions, not in the sidebar (FR-055)
-        findPointItem = new javax.swing.JMenuItem(I18n.t("layout.ui.menuFindAPoint"));
+        findPointItem = new JMenuItem(I18n.t("layout.ui.menuFindAPoint"));
 
         findPointItem.setFocusable(false);
         findPointItem.addActionListener(e -> findAPoint());
 
         // The key the editor's key handler acts on, shown and not bound again; the tooltip keeps its sentence.
-        org.traincontrol.gui.TrainControlUI.showShortcut(findPointItem, FIND_A_POINT_KEY);
+        TrainControlUI.showShortcut(findPointItem, FIND_A_POINT_KEY);
         findPointItem.setToolTipText(I18n.t("layout.ui.tooltipFindAPoint"));
 
         menu.add(findPointItem);
 
         refreshFindPointItem();
 
-        javax.swing.JMenuBar bar = new javax.swing.JMenuBar();
+        JMenuBar bar = new JMenuBar();
 
         bar.add(menu);
 
@@ -4339,12 +4568,11 @@ public class LayoutEditor extends PositionAwareJFrame
         setJMenuBar(bar);
     }
 
-    private javax.swing.JMenuItem findPointItem;
+    private JMenuItem findPointItem;
 
     /** Find a Point's key (FR-055): what the key handler acts on and what the Tools item shows. */
-    public static final javax.swing.KeyStroke FIND_A_POINT_KEY =
-        javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_F, java.awt.event.InputEvent.CTRL_DOWN_MASK);
-    private java.awt.Component findPointSeparator;
+    public static final KeyStroke FIND_A_POINT_KEY = KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK);
+    private Component findPointSeparator;
 
     /** Find a Point... is the autonomy editor's: not shown at all in Track Diagram mode (FR-055). */
     private void refreshFindPointItem()
@@ -4377,20 +4605,20 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (!isAutonomyMode() || switching || changingPage) return;
 
-            autonomyPanel.goToNotice(tile, new java.util.ArrayList<>());
+            autonomyPanel.goToNotice(tile, new ArrayList<>());
         }).setVisible(true);
     }
 
     /** The named points as they are now; one on a page that is not there to open is left out. */
-    private java.util.List<FindAPointPrompt.Entry> findablePoints()
+    private List<FindAPointPrompt.Entry> findablePoints()
     {
-        java.util.List<FindAPointPrompt.Entry> points = new java.util.ArrayList<>();
+        List<FindAPointPrompt.Entry> points = new ArrayList<>();
 
         if (!isAutonomyMode() || parent == null || parent.getModel() == null) return points;
 
-        java.util.List<String> pages = parent.getModel().getLayoutList();
+        List<String> pages = parent.getModel().getLayoutList();
 
-        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, String> named
+        for (Map.Entry<TileGraph.TileKey, String> named
             : autonomyPanel.namedPoints().entrySet())
         {
             if (pages.contains(named.getKey().getPage()))
@@ -4402,9 +4630,9 @@ public class LayoutEditor extends PositionAwareJFrame
         return points;
     }
 
-    private javax.swing.JMenuItem pageMenuItem(String key, Runnable action)
+    private JMenuItem pageMenuItem(String key, Runnable action)
     {
-        javax.swing.JMenuItem item = new javax.swing.JMenuItem(I18n.t(key));
+        JMenuItem item = new JMenuItem(I18n.t(key));
 
         item.setFocusable(false);
 
@@ -4437,17 +4665,17 @@ public class LayoutEditor extends PositionAwareJFrame
      * The icons under the Page heading (FR-174): add, rename, duplicate, move up, move down, and delete apart at the
      * end.  Flat, as the route editor's are.
      */
-    private javax.swing.JComponent buildPageStrip(java.util.List<String> pages)
+    private JComponent buildPageStrip(List<String> pages)
     {
         int at = pages.indexOf(layout.getName());
 
-        java.awt.Color gray = new java.awt.Color(175, 175, 175);
+        Color gray = new Color(175, 175, 175);
 
-        javax.swing.JPanel strip = new javax.swing.JPanel();
+        JPanel strip = new JPanel();
 
-        strip.setLayout(new javax.swing.BoxLayout(strip, javax.swing.BoxLayout.X_AXIS));
+        strip.setLayout(new BoxLayout(strip, BoxLayout.X_AXIS));
         strip.setOpaque(false);
-        strip.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        strip.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         strip.add(pageIcon(RowIcons.plus(14), RowIcons.plus(14, gray), I18n.t("ui.main.toolbar.addBlackPage"), true,
             () -> parent.addBlankPageFromTheEditor(this)));
@@ -4466,7 +4694,7 @@ public class LayoutEditor extends PositionAwareJFrame
             I18n.t(last ? "layout.ui.tooltipPageIsLast" : "layout.ui.tooltipMovePageDown"), !last,
             () -> parent.movePageFromTheEditor(this, 1)));
 
-        strip.add(javax.swing.Box.createHorizontalGlue());
+        strip.add(Box.createHorizontalGlue());
 
         // The handler refuses the last page on the same count
         boolean onlyOne = pages.size() <= 1;
@@ -4479,15 +4707,15 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /** One flat icon button of the strip: no border until pointed at, out of the tab order. */
-    private javax.swing.JButton pageIcon(javax.swing.Icon icon, javax.swing.Icon grayed, String tip, boolean enabled,
+    private JButton pageIcon(Icon icon, Icon grayed, String tip, boolean enabled,
         Runnable action)
     {
-        javax.swing.JButton button = new javax.swing.JButton(icon);
+        JButton button = new JButton(icon);
 
         button.setDisabledIcon(grayed);
         button.putClientProperty("JButton.buttonType", "toolBarButton");
         button.setFocusable(false);
-        button.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        button.setMargin(new Insets(0, 0, 0, 0));
         button.setToolTipText(tip);
         button.setEnabled(enabled);
         button.addActionListener(e -> runPageAction(action));
@@ -4501,21 +4729,20 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private void mountSidebar()
     {
-        java.util.List<String> pages = parent.getModel() == null
-            ? new java.util.ArrayList<String>() : parent.getModel().getLayoutList();
+        List<String> pages = parent.getModel() == null ? new ArrayList<String>() : parent.getModel().getLayoutList();
 
         boolean offersModes = pages.size() > 1 || parent.editableAutonomySession() != null || isAutonomyMode();
 
-        sidebar = new javax.swing.JPanel();
-        sidebar.setLayout(new javax.swing.BoxLayout(sidebar, javax.swing.BoxLayout.Y_AXIS));
+        sidebar = new JPanel();
+        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
         // Less on the right (MT-097): a list has its own inset.
-        sidebar.setBorder(new javax.swing.border.EmptyBorder(8, 8, 8, 2));
+        sidebar.setBorder(new EmptyBorder(8, 8, 8, 2));
 
         sidebar.add(heading(I18n.t("layout.ui.sidebarPages")));
         sidebar.add(buildPageStrip(pages));
-        sidebar.add(javax.swing.Box.createVerticalStrut(CHECKBOX_GAP));
+        sidebar.add(Box.createVerticalStrut(CHECKBOX_GAP));
         sidebar.add(scrollable(buildPageControl(pages)));
-        sidebar.add(javax.swing.Box.createVerticalStrut(12));
+        sidebar.add(Box.createVerticalStrut(12));
 
         if (offersModes)
         {
@@ -4523,26 +4750,26 @@ public class LayoutEditor extends PositionAwareJFrame
             sidebar.add(buildModeControl());
         }
 
-        pageSettings = new javax.swing.JPanel();
-        pageSettings.setLayout(new javax.swing.BoxLayout(pageSettings, javax.swing.BoxLayout.Y_AXIS));
-        pageSettings.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        pageSettings = new JPanel();
+        pageSettings.setLayout(new BoxLayout(pageSettings, BoxLayout.Y_AXIS));
+        pageSettings.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         sidebar.add(pageSettings);
 
         showPageSettings();
 
-        sidebar.add(javax.swing.Box.createVerticalGlue());
+        sidebar.add(Box.createVerticalGlue());
 
         // One width, whatever the names: the buttons truncate, with the whole name in a tooltip.
-        sidebar.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH, sidebar.getPreferredSize().height));
-        sidebar.setMaximumSize(new java.awt.Dimension(SIDEBAR_WIDTH, Short.MAX_VALUE));
-        sidebar.setMinimumSize(new java.awt.Dimension(SIDEBAR_WIDTH, 0));
+        sidebar.setPreferredSize(new Dimension(SIDEBAR_WIDTH, sidebar.getPreferredSize().height));
+        sidebar.setMaximumSize(new Dimension(SIDEBAR_WIDTH, Short.MAX_VALUE));
+        sidebar.setMinimumSize(new Dimension(SIDEBAR_WIDTH, 0));
 
         // Wrapped, as the generated form has nowhere to put this.
-        javax.swing.JPanel wrapper = new javax.swing.JPanel(new java.awt.BorderLayout());
+        JPanel wrapper = new JPanel(new BorderLayout());
 
-        wrapper.add(sidebar, java.awt.BorderLayout.WEST);
-        wrapper.add(formPane, java.awt.BorderLayout.CENTER);
+        wrapper.add(sidebar, BorderLayout.WEST);
+        wrapper.add(formPane, BorderLayout.CENTER);
 
         setContentPane(wrapper);
     }
@@ -4557,7 +4784,7 @@ public class LayoutEditor extends PositionAwareJFrame
         // `changingPage` too: auto-repeat's in-flight switch, which `switching` cannot see.
         if (switching || changingPage || parent == null || parent.getModel() == null) return;
 
-        java.util.List<String> pages = parent.getModel().getLayoutList();
+        List<String> pages = parent.getModel().getLayoutList();
 
         if (pages == null || pages.size() < 2) return;
 
@@ -4571,11 +4798,11 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /** Which page, as a list of rows; the control type lives here alone. */
-    private javax.swing.JComponent buildPageControl(java.util.List<String> pages)
+    private JComponent buildPageControl(List<String> pages)
     {
         // A list (OB-004): rows read as pages, buttons as things to press.
         // As wide as the strip, so a long name ends in "..." rather than at its edge.
-        pageList = new javax.swing.JList<String>(pages.toArray(new String[0]))
+        pageList = new JList<String>(pages.toArray(new String[0]))
         {
             @Override
             public boolean getScrollableTracksViewportWidth()
@@ -4604,17 +4831,17 @@ public class LayoutEditor extends PositionAwareJFrame
         pageList.setSelectedValue(layout.getName(), true);
 
         // docs/UI-standards.md: regular text is Segoe UI Plain 14 (OB-014).
-        pageList.setFont(new java.awt.Font("Segoe UI", 0, 14));
-        pageList.setForeground(java.awt.Color.BLACK);
+        pageList.setFont(new Font("Segoe UI", 0, 14));
+        pageList.setForeground(Color.BLACK);
         pageList.setFixedCellHeight(24);
-        pageList.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        pageList.setAlignmentX(Component.LEFT_ALIGNMENT);
         pageList.setFocusable(false);
 
         // The whole name for the row under the pointer, cut off by the fixed width.
         pageList.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
         {
             @Override
-            public void mouseMoved(java.awt.event.MouseEvent e)
+            public void mouseMoved(MouseEvent e)
             {
                 int row = pageRowAt(e.getPoint());
 
@@ -4650,15 +4877,15 @@ public class LayoutEditor extends PositionAwareJFrame
      * Which editor, as two radio buttons, the control type confined here.  The setup half is disabled with a tooltip,
      * not hidden, when there is nothing to set up.
      */
-    private javax.swing.JComponent buildModeControl()
+    private JComponent buildModeControl()
     {
-        javax.swing.JPanel column = new javax.swing.JPanel();
-        column.setLayout(new javax.swing.BoxLayout(column, javax.swing.BoxLayout.Y_AXIS));
+        JPanel column = new JPanel();
+        column.setLayout(new BoxLayout(column, BoxLayout.Y_AXIS));
 
         trackModeButton = modeTab(I18n.t("layout.ui.sidebarTrack"), false);
         autonomyModeButton = modeTab(I18n.t("layout.ui.sidebarAutonomy"), true);
 
-        javax.swing.ButtonGroup group = new javax.swing.ButtonGroup();
+        ButtonGroup group = new ButtonGroup();
 
         group.add(trackModeButton);
         group.add(autonomyModeButton);
@@ -4682,16 +4909,16 @@ public class LayoutEditor extends PositionAwareJFrame
         return column;
     }
 
-    private javax.swing.JToggleButton modeTab(String text, final boolean autonomy)
+    private JToggleButton modeTab(String text, final boolean autonomy)
     {
         // A radio button (OB-004); a JRadioButton is a JToggleButton.
-        javax.swing.JToggleButton tab = new javax.swing.JRadioButton(text);
+        JToggleButton tab = new javax.swing.JRadioButton(text);
 
         // docs/UI-standards.md: Segoe UI Plain 14 (OB-015).
-        tab.setFont(new java.awt.Font("Segoe UI", 0, 14));
-        tab.setForeground(java.awt.Color.BLACK);
+        tab.setFont(new Font("Segoe UI", 0, 14));
+        tab.setForeground(Color.BLACK);
 
-        tab.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        tab.setAlignmentX(Component.LEFT_ALIGNMENT);
         tab.setFocusable(false);
         tab.setOpaque(false);
 
@@ -4716,41 +4943,41 @@ public class LayoutEditor extends PositionAwareJFrame
      * shorter, scrolling, when the window is too short for it and the controls under it.  No taller in either mode
      * (OB-383): the strip's spare room goes below it.
      */
-    private javax.swing.JComponent scrollable(javax.swing.JComponent column)
+    private JComponent scrollable(JComponent column)
     {
-        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(column,
-            javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-            javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        JScrollPane scroll = new JScrollPane(column,
+            ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
         scroll.setBorder(null);
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
-        scroll.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        scroll.setAlignmentX(Component.LEFT_ALIGNMENT);
         scroll.getVerticalScrollBar().setUnitIncrement(24);
 
         // 24, as pageList.setFixedCellHeight, so whole rows show.
         int rows = Math.max(column.getPreferredSize().height, SIDEBAR_ROWS_AT_LEAST * 24);
         int height = Math.min(rows, SIDEBAR_TABS_BEFORE_SCROLLING * 24);
 
-        scroll.setPreferredSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
-        scroll.setMaximumSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, height));
-        scroll.setMinimumSize(new java.awt.Dimension(SIDEBAR_WIDTH - 16, Math.min(height, 3 * 24)));
+        scroll.setPreferredSize(new Dimension(SIDEBAR_WIDTH - 16, height));
+        scroll.setMaximumSize(new Dimension(SIDEBAR_WIDTH - 16, height));
+        scroll.setMinimumSize(new Dimension(SIDEBAR_WIDTH - 16, Math.min(height, 3 * 24)));
 
         return scroll;
     }
 
-    private javax.swing.JLabel heading(String text)
+    private JLabel heading(String text)
     {
-        javax.swing.JLabel label = new javax.swing.JLabel(text);
+        JLabel label = new JLabel(text);
 
-        label.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // docs/UI-standards.md: section headings are Segoe UI Semibold 13 in 0,0,155
-        label.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));
-        label.setForeground(new java.awt.Color(0, 0, 155));
+        label.setFont(new Font("Segoe UI Semibold", 0, 13));
+        label.setForeground(new Color(0, 0, 155));
 
         // The form's air under a heading (HEADING_GAP)
-        label.setBorder(new javax.swing.border.EmptyBorder(0, 0, HEADING_GAP, 0));
+        label.setBorder(new EmptyBorder(0, 0, HEADING_GAP, 0));
 
         return label;
     }
@@ -4803,12 +5030,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (autonomyPanel != null)
         {
-            pageSettings.add(javax.swing.Box.createVerticalStrut(12));
+            pageSettings.add(Box.createVerticalStrut(12));
             pageSettings.add(heading(I18n.t("autosetup.ui.labelPageSettings")));
 
-            javax.swing.JCheckBox exclude = autonomyPanel.getExcludePage();
+            JCheckBox exclude = autonomyPanel.getExcludePage();
 
-            exclude.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+            exclude.setAlignmentX(Component.LEFT_ALIGNMENT);
 
             pageSettings.add(exclude);
         }
@@ -4820,18 +5047,18 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /** The panel the form built, which the sidebar wraps. */
-    private java.awt.Container formPane;
+    private Container formPane;
 
-    private javax.swing.JPanel sidebar;
+    private JPanel sidebar;
 
     /** Under the mode buttons: Autonomy Setup's Page Settings (`showPageSettings`). */
-    private javax.swing.JPanel pageSettings;
+    private JPanel pageSettings;
 
-    private javax.swing.JList<String> pageList;
+    private JList<String> pageList;
 
-    private javax.swing.JToggleButton trackModeButton;
+    private JToggleButton trackModeButton;
 
-    private javax.swing.JToggleButton autonomyModeButton;
+    private JToggleButton autonomyModeButton;
 
     /** Set while the sidebar is being put back, so that does not read as a click. */
     private boolean switching;

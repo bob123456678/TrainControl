@@ -251,6 +251,38 @@ public final class AskingWindows
         Components.settle();
     }
 
+    /** Renames a locomotive as the Locomotive Settings window's Save does, answering nothing it asks. */
+    public static void renameInSettings(TrainControlUI ui, org.traincontrol.base.Locomotive train, String name)
+        throws Exception
+    {
+        final Object actions = Reflect.get(TrainControlUI.class, ui, "locomotiveActions");
+
+        final java.lang.reflect.Method write = Reflect.method(actions.getClass(), "writeNameAndAddress",
+            Component.class, org.traincontrol.base.Locomotive.class, String.class, String.class,
+            org.traincontrol.base.Locomotive.decoderType.class);
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            final Object[] done = new Object[1];
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    done[0] = write.invoke(actions, ui, train, name, "", train.getDecoderType());
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            Assert.assertEquals(done[0], Boolean.TRUE, "the rename to " + name + " was refused: " + answering.asked());
+        }
+
+        Components.drain(2);
+    }
+
     /**
      * Runs a door over a database holding only these locomotives, in memory, and puts the rest back: an empty or a
      * one-train database is a state a door asks about, and no other test shares this model.

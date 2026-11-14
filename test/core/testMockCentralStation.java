@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -53,7 +54,36 @@ public class testMockCentralStation
     /** A path suffix to serve rubbish for, leaving every other file intact: a real fault is ONE config file broken. */
     private static volatile String garbledPath;
 
-    /** The diagrams are read from a copy of the fixture, as from a user's own folder: the mock serves no pages. */
+    /** A path suffix whose next fetch arrives broken: cut short with its length promised, or in the wrong character set. */
+    private static volatile String damagedPath;
+
+    private static volatile boolean cutShort;
+
+    /** With cutShort: the body is sent whole but promises more, the same every time, as a station's wrong length. */
+    private static volatile boolean wrongLength;
+
+    /** With cutShort: the headers promise the body and none of it is sent, the same every time. */
+    private static volatile boolean headersOnly;
+
+    /** When each broken fetch of the damaged path was served, in nanoseconds. */
+    private static final List<Long> damagedFetchTimes = java.util.Collections.synchronizedList(new LinkedList<>());
+
+    /** How many more fetches of the damaged path arrive broken; the rest arrive whole. */
+    private static final AtomicInteger damagedFetchesLeft = new AtomicInteger(Integer.MAX_VALUE);
+
+    /** Each cut-off stops at a different length, as a dropped connection does. */
+    private static final AtomicInteger cutsServed = new AtomicInteger();
+
+    /** Serves accessory address 1 as a DCC article, so a tile built without the list (as MM2) shows. */
+    private static volatile boolean dccAtOne;
+
+    private static final String ADDRESS_ONE = " .id=1\n .name=1\n .typ=linksweiche\n .stellung=1\n .schaltzeit=200\n"
+        + " .decoder=mehr_alt\n .dectyp=mm2";
+
+    /** How many layout pages the mock was asked for. */
+    private static final AtomicInteger pageRequests = new AtomicInteger();
+
+    /** Syncs read the diagrams from a copy of the fixture, as from a user's own folder, unless a test points them here. */
     private static support.LayoutSandbox sandbox;
 
     @BeforeClass
@@ -115,6 +145,10 @@ public class testMockCentralStation
         {
             body = forcedBody.getBytes("UTF-8");
         }
+        else if (exchange.getRequestURI().getPath().endsWith("/geraet.vrs"))
+        {
+            body = "[geraet]\ngeraet\n .produkt=Central Station 2\n".getBytes("UTF-8");
+        }
         else
         {
             File file = fixtureFor(exchange.getRequestURI().getPath());
@@ -127,6 +161,39 @@ public class testMockCentralStation
             }
 
             body = Files.readAllBytes(file.toPath());
+        }
+
+        if (dccAtOne && exchange.getRequestURI().getPath().endsWith("/magnetartikel.cs2"))
+        {
+            String text = new String(body, "UTF-8").replace("\r", "");
+
+            if (!text.contains(ADDRESS_ONE)) throw new IOException("the fixture's record for address 1 has changed");
+
+            body = text.replace(ADDRESS_ONE, ADDRESS_ONE.replace("dectyp=mm2", "dectyp=dcc")).getBytes("UTF-8");
+        }
+
+        String damaged = damagedPath;
+
+        if (damaged != null && exchange.getRequestURI().getPath().endsWith(damaged)
+            && damagedFetchesLeft.getAndDecrement() > 0)
+        {
+            damagedFetchTimes.add(System.nanoTime());
+
+            if (cutShort)
+            {
+                exchange.sendResponseHeaders(200, wrongLength ? body.length + 7 : body.length);
+
+                // Not closed: the exception out of this handler makes the server drop the connection with the rest owed.
+                OutputStream out = exchange.getResponseBody();
+
+                out.write(body, 0, headersOnly ? 0 : wrongLength ? body.length
+                    : body.length / (2 + cutsServed.getAndIncrement() % 4));
+                out.flush();
+
+                throw new IOException("the mock station drops the connection half way");
+            }
+
+            body = new String(body, "UTF-8").getBytes("ISO-8859-1");
         }
 
         exchange.sendResponseHeaders(200, body.length);
@@ -145,6 +212,15 @@ public class testMockCentralStation
         if (path.endsWith("/magnetartikel.cs2")) return new File("test/magnetartikel.cs2");
         if (path.endsWith("/gleisbild.cs2")) return new File("test/test_layout/config/gleisbild.cs2");
 
+        int pages = path.indexOf("/gleisbilder/");
+
+        if (pages >= 0)
+        {
+            pageRequests.incrementAndGet();
+
+            return new File("test/test_layout/config/gleisbilder", path.substring(pages + "/gleisbilder/".length()));
+        }
+
         return null;
     }
 
@@ -157,9 +233,9 @@ public class testMockCentralStation
 
     /**
      * A locomotive database fetched over the wire is the one the file describes: parity rather than a fixed
-     * expectation.  Both sides share the parser, so this catches transport-level loss (a truncated body, a mangled
-     * encoding, a dropped block).  Name, address and decoder type are compared, since the address decides which engine
-     * a command reaches.
+     * expectation.  Both sides share the parser, so a transport that loses or reorders a record shows; a body cut
+     * short or in the wrong encoding is the damaged-file claims below.  Name, address and decoder type are compared,
+     * since the address decides which engine a command reaches.
      */
     @Test
     public void testLocomotivesFetchedOverHttpMatchTheFile() throws Exception
@@ -652,17 +728,27 @@ public class testMockCentralStation
     }
 
     /**
-     * A full sync against the mock station, reconciliation and all.  Modest on purpose: a station that IS there
-     * succeeds and brings its locomotives in.  Nothing is saved: the databases are mutated in memory.
+     * A full sync against the mock station: the locomotives it lists, taken out of the database first, are all back
+     * afterwards, as the file describes them.  Nothing is saved: the databases are mutated in memory.
+     *
+     * MUTATION: make `syncWithCS2` skip `newLocomotive(...)` for a locomotive the database lacks, and this fails.
      */
     @Test
     public void testAFullSyncAgainstTheMockStationSucceeds() throws Exception
     {
         String was = TestStationAddress.get();
 
-        // `requests` is class-static and never reset, so a bare `> 0` after the sync was true before it ran; the delta
-        // is the fact
-        int before = requests.get();
+        List<String> served = describe(mockStation().parseLocomotives());
+
+        int taken = takeTheServedLocomotivesOut();
+
+        assertTrue(taken > 0, "precondition: the database holds none of the station's locomotives to take out");
+
+        List<String> before = heldAmongTheServed();
+
+        assertNotEquals(before, served, "precondition: the database starts out as the station's list");
+
+        int requestsBefore = requests.get();
 
         TestStationAddress.set(address);
 
@@ -673,17 +759,555 @@ public class testMockCentralStation
             assertTrue(result >= 0,
                 "a sync against a station that is answering should not report failure, got " + result);
 
-            assertFalse(model.getLocList().isEmpty(),
-                "the sync brought in no locomotives at all, though the station served a full file");
+            assertTrue(requests.get() > requestsBefore, "the sync never asked the station for anything");
 
-            assertTrue(requests.get() > before,
-                "the sync never asked the station for anything - it went " + before + " requests in "
-                + "and came out at " + requests.get() + ", so whatever it did it did from memory");
+            assertEquals(heldAmongTheServed(), served, "after the sync the database does not hold the station's"
+                + " locomotives as its file describes them, though " + taken + " were missing before it");
         }
         finally
         {
             TestStationAddress.set(was);
         }
+    }
+
+    /**
+     * A sync with no layout folder of ours fetches the diagram pages over HTTP, every page the station's index names.
+     *
+     * MUTATION: make `CS2File.getLayoutURL` answer a path the mock does not serve, and this fails.
+     */
+    @Test
+    public void testASyncFetchesTheLayoutPagesOverHttp() throws Exception
+    {
+        java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
+
+        String folder = prefs.get(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+        String was = TestStationAddress.get();
+
+        List<String> named = new LinkedList<>();
+
+        for (java.util.Map<String, String> block : CS2File.parseFile(new java.io.BufferedReader(
+            new java.io.InputStreamReader(new java.io.FileInputStream("test/test_layout/config/gleisbild.cs2"),
+                java.nio.charset.StandardCharsets.UTF_8))))
+        {
+            if ("seite".equals(block.get("_type"))) named.add(block.get("name"));
+        }
+
+        assertFalse(named.isEmpty(), "precondition: the fixture's index names no pages");
+
+        try
+        {
+            prefs.remove(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF);
+
+            model.clearLayouts();
+
+            TestStationAddress.set(address);
+
+            int before = pageRequests.get();
+
+            assertTrue(model.syncWithCS2() >= 0, "precondition: the sync against the mock station failed");
+
+            assertEquals(pageRequests.get() - before, named.size(),
+                "the sync did not ask the station for each page its index names");
+
+            List<String> held = model.getLayoutList();
+
+            assertEquals(new java.util.TreeSet<>(held), new java.util.TreeSet<>(named),
+                "the pages fetched over HTTP are not the pages the station's index names");
+        }
+        finally
+        {
+            TestStationAddress.set(was);
+
+            prefs.put(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, folder);
+
+            model.refreshLayouts();
+        }
+    }
+
+    /**
+     * A locomotive file that stops half way is not taken for the whole of it: the database is as it was and the sync
+     * says it failed.
+     *
+     * MUTATION: take the byte count out of `CS2File.fetchURL`, and the cut file is read as a smaller one: the sync
+     * succeeds on it and this fails.
+     */
+    @Test
+    public void testATruncatedLocomotiveFileIsNotTakenForTheWholeOfIt() throws Exception
+    {
+        assertADamagedLocomotiveFileChangesNothing(true);
+    }
+
+    /**
+     * Every file the sync reads comes through `CS2File.fetchURL`, so one that ends short of its Content-Length is an
+     * error for each: locomotives, routes, accessories, the page index and a page.  The CS3 JSON readers use the same
+     * method.
+     *
+     * MUTATION: take the byte count out of `fetchURL`, and this fails for every path.
+     */
+    @Test(dataProvider = "files")
+    public void testAnyFileThatEndsShortIsAnErrorNotASmallerFile(String suffix, String url) throws Exception
+    {
+        damagedPath = suffix;
+
+        cutShort = true;
+
+        try
+        {
+            try (java.io.BufferedReader in = CS2File.fetchURL("http://" + address + url))
+            {
+                String line;
+
+                while ((line = in.readLine()) != null) { }
+            }
+
+            fail(url + " arrived cut off half way and was read to its end as though it were whole");
+        }
+        catch (java.io.IOException expected)
+        {
+            // what we want: the caller cannot mistake this for a smaller file
+        }
+        finally
+        {
+            damagedPath = null;
+        }
+    }
+
+    @DataProvider
+    public static Object[][] files()
+    {
+        return new Object[][]
+        {
+            {"/lokomotive.cs2", "/config/lokomotive.cs2"}, {"/fahrstrassen.cs2", "/config/fahrstrassen.cs2"},
+            {"/magnetartikel.cs2", "/config/magnetartikel.cs2"}, {"/gleisbild.cs2", "/config/gleisbild.cs2"},
+            {"Main.cs2", "/config/gleisbilder/1%20-%20Main.cs2"}
+        };
+    }
+
+    /**
+     * A station that promises more bytes than it sends, the same short body every time, is a wrong length rather than a
+     * cut-off: the sync reads what it sent, and every locomotive comes in as the file has it.
+     *
+     * MUTATION: drop the retry in `CS2File.fetchURL` (throw at the first short body), and the sync fails.
+     */
+    @Test
+    public void testAStationThatAlwaysSendsTheSameShortBodyStillSyncs() throws Exception
+    {
+        String was = TestStationAddress.get();
+
+        List<String> served = describe(mockStation().parseLocomotives());
+
+        assertTrue(takeTheServedLocomotivesOut() > 0, "precondition: the database holds none of the station's locomotives");
+
+        damagedPath = "/lokomotive.cs2";
+        cutShort = true;
+        wrongLength = true;
+
+        TestStationAddress.set(address);
+
+        try
+        {
+            assertTrue(model.syncWithCS2() >= 0, "a station whose file is always the same bytes short of its length could"
+                + " not be synced with: " + model.getLastSyncError());
+
+            assertEquals(heldAmongTheServed(), served, "the locomotives are not the file's");
+        }
+        finally
+        {
+            damagedPath = null;
+            wrongLength = false;
+
+            TestStationAddress.set(was);
+        }
+    }
+
+    /**
+     * The same short bytes read as sent are said in the application's log, in the user's language, not only to the
+     * developer's logger.
+     *
+     * MUTATION: write the line in `CS2File.fetchURL` to `java.util.logging` for `CS2File` again, and the log lacks it.
+     */
+    @Test
+    public void testAShortBodyReadAsSentIsInTheLog() throws Exception
+    {
+        List<String> logged = java.util.Collections.synchronizedList(new LinkedList<>());
+        java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
+        java.util.logging.Logger station = java.util.logging.Logger.getLogger(
+            org.traincontrol.marklin.MarklinControlStation.class.getName());
+
+        station.addHandler(tap);
+
+        // The model drops a line equal to the one before it, which another claim's fetch of this file may have written
+        model.log("next claim " + System.nanoTime());
+
+        String url = "http://" + address + "/config/lokomotive.cs2";
+        int size = Files.readAllBytes(new File("test/lokomotive.cs2").toPath()).length;
+
+        damagedPath = "/lokomotive.cs2";
+        cutShort = true;
+        wrongLength = true;
+
+        try
+        {
+            CS2File.fetchURL(url).close();
+
+            assertTrue(logged.contains(org.traincontrol.util.I18n.f("network.stationFileReadAsSent", url,
+                String.valueOf(size), String.valueOf(size + 7))), "the log does not say the file was read as sent: "
+                + logged);
+        }
+        finally
+        {
+            station.removeHandler(tap);
+            damagedPath = null;
+            wrongLength = false;
+        }
+    }
+
+    /**
+     * A body that ends short is asked for again after a pause, not at once: three fetches milliseconds apart would all
+     * meet a station that is briefly unable to send the file.
+     *
+     * MUTATION: drop the pause in `CS2File.fetchURL`, and the fetches come together.
+     */
+    @Test
+    public void testAShortBodyIsAskedForAgainAfterAPause() throws Exception
+    {
+        damagedPath = "/lokomotive.cs2";
+        cutShort = true;
+        wrongLength = true;
+        damagedFetchTimes.clear();
+
+        try
+        {
+            CS2File.fetchURL("http://" + address + "/config/lokomotive.cs2").close();
+
+            List<Long> at = new java.util.ArrayList<>(damagedFetchTimes);
+
+            assertEquals(at.size(), 3, "the short body is fetched three times in all");
+
+            for (int i = 1; i < at.size(); i++)
+            {
+                assertTrue(at.get(i) - at.get(i - 1) >= 200_000_000L, "fetch " + (i + 1) + " came "
+                    + (at.get(i) - at.get(i - 1)) / 1_000_000 + " ms after the one before");
+            }
+        }
+        finally
+        {
+            damagedPath = null;
+            wrongLength = false;
+        }
+    }
+
+    /**
+     * Headers with no body, every time, are never the station's whole file, though they are the same each time: the
+     * accessory list fails the sync, rather than being read as empty and every tile at a DCC article's address built
+     * as MM2.  The diagram is read from the station.
+     *
+     * MUTATION: take the empty-body failure out of `CS2File.fetchURL`, and the sync succeeds with the tile MM2.
+     */
+    @Test
+    public void testHeadersAndNoBodyEveryTimeFailTheSync() throws Exception
+    {
+        assertAnAccessoryListThatFailsToArriveBuildsNothing(true);
+    }
+
+    /**
+     * A file cut off once and whole when asked again is read whole.
+     *
+     * MUTATION: drop the retry in `CS2File.fetchURL`, and the fetch fails.
+     */
+    @Test
+    public void testAFileCutOffOnceIsReadWholeOnTheRetry() throws Exception
+    {
+        damagedPath = "/lokomotive.cs2";
+        cutShort = true;
+        damagedFetchesLeft.set(1);
+
+        try
+        {
+            assertEquals(describe(mockStation().parseLocomotives()), describe(mockStation().parseLocomotives(CS2File.parseFile(
+                new java.io.BufferedReader(new java.io.InputStreamReader(new java.io.FileInputStream("test/lokomotive.cs2"),
+                    java.nio.charset.StandardCharsets.UTF_8))))), "a file whole on the second fetch is read as the file");
+        }
+        finally
+        {
+            damagedPath = null;
+            damagedFetchesLeft.set(Integer.MAX_VALUE);
+        }
+    }
+
+    /**
+     * An accessory list that fails to arrive fails the sync before the diagram is built: no tile at a DCC article's
+     * address is made MM2, and the next sync builds the diagram right.  The diagram is read from the station.
+     *
+     * MUTATION: catch every exception around `getMagList` in `MarklinControlStation.syncLayouts`, as an empty list, and
+     * the tiles are built as MM2 and stay so.
+     */
+    @Test
+    public void testAnAccessoryListThatFailsToArriveFailsTheSyncAndBuildsNothingFromIt() throws Exception
+    {
+        assertAnAccessoryListThatFailsToArriveBuildsNothing(false);
+    }
+
+    /**
+     * A first sync from the station with its accessory list cut off, or headers alone every time: it fails and builds no
+     * tile at DCC address 1 as MM2, and the next sync builds it right.
+     */
+    private static void assertAnAccessoryListThatFailsToArriveBuildsNothing(boolean asHeadersOnly) throws Exception
+    {
+        java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
+        String folder = prefs.get(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+        String was = TestStationAddress.get();
+
+        try
+        {
+            prefs.remove(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF);
+            TestStationAddress.set(address);
+            dccAtOne = true;
+
+            model.clearLayouts();
+            assertTrue(model.syncWithCS2() >= 0, "precondition: the healthy sync failed: " + model.getLastSyncError());
+
+            String control = protocolsAtAddressOne();
+            assertTrue(!control.isEmpty() && !control.contains("MM2"), "precondition: address 1 reads as DCC: " + control);
+
+            // As at a first start: the station's diagram is read only into an empty layout database
+            model.clearLayouts();
+            damagedPath = "/magnetartikel.cs2";
+            cutShort = true;
+            headersOnly = asHeadersOnly;
+
+            assertEquals(model.syncWithCS2(), -1, "a sync whose accessory list did not arrive answered success");
+            assertNotNull(model.getLastSyncError(), "and names no reason");
+            assertFalse(protocolsAtAddressOne().contains("MM2"), "the tile at DCC address 1 was built as MM2 from a list"
+                + " that never arrived: " + protocolsAtAddressOne());
+
+            damagedPath = null;
+
+            assertTrue(model.syncWithCS2() >= 0, "the next, healthy sync failed: " + model.getLastSyncError());
+            assertEquals(protocolsAtAddressOne(), control, "after the next sync, the tile at DCC address 1 is");
+        }
+        finally
+        {
+            damagedPath = null;
+            headersOnly = false;
+            dccAtOne = false;
+            TestStationAddress.set(was);
+            prefs.put(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, folder);
+            model.refreshLayouts();
+        }
+    }
+
+    /** The protocols of the accessory tiles at address 1 on every page, in page order. */
+    private static String protocolsAtAddressOne()
+    {
+        StringBuilder found = new StringBuilder();
+
+        for (String name : model.getLayoutList())
+        {
+            for (org.traincontrol.base.LayoutDiagramComponent c : model.getLayout(name).getAll())
+            {
+                if (c.isAccessory() && c.getAddress() == 1) found.append(c.getProtocol()).append(' ');
+            }
+        }
+
+        return found.toString().trim();
+    }
+
+    /**
+     * A station whose device file fails to arrive fails the sync before the routes and locomotives are read, rather than
+     * being taken for a CS2: the database is as it was.
+     *
+     * MUTATION: drop the throw of `typeUnknown` in `MarklinControlStation.syncWithCS2`, and the sync succeeds.
+     */
+    @Test
+    public void testAStationThatDoesNotSayWhatItIsFailsTheSync() throws Exception
+    {
+        String was = TestStationAddress.get();
+        List<String> described = everythingHeld();
+
+        damagedPath = "/geraet.vrs";
+        cutShort = true;
+
+        TestStationAddress.set(address);
+
+        try
+        {
+            assertEquals(model.syncWithCS2(), -1, "a sync whose device file did not arrive answered success");
+            assertNotNull(model.getLastSyncError(), "and names no reason");
+            assertEquals(everythingHeld(), described, "the sync changed the locomotive database");
+        }
+        finally
+        {
+            damagedPath = null;
+
+            TestStationAddress.set(was);
+        }
+    }
+
+    /**
+     * `ping` answers once the headers of /can/ arrive and does not wait for its body, which a station may never end.
+     *
+     * MUTATION: have `CS2File.ping` read the body to its end (through `fetchURL`), and it answers false after the read
+     * timeout.
+     */
+    @Test(timeOut = 60000)
+    public void testPingDoesNotWaitForTheBody() throws Exception
+    {
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        HttpServer endless = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+
+        endless.createContext("/", exchange ->
+        {
+            exchange.sendResponseHeaders(200, 0);
+
+            OutputStream out = exchange.getResponseBody();
+            out.write("still going".getBytes("UTF-8"));
+            out.flush();
+
+            try
+            {
+                release.await();
+            }
+            catch (InterruptedException stop)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            exchange.close();
+        });
+        endless.setExecutor(java.util.concurrent.Executors.newCachedThreadPool());
+        endless.start();
+
+        try
+        {
+            long started = System.nanoTime();
+            boolean reached = CS2File.ping("127.0.0.1:" + endless.getAddress().getPort());
+            long tookMs = (System.nanoTime() - started) / 1000000;
+
+            assertTrue(reached, "a station whose /can/ body does not end was not reached");
+            assertTrue(tookMs < CS2File.READ_TIMEOUT_MS / 2, "ping waited " + tookMs + " ms, for the body");
+        }
+        finally
+        {
+            release.countDown();
+            endless.stop(0);
+        }
+    }
+
+    /**
+     * A station file in UTF-8 or in ISO-8859-1 syncs with every name exactly right, umlauts included.
+     *
+     * MUTATION: decode every fetched file as UTF-8 only, in `CS2File.fetchURL`, and the Latin-1 case fails.
+     */
+    @Test(dataProvider = "encodings")
+    public void testAStationFileInEitherEncodingSyncsWithTheNamesRight(boolean latin1) throws Exception
+    {
+        String was = TestStationAddress.get();
+
+        List<String> served = describe(mockStation().parseLocomotives());
+
+        assertTrue(takeTheServedLocomotivesOut() > 0, "precondition: the database holds none of the station's locomotives");
+
+        damagedPath = latin1 ? "/lokomotive.cs2" : null;
+
+        cutShort = false;
+
+        TestStationAddress.set(address);
+
+        try
+        {
+            assertTrue(model.syncWithCS2() >= 0, "the sync of a " + (latin1 ? "Latin-1" : "UTF-8") + " file failed");
+
+            assertEquals(heldAmongTheServed(), served, "a " + (latin1 ? "Latin-1" : "UTF-8") + " file synced with"
+                + " names or addresses that are not the file's");
+        }
+        finally
+        {
+            damagedPath = null;
+
+            TestStationAddress.set(was);
+        }
+    }
+
+    @DataProvider
+    public static Object[][] encodings()
+    {
+        return new Object[][] {{false}, {true}};
+    }
+
+    /** A locomotive file that stops half way is not taken for the whole of it: the database is as it was. */
+    private void assertADamagedLocomotiveFileChangesNothing(boolean truncated) throws Exception
+    {
+        String was = TestStationAddress.get();
+
+        int taken = takeTheServedLocomotivesOut();
+
+        assertTrue(taken > 0, "precondition: the database holds none of the station's locomotives to take out");
+
+        List<String> described = everythingHeld();
+
+        damagedPath = "/lokomotive.cs2";
+
+        cutShort = truncated;
+
+        TestStationAddress.set(address);
+
+        try
+        {
+            int result = model.syncWithCS2();
+
+            assertEquals(result, -1, "the sync did not report failing on a locomotive file that arrived cut off half way");
+
+            assertNotNull(model.getLastSyncError(), "the sync names no error for the damaged file");
+
+            assertEquals(everythingHeld(), described, "the sync changed the locomotive database from a damaged file");
+        }
+        finally
+        {
+            damagedPath = null;
+
+            assertTrue(model.syncWithCS2() >= 0, "the sync that puts the locomotives back failed");
+
+            TestStationAddress.set(was);
+        }
+    }
+
+    private static List<String> everythingHeld()
+    {
+        List<MarklinLocomotive> held = new LinkedList<>();
+
+        for (String name : model.getLocList()) held.add(model.getLocByName(name));
+
+        return describe(held);
+    }
+
+    /** Takes out of the database each locomotive the station's file lists; how many were there. */
+    private static int takeTheServedLocomotivesOut() throws Exception
+    {
+        int taken = 0;
+
+        for (MarklinLocomotive l : mockStation().parseLocomotives())
+        {
+            if (model.getLocByName(l.getName()) != null && model.deleteLoc(l.getName())) taken++;
+        }
+
+        return taken;
+    }
+
+    /** The database's own entry for each locomotive the station's file lists, as name, address and decoder type. */
+    private static List<String> heldAmongTheServed() throws Exception
+    {
+        List<MarklinLocomotive> held = new LinkedList<>();
+
+        for (MarklinLocomotive l : mockStation().parseLocomotives())
+        {
+            MarklinLocomotive mine = model.getLocByName(l.getName());
+
+            if (mine != null) held.add(mine);
+        }
+
+        return describe(held);
     }
 
     /**

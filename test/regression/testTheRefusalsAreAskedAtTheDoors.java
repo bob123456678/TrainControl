@@ -138,8 +138,42 @@ public class testTheRefusalsAreAskedAtTheDoors
             "a recent layout swaps the layout folder, as Open Layout does (FR-145)"},
         {"private void mountRestoreFromBackup(", SETUP + "|" + EDITOR,
             "Restore from Backup replaces the layout folder and the data, then closes TrainControl (FR-124)"},
-        {"    void initializeLocalLayoutMenuItemActionPerformed(", SETUP,
-            "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2)"},
+        {"    void initializeLocalLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
+            "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2); under an open editor it switched first and was refused at the sync"},
+        {"    void downloadCSLayoutMenuItemActionPerformed(", EDITOR,
+            "Download Central Station Layout switches the layout to the downloaded folder, under an open editor as well"},
+
+        // The Autonomy tab's Manage list and the configuration list's right-click menu, which the menu bar grays and
+        // these doors must refuse by themselves.
+        {"    public void initialize()", EDITOR,
+            "a first configuration is written into the setup an open editor holds"},
+        {"    public void importConfiguration()", EDITOR,
+            "an import writes the setup's shared half under an open editor"},
+        {"    public void exportConfiguration()", EDITOR,
+            "an export folds the running railway into the setup first"},
+        {"    public void duplicate()", EDITOR,
+            "a new configuration is written into the setup an open editor holds"},
+        {"    public void rename()", EDITOR,
+            "renaming the running configuration leaves the editor's Cancel restoring a name the window no longer runs"},
+        {"    public void delete()", EDITOR,
+            "deleting resets the session, and the editor's Cancel recreates the configuration"},
+        {"    private static void deleteEverything(", EDITOR,
+            "deleting the whole setup under an open editor"},
+        {"    boolean unloadAutonomy()", EDITOR,
+            "Stop Using Autonomy resets the session under an open editor"},
+        {"    public boolean refusedWhileRunning()", EDITOR,
+            "every door that loads a configuration asks here, and a load saves the setup under an open editor"},
+        {"    private JMenu pagesMenu(", EDITOR,
+            "ticking a page in or out saves the setup with a reconcile and reloads the configuration under an open"
+            + " editor"},
+
+        // Grayed or emptied for an editor on its way as well as one open: the gate every sending door asks.
+        {"    void guardLayoutMenu()", "anEditorIsOpenOrOnItsWay()",
+            "the Layout menu's saves and rebuilds commit work an editor has not saved"},
+        {"    private static PathOptions gatherPathOptions(", "anEditorIsOpenOrOnItsWay()",
+            "the right-click menu gathers on a worker, so it can be built between Edit and the editor showing"},
+        {"    private LayoutRightclickAutonomyMenu(TrainControlUI ui,", "anEditorIsOpenOrOnItsWay()",
+            "anything done from the right-click menu is overwritten by the editor's own copy of the setup"},
 
         // And the rest.
         {"private void startAutonomyActionPerformed(", GATE,

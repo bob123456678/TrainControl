@@ -212,6 +212,17 @@ public class testTheStationIsReachedOverTcp
     {
         if (this.proxy != null) this.proxy.stopListening();
         if (this.station != null) this.station.close();
+
+        NetworkProxy.restoreTcpTimeoutsAfterATest();
+    }
+
+    /**
+     * Production gives up on TCP after 3 tries of 2 s with pauses of 1, 2 and 3 s.  A claim about giving up shortens that
+     * to 3 tries of 0.5 s with pauses of 0.1, 0.2 and 0.3 s; the real values stay on the claims that hang one connect.
+     */
+    private static void giveUpQuickly()
+    {
+        NetworkProxy.setTcpTimeoutsForATest(500, 3, 100);
     }
 
     /** A proxy for the station's address, with the model set, asked to connect over TCP to a port there. */
@@ -565,13 +576,14 @@ public class testTheStationIsReachedOverTcp
 
     /**
      * When no new connection can be made, UDP takes over for the rest of the session, logged, and the station's
-     * broadcasts are heard again.  Three tries of up to 2 s each, after pauses of 1, 2 and 3 s.
+     * broadcasts are heard again.  Three tries, each after a longer pause.
      *
      * MUTATION: in `NetworkProxy.recover`, put `if (true) return;` before the block that sets `this.tcp = null`.
      */
     @Test(timeOut = 60000)
     public void testAConnectionThatCannotBeReplacedFallsBackToUdp() throws Exception
     {
+        giveUpQuickly();
         connectedAndAnswered();
 
         this.station.close();
@@ -610,13 +622,14 @@ public class testTheStationIsReachedOverTcp
     @Test(timeOut = 60000)
     public void testUdpIsHeardWhileAReconnectHangs() throws Exception
     {
+        giveUpQuickly();
         connectedAndAnswered();
 
         long start = System.nanoTime();
         this.station.close();
 
         assertAllHeard(broadcastWhile(4000, () -> this.model.count("network.tcpReconnectFailed") == 0
-            && System.nanoTime() - start < 30000000000L), start, 8000);
+            && System.nanoTime() - start < 30000000000L), start, 1500);
     }
 
     /** Broadcasts a sensor frame every 20 ms, from `contact` up, while `going` holds; returns them. */
@@ -1600,6 +1613,7 @@ public class testTheStationIsReachedOverTcp
     @Test(timeOut = 60000)
     public void testAFrameWrittenBeforeTcpIsGivenUpIsNotSentOverUdp() throws Exception
     {
+        giveUpQuickly();
         try (DatagramSocket wire = udpWire())
         {
             connectedAndWritten(Packets.powerStop().getRawMessage());

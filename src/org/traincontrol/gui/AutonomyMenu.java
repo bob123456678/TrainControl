@@ -1,11 +1,14 @@
 package org.traincontrol.gui;
 
 import java.util.List;
+import java.awt.Component;
+import java.io.IOException;
 import javax.swing.ButtonGroup;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
@@ -95,13 +98,13 @@ public class AutonomyMenu extends JMenu
      */
     private void guardWhileEditing(JMenuItem guide)
     {
-        if (!ui.isLayoutEditorOpen()) return;
+        if (!ui.anEditorIsOpenOrOnItsWay()) return;
 
         String why = AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipCloseTheEditor"));
 
         for (int i = 0; i < getMenuComponentCount(); i++)
         {
-            java.awt.Component part = getMenuComponent(i);
+            Component part = getMenuComponent(i);
 
             if (part == guide) continue;
 
@@ -165,7 +168,7 @@ public class AutonomyMenu extends JMenu
 
         for (int i = 0; i < getMenuComponentCount(); i++)
         {
-            java.awt.Component part = getMenuComponent(i);
+            Component part = getMenuComponent(i);
 
             if (!(part instanceof JMenuItem) || part == documentation || part == settingsItem) continue;
 
@@ -196,7 +199,7 @@ public class AutonomyMenu extends JMenu
             // taken for reasons it would not touch.
             if (ui.isRemoteLayout())
             {
-                javax.swing.JMenu offer = new javax.swing.JMenu(I18n.t("autosetup.ui.menuNoSetupPossible"));
+                JMenu offer = new JMenu(I18n.t("autosetup.ui.menuNoSetupPossible"));
 
                 JMenuItem download = new JMenuItem(I18n.t("ui.main.toolbar.downloadCSLayout"));
 
@@ -395,10 +398,10 @@ public class AutonomyMenu extends JMenu
      * The session's pages in the order the window shows them, for a menu; the session's own list is name-sorted, which
      * its links index, and is left as it is.
      */
-    private java.util.List<LayoutDiagram> shownOrder(AutonomySession session)
+    private List<LayoutDiagram> shownOrder(AutonomySession session)
     {
-        java.util.List<LayoutDiagram> out = new java.util.ArrayList<>(session.getPages());
-        final java.util.List<String> shown = ui.getModel().getLayoutList();
+        List<LayoutDiagram> out = new java.util.ArrayList<>(session.getPages());
+        final List<String> shown = ui.getModel().getLayoutList();
 
         out.sort((a, b) -> Integer.compare(shown.indexOf(a.getName()), shown.indexOf(b.getName())));
 
@@ -497,8 +500,8 @@ public class AutonomyMenu extends JMenu
 
         forget.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintDeleteSetup")));
 
-        for (java.awt.Component part : new java.awt.Component[] {copy, rename, deleteOne,
-            new javax.swing.JPopupMenu.Separator(), importItem, exportItem, new javax.swing.JPopupMenu.Separator(),
+        for (Component part : new Component[] {copy, rename, deleteOne,
+            new JPopupMenu.Separator(), importItem, exportItem, new JPopupMenu.Separator(),
             unload, forget})
         {
             into.add(part);
@@ -511,6 +514,8 @@ public class AutonomyMenu extends JMenu
      */
     private static void deleteEverything(TrainControlUI ui, AutonomySession session)
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
         int names = session.getStore().getConfigurationNames().size();
@@ -531,7 +536,7 @@ public class AutonomyMenu extends JMenu
 
             session.rebuild();
         }
-        catch (java.io.IOException e)
+        catch (IOException e)
         {
             JOptionPane.showMessageDialog(ui,
                 I18n.f("autosetup.ui.errorDeleteSetupFailed", String.valueOf(e.getMessage())));
@@ -561,6 +566,13 @@ public class AutonomyMenu extends JMenu
 
             box.addActionListener(e ->
             {
+                // Not under an open editor: the save reconciles and the reload rebuilds under it
+                if (ui.refuseWhileEditorOpen())
+                {
+                    box.setSelected(!box.isSelected());
+                    return;
+                }
+
                 // Refused while trains are running: the running layout is built from the configuration as loaded and
                 // nothing here rebuilds it, so ticking a page off mid-run would leave the layout routing trains to
                 // those stations.
@@ -571,7 +583,7 @@ public class AutonomyMenu extends JMenu
                 // driven on the throttle alone, which nothing counts and this still sees.
                 if (ui.getActiveDiagramConfiguration() != null)
                 {
-                    java.util.List<String> moving = ui.locomotivesMoving();
+                    List<String> moving = ui.locomotivesMoving();
 
                     if (!moving.isEmpty()
                         && JOptionPane.showOptionDialog(ui,
@@ -594,9 +606,9 @@ public class AutonomyMenu extends JMenu
                     // go.
                     AutonomyReport.show(ui, session.save());
                 }
-                catch (java.io.IOException io)
+                catch (IOException io)
                 {
-                    javax.swing.JOptionPane.showMessageDialog(ui, String.valueOf(io.getMessage()));
+                    JOptionPane.showMessageDialog(ui, String.valueOf(io.getMessage()));
                 }
 
                 ui.autonomyMenuActed();

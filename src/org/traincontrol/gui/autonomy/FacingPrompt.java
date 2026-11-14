@@ -5,7 +5,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.util.I18n;
 
@@ -37,10 +40,10 @@ public class FacingPrompt
      * The answer the next question gets, for a test that has to drive a real paste (MT-394): a modal dialog in a test
      * hangs the suite.  Null means the dialog is shown.
      */
-    private static volatile org.traincontrol.automationui.TilePorts.Side answeredByATest;
+    private static volatile TilePorts.Side answeredByATest;
 
     /** Makes every facing question answer this without showing a dialog, until reset with null.  For tests only. */
-    public static void answerForTests(org.traincontrol.automationui.TilePorts.Side answer)
+    public static void answerForTests(TilePorts.Side answer)
     {
         answeredByATest = answer;
     }
@@ -145,7 +148,7 @@ public class FacingPrompt
      * @param heading the way the train would face
      * @return the button label, in the running language
      */
-    public static String labelFor(org.traincontrol.automationui.TilePorts.Side heading)
+    public static String labelFor(TilePorts.Side heading)
     {
         if (heading == null) return I18n.t("autolayout.ui.headingN");
 
@@ -179,7 +182,7 @@ public class FacingPrompt
     static <T> T askAmong(Component parent, String question, String title, List<T> choices,
         java.util.function.Function<T, String> label, int preferred)
     {
-        java.util.concurrent.atomic.AtomicReference<T> answer = new java.util.concurrent.atomic.AtomicReference<>();
+        AtomicReference<T> answer = new AtomicReference<>();
 
         try
         {
@@ -196,8 +199,8 @@ public class FacingPrompt
                 if (chose >= 0 && chose < choices.size()) answer.set(choices.get(chose));
             };
 
-            if (javax.swing.SwingUtilities.isEventDispatchThread()) prompt.run();
-            else javax.swing.SwingUtilities.invokeAndWait(prompt);
+            if (SwingUtilities.isEventDispatchThread()) prompt.run();
+            else SwingUtilities.invokeAndWait(prompt);
         }
         catch (Exception cannotAsk)
         {

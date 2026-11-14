@@ -323,7 +323,7 @@ final class TrainFit
      */
     static int askedForOnTheWayRound(List<String> askedAlong, int left, int back)
     {
-        java.util.Set<String> keys = new java.util.HashSet<>();
+        Set<String> keys = new java.util.HashSet<>();
 
         for (int g = Math.max(0, left + 1); g < back && g < askedAlong.size(); g++)
         {
@@ -355,7 +355,7 @@ final class TrainFit
         // is copied into an ArrayList because callers hand in linked lists and `subList` is asked path.size() times.
         if (loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
 
-        List<Edge> ordered = new java.util.ArrayList<>(path);
+        List<Edge> ordered = new ArrayList<>(path);
 
         for (int i = 0; i < ordered.size(); i++)
         {

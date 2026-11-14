@@ -10,6 +10,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
@@ -277,10 +278,12 @@ public class testWhatTheStationSendsIsHeard
      *
      * MUTATION: in `MarklinAccessory.parseMessage`, `if (this.switched != stateAtLastActuation)` to `if (true)`.
      */
-    @Test
-    public void testAnAccessoryEchoMovesTheTurnoutAndCountsTheMove() throws Exception
+    @Test(dataProvider = "accessoryProtocols")
+    public void testAnAccessoryEchoMovesTheTurnoutAndCountsTheMove(Accessory.accessoryDecoderType protocol)
+        throws Exception
     {
-        final MarklinAccessory turnout = straightTurnout(SWITCH + 4);
+        final MarklinAccessory turnout = straightTurnout(SWITCH + 4 + (protocol == Accessory.accessoryDecoderType.DCC ? 20 : 0),
+            protocol);
 
         final int counted = turnout.getNumActuations();
 
@@ -333,10 +336,10 @@ public class testWhatTheStationSendsIsHeard
      *
      * MUTATION: in `MarklinLocomotive.parseMessage`, `(int) Math.round(speed / 10.0)` to `speed / 10`.
      */
-    @Test
-    public void testASpeedEchoSetsTheSpeedRounded()
+    @Test(dataProvider = "protocols")
+    public void testASpeedEchoSetsTheSpeedRounded(String protocol)
     {
-        final MarklinLocomotive train = locomotive("speed", 71);
+        final MarklinLocomotive train = locomotive("speed", 71, protocol);
 
         hear(Packets.speedEcho(train, 455));
 
@@ -349,10 +352,10 @@ public class testWhatTheStationSendsIsHeard
      *
      * MUTATION: in `MarklinLocomotive.parseMessage`, take out the `this._setSpeed(0)` under `direction == 2`.
      */
-    @Test
-    public void testADirectionEchoTurnsTheTrainAndStopsIt()
+    @Test(dataProvider = "protocols")
+    public void testADirectionEchoTurnsTheTrainAndStopsIt(String protocol)
     {
-        final MarklinLocomotive train = locomotive("direction", 72);
+        final MarklinLocomotive train = locomotive("direction", 72, protocol);
 
         hear(Packets.directionEcho(train, true));
 
@@ -376,10 +379,10 @@ public class testWhatTheStationSendsIsHeard
      *
      * MUTATION: in `MarklinLocomotive.parseMessage`, `m.getData()[5] != 0` to `m.getData()[5] == 0`.
      */
-    @Test
-    public void testAFunctionEchoTurnsTheFunctionOnAndOff()
+    @Test(dataProvider = "protocols")
+    public void testAFunctionEchoTurnsTheFunctionOnAndOff(String protocol)
     {
-        final MarklinLocomotive train = locomotive("function", 73);
+        final MarklinLocomotive train = locomotive("function", 73, protocol);
 
         hear(Packets.functionEcho(train, 3, true));
 
@@ -515,9 +518,27 @@ public class testWhatTheStationSendsIsHeard
         holdThenHear(Packets.s88(sensor, second));
     }
 
+    /** One locomotive of each protocol the station drives, so a frame for each is shown heard. */
+    @DataProvider
+    public static Object[][] protocols()
+    {
+        return new Object[][] {{"MM2"}, {"MFX"}, {"DCC"}};
+    }
+
+    @DataProvider
+    public static Object[][] accessoryProtocols()
+    {
+        return new Object[][] {{Accessory.accessoryDecoderType.MM2}, {Accessory.accessoryDecoderType.DCC}};
+    }
+
     private static MarklinAccessory straightTurnout(int address)
     {
-        MarklinAccessory turnout = model.newSwitch(address, Accessory.accessoryDecoderType.MM2, false);
+        return straightTurnout(address, Accessory.accessoryDecoderType.MM2);
+    }
+
+    private static MarklinAccessory straightTurnout(int address, Accessory.accessoryDecoderType protocol)
+    {
+        MarklinAccessory turnout = model.newSwitch(address, protocol, false);
 
         turnout.setSwitched(false);
 
@@ -556,9 +577,18 @@ public class testWhatTheStationSendsIsHeard
 
     private static MarklinLocomotive locomotive(String name, int address)
     {
-        MarklinLocomotive train = model.getLocByName(PREFIX + name);
+        return locomotive(name, address, "MM2");
+    }
 
-        if (train == null) train = model.newMM2Locomotive(PREFIX + name, address);
+    private static MarklinLocomotive locomotive(String name, int address, String protocol)
+    {
+        final String named = PREFIX + name + " " + protocol;
+
+        MarklinLocomotive train = model.getLocByName(named);
+
+        if (train == null && protocol.equals("MFX")) train = model.newMFXLocomotive(named, address);
+        else if (train == null && protocol.equals("DCC")) train = model.newDCCLocomotive(named, address);
+        else if (train == null) train = model.newMM2Locomotive(named, address);
 
         assertNotNull(train, "precondition: the locomotive could not be added");
 

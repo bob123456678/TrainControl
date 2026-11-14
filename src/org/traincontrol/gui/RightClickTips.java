@@ -1,6 +1,8 @@
 package org.traincontrol.gui;
 
 import java.awt.Component;
+import java.util.HashSet;
+import java.util.Set;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
@@ -26,7 +28,7 @@ public final class RightClickTips
     private static boolean installed;
 
     /** The items whose tips or keys this setting has taken off, to put back once their menu closes. */
-    private static final java.util.Set<JMenuItem> stripped = new java.util.HashSet<>();
+    private static final Set<JMenuItem> stripped = new HashSet<>();
 
     private RightClickTips()
     {
@@ -54,7 +56,7 @@ public final class RightClickTips
     {
         MenuElement[] path = MenuSelectionManager.defaultManager().getSelectedPath();
 
-        java.util.Set<JMenuItem> open = new java.util.HashSet<>();
+        Set<JMenuItem> open = new HashSet<>();
 
         for (MenuElement each : path)
         {
@@ -84,7 +86,7 @@ public final class RightClickTips
         }
     }
 
-    private static void collect(Component[] items, java.util.Set<JMenuItem> into)
+    private static void collect(Component[] items, Set<JMenuItem> into)
     {
         for (Component each : items)
         {

@@ -374,16 +374,29 @@ public class LayoutDiagramComponent
         return RESOURCE_PATH + Integer.toString(artSize(size)) + "/" + this.getTypeName() + stateString + ".gif";
     }
     
+    /** Each icon file as read, by name: one file serves every rotation and size drawn from it.  Never drawn on. */
+    private static final Map<String, BufferedImage> SOURCES = new java.util.concurrent.ConcurrentHashMap<>();
+
     public Image getImage(int size, boolean ignoreState) throws IOException
-    {  
-         String imageName = getImageName(size, ignoreState);
-         java.net.URL icon = LayoutDiagramComponent.class.getResource(imageName);
+    {
+        return getImage(getImageName(size, ignoreState), size);
+    }
 
-         if (icon == null) throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
+    /** The picture `getImageName` named, at `size` and turned to this square, so key and picture share one state. */
+    public Image getImage(String imageName, int size) throws IOException
+    {
+         Image img = SOURCES.get(imageName);
 
-         Image img = ImageIO.read(icon);
+         if (img == null)
+         {
+            java.net.URL icon = LayoutDiagramComponent.class.getResource(imageName);
+            BufferedImage read = icon == null ? null : ImageIO.read(icon);
 
-         if (img == null) throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
+            if (read == null) throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
+
+            SOURCES.putIfAbsent(imageName, read);
+            img = read;
+         }
 
          // Resize only if we don't have the right icon
          if (size != img.getWidth(null))
@@ -853,7 +866,13 @@ public class LayoutDiagramComponent
     public String getImageKey(int size, boolean ignoreState)
     {
         // and the size it is drawn at: two sizes drawn from one icon set are two pictures (FR-122)
-        return this.getImageName(size, ignoreState) + "_" + Integer.toString(orientation) + "_" + Integer.toString(size);
+        return getImageKey(this.getImageName(size, ignoreState), size);
+    }
+
+    /** The cache key of the picture `getImageName` named, at `size` on this square. */
+    public String getImageKey(String imageName, int size)
+    {
+        return imageName + "_" + Integer.toString(orientation) + "_" + Integer.toString(size);
     }
 
     /**

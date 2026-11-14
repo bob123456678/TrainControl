@@ -594,12 +594,12 @@ public final class CopyScan
         return new Tokens(id, line);
     }
 
-    /** Prints what dupscan.py prints first (files, tokens, clusters, duplicated tokens), then the baseline lines. */
+    /** Prints the clusters and duplicated tokens, then the baseline lines; a second argument pairs every run (as `test/` is). */
     public static void main(String[] args) throws IOException
     {
         File src = new File(args.length > 0 ? args[0] : "src");
 
-        List<Group> groups = scan(src);
+        List<Group> groups = scan(src, args.length > 1 ? Integer.MAX_VALUE : CROWDED);
 
         long dup = 0;
 

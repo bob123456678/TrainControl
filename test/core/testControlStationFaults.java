@@ -805,7 +805,7 @@ public class testControlStationFaults
 
         try
         {
-            support.TestStationAddress.set("127.0.0.1:1");
+            support.TestStationAddress.set(support.TestStationAddress.NOWHERE);
 
             System.setProperty(switchName, "2");
             model.debug(true);
@@ -1334,5 +1334,64 @@ public class testControlStationFaults
     private static void set(Object target, String name, Object value) throws Exception
     {
         Reflect.set(org.traincontrol.gui.TrainControlUI.class, target, name, value);
+    }
+
+    /**
+     * A failed sync names what went wrong in one plain sentence by the kind of failure, never the exception, a URL or a
+     * byte count: no answer from a port nothing listens on, then each other kind from the shape the JDK gives it.
+     *
+     * MUTATION: return `failure.toString()` from `MarklinControlStation.describe`, or send one kind to another kind's
+     * sentence, and this fails.
+     */
+    @Test
+    public void testAFailedSyncSaysWhatWentWrongInPlainWords() throws Exception
+    {
+        String was = support.TestStationAddress.get();
+        java.lang.reflect.Field parser = Reflect.field(MarklinControlStation.class, "fileParser");
+        Object parserWas = parser.get(model);
+
+        try
+        {
+            support.TestStationAddress.set("127.0.0.1:1");
+            assertTrue(model.syncWithCS2() < 0);
+            assertEquals(model.getLastSyncError(), org.traincontrol.util.I18n.t("sync.failedNoAnswer"));
+        }
+        finally
+        {
+            support.TestStationAddress.set(was);
+            parser.set(model, parserWas);
+        }
+
+        java.lang.reflect.Method describe = MarklinControlStation.class.getDeclaredMethod("describe", Exception.class);
+        describe.setAccessible(true);
+
+        java.lang.reflect.Constructor<?> cutOff = CS2File.CutOffException.class.getDeclaredConstructor(String.class,
+            String.class);
+        cutOff.setAccessible(true);
+
+        Object[][] cases =
+        {
+            { new java.net.SocketException("Unexpected end of file from server"), "sync.failedInterrupted", new String[0] },
+            { new java.net.SocketTimeoutException("Read timed out"), "sync.failedInterrupted", new String[0] },
+            { new java.net.SocketTimeoutException("connect timed out"), "sync.failedNoAnswer", new String[0] },
+            { new java.net.UnknownHostException("cs3"), "sync.failedNoAnswer", new String[0] },
+            { cutOff.newInstance("http://10.0.0.5/config/magnetartikel.cs2", "stopped after 0 of 13044 bytes"),
+                "sync.failedCutOff", new String[] { "magnetartikel.cs2" } },
+            { new java.io.IOException("Server returned HTTP response code: 403 for URL: http://10.0.0.5/config/geraet.vrs"),
+                "sync.failedRefused", new String[] { "geraet.vrs", "403" } },
+            { new java.io.FileNotFoundException("http://10.0.0.5/config/lokomotive.cs2"), "sync.failedMissing",
+                new String[] { "lokomotive.cs2" } },
+            { new org.json.JSONException("Expected a ',' or '}'"), "sync.failedUnreadable", new String[0] },
+        };
+
+        for (Object[] c : cases)
+        {
+            String said = (String) describe.invoke(null, c[0]);
+            String[] args = (String[]) c[2];
+
+            assertEquals(said, args.length == 0 ? org.traincontrol.util.I18n.t((String) c[1])
+                : org.traincontrol.util.I18n.f((String) c[1], (Object[]) args), "for " + c[0]);
+            assertFalse(said.contains("Exception") || said.contains("http") || said.contains("bytes"), "plain: " + said);
+        }
     }
 }

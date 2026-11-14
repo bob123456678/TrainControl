@@ -51,12 +51,38 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
     /** What the stand-in serves at a path in place of the fixture's file; a null body is a 404. */
     private static final Map<String, byte[]> served = new HashMap<>();
 
+    /** A path the stand-in drops the connection on, with no answer; null for none. */
+    private static volatile String dropped;
+
+    /** A whole CS3 for a full sync, which drops the connection on its device file this many more times. */
+    private static StandInStation wholeStation;
+    private static final java.util.concurrent.atomic.AtomicInteger deviceDrops =
+        new java.util.concurrent.atomic.AtomicInteger();
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
         sandbox = support.LayoutSandbox.open();
         model = support.TestStation.simulated();
-        station = new StandInStation((path, n) -> served.containsKey(path) ? served.get(path) : fixture(path));
+        station = new StandInStation((path, n) ->
+        {
+            if (path.equals(dropped)) throw new IllegalStateException("the stand-in drops the connection");
+
+            return served.containsKey(path) ? served.get(path) : fixture(path);
+        });
+
+        java.util.function.BiFunction<String, Integer, byte[]> cs3 = StandInStation.cs3("260",
+            "{\"softwareVersion\":\"2.6.1 (Build 3)\"}");
+
+        wholeStation = new StandInStation((path, n) ->
+        {
+            if (path.equals("/config/geraet.vrs") && deviceDrops.getAndUpdate(k -> Math.max(0, k - 1)) > 0)
+            {
+                throw new IllegalStateException("the stand-in drops the connection");
+            }
+
+            return cs3.apply(path, n);
+        });
 
         Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
     }
@@ -65,6 +91,9 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
     public static void tearDownClass()
     {
         Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+
+        if (wholeStation != null) wholeStation.close();
+
         StandInStation.tearDown(station, model, sandbox);
     }
 
@@ -319,6 +348,33 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
         readAndCheck(accessoryDecoderType.DCC, accessoryDecoderType.MM2, 0);
     }
 
+    /**
+     * Plans that fail to arrive (a dropped connection, not a 404) fail the read, so the sync fails before it clears the
+     * diagram rather than building the tiles with the first article's protocol.
+     *
+     * MUTATION: drop the `trackPlanFailure` throw at the end of `CS2File.parseLayout`, and the read returns pages.
+     */
+    @Test
+    public void testPlansThatFailToArriveFailTheRead() throws Exception
+    {
+        dropped = "/app/api/gbs";
+
+        try
+        {
+            List<LayoutDiagram> pages = read(true);
+
+            fail("plans that never arrived gave " + pages.size() + " pages built without them");
+        }
+        catch (java.io.IOException expected)
+        {
+            // what we want: the caller fails before it clears anything
+        }
+        finally
+        {
+            dropped = null;
+        }
+    }
+
     /** No address with two protocols: the plans are never asked for, and nothing is warned. */
     @Test
     public void testNoAddressWithTwoProtocolsNoFetch() throws Exception
@@ -512,5 +568,153 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
         assertEquals(warnings().size(), 3, "each address with two protocols is named once per page: " + warnings());
         assertTrue(warnings().stream().allMatch(w -> w.contains("not checked against the Central Station")),
             "the local copy's wording: " + warnings());
+    }
+
+    /**
+     * A full sync with the whole CS3 from the layout folder `folder` ("" for the station's diagram), as a fresh start
+     * makes it: no diagram yet and the type not known, with the device file dropped (twice, as the JDK repeats a dropped
+     * request once).  Answers the sync's result; the folder preference is put back by the caller.
+     */
+    private static int firstSyncWithTheDeviceFileDropped(String folder) throws Exception
+    {
+        org.traincontrol.gui.TrainControlUI.getPrefs().put(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF,
+            folder);
+        model.clearLayouts();
+        StandInStation.setCS3(model, false);
+        deviceDrops.set(2);
+
+        return syncWithTheWholeStation();
+    }
+
+    private static int syncWithTheWholeStation()
+    {
+        String was = support.TestStationAddress.get();
+
+        try
+        {
+            support.TestStationAddress.set(wholeStation.address());
+
+            return model.syncWithCS2();
+        }
+        finally
+        {
+            support.TestStationAddress.set(was);
+        }
+    }
+
+    /** W 15's square on Main Layout as the model holds it: MM2 by the station's plan. */
+    private static String w15()
+    {
+        LayoutDiagram page = model.getLayout("Main Layout");
+
+        return page == null ? "no page" : String.valueOf(page.getComponent(5, 9).getProtocol());
+    }
+
+    /** Runs `claim` with the layout folder preference put back after, and the diagram read again from it. */
+    private static void withTheFolderPutBack(java.util.concurrent.Callable<Void> claim) throws Exception
+    {
+        String folder = org.traincontrol.gui.TrainControlUI.getPrefs().get(
+            org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+
+        try
+        {
+            claim.call();
+        }
+        finally
+        {
+            deviceDrops.set(0);
+            org.traincontrol.gui.TrainControlUI.getPrefs().put(
+                org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, folder);
+            model.refreshLayouts();
+        }
+    }
+
+    /**
+     * A device file that fails to arrive fails the sync before the station's diagram is read, as the type decides which
+     * protocol W 15's tile takes: nothing is built, so the retry (Resync or Retry) reads the diagram as a CS3's, and
+     * W 15 is MM2.  Built as a CS2's, it would be DCC until restart, the switch never moving.
+     *
+     * MUTATION: drop the `stationTypeUnknown` throw before `syncLayouts` in the no-folder branch of
+     * `MarklinControlStation.syncLayoutsFromConfiguredSource`, and the failed sync builds the pages, as a CS2's.
+     */
+    @Test
+    public void testAStationsDiagramWaitsForTheStationsType() throws Exception
+    {
+        assertTheStationsDiagramWaitsForTheType("");
+    }
+
+    /** A first sync from `folder` with the device file dropped builds no page, and the retry builds W 15 as MM2. */
+    private static void assertTheStationsDiagramWaitsForTheType(String folder) throws Exception
+    {
+        withTheFolderPutBack(() ->
+        {
+            assertEquals(firstSyncWithTheDeviceFileDropped(folder), -1, "a sync whose device file did not arrive succeeded");
+            assertEquals(model.getLayoutList(), new ArrayList<>(),
+                "pages were built before the station's type was known");
+
+            assertTrue(syncWithTheWholeStation() >= 0, "the retry failed: " + model.getLastSyncError());
+            assertEquals(w15(), "MM2", "after the failed sync and the retry, W 15's tile is commanded as");
+            return null;
+        });
+    }
+
+    /**
+     * The same through a layout folder that will not read, which falls back to the station's diagram: the fallback waits
+     * for the type too, and the folder is kept for the retry, which falls back with the type known.
+     *
+     * MUTATION: drop the `stationTypeUnknown` throw in the fallback of
+     * `MarklinControlStation.syncLayoutsFromConfiguredSource`, and the failed sync builds the pages, as a CS2's.
+     */
+    @Test
+    public void testAFolderThatWillNotReadWaitsForTheTypeToo() throws Exception
+    {
+        assertTheStationsDiagramWaitsForTheType(new File(sandbox.getFolder(), "no such folder").getAbsolutePath());
+    }
+
+    /**
+     * A layout folder is read whether or not the type is known, as a simulation's start needs its diagram: the sync
+     * still fails, with the folder's pages loaded, and the next one succeeds.
+     *
+     * MUTATION: throw `stationTypeUnknown` before the folder is read in
+     * `MarklinControlStation.syncLayoutsFromConfiguredSource`, and no page is loaded.
+     */
+    @Test
+    public void testALayoutFolderIsReadThoughTheTypeIsUnknown() throws Exception
+    {
+        withTheFolderPutBack(() ->
+        {
+            assertEquals(firstSyncWithTheDeviceFileDropped(sandbox.getFolder().getAbsolutePath()), -1,
+                "a sync whose device file did not arrive succeeded");
+            assertFalse(model.getLayoutList().isEmpty(), "the layout folder's pages were not loaded");
+
+            assertTrue(syncWithTheWholeStation() >= 0, "the next sync failed: " + model.getLastSyncError());
+            return null;
+        });
+    }
+
+    /**
+     * "Switch to the Central Station's layout" clears the diagram and syncs; the device file failing that once, after a
+     * sync learned the type, still builds the pages (as a CS3's: W 15 is MM2), though the sync fails.
+     *
+     * MUTATION: withhold the diagram whenever detection failed, whatever was learned before (drop `typeLearned` from
+     * `MarklinControlStation.requireTheTypeKnown`), and no page is built.
+     */
+    @Test
+    public void testTheDiagramIsKeptWhenTheDeviceFileFailsAfterTheTypeWasLearned() throws Exception
+    {
+        withTheFolderPutBack(() ->
+        {
+            org.traincontrol.gui.TrainControlUI.getPrefs().put(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+            model.clearLayouts();
+            StandInStation.setCS3(model, false);
+            assertTrue(syncWithTheWholeStation() >= 0, "precondition: " + model.getLastSyncError());
+
+            model.clearLayouts();
+            deviceDrops.set(2);
+
+            assertEquals(syncWithTheWholeStation(), -1, "a sync whose device file did not arrive succeeded");
+            assertEquals(w15(), "MM2", "the type was known (CS3), so the diagram is built with it");
+            return null;
+        });
     }
 }

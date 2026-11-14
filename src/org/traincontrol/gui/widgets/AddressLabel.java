@@ -2,6 +2,7 @@ package org.traincontrol.gui.widgets;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -31,7 +32,7 @@ public class AddressLabel extends JLabel
     private String[] lines = new String[0];
 
     /** Its square, beyond whose right edge it takes no mouse: the text may run on over the squares to the right. */
-    private java.awt.Component square;
+    private Component square;
 
     public AddressLabel()
     {
@@ -88,7 +89,7 @@ public class AddressLabel extends JLabel
     }
 
     /** @param square the square this is the address of, over which alone it answers the mouse */
-    public void answerOnlyOver(java.awt.Component square)
+    public void answerOnlyOver(Component square)
     {
         this.square = square;
     }
