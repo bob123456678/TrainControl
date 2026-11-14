@@ -212,6 +212,7 @@ public class testTheHomeLabelIsDrawnOnce
             built[0] = new LayoutEditor(page, 30, ui, 0);
             built[0].render();
             built[0].setAutonomyMode(session);
+            captionWas = captions(built[0], org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.CAPTIONS_HOMES);
             built[0].getAutonomyPanel().getShowHomeLocomotives().setSelected(true);
         });
 
@@ -227,6 +228,8 @@ public class testTheHomeLabelIsDrawnOnce
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
+        if (editor != null) javax.swing.SwingUtilities.invokeAndWait(() -> captions(editor, captionWas));
+
         Teardown.close(sandbox, model, editor, ui);
     }
 
@@ -484,5 +487,22 @@ public class testTheHomeLabelIsDrawnOnce
         settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
 
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** The caption choice before this class picked Homes, put back after */
+    private static int captionWas;
+
+    /**
+     * Picks a caption mode through the editor's choice, the user's door: a run starts at the default (Stations), which
+     * re-applies over a box ticked directly.  On the event thread.
+     *
+     * @return the mode it replaced
+     */
+    private static int captions(LayoutEditor on, int mode)
+    {
+        javax.swing.JComboBox<String> choice = on.getAutonomyPanel().getCaptionChoice();
+        int was = choice.getSelectedIndex();
+        choice.setSelectedIndex(mode);
+        return was;
     }
 }
