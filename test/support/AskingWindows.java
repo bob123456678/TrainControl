@@ -212,6 +212,16 @@ public final class AskingWindows
 
         Components.press((AbstractButton) field.get(ui));
 
+        return theNewPageWindow(before, "the Small button opened no window");
+    }
+
+    /**
+     * Waits for a page window that was not open when `before` was taken.
+     *
+     * @return the window, showing; fails with `failure` when none opens
+     */
+    public static LayoutPopupUI theNewPageWindow(Set<Window> before, String failure) throws Exception
+    {
         final LayoutPopupUI[] opened = new LayoutPopupUI[1];
 
         Assert.assertTrue(Components.waitFor(() ->
@@ -227,7 +237,7 @@ public final class AskingWindows
             }
 
             return false;
-        }, PATIENCE_MS), "the Small button opened no window");
+        }, PATIENCE_MS), failure);
 
         Components.settle();
 

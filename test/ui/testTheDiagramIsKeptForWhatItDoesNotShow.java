@@ -564,26 +564,13 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
         try
         {
-            final List<java.awt.Window> before = Arrays.asList(java.awt.Window.getWindows());
+            final java.util.Set<java.awt.Window> before =
+                new java.util.HashSet<>(Arrays.asList(java.awt.Window.getWindows()));
 
             SwingUtilities.invokeAndWait(ui::restoreLayoutTitles);
 
-            final LayoutPopupUI[] restored = new LayoutPopupUI[1];
-
-            assertTrue(Components.waitFor(() ->
-            {
-                for (java.awt.Window w : java.awt.Window.getWindows())
-                {
-                    if (w instanceof LayoutPopupUI && w.isShowing() && !before.contains(w))
-                    {
-                        restored[0] = (LayoutPopupUI) w;
-                    }
-                }
-
-                return restored[0] != null;
-            }, 10000), "precondition: no page window was restored for " + RENAMED_FROM);
-
-            window = restored[0];
+            window = AskingWindows.theNewPageWindow(before, "precondition: no page window was restored for "
+                + RENAMED_FROM);
 
             assertEquals(window.getLayoutTitle(), RENAMED_FROM, "precondition: the restored window shows another page");
 
