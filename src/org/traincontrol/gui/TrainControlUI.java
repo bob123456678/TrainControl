@@ -15068,6 +15068,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             setLocomotiveWorkInFlight(true);
+
+            final LayoutDiagram before = shownDiagram();
             
             new Thread(() ->
             {
@@ -15097,6 +15099,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     setLocomotiveWorkInFlight(false);
                 });
+
+                followIfReadAgain(before);
 
                 // Left OUT of the pass: both go through their own renderer first.  See singlePass.
                 this.repaintLoc(true, null);
@@ -16438,6 +16442,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void layoutRefreshCompleteInternal()
     {
+        followThePagesReadAgain();
+
+        this.repaintLayout();
+
+        this.updatePopups(true);
+
+        setEditLayoutEnabled(true);
+
+        // Revert preference
+        windowAlwaysOnTopMenuItemActionPerformed(null);
+
+        // Revert preference for graph UI
+    }
+
+    /** The page list and the autonomy setup follow pages read again as new objects, as after a page edit. */
+    private void followThePagesReadAgain()
+    {
         int oldIndex = this.LayoutList.getSelectedIndex();
 
         // Update list of pages
@@ -16465,17 +16486,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Quietly: a modal here would be about a configuration the user never asked to reload.
             getAutonomyViewerPanel().load(wasRunning, false);
         }
-
-        this.repaintLayout();
-
-        this.updatePopups(true);
-        
-        setEditLayoutEnabled(true);
-        
-        // Revert preference
-        windowAlwaysOnTopMenuItemActionPerformed(null);
-        
-        // Revert preference for graph UI
     }
 
     /**
@@ -21522,6 +21532,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return page == null ? null : this.model.getLayout(page.toString());
     }
 
+    /** After a sync: where the model holds `before`'s page as a new object, the list and the setup follow, posted. */
+    private void followIfReadAgain(LayoutDiagram before)
+    {
+        if (before != null && before != this.model.getLayout(before.getName()))
+            SwingUtilities.invokeLater(this::followThePagesReadAgain);
+    }
+
     /**
      * After a route write or a sync: rebuilt where the pages were read again (a local folder's edits), else only the
      * route squares bound again.
@@ -21530,6 +21547,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (before == null || before != shownDiagram())
         {
+            followIfReadAgain(before);
+
             repaintLayout();
 
             return;
