@@ -440,6 +440,9 @@ public class testRecentLayouts
 
             record(none, a);
 
+            assertEquals(shown(), Collections.singletonList(none),
+                "precondition: Recent Layouts does not list the folder");
+
             List<String> pagesWere = new ArrayList<>(model.getLayoutList());
 
             assertEquals(click(none), Collections.singletonList(I18n.t("layout.ui.errorInvalidPathOrCorruptData")),
