@@ -15,8 +15,9 @@ root.  A test class is listed when it
     testJavadocsAreAttached), a `synchronized` line touched (the railway monitor class), a bundle (testMessageBundles,
     testEveryMessageKeyIsAskedFor, testEveryLanguageFits), a source file (testNoNewCopies);
   - is paired by CLAUDE.md's standing rules (PAIRINGS below).
---guards prints only the bookkeeping and pairing classes, not those that merely name a changed file: the guard set, which
-runs at every merge, small fix or not (1 to 3 minutes of tests).
+--guards prints only the bookkeeping and pairing classes, plus the classes that read the source of a method a changed
+file declares, and testEveryTestIsInTheBattery when serial-lane.txt or a test using its words changed: the guard set,
+which runs at every merge, small fix or not.
 -v says on stderr why each class is there.  It over-includes for a change to a class most tests name (Layout, Util): the
 list is then long, and that is the honest answer.  The full battery stays the orchestrator's.
 """
@@ -116,6 +117,11 @@ def main(argv):
     why = {}
     guarded = set()
 
+    # the words serial-lane.txt's header lists, as testEveryTestIsInTheBattery holds them
+    block = re.search(r"DESKTOP_WORDS = .*?;", tests.get("regression.testEveryTestIsInTheBattery", ""), re.S)
+    words = "".join(re.findall(r'"([^"]*)"', block.group(0))) if block else "(?!)"
+    desktop = re.compile(words.replace("\\\\", "\\"))
+
     def add(qualified, reason, guard=False):
         if qualified in tests and qualified not in KNOWN_OUT:
             why.setdefault(qualified, []).append(reason)
@@ -154,6 +160,8 @@ def main(argv):
                 add(q, "is itself changed")
             elif q in support:
                 src_names.append(base_name[:-5])
+            if desktop.search(without_comments(tests.get(q) or support.get(q) or "")):
+                add("regression.testEveryTestIsInTheBattery", "%s uses the serial lane's words" % q, True)
             if status == "A" and q in tests:
                 add("regression.testEveryTestIsInTheBattery", "new test %s" % q, True)
                 if WINDOW.search(tests[q]):
@@ -165,8 +173,8 @@ def main(argv):
                 comment_touched = True
         elif path.startswith("test/layouts/"):
             scenarios.append(path.split("/")[2])
-        elif path == "build.xml":
-            add("regression.testEveryTestIsInTheBattery", "build.xml changed", True)
+        elif path in ("build.xml", "docs/tools/serial-lane.txt"):
+            add("regression.testEveryTestIsInTheBattery", "%s changed" % path, True)
         else:
             doc_names.append(base_name)
         if path.startswith("src/") and not path.endswith(".java") and not path.endswith(".properties"):
@@ -187,7 +195,7 @@ def main(argv):
             for lit in re.findall(r'"([^"\n]*\()', text):
                 m = re.search(r"\w[\w<>\[\]]*\s+(\w+)\($", lit)
                 if m and m.group(1) in called:
-                    add(q, "reads the source of %s (%s)" % (sorted(called[m.group(1)])[0], m.group(1)))
+                    add(q, "reads the source of %s (%s)" % (sorted(called[m.group(1)])[0], m.group(1)), True)
                     break
         for k in set(keys):
             if k in text:

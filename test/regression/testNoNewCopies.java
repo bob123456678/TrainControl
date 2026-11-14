@@ -1,8 +1,8 @@
 package regression;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -156,6 +156,8 @@ public class testNoNewCopies
             }
         });
 
+        if (copied <= TEST_COPIED_TOKENS_ALLOWED) return;
+
         Set<String> changed = changedFiles();
 
         Map<String, CopyScan.Group> largest = new LinkedHashMap<>();
@@ -173,17 +175,20 @@ public class testNoNewCopies
             }
         }
 
-        assertFalse(copied > TEST_COPIED_TOKENS_ALLOWED, "test copies rose: " + copied + " tokens stand in a second"
-            + " copy, against " + TEST_COPIED_TOKENS_ALLOWED + " pinned.  The groups with a copy in a file changed on this branch, then the largest:\n  " + mineFirst(largest, changed) + "\nA claim's"
-            + " own set-up may stay written in it; shared steps belong in a helper (test/support, or the class).  Do not"
-            + " raise TEST_COPIED_TOKENS_ALLOWED.");
-
+        fail("test copies rose: " + copied + " tokens stand in a second copy, against " + TEST_COPIED_TOKENS_ALLOWED
+            + " pinned.  The groups with a copy in a file changed on this branch, then the largest:" + "\n" + "  "
+            + mineFirst(largest, changed) + "\n" + "A claim's own set-up may stay written in it; shared steps belong in a"
+            + " helper (test/support, or the class).  Do not raise TEST_COPIED_TOKENS_ALLOWED.");
     }
 
+    private static Set<String> changedNames;
+
     /** The base names of the files this branch changed against dev, untracked ones too; empty when git cannot say. */
-    private static Set<String> changedFiles()
+    private static synchronized Set<String> changedFiles()
     {
-        Set<String> names = new HashSet<>();
+        if (changedNames != null) return changedNames;
+
+        changedNames = new HashSet<>();
 
         String[][] asks = {{"diff", "--name-only", "dev"}, {"diff", "--name-only", "HEAD"},
             {"ls-files", "--others", "--exclude-standard"}};
@@ -192,25 +197,35 @@ public class testNoNewCopies
         {
             try
             {
-                List<String> command = new ArrayList<>(Arrays.asList("git"));
+                File out = File.createTempFile("copies-git", ".txt");
 
-                command.addAll(Arrays.asList(asks[i]));
-
-                Process process = new ProcessBuilder(command).redirectErrorStream(true).start();
-
-                process.getOutputStream().close();
-
-                BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream(), "UTF-8"));
-
-                List<String> lines = new ArrayList<>();
-
-                for (String line; (line = in.readLine()) != null; ) lines.add(line.substring(line.lastIndexOf('/') + 1));
-
-                if (process.waitFor(30, TimeUnit.SECONDS) && process.exitValue() == 0)
+                try
                 {
-                    names.addAll(lines);
+                    List<String> command = new ArrayList<>(Arrays.asList("git"));
 
-                    if (i == 0) i++;  // dev named the whole branch; HEAD would add nothing
+                    command.addAll(Arrays.asList(asks[i]));
+
+                    Process process = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(out).start();
+
+                    process.getOutputStream().close();
+
+                    if (!process.waitFor(30, TimeUnit.SECONDS))
+                    {
+                        process.destroyForcibly();
+                    }
+                    else if (process.exitValue() == 0)
+                    {
+                        for (String line : Files.readAllLines(out.toPath(), StandardCharsets.UTF_8))
+                        {
+                            changedNames.add(line.substring(line.lastIndexOf('/') + 1));
+                        }
+
+                        if (i == 0) i++;  // dev named the whole branch; HEAD would add nothing
+                    }
+                }
+                finally
+                {
+                    out.delete();
                 }
             }
             catch (Exception e)
@@ -219,7 +234,7 @@ public class testNoNewCopies
             }
         }
 
-        return names;
+        return changedNames;
     }
 
     private static boolean touches(CopyScan.Group g, Set<String> changed)
@@ -330,10 +345,12 @@ public class testNoNewCopies
             }
         }
 
-        assertTrue(rose.isEmpty() && found.size() <= GROUPS_ALLOWED,
-            "copies: there are " + found.size() + " groups of 60 or more copied tokens, against " + GROUPS_ALLOWED
-            + " pinned.  These are new or longer than pinned, those with a copy in a file changed on this branch first:"
-            + "\n  " + mineFirst(rose, changedFiles()) + "\n" + ADVICE);
+        if (!rose.isEmpty() || found.size() > GROUPS_ALLOWED)
+        {
+            fail("copies: there are " + found.size() + " groups of 60 or more copied tokens, against " + GROUPS_ALLOWED
+                + " pinned.  These are new or longer than pinned, those with a copy in a file changed on this branch"
+                + " first:" + "\n" + "  " + mineFirst(rose, changedFiles()) + "\n" + ADVICE);
+        }
 
         assertTrue(fell.isEmpty() && found.size() == GROUPS_ALLOWED,
             "copies: " + found.size() + " groups remain, fewer than the " + GROUPS_ALLOWED + " recorded.  Lower "
