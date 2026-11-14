@@ -331,15 +331,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
         System.err.print("Exception in thread \"" + thread.getName() + "\" ");
         error.printStackTrace();
 
-        String said = I18n.f("error.uncaughtInThread", thread.getName(), error);
-        MarklinControlStation station = MarklinControlStation.reporter;
-
-        if (station != null) station.log(said);
-        else MarklinControlStation.log.warning(said);
+        logThroughLatest(I18n.f("error.uncaughtInThread", thread.getName(), error));
     };
 
-    /** The station started last, which `THREAD_ERRORS` reports through. */
+    /** The station started last, which `THREAD_ERRORS` and `logThroughLatest` report through. */
     private static volatile MarklinControlStation reporter;
+
+    /** Writes a line to the log of the station started last, or to the Logger alone when none has started. */
+    public static void logThroughLatest(String message)
+    {
+        MarklinControlStation station = reporter;
+
+        if (station != null) station.log(message);
+        else log.warning(message);
+    }
 
     private static ExecutorService messageProcessor(final String name)
     {
