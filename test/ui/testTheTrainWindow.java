@@ -4178,8 +4178,8 @@ public class testTheTrainWindow
     }
 
     /**
-     * While a route runs the item is not offered at all (Adam: "hide the Place during a run"), and it is back once the
-     * route is over; one offered at rest and pressed during the run places nothing.
+     * While a route runs the item is not offered at all, and it is back once the route is over; one offered at rest and
+     * pressed during the run places nothing.
      *
      * MUTATION: offer the item while `aRunHoldsTheSetup()`, grayed or not, and this fails.
      */
@@ -4223,8 +4223,7 @@ public class testTheTrainWindow
 
     /**
      * Cancel undoes a train placed on an empty station from the train window's list, as it undoes a drag (MT-914): the
-     * station is as the editor opened it, in the setup and on the railway, and the train, which stood nowhere, stands
-     * nowhere again with nothing of the placement left on the railway's copies of the square.
+     * station and the train stand as when the editor opened, in the setup and on the railway.
      *
      * MUTATION: leave out of `LayoutEditor.railwayAsPictured` the trains the picture lacks, and the train stays on the
      * station and this fails.
@@ -4268,9 +4267,8 @@ public class testTheTrainWindow
     }
 
     /**
-     * A train that stood on another station, placed on an empty one through the editor's Place <selected>, is back on
-     * its own after Cancel, come in by the same side with its tail along the same road, in the setup and on the railway
-     * (MT-914): a train of 5 on Tunnel from the north, its tail on TunnelPre, as a first editor left it.
+     * A train placed on an empty station through the editor's Place <selected> is back on its own station after Cancel
+     * (MT-914), come in by the same side with its tail along the same road, in the setup and on the railway.
      *
      * MUTATION: pass null for `railwayAsPictured()` in `LayoutEditor.discardAutonomyWork`, and the train stays on the
      * empty station and this fails.
@@ -5257,10 +5255,8 @@ public class testTheTrainWindow
     }
 
     /**
-     * A turn the railway made on arrival and wrote into the setup only once the editor is open (`faceTheWayItCameIn`,
-     * retried while idle) is no turn since the editor opened: no train runs with an editor open, so the railway turned
-     * it before, and Edit's fold and picture already have it so.  The write is saved, as a followed turn is, so Cancel
-     * asks nothing, and it keeps the train as it stands.
+     * A turn the railway made on arrival and written only once the editor is open (`faceTheWayItCameIn`) is no turn
+     * since the editor opened: Cancel asks nothing and keeps the train as it stands.
      *
      * MUTATION: call `turned(locomotive)` at the end of `AutonomySession.faceTheWayItCameIn`, and Cancel asks and turns
      * it back.
@@ -5297,8 +5293,7 @@ public class testTheTrainWindow
 
             theEditorsPanel();
 
-            // The write still owed, retried once the editor is open (owed only now, or an idle refresh before the
-            // editor opened would write it first)
+            // The write still owed, retried once the editor is open
             Components.onTheEventThread(() ->
             {
                 model.getAutoLayout().restoreReversalsOnArrival(java.util.Collections.singletonMap(train.name,

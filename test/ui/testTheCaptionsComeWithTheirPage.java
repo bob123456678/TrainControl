@@ -30,8 +30,8 @@ import support.Reflect;
 /**
  * The station captions of the main track diagram are written in the event that puts their page up, so its first paint
  * shows them, and a pass that changes nothing asks for no repaint; a caption whose train, locomotive name or station
- * changes still follows it (Adam: "just make sure locomotive renames or remote track diagram changes are properly
- * updated").  And a sensor at rest leaves the strip above the diagram alone.  On the frozen railway, through the
+ * changes still follows it (the owner's rule: renames and remote diagram changes must still update).  And a sensor at
+ * rest leaves the strip above the diagram alone.  On the frozen railway, through the
  * window's own doors.
  */
 public class testTheCaptionsComeWithTheirPage
