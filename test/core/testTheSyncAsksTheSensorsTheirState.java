@@ -254,7 +254,7 @@ public class testTheSyncAsksTheSensorsTheirState
      * equals its new, as a station's own s88 bus may report one, or a late or another client's answer, is an edge when
      * it changes the state (D133): a route armed clear then occupied fires on it.
      *
-     * MUTATION: in `NetworkProxy.isConfirming`, `this.asks > 0` to `true`.
+     * MUTATION: in `NetworkProxy.isConfirming`, `this.holds > 0` to `true`.
      */
     @Test(timeOut = 120000)
     public void testAnEventOfNoChangeFiresARouteWhenNoQueryIsUnderWay() throws Exception
@@ -274,9 +274,9 @@ public class testTheSyncAsksTheSensorsTheirState
     }
 
     /**
-     * Until the confirmation is in, a real event fires no route either (D133): the station changes the contact when the
-     * query for it arrives, while the pass waits; the route armed clear then occupied does not fire.  After the pass, a
-     * real clear then occupied fires it once.
+     * Until a reconnect's confirmation is in, a real event fires no route either (D133): the station changes the
+     * contact when the new connection's query for it arrives, while the pass waits; the route armed clear then occupied
+     * does not fire.  After the pass, a real clear then occupied fires it once.
      *
      * MUTATION: in `MarklinFeedback.parseMessage`, `this.network.isConfirming()` to `false`.
      */
@@ -292,7 +292,7 @@ public class testTheSyncAsksTheSensorsTheirState
 
             // The change comes when the query arrives: the pass is waiting for its answer
             station.onQuery(contact, () -> station.sensor(contact, true));
-            synced(rig, station);
+            station.drop();
             assertTrue(shows(rig, contact, true), "precondition: the event did not arrive");
             assertTrue(Components.waitFor(() -> RouteMonitor.waitingFor(route, false), WAIT_MS),
                 "the route's monitor did not go back to waiting");
@@ -304,6 +304,34 @@ public class testTheSyncAsksTheSensorsTheirState
             station.sensor(contact, true);
             assertTrue(Components.waitFor(() -> fired(rig, log, name) == 1, WAIT_MS),
                 "real events after the confirmation did not fire the route: " + log);
+        });
+    }
+
+    /**
+     * A later sync's pass holds no route (D139): a real occupied frame that arrives while the sync waits for its
+     * answers fires the route armed clear then occupied, as it would outside the pass.
+     *
+     * MUTATION: in `NetworkProxy.syncSensors`, `holding = !this.connectAsked;` to `holding = true;`.
+     */
+    @Test(timeOut = 120000)
+    public void testARealEventDuringALaterSyncFiresTheRoute() throws Exception
+    {
+        connected((rig, station) ->
+        {
+            int contact = 2904;
+            String name = "Sync claim " + contact;
+            List<String> log = new ArrayList<>();
+
+            armedRoute(rig, station, contact, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+            assertTrue(Components.waitFor(() -> !rig.model.isConfirming(), WAIT_MS),
+                "precondition: the connect's confirmation did not end");
+
+            // The change comes when the sync's query arrives: the pass is waiting for its answer
+            station.onQuery(contact, () -> station.sensor(contact, true));
+            synced(rig, station);
+
+            assertTrue(Components.waitFor(() -> fired(rig, log, name) == 1, WAIT_MS), "a real event during a later"
+                + " sync's pass did not fire the route: " + log);
         });
     }
 

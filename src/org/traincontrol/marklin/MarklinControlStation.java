@@ -2799,10 +2799,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return false;
     }
     
-    /** Whether a CS3's sensor state confirmation is under way (D133): sensor changes then fire no route. */
+    /** Whether a CS3's sensor state confirmation after a connect or reconnect is under way (D133): no route fires. */
     public final boolean isConfirming()
     {
         return this.NetworkInterface != null && this.NetworkInterface.isConfirming();
+    }
+
+    /** Whether any pass of sensor queries to a CS3, a sync's included, is under way. */
+    final boolean isAskingSensors()
+    {
+        return this.NetworkInterface != null && this.NetworkInterface.isAsking();
     }
 
     /** Whether a sensor's state was last changed during a state confirmation, not an edge: no route fires on it. */

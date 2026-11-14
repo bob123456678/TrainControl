@@ -98,16 +98,18 @@ public class MarklinFeedback extends Feedback
                 {
                     boolean was = this.isSet();
 
-                    // While a CS3's state confirmation is under way (D133) a change puts the state right, no edge
-                    boolean confirming = this.network.isConfirming();
+                    // Until a connect's or reconnect's confirmation is in, a change only puts the state right (D133);
+                    // during a later sync's pass only an answer, its old state equal to its new, does (D139)
+                    boolean asking = this.network.isAskingSensors();
+                    boolean answer = m.getData()[4] == m.getData()[5];
 
-                    this.changeTo(state == 1, confirming);
+                    this.changeTo(state == 1, this.network.isConfirming() || (asking && answer));
                                         
                     this.updateTiles();
 
-                    // A confirmation asks every sensor, and the route editor's capture must not take the answers that
-                    // change nothing
-                    if (confirming && was == (state == 1)) return;
+                    // A pass asks every sensor, and the route editor's capture must not take the answers that change
+                    // nothing
+                    if (asking && was == (state == 1)) return;
 
                     // And anything watching for one (the route editor's capture)
                     this.network.feedbackChanged(this.getName(), state == 1);
