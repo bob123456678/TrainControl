@@ -100,18 +100,16 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
         assertTrue(Settle.until(() -> !inFlight.get(), 60000), "precondition: the window's start-up sync never ended");
     }
 
-    /**
-     * A Sync that fails says why on the main window and offers Retry, which syncs again at once, and Close, which does
-     * not.
-     *
-     * MUTATION: have TrainControlUI.doSync show "ui.errorSyncFailedSeeLog" alone on a failure, and no Retry is offered.
-     */
-    @Test
-    public void testAFailedSyncSaysWhyAndRetries() throws Exception
+    /** What a claim does with the window, once its start-up sync has ended. */
+    private interface OnTheWindow
     {
-        AtomicBoolean dropping = new AtomicBoolean();
+        void run(StationRig rig, TrainControlUI ui) throws Exception;
+    }
+
+    /** Runs `claim` on the window of a stand-in CS3 that drops its route list while `dropping` is set. */
+    private static void withAWindowWhoseRoutesDrop(AtomicBoolean dropping, OnTheWindow claim) throws Exception
+    {
         BiFunction<String, Integer, byte[]> base = StandInStation.cs3("260", INFO);
-        String failed = I18n.f("ui.syncFailedRetry", "").split("\n")[0];
 
         try (StationRig rig = new StationRig(Files.createTempDirectory("tc-sync-retry").toFile(), (path, n) ->
         {
@@ -126,54 +124,106 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
             try
             {
                 startUpSyncDone(ui);
-                assertTrue(rig.model.syncWithCS2() >= 0, "the sync that imports the fixtures failed");
-
-                // Retry for the first failure, with the station well again; Close for the second; OK for the rest
-                AtomicInteger failures = new AtomicInteger();
-
-                try (Answering answering = Answering.start(message ->
-                {
-                    if (!message.startsWith(failed)) return Answering.pressAt(0);
-
-                    if (failures.incrementAndGet() > 1) return Answering.pressAt(1);
-
-                    dropping.set(false);
-                    return Answering.pressAt(0);
-                }))
-                {
-                    dropping.set(true);
-                    ui.doSync(ui);
-                    assertTrue(answering.awaitAsked(2, 60000), "the failure and the retry's result: " + answering.asked());
-
-                    Answering.Question failure = answering.questions().get(0);
-
-                    assertTrue(failure.message.startsWith(failed), "the failure says so: " + failure.message);
-                    assertTrue(failure.message.length() > I18n.f("ui.syncFailedRetry", "").length(), "and why: "
-                        + failure.message);
-                    assertEquals(failure.buttons, java.util.Arrays.asList(I18n.t("ui.syncFailedRetryButton"),
-                        I18n.t("ui.syncFailedCloseButton")));
-                    assertEquals(failure.title, I18n.t("ui.syncFailedTitle"));
-                    assertSame(failure.owner, ui, "on the main window");
-                    assertEquals(answering.asked().get(1), I18n.f("ui.infoSyncCompleteItemsAdded", "0"),
-                        "Retry synced again, and the station answered");
-
-                    // Close: no further sync
-                    dropping.set(true);
-                    ui.doSync(ui);
-                    assertTrue(answering.awaitAsked(3, 60000), "the second failure was not shown");
-                    assertTrue(answering.asked().get(2).startsWith(failed), answering.asked().get(2));
-
-                    int routesAsked = rig.station.requests("/app/api/automatics");
-
-                    assertFalse(answering.awaitAsked(4, 3000), "Close asked again: " + answering.asked());
-                    assertEquals(rig.station.requests("/app/api/automatics"), routesAsked, "Close synced again");
-                }
+                claim.run(rig, ui);
             }
             finally
             {
                 SwingUtilities.invokeAndWait(ui::dispose);
             }
         }
+    }
+
+    /** The first line of the failed-Sync popup. */
+    private static final String FAILED = I18n.f("ui.syncFailedRetry", "").split("\n")[0];
+
+    /**
+     * A Sync that fails says why on the main window and offers Retry, which syncs again at once, and Close, which does
+     * not.
+     *
+     * MUTATION: have TrainControlUI.doSync show "ui.errorSyncFailedSeeLog" alone on a failure, and no Retry is offered.
+     */
+    @Test
+    public void testAFailedSyncSaysWhyAndRetries() throws Exception
+    {
+        AtomicBoolean dropping = new AtomicBoolean();
+
+        withAWindowWhoseRoutesDrop(dropping, (rig, ui) ->
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0, "the sync that imports the fixtures failed");
+
+            // Retry for the first failure, with the station well again; Close for the second; OK for the rest
+            AtomicInteger failures = new AtomicInteger();
+
+            try (Answering answering = Answering.start(message ->
+            {
+                if (!message.startsWith(FAILED)) return Answering.pressAt(0);
+
+                if (failures.incrementAndGet() > 1) return Answering.pressAt(1);
+
+                dropping.set(false);
+                return Answering.pressAt(0);
+            }))
+            {
+                dropping.set(true);
+                ui.doSync(ui);
+                assertTrue(answering.awaitAsked(2, 60000), "the failure and the retry's result: " + answering.asked());
+
+                Answering.Question failure = answering.questions().get(0);
+
+                assertTrue(failure.message.startsWith(FAILED), "the failure says so: " + failure.message);
+                assertTrue(failure.message.length() > I18n.f("ui.syncFailedRetry", "").length(), "and why: "
+                    + failure.message);
+                assertEquals(failure.buttons, java.util.Arrays.asList(I18n.t("ui.syncFailedRetryButton"),
+                    I18n.t("ui.syncFailedCloseButton")));
+                assertEquals(failure.title, I18n.t("ui.syncFailedTitle"));
+                assertSame(failure.owner, ui, "on the main window");
+                assertEquals(answering.asked().get(1), I18n.f("ui.infoSyncCompleteItemsAdded", "0"),
+                    "Retry synced again, and the station answered");
+
+                // Close: no further sync
+                dropping.set(true);
+                ui.doSync(ui);
+                assertTrue(answering.awaitAsked(3, 60000), "the second failure was not shown");
+                assertTrue(answering.asked().get(2).startsWith(FAILED), answering.asked().get(2));
+
+                int routesAsked = rig.station.requests("/app/api/automatics");
+
+                assertFalse(answering.awaitAsked(4, 3000), "Close asked again: " + answering.asked());
+                assertEquals(rig.station.requests("/app/api/automatics"), routesAsked, "Close synced again");
+            }
+        });
+    }
+
+    /**
+     * A Sync pressed in the locomotive selector that fails says so on the selector, the window that asked, not on the
+     * main window behind it.
+     *
+     * MUTATION: have TrainControlUI.choseFirst hang the popup off the main window again, and it is the failure's owner.
+     */
+    @Test
+    public void testASyncThatFailsFromTheSelectorSaysSoOnTheSelector() throws Exception
+    {
+        AtomicBoolean dropping = new AtomicBoolean();
+
+        withAWindowWhoseRoutesDrop(dropping, (rig, ui) ->
+        {
+            java.awt.Window selector = (java.awt.Window) Reflect.field(TrainControlUI.class, "selector").get(ui);
+            javax.swing.JButton sync = (javax.swing.JButton) Reflect.field(selector.getClass(), "SyncWithCS")
+                .get(selector);
+
+            // Close for the failure; OK for anything else
+            try (Answering answering = Answering.start(message -> Answering.pressAt(message.startsWith(FAILED) ? 1 : 0)))
+            {
+                dropping.set(true);
+                SwingUtilities.invokeAndWait(sync::doClick);
+                assertTrue(answering.awaitAsked(1, 60000), "the failure was not shown");
+
+                Answering.Question failure = answering.questions().get(0);
+
+                assertTrue(failure.message.startsWith(FAILED), "the failure says so: " + failure.message);
+                assertSame(failure.owner, selector, "on the selector, whose Sync was pressed");
+            }
+        });
     }
 
     /** The start-up's own sync, made by the application's init against a station whose routes cannot be read, raises the notice. */

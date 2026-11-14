@@ -15041,13 +15041,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                     else if (r == -1)
                     {
-                        // The reason, on the main window, and Retry runs this same door again
+                        // The reason, on the window that asked, and Retry runs this same door again
                         final String reason = this.model.getLastSyncError();
                         final Object[] options = { I18n.t("ui.syncFailedRetryButton"), I18n.t("ui.syncFailedCloseButton") };
 
                         javax.swing.SwingUtilities.invokeLater(() ->
                         {
-                            if (choseFirst(I18n.f("ui.syncFailedRetry", reason == null ? I18n.t("ui.errorSyncFailedSeeLog")
+                            if (choseFirst(c, I18n.f("ui.syncFailedRetry", reason == null ? I18n.t("ui.errorSyncFailedSeeLog")
                                 : reason), I18n.t("ui.syncFailedTitle"), options, false)) doSync(c);
                         });
                     }
@@ -20178,8 +20178,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }
 
-    /** An error with its answers on the main window, wrapped for a long reason; whether the first answer was chosen. */
-    private boolean choseFirst(String message, String title, Object[] options, boolean onTop)
+    /** An error with its answers on owner's window, wrapped for a long reason; whether the first answer was chosen. */
+    private boolean choseFirst(Component owner, String message, String title, Object[] options, boolean onTop)
     {
         JOptionPane pane = new JOptionPane(message, JOptionPane.ERROR_MESSAGE, JOptionPane.DEFAULT_OPTION, null, options,
             options[0])
@@ -20191,7 +20191,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         };
 
-        JDialog dialog = pane.createDialog(this, title);
+        JDialog dialog = pane.createDialog(owner, title);
 
         applyWindowIcon(dialog);
         dialog.setAlwaysOnTop(onTop);
@@ -20212,7 +20212,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             Object[] options = { I18n.t("ui.startupSyncResync"), I18n.t("ui.main.toolbar.exit") };
 
             // On top, since the application may not hold the foreground yet while it starts
-            resync[0] = choseFirst(I18n.f("ui.startupSyncFailed", error == null ? "" : error),
+            resync[0] = choseFirst(this, I18n.f("ui.startupSyncFailed", error == null ? "" : error),
                 I18n.t("ui.startupSyncFailedTitle"), options, true);
         };
 

@@ -39,6 +39,9 @@ public final class CS2File
     public static final int CONNECT_TIMEOUT_MS = 2000;
     public static final int READ_TIMEOUT_MS = 15000;
 
+    /** The pause before a body that ended short is asked for again. */
+    private static final int RETRY_PAUSE_MS = 300;
+
     // IP address for our HTTP requests
     private final String IP;
     
@@ -414,8 +417,9 @@ public final class CS2File
     /**
      * Opens a URL and returns its whole body as a string stream.  A body that ends short of its Content-Length is an
      * error, not a smaller file: every file the sync reads comes through here, and a half file would be taken as the
-     * station's whole list.  It is asked for again, twice at most: a body that then comes whole is used, and the same
-     * short bytes every time are the station's wrong length, read as sent.  Bytes that differ are a cut-off.
+     * station's whole list.  It is asked for again, twice at most, after a pause: a body that then comes whole is used,
+     * and the same short bytes every time are the station's wrong length, read as sent and logged.  Bytes that differ,
+     * or none at all every time, are a failure.
      */
     public static BufferedReader fetchURL(String url) throws Exception
     {
@@ -424,19 +428,19 @@ public final class CS2File
 
         for (int retry = 0; retry < 2 && last.isShort(); retry++)
         {
+            // Not at once: a station briefly unable to send the file would answer all three the same
+            Thread.sleep(RETRY_PAUSE_MS);
             last = readBody(url);
 
-            if (last.isShort() && !last.sameAs(first))
-            {
-                throw new IOException(I18n.f("network.errorStationFileEndedShort", url, String.valueOf(last.bytes.length),
-                    String.valueOf(last.promised)));
-            }
+            if (last.isShort() && !last.sameAs(first)) throw last.endedShort(url);
         }
 
         if (last.isShort())
         {
-            java.util.logging.Logger.getLogger(CS2File.class.getName()).info(url + " sent " + last.bytes.length
-                + " of the " + last.promised + " bytes its length promised, the same each time; read as sent");
+            if (last.bytes.length == 0) throw last.endedShort(url);
+
+            MarklinControlStation.logThroughLatest(I18n.f("network.stationFileReadAsSent", url,
+                String.valueOf(last.bytes.length), String.valueOf(last.promised)));
         }
 
         return new BufferedReader(new java.io.StringReader(decode(last.bytes, url)));
@@ -462,6 +466,12 @@ public final class CS2File
         boolean sameAs(Body other)
         {
             return this.promised == other.promised && Arrays.equals(this.bytes, other.bytes);
+        }
+
+        IOException endedShort(String url)
+        {
+            return new IOException(I18n.f("network.errorStationFileEndedShort", url, String.valueOf(this.bytes.length),
+                String.valueOf(this.promised)));
         }
     }
 

@@ -62,6 +62,12 @@ public class testMockCentralStation
     /** With cutShort: the body is sent whole but promises more, the same every time, as a station's wrong length. */
     private static volatile boolean wrongLength;
 
+    /** With cutShort: the headers promise the body and none of it is sent, the same every time. */
+    private static volatile boolean headersOnly;
+
+    /** When each broken fetch of the damaged path was served, in nanoseconds. */
+    private static final List<Long> damagedFetchTimes = java.util.Collections.synchronizedList(new LinkedList<>());
+
     /** How many more fetches of the damaged path arrive broken; the rest arrive whole. */
     private static final AtomicInteger damagedFetchesLeft = new AtomicInteger(Integer.MAX_VALUE);
 
@@ -171,6 +177,8 @@ public class testMockCentralStation
         if (damaged != null && exchange.getRequestURI().getPath().endsWith(damaged)
             && damagedFetchesLeft.getAndDecrement() > 0)
         {
+            damagedFetchTimes.add(System.nanoTime());
+
             if (cutShort)
             {
                 exchange.sendResponseHeaders(200, wrongLength ? body.length + 7 : body.length);
@@ -178,7 +186,8 @@ public class testMockCentralStation
                 // Not closed: the exception out of this handler makes the server drop the connection with the rest owed.
                 OutputStream out = exchange.getResponseBody();
 
-                out.write(body, 0, wrongLength ? body.length : body.length / (2 + cutsServed.getAndIncrement() % 4));
+                out.write(body, 0, headersOnly ? 0 : wrongLength ? body.length
+                    : body.length / (2 + cutsServed.getAndIncrement() % 4));
                 out.flush();
 
                 throw new IOException("the mock station drops the connection half way");
@@ -913,6 +922,96 @@ public class testMockCentralStation
     }
 
     /**
+     * The same short bytes read as sent are said in the application's log, in the user's language, not only to the
+     * developer's logger.
+     *
+     * MUTATION: write the line in `CS2File.fetchURL` to `java.util.logging` for `CS2File` again, and the log lacks it.
+     */
+    @Test
+    public void testAShortBodyReadAsSentIsInTheLog() throws Exception
+    {
+        List<String> logged = java.util.Collections.synchronizedList(new LinkedList<>());
+        java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
+        java.util.logging.Logger station = java.util.logging.Logger.getLogger(
+            org.traincontrol.marklin.MarklinControlStation.class.getName());
+
+        station.addHandler(tap);
+
+        // The model drops a line equal to the one before it, which another claim's fetch of this file may have written
+        model.log("next claim " + System.nanoTime());
+
+        String url = "http://" + address + "/config/lokomotive.cs2";
+        int size = Files.readAllBytes(new File("test/lokomotive.cs2").toPath()).length;
+
+        damagedPath = "/lokomotive.cs2";
+        cutShort = true;
+        wrongLength = true;
+
+        try
+        {
+            CS2File.fetchURL(url).close();
+
+            assertTrue(logged.contains(org.traincontrol.util.I18n.f("network.stationFileReadAsSent", url,
+                String.valueOf(size), String.valueOf(size + 7))), "the log does not say the file was read as sent: "
+                + logged);
+        }
+        finally
+        {
+            station.removeHandler(tap);
+            damagedPath = null;
+            wrongLength = false;
+        }
+    }
+
+    /**
+     * A body that ends short is asked for again after a pause, not at once: three fetches milliseconds apart would all
+     * meet a station that is briefly unable to send the file.
+     *
+     * MUTATION: drop the pause in `CS2File.fetchURL`, and the fetches come together.
+     */
+    @Test
+    public void testAShortBodyIsAskedForAgainAfterAPause() throws Exception
+    {
+        damagedPath = "/lokomotive.cs2";
+        cutShort = true;
+        wrongLength = true;
+        damagedFetchTimes.clear();
+
+        try
+        {
+            CS2File.fetchURL("http://" + address + "/config/lokomotive.cs2").close();
+
+            List<Long> at = new java.util.ArrayList<>(damagedFetchTimes);
+
+            assertEquals(at.size(), 3, "the short body is fetched three times in all");
+
+            for (int i = 1; i < at.size(); i++)
+            {
+                assertTrue(at.get(i) - at.get(i - 1) >= 200_000_000L, "fetch " + (i + 1) + " came "
+                    + (at.get(i) - at.get(i - 1)) / 1_000_000 + " ms after the one before");
+            }
+        }
+        finally
+        {
+            damagedPath = null;
+            wrongLength = false;
+        }
+    }
+
+    /**
+     * Headers with no body, every time, are never the station's whole file, though they are the same each time: the
+     * accessory list fails the sync, rather than being read as empty and every tile at a DCC article's address built
+     * as MM2.  The diagram is read from the station.
+     *
+     * MUTATION: take the empty-body failure out of `CS2File.fetchURL`, and the sync succeeds with the tile MM2.
+     */
+    @Test
+    public void testHeadersAndNoBodyEveryTimeFailTheSync() throws Exception
+    {
+        assertAnAccessoryListThatFailsToArriveBuildsNothing(true);
+    }
+
+    /**
      * A file cut off once and whole when asked again is read whole.
      *
      * MUTATION: drop the retry in `CS2File.fetchURL`, and the fetch fails.
@@ -947,6 +1046,15 @@ public class testMockCentralStation
     @Test
     public void testAnAccessoryListThatFailsToArriveFailsTheSyncAndBuildsNothingFromIt() throws Exception
     {
+        assertAnAccessoryListThatFailsToArriveBuildsNothing(false);
+    }
+
+    /**
+     * A first sync from the station with its accessory list cut off, or headers alone every time: it fails and builds no
+     * tile at DCC address 1 as MM2, and the next sync builds it right.
+     */
+    private static void assertAnAccessoryListThatFailsToArriveBuildsNothing(boolean asHeadersOnly) throws Exception
+    {
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
         String folder = prefs.get(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
         String was = TestStationAddress.get();
@@ -967,6 +1075,7 @@ public class testMockCentralStation
             model.clearLayouts();
             damagedPath = "/magnetartikel.cs2";
             cutShort = true;
+            headersOnly = asHeadersOnly;
 
             assertEquals(model.syncWithCS2(), -1, "a sync whose accessory list did not arrive answered success");
             assertNotNull(model.getLastSyncError(), "and names no reason");
@@ -981,6 +1090,7 @@ public class testMockCentralStation
         finally
         {
             damagedPath = null;
+            headersOnly = false;
             dccAtOne = false;
             TestStationAddress.set(was);
             prefs.put(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, folder);

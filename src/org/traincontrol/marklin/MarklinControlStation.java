@@ -331,15 +331,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
         System.err.print("Exception in thread \"" + thread.getName() + "\" ");
         error.printStackTrace();
 
-        String said = I18n.f("error.uncaughtInThread", thread.getName(), error);
-        MarklinControlStation station = MarklinControlStation.reporter;
-
-        if (station != null) station.log(said);
-        else MarklinControlStation.log.warning(said);
+        logThroughLatest(I18n.f("error.uncaughtInThread", thread.getName(), error));
     };
 
-    /** The station started last, which `THREAD_ERRORS` reports through. */
+    /** The station started last, which `THREAD_ERRORS` and `logThroughLatest` report through. */
     private static volatile MarklinControlStation reporter;
+
+    /** Writes a line to the log of the station started last, or to the Logger alone when none has started. */
+    public static void logThroughLatest(String message)
+    {
+        MarklinControlStation station = reporter;
+
+        if (station != null) station.log(message);
+        else log.warning(message);
+    }
 
     private static ExecutorService messageProcessor(final String name)
     {
@@ -523,7 +528,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /**
      * Re-reads the track diagrams from wherever they are configured to come from - a local folder when
      * one is set, the Central Station otherwise - reverting to the Central Station if the local folder
-     * cannot be read.
+     * cannot be read.  The station's diagram is not read while the station's type is unknown, as the type decides which
+     * protocol a CS3 tile at an address with two takes; a local folder is read either way.
      *
      * Not a full sync, which also re-imports every route and locomotive: slow and side-effecting (routes are deleted
      * and re-added, addresses and function types adopted), none of it wanted after renaming a page.
@@ -563,6 +569,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 catch (Exception e)
                 {
                     this.log(e);
+
+                    // The folder is tried again at the next sync, by when the type may be known
+                    if (this.stationTypeUnknown != null) throw this.stationTypeUnknown;
                    
                     this.logf("layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
                     TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
@@ -574,6 +583,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {      
                 if (this.layoutDB.getItemNames().isEmpty())
                 {
+                    if (this.stationTypeUnknown != null) throw this.stationTypeUnknown;
+
                     syncLayouts();
                 }  
             }
@@ -1442,6 +1453,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /** What the last sync failed with, in words, or null when it did not fail. */
     private volatile String lastSyncError = null;
 
+    /** What the last sync's type detection failed with; null when the type is known or there is no device file. */
+    private volatile Exception stationTypeUnknown = null;
+
     /** What the last sync failed with (OB-338), or null when it did not fail. */
     @Override
     public String getLastSyncError()
@@ -1596,8 +1610,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
 
             // Is this a CS2 or CS3?  A device file that is not found leaves the type as it was; any other failure fails
-            // the sync once the diagram, which reads its own files, is done, before anything is read the wrong way
-            Exception typeUnknown = null;
+            // the sync, after a local folder's diagram and before anything else is read
+            this.stationTypeUnknown = null;
 
             try
             {
@@ -1608,13 +1622,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 this.logf("log.csTypeDetectionError", e.toString());
 
-                if (!(e instanceof java.io.FileNotFoundException)) typeUnknown = e;
+                if (!(e instanceof java.io.FileNotFoundException)) this.stationTypeUnknown = e;
             }
                                        
             // Import layout
             this.syncLayoutsFromConfiguredSource();
 
-            if (typeUnknown != null) throw typeUnknown;
+            if (this.stationTypeUnknown != null) throw this.stationTypeUnknown;
             
             // Import routes
             List<MarklinRoute> parsedRoutes;
