@@ -61,13 +61,11 @@ public class testTheTrackEditorByHand
     {
         Display.needed("the editor is a window, and its squares take the mouse");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("single-switch");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         // The Edit button opens whichever editor was used last; these claims are about the track editor.  Set, and put
         // back, in this run's own preference node.

@@ -38,13 +38,31 @@ public final class FrozenEditor implements AutoCloseable
     /** Opens the railway in its hidden window; skips the class on a machine with no display. */
     public static FrozenEditor open() throws Exception
     {
+        FrozenEditor out = window("live-snapshot");
+
+        if (out.asOpened == null)
+        {
+            out.close();
+
+            throw new SkipException("no autonomy configuration, so there is no editor to open");
+        }
+
+        return out;
+    }
+
+    /**
+     * The main window on a simulated station over a sandbox of this scenario, with whatever autonomy setup it holds
+     * (none is not an error here); a class that needs the setup says so itself after this call.
+     */
+    public static FrozenEditor window(String scenario) throws Exception
+    {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the autonomy editor needs a display");
 
         LayoutSandbox sandbox = null;
 
         try
         {
-            sandbox = LayoutSandbox.open(Scenario.folderFor("live-snapshot"));
+            sandbox = LayoutSandbox.open(Scenario.folderFor(scenario));
 
             MarklinControlStation model = TestStation.simulatedInDebug();
 
@@ -54,11 +72,7 @@ public final class FrozenEditor implements AutoCloseable
 
             ui[0].setViewListener(model, new CountDownLatch(1));
 
-            FrozenEditor out = new FrozenEditor(sandbox, model, ui[0]);
-
-            if (out.asOpened == null) throw new SkipException("no autonomy configuration, so there is no editor to open");
-
-            return out;
+            return new FrozenEditor(sandbox, model, ui[0]);
         }
         catch (Exception | Error failed)
         {
