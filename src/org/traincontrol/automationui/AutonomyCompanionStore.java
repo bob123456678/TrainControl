@@ -1063,6 +1063,13 @@ public class AutonomyCompanionStore
         rewriteTheUnfinishedEditNote(note -> updateRecordInSetup(note, locomotive, key, value));
     }
 
+    /** Puts a turn the railway followed into the pre-edit note, so a revert after a crash keeps it. */
+    public void updateFacingInTheUnfinishedEditNote(String configuration, TileKey square, String locomotive,
+        String facing)
+    {
+        rewriteTheUnfinishedEditNote(note -> updateFacingInSetup(note, configuration, square, locomotive, facing));
+    }
+
     /** Applies a change to the pre-edit note, if one reads, and writes it back when the change says it changed. */
     private void rewriteTheUnfinishedEditNote(Predicate<JSONObject> change)
     {
@@ -1143,6 +1150,32 @@ public class AutonomyCompanionStore
         }
 
         return changed;
+    }
+
+    /**
+     * A turned train's facing (`AutonomySession.flipFacing`) over a snapshot in snapshotSetup's shape, in place, where
+     * its square still holds it; true if changed.
+     */
+    public static boolean updateFacingInSetup(JSONObject setup, String configuration, TileKey square, String locomotive,
+        String facing)
+    {
+        JSONObject copies = setup == null || configuration == null ? null : setup.optJSONObject("configurations");
+        JSONObject copy = copies == null ? null : copies.optJSONObject(configuration);
+
+        return copy != null && updateFacingInPoints(copy.optJSONObject("points"), square, locomotive, facing);
+    }
+
+    /** The same over one configuration's points (a page snapshot holds them by configuration). */
+    public static boolean updateFacingInPoints(JSONObject points, TileKey square, String locomotive, String facing)
+    {
+        JSONObject point = points == null ? null : points.optJSONObject(square.toString());
+
+        if (point == null || !locomotive.equals(AutonomySession.nameOfPlacedLocomotive(point.opt("loc")))
+            || facing.equals(point.opt(AutonomyBuilder.FACING))) return false;
+
+        point.put(AutonomyBuilder.FACING, facing);
+
+        return true;
     }
 
     /** The same over a page snapshot (what snapshotPage returns and the editor's undo holds), changed in place. */

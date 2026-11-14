@@ -147,6 +147,24 @@ public final class RunGates
     }
 
     /**
+     * Refuses a multi-unit link, an address change or a Central Station sync while an editor is open or on its way: each
+     * can take a standing train off the railway, which the editor's Cancel would stand back over another.  Any thread;
+     * true when the caller must not proceed.
+     */
+    static boolean refuseALinkOrSyncWhileEditorOpen(TrainControlUI ui, Component source)
+    {
+        if (!ui.anEditorIsOpenOrOnItsWay()) return false;
+
+        Runnable say = () -> JOptionPane.showMessageDialog(over(ui, source),
+            I18n.t("loc.ui.errorEditorOpenNoLinkOrSync"));
+
+        if (SwingUtilities.isEventDispatchThread()) say.run();
+        else SwingUtilities.invokeLater(say);
+
+        return true;
+    }
+
+    /**
      * What stops a train being sent now, or null: the one question every door that sends a train asks.  An open editor
      * holds the diagram and no setup edit is made during a run (OB-047); a setup with errors sends nothing (MT-263).
      * What a door asks besides is its own (`whyThisPathCannotBeTaken` for a hand send's path).  `startingAutonomy`:

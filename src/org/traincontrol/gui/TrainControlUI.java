@@ -468,6 +468,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public static final int SYNC_ALREADY_RUNNING = -2;
 
+    /** What syncWithCS2 answers when an open editor refused it, having said so. */
+    public static final int SYNC_REFUSED = -3;
+
     /** True while a Central Station sync is running, so a second one is turned away rather than run. */
     private final AtomicBoolean syncInFlight = new AtomicBoolean(false);
 
@@ -7562,6 +7565,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public int syncWithCS2()
     {
+        if (RunGates.refuseALinkOrSyncWhileEditorOpen(this, null)) return SYNC_REFUSED;
+
         if (!syncInFlight.compareAndSet(false, true))
         {
             this.log(I18n.t("ui.infoSyncAlreadyRunning"));
@@ -7759,6 +7764,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Logged: something the operator did to a train has edited a stored configuration, and that must never be
         // silent.
         this.model.logf("autosetup.infoFacingFollowedDirection", name, String.valueOf(moved));
+
+        // The train's, not the open editor's work: its Cancel, its undo and the crash note keep it
+        final String configuration = session.getStore().getActiveConfiguration();
+        final String facing = String.valueOf(session.getFacing(moved));
+
+        LayoutEditor open = anEditorWindow();
+
+        if (open != null)
+        {
+            open.autonomyTurnFollowed(configuration, moved, name, facing);
+
+            // Saved, as a preset speed is, or the open editor would ask about it at Cancel
+            try
+            {
+                session.saveWithoutReconciling();
+            }
+            catch (IOException e)
+            {
+                this.model.log(e);
+            }
+        }
+
+        session.getStore().updateFacingInTheUnfinishedEditNote(configuration, moved, name, facing);
 
         autonomySetupChanged();
 
@@ -14911,7 +14939,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         // The DATABASE sync adds locomotives and re-adds routes, more invasive than the guarded state sync next door.
         // The model defers only the address update; everything else in it proceeds.
-        if (refuseWhileAutonomyRunning(c)) return;
+        if (refuseWhileAutonomyRunning(c) || RunGates.refuseALinkOrSyncWhileEditorOpen(this, c)) return;
 
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
@@ -14950,7 +14978,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.repaintLoc(true, null);
                 this.repaintLayout();
 
-                if (c != null)
+                if (c != null && r != SYNC_REFUSED)
                 {
                     if (r == SYNC_ALREADY_RUNNING)
                     {

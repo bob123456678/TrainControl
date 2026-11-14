@@ -732,6 +732,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         if (identity && main.refuseWhileARouteDrivesIt(this, loc.getName())) return false;
 
+        // A reset syncs once written
+        if (functionsTab.isDirty() && functionsTab.resets()
+            && RunGates.refuseALinkOrSyncWhileEditorOpen(main, this)) return false;
+
         if (members && main.locomotiveActions.refuseMultiUnitEdit(this, loc, multiUnitTab.chosen().keySet())) return false;
 
         // A Central Station multi-unit takes no members: changeLocAddress's refusal, asked before anything is written
@@ -808,7 +812,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
     {
         final Locomotive target = loc;
 
-        if (target == null || isDirty() && !settleUnsaved()) return;
+        if (target == null || RunGates.refuseALinkOrSyncWhileEditorOpen(main, this)) return;
+
+        if (isDirty() && !settleUnsaved()) return;
 
         main.syncLocomotive(target, () -> afterSync(target));
     }

@@ -411,6 +411,40 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
+     * Puts a turn the railway followed (a throttle's direction change) into the snapshots Cancel and Ctrl+Z put back and
+     * into the picture, as `autonomyRecordUpdated` does: the train's, not this window's work, and its decoder runs so.
+     */
+    public void autonomyTurnFollowed(String configuration, TileGraph.TileKey square, String locomotive, String facing)
+    {
+        AutonomyCompanionStore.updateFacingInSetup(this.autonomyAsOpened, configuration, square, locomotive, facing);
+
+        List<Map<String, Object>> held = new ArrayList<>(this.previousCaptions);
+
+        held.addAll(this.previousCaptionsRedo);
+
+        for (Map<String, Object> was : held)
+        {
+            Object copies = was.get("configurations");
+            Object points = copies instanceof Map ? ((Map<?, ?>) copies).get(configuration) : null;
+
+            if (points instanceof JSONObject)
+            {
+                AutonomyCompanionStore.updateFacingInPoints((JSONObject) points, square, locomotive, facing);
+            }
+        }
+
+        // On the copy it stands on now, unless this window moved it off the square it was pictured on
+        Locomotive loc = parent.getModel().getLocByName(locomotive);
+        String[] pictured = loc == null ? null : this.railwayAsOpened.get(loc);
+        String[] now = railwayNow().get(locomotive);
+
+        if (pictured != null && now != null && java.util.Objects.equals(pictured[3], now[3]))
+        {
+            this.railwayAsOpened.put(loc, now);
+        }
+    }
+
+    /**
      * Takes the undo point, in memory (for Cancel) and on disk (OB-108, for a restart after the process dies with an
      * editor open), always together: a page or mode switch moves both.
      * @param live the session to snapshot, or null when there is none

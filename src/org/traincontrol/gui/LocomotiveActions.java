@@ -126,6 +126,8 @@ final class LocomotiveActions
 
                 if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
                 {
+                    if (RunGates.refuseALinkOrSyncWhileEditorOpen(this.ui, source)) return false;
+
                     // A new address or decoder is not written under a train with a stored speed, power on or off
                     if (LocomotiveSettings.hasSpeed(this.ui, l))
                     {
@@ -185,8 +187,8 @@ final class LocomotiveActions
 
     /**
      * The refusals a multi-unit edit meets, in today's order: not while autonomy runs, nor while a route drives the
-     * multi-unit or a member (OB-287), since a multi-unit's commands drive its members.  `newMembers` is null before
-     * they are chosen; true when it refused (and said so).
+     * multi-unit or a member (OB-287), since a multi-unit's commands drive its members; nor a new member while an editor
+     * is open.  `newMembers` is null before they are chosen; true when it refused (and said so).
      */
     boolean refuseMultiUnitEdit(Component source, Locomotive l, java.util.Collection<String> newMembers)
     {
@@ -195,6 +197,9 @@ final class LocomotiveActions
             JOptionPane.showMessageDialog(source, I18n.t("autolayout.ui.errorCannotEditMultiUnitsWhileRunning"));
             return true;
         }
+
+        if (newMembers != null && !l.getLinkedLocomotiveNames().keySet().containsAll(newMembers)
+            && RunGates.refuseALinkOrSyncWhileEditorOpen(this.ui, source)) return true;
 
         Set<String> involved = new java.util.LinkedHashSet<>();
 

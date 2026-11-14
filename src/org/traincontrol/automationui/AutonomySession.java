@@ -6495,7 +6495,7 @@ public class AutonomySession
      * The locomotive named by a stored placement, or null: an object (parseAuto resets what it omits) or, in a
      * hand-edited or old file, a bare string, read too so a re-placement is no change of occupant.
      */
-    private static String nameOfPlacedLocomotive(Object placement)
+    static String nameOfPlacedLocomotive(Object placement)
     {
         if (placement == null) return null;
 
