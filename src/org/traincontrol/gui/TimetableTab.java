@@ -48,14 +48,14 @@ final class TimetableTab
     {
         // Not on the EDT: getTimetableSnapshot holds the Layout monitor, which configureAndLockPath holds across its
         // per-command sleeps (half a second to two seconds a path, because locking a path has to be atomic), so taken
-        // on the EDT the UI freezes for the length of someone else's switch-throwing.  The callback thread pays that
+        // on the EDT the UI freezes for the length of someone else's switch-throwing.  The panels' worker pays that
         // wait instead, where contention for this monitor is already the design (activeLocomotives -> Layout is the
         // order the completion block establishes).  The UI callers' busy guard does not make the monitor free: three
         // hold a modal dialog between the check and the snapshot, and a dispatch started meanwhile takes it.  The
         // callers still marshal their own work through the invokeLater below.
         if (SwingUtilities.isEventDispatchThread())
         {
-            new Thread(() -> this.repaintTimetable()).start();
+            this.ui.autonomyRenderer().submit(this::repaintTimetable);
             return;
         }
 
