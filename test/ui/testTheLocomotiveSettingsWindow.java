@@ -2040,4 +2040,44 @@ public class testTheLocomotiveSettingsWindow
             return answering.asked();
         }
     }
+
+    /**
+     * A member's multiplier opens as the percent it was saved at, for figures whose double times 100 falls just short
+     * (0.57 is 56.99...), and a Save of another change on the tab writes it back unchanged.
+     *
+     * MUTATION: in `MultiUnitPanel.buildRow`, cast `Math.abs(multiplierValue) * 100` to int again instead of rounding,
+     * and 0.57 opens as 56 and is saved as 0.56.
+     */
+    @Test(timeOut = 120000)
+    public void testAMultiplierOpensAndSavesAsItWasSet() throws Exception
+    {
+        for (double set : new double[] { 0.29, 0.57, 1.13 })
+        {
+            fixture.quiet();
+
+            assertEquals(loc.setLinkedLocomotives(java.util.Collections.singletonMap(OTHER, set)), 1,
+                "precondition: the consist was not made");
+
+            assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null), "the window did not open");
+            assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
+
+            int shown = Components.onTheEventThread(() ->
+            {
+                javax.swing.JCheckBox member = Components.find(SettingsWindow.showing().getContentPane(),
+                    javax.swing.JCheckBox.class, b -> OTHER.equals(b.getToolTipText()));
+
+                return Components.find(member.getParent(), javax.swing.JSlider.class, s -> true).getValue();
+            });
+
+            assertEquals(shown, (int) Math.round(set * 100), "a member saved at " + set + " opened as " + shown + "%");
+
+            // Another change on the tab, so that Save writes every member from the sliders
+            SettingsWindow.tickMember(THIRD);
+            SettingsWindow.press(SettingsWindow.save());
+
+            assertTrue(Components.waitFor(() -> loc.getLinkedLocomotiveNames().containsKey(THIRD), WAIT),
+                "precondition: Save did not make " + THIRD + " a member");
+            assertEquals(loc.getLinkedLocomotiveNames().get(OTHER), set, 1e-9, "Save changed the multiplier set at " + set);
+        }
+    }
 }

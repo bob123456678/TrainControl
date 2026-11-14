@@ -102,6 +102,8 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
 
     private static final AtomicBoolean deviceDropping = new AtomicBoolean();
 
+    private static final AtomicBoolean everyFileDropping = new AtomicBoolean();
+
     /** What a claim does with the window, once its start-up sync has ended. */
     private interface OnTheWindow
     {
@@ -118,6 +120,8 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
             if (dropping.get() && "/app/api/automatics".equals(path)) throw new IllegalStateException("dropped");
 
             if (deviceDropping.get() && "/config/geraet.vrs".equals(path)) throw new IllegalStateException("dropped");
+
+            if (everyFileDropping.get()) throw new IllegalStateException("dropped");
 
             return base.apply(path, n);
         }, true))
@@ -314,6 +318,108 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
 
                 assertTrue(answering.asked().get(0).startsWith(FAILED), answering.asked().get(0));
                 assertFalse(rig.model.getLayoutList().isEmpty(), "the station's diagram is gone though its type was known");
+            }
+        });
+    }
+
+    /** The page box's item count, on the event thread. */
+    private static int pagesListed(TrainControlUI ui) throws Exception
+    {
+        javax.swing.JComboBox<?> pages = (javax.swing.JComboBox<?>) Reflect.field(TrainControlUI.class, "LayoutList").get(ui);
+
+        return support.Components.onTheEventThread(pages::getItemCount);
+    }
+
+    /**
+     * Retry after a failed "Switch to the Central Station's layout" that read no pages, once the station answers, fills
+     * the page box with the station's pages; the failure is the only thing said, with no "no layout" message stacked on
+     * it.
+     *
+     * MUTATION: have the `retry` of `TrainControlUI.fetchTheStationsPages` run `doSync(this)`, and the page box stays
+     * empty.
+     */
+    @Test
+    public void testRetryAfterAFailedSwitchToTheStationsLayoutListsThePages() throws Exception
+    {
+        withAWindowWhoseRoutesDrop(new AtomicBoolean(), (rig, ui) ->
+        {
+            javax.swing.JMenuItem door = (javax.swing.JMenuItem) Reflect.field(TrainControlUI.class,
+                "switchCSLayoutMenuItem").get(ui);
+
+            // Retry once the station answers again
+            try (Answering answering = Answering.start(message ->
+            {
+                if (message.startsWith(FAILED)) everyFileDropping.set(false);
+
+                return Answering.pressAt(0);
+            }))
+            {
+                everyFileDropping.set(true);
+                SwingUtilities.invokeAndWait(() -> { door.setEnabled(true); door.doClick(); });
+                assertTrue(answering.awaitAsked(1, 60000), "the failure was not shown");
+                assertTrue(answering.asked().get(0).startsWith(FAILED), answering.asked().get(0));
+
+                assertTrue(Settle.until(() -> !rig.model.getLayoutList().isEmpty(), 60000), "Retry read no pages");
+                assertTrue(Settle.until(() -> { try { return pagesListed(ui) > 0; } catch (Exception e) { return false; } },
+                    20000), "Retry left the page box empty; said " + answering.asked());
+                assertEquals(pagesListed(ui), rig.model.getLayoutList().size(), "the page box lists other pages");
+                assertFalse(answering.awaitAsked(2, 3000), "more than the failure was said: " + answering.asked());
+            }
+            finally
+            {
+                everyFileDropping.set(false);
+            }
+        });
+    }
+
+    /**
+     * The switch's sync refused because an editor is on its way offers the same Retry popup, naming the editor, and
+     * says nothing more; Retry, the editor gone, syncs.
+     *
+     * MUTATION: in `TrainControlUI.fetchTheStationsPages`, leave out the `offerSyncRetry` for `refused`, and nothing is
+     * said.
+     */
+    @Test
+    public void testASwitchSyncRefusedForAnEditorOffersRetry() throws Exception
+    {
+        withAWindowWhoseRoutesDrop(new AtomicBoolean(), (rig, ui) ->
+        {
+            java.lang.reflect.Field onItsWay = Reflect.field(TrainControlUI.class, "editorOnItsWay");
+            java.lang.reflect.Method tail = Reflect.method(TrainControlUI.class, "fetchTheStationsPages");
+            int syncs = rig.station.requests("/config/geraet.vrs");
+
+            // Retry once the editor is gone
+            try (Answering answering = Answering.start(message ->
+            {
+                try
+                {
+                    onItsWay.setBoolean(ui, false);
+                }
+                catch (IllegalAccessException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                return Answering.pressAt(0);
+            }))
+            {
+                support.Components.onTheEventThread(() ->
+                {
+                    onItsWay.setBoolean(ui, true);
+
+                    return tail.invoke(ui);
+                });
+
+                assertTrue(answering.awaitAsked(1, 60000), "the refused sync said nothing");
+                assertEquals(answering.asked().get(0), I18n.f("ui.syncFailedRetry",
+                    I18n.t("loc.ui.errorEditorOpenNoLinkOrSync")), "not the Retry popup naming the editor");
+                assertTrue(Settle.until(() -> rig.station.requests("/config/geraet.vrs") > syncs, 60000),
+                    "Retry did not sync");
+                assertFalse(answering.awaitAsked(2, 3000), "more was said: " + answering.asked());
+            }
+            finally
+            {
+                onItsWay.setBoolean(ui, false);
             }
         });
     }

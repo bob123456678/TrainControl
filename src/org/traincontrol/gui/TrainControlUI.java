@@ -6518,6 +6518,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized public void initializeTrackDiagram(boolean showTab)
     {
+        initializeTrackDiagram(showTab, true);
+    }
+
+    /** As {@link #initializeTrackDiagram(boolean)}; `sayIfEmpty` false leaves out the "no layout" message. */
+    private synchronized void initializeTrackDiagram(boolean showTab, boolean sayIfEmpty)
+    {
         SwingUtilities.invokeLater(()->
         {
             this.LayoutList.setModel(new DefaultComboBoxModel(this.model.getLayoutList().toArray()));
@@ -6546,8 +6552,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 );
 
                 // On screen, not only in the log (OB-103): this switch or download appeared to do nothing.
-                JOptionPane.showMessageDialog(this,
-                    I18n.t("layout.ui.errorNoLayoutFromCentralStation"));
+                if (sayIfEmpty) JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorNoLayoutFromCentralStation"));
             }
         });
     }
@@ -6807,27 +6812,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void syncLocomotive(Locomotive l)
     {
-        syncLocomotive(l, null);
+        syncLocomotiveFrom(l, null, null);
     }
 
     /**
-     * As {@link #syncLocomotive(Locomotive)}, then runs {@code after} on the event thread once the sync is over.
+     * As {@link #syncLocomotive(Locomotive)}, then runs {@code after} on the event thread once the sync is over, and
+     * says on {@code asked} what `doSync` says of a sync that failed or was already running.
+     * @param asked the window whose Sync was pressed, or null to say nothing
      * @param after what to do afterwards, or null
      */
-    public void syncLocomotive(Locomotive l, Runnable after)
+    public void syncLocomotiveFrom(Locomotive l, Component asked, Runnable after)
     {
         if (l != null)
         {
             SwingUtilities.invokeLater(() -> {
                 LayoutDiagram before = shownDiagram();
 
-                this.syncWithCS2();
+                int synced = this.syncWithCS2();
                 this.model.syncLocomotive(l.getName());
                 repaintLoc(true, null);
                 redrawRouteSquaresOrRebuild(before);
                 this.repaintMappings(Collections.singletonList(l), true);
 
                 if (after != null) after.run();
+
+                if (asked != null) saidTheSyncDidNotRun(asked, synced, () -> syncLocomotiveFrom(l, asked, after));
             });
         }   
     }
@@ -14992,33 +15001,56 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         go();
     }//GEN-LAST:event_OnButtonActionPerformed
 
-    /** Says why a sync failed, on the window that asked (the log has the detail), and offers Retry, which syncs again. */
-    private void offerSyncRetry(Component c)
+    /**
+     * Says why a sync failed (`reason`, or else the model's last error; the log has the detail), on the window that
+     * asked, and offers Retry, which runs `retry`.
+     */
+    private void offerSyncRetry(Component c, String reason, Runnable retry)
     {
-        final String reason = this.model.getLastSyncError();
+        final String why = reason != null ? reason : this.model.getLastSyncError();
         final Object[] options = { I18n.t("ui.syncFailedRetryButton"), I18n.t("ui.syncFailedCloseButton") };
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            if (choseFirst(c, I18n.f("ui.syncFailedRetry", reason == null ? I18n.t("ui.errorSyncFailedSeeLog")
-                : reason), I18n.t("ui.syncFailedTitle"), options, false)) doSync(c);
+            if (choseFirst(c, I18n.f("ui.syncFailedRetry", why == null ? I18n.t("ui.errorSyncFailedSeeLog")
+                : why), I18n.t("ui.syncFailedTitle"), options, false)) retry.run();
         });
+    }
+
+    /**
+     * Says on c that a sync was already running, or that it failed with Retry running `retry`; nothing for a refusal,
+     * which has said why.  True unless the sync ran.
+     */
+    private boolean saidTheSyncDidNotRun(Component c, int synced, Runnable retry)
+    {
+        // Not a failure: reporting it as one told the user their sync had failed when another was doing the job
+        if (synced == SYNC_ALREADY_RUNNING)
+        {
+            javax.swing.SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(c, I18n.t("ui.infoSyncAlreadyRunning")));
+        }
+        else if (synced == -1) offerSyncRetry(c, null, retry);
+
+        return synced < 0;
     }
 
     public void doSync(Component c)
     {
         // The DATABASE sync adds locomotives and re-adds routes, more invasive than the guarded state sync next door.
         // The model defers only the address update; everything else in it proceeds.
-        // With no window to tell (c null), the owed sync of a door's own edit: it waits for an open editor, quietly
-        if (refuseWhileAutonomyRunning(c))
+        // With no window to tell (c null), the owed sync of a door's own edit: it waits for an open editor, quietly,
+        // and a run drops it, said in the log alone since nobody pressed Sync
+        if (c == null && RunGates.whyAutonomyRunningRefuses(this) != null)
         {
-            // A debt a run refuses is dropped, not left to fire at a later editor close
-            if (c == null) syncOwed.set(false);
+            // Dropped, not left to fire at a later editor close
+            syncOwed.set(false);
+
+            this.log(I18n.t("ui.infoOwedSyncLeftWhileRunning"));
 
             return;
         }
 
-        if (c != null && RunGates.refuseALinkOrSyncWhileEditorOpen(this, c)) return;
+        if (c != null && (refuseWhileAutonomyRunning(c) || RunGates.refuseALinkOrSyncWhileEditorOpen(this, c))) return;
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
@@ -15057,28 +15089,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.repaintLoc(true, null);
                 this.repaintLayout();
 
-                if (c != null && r != SYNC_REFUSED)
+                if (c != null && !saidTheSyncDidNotRun(c, r, () -> doSync(c)))
                 {
-                    if (r == SYNC_ALREADY_RUNNING)
-                    {
-                        // Not a failure.  Reporting it as one told the user their sync had failed
-                        // when in fact another one was doing the job for them.
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            c,
-                            I18n.t("ui.infoSyncAlreadyRunning")
-                        ));
-                    }
-                    else if (r == -1)
-                    {
-                        offerSyncRetry(c);
-                    }
-                    else
-                    {
-                        final String done = I18n.f(this.model.wasLastSyncPartial() ? "ui.infoSyncCompletePartial"
-                            : "ui.infoSyncCompleteItemsAdded", r.toString());
+                    final String done = I18n.f(this.model.wasLastSyncPartial() ? "ui.infoSyncCompletePartial"
+                        : "ui.infoSyncCompleteItemsAdded", r.toString());
 
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, done));
-                    }
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, done));
                 }
             }).start();
         });
@@ -15909,6 +15925,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
+            // Asked again: an Edit queued behind the click puts an editor on its way before this runs
+            if (refuseWhileEditorOpen())
+            {
+                this.switchCSLayoutMenuItem.setEnabled(true);
+
+                return;
+            }
+
             try
             {
                 //this.KeyboardTab.remove(this.layoutPanel);
@@ -15929,16 +15953,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 updateLayoutLoaded();
 
-                int synced = this.syncWithCS2();
-
-                if (synced == SYNC_ALREADY_RUNNING)
-                {
-                    JOptionPane.showMessageDialog(this, I18n.t("ui.infoSyncAlreadyRunning"));
-                }
-                else if (synced == -1) offerSyncRetry(this);
-                
-                // Set the updated list of layout pages
-                initializeTrackDiagram(true);
+                fetchTheStationsPages();
             }
             catch (Exception e)
             {
@@ -15950,6 +15965,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
         });
     }//GEN-LAST:event_switchCSLayoutMenuItemActionPerformed
+
+    /**
+     * Switch to Central Station Layout's tail, once the pages are cleared: the sync, then the page list.  A failed or
+     * refused sync offers Retry, which runs this again, since a plain Sync never fills the page list.
+     */
+    private void fetchTheStationsPages()
+    {
+        // Asked quietly, so that the Retry popup alone says why
+        final boolean refused = anEditorIsOpenOrOnItsWay();
+        final int synced = refused ? SYNC_REFUSED : this.syncNow();
+        final Runnable retry = () -> { if (!refuseWhileARunHoldsTheSetup(this)) fetchTheStationsPages(); };
+
+        if (refused) offerSyncRetry(this, I18n.t("loc.ui.errorEditorOpenNoLinkOrSync"), retry);
+        else saidTheSyncDidNotRun(this, synced, retry);
+
+        // No "no layout" message over the Retry popup
+        initializeTrackDiagram(true, !refused && synced != -1);
+    }
 
     private void initializeLocalLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_initializeLocalLayoutMenuItemActionPerformed
         this.layoutFileActions.initializeLocalLayoutMenuItemActionPerformed();

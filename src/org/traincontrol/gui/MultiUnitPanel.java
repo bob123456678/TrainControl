@@ -214,7 +214,8 @@ final class MultiUnitPanel extends JPanel
         double multiplierValue = currentLinkedLocos.getOrDefault(loco.getName(), 1.0);
         boolean isReversed = multiplierValue < 0;
 
-        JSlider multiplierSlider = new JSlider(0, 200, (int) (Math.abs(multiplierValue) * 100));
+        // Rounded: 0.57 * 100 is 56.99..., which a cast would show, and the next Save write, as 56
+        JSlider multiplierSlider = new JSlider(0, 200, (int) Math.round(Math.abs(multiplierValue) * 100));
         multiplierSlider.setMajorTickSpacing(50);
         multiplierSlider.setMinorTickSpacing(50);
         multiplierSlider.setPaintTicks(true);
