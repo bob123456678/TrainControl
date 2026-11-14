@@ -5646,6 +5646,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // If we don't do this, initializing the UI from the EDT will cause issues
         setAlwaysOnTop(true);
         
+        // The pictures at the size shown are decoded alongside, so each page finds its own when first shown.
+        Integer tiles = this.layoutSizes.get(String.valueOf(this.SizeList.getSelectedItem()));
+
+        if (tiles != null) LayoutLabel.warmUp(this, tiles);
+        
         // Render layout now that the UI is visible
         repaintLayout();
         
@@ -21356,6 +21361,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         repaintLayout(false, false);
     }  
+
+    /**
+     * Waits, off the event thread and for a few seconds at most, for the pictures of the page about to be built: the
+     * diagram on screen stays up meanwhile, so a page at a new size is whole on its first paint.
+     */
+    private void awaitTheShownPagesPictures()
+    {
+        try
+        {
+            Object page = this.LayoutList.getSelectedItem();
+            Integer tiles = this.layoutSizes.get(String.valueOf(this.SizeList.getSelectedItem()));
+            LayoutDiagram shown = page == null || tiles == null ? null : this.model.getLayout(page.toString());
+
+            if (shown != null) LayoutLabel.decodePage(shown, tiles, this).get(3, java.util.concurrent.TimeUnit.SECONDS);
+        }
+        catch (InterruptedException ex)
+        {
+            Thread.currentThread().interrupt();
+        }
+        // Built anyway, whatever ended the wait (the build is what follows it): its squares fill in as pictures arrive.
+        catch (Exception ex)
+        {
+        }
+    }
     
     /**
      * Repaints layout from cache - called from UI dropdown/hotkeys
@@ -21383,6 +21412,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         this.LayoutGridRenderer.submit(() ->
         {
+            awaitTheShownPagesPictures();
+
             SwingUtilities.invokeLater(() ->
             {
                 updateLayoutLoaded();

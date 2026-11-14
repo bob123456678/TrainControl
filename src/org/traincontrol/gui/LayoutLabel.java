@@ -11,6 +11,8 @@ import java.awt.event.MouseMotionAdapter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.swing.BorderFactory;
@@ -140,6 +142,19 @@ public final class LayoutLabel extends JLabel
         return this.spacer;
     }
 
+    /** A whole square before its picture is in: a picture still decoding leaves a blank, not a column closed up. */
+    @Override
+    public java.awt.Dimension getPreferredSize()
+    {
+        java.awt.Dimension shown = super.getPreferredSize();
+        java.awt.Insets border = getInsets();
+
+        if (isPreferredSizeSet()) return shown;
+
+        return new java.awt.Dimension(Math.max(shown.width, size + border.left + border.right),
+            Math.max(shown.height, size + border.top + border.bottom));
+    }
+
     public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit)
     {
         this(c, parent, size, tcUI, edit, null);
@@ -156,10 +171,6 @@ public final class LayoutLabel extends JLabel
         this.edit = edit;
         
         this.setSize(size, size);
-        // This will ensure that long text labels don't mess up the grid layout - no longer needed when using gridbaglayout
-        /*this.setMinimumSize(new Dimension(size, size));
-        this.setPreferredSize(new Dimension(size, size));
-        this.setMaximumSize(new Dimension(size, size));*/
         this.setForeground(Color.white);
         
         COUNT_CONSTRUCTED.incrementAndGet();
@@ -677,28 +688,16 @@ public final class LayoutLabel extends JLabel
                 // resting).
                 if (!update) this.tcUI.tileDecodeStarted();
 
-                // Decode/scale off the EDT, cache it, then run the (now cache-hit) Swing work on the EDT.
-                this.tcUI.getTileImageLoader().submit(() ->
+                // Then the (now cache-hit) Swing work on the EDT, failed decode or not: an uncounted tile would keep
+                // the diagram waiting forever.
+                decodeOnce(this.component, size, edit, this.tcUI).whenComplete((img, failed) ->
                 {
                     try
                     {
-                        Image img = this.component.getImage(size, edit);
-
-                        if (img != null)
-                        {
-                            imageCache.putIfAbsent(key, img);
-                        }
-                    }
-                    catch (IOException ex)
-                    {
-                        this.tcUI.getModel().log(ex.getMessage());
+                        setImageOnEDT(update);
                     }
                     finally
                     {
-                        // In a finally: a tile that fails to decode still has to stop being counted, or the diagram
-                        // waits for it forever.
-                        setImageOnEDT(update);
-
                         if (!update) this.tcUI.tileDecodeFinished();
                     }
                 });
@@ -708,6 +707,83 @@ public final class LayoutLabel extends JLabel
         }
 
         setImageOnEDT(update);
+    }
+
+    /** One icon per picture, shared by every square showing it; event thread only. */
+    private static final Map<Image, ImageIcon> ICONS = new java.util.WeakHashMap<>();
+
+    /** The decodes under way, by cache key: two hundred straight squares wait on one decode. */
+    private static final Map<String, CompletableFuture<Void>> DECODING = new ConcurrentHashMap<>();
+
+    /**
+     * Puts the picture `c` draws at `size` in the image cache, off the event thread, unless it is there or on its way;
+     * completes when that is settled, failed or not (a failure is logged).
+     */
+    static CompletableFuture<Void> decodeOnce(LayoutDiagramComponent c, int size, boolean edit, TrainControlUI tcUI)
+    {
+        final String key = c.getImageKey(size, edit);
+
+        return DECODING.computeIfAbsent(key, k -> CompletableFuture.runAsync(() ->
+        {
+            try
+            {
+                if (TrainControlUI.getImageCache().get(k) == null)
+                {
+                    Image img = c.getImage(size, edit);
+
+                    if (img != null) TrainControlUI.getImageCache().putIfAbsent(k, img);
+                }
+            }
+            catch (IOException ex)
+            {
+                tcUI.getModel().log(ex.getMessage());
+            }
+            finally
+            {
+                // After the cache has it: a square asking in between finds it there or finds this decode.
+                DECODING.remove(k);
+            }
+        }, tcUI.getTileImageLoader()));
+    }
+
+    /**
+     * Puts every picture the main window shows of `page` at `size` in the image cache; completes when they are in.  A
+     * page being reloaded or edited meanwhile completes at once: its squares decode what they miss as they are drawn.
+     */
+    static CompletableFuture<Void> decodePage(org.traincontrol.base.LayoutDiagram page, int size, TrainControlUI tcUI)
+    {
+        java.util.List<CompletableFuture<Void>> pending = new java.util.ArrayList<>();
+
+        try
+        {
+            for (LayoutDiagramComponent c : page.getAll())
+            {
+                if (!c.isText() && TrainControlUI.getImageCache().get(c.getImageKey(size, false)) == null)
+                {
+                    pending.add(decodeOnce(c, size, false, tcUI));
+                }
+            }
+        }
+        catch (RuntimeException pageChanged)
+        {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        return CompletableFuture.allOf(pending.toArray(new CompletableFuture<?>[0]));
+    }
+
+    /** Decodes every picture the pages show at `size` ahead of their first draw, off the event thread. */
+    static void warmUp(TrainControlUI tcUI, int size)
+    {
+        tcUI.getTileImageLoader().execute(() ->
+        {
+            for (String name : tcUI.getModel().getLayoutList())
+            {
+                org.traincontrol.base.LayoutDiagram page = tcUI.getModel().getLayout(name);
+
+                if (page != null) decodePage(page, size, tcUI);
+            }
+        });
     }
 
     /**
@@ -762,9 +838,7 @@ public final class LayoutLabel extends JLabel
                         }
                         
                         boolean hadIcon = (this.getIcon() != null);
-                        lastIcon = new javax.swing.ImageIcon(
-                            img
-                        );
+                        lastIcon = ICONS.computeIfAbsent(img, ImageIcon::new);
 
                         // A flash that is up is given up whenever the picture is replaced: its timer holds the icon it
                         // captured and would draw the tile as it was.

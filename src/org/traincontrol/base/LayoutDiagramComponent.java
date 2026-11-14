@@ -374,16 +374,24 @@ public class LayoutDiagramComponent
         return RESOURCE_PATH + Integer.toString(artSize(size)) + "/" + this.getTypeName() + stateString + ".gif";
     }
     
+    /** Each icon file as read, by name: one file serves every rotation and size drawn from it.  Never drawn on. */
+    private static final Map<String, BufferedImage> SOURCES = new java.util.concurrent.ConcurrentHashMap<>();
+
     public Image getImage(int size, boolean ignoreState) throws IOException
     {  
          String imageName = getImageName(size, ignoreState);
-         java.net.URL icon = LayoutDiagramComponent.class.getResource(imageName);
+         Image img = SOURCES.get(imageName);
 
-         if (icon == null) throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
+         if (img == null)
+         {
+            java.net.URL icon = LayoutDiagramComponent.class.getResource(imageName);
+            BufferedImage read = icon == null ? null : ImageIO.read(icon);
 
-         Image img = ImageIO.read(icon);
+            if (read == null) throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
 
-         if (img == null) throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
+            SOURCES.putIfAbsent(imageName, read);
+            img = read;
+         }
 
          // Resize only if we don't have the right icon
          if (size != img.getWidth(null))
