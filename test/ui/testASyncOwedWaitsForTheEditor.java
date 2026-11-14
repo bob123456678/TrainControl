@@ -256,7 +256,7 @@ public class testASyncOwedWaitsForTheEditor
     /**
      * Save: the disarm made with the editor open syncs once Save has closed it, not before.
      *
-     * MUTATION: in `TrainControlUI.editorGone`, leave the posted `syncThenRefresh` out, and no sync runs after Save.
+     * MUTATION: in `TrainControlUI.editorGone`, leave the posted `doSync(null)` out, and no sync runs after Save.
      */
     @Test(timeOut = 120000)
     public void testAnEditsSyncRunsOnceAfterSave() throws Exception

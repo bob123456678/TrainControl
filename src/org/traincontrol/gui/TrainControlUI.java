@@ -7592,7 +7592,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Posted, so the closing editor's own posted work runs first
         SwingUtilities.invokeLater(() ->
         {
-            if (syncOwed.get() && !anEditorIsOpenOrOnItsWay()) syncThenRefresh(null, this::runTheOwedSync);
+            if (syncOwed.get() && !anEditorIsOpenOrOnItsWay()) doSync(null);
         });
     }
 
@@ -14970,14 +14970,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         // The DATABASE sync adds locomotives and re-adds routes, more invasive than the guarded state sync next door.
         // The model defers only the address update; everything else in it proceeds.
-        if (refuseWhileAutonomyRunning(c) || RunGates.refuseALinkOrSyncWhileEditorOpen(this, c)) return;
+        // With no window to tell (c null), the owed sync of a door's own edit: it waits for an open editor, quietly
+        if (refuseWhileAutonomyRunning(c) || c != null && RunGates.refuseALinkOrSyncWhileEditorOpen(this, c)) return;
 
-        syncThenRefresh(c, this::syncWithCS2);
-    }
-
-    /** Sync's work past its refusals; `c` is told the outcome, null for none. */
-    private void syncThenRefresh(Component c, java.util.function.IntSupplier sync)
-    {
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             setLocomotiveWorkInFlight(true);
@@ -14991,7 +14986,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 try
                 {
-                    syncResult = sync.getAsInt();
+                    syncResult = c == null ? this.runTheOwedSync() : this.syncWithCS2();
                 }
                 catch (RuntimeException e)
                 {
@@ -18470,7 +18465,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         }
                     }
                     
-                    if (!refuseWhileAutonomyRunning(null)) syncThenRefresh(null, this::syncAfterAnEdit);
+                    syncOwed.set(true);
+
+                    doSync(null);
                 }
             }
             catch (Exception ex)
