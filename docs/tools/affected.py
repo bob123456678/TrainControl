@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Lists the test classes a change should run, one pkg.Class per line, ready for TC_CLASSES.
 
-    py -3 docs/tools/affected.py <base> [<head>] [-v] > classes.txt
+    py -3 docs/tools/affected.py <base> [<head>] [-v] [--guards] > classes.txt
 
 Compares <base> with <head> (the working tree, untracked files included, when no head is given).  Run from the project
 root.  A test class is listed when it
@@ -15,6 +15,8 @@ root.  A test class is listed when it
     testJavadocsAreAttached), a `synchronized` line touched (the railway monitor class), a bundle (testMessageBundles,
     testEveryMessageKeyIsAskedFor, testEveryLanguageFits), a source file (testNoNewCopies);
   - is paired by CLAUDE.md's standing rules (PAIRINGS below).
+--guards prints only the bookkeeping and pairing classes, not those that merely name a changed file: the guard set, which
+runs at every merge, small fix or not (1 to 3 minutes of tests).
 -v says on stderr why each class is there.  It over-includes for a change to a class most tests name (Layout, Util): the
 list is then long, and that is the honest answer.  The full battery stays the orchestrator's.
 """
@@ -25,9 +27,11 @@ import sys
 
 KNOWN_OUT = {"core.testAutoDetect"}
 
-# CLAUDE.md: a changed file (by name) calls for these classes (by simple name) whether or not they name it.
+# CLAUDE.md: a changed file or folder (a path ending, matched whole) calls for these classes (by simple name) whether or
+# not they name it.
 PAIRINGS = [
     ("LayoutEditor.java", ["testTheEditorNamesItsShortcuts", "testTheTrackEditorByHand"]),
+    ("gui/autonomyeditor/", ["testTheVisibleElementsHeadingIsSpacedLikeTheOthers"]),
 ]
 
 WINDOW = re.compile(r"new\s+(?:org\.traincontrol\.gui\.)?TrainControlUI\s*\(")
@@ -72,6 +76,7 @@ def without_comments(src):
 def main(argv):
     sys.stdout.reconfigure(newline="\n")  # a list file with CR line ends names classes that do not exist
     verbose = "-v" in argv
+    guards = "--guards" in argv
     refs = [a for a in argv[1:] if not a.startswith("-")]
     if not refs or not os.path.isfile("build.xml"):
         print(__doc__.split("\n\n")[0], file=sys.stderr)
@@ -109,18 +114,20 @@ def main(argv):
     by_simple = {q.split(".")[1]: q for q in tests}
 
     why = {}
+    guarded = set()
 
-    def add(qualified, reason):
+    def add(qualified, reason, guard=False):
         if qualified in tests and qualified not in KNOWN_OUT:
             why.setdefault(qualified, []).append(reason)
+            if guard:
+                guarded.add(qualified)
 
-    src_names, doc_names, keys, resources, scenarios, simple_changed = [], [], [], [], [], set()
+    src_names, doc_names, keys, resources, scenarios = [], [], [], [], []
     src_text = {}
     comment_touched = synchronized_touched = bundle = False
 
     for path, status in sorted(changed.items()):
         base_name = os.path.basename(path)
-        simple_changed.add(base_name)
         diff = diff_of(path) if status != "A" or head else ""
         added_removed = [l[1:].strip() for l in diff.splitlines()
                          if l[:1] in "+-" and not l.startswith(("+++", "---"))]
@@ -148,18 +155,18 @@ def main(argv):
             elif q in support:
                 src_names.append(base_name[:-5])
             if status == "A" and q in tests:
-                add("regression.testEveryTestIsInTheBattery", "new test %s" % q)
+                add("regression.testEveryTestIsInTheBattery", "new test %s" % q, True)
                 if WINDOW.search(tests[q]):
-                    add("regression.testSwitchingToACentralStationLayout", "new test %s builds a window" % q)
+                    add("regression.testSwitchingToACentralStationLayout", "new test %s builds a window" % q, True)
                 for s in os.listdir("test/layouts") if os.path.isdir("test/layouts") else []:
                     if '"%s"' % s in tests[q]:
-                        add("regression.testEveryScenarioIsUsedAndSaysSo", "new test %s names scenario %s" % (q, s))
+                        add("regression.testEveryScenarioIsUsedAndSaysSo", "new test %s names scenario %s" % (q, s), True)
             if any(l.startswith(("//", "/*", "*")) for l in added_removed):
                 comment_touched = True
         elif path.startswith("test/layouts/"):
             scenarios.append(path.split("/")[2])
         elif path == "build.xml":
-            add("regression.testEveryTestIsInTheBattery", "build.xml changed")
+            add("regression.testEveryTestIsInTheBattery", "build.xml changed", True)
         else:
             doc_names.append(base_name)
         if path.startswith("src/") and not path.endswith(".java") and not path.endswith(".properties"):
@@ -193,28 +200,28 @@ def main(argv):
                 add(q, "uses scenario %s" % s)
 
     if any(p.startswith("src/") and p.endswith(".java") for p in changed) and "testNoNewCopies" in by_simple:
-        add(by_simple["testNoNewCopies"], "a source file changed")
+        add(by_simple["testNoNewCopies"], "a source file changed", True)
     if comment_touched:
         for n in ("testCommentsStayLean", "testJavadocsAreAttached"):
             if n in by_simple:
-                add(by_simple[n], "a comment line changed")
+                add(by_simple[n], "a comment line changed", True)
     if synchronized_touched and "testNothingOnTheEventThreadTakesTheRailwaysMonitor" in by_simple:
-        add(by_simple["testNothingOnTheEventThreadTakesTheRailwaysMonitor"], "a synchronized line changed")
+        add(by_simple["testNothingOnTheEventThreadTakesTheRailwaysMonitor"], "a synchronized line changed", True)
     if bundle:
         for n in ("testMessageBundles", "testEveryMessageKeyIsAskedFor", "testEveryLanguageFits"):
             if n in by_simple:
-                add(by_simple[n], "a bundle changed")
+                add(by_simple[n], "a bundle changed", True)
     for file, classes in PAIRINGS:
-        if file in simple_changed:
+        if any("/" + file in "/" + p for p in changed):
             for n in classes:
                 if n in by_simple:
-                    add(by_simple[n], "CLAUDE.md pairs it with %s" % file)
+                    add(by_simple[n], "CLAUDE.md pairs it with %s" % file, True)
 
-    for q in sorted(why):
+    for q in sorted(guarded if guards else why):
         print(q)
         if verbose:
             print("%s: %s" % (q, "; ".join(why[q][:3])), file=sys.stderr)
-    print("%d classes for %d changed files" % (len(why), len(changed)), file=sys.stderr)
+    print("%d classes for %d changed files" % (len(guarded if guards else why), len(changed)), file=sys.stderr)
     return 0
 
 
