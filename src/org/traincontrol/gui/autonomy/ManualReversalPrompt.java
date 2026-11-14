@@ -1,8 +1,14 @@
 package org.traincontrol.gui.autonomy;
 
 import java.awt.Component;
+import java.util.List;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import org.traincontrol.automation.Edge;
+import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
@@ -36,12 +42,12 @@ public final class ManualReversalPrompt
      * @param railway the railway the path was offered on, or null
      * @return the policy to hand to executePath
      */
-    public static org.traincontrol.automation.Layout.ReversalPolicy forJourney(
-        final org.traincontrol.automationui.AutonomySession session, final Component parent,
-        final java.util.List<org.traincontrol.automation.Edge> path, final Locomotive loc,
-        final org.traincontrol.automation.Layout railway)
+    public static Layout.ReversalPolicy forJourney(
+        final AutonomySession session, final Component parent,
+        final List<Edge> path, final Locomotive loc,
+        final Layout railway)
     {
-        final org.traincontrol.automation.Layout.ReversalPolicy asking = forOperator(session, parent);
+        final Layout.ReversalPolicy asking = forOperator(session, parent);
 
         Point first = null;
 
@@ -52,7 +58,7 @@ public final class ManualReversalPrompt
         // `testATrainThatCannotReverseMayBackIntoATerminus`).
         if (path != null && !path.isEmpty())
         {
-            org.traincontrol.automation.Edge last = path.get(path.size() - 1);
+            Edge last = path.get(path.size() - 1);
 
             // UNLESS THE DOOR ASKS ABOUT IT (OB-205): `isTerminus()` is true at the turning copy of a MAY-turn square
             // as well as at a real terminus, while `asksAbout` is answered from the setup (`mayTurnTiles()`, the
@@ -89,7 +95,7 @@ public final class ManualReversalPrompt
 
         final boolean turn = ask(parent, loc, first);
 
-        return new org.traincontrol.automation.Layout.ReversalPolicy()
+        return new Layout.ReversalPolicy()
         {
             @Override
             public boolean shouldReverse(Locomotive train, Point at)
@@ -123,8 +129,8 @@ public final class ManualReversalPrompt
      * @param path the journey
      * @return the Point asked about, or null
      */
-    public static Point destinationAskedAbout(org.traincontrol.automation.Layout.ReversalPolicy asking,
-        org.traincontrol.automation.Layout railway, java.util.List<org.traincontrol.automation.Edge> path)
+    public static Point destinationAskedAbout(Layout.ReversalPolicy asking,
+        Layout railway, List<Edge> path)
     {
         Point arrival = path == null || path.isEmpty() ? null
             : path.get(path.size() - 1).getEnd();
@@ -146,8 +152,8 @@ public final class ManualReversalPrompt
      *
      * Keeps the direction and asks about nothing, so an ordinary send neither stops nor prompts.
      */
-    public static final org.traincontrol.automation.Layout.ReversalPolicy KEEP_DIRECTION =
-        new org.traincontrol.automation.Layout.ReversalPolicy()
+    public static final Layout.ReversalPolicy KEEP_DIRECTION =
+        new Layout.ReversalPolicy()
         {
             @Override
             public boolean shouldReverse(Locomotive loc, Point at)
@@ -171,10 +177,10 @@ public final class ManualReversalPrompt
      * @param parent what to center the dialog on
      * @return the policy
      */
-    public static org.traincontrol.automation.Layout.ReversalPolicy forOperator(
-        final org.traincontrol.automationui.AutonomySession session, final Component parent)
+    public static Layout.ReversalPolicy forOperator(
+        final AutonomySession session, final Component parent)
     {
-        return new org.traincontrol.automation.Layout.ReversalPolicy()
+        return new Layout.ReversalPolicy()
         {
             @Override
             public boolean shouldReverse(Locomotive loc, Point at)
@@ -201,7 +207,7 @@ public final class ManualReversalPrompt
                 // And the operator's own marking, for every square including the ones the build could
                 // not express.  By NAME, because that is what a Point carries and what the station
                 // index maps back to a square.
-                org.traincontrol.automationui.TileGraph.TileKey square =
+                TileGraph.TileKey square =
                     session.getStationIndex() == null ? null
                         : session.getStationIndex().squareOf(at.getName());
 
@@ -282,8 +288,8 @@ public final class ManualReversalPrompt
                 answer[0] = reverseFor(chose);
             };
 
-            if (javax.swing.SwingUtilities.isEventDispatchThread()) prompt.run();
-            else javax.swing.SwingUtilities.invokeAndWait(prompt);
+            if (SwingUtilities.isEventDispatchThread()) prompt.run();
+            else SwingUtilities.invokeAndWait(prompt);
         }
         catch (Exception cannotAsk)
         {

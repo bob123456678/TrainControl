@@ -1,12 +1,20 @@
 package org.traincontrol.gui.autonomy;
 
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.TrainControlUI;
@@ -66,7 +74,7 @@ public final class DiagramExport
     public static BufferedImage render(final LayoutDiagram layout, int tileSize,
         final TrainControlUI ui) throws Exception
     {
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        if (SwingUtilities.isEventDispatchThread())
         {
             throw new IllegalStateException(
                 "a diagram export holds the event thread while it waits for tile images, so it cannot "
@@ -88,7 +96,7 @@ public final class DiagramExport
         // registers under first), not grid[0], which a throwing constructor never assigns.
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
+            SwingUtilities.invokeAndWait(() ->
             {
                 host.setBackground(Color.WHITE);
 
@@ -103,7 +111,7 @@ public final class DiagramExport
 
             awaitTiles(ui);
 
-            javax.swing.SwingUtilities.invokeAndWait(() ->
+            SwingUtilities.invokeAndWait(() ->
             {
                 // A component never shown has no size and paints nothing: give it its preferred size and lay it out by
                 // hand.
@@ -147,7 +155,7 @@ public final class DiagramExport
             // happens: the event is posted before the wait.
             try
             {
-                javax.swing.SwingUtilities.invokeAndWait(() ->
+                SwingUtilities.invokeAndWait(() ->
                 {
                     // By the panel, not the reference: grid[0] is assigned only if the constructor returned, and
                     // LayoutGrid.retire asks the registry the constructor writes first.
@@ -158,7 +166,7 @@ public final class DiagramExport
             {
                 Thread.currentThread().interrupt();
             }
-            catch (java.lang.reflect.InvocationTargetException fromTheRetirement)
+            catch (InvocationTargetException fromTheRetirement)
             {
                 // The retirement's own failure must not replace the render's: invokeAndWait wraps what the task throws,
                 // which would discard the cause the caller needs.  Logged rather than thrown: a stale registration is a
@@ -189,10 +197,8 @@ public final class DiagramExport
 
         try
         {
-            g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
-                java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            g.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING,
-                java.awt.RenderingHints.VALUE_RENDER_QUALITY);
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
             g.drawImage(source, 0, 0, width, height, null);
         }
@@ -214,18 +220,17 @@ public final class DiagramExport
     {
         if (ui == null) return;
 
-        final java.util.concurrent.CountDownLatch settled =
-            new java.util.concurrent.CountDownLatch(1);
+        final CountDownLatch settled = new CountDownLatch(1);
 
         ui.whenTilesSettled(() -> settled.countDown());
 
-        settled.await(TILE_WAIT_SECONDS, java.util.concurrent.TimeUnit.SECONDS);
+        settled.await(TILE_WAIT_SECONDS, TimeUnit.SECONDS);
 
         // One more turn of the event queue, so the label updates posted by the last decode have been
         // applied before anything is painted
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(() -> { });
+            SwingUtilities.invokeAndWait(() -> { });
         }
         catch (Exception e)
         {
@@ -239,13 +244,13 @@ public final class DiagramExport
      * doLayout only arranges one level.  Without walking down, the tiles inside the grid keep a size
      * of zero and the picture comes out empty.
      */
-    private static void layoutEverything(java.awt.Container container)
+    private static void layoutEverything(Container container)
     {
         container.doLayout();
 
-        for (java.awt.Component child : container.getComponents())
+        for (Component child : container.getComponents())
         {
-            if (child instanceof java.awt.Container) layoutEverything((java.awt.Container) child);
+            if (child instanceof Container) layoutEverything((Container) child);
         }
     }
 
@@ -265,7 +270,7 @@ public final class DiagramExport
 
         if (!ImageIO.write(image, "png", destination))
         {
-            throw new java.io.IOException(I18n.t("layout.ui.errorExportNoWriter"));
+            throw new IOException(I18n.t("layout.ui.errorExportNoWriter"));
         }
     }
 }

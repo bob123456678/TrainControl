@@ -1,8 +1,10 @@
 package org.traincontrol.gui.autonomy;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.swing.SwingUtilities;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automationui.AutonomyBuilder;
@@ -11,6 +13,7 @@ import org.traincontrol.automationui.DiagramMonitor;
 import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TileOverlay;
+import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.gui.TrainControlUI;
 
 /**
@@ -37,10 +40,10 @@ public class DiagramMonitorDriver
 
     // What the last bind's builder says each Point faces, the Points it says nothing about, with their squares, the setup
     // they were bound with, and the facings last handed to the monitor (OB-348).  Written and read on the event thread.
-    private Map<String, org.traincontrol.automationui.TilePorts.Side> built;
-    private Map<String, TileKey> guessed = new java.util.LinkedHashMap<>();
+    private Map<String, TilePorts.Side> built;
+    private Map<String, TileKey> guessed = new LinkedHashMap<>();
     private AutonomySession boundTo;
-    private Map<String, org.traincontrol.automationui.TilePorts.Side> facingsShown;
+    private Map<String, TilePorts.Side> facingsShown;
     private volatile Timer timer;
 
     // Whether monitoring is wanted at all; separate from the timer running, so turning the layer off keeps the wiring.
@@ -50,8 +53,7 @@ public class DiagramMonitorDriver
      * Which wipe the overlays on screen belong to: a tick computes on the timer thread and paints on the event thread,
      * so comparing this on both sides lets a wipe asked for in between win over a picture computed before it.
      */
-    private final java.util.concurrent.atomic.AtomicLong generation =
-        new java.util.concurrent.atomic.AtomicLong();
+    private final AtomicLong generation = new AtomicLong();
 
     public DiagramMonitorDriver(TrainControlUI ui, DiagramTileRegistry registry)
     {
@@ -98,7 +100,7 @@ public class DiagramMonitorDriver
 
         // THE SQUARES WHOSE FACING IS THE SETUP'S, or a guess along their track (OB-348): asked again whenever the captions
         // are, so the icon follows a facing a door writes (`recordedFacingsChanged`)
-        Map<String, TileKey> guesses = new java.util.LinkedHashMap<>();
+        Map<String, TileKey> guesses = new LinkedHashMap<>();
 
         for (Map.Entry<String, TileKey> entry : names.entrySet())
         {
@@ -145,16 +147,16 @@ public class DiagramMonitorDriver
      * a single copy's only way out where it has one (the icon of a parked train turns to it).  Answers Point name to
      * the side a train's front faces there.
      */
-    private static Map<String, org.traincontrol.automationui.TilePorts.Side> facingsOf(AutonomyBuilder builder,
+    private static Map<String, TilePorts.Side> facingsOf(AutonomyBuilder builder,
         Map<String, TileKey> names)
     {
-        Map<String, org.traincontrol.automationui.TilePorts.Side> out = new java.util.LinkedHashMap<>(builder.facingByName());
+        Map<String, TilePorts.Side> out = new LinkedHashMap<>(builder.facingByName());
 
         for (Map.Entry<String, TileKey> entry : names.entrySet())
         {
             if (out.containsKey(entry.getKey())) continue;
 
-            org.traincontrol.automationui.TilePorts.Side only = builder.onlyWayOutFacing(entry.getValue());
+            TilePorts.Side only = builder.onlyWayOutFacing(entry.getValue());
 
             if (only != null) out.put(entry.getKey(), only);
         }
@@ -174,11 +176,11 @@ public class DiagramMonitorDriver
 
         if (current == null || session == null || built == null) return;
 
-        Map<String, org.traincontrol.automationui.TilePorts.Side> facings = new java.util.LinkedHashMap<>(built);
+        Map<String, TilePorts.Side> facings = new LinkedHashMap<>(built);
 
         for (Map.Entry<String, TileKey> entry : guessed.entrySet())
         {
-            org.traincontrol.automationui.TilePorts.Side guess = session.facingWhereNoCopySays(entry.getValue());
+            TilePorts.Side guess = session.facingWhereNoCopySays(entry.getValue());
 
             if (guess != null) facings.put(entry.getKey(), guess);
         }

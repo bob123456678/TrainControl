@@ -2,8 +2,32 @@ package org.traincontrol.gui.autonomy;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Insets;
+import java.awt.LayoutManager;
+import java.awt.Rectangle;
+import java.awt.Window;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JEditorPane;
+import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JViewport;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import org.traincontrol.util.I18n;
 
@@ -52,26 +76,25 @@ public class AutonomyBanner extends JPanel
      * docs/UI-standards.md calls regular text (OB-151).  The excluded-page label and the findings count take this font
      * rather than naming a size of their own.
      */
-    public static final java.awt.Font MESSAGE_FONT =
-        new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
+    public static final Font MESSAGE_FONT = new Font("Segoe UI", Font.PLAIN, 14);
 
     /**
      * The message itself: a JEditorPane in a scroll pane rather than a JLabel, since a label fits "this tile is now one
      * way" but not "why is it not moving" (a train, a dozen stations and each reason).  The pane wraps to the width it
      * is given and the scroll pane caps how tall the bar can grow.
      */
-    private final javax.swing.JEditorPane message = new javax.swing.JEditorPane();
+    private final JEditorPane message = new JEditorPane();
 
-    private final javax.swing.JScrollPane scroller = new javax.swing.JScrollPane(message);
+    private final JScrollPane scroller = new JScrollPane(message);
 
     /**
      * The one thing the message invites the user to do, where there is one: the banner also carries states such as
      * "this layout has a setup nobody has loaded", which need a way to act.
      */
-    private final javax.swing.JButton action = new javax.swing.JButton();
+    private final JButton action = new JButton();
 
     /** What the button currently does, so that a second offer replaces the first rather than firing both. */
-    private java.awt.event.ActionListener acting;
+    private ActionListener acting;
 
     private final Timer clear;
 
@@ -79,13 +102,13 @@ public class AutonomyBanner extends JPanel
     private String saying;
 
     /** Holds the offer button, and is taken out of the layout with it - see the constructor. */
-    private javax.swing.JPanel right;
+    private JPanel right;
 
     /** The right-hand column: the offer, and the X where the strip has one. */
-    private final javax.swing.JPanel east;
+    private final JPanel east;
 
     /** The X that hides the strip until the next notice, where floatOver gave it one; otherwise null. */
-    private javax.swing.JButton close;
+    private JButton close;
 
     /** Whether the user closed the notice showing.  The next notice clears it. */
     private boolean dismissed;
@@ -126,17 +149,15 @@ public class AutonomyBanner extends JPanel
 
         // Vertically only.  A message that has to be scrolled sideways to be read is a message that
         // has not been shown, and wrapping is what the editor pane is here for.
-        scroller.setHorizontalScrollBarPolicy(
-            javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
-        scroller.setVerticalScrollBarPolicy(
-            javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 
         scroller.getVerticalScrollBar().setUnitIncrement(16);
 
         // Centered in the band and never laid out taller than it (OB-151, OB-191); CentredButNeverTaller says why no
         // GridBagConstraints can say both.
-        javax.swing.JPanel centred = new javax.swing.JPanel(new CentredButNeverTaller());
+        JPanel centred = new JPanel(new CentredButNeverTaller());
 
         centred.setOpaque(false);
 
@@ -150,11 +171,10 @@ public class AutonomyBanner extends JPanel
         action.setVisible(false);
 
         // The standard's button font
-        action.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
-        action.setMargin(new java.awt.Insets(0, 10, 0, 10));
+        action.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        action.setMargin(new Insets(0, 10, 0, 10));
 
-        right = new javax.swing.JPanel(
-            new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 0, 0));
+        right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
 
         right.setOpaque(false);
         right.add(action);
@@ -164,7 +184,7 @@ public class AutonomyBanner extends JPanel
         // is a few pixels of nothing on the right of every ordinary message.
         right.setVisible(false);
 
-        east = new javax.swing.JPanel(new BorderLayout());
+        east = new JPanel(new BorderLayout());
         east.setOpaque(false);
         east.add(right, BorderLayout.CENTER);
 
@@ -184,29 +204,29 @@ public class AutonomyBanner extends JPanel
      * @param diagram the diagram's scroll pane
      * @return what to mount where the scroll pane was
      */
-    public javax.swing.JLayeredPane floatOver(final javax.swing.JScrollPane diagram)
+    public JLayeredPane floatOver(final JScrollPane diagram)
     {
-        final javax.swing.JLayeredPane deck = new javax.swing.JLayeredPane();
+        final JLayeredPane deck = new JLayeredPane();
 
         deck.setLayout(new OverTheDiagram(diagram, this));
 
-        deck.add(diagram, javax.swing.JLayeredPane.DEFAULT_LAYER);
-        deck.add(this, javax.swing.JLayeredPane.PALETTE_LAYER);
+        deck.add(diagram, JLayeredPane.DEFAULT_LAYER);
+        deck.add(this, JLayeredPane.PALETTE_LAYER);
 
         // The scroll pane lays its own viewport out, narrower or shorter as its scrollbars come and go, without asking
         // the deck; the strip follows the viewport's edges.
         followedViewport = diagram.getViewport();
 
-        followingViewport = new java.awt.event.ComponentAdapter()
+        followingViewport = new ComponentAdapter()
         {
             @Override
-            public void componentResized(java.awt.event.ComponentEvent e)
+            public void componentResized(ComponentEvent e)
             {
                 deck.revalidate();
             }
 
             @Override
-            public void componentMoved(java.awt.event.ComponentEvent e)
+            public void componentMoved(ComponentEvent e)
             {
                 deck.revalidate();
             }
@@ -216,16 +236,16 @@ public class AutonomyBanner extends JPanel
 
         // A click on the strip stays on it.  Swing hands a click to the topmost component under the pointer that
         // listens for clicks, and without a listener of its own the strip's padding would pass it to a square below.
-        addMouseListener(new java.awt.event.MouseAdapter()
+        addMouseListener(new MouseAdapter()
         {
         });
 
-        close = new javax.swing.JButton("×");
+        close = new JButton("×");
 
         close.setName("dismissNotice");
         close.setToolTipText(I18n.t("autosetup.ui.tooltipDismissNotice"));
-        close.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
-        close.setMargin(new java.awt.Insets(0, 4, 0, 4));
+        close.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        close.setMargin(new Insets(0, 4, 0, 4));
         close.putClientProperty("JButton.buttonType", "toolBarButton");
 
         // Reached with Tab and pressed with Space or Enter, but never given the keyboard by a click (OB-200): the
@@ -233,25 +253,25 @@ public class AutonomyBanner extends JPanel
         // window's own handler, so Escape and the shortcuts do what they always do.
         close.setRequestFocusEnabled(false);
 
-        close.addKeyListener(new java.awt.event.KeyAdapter()
+        close.addKeyListener(new KeyAdapter()
         {
             @Override
-            public void keyPressed(java.awt.event.KeyEvent e)
+            public void keyPressed(KeyEvent e)
             {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) close.doClick();
-                else if (e.getKeyCode() != java.awt.event.KeyEvent.VK_SPACE) toTheWindow(e);
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) close.doClick();
+                else if (e.getKeyCode() != KeyEvent.VK_SPACE) toTheWindow(e);
             }
 
             @Override
-            public void keyReleased(java.awt.event.KeyEvent e)
+            public void keyReleased(KeyEvent e)
             {
-                if (e.getKeyCode() != java.awt.event.KeyEvent.VK_SPACE) toTheWindow(e);
+                if (e.getKeyCode() != KeyEvent.VK_SPACE) toTheWindow(e);
             }
         });
 
         close.addActionListener(e -> dismiss());
 
-        javax.swing.JPanel corner = new javax.swing.JPanel(new BorderLayout());
+        JPanel corner = new JPanel(new BorderLayout());
         corner.setOpaque(false);
         corner.add(close, BorderLayout.NORTH);
 
@@ -270,8 +290,8 @@ public class AutonomyBanner extends JPanel
     }
 
     /** What floatOver listens to and with; both null before it and after letGoOfTheDiagram. */
-    private javax.swing.JViewport followedViewport;
-    private java.awt.event.ComponentListener followingViewport;
+    private JViewport followedViewport;
+    private ComponentListener followingViewport;
 
     /** Hides the strip until the next notice; the timer is stopped with it, so nothing else changes. */
     private void dismiss()
@@ -297,7 +317,7 @@ public class AutonomyBanner extends JPanel
         // The keyboard goes back to the window before the X holding it goes
         if (!shown && close != null && close.isFocusOwner())
         {
-            java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+            Window window = SwingUtilities.getWindowAncestor(this);
 
             if (window != null) window.requestFocusInWindow();
         }
@@ -306,16 +326,16 @@ public class AutonomyBanner extends JPanel
     }
 
     /** A key the X does not use, handed to its window's own key handler. */
-    private void toTheWindow(java.awt.event.KeyEvent e)
+    private void toTheWindow(KeyEvent e)
     {
-        java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+        Window window = SwingUtilities.getWindowAncestor(this);
 
         if (window == null) return;
 
-        for (java.awt.event.KeyListener each : window.getKeyListeners())
+        for (KeyListener each : window.getKeyListeners())
         {
-            if (e.getID() == java.awt.event.KeyEvent.KEY_PRESSED) each.keyPressed(e);
-            else if (e.getID() == java.awt.event.KeyEvent.KEY_RELEASED) each.keyReleased(e);
+            if (e.getID() == KeyEvent.KEY_PRESSED) each.keyPressed(e);
+            else if (e.getID() == KeyEvent.KEY_RELEASED) each.keyReleased(e);
         }
     }
 
@@ -419,7 +439,7 @@ public class AutonomyBanner extends JPanel
     }
 
     /** The button this banner offers, for whoever mounts it to size it like its neighbors. */
-    public javax.swing.JButton getActionButton()
+    public JButton getActionButton()
     {
         return action;
     }
@@ -437,13 +457,13 @@ public class AutonomyBanner extends JPanel
      * border; past that the message scrolls.
      */
     @Override
-    public java.awt.Dimension getPreferredSize()
+    public Dimension getPreferredSize()
     {
-        java.awt.Insets pad = getInsets();
+        Insets pad = getInsets();
 
         int most = mostHeight() + pad.top + pad.bottom;
 
-        java.awt.Dimension natural = super.getPreferredSize();
+        Dimension natural = super.getPreferredSize();
 
         // The message's own idea of how tall it needs to be, which the scroll pane will not report
         // - a viewport asks for whatever it was given rather than for what is inside it.
@@ -451,7 +471,7 @@ public class AutonomyBanner extends JPanel
 
         int height = Math.max(MINIMUM_HEIGHT, Math.min(most, Math.max(wanted, natural.height)));
 
-        return new java.awt.Dimension(10, height);
+        return new Dimension(10, height);
     }
 
     /** The height of the most lines a notice is shown at, in the message's own font. */
@@ -478,7 +498,7 @@ public class AutonomyBanner extends JPanel
 
         if (body.endsWith("</html>")) body = body.substring(0, body.length() - "</html>".length());
 
-        java.awt.Color ink = warning ? WARNING_TEXT : INFO_TEXT;
+        Color ink = warning ? WARNING_TEXT : INFO_TEXT;
 
         // The font and the color go into the DOCUMENT: an editor pane showing HTML takes neither from setFont nor from
         // setForeground, so a message set the ordinary way comes out in the default serif face in black.
@@ -499,7 +519,7 @@ public class AutonomyBanner extends JPanel
 
         showOrHide();
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             scroller.getVerticalScrollBar().setValue(0);
 
@@ -524,19 +544,19 @@ public class AutonomyBanner extends JPanel
      * Lays the diagram over the whole of its layered pane, as if nothing floated over it, and the strip over the
      * bottom of the diagram's viewport: the viewport's width, the strip's own height up to the viewport's.
      */
-    private static final class OverTheDiagram implements java.awt.LayoutManager
+    private static final class OverTheDiagram implements LayoutManager
     {
-        private final javax.swing.JScrollPane diagram;
+        private final JScrollPane diagram;
         private final AutonomyBanner band;
 
-        OverTheDiagram(javax.swing.JScrollPane diagram, AutonomyBanner band)
+        OverTheDiagram(JScrollPane diagram, AutonomyBanner band)
         {
             this.diagram = diagram;
             this.band = band;
         }
 
         @Override
-        public void layoutContainer(java.awt.Container deck)
+        public void layoutContainer(Container deck)
         {
             diagram.setBounds(0, 0, deck.getWidth(), deck.getHeight());
 
@@ -545,8 +565,7 @@ public class AutonomyBanner extends JPanel
 
             if (!band.isVisible()) return;
 
-            java.awt.Rectangle view = javax.swing.SwingUtilities.convertRectangle(diagram,
-                diagram.getViewport().getBounds(), deck);
+            Rectangle view = SwingUtilities.convertRectangle(diagram, diagram.getViewport().getBounds(), deck);
 
             // At the viewport's width first: how tall a wrapped message is depends on how wide it is
             band.setBounds(view.x, band.getY(), view.width, Math.max(1, band.getHeight()));
@@ -558,24 +577,24 @@ public class AutonomyBanner extends JPanel
         }
 
         @Override
-        public java.awt.Dimension preferredLayoutSize(java.awt.Container deck)
+        public Dimension preferredLayoutSize(Container deck)
         {
             return diagram.getPreferredSize();
         }
 
         @Override
-        public java.awt.Dimension minimumLayoutSize(java.awt.Container deck)
+        public Dimension minimumLayoutSize(Container deck)
         {
             return diagram.getMinimumSize();
         }
 
         @Override
-        public void addLayoutComponent(String name, java.awt.Component comp)
+        public void addLayoutComponent(String name, Component comp)
         {
         }
 
         @Override
-        public void removeLayoutComponent(java.awt.Component comp)
+        public void removeLayoutComponent(Component comp)
         {
         }
     }
@@ -585,16 +604,16 @@ public class AutonomyBanner extends JPanel
      * message is given exactly the band, so the scroll pane's AS_NEEDED scrollbar appears.  `GridBagLayout` cannot
      * express both.  ONE CHILD, deliberately.
      */
-    private static final class CentredButNeverTaller implements java.awt.LayoutManager
+    private static final class CentredButNeverTaller implements LayoutManager
     {
         @Override
-        public void layoutContainer(java.awt.Container parent)
+        public void layoutContainer(Container parent)
         {
             if (parent.getComponentCount() == 0) return;
 
-            java.awt.Component only = parent.getComponent(0);
+            Component only = parent.getComponent(0);
 
-            java.awt.Insets pad = parent.getInsets();
+            Insets pad = parent.getInsets();
 
             int width = Math.max(0, parent.getWidth() - pad.left - pad.right);
             int band = Math.max(0, parent.getHeight() - pad.top - pad.bottom);
@@ -610,15 +629,14 @@ public class AutonomyBanner extends JPanel
         }
 
         @Override
-        public java.awt.Dimension preferredLayoutSize(java.awt.Container parent)
+        public Dimension preferredLayoutSize(Container parent)
         {
-            java.awt.Insets pad = parent.getInsets();
+            Insets pad = parent.getInsets();
 
-            java.awt.Dimension only = parent.getComponentCount() == 0
-                ? new java.awt.Dimension() : parent.getComponent(0).getPreferredSize();
+            Dimension only = parent.getComponentCount() == 0
+                ? new Dimension() : parent.getComponent(0).getPreferredSize();
 
-            return new java.awt.Dimension(only.width + pad.left + pad.right,
-                only.height + pad.top + pad.bottom);
+            return new Dimension(only.width + pad.left + pad.right, only.height + pad.top + pad.bottom);
         }
 
         /**
@@ -626,18 +644,18 @@ public class AutonomyBanner extends JPanel
          * pixels.  This layout never needs any space taken from it; it fits whatever it is given.
          */
         @Override
-        public java.awt.Dimension minimumLayoutSize(java.awt.Container parent)
+        public Dimension minimumLayoutSize(Container parent)
         {
-            return new java.awt.Dimension(0, 0);
+            return new Dimension(0, 0);
         }
 
         @Override
-        public void addLayoutComponent(String name, java.awt.Component comp)
+        public void addLayoutComponent(String name, Component comp)
         {
         }
 
         @Override
-        public void removeLayoutComponent(java.awt.Component comp)
+        public void removeLayoutComponent(Component comp)
         {
         }
     }
