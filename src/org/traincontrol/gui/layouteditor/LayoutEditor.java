@@ -429,7 +429,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             if (points instanceof JSONObject)
             {
-                AutonomyCompanionStore.updateFacingInPoints((JSONObject) points, square, locomotive, facing);
+                AutonomySession.updateFacingInPoints((JSONObject) points, square, locomotive, facing);
             }
         }
 

@@ -1162,20 +1162,7 @@ public class AutonomyCompanionStore
         JSONObject copies = setup == null || configuration == null ? null : setup.optJSONObject("configurations");
         JSONObject copy = copies == null ? null : copies.optJSONObject(configuration);
 
-        return copy != null && updateFacingInPoints(copy.optJSONObject("points"), square, locomotive, facing);
-    }
-
-    /** The same over one configuration's points (a page snapshot holds them by configuration). */
-    public static boolean updateFacingInPoints(JSONObject points, TileKey square, String locomotive, String facing)
-    {
-        JSONObject point = points == null ? null : points.optJSONObject(square.toString());
-
-        if (point == null || !locomotive.equals(AutonomySession.nameOfPlacedLocomotive(point.opt("loc")))
-            || facing.equals(point.opt(AutonomyBuilder.FACING))) return false;
-
-        point.put(AutonomyBuilder.FACING, facing);
-
-        return true;
+        return copy != null && AutonomySession.updateFacingInPoints(copy.optJSONObject("points"), square, locomotive, facing);
     }
 
     /** The same over a page snapshot (what snapshotPage returns and the editor's undo holds), changed in place. */
