@@ -15032,10 +15032,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                     else if (r == -1)
                     {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            c,
-                            I18n.t("ui.errorSyncFailedSeeLog")
-                        ));
+                        // The reason, on the main window, and Retry runs this same door again
+                        final String reason = this.model.getLastSyncError();
+                        final Object[] options = { I18n.t("ui.syncFailedRetryButton"), I18n.t("ui.syncFailedCloseButton") };
+
+                        javax.swing.SwingUtilities.invokeLater(() ->
+                        {
+                            if (choseFirst(I18n.f("ui.syncFailedRetry", reason == null ? I18n.t("ui.errorSyncFailedSeeLog")
+                                : reason), I18n.t("ui.syncFailedTitle"), options, false)) doSync(c);
+                        });
                     }
                     else
                     {
@@ -20164,6 +20169,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }
 
+    /** An error with its answers on the main window, wrapped for a long reason; whether the first answer was chosen. */
+    private boolean choseFirst(String message, String title, Object[] options, boolean onTop)
+    {
+        JOptionPane pane = new JOptionPane(message, JOptionPane.ERROR_MESSAGE, JOptionPane.DEFAULT_OPTION, null, options,
+            options[0])
+        {
+            @Override
+            public int getMaxCharactersPerLineCount()
+            {
+                return 70;
+            }
+        };
+
+        JDialog dialog = pane.createDialog(this, title);
+
+        applyWindowIcon(dialog);
+        dialog.setAlwaysOnTop(onTop);
+        dialog.setVisible(true);
+        dialog.dispose();
+
+        return options[0].equals(pane.getValue());
+    }
+
     @Override
     public boolean offerResync(String error)
     {
@@ -20174,26 +20202,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             Object[] options = { I18n.t("ui.startupSyncResync"), I18n.t("ui.main.toolbar.exit") };
 
-            JOptionPane pane = new JOptionPane(I18n.f("ui.startupSyncFailed", error == null ? "" : error),
-                JOptionPane.ERROR_MESSAGE, JOptionPane.DEFAULT_OPTION, null, options, options[0])
-            {
-                @Override
-                public int getMaxCharactersPerLineCount()
-                {
-                    return 70;
-                }
-            };
-
-            JDialog dialog = pane.createDialog(this, I18n.t("ui.startupSyncFailedTitle"));
-
-            applyWindowIcon(dialog);
-
             // On top, since the application may not hold the foreground yet while it starts
-            dialog.setAlwaysOnTop(true);
-            dialog.setVisible(true);
-            dialog.dispose();
-
-            resync[0] = options[0].equals(pane.getValue());
+            resync[0] = choseFirst(I18n.f("ui.startupSyncFailed", error == null ? "" : error),
+                I18n.t("ui.startupSyncFailedTitle"), options, true);
         };
 
         try

@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
@@ -11,6 +13,8 @@ import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import support.Answering;
+import support.Reflect;
+import support.Settle;
 import support.StandInStation;
 import support.StationRig;
 
@@ -43,11 +47,13 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
 
             try
             {
+                startUpSyncDone(ui);
+
                 // One answerer for the whole claim: a dialog just answered is still showing for a moment, and a new answerer
                 // would count it again
                 try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
                 {
-                    assertTrue(rig.model.syncWithCS2() > 0, "the first sync imports the fixtures");
+                    assertTrue(rig.model.syncWithCS2() >= 0, "the sync that imports the fixtures failed");
 
                     ui.doSync(ui);
                     assertTrue(answering.awaitAsked(1, 60000), "a sync that read everything asked nothing");
@@ -71,6 +77,96 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
                     assertTrue(partial.contains("Items added: 0"), "and still says what was added: " + partial);
                     assertEquals(notice, I18n.t("ui.startupSyncPartial"));
                     assertTrue(notice.contains("could not be read") && notice.contains("sync again"), "start-up says so: " + notice);
+                }
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(ui::dispose);
+            }
+        }
+    }
+
+    /**
+     * The window lays out its demo diagram as it opens and syncs behind a spinner, posted from its start-up; a Sync
+     * pressed meanwhile is rightly turned away as already running, so a claim starts once that sync has ended.
+     */
+    private static void startUpSyncDone(TrainControlUI ui) throws Exception
+    {
+        // The start-up's posted sync takes the flag before this runs, in the spinner's own event loop
+        SwingUtilities.invokeAndWait(() -> { });
+
+        AtomicBoolean inFlight = (AtomicBoolean) Reflect.field(TrainControlUI.class, "syncInFlight").get(ui);
+
+        assertTrue(Settle.until(() -> !inFlight.get(), 60000), "precondition: the window's start-up sync never ended");
+    }
+
+    /**
+     * A Sync that fails says why on the main window and offers Retry, which syncs again at once, and Close, which does
+     * not.
+     *
+     * MUTATION: have TrainControlUI.doSync show "ui.errorSyncFailedSeeLog" alone on a failure, and no Retry is offered.
+     */
+    @Test
+    public void testAFailedSyncSaysWhyAndRetries() throws Exception
+    {
+        AtomicBoolean dropping = new AtomicBoolean();
+        BiFunction<String, Integer, byte[]> base = StandInStation.cs3("260", INFO);
+        String failed = I18n.f("ui.syncFailedRetry", "").split("\n")[0];
+
+        try (StationRig rig = new StationRig(Files.createTempDirectory("tc-sync-retry").toFile(), (path, n) ->
+        {
+            if (dropping.get() && "/app/api/automatics".equals(path)) throw new IllegalStateException("dropped");
+
+            return base.apply(path, n);
+        }, true))
+        {
+            TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
+            assertNotNull(ui, "the window");
+
+            try
+            {
+                startUpSyncDone(ui);
+                assertTrue(rig.model.syncWithCS2() >= 0, "the sync that imports the fixtures failed");
+
+                // Retry for the first failure, with the station well again; Close for the second; OK for the rest
+                AtomicInteger failures = new AtomicInteger();
+
+                try (Answering answering = Answering.start(message ->
+                {
+                    if (!message.startsWith(failed)) return Answering.pressAt(0);
+
+                    if (failures.incrementAndGet() > 1) return Answering.pressAt(1);
+
+                    dropping.set(false);
+                    return Answering.pressAt(0);
+                }))
+                {
+                    dropping.set(true);
+                    ui.doSync(ui);
+                    assertTrue(answering.awaitAsked(2, 60000), "the failure and the retry's result: " + answering.asked());
+
+                    Answering.Question failure = answering.questions().get(0);
+
+                    assertTrue(failure.message.startsWith(failed), "the failure says so: " + failure.message);
+                    assertTrue(failure.message.length() > I18n.f("ui.syncFailedRetry", "").length(), "and why: "
+                        + failure.message);
+                    assertEquals(failure.buttons, java.util.Arrays.asList(I18n.t("ui.syncFailedRetryButton"),
+                        I18n.t("ui.syncFailedCloseButton")));
+                    assertEquals(failure.title, I18n.t("ui.syncFailedTitle"));
+                    assertSame(failure.owner, ui, "on the main window");
+                    assertEquals(answering.asked().get(1), I18n.f("ui.infoSyncCompleteItemsAdded", "0"),
+                        "Retry synced again, and the station answered");
+
+                    // Close: no further sync
+                    dropping.set(true);
+                    ui.doSync(ui);
+                    assertTrue(answering.awaitAsked(3, 60000), "the second failure was not shown");
+                    assertTrue(answering.asked().get(2).startsWith(failed), answering.asked().get(2));
+
+                    int routesAsked = rig.station.requests("/app/api/automatics");
+
+                    assertFalse(answering.awaitAsked(4, 3000), "Close asked again: " + answering.asked());
+                    assertEquals(rig.station.requests("/app/api/automatics"), routesAsked, "Close synced again");
                 }
             }
             finally

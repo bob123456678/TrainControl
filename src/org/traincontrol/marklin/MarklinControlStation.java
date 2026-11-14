@@ -745,8 +745,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // true to prefer the local file
             accs = parser.getMagList(true);
         }
-        catch (Exception e)
+        catch (java.io.FileNotFoundException none)
         {
+            // Only a missing list means none; any other failure fails here, before anything is cleared, as the tiles
+            // would otherwise all be built as MM2
             if (isDebug())
             {
                 this.logf("layout.noDCC");
@@ -1441,6 +1443,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private volatile String lastSyncError = null;
 
     /** What the last sync failed with (OB-338), or null when it did not fail. */
+    @Override
     public String getLastSyncError()
     {
         return this.lastSyncError;
@@ -1592,7 +1595,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             }
 
-            // Is this a CS2 or CS3?
+            // Is this a CS2 or CS3?  A device file that is not found leaves the type as it was; any other failure fails
+            // the sync once the diagram, which reads its own files, is done, before anything is read the wrong way
+            Exception typeUnknown = null;
+
             try
             {
                 this.isCS3 = CS2File.isCS3(CS2File.getDeviceInfoURL(cs2Address()));
@@ -1601,18 +1607,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
             catch (Exception e)
             {
                 this.logf("log.csTypeDetectionError", e.toString());
+
+                if (!(e instanceof java.io.FileNotFoundException)) typeUnknown = e;
             }
                                        
             // Import layout
             this.syncLayoutsFromConfiguredSource();
+
+            if (typeUnknown != null) throw typeUnknown;
             
             // Import routes
             List<MarklinRoute> parsedRoutes;
 
             if (this.isCS3)
             {
-                // The firmware is read once for the whole sync, by the parser (OB-403, FR-170).  A CS3 answer that cannot
-                // be read leaves the routes, or the locomotives below, as they are, and the sync goes on (FR-169).
+                // The firmware is read once for the whole sync, by the parser (OB-403, FR-170).  A CS3 answer that arrives
+                // but cannot be read leaves the routes, or the locomotives below, as they are, and the sync goes on
+                // (FR-169); one that fails to arrive fails the sync.
                 try
                 {
                     parsedRoutes = fileParser.parseRoutesCS3();

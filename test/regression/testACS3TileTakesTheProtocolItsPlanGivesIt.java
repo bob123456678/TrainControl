@@ -51,12 +51,20 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
     /** What the stand-in serves at a path in place of the fixture's file; a null body is a 404. */
     private static final Map<String, byte[]> served = new HashMap<>();
 
+    /** A path the stand-in drops the connection on, with no answer; null for none. */
+    private static volatile String dropped;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
         sandbox = support.LayoutSandbox.open();
         model = support.TestStation.simulated();
-        station = new StandInStation((path, n) -> served.containsKey(path) ? served.get(path) : fixture(path));
+        station = new StandInStation((path, n) ->
+        {
+            if (path.equals(dropped)) throw new IllegalStateException("the stand-in drops the connection");
+
+            return served.containsKey(path) ? served.get(path) : fixture(path);
+        });
 
         Logger.getLogger(MarklinControlStation.class.getName()).addHandler(tap);
     }
@@ -317,6 +325,33 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
         articles("Main Layout", name -> true, renames);
 
         readAndCheck(accessoryDecoderType.DCC, accessoryDecoderType.MM2, 0);
+    }
+
+    /**
+     * Plans that fail to arrive (a dropped connection, not a 404) fail the read, so the sync fails before it clears the
+     * diagram rather than building the tiles with the first article's protocol.
+     *
+     * MUTATION: drop the `trackPlanFailure` throw at the end of `CS2File.parseLayout`, and the read returns pages.
+     */
+    @Test
+    public void testPlansThatFailToArriveFailTheRead() throws Exception
+    {
+        dropped = "/app/api/gbs";
+
+        try
+        {
+            List<LayoutDiagram> pages = read(true);
+
+            fail("plans that never arrived gave " + pages.size() + " pages built without them");
+        }
+        catch (java.io.IOException expected)
+        {
+            // what we want: the caller fails before it clears anything
+        }
+        finally
+        {
+            dropped = null;
+        }
     }
 
     /** No address with two protocols: the plans are never asked for, and nothing is warned. */
