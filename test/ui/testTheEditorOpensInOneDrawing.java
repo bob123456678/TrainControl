@@ -77,6 +77,56 @@ public class testTheEditorOpensInOneDrawing
     }
 
     /**
+     * With Show Lengths on and the page's addresses shown, the autonomy editor still builds its diagram once on opening:
+     * the two exclude each other, and turning the addresses off asked for a second build after the first.
+     *
+     * MUTATION: have `setAutonomyMode`'s lengths-and-addresses correction call `toggleAddresses()` with no grid yet too,
+     * and this fails.
+     */
+    @Test(timeOut = 120000, priority = 1)
+    public void testWithLengthsAndAddressesOnTheAutonomyEditorStillBuildsOnce() throws Exception
+    {
+        String page = aPage(false);
+
+        LayoutDiagram diagram = rig.model.getLayout(page);
+
+        java.util.prefs.Preferences prefs = org.traincontrol.util.Util.preferencesFor(
+            org.traincontrol.gui.TrainControlUI.class);
+
+        String lengthsWere = prefs.get("autonomyEditorLengths", null);
+        boolean addressesWere = diagram.getShowAddress();
+
+        List<Component> built = new ArrayList<>();
+        LayoutEditor[] editor = new LayoutEditor[1];
+
+        try
+        {
+            prefs.putBoolean("autonomyEditorLengths", true);
+
+            Components.onTheEventThread(() -> { diagram.setShowAddress(true); return null; });
+
+            editor[0] = opened(page, true, built);
+
+            assertTrue(Components.onTheEventThread(() -> editor[0].getAutonomyPanel().getShowLengths().isSelected()),
+                "precondition: Show Lengths is not on");
+            assertFalse(Components.onTheEventThread(() -> diagram.getShowAddress()), "precondition: the addresses"
+                + " stayed on beside the lengths");
+
+            assertEquals(built.size(), 1, "opening the autonomy editor on " + page + " with Show Lengths on and its"
+                + " addresses shown built its diagram " + built.size() + " times");
+        }
+        finally
+        {
+            if (editor[0] != null) FrozenEditor.dispose(editor[0]);
+
+            if (lengthsWere == null) prefs.remove("autonomyEditorLengths");
+            else prefs.put("autonomyEditorLengths", lengthsWere);
+
+            Components.onTheEventThread(() -> { diagram.setShowAddress(addressesWere); return null; });
+        }
+    }
+
+    /**
      * A page smaller than the editor's floor is grown and drawn by the same call: growing asked for a redraw of its
      * own, a second build of the diagram straight after the first.
      *

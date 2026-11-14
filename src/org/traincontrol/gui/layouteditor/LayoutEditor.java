@@ -1842,11 +1842,13 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // Lengths and addresses exclude each other (two numbers on a tile are unreadable); applied once now, as
-            // both can arrive on.
+            // both can arrive on.  Before the grid exists the flag alone, as the coming build draws it once.
             if (autonomyPanel.getShowLengths().isSelected() && this.showAddressCheckbox.isSelected())
             {
                 this.showAddressCheckbox.setSelected(false);
-                toggleAddresses();
+
+                if (grid == null) this.layout.setShowAddress(false);
+                else toggleAddresses();
             }
 
             autonomyPanel.getShowLengths().addActionListener(e ->
