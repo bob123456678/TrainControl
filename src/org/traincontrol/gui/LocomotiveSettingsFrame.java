@@ -721,10 +721,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             return false;
         }
 
-        // Nor a member at the typed address and decoder (the sharers): canBeLinkedTo would drop it with a log line only
-        for (String member : multiUnitTab.chosen().keySet())
+        // Nor a member the Save leaves at the typed address and decoder (the sharers): a consist on one address
+        for (String member : (members ? multiUnitTab.chosen() : loc.getLinkedLocomotiveNames()).keySet())
         {
-            if (members && sharers.contains(member))
+            if (sharers.contains(member))
             {
                 JOptionPane.showMessageDialog(this, I18n.f("loc.errorLinkSameAddress", loc.getName(), member));
 
