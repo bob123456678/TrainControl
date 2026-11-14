@@ -56,6 +56,9 @@ import support.Reflect;
  */
 public class testRestoreFromBackup
 {
+    /** Whether the restore's click was still running once its first question was answered. */
+    private boolean stillInTheRestore;
+
     private static final String PROBE = "FR-124 probe route";
     private static final String RUN_TRAIN = "FR-124 run train";
     private static final String OTHER_LAYOUT = "FR-124 another layout";
@@ -333,8 +336,9 @@ public class testRestoreFromBackup
 
             byte[] locomotives = Files.readAllBytes(new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME)).toPath());
 
-            // Long enough for a backup to be taken and the restore to end, were Cancel to go ahead
-            List<String> said = restore(zip, I18n.t("ui.cancel"), 1, 20000);
+            List<String> said = restore(zip, I18n.t("ui.cancel"), 1, 1000);
+
+            assertFalse(stillInTheRestore, "the restore went on after Cancel");
 
             assertEquals(said.size(), 1, "something was asked after Cancel: " + said);
 
@@ -986,12 +990,25 @@ public class testRestoreFromBackup
 
             assertTrue(answering.awaitAsked(questions, 120000), "the restore asked " + answering.asked());
 
+            // Once the question is gone, the click's handler has either returned or is held in the restore's busy dialog
+            Components.waitFor(() -> !aQuestionIsUp(), 5000);
+
+            stillInTheRestore = Components.onTheEventThread(() -> Arrays.stream(Thread.currentThread().getStackTrace())
+                .anyMatch(frame -> frame.getClassName().equals(RestoreAction.class.getName())));
+
             answering.awaitAsked(questions + 1, quietMillis);
 
             Components.settle();
 
             return answering.asked();
         }
+    }
+
+    private boolean aQuestionIsUp()
+    {
+        return Components.onTheEventThread(() -> Arrays.stream(java.awt.Window.getWindows()).anyMatch(window ->
+            window instanceof javax.swing.JDialog && window.isShowing()
+                && Components.find(window, javax.swing.JOptionPane.class, null) != null));
     }
 
     /** Clicks Backup TrainControl Data, answers OK, and gives back the archive it wrote. */
