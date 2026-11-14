@@ -4099,8 +4099,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Stands each train where `standing` (`whereTheTrainsAre`) has it on the railway as it is, by the Point names it
-     * records, with no rebuild: for the track editor's discard, whose setup's build is the edited one until the reset.
+     * Stands each train where `standing` (`whereTheTrainsAre`) has it on the railway as it is, by Point names, with no
+     * rebuild: for the track editor's discard.
      */
     public void standTheTrainsBack(Map<String, String[]> standing)
     {
@@ -7594,7 +7594,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * The sync a door runs after its own edit: at once, or, while an editor is open or on its way, quietly once it
      * closes (`editorGone`).  A sync the user presses goes through `syncWithCS2`, which refuses aloud.
-     *
      * @return as syncWithCS2, or SYNC_OWED
      */
     public int syncAfterAnEdit()
@@ -7624,9 +7623,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The sync itself, without the editor gate: on the event thread the fetch runs on a worker behind a modal spinner,
-     * off it a plain call.  One at a time (a modal dialog's nested loop dequeues posted runnables, so two workers
-     * could reconcile the databases at once); a second caller gets SYNC_ALREADY_RUNNING.
+     * The sync itself, without the editor gate: on the event thread the fetch runs on a worker behind a modal spinner.
+     * One at a time (a modal dialog's nested loop could start two workers); a second caller gets SYNC_ALREADY_RUNNING.
      */
     private int syncNow()
     {
@@ -21471,8 +21469,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * After a route write or a sync, given `shownDiagram` from before it: rebuilt where the pages were read again (a
-     * sync from a local folder brings in edits made elsewhere), else only the route squares bound again, cache kept.
+     * After a route write or a sync: rebuilt where the pages were read again (a local folder's edits), else only the
+     * route squares bound again.
      */
     void redrawRouteSquaresOrRebuild(LayoutDiagram before)
     {
@@ -21511,8 +21509,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Waits, off the event thread and for a few seconds at most, for the pictures of the page about to be built: the
-     * diagram on screen stays up meanwhile, so a page at a new size is whole on its first paint.
+     * Waits, off the event thread and a few seconds at most, for the pictures of the page about to be built, so it is
+     * whole on its first paint.
      */
     private void awaitTheShownPagesPictures()
     {

@@ -752,8 +752,8 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * Puts every picture the main window shows of `page` at `size` in the image cache; completes when they are in.  A
-     * page being reloaded or edited meanwhile completes at once: its squares decode what they miss as they are drawn.
+     * Puts every picture the main window shows of `page` at `size` in the image cache; completes when they are in (at
+     * once if the page is being reloaded or edited).
      */
     static CompletableFuture<Void> decodePage(org.traincontrol.base.LayoutDiagram page, int size, TrainControlUI tcUI)
     {
