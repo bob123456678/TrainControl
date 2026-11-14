@@ -3435,6 +3435,79 @@ public class testTheTrainWindow
         });
     }
 
+    /**
+     * Cancel and both Discards send the Central Station nothing, after an edit that placed a train elsewhere, turned it
+     * there with the editor's Facing door and reversed it on its decoder, all with the editor open: the trains go back
+     * in the model alone, and no train's direction is changed.
+     *
+     * MUTATION: in `LayoutEditor.discardAutonomyWork`, `switchDirection()` each train it puts back after the rebuild, and
+     * Cancel sends a direction command.
+     */
+    @Test(timeOut = 400000)
+    public void testCancelAndTheDiscardsSendTheCentralStationNothing() throws Exception
+    {
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        support.WireRecorder wire = support.WireRecorder.open();
+
+        try
+        {
+            forEachWayOutWithATrainThatCanTurn((how, panel, square, name, copyBefore) ->
+            {
+                final TileKey elsewhere = anEmptyStationWhere(each -> session.trainsWhereTheyStand().get(each) == null
+                    && session.facingChoices(each).size() == 2);
+
+                placeFromTheMenu(panel, elsewhere, name);
+
+                Components.settle();
+
+                faceFromTheMenu(panel, elsewhere, name, theOtherWay(elsewhere));
+
+                // Reversed for real: the command to its decoder, then its turn followed as the echo would be
+                final org.traincontrol.marklin.MarklinLocomotive loc = model.getLocByName(name);
+                final int sentBefore = wire.mark();
+                final String facedBefore = copyOf(name);
+                final org.traincontrol.base.Locomotive.locDirection ran = loc.getDirection();
+
+                try
+                {
+                    loc.switchDirection();
+
+                    Components.settle();
+
+                    assertTrue(wire.directionCommandsSince(sentBefore, loc.getIntUID()).size() > 0, "precondition: the"
+                        + " reversal of " + name + " sent its decoder nothing the recorder heard");
+
+                    if (facedBefore.equals(copyOf(name))) reverse(name, facedBefore);
+
+                    // A line of its own, as the log drops a line equal to the last, which would hide a repeated command
+                    model.log("D130: " + DISCARDS[how]);
+
+                    final int mark = wire.mark();
+
+                    leave(how);
+
+                    Components.settle();
+                    Components.drain(8);
+
+                    assertEquals(wire.sentSince(mark), java.util.Collections.emptyList(), DISCARDS[how] + " after "
+                        + name + " was placed on " + elsewhere + ", turned there and reversed on its decoder sent the"
+                        + " Central Station " + wire.since(mark));
+                }
+                finally
+                {
+                    loc.setDirection(ran);
+                }
+            });
+        }
+        finally
+        {
+            wire.close();
+
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+        }
+    }
+
     /** A claim's body, run once for each way out (`DISCARDS`). */
     private interface WayOut
     {
