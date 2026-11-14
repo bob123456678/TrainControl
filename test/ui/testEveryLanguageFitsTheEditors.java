@@ -111,7 +111,7 @@ public class testEveryLanguageFitsTheEditors
         LanguageFit.assertNothingClipped("page-window", LanguageFit.everyLanguage(language ->
             LanguageFit.measureBuilt(LEDGER, "page-window", language, () ->
             {
-                LayoutPopupUI built = new LayoutPopupUI(railway.model.getLayout(PAGE), small, railway.ui, railway.model.getLayoutList().indexOf(PAGE));
+                LayoutPopupUI built = new LayoutPopupUI(railway.model.getLayout(PAGE), small, railway.ui);
 
                 built.render();
 
