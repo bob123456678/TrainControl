@@ -19744,6 +19744,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         this.timetableTab.repaintTimetable();
     }
+
+    /** The status panels' worker, which the timetable shares rather than a thread per route event. */
+    ExecutorService autonomyRenderer()
+    {
+        return this.AutonomyRenderer;
+    }
     
     synchronized public void repaintAutoLocList(boolean external)
     {
