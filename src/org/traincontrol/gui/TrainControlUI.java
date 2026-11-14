@@ -1,16 +1,20 @@
 package org.traincontrol.gui;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -18,11 +22,15 @@ import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.KeyboardFocusManager;
+import java.awt.Polygon;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.Window;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -30,6 +38,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.geom.Arc2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -41,6 +50,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -78,6 +88,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.prefs.Preferences;
@@ -197,6 +209,9 @@ import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.automationui.LayoutPageEdit;
+import org.traincontrol.base.RouteCommand;
+import org.traincontrol.marklin.MarklinRoute;
 
 /**
  * UI for controlling trains and switches using the keyboard
@@ -1747,7 +1762,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             SwingUtilities.invokeAndWait(say);
         }
-        catch (InterruptedException | java.lang.reflect.InvocationTargetException couldNotSay)
+        catch (InterruptedException | InvocationTargetException couldNotSay)
         {
             this.model.log(couldNotSay);
         }
@@ -1827,7 +1842,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             // The FIELD, never getAutonomySession(): that is a lazy builder that parses every page, writes to disk and
             // can put up a dialog, and this runs on the event thread mid-write of the index.  No session, no floor.
-            return org.traincontrol.automationui.LayoutPageEdit.pageIdFloor(this.autonomySession);
+            return LayoutPageEdit.pageIdFloor(this.autonomySession);
         }
         catch (RuntimeException e)
         {
@@ -2942,8 +2957,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (address <= 0) return;
 
-        String command = org.traincontrol.base.RouteCommand
-            .RouteCommandFeedback(address, state).toLine(null);
+        String command = RouteCommand.RouteCommandFeedback(address, state).toLine(null);
 
         long now = System.currentTimeMillis();
 
@@ -14255,9 +14269,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             private final String name;
             private final Keys keys;
-            private final java.util.function.Consumer<Press> action;
+            private final Consumer<Press> action;
 
-            private Row(String name, Keys keys, java.util.function.Consumer<Press> action)
+            private Row(String name, Keys keys, Consumer<Press> action)
             {
                 this.name = name;
                 this.keys = keys;
@@ -14271,14 +14285,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             /** Its first key with what must be held, for a menu to show; null for the keyboard layout's letters. */
-            public javax.swing.KeyStroke stroke()
+            public KeyStroke stroke()
             {
                 if (keys.keyCodes == null) return null;
 
-                int held = (keys.held.alt == Boolean.TRUE ? java.awt.event.InputEvent.ALT_DOWN_MASK : 0)
-                    | (keys.held.control == Boolean.TRUE ? java.awt.event.InputEvent.CTRL_DOWN_MASK : 0);
+                int held = (keys.held.alt == Boolean.TRUE ? InputEvent.ALT_DOWN_MASK : 0)
+                    | (keys.held.control == Boolean.TRUE ? InputEvent.CTRL_DOWN_MASK : 0);
 
-                return javax.swing.KeyStroke.getKeyStroke(keys.keyCodes[0], held);
+                return KeyStroke.getKeyStroke(keys.keyCodes[0], held);
             }
 
             private void run(TrainControlUI ui, KeyEvent evt)
@@ -14304,7 +14318,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             KeyEvent.VK_F24};
 
         /** The speed button of each digit key, by digit. */
-        private static final List<java.util.function.BiConsumer<TrainControlUI, ActionEvent>> SPEED_BUTTONS =
+        private static final List<BiConsumer<TrainControlUI, ActionEvent>> SPEED_BUTTONS =
             Arrays.asList(TrainControlUI::ZeroButtonActionPerformed, TrainControlUI::OneButtonActionPerformed,
                 TrainControlUI::TwoButtonActionPerformed, TrainControlUI::ThreeButtonActionPerformed,
                 TrainControlUI::FourButtonActionPerformed, TrainControlUI::FiveButtonActionPerformed,
@@ -14437,7 +14451,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             for (int digit = 0; digit < SPEED_BUTTONS.size(); digit++)
             {
-                final java.util.function.BiConsumer<TrainControlUI, ActionEvent> button = SPEED_BUTTONS.get(digit);
+                final BiConsumer<TrainControlUI, ActionEvent> button = SPEED_BUTTONS.get(digit);
 
                 row("speed key " + digit, Held.NEITHER.on(KeyEvent.VK_0 + digit), key -> button.accept(key.ui, null));
             }
@@ -14555,7 +14569,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
         }
 
-        private static void row(String name, Keys keys, java.util.function.Consumer<Press> action)
+        private static void row(String name, Keys keys, Consumer<Press> action)
         {
             ROWS.add(new Row(name, keys, action));
         }
@@ -14756,7 +14770,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     private void writeIndexAndKeepLinksAimed(List<String> layoutList, Map<String, String> renamed,
-        java.util.Collection<String> keepAbsent) throws java.io.IOException
+        Collection<String> keepAbsent) throws IOException
     {
         this.layoutFileActions.writeIndexAndKeepLinksAimed(layoutList, renamed, keepAbsent);
     }
@@ -14767,7 +14781,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param link the arrow that was clicked
      */
-    public void followLink(org.traincontrol.base.LayoutDiagramComponent link)
+    public void followLink(LayoutDiagramComponent link)
     {
         String page = link.getLinkPageName();
 
@@ -14805,8 +14819,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** `known` is the accessory and reason key when the caller already has them; null to ask the route itself. */
-    public RouteConflict askAboutRouteConflict(org.traincontrol.marklin.MarklinRoute route,
-        java.awt.Component over, String[] known)
+    public RouteConflict askAboutRouteConflict(MarklinRoute route,
+        Component over, String[] known)
     {
         if (route == null) return RouteConflict.REFUSED;
 
@@ -14842,10 +14856,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         try
         {
-            if (javax.swing.SwingUtilities.isEventDispatchThread()) ask.run();
-            else javax.swing.SwingUtilities.invokeAndWait(ask);
+            if (SwingUtilities.isEventDispatchThread()) ask.run();
+            else SwingUtilities.invokeAndWait(ask);
         }
-        catch (InterruptedException | java.lang.reflect.InvocationTargetException couldNotAsk)
+        catch (InterruptedException | InvocationTargetException couldNotAsk)
         {
             this.model.log(couldNotAsk);
 
@@ -14862,16 +14876,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
         
-    public void childWindowKeyEvent(java.awt.event.KeyEvent evt)
+    public void childWindowKeyEvent(KeyEvent evt)
     {
         final Component on = evt.getComponent();
 
-        pressFromWindow(on instanceof java.awt.Window ? (java.awt.Window) on : SwingUtilities.getWindowAncestor(on),
+        pressFromWindow(on instanceof Window ? (Window) on : SwingUtilities.getWindowAncestor(on),
             () -> this.LocControlPanelKeyPressed(evt));
     }
         
     private void ProcessFunction(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ProcessFunction
-        javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
+        JToggleButton b = (JToggleButton) evt.getSource();
 
         Integer fNumber = this.functionMapping.get(b);
         Boolean state = b.isSelected();
@@ -14913,7 +14927,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The model defers only the address update; everything else in it proceeds.
         if (refuseWhileAutonomyRunning(c)) return;
 
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        SwingUtilities.invokeLater(() -> 
         {
             setLocomotiveWorkInFlight(true);
             
@@ -14956,14 +14970,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     {
                         // Not a failure.  Reporting it as one told the user their sync had failed
                         // when in fact another one was doing the job for them.
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                             c,
                             I18n.t("ui.infoSyncAlreadyRunning")
                         ));
                     }
                     else if (r == -1)
                     {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                             c,
                             I18n.t("ui.errorSyncFailedSeeLog")
                         ));
@@ -14973,7 +14987,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         final String done = I18n.f(this.model.wasLastSyncPartial() ? "ui.infoSyncCompletePartial"
                             : "ui.infoSyncCompleteItemsAdded", r.toString());
 
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, done));
+                        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, done));
                     }
                 }
             }).start();
@@ -15038,7 +15052,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void clearCurrentPage()
     {
         // The dialog and the mappings it clears both belong on the event thread
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             int dialogResult = JOptionPane.showOptionDialog(
                 this,
@@ -15129,7 +15143,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         // Both ends, because either could be the station's (OB-155): the old route's lock says whether
                         // it carried the route, the new id's range whether it could have issued the id.
-                        if (!org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(newId)
+                        if (!MarklinControlStation.isLocalRouteId(newId)
                             || currentRoute.isLocked())
                         {
                             this.syncWithCS2();
@@ -15201,7 +15215,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
         
-    private synchronized void sliderClickedSynced(java.awt.event.MouseEvent evt)
+    private synchronized void sliderClickedSynced(MouseEvent evt)
     {
         if (evt.getClickCount() == 2 && SwingUtilities.isRightMouseButton(evt))
         {
@@ -15240,7 +15254,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Validates that a component's value is an integer
      */
-    public static void validateInt(java.awt.event.KeyEvent evt, boolean hex)
+    public static void validateInt(KeyEvent evt, boolean hex)
     {
         JTextField field = (JTextField) evt.getSource();
         
@@ -15267,7 +15281,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Validates that a component's value is simple string
      */
-    public static void validateLayoutName(java.awt.event.KeyEvent evt)
+    public static void validateLayoutName(KeyEvent evt)
     {
         JTextField field = (JTextField) evt.getSource();
         
@@ -15282,7 +15296,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Validates that a component's value is an integer
      */
-    public static void limitLength(java.awt.event.KeyEvent evt, int maxLength)
+    public static void limitLength(KeyEvent evt, int maxLength)
     {
         JTextField field = (JTextField) evt.getSource();
         
@@ -15434,7 +15448,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             else
             {
-                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                     this,
                     I18n.f("route.ui.errorS88RequiredForAutoFire", r.getName())
                 ));
@@ -15607,9 +15621,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (SwingUtilities.isRightMouseButton(evt) && this.activeLoc != null)
         {
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
-                javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
+                JToggleButton b = (JToggleButton) evt.getSource();
                                 
                 if (b != null && b.isEnabled())
                 {
@@ -15639,7 +15653,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // lights and sounds off moving trains and fight the automation for them (MT-141).
         if (refuseWhileAutonomyRunning(evt == null ? this : (Component) evt.getSource())) return;
 
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        SwingUtilities.invokeLater(() -> 
         {
             int dialogResult = JOptionPane.showOptionDialog(
                 this,
@@ -15681,7 +15695,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_viewDatabaseMenuItemActionPerformed
 
     private void turnOnLightsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOnLightsMenuItemActionPerformed
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             setLocomotiveWorkInFlight(true);
 
@@ -15701,7 +15715,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // Back on the event thread; these keep their greyout, unlike the sibling above, because they are quick
                 // model calls and a modal window would be worse than the wait.
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     setLocomotiveWorkInFlight(false);
                 });
@@ -15711,7 +15725,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_turnOnLightsMenuItemActionPerformed
 
     private void turnOffFunctionsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnOffFunctionsMenuItemActionPerformed
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        SwingUtilities.invokeLater(() -> 
         {
             setLocomotiveWorkInFlight(true);
             
@@ -15720,7 +15734,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.allFunctionsOff();
 
                 // Back on the event thread, with the greyout kept, as above.
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     setLocomotiveWorkInFlight(false);
                 });
@@ -15754,13 +15768,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private final BackupAction backupAction = new BackupAction(this);
 
     /** File > Backup TrainControl Data, which a backup grays while it runs. */
-    public javax.swing.JMenuItem backupDataMenuItem()
+    public JMenuItem backupDataMenuItem()
     {
         return this.backupDataMenuItem;
     }
 
     /** File &gt; Restore from Backup (FR-124), placed by hand under Backup TrainControl Data. */
-    javax.swing.JMenuItem restoreDataMenuItem;
+    JMenuItem restoreDataMenuItem;
 
     private void backupDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backupDataMenuItemActionPerformed
         this.backupAction.backupDataMenuItemActionPerformed();
@@ -15798,7 +15812,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Hide the tab in case loading fails but the model still has the local diagram
         this.switchCSLayoutMenuItem.setEnabled(false);
 
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        SwingUtilities.invokeLater(() -> 
         {
             try
             {
@@ -15951,11 +15965,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 I18n.t("ui.cancel")
             };
 
-            int answer = javax.swing.JOptionPane.showOptionDialog(this,
+            int answer = JOptionPane.showOptionDialog(this,
                 I18n.t("layout.ui.confirmAccessorySwitchPowerOff"),
                 I18n.t("layout.ui.dialogPleaseConfirm"),
-                javax.swing.JOptionPane.YES_NO_CANCEL_OPTION,
-                javax.swing.JOptionPane.QUESTION_MESSAGE,
+                JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
                 null, powerOptions, powerOptions[0]);
 
             // Anything but the two yeses is a no, Escape and the close box included.
@@ -15990,12 +16004,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (!this.model.hasAutoLayout() || !this.model.isAutonomyRunning()) return true;
 
-        org.traincontrol.automation.Layout layout = this.model.getAutoLayout();
+        Layout layout = this.model.getAutoLayout();
 
         if (layout == null) return true;
 
-        org.traincontrol.base.Accessory accessory =
-            this.model.getAccessoryByAddressIfPresent(address, keyboardProtocolFor(address));
+        Accessory accessory = this.model.getAccessoryByAddressIfPresent(address, keyboardProtocolFor(address));
 
         if (accessory == null) return true;
 
@@ -16007,13 +16020,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         Object[] options = { I18n.t("ui.ok"), I18n.t("ui.cancel") };
 
-        int choice = javax.swing.JOptionPane.showOptionDialog(this,
+        int choice = JOptionPane.showOptionDialog(this,
             protecting
                 ? I18n.t("layout.ui.confirmAccessoryProtecting")
                 : I18n.t("layout.ui.confirmAccessoryActiveRoute"),
             I18n.t("layout.ui.dialogPleaseConfirm"),
-            javax.swing.JOptionPane.YES_NO_CANCEL_OPTION,
-            javax.swing.JOptionPane.QUESTION_MESSAGE,
+            JOptionPane.YES_NO_CANCEL_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
             null, options, options[0]);
 
         if (choice == 0) return true;
@@ -16062,7 +16075,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         try
                         {
                             if (!this.model.waitForPowerState(true,
-                                org.traincontrol.marklin.MarklinControlStation.POWER_STATE_TIMEOUT))
+                                MarklinControlStation.POWER_STATE_TIMEOUT))
                             {
                                 this.model.logf("layout.warnPowerNotConfirmed", switchId);
                             }
@@ -16082,7 +16095,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** The generated keys' handler: these keys' clicks go through `keyboardKeyClicked`. */
     private void UpdateSwitchState(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_UpdateSwitchState
-        javax.swing.JToggleButton b = (javax.swing.JToggleButton) evt.getSource();
+        JToggleButton b = (JToggleButton) evt.getSource();
 
         keyboardKeyClicked(Integer.parseInt(b.getText()), b.isSelected());
     }//GEN-LAST:event_UpdateSwitchState
@@ -16131,7 +16144,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (refuseWhileEditorOpen()) return;
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     // Checked on the EDT right before constructing: on the worker, two quick clicks opened two editors.
                     if (routeEditor != null && routeEditor.isVisible())
@@ -16171,7 +16184,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         refreshesUnderWay.incrementAndGet();
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             try
             {
@@ -16217,7 +16230,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             finally
             {
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     layoutRefreshComplete(after);
 
@@ -16318,8 +16331,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void layoutEditingCompleteThen(Runnable after)
     {
         // Run once, from the end of the refresh or the catch below (a throw before the worker exists).
-        final java.util.concurrent.atomic.AtomicBoolean ran =
-            new java.util.concurrent.atomic.AtomicBoolean(false);
+        final AtomicBoolean ran = new AtomicBoolean(false);
 
         Runnable once = () ->
         {
@@ -16368,7 +16380,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void showLayoutPopup(String layoutName, int size)
     {
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             LayoutPopupUI popup = new LayoutPopupUI(
                 this.model.getLayout(layoutName),
@@ -16527,7 +16539,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_PrevLocMappingActionPerformed
 
     private void LetterButtonPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LetterButtonPressed
-        this.displayCurrentButtonLoc((javax.swing.JButton) evt.getSource(), true);
+        this.displayCurrentButtonLoc((JButton) evt.getSource(), true);
     }//GEN-LAST:event_LetterButtonPressed
 
     private void toggleMenuBarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_toggleMenuBarActionPerformed
@@ -16690,7 +16702,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Each setting refuses as an edit; Execute Timetable sends trains, so it says to wait
         String why = I18n.t(RunGates.NO_EDITS_WHILE_RUNNING);
 
-        for (javax.swing.JComponent waits : new javax.swing.JComponent[] {
+        for (JComponent waits : new JComponent[] {
             this.minDelay, this.maxDelay, this.maxLocInactiveSeconds, this.defaultLocSpeed, this.preArrivalSpeedReduction,
             this.maxActiveTrains, this.maximumLatency, this.atomicRoutes, this.turnOffFunctionsOnArrival,
             this.turnOnFunctionsOnDeparture, this.simulate, this.algorithmType, this.timetableCapture})
@@ -16705,7 +16717,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Hand sends under way, from the click until the dispatch's thread has ended: the railway's first word comes only
      * after that.  Event thread up, the dispatch's thread down.
      */
-    private final java.util.concurrent.atomic.AtomicInteger handSendsUnderWay = new java.util.concurrent.atomic.AtomicInteger();
+    private final AtomicInteger handSendsUnderWay = new AtomicInteger();
 
     /**
      * Whether the Auto tab's waiting controls are grayed: autonomy busy, a hand send under way, or Graceful Stop
@@ -16725,7 +16737,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Grays one control while the trains run, saying why, or gives it back.  Takes back only what it grayed: a refresh
      * between Execute Timetable's press and its run being counted must not re-enable it.
      */
-    private static void greyWhileTheTrainsRun(javax.swing.JComponent control, boolean busy, String why)
+    private static void greyWhileTheTrainsRun(JComponent control, boolean busy, String why)
     {
         if (control == null) return;
 
@@ -16759,7 +16771,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Sets a control's own tooltip, or the one it gets back while grayed (a load can set it mid-run). */
-    private static void setToolTipAtRest(javax.swing.JComponent control, String text)
+    private static void setToolTipAtRest(JComponent control, String text)
     {
         Object[] atRest = (Object[]) control.getClientProperty(TOOLTIP_AT_REST);
 
@@ -16771,7 +16783,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Whether a click landed on a grayed control: a grayed Swing control still tells its mouse listeners.  `evt` may be
      * null.
      */
-    static boolean onAGreyedControl(java.awt.event.MouseEvent evt)
+    static boolean onAGreyedControl(MouseEvent evt)
     {
         return evt != null && evt.getComponent() != null && !evt.getComponent().isEnabled();
     }
@@ -16793,7 +16805,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public boolean autonomyHasErrors()
     {
-        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+        AutonomySession session = getAutonomySession();
 
         return session != null && session.hasErrors();
     }
@@ -16808,7 +16820,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The guard's own first reason; the rule below knows only the setup and would say "wait for the trains".
         if (isRemoteLayout()) return I18n.t("autosetup.ui.menuNoSetupPossible");
 
-        org.traincontrol.automationui.AutonomySession asked = getAutonomySession();
+        AutonomySession asked = getAutonomySession();
 
         return whyAutonomyWillNotStart(autonomyErrorCount(),
             asked == null ? 0 : asked.blockingProblemCount(), autonomyHasErrors());
@@ -16842,7 +16854,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public String[] whyStartAndAHandSendAreRefused()
     {
-        org.traincontrol.automationui.AutonomySession asked = getAutonomySession();
+        AutonomySession asked = getAutonomySession();
 
         int errors = asked == null ? 0 : asked.errorCount();
         int blocking = asked == null ? 0 : asked.blockingProblemCount();
@@ -16860,7 +16872,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public int autonomyErrorCount()
     {
-        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+        AutonomySession session = getAutonomySession();
 
         return session == null ? 0 : session.errorCount();
     }
@@ -16980,7 +16992,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (!isLocalLayout()) return I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles");
 
-        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+        AutonomySession session = getAutonomySession();
 
         if (session == null)
         {
@@ -16991,7 +17003,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return session.homesToPlace().isEmpty() ? I18n.t("autosetup.ui.infoNoHomesToPlace") : null;
     }
 
-    private javax.swing.JPopupMenu returnHomePopup;
+    private JPopupMenu returnHomePopup;
 
     /** Right-click on Return Home opens its menu even when grayed, so the click can say why (FR-129). */
     private void installReturnHomeMenu()
@@ -17007,7 +17019,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }));
     }
 
-    javax.swing.JPopupMenu buildReturnHomeMenu()
+    JPopupMenu buildReturnHomeMenu()
     {
         return this.returnHomeController.buildReturnHomeMenu();
     }
@@ -17042,7 +17054,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** For tests: the popup the last right-click on Return Home opened, or null when none was opened. */
-    public javax.swing.JPopupMenu returnHomePopupForTest()
+    public JPopupMenu returnHomePopupForTest()
     {
         return this.returnHomePopup;
     }
@@ -17056,12 +17068,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     volatile Layout returnHomeTriageSubject = null;
 
     /** Whether the answer is out of date - set by an ask, cleared by the pass that answers it. */
-    final java.util.concurrent.atomic.AtomicBoolean returnHomeTriageDirty
-        = new java.util.concurrent.atomic.AtomicBoolean(false);
+    final AtomicBoolean returnHomeTriageDirty = new AtomicBoolean(false);
 
     /** Whether a worker is already on the job, so a burst of asks makes one pass rather than many. */
-    final java.util.concurrent.atomic.AtomicBoolean returnHomeTriageInFlight
-        = new java.util.concurrent.atomic.AtomicBoolean(false);
+    final AtomicBoolean returnHomeTriageInFlight = new AtomicBoolean(false);
 
     /** Announced on whenever the job is given up, for `awaitReturnHomeTriage`. */
     final Object returnHomeTriageSettled = new Object();
@@ -17121,7 +17131,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * One already turning is kept, and the timer stops with this window.  `alsoRepaint` is any other surface showing the
      * same mark, or null.
      */
-    private javax.swing.Timer turningMark(javax.swing.JButton button, javax.swing.Timer timer, boolean on,
+    private javax.swing.Timer turningMark(JButton button, javax.swing.Timer timer, boolean on,
         Runnable alsoRepaint)
     {
         if (!on)
@@ -17168,7 +17178,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** A three-quarter circle that turns a step each frame (FR-077). */
-    static final class TurningArc implements javax.swing.Icon
+    static final class TurningArc implements Icon
     {
         private final int size;
         private int angle;
@@ -17184,9 +17194,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         @Override
-        public void paintIcon(Component c, java.awt.Graphics g, int x, int y)
+        public void paintIcon(Component c, Graphics g, int x, int y)
         {
-            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+            Graphics2D g2 = (Graphics2D) g.create();
 
             try
             {
@@ -17196,14 +17206,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 float stroke = Math.max(2f, size / 6f);
 
-                g2.setStroke(new java.awt.BasicStroke(stroke,
-                    java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
-                g2.setColor(new java.awt.Color(90, 90, 90));
+                g2.setStroke(new BasicStroke(stroke, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2.setColor(new Color(90, 90, 90));
 
                 double inset = stroke / 2.0 + 0.5;
 
-                g2.draw(new java.awt.geom.Arc2D.Double(x + inset, y + inset, size - 2 * inset, size - 2 * inset,
-                    angle, 270, java.awt.geom.Arc2D.OPEN));
+                g2.draw(new Arc2D.Double(x + inset, y + inset, size - 2 * inset, size - 2 * inset,
+                    angle, 270, Arc2D.OPEN));
             }
             finally
             {
@@ -17261,7 +17270,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Asks a yes/no question on the event thread and waits, for worker threads that cannot go on until it is answered.
      * NO_OPTION when the dialog could not be shown: refusing is the safe reading.
      */
-    private int confirmOnEventThread(String message, java.awt.Window asked)
+    private int confirmOnEventThread(String message, Window asked)
     {
         final int[] answer = new int[]{JOptionPane.NO_OPTION};
 
@@ -17278,13 +17287,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 YES_NO_OPTS[0]
             );
 
-            if (javax.swing.SwingUtilities.isEventDispatchThread())
+            if (SwingUtilities.isEventDispatchThread())
             {
                 ask.run();
             }
             else
             {
-                javax.swing.SwingUtilities.invokeAndWait(ask);
+                SwingUtilities.invokeAndWait(ask);
             }
         }
         catch (InterruptedException e)
@@ -17294,7 +17303,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             if (this.model != null) this.model.log(e);
         }
-        catch (java.lang.reflect.InvocationTargetException e)
+        catch (InvocationTargetException e)
         {
             if (this.model != null) this.model.log(e);
         }
@@ -17306,15 +17315,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The names of every locomotive with a speed above zero.  Not `isAutonomyBusy()`: a train driven by hand is moving
      * while autonomy is not busy.
      */
-    public java.util.List<String> locomotivesMoving()
+    public List<String> locomotivesMoving()
     {
-        java.util.List<String> moving = new java.util.ArrayList<>();
+        List<String> moving = new ArrayList<>();
 
         if (this.model == null) return moving;
 
         for (String name : this.model.getLocList())
         {
-            org.traincontrol.base.Locomotive loc = this.model.getLocByName(name);
+            Locomotive loc = this.model.getLocByName(name);
 
             if (loc != null && loc.getSpeed() > 0) moving.add(name);
         }
@@ -17380,7 +17389,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             final String payload = generated;
             final Exception threw = failed;
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 if (threw != null)
                 {
@@ -17451,7 +17460,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         try
         {
-            read = new String(Files.readAllBytes(Paths.get(chosen.getPath())), java.nio.charset.StandardCharsets.UTF_8);
+            read = new String(Files.readAllBytes(Paths.get(chosen.getPath())), StandardCharsets.UTF_8);
         }
         catch (Exception unreadable)
         {
@@ -17460,8 +17469,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         final String json = read;
 
-        final java.util.List<String> savedArmed = json == null
-            ? java.util.Collections.<String>emptyList() : this.model.routesSavedArmed(json);
+        final List<String> savedArmed = json == null
+            ? Collections.<String>emptyList() : this.model.routesSavedArmed(json);
 
         // No is the default: an import that starts nothing cannot surprise anybody.  Routes by name (MT-496), in a
         // Details list under the question.
@@ -17524,14 +17533,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // The routes arrive off and the door says so, or, asked, the ones saved armed come back armed.  A route
                 // with an emergency stop among other commands is split into a stop-only route, named too.
-                java.util.List<String> split = new java.util.ArrayList<>();
+                List<String> split = new ArrayList<>();
 
                 for (String[] pair : this.model.getRoutesSplitByLastImport()) split.add(pair[0]);
 
                 String notice = rearmed[0] > 0
-                    ? I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_REARMED, added[0],
+                    ? I18n.f(MarklinControlStation.IMPORTED_ROUTES_REARMED, added[0],
                         rearmed[0])
-                    : I18n.f(org.traincontrol.marklin.MarklinControlStation.IMPORTED_ROUTES_NOTICE, added[0],
+                    : I18n.f(MarklinControlStation.IMPORTED_ROUTES_NOTICE, added[0],
                         I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution"));
 
                 JOptionPane.showMessageDialog(this, split.isEmpty() ? notice
@@ -17590,13 +17599,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Answers the update question in place of the user, in a test: given the buttons and the default, returns the index
      * pressed.
      */
-    public static volatile java.util.function.BiFunction<Object[], Object, Integer> updateQuestionForTests;
+    public static volatile BiFunction<Object[], Object, Integer> updateQuestionForTests;
 
     /**
      * Sets `updateQuestionForTests`; the hook returns the index pressed, -1 for the window closed, null for the real
      * question.
      */
-    public static void updateQuestionForTests(java.util.function.BiFunction<Object[], Object, Integer> hook)
+    public static void updateQuestionForTests(BiFunction<Object[], Object, Integer> hook)
     {
         updateQuestionForTests = hook;
     }
@@ -17787,7 +17796,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_rememberLocationMenuItemActionPerformed
 
     /** Preferences > Remember Window Locations, which the menu tips setting sits under. */
-    javax.swing.JMenuItem rememberLocationMenuItem()
+    JMenuItem rememberLocationMenuItem()
     {
         return this.rememberLocationMenuItem;
     }
@@ -17809,8 +17818,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         boolean pressable = isOverTheRoutePlayButton(evt)
             && under != null && (routeListEditsRoutes() || !routesExecuting.contains(under.getName()));
 
-        RouteList.setCursor(java.awt.Cursor.getPredefinedCursor(
-            pressable ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
+        RouteList.setCursor(Cursor.getPredefinedCursor(pressable ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
 
         int row = RouteList.rowAtPoint(evt.getPoint());
         int column = RouteList.columnAtPoint(evt.getPoint());
@@ -17836,7 +17844,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void RouteListMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_RouteListMouseExited
 
         // The cursor is set per component, not per pixel; leaving over a play button would leave the hand behind.
-        RouteList.setCursor(java.awt.Cursor.getDefaultCursor());
+        RouteList.setCursor(Cursor.getDefaultCursor());
 
         for (int column = 0; column < RouteList.getColumnCount(); column++)
         {
@@ -17909,7 +17917,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The layout editor a page action was started from (the event's source), or null for the Layouts menu.  That editor
      * is not refused as an open one: it steps aside once nothing can refuse the action, and the dialogs hang off it.
      */
-    private static LayoutEditor editorBehind(java.awt.event.ActionEvent evt)
+    private static LayoutEditor editorBehind(ActionEvent evt)
     {
         Object source = evt == null ? null : evt.getSource();
 
@@ -17917,9 +17925,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** A menu item's event with the layout editor as its source, as `editorBehind` reads it. */
-    private static java.awt.event.ActionEvent pressedIn(LayoutEditor editor)
+    private static ActionEvent pressedIn(LayoutEditor editor)
     {
-        return new java.awt.event.ActionEvent(editor, java.awt.event.ActionEvent.ACTION_PERFORMED, null);
+        return new ActionEvent(editor, ActionEvent.ACTION_PERFORMED, null);
     }
 
     /** Add Blank Page from the layout editor: the Layouts menu's handler, with the editor as the source (FR-109). */
@@ -17966,7 +17974,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** Presses a handler for the editor, which is `pageActionFrom` while it runs, for the calls that take no event. */
     private void pressFromTheEditor(LayoutEditor editor,
-        java.util.function.Consumer<java.awt.event.ActionEvent> handler)
+        Consumer<ActionEvent> handler)
     {
         pageActionFrom = editor;
 
@@ -17984,15 +17992,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private LayoutEditor pageActionFrom;
 
     /** The window whose door is being pressed (`pressFromWindow`), or null: read by a worker a door may start. */
-    private volatile java.awt.Window askedFrom;
+    private volatile Window askedFrom;
 
     /**
      * Runs a door of another window, whose questions and messages hang off that window while the handler runs (OB-324).
      * A handler that goes on to a worker or a posted task reads `dialogParent` first and carries the answer there.
      */
-    public void pressFromWindow(java.awt.Window from, Runnable handler)
+    public void pressFromWindow(Window from, Runnable handler)
     {
-        final java.awt.Window before = askedFrom;
+        final Window before = askedFrom;
 
         askedFrom = from;
 
@@ -18007,45 +18015,45 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Every item of this menu, in its submenus too, as a press from the window it was opened in (`pressFromWindow`). */
-    public void itemsPressFromWindow(java.awt.Component menu, java.awt.Window from)
+    public void itemsPressFromWindow(Component menu, Window from)
     {
         if (from == null || from == this) return;
 
-        final java.awt.Component[] parts = menu instanceof javax.swing.JMenu
-            ? ((javax.swing.JMenu) menu).getMenuComponents() : ((java.awt.Container) menu).getComponents();
+        final Component[] parts = menu instanceof JMenu
+            ? ((JMenu) menu).getMenuComponents() : ((Container) menu).getComponents();
 
-        for (java.awt.Component part : parts)
+        for (Component part : parts)
         {
-            if (part instanceof javax.swing.JMenu)
+            if (part instanceof JMenu)
             {
                 itemsPressFromWindow(part, from);
             }
-            else if (part instanceof javax.swing.JMenuItem)
+            else if (part instanceof JMenuItem)
             {
-                final javax.swing.JMenuItem item = (javax.swing.JMenuItem) part;
-                final java.awt.event.ActionListener[] heard = item.getActionListeners();
+                final JMenuItem item = (JMenuItem) part;
+                final ActionListener[] heard = item.getActionListeners();
 
-                for (java.awt.event.ActionListener each : heard) item.removeActionListener(each);
+                for (ActionListener each : heard) item.removeActionListener(each);
 
                 item.addActionListener(event -> pressFromWindow(from, () ->
                 {
-                    for (java.awt.event.ActionListener each : heard) each.actionPerformed(event);
+                    for (ActionListener each : heard) each.actionPerformed(event);
                 }));
             }
         }
     }
 
     /** What a question or message hangs off: the window whose door is being pressed, else this one. */
-    public java.awt.Window dialogParent()
+    public Window dialogParent()
     {
         return stillShowing(askedFrom);
     }
 
     /** This window, where the one a door was pressed from has closed or gone to the taskbar, hiding what it owns. */
-    public java.awt.Window stillShowing(java.awt.Window asked)
+    public Window stillShowing(Window asked)
     {
         final boolean showing = asked != null && asked.isShowing()
-            && (!(asked instanceof java.awt.Frame) || (((java.awt.Frame) asked).getExtendedState() & java.awt.Frame.ICONIFIED) == 0);
+            && (!(asked instanceof Frame) || (((Frame) asked).getExtendedState() & Frame.ICONIFIED) == 0);
 
         return showing ? asked : this;
     }
@@ -18056,7 +18064,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Check if the new name already exists in the layout list - or another page's file is its file
         while (this.model.getLayoutList().contains(newName)
-            || org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(this.model.getLayoutList(), newName, null)
+            || LayoutPageEdit.pageUsingTheFileOf(this.model.getLayoutList(), newName, null)
                 != null)
         {
             newName += " " + I18n.t("layout.ui.copy");
@@ -18100,7 +18108,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (from == null) showLayoutTab();
         
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        SwingUtilities.invokeLater(() -> 
         {
             if (this.model.getLayoutList().size() <= 1)
             {
@@ -18153,8 +18161,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Any other missing page is asked about BEFORE the file goes: everything below is irreversible
             // (FR-018).
             // The page being deleted counts as a deliberate removal, so it is not asked about.
-            java.util.Collection<String> keepAbsent = settleAbsentPages(layoutList, null,
-                java.util.Arrays.asList(going), over);
+            Collection<String> keepAbsent = settleAbsentPages(layoutList, null, Arrays.asList(going), over);
 
             if (keepAbsent == null) return;
 
@@ -18165,14 +18172,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // Only a session already built and a setup already there, as in the rename above:
             // saveWithoutReconciling ends in store.save(), which creates the folder and the file.
-            org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+            AutonomySession session = this.autonomySession;
 
             try
             {
                 if (session == null)
                 {
-                    org.traincontrol.automationui.AutonomyCompanionStore.deletePageOnDisk(
-                        new java.io.File(this.getLocalLayoutPath()), going);
+                    AutonomyCompanionStore.deletePageOnDisk(new File(this.getLocalLayoutPath()), going);
                 }
                 else
                 {
@@ -18193,7 +18199,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     if (session.exists()) session.saveWithoutReconciling();
                 }
             }
-            catch (java.io.IOException e)
+            catch (IOException e)
             {
                 // The page is going either way; only the record of it is at risk
                 this.model.log(e);
@@ -18231,7 +18237,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Offered as New Page 1, 2 and on, the first not taken; a taken name typed instead is refused in the action.
         String name = promptUserForLayout(from == null ? this : from,
-            org.traincontrol.automationui.LayoutPageEdit.unusedNewPageName(getModel().getLayoutList()));
+            LayoutPageEdit.unusedNewPageName(getModel().getLayoutList()));
 
         if (name != null)
         {
@@ -18282,7 +18288,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             this.ensureShowLayoutPreference();
             
             // Repaint diagrams
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 this.repaintLayout(false, false);
                 this.updatePopups(true);
@@ -18297,7 +18303,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void checkForRenameMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkForRenameMenuItemActionPerformed
         
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        SwingUtilities.invokeLater(() -> 
         {
             if (!this.model.getNetworkCommState())
             {
@@ -18353,7 +18359,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             // The fourth door into `renameLoc`, and the one with no check (OB-074): a name the Central
                             // Station proposes, such as "SBB 460 (2)", is rewritten by the condition parser into a
                             // broken expression, and nobody typed it who could be told why.
-                            if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
+                            if (!RouteCommand.isNameUsable(newName))
                             {
                                 JOptionPane.showMessageDialog(this,
                                     I18n.t("loc.ui.errorLocomotiveNameUnusable"));
@@ -18516,7 +18522,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void timetableCaptureActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timetableCaptureActionPerformed
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
             {
                 if (!refuseWhileARunHoldsTheSetup(this))
                 {
@@ -18536,7 +18542,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         this.executeTimetable.setEnabled(false);
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
             {
                 if (this.isAutonomyBusy())
                 {
@@ -18654,7 +18660,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 new Thread(() ->
                     {
-                        javax.swing.SwingUtilities.invokeLater(() ->
+                        SwingUtilities.invokeLater(() ->
                             {
                                 this.startAutonomy.setEnabled(false);
 
@@ -18675,13 +18681,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                 // With its reason, where it stopped at an entry it cannot run
                                 final String because = running.whyTheTimetableStopped();
 
-                                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
+                                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this,
                                     because != null
                                         ? I18n.f("autolayout.ui.errorTimetableStoppedBecause", stoppedAt + 1, because)
                                         : I18n.f("autolayout.ui.errorTimetableStopped", stoppedAt + 1)));
                         }
 
-                        javax.swing.SwingUtilities.invokeLater(() ->
+                        SwingUtilities.invokeLater(() ->
                             {
                                 this.executeTimetable.setEnabled(true);
                                 this.startAutonomy.setEnabled(true);
@@ -18712,7 +18718,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (refusedToSendATrain(true)) return;
 
         // The window that pressed it, for what the workers below have to say
-        final java.awt.Window asked = dialogParent();
+        final Window asked = dialogParent();
 
         // A graceful stop of an earlier run excuses nothing in this one, as in Return Home.
         this.gracefulStopRequested = false;
@@ -18728,8 +18734,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // reentrancy guard.
         this.startAutonomy.setEnabled(false);
 
-        final java.util.concurrent.atomic.AtomicBoolean started =
-        new java.util.concurrent.atomic.AtomicBoolean(false);
+        final AtomicBoolean started = new AtomicBoolean(false);
 
         new Thread(() ->
             {
@@ -18773,7 +18778,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     if (this.model.getAutoLayout().getLocomotivesToRun().isEmpty())
                     {
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                             stillShowing(asked),
                             I18n.t("autolayout.ui.infoPleaseAddLocomotivesToGraph")
                         ));
@@ -18789,14 +18794,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                         try
                         {
-                            javax.swing.SwingUtilities.invokeAndWait(() ->
+                            SwingUtilities.invokeAndWait(() ->
                             {
                                 editorCame[0] = refusedForAnEditorOnItsWay(asked);
 
                                 if (!editorCame[0]) keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
                             });
                         }
-                        catch (InterruptedException | java.lang.reflect.InvocationTargetException gate)
+                        catch (InterruptedException | InvocationTargetException gate)
                         {
                             this.model.log(gate);
 
@@ -18811,7 +18816,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                             // On the EDT, and posted BEFORE the run's thread starts, so its word that nothing started
                             // lands after them.
-                            javax.swing.SwingUtilities.invokeLater(() ->
+                            SwingUtilities.invokeLater(() ->
                                 {
                                     this.startAutonomy.setEnabled(false);
                                     this.gracefulStop.setEnabled(true);
@@ -18834,7 +18839,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     // coasting, and its own worker gives Start back.
                                     if (!starting.isRunning())
                                     {
-                                        javax.swing.SwingUtilities.invokeLater(() ->
+                                        SwingUtilities.invokeLater(() ->
                                         {
                                             this.startAutonomy.setEnabled(true);
                                             this.gracefulStop.setEnabled(false);
@@ -18847,7 +18852,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                         // up on a train, which says so itself.
                                         if (starting.isValid())
                                         {
-                                            javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                                            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                                                 stillShowing(asked), I18n.t("autolayout.ui.errorNothingStarted")));
                                         }
                                     }
@@ -18861,14 +18866,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             }
                             else if (this.model.getAutoLayout().isRunning())
                             {
-                                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                                     stillShowing(asked),
                                     I18n.t("autolayout.ui.infoWaitForActiveLocomotivesToStop")
                                 ));
                             }
                             else if (!this.model.getAutoLayout().isValid())
                             {
-                                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                                     stillShowing(asked),
                                     I18n.t("autolayout.ui.errorLayoutStateInvalidRevalidateJson")
                                 ));
@@ -18876,7 +18881,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             else
                             {
                                 // Busy but not running (the staging planning window): say why the press was refused.
-                                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
                                     stillShowing(asked),
                                     describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
                                 ));
@@ -18888,8 +18893,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             // back.
                             if (!started.get())
                             {
-                                javax.swing.SwingUtilities.invokeLater(
-                                    () -> this.startAutonomy.setEnabled(true));
+                                SwingUtilities.invokeLater(() -> this.startAutonomy.setEnabled(true));
                             }
                         }
                     }).start();
@@ -18910,7 +18914,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (stopping == null)
                 {
-                    javax.swing.SwingUtilities.invokeLater(() ->
+                    SwingUtilities.invokeLater(() ->
                     {
                         this.startAutonomy.setEnabled(true);
 
@@ -18941,7 +18945,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     this.startAutonomy.setEnabled(true);
 
@@ -18996,32 +19000,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The timetable's repaint and entry-menu actions. */
     private final TimetableTab timetableTab = new TimetableTab(this);
 
-    javax.swing.JTable timetable()
+    JTable timetable()
     {
         return this.timetable;
     }
 
-    javax.swing.JToggleButton timetableCapture()
+    JToggleButton timetableCapture()
     {
         return this.timetableCapture;
     }
 
-    javax.swing.JButton returnHomeButton()
+    JButton returnHomeButton()
     {
         return this.returnHomeButton;
     }
 
-    javax.swing.JButton executeTimetableButton()
+    JButton executeTimetableButton()
     {
         return this.executeTimetable;
     }
 
-    javax.swing.JButton startAutonomyButton()
+    JButton startAutonomyButton()
     {
         return this.startAutonomy;
     }
 
-    javax.swing.JButton gracefulStopButton()
+    JButton gracefulStopButton()
     {
         return this.gracefulStop;
     }
@@ -19042,11 +19046,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         BufferedImage out = new BufferedImage(icon.getWidth(), icon.getHeight(),
             BufferedImage.TYPE_INT_ARGB);
 
-        java.awt.Graphics2D g = out.createGraphics();
+        Graphics2D g = out.createGraphics();
 
         ImageUtil.antialias(g);
-        g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
-            java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
         g.drawImage(icon, 0, 0, null);
 
@@ -19080,7 +19083,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** The hover wrench over locIcon's upper left (FR-104, OB-443); null until the window is built. */
-    private javax.swing.JLabel iconWrench;
+    private JLabel iconWrench;
 
     /**
      * Puts the hover wrench on the big locomotive picture (FR-104); it opens the locomotive's Locomotive Settings on
@@ -19094,7 +19097,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         iconWrench.setToolTipText(I18n.t("loc.ui.tooltip.openSettingsFromPicture"));
         iconWrench.setVisible(false);
         iconWrench.setOpaque(false);
-        iconWrench.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        iconWrench.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         iconWrench.addMouseListener(Listen.released(evt ->
         {
@@ -19106,24 +19109,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }));
 
         // Hard in the upper left corner with no gap, as any inset spends picture rather than margin.
-        JPanel corner = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+        JPanel corner = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 
         corner.setOpaque(false);
         corner.add(iconWrench);
 
-        locIcon.setLayout(new java.awt.BorderLayout());
-        locIcon.add(corner, java.awt.BorderLayout.NORTH);
+        locIcon.setLayout(new BorderLayout());
+        locIcon.add(corner, BorderLayout.NORTH);
 
-        java.awt.event.MouseAdapter hover = new java.awt.event.MouseAdapter()
+        MouseAdapter hover = new MouseAdapter()
         {
             @Override
-            public void mouseEntered(java.awt.event.MouseEvent evt)
+            public void mouseEntered(MouseEvent evt)
             {
                 showIconWrench();
             }
 
             @Override
-            public void mouseExited(java.awt.event.MouseEvent evt)
+            public void mouseExited(MouseEvent evt)
             {
                 // Still inside, counting children: entering the wrench itself is an exit from the label.
                 if (locIcon.getMousePosition(true) == null) iconWrench.setVisible(false);
@@ -19135,7 +19138,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // The plain pointer over the picture (FR-104): the wrench is what can be pressed, and keeps the hand. Set here
         // because the form's block is regenerated.
-        locIcon.setCursor(java.awt.Cursor.getDefaultCursor());
+        locIcon.setCursor(Cursor.getDefaultCursor());
         locIcon.setToolTipText(null);
 
         fitTheIconTools();
@@ -19153,12 +19156,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The route list: running, editing, duplicating, bulk arming, finding and refreshing routes. */
     private final RouteListPanel routeListPanel = new RouteListPanel(this);
 
-    javax.swing.JTable routeList()
+    JTable routeList()
     {
         return this.RouteList;
     }
 
-    javax.swing.JPanel routePanel()
+    JPanel routePanel()
     {
         return this.RoutePanel;
     }
@@ -19169,88 +19172,88 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         windowAlwaysOnTopMenuItemActionPerformed(null);
     }
 
-    javax.swing.JComboBox layoutList()
+    JComboBox layoutList()
     {
         return this.LayoutList;
     }
 
-    javax.swing.JMenuItem initializeLocalLayoutMenuItem()
+    JMenuItem initializeLocalLayoutMenuItem()
     {
         return this.initializeLocalLayoutMenuItem;
     }
 
-    javax.swing.JMenu layoutMenu()
+    JMenu layoutMenu()
     {
         return this.layoutMenu;
     }
 
-    javax.swing.JMenu interfaceMenu()
+    JMenu interfaceMenu()
     {
         return this.interfaceMenu;
     }
 
-    javax.swing.JMenu autonomyToolbarMenu()
+    JMenu autonomyToolbarMenu()
     {
         return this.autonomyToolbarMenu;
     }
 
-    javax.swing.JMenuItem chooseLocalDataFolderMenuItem()
+    JMenuItem chooseLocalDataFolderMenuItem()
     {
         return this.chooseLocalDataFolderMenuItem;
     }
 
-    javax.swing.JMenuItem switchCSLayoutMenuItem()
+    JMenuItem switchCSLayoutMenuItem()
     {
         return this.switchCSLayoutMenuItem;
     }
 
-    javax.swing.JMenuItem downloadCSLayoutMenuItem()
+    JMenuItem downloadCSLayoutMenuItem()
     {
         return this.downloadCSLayoutMenuItem;
     }
 
-    javax.swing.JMenu modifyLocalLayoutMenu()
+    JMenu modifyLocalLayoutMenu()
     {
         return this.modifyLocalLayoutMenu;
     }
 
-    javax.swing.JButton editLayoutButton()
+    JButton editLayoutButton()
     {
         return this.editLayoutButton;
     }
 
-    javax.swing.JComboBox sizeList()
+    JComboBox sizeList()
     {
         return this.SizeList;
     }
 
-    javax.swing.JButton editAutonomyFromSettings()
+    JButton editAutonomyFromSettings()
     {
         return this.editAutonomyFromSettings;
     }
 
-    javax.swing.JMenuItem openCS3AppMenuItem()
+    JMenuItem openCS3AppMenuItem()
     {
         return this.openCS3AppMenuItem;
     }
 
-    javax.swing.JMenuItem popUpAllMenuItem()
+    JMenuItem popUpAllMenuItem()
     {
         return this.popUpAllMenuItem;
     }
 
-    javax.swing.JMenuItem showCurrentLayoutFolderMenuItem()
+    JMenuItem showCurrentLayoutFolderMenuItem()
     {
         return this.showCurrentLayoutFolderMenuItem;
     }
 
-    javax.swing.JPanel innerLayoutPanel()
+    JPanel innerLayoutPanel()
     {
         return this.InnerLayoutPanel;
     }
 
     /** The autonomy session as the field holds it now; null until one is built. */
-    org.traincontrol.automationui.AutonomySession autonomySession()
+    AutonomySession autonomySession()
     {
         return this.autonomySession;
     }
@@ -19259,8 +19262,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * `settleAbsentPages` for this package's collaborators; returns the names to keep in the index, or null when the
      * index must not be written.
      */
-    java.util.Collection<String> settleTheAbsentPages(java.util.List<String> layoutList,
-        java.util.Map<String, String> renamedFromTo, java.util.Collection<String> deliberatelyRemoved, Component over)
+    Collection<String> settleTheAbsentPages(List<String> layoutList,
+        Map<String, String> renamedFromTo, Collection<String> deliberatelyRemoved, Component over)
     {
         return settleAbsentPages(layoutList, renamedFromTo, deliberatelyRemoved, over);
     }
@@ -19389,7 +19392,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Removes the local icon override, so the Central Station's own picture is shown again. */
     public void clearLocIcon(Locomotive l)
     {
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             // A crop of ours is referenced only by this locomotive, so clearing the reference makes it unreachable
             // (FR-022); only files inside our own folder qualify, never the user's original.
@@ -19457,7 +19460,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Crops the icon a locomotive already has without asking for the file again (FR-032), from the original when the
      * crop remembers one; then as `setLocIcon` does for a fresh file.
      */
-    public void recropLocIcon(Locomotive l, java.awt.Component parent)
+    public void recropLocIcon(Locomotive l, Component parent)
     {
         this.locIconActions.recropLocIcon(l, parent);
     }
@@ -19525,72 +19528,72 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The Auto tab's settings; the accessors below hand its controls to it. */
     final AutonomySettingsTab autonomySettingsTab = new AutonomySettingsTab(this);
 
-    javax.swing.JComboBox<String> algorithmType()
+    JComboBox<String> algorithmType()
     {
         return this.algorithmType;
     }
 
-    javax.swing.JCheckBox atomicRoutes()
+    JCheckBox atomicRoutes()
     {
         return this.atomicRoutes;
     }
 
-    javax.swing.JList<Route> autoRouteList()
+    JList<Route> autoRouteList()
     {
         return this.autoRouteList;
     }
 
-    javax.swing.JSlider defaultLocSpeed()
+    JSlider defaultLocSpeed()
     {
         return this.defaultLocSpeed;
     }
 
-    javax.swing.JSlider maxActiveTrains()
+    JSlider maxActiveTrains()
     {
         return this.maxActiveTrains;
     }
 
-    javax.swing.JSlider maxDelay()
+    JSlider maxDelay()
     {
         return this.maxDelay;
     }
 
-    javax.swing.JSlider maxLocInactiveSeconds()
+    JSlider maxLocInactiveSeconds()
     {
         return this.maxLocInactiveSeconds;
     }
 
-    javax.swing.JSlider maximumLatency()
+    JSlider maximumLatency()
     {
         return this.maximumLatency;
     }
 
-    javax.swing.JSlider minDelay()
+    JSlider minDelay()
     {
         return this.minDelay;
     }
 
-    javax.swing.JSlider preArrivalSpeedReduction()
+    JSlider preArrivalSpeedReduction()
     {
         return this.preArrivalSpeedReduction;
     }
 
-    javax.swing.JCheckBox simulate()
+    JCheckBox simulate()
     {
         return this.simulate;
     }
 
-    javax.swing.JCheckBox toggleSpecifiedRoutes()
+    JCheckBox toggleSpecifiedRoutes()
     {
         return this.toggleSpecifiedRoutes;
     }
 
-    javax.swing.JCheckBox turnOffFunctionsOnArrival()
+    JCheckBox turnOffFunctionsOnArrival()
     {
         return this.turnOffFunctionsOnArrival;
     }
 
-    javax.swing.JCheckBox turnOnFunctionsOnDeparture()
+    JCheckBox turnOnFunctionsOnDeparture()
     {
         return this.turnOnFunctionsOnDeparture;
     }
@@ -19645,11 +19648,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * (OB-102).  Reads the session FIELD, never `getAutonomySession()`, a lazy builder that parses pages, writes to
      * disk and can raise a dialog.
      */
-    String stationLabel(org.traincontrol.automation.Point point)
+    String stationLabel(Point point)
     {
         if (point == null) return "";
 
-        org.traincontrol.automationui.AutonomySession session = this.autonomySession;
+        AutonomySession session = this.autonomySession;
 
         if (session == null) return point.getName();
 
@@ -19699,7 +19702,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The first timetable entry, from where the run would start, whose train does not stand at its start, or null if
      * none.  What Start Timetable refuses a run over.
      */
-    public static TimetablePath aTrainNotAtItsStart(org.traincontrol.automation.Layout layout)
+    public static TimetablePath aTrainNotAtItsStart(Layout layout)
     {
         List<Locomotive> seen = new ArrayList<>();
 
@@ -19811,7 +19814,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized void repaintAutoLocListLite()
     { 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             // Arrivals enter here, on a locomotive thread, hence the invokeLater.  Full does not funnel through here,
             // so it carries the same line.
@@ -19822,7 +19825,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             refreshWhatWaitsForTheTrains();
 
             // The panel list is read here, on the EDT, because the component list belongs to Swing.
-            final java.util.List<AutoLocomotiveStatus> panels = new java.util.ArrayList<>();
+            final List<AutoLocomotiveStatus> panels = new ArrayList<>();
 
             for (Object o : this.autoLocPanel.getComponents())
             {
@@ -19834,8 +19837,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // thread holds.
             AutonomyRenderer.submit(() ->
             {
-                final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found =
-                    new java.util.LinkedHashMap<>();
+                final Map<AutoLocomotiveStatus, List<List<Edge>>> found = new LinkedHashMap<>();
 
                 for (AutoLocomotiveStatus panel : panels)
                 {
@@ -19852,14 +19854,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     for (AutoLocomotiveStatus panel : panels)
                     {
                         // null is "did not search", not "searched and found nothing": findPaths bails while the layout
                         // runs, and the run can have ended by now, so the panel would print "no available paths" with
                         // nothing to correct it.
-                        java.util.List<java.util.List<Edge>> answer = found.get(panel);
+                        List<List<Edge>> answer = found.get(panel);
 
                         panel.updateState(null, answer, answer != null);
                     }
@@ -19876,7 +19878,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized void repaintAutoLocListFull()
     { 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             // The other terminal path.  Every placement and removal call site reaches the button
             // through here, not through Lite.
@@ -19901,7 +19903,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Number of columns in the grid
             int gridCols = 3;
 
-            autoLocPanel.setLayout(new java.awt.GridLayout(
+            autoLocPanel.setLayout(new GridLayout(
                 (int) Math.ceil((double) shown.getLocomotivesToRun().size() / gridCols), 
                 gridCols, // cols
                 5, // padding
@@ -19912,7 +19914,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // Built empty and filled in afterwards: AutoLocomotiveStatus's constructor would search paths (synchronized
             // on the Layout, the whole graph, once per locomotive) on the EDT.
-            final java.util.List<AutoLocomotiveStatus> panels = new java.util.LinkedList<>();
+            final List<AutoLocomotiveStatus> panels = new LinkedList<>();
 
             for (Locomotive loc : locs)
             {
@@ -19925,8 +19927,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             AutonomyRenderer.submit(() ->
             {
-                final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found
-                    = new java.util.LinkedHashMap<>();
+                final Map<AutoLocomotiveStatus, List<List<Edge>>> found = new LinkedHashMap<>();
 
                 for (AutoLocomotiveStatus panel : panels)
                 {
@@ -19945,10 +19946,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                 }
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
-                    for (java.util.Map.Entry<AutoLocomotiveStatus,
-                        java.util.List<java.util.List<Edge>>> entry : found.entrySet())
+                    for (Map.Entry<AutoLocomotiveStatus,
+                        List<List<Edge>>> entry : found.entrySet())
                     {
                         entry.getKey().updateState(entry.getKey().getLocomotive(),
                             entry.getValue(), entry.getValue() != null);
@@ -19969,9 +19970,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The order of the Auto tab's cards (FR-126): trains going on active stations, then paused, then on stations out of
      * use, then any standing nowhere; each group by name, capitals ignored, then exact name.  Returns a new list.
      */
-    static List<Locomotive> autoTabOrder(Layout shown, java.util.Collection<Locomotive> trains)
+    static List<Locomotive> autoTabOrder(Layout shown, Collection<Locomotive> trains)
     {
-        final java.util.Map<Locomotive, Integer> group = new java.util.IdentityHashMap<>();
+        final Map<Locomotive, Integer> group = new IdentityHashMap<>();
 
         for (Locomotive train : trains)
         {
@@ -19980,7 +19981,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             group.put(train, at == null ? 3 : !at.isActive() ? 2 : train.isAutonomyPaused() ? 1 : 0);
         }
 
-        List<Locomotive> sorted = new java.util.ArrayList<>(trains);
+        List<Locomotive> sorted = new ArrayList<>(trains);
 
         sorted.sort(java.util.Comparator.<Locomotive>comparingInt(train -> group.get(train))
             .thenComparing(Locomotive::getName, String.CASE_INSENSITIVE_ORDER)
@@ -19996,9 +19997,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (shown == null || this.autoLocPanel == null) return;
 
-        final java.util.Map<Locomotive, AutoLocomotiveStatus> cards = new java.util.IdentityHashMap<>();
+        final Map<Locomotive, AutoLocomotiveStatus> cards = new IdentityHashMap<>();
 
-        final List<Component> standing = java.util.Arrays.asList(this.autoLocPanel.getComponents());
+        final List<Component> standing = Arrays.asList(this.autoLocPanel.getComponents());
 
         for (Component card : standing)
         {
@@ -20041,10 +20042,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** The window a route was started from, inherited by its thread and the routes it fires; null for none. */
-    private final InheritableThreadLocal<java.awt.Window> routeStartedFrom = new InheritableThreadLocal<>();
+    private final InheritableThreadLocal<Window> routeStartedFrom = new InheritableThreadLocal<>();
 
     /** Says which window a route this thread goes on to start was started from (OB-324). */
-    void routesStartHereFrom(java.awt.Window from)
+    void routesStartHereFrom(Window from)
     {
         routeStartedFrom.set(from);
     }
@@ -20055,17 +20056,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The dialog the two human doors ask before a route starts, asked again when the railway changed under it.  The
         // s88 trigger door has nobody to ask, so it sets none of its accessories.  Runs on the route's own thread and
         // blocks only it.
-        if (!(r instanceof org.traincontrol.marklin.MarklinRoute)) return false;
+        if (!(r instanceof MarklinRoute)) return false;
 
         // known != null, so NOTHING_TO_CONFIRM cannot come back here.
-        return askAboutRouteConflict((org.traincontrol.marklin.MarklinRoute) r, stillShowing(routeStartedFrom.get()),
+        return askAboutRouteConflict((MarklinRoute) r, stillShowing(routeStartedFrom.get()),
             new String[] {accessory, reason}) == RouteConflict.OVERRIDE;
     }
 
     @Override
     public void emergencyStopTriggered(Route r)
     {
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             JOptionPane.showMessageDialog(
                 this,
@@ -20111,8 +20112,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         try
         {
-            if (javax.swing.SwingUtilities.isEventDispatchThread()) ask.run();
-            else javax.swing.SwingUtilities.invokeAndWait(ask);
+            if (SwingUtilities.isEventDispatchThread()) ask.run();
+            else SwingUtilities.invokeAndWait(ask);
         }
         catch (InterruptedException interrupted)
         {
@@ -20120,7 +20121,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             return false;
         }
-        catch (java.lang.reflect.InvocationTargetException couldNotAsk)
+        catch (InvocationTargetException couldNotAsk)
         {
             // A question nobody could be asked is not a Resync: asking again would spin, so the start-up leaves
             couldNotAsk.printStackTrace();
@@ -20134,14 +20135,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     @Override
     public void showSyncPartial()
     {
-        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("ui.startupSyncPartial"),
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.t("ui.startupSyncPartial"),
             I18n.t("ui.startupSyncPartialTitle"), JOptionPane.WARNING_MESSAGE));
     }
 
     @Override
     public void showPowerCut(int channel)
     {
-        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.f("ui.powerCut", channel),
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.f("ui.powerCut", channel),
             I18n.t("ui.powerCutTitle"), JOptionPane.WARNING_MESSAGE));
     }
 
@@ -20149,7 +20150,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void showAutonomyAlert(String message)
     {
         // Non-blocking so the autonomy thread that raised the alert is not held up
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             JOptionPane.showMessageDialog(
                 this,
@@ -20165,8 +20166,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Routes whose play button is a spinner (FR-043), by name: the table is rebuilt constantly, so a cell's object is
      * not the one the run started against.  Written from route threads, read by the renderer on the event thread.
      */
-    final java.util.Set<String> routesExecuting =
-        java.util.concurrent.ConcurrentHashMap.newKeySet();
+    final Set<String> routesExecuting = ConcurrentHashMap.newKeySet();
 
     private final RouteRunningMarks routeMarks = new RouteRunningMarks(() -> this.RouteList,
         name -> this.model == null ? null : this.model.getRoute(name));
@@ -20178,8 +20178,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** When each running route was marked, so the debug line can say how long it lasted. */
-    private final java.util.Map<String, Long> startedRunningAt =
-        new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, Long> startedRunningAt = new ConcurrentHashMap<>();
 
     /**
      * The play button's glyph size, kept at the text's height; the click target is a strip the full height of the row.
@@ -20201,7 +20200,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (this.model != null && this.model.isDebug()) this.model.log("Route " + route + " marked as running");
 
         // A rebuild rather than a repaint (MT-217): refreshRouteList replaces the table's model, so every cell redraws.
-        javax.swing.SwingUtilities.invokeLater(() -> refreshRouteList());
+        SwingUtilities.invokeLater(() -> refreshRouteList());
     }
 
     /**
@@ -20222,7 +20221,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (showFor > 0)
         {
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 javax.swing.Timer rest = new javax.swing.Timer((int) showFor,
                     e -> clearRunningRoute(route));
@@ -20255,7 +20254,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 + (began == null ? "" : " after " + (System.currentTimeMillis() - began) + "ms"));
         }
 
-        javax.swing.SwingUtilities.invokeLater(() -> refreshRouteList());
+        SwingUtilities.invokeLater(() -> refreshRouteList());
     }
 
     /**
@@ -20269,7 +20268,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         startedRunningAt.clear();
     }
 
-    private boolean isOverTheRoutePlayButton(java.awt.event.MouseEvent evt)
+    private boolean isOverTheRoutePlayButton(MouseEvent evt)
     {
         return this.routeListPanel.isOverTheRoutePlayButton(evt);
     }
@@ -20278,10 +20277,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Where the play button sits inside a cell; one answer for the renderer that draws it and the click that hits it,
      * so they cannot drift.
      */
-    public static java.awt.Rectangle routePlayButtonBox(java.awt.Rectangle cell)
+    public static Rectangle routePlayButtonBox(Rectangle cell)
     {
-        return new java.awt.Rectangle(cell.x + cell.width - ROUTE_PLAY_STRIP, cell.y,
-            ROUTE_PLAY_STRIP, cell.height);
+        return new Rectangle(cell.x + cell.width - ROUTE_PLAY_STRIP, cell.y, ROUTE_PLAY_STRIP, cell.height);
     }
 
     /**
@@ -20297,9 +20295,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Where the triangle (or, with the power off, the wrench) is drawn inside that strip.  The strip and the glyph
      * differ in size on purpose: one number made the button unhittable.
      */
-    public static java.awt.Rectangle routePlayGlyphBox(java.awt.Rectangle strip)
+    public static Rectangle routePlayGlyphBox(Rectangle strip)
     {
-        return new java.awt.Rectangle(
+        return new Rectangle(
             strip.x + (strip.width - ROUTE_PLAY_SIZE) / 2,
             strip.y + (strip.height - ROUTE_PLAY_SIZE) / 2,
             ROUTE_PLAY_SIZE, ROUTE_PLAY_SIZE);
@@ -20320,7 +20318,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Background of a running route's cell: gray, the cell saying "not just now", like the grayed triangle. */
     private static final Color RUNNING_BACKGROUND = new Color(226, 226, 226);
 
-    javax.swing.JMenuItem findRouteMenuItem;
+    JMenuItem findRouteMenuItem;
 
     void findRoute()
     {
@@ -20442,13 +20440,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
          * live component, it is this one renderer stamped once per cell.
          */
         @Override
-        protected void paintComponent(java.awt.Graphics g)
+        protected void paintComponent(Graphics g)
         {
             super.paintComponent(g);
 
             if (paintingRoute == null) return;
 
-            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+            Graphics2D g2 = (Graphics2D) g.create();
 
             try
             {
@@ -20456,9 +20454,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // The renderer is stamped at the cell's origin, so the box is worked out against a rectangle of its own
                 // size, through the same method the click uses.
-                java.awt.Rectangle strip = routePlayButtonBox(new java.awt.Rectangle(0, 0, getWidth(), getHeight()));
+                Rectangle strip = routePlayButtonBox(new Rectangle(0, 0, getWidth(), getHeight()));
 
-                java.awt.Rectangle box = routePlayGlyphBox(strip);
+                Rectangle box = routePlayGlyphBox(strip);
 
                 // Gray while it runs, green when it does not (MT-217): a disabled button is a state that is true or
                 // false, not one to be caught happening, which matters for a route finishing in under a second.
@@ -20467,14 +20465,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (routeListEditsRoutes())
                 {
                     // The same spot, for the same click's other meaning (FR-164)
-                    org.traincontrol.gui.widgets.RowIcons.wrench(box.width, new java.awt.Color(110, 110, 110))
-                        .paintIcon(this, g2, box.x, box.y);
+                    RowIcons.wrench(box.width, new Color(110, 110, 110)).paintIcon(this, g2, box.x, box.y);
                 }
                 else
                 {
-                    g2.setColor(running ? new java.awt.Color(170, 170, 170) : new java.awt.Color(0, 150, 0));
+                    g2.setColor(running ? new Color(170, 170, 170) : new Color(0, 150, 0));
 
-                    java.awt.Polygon play = new java.awt.Polygon();
+                    Polygon play = new Polygon();
 
                     play.addPoint(box.x, box.y);
                     play.addPoint(box.x + box.width, box.y + box.height / 2);
@@ -20628,13 +20625,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (body == null) return;
 
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        if (SwingUtilities.isEventDispatchThread())
         {
             body.run();
         }
         else
         {
-            javax.swing.SwingUtilities.invokeLater(body);
+            SwingUtilities.invokeLater(body);
         }
     }
 
