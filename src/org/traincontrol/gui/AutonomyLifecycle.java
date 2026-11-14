@@ -17,6 +17,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
+import javax.swing.JPopupMenu;
 import org.traincontrol.util.I18n;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -747,18 +748,18 @@ final class AutonomyLifecycle
     {
         if (ui.routesMenu() == null || ui.findRouteMenuItem != null) return;
 
-        javax.swing.JMenuItem newRoute = new javax.swing.JMenuItem(I18n.t("route.ui.menuNewRoute"));
+        JMenuItem newRoute = new JMenuItem(I18n.t("route.ui.menuNewRoute"));
 
         newRoute.addActionListener(e -> ui.newRoute());
 
-        ui.findRouteMenuItem = new javax.swing.JMenuItem(I18n.t("route.ui.menuFindRoute"));
+        ui.findRouteMenuItem = new JMenuItem(I18n.t("route.ui.menuFindRoute"));
 
         ui.findRouteMenuItem.addActionListener(e -> ui.findRoute());
 
         // At the top, above Export and Import, which are about the route list as a file.
         ui.routesMenu().add(newRoute, 0);
         ui.routesMenu().add(ui.findRouteMenuItem, 1);
-        ui.routesMenu().add(new javax.swing.JPopupMenu.Separator(), 2);
+        ui.routesMenu().add(new JPopupMenu.Separator(), 2);
     }
 
     /** A setup refused as written by a newer TrainControl arrives as a message KEY plus versions; translated here. */
@@ -768,7 +769,7 @@ final class AutonomyLifecycle
 
         if (message == null || message.trim().isEmpty()) return failure.getClass().getSimpleName();
 
-        String version = org.traincontrol.automationui.AutonomyCompanionStore.ERROR_VERSION;
+        String version = AutonomyCompanionStore.ERROR_VERSION;
 
         return message.startsWith(version) ? I18n.t(version) + message.substring(version.length()) : message;
     }
