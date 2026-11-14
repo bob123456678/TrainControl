@@ -52,4 +52,5 @@ The release itself: `IS_PRE_RELEASE` matches the kind of release, the GitHub rel
 - **Escape log** (`release/escapes.tsv`): every bug found after the freeze, by Adam, a user or anyone outside these steps, gets a row naming the step that should have caught it and what changed in that step's brief.
 - **Yield record** (`release/yield.tsv`): each review's A and B count per release. A review that finds no A or B two releases running gets lighter, except upgrade path and concurrency, where a miss costs too much.
 - **Rework:** per release, the share of fix lines that rework the release's own code, and the share of bugs Adam found rather than the steps above. Both should fall.
+- **3.1.0 baseline** (measured 2026-11-14 by blaming each fix's changed src lines): 51% of fix lines reworked code written in the release, a median of 3 hours after it was written, so mostly the validator loop on fresh branches. Of the 32 bugs filed during the cycle that could be classified, 18 were regressions in 3.1.0 code; Adam found 9 of those, reviews, validators and builders 8.
 - **After each release**, read the three and change this file.
