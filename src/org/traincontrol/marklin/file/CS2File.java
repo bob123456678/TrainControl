@@ -446,6 +446,18 @@ public final class CS2File
         return new BufferedReader(new java.io.StringReader(decode(last.bytes, url)));
     }
 
+    /** A file that ended short of the length promised; the message is for the log, the sync tells the user plainly. */
+    public static final class CutOffException extends IOException
+    {
+        public final String url;
+
+        CutOffException(String url, String message)
+        {
+            super(message);
+            this.url = url;
+        }
+    }
+
     /** One fetch's body and the length its headers promised (-1 when none). */
     private static final class Body
     {
@@ -470,8 +482,8 @@ public final class CS2File
 
         IOException endedShort(String url)
         {
-            return new IOException(I18n.f("network.errorStationFileEndedShort", url, String.valueOf(this.bytes.length),
-                String.valueOf(this.promised)));
+            return new CutOffException(url, I18n.f("network.errorStationFileEndedShort", url,
+                String.valueOf(this.bytes.length), String.valueOf(this.promised)));
         }
     }
 

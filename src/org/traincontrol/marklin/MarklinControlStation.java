@@ -571,7 +571,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     this.log(e);
 
                     // The folder is tried again at the next sync, by when the type may be known
-                    if (this.stationTypeUnknown != null) throw this.stationTypeUnknown;
+                    requireTheTypeKnown();
                    
                     this.logf("layout.revertToDefaultSource", !debug ? " Enable debug mode for details." : "");
                     TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
@@ -583,7 +583,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {      
                 if (this.layoutDB.getItemNames().isEmpty())
                 {
-                    if (this.stationTypeUnknown != null) throw this.stationTypeUnknown;
+                    requireTheTypeKnown();
 
                     syncLayouts();
                 }  
@@ -791,7 +791,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         if (actuallyRead == 0 && (couldNotBeRead > 0 || namedByTheIndex > 0))
         {
-            throw new Exception(I18n.f("layout.errorNoPageCouldBeRead",
+            throw new PlainFailure(I18n.f("layout.errorNoPageCouldBeRead",
                 Math.max(couldNotBeRead, namedByTheIndex)));
         }
 
@@ -1456,6 +1456,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
     /** What the last sync's type detection failed with; null when the type is known or there is no device file. */
     private volatile Exception stationTypeUnknown = null;
 
+    /** Whether any sync this session read the station's type, so that `isCS3` is not a guess. */
+    private volatile boolean typeLearned = false;
+
+    /** Withholds the station's diagram while its type was never learned, as the type decides the tiles' protocols. */
+    private void requireTheTypeKnown() throws Exception
+    {
+        final Exception unknown = this.stationTypeUnknown;
+
+        if (unknown != null && !this.typeLearned) throw unknown;
+    }
+
     /** What the last sync failed with (OB-338), or null when it did not fail. */
     @Override
     public String getLastSyncError()
@@ -1567,13 +1578,51 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return !simulate && !connected;
     }
 
-    /** A failure in a few words: what kind it was, and what it said. */
+    /** A failure whose message is already fit for the user to read. */
+    private static final class PlainFailure extends IOException
+    {
+        PlainFailure(String message)
+        {
+            super(message);
+        }
+    }
+
+    private static final java.util.regex.Pattern HTTP_REFUSAL = java.util.regex.Pattern.compile(
+        "Server returned HTTP response code: (\\d+) for URL: (\\S+)");
+
+    /** The file a URL or path names, without its folders, query or the system's remark after it. */
+    private static String fileName(String where)
+    {
+        String name = where.replaceAll(" \\(.*$", "").replaceAll("\\?.*$", "");
+
+        return name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
+    }
+
+    /** A failed sync in a plain sentence, by the kind of failure; the log has the exception itself. */
     private static String describe(Exception failure)
     {
-        String said = failure.getMessage();
-        String kind = failure.getClass().getSimpleName();
+        final String said = failure.getMessage() == null ? "" : failure.getMessage().trim();
+        final java.util.regex.Matcher refused = HTTP_REFUSAL.matcher(said);
 
-        return said == null || said.trim().isEmpty() ? kind : kind + ": " + said.trim();
+        if (failure instanceof PlainFailure && !said.isEmpty()) return said;
+
+        if (failure instanceof CS2File.CutOffException)
+            return I18n.f("sync.failedCutOff", fileName(((CS2File.CutOffException) failure).url));
+
+        if (failure instanceof java.io.FileNotFoundException) return I18n.f("sync.failedMissing", fileName(said));
+
+        if (refused.find()) return I18n.f("sync.failedRefused", fileName(refused.group(2)), refused.group(1));
+
+        if (failure instanceof java.net.ConnectException || failure instanceof java.net.NoRouteToHostException
+            || failure instanceof java.net.UnknownHostException
+            || (failure instanceof java.net.SocketTimeoutException && said.toLowerCase().contains("connect")))
+            return I18n.t("sync.failedNoAnswer");
+
+        if (failure instanceof java.net.SocketException || failure instanceof java.io.InterruptedIOException
+            || failure instanceof java.io.EOFException)
+            return I18n.t("sync.failedInterrupted");
+
+        return I18n.t("sync.failedUnreadable");
     }
 
     /**
@@ -1605,7 +1654,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                 if (before > 0)
                 {
-                    throw new IOException("Simulated sync failure for testing (traincontrol.failFirstSyncs), " + (before - 1) + " more to come");
+                    throw new PlainFailure("Simulated sync failure for testing (traincontrol.failFirstSyncs), " + (before - 1) + " more to come");
                 }
             }
 
@@ -1616,6 +1665,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             try
             {
                 this.isCS3 = CS2File.isCS3(CS2File.getDeviceInfoURL(cs2Address()));
+                this.typeLearned = true;
                 this.logf("log.csTypeDetectionResult", (this.isCS3 ? "CS3" : "CS2"));
             }
             catch (Exception e)
@@ -1628,8 +1678,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Import layout
             this.syncLayoutsFromConfiguredSource();
 
-            if (this.stationTypeUnknown != null) throw this.stationTypeUnknown;
-            
+            final Exception unknown = this.stationTypeUnknown;
+
+            if (unknown != null) throw unknown;
+
             // Import routes
             List<MarklinRoute> parsedRoutes;
 

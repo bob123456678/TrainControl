@@ -691,4 +691,30 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
             return null;
         });
     }
+
+    /**
+     * "Switch to the Central Station's layout" clears the diagram and syncs; the device file failing that once, after a
+     * sync learned the type, still builds the pages (as a CS3's: W 15 is MM2), though the sync fails.
+     *
+     * MUTATION: withhold the diagram whenever detection failed, whatever was learned before (drop `typeLearned` from
+     * `MarklinControlStation.requireTheTypeKnown`), and no page is built.
+     */
+    @Test
+    public void testTheDiagramIsKeptWhenTheDeviceFileFailsAfterTheTypeWasLearned() throws Exception
+    {
+        withTheFolderPutBack(() ->
+        {
+            org.traincontrol.gui.TrainControlUI.getPrefs().put(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+            model.clearLayouts();
+            StandInStation.setCS3(model, false);
+            assertTrue(syncWithTheWholeStation() >= 0, "precondition: " + model.getLastSyncError());
+
+            model.clearLayouts();
+            deviceDrops.set(2);
+
+            assertEquals(syncWithTheWholeStation(), -1, "a sync whose device file did not arrive succeeded");
+            assertEquals(w15(), "MM2", "the type was known (CS3), so the diagram is built with it");
+            return null;
+        });
+    }
 }

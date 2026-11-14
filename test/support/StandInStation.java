@@ -227,5 +227,10 @@ public final class StandInStation implements AutoCloseable
         java.lang.reflect.Field f = MarklinControlStation.class.getDeclaredField("isCS3");
         f.setAccessible(true);
         f.set(model, cs3);
+
+        // As a fresh start has it: the type is a guess until a sync reads it
+        java.lang.reflect.Field learned = MarklinControlStation.class.getDeclaredField("typeLearned");
+        learned.setAccessible(true);
+        learned.set(model, false);
     }
 }

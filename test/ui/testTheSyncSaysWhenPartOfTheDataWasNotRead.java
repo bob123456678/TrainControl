@@ -100,6 +100,8 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
         assertTrue(Settle.until(() -> !inFlight.get(), 60000), "precondition: the window's start-up sync never ended");
     }
 
+    private static final AtomicBoolean deviceDropping = new AtomicBoolean();
+
     /** What a claim does with the window, once its start-up sync has ended. */
     private interface OnTheWindow
     {
@@ -114,6 +116,8 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
         try (StationRig rig = new StationRig(Files.createTempDirectory("tc-sync-retry").toFile(), (path, n) ->
         {
             if (dropping.get() && "/app/api/automatics".equals(path)) throw new IllegalStateException("dropped");
+
+            if (deviceDropping.get() && "/config/geraet.vrs".equals(path)) throw new IllegalStateException("dropped");
 
             return base.apply(path, n);
         }, true))
@@ -251,5 +255,66 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
                 }
             }
         }
+    }
+
+    /**
+     * The failed-Sync popup gives one plain sentence for what went wrong, never the raw exception, a URL or a byte count.
+     *
+     * MUTATION: put `failure.getClass().getSimpleName() + ": " + failure.getMessage()` back in
+     * `MarklinControlStation.describe`, and the popup names an exception.
+     */
+    @Test
+    public void testAFailedSyncSaysWhatWentWrongInOnePlainSentence() throws Exception
+    {
+        AtomicBoolean dropping = new AtomicBoolean();
+
+        withAWindowWhoseRoutesDrop(dropping, (rig, ui) ->
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0, "the sync that imports the fixtures failed");
+
+            try (Answering answering = Answering.start(message -> Answering.pressAt(1)))
+            {
+                dropping.set(true);
+                ui.doSync(ui);
+                assertTrue(answering.awaitAsked(1, 60000), "the failure was not shown");
+
+                assertEquals(answering.asked().get(0), I18n.f("ui.syncFailedRetry", I18n.t("sync.failedInterrupted")),
+                    "a connection dropped part way says so in plain words");
+            }
+        });
+    }
+
+    /**
+     * "Switch to the Central Station's layout" with the device file failing once, after the type was learned, keeps the
+     * station's diagram and offers the same Retry popup as Sync.
+     *
+     * MUTATION: withhold the diagram whenever detection failed, whatever was learned before (drop `typeLearned` from
+     * `MarklinControlStation.requireTheTypeKnown`), and the Layout tab is empty; drop the `offerSyncRetry` call of
+     * `switchCSLayoutMenuItemActionPerformed`, and the popup is not shown.
+     */
+    @Test
+    public void testTheSwitchToTheStationsLayoutKeepsTheDiagramAndOffersRetry() throws Exception
+    {
+        AtomicBoolean dropping = new AtomicBoolean();
+
+        withAWindowWhoseRoutesDrop(dropping, (rig, ui) ->
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0, "the sync that imports the fixtures failed");
+            assertFalse(rig.model.getLayoutList().isEmpty(), "precondition: the station's diagram is loaded");
+
+            javax.swing.JMenuItem door = (javax.swing.JMenuItem) Reflect.field(TrainControlUI.class,
+                "switchCSLayoutMenuItem").get(ui);
+
+            try (Answering answering = Answering.start(message -> Answering.pressAt(1)))
+            {
+                deviceDropping.set(true);
+                SwingUtilities.invokeAndWait(() -> { door.setEnabled(true); door.doClick(); });
+                assertTrue(answering.awaitAsked(1, 60000), "the failure was not shown");
+                deviceDropping.set(false);
+
+                assertTrue(answering.asked().get(0).startsWith(FAILED), answering.asked().get(0));
+                assertFalse(rig.model.getLayoutList().isEmpty(), "the station's diagram is gone though its type was known");
+            }
+        });
     }
 }

@@ -14976,6 +14976,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         go();
     }//GEN-LAST:event_OnButtonActionPerformed
 
+    /** Says why a sync failed, on the window that asked (the log has the detail), and offers Retry, which syncs again. */
+    private void offerSyncRetry(Component c)
+    {
+        final String reason = this.model.getLastSyncError();
+        final Object[] options = { I18n.t("ui.syncFailedRetryButton"), I18n.t("ui.syncFailedCloseButton") };
+
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            if (choseFirst(c, I18n.f("ui.syncFailedRetry", reason == null ? I18n.t("ui.errorSyncFailedSeeLog")
+                : reason), I18n.t("ui.syncFailedTitle"), options, false)) doSync(c);
+        });
+    }
+
     public void doSync(Component c)
     {
         // The DATABASE sync adds locomotives and re-adds routes, more invasive than the guarded state sync next door.
@@ -15041,15 +15054,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     }
                     else if (r == -1)
                     {
-                        // The reason, on the window that asked, and Retry runs this same door again
-                        final String reason = this.model.getLastSyncError();
-                        final Object[] options = { I18n.t("ui.syncFailedRetryButton"), I18n.t("ui.syncFailedCloseButton") };
-
-                        javax.swing.SwingUtilities.invokeLater(() ->
-                        {
-                            if (choseFirst(c, I18n.f("ui.syncFailedRetry", reason == null ? I18n.t("ui.errorSyncFailedSeeLog")
-                                : reason), I18n.t("ui.syncFailedTitle"), options, false)) doSync(c);
-                        });
+                        offerSyncRetry(c);
                     }
                     else
                     {
@@ -15908,10 +15913,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 updateLayoutLoaded();
 
-                if (this.syncWithCS2() == SYNC_ALREADY_RUNNING)
+                int synced = this.syncWithCS2();
+
+                if (synced == SYNC_ALREADY_RUNNING)
                 {
                     JOptionPane.showMessageDialog(this, I18n.t("ui.infoSyncAlreadyRunning"));
                 }
+                else if (synced == -1) offerSyncRetry(this);
                 
                 // Set the updated list of layout pages
                 initializeTrackDiagram(true);
