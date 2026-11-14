@@ -97,8 +97,8 @@ public class testTheDiagramSaysItIsLoadingAtStart
      * The first thing in the diagram's place is the hourglass, before the diagram; once the diagram is drawn the
      * hourglass is gone and the diagram is shown.
      *
-     * MUTATION: leave out `showTheDiagramIsLoading(tiles)` in `TrainControlUI.setViewListener`, and the diagram is the
-     * first thing put in its place.
+     * MUTATION: leave out the call to `showTheDiagramIsLoadingIfBlank` on the event thread in
+     * `TrainControlUI.repaintLayout`, and the diagram is the first thing put in its place.
      */
     @Test(timeOut = 120000)
     public void testTheHourglassStandsUntilTheFirstDrawing() throws Exception

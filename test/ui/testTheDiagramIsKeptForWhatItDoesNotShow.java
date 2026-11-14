@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,8 @@ import support.WindowField;
  * and a route renumbered, disarmed or deleted, while the route squares follow in place; a locomotive renamed is renamed
  * on every caption, a page window's too; and a sync that reads the pages again, as Sync of one locomotive does from a
  * local folder, still redraws an edit made elsewhere (the owner's rule: renames and remote diagram changes must still
- * update).  On a copy of the frozen railway, syncing with a stand-in station.
+ * update).  A page window closes once its page is gone, follows its page through a rename, and keeps its size through
+ * a page edit.  On a copy of the frozen railway, syncing with a stand-in station.
  */
 public class testTheDiagramIsKeptForWhatItDoesNotShow
 {
@@ -541,7 +543,174 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         }
     }
 
+    /**
+     * A page window follows its page through a rename (OB-466): it shows the renamed page, not whichever page sits at
+     * a place it once had.  The window is restored as a start restores a remembered one, with the main window on
+     * another page.
+     *
+     * MUTATION: in `LayoutPopupUI.pageNow`, return the page found by name alone, and the window closes.
+     */
+    @Test(timeOut = 180000)
+    public void testAPageWindowFollowsItsPageThroughARename() throws Exception
+    {
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        final boolean rememberWas = prefs.getBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, false);
+        final String key = TrainControlUI.LAYOUT_TITLES_PREF + "_" + aTileSize();
+
+        prefs.putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, true);
+        prefs.put(key, RENAMED_FROM);
+
+        LayoutPopupUI window = null;
+
+        try
+        {
+            final List<java.awt.Window> before = Arrays.asList(java.awt.Window.getWindows());
+
+            SwingUtilities.invokeAndWait(ui::restoreLayoutTitles);
+
+            final LayoutPopupUI[] restored = new LayoutPopupUI[1];
+
+            assertTrue(Components.waitFor(() ->
+            {
+                for (java.awt.Window w : java.awt.Window.getWindows())
+                {
+                    if (w instanceof LayoutPopupUI && w.isShowing() && !before.contains(w))
+                    {
+                        restored[0] = (LayoutPopupUI) w;
+                    }
+                }
+
+                return restored[0] != null;
+            }, 10000), "precondition: no page window was restored for " + RENAMED_FROM);
+
+            window = restored[0];
+
+            assertEquals(window.getLayoutTitle(), RENAMED_FROM, "precondition: the restored window shows another page");
+
+            renamePage(RENAMED_FROM, RENAMED_TO);
+
+            final LayoutPopupUI renamed = window;
+
+            assertTrue(Components.waitFor(() -> renamed.isShowing() && RENAMED_TO.equals(renamed.getLayoutTitle()),
+                20000), "the page window does not show " + RENAMED_TO + " after its page was renamed; showing: "
+                + renamed.isShowing() + ", page: " + renamed.getLayoutTitle());
+        }
+        finally
+        {
+            prefs.putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, rememberWas);
+            prefs.remove(key);
+
+            if (model.getLayoutList().contains(RENAMED_TO)) renamePage(RENAMED_TO, RENAMED_FROM);
+
+            if (window != null) SwingUtilities.invokeAndWait(window::dispose);
+
+            showTheMainPage();
+        }
+    }
+
+    /**
+     * A page edit that leaves a window's page the same size keeps the size the operator gave the window (OB-466): the
+     * window is redrawn, not packed to its page again.
+     *
+     * MUTATION: in `LayoutPopupUI.refreshDiagram`, pass true to `goToLayoutPage` again, and the window is packed.
+     */
+    @Test(timeOut = 180000)
+    public void testAPageEditKeepsTheSizeOfAPageWindow() throws Exception
+    {
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), RENAMED_FROM);
+        Settle.theDiagram(ui);
+
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+
+        try
+        {
+            final java.awt.Dimension chosen = Components.onTheEventThread(() ->
+                new java.awt.Dimension(window.getWidth() + 60, window.getHeight() + 40));
+
+            SwingUtilities.invokeAndWait(() -> window.setSize(chosen));
+            Components.settle();
+
+            final Object gridBefore = Reflect.get(LayoutPopupUI.class, window, "grid");
+
+            renamePage(RENAMED_FROM, RENAMED_TO);
+
+            assertTrue(Components.waitFor(() -> gridOf(window) != gridBefore, 20000), "precondition: the page edit did"
+                + " not redraw the page window");
+
+            Components.settle();
+
+            assertEquals(Components.onTheEventThread(window::getSize), chosen, "a page edit that left the page's size"
+                + " alone packed the page window to its page again");
+        }
+        finally
+        {
+            if (model.getLayoutList().contains(RENAMED_TO)) renamePage(RENAMED_TO, RENAMED_FROM);
+
+            SwingUtilities.invokeAndWait(window::dispose);
+
+            showTheMainPage();
+        }
+    }
+
     // ---------------------------------------------------------------- the fixture
+
+    // A page autonomy leaves out, so a rename does not put the setup at stake
+    private static final String RENAMED_FROM = "5 - Test";
+    private static final String RENAMED_TO = "5 - Test renamed";
+
+    /** Renames a page through Layouts &gt; Rename's own door, past its prompt, and waits for the pages read again. */
+    private static void renamePage(String from, String to) throws Exception
+    {
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), from);
+        Settle.theDiagram(ui);
+
+        final Object actions = Reflect.get(TrainControlUI.class, ui, "layoutFileActions");
+        final java.lang.reflect.Method rename = Reflect.method(actions.getClass(), "duplicateOrRenameCurrentLayout",
+            String.class, boolean.class, boolean.class, boolean.class,
+            org.traincontrol.gui.layouteditor.LayoutEditor.class);
+        final java.util.concurrent.atomic.AtomicInteger underWay = (java.util.concurrent.atomic.AtomicInteger)
+            Reflect.get(TrainControlUI.class, ui, "refreshesUnderWay");
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    rename.invoke(actions, to, true, false, false, null);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertTrue(Components.waitFor(() -> model.getLayoutList().contains(to) && underWay.get() == 0, 30000),
+                "precondition: " + from + " was not renamed " + to + "; asked: " + answering.asked());
+        }
+
+        Settle.theDiagram(ui);
+        Components.settle();
+    }
+
+    private static Object gridOf(LayoutPopupUI window)
+    {
+        try
+        {
+            return Reflect.get(LayoutPopupUI.class, window, "grid");
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** One of the window's tile sizes, under which a page window is remembered. */
+    @SuppressWarnings("unchecked")
+    private static int aTileSize() throws Exception
+    {
+        return ((Map<String, Integer>) Reflect.get(TrainControlUI.class, ui, "layoutSizes")).values().iterator().next();
+    }
 
     /** The diagram on screen and the cached pages, to say afterwards that a door kept them. */
     private static final class Kept

@@ -174,12 +174,12 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
         }
     }
 
-    /** Opens a popup on this page, saving its place in the shown list as the window does for the page it shows. */
+    /** Opens a popup on this page, as the window does. */
     private LayoutPopupUI showPopup(final String page) throws Exception
     {
         final LayoutPopupUI popup = Components.onTheEventThread(() ->
         {
-            LayoutPopupUI made = new LayoutPopupUI(model.getLayout(page), 30, ui, model.getLayoutList().indexOf(page));
+            LayoutPopupUI made = new LayoutPopupUI(model.getLayout(page), 30, ui);
 
             made.render();
 

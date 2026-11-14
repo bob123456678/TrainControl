@@ -5699,8 +5699,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (tiles != null) LayoutLabel.warmUp(this, tiles);
 
-        if (!listener.getLayoutList().isEmpty()) showTheDiagramIsLoading(tiles);
-
         // Render layout now that the UI is visible
         repaintLayout();
         
@@ -5965,11 +5963,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         letTheWholeWindowDriveTrains();
     }
 
-    /** The hourglass in the diagram's place, sized to the page shown, until the first drawing replaces it (OB-467). */
-    private void showTheDiagramIsLoading(Integer tiles)
+    /**
+     * The hourglass in an empty diagram's place, sized to the page shown, while the build waits for its pictures; the
+     * drawing replaces it (OB-467).  Event thread only.
+     */
+    private void showTheDiagramIsLoadingIfBlank()
     {
+        if (InnerLayoutPanel.getComponentCount() > 0 || this.model == null || this.model.getLayoutList().isEmpty())
+        {
+            return;
+        }
+
         LoadingSpinner spinner = new LoadingSpinner();
         LayoutDiagram page = shownDiagram();
+        Integer tiles = this.layoutSizes.get(String.valueOf(this.SizeList.getSelectedItem()));
 
         if (page != null && tiles != null)
         {
@@ -16580,12 +16587,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            LayoutPopupUI popup = new LayoutPopupUI(
-                this.model.getLayout(layoutName),
-                size,
-                this,
-                this.LayoutList.getSelectedIndex()
-            );
+            LayoutPopupUI popup = new LayoutPopupUI(this.model.getLayout(layoutName), size, this);
 
             popup.render();
             popups.add(popup);
@@ -21653,6 +21655,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // repaintPathLabel must not run from inside the submission below: it would queue behind LayoutGridRenderer (one
         // thread), whose rebuild is the slow part of a CS sync, leaving the menu item enabled that long (OB-094).
         repaintPathLabel();
+
+        // Posted before the build, which waits for the pictures first
+        if (SwingUtilities.isEventDispatchThread()) showTheDiagramIsLoadingIfBlank();
+        else SwingUtilities.invokeLater(this::showTheDiagramIsLoadingIfBlank);
 
         this.LayoutGridRenderer.submit(() ->
         {

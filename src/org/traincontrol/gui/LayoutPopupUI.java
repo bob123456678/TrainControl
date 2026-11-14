@@ -20,14 +20,13 @@ public class LayoutPopupUI extends PositionAwareJFrame
     private final TrainControlUI parent;
     private final int size;
     private LayoutDiagram layout;
-    private int pageIndex;
     
     /**
      * Popup window showing train layouts
      * @param l reference to the layout
      * @param size size of each tile, in pixels
      */
-    public LayoutPopupUI(LayoutDiagram l, int size, TrainControlUI ui, int pageIndex)
+    public LayoutPopupUI(LayoutDiagram l, int size, TrainControlUI ui)
     {
         initComponents();
         
@@ -35,7 +34,6 @@ public class LayoutPopupUI extends PositionAwareJFrame
         this.parent = ui;
         this.size = size;
         this.layout = l;
-        this.pageIndex = pageIndex;
     }
 
     // The grid on screen now, so that the next one can tell it to stop
@@ -117,22 +115,27 @@ public class LayoutPopupUI extends PositionAwareJFrame
         return now != null && now != this.layout;
     }
 
-    /** Whether the model has this window's page no longer, under its name or its page ID (a rename keeps the ID). */
+    /** Whether the model has this window's page no longer (OB-466). */
     boolean showsAPageThatIsGone()
     {
-        if (this.parent.getModel().getLayout(this.layout.getName()) != null) return false;
+        return pageNow() == null;
+    }
+
+    /** This window's page as the model holds it now, by name, else by page ID (a rename keeps it); null once gone. */
+    private LayoutDiagram pageNow()
+    {
+        LayoutDiagram byName = this.parent.getModel().getLayout(this.layout.getName());
+
+        if (byName != null || this.layout.getPageId() == null) return byName;
 
         for (String name : this.parent.getModel().getLayoutList())
         {
             LayoutDiagram page = this.parent.getModel().getLayout(name);
 
-            if (page != null && page.getPageId() != null && page.getPageId().equals(this.layout.getPageId()))
-            {
-                return false;
-            }
+            if (page != null && this.layout.getPageId().equals(page.getPageId())) return page;
         }
 
-        return true;
+        return null;
     }
 
     /** Closes the window for good, its grid stopped first. */
@@ -192,23 +195,24 @@ public class LayoutPopupUI extends PositionAwareJFrame
         });
     }
     
-    /**
-     * Refreshes the contents of the layout
-     */
+    /** Draws the page again after an edit, sized to it again only when its size changed: a size chosen stays. */
     public void refreshDiagram()
     {
-        this.goToLayoutPage(shownPlace(), true);
+        LayoutDiagram now = pageNow();
+
+        this.goToLayoutPage(shownPlace(), now != null
+            && (now.getSx() != this.layout.getSx() || now.getSy() != this.layout.getSy()));
     }
 
     /**
-     * This window's page in the shown list, by name: a place saved earlier is stale once pages have moved, and an
-     * arrow's number is a place in another list.
+     * This window's page in the shown list, found as `pageNow` finds it, or -1 once it is gone: a place saved earlier
+     * is stale once pages have moved, and an arrow's number is a place in another list.
      */
     private int shownPlace()
     {
-        int at = this.parent.getModel().getLayoutList().indexOf(this.layout.getName());
+        LayoutDiagram now = pageNow();
 
-        return at >= 0 ? at : this.pageIndex;
+        return now == null ? -1 : this.parent.getModel().getLayoutList().indexOf(now.getName());
     }
 
     /**
@@ -269,9 +273,6 @@ public class LayoutPopupUI extends PositionAwareJFrame
 
                 drawGrid(fit);
                 this.repaint();
-
-                // Update saved index
-                this.pageIndex = index;
             }
             else
             {
