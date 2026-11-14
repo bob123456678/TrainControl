@@ -428,7 +428,7 @@ public class testRecentLayouts
      *
      * MUTATION: drop the `config/gleisbild.cs2` check at the top of `TrainControlUI.openLayoutFolder`.
      */
-    @Test
+    @Test(timeOut = 120000)
     public void testAFolderWithNoLayoutIsRefusedAndNothingChanges() throws Exception
     {
         String a = sandbox.getFolder().getAbsolutePath();
