@@ -9,6 +9,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -105,6 +106,9 @@ final class LocomotiveFunctionsTab extends JPanel
     private int phase;
     private boolean reset;
     private boolean copied;
+
+    /** Set by the preset buttons, which say what every row holds: Save then writes every row's tick. */
+    private boolean wholePreset;
 
     /** What Copy Icons took, for the rows a bigger decoder type adds afterwards. */
     private Locomotive.Customizations copiedFrom;
@@ -251,6 +255,7 @@ final class LocomotiveFunctionsTab extends JPanel
         {
             for (Row r : everyRow()) r.preset = r.function < loc.getNumF() && loc.getF(r.function);
 
+            wholePreset = true;
             changed();
         });
 
@@ -258,6 +263,7 @@ final class LocomotiveFunctionsTab extends JPanel
         {
             for (Row r : everyRow()) r.preset = false;
 
+            wholePreset = true;
             changed();
         });
 
@@ -425,7 +431,7 @@ final class LocomotiveFunctionsTab extends JPanel
     /** Whether anything in the table differs from what the locomotive held when the tab was built. */
     boolean isDirty()
     {
-        if (reset || copied) return true;
+        if (reset || copied || wholePreset) return true;
 
         for (Row r : rows)
         {
@@ -631,7 +637,10 @@ final class LocomotiveFunctionsTab extends JPanel
         return reset;
     }
 
-    /** Writes the table onto the locomotive. */
+    /**
+     * Writes onto the locomotive only what the table changed from its loaded values (Copy writes every row): a sync or
+     * a key-menu preset made while the window was open keeps the rest.
+     */
     void apply()
     {
         if (table.isEditing()) table.getCellEditor().stopCellEditing();
@@ -642,7 +651,8 @@ final class LocomotiveFunctionsTab extends JPanel
             loc.unsetLocalFunctionImageURLs();
         }
 
-        boolean[] preset = new boolean[loc.getNumF()];
+        boolean[] held = loc.getPreferredFunctions();
+        boolean[] preset = held == null ? new boolean[loc.getNumF()] : Arrays.copyOf(held, loc.getNumF());
 
         for (Row r : rows)
         {
@@ -651,25 +661,26 @@ final class LocomotiveFunctionsTab extends JPanel
             // A decoder change in the same Save can leave the locomotive with fewer functions than the table has
             if (f >= preset.length) continue;
 
-            if (copied || r.icon != loc.sanitizeFIconIndex(loc.getFunctionType(f)) || r.behavior != behaviorShownFor(loc, f))
+            if (copied || r.icon != r.icon0 || r.behavior != r.behavior0)
             {
                 loc.setFunctionType(f, r.icon, triggerFor(r.behavior));
             }
 
             String stored = loc.getLocalFunctionImageURL(f);
+            boolean touched = copied || !Objects.equals(r.custom, r.custom0);
 
-            if (r.custom == null)
+            if (touched && r.custom == null)
             {
                 if (stored != null) loc.unsetLocalFunctionImageURL(f);
             }
-            else if (!r.custom.equals(stored))
+            else if (touched && !r.custom.equals(stored))
             {
                 loc.setLocalFunctionImageURL(f, r.custom);
 
                 ui.getModel().logf("loc.ui.logSetCustomFunctionIcon", loc.getName(), f, loc.getLocalFunctionImageURL(f));
             }
 
-            preset[f] = r.preset;
+            if (wholePreset || r.preset != r.preset0) preset[f] = r.preset;
         }
 
         // A copy leaves this locomotive customized even when its source was not: it now carries somebody else's functions.

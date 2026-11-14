@@ -182,7 +182,7 @@ final class RunningLayoutSync
     {
         // No placement edit is pending here: the callers are autonomyEditorClosed() and
         // LayoutEditor.discardAutonomyWork, and every placement made in the editor already reached the running layout.
-        rebuildRunningLayoutFromSetup(false, null);
+        rebuildRunningLayoutFromSetup(false, null, null);
     }
 
     /**
@@ -560,9 +560,10 @@ final class RunningLayoutSync
      * starting inside the coalesced rebuild's event finds the gate shut and the edit is thrown away, correctly; a
      * deferred rebuild would put each train back where it started (OB-144).  The remedy: stop the run and make the edit
      * again.  `placementsJustEdited` is the locomotives whose placement this gesture wrote into the setup, or null.
+     * `standingBefore`, from a Cancel, is where the railway had each train the edit moved, or null.
      */
     void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,
-        java.util.Set<String> placementsJustEdited)
+        java.util.Set<String> placementsJustEdited, java.util.Map<String, String[]> standingBefore)
     {
         if (sayIfDeclined && this.ui.getActiveDiagramConfiguration() != null && this.ui.isAutonomyBusy()
             && this.ui.getAutonomyViewerPanel() != null)
@@ -590,6 +591,19 @@ final class RunningLayoutSync
             // Where the trains ARE survives the rebuild (OB-183): placements only, with the one exception named
             // (`placementsJustEdited`, MT-337).
             java.util.Map<String, String[]> standing = this.ui.whereTheTrainsAre();
+
+            // A Cancel puts each train the edit moved back where the railway had it, not on the setup's square for it,
+            // which a run may have left behind (OB-416); one the railway did not have follows the restored setup
+            if (standingBefore != null)
+            {
+                placementsJustEdited = new java.util.HashSet<>();
+
+                for (java.util.Map.Entry<String, String[]> was : standingBefore.entrySet())
+                {
+                    if (was.getValue() == null) placementsJustEdited.add(was.getKey());
+                    else standing.put(was.getKey(), was.getValue());
+                }
+            }
 
             // And the turns nobody has managed to write down yet: `Layout.reversedOnArrival` lives on the Layout, which
             // the load below replaces wholesale; a turn that declined to write is put back and retried at the next

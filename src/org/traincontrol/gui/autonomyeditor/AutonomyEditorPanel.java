@@ -1881,6 +1881,10 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        // Cancel puts them back, the homed and the lifted
+        rememberWhereTheyStand(homed);
+        rememberWhereTheyStand(session.trainsWhereTheyStand().values());
+
         java.util.Set<String> touched = session.placeEveryTrainAtHome(homeCopyFacings());
 
         saying.accept(I18n.f("autosetup.ui.infoTrainsPlacedAtHome", homes.size(), homeless));
@@ -3740,7 +3744,7 @@ public class AutonomyEditorPanel extends JPanel
         named.addAll(leaving);
 
         // Cancel undoes a placement as it undoes a drag: the station, and the train where it stood (MT-914)
-        putBackOnDiscard.addAll(named);
+        rememberWhereTheyStand(named);
 
         session.placeLocomotive(tile, name);
 
@@ -3867,6 +3871,8 @@ public class AutonomyEditorPanel extends JPanel
     {
         java.util.Set<String> named = trainsLeaving(tile, null);
 
+        rememberWhereTheyStand(named);
+
         for (TileKey stale : otherSquaresOf(named, tile)) session.placeLocomotive(stale, null);
 
         session.placeLocomotive(tile, null);
@@ -3966,13 +3972,54 @@ public class AutonomyEditorPanel extends JPanel
             || window.canTrainLandOn(locomotiveAt(from), to);
     }
 
-    /** The trains a Cancel puts back with the setup: every train dragged or placed this session, and any they displaced. */
-    private final java.util.Set<String> putBackOnDiscard = new java.util.LinkedHashSet<>();
+    /**
+     * Where the railway had each train this edit placed, lifted, dragged or displaced, as a door first moved it (null:
+     * nowhere, so the restored setup decides); cleared on save.
+     */
+    private final Map<String, String[]> railwayBeforeTheEdit = new java.util.LinkedHashMap<>();
 
-    /** @return the trains the railway must not keep where a drag left them when the edit is thrown away */
-    public java.util.Set<String> trainsToPutBackOnDiscard()
+    /**
+     * @return where Cancel puts back each train this edit moved, as `TrainControlUI.whereTheTrainsAre` reads it; asked
+     * before the setup is restored, as it leaves out a train the railway has moved since the edit put it
+     */
+    public Map<String, String[]> railwayBeforeTheEdit()
     {
-        return java.util.Collections.unmodifiableSet(putBackOnDiscard);
+        Map<String, String[]> back = new java.util.LinkedHashMap<>(railwayBeforeTheEdit);
+
+        // Where a train IS is a fact: putting it back would leave its square reading free
+        Map<String, String[]> now = TrainControlUI.whereTheTrainsAre(layoutSource == null ? null : layoutSource.get());
+
+        back.keySet().removeIf(train -> !standsWhereTheEditPutIt(train, now.get(train)));
+
+        return back;
+    }
+
+    /** Whether the railway has this train on a copy of the setup's square for it, or nowhere where the setup has none. */
+    private boolean standsWhereTheEditPutIt(String train, String[] onTheRailway)
+    {
+        if (session == null || session.getStationIndex() == null) return true;
+
+        List<TileKey> squares = otherSquaresOf(java.util.Collections.singleton(train), null);
+
+        if (onTheRailway == null) return squares.isEmpty();
+
+        for (TileKey square : squares)
+        {
+            if (session.getStationIndex().pointNamesAt(square).contains(onTheRailway[0])) return true;
+        }
+
+        return false;
+    }
+
+    /** Records where the railway has these trains, each the first time a door moves it: a run may move it later. */
+    private void rememberWhereTheyStand(java.util.Collection<String> trains)
+    {
+        Map<String, String[]> now = TrainControlUI.whereTheTrainsAre(layoutSource == null ? null : layoutSource.get());
+
+        for (String train : trains)
+        {
+            if (train != null && !railwayBeforeTheEdit.containsKey(train)) railwayBeforeTheEdit.put(train, now.get(train));
+        }
     }
 
     /** Whether a tool or a half-made gesture is waiting for a click, which a press on a train then belongs to. */
@@ -4006,19 +4053,14 @@ public class AutonomyEditorPanel extends JPanel
 
         if (window != null && window.getModel() != null && window.getModel().hasAutoLayout())
         {
+            // Cancel throws every drag away, the trains a drop displaces with it
+            rememberWhereTheyStand(java.util.Arrays.asList(name, displaced,
+                session.trainOnTheRailway(to, window.getModel().getAutoLayout())));
+
             boolean landed = window.dropTrainByPaste(name, to);
 
             // Whatever the paste did to the setup is drawn and rebuilt, landed or not
             placementChanged(java.util.Collections.singletonList(name));
-
-            // Cancel throws every drag away, and a drop onto another train takes that one back with it: the railway
-            // alone lost it.  To let an empty target stay moved, add the dragged name only when `displaced` is not null.
-            if (landed)
-            {
-                putBackOnDiscard.add(name);
-
-                if (displaced != null) putBackOnDiscard.add(displaced);
-            }
 
             return landed;
         }
@@ -7329,6 +7371,8 @@ public class AutonomyEditorPanel extends JPanel
         // The session's bulk door; the names read first, so the rebuild knows whose placements went.
         java.util.List<String> lifted = placedLocomotives();
 
+        rememberWhereTheyStand(lifted);
+
         int cleared = session.clearEveryPlacement();
 
         say(hint, I18n.f("autosetup.ui.infoLocomotivesCleared", cleared));
@@ -7479,6 +7523,8 @@ public class AutonomyEditorPanel extends JPanel
         {
             // Through the one display every door uses.
             AutonomyReport.show(owner(), session.save());
+
+            railwayBeforeTheEdit.clear();
 
             refresh();
 

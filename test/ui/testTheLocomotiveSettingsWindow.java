@@ -719,6 +719,99 @@ public class testTheLocomotiveSettingsWindow
             "a member's Multi-Unit tab does not say it is part of " + NAME);
     }
 
+    /**
+     * Members ticked in the same Save as a decoder change to Multi-Unit are never dropped without a word: Save refuses
+     * with the reason a locomotive that already has members gets, writes nothing, and the window stays open.
+     *
+     * MUTATION: leave out the members check before the writes in `write`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testMembersAndAMultiUnitDecoderInOneSaveAreRefused() throws Exception
+    {
+        open(3);
+
+        SettingsWindow.tickMember(OTHER);
+
+        decoder(Locomotive.decoderType.MULTI_UNIT);
+
+        List<String> asked = saveAndAnswer();
+
+        assertEquals(asked, Arrays.asList(I18n.t("loc.changeToMultiUnitNotAllowed")),
+            "Save did not say why the members and a Multi-Unit decoder cannot go together");
+        assertNotNull(SettingsWindow.showing(), "the window closed as if saved");
+        assertEquals(loc.getDecoderType(), Locomotive.decoderType.MFX, "the refused Save changed the decoder");
+        assertTrue(loc.getLinkedLocomotiveNames().isEmpty(), "the refused Save wrote members");
+    }
+
+    /**
+     * A member ticked in the same Save as a new address equal to its own is never dropped without a word: Save refuses
+     * with the reason a link at the same address gets, writes nothing, and the window stays open.
+     *
+     * MUTATION: leave out the same-address check before the writes in `write`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAMemberAtTheNewAddressInOneSaveIsRefused() throws Exception
+    {
+        open(3);
+
+        SettingsWindow.tickMember(OTHER);
+
+        SettingsWindow.type("settings.address", String.valueOf(other.getAddress()));
+
+        List<String> asked = saveAndAnswer();
+
+        assertEquals(asked, Arrays.asList(I18n.f("loc.errorLinkSameAddress", NAME, OTHER)),
+            "Save did not say why a member cannot share the new address");
+        assertNotNull(SettingsWindow.showing(), "the window closed as if saved");
+        assertEquals(loc.getAddress(), 3401, "the refused Save changed the address");
+        assertTrue(loc.getLinkedLocomotiveNames().isEmpty(), "the refused Save wrote members");
+    }
+
+    /**
+     * With the Multi-Unit tab untouched, a new address equal to an existing member's is refused the same way: a
+     * consist never ends up with two locomotives on one address.
+     *
+     * MUTATION: check only the ticked members, not the existing ones when the tab is untouched, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testANewAddressEqualToAnExistingMembersIsRefused() throws Exception
+    {
+        java.util.Map<String, Double> link = new java.util.HashMap<>();
+
+        link.put(OTHER, 1.0);
+
+        assertEquals(loc.setLinkedLocomotives(link), 1, "precondition: the consist was not made");
+
+        open(0);
+
+        SettingsWindow.type("settings.address", String.valueOf(other.getAddress()));
+
+        refusedOverTheConsist("Save did not say why the new address cannot be a member's");
+        assertEquals(loc.getAddress(), 3401, "the refused Save changed the address");
+        assertTrue(loc.getLinkedLocomotiveNames().containsKey(OTHER), "the refused Save dropped the member");
+    }
+
+    /**
+     * The mirror: a member given its head's address in its own window is refused the same way, before anything is
+     * written, where the Save would drop it from the consist with only a line in the log.
+     *
+     * MUTATION: drop the head's check after the members' in `LocomotiveSettingsFrame.write`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAMembersNewAddressEqualToItsHeadsIsRefused() throws Exception
+    {
+        assertEquals(loc.setLinkedLocomotives(java.util.Collections.singletonMap(OTHER, 1.0)), 1,
+            "precondition: the consist was not made");
+
+        open(other, 0);
+
+        SettingsWindow.type("settings.address", String.valueOf(loc.getAddress()));
+
+        refusedOverTheConsist("Save did not say why the member cannot take its head's address");
+        assertEquals(other.getAddress(), 3402, "the refused Save changed the member's address");
+        assertTrue(loc.getLinkedLocomotiveNames().containsKey(OTHER), "the member left the consist");
+    }
+
     /** The Multi-Unit tab's note for a member, as it reads. */
     private static String noteText()
     {
@@ -1810,7 +1903,13 @@ public class testTheLocomotiveSettingsWindow
     /** Opens the window on a tab of the first train. */
     private static void open(int tab) throws Exception
     {
-        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.values()[tab], null), "the window did not open");
+        open(loc, tab);
+    }
+
+    /** Opens the window on a tab of this train. */
+    private static void open(Locomotive which, int tab) throws Exception
+    {
+        assertTrue(SettingsWindow.open(ui, which, LocomotiveSettingsFrame.Tab.values()[tab], null), "the window did not open");
         assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
     }
 
@@ -1839,6 +1938,13 @@ public class testTheLocomotiveSettingsWindow
     private static int selectedFunction()
     {
         return Components.onTheEventThread(() -> SettingsWindow.part("functions.table", javax.swing.JTable.class).getSelectedRow());
+    }
+
+    /** Save refuses: the consist of the first two trains cannot share an address, and the window stays open. */
+    private static void refusedOverTheConsist(String notSaid) throws Exception
+    {
+        assertEquals(saveAndAnswer(), Arrays.asList(I18n.f("loc.errorLinkSameAddress", NAME, OTHER)), notSaid);
+        assertNotNull(SettingsWindow.showing(), "the window closed as if saved");
     }
 
     /** Presses Save, answers whatever it asks with its first button, and gives what was asked. */

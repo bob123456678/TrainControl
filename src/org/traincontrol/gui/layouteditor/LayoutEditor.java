@@ -433,7 +433,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * Throws away this window's autonomy edits, putting the opening setup back in memory and on disk (MT-406), as the
-     * per-gesture save already wrote them.  Lifted, dragged and placed trains go back where the setup had them.
+     * per-gesture save already wrote them.  Lifted, dragged and placed trains go back where the railway had them.
      * @return null when it worked, or the reason it did not
      */
     private String discardAutonomyWork()
@@ -442,17 +442,16 @@ public class LayoutEditor extends PositionAwareJFrame
 
         String failed;
 
+        // Asked of the edit, before it is thrown away
+        java.util.Map<String, String[]> standingBefore = autonomyPanel.railwayBeforeTheEdit();
+
         if (this.autonomyAsOpened == null || autonomy == null) failed = autonomyPanel.discardEdits();
         else if (!autonomy.restoreSetup(this.autonomyAsOpened)) failed = I18n.t("autosetup.log.restoreFailedAfterCancel");
         else failed = null;
 
         // The railway follows at once, before the window goes, or a fold in between would write the discarded edit
         // back.  Declines while autonomy runs.
-        // Both trains of a drop onto an occupied square come back with the setup: the railway holds only the one
-        if (failed == null && autonomy != null)
-        {
-            parent.rebuildRunningLayoutFromSetup(false, new java.util.HashSet<>(autonomyPanel.trainsToPutBackOnDiscard()));
-        }
+        if (failed == null && autonomy != null) parent.rebuildRunningLayoutFromSetup(standingBefore);
 
         return failed;
     }

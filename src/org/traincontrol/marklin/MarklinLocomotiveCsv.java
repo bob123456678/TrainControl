@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.RouteCommand;
+import org.traincontrol.gui.LocomotiveSettings;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.model.ViewListener;
 
@@ -358,7 +359,7 @@ public final class MarklinLocomotiveCsv
 
         for (Move move : plan.moves)
         {
-            if (model.getLocByName(move.name).getSpeed() > 0) moving.add(move.name);
+            if (LocomotiveSettings.hasSpeed(model, model.getLocByName(move.name))) moving.add(move.name);
         }
 
         return moving;
@@ -517,7 +518,7 @@ public final class MarklinLocomotiveCsv
                 return;
             }
 
-            if (loc.getSpeed() > 0)
+            if (LocomotiveSettings.hasSpeed(model, loc))
             {
                 held.add(label(loc.getDecoderType(), loc.getAddress()));
                 result.kept.add(late);

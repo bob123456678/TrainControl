@@ -502,6 +502,9 @@ public final class RowIcons
                 {
                     float inset = width * 0.16f;
 
+                    // Pure strokes: normalizing snaps each turn's ring to whole pixels and it wobbles (OB-458)
+                    g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
                     g.draw(new java.awt.geom.Arc2D.Float(inset, inset, width - 2 * inset, height - 2 * inset, -phase, 270,
                         java.awt.geom.Arc2D.OPEN));
 

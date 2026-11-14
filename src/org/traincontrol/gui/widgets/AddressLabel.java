@@ -30,6 +30,9 @@ public class AddressLabel extends JLabel
     /** The lines drawn, top to bottom. */
     private String[] lines = new String[0];
 
+    /** Its square, beyond whose right edge it takes no mouse: the text may run on over the squares to the right. */
+    private java.awt.Component square;
+
     public AddressLabel()
     {
         setOpaque(false);
@@ -82,6 +85,18 @@ public class AddressLabel extends JLabel
         for (String line : lines) wide = Math.max(wide, fm.stringWidth(line));
 
         return new Dimension(wide + 2 * pad(), fm.getHeight() * lines.length + 2 * pad());
+    }
+
+    /** @param square the square this is the address of, over which alone it answers the mouse */
+    public void answerOnlyOver(java.awt.Component square)
+    {
+        this.square = square;
+    }
+
+    @Override
+    public boolean contains(int x, int y)
+    {
+        return super.contains(x, y) && (square == null || getX() + x < square.getX() + square.getWidth());
     }
 
     @Override

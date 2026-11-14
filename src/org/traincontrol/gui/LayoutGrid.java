@@ -1268,7 +1268,14 @@ public class LayoutGrid
                     
                     text.setLines(c.isLink() && c.getLinkPageName() != null ? c.getLinkPageName()
                         : c.getLogicalAddress() + redOrGreen, protocol);
-                    
+
+                    // To the row's end, as text labels are: an arrow's page name is wider than a square and would
+                    // widen its column, leaving a blank gap in the diagram.
+                    gbc.gridwidth = GridBagConstraints.REMAINDER;
+
+                    // The squares its text runs on over keep their clicks
+                    text.answerOnlyOver(outer);
+
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);
                 }

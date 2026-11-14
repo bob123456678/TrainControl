@@ -645,6 +645,99 @@ public class testTheLocomotiveSettingsFunctions
     }
 
     /**
+     * A sync that changes an icon while the window is open survives a Save of one preset tick, and the locomotive does
+     * not become customized, so later syncs still take the station's functions.
+     *
+     * MUTATION: write a row's icon whenever it differs from the locomotive now, not from what the row loaded, and
+     * this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testASaveKeepsAnIconSyncedWhileTheWindowWasOpen() throws Exception
+    {
+        assertFalse(loc.isCustomFunctions(), "precondition: not customized");
+
+        int synced = loc.getFunctionType(F) == 5 ? 6 : 5;
+        int[] types = Arrays.copyOf(loc.getFunctionTypes(), loc.getFunctionTypes().length);
+
+        types[F] = synced;
+
+        // As syncWithCS2 adopts the station's types for a locomotive that is not customized
+        loc.setFunctionTypes(types, loc.getFunctionTriggerTypes());
+
+        assertEquals(loc.getFunctionType(F), synced, "precondition: the sync took");
+
+        tick(2);
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> saved(2), WAIT), "Save did not write the tick");
+        assertEquals(loc.getFunctionType(F), synced, "Save put back the icon F3 had before the sync");
+        assertFalse(loc.isCustomFunctions(), "Save of a preset tick marked the locomotive customized");
+    }
+
+    /**
+     * A preset saved from the key menu while the window is open survives a Save that ticks another function: Save
+     * changes only the ticks the operator changed.
+     *
+     * MUTATION: write every row's tick at Save instead of only the changed ones, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testASaveKeepsAPresetSavedFromTheKeyMenuWhileOpen() throws Exception
+    {
+        presetFromTheKeyMenu(5);
+
+        tick(2);
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> saved(2), WAIT), "Save did not write the tick");
+        assertTrue(saved(5), "Save replaced the preset saved from the key menu while the window was open");
+    }
+
+    /**
+     * Clear Preset says what every row holds, so its Save clears a tick saved from the key menu while the window was
+     * open, though that row still shows what it loaded.
+     *
+     * MUTATION: drop `wholePreset = true` from Clear Preset in `LocomotiveFunctionsTab.buttons`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testClearPresetClearsATickSavedFromTheKeyMenuWhileOpen() throws Exception
+    {
+        presetFromTheKeyMenu(5);
+
+        // A tick in the table, as Clear Preset is gray with none
+        tick(2);
+
+        press("functions.clearPreset");
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> !saved(5), WAIT), "Clear Preset and Save left the tick saved from the key menu");
+    }
+
+    /**
+     * Use Current Functions as Preset says what every row holds too: a function now off leaves the preset, though the
+     * key menu saved it while the window was open.
+     *
+     * MUTATION: drop `wholePreset = true` from Use Current in `LocomotiveFunctionsTab.buttons`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testUseCurrentDropsATickSavedFromTheKeyMenuWhileOpen() throws Exception
+    {
+        presetFromTheKeyMenu(5);
+
+        loc.setF(5, false);
+
+        assertTrue(Components.waitFor(() -> !loc.getF(5), WAIT));
+
+        press("functions.useCurrent");
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> !saved(5), WAIT), "Use Current and Save kept a function that is off in the preset");
+    }
+
+    /**
      * Copy Icons from the clipboard locomotive takes its functions into the table and Save writes them; with nothing
      * copied the button is gray.
      *
@@ -1110,6 +1203,18 @@ public class testTheLocomotiveSettingsFunctions
         assertNotNull(b, "the tab has no " + name);
 
         SettingsWindow.press(b);
+    }
+
+    /** F on and saved as the preset from the key menu, with the window open. */
+    private static void presetFromTheKeyMenu(int f)
+    {
+        loc.setF(f, true);
+
+        assertTrue(Components.waitFor(() -> loc.getF(f), WAIT));
+
+        loc.savePreferredFunctions();
+
+        assertTrue(saved(f), "precondition: the key menu's preset took");
     }
 
     private static boolean saved(int function)

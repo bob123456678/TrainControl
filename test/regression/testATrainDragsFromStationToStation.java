@@ -928,8 +928,8 @@ public class testATrainDragsFromStationToStation
      * they were in the setup, the file and the railway, with their facing and tail (FR-160): the railway alone lost the
      * displaced train, and a rebuild let the railway's places win over the restored setup.
      *
-     * MUTATION: passing no trains from `LayoutEditor.discardAutonomyWork` to the rebuild (as before) loses the
-     * displaced train from all three stores.
+     * MUTATION: passing null from `LayoutEditor.discardAutonomyWork` to the rebuild loses the displaced train from all
+     * three stores.
      */
     @Test(timeOut = 400000)
     public void testCancelAndDiscardPutBothTrainsBackWhenTheTargetIsOccupied() throws Exception
@@ -968,6 +968,63 @@ public class testATrainDragsFromStationToStation
         }
         finally
         {
+            putBack(asFound);
+        }
+    }
+
+    /**
+     * After a run the railway can hold Z on a square whose setup train X stands on another station: a train dragged onto
+     * that square, then Cancel, leaves X and Z where the railway had them, so neither square reads free under a standing
+     * train (OB-416).
+     *
+     * MUTATION: drop `dropTrain`'s call to `rememberWhereTheyStand`, and X goes back onto the square while Z leaves the
+     * railway.
+     */
+    @Test(timeOut = 400000)
+    public void testCancelAfterARunLeavesTheRailwaysTrainsWhereTheyStood() throws Exception
+    {
+        Fixture f = fixture(true);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        String dragged = session.getLocomotiveNameAt(f.from);
+        String setupTrain = session.getLocomotiveNameAt(f.to);
+        String brought = support.StandingTrain.standingNowhere(model, session);
+        TileKey elsewhere = emptyStations().get(0);
+
+        try
+        {
+            // As after a run, the railway alone told: the setup's train has gone on, and another stands on its square
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+
+            moveOnTheRailwayAlone(setupTrain, elsewhere);
+            moveOnTheRailwayAlone(brought, f.to);
+
+            editor = openEditor();
+
+            fixture(true);
+
+            dragTrain(f.from, f.to);
+
+            assertEquals(session.getLocomotiveNameAt(f.to), dragged, "precondition: the train did not land");
+
+            cancelTheEditor();
+
+            assertEquals(railwaySquareOf(brought), f.to, "Cancel after a run did not put " + brought + " back where it stood");
+            assertEquals(railwaySquareOf(setupTrain), elsewhere, "Cancel after a run moved " + setupTrain
+                + " from where the run left it");
+            assertEquals(railwaySquareOf(dragged), f.from, "Cancel did not put the dragged train back");
+        }
+        finally
+        {
+            // Off the railway, which only the setup's trains are put back on
+            onTheEventThread(() ->
+            {
+                org.traincontrol.automation.Point at = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(brought));
+
+                if (at != null) model.getAutoLayout().moveLocomotive(null, at.getName(), false);
+            });
+
             putBack(asFound);
         }
     }
@@ -1144,10 +1201,10 @@ public class testATrainDragsFromStationToStation
     /**
      * Cancel throws away every drag of the session, in the setup, the file and the railway, with facing and tail
      * (FR-160): the dragged train goes back whatever the target held, a chain of drops leaves no train lost, and a
-     * dragged train the railway moved on afterwards goes back too.
+     * dragged train the railway moved on afterwards stays where the railway has it, as where a train is is a fact.
      *
-     * MUTATION: adding the dragged name only for an occupied target (`displaced != null` in
-     * `AutonomyEditorPanel.dropTrain`) loses a train in the chain and leaves the empty drags moved.
+     * MUTATION: recording the dragged train only for an occupied target (`displaced != null` in
+     * `AutonomyEditorPanel.dropTrain`'s `rememberWhereTheyStand`) leaves the empty drags moved.
      */
     @Test(timeOut = 400000)
     public void testCancelUndoesEveryDragOfTheSession() throws Exception
@@ -1163,7 +1220,7 @@ public class testATrainDragsFromStationToStation
 
             TileKey a = trains.get(0), b = trains.get(1), c = trains.get(2);
 
-            // Two empty drops, then the railway moves the first train on alone
+            // Two empty drops
             reopenedFrom(asFound);
 
             String before = storesOn(a, b, c, empty.get(0), empty.get(1), empty.get(2));
@@ -1175,12 +1232,28 @@ public class testATrainDragsFromStationToStation
 
             assertNotNull(session.getLocomotiveNameAt(empty.get(1)), "precondition: the second drop did not land");
 
-            moveOnTheRailwayAlone(session.getLocomotiveNameAt(empty.get(0)), empty.get(2));
-
             cancelTheEditor();
 
             assertEquals(storesOn(a, b, c, empty.get(0), empty.get(1), empty.get(2)), before,
                 "Cancel left something of two empty drops");
+
+            // A drop the railway then moves on alone, as a run does
+            reopenedFrom(asFound);
+
+            scrollTheDiagram();
+
+            dragTrain(a, empty.get(0));
+
+            String moved = session.getLocomotiveNameAt(empty.get(0));
+
+            assertNotNull(moved, "precondition: the drop did not land");
+
+            moveOnTheRailwayAlone(moved, empty.get(2));
+
+            cancelTheEditor();
+
+            assertEquals(railwaySquareOf(moved), empty.get(2), "Cancel put back a dragged train the railway moved on afterwards");
+            assertNull(session.getLocomotiveNameAt(empty.get(0)), "Cancel kept the drop in the setup");
 
             // A chain: a onto b, then c onto the square a left
             reopenedFrom(asFound);
@@ -1279,7 +1352,7 @@ public class testATrainDragsFromStationToStation
      * setup, the file and the railway (MT-914): placed on an empty station then a drag, or a drag then a placement on
      * the square the drag left.
      *
-     * MUTATION: put `if (named.size() > 1)` back before `putBackOnDiscard.addAll(named)` in
+     * MUTATION: put `if (named.size() > 1)` before `rememberWhereTheyStand(named)` in
      * `AutonomyEditorPanel.placeLocomotive`, and the placed train stays in both orders and this fails.
      */
     @Test(timeOut = 400000)
