@@ -202,6 +202,9 @@ abstract class StationWindowBase extends JDialog
 
         reload();
 
+        // Closed by the reload, as its square is no Point now: `pack()` would make it displayable again
+        if (tile == null) return;
+
         pack();
 
         if (first)

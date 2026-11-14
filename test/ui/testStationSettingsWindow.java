@@ -1058,6 +1058,172 @@ public class testStationSettingsWindow
     }
 
     /**
+     * The list of trains is titled by what it does: Whitelist's, from its radio on an empty list and from Choose, as the
+     * trains let in; Blacklist's, from Choose, as the trains kept out.
+     *
+     * MUTATION: title `EditorPrompts.promptTrainList`'s list "Locomotive Exclusions" whatever `which` is, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheListOfTrainsIsTitledByWhatItDoes() throws Exception
+    {
+        final TileKey square = aStation();
+        final List<String> one = Arrays.asList(model.getLocList().get(0));
+
+        // No home, which a list could shut out and so ask about first
+        Components.onTheEventThread(() -> { session.setPointProperty(square, "home", null); return null; });
+
+        assertTitled(titlesAsked(StationDoors.open(panel, square), "station.whichWhite"), WhichTrains.WHITELIST,
+            "Whitelist on an empty list");
+
+        for (WhichTrains which : new WhichTrains[] {WhichTrains.WHITELIST, WhichTrains.BLACKLIST})
+        {
+            Components.onTheEventThread(() -> { session.setWhichTrains(square, which, one); return null; });
+
+            assertTitled(titlesAsked(StationDoors.open(panel, square), "station.whichChoose"), which, "Choose under "
+                + which);
+        }
+    }
+
+    /** The titles of the questions a control's click asks, each answered Cancel. */
+    private static List<String> titlesAsked(StationSettingsWindow window, String control) throws Exception
+    {
+        final AbstractButton button = StationDoors.part(window, control, AbstractButton.class);
+        final java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(1);
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(1)))
+        {
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    button.doClick();
+                }
+                finally
+                {
+                    done.countDown();
+                }
+            });
+
+            assertTrue(done.await(30, java.util.concurrent.TimeUnit.SECONDS), control + " did not finish");
+
+            Components.settle();
+
+            List<String> titles = new java.util.ArrayList<>();
+
+            for (Answering.Question each : answering.questions()) titles.add(each.title);
+
+            return titles;
+        }
+    }
+
+    private static void assertTitled(List<String> titles, WhichTrains which, String door)
+    {
+        String expected = I18n.t(which == WhichTrains.WHITELIST ? "autosetup.ui.labelLocomotivesAllowed"
+            : "autosetup.ui.labelLocomotiveExclusions");
+
+        assertEquals(titles.size(), 1, "precondition: " + door + " did not open the list once: " + titles);
+        assertTrue(titles.get(0).startsWith(expected), door + " opened the list of trains titled \"" + titles.get(0)
+            + "\", not \"" + expected + "\"");
+    }
+
+    // ------------------------------------------------------------------------------------------ closed stays closed
+
+    /**
+     * A window closed while its matrix question is still being answered stays closed: the answer's paint made it
+     * displayable again, its pointer watch registered again until the editor closed.
+     *
+     * MUTATION: drop `|| tile == null` from the posted paint in `StationSettingsWindow.askTheRailway`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAWindowClosedBeforeItsMatrixAnswersStaysClosed() throws Exception
+    {
+        TileKey square = aStation();
+
+        final java.util.concurrent.ThreadPoolExecutor worker = (java.util.concurrent.ThreadPoolExecutor)
+            Reflect.get(AutonomyEditorPanel.class, panel, "WhyRenderer");
+        final java.util.concurrent.CountDownLatch held = new java.util.concurrent.CountDownLatch(1);
+        final StationSettingsWindow[] window = new StationSettingsWindow[1];
+
+        // The one worker the question goes to, held so the window closes before the answer comes
+        worker.execute(() ->
+        {
+            try
+            {
+                held.await(60, java.util.concurrent.TimeUnit.SECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+        });
+
+        try
+        {
+            window[0] = Components.onTheEventThread(() -> panel.openStationSettings(square));
+
+            Components.settle();
+
+            assertFalse(window[0].matrixIsCurrent(), "precondition: the matrix answered while its worker was held");
+
+            pressEscapeOn(window[0]);
+
+            assertFalse(Components.onTheEventThread(() -> window[0].isDisplayable()), "precondition: Escape did not"
+                + " close the window");
+        }
+        finally
+        {
+            held.countDown();
+        }
+
+        assertTrue(Components.waitFor(() -> worker.getActiveCount() == 0 && worker.getQueue().isEmpty(), 30000),
+            "precondition: the matrix question was never answered");
+
+        Components.settle();
+
+        assertFalse(Components.onTheEventThread(() -> window[0].isDisplayable()), "the matrix answer arriving after"
+            + " the window closed made it displayable again");
+    }
+
+    /**
+     * A window aimed at a square that is no Point closes, and stays closed: `aim` went on to `pack()` after the reload
+     * had closed it.
+     *
+     * MUTATION: drop the `tile == null` return after `reload()` in `StationWindowBase.aim`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAWindowAimedAtASquareThatIsNoPointStaysClosed() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        TileKey plain = Components.onTheEventThread(() ->
+        {
+            org.traincontrol.base.LayoutDiagram diagram = model.getLayout(PAGE);
+
+            for (int x = 0; x < diagram.getSx(); x++)
+            {
+                for (int y = 0; y < diagram.getSy(); y++)
+                {
+                    TileKey each = new TileKey(PAGE, x, y);
+
+                    if (diagram.getComponent(x, y) != null && !session.getReducer().getPoints().containsKey(each))
+                        return each;
+                }
+            }
+
+            throw new AssertionError("precondition: no square of " + PAGE + " that is no Point");
+        });
+
+        final java.lang.reflect.Method aimAt = Reflect.method(StationSettingsWindow.class, "aimAt", List.class);
+
+        Components.onTheEventThread(() -> aimAt.invoke(window, java.util.Collections.singletonList(plain)));
+
+        Components.settle();
+
+        assertFalse(Components.onTheEventThread(() -> window.isDisplayable()), "Station Settings aimed at " + plain
+            + ", which is no Point, closed and was made displayable again");
+    }
+
+    /**
      * Turning on a kept list that shuts out the station's home locomotive warns, as choosing the list does (OB-022): No
      * leaves All in force.
      *
