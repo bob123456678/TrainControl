@@ -640,9 +640,15 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
     @Test
     public void testAStationsDiagramWaitsForTheStationsType() throws Exception
     {
+        assertTheStationsDiagramWaitsForTheType("");
+    }
+
+    /** A first sync from `folder` with the device file dropped builds no page, and the retry builds W 15 as MM2. */
+    private static void assertTheStationsDiagramWaitsForTheType(String folder) throws Exception
+    {
         withTheFolderPutBack(() ->
         {
-            assertEquals(firstSyncWithTheDeviceFileDropped(""), -1, "a sync whose device file did not arrive succeeded");
+            assertEquals(firstSyncWithTheDeviceFileDropped(folder), -1, "a sync whose device file did not arrive succeeded");
             assertEquals(model.getLayoutList(), new ArrayList<>(),
                 "pages were built before the station's type was known");
 
@@ -662,19 +668,7 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
     @Test
     public void testAFolderThatWillNotReadWaitsForTheTypeToo() throws Exception
     {
-        File missing = new File(sandbox.getFolder(), "no such folder");
-
-        withTheFolderPutBack(() ->
-        {
-            assertEquals(firstSyncWithTheDeviceFileDropped(missing.getAbsolutePath()), -1,
-                "a sync whose device file did not arrive succeeded");
-            assertEquals(model.getLayoutList(), new ArrayList<>(),
-                "pages were built before the station's type was known");
-
-            assertTrue(syncWithTheWholeStation() >= 0, "the retry failed: " + model.getLastSyncError());
-            assertEquals(w15(), "MM2", "after the failed sync and the retry, W 15's tile is commanded as");
-            return null;
-        });
+        assertTheStationsDiagramWaitsForTheType(new File(sandbox.getFolder(), "no such folder").getAbsolutePath());
     }
 
     /**

@@ -1008,47 +1008,7 @@ public class testMockCentralStation
     @Test
     public void testHeadersAndNoBodyEveryTimeFailTheSync() throws Exception
     {
-        java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
-        String folder = prefs.get(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
-        String was = TestStationAddress.get();
-
-        try
-        {
-            prefs.remove(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF);
-            TestStationAddress.set(address);
-            dccAtOne = true;
-
-            model.clearLayouts();
-            assertTrue(model.syncWithCS2() >= 0, "precondition: the healthy sync failed: " + model.getLastSyncError());
-
-            String control = protocolsAtAddressOne();
-            assertTrue(!control.isEmpty() && !control.contains("MM2"), "precondition: address 1 reads as DCC: " + control);
-
-            // As at a first start: the station's diagram is read only into an empty layout database
-            model.clearLayouts();
-            damagedPath = "/magnetartikel.cs2";
-            cutShort = true;
-            headersOnly = true;
-
-            assertEquals(model.syncWithCS2(), -1, "a sync whose accessory list came as headers and no body answered"
-                + " success, with address 1 as " + protocolsAtAddressOne());
-            assertFalse(protocolsAtAddressOne().contains("MM2"), "the tile at DCC address 1 was built as MM2 from a list"
-                + " that never arrived: " + protocolsAtAddressOne());
-
-            damagedPath = null;
-
-            assertTrue(model.syncWithCS2() >= 0, "the next, healthy sync failed: " + model.getLastSyncError());
-            assertEquals(protocolsAtAddressOne(), control, "after the next sync, the tile at DCC address 1 is");
-        }
-        finally
-        {
-            damagedPath = null;
-            headersOnly = false;
-            dccAtOne = false;
-            TestStationAddress.set(was);
-            prefs.put(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, folder);
-            model.refreshLayouts();
-        }
+        assertAnAccessoryListThatFailsToArriveBuildsNothing(true);
     }
 
     /**
@@ -1086,6 +1046,15 @@ public class testMockCentralStation
     @Test
     public void testAnAccessoryListThatFailsToArriveFailsTheSyncAndBuildsNothingFromIt() throws Exception
     {
+        assertAnAccessoryListThatFailsToArriveBuildsNothing(false);
+    }
+
+    /**
+     * A first sync from the station with its accessory list cut off, or headers alone every time: it fails and builds no
+     * tile at DCC address 1 as MM2, and the next sync builds it right.
+     */
+    private static void assertAnAccessoryListThatFailsToArriveBuildsNothing(boolean asHeadersOnly) throws Exception
+    {
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
         String folder = prefs.get(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
         String was = TestStationAddress.get();
@@ -1106,6 +1075,7 @@ public class testMockCentralStation
             model.clearLayouts();
             damagedPath = "/magnetartikel.cs2";
             cutShort = true;
+            headersOnly = asHeadersOnly;
 
             assertEquals(model.syncWithCS2(), -1, "a sync whose accessory list did not arrive answered success");
             assertNotNull(model.getLastSyncError(), "and names no reason");
@@ -1120,6 +1090,7 @@ public class testMockCentralStation
         finally
         {
             damagedPath = null;
+            headersOnly = false;
             dccAtOne = false;
             TestStationAddress.set(was);
             prefs.put(org.traincontrol.gui.TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, folder);
