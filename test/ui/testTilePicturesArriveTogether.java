@@ -99,7 +99,7 @@ public class testTilePicturesArriveTogether
      * Two hundred straight squares and twenty curves are two pictures, so two decodes, not one per square.
      *
      * MUTATION: in `LayoutLabel.decodeOnce`, return a fresh `CompletableFuture.runAsync(...)` instead of going through
-     * `DECODING.computeIfAbsent` and the count goes to about one per square.
+     * `DECODING.computeIfAbsent` and the count goes to dozens.
      */
     @Test
     public void testAPictureIsDecodedOnceForAllItsSquares() throws Exception
