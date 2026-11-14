@@ -684,13 +684,7 @@ public class testTheLocomotiveSettingsFunctions
     @Test(timeOut = 120000)
     public void testASaveKeepsAPresetSavedFromTheKeyMenuWhileOpen() throws Exception
     {
-        loc.setF(5, true);
-
-        assertTrue(Components.waitFor(() -> loc.getF(5), WAIT));
-
-        loc.savePreferredFunctions();
-
-        assertTrue(saved(5), "precondition: the key menu's preset took");
+        presetFromTheKeyMenu(5);
 
         tick(2);
 
@@ -698,6 +692,49 @@ public class testTheLocomotiveSettingsFunctions
 
         assertTrue(Components.waitFor(() -> saved(2), WAIT), "Save did not write the tick");
         assertTrue(saved(5), "Save replaced the preset saved from the key menu while the window was open");
+    }
+
+    /**
+     * Clear Preset says what every row holds, so its Save clears a tick saved from the key menu while the window was
+     * open, though that row still shows what it loaded.
+     *
+     * MUTATION: drop `wholePreset = true` from Clear Preset in `LocomotiveFunctionsTab.buttons`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testClearPresetClearsATickSavedFromTheKeyMenuWhileOpen() throws Exception
+    {
+        presetFromTheKeyMenu(5);
+
+        // A tick in the table, as Clear Preset is gray with none
+        tick(2);
+
+        press("functions.clearPreset");
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> !saved(5), WAIT), "Clear Preset and Save left the tick saved from the key menu");
+    }
+
+    /**
+     * Use Current Functions as Preset says what every row holds too: a function now off leaves the preset, though the
+     * key menu saved it while the window was open.
+     *
+     * MUTATION: drop `wholePreset = true` from Use Current in `LocomotiveFunctionsTab.buttons`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testUseCurrentDropsATickSavedFromTheKeyMenuWhileOpen() throws Exception
+    {
+        presetFromTheKeyMenu(5);
+
+        loc.setF(5, false);
+
+        assertTrue(Components.waitFor(() -> !loc.getF(5), WAIT));
+
+        press("functions.useCurrent");
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> !saved(5), WAIT), "Use Current and Save kept a function that is off in the preset");
     }
 
     /**
@@ -1166,6 +1203,18 @@ public class testTheLocomotiveSettingsFunctions
         assertNotNull(b, "the tab has no " + name);
 
         SettingsWindow.press(b);
+    }
+
+    /** F on and saved as the preset from the key menu, with the window open. */
+    private static void presetFromTheKeyMenu(int f)
+    {
+        loc.setF(f, true);
+
+        assertTrue(Components.waitFor(() -> loc.getF(f), WAIT));
+
+        loc.savePreferredFunctions();
+
+        assertTrue(saved(f), "precondition: the key menu's preset took");
     }
 
     private static boolean saved(int function)

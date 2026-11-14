@@ -107,6 +107,9 @@ final class LocomotiveFunctionsTab extends JPanel
     private boolean reset;
     private boolean copied;
 
+    /** Set by the preset buttons, which say what every row holds: Save then writes every row's tick. */
+    private boolean wholePreset;
+
     /** What Copy Icons took, for the rows a bigger decoder type adds afterwards. */
     private Locomotive.Customizations copiedFrom;
     private boolean blocked;
@@ -252,6 +255,7 @@ final class LocomotiveFunctionsTab extends JPanel
         {
             for (Row r : everyRow()) r.preset = r.function < loc.getNumF() && loc.getF(r.function);
 
+            wholePreset = true;
             changed();
         });
 
@@ -259,6 +263,7 @@ final class LocomotiveFunctionsTab extends JPanel
         {
             for (Row r : everyRow()) r.preset = false;
 
+            wholePreset = true;
             changed();
         });
 
@@ -426,7 +431,7 @@ final class LocomotiveFunctionsTab extends JPanel
     /** Whether anything in the table differs from what the locomotive held when the tab was built. */
     boolean isDirty()
     {
-        if (reset || copied) return true;
+        if (reset || copied || wholePreset) return true;
 
         for (Row r : rows)
         {
@@ -675,7 +680,7 @@ final class LocomotiveFunctionsTab extends JPanel
                 ui.getModel().logf("loc.ui.logSetCustomFunctionIcon", loc.getName(), f, loc.getLocalFunctionImageURL(f));
             }
 
-            if (r.preset != r.preset0) preset[f] = r.preset;
+            if (wholePreset || r.preset != r.preset0) preset[f] = r.preset;
         }
 
         // A copy leaves this locomotive customized even when its source was not: it now carries somebody else's functions.
