@@ -5269,9 +5269,11 @@ public class testTheTrainWindow
     /**
      * A turn the railway made on arrival and wrote into the setup only once the editor is open (`faceTheWayItCameIn`,
      * retried while idle) is no turn since the editor opened: no train runs with an editor open, so the railway turned
-     * it before, and Edit's fold and picture already have it so.  Cancel asks nothing and keeps it as it stands.
+     * it before, and Edit's fold and picture already have it so.  The write is saved, as a followed turn is, so Cancel
+     * asks nothing, and it keeps the train as it stands.
      *
-     * MUTATION: call `turned(locomotive)` at the end of `AutonomySession.faceTheWayItCameIn`, and Cancel turns it back.
+     * MUTATION: call `turned(locomotive)` at the end of `AutonomySession.faceTheWayItCameIn`, and Cancel asks and turns
+     * it back.
      */
     @Test(timeOut = 300000)
     public void testAnArrivalTurnWrittenWithTheEditorOpenIsKeptByCancel() throws Exception
@@ -5284,28 +5286,40 @@ public class testTheTrainWindow
 
         try
         {
-            // The railway turned it on arrival: on the copy facing the other way, in by that side, the write owed
+            // The railway turned it on arrival: on the copy facing the other way, in by that side
             Components.onTheEventThread(() ->
             {
                 org.traincontrol.automation.Layout railway = model.getAutoLayout();
                 org.traincontrol.automation.Point turnedOn = session.copyFacing(square, way, railway);
 
                 railway.moveLocomotive(null, copyBefore, false);
-                railway.moveLocomotive(name, turnedOn.getName(), false);
+
+                // Onto a barred copy too, as a turn on arrival can leave it on one
+                assertTrue(railway.moveLocomotive(name, turnedOn.getName(), false, true), "precondition: " + name
+                    + " could not be stood on " + turnedOn.getName());
 
                 turnedOn.setArrivedFrom(way.name());
-
-                railway.restoreReversalsOnArrival(java.util.Collections.singletonMap(name, turnedOn.getName()));
-
-                // Edit's fold, before the editor takes its picture
-                fold.invoke(ui);
 
                 return null;
             });
 
+            // Edit's fold, before the editor takes its picture, once what the railway's change posted has run
+            Components.settle();
+
+            Components.onTheEventThread(() -> fold.invoke(ui));
+
             theEditorsPanel();
 
-            Components.onTheEventThread(() -> { ui.reconcileFacingWhenIdle(); return null; });
+            // The write still owed, retried once the editor is open (owed only now, or an idle refresh before the
+            // editor opened would write it first)
+            Components.onTheEventThread(() ->
+            {
+                model.getAutoLayout().restoreReversalsOnArrival(java.util.Collections.singletonMap(name, copyOf(name)));
+
+                ui.reconcileFacingWhenIdle();
+
+                return null;
+            });
 
             Components.settle();
 

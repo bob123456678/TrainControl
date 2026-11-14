@@ -378,6 +378,7 @@ final class DiagramLocGestures
     {
         // Forgotten only once written, so a turn that never reached the graph is put back.
         Map<String, String> turnedRound = built.takeReversalsOnArrival();
+        boolean wrote = false;
 
         try
         {
@@ -398,8 +399,17 @@ final class DiagramLocGestures
                     }
 
                     pending.remove();
+
+                    wrote = true;
                 }
+
+                // Saved with an editor open, as a followed turn is: the railway's, not the editor's work to ask about
+                if (wrote && ui.anEditorWindow() != null) session.saveWithoutReconciling();
             }
+        }
+        catch (java.io.IOException notSaved)
+        {
+            if (ui.getModel() != null) ui.getModel().log(notSaved);
         }
         finally
         {
