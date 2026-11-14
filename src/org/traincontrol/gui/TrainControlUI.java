@@ -167,6 +167,7 @@ import org.traincontrol.gui.widgets.BackupAction;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.gui.widgets.HandScrollListener;
+import org.traincontrol.gui.widgets.LoadingSpinner;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.QuickFileChooser;
@@ -5697,7 +5698,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Integer tiles = this.layoutSizes.get(String.valueOf(this.SizeList.getSelectedItem()));
 
         if (tiles != null) LayoutLabel.warmUp(this, tiles);
-        
+
+        if (!listener.getLayoutList().isEmpty()) showTheDiagramIsLoading(tiles);
+
         // Render layout now that the UI is visible
         repaintLayout();
         
@@ -5960,6 +5963,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         takeTheKeyboard();
 
         letTheWholeWindowDriveTrains();
+    }
+
+    /** The hourglass in the diagram's place, sized to the page shown, until the first drawing replaces it (OB-467). */
+    private void showTheDiagramIsLoading(Integer tiles)
+    {
+        LoadingSpinner spinner = new LoadingSpinner();
+        LayoutDiagram page = shownDiagram();
+
+        if (page != null && tiles != null)
+        {
+            spinner.setPreferredSize(new Dimension(Math.max(200, page.getSx() * tiles),
+                Math.max(200, page.getSy() * tiles)));
+        }
+
+        InnerLayoutPanel.removeAll();
+        InnerLayoutPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        InnerLayoutPanel.add(spinner);
     }
 
     private KeyEvent theKeyTheMapAlreadySaw;

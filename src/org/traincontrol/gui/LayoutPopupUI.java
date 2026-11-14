@@ -126,7 +126,10 @@ public class LayoutPopupUI extends PositionAwareJFrame
         {
             LayoutDiagram page = this.parent.getModel().getLayout(name);
 
-            if (page != null && page.getPageId() != null && page.getPageId().equals(this.layout.getPageId())) return false;
+            if (page != null && page.getPageId() != null && page.getPageId().equals(this.layout.getPageId()))
+            {
+                return false;
+            }
         }
 
         return true;
