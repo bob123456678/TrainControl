@@ -1312,10 +1312,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             return decoder.getSelectedItem() != loadedDecoder ? Integer.toString(loc.getAddress()) : null;
         }
 
-        /** The decoder type to write: the chosen one when it was changed, else the locomotive's own (a sync may have changed it). */
+        /** The decoder type to write: the chosen one when adding or changed, else the locomotive's own (a sync may have changed it). */
         decoderType decoderToWrite()
         {
-            return decoder.getSelectedItem() != loadedDecoder ? chosenDecoder() : loc.getDecoderType();
+            return adding || decoder.getSelectedItem() != loadedDecoder ? chosenDecoder() : loc.getDecoderType();
         }
 
         boolean identityChanged()

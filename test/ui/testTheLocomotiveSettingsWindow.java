@@ -1436,9 +1436,8 @@ public class testTheLocomotiveSettingsWindow
         loc.setStructuredNotes(1955, 1970, "LS Railway", "first notes");
 
         typeArea("notes.text", "second notes");
-        SettingsWindow.press(SettingsWindow.save());
+        saveTyped(null, "3401");
 
-        assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "the Save did not go through");
         assertEquals(loc.getStructuredNotes().getStartYear(), 1955, "the import's start year was written back empty");
         assertEquals(loc.getStructuredNotes().getNotes(), "second notes");
     }
