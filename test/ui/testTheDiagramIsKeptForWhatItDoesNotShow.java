@@ -31,6 +31,7 @@ import org.traincontrol.gui.LayoutPopupUI;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
+import org.traincontrol.util.I18n;
 import support.Answering;
 import support.AskingWindows;
 import support.Components;
@@ -798,6 +799,12 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
      */
     private static void outAndBackElsewhere(Check out, Check back) throws Exception
     {
+        outAndBackElsewhere(testTheDiagramIsKeptForWhatItDoesNotShow::syncTheLocomotive, out, back);
+    }
+
+    /** As {@link #outAndBackElsewhere(Check, Check)}, with `door` reading the pages again after the edit. */
+    private static void outAndBackElsewhere(Check door, Check out, Check back) throws Exception
+    {
         final Path file = sandbox.getFolder().toPath().resolve("config/gleisbilder/" + PAGE + ".cs2");
         final byte[] asItWas = Files.readAllBytes(file);
         final String text = new String(asItWas, StandardCharsets.UTF_8);
@@ -812,7 +819,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         {
             Files.write(file, text.replace(square, "").getBytes(StandardCharsets.UTF_8));
 
-            syncTheLocomotive(train);
+            door.check(train);
 
             out.check(train);
         }
@@ -882,18 +889,162 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     }
 
     /**
-     * Sync from the main window reads the pages again from the folder, as new objects, and the autonomy setup then
-     * describes those, not the pages it was opened on: an edit made elsewhere would otherwise reach the diagram and
-     * not the graph trains are sent over.
+     * Sync from the main window reads a page changed elsewhere, and the autonomy setup then describes the pages read,
+     * not the ones it was opened on: the edit would otherwise reach the diagram and not the graph trains are sent over.
      *
      * MUTATION: leave out `followIfReadAgain(before)` in `TrainControlUI.doSync`, and this fails.
      */
-    @Test(timeOut = 180000)
+    @Test(timeOut = 240000)
     public void testTheSetupFollowsThePagesSyncReadsAgain() throws Exception
     {
-        assertNotNull(Components.onTheEventThread(() -> ui.getAutonomySession()), "precondition: no autonomy setup");
+        final Check follows = train -> assertTrue(theSetupHoldsThePagesNow(), "after Sync the autonomy setup still"
+            + " describes the pages it was opened on");
 
-        // The stand-in fails the sync after the pages, so Sync offers Retry: Close
+        outAndBackElsewhere(train -> pressSync(), follows, follows);
+    }
+
+    /**
+     * Sync of one locomotive, which reads the pages again from a local folder too, leaves the setup describing a page
+     * changed elsewhere.
+     *
+     * MUTATION: leave out `followIfReadAgain(before)` in `TrainControlUI.redrawRouteSquaresOrRebuild`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheSetupFollowsThePagesALocomotiveSyncReadsAgain() throws Exception
+    {
+        final Check follows = train -> assertTrue(theSetupHoldsThePagesNow(), "after Sync of a locomotive the autonomy"
+            + " setup still describes the pages it was opened on");
+
+        outAndBackElsewhere(follows, follows);
+    }
+
+    /**
+     * Pages read again unchanged leave the setup and its configuration alone: following them resets the session and
+     * reloads the configuration, which a route toggle or a locomotive's Sync does not ask for.
+     *
+     * MUTATION: in `TrainControlUI.followThePagesIfChanged`, follow without asking `thePagesChanged()`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testPagesReadAgainUnchangedKeepTheSetup() throws Exception
+    {
+        final Object before = Components.onTheEventThread(() -> ui.getAutonomySession());
+        final String active = Components.onTheEventThread(() -> ui.getActiveDiagramConfiguration());
+
+        syncTheLocomotive(model.getLocByName(model.getLocList().get(0)));
+
+        Components.settle();
+
+        assertSame(Components.onTheEventThread(() -> ui.getAutonomySession()), before, "a Sync that read the pages"
+            + " again unchanged replaced the autonomy setup");
+
+        assertEquals(Components.onTheEventThread(() -> ui.getActiveDiagramConfiguration()), active,
+            "a Sync that read the pages again unchanged changed the configuration loaded");
+    }
+
+    /**
+     * Sync of one locomotive during a run, with a page changed elsewhere, asks nothing and leaves the running
+     * configuration and its setup alone; the follow is owed, and made once the run is over.
+     *
+     * MUTATION: in `TrainControlUI.followThePagesIfChanged`, follow without asking `aRunHoldsTheSetup()`, and this
+     * fails.
+     */
+    @Test(timeOut = 240000)
+    public void testALocomotiveSyncDuringARunLeavesTheRunAlone() throws Exception
+    {
+        duringARun(train -> syncTheLocomotive(train));
+    }
+
+    /**
+     * Disarming a route the station carries during a run, with a page changed elsewhere, asks nothing and leaves the
+     * running configuration and its setup alone; the follow is owed, and made once the run is over.
+     *
+     * MUTATION: in `TrainControlUI.followThePagesIfChanged`, follow without asking `aRunHoldsTheSetup()`, and this
+     * fails.
+     */
+    @Test(timeOut = 240000)
+    public void testAStationRouteDisarmedDuringARunLeavesTheRunAlone() throws Exception
+    {
+        final MarklinRoute route = (MarklinRoute) model.getRoute(model.getRouteList().get(0));
+        final boolean wasLocked = route.isLocked();
+        final boolean wasEnabled = route.isEnabled();
+
+        try
+        {
+            // As a route the station carries, whose write syncs
+            route.setLocked(true);
+
+            duringARun(train ->
+            {
+                ui.enableOrDisableRoute(route.getName(), false);
+
+                assertTrue(Components.waitFor(() -> model.getRoute(route.getName()) != route, 30000),
+                    "precondition: disarming did not write the route anew");
+
+                Settle.theDiagram(ui);
+            });
+        }
+        finally
+        {
+            putBack(route.getName(), wasLocked, wasEnabled);
+        }
+    }
+
+    /**
+     * A page changed elsewhere, then `door` while the railway reads as running: nothing is asked, the configuration
+     * and the setup stay; once the run is over the setup follows the pages, with the configuration still loaded.
+     */
+    private static void duringARun(Check door) throws Exception
+    {
+        final String active = Components.onTheEventThread(() -> ui.getActiveDiagramConfiguration());
+        final Object before = Components.onTheEventThread(() -> ui.getAutonomySession());
+        final org.traincontrol.automation.Layout railway = model.getAutoLayout();
+        final java.lang.reflect.Field running = Reflect.field(org.traincontrol.automation.Layout.class, "running");
+        final String stops = I18n.t("autolayout.ui.confirmReloadJsonStopsRunningLocomotives");
+
+        assertNotNull(active, "precondition: no configuration is loaded");
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(1)))
+        {
+            outAndBackElsewhere(train ->
+            {
+                running.setBoolean(railway, true);
+
+                door.check(train);
+            }, train ->
+            {
+                Components.settle();
+
+                assertFalse(answering.asked().contains(stops), "a door during a run asked to stop the trains: "
+                    + answering.asked());
+
+                assertEquals(Components.onTheEventThread(() -> ui.getActiveDiagramConfiguration()), active,
+                    "a door during a run unloaded the configuration running");
+
+                assertSame(Components.onTheEventThread(() -> ui.getAutonomySession()), before,
+                    "a door during a run replaced the autonomy setup under the running railway");
+
+                running.setBoolean(railway, false);
+
+                // What the end of a run calls
+                ui.updateVisiblePoints();
+
+                assertTrue(Components.waitFor(testTheDiagramIsKeptForWhatItDoesNotShow::theSetupHoldsThePagesNow,
+                    20000), "once the run was over the"
+                    + " autonomy setup still described the pages from before the edit");
+
+                assertEquals(Components.onTheEventThread(() -> ui.getActiveDiagramConfiguration()), active,
+                    "following the pages once the run was over unloaded the configuration");
+            }, train -> { });
+        }
+        finally
+        {
+            running.setBoolean(railway, false);
+        }
+    }
+
+    /** Sync from the main window, whose failure after the pages (the stand-in has no routes) is closed. */
+    private static void pressSync() throws Exception
+    {
         try (Answering answering = Answering.start(message -> Answering.pressAt(1)))
         {
             SwingUtilities.invokeLater(() -> ui.doSync(ui));
@@ -902,43 +1053,31 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
             Settle.theDiagram(ui);
         }
-
-        assertTrue(theSetupHoldsThePagesNow(), "after Sync the autonomy setup still describes the pages it was"
-            + " opened on");
-    }
-
-    /**
-     * Sync of one locomotive, which reads the pages again from a local folder too, leaves the setup describing them.
-     *
-     * MUTATION: leave out `followIfReadAgain(before)` in `TrainControlUI.redrawRouteSquaresOrRebuild`, and this fails.
-     */
-    @Test(timeOut = 180000)
-    public void testTheSetupFollowsThePagesALocomotiveSyncReadsAgain() throws Exception
-    {
-        assertNotNull(Components.onTheEventThread(() -> ui.getAutonomySession()), "precondition: no autonomy setup");
-
-        syncTheLocomotive(model.getLocByName(model.getLocList().get(0)));
-
-        assertTrue(theSetupHoldsThePagesNow(), "after Sync of a locomotive the autonomy setup still describes the pages"
-            + " it was opened on");
     }
 
     /** Whether the autonomy setup's pages are the objects the model holds now. */
-    private static boolean theSetupHoldsThePagesNow() throws Exception
+    private static boolean theSetupHoldsThePagesNow()
     {
-        return Components.onTheEventThread(() ->
+        try
         {
-            AutonomySession now = ui.getAutonomySession();
-
-            if (now == null || now.getPages().isEmpty()) return false;
-
-            for (org.traincontrol.base.LayoutDiagram page : now.getPages())
+            return Components.onTheEventThread(() ->
             {
-                if (page != model.getLayout(page.getName())) return false;
-            }
+                AutonomySession now = ui.getAutonomySession();
 
-            return true;
-        });
+                if (now == null || now.getPages().isEmpty()) return false;
+
+                for (org.traincontrol.base.LayoutDiagram page : now.getPages())
+                {
+                    if (page != model.getLayout(page.getName())) return false;
+                }
+
+                return true;
+            });
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
     }
 
     /** Sync in Locomotive Settings, waited out with the diagram it draws. */
