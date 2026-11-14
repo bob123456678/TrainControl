@@ -456,7 +456,35 @@ public final class CS2File
             }
         };
 
-        return new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8));
+        java.io.ByteArrayOutputStream whole = new java.io.ByteArrayOutputStream();
+
+        try (InputStream in = body)
+        {
+            byte[] chunk = new byte[8192];
+
+            int n;
+
+            while ((n = in.read(chunk)) >= 0) whole.write(chunk, 0, n);
+        }
+
+        return new BufferedReader(new java.io.StringReader(decode(whole.toByteArray(), url)));
+    }
+
+    /** UTF-8 when the bytes are valid UTF-8, otherwise ISO-8859-1: names come out right whichever a station sends. */
+    private static String decode(byte[] bytes, String url)
+    {
+        try
+        {
+            return StandardCharsets.UTF_8.newDecoder().onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+                .decode(java.nio.ByteBuffer.wrap(bytes)).toString();
+        }
+        catch (java.nio.charset.CharacterCodingException notUtf8)
+        {
+            java.util.logging.Logger.getLogger(CS2File.class.getName()).info(url + " is not UTF-8; read as ISO-8859-1");
+
+            return new String(bytes, StandardCharsets.ISO_8859_1);
+        }
     }
 
     /** Parses a CS2 config file into a string map */

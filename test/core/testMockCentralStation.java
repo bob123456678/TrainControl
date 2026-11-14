@@ -844,15 +844,47 @@ public class testMockCentralStation
     }
 
     /**
-     * A locomotive file that arrives in the wrong character set (the station's umlauts as single bytes) is not read as
-     * though the names were right: the database is as it was and the sync says it failed.
+     * A station file in UTF-8 or in ISO-8859-1 syncs with every name exactly right, umlauts included.
+     *
+     * MUTATION: decode every fetched file as UTF-8 only, in `CS2File.fetchURL`, and the Latin-1 case fails.
      */
-    @Test
-    public void testALocomotiveFileInTheWrongEncodingChangesNothing() throws Exception
+    @Test(dataProvider = "encodings")
+    public void testAStationFileInEitherEncodingSyncsWithTheNamesRight(boolean latin1) throws Exception
     {
-        assertADamagedLocomotiveFileChangesNothing(false);
+        String was = TestStationAddress.get();
+
+        List<String> served = describe(mockStation().parseLocomotives());
+
+        assertTrue(takeTheServedLocomotivesOut() > 0, "precondition: the database holds none of the station's locomotives");
+
+        damagedPath = latin1 ? "/lokomotive.cs2" : null;
+
+        cutShort = false;
+
+        TestStationAddress.set(address);
+
+        try
+        {
+            assertTrue(model.syncWithCS2() >= 0, "the sync of a " + (latin1 ? "Latin-1" : "UTF-8") + " file failed");
+
+            assertEquals(heldAmongTheServed(), served, "a " + (latin1 ? "Latin-1" : "UTF-8") + " file synced with"
+                + " names or addresses that are not the file's");
+        }
+        finally
+        {
+            damagedPath = null;
+
+            TestStationAddress.set(was);
+        }
     }
 
+    @DataProvider
+    public static Object[][] encodings()
+    {
+        return new Object[][] {{false}, {true}};
+    }
+
+    /** A locomotive file that stops half way is not taken for the whole of it: the database is as it was. */
     private void assertADamagedLocomotiveFileChangesNothing(boolean truncated) throws Exception
     {
         String was = TestStationAddress.get();
@@ -873,8 +905,7 @@ public class testMockCentralStation
         {
             int result = model.syncWithCS2();
 
-            assertEquals(result, -1, "the sync did not report failing on a locomotive file that arrived "
-                + (truncated ? "cut off half way" : "in the wrong character set"));
+            assertEquals(result, -1, "the sync did not report failing on a locomotive file that arrived cut off half way");
 
             assertNotNull(model.getLastSyncError(), "the sync names no error for the damaged file");
 
