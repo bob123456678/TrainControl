@@ -15,8 +15,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 
 /**
- * The autonomy editor on the frozen railway (never `cs2_sample_layout`, OB-111), in a sandbox, for claims that press its
- * controls: the window behind it hidden, the setup put back before each claim, and what Save wrote read back.
+ * The main window on the frozen railway (never `cs2_sample_layout`, OB-111), in a sandbox, for claims that press the
+ * autonomy editor's controls or the window's own: the window hidden, the setup put back before each claim, and what
+ * Save wrote read back.
  */
 public final class FrozenEditor implements AutoCloseable
 {
@@ -56,15 +57,16 @@ public final class FrozenEditor implements AutoCloseable
      */
     public static FrozenEditor window(String scenario) throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the autonomy editor needs a display");
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
         LayoutSandbox sandbox = null;
+        MarklinControlStation model = null;
 
         try
         {
             sandbox = LayoutSandbox.open(Scenario.folderFor(scenario));
 
-            MarklinControlStation model = TestStation.simulatedInDebug();
+            model = TestStation.simulatedInDebug();
 
             TrainControlUI[] ui = new TrainControlUI[1];
 
@@ -76,6 +78,8 @@ public final class FrozenEditor implements AutoCloseable
         }
         catch (Exception | Error failed)
         {
+            if (model != null) model.stop();
+
             // The machine's layout preference must not stay on a folder under %TEMP%
             if (sandbox != null) sandbox.close();
 
