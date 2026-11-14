@@ -41,6 +41,9 @@ lane).  The store owns the numbers; the folder is empty by design.
 - **Comments are reviewed against the comment rule in `CLAUDE.md`:** a new or changed comment that tells history
   (what the code used to do, a review round, a date), runs past 15 lines outside a javadoc contract, repeats the
   code, or carries detail that belongs on its OB or FR (cases, reasoning, choices turned down) is a C finding.
+- **Ask who else touches the data:** for every changed read or write of the user's data, who else reads or writes
+  it (another door, a window, a sync, a save), and does that still hold? A sibling door left behind is a finding
+  (`RELEASE.md` section 1, D136).
 
 ## The round
 

@@ -1,0 +1,7 @@
+release	review	prefix	A	B	C	note
+3.1.0	cross-feature (Opus)	XFO1	1	2	3	calibration run against OB-465 to 467
+3.1.0	cross-feature (Fable)	XFF1	2	3	7	calibration run against OB-465 to 467
+3.1.0	data safety	WFL1	1	0	5	A1 predates 3.1.0
+3.1.0	concurrency	THR1	0	0	5	two passes
+3.1.0	upgrade path	FRU1	0	0	3	
+3.1.0	translation wording	TR	0	0	11	6 wording fixes, 5 widths

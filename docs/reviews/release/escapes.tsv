@@ -1,0 +1,4 @@
+release	bug	found_by	should_have_caught	what_changed
+3.1.0	OB-465 Download loses each square's protocol	Adam, hands-on, before the cross-feature review existed	cross-feature; it caught this in its calibration run (XFO1-A1, XFF1-A1). Building: twin doors, round trips	cross-feature made standard; twin-door and round-trip rules (D136)
+3.1.0	OB-466 pop-outs outlive a layout switch	Adam, hands-on, before the cross-feature review existed	cross-feature; caught in calibration (XFO1-B2, XFF1-B1)	cross-feature made standard (D136)
+3.1.0	OB-467 blank diagram at start-up	Adam, hands-on, before the cross-feature review existed	cross-feature caught it in part (XFF1-C1: rebuild waits with no sign). Building: look at it	look-at-it rule (D136)
