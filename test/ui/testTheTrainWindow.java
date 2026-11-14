@@ -5127,6 +5127,85 @@ public class testTheTrainWindow
     }
 
     /**
+     * The track editor deletes two station squares, and between a page switch's Discard and the page's arrival (the
+     * editor's `changingPage` latch is up) Ctrl+Z reaches its key handler: nothing is restored or saved, so the second
+     * station is still gone from the diagram and from the setup on disk.  The latch is raised as `leaveFor` raises it:
+     * the real gap is the worker's re-read, which a test cannot hold open.
+     *
+     * MUTATION: take `switching || changingPage` out of the guard in `LayoutEditor.formKeyPressed` above the selection
+     * shortcuts, and Ctrl+Z puts the second station back, on disk too.
+     */
+    @Test(timeOut = 600000)
+    public void testCtrlZWhileAPageSwitchIsUnderWayRestoresAndSavesNothing() throws Exception
+    {
+        final TileKey first = anEmptyStation();
+        final TileKey second = anEmptyStationBut(first);
+        final org.traincontrol.base.LayoutDiagramComponent firstTile = model.getLayout(PAGE).getComponent(first.getX(),
+            first.getY());
+        final org.traincontrol.base.LayoutDiagramComponent secondTile = model.getLayout(PAGE).getComponent(
+            second.getX(), second.getY());
+        final LayoutEditor open = theTrackEditor();
+        final java.lang.reflect.Method key = Reflect.method(LayoutEditor.class, "formKeyPressed",
+            java.awt.event.KeyEvent.class);
+
+        assertNotNull(pointOnDisk(second), "precondition: the second station has no record on disk");
+
+        try
+        {
+            deleteTheSquare(open, first);
+            deleteTheSquare(open, second);
+
+            assertNull(pointOnDisk(second), "precondition: the second delete did not reach the setup on disk");
+
+            Reflect.set(LayoutEditor.class, open, "changingPage", true);
+
+            Components.onTheEventThread(() ->
+            {
+                key.invoke(open, new java.awt.event.KeyEvent(open, java.awt.event.KeyEvent.KEY_PRESSED,
+                    System.currentTimeMillis(), java.awt.event.InputEvent.CTRL_DOWN_MASK, java.awt.event.KeyEvent.VK_Z,
+                    'z'));
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertNull(pointOnDisk(second), "Ctrl+Z while a page switch was under way put the page's setup back as it"
+                + " was before the last edit and saved it: " + second + " is on disk again");
+
+            assertNull(model.getLayout(PAGE).getComponent(second.getX(), second.getY()), "Ctrl+Z while a page switch"
+                + " was under way put the tile of " + second + " back");
+        }
+        finally
+        {
+            Reflect.set(LayoutEditor.class, open, "changingPage", false);
+
+            support.FrozenEditor.dispose(open);
+
+            editor = null;
+
+            putTheSquareBack(first, firstTile);
+            putTheSquareBack(second, secondTile);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /** What the setup on disk records on a square, as a restart reads it, or null. */
+    private static String pointOnDisk(TileKey square) throws Exception
+    {
+        org.traincontrol.automationui.AutonomyCompanionStore store
+            = new org.traincontrol.automationui.AutonomyCompanionStore(sandbox.getFolder());
+
+        store.load();
+
+        org.json.JSONObject point = store.getConfiguration(store.getActiveConfiguration()).getJSONObject("points")
+            .optJSONObject(square.toString());
+
+        return point == null ? null : point.toString();
+    }
+
+    /**
      * A track edit, the throttle reverses the train on the square edited, then Cancel, a page switch's Discard or the
      * exit's Discard: the edit is thrown away but the turn kept, on the railway and in the setup the pages read again
      * build, and on disk where the exit leaves it.

@@ -1038,7 +1038,8 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         TileGraph.TileKey over = hoveredSquare();
 
-        if (over != null && autonomyPanel != null) prompt.accept(over);
+        // Not while a page switch is under way: the setup is being read again.
+        if (over != null && autonomyPanel != null && !switching && !changingPage) prompt.accept(over);
     }
 
     public void receiveMoveEvent(MouseEvent e, LayoutLabel label)
@@ -5359,7 +5360,7 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
 
-                if (autonomyPanel != null)
+                if (autonomyPanel != null && !switching && !changingPage)
                 {
                     if (over != null) autonomyPanel.openStationSettings(over);
                     else autonomyPanel.openStationSettingsForTheFinding();
@@ -5407,8 +5408,9 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
-            // Every shortcut below places, cuts, rotates or retextures a tile, which autonomy mode must not.
-            if (isAutonomyMode()) return;
+            // Every shortcut below places, cuts, rotates or retextures a tile, which autonomy mode must not, nor a
+            // window between a switch's Discard and its arrival, which would write the page being left.
+            if (isAutonomyMode() || switching || changingPage) return;
 
             // Selection shortcuts live here: key bindings are dead in this window, as the unfocusable controls leave
             // the frame the focus owner.  Selection first, then the single tile.
