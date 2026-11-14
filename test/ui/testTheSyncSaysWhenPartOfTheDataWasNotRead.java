@@ -212,6 +212,37 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
     public void testALocomotiveSyncSaysWhenPartWasNotRead() throws Exception
     {
         Map<String, byte[]> replaced = new ConcurrentHashMap<>();
+
+        withAReplaceableStation(replaced, (rig, ui) ->
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0, "the sync that imports the fixtures failed");
+
+            org.traincontrol.marklin.MarklinLocomotive loc = rig.model.newDCCLocomotive("PS train", 1931);
+            javax.swing.JFrame window = new javax.swing.JFrame();
+
+            try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+            {
+                // Everything read: nothing to say
+                ui.syncLocomotiveFrom(loc, window, null);
+                SwingUtilities.invokeAndWait(() -> { });
+                assertFalse(answering.awaitAsked(1, 3000), "a sync that read everything said: " + answering.asked());
+
+                replaced.put("/app/api/automatics", "<html>not json</html>".getBytes(StandardCharsets.UTF_8));
+                ui.syncLocomotiveFrom(loc, window, null);
+                assertTrue(answering.awaitAsked(1, 60000), "a sync that read part said nothing on the window");
+                assertEquals(answering.asked().get(0), I18n.f("ui.infoSyncCompletePartial", "0"));
+                assertSame(answering.questions().get(0).owner, window, "not on the window that asked");
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(window::dispose);
+            }
+        });
+    }
+
+    /** Runs `claim` on the window of a stand-in CS3 whose answers are the ones in `replaced`, once its start-up sync ended. */
+    private static void withAReplaceableStation(Map<String, byte[]> replaced, OnTheWindow claim) throws Exception
+    {
         BiFunction<String, Integer, byte[]> base = StandInStation.cs3("260", INFO);
 
         try (StationRig rig = new StationRig(Files.createTempDirectory("tc-sync-loc").toFile(),
@@ -222,28 +253,7 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
             try
             {
                 startUpSyncDone(ui);
-                assertTrue(rig.model.syncWithCS2() >= 0, "the sync that imports the fixtures failed");
-
-                org.traincontrol.marklin.MarklinLocomotive loc = rig.model.newDCCLocomotive("PS train", 1931);
-                javax.swing.JFrame window = new javax.swing.JFrame();
-
-                try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
-                {
-                    // Everything read: nothing to say
-                    ui.syncLocomotiveFrom(loc, window, null);
-                    SwingUtilities.invokeAndWait(() -> { });
-                    assertFalse(answering.awaitAsked(1, 3000), "a sync that read everything said: " + answering.asked());
-
-                    replaced.put("/app/api/automatics", "<html>not json</html>".getBytes(StandardCharsets.UTF_8));
-                    ui.syncLocomotiveFrom(loc, window, null);
-                    assertTrue(answering.awaitAsked(1, 60000), "a sync that read part said nothing on the window");
-                    assertEquals(answering.asked().get(0), I18n.f("ui.infoSyncCompletePartial", "0"));
-                    assertSame(answering.questions().get(0).owner, window, "not on the window that asked");
-                }
-                finally
-                {
-                    SwingUtilities.invokeAndWait(window::dispose);
-                }
+                claim.run(rig, ui);
             }
             finally
             {

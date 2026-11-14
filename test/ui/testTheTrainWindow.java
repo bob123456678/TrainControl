@@ -5430,10 +5430,7 @@ public class testTheTrainWindow
     @Test(timeOut = 300000)
     public void testARightClickPostedBeforeAPageSwitchOpensNoMenu() throws Exception
     {
-        final LayoutEditor open = theTrackEditor();
-        final GapSquares at = gapSquares(open);
-
-        try
+        inTheGapSquares((open, at) ->
         {
             Reflect.set(LayoutEditor.class, open, "popup", null);
 
@@ -5450,11 +5447,7 @@ public class testTheTrainWindow
 
             assertNull(Reflect.get(LayoutEditor.class, open, "popup"), "a right click posted before a page switch began"
                 + " opened its menu, with its Undo, Paste and Delete, on the page being left");
-        }
-        finally
-        {
-            leaveTheGap(open, at);
-        }
+        });
     }
 
     /**
@@ -5465,10 +5458,7 @@ public class testTheTrainWindow
     @Test(timeOut = 300000)
     public void testAPageSwitchClosesTheOpenSquareMenu() throws Exception
     {
-        final LayoutEditor open = theTrackEditor();
-        final GapSquares at = gapSquares(open);
-
-        try
+        inTheGapSquares((open, at) ->
         {
             Components.onTheEventThread(() ->
             {
@@ -5499,6 +5489,23 @@ public class testTheTrainWindow
 
             // The switch reads the pages again, which replaces the setup the other claims hold
             reloaded(was);
+        });
+    }
+
+    /** A claim's body on a track editor and its two squares; the latch lowered and the squares put back after. */
+    private interface InTheGap
+    {
+        void run(LayoutEditor open, GapSquares at) throws Exception;
+    }
+
+    private void inTheGapSquares(InTheGap body) throws Exception
+    {
+        final LayoutEditor open = theTrackEditor();
+        final GapSquares at = gapSquares(open);
+
+        try
+        {
+            body.run(open, at);
         }
         finally
         {
