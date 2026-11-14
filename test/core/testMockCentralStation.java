@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -794,6 +795,52 @@ public class testMockCentralStation
     public void testATruncatedLocomotiveFileIsNotTakenForTheWholeOfIt() throws Exception
     {
         assertADamagedLocomotiveFileChangesNothing(true);
+    }
+
+    /**
+     * Every file the sync reads comes through `CS2File.fetchURL`, so one that ends short of its Content-Length is an
+     * error for each: locomotives, routes, accessories, the page index and a page.  The CS3 JSON readers use the same
+     * method.
+     *
+     * MUTATION: take the byte count out of `fetchURL`, and this fails for every path.
+     */
+    @Test(dataProvider = "files")
+    public void testAnyFileThatEndsShortIsAnErrorNotASmallerFile(String suffix, String url) throws Exception
+    {
+        damagedPath = suffix;
+
+        cutShort = true;
+
+        try
+        {
+            try (java.io.BufferedReader in = CS2File.fetchURL("http://" + address + url))
+            {
+                String line;
+
+                while ((line = in.readLine()) != null) { }
+            }
+
+            fail(url + " arrived cut off half way and was read to its end as though it were whole");
+        }
+        catch (java.io.IOException expected)
+        {
+            // what we want: the caller cannot mistake this for a smaller file
+        }
+        finally
+        {
+            damagedPath = null;
+        }
+    }
+
+    @DataProvider
+    public static Object[][] files()
+    {
+        return new Object[][]
+        {
+            {"/lokomotive.cs2", "/config/lokomotive.cs2"}, {"/fahrstrassen.cs2", "/config/fahrstrassen.cs2"},
+            {"/magnetartikel.cs2", "/config/magnetartikel.cs2"}, {"/gleisbild.cs2", "/config/gleisbild.cs2"},
+            {"Main.cs2", "/config/gleisbilder/1%20-%20Main.cs2"}
+        };
     }
 
     /**

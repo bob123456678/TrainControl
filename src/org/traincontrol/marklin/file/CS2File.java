@@ -422,10 +422,41 @@ public final class CS2File
         connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
         connection.setReadTimeout(READ_TIMEOUT_MS);
 
-        return new BufferedReader(
-            new InputStreamReader(
-                connection.getInputStream(), StandardCharsets.UTF_8)
-        );
+        final long promised = connection.getContentLengthLong();
+
+        // A body that ends short of its Content-Length is an error, not a smaller file: every file the sync reads comes
+        // through here, and a half file would be taken as the station's whole list.
+        InputStream body = new java.io.FilterInputStream(connection.getInputStream())
+        {
+            private long got = 0;
+
+            @Override
+            public int read() throws IOException
+            {
+                return counted(super.read(), 1);
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException
+            {
+                int n = super.read(b, off, len);
+
+                return counted(n, n);
+            }
+
+            private int counted(int result, int bytes) throws IOException
+            {
+                if (result >= 0) got += bytes;
+                else if (promised >= 0 && got < promised)
+                {
+                    throw new IOException("the Central Station's file ended after " + got + " of " + promised + " bytes");
+                }
+
+                return result;
+            }
+        };
+
+        return new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8));
     }
 
     /** Parses a CS2 config file into a string map */
