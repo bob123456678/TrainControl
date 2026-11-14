@@ -410,8 +410,8 @@ public class testAutonomyStoreSettingsMatrix
      * Every per-station key `AutonomySession` captures (and facing and homeFacing) is written to the file and read back,
      * one row each, the rows driven by the session's own list: a key added there without a row here fails.
      *
-     * MUTATION: dropping one key in `AutonomyCompanionStore.toStored` or `fromStored`, or adding a key to
-     * `AutonomySession.POINT_OPERATIONAL_KEYS`, fails this.
+     * MUTATION: adding a key to `AutonomySession.POINT_OPERATIONAL_KEYS` with no row fails this; so does a store that
+     * writes or reads a configuration's `points` object without its stations' settings.
      */
     @Test
     public void testEveryStationKeySurvivesASaveAndLoad() throws Exception

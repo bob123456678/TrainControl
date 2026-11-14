@@ -39,10 +39,9 @@ import support.Reflect;
  * counter never resets - any single failure would therefore be caught.  DEBUG_SIMULATE_PACKETS is on so
  * the Central Station echoes are simulated, which is what advances each accessory's actuation count.
  *
- * The frozen layout (test/autonomy_sanity_forks.json, a ring of two forks with three stations on each branch, so two trains are routinely out at once) is a larger version of test/sample_autonomy.json:
- * three departure stations plus an arrival station, four switches and three signals, three locomotives,
- * and 0-1s action delays so trains cycle quickly.  The switches are commanded to different positions on
- * different routes, so they toggle constantly as the trains move around.
+ * The frozen layout (test/autonomy_sanity_forks.json) is a ring of two forks with six stations, so two trains are
+ * routinely out at once, with three locomotives and 0-1s action delays so trains cycle quickly.  The switches are
+ * commanded to different positions on different routes, so they toggle constantly as the trains move around.
  */
 public class testAutonomySimulationSanity
 {

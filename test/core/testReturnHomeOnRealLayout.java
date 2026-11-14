@@ -273,7 +273,15 @@ public class testReturnHomeOnRealLayout
 
             while (System.currentTimeMillis() < until)
             {
-                watch.poll();
+                try
+                {
+                    watch.poll();
+                }
+                catch (AssertionError clash)
+                {
+                    throw new AssertionError("round " + round + ": " + clash.getMessage() + andTheSeed(), clash);
+                }
+
                 Thread.sleep(250);
             }
 
@@ -317,7 +325,14 @@ public class testReturnHomeOnRealLayout
         }
 
         // MUTATION: cap trains out at one in Layout.isPathClear (`trainsUnderway() >= 1`) and this fails.
-        watch.requireOverlap(MIN_POLLS_WITH_TWO_TRAINS);
+        try
+        {
+            watch.requireOverlap(MIN_POLLS_WITH_TWO_TRAINS);
+        }
+        catch (AssertionError tooFew)
+        {
+            throw new AssertionError(tooFew.getMessage() + andTheSeed(), tooFew);
+        }
 
         // The floor: if every round happened to land at home, planReturnToHome() and
         // executeTimetable() were never exercised and this test proved nothing about either of them,
@@ -329,10 +344,11 @@ public class testReturnHomeOnRealLayout
 
     /**
      * The watch the run above leans on does see a clash: two trains handed one edge, and two handed edges that lock each
-     * other, are each named; two handed edges that share nothing pass.  Without this the run's claim cannot be told from a
-     * watch that never fires.
+     * other, are each named, and so is one headed for the square the other stands on; two handed edges that share nothing
+     * pass.  Without this the run's claim cannot be told from a watch that never fires.
      *
-     * MUTATION: drop the `t.getLockEdges().contains(e)` test from `TrackWatch.sharing` and the lock-edge case fails.
+     * MUTATION: drop the `t.getLockEdges().contains(e)` test from `TrackWatch.sharing` and the lock-edge case fails; delete
+     * the two `getCurrentLocomotive()` tests from `TrackWatch.clash` and the standing-train case fails.
      */
     @Test
     public void testTheTrackWatchSeesTwoTrainsOnOneTrack() throws Exception
@@ -375,9 +391,15 @@ public class testReturnHomeOnRealLayout
             assertSees(layout, watch, a, locker, b, locker, true);
             assertSees(layout, watch, a, locker, b, locked, true);
             assertSees(layout, watch, a, locker, b, apart, false);
+
+            // The second train stands on the first's destination, holding track that is unrelated to the first's
+            locker.getEnd().setLocomotive(b);
+
+            assertSees(layout, watch, a, locker, b, apart, true);
         }
         finally
         {
+            locker.getEnd().setLocomotive(null);
             layout.getActiveLocomotives().remove(a);
             layout.getActiveLocomotives().remove(b);
         }

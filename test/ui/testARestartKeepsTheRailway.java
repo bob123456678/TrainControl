@@ -68,7 +68,7 @@ public class testARestartKeepsTheRailway
      * The saved fields `testEveryLocomotiveFieldComesBackAfterTheRestart` does not compare, and where each is checked.
      * Every other declared field of `MarklinSimpleComponent` is compared.
      */
-    private static final Map<String, String> CHECKED_ELSEWHERE = new TreeMap<>();
+    public static final Map<String, String> CHECKED_ELSEWHERE = new TreeMap<>();
 
     static
     {

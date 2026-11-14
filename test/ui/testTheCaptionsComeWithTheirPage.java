@@ -421,7 +421,7 @@ public class testTheCaptionsComeWithTheirPage
         throw new AssertionError("precondition: no train stands alone at a named, captioned station on the page shown");
     }
 
-    /** Renames through the Locomotive Settings window's Save door. */
+    /** Renames as the Locomotive Settings window's Save does. */
     private static void rename(Locomotive train, String name) throws Exception
     {
         AskingWindows.renameInSettings(ui, train, name);

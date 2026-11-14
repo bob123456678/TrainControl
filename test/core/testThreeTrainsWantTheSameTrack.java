@@ -18,7 +18,9 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Components;
 import support.Reflect;
+import support.Settle;
 
 /**
  * Three trains ready to go and one piece of track they all want (OB-455): the dispatcher lets one hold it at a time,
@@ -130,19 +132,24 @@ public class testThreeTrainsWantTheSameTrack
 
         support.TrackWatch watch = new support.TrackWatch(layout);
 
-        int pollsWithAWaiter = 0;
-        int mostClaimsOnOneEdge = 0;
+        int[] pollsWithAWaiter = {0};
+        int[] mostClaimsOnOneEdge = {0};
         Map<Locomotive, Boolean> sawHolding = new HashMap<>();
-
-        long deadline = System.currentTimeMillis() + RUN_LIMIT_MS;
 
         try
         {
-            while (System.currentTimeMillis() < deadline && !allArrived(arrivals))
+            Components.waitFor(() ->
             {
-                watch.poll();
+                try
+                {
+                    watch.poll();
 
-                for (Edge e : layout.getEdges()) mostClaimsOnOneEdge = Math.max(mostClaimsOnOneEdge, claimsOn(e));
+                    for (Edge e : layout.getEdges()) mostClaimsOnOneEdge[0] = Math.max(mostClaimsOnOneEdge[0], claimsOn(e));
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
 
                 boolean someoneOut = false;
 
@@ -166,24 +173,22 @@ public class testThreeTrainsWantTheSameTrack
 
                         if (at != null && at.getName().startsWith("Start") && !layout.isAlreadyUnderway(loc))
                         {
-                            pollsWithAWaiter++;
+                            pollsWithAWaiter[0]++;
 
                             break;
                         }
                     }
                 }
 
-                Thread.sleep(5);
-            }
+                return allArrived(arrivals);
+            }, RUN_LIMIT_MS);
         }
         finally
         {
             layout.stopLocomotives();
         }
 
-        long windDown = System.currentTimeMillis() + 5000;
-
-        while (!layout.getActiveLocomotives().isEmpty() && System.currentTimeMillis() < windDown) Thread.sleep(50);
+        Settle.until(() -> layout.getActiveLocomotives().isEmpty(), 5000);
 
         for (String name : TRAINS)
         {
@@ -195,10 +200,10 @@ public class testThreeTrainsWantTheSameTrack
                 name + " never held a path, so it did not take its turn");
         }
 
-        assertTrue(pollsWithAWaiter > 0, "no poll saw a train hold its road while another still stood at its start,"
+        assertTrue(pollsWithAWaiter[0] > 0, "no poll saw a train hold its road while another still stood at its start,"
             + " so the three never wanted the same track at once and this proves nothing about contention");
 
-        assertTrue(mostClaimsOnOneEdge == 1, "some edge was claimed " + mostClaimsOnOneEdge + " times at once: two"
+        assertTrue(mostClaimsOnOneEdge[0] == 1, "some edge was claimed " + mostClaimsOnOneEdge[0] + " times at once: two"
             + " trains held (or locked) the same track");
 
         Map<String, String> finishedAt = new HashMap<>();

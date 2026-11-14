@@ -1084,7 +1084,7 @@ public class testEditorSurfaceRules
             "the arrival side is still added as its own submenu as well, so there are two doors"
             + " again and only one of them is on the diagram");
 
-        assertEquals(0, SourceOf.occurrences("javax.swing.JMenu tailMenu = buildArrivedFromMenu(target);"),
+        assertEquals(SourceOf.occurrences("javax.swing.JMenu tailMenu = buildArrivedFromMenu(target);"), 0,
             "the editor still builds a separate tail submenu, which is the arrangement that gave the"
             + " editor a setting the viewer did not have");
     }

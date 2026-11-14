@@ -209,6 +209,8 @@ def main(argv):
 
     if any(p.startswith(("src/", "test/")) and p.endswith(".java") for p in changed) and "testNoNewCopies" in by_simple:
         add(by_simple["testNoNewCopies"], "a java file changed", True)
+    if any(p.startswith("test/") and p.endswith(".java") for p in changed) and "testTestSleepsOnlyGoDown" in by_simple:
+        add(by_simple["testTestSleepsOnlyGoDown"], "a test file changed", True)
     if comment_touched:
         for n in ("testCommentsStayLean", "testJavadocsAreAttached"):
             if n in by_simple:

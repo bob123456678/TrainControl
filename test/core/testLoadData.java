@@ -283,11 +283,63 @@ public class testLoadData
         assertTrue(found > 0, "no fixture held a train-at-a-sensor condition, so this proved nothing");
     }
 
-    /** The locomotives the 3.1.0 build saved, with the one that has every field set, still come back. */
+    /**
+     * The locomotives the 3.1.0 build saved, with the one that has every field set, still come back, each field as it
+     * was saved (D90): every field `ui.testARestartKeepsTheRailway` compares, read from the file.
+     *
+     * MUTATION: have the reader drop one saved field of a locomotive (say `notes` or `linkedLocomotives` read as null);
+     * the name, address and function slots stay right, and the field-by-field comparison fails.
+     */
     @Test
     public void testLoad3_1_0() throws Exception
     {
         assertRestores(DB3_1_0);
+
+        List<MarklinSimpleComponent> restored = model.restoreState(pathOf(DB3_1_0));
+        Map<String, MarklinSimpleComponent> expected = new java.util.TreeMap<>();
+
+        try
+        {
+            for (org.traincontrol.marklin.MarklinLocomotive loc : ui.testARestartKeepsTheRailway.addTheFullLocomotives(model))
+                expected.put(loc.getName(), new MarklinSimpleComponent(loc));
+
+            int compared = 0;
+
+            for (String name : new String[] {"RS plain train", "RS full train", "RS multi unit"})
+            {
+                MarklinSimpleComponent saved = byName(restored, name);
+
+                assertNotNull(saved, "the file no longer holds " + name);
+
+                for (java.lang.reflect.Field field : MarklinSimpleComponent.class.getDeclaredFields())
+                {
+                    if (java.lang.reflect.Modifier.isStatic(field.getModifiers())
+                        || ui.testARestartKeepsTheRailway.CHECKED_ELSEWHERE.containsKey(field.getName())) continue;
+
+                    field.setAccessible(true);
+
+                    Object built = field.get(expected.get(name));
+                    Object read = field.get(saved);
+
+                    assertTrue(java.util.Objects.deepEquals(built, read), name + ": the saved field \"" + field.getName()
+                        + "\" is " + describe(built) + " as 3.1.0 saved it and " + describe(read) + " as this build reads it");
+
+                    compared++;
+                }
+            }
+
+            assertTrue(compared > 20, "precondition: only " + compared + " fields were compared");
+        }
+        finally
+        {
+            for (String name : expected.keySet()) model.deleteLoc(name);
+        }
+    }
+
+    private static String describe(Object value)
+    {
+        return value instanceof boolean[] ? Arrays.toString((boolean[]) value)
+            : value instanceof int[] ? Arrays.toString((int[]) value) : String.valueOf(value);
     }
 
     /**

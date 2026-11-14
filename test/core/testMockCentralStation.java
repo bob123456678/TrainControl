@@ -790,6 +790,9 @@ public class testMockCentralStation
     /**
      * A locomotive file that stops half way is not taken for the whole of it: the database is as it was and the sync
      * says it failed.
+     *
+     * MUTATION: take the byte count out of `CS2File.fetchURL`, and the cut file is read as a smaller one: the sync
+     * succeeds on it and this fails.
      */
     @Test
     public void testATruncatedLocomotiveFileIsNotTakenForTheWholeOfIt() throws Exception

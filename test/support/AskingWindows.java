@@ -251,7 +251,7 @@ public final class AskingWindows
         Components.settle();
     }
 
-    /** Renames a locomotive through the Locomotive Settings window's Save door, answering nothing it asks. */
+    /** Renames a locomotive as the Locomotive Settings window's Save does, answering nothing it asks. */
     public static void renameInSettings(TrainControlUI ui, org.traincontrol.base.Locomotive train, String name)
         throws Exception
     {
