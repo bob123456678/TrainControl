@@ -163,6 +163,17 @@ public class testTheRefusalsAreAskedAtTheDoors
             "Stop Using Autonomy resets the session under an open editor"},
         {"    public boolean refusedWhileRunning()", EDITOR,
             "every door that loads a configuration asks here, and a load saves the setup under an open editor"},
+        {"    private JMenu pagesMenu(", EDITOR,
+            "ticking a page in or out saves the setup with a reconcile and reloads the configuration under an open"
+            + " editor"},
+
+        // Grayed or emptied for an editor on its way as well as one open: the gate every sending door asks.
+        {"    void guardLayoutMenu()", "anEditorIsOpenOrOnItsWay()",
+            "the Layout menu's saves and rebuilds commit work an editor has not saved"},
+        {"    private static PathOptions gatherPathOptions(", "anEditorIsOpenOrOnItsWay()",
+            "the right-click menu gathers on a worker, so it can be built between Edit and the editor showing"},
+        {"    private LayoutRightclickAutonomyMenu(TrainControlUI ui,", "anEditorIsOpenOrOnItsWay()",
+            "anything done from the right-click menu is overwritten by the editor's own copy of the setup"},
 
         // And the rest.
         {"private void startAutonomyActionPerformed(", GATE,
