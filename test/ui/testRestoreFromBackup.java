@@ -1004,6 +1004,119 @@ public class testRestoreFromBackup
         }
     }
 
+    /**
+     * An exit whose locomotive database another program holds says which file could not be saved and why, and asks
+     * again on Retry while it is still held; once it is free, Retry saves it and TrainControl closes.
+     *
+     * MUTATION: in `WindowClosed`, leave the save loop without asking, and the exit closes with nothing saved or said.
+     */
+    @Test
+    public void testAnExitThatCannotSaveAsksUntilTheSaveWorks() throws Exception
+    {
+        File live = new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
+
+        if (!live.exists()) Files.write(live.toPath(), new byte[]{ 1 });
+
+        byte[] before = Files.readAllBytes(live.toPath());
+
+        java.io.FileInputStream holding = new java.io.FileInputStream(live);
+
+        try (Answering answering = Answering.start(message ->
+        {
+            // The first Retry finds the file still held; the second, freed
+            if (message.contains(MarklinControlStation.DATA_FILE_NAME) && answeredSoFar[0]++ == 1) closeQuietly(holding);
+
+            return Answering.press(I18n.t("ui.exitSaveRetry"));
+        }))
+        {
+            closeTheProgram();
+
+            assertEquals(answering.asked().size(), 2, "the exit did not ask once per failed save: " + answering.asked());
+
+            assertTrue(answering.asked().get(0).contains(MarklinControlStation.DATA_FILE_NAME), "the question does not"
+                + " name the file that could not be saved: " + answering.asked());
+
+            assertEquals(answering.questions().get(0).buttons, Arrays.asList(I18n.t("ui.exitSaveRetry"),
+                I18n.t("ui.exitWithoutSaving")), "the question does not offer Retry and Exit Without Saving");
+        }
+        finally
+        {
+            closeQuietly(holding);
+        }
+
+        assertFalse(Arrays.equals(Files.readAllBytes(live.toPath()), before), "Retry did not save the database once it"
+            + " was free");
+
+        assertEquals(guard.exits(), Collections.singletonList(0), "TrainControl did not close once the save worked");
+    }
+
+    /**
+     * Exit Without Saving closes TrainControl with the held file as it was.
+     *
+     * MUTATION: in `WindowClosed`, read every answer as Retry, and the exit never closes.
+     */
+    @Test
+    public void testExitWithoutSavingClosesWithTheFileAsItWas() throws Exception
+    {
+        File live = new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
+
+        if (!live.exists()) Files.write(live.toPath(), new byte[]{ 1 });
+
+        byte[] before = Files.readAllBytes(live.toPath());
+
+        try (java.io.FileInputStream holding = new java.io.FileInputStream(live);
+            Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.exitWithoutSaving"))))
+        {
+            closeTheProgram();
+
+            assertEquals(answering.asked().size(), 1, "Exit Without Saving was asked again: " + answering.asked());
+        }
+
+        assertEquals(Files.readAllBytes(live.toPath()), before, "the held database changed");
+
+        assertEquals(guard.exits(), Collections.singletonList(0), "Exit Without Saving did not close TrainControl");
+    }
+
+    /** How many questions the first exit claim has answered. */
+    private final int[] answeredSoFar = {0};
+
+    /** The window's close box, through `WindowClosed`, on the event thread; the exit it ends in is refused by `guard`. */
+    private void closeTheProgram() throws Exception
+    {
+        final java.lang.reflect.Method close = Reflect.method(TrainControlUI.class, "WindowClosed",
+            java.awt.event.WindowEvent.class);
+
+        final TrainControlUI window = ui;
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                close.invoke(window, (Object) null);
+            }
+            catch (java.lang.reflect.InvocationTargetException refused)
+            {
+                if (!(refused.getCause() instanceof SecurityException)) throw new RuntimeException(refused.getCause());
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private static void closeQuietly(java.io.Closeable closing)
+    {
+        try
+        {
+            closing.close();
+        }
+        catch (java.io.IOException ignored)
+        {
+            // Closing twice is harmless
+        }
+    }
+
     private boolean aQuestionIsUp()
     {
         return Components.onTheEventThread(() -> Arrays.stream(java.awt.Window.getWindows()).anyMatch(window ->

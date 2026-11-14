@@ -2122,9 +2122,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Saves initialized component database to a file
+     *
+     * @return why it could not be written, or null when it was
      */
     @Override
-    public void saveState(boolean backup)
+    public String saveState(boolean backup)
     {
         String prefix = backup ? ("backup" + Conversion.convertSecondsToDatetime(System.currentTimeMillis()).replace(':', '-').replace(' ', '_')) : "";
         
@@ -2170,7 +2172,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                 this.logf("log.databaseSaveFailed", keepFailed.toString());
 
-                return;
+                return keepFailed.toString();
             }
         }
 
@@ -2195,10 +2197,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             });
 
             this.logf("log.savingDatabaseState", new File(path).getAbsolutePath());
+
+            return null;
         }
         catch (IOException iOException)
         {
             this.logf("log.databaseSaveFailed", iOException.getMessage());
+
+            return String.valueOf(iOException.getMessage());
         }
     }
     

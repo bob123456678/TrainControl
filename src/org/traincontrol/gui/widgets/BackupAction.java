@@ -124,9 +124,16 @@ public final class BackupAction
             // Written LIVE first, so the archive holds the state as it is now.  WITHOUT the session capture: that would
             // commit whatever was open in the autonomy editor from a thread that is not the event thread, and the
             // editor's Cancel could not undo it (discardEdits re-reads the file just written).  Callers fold the run
-            // first.
-            this.ui.saveState(false, false);
-            this.ui.getModel().saveState(false);
+            // first.  A file that will not save goes in as last saved, and the backup says so: the update and the
+            // restore stop on an incomplete backup.
+            String why = this.ui.saveState(false, false);
+
+            if (why != null) unsaved.add(I18n.f("ui.backupHasItAsLastSaved", TrainControlUI.DATA_FILE_NAME, why));
+
+            if ((why = this.ui.getModel().saveState(false)) != null)
+            {
+                unsaved.add(I18n.f("ui.backupHasItAsLastSaved", MarklinControlStation.DATA_FILE_NAME, why));
+            }
 
             // One archive, holding all of it (FR-015): the autonomy setup is keyed by PAGE ID and those ids are defined
             // by config/gleisbild.cs2, so setup.json alone means nothing and a gleisbild.cs2 from a different day
