@@ -42,7 +42,7 @@ import static support.Settle.until;
 /**
  * A CS3's TCP connection dropped in the middle of an autonomy run, end to end (FR-186): the model syncs with a stand-in
  * CS3 and connects to its TCP port, autonomy runs test/autonomy_sanity.json with its sensors simulated, and the station
- * drops the connection and refuses the first two reconnect tries, about 10 s on Windows.  During the gap the program
+ * drops the connection and refuses the first two reconnect tries, at least 2.4 s with the tries shortened.  During the gap the program
  * gives a train a speed, and a handset drives another train and throws a switch, broadcast over UDP as a CS3 does.
  * A simulation's station is always 127.0.0.1, so once the model has connected its UDP and its reconnects are aimed at
  * a loopback address of this class's own, where the test reads the UDP as the station would.
@@ -57,7 +57,7 @@ public class testAutonomyRidesOutADroppedConnection
 
     private static final String CS3_INFO = "{\"softwareVersion\":\"2.6.1 (Build 3)\"}";
 
-    /** Reconnect tries refused before the station takes connections again: 2 makes the gap about 10 s on Windows. */
+    /** Reconnect tries refused before the station takes connections again: 2 makes the gap about 2.4 s at least. */
     private static final int TRIES_REFUSED = 2;
 
     /**
@@ -253,10 +253,17 @@ public class testAutonomyRidesOutADroppedConnection
     /** The drop, with or without the station taking a connection again. */
     private void ride(boolean reconnects) throws Exception
     {
+        // The same three tries, shortened but still leaving a gap of at least 2.4 s for the claims made inside it
+        NetworkProxy.setTcpTimeoutsForATest(1000, 3, 800);
+
         try (TcpStation station = new TcpStation().answering(true))
         {
             TcpStation.forSimulations(station.port(), () -> onRig(StandInStation.cs3("260", CS3_INFO), true, rig ->
                 ride(rig.model, station, reconnects)));
+        }
+        finally
+        {
+            NetworkProxy.restoreTcpTimeoutsAfterATest();
         }
     }
 
