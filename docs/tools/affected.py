@@ -199,8 +199,8 @@ def main(argv):
             if '"%s"' % s in text:
                 add(q, "uses scenario %s" % s)
 
-    if any(p.startswith("src/") and p.endswith(".java") for p in changed) and "testNoNewCopies" in by_simple:
-        add(by_simple["testNoNewCopies"], "a source file changed", True)
+    if any(p.startswith(("src/", "test/")) and p.endswith(".java") for p in changed) and "testNoNewCopies" in by_simple:
+        add(by_simple["testNoNewCopies"], "a java file changed", True)
     if comment_touched:
         for n in ("testCommentsStayLean", "testJavadocsAreAttached"):
             if n in by_simple:

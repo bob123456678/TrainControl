@@ -156,18 +156,25 @@ public class testNoNewCopies
             }
         });
 
-        StringBuilder largest = new StringBuilder();
+        Set<String> changed = changedFiles();
 
-        for (int i = 0; i < Math.min(5, found.size()); i++)
+        Map<String, CopyScan.Group> largest = new LinkedHashMap<>();
+
+        for (int i = 0; i < found.size(); i++)
         {
-            List<String> places = found.get(i).places;
+            CopyScan.Group g = found.get(i);
 
-            largest.append("\n  ").append(found.get(i).entry()).append(" in ")
-                .append(places.subList(0, Math.min(6, places.size()))).append(places.size() > 6 ? " ..." : "");
+            List<String> places = g.places;
+
+            if (i < 5 || touches(g, changed))
+            {
+                largest.put(g.entry() + " in " + places.subList(0, Math.min(6, places.size()))
+                    + (places.size() > 6 ? " ..." : ""), g);
+            }
         }
 
         assertFalse(copied > TEST_COPIED_TOKENS_ALLOWED, "test copies rose: " + copied + " tokens stand in a second"
-            + " copy, against " + TEST_COPIED_TOKENS_ALLOWED + " pinned.  The largest groups:" + largest + "\nA claim's"
+            + " copy, against " + TEST_COPIED_TOKENS_ALLOWED + " pinned.  The groups with a copy in a file changed on this branch, then the largest:\n  " + mineFirst(largest, changed) + "\nA claim's"
             + " own set-up may stay written in it; shared steps belong in a helper (test/support, or the class).  Do not"
             + " raise TEST_COPIED_TOKENS_ALLOWED.");
 
@@ -215,6 +222,13 @@ public class testNoNewCopies
         return names;
     }
 
+    private static boolean touches(CopyScan.Group g, Set<String> changed)
+    {
+        for (String place : g.places) if (changed.contains(place.substring(0, place.indexOf(':')))) return true;
+
+        return false;
+    }
+
     /** The listed groups, those with a copy in one of the `changed` files first and marked, then the rest. */
     static String mineFirst(Map<String, CopyScan.Group> lines, Set<String> changed)
     {
@@ -223,9 +237,7 @@ public class testNoNewCopies
 
         for (Map.Entry<String, CopyScan.Group> e : lines.entrySet())
         {
-            boolean here = false;
-
-            for (String place : e.getValue().places) here |= changed.contains(place.substring(0, place.indexOf(':')));
+            boolean here = touches(e.getValue(), changed);
 
             (here ? mine : rest).add((here ? "(in a file you changed) " : "") + e.getKey());
         }
