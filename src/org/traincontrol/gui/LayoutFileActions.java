@@ -757,6 +757,7 @@ final class LayoutFileActions
                 // rebuilds the page list, the autonomy session and the Autonomy menu
                 this.ui.useTheDownloadedLayout(path);
                 this.ui.openLayoutFolder(path.getAbsoluteFile());
+                this.ui.showLayoutTab();
 
                 if (!this.ui.getModel().getLayoutList().isEmpty()) JOptionPane.showMessageDialog(
                     this.ui,
