@@ -32,7 +32,8 @@ import support.Reflect;
  * The station captions of the main track diagram are written in the event that puts their page up, so its first paint
  * shows them, and a pass that changes nothing asks for no repaint; a caption whose train, locomotive name or station
  * changes still follows it (Adam: "just make sure locomotive renames or remote track diagram changes are properly
- * updated").  On the frozen railway, through the window's own doors.
+ * updated").  And a sensor at rest leaves the strip above the diagram alone.  On the frozen railway, through the
+ * window's own doors.
  */
 public class testTheCaptionsComeWithTheirPage
 {
@@ -266,7 +267,8 @@ public class testTheCaptionsComeWithTheirPage
             Components.drain(2);
         }
 
-        assertEquals(captionText(from), saidFrom, "moved back, " + train.getName() + "'s station does not name it again");
+        assertEquals(captionText(from), saidFrom, "moved back, " + train.getName() + "'s station does not name it"
+            + " again");
         assertEquals(captionText(to), saidTo, "moved back, the other station does not go back to its dash");
     }
 
@@ -347,7 +349,7 @@ public class testTheCaptionsComeWithTheirPage
 
         try
         {
-            session.setPointName(at, name + " D119");
+            session.setPointName(at, name + " Renamed");
 
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
@@ -356,7 +358,7 @@ public class testTheCaptionsComeWithTheirPage
             assertNotSame(model.getAutoLayout(), before, "precondition: the railway was not rebuilt from the setup");
 
             assertEquals(captionText(at), said, "the caption at " + at + " no longer shows the train standing there"
-                + " after the station was renamed " + name + " D119");
+                + " after the station was renamed " + name + " Renamed");
 
             // And its name, which the caption gives on hover
             final TileKey square = at;
@@ -372,8 +374,8 @@ public class testTheCaptionsComeWithTheirPage
                 return null;
             });
 
-            assertTrue(String.valueOf(tip).contains("D119"), "the caption at " + at + " still names the station " + tip
-                + " after it was renamed " + name + " D119");
+            assertTrue(String.valueOf(tip).contains("Renamed"), "the caption at " + at + " still names the station "
+                + tip + " after it was renamed " + name + " Renamed");
         }
         finally
         {
@@ -385,19 +387,94 @@ public class testTheCaptionsComeWithTheirPage
         }
     }
 
+    /**
+     * A sensor at rest leaves the autonomy strip above the diagram alone: each one ended in the Auto tab's refresh
+     * taking Start's turning mark off when there was none, and the strip laid itself out and repainted for it.
+     *
+     * MUTATION: take Start's icon off unconditionally again in `turningMark`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testASensorAtRestLeavesTheStripAboveTheDiagramAlone() throws Exception
+    {
+        final Component page = shownPage();
+
+        final String sensor = onTheEventThread(() ->
+        {
+            for (org.traincontrol.gui.LayoutLabel tile : Components.all(page, org.traincontrol.gui.LayoutLabel.class,
+                each -> each.getComponent() != null && each.getComponent().isFeedback()
+                    && each.getComponent().getFeedback() != null))
+            {
+                return tile.getComponent().getFeedback().getName();
+            }
+
+            return null;
+        });
+
+        assertNotNull(sensor, "precondition: the page shown has no sensor");
+
+        assertNotNull(Components.onTheEventThread(() ->
+            Components.find(ui, org.traincontrol.gui.AutonomyOverlayToggle.class, each -> true)),
+            "precondition: the window has no autonomy strip above the diagram");
+
+        Counting counter = new Counting();
+
+        RepaintManager was = RepaintManager.currentManager(ui);
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(counter));
+
+            for (boolean state : new boolean[] {true, false})
+            {
+                counter.panels = 0;
+
+                model.setFeedbackState(sensor, state);
+
+                // The Auto tab's refresh has run once its locomotive cards are redrawn
+                support.Settle.until(() -> counter.panels > 0, 10000);
+
+                Components.drain(2);
+
+                assertTrue(counter.panels > 0, "precondition: the sensor never reached the Auto tab's refresh");
+            }
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(was));
+        }
+
+        assertEquals(counter.strip, 0, "the sensor, firing and clearing with nothing running, laid out or repainted the"
+            + " autonomy strip above the diagram " + counter.strip + " times");
+    }
+
     // ---------------------------------------------------------------- the fixture
 
-    /** Records the repaints asked of station captions, before Swing filters them. */
+    /** Records the repaints asked of station captions and the strip, and the layouts asked of the strip. */
     private static final class Counting extends RepaintManager
     {
         int captions;
+        volatile int strip, panels;
 
         @Override
         public synchronized void addDirtyRegion(JComponent c, int x, int y, int w, int h)
         {
             if (c instanceof StationCaption) captions++;
+            if (c instanceof org.traincontrol.gui.AutonomyOverlayToggle) strip++;
+
+            if (SwingUtilities.getAncestorOfClass(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class, c) != null)
+            {
+                panels++;
+            }
 
             super.addDirtyRegion(c, x, y, w, h);
+        }
+
+        @Override
+        public synchronized void addInvalidComponent(JComponent c)
+        {
+            if (c instanceof org.traincontrol.gui.AutonomyOverlayToggle) strip++;
+
+            super.addInvalidComponent(c);
         }
     }
 
@@ -489,8 +566,11 @@ public class testTheCaptionsComeWithTheirPage
             {
                 for (JLabel label : ui.getLayoutStations(square))
                 {
-                    if (label instanceof StationCaption && ((StationCaption) label).isPill() && page instanceof Container
-                        && SwingUtilities.isDescendingFrom(label, (Container) page)) out.add(square);
+                    if (label instanceof StationCaption && ((StationCaption) label).isPill()
+                        && page instanceof Container && SwingUtilities.isDescendingFrom(label, (Container) page))
+                    {
+                        out.add(square);
+                    }
                 }
             }
 
