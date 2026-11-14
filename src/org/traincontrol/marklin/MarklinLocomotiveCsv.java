@@ -5,6 +5,8 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -677,7 +680,7 @@ public final class MarklinLocomotiveCsv
 
         for (String language : new String[] {"", "da", "de", "es", "fr", "it", "nl", "pl"})
         {
-            java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages",
+            ResourceBundle bundle = ResourceBundle.getBundle("org.traincontrol.resources.messages",
                 language.isEmpty() ? Locale.ROOT : new Locale(language));
 
             MULTI_UNIT_LABELS.add(bundle.getString("loc.multiUnit").toLowerCase(Locale.ROOT));
@@ -723,15 +726,15 @@ public final class MarklinLocomotiveCsv
 
         try
         {
-            java.time.LocalDate day = java.time.LocalDate.parse(s);
+            LocalDate day = LocalDate.parse(s);
 
-            if (day.toString().equals(s) && s.compareTo("2018-01-01") >= 0 && !day.isAfter(java.time.LocalDate.now()))
+            if (day.toString().equals(s) && s.compareTo("2018-01-01") >= 0 && !day.isAfter(LocalDate.now()))
             {
                 row.day = Day.OK;
                 row.lastRun = s;
             }
         }
-        catch (java.time.format.DateTimeParseException unusable)
+        catch (DateTimeParseException unusable)
         {
             row.day = Day.BAD;
         }
