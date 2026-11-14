@@ -5161,7 +5161,7 @@ public class LayoutEditor extends PositionAwareJFrame
     private void formKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_formKeyPressed
         
         // Handle key shortcuts
-        SwingUtilities.invokeLater(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             // The keys that show or hide something, and so work in autonomy mode too, come before the guard below.
             if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_G)
@@ -5245,7 +5245,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // diagram, on the finding chosen in the list (FR-072).
             if (is(evt, AutonomyEditorPanel.SETTINGS_KEY))
             {
-                TileGraph.TileKey over = hoveredSquare();
+                org.traincontrol.automationui.TileGraph.TileKey over = hoveredSquare();
 
                 if (autonomyPanel != null)
                 {
