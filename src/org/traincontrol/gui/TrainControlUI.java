@@ -4098,6 +4098,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.runningLayoutSync.rebuildRunningLayoutFromSetup(false, null, standingBefore);
     }
 
+    /**
+     * Stands each train where `standing` (`whereTheTrainsAre`) has it on the railway as it is, by the Point names it
+     * records, with no rebuild: for the track editor's discard, whose setup's build is the edited one until the reset.
+     */
+    public void standTheTrainsBack(Map<String, String[]> standing)
+    {
+        Map<String, String[]> known = new java.util.LinkedHashMap<>(standing);
+
+        known.values().removeIf(java.util.Objects::isNull);
+
+        Layout railway = this.model == null ? null : this.model.getAutoLayoutIfLoaded();
+
+        if (railway != null) RunningLayoutSync.putTheTrainsBack(railway, known, this.model::log);
+    }
+
     /** The setup and the running railway kept in step: the folds, the rebuild and the settings as built. */
     private final RunningLayoutSync runningLayoutSync = new RunningLayoutSync(this);
 

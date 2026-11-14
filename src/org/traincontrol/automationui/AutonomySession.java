@@ -1812,11 +1812,65 @@ public class AutonomySession
      */
     public Side theOtherFacing(TileKey square, Side was)
     {
-        List<Side> choices = square == null || was == null ? Collections.<Side>emptyList() : facingChoices(square);
+        return square == null ? null : otherOf(facingChoices(square), was);
+    }
 
-        if (choices.size() != 2 || !choices.contains(was)) return null;
+    /** The other of exactly two choices from `was`; null where there are not two, or `was` is not one of them. */
+    private static Side otherOf(List<Side> choices, Side was)
+    {
+        if (choices == null || choices.size() != 2 || !choices.contains(was)) return null;
 
         return choices.get(0) == was ? choices.get(1) : choices.get(0);
+    }
+
+    /**
+     * Each placed train's square with its facing choices now: what turning a snapshot of this setup asks later, when the
+     * build may have been edited since (`withTheseTrainsTurned`).
+     */
+    public Map<TileKey, List<Side>> choicesWhereTrainsStand()
+    {
+        Map<TileKey, List<Side>> out = new HashMap<>();
+
+        for (TileKey square : placedLocomotives().keySet()) out.put(square, new ArrayList<>(facingChoices(square)));
+
+        return out;
+    }
+
+    /** `choicesWhereTrainsStand` as the edit began: the build the crash note goes back to. */
+    private Map<TileKey, List<Side>> choicesAsTheEditBegan = Collections.emptyMap();
+
+    /** Each lifted train's heading where it left the setup, the other way it could face there, and its turns then. */
+    private final Map<Object, Object[]> lifted = new HashMap<>();
+
+    /**
+     * Which way a train no square holds faces, from where it was lifted: its heading there, turned where it was turned an
+     * odd number of times since; null where unknown, or where it was turned on a square with no other way.
+     */
+    public Side headingOfALiftedTrain(String locomotive)
+    {
+        Object[] was = locomotive == null ? null : lifted.get(turnKey(locomotive));
+
+        if (was == null) return null;
+
+        boolean turnedSince = (turnsMade.getOrDefault(turnKey(locomotive), 0) - (Integer) was[2]) % 2 != 0;
+
+        return (Side) (turnedSince ? was[1] : was[0]);
+    }
+
+    /** Notes a train leaving a square (`was` to `now`, as stored under "loc") for `headingOfALiftedTrain`. */
+    private void noteALift(TileKey square, Object was, Object now)
+    {
+        String leaving = nameOfPlacedLocomotive(was);
+
+        if (leaving == null || leaving.equals(nameOfPlacedLocomotive(now)) || graph == null) return;
+
+        // The railway's copy first, as it IS the train's facing
+        Side heading = facingOfTheTrainOn(square, leaving, runningLayout == null ? null : runningLayout.get());
+
+        if (heading == null) heading = getFacing(square);
+
+        lifted.put(turnKey(leaving), new Object[] {heading, theOtherFacing(square, heading),
+            turnsMade.getOrDefault(turnKey(leaving), 0)});
     }
 
     /**
@@ -1875,39 +1929,38 @@ public class AutonomySession
 
     /**
      * Counts a turn of a train, written or not (the editor may have lifted it, or stood it where it cannot turn), and
-     * turns it in the crash note too, wherever the note places it.
+     * turns it in the crash note too, wherever the note places it, by the build as the edit began.
      */
     public void turned(String locomotive)
     {
         turnsMade.merge(turnKey(locomotive), 1, Integer::sum);
 
-        store.rewriteTheUnfinishedEditNote(note -> turnInSetup(note, locomotive));
+        store.rewriteTheUnfinishedEditNote(note -> turnInSetup(note, locomotive, choicesAsTheEditBegan));
     }
 
-    /** A setup snapshot with each of these trains turned where it places them (`theOtherFacing`); a copy if any. */
-    public JSONObject withTheseTrainsTurned(JSONObject setup, Collection<String> trains)
+    /**
+     * A setup snapshot with each of these trains turned where it places them, by `choices` (`choicesWhereTrainsStand`
+     * as the snapshot was taken); a copy if any.
+     */
+    public JSONObject withTheseTrainsTurned(JSONObject setup, Collection<String> trains,
+        Map<TileKey, List<Side>> choices)
     {
         if (setup == null || trains.isEmpty()) return setup;
 
         JSONObject out = new JSONObject(setup.toString());
 
-        for (String train : trains) turnInSetup(out, train);
+        for (String train : trains) turnInSetup(out, train, choices);
 
         return out;
     }
 
     /** Turns a train in a setup snapshot's active configuration, in place; true if it did. */
-    private boolean turnInSetup(JSONObject setup, String locomotive)
+    private boolean turnInSetup(JSONObject setup, String locomotive, Map<TileKey, List<Side>> choices)
     {
         JSONObject copies = setup.optJSONObject("configurations");
         JSONObject copy = copies == null ? null : copies.optJSONObject(store.getActiveConfiguration());
+        JSONObject points = copy == null ? null : copy.optJSONObject("points");
 
-        return copy != null && turnInPoints(copy.optJSONObject("points"), locomotive);
-    }
-
-    /** The same over one configuration's points, as a page snapshot holds them. */
-    private boolean turnInPoints(JSONObject points, String locomotive)
-    {
         for (String key : points == null ? Collections.<String>emptySet() : points.keySet())
         {
             JSONObject point = points.optJSONObject(key);
@@ -1915,7 +1968,7 @@ public class AutonomySession
             if (point == null || !locomotive.equals(nameOfPlacedLocomotive(point.opt("loc")))) continue;
 
             Side was = sideNamed(point.opt(AutonomyBuilder.FACING));
-            Side other = theOtherFacing(AutonomyCompanionStore.parseTileKey(key), was);
+            Side other = otherOf(choices.get(AutonomyCompanionStore.parseTileKey(key)), was);
 
             if (other == null) return false;
 
@@ -2136,6 +2189,8 @@ public class AutonomySession
         forgetTheNamesKept();
 
         asTheEditBegan = remembered();
+
+        choicesAsTheEditBegan = choicesWhereTrainsStand();
 
         squareMovedInTheEdit = false;
 
@@ -2440,18 +2495,15 @@ public class AutonomySession
         return snapshot;
     }
 
-    /** Puts a page back as `snapshotPage` found it, but each train turned since keeps its turns, as Cancel does. */
+    /**
+     * Puts a page back as `snapshotPage` found it, but each train turned since keeps its turns, as Cancel does: turned
+     * after the rebuild, by the build the page goes back to, and stood so on the railway.
+     */
     public void restorePage(String page, Map<String, Object> snapshot)
     {
         if (snapshot == null) return;
 
-        Object copies = snapshot.get("configurations");
-        Object points = copies instanceof Map ? ((Map<?, ?>) copies).get(store.getActiveConfiguration()) : null;
-
-        for (String train : turnedSince(snapshot.get(TURNS)))
-        {
-            if (points instanceof JSONObject) turnInPoints((JSONObject) points, train);
-        }
+        Set<String> turned = turnedSince(snapshot.get(TURNS));
 
         // Once, however often it is put back
         snapshot.put(TURNS, turnsSoFar());
@@ -2463,6 +2515,20 @@ public class AutonomySession
         if (remembered instanceof Remembered) putBack((Remembered) remembered, true);
 
         touched();
+
+        Layout running = runningLayout == null ? null : runningLayout.get();
+
+        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        {
+            TileKey square = placed.getKey();
+            Side other = page.equals(square.getPage()) ? theOtherFacing(square, getFacing(square)) : null;
+
+            if (other == null || !turned.remove(placed.getValue())) continue;
+
+            setFacing(square, other);
+
+            moveOntoFacingCopy(running, placed.getValue(), square, other);
+        }
     }
 
     /**
@@ -8089,6 +8155,8 @@ public class AutonomySession
         String id = tile.toString();
 
         if (!points.has(id)) points.put(id, new JSONObject());
+
+        if ("loc".equals(key)) noteALift(tile, points.getJSONObject(id).opt(key), value);
 
         if (value == null) points.getJSONObject(id).remove(key);
         else points.getJSONObject(id).put(key, value);

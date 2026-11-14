@@ -844,8 +844,8 @@ public class testCancelUndoesAutonomyEdits
 
         try
         {
-            java.nio.file.Files.write(note.toPath(),
-                opened.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            // As an editor opening takes it, with the build the note goes back to
+            assertTrue(session.beginEditSession(), "precondition: the crash note was not written");
 
             session.placeLocomotive(empty, name);
             session.setFacing(empty, session.facingChoices(empty).get(0));
@@ -867,9 +867,11 @@ public class testCancelUndoesAutonomyEdits
         }
         finally
         {
-            java.nio.file.Files.deleteIfExists(note.toPath());
-
             session.restoreSetup(opened);
+
+            session.endEditSession();
+
+            java.nio.file.Files.deleteIfExists(note.toPath());
         }
     }
 

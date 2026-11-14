@@ -566,6 +566,13 @@ public class AutonomyMenu extends JMenu
 
             box.addActionListener(e ->
             {
+                // Not under an open editor: the save reconciles and the reload rebuilds under it
+                if (ui.refuseWhileEditorOpen())
+                {
+                    box.setSelected(!box.isSelected());
+                    return;
+                }
+
                 // Refused while trains are running: the running layout is built from the configuration as loaded and
                 // nothing here rebuilds it, so ticking a page off mid-run would leave the layout routing trains to
                 // those stations.

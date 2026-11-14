@@ -40,7 +40,7 @@ final class LayoutMenus
     {
         if (ui.layoutMenu() == null) return;
 
-        boolean busy = ui.isLayoutEditorOpen();
+        boolean busy = ui.anEditorIsOpenOrOnItsWay();
 
         takeBackTheEditorsReason();
 
