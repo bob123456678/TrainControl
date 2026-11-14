@@ -714,7 +714,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         if (members && main.locomotiveActions.refuseMultiUnitEdit(this, loc, multiUnitTab.chosen().keySet())) return false;
 
         // A Central Station multi-unit takes no members: changeLocAddress's refusal, asked before anything is written
-        if (members && !multiUnitTab.chosen().isEmpty() && locomotiveTab.chosenDecoder() == decoderType.MULTI_UNIT)
+        if (members && !multiUnitTab.chosen().isEmpty() && locomotiveTab.decoderToWrite() == decoderType.MULTI_UNIT)
         {
             JOptionPane.showMessageDialog(this, I18n.t("loc.changeToMultiUnitNotAllowed"));
 
@@ -745,7 +745,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         // Only what the operator changed from the loaded values: another door may have changed the rest since
         if (identity && !main.locomotiveActions.writeNameAndAddress(this, loc,
             locomotiveTab.nameChanged() ? locomotiveTab.name.getText() : null,
-            address, locomotiveTab.chosenDecoder()))
+            address, locomotiveTab.decoderToWrite()))
         {
             return false;
         }
@@ -1290,6 +1290,12 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             if (!address.getText().equals(loadedAddress)) return address.getText();
 
             return decoder.getSelectedItem() != loadedDecoder ? Integer.toString(loc.getAddress()) : null;
+        }
+
+        /** The decoder type to write: the chosen one when it was changed, else the locomotive's own (a sync may have changed it). */
+        decoderType decoderToWrite()
+        {
+            return decoder.getSelectedItem() != loadedDecoder ? chosenDecoder() : loc.getDecoderType();
         }
 
         boolean identityChanged()
