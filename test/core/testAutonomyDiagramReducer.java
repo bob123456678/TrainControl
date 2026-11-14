@@ -571,6 +571,84 @@ public class testAutonomyDiagramReducer
     }
 
     /**
+     * Two pages joined by a paired link square give one edge each way between the sensors either side: both pages' track
+     * added into its length, the link squares in its path, one lock between the two directions (OB-454).  The built
+     * configuration carries the same length and lock.
+     *
+     * MUTATION: make `GraphReducer.sumLength` count only the first page's tiles (22 becomes 15), or make
+     * `TileGraph.landing` refuse a null-side exit from the right page's link (one direction vanishes).
+     */
+    @Test
+    public void testAnEdgeAcrossAPairedLinkJoinsBothPages() throws IOException
+    {
+        LayoutDiagram left = page("left", 8, 4);
+        Diagrams.row(left, 1, 2, "FSS", 11);
+        add(left, componentType.LINK, 4, 2, 0);
+
+        LayoutDiagram right = page("right", 8, 4);
+        add(right, componentType.LINK, 1, 2, 2);
+        add(right, componentType.CROSSING, 2, 2, 0);
+        for (int y = 1; y <= 3; y += 2) feedbackNS(right, 2, y, 13 + y);
+        Diagrams.row(right, 3, 2, "FSF", 12, 13);
+
+        TileKey near = key("left", 1, 2);
+        TileKey far = key("right", 3, 2);
+        TileKey beyond = key("right", 5, 2);
+        TileKey linkLeft = key("left", 4, 2);
+        TileKey linkRight = key("right", 1, 2);
+
+        TileGraph graph = graph(left, right);
+
+        graph.pairPortals(linkLeft, linkRight);
+
+        Map<TileKey, Integer> lengths = new HashMap<>();
+        for (Object[] one : new Object[][] {{"left", 2, 10}, {"left", 3, 5}, {"right", 2, 7}, {"right", 4, 3}})
+        {
+            lengths.put(key((String) one[0], (Integer) one[1], 2), (Integer) one[2]);
+        }
+
+        GraphReducer reducer = reduce(graph, authored(lengths, null, null));
+
+        ReducedEdge east = onlyEdge(reducer, near, far);
+        ReducedEdge west = onlyEdge(reducer, far, near);
+
+        assertEquals(east.getLength(), 22, "the edge across the link must add both pages' track (10 + 5 + 7)");
+        assertEquals(west.getLength(), 22, "the edge back must add both pages' track too");
+
+        assertEquals(Arrays.asList(east.getExitSide(), east.getEntrySide(), west.getExitSide(), west.getEntrySide()),
+            Arrays.asList(Side.E, Side.W, Side.W, Side.E), "each leaves by the side facing the link, arrives by the far one");
+
+        assertEquals(east.getPath().size(), 5, "the path is the near page's track, both link squares, the far page's");
+        assertEquals(east.getPath().get(2).getTile(), linkLeft, "the near link square comes after the near track");
+        assertEquals(east.getPath().get(3).getTile(), linkRight, "and the far one straight after it");
+
+        assertEquals(onlyEdge(reducer, far, beyond).getLength(), 3, "the far page's own edge must stay");
+
+        // A road over the far page's crossing meets the edge on a tile past the link: the lock set spans the jump.
+        ReducedEdge cross = edgesBetween(reducer, key("right", 2, 1), key("right", 2, 3)).get(0);
+
+        for (ReducedEdge across : Arrays.asList(east, west))
+        {
+            assertTrue(locked(reducer, across, cross) && locked(reducer, cross, across),
+                "an edge across the link must be mutually locked against the road over the far page's crossing");
+        }
+
+        // THE BUILT GRAPH, which is what the railway runs: the same length and the same lock.
+        AutonomyBuilder builder = new AutonomyBuilder(reducer, null).withReversibleTiles(reducer.getPoints().keySet());
+        Map<String, TileKey> squares = builder.tilesByName();
+        JSONObject built = new JSONObject(builder.build());
+
+        JSONObject builtOut = builtEdge(built.getJSONArray("edges"), squares, near, far);
+
+        assertNotNull(builtOut, "the built configuration has no edge across the link: " + built.getJSONArray("edges"));
+        assertEquals(builtOut.getInt("length"), 22, "the built edge's length differs from the reduction's");
+
+        assertTrue(builtOut.has("lockedges") && builtEdge(builtOut.getJSONArray("lockedges"), squares,
+            key("right", 2, 1), key("right", 2, 3)) != null,
+            "the built edge across the link does not lock the road over the far crossing");
+    }
+
+    /**
      * How much length lies after the last switch, the room a train has to stop in: `Layout.measuredRoomAtTheEndOf`
      * bounds the train by the stretch beyond the last switch on each edge; the switch tile itself is not counted.
      * Three states: no switch bounds nothing (`crossesASwitch` false), a switch with full lengths gives a number, a gap
@@ -1420,6 +1498,20 @@ public class testAutonomyDiagramReducer
         return at < 0 ? pointName : pointName.substring(0, at);
     }
 
+    /** The entry of an emitted edge or lock list running from one square to another, or null. */
+    private static JSONObject builtEdge(JSONArray list, Map<String, TileKey> squares, TileKey from, TileKey to)
+    {
+        for (Object o : list)
+        {
+            JSONObject edge = (JSONObject) o;
+
+            if (from.equals(squares.get(edge.getString("start"))) && to.equals(squares.get(edge.getString("end"))))
+                return edge;
+        }
+
+        return null;
+    }
+
     private LayoutDiagram page(String name, int sx, int sy)
     {
         return new LayoutDiagram(name, sx, sy, null, null);
@@ -1985,5 +2077,15 @@ public class testAutonomyDiagramReducer
         }
 
         return answer;
+    }
+
+    /** The one edge between two squares: a missing one, or a second, is the finding. */
+    private ReducedEdge onlyEdge(GraphReducer reducer, TileKey from, TileKey to)
+    {
+        List<ReducedEdge> found = edgesBetween(reducer, from, to);
+
+        assertEquals(found.size(), 1, "expected one edge from " + from + " to " + to + ": " + describe(reducer));
+
+        return found.get(0);
     }
 }
