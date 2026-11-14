@@ -8,7 +8,6 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.io.File;
 import java.io.IOException;
@@ -240,7 +239,7 @@ public class AutonomyViewerPanel extends JPanel
         outer.add(javax.swing.Box.createVerticalStrut(3));
 
         JPanel panel = box();
-        panel.setLayout(new GridBagLayout());
+        panel.setLayout(new java.awt.GridBagLayout());
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;

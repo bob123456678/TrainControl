@@ -16,7 +16,6 @@ import org.traincontrol.base.Accessory.accessorySetting;
 import org.traincontrol.automationui.GraphReducer.ReducedEdge;
 import org.traincontrol.automationui.GraphReducer.ReducedPoint;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.automation.Point;
 import org.traincontrol.base.LayoutDiagramComponent;
 
 /**
@@ -929,7 +928,7 @@ public class AutonomyBuilder
 
                         // Stop-only means a station (FR-111), on every copy including a barred side's: a square that
                         // is no station lets trains through, whatever it remembers from when it was one.
-                        if (Point.RUN_THROUGH.equals(key) && !point.isStation()) continue;
+                        if (org.traincontrol.automation.Point.RUN_THROUGH.equals(key) && !point.isStation()) continue;
 
                         // Active is carried on every square, not only a station: the usage menu writes `active` alone
                         // for Out of service on any square, and `Layout.isPathClear` refuses a path through an inactive

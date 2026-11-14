@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.prefs.Preferences;
 import javax.swing.JOptionPane;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
@@ -439,7 +438,7 @@ final class LayoutMenus
     {
         final JMenu autonomyToolbarMenu = ui.autonomyToolbarMenu();
 
-        final Preferences prefs = TrainControlUI.getPrefs();
+        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
 
         if (autonomyToolbarMenu == null) return;
 

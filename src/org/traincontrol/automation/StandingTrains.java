@@ -5,7 +5,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 import org.traincontrol.base.Locomotive;
 
 /**
@@ -131,7 +130,7 @@ final class StandingTrains
 
     /** The body of `Layout.walkStandingTrains(Map, Map, Predicate)`. */
     void walkStandingTrains(Map<Edge, Locomotive> covered, Map<String, Locomotive> places,
-        Predicate<Locomotive> which)
+        java.util.function.Predicate<Locomotive> which)
     {
         // ONE TAIL PER TRAIN, AND A RUNNING ONE IS ANCHORED WHERE IT IS (MT-438): a locked path reserves every point on
         // it, so walking a tail from each anchored phantom claims at a destination the train has not reached.

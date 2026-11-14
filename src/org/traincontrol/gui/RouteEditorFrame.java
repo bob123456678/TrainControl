@@ -80,7 +80,6 @@ import org.traincontrol.base.NodeAnd;
 import org.traincontrol.base.NodeGroup;
 import org.traincontrol.base.NodeOr;
 import org.traincontrol.base.NodeRouteCommand;
-import org.traincontrol.base.RouteCapture;
 import org.traincontrol.gui.widgets.PopupListener;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.ImageUtil;
@@ -1567,7 +1566,7 @@ public class RouteEditorFrame extends JFrame
             text.append(entry.toCommand().toLine(null));
         }
 
-        String settled = RouteCapture.filterConfigCommands(text.toString());
+        String settled = org.traincontrol.base.RouteCapture.filterConfigCommands(text.toString());
 
         List<Entry> rebuilt = new ArrayList<>();
 

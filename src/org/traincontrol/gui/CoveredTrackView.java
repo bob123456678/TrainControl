@@ -3,7 +3,6 @@ package org.traincontrol.gui;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import org.traincontrol.automation.Layout;
 import org.traincontrol.automationui.TileGraph;
 
 /**
@@ -36,7 +35,7 @@ final class CoveredTrackView extends SettledQuestion
         // `hasAutoLayout` so a question about what is covered does not bring a railway into being.  And only with a
         // setup loaded (OB-307: "orange should only be painted with autonomy loaded"): a railway object outlives the
         // setup it was loaded from.
-        Layout railway = this.ui.getModel() != null && this.ui.getModel().hasAutoLayout()
+        org.traincontrol.automation.Layout railway = this.ui.getModel() != null && this.ui.getModel().hasAutoLayout()
             && this.ui.isAutonomyLoaded() ? this.ui.getModel().getAutoLayout() : null;
 
         this.ui.coveredTrackSubject = new TrainControlUI.CoveredTrackAsk(railway, railway == null ? null : this.ui.getAutonomySession());

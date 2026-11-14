@@ -32,7 +32,6 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -800,7 +799,7 @@ public final class StationSettingsWindow extends StationWindowBase
         triangle.paintIcon(null, g, 0, 0);
         g.dispose();
 
-        out.setDisabledIcon(new ImageIcon(javax.swing.GrayFilter.createDisabledImage(drawn)));
+        out.setDisabledIcon(new javax.swing.ImageIcon(javax.swing.GrayFilter.createDisabledImage(drawn)));
         out.setToolTipText(mixedTip());
         out.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 0));
         out.setVisible(false);

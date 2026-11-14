@@ -598,9 +598,9 @@ public class testAPasteDoesNotTurnTheTrainRound
             + " as if no paste had been done\"");
 
         // READ BEFORE THE TAIL QUESTION WAITS, and written from there.
-        String placement = SourceOf.declaration("private void rememberPlacement(").replaceAll("\\s+", " ");
+        String placement = SourceOf.plain(SourceOf.declaration("private void rememberPlacement(")).replaceAll("\\s+", " ");
 
-        assertTrue(placement.contains("final org.traincontrol.automationui.TilePorts.Side facingChosen ="
+        assertTrue(placement.contains("final TilePorts.Side facingChosen ="
             + " ui.facingChosenAtTheLanding;") && placement.contains("session.setFacing(tile, facingChosen != null ? facingChosen"),
             "the operator's answer is no longer what gets written, so the question is asked and then"
             + " overruled by the walk it exists to replace");
