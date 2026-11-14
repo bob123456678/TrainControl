@@ -174,7 +174,6 @@ public final class LayoutLabel extends JLabel
         this.setForeground(Color.white);
         
         COUNT_CONSTRUCTED.incrementAndGet();
-        this.setImage(false);
         
         // Edit mode callback
         if (edit)
@@ -563,6 +562,9 @@ public final class LayoutLabel extends JLabel
         {
             this.setIcon(new EmptyIcon(size, size)); 
         }
+
+        // Last: a picture already decoded goes up at once, over the blank stand-in above.
+        this.setImage(false);
     }
     
     /**
@@ -721,7 +723,10 @@ public final class LayoutLabel extends JLabel
      */
     static CompletableFuture<Void> decodeOnce(LayoutDiagramComponent c, int size, boolean edit, TrainControlUI tcUI)
     {
-        final String key = c.getImageKey(size, edit);
+        // The state read once: decoded from the square at decode time, a sensor cleared meanwhile would leave its clear
+        // picture under the occupied key for the session.
+        final String name = c.getImageName(size, edit);
+        final String key = c.getImageKey(name, size);
 
         return DECODING.computeIfAbsent(key, k -> CompletableFuture.runAsync(() ->
         {
@@ -729,7 +734,7 @@ public final class LayoutLabel extends JLabel
             {
                 if (TrainControlUI.getImageCache().get(k) == null)
                 {
-                    Image img = c.getImage(size, edit);
+                    Image img = c.getImage(name, size);
 
                     if (img != null) TrainControlUI.getImageCache().putIfAbsent(k, img);
                 }
@@ -798,7 +803,10 @@ public final class LayoutLabel extends JLabel
     private void setImageOnEDT(boolean update)
     {
         COUNT_APPLIED.incrementAndGet();
-        javax.swing.SwingUtilities.invokeLater(() ->
+
+        // At once on the event thread, so a window built there paints its pictures with its first paint; a picture
+        // that was still decoding arrives from the pool and is posted.
+        Runnable apply = () ->
         {
             if (this.component != null)
             {            
@@ -812,17 +820,20 @@ public final class LayoutLabel extends JLabel
                 }
                 else
                 {
+                    // One reading of the state names the key, the picture and what `updateImage` compares with
+                    final String shown = this.component.getImageName(size, edit);
+
                     try
                     {
                         // Cache icons in memory to speed up rendering
                         Map<String,Image> imageCache = TrainControlUI.getImageCache();
-                        String key = this.component.getImageKey(size, edit);
+                        String key = this.component.getImageKey(shown, size);
                         
                         Image img;
                         
                         if (!imageCache.containsKey(key))
                         {
-                            img = this.component.getImage(size, edit);
+                            img = this.component.getImage(shown, size);
 
                             // The cache is a ConcurrentHashMap, which rejects null values.
                             // getImage() never returns null today (it throws instead), but guard
@@ -901,7 +912,7 @@ public final class LayoutLabel extends JLabel
                         this.tcUI.getModel().log(ex.getMessage());
                     }
 
-                    this.imageName = component.getImageName(size, edit);
+                    this.imageName = shown;
                 }
                 
                 if (update)
@@ -925,7 +936,10 @@ public final class LayoutLabel extends JLabel
                     }
                 }
             }
-        });
+        };
+
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) apply.run();
+        else javax.swing.SwingUtilities.invokeLater(apply);
     }
     
     /**

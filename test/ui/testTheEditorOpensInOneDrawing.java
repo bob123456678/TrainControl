@@ -146,16 +146,42 @@ public class testTheEditorOpensInOneDrawing
             + seen.painted.size() + " different diagrams");
     }
 
+    /**
+     * A page switch paints the arriving page whole on its first paint: each picture already decoded went up one event
+     * after its square, so the window painted the page with blank squares, then again.
+     *
+     * MUTATION: in `LayoutLabel.setImageOnEDT`, post `apply` on the event thread too, and this fails.
+     */
+    @Test(timeOut = 120000, priority = 2)
+    public void testAPageSwitchPaintsItsPicturesWithItsFirstPaint() throws Exception
+    {
+        Switch seen = switched(false);
+
+        assertFalse(seen.painted.isEmpty(), "precondition: switching the track editor to " + seen.to
+            + " never painted the page");
+
+        assertEquals(seen.blankPaints, 0, "switching the track editor to " + seen.to + " painted the page "
+            + seen.blankPaints + " times with squares still blank (" + seen.blankSquares + " at most), each picture"
+            + " one paint behind its square");
+    }
+
     /** What one page switch built and painted. */
     private static final class Switch
     {
         String to;
         final List<Component> built = new ArrayList<>();
 
-        /** Each diagram a paint of the window drew, by identity, in order. */
+        /** The diagram on screen before the click, whose paints are not the switch's. */
+        Component leaving;
+
+        /** Each diagram a paint of the window drew after the click, by identity, in order. */
         final List<Component> painted = new ArrayList<>();
 
         int firstPaintMarked = -1;
+
+        /** The paints that showed squares without their pictures, and the most squares one showed so. */
+        int blankPaints;
+        int blankSquares;
     }
 
     /**
@@ -182,6 +208,8 @@ public class testTheEditorOpensInOneDrawing
 
             SwingUtilities.invokeAndWait(() ->
             {
+                seen.leaving = ((LayoutGrid) get(editor, "grid")).getContainer();
+
                 RepaintManager.setCurrentManager(new PaintWatch(editor, seen));
 
                 JList<?> list = (JList<?>) get(editor, "pageList");
@@ -270,12 +298,40 @@ public class testTheEditorOpensInOneDrawing
 
             LayoutGrid grid = (LayoutGrid) get(editor, "grid");
 
-            if (!reached || grid == null) return;
+            // A paint of the page being left, before the switch arrives, is not the switch's
+            if (!reached || grid == null || grid.getContainer() == seen.leaving) return;
 
             if (!seen.painted.contains(grid.getContainer())) seen.painted.add(grid.getContainer());
 
             if (seen.firstPaintMarked < 0) seen.firstPaintMarked = marked(editor);
+
+            int blank = blank(grid.getContainer());
+
+            if (blank > 0) seen.blankPaints++;
+
+            seen.blankSquares = Math.max(seen.blankSquares, blank);
         }
+    }
+
+    /** The squares of a diagram drawing a track piece whose picture has not been put up yet. */
+    private static int blank(Component diagram)
+    {
+        int blank = 0;
+
+        for (LayoutLabel square : Components.all(diagram, LayoutLabel.class, each -> each.getComponent() != null
+            && !each.getComponent().isText()))
+        {
+            try
+            {
+                if (Reflect.get(LayoutLabel.class, square, "imageName") == null) blank++;
+            }
+            catch (Exception e)
+            {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        return blank;
     }
 
     /** The pages of the frozen railway at the editor's floor, which opening does not grow. */

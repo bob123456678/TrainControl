@@ -21,6 +21,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.Feedback;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.LayoutGrid;
@@ -29,6 +30,7 @@ import org.traincontrol.gui.TrainControlUI;
 import support.Components;
 import support.FrozenEditor;
 import support.Reflect;
+import support.Settle;
 
 /**
  * A diagram's squares and their pictures: a page drawn at a size nobody has drawn yet appears whole on its first paint,
@@ -64,14 +66,99 @@ public class testTilePicturesArriveTogether
             this.unreadable = unreadable;
         }
 
-        @Override
-        public Image getImage(int size, boolean ignoreState) throws IOException
+        // The decode's door; not marked @Override, so a red run can compile this file over code without it
+        public Image getImage(String imageName, int size) throws IOException
         {
             reads.incrementAndGet();
 
             if (unreadable) throw new IOException("a picture that cannot be read, on purpose");
 
-            return super.getImage(size, ignoreState);
+            return super.getImage(imageName, size);
+        }
+    }
+
+    /** The tile loader with every decode held until `release` opens. */
+    private static final class Held extends AbstractExecutorService
+    {
+        private final ExecutorService under;
+        final CountDownLatch release = new CountDownLatch(1);
+
+        Held(ExecutorService under)
+        {
+            this.under = under;
+        }
+
+        @Override
+        public void execute(Runnable work)
+        {
+            under.execute(() ->
+            {
+                try
+                {
+                    release.await();
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                }
+
+                work.run();
+            });
+        }
+
+        @Override
+        public void shutdown()
+        {
+        }
+
+        @Override
+        public List<Runnable> shutdownNow()
+        {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public boolean isShutdown()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isTerminated()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit)
+        {
+            return false;
+        }
+    }
+
+    /** A sensor of no station, set and cleared by the claim. */
+    private static final class HeldSensor extends Feedback
+    {
+        HeldSensor()
+        {
+            super("held");
+        }
+
+        @Override
+        public int getUID()
+        {
+            return 0;
+        }
+
+        @Override
+        public void setState(boolean val)
+        {
+            _setState(val);
+        }
+
+        @Override
+        public void addTile(LayoutLabel l)
+        {
         }
     }
 
@@ -170,6 +257,67 @@ public class testTilePicturesArriveTogether
     }
 
     /**
+     * A sensor's picture asked for while it was occupied and decoded after it was cleared is the occupied picture: kept
+     * under the occupied key, the cleared one stood for every occupied sensor of that turn and size until the program
+     * closed.
+     *
+     * MUTATION: in `LayoutLabel.decodeOnce`, decode with `c.getImage(size, edit)`, the state at decode time, and this
+     * fails.
+     */
+    @Test(timeOut = 60000)
+    public void testAPictureIsOfTheStateItWasAskedIn() throws Exception
+    {
+        final TrainControlUI ui = frozen.ui;
+        final HeldSensor sensor = new HeldSensor();
+        final LayoutDiagramComponent square = new LayoutDiagramComponent(LayoutDiagramComponent.componentType.FEEDBACK,
+            0, 0, 0, 0, 0, 0, Accessory.accessoryDecoderType.MM2);
+
+        square.setFeedback(sensor);
+        sensor.setState(true);
+
+        // The icon set's own size, unturned: the picture is the file as read, the same object every time
+        final int size = 30;
+        final Image occupied = square.getImage(size, false);
+        final String key = square.getImageKey(size, false);
+
+        assertSame(square.getImage(size, false), occupied, "precondition: the occupied picture is drawn anew each time");
+
+        final ExecutorService decoding = (ExecutorService) Reflect.get(TrainControlUI.class, ui, "TileImageLoader");
+        final Held held = new Held(decoding);
+        final Image cached;
+
+        TrainControlUI.getImageCache().remove(key);
+        Reflect.set(TrainControlUI.class, ui, "TileImageLoader", held);
+
+        try
+        {
+            java.util.concurrent.Future<?> done = (java.util.concurrent.Future<?>) Reflect.method(LayoutLabel.class,
+                "decodeOnce", LayoutDiagramComponent.class, int.class, boolean.class, TrainControlUI.class)
+                .invoke(null, square, size, false, ui);
+
+            sensor.setState(false);
+            held.release.countDown();
+
+            done.get(20, TimeUnit.SECONDS);
+        }
+        finally
+        {
+            held.release.countDown();
+
+            Reflect.set(TrainControlUI.class, ui, "TileImageLoader", decoding);
+
+            cached = TrainControlUI.getImageCache().get(key);
+
+            // Not left for the claims after this one
+            if (cached != occupied) TrainControlUI.getImageCache().remove(key);
+        }
+
+        assertSame(cached, occupied, "the occupied sensor's picture, asked for while it was occupied and decoded once it"
+            + " was cleared, is " + (cached == null ? "missing" : "another picture, the cleared one") + ": every"
+            + " occupied sensor drawn that way would look clear until the program is closed");
+    }
+
+    /**
      * Changing the main window's diagram size to one not drawn yet: the first paint of the new diagram has every square
      * with its picture and none zero wide.  The old one stays up while the pictures are decoded.
      *
@@ -223,60 +371,10 @@ public class testTilePicturesArriveTogether
 
         final RepaintManager was = Components.onTheEventThread(() -> RepaintManager.currentManager((JComponent) inner));
 
-        // Each decode slowed to what a busy machine takes, so a first paint cannot beat the pictures by luck.
         final ExecutorService decoding = (ExecutorService) Reflect.get(TrainControlUI.class, ui, "TileImageLoader");
 
-        final ExecutorService slowed = new AbstractExecutorService()
-        {
-            @Override
-            public void execute(Runnable work)
-            {
-                decoding.execute(() ->
-                {
-                    try
-                    {
-                        Thread.sleep(150);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        Thread.currentThread().interrupt();
-                    }
-
-                    work.run();
-                });
-            }
-
-            @Override
-            public void shutdown()
-            {
-            }
-
-            @Override
-            public List<Runnable> shutdownNow()
-            {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public boolean isShutdown()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean isTerminated()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean awaitTermination(long timeout, TimeUnit unit)
-            {
-                return false;
-            }
-        };
-
-        Reflect.set(TrainControlUI.class, ui, "TileImageLoader", slowed);
+        // The new size's pictures are held, so a first paint cannot beat them by luck
+        final Held held = new Held(decoding);
 
         try
         {
@@ -289,8 +387,10 @@ public class testTilePicturesArriveTogether
                 ui.showLayoutTab();
             });
 
-            Thread.sleep(1500);
+            Settle.theDiagram(ui);
             Components.settle();
+
+            Reflect.set(TrainControlUI.class, ui, "TileImageLoader", held);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -312,6 +412,12 @@ public class testTilePicturesArriveTogether
                 sizes.setSelectedIndex(chosen[1]);
             });
 
+            // A diagram that does not wait for its pictures goes up meanwhile; one that waits is held, for a second
+            // here, under the three the main window gives the pictures
+            Components.waitFor(() -> firstPaint[0] != null, 1000);
+
+            held.release.countDown();
+
             assertTrue(Components.waitFor(() -> firstPaint[0] != null, 20000),
                 "precondition: the diagram at the new size was never painted");
 
@@ -322,6 +428,8 @@ public class testTilePicturesArriveTogether
         }
         finally
         {
+            held.release.countDown();
+
             Reflect.set(TrainControlUI.class, ui, "TileImageLoader", decoding);
 
             SwingUtilities.invokeAndWait(() ->
