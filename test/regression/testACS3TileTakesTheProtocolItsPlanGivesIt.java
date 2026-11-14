@@ -635,7 +635,7 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
      * W 15 is MM2.  Built as a CS2's, it would be DCC until restart, the switch never moving.
      *
      * MUTATION: drop the `stationTypeUnknown` throw before `syncLayouts` in the no-folder branch of
-     * `MarklinControlStation.syncLayoutsFromConfiguredSource`, and W 15 stays DCC after the retry.
+     * `MarklinControlStation.syncLayoutsFromConfiguredSource`, and the failed sync builds the pages, as a CS2's.
      */
     @Test
     public void testAStationsDiagramWaitsForTheStationsType() throws Exception
@@ -657,7 +657,7 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
      * for the type too, and the folder is kept for the retry, which falls back with the type known.
      *
      * MUTATION: drop the `stationTypeUnknown` throw in the fallback of
-     * `MarklinControlStation.syncLayoutsFromConfiguredSource`, and W 15 stays DCC after the retry.
+     * `MarklinControlStation.syncLayoutsFromConfiguredSource`, and the failed sync builds the pages, as a CS2's.
      */
     @Test
     public void testAFolderThatWillNotReadWaitsForTheTypeToo() throws Exception
