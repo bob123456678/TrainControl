@@ -721,6 +721,9 @@
         <test-one-class class="testADownloadedCS3LayoutKeepsEachSquaresProtocol"/>
         <test-one-class class="testTheDiagramSaysItIsLoadingAtStart"/>
         <test-one-class class="testDownloadingTheStationsLayout"/>
+        <test-one-class class="testEveryLanguageFitsTheSettingsWindows"/>
+        <test-one-class class="testEveryLanguageFitsTheEditors"/>
+        <test-one-class class="testEveryLanguageFitsThePopups"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
