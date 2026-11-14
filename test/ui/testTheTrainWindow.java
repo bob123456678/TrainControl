@@ -4826,7 +4826,7 @@ public class testTheTrainWindow
      * Ctrl+Z in the track editor puts back the page's setup as it was before the edit, but a train turned on the
      * throttle meanwhile keeps its facing.
      *
-     * MUTATION: drop the `turnInPoints` loop from `AutonomySession.restorePage`, and Ctrl+Z turns it back.
+     * MUTATION: drop the turning loop at the end of `AutonomySession.restorePage`, and Ctrl+Z turns it back.
      */
     @Test(timeOut = 300000)
     public void testTheTrackEditorsUndoKeepsAThrottleTurn() throws Exception
@@ -4853,6 +4853,477 @@ public class testTheTrainWindow
         }
         finally
         {
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /** A track edit of the square a train stands on, in the open track editor. */
+    private interface TrackEdit
+    {
+        void run(LayoutEditor open, TileKey square) throws Exception;
+    }
+
+    /** As the track editor's Delete does for one square (`LayoutEditorSelection.delete`): the tile and its record go. */
+    private static void deleteTheSquare(LayoutEditor open, TileKey square) throws Exception
+    {
+        final org.traincontrol.base.LayoutDiagram diagram = model.getLayout(PAGE);
+        final java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
+        final java.lang.reflect.Method remember = Reflect.method(LayoutEditor.class, "rememberAutonomy",
+            AutonomySession.class);
+
+        Components.onTheEventThread(() ->
+        {
+            snapshot.invoke(open);
+
+            diagram.addComponent(null, square.getX(), square.getY());
+
+            if (session.forgetTiles(java.util.Collections.singletonList(square))) remember.invoke(open, session);
+
+            return null;
+        });
+
+        Components.settle();
+    }
+
+    /**
+     * As the track editor's move of a picked square does (`LayoutEditorSelection.moveSelection`): the tile and its record
+     * onto an empty square beside it.
+     */
+    private static void moveTheSquare(LayoutEditor open, TileKey square) throws Exception
+    {
+        final org.traincontrol.base.LayoutDiagram diagram = model.getLayout(PAGE);
+        final java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
+        final java.lang.reflect.Method remember = Reflect.method(LayoutEditor.class, "rememberAutonomy",
+            AutonomySession.class);
+        TileKey empty = null;
+
+        for (int[] step : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}})
+        {
+            int x = square.getX() + step[0];
+            int y = square.getY() + step[1];
+
+            if (empty == null && x >= 0 && y >= 0 && x < diagram.getSx() && y < diagram.getSy()
+                && diagram.getComponent(x, y) == null) empty = new TileKey(PAGE, x, y);
+        }
+
+        assertNotNull(empty, "precondition: no empty square beside " + square);
+
+        final TileKey onto = empty;
+
+        Components.onTheEventThread(() ->
+        {
+            snapshot.invoke(open);
+
+            org.traincontrol.base.LayoutDiagramComponent moved = new org.traincontrol.base.LayoutDiagramComponent(
+                diagram.getComponent(square.getX(), square.getY()));
+
+            diagram.addComponent(null, square.getX(), square.getY());
+
+            moved.setX(onto.getX());
+            moved.setY(onto.getY());
+
+            diagram.addComponent(moved, onto.getX(), onto.getY());
+
+            session.moveTile(square, onto);
+
+            remember.invoke(open, session);
+
+            return null;
+        });
+
+        Components.settle();
+    }
+
+    /** The page's tile back on its square where a claim left it out, and the session built from it again. */
+    private static void putTheSquareBack(TileKey square, org.traincontrol.base.LayoutDiagramComponent tile)
+    {
+        Components.onTheEventThread(() ->
+        {
+            org.traincontrol.base.LayoutDiagram diagram = model.getLayout(PAGE);
+
+            if (diagram.getComponent(square.getX(), square.getY()) == null)
+            {
+                diagram.addComponent(tile, square.getX(), square.getY());
+
+                session.rebuild();
+            }
+
+            return null;
+        });
+
+        Components.settle();
+    }
+
+    /**
+     * A track edit takes the square from under a standing train, the throttle then reverses it (counted, though nothing
+     * can be written where no square holds it), Ctrl+Z: the train is on its square again turned round, on the railway
+     * and in the setup, as its decoder runs.
+     */
+    private void theTrackEditorsUndoKeepsATurnAfter(TrackEdit edit) throws Exception
+    {
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+        final org.traincontrol.automationui.TilePorts.Side way = theOtherWay(square);
+        final org.traincontrol.base.LayoutDiagramComponent tile = model.getLayout(PAGE).getComponent(square.getX(),
+            square.getY());
+        final LayoutEditor open = theTrackEditor();
+
+        try
+        {
+            edit.run(open, square);
+
+            final Object written = followed(name);
+
+            Components.onTheEventThread(() -> { open.undo(); return null; });
+
+            Components.settle();
+
+            assertEquals(standingAndFacing(name), "on " + square + " facing " + way + ", setup facing " + way,
+                "Ctrl+Z after a track edit of the square under " + name + " and a reversal (written on " + written
+                + ") did not put it back turned round (it stood on " + copyBefore + ")");
+        }
+        finally
+        {
+            putTheSquareBack(square, tile);
+
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * The track editor deletes the square under a train, the throttle reverses it, Ctrl+Z: it is back turned round.
+     *
+     * MUTATION: in `AutonomySession.restorePage`, turn the trains before `touched()`, and Ctrl+Z puts it back facing as
+     * before.
+     */
+    @Test(timeOut = 300000)
+    public void testTheTrackEditorsUndoKeepsATurnOfATrainWhoseSquareWasDeleted() throws Exception
+    {
+        theTrackEditorsUndoKeepsATurnAfter(testTheTrainWindow::deleteTheSquare);
+    }
+
+    /**
+     * The track editor moves the station square under a train, the throttle reverses it, Ctrl+Z: it is back on the
+     * square it stood on, turned round.
+     *
+     * MUTATION: in `AutonomySession.restorePage`, turn the trains before `touched()`, and Ctrl+Z puts it back facing as
+     * before.
+     */
+    @Test(timeOut = 300000)
+    public void testTheTrackEditorsUndoKeepsATurnOfATrainWhoseSquareWasMoved() throws Exception
+    {
+        theTrackEditorsUndoKeepsATurnAfter(testTheTrainWindow::moveTheSquare);
+    }
+
+    /** Leaves the track editor without saving the given way (`DISCARDS`), answering the question with throwing away. */
+    private void leaveTheTrackEditor(int how, LayoutEditor open) throws Exception
+    {
+        if (how == 0)
+        {
+            assertNotNull(cancelTheEditor(), "precondition: Cancel did not ask about the track edit");
+
+            return;
+        }
+
+        try (support.Answering answering = support.Answering.start(
+            message -> support.Answering.press(I18n.t("layout.ui.switchDiscard"))))
+        {
+            if (how == 1)
+            {
+                final java.lang.reflect.Method leaveFor = Reflect.method(LayoutEditor.class, "leaveFor", String.class,
+                    boolean.class);
+
+                Components.onTheEventThread(() -> leaveFor.invoke(open, PAGE, false));
+            }
+            else
+            {
+                assertTrue(Components.onTheEventThread(() -> open.maySettleBeforeExit()), "the exit's question refused");
+
+                Components.onTheEventThread(() -> { open.completeExitDiscard(); return null; });
+            }
+
+            assertEquals(answering.asked().size(), 1, "precondition: " + DISCARDS[how] + " asked " + answering.asked());
+        }
+
+        // The switch's arrival waits for the pages read again
+        if (how == 2) support.FrozenEditor.dispose(open);
+    }
+
+    /** Waits for the pages to be read again after a track edit ends (`layoutEditingComplete`); takes up its session. */
+    private static void reloaded(AutonomySession was) throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicInteger underWay = (java.util.concurrent.atomic.AtomicInteger)
+            Reflect.get(TrainControlUI.class, ui, "refreshesUnderWay");
+
+        assertTrue(Components.waitFor(() -> underWay.get() == 0 && Components.onTheEventThread(() ->
+        {
+            Object now = Reflect.get(TrainControlUI.class, ui, "autonomySession");
+
+            return now != null && now != was;
+        }), 60000), "precondition: the pages were not read again after the track editor");
+
+        Components.settle();
+
+        session = Components.onTheEventThread(() -> ui.getAutonomySession());
+    }
+
+    /** The facing the setup on disk records on a square, as a restart reads it. */
+    private static String facingOnDisk(TileKey square) throws Exception
+    {
+        org.traincontrol.automationui.AutonomyCompanionStore store
+            = new org.traincontrol.automationui.AutonomyCompanionStore(sandbox.getFolder());
+
+        store.load();
+
+        org.json.JSONObject point = store.getConfiguration(store.getActiveConfiguration()).getJSONObject("points")
+            .optJSONObject(square.toString());
+
+        return point == null ? null : point.optString("facing", null);
+    }
+
+    /**
+     * The track editor deletes the square under a standing train, the throttle reverses it, then Cancel, a page switch's
+     * Discard or the exit's Discard: the edit is thrown away but the turn kept.
+     *
+     * MUTATION: in `LayoutEditor.undoAutonomyEdits`, restore `autonomyAsOpened` itself, and each door puts it back facing
+     * as before.
+     */
+    @Test(timeOut = 600000)
+    public void testTheTrackEditorsDiscardsKeepATurnOfATrainWhoseSquareWasDeleted() throws Exception
+    {
+        theTrackEditorsDiscardsKeepATurnAfter(testTheTrainWindow::deleteTheSquare);
+    }
+
+    /**
+     * The same where the track edit leaves the train's square alone, so the reversal is written as it happens.
+     *
+     * MUTATION: in `LayoutEditor.undoAutonomyEdits`, restore `autonomyAsOpened` itself and stand the railway as pictured
+     * unturned (`railwayAsPictured(false)`), and each door turns it back.
+     */
+    @Test(timeOut = 600000)
+    public void testTheTrackEditorsDiscardsKeepAThrottleTurn() throws Exception
+    {
+        final java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
+
+        theTrackEditorsDiscardsKeepATurnAfter((open, square) ->
+            Components.onTheEventThread(() -> { snapshot.invoke(open); return null; }));
+    }
+
+    /**
+     * A track edit, the throttle reverses the train on the square edited, then Cancel, a page switch's Discard or the
+     * exit's Discard: the edit is thrown away but the turn kept, on the railway and in the setup the pages read again
+     * build, and on disk where the exit leaves it.
+     */
+    private void theTrackEditorsDiscardsKeepATurnAfter(TrackEdit edit) throws Exception
+    {
+        for (int how = 0; how < DISCARDS.length; how++)
+        {
+            final TileKey square = aTrainThatCanTurn();
+            final String name = session.getLocomotiveNameAt(square);
+            final String copyBefore = copyOf(name);
+            final org.traincontrol.automationui.TilePorts.Side way = theOtherWay(square);
+            final org.traincontrol.base.LayoutDiagramComponent tile = model.getLayout(PAGE).getComponent(square.getX(),
+                square.getY());
+            final AutonomySession was = session;
+            final LayoutEditor open = theTrackEditor();
+
+            try
+            {
+                edit.run(open, square);
+
+                followed(name);
+
+                leaveTheTrackEditor(how, open);
+
+                if (how == 2)
+                {
+                    assertEquals(facingOnDisk(square), way.name(), "the exit's Discard after a track edit of the square"
+                        + " under " + name + " and a reversal left it on disk facing as before");
+
+                    // As the restart reads the pages
+                    Components.onTheEventThread(() -> { ui.layoutEditingComplete(); return null; });
+                }
+
+                reloaded(was);
+
+                assertEquals(standingAndFacing(name), "on " + square + " facing " + way + ", setup facing " + way,
+                    DISCARDS[how] + " after a track edit of the square under " + name + " and a reversal did not keep"
+                    + " the turn (it stood on " + copyBefore + ")");
+            }
+            finally
+            {
+                support.FrozenEditor.dispose(open);
+
+                editor = null;
+
+                putTheSquareBack(square, tile);
+
+                standBack(name, copyBefore, null, null, null);
+
+                support.FrozenEditor.putBack(ui, session, asOpened);
+            }
+        }
+    }
+
+    /**
+     * The track editor deletes the square under a standing train and the throttle reverses it: the crash note turns it
+     * by the build as the edit began, so a restart's revert puts it on its square turned round, as Cancel would.
+     *
+     * MUTATION: in `AutonomySession.turned`, turn the note by `choicesWhereTrainsStand()`, and the note keeps it facing
+     * as before.
+     */
+    @Test(timeOut = 300000)
+    public void testTheCrashNoteKeepsATurnOfATrainWhoseSquareTheTrackEditorDeleted() throws Exception
+    {
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+        final org.traincontrol.automationui.TilePorts.Side way = theOtherWay(square);
+        final org.traincontrol.base.LayoutDiagramComponent tile = model.getLayout(PAGE).getComponent(square.getX(),
+            square.getY());
+        final LayoutEditor open = theTrackEditor();
+
+        try
+        {
+            deleteTheSquare(open, square);
+
+            followed(name);
+
+            org.json.JSONObject note = Components.onTheEventThread(() -> session.getStore().unfinishedEdit());
+
+            assertNotNull(note, "precondition: the track editor wrote no crash note");
+
+            org.json.JSONObject point = note.getJSONObject("configurations")
+                .getJSONObject(session.getStore().getActiveConfiguration()).getJSONObject("points")
+                .getJSONObject(square.toString());
+
+            assertEquals(point.optString("facing", null), way.name(), "the crash note after the track editor deleted"
+                + " the square under " + name + " and the throttle reversed it keeps it facing as before");
+        }
+        finally
+        {
+            putTheSquareBack(square, tile);
+
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * The editor lifts a train, the throttle reverses it, Place puts it back on its square, Save: it stands turned
+     * round, on the railway and in the setup, as its decoder runs.
+     *
+     * MUTATION: leave `headingOfALiftedTrain` out of `AutonomyEditorPanel.placeLocomotive`, and Save keeps another
+     * facing.
+     */
+    @Test(timeOut = 300000)
+    public void testATrainPlacedBackAfterATurnWhileLiftedIsSavedTurned() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+        final org.traincontrol.automationui.TilePorts.Side way = theOtherWay(square);
+        final java.lang.reflect.Method remove = Reflect.method(AutonomyEditorPanel.class, "removeLocomotive",
+            TileKey.class);
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            Components.onTheEventThread(() -> remove.invoke(panel, square));
+
+            Components.settle();
+
+            assertNull(followed(name), "precondition: the reversal of the lifted " + name + " was written somewhere");
+
+            placeFromTheMenu(panel, square, name);
+
+            Components.settle();
+
+            final String placed = standingAndFacing(name);
+
+            saveTheEditor();
+
+            assertEquals(standingAndFacing(name), "on " + square + " facing " + way + ", setup facing " + way,
+                "Save after " + name + " was lifted, reversed and placed back (" + placed + ") did not keep the turn"
+                + " (it stood on " + copyBefore + ")");
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * A turn the railway made on arrival and wrote into the setup only once the editor is open (`faceTheWayItCameIn`,
+     * retried while idle) is no turn since the editor opened: no train runs with an editor open, so the railway turned
+     * it before, and Edit's fold and picture already have it so.  Cancel asks nothing and keeps it as it stands.
+     *
+     * MUTATION: call `turned(locomotive)` at the end of `AutonomySession.faceTheWayItCameIn`, and Cancel turns it back.
+     */
+    @Test(timeOut = 300000)
+    public void testAnArrivalTurnWrittenWithTheEditorOpenIsKeptByCancel() throws Exception
+    {
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+        final org.traincontrol.automationui.TilePorts.Side way = theOtherWay(square);
+        final java.lang.reflect.Method fold = Reflect.method(TrainControlUI.class, "captureRunningLayout");
+
+        try
+        {
+            // The railway turned it on arrival: on the copy facing the other way, in by that side, the write owed
+            Components.onTheEventThread(() ->
+            {
+                org.traincontrol.automation.Layout railway = model.getAutoLayout();
+                org.traincontrol.automation.Point turnedOn = session.copyFacing(square, way, railway);
+
+                railway.moveLocomotive(null, copyBefore, false);
+                railway.moveLocomotive(name, turnedOn.getName(), false);
+
+                turnedOn.setArrivedFrom(way.name());
+
+                railway.restoreReversalsOnArrival(java.util.Collections.singletonMap(name, turnedOn.getName()));
+
+                // Edit's fold, before the editor takes its picture
+                fold.invoke(ui);
+
+                return null;
+            });
+
+            theEditorsPanel();
+
+            Components.onTheEventThread(() -> { ui.reconcileFacingWhenIdle(); return null; });
+
+            Components.settle();
+
+            assertTrue(Components.onTheEventThread(() -> model.getAutoLayout().takeReversalsOnArrival().isEmpty()),
+                "precondition: the turn owed on arrival was not written with the editor open");
+
+            final String turned = standingAndFacing(name);
+
+            assertEquals(turned, "on " + square + " facing " + way + ", setup facing " + way,
+                "precondition: the arrival did not turn " + name);
+            assertNull(cancelTheEditor(), "Cancel asked after only an arrival turn was written");
+            assertEquals(standingAndFacing(name), turned, "Cancel turned " + name + " back after an arrival turn was"
+                + " written with the editor open");
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> model.getAutoLayout().takeReversalsOnArrival());
+
             standBack(name, copyBefore, null, null, null);
 
             support.FrozenEditor.putBack(ui, session, asOpened);

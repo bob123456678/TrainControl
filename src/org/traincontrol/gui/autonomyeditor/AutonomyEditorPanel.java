@@ -3751,8 +3751,10 @@ public class AutonomyEditorPanel extends JPanel
     void placeLocomotive(TileKey tile, String name)
     {
         // The session lifts it off everywhere, excluded pages too.  Its heading is read first: the facing would
-        // otherwise be the previous occupant's.
+        // otherwise be the previous occupant's.  A lifted train's, turned as often as it was turned since.
         TilePorts.Side heading = session.facingOf(name);
+
+        if (heading == null) heading = session.headingOfALiftedTrain(name);
 
         Layout running = layoutSource == null ? null : layoutSource.get();
 

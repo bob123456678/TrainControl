@@ -364,6 +364,15 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     private Map<Object, Integer> turnsAsOpened;
 
+    /**
+     * The facing choices where each train stood as the picture was taken (`choicesWhereTrainsStand`): the build a
+     * discard restores, which an edit since may have changed.
+     */
+    private Map<TileGraph.TileKey, List<TilePorts.Side>> choicesAsOpened = java.util.Collections.emptyMap();
+
+    /** Each pictured place turned round, by that build (`turnedRound`). */
+    private final Map<Locomotive, String[]> turnedAsOpened = new java.util.IdentityHashMap<>();
+
     /** How many trains the discard question names before "and N more". */
     private static final int TRAINS_NAMED = 5;
 
@@ -437,13 +446,18 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         this.turnsAsOpened = live == null ? null : live.turnsSoFar();
 
+        this.choicesAsOpened = live == null ? java.util.Collections.emptyMap() : live.choicesWhereTrainsStand();
+
         this.railwayAsOpened.clear();
+        this.turnedAsOpened.clear();
 
         for (Map.Entry<String, String[]> each : railwayNow().entrySet())
         {
             Locomotive loc = parent.getModel().getLocByName(each.getKey());
 
             if (loc != null) this.railwayAsOpened.put(loc, each.getValue());
+
+            if (loc != null && live != null) this.turnedAsOpened.put(loc, turnedRound(each.getValue(), live));
         }
     }
 
@@ -457,13 +471,13 @@ public class LayoutEditor extends PositionAwareJFrame
     /**
      * The picture by each train's name now, a deleted one left out, and null for a train the railway has now and had
      * not then, which the restored setup then places.  With `keepingTheTurns`, a train turned since faces the other way
-     * there, as the edited build has it.
+     * there, by the build as pictured.
      */
     private Map<String, String[]> railwayAsPictured(boolean keepingTheTurns)
     {
         Map<String, String[]> back = new java.util.TreeMap<>();
-        AutonomySession autonomy = parent.getAutonomySession();
-        Set<String> turned = keepingTheTurns ? trainsTurnedSince(autonomy) : java.util.Collections.<String>emptySet();
+        Set<String> turned = keepingTheTurns ? trainsTurnedSince(parent.getAutonomySession())
+            : java.util.Collections.<String>emptySet();
 
         for (String now : railwayNow().keySet()) back.put(now, null);
 
@@ -473,7 +487,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
             if (parent.getModel().getLocByName(name) != each.getKey()) continue;
 
-            back.put(name, turned.contains(name) ? turnedRound(each.getValue(), autonomy) : each.getValue());
+            back.put(name, turned.contains(name) ? this.turnedAsOpened.getOrDefault(each.getKey(), each.getValue())
+                : each.getValue());
         }
 
         return back;
@@ -507,10 +522,10 @@ public class LayoutEditor extends PositionAwareJFrame
         return turned;
     }
 
-    /** The setup as this window opened it, each train turned since turned there too. */
+    /** The setup as this window opened it, each train turned since turned there too, by the build as pictured. */
     private JSONObject asOpenedKeepingTheTurns(AutonomySession autonomy)
     {
-        return autonomy.withTheseTrainsTurned(this.autonomyAsOpened, trainsTurnedSince(autonomy));
+        return autonomy.withTheseTrainsTurned(this.autonomyAsOpened, trainsTurnedSince(autonomy), this.choicesAsOpened);
     }
 
     /** The question, with a sentence naming the trains a discard moves; word for word where there are none. */
@@ -642,22 +657,25 @@ public class LayoutEditor extends PositionAwareJFrame
         return failed;
     }
 
-    /** Puts the setup back as the window opened it, with the page re-read beside it, as both halves undo together. */
+    /**
+     * Puts the setup back as the window opened it, with the page re-read beside it, as both halves undo together; each
+     * train turned since turned by the build as pictured, which the pages read again restore (the edited one may lack
+     * the train's square), and stood so on the railway, whose facing the reset's fold writes over the setup's.
+     */
     private void undoAutonomyEdits()
     {
         if (this.autonomyAsOpened == null) return;
 
         AutonomySession autonomy = parent.getAutonomySession();
-        Set<String> turned = trainsTurnedSince(autonomy);
+        Map<String, String[]> standing = railwayAsPictured(true);
 
-        if (autonomy != null && !autonomy.restoreSetup(this.autonomyAsOpened) && parent.getModel() != null)
+        if (autonomy != null && !autonomy.restoreSetup(asOpenedKeepingTheTurns(autonomy)) && parent.getModel() != null)
         {
             parent.getModel().logf("autosetup.log.restoreFailedAfterCancel");
         }
         else if (autonomy != null)
         {
-            // The railway already faces them so
-            turnAgain(autonomy, turned, null);
+            parent.standTheTrainsBack(standing);
         }
 
         this.autonomyAsOpened = null;
