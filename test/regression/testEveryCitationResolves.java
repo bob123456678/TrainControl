@@ -254,6 +254,11 @@ public class testEveryCitationResolves
         java.util.regex.Pattern sublettered =
             java.util.regex.Pattern.compile("\\b([A-Z][A-Z0-9]{1,7}-[A-D]\\d{1,3}[a-z])\\b");
 
+        // THE FOLDER IS LISTED ONCE, not once per row: name to first file with that name, in listing order.
+        Map<String, File> documents = new java.util.HashMap<>();
+
+        for (File candidate : filesUnder(docs, ".md")) documents.putIfAbsent(candidate.getName(), candidate);
+
         List<String> unwritten = out.unwritten;
 
         int seen = 0;
@@ -271,7 +276,7 @@ public class testEveryCitationResolves
             // COUNTED OVER EVERY ROW, not only the sub-lettered ones, which are legitimately rare.  COUNTED AND
             // REPORTED, not asserted on: "2 rows, 0 of them checkable" and "2 rows, all checked and clean" are
             // different states.
-            if (documentExists(cells[1].trim(), docs)) resolvable++;
+            if (documents.containsKey(cells[1].trim())) resolvable++;
 
             java.util.regex.Matcher m = sublettered.matcher(cells[0].trim());
 
@@ -281,17 +286,7 @@ public class testEveryCitationResolves
 
             // The document is the second column by the catalogue's own layout.  A sub-lettered ref is only
             // legitimate if the document writes it out, which is what the fifteen did not.
-            File document = null;
-
-            for (File candidate : filesUnder(docs, ".md"))
-            {
-                if (candidate.getName().equals(cells[1].trim()))
-                {
-                    document = candidate;
-
-                    break;
-                }
-            }
+            File document = documents.get(cells[1].trim());
 
             // A deleted document cannot be checked, and most have been: those rows are the catalog's whole purpose.
             if (document == null) continue;
@@ -382,22 +377,6 @@ public class testEveryCitationResolves
         }
 
         return rows;
-    }
-
-    /**
-     * Whether a review document named in the catalog is still in the tree.  Most are not, deliberately; this says
-     * whether the name-to-file resolution works rather than silently matching nothing.
-     */
-    private static boolean documentExists(String named, File docs)
-    {
-        if (named == null || named.isEmpty()) return false;
-
-        for (File candidate : filesUnder(docs, ".md"))
-        {
-            if (candidate.getName().equals(named)) return true;
-        }
-
-        return false;
     }
 
     /** Every .java or .md file under a directory, recursively. */
