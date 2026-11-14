@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
  */
 public class testTestSleepsOnlyGoDown
 {
-    private static final int SLEEPS_ALLOWED = 407;
+    private static final int SLEEPS_ALLOWED = 401;
 
     // Built from pieces so this file does not count itself
     private static final Pattern SLEEP = Pattern.compile("Thread" + "\\.sleep\\(|TimeUnit\\.[A-Z]+\\.sleep\\("

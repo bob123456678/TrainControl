@@ -1844,6 +1844,22 @@ public class testATrainIsDispatchedOnce
         }
     }
 
+    /** The threads with the method named on their stack. */
+    private static List<Thread> threadsIn(String method)
+    {
+        List<Thread> found = new ArrayList<>();
+
+        for (java.util.Map.Entry<Thread, StackTraceElement[]> each : Thread.getAllStackTraces().entrySet())
+        {
+            for (StackTraceElement frame : each.getValue())
+            {
+                if (method.equals(frame.getMethodName())) found.add(each.getKey());
+            }
+        }
+
+        return found;
+    }
+
     /** Whether some thread is waiting for a monitor inside the method named. */
     private static boolean aThreadIsBlockedIn(String method)
     {
@@ -3959,9 +3975,11 @@ public class testATrainIsDispatchedOnce
             executor.setDaemon(true);
             executor.start();
 
-            Thread.sleep(600);
+            assertTrue(until(() -> !threadsIn("pauseUnlessStopped").isEmpty(), 5000), "precondition: no entry is pausing");
 
             assertTrue(rail.isAutoRunning(), "precondition: the timetable is not running");
+
+            final List<Thread> pausing = threadsIn("pauseUnlessStopped");
 
             // THE YES
             final long yes = System.currentTimeMillis();
@@ -3982,7 +4000,8 @@ public class testATrainIsDispatchedOnce
             rail.setLocomotivesToRun(new ArrayList<Locomotive>());
             rail.runLocomotives();
 
-            Thread.sleep(7000);
+            // The entry that was pausing has left, or has gone on into this run and stopped it
+            until(() -> pausing.stream().noneMatch(Thread::isAlive), 10000);
 
             assertTrue(rail.isAutoRunning(), "the next run was stopped by an entry of the run the Yes ended (RSA3-C5):"
                 + " " + said);
