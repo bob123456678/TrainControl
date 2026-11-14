@@ -23,9 +23,9 @@ pictures).  `docs/tools/release-tree.sh` computes that tree, so a release never 
 
 6. The full battery, from a worktree detached at `release`:
    `TC_SCRATCH=<scratch folder> bash docs/tools/battery.sh > battery.log`.
-   Run the four record tests the release tree leaves out from the main checkout on `dev`.  On the release tree
-   `regression.testNoNewCopies` asks to lower its test-copies pin: the record tests it leaves out held copies.  Leave
-   the pin, which is green on `dev`.
+   Run the four record tests the release tree leaves out from the main checkout on `dev`.  The test-copies pin is an
+   upper bound, so the release tree, holding fewer copies, passes it.  Lower the pin on `dev` to `codesize.py`'s figure
+   at a merge, never on the release tree.
 7. Anything changed after the battery: run the classes it touches and the bookkeeping classes, then rebuild the
    release commit (step 4).
 
