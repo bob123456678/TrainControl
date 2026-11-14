@@ -4062,7 +4062,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,
         java.util.Set<String> placementsJustEdited)
     {
-        this.runningLayoutSync.rebuildRunningLayoutFromSetup(sayIfDeclined, placementsJustEdited);
+        this.runningLayoutSync.rebuildRunningLayoutFromSetup(sayIfDeclined, placementsJustEdited, null);
+    }
+
+    /** The same for a Cancel: `standingAsOpened` is `whereTheTrainsAre` as the edit began. */
+    public void rebuildRunningLayoutFromSetup(java.util.Set<String> placementsJustEdited,
+        java.util.Map<String, String[]> standingAsOpened)
+    {
+        this.runningLayoutSync.rebuildRunningLayoutFromSetup(false, placementsJustEdited, standingAsOpened);
     }
 
     /** The setup and the running railway kept in step: the folds, the rebuild and the settings as built. */

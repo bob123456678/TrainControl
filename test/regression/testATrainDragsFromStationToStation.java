@@ -972,6 +972,63 @@ public class testATrainDragsFromStationToStation
         }
     }
 
+    /**
+     * After a run the railway can hold Z on a square whose setup train X stands on another station: a train dragged onto
+     * that square, then Cancel, leaves X and Z where the railway had them, so neither square reads free under a standing
+     * train (OB-416).
+     *
+     * MUTATION: pass no `railwayAsOpened` from `LayoutEditor.discardAutonomyWork` to the rebuild, and X goes back onto
+     * the square while Z leaves the railway.
+     */
+    @Test(timeOut = 400000)
+    public void testCancelAfterARunLeavesTheRailwaysTrainsWhereTheyStood() throws Exception
+    {
+        Fixture f = fixture(true);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        String dragged = session.getLocomotiveNameAt(f.from);
+        String setupTrain = session.getLocomotiveNameAt(f.to);
+        String brought = support.StandingTrain.standingNowhere(model, session);
+        TileKey elsewhere = emptyStations().get(0);
+
+        try
+        {
+            // As after a run, the railway alone told: the setup's train has gone on, and another stands on its square
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+
+            moveOnTheRailwayAlone(setupTrain, elsewhere);
+            moveOnTheRailwayAlone(brought, f.to);
+
+            editor = openEditor();
+
+            fixture(true);
+
+            dragTrain(f.from, f.to);
+
+            assertEquals(session.getLocomotiveNameAt(f.to), dragged, "precondition: the train did not land");
+
+            cancelTheEditor();
+
+            assertEquals(railwaySquareOf(brought), f.to, "Cancel after a run did not put " + brought + " back where it stood");
+            assertEquals(railwaySquareOf(setupTrain), elsewhere, "Cancel after a run moved " + setupTrain
+                + " from where the run left it");
+            assertEquals(railwaySquareOf(dragged), f.from, "Cancel did not put the dragged train back");
+        }
+        finally
+        {
+            // Off the railway, which only the setup's trains are put back on
+            onTheEventThread(() ->
+            {
+                org.traincontrol.automation.Point at = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(brought));
+
+                if (at != null) model.getAutoLayout().moveLocomotive(null, at.getName(), false);
+            });
+
+            putBack(asFound);
+        }
+    }
+
     /** The setup, the file and the railway on two squares: each train, its facing and its tail. */
     private static String threeStores(Fixture f) throws Exception
     {

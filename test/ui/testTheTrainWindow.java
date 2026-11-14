@@ -3079,6 +3079,166 @@ public class testTheTrainWindow
         }
     }
 
+    /**
+     * After a run the railway can hold Z on a square whose setup train X stands elsewhere: the editor's Place over Z,
+     * then Cancel, stands Z where the railway had it, not on its old setup square, which would leave the square reading
+     * free under a standing train; X stays where the run left it (OB-416).
+     *
+     * MUTATION: pass no `railwayAsOpened` from `LayoutEditor.discardAutonomyWork` to the rebuild, and Z goes back to its
+     * old setup square.
+     */
+    @Test(timeOut = 240000)
+    public void testCancelAfterARunPutsTheRailwaysTrainBack() throws Exception
+    {
+        cancelAfterARun((panel, square) ->
+        {
+            String name = aTrainOffTheRailway();
+
+            makeActive(name);
+
+            JMenuItem item = placeItemOn(panel, square, name);
+
+            assertNotNull(item, "precondition: no Place " + name);
+
+            Components.onTheEventThread(() -> { item.doClick(); return null; });
+
+            return name;
+        });
+    }
+
+    /**
+     * The same through None on the editor's Train tab, which lifts Z: Cancel stands it where the railway had it (OB-416).
+     *
+     * MUTATION: pass no `railwayAsOpened` from `LayoutEditor.discardAutonomyWork` to the rebuild, and Z goes back to its
+     * old setup square.
+     */
+    @Test(timeOut = 240000)
+    public void testCancelAfterARunAndNonePutsTheRailwaysTrainBack() throws Exception
+    {
+        cancelAfterARun((panel, square) ->
+        {
+            StationSettingsWindow window = StationDoors.openTrain(panel, square);
+
+            StationDoors.pick(window, "train.train", I18n.t("autosetup.ui.labelNone"));
+
+            Components.drain(8);
+
+            Components.onTheEventThread(() -> { window.dispose(); return null; });
+
+            return null;
+        });
+    }
+
+    /** An editor door over a square; returns the train it put there, or null. */
+    private interface AfterARunDoor
+    {
+        String act(AutonomyEditorPanel panel, TileKey square) throws Exception;
+    }
+
+    /**
+     * As after a run, moves a square's setup train X on to an empty station and stands another placed train Z on its
+     * copy, the railway alone told; opens the editor, uses the door, Cancels, and asserts both stand as before.
+     */
+    private void cancelAfterARun(AfterARunDoor door) throws Exception
+    {
+        final TileKey square = aSquareWithATrain();
+        final String setupTrain = session.getLocomotiveNameAt(square);
+        final TileKey elsewhere = anEmptyStation();
+
+        String broughtFound = null;
+
+        for (Map.Entry<TileKey, String> each : session.placementsAutonomyWillWrite().entrySet())
+        {
+            if (!each.getKey().equals(square)
+                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(each.getValue())) != null)
+            {
+                broughtFound = each.getValue();
+            }
+        }
+
+        final String brought = broughtFound;
+
+        assertNotNull(brought, "precondition: no other placed train stands on the railway");
+
+        org.traincontrol.automation.Layout running = model.getAutoLayout();
+        final org.traincontrol.automation.Point copy = running.getLocomotiveLocation(model.getLocByName(setupTrain));
+        final org.traincontrol.automation.Point broughtWas = running.getLocomotiveLocation(model.getLocByName(brought));
+        org.traincontrol.automation.Point otherFound = null;
+
+        for (org.traincontrol.automation.Point p : running.getPoints())
+        {
+            if (elsewhere.equals(session.getStationIndex().squareOf(p)) && p.isDestination() && p.getCurrentLocomotive() == null)
+            {
+                otherFound = p;
+                break;
+            }
+        }
+
+        final org.traincontrol.automation.Point other = otherFound;
+
+        assertNotNull(copy, "precondition: " + setupTrain + " stands nowhere on the railway");
+        assertNotNull(other, "precondition: no free copy of " + elsewhere);
+
+        final String copyName = copy.getName();
+
+        String placed = null;
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                running.moveLocomotive(null, copyName, false);
+                running.moveLocomotive(null, broughtWas.getName(), false);
+                assertTrue(running.moveLocomotive(setupTrain, other.getName(), false), "precondition: could not move " + setupTrain);
+                assertTrue(running.moveLocomotive(brought, copyName, false), "precondition: could not stand " + brought);
+                return null;
+            });
+
+            Components.settle();
+
+            placed = door.act(theEditorsPanel(), square);
+
+            if (placed != null) cancelOnceOnTheRailway(placed);
+            else cancelTheEditor();
+
+            org.traincontrol.automation.Point broughtNow = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(brought));
+            org.traincontrol.automation.Point setupNow = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(setupTrain));
+
+            assertEquals(broughtNow == null ? null : broughtNow.getName(), copyName, "Cancel after a run did not put "
+                + brought + " back where it stood before the edit");
+            assertEquals(setupNow == null ? null : setupNow.getName(), other.getName(), "Cancel after a run moved "
+                + setupTrain + " from where the run left it");
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            final String name = placed;
+
+            // The railway as the setup has it, for the claims after this one
+            Components.onTheEventThread(() ->
+            {
+                org.traincontrol.automation.Layout l = model.getAutoLayout();
+
+                for (String each : new String[] {brought, setupTrain, name})
+                {
+                    org.traincontrol.automation.Point at = each == null ? null : l.getLocomotiveLocation(model.getLocByName(each));
+
+                    if (at != null) l.moveLocomotive(null, at.getName(), false);
+                }
+
+                l.moveLocomotive(setupTrain, copyName, false);
+                l.moveLocomotive(brought, broughtWas.getName(), false);
+
+                return null;
+            });
+
+            Components.settle();
+        }
+    }
+
     /** Where the setup and the railway have this train, with the side it came in by on the railway. */
     private static String where(String name)
     {
