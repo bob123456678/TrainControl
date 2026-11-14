@@ -1273,6 +1273,9 @@ public class LayoutGrid
                     // widen its column, leaving a blank gap in the diagram.
                     gbc.gridwidth = GridBagConstraints.REMAINDER;
 
+                    // The squares its text runs on over keep their clicks
+                    text.answerOnlyOver(outer);
+
                     container.add(text, gbc);
                     container.setComponentZOrder(text, 0);
                 }

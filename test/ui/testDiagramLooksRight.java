@@ -3358,6 +3358,65 @@ public class testDiagramLooksRight
         }
     }
 
+    /**
+     * An arrow's address runs on over the squares to its right but takes no clicks there: the mouse lands on the square
+     * under it, whose own menu answers, where the address would hand the click to the arrow and follow its link.
+     *
+     * MUTATION: drop `text.answerOnlyOver(outer)` in LayoutGrid, and the address takes the click.
+     */
+    @Test
+    public void testAnAddressTakesNoClicksBeyondItsSquare() throws Exception
+    {
+        final LayoutDiagram page = model.getLayout("1 - Main");
+        final boolean shown = page.getShowAddress();
+
+        page.setShowAddress(true);
+
+        try
+        {
+            final java.awt.Container box = laidOut(page, 30);
+            final org.traincontrol.gui.LayoutGrid grid = org.traincontrol.gui.LayoutGrid.of(box);
+
+            StringBuilder taken = new StringBuilder();
+            int across = 0;
+
+            for (int y = 0; grid.getValueAt(0, y + 1) != null; y++)
+            {
+                for (int x = 0; grid.getValueAt(x + 2, y) != null; x++)
+                {
+                    java.awt.Rectangle square = grid.getValueAt(x, y).getBounds();
+                    java.awt.Rectangle next = grid.getValueAt(x + 1, y).getBounds();
+
+                    for (java.awt.Component one : box.getComponents())
+                    {
+                        java.awt.Rectangle over = one.getBounds().intersection(next);
+
+                        if (!(one instanceof org.traincontrol.gui.widgets.AddressLabel) || !square.contains(one.getLocation())
+                            || over.isEmpty()) continue;
+
+                        across++;
+
+                        // Where AWT sends a click at the middle of the overlap
+                        java.awt.Component hit = support.Components.onTheEventThread(() -> javax.swing.SwingUtilities
+                            .getDeepestComponentAt(box, over.x + over.width / 2, over.y + over.height / 2));
+
+                        // The square, or its own address, which hands the click to it
+                        if (hit != grid.getValueAt(x + 1, y) && !(hit instanceof org.traincontrol.gui.widgets.AddressLabel
+                            && next.contains(hit.getLocation()))) taken.append("\n  \"").append(((javax.swing.JLabel) one)
+                            .getText()).append("\" over square ").append(x + 1).append(',').append(y).append(": ").append(hit);
+                    }
+                }
+            }
+
+            assertTrue(across > 0, "precondition: no address on " + page.getName() + " runs on over the next square");
+            assertEquals(taken.toString(), "", "an address takes the clicks of the square to its right:" + taken);
+        }
+        finally
+        {
+            page.setShowAddress(shown);
+        }
+    }
+
     /** Every address label under a component: a plain label, not a square's tile or a station's caption. */
     private static void collectAddresses(java.awt.Container under, java.util.List<javax.swing.JLabel> into)
     {
