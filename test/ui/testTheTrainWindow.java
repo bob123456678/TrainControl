@@ -3438,13 +3438,31 @@ public class testTheTrainWindow
     /**
      * Cancel and both Discards send the Central Station nothing, after an edit that placed a train elsewhere, turned it
      * there with the editor's Facing door and reversed it on its decoder, all with the editor open: the trains go back
-     * in the model alone, and no train's direction is changed.
+     * in the model alone, and no train's direction is changed.  The turns are even, so the way out only rebuilds.
      *
      * MUTATION: in `LayoutEditor.discardAutonomyWork`, `switchDirection()` each train it puts back after the rebuild, and
      * Cancel sends a direction command.
      */
     @Test(timeOut = 400000)
     public void testCancelAndTheDiscardsSendTheCentralStationNothing() throws Exception
+    {
+        sendsTheCentralStationNothing(true);
+    }
+
+    /**
+     * The same with the Facing door alone: one turn, so the way out also turns the train again (`turnAgain`), which
+     * must change no train's direction either.
+     *
+     * MUTATION: in `LayoutEditor.turnAgain`, `switchDirection()` each train it turns, and Cancel sends a direction
+     * command.
+     */
+    @Test(timeOut = 400000)
+    public void testTurningAgainAfterAnOddTurnSendsTheCentralStationNothing() throws Exception
+    {
+        sendsTheCentralStationNothing(false);
+    }
+
+    private void sendsTheCentralStationNothing(final boolean reversedForReal) throws Exception
     {
         org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
 
@@ -3471,14 +3489,17 @@ public class testTheTrainWindow
 
                 try
                 {
-                    loc.switchDirection();
+                    if (reversedForReal)
+                    {
+                        loc.switchDirection();
 
-                    Components.settle();
+                        Components.settle();
 
-                    assertTrue(wire.directionCommandsSince(sentBefore, loc.getIntUID()).size() > 0, "precondition: the"
-                        + " reversal of " + name + " sent its decoder nothing the recorder heard");
+                        assertTrue(wire.directionCommandsSince(sentBefore, loc.getIntUID()).size() > 0, "precondition: the"
+                            + " reversal of " + name + " sent its decoder nothing the recorder heard");
 
-                    if (facedBefore.equals(copyOf(name))) reverse(name, facedBefore);
+                        if (facedBefore.equals(copyOf(name))) reverse(name, facedBefore);
+                    }
 
                     // A line of its own, as the log drops a line equal to the last, which would hide a repeated command
                     model.log("D130: " + DISCARDS[how]);
@@ -3491,8 +3512,8 @@ public class testTheTrainWindow
                     Components.drain(8);
 
                     assertEquals(wire.sentSince(mark), java.util.Collections.emptyList(), DISCARDS[how] + " after "
-                        + name + " was placed on " + elsewhere + ", turned there and reversed on its decoder sent the"
-                        + " Central Station " + wire.since(mark));
+                        + name + " was placed on " + elsewhere + ", turned there" + (reversedForReal
+                        ? " and reversed on its decoder" : "") + " sent the Central Station " + wire.since(mark));
                 }
                 finally
                 {
