@@ -1212,7 +1212,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             try
             {
-                decoderType type = (decoderType) decoder.getSelectedItem();
+                decoderType type = decoderToWrite();
                 int typed = Conversion.parseTypedAddress(address.getText().trim(), type == decoderType.MFX);
 
                 for (Locomotive other : main.getModel().getLocomotives())
@@ -1254,7 +1254,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 try
                 {
                     return Math.abs(Conversion.parseTypedAddress(address.getText().trim(),
-                        chosenDecoder() == decoderType.MFX));
+                        decoderToWrite() == decoderType.MFX));
                 }
                 catch (NumberFormatException blankOrNotANumber)
                 {
@@ -1264,7 +1264,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             private Object ifValid(int value)
             {
-                return MarklinLocomotive.validateNewAddress(chosenDecoder(), value) ? (Object) value : null;
+                return MarklinLocomotive.validateNewAddress(decoderToWrite(), value) ? (Object) value : null;
             }
 
             @Override public Object getValue() { return typed(); }

@@ -258,16 +258,18 @@ final class LocomotiveNotesPanel extends JPanel
         return digits.isEmpty() ? 0 : (int) Long.parseLong(digits);
     }
 
-    /** Writes what is shown onto the locomotive. */
+    /** Writes the fields the operator changed; the others keep the locomotive's current values (an import may have filled them). */
     void apply(Locomotive l)
     {
-        int start = year(startYear);
-        int end = year(endYear);
+        LocomotiveNotes now = l.getStructuredNotes();
 
         String trimmed = railwayText.getText().trim();
         String rail = trimmed.substring(0, Math.min(trimmed.length(), TrainControlUI.MAX_LOC_RAILWAY_NAME));
         String text = notes.getText().substring(0, Math.min(notes.getText().length(), TrainControlUI.MAX_LOC_NOTES_LENGTH));
 
-        l.setStructuredNotes(start, end, rail, text);
+        l.setStructuredNotes(startYear.getText().equals(loadedStart) ? now.getStartYear() : year(startYear),
+            endYear.getText().equals(loadedEnd) ? now.getEndYear() : year(endYear),
+            railwayText.getText().equals(loadedRailway) ? now.getRailway() : rail,
+            notes.getText().equals(loadedNotes) ? now.getNotes() : text);
     }
 }
