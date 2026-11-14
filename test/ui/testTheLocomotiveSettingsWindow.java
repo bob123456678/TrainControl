@@ -719,6 +719,30 @@ public class testTheLocomotiveSettingsWindow
             "a member's Multi-Unit tab does not say it is part of " + NAME);
     }
 
+    /**
+     * Members ticked in the same Save as a decoder change to Multi-Unit are never dropped without a word: Save refuses
+     * with the reason a locomotive that already has members gets, writes nothing, and the window stays open.
+     *
+     * MUTATION: leave out the members check before the writes in `write`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testMembersAndAMultiUnitDecoderInOneSaveAreRefused() throws Exception
+    {
+        open(3);
+
+        SettingsWindow.tickMember(OTHER);
+
+        decoder(Locomotive.decoderType.MULTI_UNIT);
+
+        List<String> asked = saveAndAnswer();
+
+        assertEquals(asked, Arrays.asList(I18n.t("loc.changeToMultiUnitNotAllowed")),
+            "Save did not say why the members and a Multi-Unit decoder cannot go together");
+        assertNotNull(SettingsWindow.showing(), "the window closed as if saved");
+        assertEquals(loc.getDecoderType(), Locomotive.decoderType.MFX, "the refused Save changed the decoder");
+        assertTrue(loc.getLinkedLocomotiveNames().isEmpty(), "the refused Save wrote members");
+    }
+
     /** The Multi-Unit tab's note for a member, as it reads. */
     private static String noteText()
     {

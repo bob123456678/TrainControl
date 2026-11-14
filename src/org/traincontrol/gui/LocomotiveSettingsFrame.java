@@ -713,6 +713,14 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         if (members && main.locomotiveActions.refuseMultiUnitEdit(this, loc, multiUnitTab.chosen().keySet())) return false;
 
+        // A Central Station multi-unit takes no members: changeLocAddress's refusal, asked before anything is written
+        if (members && !multiUnitTab.chosen().isEmpty() && locomotiveTab.chosenDecoder() == decoderType.MULTI_UNIT)
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("loc.changeToMultiUnitNotAllowed"));
+
+            return false;
+        }
+
         // Only what the operator changed from the loaded values: another door may have changed the rest since
         if (identity && !main.locomotiveActions.writeNameAndAddress(this, loc,
             locomotiveTab.nameChanged() ? locomotiveTab.name.getText() : null,
