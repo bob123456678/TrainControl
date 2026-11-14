@@ -3289,6 +3289,75 @@ public class testDiagramLooksRight
         }
     }
 
+    /**
+     * An address never widens its column: an arrow's address is its page's name, wider than a square, and the editor
+     * and the Layout tab with Show Addresses on drew a blank column after it, shifting the rest of the row right.
+     *
+     * MUTATION: give the address label `gbc.gridwidth = 1` in LayoutGrid.
+     */
+    @Test
+    public void testAnAddressNeverWidensItsColumn() throws Exception
+    {
+        LayoutDiagram page = model.getLayout("1 - Main");
+
+        assertNotNull(page, "precondition: the fixture layout has no page \"1 - Main\"");
+
+        final boolean addressesWere = page.getShowAddress();
+
+        page.setShowAddress(true);
+
+        try
+        {
+            for (int size : new int[] {30, 60})
+            {
+                final java.awt.Container box = laidOut(page, size);
+                final org.traincontrol.gui.LayoutGrid grid = org.traincontrol.gui.LayoutGrid.of(box);
+
+                // Only a page whose addresses are wider than a square can fail this.
+                int wide = 0;
+
+                for (java.awt.Component one : box.getComponents())
+                {
+                    if (!(one instanceof org.traincontrol.gui.widgets.AddressLabel) || one.getWidth() <= size) continue;
+
+                    wide++;
+
+                    assertTrue(one.getWidth() >= one.getPreferredSize().width, "the address \""
+                        + ((javax.swing.JLabel) one).getText() + "\" is cut short at size " + size);
+                }
+
+                assertTrue(wide > 0, "precondition: no address on " + page.getName() + " is wider than a square at size "
+                    + size + ", so nothing here could widen a column");
+
+                StringBuilder moved = new StringBuilder();
+
+                // The last column and row are the spacer (`LayoutLabel.markSpacer`), not squares.
+                for (int y = 0; grid.getValueAt(0, y + 1) != null; y++)
+                {
+                    for (int x = 1; grid.getValueAt(x + 1, y) != null; x++)
+                    {
+                        java.awt.Rectangle before = grid.getValueAt(x - 1, y).getBounds();
+                        java.awt.Rectangle here = grid.getValueAt(x, y).getBounds();
+
+                        if (here.x != before.x + before.width && moved.length() < 400)
+                        {
+                            moved.append("\n  column ").append(x).append(" row ").append(y).append(" starts at ")
+                                .append(here.x).append(", the square before it ends at ")
+                                .append(before.x + before.width);
+                        }
+                    }
+                }
+
+                assertEquals(moved.toString(), "", "at size " + size + " with addresses shown, a square does not"
+                    + " start where the one before it ends, so the diagram has a blank gap in it:" + moved);
+            }
+        }
+        finally
+        {
+            page.setShowAddress(addressesWere);
+        }
+    }
+
     /** Every address label under a component: a plain label, not a square's tile or a station's caption. */
     private static void collectAddresses(java.awt.Container under, java.util.List<javax.swing.JLabel> into)
     {
