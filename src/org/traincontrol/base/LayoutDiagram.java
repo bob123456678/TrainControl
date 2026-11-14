@@ -1319,6 +1319,59 @@ public class LayoutDiagram
      */
     public static String withLinkPageIds(String text, java.util.function.Function<Map<String, String>, Integer> idFor)
     {
+        return eachBlock(text, block -> arrowWithId(block, idFor));
+    }
+
+    /**
+     * A page file's text with `.prot` on each square where a save of this page would write it, with this page's
+     * protocol for the square (OB-465).  Other lines stay as they were.
+     */
+    public String withSavedProtocols(String text)
+    {
+        return eachBlock(text, block ->
+        {
+            Map<String, String> keys = new java.util.HashMap<>();
+            int at = block.size();
+
+            for (int i = block.size() - 1; i > 0; i--)
+            {
+                String[] parts = block.get(i).replace("\r", "").replaceFirst("^ \\.", "").split("=", 2);
+
+                if (parts.length == 2) keys.putIfAbsent(parts[0], parts[1]);
+                if (parts[0].equals("artikel") || parts[0].equals("prot")) at = i;
+            }
+
+            boolean element = block.get(0).replace("\r", "").equalsIgnoreCase("element");
+            LayoutDiagramComponent tile = element ? tileAt(keys) : null;
+            Accessory.accessoryDecoderType saved = tile == null ? null : tile.savedProtocol();
+
+            if (saved == null) return block;
+
+            List<String> out = new ArrayList<>(block);
+            out.removeIf(line -> line.startsWith(" .prot="));
+            out.add(Math.min(at, out.size()), " .prot=" + saved + (block.get(0).endsWith("\r") ? "\r" : ""));
+            return out;
+        });
+    }
+
+    /** The square an element's keys name, or null when this page has none there. */
+    private LayoutDiagramComponent tileAt(Map<String, String> keys)
+    {
+        try
+        {
+            int coord = keys.get("id") == null ? 0 : Integer.valueOf(keys.get("id").replace("0x", ""), 16);
+
+            return getComponent(coord % 256, (coord >> 8) % 256);
+        }
+        catch (NumberFormatException unreadCoordinate)
+        {
+            return null;
+        }
+    }
+
+    /** The text cut into blocks, each a line naming it and the key lines under it, each passed through `change`. */
+    private static String eachBlock(String text, java.util.function.Function<List<String>, List<String>> change)
+    {
         List<String> lines = java.util.Arrays.asList(text.split("\n", -1));
 
         List<String> out = new ArrayList<>();
@@ -1331,7 +1384,7 @@ public class LayoutDiagram
 
             while (end < lines.size() && !lines.get(end).replace("\r", "").matches("^[a-zA-Z]+$")) end++;
 
-            out.addAll(arrowWithId(lines.subList(start, end), idFor));
+            out.addAll(change.apply(lines.subList(start, end)));
 
             start = end;
         }
@@ -1411,20 +1464,8 @@ public class LayoutDiagram
 
         final String after = withLinkPageIds(before, keys ->
         {
-            Integer id = null;
-
-            try
-            {
-                int coord = keys.get("id") == null ? 0 : Integer.valueOf(keys.get("id").replace("0x", ""), 16);
-
-                LayoutDiagramComponent tile = coord % 256 < getSx() && (coord >> 8) % 256 < getSy()
-                    ? getComponent(coord % 256, (coord >> 8) % 256) : null;
-
-                if (tile != null && tile.isLink()) id = tile.getLinkPageId();
-            }
-            catch (NumberFormatException unreadCoordinate)
-            {
-            }
+            LayoutDiagramComponent tile = tileAt(keys);
+            Integer id = tile != null && tile.isLink() ? tile.getLinkPageId() : null;
 
             if (id != null) given[0]++;
 
