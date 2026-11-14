@@ -1,15 +1,24 @@
 package org.traincontrol.gui;
 
+import java.awt.Component;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.prefs.Preferences;
 import javax.swing.JOptionPane;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JFileChooser;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+import javax.swing.JSeparator;
 import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.QuickFileChooser;
+import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 
 /** The window's Layouts menu (guard, headings, pages, Recent Layouts, picture export), drawing settings, Debug menu. */
@@ -22,7 +31,7 @@ final class LayoutMenus
         this.ui = ui;
     }
 
-    private javax.swing.JCheckBoxMenuItem allowedDirectionsMenuItem;
+    private JCheckBoxMenuItem allowedDirectionsMenuItem;
 
     /**
      * Grays the Layout menu while an editor has the diagram and offers the way back (OB-033): saving or rebuilding then
@@ -38,7 +47,7 @@ final class LayoutMenus
 
         for (int i = 0; i < ui.layoutMenu().getMenuComponentCount(); i++)
         {
-            java.awt.Component child = ui.layoutMenu().getMenuComponent(i);
+            Component child = ui.layoutMenu().getMenuComponent(i);
 
             if (child == goToEditorItem) continue;
 
@@ -90,7 +99,7 @@ final class LayoutMenus
 
         greyForTheRun(ui.chooseLocalDataFolderMenuItem(), running, false, why);
         // The layouts Recent Layouts lists wait; the folder under them stays live, as opening it changes nothing.
-        for (javax.swing.JMenuItem each : recentItems) greyForTheRun(each, running, true, why);
+        for (JMenuItem each : recentItems) greyForTheRun(each, running, true, why);
         greyForTheRun(ui.modifyLocalLayoutMenu(), running, false, why);
         greyForTheRun(ui.managePagesItem, running, false, why);
         greyForTheRun(ui.initializeLocalLayoutMenuItem(), running, true, why);
@@ -108,7 +117,7 @@ final class LayoutMenus
 
             ui.layoutMenu().add(goToEditorItem, 0);
 
-            goToEditorDivider = new javax.swing.JPopupMenu.Separator();
+            goToEditorDivider = new JPopupMenu.Separator();
 
             ui.layoutMenu().add(goToEditorDivider, 1);
         }
@@ -120,8 +129,8 @@ final class LayoutMenus
     }
 
     /** The "an editor has this diagram" item on the Layout menu, and the divider under it. */
-    private javax.swing.JMenuItem goToEditorItem;
-    private javax.swing.JPopupMenu.Separator goToEditorDivider;
+    private JMenuItem goToEditorItem;
+    private JPopupMenu.Separator goToEditorDivider;
 
     /** What a Layout menu item said before an open editor's reason replaced it, in a one-element array. */
     private static final String SAID_BEFORE_THE_EDITOR = "saidBeforeTheEditor";
@@ -134,12 +143,12 @@ final class LayoutMenus
     {
         String why = AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipCloseTheEditor"));
 
-        for (java.awt.Component child : ui.layoutMenu().getMenuComponents())
+        for (Component child : ui.layoutMenu().getMenuComponents())
         {
-            if (!(child instanceof javax.swing.JMenuItem) || child.isEnabled() || child == goToEditorItem
+            if (!(child instanceof JMenuItem) || child.isEnabled() || child == goToEditorItem
                 || child == localHeading || child == centralStationHeading) continue;
 
-            javax.swing.JMenuItem item = (javax.swing.JMenuItem) child;
+            JMenuItem item = (JMenuItem) child;
 
             item.putClientProperty(SAID_BEFORE_THE_EDITOR, new String[] {item.getToolTipText()});
 
@@ -152,11 +161,11 @@ final class LayoutMenus
     {
         String why = AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipCloseTheEditor"));
 
-        for (java.awt.Component child : ui.layoutMenu().getMenuComponents())
+        for (Component child : ui.layoutMenu().getMenuComponents())
         {
-            if (!(child instanceof javax.swing.JMenuItem)) continue;
+            if (!(child instanceof JMenuItem)) continue;
 
-            javax.swing.JMenuItem item = (javax.swing.JMenuItem) child;
+            JMenuItem item = (JMenuItem) child;
 
             Object kept = item.getClientProperty(SAID_BEFORE_THE_EDITOR);
 
@@ -175,7 +184,7 @@ final class LayoutMenus
      * Grays the item with `why` as its tooltip while a run goes and gives the tooltip back after it (the enabled state
      * too, when `owned` by something else); returns true when it was given back just now.
      */
-    static boolean greyForTheRun(javax.swing.JMenuItem item, boolean running, boolean owned, String why)
+    static boolean greyForTheRun(JMenuItem item, boolean running, boolean owned, String why)
     {
         if (item == null) return false;
 
@@ -207,8 +216,8 @@ final class LayoutMenus
     }
 
     /** The two section labels on the Layout menu. */
-    private javax.swing.JMenuItem localHeading;
-    private javax.swing.JMenuItem centralStationHeading;
+    private JMenuItem localHeading;
+    private JMenuItem centralStationHeading;
 
     /**
      * Preferences > Debug, in debug and simulation only.  Echo Sent Commands is `DEBUG_SIMULATE_PACKETS`, so a
@@ -227,7 +236,7 @@ final class LayoutMenus
         {
             boolean wasOn = TrainControlUI.getPrefs().getBoolean(TrainControlUI.ECHO_COMMANDS_PREF, false);
 
-            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.ECHO_COMMANDS_PREF, true);
 
@@ -238,18 +247,17 @@ final class LayoutMenus
             }
         }
 
-        javax.swing.JMenu debug = new javax.swing.JMenu(I18n.t("ui.main.toolbar.debug"));
+        JMenu debug = new JMenu(I18n.t("ui.main.toolbar.debug"));
 
-        final javax.swing.JCheckBoxMenuItem echo =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.echoCommands"));
+        final JCheckBoxMenuItem echo = new JCheckBoxMenuItem(I18n.t("ui.main.toolbar.echoCommands"));
 
         echo.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("ui.main.toolbar.tooltip.echoCommands")));
 
-        echo.setSelected(org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS);
+        echo.setSelected(MarklinControlStation.DEBUG_SIMULATE_PACKETS);
 
         echo.addActionListener(e ->
         {
-            org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echo.isSelected();
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = echo.isSelected();
 
             if (!TrainControlUI.isUnattended())
             {
@@ -263,9 +271,9 @@ final class LayoutMenus
     }
 
     /** A disabled bold item as a label (as LayoutRightclickAutonomyMenu): a plain grayed item looks unavailable. */
-    javax.swing.JMenuItem menuHeading(String text)
+    JMenuItem menuHeading(String text)
     {
-        javax.swing.JMenuItem heading = new javax.swing.JMenuItem(text);
+        JMenuItem heading = new JMenuItem(text);
 
         heading.setEnabled(false);
         heading.setFont(heading.getFont().deriveFont(java.awt.Font.BOLD));
@@ -281,7 +289,7 @@ final class LayoutMenus
     {
         if (ui.layoutMenu() == null || ui.modifyLocalLayoutMenu() == null || ui.managePagesItem != null) return;
 
-        ui.managePagesItem = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.managePages"));
+        ui.managePagesItem = new JMenuItem(I18n.t("ui.main.toolbar.managePages"));
 
         ui.managePagesItem.setToolTipText(I18n.t("ui.main.toolbar.tooltip.modifyLayout"));
 
@@ -305,7 +313,7 @@ final class LayoutMenus
      * The tooltip a menu item shows for its state: its description when lit (a null key for none), and why when
      * grayed.  Asked after whatever decides the item's state.
      */
-    static void sayWhy(javax.swing.JMenuItem item, String descriptionKey, String whyKey)
+    static void sayWhy(JMenuItem item, String descriptionKey, String whyKey)
     {
         String key = item.isEnabled() ? descriptionKey : whyKey;
 
@@ -359,7 +367,7 @@ final class LayoutMenus
 
         for (int i = 0; i < ui.layoutMenu().getMenuComponentCount(); i++)
         {
-            boolean separator = ui.layoutMenu().getMenuComponent(i) instanceof javax.swing.JSeparator;
+            boolean separator = ui.layoutMenu().getMenuComponent(i) instanceof JSeparator;
 
             if (separator && previousWasSeparator)
             {
@@ -376,13 +384,13 @@ final class LayoutMenus
         // And a trailing one, which the loop above cannot see because nothing follows it.
         int last = ui.layoutMenu().getMenuComponentCount() - 1;
 
-        if (last >= 0 && ui.layoutMenu().getMenuComponent(last) instanceof javax.swing.JSeparator)
+        if (last >= 0 && ui.layoutMenu().getMenuComponent(last) instanceof JSeparator)
         {
             ui.layoutMenu().remove(last);
         }
     }
 
-    private int indexOnLayoutMenu(java.awt.Component item)
+    private int indexOnLayoutMenu(Component item)
     {
         if (ui.layoutMenu() == null || item == null) return -1;
 
@@ -429,16 +437,16 @@ final class LayoutMenus
      */
     void buildDiagramDrawingMenu()
     {
-        final javax.swing.JMenu autonomyToolbarMenu = ui.autonomyToolbarMenu();
+        final JMenu autonomyToolbarMenu = ui.autonomyToolbarMenu();
 
-        final java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        final Preferences prefs = TrainControlUI.getPrefs();
 
         if (autonomyToolbarMenu == null) return;
 
         autonomyToolbarMenu.addSeparator();
 
         // Built here (generated blocks drop hand-written items).  On by default: a vanishing caption surprises more.
-        final javax.swing.JCheckBoxMenuItem show = new javax.swing.JCheckBoxMenuItem(
+        final JCheckBoxMenuItem show = new JCheckBoxMenuItem(
             I18n.t("autolayout.ui.menuShowInactiveLabels"),
             prefs.getBoolean(TrainControlUI.SHOW_INACTIVE_LABELS_PREF,
                 TrainControlUI.SHOW_INACTIVE_LABELS_DEFAULT));
@@ -455,8 +463,7 @@ final class LayoutMenus
 
         autonomyToolbarMenu.add(show);
 
-        ui.greyStationLabelsMenuItem =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.greyStationLabels"));
+        ui.greyStationLabelsMenuItem = new JCheckBoxMenuItem(I18n.t("ui.main.toolbar.greyStationLabels"));
 
         ui.greyStationLabelsMenuItem.setToolTipText(
             AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.greyStationLabels")));
@@ -474,8 +481,7 @@ final class LayoutMenus
 
         autonomyToolbarMenu.add(ui.greyStationLabelsMenuItem);
 
-        ui.restrictionArrowsMenuItem =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.restrictionArrows"));
+        ui.restrictionArrowsMenuItem = new JCheckBoxMenuItem(I18n.t("ui.main.toolbar.restrictionArrows"));
 
         ui.restrictionArrowsMenuItem.setToolTipText(
             AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.restrictionArrows")));
@@ -496,8 +502,7 @@ final class LayoutMenus
         autonomyToolbarMenu.add(ui.restrictionArrowsMenuItem);
 
         // And the green (FR-110), chosen apart from the red: either, or both.
-        this.allowedDirectionsMenuItem =
-            new javax.swing.JCheckBoxMenuItem(I18n.t("ui.main.toolbar.allowedDirections"));
+        this.allowedDirectionsMenuItem = new JCheckBoxMenuItem(I18n.t("ui.main.toolbar.allowedDirections"));
 
         this.allowedDirectionsMenuItem.setToolTipText(
             AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.allowedDirections")));
@@ -523,7 +528,7 @@ final class LayoutMenus
 
         if (ui.interfaceMenu() == null) return;
 
-        final javax.swing.JCheckBoxMenuItem hide = new javax.swing.JCheckBoxMenuItem(
+        final JCheckBoxMenuItem hide = new JCheckBoxMenuItem(
             I18n.t("ui.main.toolbar.hideRightClickTips"),
             RightClickTips.hidden());
 
@@ -545,8 +550,7 @@ final class LayoutMenus
         if (ui.layoutMenu() == null) return;
 
         // One item, for the page on screen: a second one asking which page was rarely worth a menu line.
-        javax.swing.JMenuItem active =
-            new javax.swing.JMenuItem(I18n.t("layout.ui.menuExportActiveDiagram"));
+        JMenuItem active = new JMenuItem(I18n.t("layout.ui.menuExportActiveDiagram"));
 
         active.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("layout.ui.tooltipExportActiveDiagram")));
 
@@ -583,7 +587,7 @@ final class LayoutMenus
      */
     private void exportDiagram(String page)
     {
-        java.util.List<String> pages = ui.getModel().getLayoutList();
+        List<String> pages = ui.getModel().getLayoutList();
 
         if (pages == null || pages.isEmpty())
         {
@@ -615,23 +619,23 @@ final class LayoutMenus
 
         if (tileSize == null) return;
 
-        javax.swing.JFileChooser chooser = new QuickFileChooser();
+        JFileChooser chooser = new QuickFileChooser();
 
         chooser.setDialogTitle(I18n.t("layout.ui.menuExportDiagram"));
 
         // A sensible name that is also a legal one, since a page may be called anything at all
-        chooser.setSelectedFile(new java.io.File(page.replaceAll("[^a-zA-Z0-9 _-]", "_") + ".png"));
+        chooser.setSelectedFile(new File(page.replaceAll("[^a-zA-Z0-9 _-]", "_") + ".png"));
 
-        if (chooser.showSaveDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+        if (chooser.showSaveDialog(ui) != JFileChooser.APPROVE_OPTION) return;
 
-        java.io.File destination = chooser.getSelectedFile();
+        File destination = chooser.getSelectedFile();
 
         if (!destination.getName().toLowerCase().endsWith(".png"))
         {
-            destination = new java.io.File(destination.getParentFile(), destination.getName() + ".png");
+            destination = new File(destination.getParentFile(), destination.getName() + ".png");
         }
 
-        final java.io.File writeTo = destination;
+        final File writeTo = destination;
         final int pixels = tileSize;
         final String chosen = page;
         final Exception[] failed = new Exception[1];
@@ -702,16 +706,16 @@ final class LayoutMenus
     }
 
     /** Layouts &gt; Recent Layouts (FR-145), rebuilt each time the Layouts menu opens. */
-    private javax.swing.JMenu recentLayoutsMenu;
+    private JMenu recentLayoutsMenu;
 
     /** The layouts it lists now, each opening one. */
-    private final List<javax.swing.JMenuItem> recentItems = new ArrayList<>();
+    private final List<JMenuItem> recentItems = new ArrayList<>();
 
     void mountRecentLayouts()
     {
         if (ui.layoutMenu() == null || recentLayoutsMenu != null) return;
 
-        recentLayoutsMenu = new javax.swing.JMenu(I18n.t("ui.main.toolbar.recentLayouts"));
+        recentLayoutsMenu = new JMenu(I18n.t("ui.main.toolbar.recentLayouts"));
 
         int open = indexOnLayoutMenu(ui.chooseLocalDataFolderMenuItem());
 
@@ -741,7 +745,7 @@ final class LayoutMenus
 
         for (final String path : shown)
         {
-            javax.swing.JMenuItem item = new javax.swing.JMenuItem(++number + ". " + recentLabel(path, shown));
+            JMenuItem item = new JMenuItem(++number + ". " + recentLabel(path, shown));
 
             item.setToolTipText(AutonomyEditorPanel.wrappedIfLong(path));
 
@@ -754,14 +758,14 @@ final class LayoutMenus
 
         if (shown.isEmpty())
         {
-            javax.swing.JMenuItem none = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.noOtherLayouts"));
+            JMenuItem none = new JMenuItem(I18n.t("ui.main.toolbar.noOtherLayouts"));
 
             none.setEnabled(false);
 
             recentLayoutsMenu.add(none);
         }
 
-        javax.swing.JMenuItem folder = ui.showCurrentLayoutFolderMenuItem();
+        JMenuItem folder = ui.showCurrentLayoutFolderMenuItem();
 
         if (folder != null && ui.isLocalLayout() && ui.isLayoutLoaded())
         {

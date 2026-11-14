@@ -2,6 +2,7 @@ package org.traincontrol.gui;
 
 import java.awt.Component;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import org.traincontrol.util.I18n;
 
 /**
@@ -132,13 +133,13 @@ public final class RunGates
         // raw worker thread, and a modal JOptionPane built off the EDT mispaints and can deadlock.  invokeLater rather
         // than invokeAndWait: blocking until a dialog is dismissed would hold a worker and, from the EDT, deadlock
         // outright.
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        if (SwingUtilities.isEventDispatchThread())
         {
             JOptionPane.showMessageDialog(ui.stillShowing(asked), I18n.t("autosetup.ui.menuEditorOpen"));
         }
         else
         {
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
                 JOptionPane.showMessageDialog(ui.stillShowing(asked), I18n.t("autosetup.ui.menuEditorOpen")));
         }
 

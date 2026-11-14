@@ -5,9 +5,11 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
+import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.RoundRectangle2D;
+import java.util.List;
 import javax.swing.Icon;
 
 /**
@@ -157,9 +159,9 @@ public final class TabIcons
         {
             g.setColor(INK);
 
-            java.awt.geom.Area ring = new java.awt.geom.Area(play(w, h, 0));
+            Area ring = new Area(play(w, h, 0));
 
-            ring.subtract(new java.awt.geom.Area(play(w, h, 0.07)));
+            ring.subtract(new Area(play(w, h, 0.07)));
             g.fill(ring);
             g.fill(play(w, h, 0.12));
         });
@@ -197,9 +199,9 @@ public final class TabIcons
         for (Shape part : parts(w, h, boxes, circles)) g.fill(part);
     }
 
-    private static java.util.List<Shape> parts(int w, int h, String boxes, String circles)
+    private static List<Shape> parts(int w, int h, String boxes, String circles)
     {
-        java.util.List<Shape> out = new java.util.ArrayList<>();
+        List<Shape> out = new java.util.ArrayList<>();
 
         for (String part : (boxes + "," + circles).split(","))
         {

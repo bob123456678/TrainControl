@@ -12,6 +12,7 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
+import org.traincontrol.base.Locomotive;
 
 /**
  * The translation between the squares a user sees and the Points a railway runs.  One square becomes several Points,
@@ -178,7 +179,7 @@ public final class StationIndex
     {
         if (name == null) return "";
 
-        return org.traincontrol.automation.Layout.withoutArrivalSuffix(name);
+        return Layout.withoutArrivalSuffix(name);
     }
 
     /**
@@ -331,9 +332,7 @@ public final class StationIndex
     {
         List<Point> out = new ArrayList<>();
 
-        java.util.Set<org.traincontrol.base.Locomotive> seen =
-            java.util.Collections.newSetFromMap(
-                new java.util.IdentityHashMap<org.traincontrol.base.Locomotive, Boolean>());
+        Set<Locomotive> seen = Collections.newSetFromMap(new java.util.IdentityHashMap<Locomotive, Boolean>());
 
         for (Point point : points)
         {

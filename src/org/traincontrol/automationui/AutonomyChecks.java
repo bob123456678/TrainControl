@@ -13,6 +13,7 @@ import java.util.Set;
 import org.traincontrol.automationui.GraphReducer.ReducedEdge;
 import org.traincontrol.automationui.GraphReducer.ReducedPoint;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.util.I18n;
 
 /**
  * Checks a user can run against a configuration before trusting trains to it: questions that are obvious once asked and
@@ -868,7 +869,7 @@ public class AutonomyChecks
     {
         List<String> words = new ArrayList<>();
 
-        for (TilePorts.Side side : sides) words.add(org.traincontrol.util.I18n.t("autosetup.ui.side" + side.name()));
+        for (TilePorts.Side side : sides) words.add(I18n.t("autosetup.ui.side" + side.name()));
 
         return andJoined(words);
     }
@@ -879,7 +880,7 @@ public class AutonomyChecks
         if (words.size() < 2) return words.isEmpty() ? "" : words.get(0);
 
         return String.join(", ", words.subList(0, words.size() - 1)) + " "
-            + org.traincontrol.util.I18n.t("route.ui.joinAnd") + " " + words.get(words.size() - 1);
+            + I18n.t("route.ui.joinAnd") + " " + words.get(words.size() - 1);
     }
 
     /**

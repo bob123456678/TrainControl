@@ -443,7 +443,7 @@ public class TilePorts
      */
     public static int numOrientations(componentType type)
     {
-        return org.traincontrol.base.LayoutDiagramComponent.getNumOrientations(type);
+        return LayoutDiagramComponent.getNumOrientations(type);
     }
 
     private static Route route(Side a, Side b)

@@ -1,5 +1,6 @@
 package org.traincontrol.gui.autonomyeditor;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -14,6 +15,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
+import java.awt.geom.PathIterator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -132,9 +134,9 @@ final class StationPicture extends JPanel
 
             double[] each = new double[6];
 
-            for (java.awt.geom.PathIterator it = shape.getPathIterator(null); !it.isDone(); it.next())
+            for (PathIterator it = shape.getPathIterator(null); !it.isDone(); it.next())
             {
-                if (it.currentSegment(each) == java.awt.geom.PathIterator.SEG_CLOSE) continue;
+                if (it.currentSegment(each) == PathIterator.SEG_CLOSE) continue;
 
                 x += each[0];
                 y += each[1];
@@ -146,7 +148,7 @@ final class StationPicture extends JPanel
     }
 
     /** How near a mark's outline a click still presses it, where it is on no mark. */
-    private static final java.awt.BasicStroke NEAR = new java.awt.BasicStroke(6);
+    private static final BasicStroke NEAR = new BasicStroke(6);
 
     private final Block block = new Block();
 

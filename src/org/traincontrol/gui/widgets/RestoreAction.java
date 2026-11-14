@@ -1,6 +1,7 @@
 package org.traincontrol.gui.widgets;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -278,7 +279,7 @@ public final class RestoreAction
 
         private static byte[] bytesOf(InputStream in) throws IOException
         {
-            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
 
             byte[] buffer = new byte[8192];
 

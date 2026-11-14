@@ -3,9 +3,11 @@ package org.traincontrol.gui;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.TimetablePath;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 
@@ -35,7 +37,7 @@ final class TimetableTab
 
         String name = start ? path.getStartName() : path.getEndName();
 
-        org.traincontrol.automationui.AutonomySession session = this.ui.autonomySession();
+        AutonomySession session = this.ui.autonomySession();
 
         String base = session == null || name == null ? null : session.baseNameOf(name);
 
@@ -51,7 +53,7 @@ final class TimetableTab
         // order the completion block establishes).  The UI callers' busy guard does not make the monitor free: three
         // hold a modal dialog between the check and the snapshot, and a dispatch started meanwhile takes it.  The
         // callers still marshal their own work through the invokeLater below.
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        if (SwingUtilities.isEventDispatchThread())
         {
             new Thread(() -> this.repaintTimetable()).start();
             return;
@@ -63,7 +65,7 @@ final class TimetableTab
         final List<TimetablePath> timeTable =
             shown == null ? java.util.Collections.<TimetablePath>emptyList() : shown.getTimetableSnapshot();
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             this.ui.prepareTimetableColumns();
 
@@ -96,7 +98,7 @@ final class TimetableTab
 
     void clearTimetable()
     {
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        SwingUtilities.invokeLater(() -> 
         {
             if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
 
@@ -119,7 +121,7 @@ final class TimetableTab
             // operator likes, and a run may have started meanwhile
             if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
 
-            final org.traincontrol.automation.Layout layout = this.ui.getModel().getAutoLayout();
+            final Layout layout = this.ui.getModel().getAutoLayout();
 
             // UNDER THE RAILWAY'S LOCK, which capture appends under from locomotive threads - so off this thread, as every
             // door onto that lock from the window is (OB-192)
@@ -127,11 +129,11 @@ final class TimetableTab
             {
                 layout.emptyTimetable();
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     // AND THE TIMETABLE THE CONFIGURATION KEEPS, at once: left to the next fold, a Clear pressed
                     // while a page was out came back with the page
-                    org.traincontrol.automationui.AutonomySession keeping = this.ui.autonomySession();
+                    AutonomySession keeping = this.ui.autonomySession();
 
                     if (keeping != null && this.ui.getActiveDiagramConfiguration() != null)
                     {
@@ -190,7 +192,7 @@ final class TimetableTab
 
                 if (!(shown instanceof TimetablePath)) return;
 
-                final org.traincontrol.automation.Layout layout = this.ui.getModel().getAutoLayout();
+                final Layout layout = this.ui.getModel().getAutoLayout();
                 final int row = index;
 
                 // UNDER THE RAILWAY'S LOCK, which capture appends under from locomotive threads - so off this thread, as
@@ -199,7 +201,7 @@ final class TimetableTab
                 {
                     layout.removeTimetableEntry(row, (TimetablePath) shown);
 
-                    javax.swing.SwingUtilities.invokeLater(this::repaintTimetable);
+                    SwingUtilities.invokeLater(this::repaintTimetable);
                 }, "Timetable entry removal").start();
             }
         }
@@ -251,7 +253,7 @@ final class TimetableTab
      */
     void restartTimetable()
     {
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        SwingUtilities.invokeLater(() -> 
         {
             if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
             

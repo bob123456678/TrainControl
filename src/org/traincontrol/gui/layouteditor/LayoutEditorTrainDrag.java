@@ -1,13 +1,19 @@
 package org.traincontrol.gui.layouteditor;
 
+import java.awt.Color;
 import java.awt.Container;
 import java.awt.Cursor;
+import java.awt.Font;
+import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.RenderingHints;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import javax.swing.SwingUtilities;
 
 /**
  * Dragging a train drawn on a station to another station in the autonomy editor (FR-160).  This only watches the
@@ -64,8 +70,7 @@ final class LayoutEditorTrainDrag
         from = tile;
         train = standing;
         pressedOn = e.getComponent() instanceof LayoutLabel ? (LayoutLabel) e.getComponent() : square;
-        pressedAt = javax.swing.SwingUtilities.convertPoint(e.getComponent(), e.getPoint(),
-            editor.grid.getContainer());
+        pressedAt = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), editor.grid.getContainer());
 
         return true;
     }
@@ -77,7 +82,7 @@ final class LayoutEditorTrainDrag
 
         Container squares = editor.grid.getContainer();
 
-        Point at = javax.swing.SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), squares);
+        Point at = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), squares);
 
         if (!carrying)
         {
@@ -85,13 +90,12 @@ final class LayoutEditorTrainDrag
 
             carrying = true;
 
-            java.awt.image.BufferedImage shot = picture(train);
+            BufferedImage shot = picture(train);
 
             editor.showCaptionGhost(shot, shot.getWidth() / 2, shot.getHeight() / 2);
         }
 
-        editor.moveCaptionGhost(javax.swing.SwingUtilities.convertPoint(e.getComponent(), e.getPoint(),
-            editor.getLayeredPane()));
+        editor.moveCaptionGhost(SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), editor.getLayeredPane()));
 
         LayoutLabel over = LayoutGrid.squareUnder(squares, e.getComponent(), e);
 
@@ -185,14 +189,13 @@ final class LayoutEditorTrainDrag
     }
 
     /** The name on a small pill, the picture that follows the pointer. */
-    private static java.awt.image.BufferedImage picture(String name)
+    private static BufferedImage picture(String name)
     {
-        java.awt.Font font = new java.awt.Font(java.awt.Font.SANS_SERIF, java.awt.Font.BOLD, 13);
+        Font font = new Font(Font.SANS_SERIF, Font.BOLD, 13);
 
-        java.awt.image.BufferedImage probe = new java.awt.image.BufferedImage(1, 1,
-            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        BufferedImage probe = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
 
-        java.awt.Graphics2D measure = probe.createGraphics();
+        Graphics2D measure = probe.createGraphics();
 
         java.awt.FontMetrics metrics = measure.getFontMetrics(font);
 
@@ -201,17 +204,16 @@ final class LayoutEditorTrainDrag
         int width = metrics.stringWidth(name) + 16;
         int height = metrics.getHeight() + 8;
 
-        java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(width, height,
-            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        BufferedImage shot = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
-        java.awt.Graphics2D g = shot.createGraphics();
+        Graphics2D g = shot.createGraphics();
 
         try
         {
-            g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-            g.setColor(new java.awt.Color(40, 40, 40, 210));
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setColor(new Color(40, 40, 40, 210));
             g.fillRoundRect(0, 0, width - 1, height - 1, 10, 10);
-            g.setColor(java.awt.Color.WHITE);
+            g.setColor(Color.WHITE);
             g.setFont(font);
             g.drawString(name, 8, 4 + metrics.getAscent());
         }

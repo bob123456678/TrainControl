@@ -3,16 +3,19 @@ package org.traincontrol.gui.autonomyeditor;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.JComponent;
@@ -43,7 +46,7 @@ final class StationMatrixPanel extends JPanel
     private final JLabel also = new JLabel();
 
     /** A cell as drawn, for a test to compare with the real doors: row, tier and answer per side. */
-    private final Map<String, Map<String, Answer>> drawn = new java.util.LinkedHashMap<>();
+    private final Map<String, Map<String, Answer>> drawn = new LinkedHashMap<>();
 
     /** The width its lines wrap at, the problem's too, and the panel's. */
     private final int lineWidth;
@@ -57,7 +60,7 @@ final class StationMatrixPanel extends JPanel
         heading.setLayout(new BoxLayout(heading, BoxLayout.X_AXIS));
         heading.setOpaque(false);
         heading.add(UiStyle.heading(I18n.t("autosetup.ui.stationMatrixHeading")));
-        heading.add(javax.swing.Box.createHorizontalStrut(4));
+        heading.add(Box.createHorizontalStrut(4));
         heading.add(mark(I18n.t("autosetup.ui.stationMatrixHelp")));
 
         add(heading, BorderLayout.NORTH);
@@ -103,9 +106,9 @@ final class StationMatrixPanel extends JPanel
         private final int kept = roomFor(4);
 
         @Override
-        public java.awt.Dimension getPreferredSize()
+        public Dimension getPreferredSize()
         {
-            java.awt.Dimension asked = super.getPreferredSize();
+            Dimension asked = super.getPreferredSize();
 
             asked.height = Math.max(asked.height, kept);
 
@@ -182,9 +185,9 @@ final class StationMatrixPanel extends JPanel
 
     /** As wide as the table, whatever the lines under it hold. */
     @Override
-    public java.awt.Dimension getPreferredSize()
+    public Dimension getPreferredSize()
     {
-        java.awt.Dimension asked = super.getPreferredSize();
+        Dimension asked = super.getPreferredSize();
 
         asked.width = lineWidth;
 
@@ -278,7 +281,7 @@ final class StationMatrixPanel extends JPanel
         out.setOpaque(false);
         out.setName("station.cell." + row + "." + tier);
 
-        Map<String, Answer> answers = new java.util.LinkedHashMap<>();
+        Map<String, Answer> answers = new LinkedHashMap<>();
 
         drawn.put(row + "." + tier, answers);
 
@@ -384,7 +387,7 @@ final class StationMatrixPanel extends JPanel
         out.setLayout(new BoxLayout(out, BoxLayout.X_AXIS));
         out.setOpaque(false);
         out.add(UiStyle.blackLabel(text));
-        out.add(javax.swing.Box.createHorizontalStrut(4));
+        out.add(Box.createHorizontalStrut(4));
         out.add(mark(help));
 
         return out;

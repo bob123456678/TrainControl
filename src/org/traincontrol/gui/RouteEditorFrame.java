@@ -1,27 +1,69 @@
 package org.traincontrol.gui;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.CellRendererPane;
 import javax.swing.DefaultCellEditor;
+import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.JViewport;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.text.JTextComponent;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.CommandRow;
 import org.traincontrol.base.ConditionOutline;
@@ -33,6 +75,15 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.util.I18n;
+import org.traincontrol.base.Locomotive;
+import org.traincontrol.base.NodeAnd;
+import org.traincontrol.base.NodeGroup;
+import org.traincontrol.base.NodeOr;
+import org.traincontrol.base.NodeRouteCommand;
+import org.traincontrol.base.RouteCapture;
+import org.traincontrol.gui.widgets.PopupListener;
+import org.traincontrol.marklin.MarklinRoute;
+import org.traincontrol.util.ImageUtil;
 
 /**
  * Edits a route as two tables of dropdowns (commands; conditions) instead of text lines that have to be right.
@@ -243,9 +294,9 @@ public class RouteEditorFrame extends JFrame
         return height;
     }
 
-    private static int viewportHeight(javax.swing.JTable table)
+    private static int viewportHeight(JTable table)
     {
-        java.awt.Container port = javax.swing.SwingUtilities.getAncestorOfClass(javax.swing.JViewport.class, table);
+        Container port = SwingUtilities.getAncestorOfClass(JViewport.class, table);
 
         return port == null ? 0 : port.getHeight();
     }
@@ -256,12 +307,12 @@ public class RouteEditorFrame extends JFrame
      */
     private int narrowest()
     {
-        java.awt.Insets frame = getInsets();
-        java.awt.Insets content = ((JPanel) getContentPane()).getInsets();
+        Insets frame = getInsets();
+        Insets content = ((JPanel) getContentPane()).getInsets();
 
         int actions = conditionActions.getPreferredSize().width;
 
-        for (java.awt.Container around = conditionActions.getParent(); around != null && around != getContentPane();
+        for (Container around = conditionActions.getParent(); around != null && around != getContentPane();
             around = around.getParent())
         {
             actions += around.getInsets().left + around.getInsets().right;
@@ -279,11 +330,11 @@ public class RouteEditorFrame extends JFrame
     {
         private static final int GAP = 12;
 
-        private final java.awt.Component heading;
-        private final java.awt.Component notice;
-        private final java.awt.Component reading;
+        private final Component heading;
+        private final Component notice;
+        private final Component reading;
 
-        HeadingLine(java.awt.Component heading, java.awt.Component notice, java.awt.Component reading)
+        HeadingLine(Component heading, Component notice, Component reading)
         {
             super(null);
 
@@ -300,11 +351,11 @@ public class RouteEditorFrame extends JFrame
         /** The width it is laid out at, a BorderLayout's NORTH: its holder's inside the holder's insets. */
         private int available()
         {
-            java.awt.Container holder = getParent();
+            Container holder = getParent();
 
             if (holder == null || holder.getWidth() <= 0) return Integer.MAX_VALUE;
 
-            java.awt.Insets in = holder.getInsets();
+            Insets in = holder.getInsets();
 
             return holder.getWidth() - in.left - in.right;
         }
@@ -374,7 +425,7 @@ public class RouteEditorFrame extends JFrame
         JPanel content = new JPanel(new BorderLayout(8, 8));
 
         // White to the edges, so the panels read as one window.
-        content.setBackground(java.awt.Color.WHITE);
+        content.setBackground(Color.WHITE);
         content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         topLine = header();
@@ -385,7 +436,7 @@ public class RouteEditorFrame extends JFrame
         {
             /** As a grid up to the packed height; past it the conditions take the extra (FR-152). */
             @Override
-            public void layoutContainer(java.awt.Container parent)
+            public void layoutContainer(Container parent)
             {
                 if (parent.getComponentCount() != 2)
                 {
@@ -394,7 +445,7 @@ public class RouteEditorFrame extends JFrame
                     return;
                 }
 
-                java.awt.Insets in = parent.getInsets();
+                Insets in = parent.getInsets();
                 int width = parent.getWidth() - in.left - in.right;
                 int height = parent.getHeight() - in.top - in.bottom - getVgap();
                 int packed = (preferredLayoutSize(parent).height - in.top - in.bottom - getVgap()) / 2;
@@ -405,21 +456,21 @@ public class RouteEditorFrame extends JFrame
             }
         });
 
-        middle.setBackground(java.awt.Color.WHITE);
+        middle.setBackground(Color.WHITE);
 
         JPanel commandSection = section(I18n.t("route.ui.frameCommands"), commands);
 
         footed(commandSection, commandActions());
 
         // Below the rows, the commands' menu offers Add Command (FR-162).
-        final java.awt.Component belowCommands = commands.getParent();
+        final Component belowCommands = commands.getParent();
 
-        belowCommands.addMouseListener(new org.traincontrol.gui.widgets.PopupListener()
+        belowCommands.addMouseListener(new PopupListener()
         {
             @Override
-            protected void showPopup(java.awt.event.MouseEvent e)
+            protected void showPopup(MouseEvent e)
             {
-                offerCommandMenu(javax.swing.SwingUtilities.convertMouseEvent(belowCommands, e, commands));
+                offerCommandMenu(SwingUtilities.convertMouseEvent(belowCommands, e, commands));
             }
         });
 
@@ -449,13 +500,13 @@ public class RouteEditorFrame extends JFrame
 
         footed(conditionSection, conditionActions());
 
-        readsAs.setFont(new java.awt.Font("Segoe UI", 0, 14));
-        readsAs.setForeground(new java.awt.Color(90, 90, 90));
+        readsAs.setFont(new Font("Segoe UI", 0, 14));
+        readsAs.setForeground(new Color(90, 90, 90));
 
         readsAs.setVerticalAlignment(JLabel.TOP);
 
-        unasked.setFont(new java.awt.Font("Segoe UI", 0, 14));
-        unasked.setForeground(new java.awt.Color(0xC6, 0x28, 0x28));
+        unasked.setFont(new Font("Segoe UI", 0, 14));
+        unasked.setForeground(new Color(0xC6, 0x28, 0x28));
         unasked.setIcon(RowIcons.warning(16));
         unasked.setIconTextGap(6);
         unasked.setVisible(false);
@@ -495,11 +546,10 @@ public class RouteEditorFrame extends JFrame
         // Stacked in the one slot at the bottom: a second component at SOUTH replaces the first, not sits under it.
         JPanel below = new JPanel(new BorderLayout(4, 0));
 
-        below.setBackground(java.awt.Color.WHITE);
+        below.setBackground(Color.WHITE);
 
         // The notice on the heading's line, at its right; the reading on a line of its own under them (OB-396).
-        java.awt.Component heading = ((BorderLayout) conditionSection.getLayout())
-            .getLayoutComponent(BorderLayout.NORTH);
+        Component heading = ((BorderLayout) conditionSection.getLayout()).getLayoutComponent(BorderLayout.NORTH);
 
         conditionSection.add(new HeadingLine(heading, unasked, readsAs), BorderLayout.NORTH);
 
@@ -515,14 +565,14 @@ public class RouteEditorFrame extends JFrame
         // Cancel, added last, sits in the corner.
         JPanel buttons = new JPanel(new BorderLayout());
 
-        buttons.setBackground(java.awt.Color.WHITE);
+        buttons.setBackground(Color.WHITE);
 
         // No rule above them (MT-108): they sit at the opposite end from the buttons that act on a row.
         buttons.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
 
-        right.setBackground(java.awt.Color.WHITE);
+        right.setBackground(Color.WHITE);
 
         // Save, then Cancel: the Windows order.
         saveButton = button(I18n.t("route.ui.frameSave"), this::onSave);
@@ -538,14 +588,14 @@ public class RouteEditorFrame extends JFrame
 
         // Escape is Cancel; a cell being edited gets its Escape first, as WHEN_IN_FOCUSED_WINDOW is checked last.
         getRootPane().registerKeyboardAction(e -> closeIfThrowingNothingAway(),
-            javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
-            javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
+            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+            JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         return content;
     }
 
     /** Everything a route says about itself, as one string, tolerant like `stateSignature`. */
-    private static String signatureOf(org.traincontrol.base.Route route)
+    private static String signatureOf(Route route)
     {
         if (route == null) return null;
 
@@ -556,14 +606,14 @@ public class RouteEditorFrame extends JFrame
            .append(String.valueOf(route.getTriggerType())).append('\u0001')
            .append(route.isEnabled()).append('\u0002');
 
-        for (org.traincontrol.base.RouteCommand command : route.getRoute())
+        for (RouteCommand command : route.getRoute())
         {
             out.append(String.valueOf(command)).append('\u0003');
         }
 
         // Conditions by content: NodeExpression has no toString, and Route.locomotiveRenamed rewrites them in place.
-        for (org.traincontrol.base.RouteCommand condition
-            : org.traincontrol.base.NodeExpression.toList(route.getConditions()))
+        for (RouteCommand condition
+            : NodeExpression.toList(route.getConditions()))
         {
             out.append(String.valueOf(condition)).append('\u0004');
         }
@@ -582,7 +632,7 @@ public class RouteEditorFrame extends JFrame
     {
         if (originalName == null || originalName.isEmpty() || parent == null || parent.getModel() == null) return null;
 
-        org.traincontrol.base.Route now = parent.getModel().getRoute(originalName);
+        Route now = parent.getModel().getRoute(originalName);
 
         if (now == null) return nameNowHeldById() != null ? "renamed" : "gone";
 
@@ -613,7 +663,7 @@ public class RouteEditorFrame extends JFrame
 
         for (String name : parent.getModel().getRouteList())
         {
-            org.traincontrol.base.Route candidate = parent.getModel().getRoute(name);
+            Route candidate = parent.getModel().getRoute(name);
 
             if (candidate != null && candidate.getId() == loadedId) return candidate.getName();
         }
@@ -644,9 +694,9 @@ public class RouteEditorFrame extends JFrame
         if (!hasUnsavedWork()) return true;
 
         // Out of the taskbar before it asks (MT-703): toFront does not restore a minimized window.
-        if ((getExtendedState() & java.awt.Frame.ICONIFIED) != 0)
+        if ((getExtendedState() & Frame.ICONIFIED) != 0)
         {
-            setExtendedState(getExtendedState() & ~java.awt.Frame.ICONIFIED);
+            setExtendedState(getExtendedState() & ~Frame.ICONIFIED);
         }
 
         toFront();
@@ -750,10 +800,10 @@ public class RouteEditorFrame extends JFrame
     {
         for (String name : parent.getModel().getRouteList())
         {
-            org.traincontrol.base.Route route = parent.getModel().getRoute(name);
+            Route route = parent.getModel().getRoute(name);
 
-            if (route instanceof org.traincontrol.marklin.MarklinRoute
-                && ((org.traincontrol.marklin.MarklinRoute) route).isLocked())
+            if (route instanceof MarklinRoute
+                && ((MarklinRoute) route).isLocked())
             {
                 return true;
             }
@@ -775,8 +825,8 @@ public class RouteEditorFrame extends JFrame
         triggerLabelText.setEnabled(automatic);
         triggerBox.setEnabled(automatic);
 
-        sensorLabel.setForeground(automatic ? HEADING_BLUE : java.awt.Color.GRAY);
-        triggerLabelText.setForeground(automatic ? HEADING_BLUE : java.awt.Color.GRAY);
+        sensorLabel.setForeground(automatic ? HEADING_BLUE : Color.GRAY);
+        triggerLabelText.setForeground(automatic ? HEADING_BLUE : Color.GRAY);
     }
 
     /** What a trigger means, in words. */
@@ -801,12 +851,12 @@ public class RouteEditorFrame extends JFrame
         // No leading gap: FlowLayout puts its hgap before the first component too, so struts separate the fields.
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 4));
 
-        row.setBackground(java.awt.Color.WHITE);
+        row.setBackground(Color.WHITE);
 
         row.add(label(I18n.t("route.ui.frameName")));
-        row.add(javax.swing.Box.createHorizontalStrut(8));
+        row.add(Box.createHorizontalStrut(8));
         row.add(nameField);
-        row.add(javax.swing.Box.createHorizontalStrut(8));
+        row.add(Box.createHorizontalStrut(8));
 
         // The tick first, and the sensor only when ticked: a sensor box beside an unticked box asks a question with
         // no bearing yet.
@@ -814,14 +864,14 @@ public class RouteEditorFrame extends JFrame
         enabledBox.setFocusable(false);
 
         row.add(enabledBox);
-        row.add(javax.swing.Box.createHorizontalStrut(8));
+        row.add(Box.createHorizontalStrut(8));
 
         row.add(sensorLabel);
-        row.add(javax.swing.Box.createHorizontalStrut(8));
+        row.add(Box.createHorizontalStrut(8));
         row.add(s88Field);
-        row.add(javax.swing.Box.createHorizontalStrut(8));
+        row.add(Box.createHorizontalStrut(8));
         row.add(triggerLabelText);
-        row.add(javax.swing.Box.createHorizontalStrut(8));
+        row.add(Box.createHorizontalStrut(8));
         row.add(triggerBox);
 
         enabledBox.addActionListener(e -> showSensorIfAutomatic());
@@ -842,15 +892,15 @@ public class RouteEditorFrame extends JFrame
         JPanel panel = new JPanel(new BorderLayout(4, 4));
 
         // A panel with a line round it, like the rest of the application (docs/UI-standards.md).
-        panel.setBackground(java.awt.Color.WHITE);
+        panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204), 1),
+            BorderFactory.createLineBorder(new Color(204, 204, 204), 1),
             BorderFactory.createEmptyBorder(6, 8, 8, 8)));
 
         // A heading, not a nested frame: styled as GraphEdgeEdit's, indented like the panel's contents.
         JLabel heading = new JLabel(title);
 
-        heading.setFont(new java.awt.Font("Segoe UI Semibold", 0, 13));
+        heading.setFont(new Font("Segoe UI Semibold", 0, 13));
         heading.setForeground(HEADING_BLUE);
         heading.setBorder(BorderFactory.createEmptyBorder(2, 0, 4, 0));
 
@@ -860,8 +910,8 @@ public class RouteEditorFrame extends JFrame
         scroll.setPreferredSize(new Dimension(640, 180));
 
         // White, with a single line round it (docs/UI-standards.md).
-        table.setBackground(java.awt.Color.WHITE);
-        scroll.setBorder(BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204), 1));
+        table.setBackground(Color.WHITE);
+        scroll.setBorder(BorderFactory.createLineBorder(new Color(204, 204, 204), 1));
 
         panel.add(scroll, BorderLayout.CENTER);
 
@@ -869,7 +919,7 @@ public class RouteEditorFrame extends JFrame
         JPanel below = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
 
         below.setOpaque(false);
-        below.setBackground(java.awt.Color.WHITE);
+        below.setBackground(Color.WHITE);
 
         panel.add(below, BorderLayout.SOUTH);
 
@@ -884,7 +934,7 @@ public class RouteEditorFrame extends JFrame
     {
         final JPanel area = new ScrollingArea();
 
-        area.setBackground(java.awt.Color.WHITE);
+        area.setBackground(Color.WHITE);
 
         area.add(conditions, BorderLayout.NORTH);
 
@@ -895,12 +945,12 @@ public class RouteEditorFrame extends JFrame
             conditions.clearSelection();
         }));
 
-        area.addMouseListener(new org.traincontrol.gui.widgets.PopupListener()
+        area.addMouseListener(new PopupListener()
         {
             @Override
-            protected void showPopup(java.awt.event.MouseEvent e)
+            protected void showPopup(MouseEvent e)
             {
-                offerConditionMenu(javax.swing.SwingUtilities.convertMouseEvent(area, e, conditions));
+                offerConditionMenu(SwingUtilities.convertMouseEvent(area, e, conditions));
             }
         });
 
@@ -922,13 +972,13 @@ public class RouteEditorFrame extends JFrame
         }
 
         @Override
-        public int getScrollableUnitIncrement(java.awt.Rectangle visible, int orientation, int direction)
+        public int getScrollableUnitIncrement(Rectangle visible, int orientation, int direction)
         {
             return 24;
         }
 
         @Override
-        public int getScrollableBlockIncrement(java.awt.Rectangle visible, int orientation, int direction)
+        public int getScrollableBlockIncrement(Rectangle visible, int orientation, int direction)
         {
             return Math.max(24, (orientation == javax.swing.SwingConstants.VERTICAL ? visible.height : visible.width) - 24);
         }
@@ -942,7 +992,7 @@ public class RouteEditorFrame extends JFrame
         @Override
         public boolean getScrollableTracksViewportHeight()
         {
-            return getParent() instanceof javax.swing.JViewport && getParent().getHeight() > getPreferredSize().height;
+            return getParent() instanceof JViewport && getParent().getHeight() > getPreferredSize().height;
         }
     }
 
@@ -952,7 +1002,7 @@ public class RouteEditorFrame extends JFrame
      */
     private JPanel conditionActions()
     {
-        java.awt.Color gray = new java.awt.Color(175, 175, 175);
+        Color gray = new Color(175, 175, 175);
 
         addConditionButton = flatButton("route.ui.menuAddCondition", RowIcons.plus(16), RowIcons.plus(16, gray),
             "route.ui.tooltipAddCondition", () -> addTo(conditions));
@@ -980,8 +1030,8 @@ public class RouteEditorFrame extends JFrame
     /** One table's Undo (true) or Redo button (FR-161, FR-163), its tooltip naming what Undo takes back. */
     private JButton undoOrRedo(boolean undo, String tip, HandledTable table)
     {
-        java.awt.Color ink = new java.awt.Color(110, 110, 110);
-        java.awt.Color gray = new java.awt.Color(175, 175, 175);
+        Color ink = new Color(110, 110, 110);
+        Color gray = new Color(175, 175, 175);
 
         return flatButton(undo ? "route.ui.menuUndo" : "route.ui.menuRedo",
             undo ? RowIcons.undo(16, ink) : RowIcons.redo(16, ink),
@@ -992,7 +1042,7 @@ public class RouteEditorFrame extends JFrame
     private JPanel commandActions()
     {
         addCommandButton = flatButton("route.ui.menuAddCommand", RowIcons.plus(16),
-            RowIcons.plus(16, new java.awt.Color(175, 175, 175)), "route.ui.tooltipAddCommand", () -> addTo(commands));
+            RowIcons.plus(16, new Color(175, 175, 175)), "route.ui.tooltipAddCommand", () -> addTo(commands));
 
         commandUndoButton = undoOrRedo(true, "route.ui.tooltipUndoCommands", commands);
         commandRedoButton = undoOrRedo(false, "route.ui.tooltipRedo", commands);
@@ -1040,8 +1090,8 @@ public class RouteEditorFrame extends JFrame
         framed.setBorder(scroll.getBorder());
         scroll.setBorder(BorderFactory.createEmptyBorder());
         foot.setOpaque(true);
-        foot.setBackground(java.awt.Color.WHITE);
-        foot.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new java.awt.Color(0xE0, 0xE0, 0xE0)));
+        foot.setBackground(Color.WHITE);
+        foot.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(0xE0, 0xE0, 0xE0)));
 
         framed.add(scroll, BorderLayout.CENTER);
         framed.add(foot, BorderLayout.SOUTH);
@@ -1063,21 +1113,21 @@ public class RouteEditorFrame extends JFrame
     {
         JPanel out = new JPanel();
 
-        out.setBackground(new java.awt.Color(0xE0, 0xE0, 0xE0));
+        out.setBackground(new Color(0xE0, 0xE0, 0xE0));
         out.setPreferredSize(new Dimension(1, 18));
 
         return out;
     }
 
     /** A toolbar button: no border until hovered (FlatLaf's toolBarButton), out of the tab order. */
-    private JButton flatButton(String key, javax.swing.Icon icon, javax.swing.Icon grayed, String tip,
+    private JButton flatButton(String key, Icon icon, Icon grayed, String tip,
         final Runnable action)
     {
         JButton out = new JButton(I18n.t(key), icon);
 
         out.setDisabledIcon(grayed);
         out.putClientProperty("JButton.buttonType", "toolBarButton");
-        out.setFont(new java.awt.Font("Segoe UI", 0, 13));
+        out.setFont(new Font("Segoe UI", 0, 13));
         out.setFocusable(false);
         out.setToolTipText(I18n.t(tip));
 
@@ -1104,13 +1154,13 @@ public class RouteEditorFrame extends JFrame
     }
 
     /** A cell editor that will only accept digits, refused as typed rather than at Save. */
-    private static javax.swing.table.TableCellEditor digitsOnly()
+    private static TableCellEditor digitsOnly()
     {
         return new DefaultCellEditor(AutonomyEditorPanel.digitsOnlyField(null, 0, 0));
     }
 
     /** A cell editor offering exactly these values. */
-    private static javax.swing.table.TableCellEditor chooseFrom(String[] values)
+    private static TableCellEditor chooseFrom(String[] values)
     {
         JComboBox<String> box = new JComboBox<>();
 
@@ -1120,7 +1170,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /** A cell editor offering setting words: each is shown in the user's language and committed as the stored word. */
-    private static javax.swing.table.TableCellEditor chooseSetting(String[] words)
+    private static TableCellEditor chooseSetting(String[] words)
     {
         JComboBox<String> box = new JComboBox<>();
 
@@ -1129,7 +1179,7 @@ public class RouteEditorFrame extends JFrame
         box.setRenderer(new javax.swing.DefaultListCellRenderer()
         {
             @Override
-            public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value,
+            public Component getListCellRendererComponent(javax.swing.JList<?> list, Object value,
                 int index, boolean selected, boolean focused)
             {
                 return super.getListCellRendererComponent(list,
@@ -1141,7 +1191,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /** The setting words a route stores, each with a `route.ui.setting.<word>` text in every bundle. */
-    private static final java.util.Set<String> SETTING_WORDS = new java.util.HashSet<>(java.util.Arrays.asList(
+    private static final Set<String> SETTING_WORDS = new java.util.HashSet<>(java.util.Arrays.asList(
         "straight", "turn", "green", "red", "on", "off", "forward", "backward", "left", "right"));
 
     /**
@@ -1160,9 +1210,9 @@ public class RouteEditorFrame extends JFrame
      * box handed a value it lacks keeps whatever was selected, so a route naming a since-deleted locomotive would be
      * rewritten to the first name by a click, and the Save gate would be satisfied.
      */
-    private static String[] withTheCellsOwn(java.util.List<String> names, String has)
+    private static String[] withTheCellsOwn(List<String> names, String has)
     {
-        java.util.List<String> out = names == null ? new ArrayList<>() : new ArrayList<>(names);
+        List<String> out = names == null ? new ArrayList<>() : new ArrayList<>(names);
 
         // As it stands, spaces and all: a trimmed offer is not the value the combo box was handed.
         if (has != null && !has.trim().isEmpty() && !out.contains(has)) out.add(has);
@@ -1294,17 +1344,17 @@ public class RouteEditorFrame extends JFrame
         JLabel out = new JLabel(text);
 
         // The small labels beside a field are plain 14 in the heading blue, so they do not compete with headings.
-        out.setFont(new java.awt.Font("Segoe UI", 0, 14));
+        out.setFont(new Font("Segoe UI", 0, 14));
         out.setForeground(HEADING_BLUE);
 
         return out;
     }
 
     /** The blue this application uses for headings and for the labels beside fields. */
-    private static final java.awt.Color HEADING_BLUE = new java.awt.Color(0, 0, 155);
+    private static final Color HEADING_BLUE = new Color(0, 0, 155);
 
     /** For a line that says something the rest of its level does not agree with. */
-    private static final java.awt.Color WRONG = new java.awt.Color(190, 30, 30);
+    private static final Color WRONG = new Color(190, 30, 30);
 
     /** Says how the two halves of this window fit together. */
     private void showHelp()
@@ -1318,7 +1368,7 @@ public class RouteEditorFrame extends JFrame
         JButton button = new JButton(text);
 
         // Segoe UI Bold 12, as every other button in this application is
-        button.setFont(new java.awt.Font("Segoe UI", 1, 12));
+        button.setFont(new Font("Segoe UI", 1, 12));
         button.addActionListener(e -> action.run());
 
         return button;
@@ -1517,9 +1567,9 @@ public class RouteEditorFrame extends JFrame
             text.append(entry.toCommand().toLine(null));
         }
 
-        String settled = org.traincontrol.base.RouteCapture.filterConfigCommands(text.toString());
+        String settled = RouteCapture.filterConfigCommands(text.toString());
 
-        java.util.List<Entry> rebuilt = new ArrayList<>();
+        List<Entry> rebuilt = new ArrayList<>();
 
         for (String line : settled.split("\n"))
         {
@@ -1570,7 +1620,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /** Everything this editor would refuse to save, as message keys resolved to text (OB-178). */
-    public java.util.List<String> problemsForTest()
+    public List<String> problemsForTest()
     {
         return everythingWrong();
     }
@@ -1637,7 +1687,7 @@ public class RouteEditorFrame extends JFrame
      *
      * @return the live list, so a caller can read what an edit left behind
      */
-    public java.util.List<ConditionOutline.Row> conditionRowsForTest()
+    public List<ConditionOutline.Row> conditionRowsForTest()
     {
         return conditions.rows;
     }
@@ -1647,7 +1697,7 @@ public class RouteEditorFrame extends JFrame
      *
      * @param rows the outline
      */
-    public void setConditionRowsForTest(java.util.List<ConditionOutline.Row> rows)
+    public void setConditionRowsForTest(List<ConditionOutline.Row> rows)
     {
         conditions.rows.clear();
         conditions.rows.addAll(rows);
@@ -1708,13 +1758,13 @@ public class RouteEditorFrame extends JFrame
      * @param column which column
      * @return the rendered component
      */
-    public java.awt.Component commandCellForTest(int row, int column)
+    public Component commandCellForTest(int row, int column)
     {
         return commands.prepareRenderer(commands.getCellRenderer(row, column), row, column);
     }
 
     /** @return the ink a row Save would refuse is drawn in */
-    public static java.awt.Color refusedInkForTest()
+    public static Color refusedInkForTest()
     {
         return WRONG;
     }
@@ -1848,37 +1898,37 @@ public class RouteEditorFrame extends JFrame
     /**
      * An expression in words, for the reading under the conditions; the chosen conditions are drawn in bold (FR-147).
      */
-    private String describe(NodeExpression node, java.util.Set<RouteCommand> chosen)
+    private String describe(NodeExpression node, Set<RouteCommand> chosen)
     {
         if (node == null) return "";
 
-        if (node instanceof org.traincontrol.base.NodeRouteCommand)
+        if (node instanceof NodeRouteCommand)
         {
-            RouteCommand command = ((org.traincontrol.base.NodeRouteCommand) node).getRouteCommand();
+            RouteCommand command = ((NodeRouteCommand) node).getRouteCommand();
 
             return chosen.contains(command) ? "<b>" + shortly(command) + "</b>" : shortly(command);
         }
 
-        if (node instanceof org.traincontrol.base.NodeAnd)
+        if (node instanceof NodeAnd)
         {
-            return describe(((org.traincontrol.base.NodeAnd) node).getLeft(), chosen)
+            return describe(((NodeAnd) node).getLeft(), chosen)
                 + " <b>" + marked(I18n.t("route.ui.joinAnd")) + "</b> "
-                + describe(((org.traincontrol.base.NodeAnd) node).getRight(), chosen);
+                + describe(((NodeAnd) node).getRight(), chosen);
         }
 
-        if (node instanceof org.traincontrol.base.NodeOr)
+        if (node instanceof NodeOr)
         {
-            return describe(((org.traincontrol.base.NodeOr) node).getLeft(), chosen)
+            return describe(((NodeOr) node).getLeft(), chosen)
                 + " <b>" + marked(I18n.t("route.ui.joinOr")) + "</b> "
-                + describe(((org.traincontrol.base.NodeOr) node).getRight(), chosen);
+                + describe(((NodeOr) node).getRight(), chosen);
         }
 
-        if (node instanceof org.traincontrol.base.NodeGroup)
+        if (node instanceof NodeGroup)
         {
             StringBuilder out = new StringBuilder("(");
 
             for (NodeExpression inside
-                : ((org.traincontrol.base.NodeGroup) node).getExpressions())
+                : ((NodeGroup) node).getExpressions())
             {
                 out.append(describe(inside, chosen));
             }
@@ -1893,7 +1943,7 @@ public class RouteEditorFrame extends JFrame
     private static final int POSITION = 1;
 
     /** The shade a cell takes when its kind has no use for it. */
-    private static final java.awt.Color UNUSABLE = new java.awt.Color(242, 242, 242);
+    private static final Color UNUSABLE = new Color(242, 242, 242);
 
     private static final int DELETE = 8;
 
@@ -1925,14 +1975,14 @@ public class RouteEditorFrame extends JFrame
      */
     private void actOnRowMarks(final HandledTable table, final int... marked)
     {
-        final javax.swing.table.DefaultTableCellRenderer marks = markRenderer(Math.max(12, table.getRowHeight() - 10));
+        final DefaultTableCellRenderer marks = markRenderer(Math.max(12, table.getRowHeight() - 10));
 
         for (int column : marked) table.getColumnModel().getColumn(column).setCellRenderer(marks);
 
         table.addMouseListener(Listen.pressed(e ->
         {
             // A right-click opens the table's menu rather than working the mark under it.
-            if (!javax.swing.SwingUtilities.isLeftMouseButton(e)) return;
+            if (!SwingUtilities.isLeftMouseButton(e)) return;
 
             // With Shift or Ctrl the press only selects: the trash would delete the whole selection it just grew.
             if (e.isShiftDown() || e.isControlDown()) return;
@@ -1943,7 +1993,7 @@ public class RouteEditorFrame extends JFrame
         table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
         {
             @Override
-            public void mouseMoved(java.awt.event.MouseEvent e)
+            public void mouseMoved(MouseEvent e)
             {
                 int row = table.rowAtPoint(e.getPoint());
                 int column = table.columnAtPoint(e.getPoint());
@@ -1952,19 +2002,18 @@ public class RouteEditorFrame extends JFrame
                     && !"".equals(String.valueOf(table.getValueAt(row, column)))
                     && isAmong(column, marked);
 
-                table.setCursor(java.awt.Cursor.getPredefinedCursor(
-                    live ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
+                table.setCursor(Cursor.getPredefinedCursor(live ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
             }
         });
     }
 
     /** The trash and copy icons, never in the selection's colors: a press on a mark keeps the selection. */
-    private static javax.swing.table.DefaultTableCellRenderer markRenderer(final int mark)
+    private static DefaultTableCellRenderer markRenderer(final int mark)
     {
-        return new javax.swing.table.DefaultTableCellRenderer()
+        return new DefaultTableCellRenderer()
         {
             @Override
-            public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
+            public Component getTableCellRendererComponent(JTable which, Object value,
                 boolean selected, boolean focused, int row, int column)
             {
                 JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", false, false, row, column);
@@ -1992,14 +2041,14 @@ public class RouteEditorFrame extends JFrame
      * A cell with no wash on it (OB-121).  A renderer hands back one recycled component, which may already have been
      * painted gray for the cell before; a selected row is left as super made it.
      */
-    private static java.awt.Component unshaded(java.awt.Component out, JTable which, boolean selected)
+    private static Component unshaded(Component out, JTable which, boolean selected)
     {
         // And no tooltip: the recycled component would otherwise wear the refusal of the row drawn before it (OB-246).
-        if (out instanceof javax.swing.JComponent) ((javax.swing.JComponent) out).setToolTipText(null);
+        if (out instanceof JComponent) ((JComponent) out).setToolTipText(null);
 
-        if (!selected && out instanceof javax.swing.JComponent)
+        if (!selected && out instanceof JComponent)
         {
-            ((javax.swing.JComponent) out).setOpaque(true);
+            ((JComponent) out).setOpaque(true);
             out.setBackground(which.getBackground());
         }
 
@@ -2008,11 +2057,10 @@ public class RouteEditorFrame extends JFrame
 
     /** Files an accessory command under its address and the protocol it is sent in. */
     private static void byDecoder(
-        java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> into,
-        org.traincontrol.base.RouteCommand command)
+        Map<Integer, Set<Accessory.accessoryDecoderType>> into,
+        RouteCommand command)
     {
-        into.computeIfAbsent(command.getAddress(), address -> new java.util.LinkedHashSet<>())
-            .add(command.getProtocol());
+        into.computeIfAbsent(command.getAddress(), address -> new LinkedHashSet<>()).add(command.getProtocol());
     }
 
     /**
@@ -2021,12 +2069,12 @@ public class RouteEditorFrame extends JFrame
      */
     private void greyWhatCannotBeEdited(final JTable table)
     {
-        final javax.swing.table.TableCellRenderer was = table.getDefaultRenderer(Object.class);
+        final TableCellRenderer was = table.getDefaultRenderer(Object.class);
 
-        table.setDefaultRenderer(Object.class, new javax.swing.table.TableCellRenderer()
+        table.setDefaultRenderer(Object.class, new TableCellRenderer()
         {
             @Override
-            public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
+            public Component getTableCellRendererComponent(JTable which, Object value,
                 boolean selected, boolean focused, int row, int column)
             {
                 // A TRAIN'S SENSOR SAYS IT IS ONE (FR-141): shown, not stored, so the cell still holds and edits the number
@@ -2038,8 +2086,7 @@ public class RouteEditorFrame extends JFrame
 
                 if (column == settingColumn && shown instanceof String) shown = settingLabel((String) shown);
 
-                java.awt.Component out = was.getTableCellRendererComponent(which, shown, selected,
-                    focused, row, column);
+                Component out = was.getTableCellRendererComponent(which, shown, selected, focused, row, column);
 
                 boolean editable = which.getModel().isCellEditable(row, column);
 
@@ -2059,26 +2106,26 @@ public class RouteEditorFrame extends JFrame
                 String explained = which instanceof ConditionTable
                     ? ((ConditionTable) which).explains(row, column) : null;
 
-                if (out instanceof javax.swing.JComponent)
+                if (out instanceof JComponent)
                 {
-                    ((javax.swing.JComponent) out).setToolTipText(refused != null ? refused : explained);
+                    ((JComponent) out).setToolTipText(refused != null ? refused : explained);
                 }
 
                 if (!selected)
                 {
                     out.setForeground(refused != null && editable ? WRONG
-                        : editable ? which.getForeground() : java.awt.Color.GRAY);
+                        : editable ? which.getForeground() : Color.GRAY);
 
                     // A background, not only gray text: most of these cells are empty, and gray text in an empty cell
                     // shows nothing.  Not the position column, which is the row's number.
                     boolean position = which instanceof CommandTable && column == POSITION;
 
-                    if (!editable && !position && out instanceof javax.swing.JComponent)
+                    if (!editable && !position && out instanceof JComponent)
                     {
-                        ((javax.swing.JComponent) out).setOpaque(true);
+                        ((JComponent) out).setOpaque(true);
                         out.setBackground(UNUSABLE);
                     }
-                    else if (out instanceof javax.swing.JComponent)
+                    else if (out instanceof JComponent)
                     {
                         out.setBackground(which.getBackground());
                     }
@@ -2106,13 +2153,13 @@ public class RouteEditorFrame extends JFrame
      * duplicating and deleting, each enabled exactly when it would do something.  On a caption, Add Condition into its
      * group; below the lines, Add Condition at the end of the outermost.
      */
-    private void offerConditionMenu(java.awt.event.MouseEvent e)
+    private void offerConditionMenu(MouseEvent e)
     {
         offerRowMenu(conditions, e);
     }
 
     /** The right-click menu on the commands (FR-162): the conditions' without grouping; below the rows, Add Command. */
-    private void offerCommandMenu(java.awt.event.MouseEvent e)
+    private void offerCommandMenu(MouseEvent e)
     {
         offerRowMenu(commands, e);
     }
@@ -2121,7 +2168,7 @@ public class RouteEditorFrame extends JFrame
      * Either table's right-click menu (FR-147, FR-162): on a row, inserting beside it, moving the selection, the
      * table's own items, duplicating and deleting; elsewhere, adding one at the end.
      */
-    private void offerRowMenu(final HandledTable table, java.awt.event.MouseEvent e)
+    private void offerRowMenu(final HandledTable table, MouseEvent e)
     {
         if (!table.handlesWork() || !table.isShowing()) return;
 
@@ -2131,7 +2178,7 @@ public class RouteEditorFrame extends JFrame
         final int row = table.rowOf(line);
         final String[] keys = table.menuKeys();
 
-        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+        JPopupMenu menu = new JPopupMenu();
 
         if (row < 0)
         {
@@ -2165,9 +2212,9 @@ public class RouteEditorFrame extends JFrame
         menu.show(table, e.getX(), e.getY());
     }
 
-    private static javax.swing.JMenuItem menuItem(String key, boolean enabled, Runnable action)
+    private static JMenuItem menuItem(String key, boolean enabled, Runnable action)
     {
-        javax.swing.JMenuItem item = new javax.swing.JMenuItem(I18n.t(key));
+        JMenuItem item = new JMenuItem(I18n.t(key));
 
         item.setEnabled(enabled);
         item.addActionListener(e -> action.run());
@@ -2348,7 +2395,7 @@ public class RouteEditorFrame extends JFrame
     /** The problems numbered, for the Details list: a route pasted in can have a fault in every row. */
     private static List<String> listed(List<String> wrong)
     {
-        List<String> out = new java.util.ArrayList<>();
+        List<String> out = new ArrayList<>();
 
         for (int at = 0; at < wrong.size(); at++) out.add((at + 1) + ".  " + wrong.get(at));
 
@@ -2467,11 +2514,11 @@ public class RouteEditorFrame extends JFrame
 
         String target = row.getTarget() == null ? "" : row.getTarget().trim();
 
-        org.traincontrol.base.Locomotive loco = parent.getModel().getLocByName(target);
+        Locomotive loco = parent.getModel().getLocByName(target);
 
         if (loco == null || loco.getNumF() <= 0) return null;
 
-        java.util.List<String> out = new ArrayList<>();
+        List<String> out = new ArrayList<>();
 
         for (int f = 0; f < loco.getNumF(); f++) out.add(String.valueOf(f));
 
@@ -2483,38 +2530,38 @@ public class RouteEditorFrame extends JFrame
     }
 
     /** What the function column would offer for a row, for a test (MT-464). */
-    public java.util.List<String> functionChoicesForTest(int row)
+    public List<String> functionChoicesForTest(int row)
     {
         // Through the cell editor the table would use, not functionsOffered: the editor decides what can be typed.
         return offeredBy(commands, row, CommandTable.NUMBER);
     }
 
     /** What a command's locomotive or route cell would offer, for a test. */
-    public java.util.List<String> targetChoicesForTest(int row)
+    public List<String> targetChoicesForTest(int row)
     {
         return offeredBy(commands, row, CommandTable.TARGET);
     }
 
     /** What a condition's locomotive cell would offer, for a test. */
-    public java.util.List<String> conditionTargetChoicesForTest(int line)
+    public List<String> conditionTargetChoicesForTest(int line)
     {
         return offeredBy(conditions, conditions.lineOf(line), ConditionTable.TARGET);
     }
 
     /** What one cell's editor offers, read through the editor the table would use. */
-    private static java.util.List<String> offeredBy(JTable table, int row, int column)
+    private static List<String> offeredBy(JTable table, int row, int column)
     {
-        javax.swing.table.TableCellEditor editor = table.getCellEditor(row, column);
+        TableCellEditor editor = table.getCellEditor(row, column);
 
         if (!(editor instanceof DefaultCellEditor)) return null;
 
-        java.awt.Component control = ((DefaultCellEditor) editor).getComponent();
+        Component control = ((DefaultCellEditor) editor).getComponent();
 
         if (!(control instanceof JComboBox)) return null;
 
         JComboBox<?> box = (JComboBox<?>) control;
 
-        java.util.List<String> out = new ArrayList<>();
+        List<String> out = new ArrayList<>();
 
         for (int at = 0; at < box.getItemCount(); at++) out.add(String.valueOf(box.getItemAt(at)));
 
@@ -2611,7 +2658,7 @@ public class RouteEditorFrame extends JFrame
         // A function number past the end of what that locomotive has saves cleanly and does nothing on the rails.
         if (row.getKind() == CommandRow.Kind.FUNCTION)
         {
-            org.traincontrol.base.Locomotive loco = parent.getModel().getLocByName(target);
+            Locomotive loco = parent.getModel().getLocByName(target);
 
             int number = numberOr(functionNumberOf(row.getSetting()), -1);
 
@@ -2664,7 +2711,7 @@ public class RouteEditorFrame extends JFrame
     {
         if (parent == null || parent.getModel() == null) return "";
 
-        java.util.List<String> names = parent.getModel().getLocList();
+        List<String> names = parent.getModel().getLocList();
 
         return names == null || names.isEmpty() ? "" : names.get(0);
     }
@@ -2696,19 +2743,17 @@ public class RouteEditorFrame extends JFrame
 
         // By kind, not number (MT-462): a tile of any kind carries a number, so the kind travels with the address, and
         // the protocol too, as an accessory address is one per protocol.
-        java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> commanded =
-            new java.util.LinkedHashMap<>();
-        java.util.Set<Integer> commandedRoutes = new java.util.LinkedHashSet<>();
-        java.util.Map<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>> checked =
-            new java.util.LinkedHashMap<>();
-        java.util.Set<Integer> checkedSensors = new java.util.LinkedHashSet<>();
+        Map<Integer, Set<Accessory.accessoryDecoderType>> commanded = new LinkedHashMap<>();
+        Set<Integer> commandedRoutes = new LinkedHashSet<>();
+        Map<Integer, Set<Accessory.accessoryDecoderType>> checked = new LinkedHashMap<>();
+        Set<Integer> checkedSensors = new LinkedHashSet<>();
 
         // A sensor a COMMAND names, which only a route saved by an older version can hold.
-        java.util.Set<Integer> commandedSensors = new java.util.LinkedHashSet<>();
+        Set<Integer> commandedSensors = new LinkedHashSet<>();
 
         for (Entry entry : commands.rows)
         {
-            org.traincontrol.base.RouteCommand command = entry.toCommand();
+            RouteCommand command = entry.toCommand();
 
             // Asked whether it has an address first: getAddress() throws for command types without one.
             if (command == null || !command.hasAddress() || command.getAddress() <= 0) continue;
@@ -2741,10 +2786,10 @@ public class RouteEditorFrame extends JFrame
 
         // A square both commanded and checked is drawn as commanded, the stronger statement.  Asked within a kind and
         // a decoder: an accessory and a sensor numbered alike, or MM2 5 and DCC 5, are different squares.
-        for (java.util.Map.Entry<Integer, java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType>>
+        for (Map.Entry<Integer, Set<Accessory.accessoryDecoderType>>
             both : commanded.entrySet())
         {
-            java.util.Set<org.traincontrol.base.Accessory.accessoryDecoderType> alsoChecked = checked.get(both.getKey());
+            Set<Accessory.accessoryDecoderType> alsoChecked = checked.get(both.getKey());
 
             if (alsoChecked == null) continue;
 
@@ -2758,22 +2803,20 @@ public class RouteEditorFrame extends JFrame
         // the route's own trigger, always in checkedSensors.  The removal comes before the paint calls.
         checkedSensors.removeAll(commandedSensors);
 
-        int lit = parent.highlightAccessories(commanded, org.traincontrol.util.ImageUtil.HIGHLIGHT,
-            HIGHLIGHT_HOLD_MS);
+        int lit = parent.highlightAccessories(commanded, ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
         lit += parent.highlightAddresses(commandedRoutes, TrainControlUI.AddressedAs.ROUTE,
-            org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
+            ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
         // And not a square already lit as commanded (OB-286): a three-way is commanded under one address and checked
         // under the other.
-        lit += parent.highlightAccessories(checked, org.traincontrol.util.ImageUtil.HIGHLIGHT_CONDITION,
-            HIGHLIGHT_HOLD_MS, commanded);
+        lit += parent.highlightAccessories(checked, ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS, commanded);
 
         lit += parent.highlightAddresses(checkedSensors, TrainControlUI.AddressedAs.FEEDBACK,
-            org.traincontrol.util.ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);
+            ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);
 
         lit += parent.highlightAddresses(commandedSensors, TrainControlUI.AddressedAs.FEEDBACK,
-            org.traincontrol.util.ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
+            ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
         // Nothing lit is an answer too: a route can name accessories that are not drawn anywhere on the diagram.
         if (lit == 0) JOptionPane.showMessageDialog(this, I18n.t("route.ui.infoNothingToHighlight"));
@@ -2843,7 +2886,7 @@ public class RouteEditorFrame extends JFrame
 
             final String said = answer;
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 if (testButton != null) testButton.setEnabled(true);
 
@@ -2999,7 +3042,7 @@ public class RouteEditorFrame extends JFrame
 
             // A sync only when the route is NEW and its id could collide with one the station issued (OB-155); read
             // back from the database, because newRoute picks the id.
-            org.traincontrol.base.Route saved = parent.getModel().getRoute(name);
+            Route saved = parent.getModel().getRoute(name);
 
             boolean couldCollide = saved == null
                 || !org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(saved.getId());
@@ -3035,9 +3078,9 @@ public class RouteEditorFrame extends JFrame
      */
     private static int delayTheRailwayWillUse(int asked)
     {
-        if (asked > 0 && asked < org.traincontrol.marklin.MarklinRoute.DEFAULT_SLEEP_MS)
+        if (asked > 0 && asked < MarklinRoute.DEFAULT_SLEEP_MS)
         {
-            return org.traincontrol.marklin.MarklinRoute.DEFAULT_SLEEP_MS;
+            return MarklinRoute.DEFAULT_SLEEP_MS;
         }
 
         return asked;
@@ -3146,22 +3189,22 @@ public class RouteEditorFrame extends JFrame
         /** Whether this says what another entry says: a cell left as it was is no edit (FR-163). */
         boolean sameAs(Entry other)
         {
-            if (row == null || other.row == null) return row == other.row && java.util.Objects.equals(kept, other.kept);
+            if (row == null || other.row == null) return row == other.row && Objects.equals(kept, other.kept);
 
             return row.getKind() == other.row.getKind() && row.getDelay() == other.row.getDelay()
                 && row.getProtocol() == other.row.getProtocol()
-                && java.util.Objects.equals(row.getTarget(), other.row.getTarget())
-                && java.util.Objects.equals(row.getSetting(), other.row.getSetting());
+                && Objects.equals(row.getTarget(), other.row.getTarget())
+                && Objects.equals(row.getSetting(), other.row.getSetting());
         }
     }
 
     /** One table's Undo and Redo (FR-161, FR-163): its rows before each edit, the latest first, a hundred kept. */
     private static final class History<T>
     {
-        private final java.util.Deque<List<T>> undoable = new java.util.ArrayDeque<>();
+        private final Deque<List<T>> undoable = new ArrayDeque<>();
 
         /** The rows before each Undo, for Redo; a new edit clears it. */
-        private final java.util.Deque<List<T>> redoable = new java.util.ArrayDeque<>();
+        private final Deque<List<T>> redoable = new ArrayDeque<>();
 
         /** Set while Undo or Redo puts rows back, so that is not itself an edit to undo. */
         private boolean restoring;
@@ -3191,7 +3234,7 @@ public class RouteEditorFrame extends JFrame
         /** Hands the rows on top of one side to `putBack`, keeping the rows `now` on the other side. */
         void step(boolean undo, List<T> now, java.util.function.Consumer<List<T>> putBack)
         {
-            java.util.Deque<List<T>> from = undo ? undoable : redoable;
+            Deque<List<T>> from = undo ? undoable : redoable;
 
             if (from.isEmpty()) return;
 
@@ -3226,8 +3269,8 @@ public class RouteEditorFrame extends JFrame
         static final int LINE = 24;
 
         /** The rows a handle drag holds, from its press to its release; null when there is none. */
-        java.util.Set<Integer> dragging;
-        private java.awt.Point pressedAt;
+        Set<Integer> dragging;
+        private Point pressedAt;
         private Drop drop;
 
         /** The line of a press that kept a selection of several for a drag; -1 once the pointer moves off. */
@@ -3246,7 +3289,7 @@ public class RouteEditorFrame extends JFrame
         abstract boolean isMark(int column);
 
         /** @return the rows of the selected lines, in order */
-        abstract java.util.SortedSet<Integer> chosenRows();
+        abstract SortedSet<Integer> chosenRows();
 
         abstract String handleTip();
 
@@ -3254,10 +3297,10 @@ public class RouteEditorFrame extends JFrame
         abstract String[] menuKeys();
 
         /** @return where a drag would land at a point, or null where the dragged rows can go nowhere */
-        abstract Drop dropAt(java.awt.Point point);
+        abstract Drop dropAt(Point point);
 
         /** Moves the dragged rows to where the drag let go, and leaves them selected. */
-        abstract void land(java.util.Set<Integer> moving, Drop landing);
+        abstract void land(Set<Integer> moving, Drop landing);
 
         abstract int dropLeft(Drop landing);
 
@@ -3272,7 +3315,7 @@ public class RouteEditorFrame extends JFrame
         abstract void shiftChosen(int by);
 
         /** Copies these rows directly below the last of them, as one run in their order, and selects the copies. */
-        abstract void duplicateRows(java.util.SortedSet<Integer> chosen);
+        abstract void duplicateRows(SortedSet<Integer> chosen);
 
         /** @return this table's own Undo and Redo, which no other table's edits reach */
         abstract History<?> history();
@@ -3317,11 +3360,11 @@ public class RouteEditorFrame extends JFrame
         /** A key the table answers while it or its cell editor has the keyboard; an open edit is committed first. */
         void keys(String stroke, String name, Runnable action)
         {
-            getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(javax.swing.KeyStroke.getKeyStroke(stroke), name);
-            getActionMap().put(name, new javax.swing.AbstractAction()
+            getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(stroke), name);
+            getActionMap().put(name, new AbstractAction()
             {
                 @Override
-                public void actionPerformed(java.awt.event.ActionEvent e)
+                public void actionPerformed(ActionEvent e)
                 {
                     if (isEditing()) getCellEditor().stopCellEditing();
 
@@ -3333,7 +3376,7 @@ public class RouteEditorFrame extends JFrame
         abstract void removeAt(int row);
 
         /** Takes these rows out as one edit, then selects the row nearest a line, unless that is -1. */
-        abstract void removeRows(java.util.Set<Integer> chosen, int near);
+        abstract void removeRows(Set<Integer> chosen, int near);
 
         /** A right-click off every row: what it leaves selected. */
         void chooseOffARow(int line)
@@ -3342,7 +3385,7 @@ public class RouteEditorFrame extends JFrame
         }
 
         /** The table's own items in its menu, after Move Down. */
-        void addOwnItems(javax.swing.JPopupMenu menu)
+        void addOwnItems(JPopupMenu menu)
         {
         }
 
@@ -3353,20 +3396,20 @@ public class RouteEditorFrame extends JFrame
         }
 
         /** A press the table answers before its handles, as on a caption; true when it did. */
-        boolean pressedBeside(java.awt.event.MouseEvent e, int line)
+        boolean pressedBeside(MouseEvent e, int line)
         {
             return false;
         }
 
         /** @return the pointer over a point, or null to leave the one the marks set */
-        java.awt.Cursor cursorAt(java.awt.Point point)
+        Cursor cursorAt(Point point)
         {
             return rowOf(rowAtPoint(point)) >= 0 && columnAtPoint(point) == HANDLE
-                ? java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.MOVE_CURSOR) : null;
+                ? Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR) : null;
         }
 
         /** Paints over the cells, under where a drag would drop. */
-        void paintOver(java.awt.Graphics2D g2)
+        void paintOver(Graphics2D g2)
         {
         }
 
@@ -3409,10 +3452,10 @@ public class RouteEditorFrame extends JFrame
             handle.setMinWidth(HANDLE_WIDTH);
             handle.setMaxWidth(HANDLE_WIDTH);
 
-            handle.setCellRenderer(new javax.swing.table.DefaultTableCellRenderer()
+            handle.setCellRenderer(new DefaultTableCellRenderer()
             {
                 @Override
-                public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
+                public Component getTableCellRendererComponent(JTable which, Object value,
                     boolean selected, boolean focused, int line, int column)
                 {
                     JLabel out = (JLabel) super.getTableCellRendererComponent(which, "", false, false, line, column);
@@ -3446,8 +3489,8 @@ public class RouteEditorFrame extends JFrame
             keys("ctrl Y", "redo", this::redo);
 
             // On the table itself, not its editor: Delete in a cell being edited is the cell's own.
-            getInputMap(WHEN_FOCUSED).put(javax.swing.KeyStroke.getKeyStroke("DELETE"), "deleteSelected");
-            getActionMap().put("deleteSelected", new javax.swing.AbstractAction()
+            getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke("DELETE"), "deleteSelected");
+            getActionMap().put("deleteSelected", new AbstractAction()
             {
                 // Not taken while a cell is edited, so the key goes on to the editor, even one begun by typing
                 @Override
@@ -3457,47 +3500,47 @@ public class RouteEditorFrame extends JFrame
                 }
 
                 @Override
-                public void actionPerformed(java.awt.event.ActionEvent e)
+                public void actionPerformed(ActionEvent e)
                 {
                     if (!isEditing()) deleteSelected();
                 }
             });
 
-            addMouseListener(new org.traincontrol.gui.widgets.PopupListener()
+            addMouseListener(new PopupListener()
             {
                 @Override
-                protected void showPopup(java.awt.event.MouseEvent e)
+                protected void showPopup(MouseEvent e)
                 {
                     offerRowMenu(HandledTable.this, e);
                 }
             });
 
-            java.awt.event.MouseAdapter hands = new java.awt.event.MouseAdapter()
+            MouseAdapter hands = new MouseAdapter()
             {
                 @Override
-                public void mousePressed(java.awt.event.MouseEvent e)
+                public void mousePressed(MouseEvent e)
                 {
                     pressed(e);
                 }
 
                 @Override
-                public void mouseDragged(java.awt.event.MouseEvent e)
+                public void mouseDragged(MouseEvent e)
                 {
                     dragged(e.getPoint());
                 }
 
                 @Override
-                public void mouseReleased(java.awt.event.MouseEvent e)
+                public void mouseReleased(MouseEvent e)
                 {
                     released();
                 }
 
                 @Override
-                public void mouseMoved(java.awt.event.MouseEvent e)
+                public void mouseMoved(MouseEvent e)
                 {
                     if (!handlesWork()) return;
 
-                    java.awt.Cursor over = cursorAt(e.getPoint());
+                    Cursor over = cursorAt(e.getPoint());
 
                     if (over != null) setCursor(over);
                 }
@@ -3507,9 +3550,9 @@ public class RouteEditorFrame extends JFrame
             addMouseMotionListener(hands);
         }
 
-        private void pressed(java.awt.event.MouseEvent e)
+        private void pressed(MouseEvent e)
         {
-            if (!javax.swing.SwingUtilities.isLeftMouseButton(e) || !handlesWork()) return;
+            if (!SwingUtilities.isLeftMouseButton(e) || !handlesWork()) return;
 
             int line = rowAtPoint(e.getPoint());
 
@@ -3522,7 +3565,7 @@ public class RouteEditorFrame extends JFrame
             held = dragging.size() > 1 && !e.isShiftDown() && !e.isControlDown() ? line : -1;
         }
 
-        private void dragged(java.awt.Point point)
+        private void dragged(Point point)
         {
             if (dragging == null) return;
 
@@ -3536,7 +3579,7 @@ public class RouteEditorFrame extends JFrame
         private void released()
         {
             Drop landing = drop;
-            java.util.Set<Integer> moving = dragging;
+            Set<Integer> moving = dragging;
             int clicked = held;
 
             dragging = null;
@@ -3552,15 +3595,15 @@ public class RouteEditorFrame extends JFrame
 
         /** The cells, what the table paints over them, and where a drag would drop. */
         @Override
-        protected void paintComponent(java.awt.Graphics g)
+        protected void paintComponent(Graphics g)
         {
             super.paintComponent(g);
 
-            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+            Graphics2D g2 = (Graphics2D) g.create();
 
             try
             {
-                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
                 paintOver(g2);
 
@@ -3594,7 +3637,7 @@ public class RouteEditorFrame extends JFrame
          */
         void removeLines(int line)
         {
-            java.util.SortedSet<Integer> chosen = chosenRows();
+            SortedSet<Integer> chosen = chosenRows();
 
             if (chosen.size() < 2 || !isRowSelected(line))
             {
@@ -3612,8 +3655,7 @@ public class RouteEditorFrame extends JFrame
 
             if (row < 0) return;
 
-            duplicateRows(isRowSelected(line) ? chosenRows()
-                : new java.util.TreeSet<>(java.util.Collections.singleton(row)));
+            duplicateRows(isRowSelected(line) ? chosenRows() : new TreeSet<>(Collections.singleton(row)));
         }
     }
 
@@ -3637,7 +3679,7 @@ public class RouteEditorFrame extends JFrame
          * Why each row cannot be saved, for the mark beside it (OB-246).  Held, not asked per paint: `problemsWith`
          * asks the layout about every name, and a renderer runs once per cell.
          */
-        private final java.util.Map<Integer, String> wrongRows = new java.util.LinkedHashMap<>();
+        private final Map<Integer, String> wrongRows = new LinkedHashMap<>();
 
         private final AbstractTableModel model = new AbstractTableModel()
         {
@@ -3841,11 +3883,11 @@ public class RouteEditorFrame extends JFrame
         {
             setModel(model);
             setRowHeight(24);
-            setBackground(java.awt.Color.WHITE);
+            setBackground(Color.WHITE);
 
             // Same as the conditions: the marks down either side are controls, not data
             setShowVerticalLines(false);
-            setGridColor(new java.awt.Color(228, 228, 228));
+            setGridColor(new Color(228, 228, 228));
 
             JComboBox<String> kinds = new JComboBox<>();
 
@@ -3890,11 +3932,10 @@ public class RouteEditorFrame extends JFrame
             setDefaultRenderer(Object.class, new DefaultTableCellRenderer()
             {
                 @Override
-                public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                public Component getTableCellRendererComponent(JTable table, Object value,
                     boolean selected, boolean focused, int row, int column)
                 {
-                    java.awt.Component c = super.getTableCellRendererComponent(table, value, selected,
-                        focused, row, column);
+                    Component c = super.getTableCellRendererComponent(table, value, selected, focused, row, column);
 
                     // Both kinds of "you cannot type here": a kept command row, and a cell whose kind has no such thing
                     // (a stop has no address).
@@ -3907,8 +3948,7 @@ public class RouteEditorFrame extends JFrame
                     // overwrite the ink, so the mark lives there.
                     if (!selected)
                     {
-                        c.setForeground(editable
-                            ? table.getForeground() : java.awt.Color.GRAY);
+                        c.setForeground(editable ? table.getForeground() : Color.GRAY);
                     }
 
                     return c;
@@ -3927,7 +3967,7 @@ public class RouteEditorFrame extends JFrame
          * number or a name.
          */
         @Override
-        public javax.swing.table.TableCellEditor getCellEditor(int row, int column)
+        public TableCellEditor getCellEditor(int row, int column)
         {
             if (row < 0 || row >= rows.size() || !rows.get(row).isEditable()) return super.getCellEditor(row, column);
 
@@ -3963,7 +4003,7 @@ public class RouteEditorFrame extends JFrame
                 {
                     // Not this route: Save refuses a route that calls itself (frameRouteCallsItself).  A cell already
                     // holding it keeps it (withTheCellsOwn), so the gate still names it.
-                    java.util.List<String> others = new ArrayList<>(parent.getModel().getRouteList());
+                    List<String> others = new ArrayList<>(parent.getModel().getRouteList());
 
                     others.remove(originalName);
 
@@ -3993,7 +4033,7 @@ public class RouteEditorFrame extends JFrame
         }
 
         @Override
-        void duplicateRows(java.util.SortedSet<Integer> chosen)
+        void duplicateRows(SortedSet<Integer> chosen)
         {
             if (locked || chosen.isEmpty() || chosen.last() >= rows.size()) return;
 
@@ -4034,9 +4074,9 @@ public class RouteEditorFrame extends JFrame
         }
 
         @Override
-        java.util.SortedSet<Integer> chosenRows()
+        SortedSet<Integer> chosenRows()
         {
-            java.util.SortedSet<Integer> out = new java.util.TreeSet<>();
+            SortedSet<Integer> out = new TreeSet<>();
 
             for (int line : getSelectedRows())
             {
@@ -4061,7 +4101,7 @@ public class RouteEditorFrame extends JFrame
 
         /** The gap between the rows nearest a point; below the last row, after it. */
         @Override
-        Drop dropAt(java.awt.Point point)
+        Drop dropAt(Point point)
         {
             if (rows.isEmpty()) return null;
 
@@ -4069,7 +4109,7 @@ public class RouteEditorFrame extends JFrame
 
             for (int at = 0; at < rows.size(); at++)
             {
-                java.awt.Rectangle row = getCellRect(at, POSITION, true);
+                Rectangle row = getCellRect(at, POSITION, true);
 
                 if (point.y < row.y + row.height / 2)
                 {
@@ -4078,14 +4118,14 @@ public class RouteEditorFrame extends JFrame
                 }
             }
 
-            java.awt.Rectangle edge = getCellRect(Math.min(gap, rows.size() - 1), POSITION, true);
+            Rectangle edge = getCellRect(Math.min(gap, rows.size() - 1), POSITION, true);
 
             return new Drop(null, gap, 0, Math.max(1, gap < rows.size() ? edge.y : edge.y + edge.height));
         }
 
         /** The dragged rows go, in their order, into the gap the drop names. */
         @Override
-        void land(java.util.Set<Integer> moving, Drop landing)
+        void land(Set<Integer> moving, Drop landing)
         {
             if (locked) return;
 
@@ -4145,7 +4185,7 @@ public class RouteEditorFrame extends JFrame
         @Override
         boolean canShiftChosen(int by)
         {
-            java.util.SortedSet<Integer> chosen = chosenRows();
+            SortedSet<Integer> chosen = chosenRows();
 
             return !locked && !chosen.isEmpty() && (by < 0 ? chosen.first() > 0 : chosen.last() < rows.size() - 1);
         }
@@ -4158,7 +4198,7 @@ public class RouteEditorFrame extends JFrame
             List<Integer> order = new ArrayList<>(chosenRows());
 
             // The one leading the way first, so each passes the row beside the run rather than another chosen one.
-            if (by > 0) java.util.Collections.reverse(order);
+            if (by > 0) Collections.reverse(order);
 
             for (int at : order) rows.add(at + by, rows.remove(at));
 
@@ -4168,11 +4208,11 @@ public class RouteEditorFrame extends JFrame
         }
 
         @Override
-        void removeRows(java.util.Set<Integer> chosen, int near)
+        void removeRows(Set<Integer> chosen, int near)
         {
-            List<Integer> going = new ArrayList<>(new java.util.TreeSet<>(chosen));
+            List<Integer> going = new ArrayList<>(new TreeSet<>(chosen));
 
-            java.util.Collections.reverse(going);
+            Collections.reverse(going);
 
             for (int at : going)
             {
@@ -4299,7 +4339,7 @@ public class RouteEditorFrame extends JFrame
         {
             history.step(undo, rows, back ->
             {
-                java.util.Set<Entry> before = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+                Set<Entry> before = Collections.newSetFromMap(new IdentityHashMap<>());
                 List<Entry> was = new ArrayList<>(rows);
 
                 before.addAll(rows);
@@ -4342,20 +4382,20 @@ public class RouteEditorFrame extends JFrame
     {
         Caption()
         {
-            setFont(new java.awt.Font("Segoe UI", 0, 12));
+            setFont(new Font("Segoe UI", 0, 12));
             setBorder(BorderFactory.createEmptyBorder(0, 7, 0, 20));
             setIconTextGap(4);
         }
 
         @Override
-        protected void paintComponent(java.awt.Graphics g)
+        protected void paintComponent(Graphics g)
         {
-            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+            Graphics2D g2 = (Graphics2D) g.create();
 
             try
             {
-                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(java.awt.Color.WHITE);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Color.WHITE);
                 g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
                 g2.setColor(CAPTION_EDGE);
                 g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 6, 6);
@@ -4363,8 +4403,8 @@ public class RouteEditorFrame extends JFrame
                 int x = getWidth() - 13;
                 int y = getHeight() / 2 - 1;
 
-                g2.setColor(isEnabled() ? new java.awt.Color(110, 110, 110) : java.awt.Color.LIGHT_GRAY);
-                g2.setStroke(new java.awt.BasicStroke(1.3f, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+                g2.setColor(isEnabled() ? new Color(110, 110, 110) : Color.LIGHT_GRAY);
+                g2.setStroke(new BasicStroke(1.3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g2.drawPolyline(new int[]{x - 3, x, x + 3}, new int[]{y - 1, y + 2, y - 1}, 3);
             }
             finally
@@ -4377,13 +4417,13 @@ public class RouteEditorFrame extends JFrame
     }
 
     /** A group's outline, and how far a nested one sits inside it (OB-396). */
-    private static final java.awt.Color OUTLINE = new java.awt.Color(0x9DB8D9);
-    private static final java.awt.Color CAPTION_EDGE = new java.awt.Color(0xC2C2C2);
+    private static final Color OUTLINE = new Color(0x9DB8D9);
+    private static final Color CAPTION_EDGE = new Color(0xC2C2C2);
 
     /** The drag handle's ground and edge, and the mark on the lines the last edit changed (OB-396). */
-    private static final java.awt.Color HANDLE_GROUND = new java.awt.Color(0xF4F4F4);
-    private static final java.awt.Color HANDLE_EDGE = new java.awt.Color(0xE6E6E6);
-    private static final java.awt.Color CHANGED_MARK = new java.awt.Color(0xE0A526);
+    private static final Color HANDLE_GROUND = new Color(0xF4F4F4);
+    private static final Color HANDLE_EDGE = new Color(0xE6E6E6);
+    private static final Color CHANGED_MARK = new Color(0xE0A526);
 
     /** Where a drag would put what it holds. */
     private static final class Drop
@@ -4428,24 +4468,24 @@ public class RouteEditorFrame extends JFrame
 
         private ConditionOutline.Group top;
         private final List<ConditionLine> lines = new ArrayList<>();
-        private final java.util.Map<ConditionOutline.Group, Integer> captionAt = new java.util.IdentityHashMap<>();
-        private final java.util.Map<ConditionOutline.Group, Integer> endsAt = new java.util.IdentityHashMap<>();
+        private final Map<ConditionOutline.Group, Integer> captionAt = new IdentityHashMap<>();
+        private final Map<ConditionOutline.Group, Integer> endsAt = new IdentityHashMap<>();
 
         /** The word chosen for a group with nothing yet to join, by its first condition: it has no row to hold it. */
-        private final java.util.Map<RouteCommand, ConditionOutline.Joiner> chosenWord = new java.util.IdentityHashMap<>();
+        private final Map<RouteCommand, ConditionOutline.Joiner> chosenWord = new IdentityHashMap<>();
 
         /** The lines whose word disagrees with its level, refreshed whenever anything changes. */
-        private java.util.Set<Integer> flagged = new java.util.LinkedHashSet<>();
+        private Set<Integer> flagged = new LinkedHashSet<>();
 
         /** Why each flagged line is flagged, for the warning on its group's caption. */
-        private java.util.Map<Integer, ConditionOutline.Problem> why = new java.util.LinkedHashMap<>();
+        private Map<Integer, ConditionOutline.Problem> why = new LinkedHashMap<>();
 
         /** The rows the last edit changed, by identity: their handles carry the mark until the next edit (OB-396). */
-        private java.util.Set<ConditionOutline.Row> changed = java.util.Collections.newSetFromMap(
-            new java.util.IdentityHashMap<ConditionOutline.Row, Boolean>());
+        private Set<ConditionOutline.Row> changed = Collections.newSetFromMap(
+            new IdentityHashMap<ConditionOutline.Row, Boolean>());
 
         private final Caption caption = new Caption();
-        private final javax.swing.CellRendererPane stamp = new javax.swing.CellRendererPane();
+        private final CellRendererPane stamp = new CellRendererPane();
 
         /** Whether a line is a group's caption rather than a condition; asked by the renderers. */
         boolean isCaptionLine(int line)
@@ -4506,7 +4546,7 @@ public class RouteEditorFrame extends JFrame
         }
 
         @Override
-        void addOwnItems(javax.swing.JPopupMenu menu)
+        void addOwnItems(JPopupMenu menu)
         {
             menu.add(menuItem("route.ui.menuGroupSelected", canGroupSelected(), this::groupSelected));
             menu.add(menuItem("route.ui.menuUngroup", canUngroupSelected(), this::ungroupSelected));
@@ -4515,9 +4555,9 @@ public class RouteEditorFrame extends JFrame
 
         /** The content of a condition line is its top LINE pixels: a group's bottom edge is drawn in the rest. */
         @Override
-        public java.awt.Rectangle getCellRect(int line, int column, boolean includeSpacing)
+        public Rectangle getCellRect(int line, int column, boolean includeSpacing)
         {
-            java.awt.Rectangle out = super.getCellRect(line, column, includeSpacing);
+            Rectangle out = super.getCellRect(line, column, includeSpacing);
 
             if (column != HANDLE && line >= 0 && line < lines.size() && lines.get(line).row >= 0)
             {
@@ -4533,14 +4573,14 @@ public class RouteEditorFrame extends JFrame
          * (MT-868).
          */
         @Override
-        public java.awt.Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int line, int column)
+        public Component prepareRenderer(TableCellRenderer renderer, int line, int column)
         {
-            java.awt.Component out = super.prepareRenderer(renderer, line, column);
+            Component out = super.prepareRenderer(renderer, line, column);
 
             if (column != HANDLE && line >= 0 && line < lines.size() && lines.get(line).row >= 0
-                && out instanceof javax.swing.JComponent)
+                && out instanceof JComponent)
             {
-                javax.swing.JComponent cell = (javax.swing.JComponent) out;
+                JComponent cell = (JComponent) out;
 
                 int beyond = column != PROTOCOL ? 0 : columnX(PROTOCOL) + getColumnModel().getColumn(PROTOCOL).getWidth()
                     - outlineRight(levelOf(lines.get(line).group)) + 2;
@@ -4826,7 +4866,7 @@ public class RouteEditorFrame extends JFrame
         {
             setModel(model);
             setRowHeight(LINE);
-            setBackground(java.awt.Color.WHITE);
+            setBackground(Color.WHITE);
 
             // No rules: the outlines are the structure (OB-396).
             setShowGrid(false);
@@ -4859,10 +4899,10 @@ public class RouteEditorFrame extends JFrame
 
             getColumnModel().getColumn(KIND).setPreferredWidth(220);
 
-            getColumnModel().getColumn(KIND).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer()
+            getColumnModel().getColumn(KIND).setCellRenderer(new DefaultTableCellRenderer()
             {
                 @Override
-                public java.awt.Component getTableCellRendererComponent(JTable which, Object value,
+                public Component getTableCellRendererComponent(JTable which, Object value,
                     boolean selected, boolean focused, int line, int column)
                 {
                     JLabel out = (JLabel) super.getTableCellRendererComponent(which, value, selected,
@@ -4872,7 +4912,7 @@ public class RouteEditorFrame extends JFrame
                     int level = line < lines.size() ? levelOf(lines.get(line).group) : 0;
 
                     out.setBorder(BorderFactory.createEmptyBorder(0, 4 + level * INSET_LEFT + 10, 0, 0));
-                    out.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14));
+                    out.setFont(new Font("Segoe UI", Font.PLAIN, 14));
                     out.setIcon(null);
                     out.setToolTipText(null);
 
@@ -4893,10 +4933,10 @@ public class RouteEditorFrame extends JFrame
             keys("ctrl shift S", "split", this::splitHere);
         }
 
-        private final javax.swing.table.TableCellEditor kindEditor;
+        private final TableCellEditor kindEditor;
 
         @Override
-        public javax.swing.table.TableCellEditor getCellEditor(int line, int column)
+        public TableCellEditor getCellEditor(int line, int column)
         {
             int at = rowOf(line);
 
@@ -4990,7 +5030,7 @@ public class RouteEditorFrame extends JFrame
         /** The group drawn with a caption that holds an outline row, which a word nested where it joins nothing lacks. */
         private ConditionOutline.Group shownGroupOf(int row)
         {
-            ConditionOutline.Group group = ConditionOutline.holding(top, java.util.Collections.singleton(row));
+            ConditionOutline.Group group = ConditionOutline.holding(top, Collections.singleton(row));
 
             while (group != null && !captionAt.containsKey(group)) group = group.getParent();
 
@@ -5002,7 +5042,7 @@ public class RouteEditorFrame extends JFrame
         {
             ConditionOutline.Problem out = null;
 
-            for (java.util.Map.Entry<Integer, ConditionOutline.Problem> each : why.entrySet())
+            for (Map.Entry<Integer, ConditionOutline.Problem> each : why.entrySet())
             {
                 if (shownGroupOf(each.getKey()) == group && out != ConditionOutline.Problem.DISAGREES)
                 {
@@ -5021,7 +5061,7 @@ public class RouteEditorFrame extends JFrame
 
             caption.setText(captionText(wordOf(group)));
             caption.setEnabled(conditionsEditable);
-            caption.setForeground(problem != null ? WRONG : conditionsEditable ? java.awt.Color.BLACK : java.awt.Color.GRAY);
+            caption.setForeground(problem != null ? WRONG : conditionsEditable ? Color.BLACK : Color.GRAY);
             caption.setIcon(problem == null ? null : RowIcons.warning(14));
             caption.setToolTipText(problem == null ? null : "<html><p style='width:300px'>" + marked(I18n.t(problem == ConditionOutline.Problem.DISAGREES
                     ? "route.ui.conditionWordDisagrees" : "route.ui.conditionWordJoinsNothing")) + "</p></html>");
@@ -5046,13 +5086,13 @@ public class RouteEditorFrame extends JFrame
         }
 
         /** Where a caption line's caption is drawn, on its outline's top edge. */
-        java.awt.Rectangle captionBounds(int line)
+        Rectangle captionBounds(int line)
         {
-            java.awt.Rectangle row = super.getCellRect(line, KIND, true);
-            java.awt.Dimension size = captionFor(line).getPreferredSize();
+            Rectangle row = super.getCellRect(line, KIND, true);
+            Dimension size = captionFor(line).getPreferredSize();
             int height = 18;
 
-            return new java.awt.Rectangle(outlineLeft(levelOf(lines.get(line).group)) + 8,
+            return new Rectangle(outlineLeft(levelOf(lines.get(line).group)) + 8,
                 row.y + (row.height - height) / 2, size.width, height);
         }
 
@@ -5071,7 +5111,7 @@ public class RouteEditorFrame extends JFrame
         }
 
         /** @return the caption line whose caption is under a point, or -1 */
-        private int captionUnder(java.awt.Point point)
+        private int captionUnder(Point point)
         {
             int line = rowAtPoint(point);
 
@@ -5079,7 +5119,7 @@ public class RouteEditorFrame extends JFrame
         }
 
         @Override
-        public String getToolTipText(java.awt.event.MouseEvent e)
+        public String getToolTipText(MouseEvent e)
         {
             int line = captionUnder(e.getPoint());
 
@@ -5088,22 +5128,22 @@ public class RouteEditorFrame extends JFrame
 
         /** The outlines and their captions, over the cells. */
         @Override
-        void paintOver(java.awt.Graphics2D g2)
+        void paintOver(Graphics2D g2)
         {
-            for (java.util.Map.Entry<ConditionOutline.Group, Integer> each : captionAt.entrySet())
+            for (Map.Entry<ConditionOutline.Group, Integer> each : captionAt.entrySet())
             {
                 ConditionOutline.Group group = each.getKey();
                 int level = levelOf(group);
                 int last = endsAt.get(group);
-                java.awt.Rectangle first = super.getCellRect(each.getValue(), KIND, true);
-                java.awt.Rectangle end = super.getCellRect(last, KIND, true);
+                Rectangle first = super.getCellRect(each.getValue(), KIND, true);
+                Rectangle end = super.getCellRect(last, KIND, true);
                 int left = outlineLeft(level);
                 int topEdge = first.y + first.height / 2;
 
                 // Bottom edges apart where several groups end on one line, the innermost highest.
                 int inner = 0;
 
-                for (java.util.Map.Entry<ConditionOutline.Group, Integer> other : endsAt.entrySet())
+                for (Map.Entry<ConditionOutline.Group, Integer> other : endsAt.entrySet())
                 {
                     if (other.getValue() == last && levelOf(other.getKey()) > level) inner++;
                 }
@@ -5113,7 +5153,7 @@ public class RouteEditorFrame extends JFrame
                 g2.setColor(OUTLINE);
                 g2.drawRoundRect(left, topEdge, outlineRight(level) - left, bottom - topEdge, 6, 6);
 
-                java.awt.Rectangle at = captionBounds(each.getValue());
+                Rectangle at = captionBounds(each.getValue());
 
                 stamp.paintComponent(g2, captionFor(each.getValue()), this, at.x, at.y, at.width, at.height, true);
             }
@@ -5133,7 +5173,7 @@ public class RouteEditorFrame extends JFrame
 
         /** A press on a caption offers its words; on a caption line, it selects the group. */
         @Override
-        boolean pressedBeside(java.awt.event.MouseEvent e, int line)
+        boolean pressedBeside(MouseEvent e, int line)
         {
             if (captionUnder(e.getPoint()) >= 0)
             {
@@ -5151,14 +5191,13 @@ public class RouteEditorFrame extends JFrame
         }
 
         @Override
-        java.awt.Cursor cursorAt(java.awt.Point point)
+        Cursor cursorAt(Point point)
         {
-            return captionUnder(point) >= 0 ? java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR)
-                : super.cursorAt(point);
+            return captionUnder(point) >= 0 ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : super.cursorAt(point);
         }
 
         @Override
-        void land(java.util.Set<Integer> moving, Drop landing)
+        void land(Set<Integer> moving, Drop landing)
         {
             dropInto(moving, landing.group, landing.at);
         }
@@ -5170,7 +5209,7 @@ public class RouteEditorFrame extends JFrame
          * @return the drop, or null where there is nowhere the dragged rows can go
          */
         @Override
-        Drop dropAt(java.awt.Point point)
+        Drop dropAt(Point point)
         {
             if (top == null || lines.isEmpty()) return null;
 
@@ -5178,7 +5217,7 @@ public class RouteEditorFrame extends JFrame
 
             for (int line = 0; line < lines.size(); line++)
             {
-                java.awt.Rectangle row = super.getCellRect(line, KIND, true);
+                Rectangle row = super.getCellRect(line, KIND, true);
 
                 if (point.y < row.y + row.height / 2)
                 {
@@ -5248,7 +5287,7 @@ public class RouteEditorFrame extends JFrame
         /**
          * Moves these conditions into a group before its item `at`, taking its word (OB-396), and leaves them selected.
          */
-        void dropInto(java.util.Set<Integer> moving, ConditionOutline.Group group, int at)
+        void dropInto(Set<Integer> moving, ConditionOutline.Group group, int at)
         {
             if (locked || !conditionsEditable) return;
 
@@ -5289,18 +5328,18 @@ public class RouteEditorFrame extends JFrame
             if (isEditing()) getCellEditor().stopCellEditing();
 
             final ConditionOutline.Group group = lines.get(line).group;
-            javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+            JPopupMenu menu = new JPopupMenu();
 
             for (final ConditionOutline.Joiner word : ConditionOutline.Joiner.values())
             {
-                javax.swing.JRadioButtonMenuItem item = new javax.swing.JRadioButtonMenuItem(captionText(word),
+                JRadioButtonMenuItem item = new JRadioButtonMenuItem(captionText(word),
                     problemOf(group) == null && wordOf(group) == word);
 
                 item.addActionListener(e -> reword(group, word));
                 menu.add(item);
             }
 
-            java.awt.Rectangle at = captionBounds(line);
+            Rectangle at = captionBounds(line);
 
             menu.show(this, at.x, at.y + at.height);
         }
@@ -5326,9 +5365,9 @@ public class RouteEditorFrame extends JFrame
 
         /** @return the outline rows of the selected conditions, in order */
         @Override
-        java.util.SortedSet<Integer> chosenRows()
+        SortedSet<Integer> chosenRows()
         {
-            java.util.SortedSet<Integer> out = new java.util.TreeSet<>();
+            SortedSet<Integer> out = new TreeSet<>();
 
             for (int line : getSelectedRows())
             {
@@ -5355,7 +5394,7 @@ public class RouteEditorFrame extends JFrame
             if (!canGroupSelected()) return;
 
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
-            java.util.SortedSet<Integer> chosen = chosenRows();
+            SortedSet<Integer> chosen = chosenRows();
 
             replaceWith(ConditionOutline.grouped(rows, chosen), commandsOf(chosen), before);
         }
@@ -5372,7 +5411,7 @@ public class RouteEditorFrame extends JFrame
             if (!canSplitHere()) return;
 
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
-            java.util.SortedSet<Integer> chosen = chosenRows();
+            SortedSet<Integer> chosen = chosenRows();
 
             replaceWith(ConditionOutline.split(rows, chosen), commandsOf(chosen), before);
         }
@@ -5402,7 +5441,7 @@ public class RouteEditorFrame extends JFrame
 
             for (int at = 0; at < lifting.size(); at++)
             {
-                java.util.Set<Integer> lines = new java.util.TreeSet<>();
+                Set<Integer> lines = new TreeSet<>();
 
                 for (int line = 0; line < after.size(); line++)
                 {
@@ -5431,7 +5470,7 @@ public class RouteEditorFrame extends JFrame
             if (into == null) into = top;
 
             replaceWith(ConditionOutline.appended(rows, into, wordOf(into), fresh),
-                java.util.Collections.singletonList(fresh), before);
+                Collections.singletonList(fresh), before);
         }
 
         /**
@@ -5468,8 +5507,7 @@ public class RouteEditorFrame extends JFrame
             RouteCommand fresh = freshCondition();
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
 
-            replaceWith(ConditionOutline.inserted(rows, row, by, fresh), java.util.Collections.singletonList(fresh),
-                before);
+            replaceWith(ConditionOutline.inserted(rows, row, by, fresh), Collections.singletonList(fresh), before);
         }
 
         /**
@@ -5477,7 +5515,7 @@ public class RouteEditorFrame extends JFrame
          * `ConditionOutline.duplicated` places them; a whole selected group is copied as a group.  One edit, for Undo.
          */
         @Override
-        void duplicateRows(java.util.SortedSet<Integer> chosen)
+        void duplicateRows(SortedSet<Integer> chosen)
         {
             if (locked || !conditionsEditable) return;
 
@@ -5542,10 +5580,10 @@ public class RouteEditorFrame extends JFrame
         {
             boolean editing = super.editCellAt(line, column, e);
 
-            if (editing && column == TARGET && e instanceof java.awt.event.KeyEvent
-                && getEditorComponent() instanceof javax.swing.text.JTextComponent)
+            if (editing && column == TARGET && e instanceof KeyEvent
+                && getEditorComponent() instanceof JTextComponent)
             {
-                ((javax.swing.text.JTextComponent) getEditorComponent()).selectAll();
+                ((JTextComponent) getEditorComponent()).selectAll();
             }
 
             return editing;
@@ -5561,7 +5599,7 @@ public class RouteEditorFrame extends JFrame
 
             changed.clear();
 
-            java.util.Set<Integer> differ = ConditionOutline.changed(before, rows);
+            Set<Integer> differ = ConditionOutline.changed(before, rows);
             boolean conditionsChanged = false;
 
             for (int at : differ) conditionsChanged |= !rows.get(at).isJoiner();
@@ -5595,10 +5633,9 @@ public class RouteEditorFrame extends JFrame
         }
 
         /** The conditions on the selected lines, by identity: two lines can ask the same thing. */
-        java.util.Set<RouteCommand> chosenConditions()
+        Set<RouteCommand> chosenConditions()
         {
-            java.util.Set<RouteCommand> out = java.util.Collections.newSetFromMap(
-                new java.util.IdentityHashMap<RouteCommand, Boolean>());
+            Set<RouteCommand> out = Collections.newSetFromMap(new IdentityHashMap<RouteCommand, Boolean>());
 
             for (int row : chosenRows()) out.add(rows.get(row).getCommand());
 
@@ -5611,7 +5648,7 @@ public class RouteEditorFrame extends JFrame
         {
             if (row < 0 || row >= rows.size() || rows.get(row).isJoiner()) return;
 
-            removeRows(java.util.Collections.singleton(row), -1);
+            removeRows(Collections.singleton(row), -1);
         }
 
         /**
@@ -5619,7 +5656,7 @@ public class RouteEditorFrame extends JFrame
          * group's word changes; then selects the condition nearest a line, unless that is -1.
          */
         @Override
-        void removeRows(java.util.Set<Integer> conditions, int near)
+        void removeRows(Set<Integer> conditions, int near)
         {
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
             List<ConditionOutline.Row> after = ConditionOutline.removed(rows, conditions);
@@ -5668,7 +5705,7 @@ public class RouteEditorFrame extends JFrame
         {
             if (!canShiftChosen(by)) return;
 
-            java.util.SortedSet<Integer> chosen = chosenRows();
+            SortedSet<Integer> chosen = chosenRows();
             List<ConditionOutline.Row> before = new ArrayList<>(rows);
 
             replaceWith(ConditionOutline.movedTogether(rows, chosen, by), commandsOf(chosen), before);
@@ -5718,7 +5755,7 @@ public class RouteEditorFrame extends JFrame
         private void settle()
         {
             why = ConditionOutline.whatIsWrong(rows);
-            flagged = new java.util.LinkedHashSet<>(why.keySet());
+            flagged = new LinkedHashSet<>(why.keySet());
 
             layOut();
             updateReadsAs();
