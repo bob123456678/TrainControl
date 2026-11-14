@@ -769,13 +769,7 @@ public class testCancelUndoesAutonomyEdits
         {
             java.nio.file.Files.write(note.toPath(), written.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-            AutonomySession restarted = new AutonomySession(sandbox.getFolder());
-
-            List<LayoutDiagram> onDisk = new ArrayList<>();
-
-            for (String name : model.getLayoutList()) onDisk.add(model.getLayout(name));
-
-            restarted.open(onDisk);
+            AutonomySession restarted = fromDisk();
 
             assertNotNull(restarted.getStore().unfinishedEdit(), "precondition: the note failed the shape check, so it is"
                 + " refused before anything reads it and this is not the case GSP-C4 is about");
@@ -860,12 +854,7 @@ public class testCancelUndoesAutonomyEdits
                 + empty);
             assertTrue(session.saveQuietly(), "precondition: the setup was not written");
 
-            AutonomySession restarted = new AutonomySession(sandbox.getFolder());
-            List<LayoutDiagram> onDisk = new ArrayList<>();
-
-            for (String page : model.getLayoutList()) onDisk.add(model.getLayout(page));
-
-            restarted.open(onDisk);
+            AutonomySession restarted = fromDisk();
 
             assertTrue(restarted.revertUnfinishedEdit(), "precondition: the crash note was not put back");
             assertEquals(restarted.getLocomotiveNameAt(square) + " facing " + restarted.getFacing(square),
