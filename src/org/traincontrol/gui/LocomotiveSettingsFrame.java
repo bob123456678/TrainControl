@@ -721,6 +721,17 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             return false;
         }
 
+        // Nor a member at the typed address and decoder (the sharers): canBeLinkedTo would drop it with a log line only
+        for (String member : multiUnitTab.chosen().keySet())
+        {
+            if (members && sharers.contains(member))
+            {
+                JOptionPane.showMessageDialog(this, I18n.f("loc.errorLinkSameAddress", loc.getName(), member));
+
+                return false;
+            }
+        }
+
         // Only what the operator changed from the loaded values: another door may have changed the rest since
         if (identity && !main.locomotiveActions.writeNameAndAddress(this, loc,
             locomotiveTab.nameChanged() ? locomotiveTab.name.getText() : null,
