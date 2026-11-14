@@ -4474,13 +4474,20 @@ public class testTheTrainWindow
     /** A reversal on the throttle or the handset, followed as its echo is (`followTheTurn`); asserts it turned. */
     private static void reverse(String name, String copyBefore) throws Exception
     {
-        final java.lang.reflect.Method follow = Reflect.method(TrainControlUI.class, "followTheTurn", String.class);
+        assertNotNull(followed(name), "precondition: followTheTurn turned nothing");
 
-        assertNotNull(Components.onTheEventThread(() -> follow.invoke(ui, name)), "precondition: followTheTurn turned nothing");
+        assertFalse(copyOf(name).equals(copyBefore), "precondition: the reversal did not turn " + name + " on the railway");
+    }
+
+    /** A reversal followed as its echo is (`followTheTurn`), written or not; the square it was written on, or null. */
+    private static Object followed(String name) throws Exception
+    {
+        final java.lang.reflect.Method follow = Reflect.method(TrainControlUI.class, "followTheTurn", String.class);
+        final Object written = Components.onTheEventThread(() -> follow.invoke(ui, name));
 
         Components.settle();
 
-        assertFalse(copyOf(name).equals(copyBefore), "precondition: the reversal did not turn " + name + " on the railway");
+        return written;
     }
 
     /** The railway's copy this train stands on, or null. */
@@ -4666,6 +4673,130 @@ public class testTheTrainWindow
         }
         finally
         {
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /** An edit of a train in the editor, before its reversal. */
+    private interface EditOfTheTrain
+    {
+        void run(AutonomyEditorPanel panel, TileKey square, String name) throws Exception;
+    }
+
+    /**
+     * The editor edits a train, the throttle then reverses it (followed whether or not it can be written where the
+     * editor put it), Cancel: the train goes back to the square it stood on at opening turned round, on the railway and
+     * in the setup, as its decoder now runs.
+     */
+    private void cancelKeepsATurnAfter(EditOfTheTrain edit) throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+        final org.traincontrol.automationui.TilePorts.Side way = theOtherWay(square);
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            edit.run(panel, square, name);
+
+            Components.settle();
+
+            final String edited = standingAndFacing(name);
+            final Object written = followed(name);
+
+            assertNotNull(cancelTheEditor(), "precondition: Cancel did not ask about the edit");
+            assertEquals(standingAndFacing(name), "on " + square + " facing " + way + ", setup facing " + way,
+                "Cancel after the editor left " + name + " " + edited + " and the throttle reversed it (written on "
+                + written + ") did not put it back turned round (it stood on " + copyBefore + ")");
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * The editor lifts a train, the throttle reverses it, Cancel: it goes back turned round, though no square held it
+     * when it was reversed.
+     *
+     * MUTATION: in `TrainControlUI.followTheTurn`, count the turn only where `flipFacing` wrote one, and it goes back
+     * facing as at opening.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelKeepsATurnOfATrainTheEditorLifted() throws Exception
+    {
+        final java.lang.reflect.Method remove = Reflect.method(AutonomyEditorPanel.class, "removeLocomotive",
+            TileKey.class);
+
+        cancelKeepsATurnAfter((panel, square, name) -> Components.onTheEventThread(() -> remove.invoke(panel, square)));
+    }
+
+    /**
+     * The editor moves a train onto a station with one facing, the throttle reverses it, Cancel: it goes back turned
+     * round, though it could not be turned where it stood.
+     *
+     * MUTATION: in `TrainControlUI.followTheTurn`, count the turn only where `flipFacing` wrote one, and it goes back
+     * facing as at opening.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelKeepsATurnOfATrainMovedWhereItCannotTurn() throws Exception
+    {
+        cancelKeepsATurnAfter((panel, square, name) -> placeFromTheMenu(panel, anEmptyStationWhere(each
+            -> session.trainsWhereTheyStand().get(each) == null && session.facingChoices(each).size() == 1), name));
+    }
+
+    /**
+     * The throttle reverses a train, it is then renamed, Cancel: nothing is asked, and it keeps the turn on the railway
+     * and in the setup, as the turn is the locomotive's whatever it is called.
+     *
+     * MUTATION: in `AutonomySession.turnKey`, key by the name alone, and Cancel asks and turns it back.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelKeepsATurnOfATrainRenamedSince() throws Exception
+    {
+        theEditorsPanel();
+
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String renamed = name + " renamed";
+        final String copyBefore = copyOf(name);
+        final Object openBefore = Reflect.get(TrainControlUI.class, ui, "openEditor");
+
+        // As the Edit menu registers it, so the rename reaches its snapshots
+        Reflect.set(TrainControlUI.class, ui, "openEditor", editor);
+
+        try
+        {
+            reverse(name, copyBefore);
+
+            final String turned = standingAndFacing(name);
+
+            SwingUtilities.invokeAndWait(() -> assertTrue(model.renameLoc(name, renamed), "precondition: rename refused"));
+
+            Components.settle();
+
+            assertNull(cancelTheEditor(), "Cancel after a reversal of " + name + " and its rename asked about unsaved"
+                + " work");
+            assertEquals(standingAndFacing(renamed), turned, "Cancel turned " + name + " back after its rename");
+        }
+        finally
+        {
+            Reflect.set(TrainControlUI.class, ui, "openEditor", openBefore);
+
+            if (model.getLocByName(renamed) != null) SwingUtilities.invokeAndWait(() -> model.renameLoc(renamed, name));
+
+            Components.settle();
+
             standBack(name, copyBefore, null, null, null);
 
             support.FrozenEditor.putBack(ui, session, asOpened);

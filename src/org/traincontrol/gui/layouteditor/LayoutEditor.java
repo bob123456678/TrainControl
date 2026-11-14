@@ -362,7 +362,7 @@ public class LayoutEditor extends PositionAwareJFrame
      * The session's `turnsSoFar` as the picture was taken: a discard keeps the turns made since, as Cancel never
      * changes which way a train faces.
      */
-    private Map<String, Integer> turnsAsOpened;
+    private Map<Object, Integer> turnsAsOpened;
 
     /** How many trains the discard question names before "and N more". */
     private static final int TRAINS_NAMED = 5;
@@ -456,13 +456,14 @@ public class LayoutEditor extends PositionAwareJFrame
 
     /**
      * The picture by each train's name now, a deleted one left out, and null for a train the railway has now and had
-     * not then, which the restored setup then places.  A train turned since faces the other way there.
+     * not then, which the restored setup then places.  With `keepingTheTurns`, a train turned since faces the other way
+     * there, as the edited build has it.
      */
-    private Map<String, String[]> railwayAsPictured()
+    private Map<String, String[]> railwayAsPictured(boolean keepingTheTurns)
     {
         Map<String, String[]> back = new java.util.TreeMap<>();
         AutonomySession autonomy = parent.getAutonomySession();
-        Set<String> turned = trainsTurnedSince(autonomy);
+        Set<String> turned = keepingTheTurns ? trainsTurnedSince(autonomy) : java.util.Collections.<String>emptySet();
 
         for (String now : railwayNow().keySet()) back.put(now, null);
 
@@ -518,7 +519,7 @@ public class LayoutEditor extends PositionAwareJFrame
         Map<String, String[]> now = railwayNow();
         List<String> moving = new ArrayList<>();
 
-        for (Map.Entry<String, String[]> was : railwayAsPictured().entrySet())
+        for (Map.Entry<String, String[]> was : railwayAsPictured(true).entrySet())
         {
             // Not a train deleted meanwhile, which only stands on the railway until the rebuild
             if (parent.getModel().getLocByName(was.getKey()) != null
@@ -618,18 +619,25 @@ public class LayoutEditor extends PositionAwareJFrame
         String failed;
 
         // By the names now, read before the setup is restored
-        Map<String, String[]> standingBefore = railwayAsPictured();
+        Map<String, String[]> standingBefore = railwayAsPictured(false);
+        Set<String> turned = trainsTurnedSince(autonomy);
 
         if (this.autonomyAsOpened == null || autonomy == null) failed = autonomyPanel.discardEdits();
-        else if (!autonomy.restoreSetup(asOpenedKeepingTheTurns(autonomy)))
-        {
-            failed = I18n.t("autosetup.log.restoreFailedAfterCancel");
-        }
+        else if (!autonomy.restoreSetup(this.autonomyAsOpened)) failed = I18n.t("autosetup.log.restoreFailedAfterCancel");
         else failed = null;
 
         // The railway follows at once, before the window goes, or a fold in between would write the discarded edit
         // back.  Declines while autonomy runs.
-        if (failed == null && autonomy != null) parent.rebuildRunningLayoutFromSetup(standingBefore);
+        if (failed == null && autonomy != null)
+        {
+            Object before = parent.getModel().getAutoLayoutIfLoaded();
+
+            parent.rebuildRunningLayoutFromSetup(standingBefore);
+
+            org.traincontrol.automation.Layout rebuilt = parent.getModel().getAutoLayoutIfLoaded();
+
+            turnAgain(autonomy, turned, rebuilt != before ? rebuilt : null);
+        }
 
         return failed;
     }
@@ -640,14 +648,35 @@ public class LayoutEditor extends PositionAwareJFrame
         if (this.autonomyAsOpened == null) return;
 
         AutonomySession autonomy = parent.getAutonomySession();
+        Set<String> turned = trainsTurnedSince(autonomy);
 
-        if (autonomy != null && !autonomy.restoreSetup(asOpenedKeepingTheTurns(autonomy))
-            && parent.getModel() != null)
+        if (autonomy != null && !autonomy.restoreSetup(this.autonomyAsOpened) && parent.getModel() != null)
         {
             parent.getModel().logf("autosetup.log.restoreFailedAfterCancel");
         }
+        else if (autonomy != null)
+        {
+            // The railway already faces them so
+            turnAgain(autonomy, turned, null);
+        }
 
         this.autonomyAsOpened = null;
+    }
+
+    /**
+     * Turns each train turned since the picture where the restored setup, and the railway if given (one stood back as
+     * pictured), now has it, by the restored build, and saves: a discard keeps every turn, written or not.
+     */
+    private void turnAgain(AutonomySession autonomy, Set<String> trains,
+        org.traincontrol.automation.Layout railway)
+    {
+        if (trains.isEmpty()) return;
+
+        for (String train : trains) autonomy.flipFacing(train, railway);
+
+        rememberAutonomy(autonomy);
+
+        parent.autonomySetupChanged();
     }
 
     void rememberAutonomy(AutonomySession autonomy)

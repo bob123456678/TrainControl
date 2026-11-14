@@ -368,6 +368,8 @@ final class AutonomyLifecycle
             return loc == null ? null : loc.getTrainLength();
         });
 
+        session.setLocomotiveSource(name -> name == null ? null : ui.getModel().getLocByName(name));
+
         // The running railway from the moment the session is made: refusing a direction or a link asks where its trains
         // stand, which a session told only by the editor would judge against the setup alone.
         session.setRunningLayoutSource(() -> ui.getModel() == null ? null : ui.getModel().getAutoLayoutIfLoaded());

@@ -7807,6 +7807,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Asked, not built: this is posted and can land after Unload, when the setup is written alone.
         final TileGraph.TileKey moved = session.flipFacing(name, this.model.getAutoLayoutIfLoaded());
 
+        // Counted where it could not be written too: an editor's discard turns the train where it then stands
+        session.turned(name);
+
         if (moved == null) return null;
 
         // Logged: something the operator did to a train has edited a stored configuration, and that must never be
