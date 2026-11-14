@@ -311,9 +311,6 @@ public class LayoutEditor extends PositionAwareJFrame
     /** The setup as this window opened, for Cancel; null with no session, cleared once the edits are kept. */
     private org.json.JSONObject autonomyAsOpened;
 
-    /** Where the railway had the trains at that moment (`whereTheTrainsAre`), which Cancel puts back. */
-    private java.util.Map<String, String[]> railwayAsOpened;
-
     /**
      * Whether the last `settleUnsavedWork` ended in Discard; its true answer also means nothing to settle, and undoing
      * on that would rewind work autonomy did since.
@@ -368,13 +365,6 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
 
-    /** Where the railway has the trains now, for Cancel: taken with every undo point of the setup. */
-    private void takeTheRailway()
-    {
-        this.railwayAsOpened = TrainControlUI.whereTheTrainsAre(parent == null || parent.getModel() == null ? null
-            : parent.getModel().getAutoLayoutIfLoaded());
-    }
-
     /**
      * Takes the undo point, in memory (for Cancel) and on disk (OB-108, for a restart after the process dies with an
      * editor open), always together: a page or mode switch moves both.
@@ -383,8 +373,6 @@ public class LayoutEditor extends PositionAwareJFrame
     private void takeTheUndoPoint(org.traincontrol.automationui.AutonomySession live)
     {
         this.autonomyAsOpened = live == null ? null : live.snapshotSetup();
-
-        takeTheRailway();
 
         this.autonomySessionForTheNote = live;
 
@@ -460,12 +448,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
         // The railway follows at once, before the window goes, or a fold in between would write the discarded edit
         // back.  Declines while autonomy runs.
-        // Both trains of a drop onto an occupied square come back with the setup: the railway holds only the one
-        if (failed == null && autonomy != null)
-        {
-            parent.rebuildRunningLayoutFromSetup(new java.util.HashSet<>(autonomyPanel.trainsToPutBackOnDiscard()),
-                this.railwayAsOpened);
-        }
+        if (failed == null && autonomy != null) parent.rebuildRunningLayoutFromSetup(autonomyPanel.railwayBeforeTheEdit());
 
         return failed;
     }
@@ -4204,8 +4187,6 @@ public class LayoutEditor extends PositionAwareJFrame
                 org.traincontrol.automationui.AutonomySession saved = parent.getAutonomySession();
 
                 this.autonomyAsOpened = saved == null ? null : saved.snapshotSetup();
-
-                takeTheRailway();
 
                 return true;
             }

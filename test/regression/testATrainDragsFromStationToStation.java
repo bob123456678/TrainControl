@@ -928,8 +928,8 @@ public class testATrainDragsFromStationToStation
      * they were in the setup, the file and the railway, with their facing and tail (FR-160): the railway alone lost the
      * displaced train, and a rebuild let the railway's places win over the restored setup.
      *
-     * MUTATION: passing no trains from `LayoutEditor.discardAutonomyWork` to the rebuild (as before) loses the
-     * displaced train from all three stores.
+     * MUTATION: passing null from `LayoutEditor.discardAutonomyWork` to the rebuild loses the displaced train from all
+     * three stores.
      */
     @Test(timeOut = 400000)
     public void testCancelAndDiscardPutBothTrainsBackWhenTheTargetIsOccupied() throws Exception
@@ -977,8 +977,8 @@ public class testATrainDragsFromStationToStation
      * that square, then Cancel, leaves X and Z where the railway had them, so neither square reads free under a standing
      * train (OB-416).
      *
-     * MUTATION: pass no `railwayAsOpened` from `LayoutEditor.discardAutonomyWork` to the rebuild, and X goes back onto
-     * the square while Z leaves the railway.
+     * MUTATION: drop `dropTrain`'s call to `rememberWhereTheyStand`, and X goes back onto the square while Z leaves the
+     * railway.
      */
     @Test(timeOut = 400000)
     public void testCancelAfterARunLeavesTheRailwaysTrainsWhereTheyStood() throws Exception
@@ -1203,8 +1203,8 @@ public class testATrainDragsFromStationToStation
      * (FR-160): the dragged train goes back whatever the target held, a chain of drops leaves no train lost, and a
      * dragged train the railway moved on afterwards goes back too.
      *
-     * MUTATION: adding the dragged name only for an occupied target (`displaced != null` in
-     * `AutonomyEditorPanel.dropTrain`) loses a train in the chain and leaves the empty drags moved.
+     * MUTATION: recording the dragged train only for an occupied target (`displaced != null` in
+     * `AutonomyEditorPanel.dropTrain`'s `rememberWhereTheyStand`) leaves the empty drags moved.
      */
     @Test(timeOut = 400000)
     public void testCancelUndoesEveryDragOfTheSession() throws Exception
@@ -1336,7 +1336,7 @@ public class testATrainDragsFromStationToStation
      * setup, the file and the railway (MT-914): placed on an empty station then a drag, or a drag then a placement on
      * the square the drag left.
      *
-     * MUTATION: put `if (named.size() > 1)` back before `putBackOnDiscard.addAll(named)` in
+     * MUTATION: put `if (named.size() > 1)` before `rememberWhereTheyStand(named)` in
      * `AutonomyEditorPanel.placeLocomotive`, and the placed train stays in both orders and this fails.
      */
     @Test(timeOut = 400000)

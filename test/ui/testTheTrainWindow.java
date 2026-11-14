@@ -3064,7 +3064,7 @@ public class testTheTrainWindow
      * Cancel after placing over another train brings the station back as it was, as after a drop onto a train: the
      * displaced train is back in the setup and on the railway, and the placed one is off both (OB-416).
      *
-     * MUTATION: drop `putBackOnDiscard.addAll(named)` from `AutonomyEditorPanel.placeLocomotive`, and the displaced train
+     * MUTATION: drop `rememberWhereTheyStand(named)` from `AutonomyEditorPanel.placeLocomotive`, and the displaced train
      * ends nowhere and this fails.
      */
     @Test(timeOut = 180000)
@@ -3108,38 +3108,54 @@ public class testTheTrainWindow
      * then Cancel, stands Z where the railway had it, not on its old setup square, which would leave the square reading
      * free under a standing train; X stays where the run left it (OB-416).
      *
-     * MUTATION: pass no `railwayAsOpened` from `LayoutEditor.discardAutonomyWork` to the rebuild, and Z goes back to its
-     * old setup square.
+     * MUTATION: pass no `railwayBeforeTheEdit()` from `LayoutEditor.discardAutonomyWork` to the rebuild, and Z goes back
+     * to its old setup square.
      */
     @Test(timeOut = 240000)
     public void testCancelAfterARunPutsTheRailwaysTrainBack() throws Exception
     {
-        cancelAfterARun((panel, square) ->
-        {
-            String name = aTrainOffTheRailway();
+        cancelAfterARun(false, testTheTrainWindow::placeAnotherTrain);
+    }
 
-            makeActive(name);
+    /**
+     * The same where the run starts and ends with the editor open: Cancel goes by where the railway had Z when Place
+     * lifted it, not when the editor opened (OB-416).
+     *
+     * MUTATION: record where the trains stand when the editor opens instead of in `rememberWhereTheyStand`, and Z goes
+     * back to where it stood before the run.
+     */
+    @Test(timeOut = 240000)
+    public void testCancelAfterARunWithTheEditorOpenPutsTheRailwaysTrainBack() throws Exception
+    {
+        cancelAfterARun(true, testTheTrainWindow::placeAnotherTrain);
+    }
 
-            JMenuItem item = placeItemOn(panel, square, name);
+    /** The editor's Place of a train standing nowhere, over the square. */
+    private static String placeAnotherTrain(AutonomyEditorPanel panel, TileKey square) throws Exception
+    {
+        String name = aTrainOffTheRailway();
 
-            assertNotNull(item, "precondition: no Place " + name);
+        makeActive(name);
 
-            Components.onTheEventThread(() -> { item.doClick(); return null; });
+        JMenuItem item = placeItemOn(panel, square, name);
 
-            return name;
-        });
+        assertNotNull(item, "precondition: no Place " + name);
+
+        Components.onTheEventThread(() -> { item.doClick(); return null; });
+
+        return name;
     }
 
     /**
      * The same through None on the editor's Train tab, which lifts Z: Cancel stands it where the railway had it (OB-416).
      *
-     * MUTATION: pass no `railwayAsOpened` from `LayoutEditor.discardAutonomyWork` to the rebuild, and Z goes back to its
-     * old setup square.
+     * MUTATION: pass no `railwayBeforeTheEdit()` from `LayoutEditor.discardAutonomyWork` to the rebuild, and Z goes back
+     * to its old setup square.
      */
     @Test(timeOut = 240000)
     public void testCancelAfterARunAndNonePutsTheRailwaysTrainBack() throws Exception
     {
-        cancelAfterARun((panel, square) ->
+        cancelAfterARun(false, (panel, square) ->
         {
             StationSettingsWindow window = StationDoors.openTrain(panel, square);
 
@@ -3161,9 +3177,10 @@ public class testTheTrainWindow
 
     /**
      * As after a run, moves a square's setup train X on to an empty station and stands another placed train Z on its
-     * copy, the railway alone told; opens the editor, uses the door, Cancels, and asserts both stand as before.
+     * copy, the railway alone told, with the editor open or before it opens; uses the door, Cancels, and asserts both
+     * stand as before.
      */
-    private void cancelAfterARun(AfterARunDoor door) throws Exception
+    private void cancelAfterARun(boolean editorOpen, AfterARunDoor door) throws Exception
     {
         final TileKey square = aSquareWithATrain();
         final String setupTrain = session.getLocomotiveNameAt(square);
@@ -3186,11 +3203,13 @@ public class testTheTrainWindow
 
         try
         {
+            AutonomyEditorPanel panel = editorOpen ? theEditorsPanel() : null;
+
             Components.onTheEventThread(() -> { asAfterARun(setupTrain, copyName, other, brought); return null; });
 
             Components.settle();
 
-            placed = door.act(theEditorsPanel(), square);
+            placed = door.act(panel != null ? panel : theEditorsPanel(), square);
 
             if (placed != null) cancelOnceOnTheRailway(placed);
             else cancelTheEditor();
@@ -3547,7 +3566,7 @@ public class testTheTrainWindow
      * station is as the editor opened it, in the setup and on the railway, and the train, which stood nowhere, stands
      * nowhere again with nothing of the placement left on the railway's copies of the square.
      *
-     * MUTATION: put `if (named.size() > 1)` back before `putBackOnDiscard.addAll(named)` in
+     * MUTATION: put `if (named.size() > 1)` before `rememberWhereTheyStand(named)` in
      * `AutonomyEditorPanel.placeLocomotive`, and the train stays on the station and this fails.
      */
     @Test(timeOut = 180000)
@@ -3593,7 +3612,7 @@ public class testTheTrainWindow
      * its own after Cancel, come in by the same side with its tail along the same road, in the setup and on the railway
      * (MT-914): a train of 5 on Tunnel from the north, its tail on TunnelPre, as a first editor left it.
      *
-     * MUTATION: put `if (named.size() > 1)` back before `putBackOnDiscard.addAll(named)` in
+     * MUTATION: put `if (named.size() > 1)` before `rememberWhereTheyStand(named)` in
      * `AutonomyEditorPanel.placeLocomotive`, and the train stays on the empty station and this fails.
      */
     @Test(timeOut = 240000)
