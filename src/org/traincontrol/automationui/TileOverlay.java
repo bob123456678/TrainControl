@@ -8,17 +8,12 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
-import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
-import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.imageio.ImageIO;
 
 /**
  * What a tile is doing, and how that is painted over it: a wash, not a recolored tile icon, because the yellow
@@ -571,11 +566,11 @@ public class TileOverlay
 
             try
             {
-                URL url = TileOverlay.class.getResource(TRAIN_ICON);
+                java.net.URL url = TileOverlay.class.getResource(TRAIN_ICON);
 
-                if (url != null) icon = ImageIO.read(url);
+                if (url != null) icon = javax.imageio.ImageIO.read(url);
             }
-            catch (IOException | RuntimeException e)
+            catch (java.io.IOException | RuntimeException e)
             {
                 icon = null;
             }
@@ -675,7 +670,7 @@ public class TileOverlay
         Color oldColor = g.getColor();
 
         // Restored with the rest: a caller that hands over a shared Graphics would find every later line at this width.
-        Stroke oldStroke = g.getStroke();
+        java.awt.Stroke oldStroke = g.getStroke();
 
         try
         {
@@ -864,7 +859,7 @@ public class TileOverlay
 
         int side = drawsTheIcon() ? iconSide(width, height) : dotDiameter(width, height);
 
-        return new Ellipse2D.Double(on[0] - side / 2.0, on[1] - side / 2.0, side, side);
+        return new java.awt.geom.Ellipse2D.Double(on[0] - side / 2.0, on[1] - side / 2.0, side, side);
     }
 
     /**

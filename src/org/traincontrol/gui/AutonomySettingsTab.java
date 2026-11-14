@@ -6,7 +6,6 @@ import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import org.traincontrol.base.Route;
-import org.traincontrol.automation.Layout;
 
 /**
  * The Auto tab's settings: loading every control from the railway, and the handler each control calls when it is let
@@ -203,7 +202,7 @@ final class AutonomySettingsTab
      */
     void loadAutoLayoutSettings()
     {
-        Layout auto = this.ui.getModel().getAutoLayout();
+        org.traincontrol.automation.Layout auto = this.ui.getModel().getAutoLayout();
 
         this.ui.minDelay().setValue(auto.getMinDelay());
         this.ui.maxDelay().setValue(auto.getMaxDelay());

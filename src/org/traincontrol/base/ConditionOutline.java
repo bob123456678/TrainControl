@@ -3,8 +3,6 @@ package org.traincontrol.base;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -158,7 +156,7 @@ public final class ConditionOutline
             if (!row.isJoiner()) continue;
 
             // Everything deeper than this word belonged to a group this word has just ended.
-            for (Iterator<Integer> deeper = settled.keySet().iterator(); deeper.hasNext();)
+            for (java.util.Iterator<Integer> deeper = settled.keySet().iterator(); deeper.hasNext();)
             {
                 if (deeper.next() > row.getDepth()) deeper.remove();
             }
@@ -328,7 +326,7 @@ public final class ConditionOutline
         Group top = groupsOf(rows);
         List<Object> blocks = new ArrayList<>();
 
-        if (top != null) blocks(top, new HashSet<>(chosen), blocks);
+        if (top != null) blocks(top, new java.util.HashSet<>(chosen), blocks);
 
         for (Object block : blocks)
         {

@@ -2,9 +2,7 @@ package org.traincontrol.gui;
 
 import java.util.List;
 import java.awt.Component;
-import java.awt.Container;
 import java.io.IOException;
-import java.util.ArrayList;
 import javax.swing.ButtonGroup;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
@@ -402,7 +400,7 @@ public class AutonomyMenu extends JMenu
      */
     private List<LayoutDiagram> shownOrder(AutonomySession session)
     {
-        List<LayoutDiagram> out = new ArrayList<>(session.getPages());
+        List<LayoutDiagram> out = new java.util.ArrayList<>(session.getPages());
         final List<String> shown = ui.getModel().getLayoutList();
 
         out.sort((a, b) -> Integer.compare(shown.indexOf(a.getName()), shown.indexOf(b.getName())));
@@ -434,7 +432,7 @@ public class AutonomyMenu extends JMenu
      * Fills the one Manage list, for the Autonomy menu and the Autonomy tab's Manage button.  Each door keeps its own
      * refusal; what acts on the configuration in use is grayed until one is, Delete (OB-319) only with none to delete.
      */
-    static void addManageItems(Container into, final TrainControlUI ui, final AutonomyViewerPanel actions,
+    static void addManageItems(java.awt.Container into, final TrainControlUI ui, final AutonomyViewerPanel actions,
         final AutonomySession session)
     {
         boolean loaded = ui.getActiveDiagramConfiguration() != null;

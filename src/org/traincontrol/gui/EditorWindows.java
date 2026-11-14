@@ -10,7 +10,6 @@ import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.util.I18n;
 import java.awt.Frame;
-import java.awt.Window;
 import java.util.List;
 
 /** The window's editors: opening and closing the layout and autonomy editors, and whether the diagram may be edited. */
@@ -437,7 +436,7 @@ final class EditorWindows
      * The layout editor's window while one is open where it can be seen, or null: for a question that has to open in
      * front of it (MT-575).  NOT a minimized one: on Windows its owned windows hide with it, leaving a modal invisible.
      */
-    Window openLayoutEditorWindow()
+    java.awt.Window openLayoutEditorWindow()
     {
         return ui.openEditor != null && ui.openEditor.isDisplayable() && ui.openEditor.isShowing()
             && (ui.openEditor.getExtendedState() & Frame.ICONIFIED) == 0 ? ui.openEditor : null;

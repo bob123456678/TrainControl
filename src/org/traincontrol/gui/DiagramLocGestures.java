@@ -1,14 +1,8 @@
 package org.traincontrol.gui;
 
 import java.awt.event.KeyEvent;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import javax.swing.JOptionPane;
-import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
@@ -255,7 +249,7 @@ final class DiagramLocGestures
 
             if (mayTurnHere(aimed) && ui.getAutonomySession() != null)
             {
-                Collection<TilePorts.Side> canHold = ui.getAutonomySession().facingsFor(aimed).values();
+                java.util.Collection<TilePorts.Side> canHold = ui.getAutonomySession().facingsFor(aimed).values();
 
                 if (!dropping && FacingPrompt.wouldAsk(canHold))
                 {
@@ -389,7 +383,7 @@ final class DiagramLocGestures
         {
             if (session != null)
             {
-                for (Iterator<Map.Entry<String, String>> pending
+                for (java.util.Iterator<Map.Entry<String, String>> pending
                     = turnedRound.entrySet().iterator(); pending.hasNext();)
                 {
                     Map.Entry<String, String> turned = pending.next();
@@ -492,7 +486,7 @@ final class DiagramLocGestures
             String tail = ui.tailAtTheLanding;
 
             // Read now, not after the tail question: a second Control+V in that wait (FR-100) overwrites these fields.
-            final List<Edge> roadBefore = ui.roadBeforeTheLanding;
+            final java.util.List<org.traincontrol.automation.Edge> roadBefore = ui.roadBeforeTheLanding;
             final boolean sameSquareAsBefore = tile.equals(ui.squareBeforeTheLanding);
             final String sideBefore = ui.sideBeforeTheLanding;
             final TilePorts.Side facingChosen = ui.facingChosenAtTheLanding;
@@ -518,7 +512,7 @@ final class DiagramLocGestures
         {
             ui.noteIfTheSetupWasNotTidied(session.save());
         }
-        catch (IOException e)
+        catch (java.io.IOException e)
         {
             // The placement stands either way; only the memory of it is at risk
             ui.getModel().log(e);
@@ -534,7 +528,7 @@ final class DiagramLocGestures
     {
         if (square == null || ui.getAutonomySession() == null || ui.getModel() == null || !ui.getModel().hasAutoLayout())
         {
-            return new LinkedHashMap<>();
+            return new java.util.LinkedHashMap<>();
         }
 
         return ui.getAutonomySession().departableFacingsFor(square, ui.getModel().getAutoLayout());

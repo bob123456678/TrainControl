@@ -2,7 +2,6 @@ package org.traincontrol.automationui;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -333,7 +332,7 @@ public final class StationIndex
     {
         List<Point> out = new ArrayList<>();
 
-        Set<Locomotive> seen = Collections.newSetFromMap(new IdentityHashMap<Locomotive, Boolean>());
+        Set<Locomotive> seen = Collections.newSetFromMap(new java.util.IdentityHashMap<Locomotive, Boolean>());
 
         for (Point point : points)
         {

@@ -1,16 +1,11 @@
 package org.traincontrol.gui;
 
-import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
-import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.net.URL;
 
 /**
  * The "there is a reason, hover me" mark, for any window: an image rather than a character, as U+24D8 has no glyph in
@@ -36,13 +31,13 @@ public final class InfoMark
 
     private static ImageIcon load()
     {
-        URL url = TrainControlUI.class.getResource("resources/info.gif");
+        java.net.URL url = TrainControlUI.class.getResource("resources/info.gif");
 
         if (url == null) return null;
 
         try
         {
-            BufferedImage read = ImageIO.read(url);
+            BufferedImage read = javax.imageio.ImageIO.read(url);
             BufferedImage out = new BufferedImage(read.getWidth(), read.getHeight(), BufferedImage.TYPE_INT_ARGB);
 
             int[] pixels = read.getRGB(0, 0, read.getWidth(), read.getHeight(), null, 0, read.getWidth());
@@ -57,7 +52,7 @@ public final class InfoMark
 
             return new ImageIcon(out);
         }
-        catch (IOException | RuntimeException ex)
+        catch (java.io.IOException | RuntimeException ex)
         {
             return new ImageIcon(url);
         }
@@ -84,7 +79,7 @@ public final class InfoMark
         // A window closed under the pointer sends no exit
         mark.addHierarchyListener(e -> { if (!mark.isShowing()) leave(mark); });
 
-        mark.addMouseListener(new MouseAdapter()
+        mark.addMouseListener(new java.awt.event.MouseAdapter()
         {
             @Override
             public void mouseEntered(MouseEvent e)
@@ -105,7 +100,7 @@ public final class InfoMark
             @Override
             public void mousePressed(MouseEvent e)
             {
-                SwingUtilities.invokeLater(() -> showNow(mark, e.getX(), e.getY()));
+                javax.swing.SwingUtilities.invokeLater(() -> showNow(mark, e.getX(), e.getY()));
             }
         });
 

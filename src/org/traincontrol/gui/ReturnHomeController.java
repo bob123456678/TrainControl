@@ -1,10 +1,7 @@
 package org.traincontrol.gui;
 
-import java.awt.Window;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import javax.swing.JOptionPane;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
@@ -47,7 +44,7 @@ final class ReturnHomeController extends SettledQuestion
         if (this.ui.refusedToSendATrain(false)) return;
 
         // The window that pressed it, for what the worker below has to say
-        final Window asked = this.ui.dialogParent();
+        final java.awt.Window asked = this.ui.dialogParent();
 
         final Layout layout = this.ui.getModel().getAutoLayout();
 
@@ -143,7 +140,7 @@ final class ReturnHomeController extends SettledQuestion
                         if (!editorCame[0]) this.ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
                     });
                 }
-                catch (InterruptedException | InvocationTargetException gate)
+                catch (InterruptedException | java.lang.reflect.InvocationTargetException gate)
                 {
                     this.ui.getModel().log(gate);
 
@@ -471,7 +468,7 @@ final class ReturnHomeController extends SettledQuestion
      */
     private String namesWithHomes(List<Locomotive> blocked)
     {
-        Map<Locomotive, Point> homes =
+        java.util.Map<Locomotive, Point> homes =
             this.ui.getModel() != null && this.ui.getModel().hasAutoLayout()
                 ? this.ui.getModel().getAutoLayout().getHomeStations() : null;
 

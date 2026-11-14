@@ -8,13 +8,10 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
@@ -51,7 +48,7 @@ public class LocIconCropDialog extends JDialog
     // class unusable for the process.
     static
     {
-        if (!GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
+        if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
     }
 
     /** How far the picture may be enlarged beyond the point where it just fills the crop window. */
@@ -372,14 +369,14 @@ public class LocIconCropDialog extends JDialog
             // laptop screen once the buttons and the instruction line are added underneath.
             setPreferredSize(new Dimension(600, 420));
 
-            addComponentListener(new ComponentAdapter()
+            addComponentListener(new java.awt.event.ComponentAdapter()
             {
                 /**
                  * The crop window is derived from the panel size, so a resize can push it outside the picture and
                  * nothing else re-checks that.
                  */
                 @Override
-                public void componentResized(ComponentEvent e)
+                public void componentResized(java.awt.event.ComponentEvent e)
                 {
                     CropPanel.this.startAtCover();
                     CropPanel.this.clampCenter();

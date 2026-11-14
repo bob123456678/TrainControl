@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import org.traincontrol.automationui.TilePorts;
@@ -181,7 +180,7 @@ public class FacingPrompt
      * @return the choice, or null when the dialog is dismissed or cannot be shown
      */
     static <T> T askAmong(Component parent, String question, String title, List<T> choices,
-        Function<T, String> label, int preferred)
+        java.util.function.Function<T, String> label, int preferred)
     {
         AtomicReference<T> answer = new AtomicReference<>();
 

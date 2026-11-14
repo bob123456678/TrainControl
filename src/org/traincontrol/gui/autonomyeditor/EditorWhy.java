@@ -9,24 +9,15 @@ import org.traincontrol.automationui.StationIndex;
 import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileAnnotation.ToolMark;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.automationui.TilePorts;
-import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.SettledQuestion;
 import org.traincontrol.util.I18n;
-import org.traincontrol.util.Util;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 /**
  * The autonomy editor's answer to Why Not Moving?: for the train on the clicked square, every station it might be
@@ -59,7 +50,7 @@ final class EditorWhy extends SettledQuestion
     {
         // Which train is standing here, asked of the layout rather than the setup, whose opinion of where trains are
         // decides what runs.
-        Locomotive standing = null;
+        org.traincontrol.base.Locomotive standing = null;
 
         // Through StationIndex, the one place that knows a square is several Points and which ones.
         for (String pointName : index.pointNamesAt(tile))
@@ -78,7 +69,7 @@ final class EditorWhy extends SettledQuestion
             // Empty, so the previous train's lines and marks go: they answered a question about another square.
             return new AutonomyEditorPanel.WhyAnswer(I18n.t("autosetup.ui.whyNoTrainHere"), false,
                 new HashMap<TileKey, List<TileAnnotation.Trace>>(),
-                Collections.<TileKey, ToolMark>emptyMap());
+                java.util.Collections.<TileKey, ToolMark>emptyMap());
         }
 
         // The lines this answer draws, installed by the paint.  Empty rather than null from here on: an answer about a
@@ -118,7 +109,7 @@ final class EditorWhy extends SettledQuestion
 
         final Map<String, String[]> sortKey = new HashMap<>();
 
-        Comparator<String> byPageThenName = (a, b) ->
+        java.util.Comparator<String> byPageThenName = (a, b) ->
         {
             String[] x = sortKey.get(a);
             String[] y = sortKey.get(b);
@@ -127,19 +118,19 @@ final class EditorWhy extends SettledQuestion
 
             if (byPage != 0) return byPage;
 
-            int byName = Util.compareAsRead(x[1], y[1]);
+            int byName = org.traincontrol.util.Util.compareAsRead(x[1], y[1]);
 
             return byName != 0 ? byName : a.compareTo(b);
         };
 
-        Set<String> available = new TreeSet<>(byPageThenName);
+        Set<String> available = new java.util.TreeSet<>(byPageThenName);
         Map<String, String> choosable = new TreeMap<>(byPageThenName);
         Map<String, String> neverChosen = new TreeMap<>(byPageThenName);
 
         // The route each colored square may be drawn by, per color: the router's own, to the first of its copies
-        Map<ToolMark, Map<TileKey, List<Edge>>> routeTo = new EnumMap<>(ToolMark.class);
+        Map<ToolMark, Map<TileKey, List<Edge>>> routeTo = new java.util.EnumMap<>(ToolMark.class);
 
-        Set<TileKey> outOfReach = new HashSet<>();
+        Set<TileKey> outOfReach = new java.util.HashSet<>();
 
         // Collapsed to stations, as the locomotive panel's tooltip does: the reasons are keyed by the running graph's
         // Points and a square is several, so a derived-graph station would appear three times under names the user
@@ -313,7 +304,7 @@ final class EditorWhy extends SettledQuestion
         }
         else
         {
-            TilePorts.Side taken = stub.getFrom() != null ? stub.getFrom() : stub.getTo();
+            org.traincontrol.automationui.TilePorts.Side taken = stub.getFrom() != null ? stub.getFrom() : stub.getTo();
 
             here.add(new TileAnnotation.Trace(null,
                 line.getFrom() == taken ? line.getTo() : line.getFrom(), true, line.isManualOnly()));
@@ -374,7 +365,7 @@ final class EditorWhy extends SettledQuestion
     }
 
     /** What the stations' colors mean, naming only the colors drawn, last and after an empty line (MT-865). */
-    private static String colours(Collection<ToolMark> drawn)
+    private static String colours(java.util.Collection<ToolMark> drawn)
     {
         List<String> said = new ArrayList<>();
 

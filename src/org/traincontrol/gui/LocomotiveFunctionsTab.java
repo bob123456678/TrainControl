@@ -1,7 +1,6 @@
 package org.traincontrol.gui;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -9,7 +8,6 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Insets;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
@@ -17,17 +15,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import javax.swing.AbstractCellEditor;
-import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultCellEditor;
@@ -53,12 +46,10 @@ import javax.swing.MutableComboBoxModel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
 import javax.swing.plaf.basic.BasicComboPopup;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.widgets.PopupListener;
 import org.traincontrol.gui.widgets.RowIcons;
@@ -192,7 +183,7 @@ final class LocomotiveFunctionsTab extends JPanel
             if (row >= 0 && SwingUtilities.isLeftMouseButton(e)) press(row);
         }));
 
-        table.addMouseMotionListener(new MouseMotionAdapter()
+        table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
         {
             @Override
             public void mouseMoved(MouseEvent e)
@@ -318,7 +309,7 @@ final class LocomotiveFunctionsTab extends JPanel
 
         for (int i = 0; i < parts.length; i++)
         {
-            if (i > 0) panel.add(Box.createHorizontalStrut(4));
+            if (i > 0) panel.add(javax.swing.Box.createHorizontalStrut(4));
 
             panel.add(parts[i]);
         }
@@ -337,8 +328,8 @@ final class LocomotiveFunctionsTab extends JPanel
     }
 
     /** The standard icons are fetched on a thread of their own, so they do not hold up the main window's pictures. */
-    private static final ExecutorService ICON_LOADER =
-        Executors.newSingleThreadExecutor(r ->
+    private static final java.util.concurrent.ExecutorService ICON_LOADER =
+        java.util.concurrent.Executors.newSingleThreadExecutor(r ->
         {
             Thread t = new Thread(r, "function-icons");
 
@@ -550,7 +541,7 @@ final class LocomotiveFunctionsTab extends JPanel
         int size = com.formdev.flatlaf.util.UIScale.scale(18);
         JButton b = new JButton(RowIcons.revert(size, UiStyle.BLUE));
 
-        b.setDisabledIcon(RowIcons.revert(size, new Color(175, 175, 175)));
+        b.setDisabledIcon(RowIcons.revert(size, new java.awt.Color(175, 175, 175)));
         b.putClientProperty("JButton.buttonType", "toolBarButton");
         b.setFocusable(false);
         b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -578,7 +569,7 @@ final class LocomotiveFunctionsTab extends JPanel
         int widest = Math.max(table.getFontMetrics(table.getFont()).stringWidth("F" + Math.max(0, loc.getNumF() - 1)),
             table.getFontMetrics(heading).stringWidth(model.getColumnName(0)));
         int width = widest + com.formdev.flatlaf.util.UIScale.scale(20);
-        TableColumn column = table.getColumnModel().getColumn(0);
+        javax.swing.table.TableColumn column = table.getColumnModel().getColumn(0);
 
         column.setMinWidth(width);
         column.setMaxWidth(width);
@@ -770,7 +761,7 @@ final class LocomotiveFunctionsTab extends JPanel
      */
     private List<String> customChoices()
     {
-        Map<Object, String> found = new LinkedHashMap<>();
+        Map<Object, String> found = new java.util.LinkedHashMap<>();
 
         for (Row r : rows) offerImage(found, r.custom);
 
@@ -788,7 +779,7 @@ final class LocomotiveFunctionsTab extends JPanel
 
         List<String> out = new ArrayList<>(found.values());
 
-        out.sort(Comparator.comparing((String url) -> fileNameOf(url).toLowerCase()).thenComparing(url -> url));
+        out.sort(java.util.Comparator.comparing((String url) -> fileNameOf(url).toLowerCase()).thenComparing(url -> url));
 
         return out;
     }
@@ -1170,7 +1161,7 @@ final class LocomotiveFunctionsTab extends JPanel
                 widenAgain = () -> widen(popup, scrollPane, list);
 
                 // The dropdown is narrow, its list is not: six icons across, with room for the scroll bar
-                combo.addPopupMenuListener(new PopupMenuListener()
+                combo.addPopupMenuListener(new javax.swing.event.PopupMenuListener()
                 {
                     @Override
                     public void popupMenuWillBecomeVisible(PopupMenuEvent e)

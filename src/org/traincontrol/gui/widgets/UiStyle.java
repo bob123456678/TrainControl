@@ -3,7 +3,6 @@ package org.traincontrol.gui.widgets;
 import java.awt.Color;
 import java.awt.Font;
 import javax.swing.JLabel;
-import javax.swing.AbstractButton;
 
 /** The owner's label style (docs/UI-standards.md), for windows that hand-build their labels. */
 public final class UiStyle
@@ -64,7 +63,7 @@ public final class UiStyle
     }
 
     /** Puts a button in the standard's button font, and returns it. */
-    public static <T extends AbstractButton> T button(T b)
+    public static <T extends javax.swing.AbstractButton> T button(T b)
     {
         b.setFont(BUTTON_FONT);
 

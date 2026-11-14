@@ -6,9 +6,7 @@ import org.traincontrol.base.LayoutDiagramComponent;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -1351,7 +1349,7 @@ public class TileGraph
     }
 
     /** The arms of a square (every side any of its roads ends at), in a fixed order so a mask over them is stable. */
-    public static List<Side> armsOf(Collection<Route> routes)
+    public static List<Side> armsOf(java.util.Collection<Route> routes)
     {
         List<Side> sides = new ArrayList<>();
 
@@ -1387,7 +1385,7 @@ public class TileGraph
     {
         if (tile == null || crossingPartners.containsKey(tile)) return false;
 
-        Set<Side> seen = EnumSet.noneOf(Side.class);
+        Set<Side> seen = java.util.EnumSet.noneOf(Side.class);
 
         for (Route route : roads(tile).values())
         {

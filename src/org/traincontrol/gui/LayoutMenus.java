@@ -1,12 +1,10 @@
 package org.traincontrol.gui;
 
 import java.awt.Component;
-import java.awt.Font;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.prefs.Preferences;
 import javax.swing.JOptionPane;
@@ -16,7 +14,6 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
-import javax.swing.SwingUtilities;
 import org.traincontrol.gui.autonomy.DiagramExport;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.widgets.BusyDialog;
@@ -176,7 +173,7 @@ final class LayoutMenus
 
             item.putClientProperty(SAID_BEFORE_THE_EDITOR, null);
 
-            if (Objects.equals(item.getToolTipText(), why)) item.setToolTipText(((String[]) kept)[0]);
+            if (java.util.Objects.equals(item.getToolTipText(), why)) item.setToolTipText(((String[]) kept)[0]);
         }
     }
 
@@ -245,7 +242,8 @@ final class LayoutMenus
 
             if (!wasOn)
             {
-                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(ui, I18n.t("ui.main.infoEchoTurnedOn")));
+                javax.swing.SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(ui, I18n.t("ui.main.infoEchoTurnedOn")));
             }
         }
 
@@ -278,7 +276,7 @@ final class LayoutMenus
         JMenuItem heading = new JMenuItem(text);
 
         heading.setEnabled(false);
-        heading.setFont(heading.getFont().deriveFont(Font.BOLD));
+        heading.setFont(heading.getFont().deriveFont(java.awt.Font.BOLD));
 
         return heading;
     }

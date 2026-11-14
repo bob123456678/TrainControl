@@ -1,15 +1,10 @@
 package org.traincontrol.automationui;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.model.ViewListener;
-import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 
 /**
@@ -78,7 +73,7 @@ public class LayoutPageEdit
     {
         for (int x = 1; ; x++)
         {
-            String name = I18n.f("layout.ui.newPageName", x);
+            String name = org.traincontrol.util.I18n.f("layout.ui.newPageName", x);
 
             if (pageUsingTheFileOf(layoutList, name, null) == null) return name;
         }
@@ -118,7 +113,7 @@ public class LayoutPageEdit
     public static void renameOrDuplicate(List<String> layoutList, LayoutDiagram page,
         String layoutPath, String currentLayout, String newLayoutName, boolean rename,
         boolean duplicate, boolean blank, AutonomySession session, ViewListener log,
-        Collection<String> keepAbsent) throws Exception
+        java.util.Collection<String> keepAbsent) throws Exception
     {
 
         // Where it sits keeps the file in the order the user sees.  The autonomy setup is keyed by page ID on disk,
@@ -207,7 +202,7 @@ public class LayoutPageEdit
                 if (session == null)
                 {
                     // No session: rewrite the file itself, which writes nothing unless the setup is already there.
-                    AutonomyCompanionStore.renamePageOnDisk(new File(layoutPath), currentLayout, newLayoutName);
+                    AutonomyCompanionStore.renamePageOnDisk(new java.io.File(layoutPath), currentLayout, newLayoutName);
                 }
                 else if (session.exists())
                 {
@@ -216,7 +211,7 @@ public class LayoutPageEdit
                     session.saveWithoutReconciling();
                 }
             }
-            catch (IOException e)
+            catch (java.io.IOException e)
             {
                 // The rekey stands in memory either way; failing to write it must not stop the rename.
                 if (log != null) log.log(e);
@@ -233,7 +228,7 @@ public class LayoutPageEdit
     /** Every page of the layout as objects; empty when there is no model (nothing to re-aim). */
     private static List<LayoutDiagram> loadedPages(ViewListener model)
     {
-        List<LayoutDiagram> pages = new ArrayList<>();
+        List<LayoutDiagram> pages = new java.util.ArrayList<>();
 
         if (model == null) return pages;
 

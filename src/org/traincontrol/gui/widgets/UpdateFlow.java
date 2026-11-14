@@ -4,8 +4,6 @@ import java.awt.Component;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
-import java.util.function.BiFunction;
-import java.util.function.BooleanSupplier;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -47,7 +45,7 @@ public final class UpdateFlow
         // Download, never Download & Update: the default is what a reflex Enter does
         final Object initial = download;
 
-        final BiFunction<Object[], Object, Integer> hook = TrainControlUI.updateQuestionForTests;
+        final java.util.function.BiFunction<Object[], Object, Integer> hook = TrainControlUI.updateQuestionForTests;
 
         final int chose = hook != null ? hook.apply(choices.clone(), initial) : JOptionPane.showOptionDialog(parent,
             I18n.f("ui.update.available", latest, running)
@@ -276,7 +274,7 @@ public final class UpdateFlow
     /**
      * `TrainControlUI.whenNoModalDialog`'s body.
      */
-    public static boolean whenNoModalDialog(final Runnable then, final BooleanSupplier dialogShowing,
+    public static boolean whenNoModalDialog(final Runnable then, final java.util.function.BooleanSupplier dialogShowing,
         int pollMs)
     {
         if (!dialogShowing.getAsBoolean())

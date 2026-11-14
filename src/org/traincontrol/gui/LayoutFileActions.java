@@ -14,13 +14,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.swing.JFileChooser;
@@ -432,7 +429,7 @@ final class LayoutFileActions
 
         List<String> out = new ArrayList<>(pages);
 
-        Collections.swap(out, at, to);
+        java.util.Collections.swap(out, at, to);
 
         return out;
     }
@@ -463,7 +460,7 @@ final class LayoutFileActions
      * (a page may have been added meanwhile); null when there is nothing to change.  `editorPage` is the page the
      * layout editor that asked arrives on, null for the one it left.
      */
-    private void reorder(final Function<List<String>, List<String>> order, final String page,
+    private void reorder(final java.util.function.Function<List<String>, List<String>> order, final String page,
         final String editorPage, final LayoutEditor from)
     {
         if (refusedAsAPageEdit(from)) return;
@@ -625,7 +622,7 @@ final class LayoutFileActions
 
             // A rename makes the old name absent by construction, so it is told about that and
             // asks only about the rest (FR-018).
-            Map<String, String> renaming = new LinkedHashMap<>();
+            Map<String, String> renaming = new java.util.LinkedHashMap<>();
 
             if (rename) renaming.put(currentLayout, newLayoutName);
 

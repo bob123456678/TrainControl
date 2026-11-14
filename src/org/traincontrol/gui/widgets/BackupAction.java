@@ -1,13 +1,9 @@
 package org.traincontrol.gui.widgets;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import org.traincontrol.gui.TrainControlUI;
@@ -60,7 +56,7 @@ public final class BackupAction
         {
             Thread.currentThread().interrupt();
         }
-        catch (InvocationTargetException e)
+        catch (java.lang.reflect.InvocationTargetException e)
         {
             // A question nobody could be asked is a no: the caller is about to do something optional
             // and expensive, and doing it unasked is the worse of the two mistakes.
@@ -104,7 +100,7 @@ public final class BackupAction
     {
         // The track diagram and the autonomy setup beside it: for a locally stored layout, config/ holds the pages AND config/autonomy holds
         // every station name, direction, caption and configuration, and that folder is the only copy of them anywhere.
-        List<String> unsaved = new ArrayList<>();
+        List<String> unsaved = new java.util.ArrayList<>();
 
         File backupArchive = null;
 
@@ -135,7 +131,7 @@ public final class BackupAction
             // One archive, holding all of it (FR-015): the autonomy setup is keyed by PAGE ID and those ids are defined
             // by config/gleisbild.cs2, so setup.json alone means nothing and a gleisbild.cs2 from a different day
             // silently reattaches every station to the wrong page.  These files are only a backup together.
-            Map<String, File> state = new LinkedHashMap<>();
+            java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
 
             state.put(TrainControlUI.DATA_FILE_NAME, new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)));
             state.put(MarklinControlStation.DATA_FILE_NAME,

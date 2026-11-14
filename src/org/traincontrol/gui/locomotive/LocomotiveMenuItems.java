@@ -1,7 +1,6 @@
 package org.traincontrol.gui.locomotive;
 
 import java.awt.event.MouseEvent;
-import java.awt.Color;
 import javax.swing.JMenuItem;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
@@ -36,7 +35,7 @@ final class LocomotiveMenuItems
     {
         JMenuItem item = new JMenuItem(I18n.t("loc.ui.menuDeleteFromDatabase"));
 
-        item.setForeground(Color.RED);
+        item.setForeground(java.awt.Color.RED);
         item.addActionListener(event -> ui.deleteLoc(loc.getName(), evt));
 
         return item;

@@ -1,12 +1,9 @@
 package org.traincontrol.gui.autonomy;
 
 import java.awt.Component;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.swing.JOptionPane;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.util.I18n;
@@ -25,7 +22,8 @@ public class AutonomyReport
      * The sets of missing pages already warned about in this session (MT-380), keyed by the sorted page names: a
      * DIFFERENT set is a new thing to say.
      */
-    private static final Set<String> ALREADY_SAID = Collections.synchronizedSet(new LinkedHashSet<String>());
+    private static final java.util.Set<String> ALREADY_SAID =
+        Collections.synchronizedSet(new java.util.LinkedHashSet<String>());
 
     /**
      * Whether a declined save is worth a dialog: the first time a set of missing pages is reported in this session, not
@@ -37,7 +35,7 @@ public class AutonomyReport
     {
         if (report == null || !report.wasDeclined()) return false;
 
-        List<String> pages = new ArrayList<>(report.getDeclinedBecauseAbsent());
+        List<String> pages = new java.util.ArrayList<>(report.getDeclinedBecauseAbsent());
 
         Collections.sort(pages);
 

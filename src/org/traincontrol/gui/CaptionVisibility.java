@@ -1,11 +1,7 @@
 package org.traincontrol.gui;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
-import javax.swing.SwingUtilities;
 import org.traincontrol.automation.Layout;
-import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.TileGraph;
 
 /**
@@ -74,7 +70,7 @@ final class CaptionVisibility
 
         if (ask != null && ask.railway != null && ask.setup != null)
         {
-            Set<TileGraph.TileKey> found = new HashSet<>();
+            Set<TileGraph.TileKey> found = new java.util.HashSet<>();
 
             try
             {
@@ -83,7 +79,7 @@ final class CaptionVisibility
                 {
                     boolean choosable = false;
 
-                    for (Point point
+                    for (org.traincontrol.automation.Point point
                         : TrainControlUI.autonomyPointsForTile(ask.railway, ask.setup, square))
                     {
                         if (ask.railway.isChoosableByAutonomy(point))
@@ -103,7 +99,7 @@ final class CaptionVisibility
                 return;
             }
 
-            cannot = Collections.unmodifiableSet(found);
+            cannot = java.util.Collections.unmodifiableSet(found);
         }
 
         // DISCARDED IF THE SETUP MOVED ON: `parseAuto` replaces the Layout wholesale, and an answer about the graph
@@ -112,6 +108,6 @@ final class CaptionVisibility
 
         this.ui.captionsAutonomyCannotChoose = cannot;
 
-        SwingUtilities.invokeLater(this.ui::paintCaptionsFromTheAnswer);
+        javax.swing.SwingUtilities.invokeLater(this.ui::paintCaptionsFromTheAnswer);
     }
 }

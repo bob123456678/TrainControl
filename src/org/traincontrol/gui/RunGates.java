@@ -1,15 +1,9 @@
 package org.traincontrol.gui;
 
 import java.awt.Component;
-import java.awt.Window;
-import java.util.Collection;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import org.traincontrol.util.I18n;
-import org.traincontrol.automation.Layout;
-import org.traincontrol.automationui.AutonomySession;
-import org.traincontrol.base.Locomotive;
-import org.traincontrol.base.Route;
 
 /**
  * The refusal gates: whether a door may send a train, edit a locomotive or the setup, or act while an editor holds the
@@ -31,7 +25,7 @@ public final class RunGates
     {
         if (ui.getModel() == null) return false;
 
-        Route running = ui.getModel().runningRouteDriving(name);
+        org.traincontrol.base.Route running = ui.getModel().runningRouteDriving(name);
 
         if (running == null) return false;
 
@@ -44,7 +38,7 @@ public final class RunGates
      * `refuseWhileARouteDrivesIt` of each of these locomotives in turn: the first a running route drives is refused
      * (OB-287).
      */
-    static boolean refuseWhileARouteDrivesAny(TrainControlUI ui, Component source, Collection<String> names)
+    static boolean refuseWhileARouteDrivesAny(TrainControlUI ui, Component source, java.util.Collection<String> names)
     {
         for (String name : names)
         {
@@ -131,7 +125,7 @@ public final class RunGates
      * the state it guards against, and loading would save the setup against a diagram somebody is editing (discarding
      * tiles they meant to Cancel) and rebuild the window under the open editor.  True when the caller must not proceed.
      */
-    static boolean refuseWhileEditorOpen(TrainControlUI ui, Window asked)
+    static boolean refuseWhileEditorOpen(TrainControlUI ui, java.awt.Window asked)
     {
         if (!ui.isLayoutEditorOpen()) return false;
 
@@ -184,8 +178,8 @@ public final class RunGates
      * Whether this train may be sent by hand now as far as runs go: not while autonomy, a timetable or Return Home runs
      * or plans, nor while it is out itself; another train sent by hand does not stop it (FR-187).  Takes no monitor.
      */
-    static boolean mayBeSentByHandNow(TrainControlUI ui, Layout railway,
-        Locomotive train)
+    static boolean mayBeSentByHandNow(TrainControlUI ui, org.traincontrol.automation.Layout railway,
+        org.traincontrol.base.Locomotive train)
     {
         return !ui.stagingFlowActive && !railway.isAutoRunning() && !railway.isStagingInProgress()
             && !railway.isAlreadyUnderway(train);
@@ -199,7 +193,7 @@ public final class RunGates
     {
         if (!ui.autonomyHasErrors()) return null;
 
-        AutonomySession asked = ui.getAutonomySession();
+        org.traincontrol.automationui.AutonomySession asked = ui.getAutonomySession();
 
         return whyAHandSendIsRefused(ui.autonomyErrorCount(), asked == null ? 0 : asked.blockingProblemCount());
     }

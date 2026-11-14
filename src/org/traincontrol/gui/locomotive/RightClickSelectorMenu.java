@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
-import javax.swing.SwingUtilities;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
@@ -49,7 +48,7 @@ public class RightClickSelectorMenu extends JPopupMenu
 
         add(LocomotiveMenuItems.deleteFromDatabase(ui, loc, e));
 
-        if (e != null) ui.itemsPressFromWindow(this, SwingUtilities.getWindowAncestor(e.getComponent()));
+        if (e != null) ui.itemsPressFromWindow(this, javax.swing.SwingUtilities.getWindowAncestor(e.getComponent()));
     }
 }
    

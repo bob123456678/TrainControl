@@ -10,31 +10,18 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
-import java.awt.Insets;
-import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.function.Function;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -57,7 +44,6 @@ import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.util.I18n;
 import org.json.JSONObject;
 import org.traincontrol.automationui.TileGraph;
-import org.traincontrol.base.LayoutDiagramComponent;
 
 /**
  * Managing a layout's autonomy configurations, from the Auto tab: choosing which one runs, moving them between
@@ -188,7 +174,7 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /** Applies the application's control font to a component, and returns it; bold for a button. */
-    static <T extends JComponent> T styled(T component, boolean bold)
+    static <T extends javax.swing.JComponent> T styled(T component, boolean bold)
     {
         component.setFont(bold ? FONT_BOLD : FONT);
         return component;
@@ -251,7 +237,7 @@ public class AutonomyViewerPanel extends JPanel
         outer.setLayout(new BoxLayout(outer, BoxLayout.Y_AXIS));
 
         outer.add(group(I18n.t("autosetup.ui.headingConfiguration")));
-        outer.add(Box.createVerticalStrut(3));
+        outer.add(javax.swing.Box.createVerticalStrut(3));
 
         JPanel panel = box();
         panel.setLayout(new GridBagLayout());
@@ -347,7 +333,7 @@ public class AutonomyViewerPanel extends JPanel
     private void add(JPanel panel, GridBagConstraints gbc, Component component,
         int gapAbove)
     {
-        gbc.insets = new Insets(gapAbove, 0, 2, 0);
+        gbc.insets = new java.awt.Insets(gapAbove, 0, 2, 0);
         panel.add(component, gbc);
         gbc.gridy++;
     }
@@ -417,7 +403,7 @@ public class AutonomyViewerPanel extends JPanel
             if (row < 0 || row >= findingRows.size()) return;
 
             // locationToIndex answers the CLOSEST row for a click below the last one, so check the cell bounds.
-            Rectangle bounds = findings.getCellBounds(row, row);
+            java.awt.Rectangle bounds = findings.getCellBounds(row, row);
 
             if (bounds == null || !bounds.contains(e.getPoint())) return;
 
@@ -475,7 +461,7 @@ public class AutonomyViewerPanel extends JPanel
      * Colors a row by what it is: a section heading, something that must be fixed, or something worth
      * checking.  Color rather than a prefix, because the list is scanned rather than read.  The editor's list too.
      */
-    public static final class FindingRenderer extends DefaultListCellRenderer
+    public static final class FindingRenderer extends javax.swing.DefaultListCellRenderer
     {
         private final List<AutonomyChecks.Severity> severities;
         private final List<?> tiles;
@@ -1142,10 +1128,10 @@ public class AutonomyViewerPanel extends JPanel
      */
     private List<AutonomySession.LocomotiveLeftOut> forgetLocomotivesNotInTheDatabase(String configuration)
     {
-        if (ui.getModel() == null) return Collections.emptyList();
+        if (ui.getModel() == null) return java.util.Collections.emptyList();
 
         List<AutonomySession.LocomotiveLeftOut> leftOut = session().forgetLocomotivesNotIn(configuration,
-            new HashSet<>(ui.getModel().getLocList()));
+            new java.util.HashSet<>(ui.getModel().getLocList()));
 
         logLocomotivesLeftOut(configuration, leftOut);
 
@@ -1197,7 +1183,7 @@ public class AutonomyViewerPanel extends JPanel
     /** One line for each locomotive, in name order: its name, and what it lost where. */
     private List<String> linesFor(List<AutonomySession.LocomotiveLeftOut> leftOut)
     {
-        Map<String, List<String>> lost = new TreeMap<>();
+        Map<String, List<String>> lost = new java.util.TreeMap<>();
 
         for (AutonomySession.LocomotiveLeftOut one : leftOut)
         {
@@ -1297,7 +1283,8 @@ public class AutonomyViewerPanel extends JPanel
         {
             // The names this database actually holds, so a placement naming something else is
             // refused here rather than by the whole layout failing to build later
-            Set<String> known = ui.getModel() == null ? null : new LinkedHashSet<>(ui.getModel().getLocList());
+            java.util.Set<String> known = ui.getModel() == null
+                ? null : new java.util.LinkedHashSet<>(ui.getModel().getLocList());
 
             // Into the configuration running, by its name: what the running layout knows goes into it FIRST, so the
             // reload after the import does not capture again over the brought homes and settings (OB-183).  While
@@ -1850,7 +1837,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         String where = tile.getX() + "," + tile.getY();
 
-        LayoutDiagramComponent component =
+        org.traincontrol.base.LayoutDiagramComponent component =
             session().getGraph() == null ? null : session().getGraph().getTiles().get(tile);
 
         if (component == null) return where;
@@ -1881,7 +1868,7 @@ public class AutonomyViewerPanel extends JPanel
         findingRelatedRows.add(null);
         findingSeverity.add(null);
 
-        Map<String, List<Object[]>> byPage = new LinkedHashMap<>();
+        Map<String, List<Object[]>> byPage = new java.util.LinkedHashMap<>();
 
         for (Object[] row : rows)
         {
@@ -1942,9 +1929,9 @@ public class AutonomyViewerPanel extends JPanel
      * @return the ERROR, WARNING and NOTICE rows, every other severity among the notices
      */
     public static Map<AutonomyChecks.Severity, List<Object[]>> findingRows(List<AutonomyChecks.Finding> findings,
-        Function<TileGraph.TileKey, String> describeTile)
+        java.util.function.Function<TileGraph.TileKey, String> describeTile)
     {
-        Map<AutonomyChecks.Severity, List<Object[]>> sorted = new EnumMap<>(AutonomyChecks.Severity.class);
+        Map<AutonomyChecks.Severity, List<Object[]>> sorted = new java.util.EnumMap<>(AutonomyChecks.Severity.class);
 
         sorted.put(AutonomyChecks.Severity.ERROR, new ArrayList<>());
         sorted.put(AutonomyChecks.Severity.WARNING, new ArrayList<>());

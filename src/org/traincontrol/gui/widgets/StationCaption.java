@@ -7,7 +7,6 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
@@ -16,15 +15,10 @@ import java.awt.font.FontRenderContext;
 import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
-import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import javax.swing.JLabel;
 import javax.swing.BorderFactory;
-import javax.swing.SwingUtilities;
 import javax.swing.plaf.basic.BasicHTML;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
-import javax.swing.text.Position;
 import javax.swing.text.View;
 import org.traincontrol.automationui.DiagramColours;
 import org.traincontrol.gui.LayoutGrid;
@@ -246,7 +240,7 @@ public class StationCaption extends JLabel
         Rectangle view = new Rectangle(in.left, in.top, getWidth() - in.left - in.right,
             getHeight() - in.top - in.bottom);
 
-        return SwingUtilities.layoutCompoundLabel(this, fm, text, getIcon(), getVerticalAlignment(),
+        return javax.swing.SwingUtilities.layoutCompoundLabel(this, fm, text, getIcon(), getVerticalAlignment(),
             getHorizontalAlignment(), getVerticalTextPosition(), getHorizontalTextPosition(), view,
             new Rectangle(), place, getIconTextGap());
     }
@@ -281,7 +275,7 @@ public class StationCaption extends JLabel
             // where JLabel's own painter puts the view
             layOut(fm, text, place);
 
-            Document document = view.getDocument();
+            javax.swing.text.Document document = view.getDocument();
 
             String words = document.getText(0, document.getLength());
 
@@ -304,7 +298,7 @@ public class StationCaption extends JLabel
 
                 if (!line.trim().isEmpty())
                 {
-                    Shape where = view.modelToView(first, place, Position.Bias.Forward);
+                    Shape where = view.modelToView(first, place, javax.swing.text.Position.Bias.Forward);
 
                     if (where != null)
                     {
@@ -321,7 +315,7 @@ public class StationCaption extends JLabel
 
             drawHalo(g2, letters);
         }
-        catch (BadLocationException e)
+        catch (javax.swing.text.BadLocationException e)
         {
             // no halo, as before: the words are drawn regardless
         }
@@ -528,7 +522,7 @@ public class StationCaption extends JLabel
 
         try
         {
-            for (String family : GraphicsEnvironment.getLocalGraphicsEnvironment()
+            for (String family : java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
                 .getAvailableFontFamilyNames())
             {
                 if (SYMBOL_FONT.equalsIgnoreCase(family))
@@ -902,7 +896,7 @@ public class StationCaption extends JLabel
             // Measured as drawn, in this graphics, which carries its scale.  Across by the ink, not the advance; up and
             // down by the capitals, since the ascent includes room above them that no letter fills.
             FontRenderContext frc = g2.getFontRenderContext();
-            Rectangle2D ink = drawnFont().createGlyphVector(frc, text).getVisualBounds();
+            java.awt.geom.Rectangle2D ink = drawnFont().createGlyphVector(frc, text).getVisualBounds();
             double capitals = drawnFont().createGlyphVector(frc, "H").getVisualBounds().getHeight();
 
             float left = (float) (x + (len - ink.getWidth()) / 2.0 - ink.getX());

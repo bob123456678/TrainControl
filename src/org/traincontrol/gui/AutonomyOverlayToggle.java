@@ -8,7 +8,6 @@ import java.awt.Dimension;
 import java.awt.Insets;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
-import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
@@ -269,7 +268,7 @@ public class AutonomyOverlayToggle extends JPanel
 
         // The turning mark, whichever button this stands in for: Start's own, grayed too during the coast-down
         // (OB-309).
-        Icon mark = start != null ? start.getIcon() : null;
+        javax.swing.Icon mark = start != null ? start.getIcon() : null;
 
         run.setIcon(mark);
         run.setDisabledIcon(mark);

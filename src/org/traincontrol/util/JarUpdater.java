@@ -1,7 +1,5 @@
 package org.traincontrol.util;
 
-import java.awt.Color;
-import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -20,7 +18,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JWindow;
@@ -767,7 +764,7 @@ public final class JarUpdater
     }
 
     /** Sets `STARTED_ENVIRONMENT` to the marker for the start that writes it and removes it for every other. */
-    public static void prepareEnvironment(Map<String, String> environment, File startedMarker)
+    public static void prepareEnvironment(java.util.Map<String, String> environment, File startedMarker)
     {
         if (startedMarker == null)
         {
@@ -785,7 +782,7 @@ public final class JarUpdater
      */
     private static JWindow showTheWindow(final String text)
     {
-        if (GraphicsEnvironment.isHeadless()) return null;
+        if (java.awt.GraphicsEnvironment.isHeadless()) return null;
 
         try
         {
@@ -796,7 +793,7 @@ public final class JarUpdater
                 JLabel label = new JLabel(text);
 
                 label.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(Color.GRAY),
+                    BorderFactory.createLineBorder(java.awt.Color.GRAY),
                     BorderFactory.createEmptyBorder(16, 28, 16, 28)));
 
                 JWindow window = new JWindow();

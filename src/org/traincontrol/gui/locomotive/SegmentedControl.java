@@ -10,7 +10,6 @@ import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.geom.RoundRectangle2D;
-import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JPanel;
@@ -179,7 +178,7 @@ public class SegmentedControl extends JPanel
     }
 
     /** Draws a button's text in this color, centered in the button, in the button's font. */
-    public static void drawCentered(Graphics2D g2, AbstractButton button, Color ink)
+    public static void drawCentered(Graphics2D g2, javax.swing.AbstractButton button, Color ink)
     {
         g2.setColor(ink);
         g2.setFont(button.getFont());

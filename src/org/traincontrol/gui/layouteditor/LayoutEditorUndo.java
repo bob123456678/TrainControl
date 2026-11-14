@@ -2,7 +2,6 @@ package org.traincontrol.gui.layouteditor;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.traincontrol.base.LayoutDiagramComponent;
@@ -37,7 +36,7 @@ final class LayoutEditorUndo
         AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
         return autonomy == null
-            ? new LinkedHashMap<String, Object>()
+            ? new java.util.LinkedHashMap<String, Object>()
             : autonomy.snapshotPage(this.editor.layout.getName());
     }
 

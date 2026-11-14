@@ -9,10 +9,8 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
-import java.awt.Insets;
 import java.awt.LayoutManager;
 import java.awt.event.MouseEvent;
-import java.awt.geom.RoundRectangle2D;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -100,7 +98,7 @@ public class AccessoryKeyboard extends JPanel
             JToggleButton tab = new JToggleButton((rangeStart(p)) + "-" + (rangeStart(p) + KEYS - 1));
 
             tab.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            tab.setMargin(new Insets(1, 2, 1, 2));
+            tab.setMargin(new java.awt.Insets(1, 2, 1, 2));
             tab.setFocusable(false);
             tab.addActionListener(e -> this.listener.pageChosen(chosen));
             group.add(tab);
@@ -152,7 +150,7 @@ public class AccessoryKeyboard extends JPanel
             {
                 Graphics2D g2 = (Graphics2D) g.create();
 
-                g2.setClip(new RoundRectangle2D.Float(0, 0, this.getWidth() - 1, this.getHeight() - 1, 3, 3));
+                g2.setClip(new java.awt.geom.RoundRectangle2D.Float(0, 0, this.getWidth() - 1, this.getHeight() - 1, 3, 3));
                 super.paintChildren(g2);
                 g2.dispose();
 

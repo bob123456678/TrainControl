@@ -12,46 +12,34 @@ import java.awt.Font;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GraphicsEnvironment;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.EventObject;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.Consumer;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.CellRendererPane;
 import javax.swing.DefaultCellEditor;
-import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -59,7 +47,6 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -70,11 +57,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JViewport;
 import javax.swing.KeyStroke;
-import javax.swing.Scrollable;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.TableModelEvent;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
@@ -99,7 +82,6 @@ import org.traincontrol.base.NodeOr;
 import org.traincontrol.base.NodeRouteCommand;
 import org.traincontrol.base.RouteCapture;
 import org.traincontrol.gui.widgets.PopupListener;
-import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.ImageUtil;
 
@@ -116,7 +98,7 @@ public class RouteEditorFrame extends JFrame
     // of FlatLaf's.  Headless-guarded: a static initializer that throws leaves the class unusable.
     static
     {
-        if (!GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
+        if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
     }
 
     private final TrainControlUI parent;
@@ -247,10 +229,10 @@ public class RouteEditorFrame extends JFrame
         // DO_NOTHING, because the close has a question to ask first - see closeIfThrowingNothingAway
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 
-        addWindowListener(new WindowAdapter()
+        addWindowListener(new java.awt.event.WindowAdapter()
         {
             @Override
-            public void windowClosing(WindowEvent e)
+            public void windowClosing(java.awt.event.WindowEvent e)
             {
                 closeIfThrowingNothingAway();
             }
@@ -976,7 +958,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /** As wide as the scroll pane, and as tall as it where the conditions are fewer. */
-    private static final class ScrollingArea extends JPanel implements Scrollable
+    private static final class ScrollingArea extends JPanel implements javax.swing.Scrollable
     {
         ScrollingArea()
         {
@@ -998,7 +980,7 @@ public class RouteEditorFrame extends JFrame
         @Override
         public int getScrollableBlockIncrement(Rectangle visible, int orientation, int direction)
         {
-            return Math.max(24, (orientation == SwingConstants.VERTICAL ? visible.height : visible.width) - 24);
+            return Math.max(24, (orientation == javax.swing.SwingConstants.VERTICAL ? visible.height : visible.width) - 24);
         }
 
         @Override
@@ -1194,10 +1176,10 @@ public class RouteEditorFrame extends JFrame
 
         for (String word : words) box.addItem(word);
 
-        box.setRenderer(new DefaultListCellRenderer()
+        box.setRenderer(new javax.swing.DefaultListCellRenderer()
         {
             @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value,
+            public Component getListCellRendererComponent(javax.swing.JList<?> list, Object value,
                 int index, boolean selected, boolean focused)
             {
                 return super.getListCellRendererComponent(list,
@@ -1209,7 +1191,7 @@ public class RouteEditorFrame extends JFrame
     }
 
     /** The setting words a route stores, each with a `route.ui.setting.<word>` text in every bundle. */
-    private static final Set<String> SETTING_WORDS = new HashSet<>(Arrays.asList(
+    private static final Set<String> SETTING_WORDS = new java.util.HashSet<>(java.util.Arrays.asList(
         "straight", "turn", "green", "red", "on", "off", "forward", "backward", "left", "right"));
 
     /**
@@ -2008,7 +1990,7 @@ public class RouteEditorFrame extends JFrame
             pressRowMark(table, table.rowAtPoint(e.getPoint()), table.columnAtPoint(e.getPoint()));
         }));
 
-        table.addMouseMotionListener(new MouseMotionAdapter()
+        table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
         {
             @Override
             public void mouseMoved(MouseEvent e)
@@ -3062,7 +3044,8 @@ public class RouteEditorFrame extends JFrame
             // back from the database, because newRoute picks the id.
             Route saved = parent.getModel().getRoute(name);
 
-            boolean couldCollide = saved == null || !MarklinControlStation.isLocalRouteId(saved.getId());
+            boolean couldCollide = saved == null
+                || !org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(saved.getId());
 
             if (originalName.isEmpty() && couldCollide && anyRouteCameFromTheStation()) parent.syncWithCS2();
 
@@ -3249,7 +3232,7 @@ public class RouteEditorFrame extends JFrame
         }
 
         /** Hands the rows on top of one side to `putBack`, keeping the rows `now` on the other side. */
-        void step(boolean undo, List<T> now, Consumer<List<T>> putBack)
+        void step(boolean undo, List<T> now, java.util.function.Consumer<List<T>> putBack)
         {
             Deque<List<T>> from = undo ? undoable : redoable;
 
@@ -3453,7 +3436,7 @@ public class RouteEditorFrame extends JFrame
         }
 
         @Override
-        public void valueChanged(ListSelectionEvent e)
+        public void valueChanged(javax.swing.event.ListSelectionEvent e)
         {
             super.valueChanged(e);
 
@@ -4625,7 +4608,7 @@ public class RouteEditorFrame extends JFrame
 
         /** Every change of the lines resets their heights, so they are set again. */
         @Override
-        public void tableChanged(TableModelEvent e)
+        public void tableChanged(javax.swing.event.TableModelEvent e)
         {
             super.tableChanged(e);
 
@@ -4809,7 +4792,7 @@ public class RouteEditorFrame extends JFrame
                     if (switchOrSignal)
                     {
                         String said = term.getSetting() == null
-                            ? "" : term.getSetting().trim().toLowerCase(Locale.ROOT);
+                            ? "" : term.getSetting().trim().toLowerCase(java.util.Locale.ROOT);
 
                         boolean stop = "turn".equals(said) || "red".equals(said);
                         boolean go = "straight".equals(said) || "green".equals(said);
@@ -4857,7 +4840,7 @@ public class RouteEditorFrame extends JFrame
                 {
                     // A value no condition can be built from is refused: the cell shows the condition as it was,
                     // which is what Save saves
-                    Toolkit.getDefaultToolkit().beep();
+                    java.awt.Toolkit.getDefaultToolkit().beep();
 
                     return;
                 }
@@ -5330,7 +5313,7 @@ public class RouteEditorFrame extends JFrame
             showChanges(before);
         }
 
-        private List<RouteCommand> commandsOf(Collection<Integer> outline)
+        private List<RouteCommand> commandsOf(java.util.Collection<Integer> outline)
         {
             List<RouteCommand> out = new ArrayList<>();
 
@@ -5593,7 +5576,7 @@ public class RouteEditorFrame extends JFrame
          * begun by a double-click keeps the text, to change part of it.
          */
         @Override
-        public boolean editCellAt(int line, int column, EventObject e)
+        public boolean editCellAt(int line, int column, java.util.EventObject e)
         {
             boolean editing = super.editCellAt(line, column, e);
 

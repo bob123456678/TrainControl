@@ -9,7 +9,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -120,7 +119,7 @@ final class StationMatrixPanel extends JPanel
     /** The height of this many lines of a notice and the gap between the two. */
     private static int roomFor(int lines)
     {
-        JLabel sample = new JLabel("<html>" + String.join("<br>", Collections.nCopies(lines, "X")) + "</html>");
+        JLabel sample = new JLabel("<html>" + String.join("<br>", java.util.Collections.nCopies(lines, "X")) + "</html>");
 
         sample.setFont(CELL_FONT);
 

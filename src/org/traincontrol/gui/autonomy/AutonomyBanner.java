@@ -9,23 +9,15 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Insets;
 import java.awt.LayoutManager;
-import java.awt.Rectangle;
 import java.awt.Window;
-import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JEditorPane;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JViewport;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -94,7 +86,7 @@ public class AutonomyBanner extends JPanel
     private final JButton action = new JButton();
 
     /** What the button currently does, so that a second offer replaces the first rather than firing both. */
-    private ActionListener acting;
+    private java.awt.event.ActionListener acting;
 
     private final Timer clear;
 
@@ -217,7 +209,7 @@ public class AutonomyBanner extends JPanel
         // the deck; the strip follows the viewport's edges.
         followedViewport = diagram.getViewport();
 
-        followingViewport = new ComponentAdapter()
+        followingViewport = new java.awt.event.ComponentAdapter()
         {
             @Override
             public void componentResized(ComponentEvent e)
@@ -236,7 +228,7 @@ public class AutonomyBanner extends JPanel
 
         // A click on the strip stays on it.  Swing hands a click to the topmost component under the pointer that
         // listens for clicks, and without a listener of its own the strip's padding would pass it to a square below.
-        addMouseListener(new MouseAdapter()
+        addMouseListener(new java.awt.event.MouseAdapter()
         {
         });
 
@@ -253,7 +245,7 @@ public class AutonomyBanner extends JPanel
         // window's own handler, so Escape and the shortcuts do what they always do.
         close.setRequestFocusEnabled(false);
 
-        close.addKeyListener(new KeyAdapter()
+        close.addKeyListener(new java.awt.event.KeyAdapter()
         {
             @Override
             public void keyPressed(KeyEvent e)
@@ -290,8 +282,8 @@ public class AutonomyBanner extends JPanel
     }
 
     /** What floatOver listens to and with; both null before it and after letGoOfTheDiagram. */
-    private JViewport followedViewport;
-    private ComponentListener followingViewport;
+    private javax.swing.JViewport followedViewport;
+    private java.awt.event.ComponentListener followingViewport;
 
     /** Hides the strip until the next notice; the timer is stopped with it, so nothing else changes. */
     private void dismiss()
@@ -332,7 +324,7 @@ public class AutonomyBanner extends JPanel
 
         if (window == null) return;
 
-        for (KeyListener each : window.getKeyListeners())
+        for (java.awt.event.KeyListener each : window.getKeyListeners())
         {
             if (e.getID() == KeyEvent.KEY_PRESSED) each.keyPressed(e);
             else if (e.getID() == KeyEvent.KEY_RELEASED) each.keyReleased(e);
@@ -565,7 +557,7 @@ public class AutonomyBanner extends JPanel
 
             if (!band.isVisible()) return;
 
-            Rectangle view = SwingUtilities.convertRectangle(diagram, diagram.getViewport().getBounds(), deck);
+            java.awt.Rectangle view = SwingUtilities.convertRectangle(diagram, diagram.getViewport().getBounds(), deck);
 
             // At the viewport's width first: how tall a wrapped message is depends on how wide it is
             band.setBounds(view.x, band.getY(), view.width, Math.max(1, band.getHeight()));

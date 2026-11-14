@@ -1,9 +1,7 @@
 package org.traincontrol.automationui;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -115,7 +113,7 @@ public class DiagramMonitor
     {
         // The gray before the trains it is drawn on, and never an empty set between (OB-343): a frame on the monitor's
         // thread reads the trains, then asks of each whether it is paused.
-        this.pausedOnNoPoint = paused == null ? Collections.<TileKey>emptySet() : new HashSet<>(paused);
+        this.pausedOnNoPoint = paused == null ? Collections.<TileKey>emptySet() : new java.util.HashSet<>(paused);
 
         this.onNoPoint = trains == null ? new LinkedHashMap<TileKey, TilePorts.Side>() : new LinkedHashMap<>(trains);
     }
@@ -365,7 +363,7 @@ public class DiagramMonitor
                 i == run.size() - 1 ? null : TileGraph.gridSideTowards(at, run.get(i + 1)),
                 states.get(i));
 
-            TileOverlay overlay = new TileOverlay(states.get(i), false, Arrays.asList(segment));
+            TileOverlay overlay = new TileOverlay(states.get(i), false, java.util.Arrays.asList(segment));
 
             TileOverlay existing = into.get(at);
 

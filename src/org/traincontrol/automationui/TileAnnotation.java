@@ -5,7 +5,6 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Composite;
 import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
 import java.awt.Rectangle;
@@ -18,12 +17,9 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -996,7 +992,7 @@ public class TileAnnotation
         double offset = span / 4.0;
 
         // Nearer the middle where two share a corner (MT-714), so chevrons on a double curve do not touch.
-        Map<Set<Side>, Integer> corners = new HashMap<>();
+        Map<Set<Side>, Integer> corners = new java.util.HashMap<>();
 
         for (Arrival arrival : arrivals)
         {
@@ -1244,7 +1240,7 @@ public class TileAnnotation
 
         Set<String> drawn = new LinkedHashSet<>();
 
-        Set<String> rails = new HashSet<>();
+        Set<String> rails = new java.util.HashSet<>();
 
         for (Trace trace : traces)
         {
@@ -2002,7 +1998,7 @@ public class TileAnnotation
 
         double r = Math.max(2, h * 0.22);
 
-        return new RoundRectangle2D.Double(-w / 2.0, -h / 2.0, w, h, 2 * r, 2 * r);
+        return new java.awt.geom.RoundRectangle2D.Double(-w / 2.0, -h / 2.0, w, h, 2 * r, 2 * r);
     }
 
     /** Around a square to a square's depth, but not the square: where its spill is drawn. */
@@ -2330,7 +2326,7 @@ public class TileAnnotation
 
         g.setFont(g.getFont().deriveFont(Font.BOLD, (float) size));
 
-        FontMetrics metrics = g.getFontMetrics();
+        java.awt.FontMetrics metrics = g.getFontMetrics();
 
         int textWidth = metrics.stringWidth(text);
 

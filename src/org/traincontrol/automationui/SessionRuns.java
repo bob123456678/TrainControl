@@ -1,6 +1,5 @@
 package org.traincontrol.automationui;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -140,7 +139,7 @@ final class SessionRuns
     }
 
     /** The body of `AutonomySession.staticAnnotations`. */
-    Map<TileKey, TileAnnotation> staticAnnotations(Collection<TileKey> squares, boolean arrows,
+    Map<TileKey, TileAnnotation> staticAnnotations(java.util.Collection<TileKey> squares, boolean arrows,
         boolean allowedToo)
     {
         Map<TileKey, TileAnnotation> out = new LinkedHashMap<>();

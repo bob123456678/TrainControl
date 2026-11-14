@@ -1,10 +1,7 @@
 package org.traincontrol.automationui;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -105,7 +102,7 @@ final class SessionImport
             Side recorded = ran == null ? owner.getFacing(tile) : null;
 
             boolean keepIt = recorded != null && ways.contains(recorded)
-                && (mayArrive.contains(recorded) || Collections.disjoint(ways, mayArrive));
+                && (mayArrive.contains(recorded) || java.util.Collections.disjoint(ways, mayArrive));
 
             if (keepIt)
             {
@@ -402,7 +399,7 @@ final class SessionImport
         Map<TileKey, String> facingToFind = new LinkedHashMap<>();
 
         // Squares this import has met, so a further old point on one is said rather than counted again.
-        Set<TileKey> metHere = new HashSet<>();
+        Set<TileKey> metHere = new java.util.HashSet<>();
 
         for (int i = 0; i < points.length(); i++)
         {
@@ -695,7 +692,7 @@ final class SessionImport
     }
 
     /** The body of `AutonomySession.importBundle`. */
-    int importBundle(String name, JSONObject file) throws IOException
+    int importBundle(String name, JSONObject file) throws java.io.IOException
     {
         int filled = owner.store.importBundle(name, file);
 

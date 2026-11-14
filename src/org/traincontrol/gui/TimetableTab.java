@@ -1,8 +1,6 @@
 package org.traincontrol.gui;
 
 import java.awt.event.MouseEvent;
-import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -65,7 +63,7 @@ final class TimetableTab
         final Layout shown = this.ui.getModel().getAutoLayoutIfLoaded();
 
         final List<TimetablePath> timeTable =
-            shown == null ? Collections.<TimetablePath>emptyList() : shown.getTimetableSnapshot();
+            shown == null ? java.util.Collections.<TimetablePath>emptyList() : shown.getTimetableSnapshot();
 
         SwingUtilities.invokeLater(() ->
         {
@@ -143,7 +141,7 @@ final class TimetableTab
                         {
                             keeping.clearTheTimetable();
                         }
-                        catch (IOException e)
+                        catch (java.io.IOException e)
                         {
                             this.ui.getModel().log(e);
                         }

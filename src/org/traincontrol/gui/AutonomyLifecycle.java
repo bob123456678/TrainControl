@@ -4,28 +4,20 @@ import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph;
-import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.widgets.RestoreAction;
 import javax.swing.JOptionPane;
 import javax.swing.GroupLayout;
-import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.MenuEvent;
-import javax.swing.event.MenuListener;
-import javax.swing.JPopupMenu;
 import org.traincontrol.util.I18n;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Container;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 /** The autonomy session's life, and the menu, strip and Auto tabs mounted around it. */
 final class AutonomyLifecycle
@@ -47,7 +39,7 @@ final class AutonomyLifecycle
         {
             ui.autonomyMenu = new AutonomyMenu(ui);
 
-            JMenuBar mainMenuBar = ui.mainMenuBar();
+            javax.swing.JMenuBar mainMenuBar = ui.mainMenuBar();
 
             int at = -1;
 
@@ -102,7 +94,7 @@ final class AutonomyLifecycle
 
         if (ui.layoutMenu() != null && ui.layoutMenu().getMenuListeners().length == 0)
         {
-            ui.layoutMenu().addMenuListener(new MenuListener()
+            ui.layoutMenu().addMenuListener(new javax.swing.event.MenuListener()
             {
                 @Override
                 public void menuSelected(MenuEvent e)
@@ -206,7 +198,7 @@ final class AutonomyLifecycle
                     // Logged rather than shown (this fires on every edit), but the refusal has to reach somebody.
                     ui.noteIfTheSetupWasNotTidied(session.save());
                 }
-                catch (IOException e)
+                catch (java.io.IOException e)
                 {
                     // The edit stands in the session either way; only the record of it is at risk
                     ui.getModel().log(e);
@@ -273,7 +265,7 @@ final class AutonomyLifecycle
 
         // Above the scroll pane, not inside it (OB-148): a column header scrolls with the view.  Swapped in at runtime
         // because the layout comes from the generated form.
-        Container home = ui.layoutArea().getParent();
+        java.awt.Container home = ui.layoutArea().getParent();
 
         if (home != null && home.getLayout() instanceof GroupLayout)
         {
@@ -314,7 +306,7 @@ final class AutonomyLifecycle
 
         try
         {
-            List<LayoutDiagram> pages = new ArrayList<>();
+            java.util.List<org.traincontrol.base.LayoutDiagram> pages = new ArrayList<>();
 
             // Name-sorted: a link's number indexes this list
             for (String name : ui.getModel().getLayoutListByName()) pages.add(ui.getModel().getLayout(name));
@@ -371,7 +363,7 @@ final class AutonomyLifecycle
         // only record of the number.
         session.setTrainLengthSource(name ->
         {
-            Locomotive loc = name == null ? null : ui.getModel().getLocByName(name);
+            org.traincontrol.base.Locomotive loc = name == null ? null : ui.getModel().getLocByName(name);
 
             return loc == null ? null : loc.getTrainLength();
         });
@@ -759,7 +751,7 @@ final class AutonomyLifecycle
         // At the top, above Export and Import, which are about the route list as a file.
         ui.routesMenu().add(newRoute, 0);
         ui.routesMenu().add(ui.findRouteMenuItem, 1);
-        ui.routesMenu().add(new JPopupMenu.Separator(), 2);
+        ui.routesMenu().add(new javax.swing.JPopupMenu.Separator(), 2);
     }
 
     /** A setup refused as written by a newer TrainControl arrives as a message KEY plus versions; translated here. */

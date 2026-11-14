@@ -7,7 +7,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
-import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Area;
@@ -429,7 +428,7 @@ public final class RowIcons
      * A shape drawn upright on a 13-unit grid around the origin, filled once turned a half right angle and scaled to
      * the icon.
      */
-    private static Icon turned(final int size, final Color colour, final Shape upright)
+    private static Icon turned(final int size, final Color colour, final java.awt.Shape upright)
     {
         return new Painted(size)
         {

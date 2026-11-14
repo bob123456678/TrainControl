@@ -1,8 +1,6 @@
 package org.traincontrol.gui.layouteditor;
 
 import java.awt.BorderLayout;
-import java.awt.Frame;
-import java.awt.GraphicsEnvironment;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
@@ -20,7 +18,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.Listen;
 import org.traincontrol.gui.TrainControlUI;
@@ -38,7 +35,7 @@ final class FindAPointPrompt extends JDialog
     // The look is installed before the first window of this class is built, as every window's is
     static
     {
-        if (!GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
+        if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
     }
 
     /** One named point: where it is and what it is called. */
@@ -73,7 +70,7 @@ final class FindAPointPrompt extends JDialog
     private final JList<Entry> list = new JList<>(shown);
     private final JLabel status = new JLabel(" ");
 
-    FindAPointPrompt(Frame owner, Supplier<List<Entry>> points, Consumer<TileKey> chosen)
+    FindAPointPrompt(java.awt.Frame owner, Supplier<List<Entry>> points, Consumer<TileKey> chosen)
     {
         super(owner, I18n.t("layout.ui.findPointTitle"), false);
 
@@ -104,7 +101,7 @@ final class FindAPointPrompt extends JDialog
 
         setContentPane(content);
 
-        box.getDocument().addDocumentListener(new DocumentListener()
+        box.getDocument().addDocumentListener(new javax.swing.event.DocumentListener()
         {
             @Override
             public void insertUpdate(DocumentEvent e)

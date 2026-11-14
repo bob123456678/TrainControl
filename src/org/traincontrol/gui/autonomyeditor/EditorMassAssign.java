@@ -2,15 +2,11 @@ package org.traincontrol.gui.autonomyeditor;
 
 import java.util.Map;
 import java.awt.BorderLayout;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -195,7 +191,7 @@ final class EditorMassAssign
         // each train with the length it has, which Skip keeps.
         Map<String, Integer> known = trains.isEmpty() ? door.trainLengths() : null;
 
-        if (known != null) trains = new ArrayList<>(known.keySet());
+        if (known != null) trains = new java.util.ArrayList<>(known.keySet());
 
         if (trains.isEmpty())
         {
@@ -332,10 +328,10 @@ final class EditorMassAssign
 
         if (prefill != null && !prefill.isEmpty())
         {
-            field.addFocusListener(new FocusAdapter()
+            field.addFocusListener(new java.awt.event.FocusAdapter()
             {
                 @Override
-                public void focusGained(FocusEvent e)
+                public void focusGained(java.awt.event.FocusEvent e)
                 {
                     field.selectAll();
                 }
@@ -381,7 +377,7 @@ final class EditorMassAssign
             // own listener.
             JOptionPane.YES_NO_CANCEL_OPTION, null, answers, null);
 
-        final JDialog dialog = pane.createDialog(editor.owner(), I18n.t(titleKey));
+        final javax.swing.JDialog dialog = pane.createDialog(editor.owner(), I18n.t(titleKey));
 
         editor.placeWalkPrompt(dialog);
 

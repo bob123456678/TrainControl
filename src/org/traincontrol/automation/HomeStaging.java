@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
-import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Objects;
 import org.traincontrol.base.Locomotive;
@@ -971,7 +970,7 @@ public final class HomeStaging
         }
 
         final Map<String, Integer> ownBody = this.layout == null ? null
-            : this.bodies.computeIfAbsent(Arrays.asList(from, loc, cameAlong),
+            : this.bodies.computeIfAbsent(java.util.Arrays.asList(from, loc, cameAlong),
                 key -> this.layout.bodyOfATrainAt(from, loc, (List<Edge>) key.get(2)));
 
         Deque<Candidate> queue = new ArrayDeque<>();

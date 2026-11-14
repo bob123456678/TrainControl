@@ -1,13 +1,10 @@
 package org.traincontrol.gui.autonomyeditor;
 
 import java.awt.Window;
-import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import javax.swing.SwingUtilities;
 
 /**
  * This panel's Station Settings window, one per surface (FR-111).  It follows every edit, closes when the square or the
@@ -34,11 +31,11 @@ final class StationWindows
     /** The window for this surface, made anew when another window asks than the one it hangs off. */
     StationSettingsWindow station(TileKey square)
     {
-        return stations(Collections.singletonList(square));
+        return stations(java.util.Collections.singletonList(square));
     }
 
     /** The same window about several squares at once (FR-052), or one. */
-    StationSettingsWindow stations(List<TileKey> squares)
+    StationSettingsWindow stations(java.util.List<TileKey> squares)
     {
         Window owner = editor.ownerWindow();
 
@@ -79,7 +76,7 @@ final class StationWindows
 
         reloadPending = true;
 
-        SwingUtilities.invokeLater(() ->
+        javax.swing.SwingUtilities.invokeLater(() ->
         {
             reloadPending = false;
 

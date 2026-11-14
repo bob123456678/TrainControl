@@ -4,13 +4,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -385,7 +383,7 @@ public class AutonomyBuilder
 
         if (!neverMeet) return nodes.size() > 1 ? tile.toString() : null;
 
-        SortedSet<TilePorts.Side> road = new TreeSet<>();
+        java.util.SortedSet<TilePorts.Side> road = new TreeSet<>();
 
         road.add(node.getArrival());
         road.addAll(onwardFrom(tile, node.getArrival()));
@@ -751,7 +749,7 @@ public class AutonomyBuilder
     /** Every square's name, for nodeName, worked out once by each caller from its own uniqueNames(). */
     private static Set<String> namesTaken(Map<TileKey, String> names)
     {
-        return new HashSet<>(names.values());
+        return new java.util.HashSet<>(names.values());
     }
 
     /**

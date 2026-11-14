@@ -11,8 +11,6 @@ import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
-import java.util.ArrayList;
-import java.util.List;
 import javax.swing.JLabel;
 import org.traincontrol.util.ImageUtil;
 
@@ -48,7 +46,7 @@ public class AddressLabel extends JLabel
      */
     public void setLines(String... lines)
     {
-        List<String> kept = new ArrayList<>();
+        java.util.List<String> kept = new java.util.ArrayList<>();
 
         for (String line : lines)
         {

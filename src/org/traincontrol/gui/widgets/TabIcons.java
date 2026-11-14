@@ -5,13 +5,10 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
-import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
-import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Icon;
 
@@ -114,7 +111,7 @@ public final class TabIcons
 
             for (int line = 0; line < 3; line++)
             {
-                g.fill(new Rectangle2D.Float(w * 0.28f, h * (0.42f + line * 0.18f), w * 0.46f, h * 0.07f));
+                g.fill(new java.awt.geom.Rectangle2D.Float(w * 0.28f, h * (0.42f + line * 0.18f), w * 0.46f, h * 0.07f));
             }
 
             Path2D.Float fold = new Path2D.Float();
@@ -188,7 +185,7 @@ public final class TabIcons
     /** Draws in a smaller copy of the icon's box, moved to (left, top) and scaled by {@code scale}. */
     private static void placed(Graphics2D g, int w, int h, float left, float top, float scale, Runnable draw)
     {
-        AffineTransform was = g.getTransform();
+        java.awt.geom.AffineTransform was = g.getTransform();
 
         g.translate(w * left, h * top);
         g.scale(scale, scale);
@@ -204,7 +201,7 @@ public final class TabIcons
 
     private static List<Shape> parts(int w, int h, String boxes, String circles)
     {
-        List<Shape> out = new ArrayList<>();
+        List<Shape> out = new java.util.ArrayList<>();
 
         for (String part : (boxes + "," + circles).split(","))
         {

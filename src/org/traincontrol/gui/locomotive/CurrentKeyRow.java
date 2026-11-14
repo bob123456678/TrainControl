@@ -12,7 +12,6 @@ import java.awt.geom.Area;
 import java.awt.geom.RoundRectangle2D;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
-import javax.accessibility.AccessibleContext;
 import javax.accessibility.AccessibleRole;
 import javax.swing.JComponent;
 import javax.swing.UIManager;
@@ -372,7 +371,7 @@ public class CurrentKeyRow extends JComponent
      * A plain JComponent has no accessible context, which `setContent` names: a label's role, with the line in words.
      */
     @Override
-    public AccessibleContext getAccessibleContext()
+    public javax.accessibility.AccessibleContext getAccessibleContext()
     {
         if (accessibleContext == null)
         {

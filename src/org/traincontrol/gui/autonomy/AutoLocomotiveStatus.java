@@ -19,7 +19,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Path2D;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -30,11 +29,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import javax.swing.DefaultListModel;
 import javax.swing.Icon;
-import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
@@ -49,12 +46,11 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 import org.traincontrol.automationui.AutonomySession;
-import org.traincontrol.gui.InfoMark;
 
 /**
  * Displays the status of a locomotive in autonomous operation
  */
-public final class AutoLocomotiveStatus extends JPanel
+public final class AutoLocomotiveStatus extends javax.swing.JPanel
 {
     private final Locomotive locomotive;
     private List<List<Edge>> paths;
@@ -127,7 +123,7 @@ public final class AutoLocomotiveStatus extends JPanel
     }
 
     /** The "there is a reason, hover me" mark (OB-063), shared as {@link org.traincontrol.gui.InfoMark}. */
-    private static final ImageIcon INFO_ICON = InfoMark.icon();
+    private static final javax.swing.ImageIcon INFO_ICON = org.traincontrol.gui.InfoMark.icon();
 
     /**
      * This tab's blue, for a card's station badge and its text: the darker blue the window's own labels are written in.
@@ -381,7 +377,7 @@ public final class AutoLocomotiveStatus extends JPanel
                     key.put(path, Edge.pathToString(path));
                 }
 
-                this.paths.sort(Comparator.comparing(key::get));
+                this.paths.sort(java.util.Comparator.comparing(key::get));
                 
                 for (List<Edge> path : this.paths)
                 {

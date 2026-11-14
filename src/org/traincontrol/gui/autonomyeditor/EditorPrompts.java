@@ -1,20 +1,13 @@
 package org.traincontrol.gui.autonomyeditor;
 
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
-import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -130,7 +123,7 @@ final class EditorPrompts
 
         // Alphabetical, by what is actually shown (FR-074: "sort unavailable while occupied list alphabetically."), on
         // `describeTile`: an entry that has lost its name renders as its sensor or its coordinates.
-        Collections.sort(choices, new Comparator<TileKey>()
+        java.util.Collections.sort(choices, new java.util.Comparator<TileKey>()
         {
             @Override
             public int compare(TileKey a, TileKey b)
@@ -157,7 +150,8 @@ final class EditorPrompts
 
             close.addActionListener(e -> pane.setValue(close));
 
-            JDialog dialog = pane.createDialog(editor.owner(), I18n.t("autosetup.ui.menuBlockedByPointsTitle"));
+            javax.swing.JDialog dialog =
+                pane.createDialog(editor.owner(), I18n.t("autosetup.ui.menuBlockedByPointsTitle"));
 
             dialog.setVisible(true);
             dialog.dispose();
@@ -171,10 +165,10 @@ final class EditorPrompts
 
         // Wrapped, because the message names a station and ran off the side of a dialog sized for
         // check boxes (OB-083).
-        panel.add(new JLabel(AutonomyEditorPanel.wrapped(
+        panel.add(new javax.swing.JLabel(AutonomyEditorPanel.wrapped(
             I18n.f("autosetup.ui.promptBlockedByPoints", editor.describeTile(station)))));
 
-        panel.add(Box.createVerticalStrut(LayoutEditor.HEADING_GAP));
+        panel.add(javax.swing.Box.createVerticalStrut(LayoutEditor.HEADING_GAP));
 
         List<JCheckBox> boxes = new ArrayList<>();
 
@@ -189,7 +183,7 @@ final class EditorPrompts
             // testEditorSurfaceRules pins the caption rule here as there.
             JCheckBox box = new JCheckBox(editor.describeTile(tile), already.contains(tile));
 
-            box.setAlignmentX(Component.LEFT_ALIGNMENT);
+            box.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
             // Lightly (FR-074), so a foreground color rather than a disabled box: these squares are valid to block with
             // (a parking berth holding a platform back is what FR-001 exists for); the mark says what kind of square it
@@ -225,7 +219,7 @@ final class EditorPrompts
         scroll.getVerticalScrollBar().setBlockIncrement(AutonomyEditorPanel.BLOCKED_ROW_HEIGHT * 5);
 
         // 460 wide: the prompt names a station, and at 320 the name wrapped into three lines.
-        scroll.setPreferredSize(new Dimension(460,
+        scroll.setPreferredSize(new java.awt.Dimension(460,
             Math.min(360, 80 + choices.size() * AutonomyEditorPanel.BLOCKED_ROW_HEIGHT)));
 
         // Three answers, not two (FR-025: "the 'unavailable when occupied' dialog should allow users to select a s88

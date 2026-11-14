@@ -5,8 +5,6 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
-import javax.swing.KeyStroke;
-import javax.swing.SwingUtilities;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Route;
@@ -33,7 +31,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
     }
 
     /** An item doing `action`, showing the key the editor's key handler acts on for it, display only. */
-    private JMenuItem keyed(String text, KeyStroke key, Action action)
+    private JMenuItem keyed(String text, javax.swing.KeyStroke key, Action action)
     {
         JMenuItem item = new JMenuItem(text);
 
@@ -246,7 +244,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                         {
                             try
                             {
-                                SwingUtilities.invokeLater(() -> 
+                                javax.swing.SwingUtilities.invokeLater(() -> 
                                 {
                                     ui.pressFromWindow(edit, () -> ui.editRoute(route.getName()));
                                 });

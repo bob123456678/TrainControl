@@ -2,9 +2,7 @@ package org.traincontrol.gui.widgets;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GridBagLayout;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -38,7 +36,7 @@ public final class StartupSplash
         content.setBorder(BorderFactory.createEmptyBorder(18, 28, 18, 28));
 
         LoadingSpinner spinner = new LoadingSpinner();
-        spinner.setPreferredSize(new Dimension(64, 64));
+        spinner.setPreferredSize(new java.awt.Dimension(64, 64));
 
         JLabel says = new JLabel(message, SwingConstants.CENTER);
         says.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -48,7 +46,7 @@ public final class StartupSplash
         middle.add(spinner, BorderLayout.CENTER);
         middle.add(says, BorderLayout.SOUTH);
 
-        JPanel centred = new JPanel(new GridBagLayout());
+        JPanel centred = new JPanel(new java.awt.GridBagLayout());
         centred.setBackground(Color.WHITE);
         centred.add(middle);
 

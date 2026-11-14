@@ -3,9 +3,7 @@ package org.traincontrol.automationui;
 import org.traincontrol.base.LayoutDiagramComponent;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -473,7 +471,7 @@ public class AutonomyChecks
     /** The findings in order of severity, the worst first; sorted in place. */
     static void bySeverity(List<Finding> findings)
     {
-        Collections.sort(findings, new Comparator<Finding>()
+        Collections.sort(findings, new java.util.Comparator<Finding>()
         {
             @Override
             public int compare(Finding a, Finding b)
@@ -867,7 +865,7 @@ public class AutonomyChecks
     }
 
     /** Sides in words, as the arrivals menu names them: "west", "west and north", "west, north and east". */
-    static String sidesInWords(Collection<TilePorts.Side> sides)
+    static String sidesInWords(java.util.Collection<TilePorts.Side> sides)
     {
         List<String> words = new ArrayList<>();
 

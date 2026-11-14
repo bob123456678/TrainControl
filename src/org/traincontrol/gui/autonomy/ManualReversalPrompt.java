@@ -8,7 +8,6 @@ import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
-import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
@@ -207,7 +206,7 @@ public final class ManualReversalPrompt
                 // And the operator's own marking, for every square including the ones the build could
                 // not express.  By NAME, because that is what a Point carries and what the station
                 // index maps back to a square.
-                TileGraph.TileKey square =
+                org.traincontrol.automationui.TileGraph.TileKey square =
                     session.getStationIndex() == null ? null
                         : session.getStationIndex().squareOf(at.getName());
 

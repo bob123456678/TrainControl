@@ -6,7 +6,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -734,7 +733,7 @@ public final class MarklinLocomotiveCsv
                 row.lastRun = s;
             }
         }
-        catch (DateTimeParseException unusable)
+        catch (java.time.format.DateTimeParseException unusable)
         {
             row.day = Day.BAD;
         }

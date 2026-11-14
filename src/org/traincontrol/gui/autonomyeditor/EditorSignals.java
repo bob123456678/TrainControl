@@ -1,27 +1,18 @@
 package org.traincontrol.gui.autonomyeditor;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.Window;
-import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntConsumer;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -29,14 +20,11 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
-import javax.swing.ListCellRenderer;
-import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
-import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.UiStyle;
 
 /**
@@ -114,7 +102,7 @@ final class EditorSignals
         final JDialog dialog = new JDialog(
             editor.ownerWindow(),
             I18n.t(guard.title),
-            Dialog.ModalityType.APPLICATION_MODAL);
+            java.awt.Dialog.ModalityType.APPLICATION_MODAL);
 
         TrainControlUI.applyWindowIcon(dialog);
 
@@ -159,7 +147,7 @@ final class EditorSignals
         };
 
         list.setVisibleRowCount(6);
-        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        list.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
 
         list.onRemove(at ->
         {
@@ -234,7 +222,7 @@ final class EditorSignals
         // there is nothing half-finished to discard.
         dialog.getRootPane().registerKeyboardAction(e -> dialog.dispose(),
             KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-            JComponent.WHEN_IN_FOCUSED_WINDOW);
+            javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         dialog.getRootPane().setDefaultButton(done);
 
@@ -286,14 +274,14 @@ final class EditorSignals
         {
             super(model);
 
-            final JLabel mark = new JLabel(RowIcons.cross(14));
-            final ListCellRenderer<? super String> plain = getCellRenderer();
+            final JLabel mark = new JLabel(org.traincontrol.gui.widgets.RowIcons.cross(14));
+            final javax.swing.ListCellRenderer<? super String> plain = getCellRenderer();
 
             mark.setPreferredSize(new Dimension(MARK, 14));
 
             setCellRenderer((shown, value, index, selected, focused) ->
             {
-                Component text = plain.getListCellRendererComponent(shown, value, index, selected, focused);
+                java.awt.Component text = plain.getListCellRendererComponent(shown, value, index, selected, focused);
                 JPanel row = new JPanel(new BorderLayout());
 
                 row.setBackground(text.getBackground());
@@ -306,7 +294,7 @@ final class EditorSignals
 
             // A left press and release on the same row's X, the first click only: the list rebuilds at once, and a
             // double click's second click would land on the next row's X
-            addMouseListener(new MouseAdapter()
+            addMouseListener(new java.awt.event.MouseAdapter()
             {
                 private int pressed = -1;
 
@@ -328,10 +316,10 @@ final class EditorSignals
             });
 
             // And from the keyboard, the row chosen
-            Action removeChosen = new AbstractAction()
+            javax.swing.Action removeChosen = new javax.swing.AbstractAction()
             {
                 @Override
-                public void actionPerformed(ActionEvent e)
+                public void actionPerformed(java.awt.event.ActionEvent e)
                 {
                     if (isEnabled() && getSelectedIndex() >= 0) remove.accept(getSelectedIndex());
                 }
@@ -350,10 +338,10 @@ final class EditorSignals
         }
 
         /** @return the row whose X is at this point, or -1 */
-        int crossAt(Point p)
+        int crossAt(java.awt.Point p)
         {
             int at = isEnabled() ? locationToIndex(p) : -1;
-            Rectangle cell = at < 0 ? null : getCellBounds(at, at);
+            java.awt.Rectangle cell = at < 0 ? null : getCellBounds(at, at);
 
             return cell != null && cell.contains(p) && p.x >= cell.x + cell.width - MARK ? at : -1;
         }

@@ -1,6 +1,5 @@
 package org.traincontrol.gui;
 
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -8,17 +7,13 @@ import java.awt.Insets;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.event.DocumentListener;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
@@ -74,7 +69,7 @@ final class LocomotiveNotesPanel extends JPanel
         railway.setName("notes.railway");
         railwayText.setFont(startYear.getFont());
         railway.setFont(startYear.getFont());
-        railway.setPreferredSize(new Dimension(startYear.getPreferredSize().width * 3,
+        railway.setPreferredSize(new java.awt.Dimension(startYear.getPreferredSize().width * 3,
             startYear.getPreferredSize().height + 2));
         notes.setName("notes.text");
 
@@ -93,7 +88,7 @@ final class LocomotiveNotesPanel extends JPanel
 
         if (onChange != null)
         {
-            DocumentListener tell = Typing.tell(onChange);
+            javax.swing.event.DocumentListener tell = Typing.tell(onChange);
 
             startYear.getDocument().addDocumentListener(tell);
             endYear.getDocument().addDocumentListener(tell);
@@ -147,9 +142,9 @@ final class LocomotiveNotesPanel extends JPanel
      * Every railway name set on any of these locomotives, trimmed, once each, sorted without regard to case; names
      * differing only in case show the first spelling found.
      */
-    static List<String> railwayNames(Collection<? extends Locomotive> locomotives)
+    static List<String> railwayNames(java.util.Collection<? extends Locomotive> locomotives)
     {
-        Map<String, String> found = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        java.util.Map<String, String> found = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
         for (Locomotive l : locomotives)
         {

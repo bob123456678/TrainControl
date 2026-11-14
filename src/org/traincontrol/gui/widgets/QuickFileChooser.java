@@ -6,16 +6,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.Icon;
-import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.filechooser.FileSystemView;
 import org.traincontrol.util.I18n;
@@ -29,7 +25,7 @@ import org.traincontrol.util.I18n;
  *
  * @author Adam
  */
-public class QuickFileChooser extends JFileChooser
+public class QuickFileChooser extends javax.swing.JFileChooser
 {
     /** The shell's own view of the files, which every chooser used. */
     private static final FileSystemView SHELL = FileSystemView.getFileSystemView();
@@ -198,7 +194,7 @@ public class QuickFileChooser extends JFileChooser
 
             return known;
         }
-        catch (ExecutionException e)
+        catch (java.util.concurrent.ExecutionException e)
         {
             return known;
         }
@@ -221,7 +217,7 @@ public class QuickFileChooser extends JFileChooser
         {
             File[] folders = desktop.listFiles(File::isDirectory);
 
-            Set<String> names = new TreeSet<>();
+            Set<String> names = new java.util.TreeSet<>();
 
             if (folders != null) for (File folder : folders) names.add(folder.getName());
 
@@ -394,7 +390,7 @@ public class QuickFileChooser extends JFileChooser
 
         /** The icons the shell has given, by path - the most recently used few thousand. */
         private static final Map<String, Icon> ICONS = Collections.synchronizedMap(
-            new LinkedHashMap<String, Icon>(512, 0.75f, true)
+            new java.util.LinkedHashMap<String, Icon>(512, 0.75f, true)
             {
                 @Override
                 protected boolean removeEldestEntry(Map.Entry<String, Icon> eldest)

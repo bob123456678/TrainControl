@@ -4,8 +4,6 @@ import javax.swing.JOptionPane;
 import org.traincontrol.util.I18n;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph;
-import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -134,7 +132,7 @@ final class LayoutEditorReshape
     /** One of the four LayoutDiagram shifts, given the hovered row or column. */
     private interface Shift
     {
-        void at(int line) throws IOException;
+        void at(int line) throws java.io.IOException;
     }
 
     /**
@@ -189,7 +187,7 @@ final class LayoutEditorReshape
         TileGraph.TileKey> setupShift(boolean across, int from, int to,
         int dx, int dy)
     {
-        Map<TileGraph.TileKey, TileGraph.TileKey> moving = new LinkedHashMap<>();
+        Map<TileGraph.TileKey, TileGraph.TileKey> moving = new java.util.LinkedHashMap<>();
 
         int otherEnd = across ? this.editor.layout.getSy() - 1 : this.editor.layout.getSx() - 1;
 

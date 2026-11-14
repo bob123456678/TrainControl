@@ -3,7 +3,6 @@ package org.traincontrol.gui.autonomy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -182,7 +181,7 @@ public class DiagramTileRegistry
     {
         Set<LayoutLabel> here = key == null ? null : tiles.get(key);
 
-        return here == null ? Collections.<LayoutLabel>emptySet() : new LinkedHashSet<>(here);
+        return here == null ? Collections.<LayoutLabel>emptySet() : new java.util.LinkedHashSet<>(here);
     }
 
     /**

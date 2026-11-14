@@ -1,17 +1,13 @@
 package org.traincontrol.gui.autonomy;
 
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -166,7 +162,7 @@ public final class DiagramExport
             {
                 Thread.currentThread().interrupt();
             }
-            catch (InvocationTargetException fromTheRetirement)
+            catch (java.lang.reflect.InvocationTargetException fromTheRetirement)
             {
                 // The retirement's own failure must not replace the render's: invokeAndWait wraps what the task throws,
                 // which would discard the cause the caller needs.  Logged rather than thrown: a stale registration is a
@@ -224,7 +220,7 @@ public final class DiagramExport
 
         ui.whenTilesSettled(() -> settled.countDown());
 
-        settled.await(TILE_WAIT_SECONDS, TimeUnit.SECONDS);
+        settled.await(TILE_WAIT_SECONDS, java.util.concurrent.TimeUnit.SECONDS);
 
         // One more turn of the event queue, so the label updates posted by the last decode have been
         // applied before anything is painted
@@ -248,7 +244,7 @@ public final class DiagramExport
     {
         container.doLayout();
 
-        for (Component child : container.getComponents())
+        for (java.awt.Component child : container.getComponents())
         {
             if (child instanceof Container) layoutEverything((Container) child);
         }
@@ -270,7 +266,7 @@ public final class DiagramExport
 
         if (!ImageIO.write(image, "png", destination))
         {
-            throw new IOException(I18n.t("layout.ui.errorExportNoWriter"));
+            throw new java.io.IOException(I18n.t("layout.ui.errorExportNoWriter"));
         }
     }
 }

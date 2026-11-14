@@ -6,13 +6,10 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.event.MouseEvent;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.Arc2D;
-import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -26,7 +23,6 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -77,7 +73,7 @@ final class LocIconActions
         }
 
         @Override
-        public void paintIcon(Component host, Graphics g, int x, int y)
+        public void paintIcon(Component host, java.awt.Graphics g, int x, int y)
         {
             Graphics2D g2 = (Graphics2D) g.create();
 
@@ -122,7 +118,7 @@ final class LocIconActions
                 60, 270, Arc2D.OPEN));
 
             // THE HEAD: its outline in the underlay's pass, so it reads on any picture, and filled in the ink's
-            Shape head = AffineTransform.getTranslateInstance(x, y).createTransformedShape(head());
+            Shape head = java.awt.geom.AffineTransform.getTranslateInstance(x, y).createTransformedShape(head());
 
             if (pass == 0) g2.draw(head);
             else g2.fill(head);
@@ -175,7 +171,7 @@ final class LocIconActions
             double jaw = 2.6;
 
             // The handle, between the two jaws
-            g2.draw(new Line2D.Double(x + middle - reach + jaw * 0.7, y + middle + reach - jaw * 0.7,
+            g2.draw(new java.awt.geom.Line2D.Double(x + middle - reach + jaw * 0.7, y + middle + reach - jaw * 0.7,
                 x + middle + reach - jaw * 0.7, y + middle - reach + jaw * 0.7));
 
             // The jaws: a ring at each end, open away from the handle - top right, and bottom left
@@ -281,7 +277,7 @@ final class LocIconActions
                 fc.cancelSelection();
             });
 
-            row.add(Box.createHorizontalStrut(16));
+            row.add(javax.swing.Box.createHorizontalStrut(16));
             row.add(clear);
 
             fc.add(row, BorderLayout.SOUTH);

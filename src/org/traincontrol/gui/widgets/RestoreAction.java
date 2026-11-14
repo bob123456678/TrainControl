@@ -9,7 +9,6 @@ import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
-import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,7 +19,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.swing.JFileChooser;
@@ -367,7 +365,7 @@ public final class RestoreAction
 
             Path root = config.toPath();
 
-            try (Stream<Path> walk = Files.walk(root, FileVisitOption.FOLLOW_LINKS))
+            try (java.util.stream.Stream<Path> walk = Files.walk(root, java.nio.file.FileVisitOption.FOLLOW_LINKS))
             {
                 for (Path file : (Iterable<Path>) walk::iterator)
                 {

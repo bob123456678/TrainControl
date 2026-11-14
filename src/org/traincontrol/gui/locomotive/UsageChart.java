@@ -4,12 +4,10 @@ import com.formdev.flatlaf.util.UIScale;
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GraphicsEnvironment;
 import java.awt.geom.Path2D;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -44,7 +42,7 @@ public class UsageChart extends JFrame
     // Headless-guarded because a static initializer that throws leaves the class unusable for the process.
     static
     {
-        if (!GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
+        if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
     }
 
     /** What one period is, and what one bar is in it. */
@@ -184,7 +182,7 @@ public class UsageChart extends JFrame
         int controlsWidth = controls.getPreferredSize().width + MIN_CONTROLS_GAP
             + content.getInsets().left + content.getInsets().right + getInsets().left + getInsets().right;
 
-        setMinimumSize(new Dimension(Math.max(MIN_WIDTH, controlsWidth), MIN_HEIGHT));
+        setMinimumSize(new java.awt.Dimension(Math.max(MIN_WIDTH, controlsWidth), MIN_HEIGHT));
         setAlwaysOnTop(tcui.isAlwaysOnTop());
         setLocationRelativeTo(tcui);
     }

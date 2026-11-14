@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
-import java.lang.management.ManagementFactory;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -378,7 +377,7 @@ public final class SelfUpdate
      */
     public static List<String> javaOptions()
     {
-        return javaOptions(ManagementFactory.getRuntimeMXBean().getInputArguments());
+        return javaOptions(java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments());
     }
 
     /** `javaOptions` of a given list, which is how a claim asks it. */

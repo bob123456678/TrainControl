@@ -1,7 +1,6 @@
 package org.traincontrol.gui.autonomyeditor;
 
 import java.util.List;
-import java.util.ArrayList;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.util.I18n;
 
@@ -65,7 +64,7 @@ final class StationFlyovers
             return nowThenChange(I18n.f("autosetup.ui.flyArriveAllNow", String.join(", ", all)), I18n.t("autosetup.ui.flyArriveAllChange"));
         }
 
-        List<String> shut = new ArrayList<>(all);
+        List<String> shut = new java.util.ArrayList<>(all);
 
         shut.removeAll(open);
 

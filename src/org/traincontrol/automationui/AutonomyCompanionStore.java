@@ -6,7 +6,6 @@ import org.traincontrol.base.LayoutDiagram;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -14,20 +13,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -1232,7 +1224,7 @@ public class AutonomyCompanionStore
 
         if (list == null) return;
 
-        Set<String> names = new TreeSet<>();
+        Set<String> names = new java.util.TreeSet<>();
 
         boolean named = false;
 
@@ -1520,7 +1512,8 @@ public class AutonomyCompanionStore
 
         boolean iKnowMyPages = !pageIdToName.isEmpty() || !pageNamesWhenWritten.isEmpty();
 
-        Map<String, String> theirIdToMine = theirPages == null || !iKnowMyPages ? null : new HashMap<String, String>();
+        Map<String, String> theirIdToMine = theirPages == null || !iKnowMyPages
+            ? null : new java.util.HashMap<String, String>();
 
         if (theirIdToMine != null)
         {
@@ -2124,7 +2117,7 @@ public class AutonomyCompanionStore
         {
             renameStoredPoints(configuration, name ->
             {
-                Matcher m = made.matcher(name);
+                java.util.regex.Matcher m = made.matcher(name);
 
                 return m.matches() ? to + " " + m.group(1) + (m.group(2) == null ? "" : m.group(2)) : name;
             });
@@ -2135,7 +2128,7 @@ public class AutonomyCompanionStore
      * Every Point name a configuration stores by name (timetable legs, standing trains' roads) through a rename, in
      * place; the rest is keyed by square.
      */
-    static void renameStoredPoints(JSONObject configuration, UnaryOperator<String> rename)
+    static void renameStoredPoints(JSONObject configuration, java.util.function.UnaryOperator<String> rename)
     {
         for (AutonomySession.NamedLeg leg : AutonomySession.legsOf(configuration))
         {
@@ -3904,7 +3897,7 @@ public class AutonomyCompanionStore
         Util.writeAtomically(target, new Util.StreamWriter()
         {
             @Override
-            public void write(OutputStream out) throws IOException
+            public void write(java.io.OutputStream out) throws IOException
             {
                 out.write(bytes);
             }
@@ -4399,7 +4392,7 @@ public class AutonomyCompanionStore
      * `dropped` each; true if anything went.  A NEW list each time.
      */
     private static boolean dropPointers(Map<TileKey, List<TileKey>> map,
-        Predicate<TileKey> gone, Consumer<TileKey> dropped)
+        Predicate<TileKey> gone, java.util.function.Consumer<TileKey> dropped)
     {
         boolean any = false;
 
@@ -4448,7 +4441,7 @@ public class AutonomyCompanionStore
 
     /** The two above: each key translated as it arrives, its value read only where the key parses. */
     private <V> void readSquareValues(JSONObject root, String field, Map<TileKey, V> into,
-        BiFunction<JSONObject, String, V> value)
+        java.util.function.BiFunction<JSONObject, String, V> value)
     {
         JSONObject object = root.optJSONObject(field);
 
@@ -4572,7 +4565,7 @@ public class AutonomyCompanionStore
 
         for (int i = 0; table != null && i < table.length(); i++) kept.add(table.get(i));
 
-        Set<Object> broughtBack = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<Object> broughtBack = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
         for (int i = 0; i < aside.length(); i++)
         {

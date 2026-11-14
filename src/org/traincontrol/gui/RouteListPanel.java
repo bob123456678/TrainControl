@@ -1,7 +1,6 @@
 package org.traincontrol.gui;
 
 import java.awt.Rectangle;
-import java.awt.Window;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -140,7 +139,7 @@ final class RouteListPanel
     void editRoute(String routeName)
     {
         // Another window's door hears the refusal over it, on the event thread, ahead of the worker's
-        final Window askedFrom = this.ui.dialogParent();
+        final java.awt.Window askedFrom = this.ui.dialogParent();
 
         if (askedFrom != this.ui && this.ui.refuseWhileEditorOpen(askedFrom)) return;
 
