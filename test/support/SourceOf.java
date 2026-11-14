@@ -6,9 +6,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The program's source, as text, for the tests that read it - found by what a declaration says, never by which file
@@ -20,6 +23,9 @@ import java.util.Map;
  * <li>Line endings are `\n`, whatever the file uses: a line break is not part of any rule.</li>
  * <li>A signature is matched in the code only, so a comment that quotes it is not a second declaration; the text
  * handed back is the source as written, comments included.</li>
+ * <li>A class name matches with or without its package: `javax.swing.JMenuItem radio(` and `JMenuItem radio(` are the
+ * same text, so an import added or removed later does not break a claim.  Offsets still point into the source as
+ * written.</li>
  * <li>A miss or a second match fails the calling claim with an {@link AssertionError} naming the signature and, for a
  * second match, every file and line.</li>
  * </ul>
@@ -207,6 +213,16 @@ public final class SourceOf
         return new String(out);
     }
 
+    /**
+     * The text without the packages of its class names (`java.util.List` reads `List`): for a claim that matches
+     * literals against text it already holds, so an import added or removed later does not break it.  Write the
+     * literal without the package too.
+     */
+    public static String plain(String text)
+    {
+        return new Plain(text).text;
+    }
+
     /** Where a signature was found: its file, that file's text and code, and the offset. */
     private static final class Found
     {
@@ -262,15 +278,71 @@ public final class SourceOf
         return found;
     }
 
+    /** A qualified class name's package: `java.util.` of `java.util.List`, never part of what a claim matches. */
+    private static final Pattern PACKAGE = Pattern.compile("(?<![\\w.$])(?:java|javax|org)(?:\\.[a-z][a-z0-9_]*)+\\.(?=[A-Z])");
+
+    /** Text without its class-name packages, and for each of its characters where it was in the original. */
+    private static final class Plain
+    {
+        final String text;
+
+        final int[] from;
+
+        Plain(String original)
+        {
+            StringBuilder out = new StringBuilder(original.length());
+
+            int[] map = new int[original.length() + 1];
+
+            Matcher m = PACKAGE.matcher(original);
+
+            int at = 0;
+
+            while (m.find())
+            {
+                for (; at < m.start(); at++)
+                {
+                    map[out.length()] = at;
+                    out.append(original.charAt(at));
+                }
+
+                at = m.end();
+            }
+
+            for (; at < original.length(); at++)
+            {
+                map[out.length()] = at;
+                out.append(original.charAt(at));
+            }
+
+            map[out.length()] = original.length();
+
+            text = out.toString();
+            from = map;
+        }
+    }
+
+    private static final Map<String, Plain> PLAINS = new IdentityHashMap<>();
+
+    private static synchronized Plain plainOf(String original)
+    {
+        return PLAINS.computeIfAbsent(original, Plain::new);
+    }
+
+    /** Offsets in `haystack` where `needle` starts, comparing both without their class-name packages. */
     private static List<Integer> occurrencesIn(String haystack, String needle)
     {
         List<Integer> at = new ArrayList<>();
 
         if (needle.isEmpty()) throw new IllegalArgumentException("an empty text is everywhere");
 
-        for (int i = haystack.indexOf(needle); i >= 0; i = haystack.indexOf(needle, i + needle.length()))
+        Plain hay = plainOf(haystack);
+
+        String want = new Plain(needle).text;
+
+        for (int i = hay.text.indexOf(want); i >= 0; i = hay.text.indexOf(want, i + want.length()))
         {
-            at.add(i);
+            at.add(hay.from[i]);
         }
 
         return at;
