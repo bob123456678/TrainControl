@@ -3556,11 +3556,11 @@ public class testTheTrainWindow
     }
 
     /**
-     * A train placed in the editor and then deleted is left out of Cancel: every other train stands back where it
-     * stood, and nothing is written or stood under the deleted name (D114).
+     * A train placed in the editor and then deleted is left out of Cancel, even where a new locomotive takes its name
+     * meanwhile: every other train stands back where it stood, and nothing is written or stood under that name (D114).
      *
-     * MUTATION: drop the `getLocByName(name) == each.getKey()` test from `LayoutEditor.railwayAsPictured`, and the
-     * deleted name is written back into the setup.
+     * MUTATION: drop the `getLocByName(name) == each.getKey()` test from `LayoutEditor.railwayAsPictured`, and the new
+     * locomotive is stood where the deleted one stood when the editor opened.
      */
     @Test(timeOut = 240000)
     public void testCancelAfterPlacingADeletedTrainPutsTheOthersBack() throws Exception
@@ -3608,6 +3608,8 @@ public class testTheTrainWindow
             Components.settle();
 
             SwingUtilities.invokeAndWait(() -> assertTrue(model.deleteLoc(name), "precondition: delete refused"));
+
+            Components.onTheEventThread(() -> model.newMM2Locomotive(name, 79));
 
             Components.settle();
 
