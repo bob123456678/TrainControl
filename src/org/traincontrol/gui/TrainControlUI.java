@@ -14797,18 +14797,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // editor is an unowned frame that disposing this window leaves open, so the next start would believe the
         // process died mid-edit and revert the setup.  After maySettleBeforeExit (its Cancel aborts the exit), before
         // System.exit, which never returns.
-        if (openEditor != null && openEditor.isDisplayable())
+        try
         {
-            // Both halves of a Discard, only now: the setup half cannot go earlier (everything above can still refuse
-            // to exit) nor later (dispose deletes the pre-edit note that is the only other way the discard gets
-            // finished).
-            openEditor.completeExitDiscard();
+            if (openEditor != null && openEditor.isDisplayable())
+            {
+                // Both halves of a Discard, only now: the setup half cannot go earlier (everything above can still
+                // refuse to exit) nor later (dispose deletes the pre-edit note that is the only other way the discard
+                // gets finished).
+                openEditor.completeExitDiscard();
 
-            openEditor.dispose();
+                openEditor.dispose();
+            }
         }
-
-        this.dispose();
-        System.exit(0);
+        catch (RuntimeException e)
+        {
+            this.model.log(e);
+        }
+        finally
+        {
+            // Exits whatever the editor threw: an updater started above holds the update lock until this process ends.
+            // A pre-edit note left behind is put back at the next start, finishing the discard.
+            this.dispose();
+            System.exit(0);
+        }
     }//GEN-LAST:event_WindowClosed
 
     /** Brings the track diagram to the front; does nothing when there is no layout tab or it is disabled (OB-128). */
