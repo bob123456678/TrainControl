@@ -86,6 +86,22 @@ public final class Settle
         return until(() -> layout.getActiveLocomotives().containsKey(train), atMostMs);
     }
 
+    /** Lets the main window's grid renderer finish its jobs, and the grids they post reach the panel. */
+    public static void theDiagram(org.traincontrol.gui.TrainControlUI ui) throws Exception
+    {
+        java.util.concurrent.ExecutorService renderer = (java.util.concurrent.ExecutorService)
+            Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "LayoutGridRenderer");
+
+        for (int round = 0; round < 3; round++)
+        {
+            Components.drain(1);
+
+            renderer.submit(() -> { }).get(30, java.util.concurrent.TimeUnit.SECONDS);
+
+            Components.drain(2);
+        }
+    }
+
     /** Waits for a condition of the program's state; whether it came true in time, asked once more at the end. */
     public static boolean until(BooleanSupplier condition, long atMostMs)
     {

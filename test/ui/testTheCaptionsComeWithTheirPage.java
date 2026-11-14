@@ -23,7 +23,7 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.marklin.MarklinControlStation;
-import support.Answering;
+import support.AskingWindows;
 import support.Components;
 import support.Reflect;
 
@@ -424,31 +424,7 @@ public class testTheCaptionsComeWithTheirPage
     /** Renames through the Locomotive Settings window's Save door. */
     private static void rename(Locomotive train, String name) throws Exception
     {
-        final Object actions = windowField("locomotiveActions");
-
-        final java.lang.reflect.Method write = Reflect.method(actions.getClass(), "writeNameAndAddress",
-            Component.class, Locomotive.class, String.class, String.class, Locomotive.decoderType.class);
-
-        try (Answering answering = Answering.start(message -> null))
-        {
-            final Object[] done = new Object[1];
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    done[0] = write.invoke(actions, ui, train, name, "", train.getDecoderType());
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
-
-            assertEquals(done[0], Boolean.TRUE, "the rename to " + name + " was refused: " + answering.asked());
-        }
-
-        Components.drain(2);
+        AskingWindows.renameInSettings(ui, train, name);
     }
 
     /** Draws the page shown afresh, as Show Addresses or a sync does, and waits for it. */
@@ -459,20 +435,10 @@ public class testTheCaptionsComeWithTheirPage
         settle();
     }
 
-    /** Lets the grid renderer's job and the grid it posts finish. */
+    /** Lets the grid renderer's jobs and the grids they post finish. */
     private static void settle() throws Exception
     {
-        java.util.concurrent.ExecutorService renderer =
-            (java.util.concurrent.ExecutorService) windowField("LayoutGridRenderer");
-
-        for (int round = 0; round < 3; round++)
-        {
-            Components.drain(1);
-
-            renderer.submit(() -> { }).get(30, java.util.concurrent.TimeUnit.SECONDS);
-
-            Components.drain(2);
-        }
+        support.Settle.theDiagram(ui);
     }
 
     private static Component shownPage() throws Exception

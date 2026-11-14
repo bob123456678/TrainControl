@@ -34,8 +34,10 @@ import support.Answering;
 import support.AskingWindows;
 import support.Components;
 import support.Reflect;
+import support.Settle;
 import support.StandInStation;
 import support.TestStationAddress;
+import support.WindowField;
 
 /**
  * The doors that change what the track diagram does not draw keep the diagram and every cached page: following a link,
@@ -84,22 +86,17 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     {
         TestStationAddress.set(addressWas);
 
-        try
-        {
-            if (station != null) station.close();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        // The layout preference first, which nothing below can stop
+        if (sandbox != null) sandbox.close();
+        if (station != null) station.close();
     }
 
     @BeforeMethod
     public void showTheMainPage() throws Exception
     {
-        Components.select((JComboBox<?>) windowField("LayoutList"), PAGE);
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), PAGE);
 
-        settle();
+        Settle.theDiagram(ui);
     }
 
     /**
@@ -111,7 +108,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     @Test(timeOut = 120000)
     public void testFollowingALinkShowsItsPageFromTheCache() throws Exception
     {
-        final LayoutDiagramComponent link = onTheEventThread(() ->
+        final LayoutDiagramComponent link = Components.onTheEventThread(() ->
         {
             for (LayoutLabel square : Components.all(shownPage(), LayoutLabel.class, each -> each.getComponent() != null
                 && each.getComponent().isLink() && each.getComponent().getLinkPageName() != null
@@ -128,27 +125,27 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         final String target = link.getLinkPageName();
 
         // Both pages drawn once, so both are cached
-        Components.select((JComboBox<?>) windowField("LayoutList"), target);
-        settle();
-        Components.select((JComboBox<?>) windowField("LayoutList"), PAGE);
-        settle();
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), target);
+        Settle.theDiagram(ui);
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), PAGE);
+        Settle.theDiagram(ui);
 
-        final Component left = onTheEventThread(() -> shownPage());
-        final JPanel cachedTarget = onTheEventThread(() -> ui.layoutCache.get(cacheKey(target)));
+        final Component left = Components.onTheEventThread(() -> shownPage());
+        final JPanel cachedTarget = Components.onTheEventThread(() -> ui.layoutCache.get(cacheKey(target)));
 
         assertNotNull(cachedTarget, "precondition: " + target + " is not cached after being shown");
 
         SwingUtilities.invokeAndWait(() -> ui.followLink(link));
 
-        settle();
+        Settle.theDiagram(ui);
 
-        assertEquals(onTheEventThread(() -> String.valueOf(((JComboBox<?>) windowField("LayoutList"))
+        assertEquals(Components.onTheEventThread(() -> String.valueOf(((JComboBox<?>) WindowField.of(ui, "LayoutList"))
             .getSelectedItem())), target, "the link did not go to " + target);
 
-        assertSame(onTheEventThread(() -> shownPage()), cachedTarget, "the link drew " + target + " afresh instead"
+        assertSame(Components.onTheEventThread(() -> shownPage()), cachedTarget, "the link drew " + target + " afresh instead"
             + " of showing it from the cache");
 
-        assertSame(onTheEventThread(() -> ui.layoutCache.get(cacheKey(PAGE))), left, "following the link threw away"
+        assertSame(Components.onTheEventThread(() -> ui.layoutCache.get(cacheKey(PAGE))), left, "following the link threw away"
             + " the cached " + PAGE);
     }
 
@@ -185,7 +182,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
                 SwingUtilities.invokeAndWait(() -> ui.changeRouteId(route.getName()));
             }
 
-            settle();
+            Settle.theDiagram(ui);
 
             assertEquals(route.getId(), free, "precondition: the route was not renumbered");
 
@@ -202,15 +199,15 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
                 SwingUtilities.invokeAndWait(() -> ui.changeRouteId(route.getName()));
             }
 
-            settle();
+            Settle.theDiagram(ui);
 
             assertEquals(route.getId(), id, "precondition: the route was not renumbered back");
 
-            assertNotSame(onTheEventThread(() -> shownPage()), kept.shown, "a sync that read the pages again did"
+            assertNotSame(Components.onTheEventThread(() -> shownPage()), kept.shown, "a sync that read the pages again did"
                 + " not draw the diagram afresh");
 
             LayoutLabel now = labelOf(squareNow(square));
-            String says = onTheEventThread(() -> now.getToolTipText());
+            String says = Components.onTheEventThread(() -> now.getToolTipText());
 
             assertTrue(String.valueOf(says).contains(route.getName()), "renumbered back, the square says " + says);
 
@@ -250,7 +247,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
             assertTrue(Components.waitFor(() -> model.getRoute(route.getName()) != route, 20000),
                 "precondition: disarming did not write the route anew");
 
-            settle();
+            Settle.theDiagram(ui);
 
             kept.assertKept("disarming " + route.getName());
 
@@ -303,7 +300,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
                 SwingUtilities.invokeAndWait(() -> ui.deleteRoute(name));
             }
 
-            settle();
+            Settle.theDiagram(ui);
 
             assertNull(model.getRoute(name), "precondition: the route was not deleted");
 
@@ -351,7 +348,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
             assertTrue(captionIn(window, at).contains(name.substring(0, 3)), "precondition: the page window's caption"
                 + " at " + at + " says " + captionIn(window, at));
 
-            rename(train, renamed);
+            AskingWindows.renameInSettings(ui, train, renamed);
 
             assertTrue(captionIn(ui, at).contains("Zq"), "the caption at " + at + " says " + captionIn(ui, at)
                 + " after " + name + " was renamed " + renamed);
@@ -359,11 +356,11 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
             assertTrue(captionIn(window, at).contains("Zq"), "the page window's caption at " + at + " says "
                 + captionIn(window, at) + " after " + name + " was renamed " + renamed);
 
-            final Component before = onTheEventThread(() -> shownPage());
+            final Component before = Components.onTheEventThread(() -> shownPage());
 
             syncTheLocomotive(train);
 
-            assertNotSame(onTheEventThread(() -> shownPage()), before, "Sync of " + renamed + " read the pages again"
+            assertNotSame(Components.onTheEventThread(() -> shownPage()), before, "Sync of " + renamed + " read the pages again"
                 + " and did not draw the diagram afresh");
 
             assertTrue(captionIn(ui, at).contains("Zq"), "after Sync of " + renamed + " the caption at " + at
@@ -371,7 +368,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         }
         finally
         {
-            rename(train, name);
+            AskingWindows.renameInSettings(ui, train, name);
 
             SwingUtilities.invokeAndWait(window::dispose);
         }
@@ -437,9 +434,9 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
         void assertKept(String door) throws Exception
         {
-            assertSame(onTheEventThread(() -> shownPage()), shown, door + " drew the diagram afresh");
+            assertSame(Components.onTheEventThread(() -> shownPage()), shown, door + " drew the diagram afresh");
 
-            Map<String, JPanel> now = onTheEventThread(() -> new HashMap<>(ui.layoutCache));
+            Map<String, JPanel> now = Components.onTheEventThread(() -> new HashMap<>(ui.layoutCache));
 
             for (Map.Entry<String, JPanel> page : cached.entrySet())
             {
@@ -451,22 +448,22 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     /** The diagram shown and every page cached, after another page has been drawn so there is one to keep. */
     private static Kept keptNow() throws Exception
     {
-        Components.select((JComboBox<?>) windowField("LayoutList"), "2 - Bottom");
-        settle();
-        Components.select((JComboBox<?>) windowField("LayoutList"), PAGE);
-        settle();
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), "2 - Bottom");
+        Settle.theDiagram(ui);
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), PAGE);
+        Settle.theDiagram(ui);
 
-        Map<String, JPanel> cached = onTheEventThread(() -> new HashMap<>(ui.layoutCache));
+        Map<String, JPanel> cached = Components.onTheEventThread(() -> new HashMap<>(ui.layoutCache));
 
         assertTrue(cached.size() > 1, "precondition: no other page is cached: " + cached.keySet());
 
-        return new Kept(onTheEventThread(() -> shownPage()), cached);
+        return new Kept(Components.onTheEventThread(() -> shownPage()), cached);
     }
 
     /** A route square on the page shown whose route the database has. */
     private static LayoutDiagramComponent aBoundRouteSquare() throws Exception
     {
-        LayoutDiagramComponent found = onTheEventThread(() ->
+        LayoutDiagramComponent found = Components.onTheEventThread(() ->
         {
             for (LayoutLabel square : Components.all(shownPage(), LayoutLabel.class, each -> each.getComponent() != null
                 && each.getComponent().isRoute() && each.getComponent().getRoute() instanceof MarklinRoute))
@@ -485,13 +482,13 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     /** The label drawing this component on the page shown, or null. */
     private static LayoutLabel labelOf(LayoutDiagramComponent c) throws Exception
     {
-        return onTheEventThread(() -> Components.find(shownPage(), LayoutLabel.class, each -> each.getComponent() == c));
+        return Components.onTheEventThread(() -> Components.find(shownPage(), LayoutLabel.class, each -> each.getComponent() == c));
     }
 
     /** The component drawn now where this one was. */
     private static LayoutDiagramComponent squareNow(LayoutDiagramComponent was) throws Exception
     {
-        return onTheEventThread(() ->
+        return Components.onTheEventThread(() ->
         {
             LayoutLabel now = Components.find(shownPage(), LayoutLabel.class, each -> each.getComponent() != null
                 && each.getComponent().getX() == was.getX() && each.getComponent().getY() == was.getY());
@@ -506,13 +503,13 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
         assertNotNull(label, "precondition: the square is not on the diagram shown");
 
-        return onTheEventThread(() -> label.getToolTipText());
+        return Components.onTheEventThread(() -> label.getToolTipText());
     }
 
     /** Whether the page shown draws something on this square. */
     private static boolean drawsTheSquare(int x, int y) throws Exception
     {
-        return onTheEventThread(() -> Components.find(shownPage(), LayoutLabel.class, each -> each.getComponent() != null
+        return Components.onTheEventThread(() -> Components.find(shownPage(), LayoutLabel.class, each -> each.getComponent() != null
             && each.getComponent().getX() == x && each.getComponent().getY() == y) != null);
     }
 
@@ -532,13 +529,13 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
         assertTrue(done.await(60, TimeUnit.SECONDS), "Sync of " + train.getName() + " did not finish");
 
-        settle();
+        Settle.theDiagram(ui);
     }
 
     /** A named, captioned station of the page shown with one train standing at it. */
     private static TileKey aTrainStandingAlone() throws Exception
     {
-        final Component page = onTheEventThread(() -> shownPage());
+        final Component page = Components.onTheEventThread(() -> shownPage());
 
         for (TileKey square : session.getGraph().getTiles().keySet())
         {
@@ -556,7 +553,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     /** What the station's captions inside this window or panel say, together. */
     private static String captionIn(Container inside, TileKey square) throws Exception
     {
-        return onTheEventThread(() ->
+        return Components.onTheEventThread(() ->
         {
             StringBuilder said = new StringBuilder();
 
@@ -569,79 +566,23 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         });
     }
 
-    /** Renames through the Locomotive Settings window's Save door. */
-    private static void rename(Locomotive train, String name) throws Exception
-    {
-        final Object actions = windowField("locomotiveActions");
-
-        final java.lang.reflect.Method write = Reflect.method(actions.getClass(), "writeNameAndAddress",
-            Component.class, Locomotive.class, String.class, String.class, Locomotive.decoderType.class);
-
-        try (Answering answering = Answering.start(message -> null))
-        {
-            final Object[] done = new Object[1];
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    done[0] = write.invoke(actions, ui, train, name, "", train.getDecoderType());
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
-
-            assertEquals(done[0], Boolean.TRUE, "the rename to " + name + " was refused: " + answering.asked());
-        }
-
-        Components.drain(2);
-    }
-
     /** Draws the page shown afresh and waits for it. */
     private static void rebuildThePage() throws Exception
     {
         SwingUtilities.invokeAndWait(() -> ui.repaintLayout());
 
-        settle();
-    }
-
-    /** Lets the grid renderer's jobs and the grids they post finish. */
-    private static void settle() throws Exception
-    {
-        java.util.concurrent.ExecutorService renderer =
-            (java.util.concurrent.ExecutorService) windowField("LayoutGridRenderer");
-
-        for (int round = 0; round < 3; round++)
-        {
-            Components.drain(1);
-
-            renderer.submit(() -> { }).get(30, TimeUnit.SECONDS);
-
-            Components.drain(2);
-        }
+        Settle.theDiagram(ui);
     }
 
     private static String cacheKey(String page) throws Exception
     {
-        return page + " " + ((JComboBox<?>) windowField("SizeList")).getSelectedItem();
+        return page + " " + ((JComboBox<?>) WindowField.of(ui, "SizeList")).getSelectedItem();
     }
 
     private static Container shownPage() throws Exception
     {
-        JPanel inner = (JPanel) windowField("InnerLayoutPanel");
+        JPanel inner = (JPanel) WindowField.of(ui, "InnerLayoutPanel");
 
         return inner.getComponentCount() == 0 ? null : (Container) inner.getComponent(0);
-    }
-
-    private static <T> T onTheEventThread(java.util.concurrent.Callable<T> work) throws Exception
-    {
-        return Components.onTheEventThread(work);
-    }
-
-    private static Object windowField(String name) throws Exception
-    {
-        return Reflect.get(TrainControlUI.class, ui, name);
     }
 }
