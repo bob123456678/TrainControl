@@ -176,6 +176,58 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
         }
     }
 
+    /**
+     * A Sync pressed in the locomotive selector that fails says so on the selector, the window that asked, not on the
+     * main window behind it.
+     *
+     * MUTATION: have TrainControlUI.choseFirst hang the popup off the main window again, and it is the failure's owner.
+     */
+    @Test
+    public void testASyncThatFailsFromTheSelectorSaysSoOnTheSelector() throws Exception
+    {
+        AtomicBoolean dropping = new AtomicBoolean();
+        BiFunction<String, Integer, byte[]> base = StandInStation.cs3("260", INFO);
+        String failed = I18n.f("ui.syncFailedRetry", "").split("\n")[0];
+
+        try (StationRig rig = new StationRig(Files.createTempDirectory("tc-sync-selector").toFile(), (path, n) ->
+        {
+            if (dropping.get() && "/app/api/automatics".equals(path)) throw new IllegalStateException("dropped");
+
+            return base.apply(path, n);
+        }, true))
+        {
+            TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
+            assertNotNull(ui, "the window");
+
+            try
+            {
+                startUpSyncDone(ui);
+
+                java.awt.Window selector = (java.awt.Window) Reflect.field(TrainControlUI.class, "selector").get(ui);
+                javax.swing.JButton sync = (javax.swing.JButton) Reflect.field(selector.getClass(), "SyncWithCS")
+                    .get(selector);
+
+                // Close for the failure; OK for anything else
+                try (Answering answering = Answering.start(message ->
+                    Answering.pressAt(message.startsWith(failed) ? 1 : 0)))
+                {
+                    dropping.set(true);
+                    SwingUtilities.invokeAndWait(sync::doClick);
+                    assertTrue(answering.awaitAsked(1, 60000), "the failure was not shown");
+
+                    Answering.Question failure = answering.questions().get(0);
+
+                    assertTrue(failure.message.startsWith(failed), "the failure says so: " + failure.message);
+                    assertSame(failure.owner, selector, "on the selector, whose Sync was pressed");
+                }
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(ui::dispose);
+            }
+        }
+    }
+
     /** The start-up's own sync, made by the application's init against a station whose routes cannot be read, raises the notice. */
     @Test
     public void testTheStartUpSaysSoToo() throws Exception
