@@ -1881,6 +1881,10 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
+        // Cancel puts them back, the homed and the lifted
+        rememberWhereTheyStand(homed);
+        rememberWhereTheyStand(session.trainsWhereTheyStand().values());
+
         java.util.Set<String> touched = session.placeEveryTrainAtHome(homeCopyFacings());
 
         saying.accept(I18n.f("autosetup.ui.infoTrainsPlacedAtHome", homes.size(), homeless));
@@ -3974,10 +3978,37 @@ public class AutonomyEditorPanel extends JPanel
      */
     private final Map<String, String[]> railwayBeforeTheEdit = new java.util.LinkedHashMap<>();
 
-    /** @return where Cancel puts back each train this edit moved, as `TrainControlUI.whereTheTrainsAre` reads it */
+    /**
+     * @return where Cancel puts back each train this edit moved, as `TrainControlUI.whereTheTrainsAre` reads it; asked
+     * before the setup is restored, as it leaves out a train the railway has moved since the edit put it
+     */
     public Map<String, String[]> railwayBeforeTheEdit()
     {
-        return java.util.Collections.unmodifiableMap(railwayBeforeTheEdit);
+        Map<String, String[]> back = new java.util.LinkedHashMap<>(railwayBeforeTheEdit);
+
+        // Where a train IS is a fact: putting it back would leave its square reading free
+        Map<String, String[]> now = TrainControlUI.whereTheTrainsAre(layoutSource == null ? null : layoutSource.get());
+
+        back.keySet().removeIf(train -> !standsWhereTheEditPutIt(train, now.get(train)));
+
+        return back;
+    }
+
+    /** Whether the railway has this train on a copy of the setup's square for it, or nowhere where the setup has none. */
+    private boolean standsWhereTheEditPutIt(String train, String[] onTheRailway)
+    {
+        if (session == null || session.getStationIndex() == null) return true;
+
+        List<TileKey> squares = otherSquaresOf(java.util.Collections.singleton(train), null);
+
+        if (onTheRailway == null) return squares.isEmpty();
+
+        for (TileKey square : squares)
+        {
+            if (session.getStationIndex().pointNamesAt(square).contains(onTheRailway[0])) return true;
+        }
+
+        return false;
     }
 
     /** Records where the railway has these trains, each the first time a door moves it: a run may move it later. */
@@ -7339,6 +7370,8 @@ public class AutonomyEditorPanel extends JPanel
 
         // The session's bulk door; the names read first, so the rebuild knows whose placements went.
         java.util.List<String> lifted = placedLocomotives();
+
+        rememberWhereTheyStand(lifted);
 
         int cleared = session.clearEveryPlacement();
 

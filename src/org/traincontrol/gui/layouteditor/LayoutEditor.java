@@ -442,13 +442,16 @@ public class LayoutEditor extends PositionAwareJFrame
 
         String failed;
 
+        // Asked of the edit, before it is thrown away
+        java.util.Map<String, String[]> standingBefore = autonomyPanel.railwayBeforeTheEdit();
+
         if (this.autonomyAsOpened == null || autonomy == null) failed = autonomyPanel.discardEdits();
         else if (!autonomy.restoreSetup(this.autonomyAsOpened)) failed = I18n.t("autosetup.log.restoreFailedAfterCancel");
         else failed = null;
 
         // The railway follows at once, before the window goes, or a fold in between would write the discarded edit
         // back.  Declines while autonomy runs.
-        if (failed == null && autonomy != null) parent.rebuildRunningLayoutFromSetup(autonomyPanel.railwayBeforeTheEdit());
+        if (failed == null && autonomy != null) parent.rebuildRunningLayoutFromSetup(standingBefore);
 
         return failed;
     }

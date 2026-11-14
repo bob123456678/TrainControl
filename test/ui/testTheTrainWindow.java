@@ -111,9 +111,15 @@ public class testTheTrainWindow
 
     private static TileKey anEmptyStation()
     {
+        return anEmptyStationBut(null);
+    }
+
+    private static TileKey anEmptyStationBut(TileKey not)
+    {
         for (TileKey each : session.getReducer().getPoints().keySet())
         {
-            if (PAGE.equals(each.getPage()) && session.getStore().isStation(each) && session.getLocomotiveNameAt(each) == null)
+            if (PAGE.equals(each.getPage()) && session.getStore().isStation(each) && session.getLocomotiveNameAt(each) == null
+                && !each.equals(not))
             {
                 return each;
             }
@@ -3166,6 +3172,152 @@ public class testTheTrainWindow
             Components.onTheEventThread(() -> { window.dispose(); return null; });
 
             return null;
+        });
+    }
+
+    /**
+     * A train the editor's Place moved, which the railway then moved on to a third station as a run with the editor
+     * open does, stays where the railway has it at Cancel: where a train is is a fact, and standing it back where it was
+     * before the Place would leave the third station reading free under it.
+     *
+     * MUTATION: return the whole record from `AutonomyEditorPanel.railwayBeforeTheEdit`, and the train goes back to
+     * where it stood before the Place.
+     */
+    @Test(timeOut = 240000)
+    public void testCancelLeavesATrainTheRailwayMovedSinceThePlace() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final TileKey square = aSquareWithATrain();
+        final String name = session.getLocomotiveNameAt(square);
+        final org.traincontrol.automation.Point copy = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
+        final TileKey empty = anEmptyStation();
+
+        assertNotNull(copy, "precondition: " + name + " stands nowhere on the railway");
+
+        offTheRailwayAt(empty);
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            makeActive(name);
+
+            JMenuItem place = placeItemOn(panel, empty, name);
+
+            assertNotNull(place, "precondition: no Place " + name);
+
+            Components.onTheEventThread(() -> { place.doClick(); return null; });
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> empty.equals(session.getStationIndex()
+                .squareOf(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name))))), 20000),
+                "precondition: Place did not move " + name + " on the railway");
+
+            final org.traincontrol.automation.Point third = aFreeCopyOf(anEmptyStationBut(square));
+
+            assertNotNull(third, "precondition: no free copy of a third station");
+
+            Components.onTheEventThread(() -> { assertTrue(model.getAutoLayout().moveLocomotive(name, third.getName(), false),
+                "precondition: the railway would not move " + name); return null; });
+
+            Components.settle();
+
+            cancelTheEditor();
+
+            org.traincontrol.automation.Point now = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
+
+            assertEquals(now == null ? null : now.getName(), third.getName(), "Cancel stood " + name
+                + " back where it was before the Place, though the railway had moved it on since");
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            standBack(name, copy.getName(), null, null, null);
+        }
+    }
+
+    /**
+     * The same through Clear All Locomotives: Cancel stands each lifted train where the railway had it, not on its old
+     * setup square (OB-416).
+     *
+     * MUTATION: drop `rememberWhereTheyStand(lifted)` from `AutonomyEditorPanel.clearAllPlacements`, and Z goes back to
+     * its old setup square.
+     */
+    @Test(timeOut = 240000)
+    public void testCancelAfterARunAndClearAllPutsTheRailwaysTrainsBack() throws Exception
+    {
+        cancelAfterARun(false, (panel, square) ->
+        {
+            bulkDoor(panel, "clearAllPlacements", () -> session.getLocomotiveNameAt(square) == null,
+                "Clear All left the square placed");
+
+            return null;
+        });
+    }
+
+    /**
+     * Place All Trains at Their Homes, then Cancel, stands every train back where the railway had it: the homed ones
+     * too, which the door's rebuild stood on their homes (OB-416).
+     *
+     * MUTATION: drop the `rememberWhereTheyStand` calls from `AutonomyEditorPanel.placeEveryTrainAtHome`, and the homed
+     * trains stay on their homes.
+     */
+    @Test(timeOut = 240000)
+    public void testCancelAfterPlaceAllAtHomePutsEveryTrainBack() throws Exception
+    {
+        final TileKey square = aSquareWithATrain();
+        final String train = session.getLocomotiveNameAt(square);
+        final TileKey home = anEmptyStation();
+
+        Components.onTheEventThread(() -> { session.setHome(home, train); ui.rebuildRunningLayoutFromSetup(); return null; });
+
+        Components.settle();
+
+        final Map<String, String> before = standingNow();
+
+        assertTrue(before.containsKey(train), "precondition: " + train + " stands nowhere on the railway");
+
+        bulkDoor(theEditorsPanel(), "placeEveryTrainAtHome", () -> !before.equals(standingNow()),
+            "the railway did not follow Place All at Home");
+
+        assertEquals(session.getLocomotiveNameAt(home), train, "precondition: Place All at Home did not put " + train
+            + " on its home");
+
+        cancelTheEditor();
+
+        assertEquals(standingNow(), before, "Cancel after Place All at Home left trains moved on the railway");
+    }
+
+    /** One of the editor's bulk doors, answered Yes, waited on until `done`. */
+    private static void bulkDoor(AutonomyEditorPanel panel, String door, java.util.function.BooleanSupplier done,
+        String notDone) throws Exception
+    {
+        final java.lang.reflect.Method method = Reflect.method(AutonomyEditorPanel.class, door);
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.press(AskingWindows.YES)))
+        {
+            SwingUtilities.invokeLater(() -> Components.onTheEventThread(() -> method.invoke(panel)));
+
+            assertTrue(Components.waitFor(done, 20000), "precondition: " + notDone);
+        }
+
+        Components.settle();
+    }
+
+    /** Each train on the railway and the Point it stands on. */
+    private static Map<String, String> standingNow()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            Map<String, String> out = new java.util.TreeMap<>();
+
+            for (Map.Entry<String, String[]> each : TrainControlUI.whereTheTrainsAre(model.getAutoLayout()).entrySet())
+            {
+                out.put(each.getKey(), each.getValue()[0]);
+            }
+
+            return out;
         });
     }
 

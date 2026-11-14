@@ -1201,7 +1201,7 @@ public class testATrainDragsFromStationToStation
     /**
      * Cancel throws away every drag of the session, in the setup, the file and the railway, with facing and tail
      * (FR-160): the dragged train goes back whatever the target held, a chain of drops leaves no train lost, and a
-     * dragged train the railway moved on afterwards goes back too.
+     * dragged train the railway moved on afterwards stays where the railway has it, as where a train is is a fact.
      *
      * MUTATION: recording the dragged train only for an occupied target (`displaced != null` in
      * `AutonomyEditorPanel.dropTrain`'s `rememberWhereTheyStand`) leaves the empty drags moved.
@@ -1220,7 +1220,7 @@ public class testATrainDragsFromStationToStation
 
             TileKey a = trains.get(0), b = trains.get(1), c = trains.get(2);
 
-            // Two empty drops, then the railway moves the first train on alone
+            // Two empty drops
             reopenedFrom(asFound);
 
             String before = storesOn(a, b, c, empty.get(0), empty.get(1), empty.get(2));
@@ -1232,12 +1232,28 @@ public class testATrainDragsFromStationToStation
 
             assertNotNull(session.getLocomotiveNameAt(empty.get(1)), "precondition: the second drop did not land");
 
-            moveOnTheRailwayAlone(session.getLocomotiveNameAt(empty.get(0)), empty.get(2));
-
             cancelTheEditor();
 
             assertEquals(storesOn(a, b, c, empty.get(0), empty.get(1), empty.get(2)), before,
                 "Cancel left something of two empty drops");
+
+            // A drop the railway then moves on alone, as a run does
+            reopenedFrom(asFound);
+
+            scrollTheDiagram();
+
+            dragTrain(a, empty.get(0));
+
+            String moved = session.getLocomotiveNameAt(empty.get(0));
+
+            assertNotNull(moved, "precondition: the drop did not land");
+
+            moveOnTheRailwayAlone(moved, empty.get(2));
+
+            cancelTheEditor();
+
+            assertEquals(railwaySquareOf(moved), empty.get(2), "Cancel put back a dragged train the railway moved on afterwards");
+            assertNull(session.getLocomotiveNameAt(empty.get(0)), "Cancel kept the drop in the setup");
 
             // A chain: a onto b, then c onto the square a left
             reopenedFrom(asFound);
