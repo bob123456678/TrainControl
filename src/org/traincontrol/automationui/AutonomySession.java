@@ -151,6 +151,9 @@ public class AutonomySession
 
     private static final String REMEMBERED = "session";
 
+    /** A page snapshot's `turnsSoFar`. */
+    private static final String TURNS = "turns";
+
     /** The carry and the railway's squares as the edit began, for a Cancel; taken at the first move only. */
     private Remembered asTheEditBegan;
 
@@ -1788,25 +1791,115 @@ public class AutonomySession
 
             if (recorded == null) recorded = getFacing(tile);
 
-            List<Side> choices = facingChoices(tile);
-
             // Carry on: a train recorded on two squares still gets the decidable one.
-            if (recorded == null || choices.size() != 2) continue;
+            final Side now = theOtherFacing(tile, recorded);
 
-            // A facing this square cannot hold (OB-177): reported by `facingsThatCannotBeHeld`, not flipped.
-            if (!choices.contains(recorded)) continue;
-
-            final Side now = choices.get(0) == recorded ? choices.get(1) : choices.get(0);
+            if (now == null) continue;
 
             setFacing(tile, now);
 
             moveOntoFacingCopy(running, locomotive, tile, now);
+
+            turned(locomotive);
 
             return tile;
         }
 
         return null;
     }
+
+    /**
+     * The other way a train on this square can face, from `was`: "the other choice" of `facingChoices`.  Null where the
+     * square has not two, or cannot hold `was` (OB-177: reported by `facingsThatCannotBeHeld`, not turned).
+     */
+    public Side theOtherFacing(TileKey square, Side was)
+    {
+        List<Side> choices = square == null || was == null ? Collections.<Side>emptyList() : facingChoices(square);
+
+        if (choices.size() != 2 || !choices.contains(was)) return null;
+
+        return choices.get(0) == was ? choices.get(1) : choices.get(0);
+    }
+
+    /** How many times each train was turned where it stood this session, by the railway or the editor's Facing. */
+    private final Map<String, Integer> turnsMade = new HashMap<>();
+
+    /**
+     * Each train's turns so far, by name, for `turnedSince`: a discard keeps the turns made since the editor opened, as
+     * Cancel never changes which way a train faces.
+     */
+    public Map<String, Integer> turnsSoFar()
+    {
+        return new HashMap<>(turnsMade);
+    }
+
+    /** The trains turned an odd number of times since `then` (a `turnsSoFar`; none for anything else). */
+    public Set<String> turnedSince(Object then)
+    {
+        Set<String> out = new TreeSet<>();
+
+        for (Map.Entry<String, Integer> now : then instanceof Map ? turnsMade.entrySet()
+            : Collections.<Map.Entry<String, Integer>>emptySet())
+        {
+            Object was = ((Map<?, ?>) then).get(now.getKey());
+
+            if ((now.getValue() - (was instanceof Integer ? (Integer) was : 0)) % 2 != 0) out.add(now.getKey());
+        }
+
+        return out;
+    }
+
+    /** Counts a turn, and turns the train in the crash note too, wherever the note places it. */
+    private void turned(String locomotive)
+    {
+        turnsMade.merge(locomotive, 1, Integer::sum);
+
+        store.rewriteTheUnfinishedEditNote(note -> turnInSetup(note, locomotive));
+    }
+
+    /** A setup snapshot with each of these trains turned where it places them (`theOtherFacing`); a copy if any. */
+    public JSONObject withTheseTrainsTurned(JSONObject setup, Collection<String> trains)
+    {
+        if (setup == null || trains.isEmpty()) return setup;
+
+        JSONObject out = new JSONObject(setup.toString());
+
+        for (String train : trains) turnInSetup(out, train);
+
+        return out;
+    }
+
+    /** Turns a train in a setup snapshot's active configuration, in place; true if it did. */
+    private boolean turnInSetup(JSONObject setup, String locomotive)
+    {
+        JSONObject copies = setup.optJSONObject("configurations");
+        JSONObject copy = copies == null ? null : copies.optJSONObject(store.getActiveConfiguration());
+
+        return copy != null && turnInPoints(copy.optJSONObject("points"), locomotive);
+    }
+
+    /** The same over one configuration's points, as a page snapshot holds them. */
+    private boolean turnInPoints(JSONObject points, String locomotive)
+    {
+        for (String key : points == null ? Collections.<String>emptySet() : points.keySet())
+        {
+            JSONObject point = points.optJSONObject(key);
+
+            if (point == null || !locomotive.equals(nameOfPlacedLocomotive(point.opt("loc")))) continue;
+
+            Side was = sideNamed(point.opt(AutonomyBuilder.FACING));
+            Side other = theOtherFacing(AutonomyCompanionStore.parseTileKey(key), was);
+
+            if (other == null) return false;
+
+            point.put(AutonomyBuilder.FACING, other.name());
+
+            return true;
+        }
+
+        return false;
+    }
+
     /** The locomotive on a stored point, or null: the one spelling of what a blank name means. */
     private static String namedLocomotiveOn(JSONObject point)
     {
@@ -2315,12 +2408,26 @@ public class AutonomySession
         // And what an edit of the page changes outside it (`Remembered`)
         snapshot.put(REMEMBERED, remembered());
 
+        snapshot.put(TURNS, turnsSoFar());
+
         return snapshot;
     }
 
+    /** Puts a page back as `snapshotPage` found it, but each train turned since keeps its turns, as Cancel does. */
     public void restorePage(String page, Map<String, Object> snapshot)
     {
         if (snapshot == null) return;
+
+        Object copies = snapshot.get("configurations");
+        Object points = copies instanceof Map ? ((Map<?, ?>) copies).get(store.getActiveConfiguration()) : null;
+
+        for (String train : turnedSince(snapshot.get(TURNS)))
+        {
+            if (points instanceof JSONObject) turnInPoints((JSONObject) points, train);
+        }
+
+        // Once, however often it is put back
+        snapshot.put(TURNS, turnsSoFar());
 
         store.restorePage(page, snapshot);
 
@@ -6519,22 +6626,6 @@ public class AutonomySession
         return name.isEmpty() ? null : name;
     }
 
-    /**
-     * A turned train's facing over one configuration's points (as a setup snapshot and a page snapshot hold them), in
-     * place, where its square still holds it; true if changed.
-     */
-    public static boolean updateFacingInPoints(JSONObject points, TileKey square, String locomotive, String facing)
-    {
-        JSONObject point = points == null ? null : points.optJSONObject(square.toString());
-
-        if (point == null || !locomotive.equals(nameOfPlacedLocomotive(point.opt("loc")))
-            || facing.equals(point.opt(AutonomyBuilder.FACING))) return false;
-
-        point.put(AutonomyBuilder.FACING, facing);
-
-        return true;
-    }
-
     /** Takes a locomotive off every other square, carrying what was recorded with it into the new placement `into`. */
     private void forgetPlacementsElsewhere(TileKey keep, String name, JSONObject into)
     {
@@ -7395,14 +7486,15 @@ public class AutonomySession
 
         String inTheSetup = getLocomotiveNameAt(tile);
         String onTheRailway = trainOnTheRailway(tile, running);
+        String name = onTheRailway != null ? onTheRailway : inTheSetup;
+        Side was = onTheRailway != null ? facingOnTheRailway(tile, running) : getFacing(tile);
 
         if (onTheRailway == null || onTheRailway.equals(inTheSetup)) setFacing(tile, facing);
 
-        if (running == null || facing == null) return;
+        if (running != null && facing != null && name != null) moveOntoFacingCopy(running, name, tile, facing);
 
-        String name = onTheRailway != null ? onTheRailway : inTheSetup;
-
-        if (name != null) moveOntoFacingCopy(running, name, tile, facing);
+        // A turn where it stands, as the throttle's is
+        if (name != null && was != null && facing != null && was != facing) turned(name);
     }
 
     /** The train standing on any copy of a square on the RAILWAY, or null; after a run the setup's need not be it. */

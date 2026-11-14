@@ -116,10 +116,16 @@ public class testTheTrainWindow
 
     private static TileKey anEmptyStationBut(TileKey not)
     {
+        return anEmptyStationWhere(each -> !each.equals(not));
+    }
+
+    /** An empty station on this page that passes the test. */
+    private static TileKey anEmptyStationWhere(java.util.function.Predicate<TileKey> also)
+    {
         for (TileKey each : session.getReducer().getPoints().keySet())
         {
             if (PAGE.equals(each.getPage()) && session.getStore().isStation(each) && session.getLocomotiveNameAt(each) == null
-                && !each.equals(not))
+                && also.test(each))
             {
                 return each;
             }
@@ -3318,14 +3324,25 @@ public class testTheTrainWindow
     /** Throws the edit away the given way (`DISCARDS`), answering yes, and closes the editor. */
     private void discard(int how) throws Exception
     {
+        java.util.List<String> asked = leave(how);
+
+        if (how > 0) assertEquals(asked.size(), 1, "precondition: " + DISCARDS[how] + " asked " + asked);
+    }
+
+    /** Leaves the editor the given way (`DISCARDS`), answering yes or Discard, and closes it; returns what it asked. */
+    private java.util.List<String> leave(int how) throws Exception
+    {
         if (how == 0)
         {
-            cancelTheEditor();
-            return;
+            String asked = cancelTheEditor();
+
+            return asked == null ? java.util.Collections.<String>emptyList()
+                : java.util.Collections.singletonList(asked);
         }
 
         final LayoutEditor closing = editor;
         final java.lang.reflect.Method settle = Reflect.method(LayoutEditor.class, "settleUnsavedWork");
+        java.util.List<String> asked;
 
         try (support.Answering answering = support.Answering.start(
             message -> support.Answering.press(I18n.t("layout.ui.switchDiscard"))))
@@ -3333,7 +3350,7 @@ public class testTheTrainWindow
             assertTrue(Components.onTheEventThread(() -> how == 1 ? (Boolean) settle.invoke(closing)
                 : closing.maySettleBeforeExit()), DISCARDS[how] + " did not go ahead");
 
-            assertEquals(answering.asked().size(), 1, "precondition: " + DISCARDS[how] + " asked " + answering.asked());
+            asked = new java.util.ArrayList<>(answering.asked());
         }
 
         support.FrozenEditor.dispose(closing);
@@ -3341,74 +3358,102 @@ public class testTheTrainWindow
         editor = null;
 
         Components.settle();
+
+        return asked;
+    }
+
+    /** Where a train stands and faces on the railway, and the setup's facing on that square. */
+    private static String standingAndFacing(String name)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automation.Point at = model.getAutoLayout().getLocomotiveLocation(
+                model.getLocByName(name));
+            TileKey sq = at == null ? null : session.getStationIndex().squareOf(at.getName());
+
+            return "on " + sq + " facing " + session.facingOf(name, model.getAutoLayout()) + ", setup facing "
+                + (sq == null ? null : session.getFacing(sq));
+        });
+    }
+
+    /** The other way a train on this square could face, from the way it faces on the railway now. */
+    private static org.traincontrol.automationui.TilePorts.Side theOtherWay(TileKey square)
+    {
+        org.traincontrol.automationui.TilePorts.Side now = session.facingOnTheRailway(square, model.getAutoLayout());
+
+        for (org.traincontrol.automationui.TilePorts.Side c : session.facingChoices(square)) if (c != now) return c;
+
+        throw new AssertionError("precondition: " + square + " has no other facing");
+    }
+
+    /** Calls one of the editor's square menu doors (`EditorTileMenus`) on a square, as its item does, and waits. */
+    private static void throughTheTileMenus(AutonomyEditorPanel panel, String door, Class<?> type, TileKey square,
+        Object value) throws Exception
+    {
+        final Object menus = Reflect.get(AutonomyEditorPanel.class, panel, "tileMenus");
+        final java.lang.reflect.Method call = Reflect.method(menus.getClass(), door, TileKey.class, type);
+
+        Components.onTheEventThread(() -> { call.invoke(menus, square, value); return null; });
+
+        Components.settle();
+    }
+
+    /** The editor's Facing door, turning the train on this square to `way`; asserts it turned on the railway. */
+    private static void faceFromTheMenu(AutonomyEditorPanel panel, TileKey square, String name,
+        org.traincontrol.automationui.TilePorts.Side way) throws Exception
+    {
+        final String before = copyOf(name);
+
+        throughTheTileMenus(panel, "chooseFacing", org.traincontrol.automationui.TilePorts.Side.class, square, way);
+
+        assertFalse(before.equals(copyOf(name)), "precondition: the Facing door did not turn " + name
+            + " on the railway");
     }
 
     /**
-     * The editor's Facing door turns the train on the railway as well as in the setup; Cancel and either Discard turn
-     * it back in both, as every train goes back where it stood when the editor opened (D114).
+     * The editor's Facing door alone, then Cancel or either Discard: nothing is asked and the train keeps the facing it
+     * has, on the railway and in the setup, as Cancel never changes which way a train faces.
      *
-     * MUTATION: pass null for `railwayAsPictured()` in `LayoutEditor.discardAutonomyWork`, and the train stays turned.
+     * MUTATION: compare `autonomyAsOpened` itself in `LayoutEditor.hasUnsavedAutonomyWork`, and each door asks and
+     * turns it back.
      */
     @Test(timeOut = 400000)
-    public void testCancelOrDiscardAfterAFacingChangePutsTheTrainBack() throws Exception
+    public void testCancelOrDiscardKeepsAFacingChangeAndAsksNothing() throws Exception
+    {
+        forEachWayOutWithATrainThatCanTurn((how, panel, square, name, copyBefore) ->
+        {
+            faceFromTheMenu(panel, square, name, theOtherWay(square));
+
+            final String turned = standingAndFacing(name);
+
+            java.util.List<String> asked = leave(how);
+
+            assertEquals(asked, java.util.Collections.emptyList(), DISCARDS[how] + " after only a facing change of "
+                + name + " asked");
+            assertEquals(standingAndFacing(name), turned, DISCARDS[how] + " after a facing change turned " + name
+                + " back (it stood on " + copyBefore + " at opening)");
+        });
+    }
+
+    /** A claim's body, run once for each way out (`DISCARDS`). */
+    private interface WayOut
+    {
+        void run(int how, AutonomyEditorPanel panel, TileKey square, String name, String copyBefore) throws Exception;
+    }
+
+    /** Runs a body for each way out on a train that can turn, in a fresh editor; railway and setup put back after. */
+    private void forEachWayOutWithATrainThatCanTurn(WayOut body) throws Exception
     {
         for (int how = 0; how < DISCARDS.length; how++)
         {
             AutonomyEditorPanel panel = theEditorsPanel();
-
-            TileKey found = null;
-            String standing = null;
-            org.traincontrol.automationui.TilePorts.Side other = null;
-
-            for (Map.Entry<TileKey, String> each : session.trainsWhereTheyStand().entrySet())
-            {
-                TileKey sq = each.getKey();
-
-                // The setup's own train: the Facing menu turns that one
-                if (!PAGE.equals(sq.getPage()) || !each.getValue().equals(session.getLocomotiveNameAt(sq))
-                    || model.getAutoLayout().getLocomotiveLocation(model.getLocByName(each.getValue())) == null) continue;
-
-                org.traincontrol.automationui.TilePorts.Side now = session.facingOnTheRailway(sq, model.getAutoLayout());
-
-                for (org.traincontrol.automationui.TilePorts.Side c : session.facingChoices(sq)) if (c != now) other = c;
-
-                if (other != null)
-                {
-                    found = sq;
-                    standing = each.getValue();
-                    break;
-                }
-            }
-
-            assertNotNull(found, "precondition: no standing train with two facings on " + PAGE);
-
-            final TileKey square = found;
-            final org.traincontrol.automationui.TilePorts.Side turnTo = other;
-            final String name = standing;
-            final String copyBefore = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)).getName();
-            final Object facingBefore = session.facingOf(name);
-
-            final Object menus = Reflect.get(AutonomyEditorPanel.class, panel, "tileMenus");
-            final java.lang.reflect.Method choose = Reflect.method(menus.getClass(), "chooseFacing", TileKey.class,
-                org.traincontrol.automationui.TilePorts.Side.class);
+            TileKey square = aTrainThatCanTurn();
+            String name = session.getLocomotiveNameAt(square);
+            String copyBefore = copyOf(name);
 
             try
             {
-                Components.onTheEventThread(() -> { choose.invoke(menus, square, turnTo); return null; });
-
-                Components.settle();
-
-                String turned = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)).getName();
-
-                assertFalse(turned.equals(copyBefore), "precondition: the facing door did not turn " + name + " on the railway");
-
-                discard(how);
-
-                org.traincontrol.automation.Point now = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
-
-                assertEquals("railway " + (now == null ? null : now.getName()) + ", setup facing " + session.facingOf(name),
-                    "railway " + copyBefore + ", setup facing " + facingBefore, DISCARDS[how] + " after turning " + name
-                    + " on " + square + " to " + turnTo + " did not turn it back");
+                body.run(how, panel, square, name, copyBefore);
             }
             finally
             {
@@ -3484,13 +3529,8 @@ public class testTheTrainWindow
             }
 
             final String side = other;
-            final AutonomyEditorPanel panel = theEditorsPanel();
-            final Object menus = Reflect.get(AutonomyEditorPanel.class, panel, "tileMenus");
-            final java.lang.reflect.Method set = Reflect.method(menus.getClass(), "setArrivedFrom", TileKey.class, String.class);
 
-            Components.onTheEventThread(() -> { set.invoke(menus, square, side); return null; });
-
-            Components.settle();
+            throughTheTileMenus(theEditorsPanel(), "setArrivedFrom", String.class, square, side);
 
             assertEquals(model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name)).getArrivedFrom(), side,
                 "precondition: the side door did not reach the railway");
@@ -4455,7 +4495,8 @@ public class testTheTrainWindow
      * A reversal on the throttle followed while the editor is open is the train's, not the editor's work: with nothing
      * edited Cancel asks nothing, and the train stays turned on the railway, in the setup and in the crash note.
      *
-     * MUTATION: leave `autonomyTurnFollowed` out of `TrainControlUI.followTheTurn`, and Cancel asks and turns it back.
+     * MUTATION: compare `autonomyAsOpened` itself in `LayoutEditor.hasUnsavedAutonomyWork`, and Cancel asks and turns
+     * it back.
      */
     @Test(timeOut = 300000)
     public void testCancelAsksNothingAfterOnlyAThrottleTurn() throws Exception
@@ -4497,7 +4538,7 @@ public class testTheTrainWindow
      * Cancel after an edit throws the edit away but keeps a reversal followed meanwhile, on the railway and in the setup,
      * so the train faces the way its decoder runs; the question does not name it as going back.
      *
-     * MUTATION: leave the picture's `railwayAsOpened.put` out of `LayoutEditor.autonomyTurnFollowed`, and this fails.
+     * MUTATION: return an empty set from `LayoutEditor.trainsTurnedSince`, and Cancel turns it back.
      */
     @Test(timeOut = 300000)
     public void testCancelKeepsAThrottleTurnMadeWhileOpen() throws Exception
@@ -4539,6 +4580,148 @@ public class testTheTrainWindow
 
             offTheRailway(java.util.Collections.singleton(unplaced));
 
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * The editor moves a train, the throttle then reverses it, then Cancel or either Discard: the train goes back to
+     * the square it stood on when the editor opened, turned round from the way it faced there, as its decoder now runs,
+     * on the railway and in the setup; the question names it, for the move.
+     *
+     * MUTATION: return an empty set from `LayoutEditor.trainsTurnedSince`, and it goes back facing as at opening.
+     */
+    @Test(timeOut = 400000)
+    public void testADiscardPutsAMovedTrainBackFacingTheWayItWasTurned() throws Exception
+    {
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            forEachWayOutWithATrainThatCanTurn((how, panel, square, name, copyBefore) ->
+            {
+                final TileKey elsewhere = anEmptyStationWhere(each -> session.trainsWhereTheyStand().get(each) == null
+                    && session.facingChoices(each).size() == 2);
+                final org.traincontrol.automationui.TilePorts.Side way = theOtherWay(square);
+
+                placeFromTheMenu(panel, elsewhere, name);
+
+                Components.settle();
+
+                reverse(name, copyOf(name));
+
+                java.util.List<String> asked = leave(how);
+
+                if (how == 0)
+                {
+                    String expected = I18n.t("autosetup.ui.confirmExitWithoutSaving") + "\n\n"
+                        + I18n.f("autosetup.ui.trainsGoBackOnDiscard", name);
+
+                    assertEquals(asked, java.util.Collections.singletonList(expected), "Cancel's question does not"
+                        + " name " + name + " alone as going back");
+                }
+                else
+                {
+                    assertEquals(asked.size(), 1, "precondition: " + DISCARDS[how] + " asked " + asked);
+                }
+
+                assertEquals(standingAndFacing(name), "on " + square + " facing " + way + ", setup facing " + way,
+                    DISCARDS[how] + " after the editor moved " + name + " to " + elsewhere + " and the throttle"
+                    + " reversed it there did not put it back turned round (it stood on " + copyBefore + ")");
+            });
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+        }
+    }
+
+    /**
+     * The editor's Facing door turns a train, the throttle then reverses it, Cancel: nothing is asked, and the train
+     * keeps the facing it has now, as both turns are kept.
+     *
+     * MUTATION: leave the `turned(name)` call out of `AutonomySession.setFacingAndMove`, and Cancel turns it round.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelKeepsTheFacingAfterAFacingChangeAndAThrottleTurn() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+
+        try
+        {
+            faceFromTheMenu(panel, square, name, theOtherWay(square));
+
+            reverse(name, copyOf(name));
+
+            final String now = standingAndFacing(name);
+
+            assertNull(cancelTheEditor(), "Cancel asked after a facing change of " + name + " and a reversal");
+            assertEquals(standingAndFacing(name), now, "Cancel changed the facing of " + name);
+        }
+        finally
+        {
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /** The track editor on this page, as the Edit menu opens it. */
+    private LayoutEditor theTrackEditor() throws Exception
+    {
+        final org.traincontrol.base.LayoutDiagram diagram = model.getLayout(PAGE);
+
+        editor = Components.onTheEventThread(() ->
+        {
+            LayoutEditor built = new LayoutEditor(diagram, 30, ui, 0);
+
+            built.render();
+
+            return built;
+        });
+
+        Components.settle();
+
+        return editor;
+    }
+
+    /**
+     * Ctrl+Z in the track editor puts back the page's setup as it was before the edit, but a train turned on the
+     * throttle meanwhile keeps its facing.
+     *
+     * MUTATION: drop the `turnInPoints` loop from `AutonomySession.restorePage`, and Ctrl+Z turns it back.
+     */
+    @Test(timeOut = 300000)
+    public void testTheTrackEditorsUndoKeepsAThrottleTurn() throws Exception
+    {
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+        final LayoutEditor open = theTrackEditor();
+        final java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
+
+        try
+        {
+            Components.onTheEventThread(() -> { snapshot.invoke(open); return null; });
+
+            reverse(name, copyBefore);
+
+            final String turned = standingAndFacing(name);
+
+            Components.onTheEventThread(() -> { open.undo(); return null; });
+
+            Components.settle();
+
+            assertEquals(standingAndFacing(name), turned, "Ctrl+Z in the track editor turned " + name + " back");
+        }
+        finally
+        {
             standBack(name, copyBefore, null, null, null);
 
             support.FrozenEditor.putBack(ui, session, asOpened);

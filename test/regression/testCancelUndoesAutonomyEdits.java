@@ -769,13 +769,7 @@ public class testCancelUndoesAutonomyEdits
         {
             java.nio.file.Files.write(note.toPath(), written.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-            AutonomySession restarted = new AutonomySession(sandbox.getFolder());
-
-            List<LayoutDiagram> onDisk = new ArrayList<>();
-
-            for (String name : model.getLayoutList()) onDisk.add(model.getLayout(name));
-
-            restarted.open(onDisk);
+            AutonomySession restarted = fromDisk();
 
             assertNotNull(restarted.getStore().unfinishedEdit(), "precondition: the note failed the shape check, so it is"
                 + " refused before anything reads it and this is not the case GSP-C4 is about");
@@ -810,6 +804,68 @@ public class testCancelUndoesAutonomyEdits
         finally
         {
             java.nio.file.Files.deleteIfExists(note.toPath());
+        }
+    }
+
+    /**
+     * The crash note puts each train back where the editor opened it, turned as often as it was turned since: the
+     * editor moves a train and it is reversed there, and after a restart it stands on its old square turned round, as
+     * its decoder runs.
+     *
+     * MUTATION: leave the note out of `AutonomySession.turned`, and the train comes back facing as at opening.
+     */
+    @Test
+    public void testACrashRevertKeepsATurnMadeAfterAMove() throws Exception
+    {
+        java.io.File note = new java.io.File(sandbox.getFolder(), "config/autonomy/setup-before-edit.json");
+
+        assertFalse(note.exists(), "precondition: a pre-edit note is in the sandbox already");
+
+        TileKey placed = null;
+        TileKey empty = null;
+
+        for (TileKey tile : session.getReducer().getPoints().keySet())
+        {
+            if (session.facingChoices(tile).size() != 2) continue;
+
+            if (session.getLocomotiveNameAt(tile) != null && session.getFacing(tile) != null) placed = tile;
+            else if (session.getLocomotiveNameAt(tile) == null && session.getStore().isStation(tile)) empty = tile;
+        }
+
+        assertNotNull(placed, "precondition: no placed train on a square with two facings");
+        assertNotNull(empty, "precondition: no empty station with two facings");
+
+        final TileKey square = placed;
+        final String name = session.getLocomotiveNameAt(square);
+        final org.json.JSONObject opened = session.snapshotSetup();
+        final org.traincontrol.automationui.TilePorts.Side before = session.getFacing(square);
+        final org.traincontrol.automationui.TilePorts.Side turned = session.facingChoices(square).get(0) == before
+            ? session.facingChoices(square).get(1) : session.facingChoices(square).get(0);
+
+        try
+        {
+            java.nio.file.Files.write(note.toPath(),
+                opened.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            session.placeLocomotive(empty, name);
+            session.setFacing(empty, session.facingChoices(empty).get(0));
+
+            assertEquals(session.flipFacing(name, null), empty, "precondition: " + name + " was not turned on "
+                + empty);
+            assertTrue(session.saveQuietly(), "precondition: the setup was not written");
+
+            AutonomySession restarted = fromDisk();
+
+            assertTrue(restarted.revertUnfinishedEdit(), "precondition: the crash note was not put back");
+            assertEquals(restarted.getLocomotiveNameAt(square) + " facing " + restarted.getFacing(square),
+                name + " facing " + turned, "after a restart, " + name + " moved to " + empty + " and reversed there"
+                + " came back to " + square + " facing as at opening (" + before + ")");
+        }
+        finally
+        {
+            java.nio.file.Files.deleteIfExists(note.toPath());
+
+            session.restoreSetup(opened);
         }
     }
 

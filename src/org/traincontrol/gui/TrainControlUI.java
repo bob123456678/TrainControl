@@ -7813,16 +7813,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // silent.
         this.model.logf("autosetup.infoFacingFollowedDirection", name, String.valueOf(moved));
 
-        // The train's, not the open editor's work: its Cancel, its undo and the crash note keep it
-        final String configuration = session.getStore().getActiveConfiguration();
-        final String facing = String.valueOf(session.getFacing(moved));
-
-        LayoutEditor open = anEditorWindow();
-
-        if (open != null)
+        // The train's, not the open editor's work: its Cancel, its undo and the crash note keep it (`turnedSince`)
+        if (anEditorWindow() != null)
         {
-            open.autonomyTurnFollowed(configuration, moved, name, facing);
-
             // Saved, as a preset speed is, or the open editor would ask about it at Cancel
             try
             {
@@ -7833,8 +7826,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.log(e);
             }
         }
-
-        session.getStore().updateFacingInTheUnfinishedEditNote(configuration, moved, name, facing);
 
         autonomySetupChanged();
 
