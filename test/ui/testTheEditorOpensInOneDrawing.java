@@ -45,10 +45,10 @@ public class testTheEditorOpensInOneDrawing
      *
      * MUTATION: post `setAutonomyMode`'s redraw whether or not a grid was drawn before the mode, and this fails.
      */
-    @Test(timeOut = 120000)
+    @Test(timeOut = 120000, priority = 1)
     public void testTheAutonomyEditorBuildsItsDiagramOnce() throws Exception
     {
-        // A page at the floor already, so only the mode's own redraw is counted
+        // A page at the floor already, so only the mode's own redraw is counted; after the claim below, which grows one
         String page = aPage(false);
 
         List<Component> built = new ArrayList<>();
