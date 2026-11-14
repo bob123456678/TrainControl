@@ -286,4 +286,61 @@ public class testTheFunctionsTabSwitchesFunctionsNow extends support.SettingsCla
 
         assertNothingFires("a train that had just started");
     }
+
+    /**
+     * The spinner turns about one fixed center: at every phase the timer produces, the ring's outer and inner radius
+     * are the same to a fraction of a pixel and no frame's ink reaches the icon's edge (OB-458).
+     *
+     * MUTATION: drop the pure-stroke hint from the FIRING branch of `RowIcons.play` and this fails.
+     */
+    @Test
+    public void testTheSpinnerTurnsAboutOneCenter()
+    {
+        for (int size : new int[] { 16, 20, 24, 32 })
+        {
+            double lowOuter = 1e9;
+            double highOuter = 0;
+            double lowInner = 1e9;
+            double highInner = 0;
+
+            for (int phase = 0; phase < 360; phase += 40)
+            {
+                java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(size, size,
+                    java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                java.awt.Graphics2D g = img.createGraphics();
+
+                RowIcons.play(size, RowIcons.PlayState.FIRING, phase).paintIcon(null, g, 0, 0);
+                g.dispose();
+
+                double outer = 0;
+                double inner = 1e9;
+
+                for (int y = 0; y < size; y++)
+                {
+                    for (int x = 0; x < size; x++)
+                    {
+                        if ((img.getRGB(x, y) >>> 24) < 128) continue;
+
+                        double r = Math.hypot(x + 0.5 - size / 2.0, y + 0.5 - size / 2.0);
+
+                        outer = Math.max(outer, r);
+                        inner = Math.min(inner, r);
+
+                        assertTrue(x > 0 && y > 0 && x < size - 1 && y < size - 1,
+                            "ink touches the edge at size " + size + " phase " + phase);
+                    }
+                }
+
+                lowOuter = Math.min(lowOuter, outer);
+                highOuter = Math.max(highOuter, outer);
+                lowInner = Math.min(lowInner, inner);
+                highInner = Math.max(highInner, inner);
+            }
+
+            assertTrue(highOuter - lowOuter < 0.5, "the ring's outer radius moves " + (highOuter - lowOuter)
+                + " px at size " + size);
+            assertTrue(highInner - lowInner < 0.5, "the ring's inner radius moves " + (highInner - lowInner)
+                + " px at size " + size);
+        }
+    }
 }
