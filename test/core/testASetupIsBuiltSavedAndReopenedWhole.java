@@ -1080,11 +1080,9 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     }
 
     /**
-     * Every per-station key survives the session's own round trip: set on a station, built into the railway, captured
-     * back from it, saved and reopened as a fresh session.  The table is the matrix's, one row per key.
-     *
-     * `facing` and `homeFacing` are never built or captured without a train standing there, so their two rows cover save
-     * and reopen only.
+     * Every per-station key survives the session's own round trip: set, built into the railway, captured back, saved
+     * and reopened as a fresh session, one row per key of the matrix.  `facing` and `homeFacing` need a train standing
+     * there to be built or captured, so their rows cover save and reopen only.
      *
      * MUTATION: skip one of the ten operational keys in `AutonomySession.capture`'s copy loop, or leave it out of
      * `AutonomyBuilder`'s point output, and this fails on that key.

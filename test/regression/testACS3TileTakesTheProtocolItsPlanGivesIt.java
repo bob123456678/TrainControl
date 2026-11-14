@@ -433,8 +433,7 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
 
     /**
      * A slip whose first square is told and whose second is not: the warning names the protocol the untold square
-     * keeps.  With W 1R on Main Layout's plan at the slip's first square (16,6) and W 11 moved off it, that square is
-     * W 1R's (MM2) and the second, (17,6), keeps the first article's DCC.
+     * keeps.  With W 11 moved off (16,6), W 1R's (MM2) square, the second, (17,6), keeps the first article's DCC.
      *
      * MUTATION: take the warning's protocol from the address's first tile again (CS2File.resolveTwoProtocolTiles), and
      * it says MM2.
@@ -572,8 +571,7 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
 
     /**
      * A full sync with the whole CS3 from the layout folder `folder` ("" for the station's diagram), as a fresh start
-     * makes it: no diagram yet and the type not known, with the device file dropped (twice, as the JDK repeats a dropped
-     * request once).  Answers the sync's result; the folder preference is put back by the caller.
+     * makes it: no diagram, type unknown, the device file dropped twice (the JDK repeats a dropped request once).
      */
     private static int firstSyncWithTheDeviceFileDropped(String folder) throws Exception
     {
@@ -630,9 +628,8 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
     }
 
     /**
-     * A device file that fails to arrive fails the sync before the station's diagram is read, as the type decides which
-     * protocol W 15's tile takes: nothing is built, so the retry (Resync or Retry) reads the diagram as a CS3's, and
-     * W 15 is MM2.  Built as a CS2's, it would be DCC until restart, the switch never moving.
+     * A device file that fails to arrive fails the sync before the station's diagram is read, as the type decides W
+     * 15's protocol: nothing is built, and the retry reads the diagram as a CS3's (W 15 is MM2), not a CS2's.
      *
      * MUTATION: drop the `stationTypeUnknown` throw before `syncLayouts` in the no-folder branch of
      * `MarklinControlStation.syncLayoutsFromConfiguredSource`, and the failed sync builds the pages, as a CS2's.
