@@ -291,6 +291,143 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
     }
 
     /**
+     * A Sync that fails (the station is nowhere) says so on this window and offers Retry, which syncs again; one pressed
+     * while another sync runs says that one is running, on this window too.
+     *
+     * MUTATION: in `TrainControlUI.syncLocomotiveFrom`, leave out the `saidTheSyncDidNotRun` call, and the button says
+     * nothing.
+     */
+    @Test(timeOut = 120000)
+    public void testASyncThatFailsSaysSoOnTheWindowAndRetries() throws Exception
+    {
+        connected(true);
+
+        JButton button = sync();
+
+        awaitLook(() -> Components.onTheEventThread(button::isEnabled));
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        String failed = I18n.f("ui.syncFailedRetry", "").split("\n")[0];
+        java.util.concurrent.atomic.AtomicInteger failures = new java.util.concurrent.atomic.AtomicInteger();
+
+        java.util.concurrent.atomic.AtomicBoolean inFlight = (java.util.concurrent.atomic.AtomicBoolean)
+            Reflect.field(org.traincontrol.gui.TrainControlUI.class, "syncInFlight").get(ui);
+
+        // Retry for the first failure, Close for the second; one answerer, since a dialog just answered is still
+        // showing for a moment and a new answerer would count it again
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(
+            message.startsWith(failed) && failures.incrementAndGet() > 1 ? 1 : 0)))
+        {
+            Components.press(button);
+
+            assertTrue(answering.awaitAsked(2, 30000), "the failed Sync, then its Retry, said: " + answering.asked());
+
+            for (support.Answering.Question q : answering.questions().subList(0, 2))
+            {
+                assertTrue(q.message.startsWith(failed), "not the failed-sync popup: " + q.message);
+                org.testng.Assert.assertSame(q.owner, window, "not on the Settings window");
+            }
+
+            assertFalse(answering.awaitAsked(3, 3000), "Close synced again: " + answering.asked());
+
+            inFlight.set(true);
+
+            Components.press(button);
+
+            assertTrue(answering.awaitAsked(3, 30000), "a Sync while another runs said nothing");
+            assertEquals(answering.asked().get(2), I18n.t("ui.infoSyncAlreadyRunning"));
+            org.testng.Assert.assertSame(answering.questions().get(2).owner, window, "not on the Settings window");
+        }
+        finally
+        {
+            inFlight.set(false);
+        }
+    }
+
+    /**
+     * A Sync pressed while another sync is still writing says so and leaves the window alone: reloading it then would
+     * show half of the other sync's data as the answer.
+     *
+     * MUTATION: in `TrainControlUI.syncLocomotiveFrom`, run `after` whatever `synced` is, and the window reloads.
+     */
+    @Test(timeOut = 120000)
+    public void testASyncWhileAnotherRunsDoesNotReloadTheWindow() throws Exception
+    {
+        connected(true);
+
+        java.util.concurrent.atomic.AtomicBoolean inFlight = (java.util.concurrent.atomic.AtomicBoolean)
+            Reflect.field(org.traincontrol.gui.TrainControlUI.class, "syncInFlight").get(ui);
+        java.util.concurrent.atomic.AtomicInteger reloads = new java.util.concurrent.atomic.AtomicInteger();
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(0)))
+        {
+            inFlight.set(true);
+            ui.syncLocomotiveFrom(loc, SettingsWindow.showing(), reloads::incrementAndGet);
+
+            assertTrue(answering.awaitAsked(1, 30000), "a Sync while another runs said nothing");
+            assertEquals(answering.asked().get(0), I18n.t("ui.infoSyncAlreadyRunning"));
+            assertEquals(reloads.get(), 0, "the window reloaded while the other sync was still writing");
+        }
+        finally
+        {
+            inFlight.set(false);
+        }
+    }
+
+    /**
+     * The pre-arrival speed slider opens at the percent the reduction was saved at, for figures whose double times 100
+     * falls just short (0.57 is 56.99...), and a click on it writes the same figure back.
+     *
+     * MUTATION: in `AutonomySettingsTab.loadAutoLayoutSettings`, cast the reduction times 100 to int again instead of
+     * rounding, and 0.57 opens as 56 and a click saves 0.56.
+     */
+    @Test(timeOut = 120000)
+    public void testThePreArrivalSliderOpensAndSavesAsItWasSet() throws Exception
+    {
+        boolean hadOne = fixture.model.hasAutoLayout();
+        org.traincontrol.automation.Layout auto = fixture.model.getAutoLayout();
+        double was = auto.getPreArrivalSpeedReduction();
+        Object tab = Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "autonomySettingsTab");
+        javax.swing.JSlider slider = (javax.swing.JSlider) Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui,
+            "preArrivalSpeedReduction");
+        java.lang.reflect.Method load = Reflect.method(tab.getClass(), "loadAutoLayoutSettings");
+        java.lang.reflect.Method release = Reflect.method(tab.getClass(), "preArrivalSpeedReductionMouseReleased",
+            java.awt.event.MouseEvent.class);
+
+        try
+        {
+            for (double set : new double[] { 0.29, 0.57, 0.58 })
+            {
+                auto.setPreArrivalSpeedReduction(set);
+
+                int shown = Components.onTheEventThread(() ->
+                {
+                    load.invoke(tab);
+
+                    return slider.getValue();
+                });
+
+                assertEquals(shown, (int) Math.round(set * 100), "a reduction saved at " + set + " opened as " + shown + "%");
+
+                Components.onTheEventThread(() ->
+                {
+                    release.invoke(tab, (Object) null);
+
+                    return null;
+                });
+
+                assertEquals(auto.getPreArrivalSpeedReduction(), set, 1e-9, "a click on the slider changed " + set);
+            }
+        }
+        finally
+        {
+            auto.setPreArrivalSpeedReduction(was);
+
+            if (!hadOne) fixture.model.clearAutoLayout();
+        }
+    }
+
+    /**
      * A sync reloads the whole window from the locomotive and overwrites what was typed, when Discard is the answer to
      * the question: the typed name and the edited Functions table are replaced by the synced values, Save goes gray,
      * and the tab selected and the window's place stay.

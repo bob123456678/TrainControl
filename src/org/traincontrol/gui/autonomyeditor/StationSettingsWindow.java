@@ -1775,7 +1775,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
                 SwingUtilities.invokeLater(() ->
                 {
-                    if (asked != matrixAsked.get()) return;
+                    // Closed meanwhile: `pack()` would make the window displayable again, its pointer watch with it
+                    if (asked != matrixAsked.get() || tile == null) return;
 
                     String shown = error != null || rules != null ? error : I18n.t("autosetup.ui.stationMatrixNotBuilt");
 

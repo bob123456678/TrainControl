@@ -3435,6 +3435,100 @@ public class testTheTrainWindow
         });
     }
 
+    /**
+     * Cancel and both Discards send the Central Station nothing, after an edit that placed a train elsewhere, turned it
+     * there with the editor's Facing door and reversed it on its decoder, all with the editor open: the trains go back
+     * in the model alone, and no train's direction is changed.  The turns are even, so the way out only rebuilds.
+     *
+     * MUTATION: in `LayoutEditor.discardAutonomyWork`, `switchDirection()` each train it puts back after the rebuild, and
+     * Cancel sends a direction command.
+     */
+    @Test(timeOut = 400000)
+    public void testCancelAndTheDiscardsSendTheCentralStationNothing() throws Exception
+    {
+        sendsTheCentralStationNothing(true);
+    }
+
+    /**
+     * The same with the Facing door alone: one turn, so the way out also turns the train again (`turnAgain`), which
+     * must change no train's direction either.
+     *
+     * MUTATION: in `LayoutEditor.turnAgain`, `switchDirection()` each train it turns, and Cancel sends a direction
+     * command.
+     */
+    @Test(timeOut = 400000)
+    public void testTurningAgainAfterAnOddTurnSendsTheCentralStationNothing() throws Exception
+    {
+        sendsTheCentralStationNothing(false);
+    }
+
+    private void sendsTheCentralStationNothing(final boolean reversedForReal) throws Exception
+    {
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        support.WireRecorder wire = support.WireRecorder.open();
+
+        try
+        {
+            forEachWayOutWithATrainThatCanTurn((how, panel, square, name, copyBefore) ->
+            {
+                final TileKey elsewhere = anEmptyStationWhere(each -> session.trainsWhereTheyStand().get(each) == null
+                    && session.facingChoices(each).size() == 2);
+
+                placeFromTheMenu(panel, elsewhere, name);
+
+                Components.settle();
+
+                faceFromTheMenu(panel, elsewhere, name, theOtherWay(elsewhere));
+
+                // Reversed for real: the command to its decoder, then its turn followed as the echo would be
+                final org.traincontrol.marklin.MarklinLocomotive loc = model.getLocByName(name);
+                final int sentBefore = wire.mark();
+                final String facedBefore = copyOf(name);
+                final org.traincontrol.base.Locomotive.locDirection ran = loc.getDirection();
+
+                try
+                {
+                    if (reversedForReal)
+                    {
+                        loc.switchDirection();
+
+                        Components.settle();
+
+                        assertTrue(wire.directionCommandsSince(sentBefore, loc.getIntUID()).size() > 0, "precondition: the"
+                            + " reversal of " + name + " sent its decoder nothing the recorder heard");
+
+                        if (facedBefore.equals(copyOf(name))) reverse(name, facedBefore);
+                    }
+
+                    // A line of its own, as the log drops a line equal to the last, which would hide a repeated command
+                    model.log("D130: " + DISCARDS[how]);
+
+                    final int mark = wire.mark();
+
+                    leave(how);
+
+                    Components.settle();
+                    Components.drain(8);
+
+                    assertEquals(wire.sentSince(mark), java.util.Collections.emptyList(), DISCARDS[how] + " after "
+                        + name + " was placed on " + elsewhere + ", turned there" + (reversedForReal
+                        ? " and reversed on its decoder" : "") + " sent the Central Station " + wire.since(mark));
+                }
+                finally
+                {
+                    loc.setDirection(ran);
+                }
+            });
+        }
+        finally
+        {
+            wire.close();
+
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+        }
+    }
+
     /** A claim's body, run once for each way out (`DISCARDS`). */
     private interface WayOut
     {
@@ -5188,6 +5282,345 @@ public class testTheTrainWindow
             putTheSquareBack(second, secondTile);
 
             support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * Between a page switch's Discard and the page's arrival the track editor's clicks write nothing: a palette piece
+     * still armed puts nothing down, a middle click turns nothing, and a right click opens no menu (whose Undo, Paste
+     * and Delete would write the page being left).  The latch is raised as `leaveFor` raises it, as the keys' claim does.
+     *
+     * MUTATION: take the `switching || changingPage` guard out of `LayoutEditor.receiveClickEvent`, and the piece lands.
+     */
+    @Test(timeOut = 300000)
+    public void testAClickWhileAPageSwitchIsUnderWayWritesNothing() throws Exception
+    {
+        final LayoutEditor open = theTrackEditor();
+        final GapSquares at = gapSquares(open);
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                org.traincontrol.gui.LayoutLabel piece = Components.all(
+                    (java.awt.Component) Reflect.get(LayoutEditor.class, open, "newComponents"),
+                    org.traincontrol.gui.LayoutLabel.class, each -> each.getComponent() != null
+                    && each.getComponent().getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT)
+                    .get(0);
+
+                open.initCopy(piece, piece.getComponent(), false);
+
+                return null;
+            });
+
+            assertTrue(Components.onTheEventThread(() -> open.hasToolFlag()), "precondition: no palette piece armed");
+
+            Reflect.set(LayoutEditor.class, open, "changingPage", true);
+            Reflect.set(LayoutEditor.class, open, "popup", null);
+
+            Components.onTheEventThread(() ->
+            {
+                open.receiveClickEvent(click(at.empty, java.awt.event.MouseEvent.BUTTON1), at.empty);
+                open.receiveClickEvent(click(at.track, java.awt.event.MouseEvent.BUTTON2), at.track);
+                open.receiveClickEvent(click(at.track, java.awt.event.MouseEvent.BUTTON3), at.track);
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertNull(at.emptyNow(), "a click with a palette piece armed put one down on the page being left while a"
+                + " page switch was under way");
+            assertEquals(at.trackNow(), at.trackAsWas, "a middle click turned a tile of the page being left while a"
+                + " page switch was under way");
+            assertNull(Reflect.get(LayoutEditor.class, open, "popup"), "a right click opened the square's menu, with"
+                + " its Undo, Paste and Delete, while a page switch was under way");
+        }
+        finally
+        {
+            leaveTheGap(open, at);
+        }
+    }
+
+    /**
+     * Between a page switch's Discard and the page's arrival a press on a tile picks nothing up.
+     *
+     * MUTATION: take the `switching || changingPage` guard out of `LayoutEditor.beginDrag`, and the press lifts the tile.
+     */
+    @Test(timeOut = 300000)
+    public void testAPressWhileAPageSwitchIsUnderWayPicksNothingUp() throws Exception
+    {
+        final LayoutEditor open = theTrackEditor();
+        final GapSquares at = gapSquares(open);
+
+        try
+        {
+            Reflect.set(LayoutEditor.class, open, "changingPage", true);
+
+            Components.onTheEventThread(() ->
+            {
+                open.beginDrag(press(at.track), at.track);
+
+                return null;
+            });
+
+            assertFalse(Components.onTheEventThread(() -> open.hasToolFlag()), "a press picked up a tile of the page"
+                + " being left while a page switch was under way");
+        }
+        finally
+        {
+            leaveTheGap(open, at);
+        }
+    }
+
+    /**
+     * A tile dragged when a page switch's Discard comes, and let go before the page arrives, is put down nowhere: the
+     * page being left keeps it where it stood.
+     *
+     * MUTATION: take the `switching || changingPage` guard out of `LayoutEditor.endDrag`, and the tile moves.
+     */
+    @Test(timeOut = 300000)
+    public void testADragLetGoWhileAPageSwitchIsUnderWayMovesNothing() throws Exception
+    {
+        final LayoutEditor open = theTrackEditor();
+        final GapSquares at = gapSquares(open);
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                open.receiveMoveEvent(press(at.track), at.track);
+                open.beginDrag(press(at.track), at.track);
+
+                return null;
+            });
+
+            assertNotNull(Reflect.get(LayoutEditor.class, open, "dragWindow"), "precondition: the press began no drag");
+
+            Reflect.set(LayoutEditor.class, open, "changingPage", true);
+
+            Components.onTheEventThread(() ->
+            {
+                open.receiveMoveEvent(press(at.empty), at.empty);
+                open.endDrag(press(at.empty), at.empty);
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertNull(at.emptyNow(), "a drag let go while a page switch was under way put a tile down on the page"
+                + " being left");
+            assertEquals(at.trackNow(), at.trackAsWas, "a drag let go while a page switch was under way took the tile"
+                + " away from where it stood");
+        }
+        finally
+        {
+            leaveTheGap(open, at);
+        }
+    }
+
+    /**
+     * A right click handled just before a page switch begins posts its menu; the menu then opens on no page being
+     * left: the latch is raised in the same turn of the event queue as the click, as `leaveFor` raises it.
+     *
+     * MUTATION: take the `switching || changingPage` guard out of the task `LayoutEditor.receiveClickEvent` posts for a
+     * right click, and the menu opens.
+     */
+    @Test(timeOut = 300000)
+    public void testARightClickPostedBeforeAPageSwitchOpensNoMenu() throws Exception
+    {
+        inTheGapSquares((open, at) ->
+        {
+            Reflect.set(LayoutEditor.class, open, "popup", null);
+
+            Components.onTheEventThread(() ->
+            {
+                open.receiveClickEvent(click(at.track, java.awt.event.MouseEvent.BUTTON3), at.track);
+
+                Reflect.set(LayoutEditor.class, open, "changingPage", true);
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertNull(Reflect.get(LayoutEditor.class, open, "popup"), "a right click posted before a page switch began"
+                + " opened its menu, with its Undo, Paste and Delete, on the page being left");
+        });
+    }
+
+    /**
+     * A page switch closes the square menu left open on the page being left, as it asks nothing first.
+     *
+     * MUTATION: drop `if (popup != null) popup.setVisible(false)` from `LayoutEditor.leaveFor`, and the menu stays.
+     */
+    @Test(timeOut = 300000)
+    public void testAPageSwitchClosesTheOpenSquareMenu() throws Exception
+    {
+        inTheGapSquares((open, at) ->
+        {
+            Components.onTheEventThread(() ->
+            {
+                open.receiveClickEvent(click(at.track, java.awt.event.MouseEvent.BUTTON3), at.track);
+
+                return null;
+            });
+
+            Components.settle();
+
+            final JPopupMenu menu = (JPopupMenu) Reflect.get(LayoutEditor.class, open, "popup");
+
+            assertNotNull(menu, "precondition: the right click opened no menu");
+            assertTrue(Components.onTheEventThread(menu::isVisible), "precondition: the menu is not showing");
+
+            final java.lang.reflect.Method leave = Reflect.method(LayoutEditor.class, "leaveFor", String.class,
+                boolean.class);
+            final AutonomySession was = session;
+
+            boolean stillOpen = Components.onTheEventThread(() ->
+            {
+                leave.invoke(open, PAGE, false);
+
+                return menu.isVisible();
+            });
+
+            assertFalse(stillOpen, "a page switch left the square menu open on the page being left");
+
+            // The switch reads the pages again, which replaces the setup the other claims hold
+            reloaded(was);
+        });
+    }
+
+    /** A claim's body on a track editor and its two squares; the latch lowered and the squares put back after. */
+    private interface InTheGap
+    {
+        void run(LayoutEditor open, GapSquares at) throws Exception;
+    }
+
+    private void inTheGapSquares(InTheGap body) throws Exception
+    {
+        final LayoutEditor open = theTrackEditor();
+        final GapSquares at = gapSquares(open);
+
+        try
+        {
+            body.run(open, at);
+        }
+        finally
+        {
+            leaveTheGap(open, at);
+        }
+    }
+
+    private static GapSquares gapSquares(LayoutEditor open) throws Exception
+    {
+        final org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) Reflect.get(LayoutEditor.class,
+            open, "grid");
+        final org.traincontrol.base.LayoutDiagram diagram = model.getLayout(PAGE);
+
+        GapSquares at = Components.onTheEventThread(() ->
+        {
+            GapSquares found = new GapSquares();
+
+            for (int x = 0; x < diagram.getSx(); x++)
+            {
+                for (int y = 0; y < diagram.getSy(); y++)
+                {
+                    org.traincontrol.base.LayoutDiagramComponent tile = diagram.getComponent(x, y);
+                    org.traincontrol.gui.LayoutLabel square = grid.getValueAt(x, y);
+
+                    if (square == null) continue;
+
+                    if (tile == null && found.empty == null)
+                    {
+                        found.empty = square;
+                        found.ex = x;
+                        found.ey = y;
+                    }
+                    else if (tile != null && found.track == null && square.getComponent() != null
+                        && tile.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.STRAIGHT
+                        && !session.getReducer().getPoints().containsKey(new TileKey(PAGE, x, y)))
+                    {
+                        found.track = square;
+                        found.tx = x;
+                        found.ty = y;
+                        found.trackTile = new org.traincontrol.base.LayoutDiagramComponent(tile);
+                    }
+                }
+            }
+
+            return found;
+        });
+
+        assertTrue(at.track != null && at.empty != null, "precondition: no plain straight and empty square on " + PAGE);
+
+        at.trackAsWas = at.trackNow();
+
+        return at;
+    }
+
+    /** Lowers the latch, closes the editor and puts both squares back as they were. */
+    private void leaveTheGap(LayoutEditor open, GapSquares at) throws Exception
+    {
+        Reflect.set(LayoutEditor.class, open, "changingPage", false);
+
+        Components.onTheEventThread(() ->
+        {
+            JPopupMenu menu = (JPopupMenu) Reflect.get(LayoutEditor.class, open, "popup");
+
+            if (menu != null) menu.setVisible(false);
+
+            org.traincontrol.base.LayoutDiagram diagram = model.getLayout(PAGE);
+
+            diagram.addComponent(null, at.ex, at.ey);
+
+            if (!at.trackAsWas.equals(at.trackNow())) diagram.addComponent(at.trackTile, at.tx, at.ty);
+
+            return null;
+        });
+
+        support.FrozenEditor.dispose(open);
+
+        editor = null;
+
+        Components.settle();
+    }
+
+    private static java.awt.event.MouseEvent click(java.awt.Component on, int button)
+    {
+        return new java.awt.event.MouseEvent(on, java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), 0,
+            1, 1, 1, false, button);
+    }
+
+    private static java.awt.event.MouseEvent press(java.awt.Component on)
+    {
+        return new java.awt.event.MouseEvent(on, java.awt.event.MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(),
+            java.awt.event.InputEvent.BUTTON1_DOWN_MASK, 1, 1, 1, false, java.awt.event.MouseEvent.BUTTON1);
+    }
+
+    /** A plain track square off the setup's Points and an empty square of the page, with the editor's squares on them. */
+    private static final class GapSquares
+    {
+        org.traincontrol.gui.LayoutLabel track;
+        org.traincontrol.gui.LayoutLabel empty;
+        int tx, ty, ex, ey;
+        org.traincontrol.base.LayoutDiagramComponent trackTile;
+        String trackAsWas;
+
+        String trackNow()
+        {
+            return Components.onTheEventThread(() -> describe(model.getLayout(PAGE).getComponent(tx, ty)));
+        }
+
+        String emptyNow()
+        {
+            return Components.onTheEventThread(() -> describe(model.getLayout(PAGE).getComponent(ex, ey)));
+        }
+
+        static String describe(org.traincontrol.base.LayoutDiagramComponent tile)
+        {
+            return tile == null ? null : tile.getType() + " turned " + tile.getOrientation();
         }
     }
 

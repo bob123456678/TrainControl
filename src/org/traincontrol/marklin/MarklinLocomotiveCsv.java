@@ -127,10 +127,13 @@ public final class MarklinLocomotiveCsv
         /** Multi-unit and linked rows left out. */
         public int leftOutMultiUnit;
         public final Map<Integer, Why> skipped = new TreeMap<>();
+        /** For a skipped line, the cells that made it unreadable: {heading, value} each. */
+        public final Map<Integer, List<String[]>> badCells = new TreeMap<>();
     }
 
     private final List<Row> rows = new ArrayList<>();
     private final Map<Integer, Why> unreadable = new TreeMap<>();
+    private final Map<Integer, List<String[]>> badCells = new TreeMap<>();
     private boolean isLocomotiveFile = true;
 
     private MarklinLocomotiveCsv()
@@ -214,6 +217,12 @@ public final class MarklinLocomotiveCsv
         }
 
         return names;
+    }
+
+    /** The cells that made a skipped line unreadable ({heading, value} each), or null. */
+    public List<String[]> badCells(int line)
+    {
+        return this.badCells.get(line);
     }
 
     /** The lines that will be skipped against the model as it is now, with why. */
@@ -429,6 +438,7 @@ public final class MarklinLocomotiveCsv
         for (Move move : plan.moves) moves.put(move.name, move);
 
         result.skipped.putAll(this.unreadable);
+        result.badCells.putAll(this.badCells);
         result.kept.addAll(plan.kept);
 
         for (Row row : this.rows)
@@ -598,7 +608,10 @@ public final class MarklinLocomotiveCsv
         for (int r = 1; r < records.size(); r++)
         {
             Record record = records.get(r);
-            Row row = record.bad || record.fields.size() != header.size() ? null : toRow(record, column);
+            List<String[]> bad = new ArrayList<>();
+            Row row = record.bad || record.fields.size() != header.size() ? null : toRow(record, column, header, bad);
+
+            if (!bad.isEmpty()) csv.badCells.put(record.line, bad);
 
             if (row == null || !seen.add(row.name))
             {
@@ -632,7 +645,8 @@ public final class MarklinLocomotiveCsv
         return semicolons > commas ? ';' : ',';
     }
 
-    private static Row toRow(Record record, Map<String, Integer> column)
+    /** The row, or null when it cannot be used; for each number cell that is wrong, `bad` gets its heading and value. */
+    private static Row toRow(Record record, Map<String, Integer> column, List<String> header, List<String[]> bad)
     {
         String name = field(record, column, "name");
 
@@ -644,11 +658,15 @@ public final class MarklinLocomotiveCsv
         long end = number(field(record, column, "end year"));
         long runtime = runtimeMs(field(record, column, "totalruntime"));
 
-        if (address < 0 || address > Integer.MAX_VALUE || speed < 0 || speed > 100 || start < 0 || start > Integer.MAX_VALUE
-            || end < 0 || end > Integer.MAX_VALUE)
-        {
-            return null;
-        }
+        if (address < 0 || address > Integer.MAX_VALUE) wrongCell(record, column, header, "address", bad);
+
+        if (speed < 0 || speed > 100) wrongCell(record, column, header, "preferredspeed", bad);
+
+        if (start < 0 || start > Integer.MAX_VALUE) wrongCell(record, column, header, "start year", bad);
+
+        if (end < 0 || end > Integer.MAX_VALUE) wrongCell(record, column, header, "end year", bad);
+
+        if (!bad.isEmpty()) return null;
 
         Row row = new Row();
 
@@ -667,6 +685,11 @@ public final class MarklinLocomotiveCsv
         lastRun(row, field(record, column, "lastrun").trim());
 
         return row;
+    }
+
+    private static void wrongCell(Record record, Map<String, Integer> column, List<String> header, String key, List<String[]> bad)
+    {
+        bad.add(new String[] {header.get(column.get(key)).replace("\ufeff", "").trim(), field(record, column, key).trim()});
     }
 
     /** The words a decoder cell may hold for a multi-unit in any language, and the patterns for a linked locomotive. */

@@ -295,7 +295,8 @@ public class testLocomotiveCsvImportDoor
                 assertTrue(said.startsWith(words(I18n.f("loc.ui.infoImportCsvDone", 1, 1))), said);
                 assertTrue(said.contains(words(I18n.f("loc.ui.infoImportCsvReaddressed", 1))), said);
                 assertEquals(seen.saidShapes.get(0).details, Collections.singletonList(I18n.f("loc.ui.importCsvSkippedLine", 4) + ": "
-                    + I18n.t("loc.ui.importCsvReasonUnreadable")), "the skipped row's line and reason are not named");
+                    + I18n.f("loc.ui.importCsvReasonCells", I18n.f("loc.ui.importCsvBadCell", "Address", "xx"))),
+                    "the skipped row's line and reason are not named");
 
                 Locomotive added = model.getLocByName("FR049 door new");
 
@@ -318,6 +319,77 @@ public class testLocomotiveCsvImportDoor
                 model.deleteLoc(there);
             }
         });
+    }
+
+    /**
+     * A row with an unusable address, speed or year is skipped whole, and its line names each wrong cell by the heading the
+     * file has and the value in it.
+     *
+     * MUTATION: name no cell, name only the first wrong one, or give the heading in lower case, and this fails.
+     */
+    @Test
+    public void testASkippedRowNamesTheCellsThatMadeItUnreadable() throws Exception
+    {
+        List<String> lines = detailsOfImporting("FR049 door year,,MFX,50,0,0:00:00,c. 1950,0,,,\n"
+            + "FR049 door two,,MFX,51,150,0:00:00,0,19x0,,,\n" + "FR049 door fine,,MFX,52,0,0:00:00,0,0,,,\n"
+            + "FR049 door kept,,DCC,21,101,0:00:00,0,0,,,\n");
+
+        assertEquals(lines, java.util.Arrays.asList(
+            I18n.f("loc.ui.importCsvSkippedLine", 2) + ": " + I18n.f("loc.ui.importCsvReasonCells",
+                I18n.f("loc.ui.importCsvBadCell", "Start Year", "c. 1950")),
+            I18n.f("loc.ui.importCsvSkippedLine", 3) + ": " + I18n.f("loc.ui.importCsvReasonCells",
+                I18n.f("loc.ui.importCsvBadCell", "PreferredSpeed", "150") + ", "
+                + I18n.f("loc.ui.importCsvBadCell", "End Year", "19x0")),
+            I18n.f("loc.ui.importCsvSkippedLine", 5) + ": " + I18n.f("loc.ui.importCsvReasonCells",
+                I18n.f("loc.ui.importCsvBadCell", "PreferredSpeed", "101"))), "the skipped rows do not name their cells");
+    }
+
+    /**
+     * A file whose only row cannot be used still gets the skipped line and its wrong cell in the "nothing to import" message.
+     *
+     * MUTATION: leave the list out of the nothing-to-import message, or leave the cell out of it, and this fails.
+     */
+    @Test
+    public void testNothingToImportNamesTheSkippedCell() throws Exception
+    {
+        assertEquals(detailsOfImporting("FR049 door only,,MFX,50,0,0:00:00,c. 1950,0,,,\n"), Collections.singletonList(
+            I18n.f("loc.ui.importCsvSkippedLine", 2) + ": " + I18n.f("loc.ui.importCsvReasonCells",
+                I18n.f("loc.ui.importCsvBadCell", "Start Year", "c. 1950"))), "the nothing-to-import message does not name the cell");
+    }
+
+    /** The list under the message the door says after importing a file of these rows; the locomotives made are deleted. */
+    private static List<String> detailsOfImporting(String rows) throws Exception
+    {
+        List<String> details = new ArrayList<>();
+
+        inAWindow((ui, model) ->
+        {
+            File file = write(HEADER11 + rows);
+
+            model.newMFXLocomotive("FR049 door kept", 20);
+
+            try
+            {
+                details.addAll(press(ui, file, IMPORT, s -> !s.said.isEmpty()).saidShapes.get(0).details);
+
+                for (String name : new String[] {"FR049 door year", "FR049 door two", "FR049 door only"})
+                {
+                    assertNull(model.getLocByName(name), "a skipped row made " + name);
+                }
+
+                assertEquals(model.getLocByName("FR049 door kept").getAddress(), 20, "a skipped row changed an existing locomotive");
+            }
+            finally
+            {
+                file.delete();
+                for (String name : new String[] {"FR049 door year", "FR049 door two", "FR049 door fine", "FR049 door only", "FR049 door kept"})
+                {
+                    model.deleteLoc(name);
+                }
+            }
+        });
+
+        return details;
     }
 
     /**

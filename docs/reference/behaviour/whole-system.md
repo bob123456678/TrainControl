@@ -181,6 +181,8 @@ one copy). So a station renamed, or a square given more copies or fewer, carries
   card's pause), with the legs of a kept timetable carried to the names of the edit's last build (OB-343). That holds
   for a card's pause an editor gesture then overtook, and Cancel asks about the gesture even where it leaves the setup
   as the editor opened it (OB-346).
+- Cancel and every Discard put each train back where it stood when the editor opened without changing which way any
+  train faces, and send the Central Station nothing: the trains go back in the model alone.
 - A station name two pages share is settled over every page, those out of autonomy too, so the plain name does not move
   to the other page while one is out.
 

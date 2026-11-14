@@ -812,7 +812,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         if (isDirty() && !settleUnsaved()) return;
 
-        main.syncLocomotive(target, () -> afterSync(target));
+        main.syncLocomotiveFrom(target, this, () -> afterSync(target));
     }
 
     private void afterSync(Locomotive synced)

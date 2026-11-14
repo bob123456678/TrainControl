@@ -1225,6 +1225,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.pressMoved = false;
 
+        // Nothing is picked up between a switch's Discard and its arrival (`receiveClickEvent`).
+        if (switching || changingPage) return;
+
         // Dragging moves track; in autonomy mode that would be a silent accident.  A train is the one thing it drags
         // there (FR-160).
         if (isAutonomyMode())
@@ -1450,6 +1453,20 @@ public class LayoutEditor extends PositionAwareJFrame
 
     public void endDrag(MouseEvent e, LayoutLabel label)
     {
+        // A drag begun before a switch's Discard is put down nowhere after it, as `beginDrag` starts none then.
+        if (switching || changingPage)
+        {
+            this.trainDrag.abandon();
+
+            if (dragWindow != null) dragWindow.dispose();
+
+            this.dragWindow = null;
+            this.dragSource = null;
+            this.groupDragging = false;
+
+            return;
+        }
+
         if (isAutonomyMode())
         {
             this.trainDrag.release(e);
@@ -1825,11 +1842,13 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // Lengths and addresses exclude each other (two numbers on a tile are unreadable); applied once now, as
-            // both can arrive on.
+            // both can arrive on.  Before the grid exists the flag alone, as the coming build draws it once.
             if (autonomyPanel.getShowLengths().isSelected() && this.showAddressCheckbox.isSelected())
             {
                 this.showAddressCheckbox.setSelected(false);
-                toggleAddresses();
+
+                if (grid == null) this.layout.setShowAddress(false);
+                else toggleAddresses();
             }
 
             autonomyPanel.getShowLengths().addActionListener(e ->
@@ -2130,6 +2149,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (ignore != null && label == ignore && e != null && e.getButton() == MouseEvent.BUTTON1) return;
 
+        // Between a switch's Discard and its arrival a click, its menu included, would write the page being left, as
+        // the keys would (`formKeyPressed`).
+        if (switching || changingPage) return;
+
         // In autonomy mode a click configures the track; LayoutLabel already routes it here.
         if (isAutonomyMode())
         {
@@ -2204,6 +2227,9 @@ public class LayoutEditor extends PositionAwareJFrame
         
             SwingUtilities.invokeLater(() ->
             {
+                // A page switch begun since the click: the menu's Undo, Paste and Delete would write the page being left
+                if (switching || changingPage) return;
+
                 popup = menuFor(label, lc);
 
                 popup.show(e.getComponent(), e.getX(), e.getY());      
@@ -4158,6 +4184,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
         if (!settleUnsavedWork(pageAction != null
             ? "layout.ui.confirmPageActionWithUnsavedWork" : "layout.ui.confirmSwitchWithUnsavedWork")) return;
+
+        // A menu a key switch left open would undo, paste or delete on the page being left.
+        if (popup != null) popup.setVisible(false);
 
         // Committed (FR-036), after the question: nothing else starts a switch until this one arrives.  Only the frame
         // survives; the teardown runs in full.  Posted (OB-016), as LayoutGrid asks whether its grid is in an editor.

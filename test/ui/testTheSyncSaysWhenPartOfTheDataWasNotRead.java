@@ -92,15 +92,31 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
      */
     private static void startUpSyncDone(TrainControlUI ui) throws Exception
     {
-        // The start-up's posted sync takes the flag before this runs, in the spinner's own event loop
+        assertTrue(syncEnded(ui), "precondition: the window's start-up sync never ended");
+    }
+
+    /** True once the sync a press posted has ended; a wait of fixed length would let a slow sync outlive its claim. */
+    private static boolean syncEnded(TrainControlUI ui) throws Exception
+    {
+        // A posted sync takes the flag before this runs, in the spinner's own event loop
         SwingUtilities.invokeAndWait(() -> { });
 
         AtomicBoolean inFlight = (AtomicBoolean) Reflect.field(TrainControlUI.class, "syncInFlight").get(ui);
 
-        assertTrue(Settle.until(() -> !inFlight.get(), 60000), "precondition: the window's start-up sync never ended");
+        return Settle.until(() -> !inFlight.get(), 60000);
+    }
+
+    /** The last lines the model logged, for a failure's message. */
+    private static String logTail(StationRig rig)
+    {
+        java.util.List<String> log = rig.takeLog();
+
+        return log.subList(Math.max(0, log.size() - 5), log.size()).toString();
     }
 
     private static final AtomicBoolean deviceDropping = new AtomicBoolean();
+
+    private static final AtomicBoolean everyFileDropping = new AtomicBoolean();
 
     /** What a claim does with the window, once its start-up sync has ended. */
     private interface OnTheWindow
@@ -119,6 +135,8 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
 
             if (deviceDropping.get() && "/config/geraet.vrs".equals(path)) throw new IllegalStateException("dropped");
 
+            if (everyFileDropping.get()) throw new IllegalStateException("dropped");
+
             return base.apply(path, n);
         }, true))
         {
@@ -132,6 +150,8 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
             }
             finally
             {
+                // A sync still running when the window goes would show its popup to the next claim
+                syncEnded(ui);
                 SwingUtilities.invokeAndWait(ui::dispose);
             }
         }
@@ -192,10 +212,75 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
 
                 int routesAsked = rig.station.requests("/app/api/automatics");
 
+                assertTrue(syncEnded(ui), "the sync did not end; log " + logTail(rig));
                 assertFalse(answering.awaitAsked(4, 3000), "Close asked again: " + answering.asked());
                 assertEquals(rig.station.requests("/app/api/automatics"), routesAsked, "Close synced again");
             }
         });
+    }
+
+    /**
+     * A locomotive's own Sync (Locomotive Settings) over a station whose route list cannot be read says on that window
+     * what the main Sync says: part was left as it was.
+     *
+     * MUTATION: leave out the `saidTheSyncWasPartial` call of `TrainControlUI.syncLocomotiveFrom`, and it says nothing.
+     */
+    @Test
+    public void testALocomotiveSyncSaysWhenPartWasNotRead() throws Exception
+    {
+        Map<String, byte[]> replaced = new ConcurrentHashMap<>();
+
+        withAReplaceableStation(replaced, (rig, ui) ->
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0, "the sync that imports the fixtures failed");
+
+            org.traincontrol.marklin.MarklinLocomotive loc = rig.model.newDCCLocomotive("PS train", 1931);
+            javax.swing.JFrame window = new javax.swing.JFrame();
+
+            try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+            {
+                // Everything read: nothing to say
+                ui.syncLocomotiveFrom(loc, window, null);
+                assertTrue(syncEnded(ui), "the first sync did not end; log " + logTail(rig));
+                assertFalse(answering.awaitAsked(1, 3000), "a sync that read everything said: " + answering.asked());
+
+                replaced.put("/app/api/automatics", "<html>not json</html>".getBytes(StandardCharsets.UTF_8));
+                ui.syncLocomotiveFrom(loc, window, null);
+                assertTrue(answering.awaitAsked(1, 60000), "a sync that read part said nothing on the window; log "
+                    + logTail(rig));
+                assertTrue(syncEnded(ui), "the second sync did not end; log " + logTail(rig));
+                assertEquals(answering.asked().get(0), I18n.f("ui.infoSyncCompletePartial", "0"));
+                assertSame(answering.questions().get(0).owner, window, "not on the window that asked");
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(window::dispose);
+            }
+        });
+    }
+
+    /** Runs `claim` on the window of a stand-in CS3 whose answers are the ones in `replaced`, once its start-up sync ended. */
+    private static void withAReplaceableStation(Map<String, byte[]> replaced, OnTheWindow claim) throws Exception
+    {
+        BiFunction<String, Integer, byte[]> base = StandInStation.cs3("260", INFO);
+
+        try (StationRig rig = new StationRig(Files.createTempDirectory("tc-sync-loc").toFile(),
+            (path, n) -> replaced.containsKey(path) ? replaced.get(path) : base.apply(path, n), true))
+        {
+            TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
+
+            try
+            {
+                startUpSyncDone(ui);
+                claim.run(rig, ui);
+            }
+            finally
+            {
+                // A sync still running when the window goes would show its popup to the next claim
+                syncEnded(ui);
+                SwingUtilities.invokeAndWait(ui::dispose);
+            }
+        }
     }
 
     /**
@@ -314,6 +399,113 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
 
                 assertTrue(answering.asked().get(0).startsWith(FAILED), answering.asked().get(0));
                 assertFalse(rig.model.getLayoutList().isEmpty(), "the station's diagram is gone though its type was known");
+            }
+        });
+    }
+
+    /** The page box's item count, on the event thread. */
+    private static int pagesListed(TrainControlUI ui) throws Exception
+    {
+        javax.swing.JComboBox<?> pages = (javax.swing.JComboBox<?>) Reflect.field(TrainControlUI.class, "LayoutList").get(ui);
+
+        return support.Components.onTheEventThread(pages::getItemCount);
+    }
+
+    /**
+     * Retry after a failed "Switch to the Central Station's layout" that read no pages, once the station answers, fills
+     * the page box with the station's pages; the failure is the only thing said, with no "no layout" message stacked on
+     * it.
+     *
+     * MUTATION: have the `retry` of `TrainControlUI.fetchTheStationsPages` run `doSync(this)`, and the page box stays
+     * empty.
+     */
+    @Test
+    public void testRetryAfterAFailedSwitchToTheStationsLayoutListsThePages() throws Exception
+    {
+        withAWindowWhoseRoutesDrop(new AtomicBoolean(), (rig, ui) ->
+        {
+            javax.swing.JMenuItem door = (javax.swing.JMenuItem) Reflect.field(TrainControlUI.class,
+                "switchCSLayoutMenuItem").get(ui);
+
+            // Retry once the station answers again
+            try (Answering answering = Answering.start(message ->
+            {
+                if (message.startsWith(FAILED)) everyFileDropping.set(false);
+
+                return Answering.pressAt(0);
+            }))
+            {
+                everyFileDropping.set(true);
+                SwingUtilities.invokeAndWait(() -> { door.setEnabled(true); door.doClick(); });
+                assertTrue(answering.awaitAsked(1, 60000), "the failure was not shown");
+                assertTrue(answering.asked().get(0).startsWith(FAILED), answering.asked().get(0));
+
+                assertTrue(Settle.until(() -> !rig.model.getLayoutList().isEmpty(), 60000), "Retry read no pages");
+                assertTrue(Settle.until(() -> { try { return pagesListed(ui) > 0; } catch (Exception e) { return false; } },
+                    20000), "Retry left the page box empty; said " + answering.asked());
+                assertEquals(pagesListed(ui), rig.model.getLayoutList().size(), "the page box lists other pages");
+                assertTrue(syncEnded(ui), "Retry's sync did not end; log " + logTail(rig));
+                assertFalse(answering.awaitAsked(2, 3000), "more than the failure was said: " + answering.asked());
+            }
+            finally
+            {
+                everyFileDropping.set(false);
+            }
+        });
+    }
+
+    /**
+     * The switch's sync refused because an editor is on its way offers the same Retry popup, naming the editor, and
+     * says nothing more; Retry, the editor gone, syncs.
+     *
+     * MUTATION: in `TrainControlUI.fetchTheStationsPages`, leave out the `offerSyncRetry` for `refused`, and nothing is
+     * said.
+     */
+    @Test
+    public void testASwitchSyncRefusedForAnEditorOffersRetry() throws Exception
+    {
+        withAWindowWhoseRoutesDrop(new AtomicBoolean(), (rig, ui) ->
+        {
+            java.lang.reflect.Field onItsWay = Reflect.field(TrainControlUI.class, "editorOnItsWay");
+            java.lang.reflect.Method tail = Reflect.method(TrainControlUI.class, "fetchTheStationsPages");
+            int syncs = rig.station.requests("/config/geraet.vrs");
+            String retry = I18n.f("ui.syncFailedRetry", I18n.t("loc.ui.errorEditorOpenNoLinkOrSync"));
+
+            // Retry once the editor is gone, on that popup only; Close on any other
+            try (Answering answering = Answering.start(message ->
+            {
+                if (!message.equals(retry)) return Answering.pressAt(1);
+
+                try
+                {
+                    onItsWay.setBoolean(ui, false);
+                }
+                catch (IllegalAccessException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+
+                return Answering.pressAt(0);
+            }))
+            {
+                support.Components.onTheEventThread(() ->
+                {
+                    onItsWay.setBoolean(ui, true);
+
+                    return tail.invoke(ui);
+                });
+
+                assertTrue(answering.awaitAsked(1, 60000), "the refused sync said nothing");
+                assertEquals(answering.asked().get(0), I18n.f("ui.syncFailedRetry",
+                    I18n.t("loc.ui.errorEditorOpenNoLinkOrSync")), "not the Retry popup naming the editor");
+                assertTrue(Settle.until(() -> rig.station.requests("/config/geraet.vrs") > syncs, 60000),
+                    "Retry did not sync");
+                assertTrue(syncEnded(ui), "Retry's sync did not end; log " + logTail(rig));
+                assertFalse(answering.awaitAsked(2, 3000), "more was said: " + answering.asked() + "; log " + logTail(rig));
+            }
+            finally
+            {
+                onItsWay.setBoolean(ui, false);
             }
         });
     }

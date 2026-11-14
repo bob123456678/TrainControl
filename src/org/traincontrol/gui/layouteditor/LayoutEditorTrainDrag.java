@@ -54,6 +54,9 @@ final class LayoutEditorTrainDrag
 
         reset();
 
+        // A new press: the click a carry ended without is not coming (a caption's press passes no `beginDrag`).
+        editor.ignoreTheClickOf(null);
+
         AutonomyEditorPanel panel = editor.getAutonomyPanel();
 
         // A tool waiting for a click takes a click on a train, and a press on one starts no drag
