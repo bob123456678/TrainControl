@@ -1,9 +1,17 @@
 package org.traincontrol.base;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.UnaryOperator;
 
 /**
  * A route's conditions as an indented list, and the expression that list means.
@@ -130,9 +138,9 @@ public final class ConditionOutline
      *
      * @return line index to reason, in the order the lines are found; empty when the outline reads
      */
-    public static java.util.Map<Integer, Problem> whatIsWrong(List<Row> rows)
+    public static Map<Integer, Problem> whatIsWrong(List<Row> rows)
     {
-        java.util.Map<Integer, Problem> out = new java.util.LinkedHashMap<>();
+        Map<Integer, Problem> out = new LinkedHashMap<>();
 
         if (rows == null) return out;
 
@@ -141,7 +149,7 @@ public final class ConditionOutline
         // E)") are unambiguous to it, and a stricter check would refuse a save the reader parses perfectly.  What still
         // holds is the class's rule: two different words SIDE BY SIDE at one level.  A joiner at a shallower depth
         // closes every run deeper than it.
-        java.util.Map<Integer, Joiner> settled = new java.util.LinkedHashMap<>();
+        Map<Integer, Joiner> settled = new LinkedHashMap<>();
 
         for (int at = 0; at < rows.size(); at++)
         {
@@ -150,7 +158,7 @@ public final class ConditionOutline
             if (!row.isJoiner()) continue;
 
             // Everything deeper than this word belonged to a group this word has just ended.
-            for (java.util.Iterator<Integer> deeper = settled.keySet().iterator(); deeper.hasNext();)
+            for (Iterator<Integer> deeper = settled.keySet().iterator(); deeper.hasNext();)
             {
                 if (deeper.next() > row.getDepth()) deeper.remove();
             }
@@ -313,14 +321,14 @@ public final class ConditionOutline
      * @param by -1 for up, 1 for down
      * @return a new list, or null where nothing moves
      */
-    public static List<Row> movedTogether(List<Row> rows, java.util.Collection<Integer> chosen, int by)
+    public static List<Row> movedTogether(List<Row> rows, Collection<Integer> chosen, int by)
     {
         if (rows == null || chosen == null || by == 0) return null;
 
         Group top = groupsOf(rows);
         List<Object> blocks = new ArrayList<>();
 
-        if (top != null) blocks(top, new java.util.HashSet<>(chosen), blocks);
+        if (top != null) blocks(top, new HashSet<>(chosen), blocks);
 
         for (Object block : blocks)
         {
@@ -329,12 +337,12 @@ public final class ConditionOutline
 
         List<RouteCommand> moving = new ArrayList<>();
 
-        for (int at : new java.util.TreeSet<>(chosen))
+        for (int at : new TreeSet<>(chosen))
         {
             if (at >= 0 && at < rows.size() && !rows.get(at).isJoiner()) moving.add(rows.get(at).getCommand());
         }
 
-        if (by > 0) java.util.Collections.reverse(moving);
+        if (by > 0) Collections.reverse(moving);
 
         List<Row> out = rows;
 
@@ -355,7 +363,7 @@ public final class ConditionOutline
     {
         List<Object> order = new ArrayList<>(blocks);
 
-        if (by > 0) java.util.Collections.reverse(order);
+        if (by > 0) Collections.reverse(order);
 
         boolean moved = false;
 
@@ -372,7 +380,7 @@ public final class ConditionOutline
                 continue;
             }
 
-            java.util.Collections.swap(from.elements, from.elements.indexOf(block), from.elements.indexOf(items.get(next)));
+            Collections.swap(from.elements, from.elements.indexOf(block), from.elements.indexOf(items.get(next)));
             moved = true;
         }
 
@@ -1049,8 +1057,8 @@ public final class ConditionOutline
     {
         if (top == null || lines == null || lines.isEmpty()) return null;
 
-        int lowest = java.util.Collections.min(lines);
-        int highest = java.util.Collections.max(lines);
+        int lowest = Collections.min(lines);
+        int highest = Collections.max(lines);
 
         if (lowest < top.first || highest > top.last) return null;
 
@@ -1170,8 +1178,7 @@ public final class ConditionOutline
         {
             Object element = items.get(item);
             boolean all = element instanceof Group ? ((Group) element).within(chosen) : chosen.contains(((Line) element).at);
-            boolean some = element instanceof Group && !java.util.Collections.disjoint(((Group) element).getConditions(),
-                chosen);
+            boolean some = element instanceof Group && !Collections.disjoint(((Group) element).getConditions(), chosen);
 
             if (!all && some) return null;
 
@@ -1352,7 +1359,7 @@ public final class ConditionOutline
      * @param chosen line indices of the selected conditions; words among them are ignored
      * @return the groups, in order; empty where there is nothing to lift
      */
-    public static List<Group> ungroupables(List<Row> rows, java.util.Collection<Integer> chosen)
+    public static List<Group> ungroupables(List<Row> rows, Collection<Integer> chosen)
     {
         List<Group> out = new ArrayList<>();
 
@@ -1361,11 +1368,11 @@ public final class ConditionOutline
         Group top = groupsOf(rows);
         List<Group> touched = new ArrayList<>();
 
-        for (int at : new java.util.TreeSet<>(chosen))
+        for (int at : new TreeSet<>(chosen))
         {
             if (at < 0 || at >= rows.size() || rows.get(at).isJoiner()) continue;
 
-            Group group = holding(top, java.util.Collections.singleton(at));
+            Group group = holding(top, Collections.singleton(at));
 
             if (group != null && group.parent != null && !touched.contains(group)) touched.add(group);
         }
@@ -1493,7 +1500,7 @@ public final class ConditionOutline
      * @return a new list, or null where no condition is chosen
      */
     public static List<Row> duplicated(List<Row> rows, Set<Integer> chosen, Joiner word,
-        java.util.function.UnaryOperator<RouteCommand> copy)
+        UnaryOperator<RouteCommand> copy)
     {
         Group top = groupsOf(rows);
         List<Object> pieces = top == null || chosen == null ? new ArrayList<Object>() : piecesOf(top, chosen);
@@ -1542,7 +1549,7 @@ public final class ConditionOutline
     }
 
     /** A piece made anew: a condition by `copy`, a group with its words and a copy of each piece inside. */
-    private static Object copyOf(Object piece, Group parent, java.util.function.UnaryOperator<RouteCommand> copy)
+    private static Object copyOf(Object piece, Group parent, UnaryOperator<RouteCommand> copy)
     {
         if (piece instanceof Line)
         {

@@ -340,9 +340,9 @@ public final class CommandRow
      * @return the commands, in the order they must be sent
      * @throws IllegalArgumentException when the row cannot be made into commands
      */
-    public java.util.List<RouteCommand> toCommands(Accessory.accessoryDecoderType protocol)
+    public List<RouteCommand> toCommands(Accessory.accessoryDecoderType protocol)
     {
-        java.util.List<RouteCommand> out = new java.util.ArrayList<>();
+        List<RouteCommand> out = new ArrayList<>();
 
         if (kind == Kind.THREE_WAY)
         {
