@@ -227,7 +227,7 @@ final class RouteListPanel
                     try
                     {
                         // Ensure route changes are synced
-                        this.ui.syncWithCS2();
+                        this.ui.syncAfterAnEdit();
                     }
                     finally
                     {

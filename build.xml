@@ -715,6 +715,7 @@
         <test-one-class class="testReversalIsAboutTheTrainAndTheStation"/>
         <test-one-class class="testTheCaptionsComeWithTheirPage"/>
         <test-one-class class="testTilePicturesArriveTogether"/>
+        <test-one-class class="testASyncOwedWaitsForTheEditor"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

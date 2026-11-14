@@ -3046,7 +3046,7 @@ public class RouteEditorFrame extends JFrame
             boolean couldCollide = saved == null
                 || !org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(saved.getId());
 
-            if (originalName.isEmpty() && couldCollide && anyRouteCameFromTheStation()) parent.syncWithCS2();
+            if (originalName.isEmpty() && couldCollide && anyRouteCameFromTheStation()) parent.syncAfterAnEdit();
 
             dispose();
         }
