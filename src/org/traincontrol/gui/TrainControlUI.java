@@ -3494,94 +3494,82 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             Locomotive current = p.getCurrentLocomotive();
             List<Point> milestones = shown.getReachedMilestones(current);
             
-            SwingUtilities.invokeLater(() ->
+            // At once on the event thread, so a rebuilt page's first paint already has its captions.
+            final Runnable apply = () ->
             {
                 // This will exclude locked points
                 for (JLabel j : this.getLayoutStations(square))
-                {                    
+                {
                     // A pill paints its own fill and stays transparent; any other caption fills its own background.
                     boolean pill = j instanceof StationCaption && ((StationCaption) j).isPill();
 
-                    j.setOpaque(!pill);
+                    String text;
+                    Color fg, bg;
 
                     // Two trains on one platform: no one route coloring fits both, so name both and say no more.
                     if (crowd.size() > 1)
                     {
-                        j.setText(crowdedLabel(crowd, square));
-
-                        j.setForeground(Color.BLACK);
-                        j.setBackground(StationCaption.restingFill());
+                        text = crowdedLabel(crowd, square);
+                        fg = Color.BLACK;
+                        bg = StationCaption.restingFill();
                     }
-                    else if (current != null)
+                    else if (current == null)
+                    {
+                        // A placeholder gray, which `StationCaption.onPill` dims below a name.
+                        text = LayoutGrid.LAYOUT_STATION_EMPTY;
+                        fg = new Color(150, 150, 150);
+                        bg = StationCaption.restingFill();
+                    }
+                    else if (milestones == null)
                     {
                         // The arrow comes from the COPY the train stands on, not the square's stored facing.
-                        j.setText(LayoutGrid.stationCaption(
-                            current.getName(), facingArrowOf(p, square)));
-
-                        if (milestones != null)
-                        {                                 
-                            // Route colors: ahead's blue until the train arrives, then driven gray; `onPill` keeps it
-                            // legible.
-                            if (milestones.contains(p))
-                            {
-                                j.setForeground(DiagramColours.PATH_DRIVEN);
-                            }
-                            else
-                            {
-                                j.setForeground(DiagramColours.PATH_AHEAD);
-                            }    
-
-                            if (p.equals(destination))
-                            {
-                                j.setBackground(StationCaption.DESTINATION_FILL);
-                                j.setForeground(Color.BLACK);
-                                
-                            }
-                            else
-                            {
-                                // Don't display locomotive name at intermediate stations to avoid confusion
-                                if (!p.equals(start))
-                                {
-                                    // One arrow (OB-158): the route's COPY IS the direction of travel; the bullets
-                                    // are the fallback where no facing is recorded.
-                                    String through = facingArrowOf(p, square).trim();
-
-                                    j.setText(through.isEmpty()
-                                        ? LayoutGrid.LAYOUT_STATION_OCCUPIED : through);
-
-                                    j.setBackground(StationCaption.restingFill());
-                                }
-                                else
-                                {
-                                    j.setBackground(new Color(160,160,160, LayoutGrid.LAYOUT_STATION_OPACITY));
-                                    j.setForeground(new Color(255,255,255));
-                                    
-                                }  
-                            }
-                        }
-                        else
-                        {
-                            j.setForeground(Color.BLACK);
-                            j.setBackground(StationCaption.restingFill());
-                        }
+                        text = LayoutGrid.stationCaption(current.getName(), facingArrowOf(p, square));
+                        fg = Color.BLACK;
+                        bg = StationCaption.restingFill();
+                    }
+                    else if (p.equals(destination))
+                    {
+                        text = LayoutGrid.stationCaption(current.getName(), facingArrowOf(p, square));
+                        fg = Color.BLACK;
+                        bg = StationCaption.DESTINATION_FILL;
+                    }
+                    else if (p.equals(start))
+                    {
+                        text = LayoutGrid.stationCaption(current.getName(), facingArrowOf(p, square));
+                        fg = new Color(255, 255, 255);
+                        bg = new Color(160, 160, 160, LayoutGrid.LAYOUT_STATION_OPACITY);
                     }
                     else
                     {
-                        j.setText(LayoutGrid.LAYOUT_STATION_EMPTY);
+                        // No locomotive name at intermediate stations.  One arrow (OB-158): the route's COPY IS the
+                        // direction of travel; the bullets are the fallback where no facing is recorded.
+                        String through = facingArrowOf(p, square).trim();
 
-                        // A placeholder gray, which `StationCaption.onPill` dims below a name.
-                        j.setForeground(new Color(150, 150, 150));
-                        j.setBackground(StationCaption.restingFill());
+                        text = through.isEmpty() ? LayoutGrid.LAYOUT_STATION_OCCUPIED : through;
+
+                        // Route colors: ahead's blue until the train arrives, then driven gray.
+                        fg = milestones.contains(p) ? DiagramColours.PATH_DRIVEN : DiagramColours.PATH_AHEAD;
+                        bg = StationCaption.restingFill();
                     }
 
                     // On a pill the text color must follow the fill: black on navy is invisible (FR-028).
-                    if (pill) j.setForeground(StationCaption.onPill(j.getBackground(), j.getForeground()));
+                    if (pill) fg = StationCaption.onPill(bg, fg);
 
-                    // This caption only: setText and setBackground already revalidated it; laying out the whole
-                    // page per station per publish (up to five a second) was the cost.
-                    j.repaint();
-                }          
-            });
+                    // Only what differs: each set repaints this caption, and a run asks five times a second.
+                    if (j.isOpaque() == pill)
+                    {
+                        j.setOpaque(!pill);
+                        j.repaint();
+                    }
+
+                    if (!text.equals(j.getText())) j.setText(text);
+                    if (!fg.equals(j.getForeground())) j.setForeground(fg);
+                    if (!bg.equals(j.getBackground())) j.setBackground(bg);
+                }
+            };
+
+            if (SwingUtilities.isEventDispatchThread()) apply.run();
+            else SwingUtilities.invokeLater(apply);
         }
     }
 

@@ -442,14 +442,18 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
             settle();
 
+            // The captions the pass wrote to, asked of the window: an unchanged one is not repainted at all.
             Set<JComponent> captions = new LinkedHashSet<>();
 
-            for (JComponent c : counter.seen())
+            for (TileKey square : everySquare())
             {
-                if (c instanceof org.traincontrol.gui.widgets.StationCaption) captions.add(c);
+                for (javax.swing.JLabel c : ui.getLayoutStations(square))
+                {
+                    if (c instanceof org.traincontrol.gui.widgets.StationCaption) captions.add(c);
+                }
             }
 
-            if (captions.isEmpty()) throw new AssertionError("no station caption on the window's page was refreshed");
+            if (captions.isEmpty()) throw new AssertionError("no station caption is drawn on the window's page");
 
             Set<java.awt.Container> pages = new LinkedHashSet<>();
 
