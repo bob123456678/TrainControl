@@ -786,11 +786,30 @@ public class testTheLocomotiveSettingsWindow
 
         SettingsWindow.type("settings.address", String.valueOf(other.getAddress()));
 
-        assertEquals(saveAndAnswer(), Arrays.asList(I18n.f("loc.errorLinkSameAddress", NAME, OTHER)),
-            "Save did not say why the new address cannot be a member's");
-        assertNotNull(SettingsWindow.showing(), "the window closed as if saved");
+        refusedOverTheConsist("Save did not say why the new address cannot be a member's");
         assertEquals(loc.getAddress(), 3401, "the refused Save changed the address");
         assertTrue(loc.getLinkedLocomotiveNames().containsKey(OTHER), "the refused Save dropped the member");
+    }
+
+    /**
+     * The mirror: a member given its head's address in its own window is refused the same way, before anything is
+     * written, where the Save would drop it from the consist with only a line in the log.
+     *
+     * MUTATION: drop the head's check after the members' in `LocomotiveSettingsFrame.write`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAMembersNewAddressEqualToItsHeadsIsRefused() throws Exception
+    {
+        assertEquals(loc.setLinkedLocomotives(java.util.Collections.singletonMap(OTHER, 1.0)), 1,
+            "precondition: the consist was not made");
+
+        open(other, 0);
+
+        SettingsWindow.type("settings.address", String.valueOf(loc.getAddress()));
+
+        refusedOverTheConsist("Save did not say why the member cannot take its head's address");
+        assertEquals(other.getAddress(), 3402, "the refused Save changed the member's address");
+        assertTrue(loc.getLinkedLocomotiveNames().containsKey(OTHER), "the member left the consist");
     }
 
     /** The Multi-Unit tab's note for a member, as it reads. */
@@ -1884,7 +1903,13 @@ public class testTheLocomotiveSettingsWindow
     /** Opens the window on a tab of the first train. */
     private static void open(int tab) throws Exception
     {
-        assertTrue(SettingsWindow.open(ui, loc, LocomotiveSettingsFrame.Tab.values()[tab], null), "the window did not open");
+        open(loc, tab);
+    }
+
+    /** Opens the window on a tab of this train. */
+    private static void open(Locomotive which, int tab) throws Exception
+    {
+        assertTrue(SettingsWindow.open(ui, which, LocomotiveSettingsFrame.Tab.values()[tab], null), "the window did not open");
         assertNotNull(SettingsWindow.awaited(), "the window is not on screen");
     }
 
@@ -1913,6 +1938,13 @@ public class testTheLocomotiveSettingsWindow
     private static int selectedFunction()
     {
         return Components.onTheEventThread(() -> SettingsWindow.part("functions.table", javax.swing.JTable.class).getSelectedRow());
+    }
+
+    /** Save refuses: the consist of the first two trains cannot share an address, and the window stays open. */
+    private static void refusedOverTheConsist(String notSaid) throws Exception
+    {
+        assertEquals(saveAndAnswer(), Arrays.asList(I18n.f("loc.errorLinkSameAddress", NAME, OTHER)), notSaid);
+        assertNotNull(SettingsWindow.showing(), "the window closed as if saved");
     }
 
     /** Presses Save, answers whatever it asks with its first button, and gives what was asked. */

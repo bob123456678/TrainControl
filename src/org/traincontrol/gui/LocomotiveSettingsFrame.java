@@ -732,6 +732,16 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             }
         }
 
+        // Nor, for a member, its head
+        Locomotive head = main.getModel().isLocLinkedToOthers(loc);
+
+        if (head != null && sharers.contains(head.getName()))
+        {
+            JOptionPane.showMessageDialog(this, I18n.f("loc.errorLinkSameAddress", head.getName(), loc.getName()));
+
+            return false;
+        }
+
         // Only what the operator changed from the loaded values: another door may have changed the rest since
         if (identity && !main.locomotiveActions.writeNameAndAddress(this, loc,
             locomotiveTab.nameChanged() ? locomotiveTab.name.getText() : null,
