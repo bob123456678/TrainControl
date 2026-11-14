@@ -16728,7 +16728,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 control.putClientProperty(TOOLTIP_AT_REST, atRest);
             }
 
-            control.setToolTipText(why);
+            // Only what differs: this runs on every sensor event.
+            if (!why.equals(control.getToolTipText())) control.setToolTipText(why);
 
             if (control.isEnabled())
             {
@@ -17116,8 +17117,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             if (timer != null) timer.stop();
 
-            button.setIcon(null);
-            button.setDisabledIcon(null);
+            // Only when shown: setting no icon over none still tells the strip's listener, which lays the strip out
+            // again on every sensor event.
+            if (button.getIcon() != null) button.setIcon(null);
+            if (button.getDisabledIcon() != null) button.setDisabledIcon(null);
 
             return null;
         }
