@@ -461,15 +461,16 @@ public class testTheLengthPromptHasTheKeyboard
     }
 
     /**
-     * Mass Assign Lengths and Mass Assign Station Max Train Lengths ask in the same prompt, and the number field has the
-     * keyboard in each (MT-454, MT-520).  The railway's lengths and maxima are cleared so there is something to ask, and
-     * the setup is put back after.
+     * Mass Assign Lengths and Mass Assign Station Max Train Lengths ask in the same prompt: the number field has the
+     * keyboard, Enter after a number submits it and the walk moves on, and Escape on the next prompt stops the walk
+     * (MT-454, MT-520).  The railway's lengths and maxima are cleared so there is something to ask, and the setup is put
+     * back after.
      *
      * MUTATION: in `askInWalkPrompt` give the option pane `answers[0]` as its initial value instead of null, and the
-     * keyboard goes to the OK button.
+     * keyboard goes to the OK button; make the field's Enter answer `answers[2]`, and no second prompt comes.
      */
     @Test
-    public void testTheLengthsAndMaximaWalksHaveTheFieldFocused() throws Exception
+    public void testTheLengthsAndMaximaWalksTakeEnterAndEscapeInTheFocusedField() throws Exception
     {
         awaitTheEditorFocused();
 
@@ -485,11 +486,18 @@ public class testTheLengthPromptHasTheKeyboard
 
             for (String key : new String[] {"autosetup.ui.menuMassAssignLengths", "autosetup.ui.menuMassAssignMaxTrainLengths"})
             {
-                javax.swing.JDialog prompt = startedFrom(bulkItem(key), key);
+                javax.swing.JDialog first = startedFrom(bulkItem(key), key);
 
-                focusedField(prompt, "the first prompt of " + I18n.t(key));
+                type(focusedField(first, "the first prompt of " + I18n.t(key)), "3");
 
-                answer(prompt, I18n.t("ui.cancel"));
+                final javax.swing.JDialog second = awaitPrompt(first, I18n.t(key));
+
+                final javax.swing.JTextField next = focusedField(second, "the prompt after Enter in " + I18n.t(key));
+
+                SwingUtilities.invokeAndWait(() -> press(next, java.awt.event.KeyEvent.VK_ESCAPE));
+
+                assertTrue(support.Components.waitFor(() -> !support.Components.onTheEventThread(second::isShowing), 5000),
+                    "Escape did not close the " + I18n.t(key) + " prompt");
             }
         }
         finally
@@ -583,9 +591,15 @@ public class testTheLengthPromptHasTheKeyboard
         {
             field.setText(text);
 
-            field.dispatchEvent(new java.awt.event.KeyEvent(field, java.awt.event.KeyEvent.KEY_PRESSED,
-                System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ENTER, java.awt.event.KeyEvent.CHAR_UNDEFINED));
+            press(field, java.awt.event.KeyEvent.VK_ENTER);
         });
+    }
+
+    /** One key pressed on the field, as the keyboard presses it; on the event thread. */
+    private static void press(javax.swing.JTextField field, int key)
+    {
+        field.dispatchEvent(new java.awt.event.KeyEvent(field, java.awt.event.KeyEvent.KEY_PRESSED,
+            System.currentTimeMillis(), 0, key, java.awt.event.KeyEvent.CHAR_UNDEFINED));
     }
 
     private static javax.swing.JMenuItem bulkItem(String key) throws Exception
