@@ -409,10 +409,11 @@ public class Util
                 return;
             }
 
+            // Read before the entry is begun, so a file that will not read leaves no empty entry to be restored
+            byte[] content = java.nio.file.Files.readAllBytes(source.toPath());
+
             out.putNextEntry(new java.util.zip.ZipEntry(name));
-
-            java.nio.file.Files.copy(source.toPath(), out);
-
+            out.write(content);
             out.closeEntry();
         }
         catch (IOException | RuntimeException e)
