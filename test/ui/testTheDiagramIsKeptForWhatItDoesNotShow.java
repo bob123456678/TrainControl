@@ -833,6 +833,19 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         back.check(train);
     }
 
+    /** The page shown, for a wait that cannot throw. */
+    private static Container shownPageNow()
+    {
+        try
+        {
+            return Components.onTheEventThread(() -> shownPage());
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
     /** Whether the page shown draws something on this square. */
     private static boolean drawsTheSquare(int x, int y) throws Exception
     {
@@ -979,6 +992,11 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
                 assertTrue(Components.waitFor(() -> model.getRoute(route.getName()) != route, 30000),
                     "precondition: disarming did not write the route anew");
+
+                // The write comes before the sync it owes; the edit drawn says that sync and its redraw have run
+                assertTrue(Components.waitFor(() -> shownPageNow() != null && !drawsTheSquare(shownPageNow(), 4, 1),
+                    60000),
+                    "precondition: the sync after disarming did not read the page edited elsewhere");
 
                 Settle.theDiagram(ui);
             });

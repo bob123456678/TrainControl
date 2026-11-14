@@ -562,6 +562,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         final Object parserWas = Reflect.get(MarklinControlStation.class, model, "fileParser");
         final Object cs3Was = Reflect.get(MarklinControlStation.class, model, "isCS3");
+        final boolean connectedWas = model.getNetworkCommState();
 
         server.startServer(260);
 
@@ -578,6 +579,9 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
             Reflect.set(MarklinControlStation.class, model, "fileParser",
                 new org.traincontrol.marklin.file.CS2File("localhost:" + server.getPort(), model));
             Reflect.set(MarklinControlStation.class, model, "isCS3", true);
+
+            // The door asks only with a station connected; the stand-in serves its lists
+            model.setNetworkCommState(true);
 
             try (Answering answering = Answering.start(message -> Answering.press(no)))
             {
@@ -616,6 +620,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
         {
             Reflect.set(MarklinControlStation.class, model, "fileParser", parserWas);
             Reflect.set(MarklinControlStation.class, model, "isCS3", cs3Was);
+            model.setNetworkCommState(connectedWas);
 
             server.stopServer();
 
