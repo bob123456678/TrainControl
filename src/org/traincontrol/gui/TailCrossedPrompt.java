@@ -1,17 +1,34 @@
 package org.traincontrol.gui;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.FlowLayout;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.swing.JOptionPane;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
+import org.traincontrol.automationui.AutonomyCompanionStore;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph;
+import org.traincontrol.base.Locomotive;
+import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 
 /**
@@ -187,8 +204,8 @@ public class TailCrossedPrompt
      * null where it did not save (OB-305).  Saves only where the question will be put (`wouldAsk`), and not while an
      * editor is open or on its way.
      */
-    public static org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation saveBeforeAsking(
-        org.traincontrol.automationui.AutonomySession session, Layout layout, Point at, String arrivedFrom,
+    public static AutonomyCompanionStore.Reconciliation saveBeforeAsking(
+        AutonomySession session, Layout layout, Point at, String arrivedFrom,
         Integer trainLength, TrainControlUI window)
     {
         if (quiet || session == null || at == null || !wouldAsk(layout, at, arrivedFrom, trainLength)) return null;
@@ -214,20 +231,20 @@ public class TailCrossedPrompt
      * waits, the question, and its road written only where the placement still stands, else a dropped answer logged.
      * Answers whether the setup written to is still the window's, so the door may save it.
      */
-    public static boolean recordTheTail(org.traincontrol.automationui.AutonomySession session,
-        org.traincontrol.automationui.TileGraph.TileKey tile, Layout layout, Point point, String tail, String train,
+    public static boolean recordTheTail(AutonomySession session,
+        TileGraph.TileKey tile, Layout layout, Point point, String tail, String train,
         List<Edge> roadBefore, boolean sameSquareAsBefore, String sideBefore, TrainControlUI ui, Component asker,
-        java.util.function.Consumer<org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation> savedEarly)
+        Consumer<AutonomyCompanionStore.Reconciliation> savedEarly)
     {
         session.setArrivedFrom(tile, tail);
 
         point.setArrivedFrom(tail);
 
         // Read before the question: it waits with the window live, and what stands on this copy may change meanwhile
-        final org.traincontrol.base.Locomotive placed = point.getCurrentLocomotive();
+        final Locomotive placed = point.getCurrentLocomotive();
         final List<Edge> roadAtTheQuestion = point.getArrivedAlong();
 
-        org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation saved =
+        AutonomyCompanionStore.Reconciliation saved =
             TailCrossedPrompt.saveBeforeAsking(session, layout, point, tail, lengthOf(point), ui);
 
         if (savedEarly != null) savedEarly.accept(saved);
@@ -432,19 +449,19 @@ public class TailCrossedPrompt
         {
             Runnable prompt = () ->
             {
-                final javax.swing.JList<String> list = new javax.swing.JList<>(labelsOf(choices));
+                final JList<String> list = new JList<>(labelsOf(choices));
 
                 list.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
 
                 if (preselect >= 0 && preselect < choices.size()) list.setSelectedIndex(preselect);
                 list.setVisibleRowCount(Math.min(10, Math.max(3, choices.size())));
 
-                javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 8));
+                JPanel panel = new JPanel(new BorderLayout(0, 8));
 
-                panel.add(new javax.swing.JLabel("<html><div style='width:320px'>"
+                panel.add(new JLabel("<html><div style='width:320px'>"
                     + escape(I18n.f("autolayout.ui.askTailCrossed", train, station)).replace("\n", "<br>")
-                    + "</div></html>"), java.awt.BorderLayout.NORTH);
-                panel.add(new javax.swing.JScrollPane(list), java.awt.BorderLayout.CENTER);
+                    + "</div></html>"), BorderLayout.NORTH);
+                panel.add(new javax.swing.JScrollPane(list), BorderLayout.CENTER);
 
                 // OK and Cancel, no "Not Known": for a train just put down they did the same.  Cancel is no answer and
                 // keeps whatever road the train has; OK with nothing chosen is the same, so no answer is given that
@@ -462,8 +479,8 @@ public class TailCrossedPrompt
                 }
             };
 
-            if (javax.swing.SwingUtilities.isEventDispatchThread()) prompt.run();
-            else javax.swing.SwingUtilities.invokeAndWait(prompt);
+            if (SwingUtilities.isEventDispatchThread()) prompt.run();
+            else SwingUtilities.invokeAndWait(prompt);
         }
         catch (Exception cannotAsk)
         {
@@ -532,15 +549,15 @@ public class TailCrossedPrompt
     // ---------------------------------------------------------------- on the diagram (FR-100)
 
     /** Whether the question goes on the diagram rather than into a list (FR-100). */
-    public static boolean putsTheQuestionOnTheDiagram(org.traincontrol.automationui.TileGraph.TileKey train,
-        java.util.Collection<org.traincontrol.automationui.TileGraph.TileKey> squares,
-        java.util.function.Predicate<org.traincontrol.automationui.TileGraph.TileKey> drawn)
+    public static boolean putsTheQuestionOnTheDiagram(TileGraph.TileKey train,
+        Collection<TileGraph.TileKey> squares,
+        java.util.function.Predicate<TileGraph.TileKey> drawn)
     {
         if (train == null || squares == null || squares.isEmpty() || drawn == null) return false;
 
-        for (org.traincontrol.automationui.TileGraph.TileKey square : squares)
+        for (TileGraph.TileKey square : squares)
         {
-            if (square == null || !java.util.Objects.equals(square.getPage(), train.getPage())) return false;
+            if (square == null || !Objects.equals(square.getPage(), train.getPage())) return false;
 
             if (!drawn.test(square)) return false;
         }
@@ -554,12 +571,12 @@ public class TailCrossedPrompt
      * first train's road over it.  So a door writes only while the copy still holds the train it placed, with the side
      * and road the placement left, asked of the running railway's copy through `whereTheAnswerGoes`.
      */
-    public static boolean placementStillStands(Point point, org.traincontrol.base.Locomotive placed, String side,
+    public static boolean placementStillStands(Point point, Locomotive placed, String side,
         List<Edge> road)
     {
         return point != null && placed != null && point.getCurrentLocomotive() == placed
-            && java.util.Objects.equals(point.getArrivedFrom(), side)
-            && java.util.Objects.equals(point.getArrivedAlong(), road);
+            && Objects.equals(point.getArrivedFrom(), side)
+            && Objects.equals(point.getArrivedAlong(), road);
     }
 
     /**
@@ -571,7 +588,7 @@ public class TailCrossedPrompt
      * hand send in the wait is not refused, so every door that asks takes where to write from here.  A null `running`
      * asks the copy itself.
      */
-    public static Point whereTheAnswerGoes(Layout running, Point asked, org.traincontrol.base.Locomotive placed,
+    public static Point whereTheAnswerGoes(Layout running, Point asked, Locomotive placed,
         String side, List<Edge> road, boolean sameSetup)
     {
         if (!sameSetup || asked == null) return null;
@@ -598,7 +615,7 @@ public class TailCrossedPrompt
     }
 
     /** The railway running now, or null where autonomy has none - asked without making one, as `getAutoLayout` does. */
-    public static Layout runningNow(org.traincontrol.model.ViewListener model)
+    public static Layout runningNow(ViewListener model)
     {
         // Asked once
         return model == null ? null : model.getAutoLayoutIfLoaded();
@@ -611,8 +628,8 @@ public class TailCrossedPrompt
      * `whereTheAnswerGoes` asks) the answer goes into the configuration loaded now and onto the railway running.  A
      * door whose setup is not the window's any more saves nothing.
      */
-    public static boolean sameSetup(org.traincontrol.automationui.AutonomySession asked,
-        org.traincontrol.automationui.AutonomySession now)
+    public static boolean sameSetup(AutonomySession asked,
+        AutonomySession now)
     {
         return asked != null && asked == now;
     }
@@ -622,7 +639,7 @@ public class TailCrossedPrompt
      * answer (Not known included; a Cancel asked for nothing to be recorded), naming the square as the diagram does
      * and offering no remedy, since the train having moved or another train standing there makes one impossible.
      */
-    public static void noteADroppedAnswer(org.traincontrol.model.ViewListener model, String train, String where)
+    public static void noteADroppedAnswer(ViewListener model, String train, String where)
     {
         if (model != null) model.logf("autolayout.ui.logTailAnswerDropped", train, where);
     }
@@ -631,7 +648,7 @@ public class TailCrossedPrompt
      * The same, saying why this answer was dropped: an editor opened in the wait, trains began running, or the square
      * changed.
      */
-    public static void noteADroppedAnswer(org.traincontrol.model.ViewListener model, String train, String where,
+    public static void noteADroppedAnswer(ViewListener model, String train, String where,
         Answer answer)
     {
         if (model == null) return;
@@ -702,15 +719,15 @@ public class TailCrossedPrompt
         private static final int HOLD_MS = 30 * 60 * 1000;
 
         private final TrainControlUI ui;
-        private final Map<org.traincontrol.automationui.TileGraph.TileKey, List<Choice>> bySquare;
+        private final Map<TileGraph.TileKey, List<Choice>> bySquare;
         private final String train;
         private final String station;
 
-        private javax.swing.JDialog prompt;
-        private java.util.function.Consumer<Reply> done;
+        private JDialog prompt;
+        private Consumer<Reply> done;
         private boolean finished;
 
-        private DiagramPick(TrainControlUI ui, Map<org.traincontrol.automationui.TileGraph.TileKey, List<Choice>> bySquare,
+        private DiagramPick(TrainControlUI ui, Map<TileGraph.TileKey, List<Choice>> bySquare,
             String train, String station)
         {
             this.ui = ui;
@@ -734,16 +751,15 @@ public class TailCrossedPrompt
             // window the editor covers.  The list is asked where the operator is working.
             if (ui.isLayoutEditorOpen()) return null;
 
-            org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+            AutonomySession session = ui.getAutonomySession();
 
             if (session == null || session.getStationIndex() == null) return null;
 
-            Map<org.traincontrol.automationui.TileGraph.TileKey, List<Choice>> bySquare = new LinkedHashMap<>();
+            Map<TileGraph.TileKey, List<Choice>> bySquare = new LinkedHashMap<>();
 
             for (Choice choice : choices)
             {
-                org.traincontrol.automationui.TileGraph.TileKey square =
-                    session.getStationIndex().squareOf(choice.getFarthest());
+                TileGraph.TileKey square = session.getStationIndex().squareOf(choice.getFarthest());
 
                 if (square == null) return null;
 
@@ -764,7 +780,7 @@ public class TailCrossedPrompt
         {
             final Reply[] out = {null};
 
-            if (javax.swing.SwingUtilities.isEventDispatchThread())
+            if (SwingUtilities.isEventDispatchThread())
             {
                 java.awt.SecondaryLoop loop =
                     java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().createSecondaryLoop();
@@ -780,11 +796,11 @@ public class TailCrossedPrompt
             }
             else
             {
-                java.util.concurrent.CountDownLatch answered = new java.util.concurrent.CountDownLatch(1);
+                CountDownLatch answered = new CountDownLatch(1);
 
                 try
                 {
-                    javax.swing.SwingUtilities.invokeAndWait(() -> arm(reply ->
+                    SwingUtilities.invokeAndWait(() -> arm(reply ->
                     {
                         out[0] = reply;
                         answered.countDown();
@@ -795,45 +811,44 @@ public class TailCrossedPrompt
                 catch (Exception stopped)
                 {
                     // Nothing answered: the question is taken down, and no answer stands.
-                    javax.swing.SwingUtilities.invokeLater(() -> finish(new Reply(false, null)));
+                    SwingUtilities.invokeLater(() -> finish(new Reply(false, null)));
                 }
             }
 
             return out[0] == null ? new Reply(false, null) : out[0];
         }
 
-        private void arm(java.util.function.Consumer<Reply> then)
+        private void arm(Consumer<Reply> then)
         {
             done = then;
             armed = this;
 
             light(true);
 
-            javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 10));
+            JPanel panel = new JPanel(new BorderLayout(0, 10));
 
             panel.setBorder(javax.swing.BorderFactory.createEmptyBorder(12, 14, 12, 14));
 
-            panel.add(new javax.swing.JLabel("<html><div style='width:320px'>"
+            panel.add(new JLabel("<html><div style='width:320px'>"
                 + escape(I18n.f("autosetup.ui.promptTailCrossedOnTheDiagram", train, station)).replace("\n", "<br>")
-                + "</div></html>"), java.awt.BorderLayout.CENTER);
+                + "</div></html>"), BorderLayout.CENTER);
 
             // Cancel, and no "Not Known": for a train just put down the two did the same, and Cancel keeps whatever
             // road a train standing still already has.
-            javax.swing.JButton cancel = org.traincontrol.gui.widgets.UiStyle.button(
-                new javax.swing.JButton(I18n.t("ui.cancel")));
+            JButton cancel = org.traincontrol.gui.widgets.UiStyle.button(new JButton(I18n.t("ui.cancel")));
 
             cancel.addActionListener(e -> finish(new Reply(false, null)));
 
-            javax.swing.JPanel buttons = new javax.swing.JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 6, 0));
+            JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
 
             buttons.add(cancel);
 
-            panel.add(buttons, java.awt.BorderLayout.SOUTH);
+            panel.add(buttons, BorderLayout.SOUTH);
 
             // Over the window whose door this is; that window closing is no answer
             final java.awt.Window over = ui.dialogParent();
 
-            prompt = new javax.swing.JDialog(over, I18n.t("autolayout.ui.askArrivalSideTitle"),
+            prompt = new JDialog(over, I18n.t("autolayout.ui.askArrivalSideTitle"),
                 java.awt.Dialog.ModalityType.MODELESS);
 
             prompt.addComponentListener(new java.awt.event.ComponentAdapter()
@@ -875,7 +890,7 @@ public class TailCrossedPrompt
         {
             if (finished) return false;
 
-            for (Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, List<Choice>> at : bySquare.entrySet())
+            for (Map.Entry<TileGraph.TileKey, List<Choice>> at : bySquare.entrySet())
             {
                 if (!ui.getDiagramTileRegistry().labelsFor(at.getKey()).contains(label)) continue;
 
@@ -927,7 +942,7 @@ public class TailCrossedPrompt
 
         private void light(boolean on)
         {
-            for (org.traincontrol.automationui.TileGraph.TileKey square : bySquare.keySet())
+            for (TileGraph.TileKey square : bySquare.keySet())
             {
                 for (LayoutLabel label : ui.getDiagramTileRegistry().labelsFor(square))
                 {
@@ -1079,7 +1094,7 @@ public class TailCrossedPrompt
      * on (MT-477), which is when the answer changes what is blocked.  A tail that reaches into the switch has passed
      * it, though the squares are the same.
      */
-    private static boolean tailsPart(java.util.Collection<Edge> rails, int left)
+    private static boolean tailsPart(Collection<Edge> rails, int left)
     {
         if (left <= 0) return false;
 
@@ -1099,7 +1114,7 @@ public class TailCrossedPrompt
      * The last square every one of these rails runs over, counted from the train - where they part - or null where they
      * share none, run over the same squares all the way, or carry no places to say.
      */
-    private static String lastSharedPlace(java.util.Collection<Edge> rails)
+    private static String lastSharedPlace(Collection<Edge> rails)
     {
         List<List<String>> all = new ArrayList<>();
 

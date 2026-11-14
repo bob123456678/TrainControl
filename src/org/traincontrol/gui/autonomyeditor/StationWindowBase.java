@@ -14,6 +14,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
@@ -27,6 +29,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -87,7 +90,7 @@ abstract class StationWindowBase extends JDialog
     }
 
     /** Asks again every second: a run starting or stopping raises no single event. */
-    private final javax.swing.Timer watch = new javax.swing.Timer(1000, e -> watched());
+    private final Timer watch = new Timer(1000, e -> watched());
 
     StationWindowBase(AutonomyEditorPanel editor, Window owner)
     {
@@ -99,27 +102,27 @@ abstract class StationWindowBase extends JDialog
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 
-        addWindowListener(new java.awt.event.WindowAdapter()
+        addWindowListener(new WindowAdapter()
         {
             @Override
-            public void windowClosing(java.awt.event.WindowEvent e)
+            public void windowClosing(WindowEvent e)
             {
                 closeWindow();
             }
 
             // Its owner went: nothing is committed over whatever the owner's Cancel put back
             @Override
-            public void windowClosed(java.awt.event.WindowEvent e)
+            public void windowClosed(WindowEvent e)
             {
                 if (tile != null) goAway();
             }
         });
 
         // Typed text applies before whatever is clicked next (the editor's Save); a list's choice its own loss put back
-        addWindowFocusListener(new java.awt.event.WindowAdapter()
+        addWindowFocusListener(new WindowAdapter()
         {
             @Override
-            public void windowLostFocus(java.awt.event.WindowEvent e)
+            public void windowLostFocus(WindowEvent e)
             {
                 commitFields();
             }
