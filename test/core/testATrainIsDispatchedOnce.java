@@ -3924,7 +3924,8 @@ public class testATrainIsDispatchedOnce
      * A timetable entry the Yes found refusing leaves with its run rather than waking into the next one: an entry is
      * counted while it lives, and a stop wakes it to leave.
      *
-     * MUTATION: let a stop not wake a pausing entry, or count it not at all, and this fails.
+     * MUTATION: let a stop not wake a pausing entry, and the call returns late; with the entry not counted either, it
+     * wakes into the next run and stops it.
      */
     @Test
     public void testAnEntryTheYesFoundRefusingLeavesWithItsRun() throws Exception
