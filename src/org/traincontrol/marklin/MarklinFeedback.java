@@ -98,14 +98,16 @@ public class MarklinFeedback extends Feedback
                 {
                     boolean was = this.isSet();
 
-                    // The proxy's mark on the answer to our own query: it puts the state right, but is no edge
-                    this.changeTo(state == 1, m.answersAResync());
+                    // While a CS3's state confirmation is under way (D133) a change puts the state right, no edge
+                    boolean confirming = this.network.isConfirming();
+
+                    this.changeTo(state == 1, confirming);
                                         
                     this.updateTiles();
 
-                    // The answer to a resync's query that changes nothing is no event: a resync asks every sensor, and
-                    // the route editor's capture must not take them.  Only the proxy's own answers.
-                    if (m.answersAResync() && was == (state == 1)) return;
+                    // A confirmation asks every sensor, and the route editor's capture must not take the answers that
+                    // change nothing
+                    if (confirming && was == (state == 1)) return;
 
                     // And anything watching for one (the route editor's capture)
                     this.network.feedbackChanged(this.getName(), state == 1);

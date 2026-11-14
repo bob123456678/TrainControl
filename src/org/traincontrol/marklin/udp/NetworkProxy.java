@@ -711,23 +711,19 @@ public class NetworkProxy
                 return;
             }
 
-            Heard heard = learn(buffer);
-
             // Send message to listener
-            if (heard != Heard.OVERTAKEN) model.receiveMessage(marked(model.createMessage(buffer), heard));
+            if (!learn(buffer)) model.receiveMessage(model.createMessage(buffer));
         }
     }
 
     /** Delivers a TCP frame. */
     private void deliverTcp(byte[] frame)
     {
-        Heard heard = learn(frame);
-
-        if (heard == Heard.OVERTAKEN) return;
+        if (learn(frame)) return;
 
         try
         {
-            model.receiveMessage(marked(model.createMessage(frame), heard));
+            model.receiveMessage(model.createMessage(frame));
         }
         catch (Exception e)
         {
@@ -735,25 +731,15 @@ public class NetworkProxy
         }
     }
 
-    /** A message, marked as the answer to a resync's query when it is one, so the model can tell it from an event. */
-    private static CANMessage marked(CANMessage message, Heard heard)
-    {
-        if (heard == Heard.ANSWER && message instanceof CS2Message) ((CS2Message) message).markAnswersAResync();
-
-        return message;
-    }
-
-    /** What a frame is: any other, the answer to a pass's query, or an answer older than an event since the query. */
-    private enum Heard { FRAME, ANSWER, OVERTAKEN }
-
     /**
      * Once learnsDevices is set, notes a contact's device from a sensor event, a change of state; a frame with the
-     * state unchanged is an answer to a query, counted for the pass that asked, and OVERTAKEN, never delivered, when a
-     * real event for the contact came after its query and less than RESYNC_WAIT_NS ago (OB-418).
+     * state unchanged is an answer to a query, counted for the pass that asked.  True, and the frame not to be
+     * delivered, when it is such an answer older than a real event for the contact since its query, less than
+     * RESYNC_WAIT_NS ago (OB-418).
      */
-    private Heard learn(byte[] frame)
+    private boolean learn(byte[] frame)
     {
-        if (!this.learnsDevices || command(frame) != CS2Message.CMD_ACC_SENSOR || frame[4] != 8) return Heard.FRAME;
+        if (!this.learnsDevices || command(frame) != CS2Message.CMD_ACC_SENSOR || frame[4] != 8) return false;
 
         int contact = ((frame[7] & 0xFF) << 8) | (frame[8] & 0xFF);
 
@@ -766,7 +752,7 @@ public class NetworkProxy
         {
             this.sensorDevice.put(contact, ((frame[5] & 0xFF) << 8) | (frame[6] & 0xFF));
             this.overtaken.replace(contact, System.nanoTime());
-            return Heard.FRAME;
+            return false;
         }
 
         boolean ours;
@@ -785,7 +771,7 @@ public class NetworkProxy
         Long event = this.overtaken.get(contact);
         boolean older = event != null && event != 0 && System.nanoTime() - event < RESYNC_WAIT_NS;
 
-        return older ? Heard.OVERTAKEN : ours ? Heard.ANSWER : Heard.FRAME;
+        return older;
     }
 
     /**
@@ -809,6 +795,7 @@ public class NetworkProxy
             epoch = this.liveEpoch.get();
         }
 
+        beginAsk();
         ask(overTcp, epoch, overTcp ? 1 : 2, "network.sensorsSynced");
     }
 
@@ -823,6 +810,18 @@ public class NetworkProxy
         if (device == null) device = this.listedDevice.get(contact);
 
         return device != null ? device : this.savedDevice.get(contact);
+    }
+
+    /**
+     * Whether a CS3's state confirmation is under way: from a connect, reconnect or sync's pass until its wait ends.
+     * A sensor change then updates the state but fires no route (D133).  Never for a CS2, which is never asked.
+     */
+    public boolean isConfirming()
+    {
+        synchronized (this.overtaken)
+        {
+            return this.learnsDevices && this.asks > 0;
+        }
     }
 
     /** The device a real event showed for a contact, or null. */
@@ -849,20 +848,27 @@ public class NetworkProxy
     {
         int epoch = this.liveEpoch.get();
 
+        // Counted here, not on the thread, so no frame between this call and the thread's start fires a route (D133)
+        beginAsk();
+
         Thread asking = new Thread(() -> ask(overTcp, epoch, passes, "network.sensorsResynced"), "cs2-s88-resync");
 
         asking.setDaemon(true);
         asking.start();
     }
 
-    /** Asks `passes` times, each pass RESYNC_AGAIN_NS after the last one's start, until superseded. */
-    private void ask(boolean overTcp, int epoch, int passes, String key)
+    /** Counts a confirmation pass that ask will end. */
+    private void beginAsk()
     {
         synchronized (this.overtaken)
         {
             this.asks++;
         }
+    }
 
+    /** Asks `passes` times, each pass RESYNC_AGAIN_NS after the last one's start, until superseded; after beginAsk. */
+    private void ask(boolean overTcp, int epoch, int passes, String key)
+    {
         try
         {
             for (int n = 0; n < passes; n++)

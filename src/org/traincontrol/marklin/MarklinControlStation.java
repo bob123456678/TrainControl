@@ -2736,7 +2736,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return false;
     }
     
-    /** Whether a sensor's state was last changed by a query's answer, not an edge: no route fires on it (OB-418). */
+    /** Whether a CS3's sensor state confirmation is under way (D133): sensor changes then fire no route. */
+    public final boolean isConfirming()
+    {
+        return this.NetworkInterface != null && this.NetworkInterface.isConfirming();
+    }
+
+    /** Whether a sensor's state was last changed during a state confirmation, not an edge: no route fires on it. */
     public final boolean isFeedbackCorrected(String name)
     {
         MarklinFeedback fb = this.feedbackDB.getByName(name);

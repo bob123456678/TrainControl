@@ -81,12 +81,7 @@ public class testTheStationIsReachedOverTcp
             }
 
             this.heard.add(((CS2Message) message).getRawMessage());
-
-            if (((CS2Message) message).answersAResync()) this.resyncAnswers.incrementAndGet();
         }
-
-        // How many frames the proxy marked as answers to its own queries
-        final java.util.concurrent.atomic.AtomicInteger resyncAnswers = new java.util.concurrent.atomic.AtomicInteger();
 
         // The next frame handed over waits until this says yes
         volatile java.util.function.BooleanSupplier holdFirst;
@@ -982,8 +977,7 @@ public class testTheStationIsReachedOverTcp
      * the model knows with no event, nor for one only an answer named (on Adam's CS3, the station's own false
      * "occupied" for device 1), nor at a device an answer named rather than an event.
      *
-     * MUTATION: in `NetworkProxy.deliverTcp`, `marked(model.createMessage(frame), heard)` to
-     * `marked(model.createMessage(frame), Heard.FRAME)`.  And: in `NetworkProxy.askOnce`, `if (device == null)` to
+     * MUTATION: in `NetworkProxy.askOnce`, `if (device == null)` to
      * `if (device == null || device < 2)`.  And: there, `this.sensorDevice.get(contact)` to
      * `this.sensorDevice.getOrDefault(contact, 2)`.  And: in `NetworkProxy.learn`, `if (frame[9] != frame[10])` to
      * `if (true)`.
@@ -1005,8 +999,6 @@ public class testTheStationIsReachedOverTcp
 
         assertTrue(Components.waitFor(() -> this.model.heardFrame(answer(TcpStation.LINK_S88, 1301, true)), WAIT_MS),
             "the Link S88's contact was not asked over the new connection");
-        assertEquals(this.model.resyncAnswers.get(), 1, "the station's answer was not marked as the resync's, or the "
-            + "device 1 frame was");
         assertEquals(asked(), "[[0, 1302], [1, 1303], [2, 1301]]", "the queries are not each contact at its device");
     }
 
