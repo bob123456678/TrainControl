@@ -662,6 +662,50 @@ public class testLocomotiveCsvImport
     }
 
     /**
+     * A member its moving head drives counts as having a speed even when its own is 0 (speed 1 times 0.5): the plan
+     * names it and the import keeps its address, as Locomotive Settings refuses it.  Both ask
+     * `LocomotiveSettings.hasSpeed`.
+     *
+     * MUTATION: ask only the locomotive's own speed in `movingToReaddress` and `apply`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testAMemberOfAMovingHeadIsNamedAndKeepsItsAddress() throws Exception
+    {
+        MarklinLocomotive head = make("AVA3 head", decoderType.MM2, 44);
+        MarklinLocomotive member = make("AVA3 member", decoderType.MM2, 45);
+
+        Map<String, Double> link = new HashMap<>();
+
+        link.put(member.getName(), 0.5);
+
+        assertEquals(head.setLinkedLocomotives(link), 1, "precondition: the consist was not made");
+
+        String file = OLD + member.getName() + ",,DCC,46,0,0:00:00,0,0,,\n";
+
+        try
+        {
+            head.setSpeed(1);
+            head.waitForSpeedAtOrAbove(1);
+
+            assertEquals(member.getSpeed(), 0, "precondition: the member's own speed is 0");
+
+            assertEquals(moving(file), Arrays.asList(member.getName()),
+                "the import would re-address a member its moving head drives, which Locomotive Settings refuses");
+
+            MarklinLocomotiveCsv.Result result = importText(file);
+
+            assertEquals(member.getAddress(), 45, "the import re-addressed a member its moving head drives");
+            assertEquals(result.kept.size(), 1);
+            assertEquals(result.kept.get(0).why, MarklinLocomotiveCsv.Keep.MOVING);
+        }
+        finally
+        {
+            head.setSpeed(0);
+            head.waitForSpeedBelow(1);
+        }
+    }
+
+    /**
      * An import never breaks a multi-unit: a member given the address of its head keeps its address and is counted, and the
      * consist stays whole.
      *

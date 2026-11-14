@@ -645,6 +645,62 @@ public class testTheLocomotiveSettingsFunctions
     }
 
     /**
+     * A sync that changes an icon while the window is open survives a Save of one preset tick, and the locomotive does
+     * not become customized, so later syncs still take the station's functions.
+     *
+     * MUTATION: write a row's icon whenever it differs from the locomotive now, not from what the row loaded, and
+     * this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testASaveKeepsAnIconSyncedWhileTheWindowWasOpen() throws Exception
+    {
+        assertFalse(loc.isCustomFunctions(), "precondition: not customized");
+
+        int synced = loc.getFunctionType(F) == 5 ? 6 : 5;
+        int[] types = Arrays.copyOf(loc.getFunctionTypes(), loc.getFunctionTypes().length);
+
+        types[F] = synced;
+
+        // As syncWithCS2 adopts the station's types for a locomotive that is not customized
+        loc.setFunctionTypes(types, loc.getFunctionTriggerTypes());
+
+        assertEquals(loc.getFunctionType(F), synced, "precondition: the sync took");
+
+        tick(2);
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> saved(2), WAIT), "Save did not write the tick");
+        assertEquals(loc.getFunctionType(F), synced, "Save put back the icon F3 had before the sync");
+        assertFalse(loc.isCustomFunctions(), "Save of a preset tick marked the locomotive customized");
+    }
+
+    /**
+     * A preset saved from the key menu while the window is open survives a Save that ticks another function: Save
+     * changes only the ticks the operator changed.
+     *
+     * MUTATION: write every row's tick at Save instead of only the changed ones, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testASaveKeepsAPresetSavedFromTheKeyMenuWhileOpen() throws Exception
+    {
+        loc.setF(5, true);
+
+        assertTrue(Components.waitFor(() -> loc.getF(5), WAIT));
+
+        loc.savePreferredFunctions();
+
+        assertTrue(saved(5), "precondition: the key menu's preset took");
+
+        tick(2);
+
+        SettingsWindow.press(SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> saved(2), WAIT), "Save did not write the tick");
+        assertTrue(saved(5), "Save replaced the preset saved from the key menu while the window was open");
+    }
+
+    /**
      * Copy Icons from the clipboard locomotive takes its functions into the table and Save writes them; with nothing
      * copied the button is gray.
      *
