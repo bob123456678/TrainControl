@@ -566,6 +566,8 @@ public class testAutonomySimulationSanity
 
         boolean sawActivity = false;
 
+        support.TrackWatch watch = new support.TrackWatch(layout);
+
         // Soak, confirming no warning ever fires.
         long deadline = System.currentTimeMillis() + RUN_MS;
 
@@ -587,6 +589,10 @@ public class testAutonomySimulationSanity
                     + "lock that threw, since the actuation guard itself is skipped in simulate "
                     + "(failures="
                     + layout.getPathValidationFailureCount() + ")");
+
+            // No two trains on one track (support.TrackWatch).  This fixture has one arrival station, so it never has
+            // two trains out at once: no floor here, and the claim that bites is in testReturnHomeOnRealLayout.
+            watch.poll();
 
             Thread.sleep(POLL_MS);
         }
