@@ -4415,4 +4415,332 @@ public class testTheTrainWindow
             return out.toString();
         });
     }
+
+    /** A standing train on this page that the setup has there too, on a square with two facings. */
+    private static TileKey aTrainThatCanTurn()
+    {
+        for (Map.Entry<TileKey, String> each : session.trainsWhereTheyStand().entrySet())
+        {
+            TileKey sq = each.getKey();
+
+            if (PAGE.equals(sq.getPage()) && each.getValue().equals(session.getLocomotiveNameAt(sq))
+                && model.getAutoLayout().getLocomotiveLocation(model.getLocByName(each.getValue())) != null
+                && session.facingChoices(sq).size() == 2) return sq;
+        }
+
+        throw new AssertionError("precondition: no standing train with two facings on " + PAGE);
+    }
+
+    /** A reversal on the throttle or the handset, followed as its echo is (`followTheTurn`); asserts it turned. */
+    private static void reverse(String name, String copyBefore) throws Exception
+    {
+        final java.lang.reflect.Method follow = Reflect.method(TrainControlUI.class, "followTheTurn", String.class);
+
+        assertNotNull(Components.onTheEventThread(() -> follow.invoke(ui, name)), "precondition: followTheTurn turned nothing");
+
+        Components.settle();
+
+        assertFalse(copyOf(name).equals(copyBefore), "precondition: the reversal did not turn " + name + " on the railway");
+    }
+
+    /** The railway's copy this train stands on, or null. */
+    private static String copyOf(String name)
+    {
+        org.traincontrol.automation.Point at = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(name));
+
+        return at == null ? null : at.getName();
+    }
+
+    /**
+     * A reversal on the throttle followed while the editor is open is the train's, not the editor's work: with nothing
+     * edited Cancel asks nothing, and the train stays turned on the railway, in the setup and in the crash note.
+     *
+     * MUTATION: leave `autonomyTurnFollowed` out of `TrainControlUI.followTheTurn`, and Cancel asks and turns it back.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelAsksNothingAfterOnlyAThrottleTurn() throws Exception
+    {
+        theEditorsPanel();
+
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+
+        try
+        {
+            reverse(name, copyBefore);
+
+            final String turned = copyOf(name);
+            final Object facing = session.getFacing(square);
+            final org.json.JSONObject note = session.getStore().unfinishedEdit();
+
+            assertNotNull(note, "precondition: no crash note while the editor is open");
+            assertEquals(note.getJSONObject("configurations").getJSONObject(session.getStore().getActiveConfiguration())
+                .getJSONObject("points").getJSONObject(square.toString()).opt("facing"), String.valueOf(facing),
+                "the crash note would turn " + name + " back after a restart");
+
+            String asked = cancelTheEditor();
+
+            assertNull(asked, "Cancel after only a throttle reversal of " + name + " asked about unsaved work");
+            assertEquals("railway " + copyOf(name) + ", setup facing " + session.getFacing(square),
+                "railway " + turned + ", setup facing " + facing, "Cancel turned " + name + " back on " + square);
+        }
+        finally
+        {
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * Cancel after an edit throws the edit away but keeps a reversal followed meanwhile, on the railway and in the setup,
+     * so the train faces the way its decoder runs; the question does not name it as going back.
+     *
+     * MUTATION: leave the picture's `railwayAsOpened.put` out of `LayoutEditor.autonomyTurnFollowed`, and this fails.
+     */
+    @Test(timeOut = 300000)
+    public void testCancelKeepsAThrottleTurnMadeWhileOpen() throws Exception
+    {
+        AutonomyEditorPanel panel = theEditorsPanel();
+
+        final TileKey square = aTrainThatCanTurn();
+        final String name = session.getLocomotiveNameAt(square);
+        final String copyBefore = copyOf(name);
+        final String unplaced = aTrainNotPlaced();
+        final TileKey empty = anEmptyStation();
+
+        org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
+
+        try
+        {
+            // An edit, so Cancel has something to throw away
+            placeFromTheMenu(panel, empty, unplaced);
+
+            Components.settle();
+
+            reverse(name, copyBefore);
+
+            final String turned = copyOf(name);
+            final Object facing = session.getFacing(square);
+
+            String asked = cancelTheEditor();
+
+            assertNotNull(asked, "precondition: Cancel did not ask about the placement");
+            assertFalse(asked.contains(name), "the question names " + name + " as going back: " + asked);
+            assertEquals("railway " + copyOf(name) + ", setup facing " + session.getFacing(square),
+                "railway " + turned + ", setup facing " + facing, "Cancel after an edit turned " + name + " back on "
+                + square + " (before the reversal: " + copyBefore + ")");
+            assertNull(copyOf(unplaced), "precondition: Cancel kept the placement of " + unplaced);
+        }
+        finally
+        {
+            org.traincontrol.gui.TailCrossedPrompt.answerForTests(null);
+
+            offTheRailway(java.util.Collections.singleton(unplaced));
+
+            standBack(name, copyBefore, null, null, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /** What was said after this, each question answered with its first button. */
+    private static java.util.List<String> saidAfter(java.util.concurrent.Callable<?> doThis) throws Exception
+    {
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(0)))
+        {
+            doThis.call();
+
+            answering.awaitAsked(1, 8000);
+
+            Components.settle();
+
+            return answering.asked();
+        }
+    }
+
+    /**
+     * The refusal every link, address change and sync meets while an editor is open; the key where the bundle lacks it,
+     * so a run on older code shows what was said instead.
+     */
+    private static java.util.List<String> refusedForTheEditor()
+    {
+        String key = "loc.ui.errorEditorOpenNoLinkOrSync";
+
+        try
+        {
+            return java.util.Collections.singletonList(I18n.t(key));
+        }
+        catch (java.util.MissingResourceException none)
+        {
+            return java.util.Collections.singletonList(key);
+        }
+    }
+
+    /** Opens Locomotive Settings on this train's tab. */
+    private static void settingsOf(String name, LocomotiveSettingsFrame.Tab tab) throws Exception
+    {
+        assertTrue(support.SettingsWindow.open(ui, model.getLocByName(name), tab, null), "precondition: Settings did not open");
+        assertNotNull(support.SettingsWindow.awaited(), "precondition: Settings is not on screen");
+    }
+
+    /**
+     * Locomotive Settings refuses a multi-unit link while the editor is open, before anything is written, and stays
+     * open with the tick: the link would take the member off the railway, and Cancel would then lift the head.
+     *
+     * MUTATION: leave the open-editor question out of `LocomotiveActions.refuseMultiUnitEdit`, and the link is made.
+     */
+    @Test(timeOut = 300000)
+    public void testALinkIsRefusedWhileTheEditorIsOpen() throws Exception
+    {
+        java.util.List<String> standing = new java.util.ArrayList<>();
+
+        for (Map.Entry<TileKey, String> each : session.trainsWhereTheyStand().entrySet())
+        {
+            Locomotive loc = model.getLocByName(each.getValue());
+
+            if (PAGE.equals(each.getKey().getPage()) && model.getAutoLayout().getLocomotiveLocation(loc) != null
+                && loc.getLinkedLocomotiveNames().isEmpty() && model.isLocLinkedToOthers(loc) == null
+                && !standing.contains(each.getValue())) standing.add(each.getValue());
+        }
+
+        assertTrue(standing.size() >= 2, "precondition: fewer than two standing unlinked trains on " + PAGE);
+
+        final String head = standing.get(0);
+        final String member = standing.get(1);
+        final String headCopy = copyOf(head);
+        final org.traincontrol.automation.Point memberWas = model.getAutoLayout().getLocomotiveLocation(model.getLocByName(member));
+
+        theEditorsPanel();
+
+        try
+        {
+            settingsOf(head, LocomotiveSettingsFrame.Tab.MULTI_UNIT);
+
+            support.SettingsWindow.tickMember(member);
+
+            java.util.List<String> said = saidAfter(() -> { Components.press(support.SettingsWindow.save()); return null; });
+
+            assertTrue(model.getLocByName(head).getLinkedLocomotiveNames().isEmpty(), "Save with the editor open linked "
+                + member + " to " + head + ", saying " + said);
+            assertNotNull(copyOf(member), "the refused Save took " + member + " off the railway");
+            assertEquals(said, refusedForTheEditor(), "linking " + member + " to " + head + " with the editor open was not refused");
+            assertNotNull(support.SettingsWindow.showing(), "the refused Save closed the window");
+            assertTrue(Components.onTheEventThread(support.SettingsWindow.save()::isEnabled), "the refused Save dropped the tick");
+        }
+        finally
+        {
+            support.SettingsWindow.closeIfOpen();
+
+            Components.onTheEventThread(() -> model.getLocByName(head).setLinkedLocomotives(new java.util.HashMap<>()));
+
+            standBack(head, headCopy, member, memberWas, null);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * Locomotive Settings refuses a new address while the editor is open, before anything is written, and stays open
+     * with what was typed: an address equal to another train's would take one off the railway.
+     *
+     * MUTATION: leave the open-editor question out of `LocomotiveActions.writeNameAndAddress`, and the address is written.
+     */
+    @Test(timeOut = 300000)
+    public void testAnAddressChangeIsRefusedWhileTheEditorIsOpen() throws Exception
+    {
+        final String name = session.getLocomotiveNameAt(aSquareWithATrain());
+        final Locomotive loc = model.getLocByName(name);
+        final int address = loc.getAddress();
+        final Locomotive.decoderType type = loc.getDecoderType();
+
+        String free = null;
+
+        for (int a = 1; free == null; a++)
+        {
+            final int at = a;
+
+            if (org.traincontrol.marklin.MarklinLocomotive.validateNewAddress(type, at)
+                && model.getLocomotives().stream().noneMatch(l -> l.getAddress() == at)) free = Integer.toString(at);
+        }
+
+        final String typed = free;
+
+        theEditorsPanel();
+
+        try
+        {
+            settingsOf(name, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+
+            support.SettingsWindow.type("settings.address", typed);
+
+            java.util.List<String> said = saidAfter(() -> { Components.press(support.SettingsWindow.save()); return null; });
+
+            assertEquals(loc.getAddress(), address, "Save with the editor open wrote a new address for " + name + ", saying "
+                + said);
+            assertEquals(said, refusedForTheEditor(), "a new address for " + name + " with the editor open was not refused");
+            assertNotNull(support.SettingsWindow.showing(), "the refused Save closed the window");
+            assertEquals(support.SettingsWindow.text("settings.address"), typed, "the refused Save dropped the typing");
+        }
+        finally
+        {
+            support.SettingsWindow.closeIfOpen();
+
+            if (loc.getAddress() != address || loc.getDecoderType() != type) model.changeLocAddress(name, address, type);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
+
+    /**
+     * A Central Station sync is refused while the editor is open, by the main window's Sync, by Locomotive Settings' Sync
+     * button, and by the sync every other door runs through: a sync can take a standing train off the railway.
+     *
+     * MUTATION: leave the open-editor question out of `TrainControlUI.syncWithCS2`, and its own door syncs.
+     */
+    @Test(timeOut = 300000)
+    public void testASyncIsRefusedWhileTheEditorIsOpen() throws Exception
+    {
+        final String name = session.getLocomotiveNameAt(aSquareWithATrain());
+        final Object simulated = Reflect.get(MarklinControlStation.class, model, "simulation");
+        final boolean on = model.getNetworkCommState();
+
+        theEditorsPanel();
+
+        try
+        {
+            assertEquals(saidAfter(() -> { SwingUtilities.invokeLater(() -> ui.doSync(ui)); return null; }),
+                refusedForTheEditor(), "the main window's Sync with the editor open was not refused");
+
+            // The button is lit only with a station connected
+            Reflect.set(MarklinControlStation.class, model, "simulation", false);
+            model.setNetworkCommState(true);
+
+            settingsOf(name, LocomotiveSettingsFrame.Tab.LOCOMOTIVE);
+
+            final javax.swing.JButton sync = support.SettingsWindow.part("settings.sync", javax.swing.JButton.class);
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(sync::isEnabled), 8000), "precondition: Sync stayed gray");
+            assertEquals(saidAfter(() -> { Components.press(sync); return null; }), refusedForTheEditor(),
+                "Locomotive Settings' Sync with the editor open was not refused");
+
+            support.SettingsWindow.closeIfOpen();
+
+            Reflect.set(MarklinControlStation.class, model, "simulation", simulated);
+            model.setNetworkCommState(on);
+
+            assertEquals(saidAfter(() -> ui.syncWithCS2()), refusedForTheEditor(),
+                "the sync the other doors run through was not refused with the editor open");
+        }
+        finally
+        {
+            support.SettingsWindow.closeIfOpen();
+
+            Reflect.set(MarklinControlStation.class, model, "simulation", simulated);
+            model.setNetworkCommState(on);
+
+            support.FrozenEditor.putBack(ui, session, asOpened);
+        }
+    }
 }

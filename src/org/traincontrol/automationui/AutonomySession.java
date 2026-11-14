@@ -6519,6 +6519,22 @@ public class AutonomySession
         return name.isEmpty() ? null : name;
     }
 
+    /**
+     * A turned train's facing over one configuration's points (as a setup snapshot and a page snapshot hold them), in
+     * place, where its square still holds it; true if changed.
+     */
+    public static boolean updateFacingInPoints(JSONObject points, TileKey square, String locomotive, String facing)
+    {
+        JSONObject point = points == null ? null : points.optJSONObject(square.toString());
+
+        if (point == null || !locomotive.equals(nameOfPlacedLocomotive(point.opt("loc")))
+            || facing.equals(point.opt(AutonomyBuilder.FACING))) return false;
+
+        point.put(AutonomyBuilder.FACING, facing);
+
+        return true;
+    }
+
     /** Takes a locomotive off every other square, carrying what was recorded with it into the new placement `into`. */
     private void forgetPlacementsElsewhere(TileKey keep, String name, JSONObject into)
     {
