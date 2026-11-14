@@ -1,20 +1,32 @@
 package org.traincontrol.gui;
 
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 
 /**
@@ -33,7 +45,7 @@ final class LocomotiveNotesPanel extends JPanel
     private String loadedEnd;
     private String loadedRailway;
     private String loadedNotes;
-    private final java.util.List<JLabel> captions = new java.util.ArrayList<>();
+    private final List<JLabel> captions = new ArrayList<>();
     private JLabel metadataCaption;
     private JLabel notesCaption;
 
@@ -44,7 +56,7 @@ final class LocomotiveNotesPanel extends JPanel
      * @param textColumns the width of the notes box
      * @param onChange told whenever anything is typed, or null
      */
-    LocomotiveNotesPanel(Locomotive l, java.util.List<String> railways, int textRows, int textColumns, Runnable onChange)
+    LocomotiveNotesPanel(Locomotive l, List<String> railways, int textRows, int textColumns, Runnable onChange)
     {
         super(new GridBagLayout());
 
@@ -62,7 +74,7 @@ final class LocomotiveNotesPanel extends JPanel
         railway.setName("notes.railway");
         railwayText.setFont(startYear.getFont());
         railway.setFont(startYear.getFont());
-        railway.setPreferredSize(new java.awt.Dimension(startYear.getPreferredSize().width * 3,
+        railway.setPreferredSize(new Dimension(startYear.getPreferredSize().width * 3,
             startYear.getPreferredSize().height + 2));
         notes.setName("notes.text");
 
@@ -81,7 +93,7 @@ final class LocomotiveNotesPanel extends JPanel
 
         if (onChange != null)
         {
-            javax.swing.event.DocumentListener tell = Typing.tell(onChange);
+            DocumentListener tell = Typing.tell(onChange);
 
             startYear.getDocument().addDocumentListener(tell);
             endYear.getDocument().addDocumentListener(tell);
@@ -135,9 +147,9 @@ final class LocomotiveNotesPanel extends JPanel
      * Every railway name set on any of these locomotives, trimmed, once each, sorted without regard to case; names
      * differing only in case show the first spelling found.
      */
-    static java.util.List<String> railwayNames(java.util.Collection<? extends Locomotive> locomotives)
+    static List<String> railwayNames(Collection<? extends Locomotive> locomotives)
     {
-        java.util.Map<String, String> found = new java.util.TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        Map<String, String> found = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
         for (Locomotive l : locomotives)
         {
@@ -146,7 +158,7 @@ final class LocomotiveNotesPanel extends JPanel
             if (name != null && !name.trim().isEmpty()) found.putIfAbsent(name.trim(), name.trim());
         }
 
-        return new java.util.ArrayList<>(found.values());
+        return new ArrayList<>(found.values());
     }
 
     private JLabel caption(String text)
@@ -166,12 +178,12 @@ final class LocomotiveNotesPanel extends JPanel
     {
         for (JLabel l : captions)
         {
-            l.setText(org.traincontrol.gui.widgets.UiStyle.withoutColon(l.getText()));
-            org.traincontrol.gui.widgets.UiStyle.style(l);
+            l.setText(UiStyle.withoutColon(l.getText()));
+            UiStyle.style(l);
         }
 
-        org.traincontrol.gui.widgets.UiStyle.styleHeading(metadataCaption);
-        org.traincontrol.gui.widgets.UiStyle.styleHeading(notesCaption);
+        UiStyle.styleHeading(metadataCaption);
+        UiStyle.styleHeading(notesCaption);
     }
 
     /** Shows what the locomotive holds now, and makes that what {@link #isDirty} compares against. */
@@ -202,8 +214,8 @@ final class LocomotiveNotesPanel extends JPanel
     /** A stored year past the four digits typing takes (an imported one may be) is shown whole, so it stays saved. */
     private static void showUnfiltered(JTextField year, String text)
     {
-        javax.swing.text.AbstractDocument document = (javax.swing.text.AbstractDocument) year.getDocument();
-        javax.swing.text.DocumentFilter typing = document.getDocumentFilter();
+        AbstractDocument document = (AbstractDocument) year.getDocument();
+        DocumentFilter typing = document.getDocumentFilter();
 
         document.setDocumentFilter(null);
         year.setText(text);
@@ -214,21 +226,21 @@ final class LocomotiveNotesPanel extends JPanel
     private static JTextField yearField()
     {
         JTextField year = AutonomyEditorPanel.digitsOnlyField(null, 10, 4);
-        javax.swing.text.AbstractDocument document = (javax.swing.text.AbstractDocument) year.getDocument();
-        javax.swing.text.DocumentFilter digits = document.getDocumentFilter();
+        AbstractDocument document = (AbstractDocument) year.getDocument();
+        DocumentFilter digits = document.getDocumentFilter();
 
-        document.setDocumentFilter(new javax.swing.text.DocumentFilter()
+        document.setDocumentFilter(new DocumentFilter()
         {
             @Override
-            public void insertString(FilterBypass fb, int offset, String text, javax.swing.text.AttributeSet attr)
-                throws javax.swing.text.BadLocationException
+            public void insertString(FilterBypass fb, int offset, String text, AttributeSet attr)
+                throws BadLocationException
             {
                 replace(fb, offset, 0, text, attr);
             }
 
             @Override
-            public void replace(FilterBypass fb, int offset, int length, String text, javax.swing.text.AttributeSet attr)
-                throws javax.swing.text.BadLocationException
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attr)
+                throws BadLocationException
             {
                 String trimmed = text == null ? null : text.trim();
 

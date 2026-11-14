@@ -1,8 +1,10 @@
 package org.traincontrol.gui;
 
 import java.awt.Component;
+import java.util.Map;
 import javax.swing.JOptionPane;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 
 /**
@@ -39,7 +41,7 @@ public final class LocomotiveSettings
     }
 
     /** {@link #hasSpeed(TrainControlUI, Locomotive)} against a model: the CSV import asks it too. */
-    public static boolean hasSpeed(org.traincontrol.model.ViewListener model, Locomotive l)
+    public static boolean hasSpeed(ViewListener model, Locomotive l)
     {
         if (model == null || l == null) return false;
 
@@ -51,7 +53,7 @@ public final class LocomotiveSettings
 
             if (other.isLinkedTo(l)) return true;
 
-            java.util.Map<String, Double> held = other.getDecoderType() == Locomotive.decoderType.MULTI_UNIT
+            Map<String, Double> held = other.getDecoderType() == Locomotive.decoderType.MULTI_UNIT
                 ? other.getModelMultiUnitLocomotiveNames() : null;
 
             if (held != null && held.containsKey(l.getName())) return true;

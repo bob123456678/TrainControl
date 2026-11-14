@@ -7,6 +7,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import org.traincontrol.util.I18n;
+import java.util.Locale;
 import java.util.function.BiFunction;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -57,7 +58,7 @@ final class SaveToFileDoor
         {
             File chosen = fc.getSelectedFile();
 
-            if (!chosen.getName().toLowerCase(java.util.Locale.ROOT).endsWith("." + extension)) chosen = new File(chosen.getPath() + "." + extension);
+            if (!chosen.getName().toLowerCase(Locale.ROOT).endsWith("." + extension)) chosen = new File(chosen.getPath() + "." + extension);
 
             try
             {

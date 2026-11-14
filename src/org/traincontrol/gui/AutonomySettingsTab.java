@@ -1,9 +1,12 @@
 package org.traincontrol.gui;
 
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import org.traincontrol.base.Route;
+import org.traincontrol.automation.Layout;
 
 /**
  * The Auto tab's settings: loading every control from the railway, and the handler each control calls when it is let
@@ -22,12 +25,12 @@ final class AutonomySettingsTab
     /**
      * The route list, let go: arms the routes picked for autonomy, or puts the picks back when a run holds the setup.
      */
-    void autoRouteListMouseReleased(java.awt.event.MouseEvent evt)
+    void autoRouteListMouseReleased(MouseEvent evt)
     {
         if (TrainControlUI.onAGreyedControl(evt)) return;
 
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
             {
                 if (this.ui.getModel().hasAutoLayout())
                 {
@@ -50,11 +53,11 @@ final class AutonomySettingsTab
     /**
      * Activate Routes, let go: switches arming the picked routes on or off, unless a run holds the setup.
      */
-    void toggleSpecifiedRoutesMouseReleased(java.awt.event.MouseEvent evt)
+    void toggleSpecifiedRoutesMouseReleased(MouseEvent evt)
     {
         if (TrainControlUI.onAGreyedControl(evt)) return;
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
             {
                 if (!this.ui.refuseWhileARunHoldsTheSetup(this.ui))
                 {
@@ -78,7 +81,7 @@ final class AutonomySettingsTab
      * A setting's control, let go: a grayed control, or a write that fails, puts the tab back from the railway, and
      * nothing is written while a run holds the setup.
      */
-    private void letGo(java.awt.event.MouseEvent evt, Setting setting)
+    private void letGo(MouseEvent evt, Setting setting)
     {
         if (TrainControlUI.onAGreyedControl(evt))
         {
@@ -100,13 +103,13 @@ final class AutonomySettingsTab
     }
 
     /** The trains-at-once slider, let go. */
-    void maxActiveTrainsMouseReleased(java.awt.event.MouseEvent evt)
+    void maxActiveTrainsMouseReleased(MouseEvent evt)
     {
         letGo(evt, () -> this.ui.getModel().getAutoLayout().setMaxActiveTrains(this.ui.maxActiveTrains().getValue()));
     }
 
     /** The maximum latency slider, let go. */
-    void maximumLatencyMouseReleased(java.awt.event.MouseEvent evt)
+    void maximumLatencyMouseReleased(MouseEvent evt)
     {
         letGo(evt, () ->
         {
@@ -116,20 +119,20 @@ final class AutonomySettingsTab
     }
 
     /** The functions-on-departure box, let go. */
-    void turnOnFunctionsOnDepartureMouseReleased(java.awt.event.MouseEvent evt)
+    void turnOnFunctionsOnDepartureMouseReleased(MouseEvent evt)
     {
         letGo(evt, () -> this.ui.getModel().getAutoLayout()
             .setTurnOnFunctionsOnDeparture(this.ui.turnOnFunctionsOnDeparture().isSelected()));
     }
 
     /** The simulate box, let go. */
-    void simulateMouseReleased(java.awt.event.MouseEvent evt)
+    void simulateMouseReleased(MouseEvent evt)
     {
         letGo(evt, () -> this.ui.getModel().getAutoLayout().setSimulate(this.ui.simulate().isSelected()));
     }
 
     /** The functions-off-on-arrival box, let go. */
-    void turnOffFunctionsOnArrivalMouseReleased(java.awt.event.MouseEvent evt)
+    void turnOffFunctionsOnArrivalMouseReleased(MouseEvent evt)
     {
         letGo(evt, () -> this.ui.getModel().getAutoLayout()
             .setTurnOffFunctionsOnArrival(this.ui.turnOffFunctionsOnArrival().isSelected()));
@@ -138,7 +141,7 @@ final class AutonomySettingsTab
     /**
      * The atomic routes box, let go: switching it off is refused while the railway lacks the lengths that needs.
      */
-    void atomicRoutesMouseReleased(java.awt.event.MouseEvent evt)
+    void atomicRoutesMouseReleased(MouseEvent evt)
     {
         letGo(evt, () ->
         {
@@ -164,33 +167,33 @@ final class AutonomySettingsTab
     }
 
     /** The pre-arrival speed reduction slider, let go. */
-    void preArrivalSpeedReductionMouseReleased(java.awt.event.MouseEvent evt)
+    void preArrivalSpeedReductionMouseReleased(MouseEvent evt)
     {
         letGo(evt, () -> this.ui.getModel().getAutoLayout()
             .setPreArrivalSpeedReduction(Double.valueOf(this.ui.preArrivalSpeedReduction().getValue()) / 100));
     }
 
     /** The default speed slider, let go. */
-    void defaultLocSpeedMouseReleased(java.awt.event.MouseEvent evt)
+    void defaultLocSpeedMouseReleased(MouseEvent evt)
     {
         letGo(evt, () -> this.ui.getModel().getAutoLayout().setDefaultLocSpeed(this.ui.defaultLocSpeed().getValue()));
     }
 
     /** The maximum delay slider, let go. */
-    void maxDelayMouseReleased(java.awt.event.MouseEvent evt)
+    void maxDelayMouseReleased(MouseEvent evt)
     {
         letGo(evt, () -> this.ui.getModel().getAutoLayout().setMaxDelay(this.ui.maxDelay().getValue()));
     }
 
     /** The inactive-minutes slider, let go. */
-    void maxLocInactiveSecondsMouseReleased(java.awt.event.MouseEvent evt)
+    void maxLocInactiveSecondsMouseReleased(MouseEvent evt)
     {
         letGo(evt, () -> this.ui.getModel().getAutoLayout()
             .setMaxLocInactiveSeconds(this.ui.maxLocInactiveSeconds().getValue() * 60));
     }
 
     /** The minimum delay slider, let go. */
-    void minDelayMouseReleased(java.awt.event.MouseEvent evt)
+    void minDelayMouseReleased(MouseEvent evt)
     {
         letGo(evt, () -> this.ui.getModel().getAutoLayout().setMinDelay(this.ui.minDelay().getValue()));
     }
@@ -200,7 +203,7 @@ final class AutonomySettingsTab
      */
     void loadAutoLayoutSettings()
     {
-        org.traincontrol.automation.Layout auto = this.ui.getModel().getAutoLayout();
+        Layout auto = this.ui.getModel().getAutoLayout();
 
         this.ui.minDelay().setValue(auto.getMinDelay());
         this.ui.maxDelay().setValue(auto.getMaxDelay());

@@ -1,11 +1,19 @@
 package org.traincontrol.gui;
 
+import java.awt.Window;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import javax.swing.JOptionPane;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
 import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
 import org.traincontrol.automation.TimetablePath;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
@@ -39,7 +47,7 @@ final class ReturnHomeController extends SettledQuestion
         if (this.ui.refusedToSendATrain(false)) return;
 
         // The window that pressed it, for what the worker below has to say
-        final java.awt.Window asked = this.ui.dialogParent();
+        final Window asked = this.ui.dialogParent();
 
         final Layout layout = this.ui.getModel().getAutoLayout();
 
@@ -107,13 +115,13 @@ final class ReturnHomeController extends SettledQuestion
                 HomeStaging.Plan plan = layout.loadReturnToHomeTimetable();
 
                 // The plan is known, whatever it says - the run that follows has its own marks.
-                javax.swing.SwingUtilities.invokeLater(() -> this.ui.showReturnHomeWorking(false));
+                SwingUtilities.invokeLater(() -> this.ui.showReturnHomeWorking(false));
 
                 if (!plan.isPossible())
                 {
                     final String message = describeStagingPlan(plan);
 
-                    javax.swing.SwingUtilities.invokeLater(() ->
+                    SwingUtilities.invokeLater(() ->
                         JOptionPane.showMessageDialog(this.ui.stillShowing(asked), message));
 
                     return;
@@ -128,14 +136,14 @@ final class ReturnHomeController extends SettledQuestion
 
                 try
                 {
-                    javax.swing.SwingUtilities.invokeAndWait(() ->
+                    SwingUtilities.invokeAndWait(() ->
                     {
                         editorCame[0] = this.ui.refusedForAnEditorOnItsWay(asked);
 
                         if (!editorCame[0]) this.ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
                     });
                 }
-                catch (InterruptedException | java.lang.reflect.InvocationTargetException gate)
+                catch (InterruptedException | InvocationTargetException gate)
                 {
                     this.ui.getModel().log(gate);
 
@@ -146,7 +154,7 @@ final class ReturnHomeController extends SettledQuestion
 
                 tookTheButtons = true;
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     this.ui.timetableCapture().setSelected(layout.isTimetableCapture());
                     this.ui.startAutonomyButton().setEnabled(false);
@@ -170,7 +178,7 @@ final class ReturnHomeController extends SettledQuestion
                 final boolean everyoneHome = after == HomeStaging.Outcome.ALREADY_HOME
                     || after == HomeStaging.Outcome.PAUSED_AWAY;
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     // A move that gave up stopped the whole run, and a log line is not something an operator watching
                     // the layout sees.  A graceful stop legitimately leaves trains short of home and returns true, so
@@ -185,7 +193,7 @@ final class ReturnHomeController extends SettledQuestion
             finally
             {
                 // And here as well, for a plan that threw: the mark must never outlive the flow.
-                javax.swing.SwingUtilities.invokeLater(() -> this.ui.showReturnHomeWorking(false));
+                SwingUtilities.invokeLater(() -> this.ui.showReturnHomeWorking(false));
 
                 // Released before the buttons come back, so no surface can offer the action while this
                 // worker is still unwinding
@@ -201,7 +209,7 @@ final class ReturnHomeController extends SettledQuestion
                 // executeTimetable would leave Start Autonomy dead and Graceful Stop live.
                 final boolean restoreButtons = tookTheButtons;
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     if (restoreButtons)
                     {
@@ -327,7 +335,7 @@ final class ReturnHomeController extends SettledQuestion
         this.ui.returnHomeTriagePausedAway = pausedAway;
         this.ui.returnHomeTriage = answer;
 
-        javax.swing.SwingUtilities.invokeLater(() -> paintReturnHomeFromTheAnswer(asked));
+        SwingUtilities.invokeLater(() -> paintReturnHomeFromTheAnswer(asked));
     }
 
     /**
@@ -386,12 +394,12 @@ final class ReturnHomeController extends SettledQuestion
      * Return Home's right-click menu, freshly built: Run Trains to Their Homes, then Place All Trains at Their Homes,
      * which sends nothing to the railway (FR-129).
      */
-    javax.swing.JPopupMenu buildReturnHomeMenu()
+    JPopupMenu buildReturnHomeMenu()
     {
-        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+        JPopupMenu menu = new JPopupMenu();
 
         // The button's own state and tooltip, so the item can never offer what the button refuses (FR-129)
-        javax.swing.JMenuItem run = new javax.swing.JMenuItem(I18n.t("autolayout.ui.menuRunTrainsToTheirHomes"));
+        JMenuItem run = new JMenuItem(I18n.t("autolayout.ui.menuRunTrainsToTheirHomes"));
 
         run.setEnabled(this.ui.isReturnHomeOffered());
         run.setToolTipText(this.ui.whyReturnHomeIsNotOffered());
@@ -401,11 +409,11 @@ final class ReturnHomeController extends SettledQuestion
 
         String why = this.ui.whyTheTrainsCannotBePlacedAtTheirHomes();
 
-        org.traincontrol.automationui.AutonomySession session = this.ui.canUseAutonomy() ? this.ui.getAutonomySession() : null;
+        AutonomySession session = this.ui.canUseAutonomy() ? this.ui.getAutonomySession() : null;
 
         int homes = session == null ? 0 : session.homesToPlace().size();
 
-        javax.swing.JMenuItem place = new javax.swing.JMenuItem(I18n.f("autolayout.ui.menuPlaceEveryTrainAtHome", homes));
+        JMenuItem place = new JMenuItem(I18n.f("autolayout.ui.menuPlaceEveryTrainAtHome", homes));
 
         place.setEnabled(why == null);
         place.setToolTipText(AutonomyEditorPanel.wrapped(why == null
@@ -463,7 +471,7 @@ final class ReturnHomeController extends SettledQuestion
      */
     private String namesWithHomes(List<Locomotive> blocked)
     {
-        java.util.Map<Locomotive, org.traincontrol.automation.Point> homes =
+        Map<Locomotive, Point> homes =
             this.ui.getModel() != null && this.ui.getModel().hasAutoLayout()
                 ? this.ui.getModel().getAutoLayout().getHomeStations() : null;
 
@@ -471,7 +479,7 @@ final class ReturnHomeController extends SettledQuestion
 
         for (Locomotive l : (blocked == null ? new ArrayList<Locomotive>() : blocked))
         {
-            org.traincontrol.automation.Point home = homes == null ? null : homes.get(l);
+            Point home = homes == null ? null : homes.get(l);
 
             named.add(home == null ? l.getName()
                 : I18n.f("autolayout.ui.locomotiveAndHome", l.getName(), stationName(home)));
@@ -484,9 +492,9 @@ final class ReturnHomeController extends SettledQuestion
      * What to call a home station in a sentence: the base name, not the copy's, as a station is several Points and
      * their names carry the arrival side ("BottomMainB (westbound, reverse)").
      */
-    private String stationName(org.traincontrol.automation.Point home)
+    private String stationName(Point home)
     {
-        org.traincontrol.automationui.AutonomySession session = this.ui.getAutonomySession();
+        AutonomySession session = this.ui.getAutonomySession();
 
         return session == null || session.getStationIndex() == null
             ? home.getName() : session.getStationIndex().describe(home);

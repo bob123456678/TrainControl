@@ -1,11 +1,16 @@
 package org.traincontrol.gui;
 
 import java.util.List;
+import java.awt.Component;
+import java.awt.Container;
+import java.io.IOException;
+import java.util.ArrayList;
 import javax.swing.ButtonGroup;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
@@ -101,7 +106,7 @@ public class AutonomyMenu extends JMenu
 
         for (int i = 0; i < getMenuComponentCount(); i++)
         {
-            java.awt.Component part = getMenuComponent(i);
+            Component part = getMenuComponent(i);
 
             if (part == guide) continue;
 
@@ -165,7 +170,7 @@ public class AutonomyMenu extends JMenu
 
         for (int i = 0; i < getMenuComponentCount(); i++)
         {
-            java.awt.Component part = getMenuComponent(i);
+            Component part = getMenuComponent(i);
 
             if (!(part instanceof JMenuItem) || part == documentation || part == settingsItem) continue;
 
@@ -196,7 +201,7 @@ public class AutonomyMenu extends JMenu
             // taken for reasons it would not touch.
             if (ui.isRemoteLayout())
             {
-                javax.swing.JMenu offer = new javax.swing.JMenu(I18n.t("autosetup.ui.menuNoSetupPossible"));
+                JMenu offer = new JMenu(I18n.t("autosetup.ui.menuNoSetupPossible"));
 
                 JMenuItem download = new JMenuItem(I18n.t("ui.main.toolbar.downloadCSLayout"));
 
@@ -395,10 +400,10 @@ public class AutonomyMenu extends JMenu
      * The session's pages in the order the window shows them, for a menu; the session's own list is name-sorted, which
      * its links index, and is left as it is.
      */
-    private java.util.List<LayoutDiagram> shownOrder(AutonomySession session)
+    private List<LayoutDiagram> shownOrder(AutonomySession session)
     {
-        java.util.List<LayoutDiagram> out = new java.util.ArrayList<>(session.getPages());
-        final java.util.List<String> shown = ui.getModel().getLayoutList();
+        List<LayoutDiagram> out = new ArrayList<>(session.getPages());
+        final List<String> shown = ui.getModel().getLayoutList();
 
         out.sort((a, b) -> Integer.compare(shown.indexOf(a.getName()), shown.indexOf(b.getName())));
 
@@ -429,7 +434,7 @@ public class AutonomyMenu extends JMenu
      * Fills the one Manage list, for the Autonomy menu and the Autonomy tab's Manage button.  Each door keeps its own
      * refusal; what acts on the configuration in use is grayed until one is, Delete (OB-319) only with none to delete.
      */
-    static void addManageItems(java.awt.Container into, final TrainControlUI ui, final AutonomyViewerPanel actions,
+    static void addManageItems(Container into, final TrainControlUI ui, final AutonomyViewerPanel actions,
         final AutonomySession session)
     {
         boolean loaded = ui.getActiveDiagramConfiguration() != null;
@@ -497,8 +502,8 @@ public class AutonomyMenu extends JMenu
 
         forget.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintDeleteSetup")));
 
-        for (java.awt.Component part : new java.awt.Component[] {copy, rename, deleteOne,
-            new javax.swing.JPopupMenu.Separator(), importItem, exportItem, new javax.swing.JPopupMenu.Separator(),
+        for (Component part : new Component[] {copy, rename, deleteOne,
+            new JPopupMenu.Separator(), importItem, exportItem, new JPopupMenu.Separator(),
             unload, forget})
         {
             into.add(part);
@@ -531,7 +536,7 @@ public class AutonomyMenu extends JMenu
 
             session.rebuild();
         }
-        catch (java.io.IOException e)
+        catch (IOException e)
         {
             JOptionPane.showMessageDialog(ui,
                 I18n.f("autosetup.ui.errorDeleteSetupFailed", String.valueOf(e.getMessage())));
@@ -571,7 +576,7 @@ public class AutonomyMenu extends JMenu
                 // driven on the throttle alone, which nothing counts and this still sees.
                 if (ui.getActiveDiagramConfiguration() != null)
                 {
-                    java.util.List<String> moving = ui.locomotivesMoving();
+                    List<String> moving = ui.locomotivesMoving();
 
                     if (!moving.isEmpty()
                         && JOptionPane.showOptionDialog(ui,
@@ -594,9 +599,9 @@ public class AutonomyMenu extends JMenu
                     // go.
                     AutonomyReport.show(ui, session.save());
                 }
-                catch (java.io.IOException io)
+                catch (IOException io)
                 {
-                    javax.swing.JOptionPane.showMessageDialog(ui, String.valueOf(io.getMessage()));
+                    JOptionPane.showMessageDialog(ui, String.valueOf(io.getMessage()));
                 }
 
                 ui.autonomyMenuActed();

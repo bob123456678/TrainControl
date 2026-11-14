@@ -1,19 +1,34 @@
 package org.traincontrol.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.Insets;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.io.File;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.swing.AbstractCellEditor;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.DefaultCellEditor;
 import javax.swing.DefaultComboBoxModel;
@@ -34,11 +49,16 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.MenuSelectionManager;
+import javax.swing.MutableComboBoxModel;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import javax.swing.plaf.basic.BasicComboPopup;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.widgets.PopupListener;
 import org.traincontrol.gui.widgets.RowIcons;
@@ -102,7 +122,7 @@ final class LocomotiveFunctionsTab extends JPanel
     private final JButton copyIcons = button("");
     private final JButton resetAll = revertButton("functions.resetAll", "loc.ui.resetAllCustomizations");
     private final JButton clearPreset = revertButton("functions.clearPreset", "loc.ui.settingsClearPreset");
-    private final javax.swing.Timer spinner = new javax.swing.Timer(100, e -> turn());
+    private final Timer spinner = new Timer(100, e -> turn());
     private int phase;
     private boolean reset;
     private boolean copied;
@@ -145,8 +165,8 @@ final class LocomotiveFunctionsTab extends JPanel
         table.setRowHeight(TrainControlUI.BUTTON_ICON_WIDTH + 8);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getTableHeader().setReorderingAllowed(false);
-        table.getTableHeader().setFont(org.traincontrol.gui.widgets.UiStyle.LABEL_FONT);
-        table.getTableHeader().setForeground(org.traincontrol.gui.widgets.UiStyle.TEXT);
+        table.getTableHeader().setFont(UiStyle.LABEL_FONT);
+        table.getTableHeader().setForeground(UiStyle.TEXT);
         table.getColumnModel().getColumn(1).setCellRenderer(iconRenderer);
         table.getColumnModel().getColumn(1).setCellEditor(iconEditor);
         table.getColumnModel().getColumn(TEST).setCellRenderer(new TestCell());
@@ -172,14 +192,14 @@ final class LocomotiveFunctionsTab extends JPanel
             if (row >= 0 && SwingUtilities.isLeftMouseButton(e)) press(row);
         }));
 
-        table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter()
+        table.addMouseMotionListener(new MouseMotionAdapter()
         {
             @Override
             public void mouseMoved(MouseEvent e)
             {
                 boolean over = playRowAt(e) >= 0;
 
-                table.setCursor(over ? java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR) : null);
+                table.setCursor(over ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
                 table.setToolTipText(over ? I18n.t("loc.ui.settingsSwitchFunction") : null);
             }
         });
@@ -213,7 +233,7 @@ final class LocomotiveFunctionsTab extends JPanel
     {
         JButton b = new JButton(text);
 
-        b.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+        b.setFont(new Font("Segoe UI", Font.BOLD, 12));
         b.setFocusable(false);
 
         return b;
@@ -276,7 +296,7 @@ final class LocomotiveFunctionsTab extends JPanel
 
         // One row: the copy on the left, the preset on the right
         JPanel copyGroup = group(copyIcons, resetAll);
-        JPanel presetGroup = group(org.traincontrol.gui.InfoMark.label(I18n.t("loc.ui.settingsFunctionsHint")), useCurrent, clearPreset);
+        JPanel presetGroup = group(InfoMark.label(I18n.t("loc.ui.settingsFunctionsHint")), useCurrent, clearPreset);
 
         copyGroup.setName("functions.copyGroup");
         presetGroup.setName("functions.presetGroup");
@@ -290,15 +310,15 @@ final class LocomotiveFunctionsTab extends JPanel
     }
 
     /** Components side by side with a 4 pixel gap and none at the ends, so the row's edges line up with the table's. */
-    private static JPanel group(java.awt.Component... parts)
+    private static JPanel group(Component... parts)
     {
         JPanel panel = new JPanel();
 
-        panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.X_AXIS));
+        panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
 
         for (int i = 0; i < parts.length; i++)
         {
-            if (i > 0) panel.add(javax.swing.Box.createHorizontalStrut(4));
+            if (i > 0) panel.add(Box.createHorizontalStrut(4));
 
             panel.add(parts[i]);
         }
@@ -317,8 +337,8 @@ final class LocomotiveFunctionsTab extends JPanel
     }
 
     /** The standard icons are fetched on a thread of their own, so they do not hold up the main window's pictures. */
-    private static final java.util.concurrent.ExecutorService ICON_LOADER =
-        java.util.concurrent.Executors.newSingleThreadExecutor(r ->
+    private static final ExecutorService ICON_LOADER =
+        Executors.newSingleThreadExecutor(r ->
         {
             Thread t = new Thread(r, "function-icons");
 
@@ -530,10 +550,10 @@ final class LocomotiveFunctionsTab extends JPanel
         int size = com.formdev.flatlaf.util.UIScale.scale(18);
         JButton b = new JButton(RowIcons.revert(size, UiStyle.BLUE));
 
-        b.setDisabledIcon(RowIcons.revert(size, new java.awt.Color(175, 175, 175)));
+        b.setDisabledIcon(RowIcons.revert(size, new Color(175, 175, 175)));
         b.putClientProperty("JButton.buttonType", "toolBarButton");
         b.setFocusable(false);
-        b.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         b.setToolTipText(I18n.t(tipKey));
         b.setName(name);
 
@@ -554,11 +574,11 @@ final class LocomotiveFunctionsTab extends JPanel
      */
     private void fixTheFnColumn()
     {
-        java.awt.Font heading = table.getTableHeader().getFont();
+        Font heading = table.getTableHeader().getFont();
         int widest = Math.max(table.getFontMetrics(table.getFont()).stringWidth("F" + Math.max(0, loc.getNumF() - 1)),
             table.getFontMetrics(heading).stringWidth(model.getColumnName(0)));
         int width = widest + com.formdev.flatlaf.util.UIScale.scale(20);
-        javax.swing.table.TableColumn column = table.getColumnModel().getColumn(0);
+        TableColumn column = table.getColumnModel().getColumn(0);
 
         column.setMinWidth(width);
         column.setMaxWidth(width);
@@ -589,7 +609,7 @@ final class LocomotiveFunctionsTab extends JPanel
         ui.fireFunction(loc, r.function, !loc.getF(r.function));
 
         // The railway answers on its own thread: shown again once it has, and turning while a pulse runs
-        javax.swing.Timer later = new javax.swing.Timer(300, e ->
+        Timer later = new Timer(300, e ->
         {
             table.repaint();
             keepTurning();
@@ -690,12 +710,12 @@ final class LocomotiveFunctionsTab extends JPanel
     }
 
     /** Each custom image by path: loaded off the event thread, and a file that would not load is held as null, tried once. */
-    private final Map<String, ImageIcon> customPictures = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, ImageIcon> customPictures = new ConcurrentHashMap<>();
 
-    private final java.util.Set<String> customRequested = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final Set<String> customRequested = ConcurrentHashMap.newKeySet();
 
     /** Images that were asked for and would not load: never offered in the dropdown. */
-    private final java.util.Set<String> customBroken = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final Set<String> customBroken = ConcurrentHashMap.newKeySet();
 
     /** The picture for a row: its own image once it has loaded, else its standard icon. */
     private ImageIcon pictureOf(Row r)
@@ -750,13 +770,13 @@ final class LocomotiveFunctionsTab extends JPanel
      */
     private List<String> customChoices()
     {
-        Map<Object, String> found = new java.util.LinkedHashMap<>();
+        Map<Object, String> found = new LinkedHashMap<>();
 
         for (Row r : rows) offerImage(found, r.custom);
 
         try
         {
-            for (org.traincontrol.base.Locomotive other : ui.getModel().getLocomotives())
+            for (Locomotive other : ui.getModel().getLocomotives())
             {
                 for (String url : new ArrayList<>(other.getLocalFunctionImageURLs().values())) offerImage(found, url);
             }
@@ -768,7 +788,7 @@ final class LocomotiveFunctionsTab extends JPanel
 
         List<String> out = new ArrayList<>(found.values());
 
-        out.sort(java.util.Comparator.comparing((String url) -> fileNameOf(url).toLowerCase()).thenComparing(url -> url));
+        out.sort(Comparator.comparing((String url) -> fileNameOf(url).toLowerCase()).thenComparing(url -> url));
 
         return out;
     }
@@ -787,7 +807,7 @@ final class LocomotiveFunctionsTab extends JPanel
     {
         try
         {
-            java.net.URI uri = new java.net.URI(url);
+            URI uri = new URI(url);
 
             return "file".equalsIgnoreCase(uri.getScheme()) ? Paths.get(uri).toAbsolutePath().normalize()
                 : uri.normalize().toString();
@@ -800,17 +820,16 @@ final class LocomotiveFunctionsTab extends JPanel
 
     private static boolean readable(Object key)
     {
-        return !(key instanceof java.nio.file.Path) || java.nio.file.Files.isRegularFile((java.nio.file.Path) key)
-            && java.nio.file.Files.isReadable((java.nio.file.Path) key);
+        return !(key instanceof Path) || Files.isRegularFile((Path) key) && Files.isReadable((Path) key);
     }
 
     private static String fileNameOf(String url)
     {
         Object key = imageKey(url);
 
-        if (key instanceof java.nio.file.Path)
+        if (key instanceof Path)
         {
-            java.nio.file.Path name = ((java.nio.file.Path) key).getFileName();
+            Path name = ((Path) key).getFileName();
 
             return name == null ? url : name.toString();
         }
@@ -971,10 +990,10 @@ final class LocomotiveFunctionsTab extends JPanel
         if (!popup.isVisible()) return;
 
         int cell = TrainControlUI.BUTTON_ICON_WIDTH + 12;
-        java.awt.Insets around = scroll.getInsets();
+        Insets around = scroll.getInsets();
         int across = 6 * cell + cell / 2 + scroll.getVerticalScrollBar().getPreferredSize().width + around.left + around.right;
         Dimension wide = new Dimension(across, scroll.getPreferredSize().height);
-        java.awt.Insets in = popup.getInsets();
+        Insets in = popup.getInsets();
 
         scroll.setMaximumSize(wide);
         scroll.setPreferredSize(wide);
@@ -1151,21 +1170,21 @@ final class LocomotiveFunctionsTab extends JPanel
                 widenAgain = () -> widen(popup, scrollPane, list);
 
                 // The dropdown is narrow, its list is not: six icons across, with room for the scroll bar
-                combo.addPopupMenuListener(new javax.swing.event.PopupMenuListener()
+                combo.addPopupMenuListener(new PopupMenuListener()
                 {
                     @Override
-                    public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e)
+                    public void popupMenuWillBecomeVisible(PopupMenuEvent e)
                     {
                         SwingUtilities.invokeLater(widenAgain);
                     }
 
                     @Override
-                    public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e)
+                    public void popupMenuWillBecomeInvisible(PopupMenuEvent e)
                     {
                     }
 
                     @Override
-                    public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e)
+                    public void popupMenuCanceled(PopupMenuEvent e)
                     {
                     }
                 });
@@ -1196,7 +1215,7 @@ final class LocomotiveFunctionsTab extends JPanel
         /** Puts the images of the user's own on this locomotive after the standard icons, ahead of the list opening. */
         private void offerCustomImages()
         {
-            javax.swing.MutableComboBoxModel<Integer> model = (javax.swing.MutableComboBoxModel<Integer>) combo.getModel();
+            MutableComboBoxModel<Integer> model = (MutableComboBoxModel<Integer>) combo.getModel();
 
             filling = true;
 

@@ -1,12 +1,17 @@
 package org.traincontrol.gui;
 
+import java.awt.Rectangle;
+import java.awt.Window;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import org.traincontrol.base.Route;
+import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 
@@ -57,9 +62,7 @@ final class RouteListPanel
                 // to the base Route).
                 org.traincontrol.base.Route found = this.ui.getModel().getRoute(route);
 
-                org.traincontrol.marklin.MarklinRoute picked =
-                    found instanceof org.traincontrol.marklin.MarklinRoute
-                    ? (org.traincontrol.marklin.MarklinRoute) found : null;
+                MarklinRoute picked = found instanceof MarklinRoute ? (MarklinRoute) found : null;
 
                 // Asked once, and the answer decides how it runs (A3): a conflict checked here and again inside, one
                 // that cleared between, comes back as "yes, override" and runs the route with every guard off.  Only
@@ -137,7 +140,7 @@ final class RouteListPanel
     void editRoute(String routeName)
     {
         // Another window's door hears the refusal over it, on the event thread, ahead of the worker's
-        final java.awt.Window askedFrom = this.ui.dialogParent();
+        final Window askedFrom = this.ui.dialogParent();
 
         if (askedFrom != this.ui && this.ui.refuseWhileEditorOpen(askedFrom)) return;
 
@@ -163,7 +166,7 @@ final class RouteListPanel
 
                     if (this.ui.refuseWhileEditorOpen()) return;
 
-                    javax.swing.SwingUtilities.invokeLater(() ->
+                    SwingUtilities.invokeLater(() ->
                     {
             // Checked on the EDT, immediately before constructing, so the two cannot be separated: with the check on
             // the worker and the construction posted, two quick clicks both saw a null field and opened two editors,
@@ -268,7 +271,7 @@ final class RouteListPanel
      * whole cell opens the route's editor and asks nothing (FR-140, FR-164).  `TrainControlUI.RouteListMouseClicked`'s
      * body.
      */
-    void RouteListMouseClicked(java.awt.event.MouseEvent evt)
+    void RouteListMouseClicked(MouseEvent evt)
     {
 
         // Three answers, one for each way of clicking a route (FR-043, MT-217; Adam: "if play button is hit, route
@@ -281,7 +284,7 @@ final class RouteListPanel
 
         if (route == null) return;
 
-        if (!javax.swing.SwingUtilities.isLeftMouseButton(evt))
+        if (!SwingUtilities.isLeftMouseButton(evt))
         {
             // The right-click menu is RightClickRouteMenu's own business - it listens for the popup
             // trigger on press and release, which is where a platform decides what a right click is.
@@ -333,7 +336,7 @@ final class RouteListPanel
      * cell's own rectangle, as the renderer paints it at the right-hand end, not from anything the renderer remembers:
      * it is one component reused for every cell, so it would answer for whichever cell was painted last.
      */
-    boolean isOverTheRoutePlayButton(java.awt.event.MouseEvent evt)
+    boolean isOverTheRoutePlayButton(MouseEvent evt)
     {
         int row = this.ui.routeList().rowAtPoint(evt.getPoint());
         int column = this.ui.routeList().columnAtPoint(evt.getPoint());
@@ -343,9 +346,9 @@ final class RouteListPanel
         // An empty cell has no button: the last row is padded out to three columns with nulls.
         if (this.ui.routeList().getValueAt(row, column) == null) return false;
 
-        java.awt.Rectangle cell = this.ui.routeList().getCellRect(row, column, true);
+        Rectangle cell = this.ui.routeList().getCellRect(row, column, true);
 
-        java.awt.Rectangle button = TrainControlUI.routePlayButtonBox(cell);
+        Rectangle button = TrainControlUI.routePlayButtonBox(cell);
 
         return button.contains(evt.getPoint());
     }

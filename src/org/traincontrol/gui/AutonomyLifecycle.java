@@ -1,10 +1,30 @@
 package org.traincontrol.gui;
 
+import org.traincontrol.automationui.AutonomyChecks;
+import org.traincontrol.automationui.AutonomyCompanionStore;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph;
+import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.widgets.RestoreAction;
 import javax.swing.JOptionPane;
+import javax.swing.GroupLayout;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 import org.traincontrol.util.I18n;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Container;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /** The autonomy session's life, and the menu, strip and Auto tabs mounted around it. */
 final class AutonomyLifecycle
@@ -26,7 +46,7 @@ final class AutonomyLifecycle
         {
             ui.autonomyMenu = new AutonomyMenu(ui);
 
-            javax.swing.JMenuBar mainMenuBar = ui.mainMenuBar();
+            JMenuBar mainMenuBar = ui.mainMenuBar();
 
             int at = -1;
 
@@ -69,7 +89,7 @@ final class AutonomyLifecycle
     /** Wires the Layout menu's additions and the Autonomy menu for every layout, and the page menus for a local one. */
     void mountAutonomyControls()
     {
-        org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+        AutonomySession session = ui.getAutonomySession();
 
         // Above the no-session return: a Central Station layout always has a null `session`, and these concern the
         // Layout menu, not a session.
@@ -81,19 +101,19 @@ final class AutonomyLifecycle
 
         if (ui.layoutMenu() != null && ui.layoutMenu().getMenuListeners().length == 0)
         {
-            ui.layoutMenu().addMenuListener(new javax.swing.event.MenuListener()
+            ui.layoutMenu().addMenuListener(new MenuListener()
             {
                 @Override
-                public void menuSelected(javax.swing.event.MenuEvent e)
+                public void menuSelected(MenuEvent e)
                 {
                     ui.layoutMenus.guardLayoutMenu();
                 }
 
                 @Override
-                public void menuDeselected(javax.swing.event.MenuEvent e) { }
+                public void menuDeselected(MenuEvent e) { }
 
                 @Override
-                public void menuCanceled(javax.swing.event.MenuEvent e) { }
+                public void menuCanceled(MenuEvent e) { }
             });
         }
 
@@ -165,7 +185,7 @@ final class AutonomyLifecycle
         // reverting an edit made here.  No menu rather than a grayed one: this menu IS the autonomy surface here.
         if (ui.isLayoutEditorOpen()) return null;
 
-        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+        final AutonomySession session = ui.getAutonomySession();
 
         if (session == null) return null;
 
@@ -185,7 +205,7 @@ final class AutonomyLifecycle
                     // Logged rather than shown (this fires on every edit), but the refusal has to reach somebody.
                     ui.noteIfTheSetupWasNotTidied(session.save());
                 }
-                catch (java.io.IOException e)
+                catch (IOException e)
                 {
                     // The edit stands in the session either way; only the record of it is at risk
                     ui.getModel().log(e);
@@ -212,11 +232,10 @@ final class AutonomyLifecycle
             ui.autonomyTileMenus.setLayoutSource(() -> ui.getModel().getAutoLayoutIfLoaded());
 
             ui.autonomyTileMenus.setLocomotiveNames(() ->
-                ui.getModel() == null ? new java.util.ArrayList<String>() : ui.getModel().getLocList());
+                ui.getModel() == null ? new ArrayList<String>() : ui.getModel().getLocList());
 
             // Writing a station name changes the tile art, so rebuild the diagram rather than repaint.
-            ui.autonomyTileMenus.setOnDiagramChanged(() ->
-                javax.swing.SwingUtilities.invokeLater(() -> ui.repaintLayout()));
+            ui.autonomyTileMenus.setOnDiagramChanged(() -> SwingUtilities.invokeLater(() -> ui.repaintLayout()));
 
             listening[0] = true;
         }
@@ -239,32 +258,32 @@ final class AutonomyLifecycle
         // Starts hidden; it appears when it has something to offer.  No X: this offer is a state with its button.
         ui.autonomyDiagramBanner.setVisible(false);
 
-        ui.autonomyDiagramStrip = new javax.swing.JPanel(new java.awt.BorderLayout());
+        ui.autonomyDiagramStrip = new JPanel(new BorderLayout());
 
-        javax.swing.JPanel strip = ui.autonomyDiagramStrip;
+        JPanel strip = ui.autonomyDiagramStrip;
         strip.setOpaque(true);
-        strip.setBackground(java.awt.Color.WHITE);
+        strip.setBackground(Color.WHITE);
 
-        strip.add(ui.autonomyDiagramBanner, java.awt.BorderLayout.NORTH);
-        strip.add(ui.autonomyOverlayToggle, java.awt.BorderLayout.CENTER);
+        strip.add(ui.autonomyDiagramBanner, BorderLayout.NORTH);
+        strip.add(ui.autonomyOverlayToggle, BorderLayout.CENTER);
 
         // Nothing in the main window may hold the keyboard: bare key presses drive locomotives
         AutonomyViewerPanel.unfocusable(strip);
 
         // Above the scroll pane, not inside it (OB-148): a column header scrolls with the view.  Swapped in at runtime
         // because the layout comes from the generated form.
-        java.awt.Container home = ui.layoutArea().getParent();
+        Container home = ui.layoutArea().getParent();
 
-        if (home != null && home.getLayout() instanceof javax.swing.GroupLayout)
+        if (home != null && home.getLayout() instanceof GroupLayout)
         {
-            javax.swing.JPanel stacked = new javax.swing.JPanel(new java.awt.BorderLayout());
+            JPanel stacked = new JPanel(new BorderLayout());
 
             stacked.setOpaque(false);
 
-            ((javax.swing.GroupLayout) home.getLayout()).replace(ui.layoutArea(), stacked);
+            ((GroupLayout) home.getLayout()).replace(ui.layoutArea(), stacked);
 
-            stacked.add(strip, java.awt.BorderLayout.NORTH);
-            stacked.add(ui.layoutArea(), java.awt.BorderLayout.CENTER);
+            stacked.add(strip, BorderLayout.NORTH);
+            stacked.add(ui.layoutArea(), BorderLayout.CENTER);
 
             home.revalidate();
             home.repaint();
@@ -278,7 +297,7 @@ final class AutonomyLifecycle
     }
 
     /** The setup for the loaded layout, created on demand; null when the layout cannot hold one (no local folder). */
-    org.traincontrol.automationui.AutonomySession getAutonomySession()
+    AutonomySession getAutonomySession()
     {
         if (ui.autonomySession != null) return ui.autonomySession;
 
@@ -288,14 +307,13 @@ final class AutonomyLifecycle
 
         if (path == null || path.isEmpty()) return null;
 
-        org.traincontrol.automationui.AutonomySession session =
-            new org.traincontrol.automationui.AutonomySession(new java.io.File(path));
+        AutonomySession session = new AutonomySession(new File(path));
 
         if (!session.isUsable()) return null;
 
         try
         {
-            java.util.List<org.traincontrol.base.LayoutDiagram> pages = new java.util.ArrayList<>();
+            List<LayoutDiagram> pages = new ArrayList<>();
 
             // Name-sorted: a link's number indexes this list
             for (String name : ui.getModel().getLayoutListByName()) pages.add(ui.getModel().getLayout(name));
@@ -333,7 +351,7 @@ final class AutonomyLifecycle
             {
                 final String pagesLeft = String.join(", ", session.getMigrationFailures());
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                     JOptionPane.showMessageDialog(ui,
                         I18n.f("autosetup.ui.errorLabelWriteFailed", pagesLeft)));
             }
@@ -352,8 +370,7 @@ final class AutonomyLifecycle
         // only record of the number.
         session.setTrainLengthSource(name ->
         {
-            org.traincontrol.base.Locomotive loc =
-                name == null ? null : ui.getModel().getLocByName(name);
+            Locomotive loc = name == null ? null : ui.getModel().getLocByName(name);
 
             return loc == null ? null : loc.getTrainLength();
         });
@@ -447,11 +464,11 @@ final class AutonomyLifecycle
     void repairAutonomyLocomotive(String from, String to)
     {
         // The session already built, not the lazy getter, which would create a setup out of nothing and then save it.
-        org.traincontrol.automationui.AutonomySession session = ui.autonomySession;
+        AutonomySession session = ui.autonomySession;
 
         // The paused-trains record and the edit session's folds also name locomotives (OB-343); the fold applies them
         // by name to the setup's list, so a stale name pauses the wrong train.
-        if (ui.settingsAsBuilt != null) org.traincontrol.automationui.AutonomyCompanionStore.repairLocomotiveInPausedList(
+        if (ui.settingsAsBuilt != null) AutonomyCompanionStore.repairLocomotiveInPausedList(
             ui.settingsAsBuilt, from, to);
 
         if (session != null) session.followALocomotiveName(from, to);
@@ -465,8 +482,7 @@ final class AutonomyLifecycle
 
             try
             {
-                org.traincontrol.automationui.AutonomyCompanionStore.repairLocomotiveOnDisk(
-                    new java.io.File(path), from, to);
+                AutonomyCompanionStore.repairLocomotiveOnDisk(new File(path), from, to);
             }
             catch (Exception e)
             {
@@ -500,7 +516,7 @@ final class AutonomyLifecycle
             // The window still shows the old name (MT-153).  Posted, not called: this runs on the event thread inside a
             // rename dialog, and updateVisiblePoints is synchronized on the main window and reaches into the layout, so
             // taking both locks in that order deadlocks.
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 ui.updateVisiblePoints();
                 ui.repaintAutoLocListLite();
@@ -521,7 +537,7 @@ final class AutonomyLifecycle
     {
         if (ui.autonomyOverlayToggle == null) return;
 
-        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+        AutonomySession session = getAutonomySession();
 
         Object showing = ui.layoutList().getSelectedItem();
         String page = showing == null ? null : showing.toString();
@@ -533,8 +549,7 @@ final class AutonomyLifecycle
         // The whole band, not only the half holding the controls, or the header reads as a drawing fault.
         if (ui.autonomyDiagramStrip != null)
         {
-            ui.autonomyDiagramStrip.setBackground(excluded
-                ? AutonomyOverlayToggle.EXCLUDED_BACKGROUND : java.awt.Color.WHITE);
+            ui.autonomyDiagramStrip.setBackground(excluded ? AutonomyOverlayToggle.EXCLUDED_BACKGROUND : Color.WHITE);
 
             ui.autonomyDiagramStrip.repaint();
         }
@@ -553,18 +568,17 @@ final class AutonomyLifecycle
         int pageErrors = 0;
         int pageWarnings = 0;
 
-        org.traincontrol.automationui.TileGraph.TileKey first = null;
-        org.traincontrol.automationui.TileGraph.TileKey firstHere = null;
+        TileGraph.TileKey first = null;
+        TileGraph.TileKey firstHere = null;
 
-        for (org.traincontrol.automationui.AutonomyChecks.Finding finding : session.check())
+        for (AutonomyChecks.Finding finding : session.check())
         {
-            org.traincontrol.automationui.AutonomyChecks.Severity severity = finding.getSeverity();
+            AutonomyChecks.Severity severity = finding.getSeverity();
 
-            boolean isError =
-                severity == org.traincontrol.automationui.AutonomyChecks.Severity.ERROR;
+            boolean isError = severity == AutonomyChecks.Severity.ERROR;
 
             // Notices and information are not warnings; the editor lists them under a heading of their own.
-            if (!isError && severity != org.traincontrol.automationui.AutonomyChecks.Severity.WARNING) continue;
+            if (!isError && severity != AutonomyChecks.Severity.WARNING) continue;
 
             // Counted twice on purpose: on the page in front of the user, and anywhere.
             boolean onThisPage = finding.getTile() != null && page != null
@@ -600,7 +614,7 @@ final class AutonomyLifecycle
         // Which stations autonomy can choose has just changed, and the captions follow it (FR-023).
         ui.refreshCaptionVisibility();
 
-        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
+        AutonomySession session = getAutonomySession();
 
         boolean waiting = session != null && session.exists()
             && ui.activeDiagramConfiguration == null
@@ -706,7 +720,7 @@ final class AutonomyLifecycle
     {
         if (ui.fileMenu() == null || ui.restoreDataMenuItem != null) return;
 
-        ui.restoreDataMenuItem = new javax.swing.JMenuItem(I18n.t("ui.main.toolbar.restoreData"));
+        ui.restoreDataMenuItem = new JMenuItem(I18n.t("ui.main.toolbar.restoreData"));
 
         ui.restoreDataMenuItem.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.restoreData")));
 
