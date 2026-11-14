@@ -1010,42 +1010,22 @@ public class testRestoreFromBackup
      *
      * MUTATION: in `WindowClosed`, leave the save loop without asking, and the exit closes with nothing saved or said.
      */
-    @Test
+    @Test(timeOut = 120000)
     public void testAnExitThatCannotSaveAsksUntilTheSaveWorks() throws Exception
     {
-        File live = new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
+        byte[] before = databaseBytes();
 
-        if (!live.exists()) Files.write(live.toPath(), new byte[]{ 1 });
+        List<Answering.Question> asked = closeWithTheDatabaseHeld(I18n.t("ui.exitSaveRetry"));
 
-        byte[] before = Files.readAllBytes(live.toPath());
+        assertEquals(asked.size(), 2, "the exit did not ask once per failed save");
 
-        java.io.FileInputStream holding = new java.io.FileInputStream(live);
+        assertTrue(asked.get(0).message.contains(MarklinControlStation.DATA_FILE_NAME), "the question does not name the"
+            + " file that could not be saved: " + asked.get(0).message);
 
-        try (Answering answering = Answering.start(message ->
-        {
-            // The first Retry finds the file still held; the second, freed
-            if (message.contains(MarklinControlStation.DATA_FILE_NAME) && answeredSoFar[0]++ == 1) closeQuietly(holding);
+        assertEquals(asked.get(0).buttons, Arrays.asList(I18n.t("ui.exitSaveRetry"), I18n.t("ui.exitWithoutSaving")),
+            "the question does not offer Retry and Exit Without Saving");
 
-            return Answering.press(I18n.t("ui.exitSaveRetry"));
-        }))
-        {
-            closeTheProgram();
-
-            assertEquals(answering.asked().size(), 2, "the exit did not ask once per failed save: " + answering.asked());
-
-            assertTrue(answering.asked().get(0).contains(MarklinControlStation.DATA_FILE_NAME), "the question does not"
-                + " name the file that could not be saved: " + answering.asked());
-
-            assertEquals(answering.questions().get(0).buttons, Arrays.asList(I18n.t("ui.exitSaveRetry"),
-                I18n.t("ui.exitWithoutSaving")), "the question does not offer Retry and Exit Without Saving");
-        }
-        finally
-        {
-            closeQuietly(holding);
-        }
-
-        assertFalse(Arrays.equals(Files.readAllBytes(live.toPath()), before), "Retry did not save the database once it"
-            + " was free");
+        assertFalse(Arrays.equals(databaseBytes(), before), "Retry did not save the database once it was free");
 
         assertEquals(guard.exits(), Collections.singletonList(0), "TrainControl did not close once the save worked");
     }
@@ -1053,32 +1033,59 @@ public class testRestoreFromBackup
     /**
      * Exit Without Saving closes TrainControl with the held file as it was.
      *
-     * MUTATION: in `WindowClosed`, read every answer as Retry, and the exit never closes.
+     * MUTATION: in `WindowClosed`, read every answer as Retry, and the question comes again.
      */
-    @Test
+    @Test(timeOut = 120000)
     public void testExitWithoutSavingClosesWithTheFileAsItWas() throws Exception
+    {
+        byte[] before = databaseBytes();
+
+        assertEquals(closeWithTheDatabaseHeld(I18n.t("ui.exitWithoutSaving")).size(), 1, "Exit Without Saving was"
+            + " asked again");
+
+        assertEquals(databaseBytes(), before, "the held database changed");
+
+        assertEquals(guard.exits(), Collections.singletonList(0), "Exit Without Saving did not close TrainControl");
+    }
+
+    /** The run's locomotive database, made first where there is none, so there is a file to hold. */
+    private static byte[] databaseBytes() throws Exception
     {
         File live = new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
 
         if (!live.exists()) Files.write(live.toPath(), new byte[]{ 1 });
 
-        byte[] before = Files.readAllBytes(live.toPath());
+        return Files.readAllBytes(live.toPath());
+    }
 
-        try (java.io.FileInputStream holding = new java.io.FileInputStream(live);
-            Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.exitWithoutSaving"))))
+    /**
+     * Closes the program with the locomotive database held open, the first question answered with `first` and any
+     * later one by freeing the file and pressing Retry, so an exit that ignores its answer ends rather than hangs.
+     */
+    private List<Answering.Question> closeWithTheDatabaseHeld(String first) throws Exception
+    {
+        java.io.FileInputStream holding = new java.io.FileInputStream(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
+
+        int[] answered = {0};
+
+        try (Answering answering = Answering.start(message ->
+        {
+            if (answered[0]++ == 0) return Answering.press(first);
+
+            closeQuietly(holding);
+
+            return Answering.press(I18n.t("ui.exitSaveRetry"));
+        }))
         {
             closeTheProgram();
 
-            assertEquals(answering.asked().size(), 1, "Exit Without Saving was asked again: " + answering.asked());
+            return answering.questions();
         }
-
-        assertEquals(Files.readAllBytes(live.toPath()), before, "the held database changed");
-
-        assertEquals(guard.exits(), Collections.singletonList(0), "Exit Without Saving did not close TrainControl");
+        finally
+        {
+            closeQuietly(holding);
+        }
     }
-
-    /** How many questions the first exit claim has answered. */
-    private final int[] answeredSoFar = {0};
 
     /** The window's close box, through `WindowClosed`, on the event thread; the exit it ends in is refused by `guard`. */
     private void closeTheProgram() throws Exception
