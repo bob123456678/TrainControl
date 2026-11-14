@@ -2127,6 +2127,9 @@ public final class CS2File
 
         List<Map<String, String>> index = parseLayoutIndex();
 
+        // Each page as the station serves it now, by name, in the order a CS2 has always been asked
+        Map<String, String> served = new HashMap<>();
+
         for (Map<String, String> page : index)
         {
             String layoutName = page.get("name");
@@ -2135,34 +2138,53 @@ public final class CS2File
             // The remote fetch above is unaffected: it goes through sanitizeURL on the http branch.
             File layoutFile = new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2");
 
-            if (!fromStation)
-            {
-                copyAtomically(getLayoutURL(layoutName), layoutFile);
-
-                continue;
-            }
-
-            try (BufferedReader reader = fetchURL(getLayoutURL(layoutName)))
-            {
-                StringBuilder text = new StringBuilder();
-
-                String line;
-
-                while ((line = reader.readLine()) != null) text.append(line).append('\n');
-
-                String withIds = org.traincontrol.base.LayoutDiagram.withLinkPageIds(text.toString(), keys ->
-                    LayoutDiagramComponent.stationLinkPageId(LayoutDiagramComponent.pageIdFromText(keys.get("zielseite")),
-                        LayoutDiagramComponent.artikelNumber(keys.get("artikel"))));
-
-                // Each accessory square with the protocol it has in the diagram as read from the station, an address's
-                // two protocols told apart by the CS3's plan, as a save writes it (OB-465)
-                LayoutDiagram asRead = this.control != null ? this.control.getLayout(layoutName) : null;
-
-                if (asRead != null) withIds = asRead.withSavedProtocols(withIds);
-
-                copyAtomically(new BufferedReader(new java.io.StringReader(withIds)), layoutFile);
-            }
+            if (fromStation) served.put(layoutName, readAll(getLayoutURL(layoutName)));
+            else copyAtomically(getLayoutURL(layoutName), layoutFile);
         }
+
+        File magsFile = new File(configDir, "magnetartikel.cs2");
+        String mags = readAll(this.getMagURL(false));
+
+        copyAtomically(new BufferedReader(new StringReader(mags)), magsFile);
+
+        // Each page parsed again from what was just served, with the accessory list and the CS3's plan as they are now,
+        // by a parser of its own: a page changed at the station since it was read gets each square's protocol as it
+        // is today (OB-465)
+        CS2File today = new CS2File(this.IP, this.control);
+        List<MarklinAccessory> accDB = fromStation ? parseMags(parseFile(new BufferedReader(new StringReader(mags))))
+            : null;
+        Map<Integer, String> twoProtocols = fromStation && this.control != null && this.control.isCS3()
+            ? addressesWithTwoProtocols(accDB) : new HashMap<>();
+
+        for (Map<String, String> page : index)
+        {
+            String layoutName = page.get("name");
+            String text = served.get(layoutName);
+
+            if (text == null) continue;
+
+            String withIds = org.traincontrol.base.LayoutDiagram.withLinkPageIds(text, keys ->
+                LayoutDiagramComponent.stationLinkPageId(LayoutDiagramComponent.pageIdFromText(keys.get("zielseite")),
+                    LayoutDiagramComponent.artikelNumber(keys.get("artikel"))));
+
+            // Each accessory square with the protocol it has on the station, as a save writes it; a page that will not
+            // parse is written as served, as a sync shows it unreadable
+            try
+            {
+                withIds = today.parsePage(layoutName, getLayoutURL(layoutName), page.get("id"),
+                    parseFile(new BufferedReader(new StringReader(text))), accDB, twoProtocols).withSavedProtocols(withIds);
+            }
+            catch (Exception unreadable)
+            {
+                logMessage(I18n.f("layout.warningPageCouldNotBeRead", layoutName, String.valueOf(unreadable)), null, false);
+            }
+
+            copyAtomically(new BufferedReader(new StringReader(withIds)),
+                new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2"));
+        }
+
+        // As a sync fails on a plan that would not read: the squares it was needed for would carry a guess
+        if (today.trackPlanFailure != null) throw today.trackPlanFailure;
 
         if (fromStation)
         {
@@ -2171,11 +2193,6 @@ public final class CS2File
             org.traincontrol.base.LayoutDiagram.markLinksByPageId(localPath.getAbsolutePath());
         }
         
-        // Download the accessory file      
-        File magsFile = new File(configDir, "magnetartikel.cs2");
-
-        copyAtomically(this.getMagURL(false), magsFile);
-
         // And the routes (FR-021): tolerated when absent, unlike the three above, since a station with no routes
         // defined is ordinary.
         try
@@ -2291,6 +2308,21 @@ public final class CS2File
         try (BufferedReader reader = fetchURL(url))
         {
             copyAtomically(reader, target);
+        }
+    }
+
+    /** The whole of a file, each line ended by a newline. */
+    private static String readAll(String url) throws Exception
+    {
+        try (BufferedReader reader = fetchURL(url))
+        {
+            StringBuilder text = new StringBuilder();
+
+            String line;
+
+            while ((line = reader.readLine()) != null) text.append(line).append('\n');
+
+            return text.toString();
         }
     }
 
@@ -2614,222 +2646,8 @@ public final class CS2File
                     );            
                 }
             
-                List<Map<String, String> > l = parseFile(fetchURL(url));
-                        
-                Map<Integer, MarklinAccessory> addressMap = accDB.stream()
-                    .collect(Collectors.toMap(
-                            MarklinAccessory::getAddress, 
-                            accessory -> accessory,
-                            (existing, replacement) -> existing // uncouplers will have the same ID
-                    ));
-            
-                int maxX = 0;
-                int maxY = 0;
-            
-                for (Map<String, String> m : l)
-                {
-                    if ("element".equals(m.get("_type")))
-                    {
-                        Integer coord = 0;
-
-                        if (m.get("id") != null)
-                        {
-                            coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
-                        }
-                        else
-                        {
-                            logMessage(
-                                I18n.f("layout.warningElementNoCoordinateInfoAssumingZeroZero", m),
-                                null,
-                                true
-                            );
-                        }
-                    
-                        Integer x = coord % 256;
-                        Integer y = (coord >> 8) % 256;
-
-                        if (x > maxX)
-                        {
-                            maxX = x;
-                        }
-
-                        if (y > maxY)
-                        {
-                            maxY = y;
-                        }
-                    }
-                }
-            
-                LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
-
-                layout.setPageId(index.get(pageIndex).get("id"));
-
-                List<LayoutDiagramComponent> unresolved = new ArrayList<>();
-                        
-                for (Map<String, String> m : l)
-                {
-                    // The left-margin keys (`page=1`), which are not a block and must not be written as one.
-                    if ("_bareKeys".equals(m.get("_type")))
-                    {
-                        for (Map.Entry<String, String> bare : m.entrySet())
-                        {
-                            layout.addBareKey(bare.getKey(), bare.getValue());
-                        }
-
-                        continue;
-                    }
-
-                    // The blocks above the elements (version, groesse, whatever a later firmware adds), kept so that
-                    // saving the page does not delete them.
-                    if (!"element".equals(m.get("_type")))
-                    {
-                        layout.addUnmodelledBlock(m);
-                        continue;
-                    }
-
-                    if ("element".equals(m.get("_type")))
-                    {
-                        Integer coord = 0;
-
-                        if (m.get("id") != null)
-                        {
-                            coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
-                        }
-
-                        Integer x = coord % 256;
-                        Integer y = (coord >> 8) % 256;
-
-                        Integer orient = 0;
-                        Integer state = 0;
-                        String type = m.get("typ");
-                    
-                        // Handle missing type
-                        if (type == null)
-                        {
-                            if (m.get("text") != null)
-                            {
-                                type = "text";
-                            }
-                            else
-                            {
-                                type = "unknown";
-                            }
-                        }
-                    
-                        Integer rawAddress = 0;
-                    
-                        try
-                        {
-                            rawAddress = Integer.valueOf(m.get("artikel"));
-                        }
-                        catch (NumberFormatException e)
-                        {
-                            if (!"text".equals(type))
-                            {
-                                logMessage(
-                                    I18n.f("layout.errorComponentNoAddressAtCoordinates", type, x, y)
-                                );
-                            }
-                        }
-                    
-                        Integer address = rawAddress;
-                    
-                        if (!"fahrstrasse".equals(type))
-                        {
-                            if (address % 2 == 0)
-                            {
-                                address = (address / 2);
-                            }
-                            else
-                            {
-                                address = (address - 1) / 2;
-                            }
-                        }
-                                        
-                        if (m.get("drehung") != null)
-                        {
-                            orient = Integer.valueOf(m.get("drehung")); 
-                        }
-                   
-                        if (m.get("zustand") != null)
-                        {
-                            state = Integer.valueOf(m.get("zustand"));
-                        }
-                    
-                        // Workaround for incorrectly oriented semaphore signals, which are rotated +90 degrees in the CS2 UI
-                        if (type.contains("_f_"))
-                        {
-                            orient = Math.floorMod(orient - 1, 4);
-                        }
-                    
-                        Accessory.accessoryDecoderType protocol = Accessory.accessoryDecoderType.MM2;
-                    
-                        // Read protocol from mags file
-                        if (addressMap.get(address) != null)
-                        {
-                            protocol = addressMap.get(address).getDecoderType();
-                        }
-                    
-                        // Custom - read protocol from the local layout files
-                        if (m.get("prot") != null)
-                        {
-                            if (MarklinAccessory.stringToAccessoryDecoderType(m.get("prot")) != null)
-                            {
-                                protocol = MarklinAccessory.stringToAccessoryDecoderType(m.get("prot"));
-                            }
-                            else
-                            {
-                                logMessage(
-                                    I18n.f("acc.errorUnknownProtocol", m.get("prot"))
-                                );
-                            }
-                        }
-                    
-                        LayoutDiagramComponent.componentType modelled = getComponentType(type, address);
-
-                        if (modelled != null)
-                        {
-                            layout.addComponent(
-                               modelled,
-                               x, y, orient, state, address, rawAddress, protocol, m.get("text")
-                            );
-
-                            // Whatever else the file said about this square: saving regenerates the page from the
-                            // model, so a key nobody carries would be deleted from the user's diagram.
-                            LayoutDiagramComponent added = layout.getComponent(x, y);
-
-                            if (added != null)
-                            {
-                                added.setUnmodelledKeys(m);
-
-                                // The page a link goes to, when the file gives its ID
-                                added.setLinkPageIdFromFile(m.get("zielseite"), m.get("zielartikel"));
-
-                                // And the file's own word for the type: the type mapping is many-to-one, so writing the
-                                // canonical word back would collapse every variant the file distinguished.
-                                added.setOriginalTyp(m.get("typ"));
-
-                                if (twoProtocols.containsKey(address) && m.get("prot") == null
-                                    && added.isAccessory())
-                                {
-                                    unresolved.add(added);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Not a component this program knows, so not one it may delete: kept verbatim and put back
-                            // on save.
-                            layout.addUnmodelledElement(m);
-                        }
-                    }
-                }
-            
-                layout.checkBounds();
-
-                if (!unresolved.isEmpty()) resolveTwoProtocolTiles(layout, unresolved, twoProtocols, accDB);
-            
-                out.add(layout);
+                out.add(parsePage(name, url, index.get(pageIndex).get("id"), parseFile(fetchURL(url)), accDB,
+                    twoProtocols));
             }
             catch (Exception | Error bad)
             {
@@ -2868,6 +2686,230 @@ public final class CS2File
         if (this.trackPlanFailure != null) throw this.trackPlanFailure;
 
         return out;
+    }
+
+    /**
+     * One page from its parsed file: each square with the protocol the accessory list gives its address, a `.prot` in
+     * the file first, and an address's two protocols told apart by the CS3's plan.
+     */
+    private LayoutDiagram parsePage(String name, String url, String pageId, List<Map<String, String>> l,
+        List<MarklinAccessory> accDB, Map<Integer, String> twoProtocols) throws Exception
+    {
+
+        Map<Integer, MarklinAccessory> addressMap = accDB.stream()
+            .collect(Collectors.toMap(
+                    MarklinAccessory::getAddress, 
+                    accessory -> accessory,
+                    (existing, replacement) -> existing // uncouplers will have the same ID
+            ));
+
+        int maxX = 0;
+        int maxY = 0;
+
+        for (Map<String, String> m : l)
+        {
+            if ("element".equals(m.get("_type")))
+            {
+                Integer coord = 0;
+
+                if (m.get("id") != null)
+                {
+                    coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
+                }
+                else
+                {
+                    logMessage(
+                        I18n.f("layout.warningElementNoCoordinateInfoAssumingZeroZero", m),
+                        null,
+                        true
+                    );
+                }
+
+                Integer x = coord % 256;
+                Integer y = (coord >> 8) % 256;
+
+                if (x > maxX)
+                {
+                    maxX = x;
+                }
+
+                if (y > maxY)
+                {
+                    maxY = y;
+                }
+            }
+        }
+
+        LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
+
+        layout.setPageId(pageId);
+
+        List<LayoutDiagramComponent> unresolved = new ArrayList<>();
+
+        for (Map<String, String> m : l)
+        {
+            // The left-margin keys (`page=1`), which are not a block and must not be written as one.
+            if ("_bareKeys".equals(m.get("_type")))
+            {
+                for (Map.Entry<String, String> bare : m.entrySet())
+                {
+                    layout.addBareKey(bare.getKey(), bare.getValue());
+                }
+
+                continue;
+            }
+
+            // The blocks above the elements (version, groesse, whatever a later firmware adds), kept so that
+            // saving the page does not delete them.
+            if (!"element".equals(m.get("_type")))
+            {
+                layout.addUnmodelledBlock(m);
+                continue;
+            }
+
+            if ("element".equals(m.get("_type")))
+            {
+                Integer coord = 0;
+
+                if (m.get("id") != null)
+                {
+                    coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
+                }
+
+                Integer x = coord % 256;
+                Integer y = (coord >> 8) % 256;
+
+                Integer orient = 0;
+                Integer state = 0;
+                String type = m.get("typ");
+
+                // Handle missing type
+                if (type == null)
+                {
+                    if (m.get("text") != null)
+                    {
+                        type = "text";
+                    }
+                    else
+                    {
+                        type = "unknown";
+                    }
+                }
+
+                Integer rawAddress = 0;
+
+                try
+                {
+                    rawAddress = Integer.valueOf(m.get("artikel"));
+                }
+                catch (NumberFormatException e)
+                {
+                    if (!"text".equals(type))
+                    {
+                        logMessage(
+                            I18n.f("layout.errorComponentNoAddressAtCoordinates", type, x, y)
+                        );
+                    }
+                }
+
+                Integer address = rawAddress;
+
+                if (!"fahrstrasse".equals(type))
+                {
+                    if (address % 2 == 0)
+                    {
+                        address = (address / 2);
+                    }
+                    else
+                    {
+                        address = (address - 1) / 2;
+                    }
+                }
+
+                if (m.get("drehung") != null)
+                {
+                    orient = Integer.valueOf(m.get("drehung")); 
+                }
+
+                if (m.get("zustand") != null)
+                {
+                    state = Integer.valueOf(m.get("zustand"));
+                }
+
+                // Workaround for incorrectly oriented semaphore signals, which are rotated +90 degrees in the CS2 UI
+                if (type.contains("_f_"))
+                {
+                    orient = Math.floorMod(orient - 1, 4);
+                }
+
+                Accessory.accessoryDecoderType protocol = Accessory.accessoryDecoderType.MM2;
+
+                // Read protocol from mags file
+                if (addressMap.get(address) != null)
+                {
+                    protocol = addressMap.get(address).getDecoderType();
+                }
+
+                // Custom - read protocol from the local layout files
+                if (m.get("prot") != null)
+                {
+                    if (MarklinAccessory.stringToAccessoryDecoderType(m.get("prot")) != null)
+                    {
+                        protocol = MarklinAccessory.stringToAccessoryDecoderType(m.get("prot"));
+                    }
+                    else
+                    {
+                        logMessage(
+                            I18n.f("acc.errorUnknownProtocol", m.get("prot"))
+                        );
+                    }
+                }
+
+                LayoutDiagramComponent.componentType modelled = getComponentType(type, address);
+
+                if (modelled != null)
+                {
+                    layout.addComponent(
+                       modelled,
+                       x, y, orient, state, address, rawAddress, protocol, m.get("text")
+                    );
+
+                    // Whatever else the file said about this square: saving regenerates the page from the
+                    // model, so a key nobody carries would be deleted from the user's diagram.
+                    LayoutDiagramComponent added = layout.getComponent(x, y);
+
+                    if (added != null)
+                    {
+                        added.setUnmodelledKeys(m);
+
+                        // The page a link goes to, when the file gives its ID
+                        added.setLinkPageIdFromFile(m.get("zielseite"), m.get("zielartikel"));
+
+                        // And the file's own word for the type: the type mapping is many-to-one, so writing the
+                        // canonical word back would collapse every variant the file distinguished.
+                        added.setOriginalTyp(m.get("typ"));
+
+                        if (twoProtocols.containsKey(address) && m.get("prot") == null
+                            && added.isAccessory())
+                        {
+                            unresolved.add(added);
+                        }
+                    }
+                }
+                else
+                {
+                    // Not a component this program knows, so not one it may delete: kept verbatim and put back
+                    // on save.
+                    layout.addUnmodelledElement(m);
+                }
+            }
+        }
+
+        layout.checkBounds();
+
+        if (!unresolved.isEmpty()) resolveTwoProtocolTiles(layout, unresolved, twoProtocols, accDB);
+
+        return layout;
     }
 
     // The CS3's own track plans (/app/api/gbs): fetched at most once per parse, and only for an address with two

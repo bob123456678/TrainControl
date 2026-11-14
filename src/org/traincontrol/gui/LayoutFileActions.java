@@ -753,16 +753,17 @@ final class LayoutFileActions
             // An editor on its way meanwhile must not see the switch; the copy stays on disk for Open Layout
             else if (!this.ui.refuseWhileEditorOpen())
             {
-                // The source a later switch of source compares with, then opened as Open Layout opens a folder, which
-                // rebuilds the page list, the autonomy session and the Autonomy menu
-                this.ui.useTheDownloadedLayout(path);
-                this.ui.openLayoutFolder(path.getAbsoluteFile());
-                this.ui.showLayoutTab();
+                // Opened as Open Layout opens a folder, which checks it first, says why when it will not open, and
+                // otherwise rebuilds the page list, the autonomy session and the Autonomy menu and records the source
+                if (this.ui.openLayoutFolder(path.getAbsoluteFile()))
+                {
+                    this.ui.showLayoutTab();
 
-                if (!this.ui.getModel().getLayoutList().isEmpty()) JOptionPane.showMessageDialog(
-                    this.ui,
-                    I18n.f("layout.ui.infoDownloadCompleteLayoutSavedIn", path.getAbsolutePath())
-                );
+                    JOptionPane.showMessageDialog(
+                        this.ui,
+                        I18n.f("layout.ui.infoDownloadCompleteLayoutSavedIn", path.getAbsolutePath())
+                    );
+                }
             }
         });
     }

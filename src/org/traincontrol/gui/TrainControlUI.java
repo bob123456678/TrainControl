@@ -2267,17 +2267,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The Download door never reaches `initializeTrackDiagram`, where source switches meet the rule, so it calls this
-     * to keep choosing the downloaded folder from reading as another railway.
-     */
-    void useTheDownloadedLayout(File path)
-    {
-        layoutFolderIs(path.getAbsolutePath());
-
-        sourceIsNow(path.getAbsolutePath());
-    }
-
-    /**
      * Runs `load` while a setup edit a run declined waits for its rebuild, carrying where every train stands across it
      * (OB-183), as `rebuildRunningLayoutFromSetup` does.  Runs whatever `isAutonomyBusy` says: a train stopped between
      * sensors keeps the old layout reading busy.
@@ -16110,15 +16099,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         openLayoutFolder(fc.getSelectedFile());
     }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
 
-    /** Open Layout after its chooser, which Recent Layouts runs too (FR-145): the folder becomes the layout and loads. */
-    void openLayoutFolder(File folder)
+    /**
+     * Open Layout after its chooser, which Recent Layouts and Download run too (FR-145): the folder becomes the layout
+     * and loads.  False, said to the user, when it does not.
+     */
+    boolean openLayoutFolder(File folder)
     {
         // Refused before anything changes: a folder that will not read sends the sync back to the station's layout
-        if (!new File(folder, "config/gleisbild.cs2").isFile())
+        if (!org.traincontrol.marklin.file.CS2File.holdsALayout(folder))
         {
             JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
 
-            return;
+            return false;
         }
 
         layoutFolderIs(folder.getPath());
@@ -16154,6 +16146,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
                 }
             });
+
+        // BusyDialog.run returns once its event-thread half has run, so this is the answer it took
+        return !this.model.getLayoutList().isEmpty() && this.isLocalLayout();
     }
 
     private void showCurrentLayoutFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showCurrentLayoutFolderMenuItemActionPerformed
