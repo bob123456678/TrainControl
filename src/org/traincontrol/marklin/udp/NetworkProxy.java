@@ -72,10 +72,33 @@ public class NetworkProxy
     /** Short, because a station that will not take TCP holds the start-up up by this much. */
     private static final int TCP_CONNECT_TIMEOUT_MS = 2000;
 
+    private static volatile int tcpConnectTimeoutMs = TCP_CONNECT_TIMEOUT_MS;
+
     private static final int TCP_RECONNECT_TRIES = 3;
+
+    private static volatile int tcpReconnectTries = TCP_RECONNECT_TRIES;
 
     /** The pause before each reconnect, times the try's number. */
     private static final long TCP_RECONNECT_BACKOFF_MS = 1000;
+
+    private static volatile long tcpReconnectBackoffMs = TCP_RECONNECT_BACKOFF_MS;
+
+    /**
+     * For tests only: the connect timeout, reconnect tries and backoff, shortened so a claim about giving up on TCP does
+     * not wait out production's schedule.  Not a setting; `restoreTcpTimeoutsAfterATest` puts the real values back.
+     */
+    public static void setTcpTimeoutsForATest(int connectTimeoutMs, int reconnectTries, long reconnectBackoffMs)
+    {
+        tcpConnectTimeoutMs = connectTimeoutMs;
+        tcpReconnectTries = reconnectTries;
+        tcpReconnectBackoffMs = reconnectBackoffMs;
+    }
+
+    /** For tests only: the real connect timeout, tries and backoff again. */
+    public static void restoreTcpTimeoutsAfterATest()
+    {
+        setTcpTimeoutsForATest(TCP_CONNECT_TIMEOUT_MS, TCP_RECONNECT_TRIES, TCP_RECONNECT_BACKOFF_MS);
+    }
 
     /**
      * A connection that has carried nothing for this long since a frame was sent on it is taken as hung.  A frame
@@ -278,7 +301,7 @@ public class NetworkProxy
 
     /**
      * Connects and starts the TCP listener; on a failure logs it.  UDP stays live until the connection is made, as a
-     * connect can hang for TCP_CONNECT_TIMEOUT_MS.
+     * connect can hang for tcpConnectTimeoutMs.
      */
     private void startTcp()
     {
@@ -307,7 +330,7 @@ public class NetworkProxy
     }
 
     /**
-     * Waits, at most TCP_CONNECT_TIMEOUT_MS, until the UDP listener has delivered what the socket held (a datagram the
+     * Waits, at most tcpConnectTimeoutMs, until the UDP listener has delivered what the socket held (a datagram the
      * socket sends itself is read after them), so no frame from before the connect is set aside; one the station sends
      * while the connect is made may still come twice, or not at all.
      */
@@ -317,7 +340,7 @@ public class NetworkProxy
         {
             int port = this.socket.getLocalPort();
             this.socket.send(new DatagramPacket(new byte[1], 1, InetAddress.getLoopbackAddress(), port));
-            this.caughtUp.await(TCP_CONNECT_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS);
+            this.caughtUp.await(tcpConnectTimeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
         }
         catch (IOException e)
         {
@@ -338,7 +361,7 @@ public class NetworkProxy
         {
             opened.setTcpNoDelay(true);
             opened.setKeepAlive(true);
-            opened.connect(new InetSocketAddress(this.transmitIP, this.tcpPort), TCP_CONNECT_TIMEOUT_MS);
+            opened.connect(new InetSocketAddress(this.transmitIP, this.tcpPort), tcpConnectTimeoutMs);
             opened.setSoTimeout(TCP_READ_WAKE_MS);
             return opened;
         }
@@ -1089,7 +1112,7 @@ public class NetworkProxy
     }
 
     /**
-     * Replaces a lost connection: up to TCP_RECONNECT_TRIES new ones, then UDP for the rest of the session.  A
+     * Replaces a lost connection: up to tcpReconnectTries new ones, then UDP for the rest of the session.  A
      * connection that never carried a frame goes straight to UDP.  UDP is live meanwhile and carries every command at
      * once; nothing is sent again, as another copy or the handset may have commanded since, so the frames that may not
      * have arrived are only counted in the log (FR-186).  The sensors are resynced on each transport made live.
@@ -1130,9 +1153,9 @@ public class NetworkProxy
 
         IOException failed = null;
 
-        for (int attempt = 1; retry && attempt <= TCP_RECONNECT_TRIES; attempt++)
+        for (int attempt = 1; retry && attempt <= tcpReconnectTries; attempt++)
         {
-            if (!pause(TCP_RECONNECT_BACKOFF_MS * attempt)) return;
+            if (!pause(tcpReconnectBackoffMs * attempt)) return;
 
             try
             {

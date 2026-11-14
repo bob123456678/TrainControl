@@ -805,7 +805,7 @@ public class testControlStationFaults
 
         try
         {
-            support.TestStationAddress.set("127.0.0.1:1");
+            support.TestStationAddress.set(support.TestStationAddress.NOWHERE);
 
             System.setProperty(switchName, "2");
             model.debug(true);
