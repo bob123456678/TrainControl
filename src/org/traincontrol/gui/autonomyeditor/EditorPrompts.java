@@ -1,10 +1,26 @@
 package org.traincontrol.gui.autonomyeditor;
 
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.UIManager;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
@@ -79,9 +95,9 @@ final class EditorPrompts
     void promptBlockingPoints(TileKey station)
     {
         // Read FIRST, because what is already stored decides what has to be offered.
-        java.util.List<TileKey> already = editor.session.getStore().getBlockingPoints(station);
+        List<TileKey> already = editor.session.getStore().getBlockingPoints(station);
 
-        java.util.List<TileKey> choices = new java.util.ArrayList<>();
+        List<TileKey> choices = new ArrayList<>();
 
         for (TileKey tile : editor.session.getStore().getNamedTiles())
         {
@@ -114,7 +130,7 @@ final class EditorPrompts
 
         // Alphabetical, by what is actually shown (FR-074: "sort unavailable while occupied list alphabetically."), on
         // `describeTile`: an entry that has lost its name renders as its sensor or its coordinates.
-        java.util.Collections.sort(choices, new java.util.Comparator<TileKey>()
+        Collections.sort(choices, new Comparator<TileKey>()
         {
             @Override
             public int compare(TileKey a, TileKey b)
@@ -130,10 +146,9 @@ final class EditorPrompts
             // Grayed, because there is nothing a click could find (MT-376: "if there are no stations on the diagram
             // yet, the 'choose on diagram' button should be greyed out to match the message"); shown rather than left
             // out, so the way in is learnt.
-            javax.swing.JButton pickNow = AutonomyEditorPanel.nothingToPickButton();
+            JButton pickNow = AutonomyEditorPanel.nothingToPickButton();
 
-            final javax.swing.JButton close = new javax.swing.JButton(
-                javax.swing.UIManager.getString("OptionPane.cancelButtonText"));
+            final JButton close = new JButton(UIManager.getString("OptionPane.cancelButtonText"));
 
             final JOptionPane pane = new JOptionPane(
                 AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.infoNoOtherPointsToBlockWith")),
@@ -142,8 +157,7 @@ final class EditorPrompts
 
             close.addActionListener(e -> pane.setValue(close));
 
-            javax.swing.JDialog dialog =
-                pane.createDialog(editor.owner(), I18n.t("autosetup.ui.menuBlockedByPointsTitle"));
+            JDialog dialog = pane.createDialog(editor.owner(), I18n.t("autosetup.ui.menuBlockedByPointsTitle"));
 
             dialog.setVisible(true);
             dialog.dispose();
@@ -153,30 +167,29 @@ final class EditorPrompts
 
         JPanel panel = new JPanel();
 
-        panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
         // Wrapped, because the message names a station and ran off the side of a dialog sized for
         // check boxes (OB-083).
-        panel.add(new javax.swing.JLabel(AutonomyEditorPanel.wrapped(
+        panel.add(new JLabel(AutonomyEditorPanel.wrapped(
             I18n.f("autosetup.ui.promptBlockedByPoints", editor.describeTile(station)))));
 
-        panel.add(javax.swing.Box.createVerticalStrut(LayoutEditor.HEADING_GAP));
+        panel.add(Box.createVerticalStrut(LayoutEditor.HEADING_GAP));
 
-        java.util.List<javax.swing.JCheckBox> boxes = new java.util.ArrayList<>();
+        List<JCheckBox> boxes = new ArrayList<>();
 
         // Which of these autonomy would never choose (FR-074: "lightly grey out stations that can't be chosen in full
         // autonomy.").  Read once, outside the loop, because the rule walks the reduction;
         // `stationsAutonomyWillNotChoose` is the runtime's own rule, the same the diagram's captions ask.
-        java.util.Set<TileKey> notChosen = editor.session.stationsAutonomyWillNotChoose();
+        Set<TileKey> notChosen = editor.session.stationsAutonomyWillNotChoose();
 
         for (TileKey tile : choices)
         {
             // describeTile, not getPointName: an entry that lost its name would render with no text at all;
             // testEditorSurfaceRules pins the caption rule here as there.
-            javax.swing.JCheckBox box = new javax.swing.JCheckBox(
-                editor.describeTile(tile), already.contains(tile));
+            JCheckBox box = new JCheckBox(editor.describeTile(tile), already.contains(tile));
 
-            box.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+            box.setAlignmentX(Component.LEFT_ALIGNMENT);
 
             // Lightly (FR-074), so a foreground color rather than a disabled box: these squares are valid to block with
             // (a parking berth holding a platform back is what FR-001 exists for); the mark says what kind of square it
@@ -193,33 +206,33 @@ final class EditorPrompts
         }
 
         // White behind the list, as every other list in the application is (OB-083).
-        panel.setBackground(java.awt.Color.WHITE);
+        panel.setBackground(Color.WHITE);
         panel.setOpaque(true);
 
-        for (javax.swing.JCheckBox box : boxes)
+        for (JCheckBox box : boxes)
         {
-            box.setBackground(java.awt.Color.WHITE);
+            box.setBackground(Color.WHITE);
             box.setOpaque(true);
         }
 
-        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(panel);
+        JScrollPane scroll = new JScrollPane(panel);
 
-        scroll.getViewport().setBackground(java.awt.Color.WHITE);
-        scroll.setBackground(java.awt.Color.WHITE);
+        scroll.getViewport().setBackground(Color.WHITE);
+        scroll.setBackground(Color.WHITE);
 
         // A wheel notch moves a row and a bit rather than one pixel.
         scroll.getVerticalScrollBar().setUnitIncrement(AutonomyEditorPanel.BLOCKED_ROW_HEIGHT);
         scroll.getVerticalScrollBar().setBlockIncrement(AutonomyEditorPanel.BLOCKED_ROW_HEIGHT * 5);
 
         // 460 wide: the prompt names a station, and at 320 the name wrapped into three lines.
-        scroll.setPreferredSize(new java.awt.Dimension(460,
+        scroll.setPreferredSize(new Dimension(460,
             Math.min(360, 80 + choices.size() * AutonomyEditorPanel.BLOCKED_ROW_HEIGHT)));
 
         // Three answers, not two (FR-025: "the 'unavailable when occupied' dialog should allow users to select a s88
         // tile by clicking, similar to the signal guard popup."): the checklist stays the default button, and picking
         // on the diagram is faster for "that one, there".  OK and Cancel take their words from the look and feel.
-        final String ok = javax.swing.UIManager.getString("OptionPane.okButtonText");
-        final String cancel = javax.swing.UIManager.getString("OptionPane.cancelButtonText");
+        final String ok = UIManager.getString("OptionPane.okButtonText");
+        final String cancel = UIManager.getString("OptionPane.cancelButtonText");
         final String pick = I18n.t("autosetup.ui.optionPickBlockerOnDiagram");
 
         Object[] answers = { ok, pick, cancel };
@@ -231,7 +244,7 @@ final class EditorPrompts
         // Anything that is not one of the two doing answers - Cancel, Escape, the close box - changes nothing.
         if (chose != 0 && chose != 1) return;
 
-        java.util.List<TileKey> chosen = new java.util.ArrayList<>();
+        List<TileKey> chosen = new ArrayList<>();
 
         // Every stored entry is on the list above, so the boxes are the whole answer.
         for (int at = 0; at < boxes.size(); at++)
@@ -258,7 +271,7 @@ final class EditorPrompts
      * @param which Blacklist or Whitelist
      * @return false where nothing changed: no locomotives, Cancel, or a home the operator would not break
      */
-    boolean promptTrainList(TileKey tile, org.traincontrol.automationui.AutonomySession.WhichTrains which)
+    boolean promptTrainList(TileKey tile, AutonomySession.WhichTrains which)
     {
         List<String> names = editor.allLocomotives();
 
@@ -268,18 +281,18 @@ final class EditorPrompts
             return false;
         }
 
-        javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
+        DefaultListModel<String> model = new DefaultListModel<>();
 
         for (String name : names) model.addElement(name);
 
-        javax.swing.JList<String> list = new javax.swing.JList<>(model);
+        JList<String> list = new JList<>(model);
 
         // Tall enough to choose from without scrolling on an ordinary roster.
         list.setVisibleRowCount(Math.max(8, Math.min(18, names.size())));
         AutonomyEditorPanel.control(list);
 
         List<String> chosen = editor.session.getTrainList(tile);
-        List<Integer> indexes = new java.util.ArrayList<>();
+        List<Integer> indexes = new ArrayList<>();
 
         for (int i = 0; i < names.size(); i++)
         {
@@ -319,10 +332,10 @@ final class EditorPrompts
      * @return false where the operator would rather not
      */
     boolean homeMayBeBroken(TileKey tile, List<String> chosen,
-        org.traincontrol.automationui.AutonomySession.WhichTrains which)
+        AutonomySession.WhichTrains which)
     {
         String broken = AutonomyEditorPanel.homeBrokenBy(editor.homeOf(tile), chosen,
-            which == org.traincontrol.automationui.AutonomySession.WhichTrains.WHITELIST);
+            which == AutonomySession.WhichTrains.WHITELIST);
 
         return broken == null || JOptionPane.showOptionDialog(editor.owner(),
             I18n.f("autolayout.ui.confirmExcludingHome", broken, editor.describeTile(tile)),

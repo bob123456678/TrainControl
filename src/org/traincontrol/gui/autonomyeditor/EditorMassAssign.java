@@ -1,9 +1,20 @@
 package org.traincontrol.gui.autonomyeditor;
 
 import java.util.Map;
+import java.awt.BorderLayout;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -34,9 +45,9 @@ final class EditorMassAssign
         // A NEW ROUND OPENS AFRESH; within it, each prompt opens where the last was left (MT-454).
         editor.walkPromptAt = null;
 
-        java.util.List<AutonomySession.Stretch> pieces = editor.session.stretchesNeedingALengthOn(editor.page);
-        java.util.Set<TileKey> switches = editor.session.switchesNeedingALengthOn(editor.page);
-        java.util.Set<TileKey> crossings = editor.session.sharedSquaresNeedingALengthOn(editor.page);
+        List<AutonomySession.Stretch> pieces = editor.session.stretchesNeedingALengthOn(editor.page);
+        Set<TileKey> switches = editor.session.switchesNeedingALengthOn(editor.page);
+        Set<TileKey> crossings = editor.session.sharedSquaresNeedingALengthOn(editor.page);
 
         if (pieces.isEmpty() && switches.isEmpty() && crossings.isEmpty())
         {
@@ -121,7 +132,7 @@ final class EditorMassAssign
         // A NEW ROUND OPENS AFRESH, as the other two walks.
         editor.walkPromptAt = null;
 
-        java.util.List<TileKey> stations = editor.session.stationsWithoutAMaximumOn(editor.page);
+        List<TileKey> stations = editor.session.stationsWithoutAMaximumOn(editor.page);
 
         if (stations.isEmpty())
         {
@@ -139,7 +150,7 @@ final class EditorMassAssign
             // Asked again, as Mass Assign Lengths asks: a list made before the walk began is not trusted.
             if (!editor.session.stationsWithoutAMaximumOn(editor.page).contains(station)) continue;
 
-            editor.outlineAndReveal(java.util.Collections.singleton(station));
+            editor.outlineAndReveal(Collections.singleton(station));
 
             String question = I18n.f("autosetup.ui.promptMassAssignMaxTrainLength", i + 1, stations.size(),
                 nameForPrompt(station));
@@ -178,13 +189,13 @@ final class EditorMassAssign
 
         AutonomyEditorPanel.TrainLengthDoor door = editor.trainLengthDoor();
 
-        java.util.List<String> trains = door.trainsWithoutALength();
+        List<String> trains = door.trainsWithoutALength();
 
         // EVERY TRAIN WHEN NONE IS MISSING A LENGTH (MT-533): the item is never grayed, and this is what it offers then -
         // each train with the length it has, which Skip keeps.
-        java.util.Map<String, Integer> known = trains.isEmpty() ? door.trainLengths() : null;
+        Map<String, Integer> known = trains.isEmpty() ? door.trainLengths() : null;
 
-        if (known != null) trains = new java.util.ArrayList<>(known.keySet());
+        if (known != null) trains = new ArrayList<>(known.keySet());
 
         if (trains.isEmpty())
         {
@@ -205,7 +216,7 @@ final class EditorMassAssign
 
             if (standing != null && editor.page != null && editor.page.equals(standing.getPage()))
             {
-                editor.outlineAndReveal(java.util.Collections.singleton(standing));
+                editor.outlineAndReveal(Collections.singleton(standing));
             }
             else
             {
@@ -317,14 +328,14 @@ final class EditorMassAssign
      */
     private Integer askForWholeLength(String question, String titleKey, String prefill)
     {
-        final javax.swing.JTextField field = editor.digitsOnly(prefill == null ? "" : prefill);
+        final JTextField field = editor.digitsOnly(prefill == null ? "" : prefill);
 
         if (prefill != null && !prefill.isEmpty())
         {
-            field.addFocusListener(new java.awt.event.FocusAdapter()
+            field.addFocusListener(new FocusAdapter()
             {
                 @Override
-                public void focusGained(java.awt.event.FocusEvent e)
+                public void focusGained(FocusEvent e)
                 {
                     field.selectAll();
                 }
@@ -355,12 +366,12 @@ final class EditorMassAssign
      *
      * @return the field's text; "" for Skip; null for Stop (Cancel, Escape or closing)
      */
-    String askInWalkPrompt(final javax.swing.JTextField field, String question, String titleKey)
+    String askInWalkPrompt(final JTextField field, String question, String titleKey)
     {
-        JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
+        JPanel panel = new JPanel(new BorderLayout(0, 6));
 
-        panel.add(new JLabel(AutonomyEditorPanel.wrapped(question)), java.awt.BorderLayout.NORTH);
-        panel.add(field, java.awt.BorderLayout.CENTER);
+        panel.add(new JLabel(AutonomyEditorPanel.wrapped(question)), BorderLayout.NORTH);
+        panel.add(field, BorderLayout.CENTER);
 
         final Object[] answers = { I18n.t("ui.ok"), I18n.t("autosetup.ui.btnSkipOne"), I18n.t("ui.cancel") };
 
@@ -370,7 +381,7 @@ final class EditorMassAssign
             // own listener.
             JOptionPane.YES_NO_CANCEL_OPTION, null, answers, null);
 
-        final javax.swing.JDialog dialog = pane.createDialog(editor.owner(), I18n.t(titleKey));
+        final JDialog dialog = pane.createDialog(editor.owner(), I18n.t(titleKey));
 
         editor.placeWalkPrompt(dialog);
 
@@ -383,19 +394,19 @@ final class EditorMassAssign
         // AND ASKED FOR BY NAME WHENEVER THE PROMPT HAS THE KEYBOARD (MT-474): the focus policy's choice of first
         // focusable component is not the prompt's, so it names the component when the window opens and when it regains
         // the keyboard.
-        dialog.addWindowListener(new java.awt.event.WindowAdapter()
+        dialog.addWindowListener(new WindowAdapter()
         {
             @Override
-            public void windowOpened(java.awt.event.WindowEvent e)
+            public void windowOpened(WindowEvent e)
             {
                 field.requestFocusInWindow();
             }
         });
 
-        dialog.addWindowFocusListener(new java.awt.event.WindowAdapter()
+        dialog.addWindowFocusListener(new WindowAdapter()
         {
             @Override
-            public void windowGainedFocus(java.awt.event.WindowEvent e)
+            public void windowGainedFocus(WindowEvent e)
             {
                 field.requestFocusInWindow();
             }

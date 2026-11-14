@@ -1,5 +1,6 @@
 package org.traincontrol.gui.autonomyeditor;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -7,6 +8,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Insets;
 import java.awt.Point;
+import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
@@ -14,9 +16,11 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
+import java.awt.geom.PathIterator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +44,7 @@ import org.traincontrol.gui.Listen;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.ImageUtil;
 
 /**
  * The station and the track squares its track meets, as the track diagram draws them at 60 pixels (FR-111): the station
@@ -132,9 +137,9 @@ final class StationPicture extends JPanel
 
             double[] each = new double[6];
 
-            for (java.awt.geom.PathIterator it = shape.getPathIterator(null); !it.isDone(); it.next())
+            for (PathIterator it = shape.getPathIterator(null); !it.isDone(); it.next())
             {
-                if (it.currentSegment(each) == java.awt.geom.PathIterator.SEG_CLOSE) continue;
+                if (it.currentSegment(each) == PathIterator.SEG_CLOSE) continue;
 
                 x += each[0];
                 y += each[1];
@@ -146,7 +151,7 @@ final class StationPicture extends JPanel
     }
 
     /** How near a mark's outline a click still presses it, where it is on no mark. */
-    private static final java.awt.BasicStroke NEAR = new java.awt.BasicStroke(6);
+    private static final BasicStroke NEAR = new BasicStroke(6);
 
     private final Block block = new Block();
 
@@ -384,7 +389,7 @@ final class StationPicture extends JPanel
 
         boolean leaves = rules.waysOut().contains(side.name());
 
-        java.awt.Polygon arrow = TileAnnotation.arrowShape(tip, heading, leaves, span);
+        Polygon arrow = TileAnnotation.arrowShape(tip, heading, leaves, span);
 
         out.add(new Mark(Mark.Kind.OUT, showing, side, leaves, arrow, tip, heading));
 
@@ -505,7 +510,7 @@ final class StationPicture extends JPanel
     /** @return the station's square and each next square, by side ("" for the station) */
     Map<String, Rectangle> squaresForTest()
     {
-        Map<String, Rectangle> out = new java.util.LinkedHashMap<>();
+        Map<String, Rectangle> out = new LinkedHashMap<>();
 
         out.put("", cell(null));
 
@@ -621,7 +626,7 @@ final class StationPicture extends JPanel
                     Rectangle at = cell(each.getKey());
 
                     // Without color, so a signal's lamps are not read as the station's arrows.
-                    org.traincontrol.util.ImageUtil.inGray(g2, at, each.getValue()::paint);
+                    ImageUtil.inGray(g2, at, each.getValue()::paint);
 
                     TileAnnotation their = nextMarks.get(each.getKey());
 

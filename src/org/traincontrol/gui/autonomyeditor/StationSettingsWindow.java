@@ -1,17 +1,30 @@
 package org.traincontrol.gui.autonomyeditor;
 
+import java.awt.AWTEvent;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Shape;
+import java.awt.Toolkit;
 import java.awt.Window;
+import java.awt.event.AWTEventListener;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.geom.Line2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -19,12 +32,19 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.ButtonGroup;
+import javax.swing.DefaultButtonModel;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.GrayFilter;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -32,21 +52,27 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+import javax.swing.text.JTextComponent;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.StandingRules;
 import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.AutonomySession.WhichTrains;
+import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.gui.InfoMark;
+import org.traincontrol.gui.widgets.PillButton;
 import org.traincontrol.gui.widgets.RowIcons;
+import org.traincontrol.gui.widgets.TabIcons;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 
@@ -100,7 +126,7 @@ public final class StationSettingsWindow extends StationWindowBase
     private final JPanel columns = new JPanel(new BorderLayout(14, 0));
     private final JPanel settingsTab = new JPanel(new BorderLayout());
     private final TrainTab trainTab = new TrainTab(this);
-    private final javax.swing.JTabbedPane tabs = new javax.swing.JTabbedPane();
+    private final JTabbedPane tabs = new JTabbedPane();
     private final JPanel middle = new JPanel(new BorderLayout());
 
     /** How many stations the banner names before saying how many more. */
@@ -213,13 +239,13 @@ public final class StationSettingsWindow extends StationWindowBase
 
         columns.add(rightColumn, BorderLayout.EAST);
 
-        settingsTab.setBorder(javax.swing.BorderFactory.createEmptyBorder(PAD, 0, 0, 0));
+        settingsTab.setBorder(BorderFactory.createEmptyBorder(PAD, 0, 0, 0));
 
         tabs.setName("station.tabs");
         tabs.putClientProperty("JTabbedPane.tabWidthMode", "preferred");
         // Icons drawn as Locomotive Settings' tabs are
-        tabs.addTab(I18n.t("autosetup.ui.stationTabSettings"), org.traincontrol.gui.widgets.TabIcons.station(), settingsTab);
-        tabs.addTab(I18n.t("autosetup.ui.stationTabTrain"), org.traincontrol.gui.widgets.TabIcons.locomotive(), trainTab);
+        tabs.addTab(I18n.t("autosetup.ui.stationTabSettings"), TabIcons.station(), settingsTab);
+        tabs.addTab(I18n.t("autosetup.ui.stationTabTrain"), TabIcons.locomotive(), trainTab);
         tabs.addChangeListener(e -> trainTab.settings.setVisible(tabs.getSelectedComponent() == trainTab));
 
         trainTab.settings.setVisible(false);
@@ -482,13 +508,13 @@ public final class StationSettingsWindow extends StationWindowBase
 
         for (StationPreset preset : StationPreset.values())
         {
-            JToggleButton button = new org.traincontrol.gui.widgets.PillButton(I18n.t(preset.labelKey));
+            JToggleButton button = new PillButton(I18n.t(preset.labelKey));
 
             button.setName("station.preset." + preset.name());
             button.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t(preset.tipKey)));
             button.addActionListener(e -> pressPreset(preset));
 
-            if (!presets.isEmpty()) strip.add(javax.swing.Box.createHorizontalStrut(4));
+            if (!presets.isEmpty()) strip.add(Box.createHorizontalStrut(4));
 
             presets.put(preset, button);
             strip.add(button);
@@ -580,7 +606,7 @@ public final class StationSettingsWindow extends StationWindowBase
         advanced.setContentAreaFilled(false);
         advanced.setBorderPainted(false);
         advanced.setRolloverEnabled(false);
-        advanced.setBorder(javax.swing.BorderFactory.createEmptyBorder());
+        advanced.setBorder(BorderFactory.createEmptyBorder());
         advanced.setHorizontalAlignment(JButton.LEFT);
         advanced.addActionListener(e -> showAdvanced(!advancedOpen));
 
@@ -598,7 +624,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         JPanel speedRow = leftAligned(speed);
 
-        speedRow.add(javax.swing.Box.createHorizontalStrut(4));
+        speedRow.add(Box.createHorizontalStrut(4));
         speedRow.add(new JLabel("%"));
 
         typedRow("autosetup.ui.stationSpeed", "speed", speed, speedRow, otherControls,
@@ -677,7 +703,7 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         List<JComponent> out = new ArrayList<>();
 
-        for (java.awt.Component part : form.getComponents())
+        for (Component part : form.getComponents())
         {
             if (((GridBagLayout) form.getLayout()).getConstraints(part).gridy >= first) out.add((JComponent) part);
         }
@@ -778,20 +804,20 @@ public final class StationSettingsWindow extends StationWindowBase
      */
     private static JLabel mixedLabel(String partName)
     {
-        javax.swing.Icon triangle = RowIcons.warning(16);
+        Icon triangle = RowIcons.warning(16);
 
         JLabel out = styled(new JLabel(triangle), partName, REGULAR);
 
-        java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(triangle.getIconWidth(),
-            triangle.getIconHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
-        java.awt.Graphics2D g = drawn.createGraphics();
+        BufferedImage drawn = new BufferedImage(triangle.getIconWidth(),
+            triangle.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = drawn.createGraphics();
 
         triangle.paintIcon(null, g, 0, 0);
         g.dispose();
 
-        out.setDisabledIcon(new javax.swing.ImageIcon(javax.swing.GrayFilter.createDisabledImage(drawn)));
+        out.setDisabledIcon(new ImageIcon(GrayFilter.createDisabledImage(drawn)));
         out.setToolTipText(mixedTip());
-        out.setBorder(javax.swing.BorderFactory.createEmptyBorder(0, 6, 0, 0));
+        out.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 0));
         out.setVisible(false);
 
         return out;
@@ -889,10 +915,10 @@ public final class StationSettingsWindow extends StationWindowBase
 
         part.addActionListener(e -> commit(part));
 
-        part.addFocusListener(new java.awt.event.FocusAdapter()
+        part.addFocusListener(new FocusAdapter()
         {
             @Override
-            public void focusLost(java.awt.event.FocusEvent e)
+            public void focusLost(FocusEvent e)
             {
                 if (!e.isTemporary()) commit(part);
             }
@@ -1004,17 +1030,17 @@ public final class StationSettingsWindow extends StationWindowBase
      * A press anywhere in the window but on a text field applies what is typed, as leaving the field does: most of the
      * window cannot take the keyboard (OB-436).  A refusal rebuilds nothing, so the press still lands.
      */
-    private final java.awt.event.AWTEventListener pressAway = event ->
+    private final AWTEventListener pressAway = event ->
     {
-        if (event.getID() != java.awt.event.MouseEvent.MOUSE_PRESSED || !(event.getSource() instanceof java.awt.Component))
+        if (event.getID() != MouseEvent.MOUSE_PRESSED || !(event.getSource() instanceof Component))
         {
             return;
         }
 
-        java.awt.Component source = (java.awt.Component) event.getSource();
+        Component source = (Component) event.getSource();
 
-        if (!(source instanceof javax.swing.text.JTextComponent)
-            && javax.swing.SwingUtilities.getWindowAncestor(source) == this) commitTypedFields();
+        if (!(source instanceof JTextComponent)
+            && SwingUtilities.getWindowAncestor(source) == this) commitTypedFields();
     };
 
     @Override
@@ -1022,13 +1048,13 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         super.addNotify();
 
-        java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(pressAway, java.awt.AWTEvent.MOUSE_EVENT_MASK);
+        Toolkit.getDefaultToolkit().addAWTEventListener(pressAway, AWTEvent.MOUSE_EVENT_MASK);
     }
 
     @Override
     public void removeNotify()
     {
-        java.awt.Toolkit.getDefaultToolkit().removeAWTEventListener(pressAway);
+        Toolkit.getDefaultToolkit().removeAWTEventListener(pressAway);
 
         super.removeNotify();
     }
@@ -1257,7 +1283,7 @@ public final class StationSettingsWindow extends StationWindowBase
     /** Leaves none of a row's radios chosen, which a group allows only by being told. */
     private static void clearOneOf(JRadioButton any)
     {
-        ((javax.swing.DefaultButtonModel) any.getModel()).getGroup().clearSelection();
+        ((DefaultButtonModel) any.getModel()).getGroup().clearSelection();
     }
 
     /** A value read from the setup, except over a field showing a refusal, which keeps what was typed. */
@@ -1281,7 +1307,7 @@ public final class StationSettingsWindow extends StationWindowBase
         AutonomySession session = editor.session;
 
         List<TilePorts.Side> ways = session.arrivalSides(tile);
-        java.util.Set<TilePorts.Side> barred = session.getBarredArrivals(tile);
+        Set<TilePorts.Side> barred = session.getBarredArrivals(tile);
 
         // The boxes stay while the sides do: one rebuilt under a press would never see its release (OB-436)
         boolean same = !ways.isEmpty() && ways.equals(arriveSides);
@@ -1311,7 +1337,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
             // The last way in cannot be shut: unticking one at a time is the same as barring a single-sided station
             allow.setEnabled(live && ways.size() > 1 && (barred.contains(side)
-                || session.arrivalsCanBeClosed(tile, java.util.Collections.singleton(side))));
+                || session.arrivalsCanBeClosed(tile, Collections.singleton(side))));
 
             allow.setToolTipText(ways.size() != 1 ? null : AutonomyEditorPanel.wrapped(I18n.f("autosetup.ui.hintOneWayIn", sideName)));
 
@@ -1380,7 +1406,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         // The lists stay while the roads do, as the arrival boxes (OB-436); a run starting or ending builds them again,
         // dropping a choice stepped to but not made
-        List<Object> shape = new ArrayList<>(java.util.Collections.singleton(live));
+        List<Object> shape = new ArrayList<>(Collections.singleton(live));
 
         for (Map.Entry<RouteId, TilePorts.Route> entry : routes.entrySet())
         {
@@ -1525,7 +1551,7 @@ public final class StationSettingsWindow extends StationWindowBase
         final String chosen = (String) home.getSelectedItem();
         final String picked = home.getSelectedIndex() <= 0 ? null : chosen;
 
-        if (java.util.Objects.equals(picked, editor.homeOf(tile))) return;
+        if (Objects.equals(picked, editor.homeOf(tile))) return;
 
         act(() -> { editor.applyHome(tile, picked); return true; });
     }
@@ -1761,7 +1787,7 @@ public final class StationSettingsWindow extends StationWindowBase
             {
                 final StandingRules rules = answer;
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     if (asked != matrixAsked.get()) return;
 
@@ -1818,13 +1844,13 @@ public final class StationSettingsWindow extends StationWindowBase
     }
 
     /** @return what the picture of the station wears */
-    public org.traincontrol.automationui.TileAnnotation pictureForTest()
+    public TileAnnotation pictureForTest()
     {
         return picture.drawnForTest();
     }
 
     /** @return the sides the picture draws a way out of the station at, or a way in */
-    public java.util.Set<String> pictureWaysForTest(boolean out)
+    public Set<String> pictureWaysForTest(boolean out)
     {
         return picture.waysForTest(out);
     }
@@ -1833,17 +1859,17 @@ public final class StationSettingsWindow extends StationWindowBase
      * @return in the picture's block's pixels: "OUT.N", "IN.N" (a station's marks), "AXIS.N" (that side's axis),
      *     "NEXT.N.W" (the next square to the north's arrow at its west side), "SQUARE" and "SQUARE.N" (the squares)
      */
-    public Map<String, java.awt.Shape> pictureMarksForTest()
+    public Map<String, Shape> pictureMarksForTest()
     {
-        Map<String, java.awt.Shape> out = new LinkedHashMap<>();
+        Map<String, Shape> out = new LinkedHashMap<>();
 
-        for (Map.Entry<String, java.awt.Rectangle> each : picture.squaresForTest().entrySet())
+        for (Map.Entry<String, Rectangle> each : picture.squaresForTest().entrySet())
         {
             out.put(each.getKey().isEmpty() ? "SQUARE" : "SQUARE." + each.getKey(), each.getValue());
 
             if (!each.getKey().isEmpty())
             {
-                java.awt.geom.Line2D axis = picture.axisForTest(TilePorts.Side.valueOf(each.getKey()));
+                Line2D axis = picture.axisForTest(TilePorts.Side.valueOf(each.getKey()));
 
                 if (axis != null) out.put("AXIS." + each.getKey(), axis);
             }
@@ -1855,13 +1881,13 @@ public final class StationSettingsWindow extends StationWindowBase
     }
 
     /** @return every mark of the picture with its open state, to tell a press that changed something */
-    public java.util.Set<String> pictureStateForTest()
+    public Set<String> pictureStateForTest()
     {
         return picture.stateForTest();
     }
 
     /** @return the mark, named as `pictureMarksForTest` names it, that a click at this point of the picture presses */
-    public String pictureMarkAtForTest(java.awt.Point at)
+    public String pictureMarkAtForTest(Point at)
     {
         StationPicture.Mark mark = picture.markAtForTest(at);
 
