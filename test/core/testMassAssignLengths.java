@@ -484,13 +484,12 @@ public class testMassAssignLengths
     }
 
     /**
-     * The number field has the keyboard focus, and Enter after typing a number submits it and moves on (Adam, MT-454:
-     * *"make sure the entry field is focused, and when I hit enter after typing the number, it submits and goes to the
-     * next one"*).  A desktop that never gives the window focus skips, which is why this is the ONLY test that presses
-     * Enter.
+     * A number typed and answered with OK is the first piece's length, and the walk moves on to the next (MT-454).  It
+     * presses OK rather than Enter, which needs a focused text component that a battery machine does not always give;
+     * Enter, Escape and where the field has the keyboard are `ui.testTheLengthPromptHasTheKeyboard`'s.
      */
     @Test
-    public void testTheNumberFieldHasFocusAndEnterSubmits() throws Exception
+    public void testTheNumberTypedInTheLengthsWalkIsWritten() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the walk's prompt needs a display");
 
@@ -502,51 +501,8 @@ public class testMassAssignLengths
 
         final javax.swing.JDialog first = awaitPrompt(null);
 
-        final java.awt.Component[] owner = new java.awt.Component[1];
-        final boolean[] focused = new boolean[1];
-        long giveUp = System.currentTimeMillis() + 5000;
-
-        while (System.currentTimeMillis() < giveUp)
-        {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                focused[0] = first.isFocused();
-                owner[0] = first.getFocusOwner();
-            });
-
-            if (focused[0] && owner[0] instanceof javax.swing.JTextField) break;
-
-            Thread.sleep(50);
-        }
-
-        if (!focused[0])
-        {
-            answer(first, org.traincontrol.util.I18n.t("ui.cancel"));
-            awaitNoPrompt();
-
-            throw new org.testng.SkipException("this desktop did not give the prompt the keyboard focus, so where the focus"
-                + " goes inside it cannot be seen");
-        }
-
-        final javax.swing.JTextField field = owner[0] instanceof javax.swing.JTextField
-            ? (javax.swing.JTextField) owner[0] : null;
-
-        if (field == null)
-        {
-            answer(first, org.traincontrol.util.I18n.t("ui.cancel"));
-            awaitNoPrompt();
-
-            fail("the prompt has the focus but the number field does not - it is on " + owner[0]
-                + ", so what is typed goes nowhere (Adam: \"make sure the entry field is focused\")");
-        }
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            field.setText("3");
-
-            field.dispatchEvent(new java.awt.event.KeyEvent(field, java.awt.event.KeyEvent.KEY_PRESSED,
-                System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ENTER, java.awt.event.KeyEvent.CHAR_UNDEFINED));
-        });
+        type(first, "3");
+        answer(first, org.traincontrol.util.I18n.t("ui.ok"));
 
         javax.swing.JDialog second = awaitPrompt(first);
 
@@ -564,7 +520,7 @@ public class testMassAssignLengths
             if (total == 3) written++;
         }
 
-        assertEquals(written, 1, "Enter after typing 3 did not give the first piece its length before moving on");
+        assertEquals(written, 1, "OK after typing 3 did not give the first piece its length before moving on");
     }
 
     // ------------------------------------------------------------------------------------------------ station maxima
@@ -617,9 +573,9 @@ public class testMassAssignLengths
     }
 
     /**
-     * The walk itself: a maximum typed and entered is written to the station asked about, and the walk moves on.  It
+     * The walk itself: a maximum typed and answered is written to the station asked about, and the walk moves on.  It
      * presses OK rather than Enter, which needs a focused text component that a battery machine does not always give;
-     * `testTheNumberFieldHasFocusAndEnterSubmits` is where Enter is pinned.
+     * `ui.testTheLengthPromptHasTheKeyboard` is where Enter is pinned.
      */
     @Test
     public void testTheMaximumWalkWritesWhatIsTypedAndMovesOn() throws Exception
@@ -868,8 +824,9 @@ public class testMassAssignLengths
 
     /**
      * On the frozen railway with every maximum cleared (MT-519), Mass Assign Station Max Train Lengths on 1 - Main asks
-     * about each station in turn, naming and outlining it, refuses 0, takes a number typed without a click and entered
-     * with Enter, and ends on Escape (MT-520, MT-521).  Skips without focus, as the Enter test does.
+     * about each station in turn, naming and outlining it, refuses 0, takes a number answered with OK, and ends on
+     * Cancel (MT-520, MT-521).  Enter, Escape and where the field has the keyboard are
+     * `ui.testTheLengthPromptHasTheKeyboard`'s.
      *
      * MUTATION: write the refused 0, stop outlining the station, or name another in the prompt, and this fails.
      */
@@ -932,24 +889,16 @@ public class testMassAssignLengths
                 assertEquals(session.getPointProperty(first, "maxTrainLength"), firstBefore, "a refused 0 was written"
                     + " (MT-521)");
 
-                final javax.swing.JTextField field = awaitTheKeyboard(prompt);
-
-                javax.swing.SwingUtilities.invokeAndWait(() ->
-                {
-                    field.setText("7");
-
-                    press(field, java.awt.event.KeyEvent.VK_ENTER);
-                });
+                type(prompt, "7");
+                answer(prompt, org.traincontrol.util.I18n.t("ui.ok"));
 
                 javax.swing.JDialog next = awaitPrompt(prompt, MAXIMA);
 
                 assertEquals(promptText(next).trim(), org.traincontrol.util.I18n.f("autosetup.ui.promptMassAssignMaxTrainLength",
-                    2, stations.size(), nameForPrompt(panel, second)), "after Enter the walk did not move on to the next"
+                    2, stations.size(), nameForPrompt(panel, second)), "after OK the walk did not move on to the next"
                     + " station (MT-520 step 3)");
 
-                final javax.swing.JTextField nextField = awaitTheKeyboard(next);
-
-                javax.swing.SwingUtilities.invokeAndWait(() -> press(nextField, java.awt.event.KeyEvent.VK_ESCAPE));
+                answer(next, org.traincontrol.util.I18n.t("ui.cancel"));
 
                 awaitNoPrompt(MAXIMA);
 
@@ -961,7 +910,7 @@ public class testMassAssignLengths
                 assertEquals(maximumShown(MAIN, first), shownAs(7), "Station Settings of "
                     + session.getStore().getPointName(first) + " does not show the number typed (MT-520 step 5)");
 
-                assertEquals(session.getPointProperty(second, "maxTrainLength"), secondBefore, "Escape gave the next station"
+                assertEquals(session.getPointProperty(second, "maxTrainLength"), secondBefore, "Cancel gave the next station"
                     + " a maximum");
 
                 assertTrue(selectionOf(panel).isEmpty(), "the outline stayed on the diagram after the walk ended");
@@ -1455,52 +1404,6 @@ public class testMassAssignLengths
         }
 
         fail("the dialog titled \"" + title + "\" did not close");
-    }
-
-    /**
-     * The prompt's number field once the prompt has the keyboard; skips, after stopping the walk, where this desktop
-     * gives it none.
-     */
-    private static javax.swing.JTextField awaitTheKeyboard(final javax.swing.JDialog prompt) throws Exception
-    {
-        final java.awt.Component[] owner = new java.awt.Component[1];
-        final boolean[] focused = new boolean[1];
-
-        long giveUp = System.currentTimeMillis() + 5000;
-
-        while (System.currentTimeMillis() < giveUp)
-        {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                focused[0] = prompt.isFocused();
-                owner[0] = prompt.getFocusOwner();
-            });
-
-            if (focused[0] && owner[0] instanceof javax.swing.JTextField) return (javax.swing.JTextField) owner[0];
-
-            Thread.sleep(50);
-        }
-
-        String title = prompt.getTitle();
-
-        answer(prompt, org.traincontrol.util.I18n.t("ui.cancel"));
-
-        if (!focused[0])
-        {
-            throw new org.testng.SkipException("this desktop did not give the \"" + title + "\" prompt the keyboard, so"
-                + " typing without a click cannot be seen");
-        }
-
-        fail("the prompt has the keyboard but its number field does not - it is on " + owner[0]);
-
-        return null;
-    }
-
-    /** One key pressed on the component, as the keyboard presses it. */
-    private static void press(java.awt.Component on, int key)
-    {
-        on.dispatchEvent(new java.awt.event.KeyEvent(on, java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0,
-            key, java.awt.event.KeyEvent.CHAR_UNDEFINED));
     }
 
     /** Escape on whatever Mass Assign Lengths asks after this prompt, until it asks nothing. */

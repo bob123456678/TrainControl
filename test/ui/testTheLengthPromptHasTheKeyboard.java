@@ -460,6 +460,70 @@ public class testTheLengthPromptHasTheKeyboard
         }
     }
 
+    /**
+     * Mass Assign Lengths and Mass Assign Station Max Train Lengths ask in the same prompt: the number field has the
+     * keyboard, Enter after a number submits it and the walk moves on, and Escape on the next prompt stops the walk
+     * (MT-454, MT-520).  The railway's lengths and maxima are cleared so there is something to ask, and the setup is put
+     * back after.
+     *
+     * MUTATION: in `askInWalkPrompt` give the option pane `answers[0]` as its initial value instead of null and drop the
+     * two `field.requestFocusInWindow()` calls, and the keyboard goes to the OK button; make the field's Enter answer
+     * `answers[2]`, and no second prompt comes.
+     */
+    @Test
+    public void testTheLengthsAndMaximaWalksTakeEnterAndEscapeInTheFocusedField() throws Exception
+    {
+        awaitTheEditorFocused();
+
+        final org.json.JSONObject was = session.snapshotSetup();
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.clearEveryTileLength();
+                session.clearEveryMaxTrainLength();
+            });
+
+            for (String key : new String[] {"autosetup.ui.menuMassAssignLengths", "autosetup.ui.menuMassAssignMaxTrainLengths"})
+            {
+                javax.swing.JDialog first = startedFrom(bulkItem(key), key);
+
+                type(focusedField(first, "the first prompt of " + I18n.t(key)), "3");
+
+                final javax.swing.JDialog second = awaitPrompt(first, I18n.t(key));
+
+                final javax.swing.JTextField next = focusedField(second, "the prompt after Enter in " + I18n.t(key));
+
+                SwingUtilities.invokeAndWait(() -> press(next, java.awt.event.KeyEvent.VK_ESCAPE));
+
+                assertTrue(support.Components.waitFor(() -> !support.Components.onTheEventThread(second::isShowing), 5000),
+                    "Escape did not close the " + I18n.t(key) + " prompt");
+            }
+        }
+        finally
+        {
+            closeEveryPrompt();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.restoreSetup(was);
+                editor.getAutonomyPanel().refresh();
+            });
+        }
+    }
+
+    /** Clicks the Bulk Tools item and waits for the walk's first prompt, titled by the item's key. */
+    private static javax.swing.JDialog startedFrom(javax.swing.JMenuItem item, String key) throws Exception
+    {
+        assertNotNull(item, "precondition: Bulk Tools has no " + I18n.t(key) + " item");
+        assertTrue(item.isEnabled(), "precondition: " + I18n.t(key) + " is grayed with everything cleared");
+
+        SwingUtilities.invokeLater(item::doClick);
+
+        return awaitPrompt(null, I18n.t(key));
+    }
+
     private static javax.swing.JTextField fieldIn(javax.swing.JDialog prompt) throws Exception
     {
         return focusedField(prompt, "the prompt that is typed into");
@@ -528,9 +592,15 @@ public class testTheLengthPromptHasTheKeyboard
         {
             field.setText(text);
 
-            field.dispatchEvent(new java.awt.event.KeyEvent(field, java.awt.event.KeyEvent.KEY_PRESSED,
-                System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ENTER, java.awt.event.KeyEvent.CHAR_UNDEFINED));
+            press(field, java.awt.event.KeyEvent.VK_ENTER);
         });
+    }
+
+    /** One key pressed on the field, as the keyboard presses it; on the event thread. */
+    private static void press(javax.swing.JTextField field, int key)
+    {
+        field.dispatchEvent(new java.awt.event.KeyEvent(field, java.awt.event.KeyEvent.KEY_PRESSED,
+            System.currentTimeMillis(), 0, key, java.awt.event.KeyEvent.CHAR_UNDEFINED));
     }
 
     private static javax.swing.JMenuItem bulkItem(String key) throws Exception

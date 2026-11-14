@@ -289,6 +289,79 @@ public class testEveryTestIsInTheBattery
             + missing);
     }
 
+    /** The words serial-lane.txt's header lists: what a test that reads the whole desktop's focus or clipboard uses. */
+    private static final java.util.regex.Pattern DESKTOP_WORDS = java.util.regex.Pattern.compile(
+        "\\b(requestFocus(InWindow)?|isFocusOwner|getFocusOwner|isFocused|KeyboardFocusManager|toFront|postEvent"
+        + "|getSystemClipboard|java\\.awt\\.Robot)\\b");
+
+    /** Files that use one of the words and are harmless beside other JVMs; the reason is on each line. */
+    private static final java.util.List<String> DESKTOP_WORDS_HARMLESS = java.util.Arrays.asList(
+        "testEveryTestIsInTheBattery.java", // this check names the words
+        "testEditorSurfaceRules.java", // getSystemClipboard is text it searches production source for
+        "testNoSetupEditWhileARouteRuns.java", // toFront on its own window; nothing asks who has the keyboard
+        "RouteListDoors.java", // postEvent puts a mouse event on its own JVM's queue
+        "testRightClickMenuTipsCanBeHidden.java", // the same: its own JVM's queue
+        "testRouteEditorValidation.java", // asks the window's own most recent focus owner; swaps the manager in its JVM
+        "testTheLocomotiveSettingsWindow.java", // reads KeyboardFocusManager's traversal-key constants
+        "testTheUsageChartShowsWhatTheLocomotivesRan.java"); // asserts a segment is not the focus owner: true anywhere
+
+    /**
+     * A test that asks which window has the keyboard, or touches the system clipboard, belongs in serial-lane.txt:
+     * another JVM's window or copy changes the answer.  Every file under test/ that uses the header's words is in the
+     * lane or on `DESKTOP_WORDS_HARMLESS`.
+     *
+     * MUTATION: put `java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();` in a test class that is in neither
+     * list and this fails naming it.
+     */
+    @Test
+    public void testEveryTestThatReadsTheDesktopIsInTheSerialLane() throws Exception
+    {
+        java.util.Set<String> lane = new java.util.HashSet<>();
+
+        for (String line : Files.readAllLines(new File("docs/tools/serial-lane.txt").toPath(), StandardCharsets.UTF_8))
+        {
+            String name = line.replaceAll("#.*", "").trim();
+
+            if (!name.isEmpty()) lane.add(name);
+        }
+
+        List<String> unlisted = new ArrayList<>();
+
+        for (String folder : new String[] {"core", "ui", "regression", "support"})
+        {
+            for (File file : new File("test/" + folder).listFiles())
+            {
+                String name = file.getName();
+
+                if (!name.endsWith(".java") || DESKTOP_WORDS_HARMLESS.contains(name)
+                    || lane.contains(folder + "." + name.substring(0, name.length() - 5))) continue;
+
+                for (String line : Files.readAllLines(file.toPath(), StandardCharsets.UTF_8))
+                {
+                    String code = line.trim();
+
+                    if (!code.startsWith("*") && !code.startsWith("//") && !code.startsWith("/*")
+                        && DESKTOP_WORDS.matcher(code).find())
+                    {
+                        unlisted.add(folder + "/" + name);
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        assertEquals(unlisted, new ArrayList<String>(),
+            "these use the keyboard focus or the system clipboard, which belong to the whole desktop, so another JVM's"
+            + " window or copy changes what they see.  Add each to docs/tools/serial-lane.txt, or to"
+            + " DESKTOP_WORDS_HARMLESS with the reason it does not care: " + unlisted);
+
+        for (String name : lane)
+        {
+            assertTrue(exists(name.substring(name.indexOf('.') + 1)), "serial-lane.txt names " + name + ", which is not a test class");
+        }
+    }
+
     private boolean excused(String name)
     {
         for (String[] each : DELIBERATELY_OUT)
