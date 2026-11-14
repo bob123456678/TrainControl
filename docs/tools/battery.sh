@@ -410,15 +410,17 @@ LANE_FLAGS="$LANE_FLAGS ${TC_JAVA_HEAP:--Xmx768m} -XX:+ExitOnOutOfMemoryError"
 #
 # So each run copies the two data files into a folder of its own and names a preference node of its
 # own, and the application reads both from there when a run says so (`Util.dataPath`,
-# `Util.preferencesFor`; with neither property set it reads what it always read).  The node starts as
-# a copy of the real one, so a class sees the settings it always saw; nothing the run writes reaches
-# the real node or the real files.  Both are removed when the run ends.
+# `Util.preferencesFor`; with neither property set it reads what it always read).  The node starts
+# empty, every setting at its default, so Adam's settings never reach a test; nothing the run
+# writes reaches the real node or the real files.  Both are removed when the run ends, and a node a
+# killed run of the same pid left behind is removed before it starts (a lane's in run_lane).
 #
 # The short (8.3) form of the folder, because $JAVA_FLAGS is split on spaces.
 ISOLATED="$S/state-$RUN_ID"
 
 rm -rf "$ISOLATED"
 mkdir -p "$ISOLATED"
+MSYS_NO_PATHCONV=1 reg.exe delete "HKCU\\Software\\JavaSoft\\Prefs\\traincontrol-test-runs\\$RUN_ID" /f >/dev/null 2>&1
 
 for DATA in LocDB.data UIState.data
 do
@@ -946,6 +948,7 @@ run_lane()
 
     rm -rf "$state"
     mkdir -p "$state/tmp" "$WORK/lane-of"
+    MSYS_NO_PATHCONV=1 reg.exe delete "HKCU\\Software\\JavaSoft\\Prefs\\traincontrol-test-runs\\$id" /f >/dev/null 2>&1
 
     for DATA in LocDB.data UIState.data
     do

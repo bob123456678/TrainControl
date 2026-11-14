@@ -46,6 +46,9 @@ public class testTheMenuBarIsWired
     private static TrainControlUI ui;
     private static String recentWas;
 
+    /** Each Preferences row's setting as it was before the class stored a value away from its default. */
+    private static final java.util.Map<String, String> settingsWere = new java.util.LinkedHashMap<>();
+
     @BeforeClass(timeOut = 180000)
     public static void setUpClass() throws Exception
     {
@@ -53,8 +56,20 @@ public class testTheMenuBarIsWired
 
         recentWas = prefs().get(TrainControlUI.RECENT_LAYOUTS_PREF, null);
 
-        // No other layout recorded: the run's node starts as a copy of the owner's, whose list would be listed.
+        // No other layout recorded: an earlier class in the run may have recorded one, which would be listed.
         prefs().put(TrainControlUI.RECENT_LAYOUTS_PREF, "");
+
+        // Every Preferences row stored away from its default before the window reads it, so an item that shows its
+        // default whatever is stored fails: a checkbox the opposite of its default, a radio group its last row's value.
+        for (Object[] row : preferences())
+        {
+            String preference = (String) row[1];
+
+            if (!settingsWere.containsKey(preference)) settingsWere.put(preference, prefs().get(preference, null));
+
+            if (row[2] instanceof Boolean) prefs().putBoolean(preference, !(Boolean) row[2]);
+            else prefs().putInt(preference, (Integer) row[2]);
+        }
 
         sandboxed = new support.SandboxedWindow();
 
@@ -78,6 +93,8 @@ public class testTheMenuBarIsWired
         finally
         {
             putBack(TrainControlUI.RECENT_LAYOUTS_PREF, recentWas);
+
+            settingsWere.forEach(testTheMenuBarIsWired::putBack);
         }
     }
 
@@ -598,11 +615,13 @@ public class testTheMenuBarIsWired
     }
 
     /**
-     * Every Preferences checkbox and radio shows the stored choice and, ticked, stores it under the same preference as
-     * before; ticked back, the choice is back (headings, names and order changed, the stored preferences did
-     * not).  Echo Sent Commands is left out: an unattended run never stores it.
+     * Every Preferences checkbox and radio shows the choice stored before the window was built, never its default (see
+     * `setUpClass`), and, ticked, stores it under the same preference as before; ticked back, the choice is back
+     * (headings, names and order changed, the stored preferences did not).  Echo Sent Commands is left out: an
+     * unattended run never stores it.
      *
-     * MUTATION: point Startup's Off at `AUTO_POWER_ON` 2 (Leave as It Was's value), and its row fails.
+     * MUTATION: point Startup's Off at `AUTO_POWER_ON` 2 (Leave as It Was's value), or have Remember Window Location
+     * start unticked whatever is stored, and that row fails.
      */
     @Test(dataProvider = "preferences", timeOut = 60000)
     public void testAPreferenceStoresWhatItShows(String[] path, String preference, Object onValue) throws Exception
@@ -619,7 +638,7 @@ public class testTheMenuBarIsWired
             {
                 JMenuItem chosen = selectedIn((javax.swing.JRadioButtonMenuItem) item);
 
-                // Shows what is stored: the radio of the stored value is the chosen one, the first for none.
+                // Shows what is stored: the radio of the stored value is the chosen one.
                 assertEquals(item.isSelected(), prefs().getInt(preference, 0) == (Integer) onValue, name
                     + " does not show the stored choice");
 
@@ -651,6 +670,62 @@ public class testTheMenuBarIsWired
         {
             putBack(preference, before);
         }
+    }
+
+    /**
+     * Show Keyboard Control Hints shows the keyboard's key hints ticked and hides them unticked; Show Menu Bar does the
+     * same for the menu bar.  Each is set both ways, never toggled, and put back.
+     *
+     * MUTATION: have `displayKeyboardHints` ignore its argument and show the hints, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testTheHintsAndMenuBarSwitchesShowAndHideThem() throws Exception
+    {
+        final javax.swing.AbstractButton hints = (javax.swing.AbstractButton) Reflect.get(TrainControlUI.class, ui, "showKeyboardHintsMenuItem");
+        final javax.swing.AbstractButton bar = (javax.swing.AbstractButton) Reflect.get(TrainControlUI.class, ui, "toggleMenuBar");
+        final Component keys = (Component) Reflect.get(TrainControlUI.class, ui, "PrimaryControls");
+        final Component menus = (Component) Reflect.get(TrainControlUI.class, ui, "mainMenuBar");
+
+        String hintsWere = prefs().get(TrainControlUI.SHOW_KEYBOARD_HINTS_PREF, null);
+        String barWas = prefs().get(TrainControlUI.MENUBAR_SETTING_PREF, null);
+
+        final boolean hintsShown = Components.onTheEventThread(hints::isSelected);
+        final boolean barShown = Components.onTheEventThread(bar::isSelected);
+
+        try
+        {
+            for (boolean on : new boolean[] {false, true})
+            {
+                tick(hints, on);
+                tick(bar, on);
+
+                assertEquals(Components.onTheEventThread(keys::isVisible), (Boolean) on, "Show Keyboard Control Hints, "
+                    + (on ? "ticked, hides" : "unticked, shows") + " the keyboard's key hints");
+                assertEquals(Components.onTheEventThread(menus::isVisible), (Boolean) on, "Show Menu Bar, "
+                    + (on ? "ticked, hides" : "unticked, shows") + " the menu bar");
+            }
+        }
+        finally
+        {
+            // Each ticked as it was, so the window and the store agree for later claims
+            tick(hints, hintsShown);
+            tick(bar, barShown);
+
+            putBack(TrainControlUI.SHOW_KEYBOARD_HINTS_PREF, hintsWere);
+            putBack(TrainControlUI.MENUBAR_SETTING_PREF, barWas);
+        }
+    }
+
+    /** Ticks or unticks a checkbox as a click does, whatever it showed before. */
+    private static void tick(final javax.swing.AbstractButton item, final boolean on) throws Exception
+    {
+        Components.onTheEventThread(() ->
+        {
+            item.setSelected(!on);
+            item.doClick(0);
+
+            return null;
+        });
     }
 
     /**

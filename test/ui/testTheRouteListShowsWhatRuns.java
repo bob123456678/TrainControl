@@ -1547,6 +1547,88 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
+     * Sort by Name lists the routes by name, each under its name alone; Sort by ID lists them by id, each as "id. name".
+     * Both are pressed, so neither rests on the stored choice, which is put back.
+     *
+     * MUTATION: drop `Collections.sort(names)` from `RouteListPanel.refreshRouteList`, and this fails.
+     */
+    @Test
+    public void testTheSortChoiceOrdersAndLabelsTheRoutes() throws Exception
+    {
+        // Made in this order, so by id the later name comes first
+        aQuickRoute(PREFIX + "zzz sorts last", 250);
+        aQuickRoute(PREFIX + "aaa sorts first", 251);
+
+        String was = TrainControlUI.getPrefs().get(TrainControlUI.ROUTE_SORT_PREF, null);
+
+        final javax.swing.AbstractButton sortByName = (javax.swing.AbstractButton) Reflect.get(TrainControlUI.class, ui,
+            "sortByName");
+        final javax.swing.AbstractButton sortByID = (javax.swing.AbstractButton) Reflect.get(TrainControlUI.class, ui,
+            "sortByID");
+
+        final javax.swing.AbstractButton shown = Components.onTheEventThread(sortByName::isSelected) ? sortByName
+            : sortByID;
+
+        try
+        {
+            for (boolean byName : new boolean[] {true, false})
+            {
+                final javax.swing.AbstractButton sort = byName ? sortByName : sortByID;
+
+                SwingUtilities.invokeAndWait(sort::doClick);
+
+                List<String> names = new ArrayList<>(model.getRouteList());
+
+                if (byName) java.util.Collections.sort(names);
+
+                final List<String> expected = new ArrayList<>();
+
+                for (String route : names) expected.add(byName ? route : model.getRouteId(route) + ". " + route);
+
+                assertTrue(until(() -> labels().equals(expected), 5000), (byName ? "Sort by Name" : "Sort by ID")
+                    + " lists the routes as " + labels() + ", not as " + expected);
+            }
+        }
+        finally
+        {
+            // The choice shown before, pressed again, so the window and the store agree for later claims
+            SwingUtilities.invokeAndWait(shown::doClick);
+
+            if (was == null) TrainControlUI.getPrefs().remove(TrainControlUI.ROUTE_SORT_PREF);
+            else TrainControlUI.getPrefs().put(TrainControlUI.ROUTE_SORT_PREF, was);
+
+            refresh();
+        }
+    }
+
+    /** What the route list draws for each route, row by row, trimmed, less the " *" of a station's route. */
+    private static List<String> labels()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            JTable table = routeTable();
+            List<String> labels = new ArrayList<>();
+
+            for (int row = 0; row < table.getRowCount(); row++)
+            {
+                for (int column = 0; column < table.getColumnCount(); column++)
+                {
+                    Object value = table.getValueAt(row, column);
+
+                    if (!(value instanceof org.traincontrol.base.Route)) continue;
+
+                    Component drawn = table.getCellRenderer(row, column)
+                        .getTableCellRendererComponent(table, value, false, false, row, column);
+
+                    labels.add(((javax.swing.JLabel) drawn).getText().trim().replaceFirst(" \\*$", ""));
+                }
+            }
+
+            return labels;
+        });
+    }
+
+    /**
      * A right-click as Windows sends it, the popup trigger on the release and then a click, opens the route's menu and
      * leaves it open, with the power on and off (MT-876).
      *

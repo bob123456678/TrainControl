@@ -2611,7 +2611,7 @@ public class testTheEditorNamesItsShortcuts
         try
         {
             // THE OPERATOR WANTS IT ON TOP, said as he says it: the Window menu's tick, which the closing paths read back into
-            // the setting.  Set, never toggled: the run's copy of his settings for this folder may have it either way.
+            // the setting.  Set, never toggled.
             SwingUtilities.invokeAndWait(() -> { if (!item.isSelected()) item.doClick(); });
 
             assertTrue(TrainControlUI.getPrefs().getBoolean(key, false), "precondition: ticking the menu item did not set the setting");

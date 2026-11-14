@@ -23,9 +23,7 @@ pictures).  `docs/tools/release-tree.sh` computes that tree, so a release never 
 
 6. The full battery, from a worktree detached at `release`:
    `TC_SCRATCH=<scratch folder> bash docs/tools/battery.sh > battery.log`.
-   Outside the main checkout three classes are always red, because the live layout preference is kept per folder:
-   `core.testMockCentralStation`, `core.testRouteInventory`, `regression.testConfirmedGoodState`.  Run those from the
-   main checkout on `dev`, with the four record tests the release tree leaves out.  On the release tree
+   Run the four record tests the release tree leaves out from the main checkout on `dev`.  On the release tree
    `regression.testNoNewCopies` asks to lower its test-copies pin: the record tests it leaves out held copies.  Leave
    the pin, which is green on `dev`.
 7. Anything changed after the battery: run the classes it touches and the bookkeeping classes, then rebuild the

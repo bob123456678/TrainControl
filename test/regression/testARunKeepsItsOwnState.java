@@ -20,7 +20,8 @@ import org.traincontrol.util.Util;
  * Only under those runners: NetBeans starts its test JVMs without the properties, so there this is a skip.
  *
  * MUTATION: have `Util.preferencesFor` ignore its property and the first claim fails; `Util.dataPath` ignore its
- * property and the second does; drop `-listener support.NoUpdateCheck` from the runner and the third does.
+ * property and the second does; drop `-listener support.NoUpdateCheck` from the runner and the third does; have
+ * `Util.preferencesFor` copy the real node into a new run's and `testARunStartsFromTheDefaults` fails.
  *
  * @author Adam
  */
@@ -57,6 +58,32 @@ public class testARunKeepsItsOwnState
         }
     }
 
+    /**
+     * A run's node starts empty, every setting at its default, so the user's own settings never decide a claim.  Built
+     * here for a run of its own name, so it needs no runner and leaves the run's property alone; under a runner it sits
+     * inside the run's node, which the runner deletes even after a killed JVM.  Green by luck only where the real node
+     * is empty.
+     */
+    @Test
+    public void testARunStartsFromTheDefaults() throws Exception
+    {
+        String run = System.getProperty(Util.PREFERENCES_PROPERTY);
+        String probe = (run == null || run.trim().isEmpty() ? "" : run.trim() + "/") + "defaults-probe-"
+            + System.nanoTime();
+
+        try
+        {
+            String[] keys = Util.preferencesFor(TrainControlUI.class, probe).keys();
+
+            assertEquals(keys.length, 0, "a new run's preference node starts with " + java.util.Arrays.toString(keys)
+                + ", copied from the user's own settings, so a claim's result depends on what the user last set");
+        }
+        finally
+        {
+            Preferences.userRoot().node(Util.ISOLATED_PREFERENCES_ROOT + "/" + probe).removeNode();
+        }
+    }
+
     /** The data files are read from, and written to, the run's own folder. */
     @Test
     public void testTheDataFilesAreTheRunsOwn() throws Exception
@@ -76,9 +103,8 @@ public class testARunKeepsItsOwnState
     }
 
     /**
-     * The window never asks GitHub for the latest release in a run (FR-136): the run's node starts as a copy of Adam's,
-     * where Check for Updates is on, and `support.NoUpdateCheck`, the runners' TestNG listener, turns it off there
-     * before any test.
+     * The window never asks GitHub for the latest release in a run (FR-136): Check for Updates is on by default, and
+     * `support.NoUpdateCheck`, the runners' TestNG listener, turns it off in the run's node before any test.
      */
     @Test
     public void testTheRunNeverChecksForUpdates()
