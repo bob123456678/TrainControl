@@ -404,6 +404,9 @@ public class LayoutGrid
     private boolean builtInEditor;
     private Container builtMaster;
 
+    /** Each route square's address label, whose hover text names the route as the square's does. */
+    private final java.util.Map<LayoutLabel, JLabel> routeAddressLabels = new java.util.HashMap<>();
+
     /** The caption labels THIS grid registered, so discarding it hands back exactly those. */
     private final java.util.List<javax.swing.JLabel> registeredCaptions = new java.util.ArrayList<>();
 
@@ -1237,6 +1240,8 @@ public class LayoutGrid
                     if (!inEditor)
                     {
                         text.setToolTipText(c.toSimpleString());
+
+                        if (c.isRoute()) routeAddressLabels.put(grid[x][y], text);
                     }
                     
                     //text.setBorder(new EmptyBorder(16 * (size / 30), 0, 0, 0)); //top, left, bottom, right
@@ -1451,6 +1456,34 @@ public class LayoutGrid
         }
 
         return true;
+    }
+
+    /**
+     * Binds each route square again to the route its square names now, and says so on hover, as a rebuild would: a
+     * route deleted, renumbered or written anew is bound by the model to the page's squares, not to their labels.
+     */
+    public void rebindRouteSquares()
+    {
+        if (grid == null || builtInEditor) return;
+
+        for (LayoutLabel[] column : grid)
+        {
+            for (LayoutLabel square : column)
+            {
+                LayoutDiagramComponent c = square == null ? null : square.getComponent();
+
+                if (c == null || !c.isRoute()) continue;
+
+                if (c.getRoute() != null) c.getRoute().addTile(square);
+
+                square.setToolTipText(c.getRoute() == null ? null : c.toSimpleString());
+                square.updateImage(false);
+
+                JLabel address = routeAddressLabels.get(square);
+
+                if (address != null) address.setToolTipText(c.toSimpleString());
+            }
+        }
     }
 
     /** Whether this grid draws that page at that size. */
