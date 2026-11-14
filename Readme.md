@@ -475,7 +475,7 @@ Tab icons provided by Freepik.
             - Pages are shown in the order of the layout's files rather than by name, and `Sort Pages by Name` puts them back in name order.
             - A page link keeps going to the same page when pages are renamed or moved.
             - In the track diagram editor, Ctrl+R turns the picked squares when there are any, and `Rotate` on the `Selection` menu shows Ctrl+R.
-            - Track diagrams draw faster and flash less: station names appear with their page, squares keep their size while their pictures load, each picture is decoded once, and the autonomy editor opens and switches pages with one drawing.
+            - Track diagrams draw faster and flash less: station names appear with their page, squares keep their size while their pictures load, and the autonomy editor opens and switches pages with one drawing.
             - A length set for a selection applies at once, and following a page link or editing routes no longer redraws the whole diagram.
         - Interface
             - `Layouts` > `Manage Pages...` is now `Edit/Add Pages...`, and the separate `Edit Layout Page` menu is gone.
@@ -532,7 +532,7 @@ Tab icons provided by Freepik.
             - A page window that is open now redraws after a sync that read its page again.
         - Central Station
             - A file that arrives from the Central Station cut off now fails the sync and changes nothing, instead of leaving a partly loaded layout.
-            - A file sent in the Latin-1 character set is now read correctly.
+            - Names with umlauts or accents now come through correctly from a Central Station that sends them in an older format.
             - A Central Station that always sends the same short file is now read, and the log says so.
             - The track diagram now waits until TrainControl knows the Central Station's type, so a CS3's squares get the right protocol.
         - Interface
