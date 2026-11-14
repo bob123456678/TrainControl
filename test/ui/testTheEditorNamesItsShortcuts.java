@@ -339,13 +339,15 @@ public class testTheEditorNamesItsShortcuts
      */
     private static void openBoth(LayoutEditor[] open) throws Exception
     {
+        // The session an unload rebuilt, not the one the class started with
+        session = ui.getAutonomySession();
+
+        open[1] = anAutonomyEditor();
+
         SwingUtilities.invokeAndWait(() ->
         {
             open[0] = new LayoutEditor(page, 30, ui, 0);
             open[0].render();
-            open[1] = new LayoutEditor(page, 30, ui, 0);
-            open[1].render();
-            open[1].setAutonomyMode(ui.getAutonomySession());
         });
 
         settleTheEditor();
