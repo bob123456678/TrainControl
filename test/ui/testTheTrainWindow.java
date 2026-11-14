@@ -3438,13 +3438,31 @@ public class testTheTrainWindow
     /**
      * Cancel and both Discards send the Central Station nothing, after an edit that placed a train elsewhere, turned it
      * there with the editor's Facing door and reversed it on its decoder, all with the editor open: the trains go back
-     * in the model alone, and no train's direction is changed.
+     * in the model alone, and no train's direction is changed.  The turns are even, so the way out only rebuilds.
      *
      * MUTATION: in `LayoutEditor.discardAutonomyWork`, `switchDirection()` each train it puts back after the rebuild, and
      * Cancel sends a direction command.
      */
     @Test(timeOut = 400000)
     public void testCancelAndTheDiscardsSendTheCentralStationNothing() throws Exception
+    {
+        sendsTheCentralStationNothing(true);
+    }
+
+    /**
+     * The same with the Facing door alone: one turn, so the way out also turns the train again (`turnAgain`), which
+     * must change no train's direction either.
+     *
+     * MUTATION: in `LayoutEditor.turnAgain`, `switchDirection()` each train it turns, and Cancel sends a direction
+     * command.
+     */
+    @Test(timeOut = 400000)
+    public void testTurningAgainAfterAnOddTurnSendsTheCentralStationNothing() throws Exception
+    {
+        sendsTheCentralStationNothing(false);
+    }
+
+    private void sendsTheCentralStationNothing(final boolean reversedForReal) throws Exception
     {
         org.traincontrol.gui.TailCrossedPrompt.answerForTests(org.traincontrol.gui.TailCrossedPrompt.DISMISSED);
 
@@ -3471,14 +3489,17 @@ public class testTheTrainWindow
 
                 try
                 {
-                    loc.switchDirection();
+                    if (reversedForReal)
+                    {
+                        loc.switchDirection();
 
-                    Components.settle();
+                        Components.settle();
 
-                    assertTrue(wire.directionCommandsSince(sentBefore, loc.getIntUID()).size() > 0, "precondition: the"
-                        + " reversal of " + name + " sent its decoder nothing the recorder heard");
+                        assertTrue(wire.directionCommandsSince(sentBefore, loc.getIntUID()).size() > 0, "precondition: the"
+                            + " reversal of " + name + " sent its decoder nothing the recorder heard");
 
-                    if (facedBefore.equals(copyOf(name))) reverse(name, facedBefore);
+                        if (facedBefore.equals(copyOf(name))) reverse(name, facedBefore);
+                    }
 
                     // A line of its own, as the log drops a line equal to the last, which would hide a repeated command
                     model.log("D130: " + DISCARDS[how]);
@@ -3491,8 +3512,8 @@ public class testTheTrainWindow
                     Components.drain(8);
 
                     assertEquals(wire.sentSince(mark), java.util.Collections.emptyList(), DISCARDS[how] + " after "
-                        + name + " was placed on " + elsewhere + ", turned there and reversed on its decoder sent the"
-                        + " Central Station " + wire.since(mark));
+                        + name + " was placed on " + elsewhere + ", turned there" + (reversedForReal
+                        ? " and reversed on its decoder" : "") + " sent the Central Station " + wire.since(mark));
                 }
                 finally
                 {
@@ -5392,6 +5413,99 @@ public class testTheTrainWindow
                 + " being left");
             assertEquals(at.trackNow(), at.trackAsWas, "a drag let go while a page switch was under way took the tile"
                 + " away from where it stood");
+        }
+        finally
+        {
+            leaveTheGap(open, at);
+        }
+    }
+
+    /**
+     * A right click handled just before a page switch begins posts its menu; the menu then opens on no page being
+     * left: the latch is raised in the same turn of the event queue as the click, as `leaveFor` raises it.
+     *
+     * MUTATION: take the `switching || changingPage` guard out of the task `LayoutEditor.receiveClickEvent` posts for a
+     * right click, and the menu opens.
+     */
+    @Test(timeOut = 300000)
+    public void testARightClickPostedBeforeAPageSwitchOpensNoMenu() throws Exception
+    {
+        inTheGapSquares((open, at) ->
+        {
+            Reflect.set(LayoutEditor.class, open, "popup", null);
+
+            Components.onTheEventThread(() ->
+            {
+                open.receiveClickEvent(click(at.track, java.awt.event.MouseEvent.BUTTON3), at.track);
+
+                Reflect.set(LayoutEditor.class, open, "changingPage", true);
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertNull(Reflect.get(LayoutEditor.class, open, "popup"), "a right click posted before a page switch began"
+                + " opened its menu, with its Undo, Paste and Delete, on the page being left");
+        });
+    }
+
+    /**
+     * A page switch closes the square menu left open on the page being left, as it asks nothing first.
+     *
+     * MUTATION: drop `if (popup != null) popup.setVisible(false)` from `LayoutEditor.leaveFor`, and the menu stays.
+     */
+    @Test(timeOut = 300000)
+    public void testAPageSwitchClosesTheOpenSquareMenu() throws Exception
+    {
+        inTheGapSquares((open, at) ->
+        {
+            Components.onTheEventThread(() ->
+            {
+                open.receiveClickEvent(click(at.track, java.awt.event.MouseEvent.BUTTON3), at.track);
+
+                return null;
+            });
+
+            Components.settle();
+
+            final JPopupMenu menu = (JPopupMenu) Reflect.get(LayoutEditor.class, open, "popup");
+
+            assertNotNull(menu, "precondition: the right click opened no menu");
+            assertTrue(Components.onTheEventThread(menu::isVisible), "precondition: the menu is not showing");
+
+            final java.lang.reflect.Method leave = Reflect.method(LayoutEditor.class, "leaveFor", String.class,
+                boolean.class);
+            final AutonomySession was = session;
+
+            boolean stillOpen = Components.onTheEventThread(() ->
+            {
+                leave.invoke(open, PAGE, false);
+
+                return menu.isVisible();
+            });
+
+            assertFalse(stillOpen, "a page switch left the square menu open on the page being left");
+
+            // The switch reads the pages again, which replaces the setup the other claims hold
+            reloaded(was);
+        });
+    }
+
+    /** A claim's body on a track editor and its two squares; the latch lowered and the squares put back after. */
+    private interface InTheGap
+    {
+        void run(LayoutEditor open, GapSquares at) throws Exception;
+    }
+
+    private void inTheGapSquares(InTheGap body) throws Exception
+    {
+        final LayoutEditor open = theTrackEditor();
+        final GapSquares at = gapSquares(open);
+
+        try
+        {
+            body.run(open, at);
         }
         finally
         {

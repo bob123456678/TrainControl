@@ -2227,6 +2227,9 @@ public class LayoutEditor extends PositionAwareJFrame
         
             SwingUtilities.invokeLater(() ->
             {
+                // A page switch begun since the click: the menu's Undo, Paste and Delete would write the page being left
+                if (switching || changingPage) return;
+
                 popup = menuFor(label, lc);
 
                 popup.show(e.getComponent(), e.getX(), e.getY());      

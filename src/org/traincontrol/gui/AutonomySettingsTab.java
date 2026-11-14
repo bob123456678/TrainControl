@@ -207,7 +207,7 @@ final class AutonomySettingsTab
         this.ui.minDelay().setValue(auto.getMinDelay());
         this.ui.maxDelay().setValue(auto.getMaxDelay());
         this.ui.defaultLocSpeed().setValue(auto.getDefaultLocSpeed());
-        this.ui.preArrivalSpeedReduction().setValue(Double.valueOf(auto.getPreArrivalSpeedReduction() * 100).intValue());
+        this.ui.preArrivalSpeedReduction().setValue((int) Math.round(auto.getPreArrivalSpeedReduction() * 100));
         this.ui.maxLocInactiveSeconds().setValue(Double.valueOf(auto.getMaxLocInactiveSeconds() / 60).intValue());
         this.ui.maxActiveTrains().setValue(auto.getMaxActiveTrains());
         this.ui.simulate().setSelected(auto.isSimulate());
