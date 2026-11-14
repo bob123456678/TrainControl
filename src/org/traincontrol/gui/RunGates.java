@@ -127,7 +127,7 @@ public final class RunGates
      */
     static boolean refuseWhileEditorOpen(TrainControlUI ui, java.awt.Window asked)
     {
-        if (!ui.isLayoutEditorOpen()) return false;
+        if (!ui.anEditorIsOpenOrOnItsWay()) return false;
 
         // The dialog goes to the event thread; the ANSWER does not wait for it (OB-078): two callers ask this from a
         // raw worker thread, and a modal JOptionPane built off the EDT mispaints and can deadlock.  invokeLater rather
