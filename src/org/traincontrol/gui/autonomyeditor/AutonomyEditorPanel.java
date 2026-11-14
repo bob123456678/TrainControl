@@ -4859,8 +4859,12 @@ public class AutonomyEditorPanel extends JPanel
         }
         else
         {
-            // A selection is squares, not runs: each gets the number.
-            for (TileKey target : targets) session.setTileLength(target, typed);
+            // A selection is squares, not runs: each gets the number, in one re-derivation.
+            Map<TileKey, Integer> lengths = new LinkedHashMap<>();
+
+            for (TileKey target : targets) lengths.put(target, typed);
+
+            session.setTileLengths(lengths);
         }
 
         selection.clear();

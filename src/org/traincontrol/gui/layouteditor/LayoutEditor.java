@@ -1844,16 +1844,20 @@ public class LayoutEditor extends PositionAwareJFrame
             // Said in the title; posted, as render()'s own invokeLater would overwrite it.
             SwingUtilities.invokeLater(() -> setTitle(titleFor(true)));
 
-            // Drawn again: render() built the grid before this mode was known.
-            SwingUtilities.invokeLater(() ->
+            // The remembered caption mode, now the panel has a window (MT-292), before the grid is drawn.
+            autonomyPanel.applyRememberedCaptionMode();
+
+            // Drawn again only over a grid drawn before this mode was known (a page switch).  On opening, render()'s
+            // queued drawing runs after this and builds the grid once, in this mode.
+            if (grid != null)
             {
-                // The remembered caption mode, now the panel has a window (MT-292), before the redraw.
-                autonomyPanel.applyRememberedCaptionMode();
+                SwingUtilities.invokeLater(() ->
+                {
+                    refreshGrid();
 
-                refreshGrid();
-
-                SwingUtilities.invokeLater(() -> refreshAutonomyAnnotations());
-            });
+                    SwingUtilities.invokeLater(() -> refreshAutonomyAnnotations());
+                });
+            }
         }
 
         this.newComponents.revalidate();
@@ -3819,7 +3823,19 @@ public class LayoutEditor extends PositionAwareJFrame
 
             mountSidebar();
 
-            drawGrid();
+            // One build: a page drawGrid grows to the floor is drawn by that call, so the redraw growing asks is not.
+            boolean was = pauseRepaint;
+
+            pauseRepaint = true;
+
+            try
+            {
+                drawGrid();
+            }
+            finally
+            {
+                pauseRepaint = was;
+            }
 
             // The mode's own title (MT-669)
             setTitle(titleFor(isAutonomyMode()));

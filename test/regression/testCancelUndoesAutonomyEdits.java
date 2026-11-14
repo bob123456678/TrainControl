@@ -274,6 +274,84 @@ public class testCancelUndoesAutonomyEdits
     }
 
     /**
+     * A length typed for a selection is one edit to Cancel, which puts every square back: the selection's squares are
+     * written in one re-derivation, still inside the setup the editor opened on.
+     *
+     * MUTATION: have `discardAutonomyWork` skip `restoreSetup` when the window has its opening snapshot, and this fails.
+     */
+    @Test
+    public void testCancelPutsBackALengthGivenToASelection() throws Exception
+    {
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        final List<TileKey> picked = new ArrayList<>();
+
+        for (TileKey tile : session.getGraph().getTiles().keySet())
+        {
+            if (PAGE.equals(tile.getPage()) && session.getRoutes(tile).size() == 1 && session.canCarryDirection(tile)
+                && !org.traincontrol.automationui.TilePorts.hasPortal(session.getGraph().getTiles().get(tile).getType()))
+            {
+                picked.add(tile);
+            }
+
+            if (picked.size() == 2) break;
+        }
+
+        assertEquals(picked.size(), 2, "precondition: no two plain track squares on " + PAGE);
+
+        final Map<TileKey, Integer> before = new LinkedHashMap<>();
+
+        for (TileKey square : picked) before.put(square, session.getStore().getTileLength(square));
+
+        final LayoutEditor editor = opened();
+
+        Answerer answerer = null;
+
+        try
+        {
+            final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = editor.getAutonomyPanel();
+
+            // Picked out with a shift-click, and the length typed
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (TileKey square : picked) panel.tileClicked(square, null, true);
+
+                panel.applyLengthAnswer(picked.get(1), 37);
+            });
+
+            Components.drain(8);
+
+            for (TileKey square : picked)
+            {
+                assertEquals(session.getStore().getTileLength(square), 37, "precondition: " + square
+                    + " did not get the length typed for the selection");
+            }
+
+            answerer = Answerer.start(String.valueOf(TrainControlUI.YES_NO_OPTS[0]));
+
+            cancel(editor);
+
+            answerer.stop();
+
+            Components.drain(8);
+
+            for (TileKey square : picked)
+            {
+                assertEquals(session.getStore().getTileLength(square), (int) before.get(square), "Cancel did not put"
+                    + " back " + square + "'s length after a length was typed for a selection holding it");
+            }
+        }
+        finally
+        {
+            if (answerer != null) answerer.stop();
+
+            dispose(editor);
+
+            session.restoreSetup(asFound);
+        }
+    }
+
+    /**
      * And the locomotives a bulk clear took off come back with Cancel (OB-194), so the clear must not say "Cancel will
      * not put them back".  Asked through the real Bulk Tools door and the real Cancel.
      */
