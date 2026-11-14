@@ -64,9 +64,9 @@ public class testSwitchingToACentralStationLayout
             + "is lying in it (OB-127)");
 
         // The gate all three page writers come through refuses when there is no local layout.
-        String settle = SourceOf.declaration("private java.util.Collection<String> settleAbsentPages(");
+        String settle = SourceOf.plain(SourceOf.declaration("private java.util.Collection<String> settleAbsentPages("));
 
-        String gate = settle.substring(0, settle.indexOf("final java.util.List<String> absent"));
+        String gate = settle.substring(0, settle.indexOf("final List<String> absent"));
 
         assertTrue(gate.contains("!isLocalLayout()"),
             "settleAbsentPages no longer refuses when the layout is not a local one, so a failed "

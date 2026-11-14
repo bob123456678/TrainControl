@@ -416,9 +416,9 @@ public class testErrorsStopTheSetupRunning
     @Test
     public void testTheStripIsNotTheScrollPanesColumnHeader() throws Exception
     {
-        String ui = SourceOf.declaration("    void ensureDiagramStrip()");
+        String ui = SourceOf.plain(SourceOf.declaration("    void ensureDiagramStrip()"));
 
-        int from = ui.indexOf("autonomyDiagramStrip = new javax.swing.JPanel");
+        int from = ui.indexOf("autonomyDiagramStrip = new JPanel");
 
         assertTrue(from >= 0, "the strip is no longer built where this test can see it");
 
