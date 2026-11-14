@@ -288,12 +288,8 @@ public class testTheSyncAsksTheSensorsTheirState
             int contact = 2903;
             String name = "Sync claim " + contact;
             List<String> log = new ArrayList<>();
-            MarklinRoute route = armedRoute(rig, station, contact, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+            MarklinRoute route = occupiedWhenAsked(rig, station, contact, station::drop);
 
-            // The change comes when the query arrives: the pass is waiting for its answer
-            station.onQuery(contact, () -> station.sensor(contact, true));
-            station.drop();
-            assertTrue(shows(rig, contact, true), "precondition: the event did not arrive");
             assertTrue(Components.waitFor(() -> RouteMonitor.waitingFor(route, false), WAIT_MS),
                 "the route's monitor did not go back to waiting");
             assertEquals(fired(rig, log, name), 0, "a real event during the confirmation fired the route: " + log);
@@ -318,21 +314,32 @@ public class testTheSyncAsksTheSensorsTheirState
     {
         connected((rig, station) ->
         {
-            int contact = 2904;
-            String name = "Sync claim " + contact;
             List<String> log = new ArrayList<>();
 
-            armedRoute(rig, station, contact, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
-            assertTrue(Components.waitFor(() -> !rig.model.isConfirming(), WAIT_MS),
-                "precondition: the connect's confirmation did not end");
+            occupiedWhenAsked(rig, station, 2904, () -> synced(rig, station));
 
-            // The change comes when the sync's query arrives: the pass is waiting for its answer
-            station.onQuery(contact, () -> station.sensor(contact, true));
-            synced(rig, station);
-
-            assertTrue(Components.waitFor(() -> fired(rig, log, name) == 1, WAIT_MS), "a real event during a later"
-                + " sync's pass did not fire the route: " + log);
+            assertTrue(Components.waitFor(() -> fired(rig, log, "Sync claim 2904") == 1, WAIT_MS), "a real event during"
+                + " a later sync's pass did not fire the route: " + log);
         });
+    }
+
+    /**
+     * A route armed clear then occupied on the contact, once the connect's confirmation is over; `pass` then runs a
+     * pass of queries, and the station occupies the contact when the pass's query for it arrives, while it waits.
+     */
+    private static MarklinRoute occupiedWhenAsked(StationRig rig, TcpStation station, int contact, Correction pass)
+        throws Exception
+    {
+        MarklinRoute route = armedRoute(rig, station, contact, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+
+        assertTrue(Components.waitFor(() -> !rig.model.isConfirming(), WAIT_MS),
+            "precondition: the connect's confirmation did not end");
+
+        station.onQuery(contact, () -> station.sensor(contact, true));
+        pass.run();
+        assertTrue(shows(rig, contact, true), "precondition: the event did not arrive");
+
+        return route;
     }
 
     private interface Correction
