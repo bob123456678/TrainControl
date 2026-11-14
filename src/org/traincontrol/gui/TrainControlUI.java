@@ -6807,27 +6807,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void syncLocomotive(Locomotive l)
     {
-        syncLocomotive(l, null);
+        syncLocomotive(l, null, null);
     }
 
     /**
-     * As {@link #syncLocomotive(Locomotive)}, then runs {@code after} on the event thread once the sync is over.
+     * As {@link #syncLocomotive(Locomotive)}, then runs {@code after} on the event thread once the sync is over, and
+     * says on {@code asked} what `doSync` says of a sync that failed or was already running.
+     * @param asked the window whose Sync was pressed, or null to say nothing
      * @param after what to do afterwards, or null
      */
-    public void syncLocomotive(Locomotive l, Runnable after)
+    public void syncLocomotive(Locomotive l, Component asked, Runnable after)
     {
         if (l != null)
         {
             SwingUtilities.invokeLater(() -> {
                 LayoutDiagram before = shownDiagram();
 
-                this.syncWithCS2();
+                int synced = this.syncWithCS2();
                 this.model.syncLocomotive(l.getName());
                 repaintLoc(true, null);
                 redrawRouteSquaresOrRebuild(before);
                 this.repaintMappings(Collections.singletonList(l), true);
 
                 if (after != null) after.run();
+
+                if (asked != null) saidTheSyncDidNotRun(asked, synced, () -> syncLocomotive(l, asked, after));
             });
         }   
     }
@@ -14992,17 +14996,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         go();
     }//GEN-LAST:event_OnButtonActionPerformed
 
-    /** Says why a sync failed, on the window that asked (the log has the detail), and offers Retry, which syncs again. */
-    private void offerSyncRetry(Component c)
+    /**
+     * Says why a sync failed (`reason`, or else the model's last error; the log has the detail), on the window that
+     * asked, and offers Retry, which runs `retry`.
+     */
+    private void offerSyncRetry(Component c, String reason, Runnable retry)
     {
-        final String reason = this.model.getLastSyncError();
+        final String why = reason != null ? reason : this.model.getLastSyncError();
         final Object[] options = { I18n.t("ui.syncFailedRetryButton"), I18n.t("ui.syncFailedCloseButton") };
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            if (choseFirst(c, I18n.f("ui.syncFailedRetry", reason == null ? I18n.t("ui.errorSyncFailedSeeLog")
-                : reason), I18n.t("ui.syncFailedTitle"), options, false)) doSync(c);
+            if (choseFirst(c, I18n.f("ui.syncFailedRetry", why == null ? I18n.t("ui.errorSyncFailedSeeLog")
+                : why), I18n.t("ui.syncFailedTitle"), options, false)) retry.run();
         });
+    }
+
+    /**
+     * Says on c that a sync was already running, or that it failed with Retry running `retry`; nothing for a refusal,
+     * which has said why.  True unless the sync ran.
+     */
+    private boolean saidTheSyncDidNotRun(Component c, int synced, Runnable retry)
+    {
+        // Not a failure: reporting it as one told the user their sync had failed when another was doing the job
+        if (synced == SYNC_ALREADY_RUNNING)
+        {
+            javax.swing.SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(c, I18n.t("ui.infoSyncAlreadyRunning")));
+        }
+        else if (synced == -1) offerSyncRetry(c, null, retry);
+
+        return synced < 0;
     }
 
     public void doSync(Component c)
@@ -15057,28 +15081,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.repaintLoc(true, null);
                 this.repaintLayout();
 
-                if (c != null && r != SYNC_REFUSED)
+                if (c != null && !saidTheSyncDidNotRun(c, r, () -> doSync(c)))
                 {
-                    if (r == SYNC_ALREADY_RUNNING)
-                    {
-                        // Not a failure.  Reporting it as one told the user their sync had failed
-                        // when in fact another one was doing the job for them.
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                            c,
-                            I18n.t("ui.infoSyncAlreadyRunning")
-                        ));
-                    }
-                    else if (r == -1)
-                    {
-                        offerSyncRetry(c);
-                    }
-                    else
-                    {
-                        final String done = I18n.f(this.model.wasLastSyncPartial() ? "ui.infoSyncCompletePartial"
-                            : "ui.infoSyncCompleteItemsAdded", r.toString());
+                    final String done = I18n.f(this.model.wasLastSyncPartial() ? "ui.infoSyncCompletePartial"
+                        : "ui.infoSyncCompleteItemsAdded", r.toString());
 
-                        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, done));
-                    }
+                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, done));
                 }
             }).start();
         });
@@ -15935,7 +15943,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     JOptionPane.showMessageDialog(this, I18n.t("ui.infoSyncAlreadyRunning"));
                 }
-                else if (synced == -1) offerSyncRetry(this);
+                else if (synced == -1) offerSyncRetry(this, null, () -> doSync(this));
                 
                 // Set the updated list of layout pages
                 initializeTrackDiagram(true);

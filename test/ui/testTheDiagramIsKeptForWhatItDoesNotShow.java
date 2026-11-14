@@ -674,7 +674,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     {
         final CountDownLatch done = new CountDownLatch(1);
 
-        ui.syncLocomotive(train, done::countDown);
+        ui.syncLocomotive(train, null, done::countDown);
 
         assertTrue(done.await(60, TimeUnit.SECONDS), "Sync of " + train.getName() + " did not finish");
 

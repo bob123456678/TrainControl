@@ -291,6 +291,60 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
     }
 
     /**
+     * A Sync that fails (the station is nowhere) says so on this window and offers Retry, which syncs again; one pressed
+     * while another sync runs says that one is running, on this window too.
+     *
+     * MUTATION: in `TrainControlUI.syncLocomotive`, leave out the `saidTheSyncDidNotRun` call, and the button says
+     * nothing.
+     */
+    @Test(timeOut = 120000)
+    public void testASyncThatFailsSaysSoOnTheWindowAndRetries() throws Exception
+    {
+        connected(true);
+
+        JButton button = sync();
+
+        awaitLook(() -> Components.onTheEventThread(button::isEnabled));
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        String failed = I18n.f("ui.syncFailedRetry", "").split("\n")[0];
+        java.util.concurrent.atomic.AtomicInteger failures = new java.util.concurrent.atomic.AtomicInteger();
+
+        java.util.concurrent.atomic.AtomicBoolean inFlight = (java.util.concurrent.atomic.AtomicBoolean)
+            Reflect.field(org.traincontrol.gui.TrainControlUI.class, "syncInFlight").get(ui);
+
+        // Retry for the first failure, Close for the second; one answerer, since a dialog just answered is still
+        // showing for a moment and a new answerer would count it again
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(
+            message.startsWith(failed) && failures.incrementAndGet() > 1 ? 1 : 0)))
+        {
+            Components.press(button);
+
+            assertTrue(answering.awaitAsked(2, 30000), "the failed Sync, then its Retry, said: " + answering.asked());
+
+            for (support.Answering.Question q : answering.questions().subList(0, 2))
+            {
+                assertTrue(q.message.startsWith(failed), "not the failed-sync popup: " + q.message);
+                org.testng.Assert.assertSame(q.owner, window, "not on the Settings window");
+            }
+
+            assertFalse(answering.awaitAsked(3, 3000), "Close synced again: " + answering.asked());
+
+            inFlight.set(true);
+
+            Components.press(button);
+
+            assertTrue(answering.awaitAsked(3, 30000), "a Sync while another runs said nothing");
+            assertEquals(answering.asked().get(2), I18n.t("ui.infoSyncAlreadyRunning"));
+            org.testng.Assert.assertSame(answering.questions().get(2).owner, window, "not on the Settings window");
+        }
+        finally
+        {
+            inFlight.set(false);
+        }
+    }
+
+    /**
      * A sync reloads the whole window from the locomotive and overwrites what was typed, when Discard is the answer to
      * the question: the typed name and the edited Functions table are replaced by the synced values, Save goes gray,
      * and the tab selected and the window's place stay.
