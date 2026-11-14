@@ -354,4 +354,157 @@ public class testASyncOwedWaitsForTheEditor
                 + station.log());
         }
     }
+
+    private static LayoutEditor editorShowing()
+    {
+        for (java.awt.Frame frame : java.awt.Frame.getFrames())
+        {
+            if (frame instanceof LayoutEditor && frame.isDisplayable() && frame.isShowing()) return (LayoutEditor) frame;
+        }
+
+        return null;
+    }
+
+    /**
+     * A layout-switch door's gate, asked in the same event as Edit, while the editor is on its way and not yet built,
+     * refuses.
+     *
+     * MUTATION: in `RunGates.refuseWhileEditorOpen`, ask `ui.isLayoutEditorOpen()` again, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testASwitchDoorIsRefusedWhileAnEditorIsOnItsWay() throws Exception
+    {
+        final boolean[] out = new boolean[3];
+        final Exception[] failed = new Exception[1];
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    ui.openLayoutEditor(PAGE, Boolean.TRUE, null);
+
+                    out[0] = (Boolean) Reflect.method(TrainControlUI.class, "anEditorIsOpenOrOnItsWay").invoke(ui);
+                    out[1] = ui.isLayoutEditorOpen();
+                    out[2] = (Boolean) Reflect.method(TrainControlUI.class, "refuseWhileEditorOpen").invoke(ui);
+                }
+                catch (Exception e)
+                {
+                    failed[0] = e;
+                }
+            });
+
+            if (failed[0] != null) throw failed[0];
+
+            assertTrue(Components.waitFor(() -> editorShowing() != null, 20000), "precondition: the editor never came");
+
+            editor = editorShowing();
+
+            assertTrue(out[0], "precondition: no editor was on its way after Edit");
+            assertFalse(out[1], "precondition: the editor was already open in the event that asked for it");
+            assertTrue(out[2], "refuseWhileEditorOpen let a layout switch through with an editor on its way; said "
+                + answering.asked());
+        }
+    }
+
+    /**
+     * The flag sync threads read to decide whether a sync runs is volatile.
+     *
+     * MUTATION: drop `volatile` from `TrainControlUI.editorOnItsWay`, and this fails.
+     */
+    @Test
+    public void testTheOnItsWayFlagIsVolatile() throws Exception
+    {
+        assertTrue(java.lang.reflect.Modifier.isVolatile(TrainControlUI.class.getDeclaredField("editorOnItsWay")
+            .getModifiers()), "editorOnItsWay is read by sync threads and is not volatile");
+    }
+
+    /**
+     * A sync owed that a run refuses (the rename-from-station door's tail) is not owed any more: stopping the run and
+     * opening and canceling an editor starts no sync.
+     *
+     * MUTATION: in `doSync`, leave the `syncOwed.set(false)` out of the autonomy refusal, and a sync follows the close.
+     */
+    @Test(timeOut = 180000)
+    public void testASyncARunRefusedIsNotOwedToTheNextEditor() throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicBoolean owed = (java.util.concurrent.atomic.AtomicBoolean)
+            Reflect.get(TrainControlUI.class, ui, "syncOwed");
+        final java.lang.reflect.Field running = Reflect.field(org.traincontrol.automation.Layout.class, "running");
+
+        running.setBoolean(model.getAutoLayout(), true);
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            owed.set(true);
+
+            SwingUtilities.invokeLater(() -> ui.doSync(null));
+
+            assertTrue(answering.awaitAsked(1, 20000), "the run's refusal was not said");
+
+            Components.settle();
+
+            running.setBoolean(model.getAutoLayout(), false);
+
+            assertFalse(owed.get(), "the refused sync is still owed");
+
+            openTheEditor();
+
+            close(Closing.CANCEL);
+
+            assertFalse(Components.waitFor(() -> syncs() > 0, QUIET_MS),
+                "a sync a run refused ran at the next editor's close: " + station.log());
+        }
+        finally
+        {
+            running.setBoolean(model.getAutoLayout(), false);
+        }
+    }
+
+    /**
+     * The locomotive CSV import that would change an address is refused with an editor open, with the editor's message,
+     * and nothing is written.
+     *
+     * MUTATION: leave the two `refuseALinkOrSyncWhileEditorOpen` asks out of `LocomotiveCsvDoor`, and the address changes.
+     */
+    @Test(timeOut = 180000)
+    public void testTheCsvImportDoesNotReaddressUnderAnEditor() throws Exception
+    {
+        final String name = "owed sync csv loco";
+        final int was = model.newMM2Locomotive(name, 20).getAddress();
+        final java.io.File file = java.io.File.createTempFile("tc-owed", ".csv");
+
+        java.nio.file.Files.write(file.toPath(), ("Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,"
+            + "Start Year,End Year,RailwayName,Notes\n" + name + ",,DCC,21,0,0:00:00,0,0,,\n")
+            .getBytes(StandardCharsets.UTF_8));
+
+        try
+        {
+            openTheEditor();
+
+            try (Answering answering = Answering.start(message -> Answering.pressAt(0)).choosing(file))
+            {
+                final javax.swing.JMenuItem door = (javax.swing.JMenuItem) Reflect.get(TrainControlUI.class, ui,
+                    "importLocsFromCSVMenuItem");
+
+                SwingUtilities.invokeLater(door::doClick);
+
+                assertTrue(answering.awaitAsked(1, 30000), "the import said nothing");
+
+                Components.settle();
+
+                List<String> said = new ArrayList<>(answering.asked());
+
+                assertEquals(said.get(0), I18n.t("loc.ui.errorEditorOpenNoLinkOrSync"), "the import said " + said);
+                assertEquals(said.size(), 1, "the import said more than the refusal: " + said);
+                assertEquals(model.getLocByName(name).getAddress(), was, "the import re-addressed under an open editor");
+            }
+        }
+        finally
+        {
+            model.deleteLoc(name);
+            file.delete();
+        }
+    }
 }

@@ -4148,8 +4148,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     final AtomicInteger refreshesUnderWay = new AtomicInteger();
 
-    /** An editor asked for and not yet shown; read by `anEditorIsOpenOrOnItsWay`.  Event thread only. */
-    boolean editorOnItsWay;
+    /** An editor asked for and not yet shown; written on the event thread, read by `anEditorIsOpenOrOnItsWay` from any thread. */
+    volatile boolean editorOnItsWay;
 
     Window openLayoutEditorWindow()
     {
@@ -7565,13 +7565,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Syncs with the Central Station without freezing the interface, and says that it is working.  The sync REPLACES
-     * the databases, so on the event thread the fetch runs on a worker behind a modal spinner; off it, a plain call.
+     * Syncs with the Central Station; refused aloud while an editor is open or on its way.
      *
-     * One at a time: a modal dialog's nested event loop dequeues posted runnables, so two workers could be in the
-     * database reconciliation at once; a second caller is turned away.
-     *
-     * @return whatever syncWithCS2 returned, or SYNC_ALREADY_RUNNING when another sync was running (NOT a failure)
+     * @return what the model's sync returned, SYNC_ALREADY_RUNNING (not a failure), or SYNC_REFUSED (nothing synced)
      */
     public int syncWithCS2()
     {
@@ -7612,6 +7608,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }
 
+    /**
+     * The sync itself, without the editor gate: on the event thread the fetch runs on a worker behind a modal spinner,
+     * off it a plain call.  One at a time (a modal dialog's nested loop dequeues posted runnables, so two workers
+     * could reconcile the databases at once); a second caller gets SYNC_ALREADY_RUNNING.
+     */
     private int syncNow()
     {
         if (!syncInFlight.compareAndSet(false, true))
@@ -14989,7 +14990,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The DATABASE sync adds locomotives and re-adds routes, more invasive than the guarded state sync next door.
         // The model defers only the address update; everything else in it proceeds.
         // With no window to tell (c null), the owed sync of a door's own edit: it waits for an open editor, quietly
-        if (refuseWhileAutonomyRunning(c) || c != null && RunGates.refuseALinkOrSyncWhileEditorOpen(this, c)) return;
+        if (refuseWhileAutonomyRunning(c))
+        {
+            // A debt a run refuses is dropped, not left to fire at a later editor close
+            if (c == null) syncOwed.set(false);
+
+            return;
+        }
+
+        if (c != null && RunGates.refuseALinkOrSyncWhileEditorOpen(this, c)) return;
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {

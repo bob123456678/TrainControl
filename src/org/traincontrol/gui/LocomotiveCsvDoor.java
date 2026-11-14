@@ -73,6 +73,9 @@ final class LocomotiveCsvDoor
         // A train with a speed keeps its address: the file would send its commands to another decoder.
         if (refuseWhileMoving(ui, csv, plan, model)) return;
 
+        // A changed address is refused while an editor is open (D125)
+        if (!plan.moves.isEmpty() && RunGates.refuseALinkOrSyncWhileEditorOpen(ui, ui)) return;
+
         List<MarklinLocomotiveCsv.Move> changing = plan.moves;
         List<MarklinLocomotiveCsv.Shared> shared = csv.sharedAddresses(model, plan);
         int sharing = 0;
@@ -105,7 +108,8 @@ final class LocomotiveCsvDoor
 
         // The question was modal; a run or a route may have begun behind it.
         if (RunGates.refuseWhileAutonomyRunning(ui, source) || RunGates.refuseWhileARouteDrivesAny(ui, ui,
-            csv.existingNames(model)) || refuseWhileMoving(ui, csv, plan, model))
+            csv.existingNames(model)) || refuseWhileMoving(ui, csv, plan, model)
+            || !plan.moves.isEmpty() && RunGates.refuseALinkOrSyncWhileEditorOpen(ui, ui))
         {
             return;
         }
