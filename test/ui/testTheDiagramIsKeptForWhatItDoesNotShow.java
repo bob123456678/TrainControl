@@ -497,44 +497,112 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     @Test(timeOut = 180000)
     public void testAPageWindowClosesWhenASyncFindsItsPageGone() throws Exception
     {
-        final String gone = "5 - Test";
-        final Path index = sandbox.getFolder().toPath().resolve("config/gleisbild.cs2");
-        final Path page = sandbox.getFolder().toPath().resolve("config/gleisbilder/" + gone + ".cs2");
-        final byte[] indexWas = Files.readAllBytes(index);
-        final byte[] pageWas = Files.readAllBytes(page);
-        final String text = new String(indexWas, StandardCharsets.UTF_8);
-        final String eol = text.contains("\r\n") ? "\r\n" : "\n";
-        final String entry = ("seite\r\n .id=4\r\n .name=" + gone + "\r\n").replace("\r\n", eol);
-
-        assertTrue(text.contains(entry), "precondition: the index has no entry for " + gone);
-
-        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), gone);
-        Settle.theDiagram(ui);
-
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
-
-        assertEquals(window.getLayoutTitle(), gone, "precondition: the page window does not show " + gone);
-
-        // The main window on a page that stays, so only the page window is about the page taken out
-        showTheMainPage();
-
-        final Locomotive train = model.getLocByName(model.getLocList().get(0));
+        final OutsideEdit edit = new OutsideEdit();
 
         try
         {
-            Files.write(index, text.replace(entry, "").getBytes(StandardCharsets.UTF_8));
-            Files.delete(page);
+            edit.write(edit.text.replace(edit.entry, ""), null);
 
-            syncTheLocomotive(train);
+            syncTheLocomotive(edit.train);
 
-            assertFalse(model.getLayoutList().contains(gone), "precondition: the sync did not read the pages again");
+            assertFalse(model.getLayoutList().contains(RENAMED_FROM), "precondition: the sync did not read the pages"
+                + " again");
 
-            assertTrue(Components.waitFor(() -> !window.isShowing(), 20000), "the page window of " + gone + " is still"
-                + " open after a sync found the page gone");
+            assertTrue(Components.waitFor(() -> !edit.window.isShowing(), 20000), "the page window of " + RENAMED_FROM
+                + " is still open after a sync found the page gone");
         }
         finally
         {
+            edit.putBack();
+        }
+    }
+
+    /**
+     * A page window follows its page when the page is renamed in the folder, outside TrainControl, and synced: it shows
+     * the page under its new name, found by its page ID.
+     *
+     * MUTATION: in `LayoutPopupUI.showsAPageReadAgain`, look the page up by name alone, and the window keeps the old
+     * page.
+     */
+    @Test(timeOut = 180000)
+    public void testAPageWindowFollowsAPageRenamedOutside() throws Exception
+    {
+        final OutsideEdit edit = new OutsideEdit();
+
+        try
+        {
+            edit.write(edit.text.replace(edit.entry, edit.entry.replace(RENAMED_FROM, RENAMED_TO)), RENAMED_TO);
+
+            syncTheLocomotive(edit.train);
+
+            assertTrue(model.getLayoutList().contains(RENAMED_TO), "precondition: the sync did not read the rename");
+
+            final LayoutPopupUI window = edit.window;
+
+            assertTrue(Components.waitFor(() -> window.isShowing() && RENAMED_TO.equals(window.getLayoutTitle()),
+                20000), "the page window does not show " + RENAMED_TO + " after the page was renamed outside and"
+                + " synced; showing: " + window.isShowing() + ", page: " + window.getLayoutTitle());
+        }
+        finally
+        {
+            edit.putBack();
+        }
+    }
+
+    /**
+     * A page window on `RENAMED_FROM` (page ID 4), opened from the main window, which then goes back to a page that
+     * stays; and the folder's index and page file, kept to be put back.
+     */
+    private final class OutsideEdit
+    {
+        final Path config = sandbox.getFolder().toPath().resolve("config");
+        final Path index = config.resolve("gleisbild.cs2");
+        final Path page = config.resolve("gleisbilder/" + RENAMED_FROM + ".cs2");
+        final Path moved = config.resolve("gleisbilder/" + RENAMED_TO + ".cs2");
+        final byte[] indexWas;
+        final byte[] pageWas;
+        final String text;
+        final String entry;
+        final LayoutPopupUI window;
+        final Locomotive train = model.getLocByName(model.getLocList().get(0));
+
+        OutsideEdit() throws Exception
+        {
+            indexWas = Files.readAllBytes(index);
+            pageWas = Files.readAllBytes(page);
+            text = new String(indexWas, StandardCharsets.UTF_8);
+
+            final String eol = text.contains("\r\n") ? "\r\n" : "\n";
+
+            entry = ("seite\r\n .id=4\r\n .name=" + RENAMED_FROM + "\r\n").replace("\r\n", eol);
+
+            assertTrue(text.contains(entry), "precondition: the index has no entry for " + RENAMED_FROM);
+
+            Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), RENAMED_FROM);
+            Settle.theDiagram(ui);
+
+            window = AskingWindows.openThePage(ui);
+
+            assertEquals(window.getLayoutTitle(), RENAMED_FROM, "precondition: the page window does not show "
+                + RENAMED_FROM);
+
+            showTheMainPage();
+        }
+
+        /** Writes the index, and moves the page's file to the name given, or deletes it for null. */
+        void write(String newIndex, String pageNowNamed) throws Exception
+        {
+            Files.write(index, newIndex.getBytes(StandardCharsets.UTF_8));
+
+            if (pageNowNamed == null) Files.delete(page);
+            else Files.move(page, moved);
+        }
+
+        /** Puts the files back, syncs, and closes the window. */
+        void putBack() throws Exception
+        {
             Files.write(index, indexWas);
+            Files.deleteIfExists(moved);
             Files.write(page, pageWas);
 
             syncTheLocomotive(train);

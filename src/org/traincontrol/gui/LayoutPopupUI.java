@@ -107,10 +107,13 @@ public class LayoutPopupUI extends PositionAwareJFrame
         return this.grid;
     }
 
-    /** Whether the model holds this window's page as a new object: a sync from a local folder reads every page again. */
+    /**
+     * Whether the model holds this window's page as a new object, found as `pageNow` finds it: a sync from a local
+     * folder reads every page again, a page renamed there too.
+     */
     boolean showsAPageReadAgain()
     {
-        LayoutDiagram now = this.parent.getModel().getLayout(this.layout.getName());
+        LayoutDiagram now = pageNow();
 
         return now != null && now != this.layout;
     }
