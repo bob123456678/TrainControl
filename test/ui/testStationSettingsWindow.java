@@ -1057,6 +1057,75 @@ public class testStationSettingsWindow
         assertEquals(session.getTrainList(square), Arrays.asList(train), "the blacklist is not the same list");
     }
 
+    /**
+     * The list of trains is titled by what it does: Whitelist's, from its radio on an empty list and from Choose, as the
+     * trains let in; Blacklist's, from Choose, as the trains kept out.
+     *
+     * MUTATION: title `EditorPrompts.promptTrainList`'s list "Locomotive Exclusions" whatever `which` is, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheListOfTrainsIsTitledByWhatItDoes() throws Exception
+    {
+        final TileKey square = aStation();
+        final List<String> one = Arrays.asList(model.getLocList().get(0));
+
+        // No home, which a list could shut out and so ask about first
+        Components.onTheEventThread(() -> { session.setPointProperty(square, "home", null); return null; });
+
+        assertTitled(titlesAsked(StationDoors.open(panel, square), "station.whichWhite"), WhichTrains.WHITELIST,
+            "Whitelist on an empty list");
+
+        for (WhichTrains which : new WhichTrains[] {WhichTrains.WHITELIST, WhichTrains.BLACKLIST})
+        {
+            Components.onTheEventThread(() -> { session.setWhichTrains(square, which, one); return null; });
+
+            assertTitled(titlesAsked(StationDoors.open(panel, square), "station.whichChoose"), which, "Choose under "
+                + which);
+        }
+    }
+
+    /** The titles of the questions a control's click asks, each answered Cancel. */
+    private static List<String> titlesAsked(StationSettingsWindow window, String control) throws Exception
+    {
+        final AbstractButton button = StationDoors.part(window, control, AbstractButton.class);
+        final java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(1);
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(1)))
+        {
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                try
+                {
+                    button.doClick();
+                }
+                finally
+                {
+                    done.countDown();
+                }
+            });
+
+            assertTrue(done.await(30, java.util.concurrent.TimeUnit.SECONDS), control + " did not finish");
+
+            Components.settle();
+
+            List<String> titles = new java.util.ArrayList<>();
+
+            for (Answering.Question each : answering.questions()) titles.add(each.title);
+
+            return titles;
+        }
+    }
+
+    private static void assertTitled(List<String> titles, WhichTrains which, String door)
+    {
+        String expected = I18n.t(which == WhichTrains.WHITELIST ? "autosetup.ui.labelLocomotivesAllowed"
+            : "autosetup.ui.labelLocomotiveExclusions");
+
+        assertEquals(titles.size(), 1, "precondition: " + door + " did not open the list once: " + titles);
+        assertTrue(titles.get(0).startsWith(expected), door + " opened the list of trains titled \"" + titles.get(0)
+            + "\", not \"" + expected + "\"");
+    }
+
     // ------------------------------------------------------------------------------------------ closed stays closed
 
     /**

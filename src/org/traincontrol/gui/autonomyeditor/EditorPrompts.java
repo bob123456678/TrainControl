@@ -299,9 +299,14 @@ final class EditorPrompts
 
         list.setSelectedIndices(selection);
 
-        if (JOptionPane.showConfirmDialog(editor.owner(), new JScrollPane(list), editor.oneOfSeveral
-            ? I18n.f("autosetup.ui.labelLocomotiveExclusionsAt", editor.describeTile(tile))
-            : I18n.t("autosetup.ui.labelLocomotiveExclusions"),
+        // Titled by what the list does: the trains it keeps out, or the only ones it lets in
+        boolean allowed = which == AutonomySession.WhichTrains.WHITELIST;
+        String title = !editor.oneOfSeveral
+            ? I18n.t(allowed ? "autosetup.ui.labelLocomotivesAllowed" : "autosetup.ui.labelLocomotiveExclusions")
+            : I18n.f(allowed ? "autosetup.ui.labelLocomotivesAllowedAt" : "autosetup.ui.labelLocomotiveExclusionsAt",
+                editor.describeTile(tile));
+
+        if (JOptionPane.showConfirmDialog(editor.owner(), new JScrollPane(list), title,
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
         {
             return false;
