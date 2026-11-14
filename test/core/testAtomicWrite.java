@@ -422,6 +422,53 @@ public class testAtomicWrite
     }
 
     /**
+     * A drive that refuses to force the staged file to disk still gets the file, and says so in the log once, not at
+     * every save: refused, every save would fail, and the exit would ask Retry for ever.  The refusal is staged by
+     * making the staging file read-only from inside the write, so the forcing handle cannot be opened.
+     *
+     * MUTATION: in `Util.writeAtomically`, drop the catch around the force, and the save fails.
+     */
+    @Test
+    public void testADriveThatRefusesTheForceStillGetsTheFile() throws Exception
+    {
+        List<String> logged = java.util.Collections.synchronizedList(new java.util.ArrayList<String>());
+
+        java.util.logging.Handler tap = support.LogTap.everyMessageInto(logged);
+        java.util.logging.Logger log = java.util.logging.Logger.getLogger(Util.class.getName());
+
+        log.addHandler(tap);
+
+        try
+        {
+            for (String content : new String[] {"first", "second"})
+            {
+                Util.writeAtomically(target, out ->
+                {
+                    out.write(content.getBytes(StandardCharsets.UTF_8));
+
+                    for (File staging : dir.toFile().listFiles((folder, name) -> name.endsWith(".part")))
+                    {
+                        assertTrue(staging.setReadOnly(), "could not stage the refusal");
+                    }
+                });
+
+                assertEquals(contents(), content, "the save did not reach the file where the force was refused");
+
+                assertTrue(target.setWritable(true), "could not undo the fixture");
+            }
+        }
+        finally
+        {
+            log.removeHandler(tap);
+
+            target.setWritable(true);
+        }
+
+        // Once in this JVM, which no other claim refuses in
+        assertEquals(logged.size(), 1, "the refusal was not logged once: " + logged);
+    }
+
+    /**
      * Restoring an archive whose entry is empty (an older backup stored a file it could not read that way) keeps the
      * file there now when it has content, says so in the question, and restores the rest.
      *
