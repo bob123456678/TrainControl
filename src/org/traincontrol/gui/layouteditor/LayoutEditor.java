@@ -4528,6 +4528,21 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (isAutonomyMode()) return this.trainDrag.cancel() || autonomyPanel.putToolsDown();
 
+        // A text tile being dragged (OB-478) stays where it was, and the release that follows drops nothing
+        if (this.captionGhost != null)
+        {
+            hideCaptionGhost();
+
+            if (this.dragWindow != null) this.dragWindow.dispose();
+
+            this.dragWindow = null;
+            this.clickToIgnore = this.dragSource;
+            this.dragSource = null;
+            this.resetClipboard();
+
+            return true;
+        }
+
         // A box being drawn is held too, or Escape would close the editor with the button down.
         boolean boxOpen = this.boxAnchorX >= 0 && this.boxAnchorY >= 0;
 

@@ -1470,6 +1470,66 @@ public class testTheTrackEditorByHand
         }
     }
 
+    /**
+     * Escape while a text label is being dragged puts it down where it was: the copy goes, and the release that follows
+     * moves nothing (OB-478).
+     *
+     * MUTATION: drop the text-drag branch from `LayoutEditor.letGoOfWhateverIsHeld`, and this fails.
+     */
+    @Test
+    public void testEscapePutsADraggedTextLabelBack() throws Exception
+    {
+        final LayoutEditor editor = aTextTileEditor();
+
+        try
+        {
+            final LayoutLabel label = square(editor, 3, 2);
+            final LayoutLabel over = square(editor, 7, 4);
+            final java.awt.Point press = new java.awt.Point(6, label.getHeight() / 2);
+
+            Components.onTheEventThread(() ->
+            {
+                editor.beginDrag(mouse(label, MouseEvent.MOUSE_PRESSED, press), label);
+                editor.updateDrag(mouse(label, MouseEvent.MOUSE_DRAGGED, new java.awt.Point(press.x + 160, press.y + 80)),
+                    label);
+                editor.receiveMoveEvent(mouse(over, MouseEvent.MOUSE_MOVED, press), over);
+
+                editor.dispatchEvent(new KeyEvent(editor, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0,
+                    KeyEvent.VK_ESCAPE, KeyEvent.CHAR_UNDEFINED));
+
+                return null;
+            });
+
+            Components.drain(5);
+
+            assertTrue(editor.isDisplayable(), "Escape closed the editor instead of putting the label down");
+            assertNull(carried(editor), "Escape left the dragged label on the window");
+
+            Components.onTheEventThread(() ->
+            {
+                editor.endDrag(mouse(label, MouseEvent.MOUSE_RELEASED, press), label);
+
+                return null;
+            });
+
+            Components.drain(5);
+
+            LayoutDiagramComponent still = editor.getMarklinLayout().getComponent(3, 2);
+
+            assertTrue(still != null && still.isText(), "the label left its square after Escape");
+            assertNull(editor.getMarklinLayout().getComponent(7, 4), "the release after Escape dropped the label");
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                editor.dispose();
+
+                return null;
+            });
+        }
+    }
+
     /** The words on the text tile the claims below drag. */
     private static final String TEXT = "Yard sidings";
 
