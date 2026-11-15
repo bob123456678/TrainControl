@@ -645,7 +645,7 @@ These live on the Auto tab's **Settings** tab; `Autonomy` → `Autonomy Settings
 | Setting | What it is for |
 | --- | --- |
 | Turn Off Functions on Arrival, Turn On Functions on Departure | On departure, switch on the locomotive's saved function preset (right-click the locomotive → `Save Active Functions as Preset`, or Alt+S); on arrival, switch all its functions off. Untick the arrival one to keep sound running between routes. Separately, one function can be toggled as each train leaves and one as it arrives, whatever these two say: open the locomotive's `Locomotive Settings` and set `Departure Function` and `Arrival Function` on its `Autonomy` tab |
-| Linked Routes | `Toggle specified routes`: whenever this configuration is loaded, and as soon as you tick a route, the routes ticked in the list are switched on and every other route is switched off, and they stay that way after autonomy stops. Use it for emergency stops, sound effects, or safety signals. Only routes triggered by a sensor can be switched on this way |
+| Linked Routes | `Toggle specified routes`: whenever this configuration is loaded (including after a page edit, or a Sync that finds a page changed), whenever autonomy starts a run, a timetable or Return Home, and as soon as you tick a route, the routes ticked in the list are switched on and every other route is switched off, and they stay that way after autonomy stops. A route you switch by hand meanwhile goes back to the list at the next of these. Use it for emergency stops, sound effects, or safety signals. Only routes triggered by a sensor can be switched on this way |
 
 **Testing**
 
