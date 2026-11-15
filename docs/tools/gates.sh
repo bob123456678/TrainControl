@@ -136,7 +136,8 @@ do
             status=$?
             dirty=""
             [ -n "$(git status --porcelain -- src build.xml nbproject)" ] && dirty="; HEAD's jar, src has uncommitted changes"
-            say updater $status "$TC_LAST_RELEASE; $(grep -m1 '^Total tests run' "$log")$dirty"
+            say updater $status "$TC_LAST_RELEASE took the store jar of HEAD $(git rev-parse --short HEAD); \
+$(grep -m1 '^Total tests run' "$log")$dirty"
             ;;
         layouts)
             started=$(date +%s)
