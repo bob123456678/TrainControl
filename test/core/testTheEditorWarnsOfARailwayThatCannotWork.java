@@ -387,6 +387,46 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             String.valueOf(Side.W), session.describeTile(turnout)), "the (i) line does not say where the limit is");
     }
 
+    /**
+     * Plain track with a station at each end is set from either one, and each one's (i) line names the other: one
+     * station closing its side lets the other leave into the track, and the other closing its own opens it again.
+     *
+     * MUTATION: have `departureSharedWith` say nothing, and this fails.
+     */
+    @Test
+    public void testMayDepartOnSharedTrackNamesTheOtherStation() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 10, 4, null, null);
+
+        Diagrams.row(page, 1, 1, "FSFSSFSF", 5, 6, 7, 8);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("D141 shared");
+
+        TileKey west = new TileKey("main", 3, 1), east = new TileKey("main", 6, 1);
+        RouteId westRoad = session.getRoutes(west).keySet().iterator().next();
+        RouteId eastRoad = session.getRoutes(east).keySet().iterator().next();
+
+        assertTrue(session.departureWayCanBeSet(west, westRoad) && session.departureWayCanBeSet(east, eastRoad),
+            "precondition: May depart is gray on plain track between stations");
+        assertTrue(session.departureSharedWith(west, westRoad).contains(I18n.f("autosetup.ui.flyDepartShared",
+            String.valueOf(Side.E), session.describeTile(east))), "the (i) line does not name the station to the east");
+        assertTrue(session.departureSharedWith(east, eastRoad).contains(I18n.f("autosetup.ui.flyDepartShared",
+            String.valueOf(Side.W), session.describeTile(west))), "the (i) line does not name the station to the west");
+
+        session.setDepartureWay(west, westRoad, toward(west, westRoad, Side.W));
+
+        assertEquals(session.departureWay(west, westRoad), toward(west, westRoad, Side.W), "precondition: not set");
+        assertEquals(session.departureWay(east, eastRoad), Direction.BOTH, "closing a side kept the other station in");
+
+        session.setDepartureWay(east, eastRoad, toward(east, eastRoad, Side.E));
+
+        assertEquals(session.departureWay(west, westRoad), Direction.BOTH,
+            "the other station's May depart did not set the shared track");
+        assertEquals(session.departureWay(east, eastRoad), toward(east, eastRoad, Side.E), "the second pick was lost");
+    }
+
     /** `platformWithTwoApproaches` with its platform moved up against the switch: s88 squares at (1,1), (4,1), (6,1). */
     private static LayoutDiagram stationBesideASwitch() throws IOException
     {

@@ -87,11 +87,12 @@ final class StationFlyovers
     /**
      * @param direction what the dropdown says
      * @param why why the dropdown is grayed (D141), or null where it sets the track beside
+     * @param shared which other stations set the same track, or null
      */
-    static String depart(String direction, String why)
+    static String depart(String direction, String why, String shared)
     {
-        return nowThenChange(I18n.f("autosetup.ui.flyDepartNow", direction),
-            why != null ? why : I18n.t("autosetup.ui.flyDepartChange"));
+        return nowThenChange(I18n.f("autosetup.ui.flyDepartNow", direction), why != null ? why
+            : I18n.t("autosetup.ui.flyDepartChange") + (shared == null ? "" : "  " + shared));
     }
 
     static String turning(boolean may, boolean must)

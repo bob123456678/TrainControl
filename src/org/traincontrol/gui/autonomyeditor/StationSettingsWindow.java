@@ -1419,7 +1419,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         String said = null;
 
-        String why = null;
+        String why = null, shared = null;
 
         for (final Map.Entry<RouteId, TilePorts.Route> entry : routes.entrySet())
         {
@@ -1458,6 +1458,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
             if (why == null) why = fixed;
 
+            if (shared == null && sets) shared = session.departureSharedWith(tile, entry.getKey());
+
             final JComboBox<String> choice = same ? departChoices.get(entry.getKey())
                 : new Choice(at -> actAlone(() -> editor.setDepartureWay(tile, entry.getKey(), answers.get(at))),
                     labels.toArray(new String[0]));
@@ -1483,7 +1485,7 @@ public final class StationSettingsWindow extends StationWindowBase
             departAnswers.put(entry.getKey(), answers);
         }
 
-        fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said, why));
+        fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said, why, shared));
 
         depart.revalidate();
     }

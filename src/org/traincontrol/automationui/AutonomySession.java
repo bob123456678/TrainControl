@@ -5302,16 +5302,34 @@ public class AutonomySession
         return null;
     }
 
-    /** Where the run beside a station ends away from it: its far boundary, or its last square where the track stops. */
+    /** The other s88 squares whose May depart sets the same track as a station's road, for its (i) line; or null. */
+    public String departureSharedWith(TileKey station, RouteId road)
+    {
+        Route route = graph == null ? null : getRoutes(station).get(road);
+
+        List<String> out = new ArrayList<>();
+
+        for (Side side : route == null ? new Side[0] : new Side[] {route.getA(), route.getB()})
+        {
+            Run run = runBeside(station, side);
+
+            TileKey far = run == null ? null : farEnd(run, station, graph.landing(station, side));
+
+            if (isSensorSquare(far) && !far.equals(station))
+            {
+                out.add(I18n.f("autosetup.ui.flyDepartShared", String.valueOf(side), describeTile(far)));
+            }
+        }
+
+        return out.isEmpty() ? null : String.join("  ", out);
+    }
+
+    /** Where the run beside a station ends away from it; null where the track stops. */
     private static TileKey farEnd(Run run, TileKey station, Landing next)
     {
-        List<TileKey> tiles = run.getTiles();
+        boolean fromStart = station.equals(run.getStart()) && run.getTiles().get(0).equals(next.getTile());
 
-        boolean fromStart = station.equals(run.getStart()) && tiles.get(0).equals(next.getTile());
-
-        TileKey far = fromStart ? run.getEnd() : run.getStart();
-
-        return far != null ? far : tiles.get(fromStart ? tiles.size() - 1 : 0);
+        return fromStart ? run.getEnd() : run.getStart();
     }
 
     /**
