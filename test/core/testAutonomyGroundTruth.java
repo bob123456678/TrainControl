@@ -110,10 +110,8 @@ public class testAutonomyGroundTruth
     }
 
     /**
-     * The count on its own, so a wholesale collapse is reported as one line rather than as hundreds.
-     *
-     * The difference above tells you which route; the count tells you it was the railway, and is reported as one line
-     * rather than as hundreds when the graph loses its edges.
+     * The count on its own, so a wholesale collapse is reported as one line rather than as hundreds: the difference
+     * above tells you which route, the count tells you it was the railway.
      */
     @Test
     public void testTheRailwayStillHasItsStationsAndEdges() throws Exception

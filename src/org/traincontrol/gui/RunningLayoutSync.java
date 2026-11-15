@@ -1,7 +1,19 @@
 package org.traincontrol.gui;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.util.I18n;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * The setup and the running railway kept in step: folding the railway into the setup, rebuilding it from the setup with
@@ -27,7 +39,7 @@ final class RunningLayoutSync
      */
     void keepThePendingTurnsAcross(Runnable load)
     {
-        java.util.Map<String, String[]> pendingTurns = takeThePendingTurns();
+        Map<String, String[]> pendingTurns = takeThePendingTurns();
 
         try
         {
@@ -79,7 +91,7 @@ final class RunningLayoutSync
         try
         {
             // Each train under way on the one point it is kept at; a railway at rest keeps none
-            org.traincontrol.automation.Layout folding = this.ui.getModel().getAutoLayout();
+            Layout folding = this.ui.getModel().getAutoLayout();
 
             String railway = folding.toJSON(folding.getLastPointsReached());
 
@@ -116,9 +128,9 @@ final class RunningLayoutSync
         if (railway == null || railway != this.ui.settingsBuiltFor || this.ui.settingsAsBuilt == null) return;
 
         // sorted, as the railway writes its list, so the fold's comparison of the two lists reads them as the same
-        java.util.Set<String> built = new java.util.TreeSet<>();
+        Set<String> built = new java.util.TreeSet<>();
 
-        org.json.JSONArray list = this.ui.settingsAsBuilt.optJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+        JSONArray list = this.ui.settingsAsBuilt.optJSONArray(Layout.PAUSED_LOCOMOTIVES);
 
         for (int i = 0; list != null && i < list.length(); i++)
         {
@@ -135,8 +147,8 @@ final class RunningLayoutSync
             else built.remove(train.getName());
         }
 
-        if (built.isEmpty()) this.ui.settingsAsBuilt.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
-        else this.ui.settingsAsBuilt.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(built));
+        if (built.isEmpty()) this.ui.settingsAsBuilt.remove(Layout.PAUSED_LOCOMOTIVES);
+        else this.ui.settingsAsBuilt.put(Layout.PAUSED_LOCOMOTIVES, new JSONArray(built));
     }
 
     /**
@@ -145,7 +157,7 @@ final class RunningLayoutSync
      */
     void noteTheRailwaysSettingsAsBuilt()
     {
-        org.traincontrol.automation.Layout built = this.ui.getModel() == null ? null : this.ui.getModel().getAutoLayoutIfLoaded();
+        Layout built = this.ui.getModel() == null ? null : this.ui.getModel().getAutoLayoutIfLoaded();
 
         this.ui.settingsBuiltFor = built;
         this.ui.settingsAsBuilt = null;
@@ -154,8 +166,7 @@ final class RunningLayoutSync
 
         try
         {
-            this.ui.settingsAsBuilt = org.traincontrol.automationui.AutonomySession.globalsOf(
-                new org.json.JSONObject(built.toJSON()));
+            this.ui.settingsAsBuilt = AutonomySession.globalsOf(new JSONObject(built.toJSON()));
         }
         catch (Exception cannotRead)
         {
@@ -168,7 +179,7 @@ final class RunningLayoutSync
      * @return its settings as it was built, or null where this window does not know them; the folds change it in place to
      *         what they take into the setup (OB-343)
      */
-    org.json.JSONObject settingsAsBuiltFor(Object railway)
+    JSONObject settingsAsBuiltFor(Object railway)
     {
         return railway != null && railway == this.ui.settingsBuiltFor ? this.ui.settingsAsBuilt : null;
     }
@@ -182,15 +193,15 @@ final class RunningLayoutSync
     {
         // No placement edit is pending here: the callers are autonomyEditorClosed() and
         // LayoutEditor.discardAutonomyWork, and every placement made in the editor already reached the running layout.
-        rebuildRunningLayoutFromSetup(false, null);
+        rebuildRunningLayoutFromSetup(false, null, null);
     }
 
     /**
      * The road a train came in on, put back on the Point it was put back on; `was` is what `whereTheTrainsAre`
      * recorded.
      */
-    private static void putTheRoadBack(org.traincontrol.automation.Layout built,
-        org.traincontrol.automation.Point back, String[] was)
+    private static void putTheRoadBack(Layout built,
+        Point back, String[] was)
     {
         if (was == null || was.length < 3 || was[2] == null) return;
 
@@ -203,18 +214,18 @@ final class RunningLayoutSync
      * The destination turns the railway has made and not yet written into the setup, DRAINED rather than copied as the
      * Layout is about to be thrown away; pairs with `putThePendingTurnsBack`.
      */
-    java.util.Map<String, String[]> takeThePendingTurns()
+    Map<String, String[]> takeThePendingTurns()
     {
         if (this.ui.getModel() == null || !this.ui.getModel().hasAutoLayout()) return java.util.Collections.emptyMap();
 
-        org.traincontrol.automation.Layout layout = this.ui.getModel().getAutoLayout();
+        Layout layout = this.ui.getModel().getAutoLayout();
 
-        java.util.Map<String, String[]> out = new java.util.LinkedHashMap<>();
+        Map<String, String[]> out = new LinkedHashMap<>();
 
         // With the square and facing of the Point each turn was made at, read before the load replaces this railway.
-        for (java.util.Map.Entry<String, String> turn : layout.takeReversalsOnArrival().entrySet())
+        for (Map.Entry<String, String> turn : layout.takeReversalsOnArrival().entrySet())
         {
-            org.traincontrol.automation.Point at = turn.getValue() == null ? null : layout.getPoint(turn.getValue());
+            Point at = turn.getValue() == null ? null : layout.getPoint(turn.getValue());
 
             out.put(turn.getKey(), new String[] {turn.getValue(), at == null ? null : at.getSquare(),
                 at == null ? null : at.getCopyFacing()});
@@ -227,21 +238,21 @@ final class RunningLayoutSync
      * Puts those turns onto the rebuilt Layout.  `restoreReversalsOnArrival` puts each back only IF ABSENT (stated on
      * the Layout), so a train that has turned again on the new railway keeps its newer record.
      */
-    void putThePendingTurnsBack(java.util.Map<String, String[]> turns)
+    void putThePendingTurnsBack(Map<String, String[]> turns)
     {
         if (turns == null || turns.isEmpty()) return;
 
         if (this.ui.getModel() == null || !this.ui.getModel().hasAutoLayout()) return;
 
-        org.traincontrol.automationui.AutonomySession naming = this.ui.autonomySession();
+        AutonomySession naming = this.ui.autonomySession();
 
-        java.util.Map<String, String> named = new java.util.LinkedHashMap<>();
+        Map<String, String> named = new LinkedHashMap<>();
 
-        for (java.util.Map.Entry<String, String[]> turn : turns.entrySet())
+        for (Map.Entry<String, String[]> turn : turns.entrySet())
         {
             String[] at = turn.getValue();
 
-            // BY THE NAME THE REBUILD GIVES THE SAME COPY; where it has none, the name recorded, owed as before
+            // BY THE NAME THE REBUILD GIVES THE SAME COPY; where it has none, the name recorded
             String now = naming == null || at[0] == null ? at[0] : naming.pointNamedNow(at[0], at[1], at[2]);
 
             named.put(turn.getKey(), now != null ? now : at[0]);
@@ -255,15 +266,15 @@ final class RunningLayoutSync
      * on; a train whose square is gone is left where the rebuild put it.  `placementsJustEdited` is the trains the
      * setup was just given a new placement for, or null.
      */
-    void putTheTrainsBack(java.util.Map<String, String[]> standing,
-        java.util.Set<String> placementsJustEdited)
+    void putTheTrainsBack(Map<String, String[]> standing,
+        Set<String> placementsJustEdited)
     {
         if (this.ui.getModel() == null || !this.ui.getModel().hasAutoLayout()) return;
 
         // BY THE NAMES THE REBUILD GIVES THE SAME POINTS, which the session traces
-        org.traincontrol.automationui.AutonomySession naming = this.ui.autonomySession();
+        AutonomySession naming = this.ui.autonomySession();
 
-        java.util.Set<String> notBack = putTheTrainsBack(this.ui.getModel().getAutoLayout(), standing, this.ui.getModel()::log,
+        Set<String> notBack = putTheTrainsBack(this.ui.getModel().getAutoLayout(), standing, this.ui.getModel()::log,
             placementsJustEdited, naming == null ? null : naming::pointNamedNow);
 
         recordTheTrainsNotPutBack(this.ui.getModel().getAutoLayout(), standing, notBack, naming, this.ui.getModel()::log);
@@ -282,9 +293,9 @@ final class RunningLayoutSync
      * Point where no copy faces its way, and the setup check's error stops every send until it is turned, moved, or the
      * track is put back.
      */
-    static void recordTheTrainsNotPutBack(org.traincontrol.automation.Layout built,
-        java.util.Map<String, String[]> standing, java.util.Set<String> notBack,
-        org.traincontrol.automationui.AutonomySession setup, java.util.function.Consumer<String> log)
+    static void recordTheTrainsNotPutBack(Layout built,
+        Map<String, String[]> standing, Set<String> notBack,
+        AutonomySession setup, Consumer<String> log)
     {
         if (built == null || standing == null || notBack == null || notBack.isEmpty()) return;
 
@@ -293,7 +304,7 @@ final class RunningLayoutSync
             String[] was = standing.get(train);
 
             // OFF WHEREVER THE REBUILD PUT IT: not where it stands
-            for (org.traincontrol.automation.Point point : new java.util.ArrayList<>(built.getPoints()))
+            for (Point point : new java.util.ArrayList<>(built.getPoints()))
             {
                 if (point.getCurrentLocomotive() != null && train.equals(point.getCurrentLocomotive().getName()))
                 {
@@ -308,9 +319,9 @@ final class RunningLayoutSync
 
             setup.placeLocomotive(square, train);
 
-            org.traincontrol.automationui.TilePorts.Side facing = null;
+            TilePorts.Side facing = null;
 
-            for (org.traincontrol.automationui.TilePorts.Side side : org.traincontrol.automationui.TilePorts.Side.values())
+            for (TilePorts.Side side : TilePorts.Side.values())
             {
                 if (was.length > 4 && side.name().equals(was[4])) facing = side;
             }
@@ -325,9 +336,9 @@ final class RunningLayoutSync
             {
                 try
                 {
-                    setup.setPointProperty(square, "arrivedAlong", new org.json.JSONArray(was[2]));
+                    setup.setPointProperty(square, "arrivedAlong", new JSONArray(was[2]));
                 }
-                catch (org.json.JSONException notARoad)
+                catch (JSONException notARoad)
                 {
                     // a road that does not read is no road: the side alone is kept
                 }
@@ -338,8 +349,8 @@ final class RunningLayoutSync
     }
 
     /** The same, over a layout handed in, so it can be tested without a window (MT-337). */
-    static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,
-        java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log)
+    static Set<String> putTheTrainsBack(Layout built,
+        Map<String, String[]> standing, Consumer<String> log)
     {
         return putTheTrainsBack(built, standing, log, null);
     }
@@ -348,13 +359,13 @@ final class RunningLayoutSync
      * The same, each train and its road put back on the Point the rebuild gives the copy it stood on, found by
      * `namedNow` from the name, square and facing recorded; `namedNow` null goes by the names recorded.
      */
-    static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,
-        java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,
-        java.util.Set<String> placementsJustEdited, TrainControlUI.NamedNow namedNow)
+    static Set<String> putTheTrainsBack(Layout built,
+        Map<String, String[]> standing, Consumer<String> log,
+        Set<String> placementsJustEdited, TrainControlUI.NamedNow namedNow)
     {
-        java.util.Set<String> nowhere = new java.util.LinkedHashSet<>();
+        Set<String> nowhere = new LinkedHashSet<>();
 
-        java.util.Set<String> notBack = putTheTrainsBack(built,
+        Set<String> notBack = putTheTrainsBack(built,
             namedNow == null ? standing : namedNow(standing, namedNow, nowhere), log, placementsJustEdited);
 
         // AND THOSE WHOSE COPY THE REBUILD HAS NOT GOT, unless the setup was just given a newer answer for them
@@ -371,14 +382,14 @@ final class RunningLayoutSync
      * square it copied and its facing); a train whose Point the rebuild lacks is left out and stays where the rebuild
      * put it.
      */
-    private static java.util.Map<String, String[]> namedNow(java.util.Map<String, String[]> standing,
-        TrainControlUI.NamedNow namedNow, java.util.Set<String> nowhere)
+    private static Map<String, String[]> namedNow(Map<String, String[]> standing,
+        TrainControlUI.NamedNow namedNow, Set<String> nowhere)
     {
         if (standing == null) return null;
 
-        java.util.Map<String, String[]> out = new java.util.LinkedHashMap<>();
+        Map<String, String[]> out = new LinkedHashMap<>();
 
-        for (java.util.Map.Entry<String, String[]> was : standing.entrySet())
+        for (Map.Entry<String, String[]> was : standing.entrySet())
         {
             String[] now = was.getValue() == null ? null : was.getValue().clone();
 
@@ -395,13 +406,13 @@ final class RunningLayoutSync
                 }
             }
 
-            org.json.JSONObject roadSquares = null;
+            JSONObject roadSquares = null;
 
             try
             {
-                roadSquares = now != null && now.length > 5 && now[5] != null ? new org.json.JSONObject(now[5]) : null;
+                roadSquares = now != null && now.length > 5 && now[5] != null ? new JSONObject(now[5]) : null;
             }
-            catch (org.json.JSONException notSquares)
+            catch (JSONException notSquares)
             {
                 roadSquares = null;
             }
@@ -410,18 +421,17 @@ final class RunningLayoutSync
             {
                 try
                 {
-                    org.json.JSONArray road = new org.json.JSONArray(now[2]);
+                    JSONArray road = new JSONArray(now[2]);
 
                     for (int i = 0; i < road.length(); i++)
                     {
-                        org.json.JSONArray step = road.optJSONArray(i);
+                        JSONArray step = road.optJSONArray(i);
 
                         for (int j = 0; step != null && j < step.length(); j++)
                         {
                             if (step.opt(j) instanceof String)
                             {
-                                org.json.JSONArray of = roadSquares == null ? null
-                                    : roadSquares.optJSONArray(step.getString(j));
+                                JSONArray of = roadSquares == null ? null : roadSquares.optJSONArray(step.getString(j));
 
                                 String then = namedNow.pointNamedNow(step.getString(j),
                                     of == null || of.isNull(0) ? null : of.optString(0),
@@ -434,9 +444,9 @@ final class RunningLayoutSync
 
                     now[2] = road.toString();
                 }
-                catch (org.json.JSONException notARoad)
+                catch (JSONException notARoad)
                 {
-                    // left as it is, and `roadNamed` finds no road in it, as before
+                    // left as it is, and `roadNamed` finds no road in it
                 }
             }
 
@@ -452,21 +462,21 @@ final class RunningLayoutSync
      * editor (MT-337), the record where a run moved a train after the last capture (OB-183).  Decided per TRAIN.
      * Returns the trains it could not put back, left where the rebuild put them; `log` is where to say so.
      */
-    static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,
-        java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,
-        java.util.Set<String> placementsJustEdited)
+    static Set<String> putTheTrainsBack(Layout built,
+        Map<String, String[]> standing, Consumer<String> log,
+        Set<String> placementsJustEdited)
     {
-        java.util.Set<String> notBack = new java.util.LinkedHashSet<>();
+        Set<String> notBack = new LinkedHashSet<>();
 
         if (standing == null || standing.isEmpty()) return notBack;
 
         if (built == null) return notBack;
 
-        for (java.util.Map.Entry<String, String[]> was : standing.entrySet())
+        for (Map.Entry<String, String[]> was : standing.entrySet())
         {
             try
             {
-                org.traincontrol.automation.Point back = built.getPoint(was.getValue()[0]);
+                Point back = built.getPoint(was.getValue()[0]);
 
                 if (back == null)
                 {
@@ -477,7 +487,7 @@ final class RunningLayoutSync
 
                 // A station copy facing the same way, where the recorded one is barred and the square has one (a
                 // turning copy at a square trains may turn at): autonomy can start the train there.
-                org.traincontrol.automation.Point twin = built.startableTwinOf(back);
+                Point twin = built.startableTwinOf(back);
 
                 if (twin != null) back = twin;
 
@@ -516,9 +526,9 @@ final class RunningLayoutSync
                 // Where the rebuild put it, which is where the SETUP says it is: a rebuild is asked for because the
                 // setup just changed, so writing this record over it undoes the edit (MT-337).  Reached only for trains
                 // somebody chose to place (`AutonomySession.placeLocomotive` writes `loc` into the setup).
-                org.traincontrol.automation.Point now = null;
+                Point now = null;
 
-                for (org.traincontrol.automation.Point each : built.getPoints())
+                for (Point each : built.getPoints())
                 {
                     if (each.getCurrentLocomotive() != null
                         && was.getKey().equals(each.getCurrentLocomotive().getName()))
@@ -560,9 +570,10 @@ final class RunningLayoutSync
      * starting inside the coalesced rebuild's event finds the gate shut and the edit is thrown away, correctly; a
      * deferred rebuild would put each train back where it started (OB-144).  The remedy: stop the run and make the edit
      * again.  `placementsJustEdited` is the locomotives whose placement this gesture wrote into the setup, or null.
+     * `standingBefore`, from a Cancel, is where the railway had each train when the editor opened, or null.
      */
     void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,
-        java.util.Set<String> placementsJustEdited)
+        Set<String> placementsJustEdited, Map<String, String[]> standingBefore)
     {
         if (sayIfDeclined && this.ui.getActiveDiagramConfiguration() != null && this.ui.isAutonomyBusy()
             && this.ui.getAutonomyViewerPanel() != null)
@@ -589,12 +600,25 @@ final class RunningLayoutSync
             // two" holds only because `openLayoutEditor` captures the running layout before it constructs the editor.
             // Where the trains ARE survives the rebuild (OB-183): placements only, with the one exception named
             // (`placementsJustEdited`, MT-337).
-            java.util.Map<String, String[]> standing = this.ui.whereTheTrainsAre();
+            Map<String, String[]> standing = this.ui.whereTheTrainsAre();
+
+            // A Cancel stands each train back where the railway had it when the editor opened; one it did not have then
+            // follows the restored setup
+            if (standingBefore != null)
+            {
+                placementsJustEdited = new java.util.HashSet<>();
+
+                for (Map.Entry<String, String[]> was : standingBefore.entrySet())
+                {
+                    if (was.getValue() == null) placementsJustEdited.add(was.getKey());
+                    else standing.put(was.getKey(), was.getValue());
+                }
+            }
 
             // And the turns nobody has managed to write down yet: `Layout.reversedOnArrival` lives on the Layout, which
-            // the load below replaces wholesale, so every pending turn died on any setup gesture; a turn that declined
-            // to write is put back and retried at the next idle refresh (OB-189).
-            java.util.Map<String, String[]> pendingTurns = takeThePendingTurns();
+            // the load below replaces wholesale; a turn that declined to write is put back and retried at the next
+            // idle refresh (OB-189).
+            Map<String, String[]> pendingTurns = takeThePendingTurns();
 
             // Asked, not built, as the carry asks
             final Object runningBefore = this.ui.getModel() == null ? null : this.ui.getModel().getAutoLayoutIfLoaded();
@@ -605,20 +629,20 @@ final class RunningLayoutSync
                 // this rebuilds from the setup.  Only what the railway changed since it was built, and only where this
                 // window knows how it was built, as a door can have edited the setup's own settings before asking for
                 // this rebuild.
-                if (runningBefore instanceof org.traincontrol.automation.Layout && this.ui.autonomySession() != null
+                if (runningBefore instanceof Layout && this.ui.autonomySession() != null
                     && settingsAsBuiltFor(runningBefore) != null
-                    && ((org.traincontrol.automation.Layout) runningBefore).isValid()
-                    && !((org.traincontrol.automation.Layout) runningBefore).isRunning())
+                    && ((Layout) runningBefore).isValid()
+                    && !((Layout) runningBefore).isRunning())
                 {
                     try
                     {
                         this.ui.autonomySession().captureTheRailwaysSettings(
-                            ((org.traincontrol.automation.Layout) runningBefore).toJSON(), this.ui.getActiveDiagramConfiguration(),
+                            ((Layout) runningBefore).toJSON(), this.ui.getActiveDiagramConfiguration(),
                             settingsAsBuiltFor(runningBefore));
                     }
                     catch (Exception cannotFold)
                     {
-                        // the rebuild goes ahead on the setup's settings, as it did before this fold existed
+                        // the rebuild goes ahead on the setup's settings
                         this.ui.getModel().log(cannotFold);
                     }
                 }

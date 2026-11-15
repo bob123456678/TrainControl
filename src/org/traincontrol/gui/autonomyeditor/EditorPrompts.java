@@ -1,10 +1,19 @@
 package org.traincontrol.gui.autonomyeditor;
 
+import java.awt.Color;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.UIManager;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
@@ -36,35 +45,39 @@ final class EditorPrompts
 
         if (entered == null) return;
 
+        String refused = applyNumber(tile, key, entered, unset);
+
+        if (refused != null) JOptionPane.showMessageDialog(editor.owner(), AutonomyEditorPanel.wrapped(refused));
+    }
+
+    /**
+     * Stores a typed number, nothing when it is the value that means "no setting".
+     * @return why it was refused, with nothing written, or null
+     */
+    String applyNumber(TileKey tile, String key, String entered, int unset)
+    {
         try
         {
             int value = Integer.parseInt(entered.trim());
 
-            // Refused before it is written, rather than by the layer that loads it; nothing is stored, as in the
-            // NumberFormatException arm below.
+            // Refused before it is written, rather than by the layer that loads it.
             String refused = AutonomyEditorPanel.whyNotThisNumber(key, value);
 
-            if (refused != null)
-            {
-                JOptionPane.showMessageDialog(editor.owner(), AutonomyEditorPanel.wrapped(refused));
-
-                return;
-            }
+            if (refused != null) return refused;
 
             editor.session.setPointProperty(tile, key, value == unset ? null : value);
         }
         catch (NumberFormatException e)
         {
-            // About numbers, not about lengths: this prompt is also used for a station's priority, where negatives are
-            // valid.
-            JOptionPane.showMessageDialog(editor.owner(), I18n.f("autosetup.ui.errorNotANumber", entered));
-            // Nothing was written, so nothing to announce: the call below would save the setup and rebuild the railway
-            // having changed nothing.
-            return;
+            // About numbers, not about lengths: this is also used for a station's priority, where negatives are valid.
+            // Nothing was written, so nothing to announce.
+            return I18n.f("autosetup.ui.errorNotANumber", entered);
         }
 
         // Persisted, and the running layout told (MT-246).
         editor.setupChanged();
+
+        return null;
     }
 
     /**
@@ -75,9 +88,9 @@ final class EditorPrompts
     void promptBlockingPoints(TileKey station)
     {
         // Read FIRST, because what is already stored decides what has to be offered.
-        java.util.List<TileKey> already = editor.session.getStore().getBlockingPoints(station);
+        List<TileKey> already = editor.session.getStore().getBlockingPoints(station);
 
-        java.util.List<TileKey> choices = new java.util.ArrayList<>();
+        List<TileKey> choices = new ArrayList<>();
 
         for (TileKey tile : editor.session.getStore().getNamedTiles())
         {
@@ -119,17 +132,16 @@ final class EditorPrompts
             }
         });
 
-        // Nothing to offer, which now also means nothing is stored - the loop above puts every stored
+        // Nothing to offer, which means nothing is stored - the loop above puts every stored
         // entry on the list. So returning here cannot hide anything.
         if (choices.isEmpty())
         {
             // Grayed, because there is nothing a click could find (MT-376: "if there are no stations on the diagram
             // yet, the 'choose on diagram' button should be greyed out to match the message"); shown rather than left
             // out, so the way in is learnt.
-            javax.swing.JButton pickNow = AutonomyEditorPanel.nothingToPickButton();
+            JButton pickNow = AutonomyEditorPanel.nothingToPickButton();
 
-            final javax.swing.JButton close = new javax.swing.JButton(
-                javax.swing.UIManager.getString("OptionPane.cancelButtonText"));
+            final JButton close = new JButton(UIManager.getString("OptionPane.cancelButtonText"));
 
             final JOptionPane pane = new JOptionPane(
                 AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.infoNoOtherPointsToBlockWith")),
@@ -149,7 +161,7 @@ final class EditorPrompts
 
         JPanel panel = new JPanel();
 
-        panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
         // Wrapped, because the message names a station and ran off the side of a dialog sized for
         // check boxes (OB-083).
@@ -158,19 +170,18 @@ final class EditorPrompts
 
         panel.add(javax.swing.Box.createVerticalStrut(LayoutEditor.HEADING_GAP));
 
-        java.util.List<javax.swing.JCheckBox> boxes = new java.util.ArrayList<>();
+        List<JCheckBox> boxes = new ArrayList<>();
 
         // Which of these autonomy would never choose (FR-074: "lightly grey out stations that can't be chosen in full
         // autonomy.").  Read once, outside the loop, because the rule walks the reduction;
         // `stationsAutonomyWillNotChoose` is the runtime's own rule, the same the diagram's captions ask.
-        java.util.Set<TileKey> notChosen = editor.session.stationsAutonomyWillNotChoose();
+        Set<TileKey> notChosen = editor.session.stationsAutonomyWillNotChoose();
 
         for (TileKey tile : choices)
         {
             // describeTile, not getPointName: an entry that lost its name would render with no text at all;
             // testEditorSurfaceRules pins the caption rule here as there.
-            javax.swing.JCheckBox box = new javax.swing.JCheckBox(
-                editor.describeTile(tile), already.contains(tile));
+            JCheckBox box = new JCheckBox(editor.describeTile(tile), already.contains(tile));
 
             box.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
 
@@ -189,19 +200,19 @@ final class EditorPrompts
         }
 
         // White behind the list, as every other list in the application is (OB-083).
-        panel.setBackground(java.awt.Color.WHITE);
+        panel.setBackground(Color.WHITE);
         panel.setOpaque(true);
 
-        for (javax.swing.JCheckBox box : boxes)
+        for (JCheckBox box : boxes)
         {
-            box.setBackground(java.awt.Color.WHITE);
+            box.setBackground(Color.WHITE);
             box.setOpaque(true);
         }
 
-        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(panel);
+        JScrollPane scroll = new JScrollPane(panel);
 
-        scroll.getViewport().setBackground(java.awt.Color.WHITE);
-        scroll.setBackground(java.awt.Color.WHITE);
+        scroll.getViewport().setBackground(Color.WHITE);
+        scroll.setBackground(Color.WHITE);
 
         // A wheel notch moves a row and a bit rather than one pixel.
         scroll.getVerticalScrollBar().setUnitIncrement(AutonomyEditorPanel.BLOCKED_ROW_HEIGHT);
@@ -214,8 +225,8 @@ final class EditorPrompts
         // Three answers, not two (FR-025: "the 'unavailable when occupied' dialog should allow users to select a s88
         // tile by clicking, similar to the signal guard popup."): the checklist stays the default button, and picking
         // on the diagram is faster for "that one, there".  OK and Cancel take their words from the look and feel.
-        final String ok = javax.swing.UIManager.getString("OptionPane.okButtonText");
-        final String cancel = javax.swing.UIManager.getString("OptionPane.cancelButtonText");
+        final String ok = UIManager.getString("OptionPane.okButtonText");
+        final String cancel = UIManager.getString("OptionPane.cancelButtonText");
         final String pick = I18n.t("autosetup.ui.optionPickBlockerOnDiagram");
 
         Object[] answers = { ok, pick, cancel };
@@ -224,11 +235,10 @@ final class EditorPrompts
             I18n.t("autosetup.ui.menuBlockedByPointsTitle"),
             JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, answers, ok);
 
-        // Anything that is not one of the two doing answers - Cancel, Escape, the close box - changes
-        // nothing, which is what Cancel has always meant here.
+        // Anything that is not one of the two doing answers - Cancel, Escape, the close box - changes nothing.
         if (chose != 0 && chose != 1) return;
 
-        java.util.List<TileKey> chosen = new java.util.ArrayList<>();
+        List<TileKey> chosen = new ArrayList<>();
 
         // Every stored entry is on the list above, so the boxes are the whole answer.
         for (int at = 0; at < boxes.size(); at++)
@@ -248,33 +258,35 @@ final class EditorPrompts
     }
 
     /**
-     * Asks which locomotives, as a multi-select list rather than typed names: a name that does not match the roster
-     * exactly would silently do nothing.
+     * Asks which locomotives are on a square's one list (FR-111), as a multi-select list rather than typed names: a name
+     * that does not match the roster exactly would silently do nothing.  OK puts the list in force under `which`.
      *
      * @param tile the square
-     * @param key the point property to store the choice under
-     * @param names the locomotives worth offering, which is not always the whole roster
+     * @param which Blacklist or Whitelist
+     * @return false where nothing changed: no locomotives, Cancel, or a home the operator would not break
      */
-    void promptLocomotives(TileKey tile, String key, List<String> names)
+    boolean promptTrainList(TileKey tile, AutonomySession.WhichTrains which)
     {
+        List<String> names = editor.allLocomotives();
+
         if (names.isEmpty())
         {
             JOptionPane.showMessageDialog(editor.owner(), I18n.t("error.noLocs"));
-            return;
+            return false;
         }
 
-        javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
+        DefaultListModel<String> model = new DefaultListModel<>();
 
         for (String name : names) model.addElement(name);
 
-        javax.swing.JList<String> list = new javax.swing.JList<>(model);
+        JList<String> list = new JList<>(model);
 
         // Tall enough to choose from without scrolling on an ordinary roster.
         list.setVisibleRowCount(Math.max(8, Math.min(18, names.size())));
         AutonomyEditorPanel.control(list);
 
-        Set<String> chosen = editor.strings(tile, key);
-        List<Integer> indexes = new java.util.ArrayList<>();
+        List<String> chosen = editor.session.getTrainList(tile);
+        List<Integer> indexes = new ArrayList<>();
 
         for (int i = 0; i < names.size(); i++)
         {
@@ -287,81 +299,48 @@ final class EditorPrompts
 
         list.setSelectedIndices(selection);
 
-        // And the list's mode, above it (FR-121): keep the chosen locomotives out (the default, a blacklist), or let
-        // only them in (a whitelist). Adam: "we don't want to allow new locomotives that get added later when that mode
-        // is on."
-        boolean exclusions = "excludedLocs".equals(key);
+        // Titled by what the list does: the trains it keeps out, or the only ones it lets in
+        boolean allowed = which == AutonomySession.WhichTrains.WHITELIST;
+        String title = !editor.oneOfSeveral
+            ? I18n.t(allowed ? "autosetup.ui.labelLocomotivesAllowed" : "autosetup.ui.labelLocomotiveExclusions")
+            : I18n.f(allowed ? "autosetup.ui.labelLocomotivesAllowedAt" : "autosetup.ui.labelLocomotiveExclusionsAt",
+                editor.describeTile(tile));
 
-        javax.swing.JRadioButton keepOut = new javax.swing.JRadioButton(I18n.t("autosetup.ui.optionExcludeChosenLocs"));
-        javax.swing.JRadioButton letInOnly = new javax.swing.JRadioButton(I18n.t("autosetup.ui.optionAllowOnlyChosenLocs"));
-
-        javax.swing.ButtonGroup modes = new javax.swing.ButtonGroup();
-
-        modes.add(keepOut);
-        modes.add(letInOnly);
-
-        (editor.allowsOnlyListed(tile) ? letInOnly : keepOut).setSelected(true);
-
-        javax.swing.JComponent asked = new JScrollPane(list);
-
-        if (exclusions)
-        {
-            javax.swing.JPanel choices = new javax.swing.JPanel(new java.awt.GridLayout(0, 1));
-
-            choices.add(keepOut);
-            choices.add(letInOnly);
-
-            javax.swing.JPanel both = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
-
-            both.add(choices, java.awt.BorderLayout.NORTH);
-            both.add(asked, java.awt.BorderLayout.CENTER);
-
-            asked = both;
-        }
-
-        // The "home" arm of this is not reached: the only caller passes "excludedLocs".  Kept because the shape is right
-        // for any list-valued property, but anything that starts using it for a HOME has to go through session.setHome,
-        // which sweeps that locomotive's home off every other square.
-        if (JOptionPane.showConfirmDialog(editor.owner(), asked, I18n.t(key.equals("home")
-                ? "autosetup.ui.labelHomeFor" : "autosetup.ui.labelLocomotiveExclusions"),
+        if (JOptionPane.showConfirmDialog(editor.owner(), new JScrollPane(list), title,
             JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
         {
-            return;
+            return false;
         }
 
         List<String> picked = list.getSelectedValuesList();
 
-        boolean allowOnly = exclusions && letInOnly.isSelected();
+        if (!homeMayBeBroken(tile, picked, which)) return false;
 
-        // Excluding a locomotive from the station that is its HOME contradicts the home (OB-022; HomeStaging.homeBrokenByExcluding):
-        // warned rather than refused, like the home warning, since an operator may mean it.
-        if ("excludedLocs".equals(key))
-        {
-            String broken = editor.homeBrokenBy(tile, picked, allowOnly);
-
-            if (broken != null && JOptionPane.showOptionDialog(editor.owner(),
-                I18n.f("autolayout.ui.confirmExcludingHome", broken, editor.describeTile(tile)),
-                I18n.t("autosetup.ui.labelExcludedLocs"),
-                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null,
-                TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
-            {
-                return;
-            }
-        }
-
-        editor.session.setPointProperty(tile, key,
-            picked.isEmpty() ? null : new org.json.JSONArray(picked));
-
-        if (exclusions)
-        {
-            editor.session.setPointProperty(tile, org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE,
-                allowOnly ? org.traincontrol.automation.Point.ALLOW_ONLY_LISTED : null);
-        }
-
-        editor.refresh();
+        editor.session.setWhichTrains(tile, which, picked);
 
         // Persisted, and the running layout told (MT-246).
         editor.setupChanged();
+
+        return true;
+    }
+
+    /**
+     * Excluding a locomotive from the station that is its home contradicts the home (OB-022): warned rather than refused,
+     * as an operator may mean it.
+     *
+     * @return false where the operator would rather not
+     */
+    boolean homeMayBeBroken(TileKey tile, List<String> chosen,
+        AutonomySession.WhichTrains which)
+    {
+        String broken = AutonomyEditorPanel.homeBrokenBy(editor.homeOf(tile), chosen,
+            which == AutonomySession.WhichTrains.WHITELIST);
+
+        return broken == null || JOptionPane.showOptionDialog(editor.owner(),
+            I18n.f("autolayout.ui.confirmExcludingHome", broken, editor.describeTile(tile)),
+            I18n.t("autosetup.ui.labelExcludedLocs"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == JOptionPane.YES_OPTION;
     }
 
     /**

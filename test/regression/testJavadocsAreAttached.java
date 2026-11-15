@@ -11,23 +11,12 @@ import org.testng.annotations.Test;
 /**
  * A javadoc block immediately followed by another javadoc block documents nothing.
  *
- * In Java only the LAST doc comment before a declaration
- * attaches, so when an insertion lands between a javadoc and the thing it was written for, the older
- * one silently becomes prose in the middle of a file - and the member it described is left with no
- * documentation at all.
+ * In Java only the LAST doc comment before a declaration attaches, so when an insertion lands between a javadoc and
+ * the thing it was written for, the older one silently becomes prose in the middle of a file and the member it
+ * described is left with no documentation at all.  Nothing warns about it.
  *
- * Nothing warns about it, and it has happened repeatedly here. The three the review names are the ones
- * that matter, all three reattached: `Layout`'s `locomotiveInBlock` parameters sat above `refreshProtectingSignal`,
- * which
- * commands real signals; `AutonomyCompanionStore`'s "a tile that moves leaves its setup behind"
- * rationale sat above `forgetTiles`, leaving `moveTiles` undocumented; and `Util`'s entire explanation
- * of why the locomotive database is staged and moved into place - the best paragraph in that file -
- * sat above `sanitizeFilename`, leaving `writeAtomically`, the primitive standing between the
- * operator's accumulated work and a truncated file, with no javadoc at all. Three more were found and
- * fixed while working through this review.
- *
- * **In a codebase where the comment IS the safety mechanism, a comment attached to the wrong member is
- * the same kind of defect as a guard on the wrong branch.**
+ * **In a codebase where the comment IS the safety mechanism, a comment attached to the wrong member is the same kind
+ * of defect as a guard on the wrong branch.**
  *
  * None stands in src or test, and a new one fails the build with its file named.
  *

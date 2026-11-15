@@ -195,10 +195,8 @@ public class testAConflictSkipsOnlyTheSwitchUnderTheTrain
 
         // WAITED FOR, NOT READ AT ONCE: `go()` SENDS a command and returns; the power flag is written by the ECHO on
         // another thread (`receiveMessage` hands it to `locMessageProcessor`), so a read taken here has no
-        // happens-before with that write.  On an idle machine the echo landed first; in a battery it did not.  This
-        // class established the state (a route carrying an emergency stop, restored by an asynchronous `model.go()` in
-        // a `finally`), and `waitForPowerState` is the railway's own wait for it, bounded because an acknowledgment of
-        // a command TrainControl itself just sent either comes back in milliseconds or is not coming.
+        // happens-before with that write.  `waitForPowerState` is the railway's own wait for it, bounded because an
+        // acknowledgment of a command TrainControl itself just sent either comes back in milliseconds or is not coming.
         assertTrue(model.waitForPowerState(true, POWER_PATIENCE_MS),
             "precondition: the power has to be ON, or the route's stop has nothing to turn off");
 

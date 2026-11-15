@@ -4,8 +4,13 @@ import static org.traincontrol.gui.TrainControlUI.LAST_EDITOR_AUTONOMY_PREF;
 import static org.traincontrol.gui.TrainControlUI.ONTOP_SETTING_DEFAULT;
 import static org.traincontrol.gui.TrainControlUI.ONTOP_SETTING_PREF;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.util.I18n;
+import java.awt.Frame;
+import java.util.List;
 
 /** The window's editors: opening and closing the layout and autonomy editors, and whether the diagram may be edited. */
 final class EditorWindows
@@ -25,6 +30,9 @@ final class EditorWindows
     {
         if (ui.openEditor != null && ui.openEditor.isDisplayable() && !ui.openEditor.maySettleBeforeExit()) return false;
 
+        if (ui.locomotiveSettings != null && ui.locomotiveSettings.isDisplayable()
+            && !ui.locomotiveSettings.maySettleBeforeExit()) return false;
+
         // A non-modal frame with its own discard question; without it File > Exit would drop typing silently.
         return ui.routeEditor == null || !ui.routeEditor.isDisplayable() || ui.routeEditor.maySettleBeforeExit();
     }
@@ -39,14 +47,14 @@ final class EditorWindows
      * Opens the diagram editor in autonomy mode on a tile's page and reveals it; a null tile just opens the current
      * page.
      */
-    void openAutonomyEditor(final org.traincontrol.automationui.TileGraph.TileKey tile)
+    void openAutonomyEditor(final TileGraph.TileKey tile)
     {
         openAutonomyEditor(tile, null);
     }
 
     /** As above, also outlining {@code related}, the squares a finding names beside its own (MT-505); may be null. */
-    void openAutonomyEditor(final org.traincontrol.automationui.TileGraph.TileKey tile,
-        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> related)
+    void openAutonomyEditor(final TileGraph.TileKey tile,
+        final List<TileGraph.TileKey> related)
     {
         openLayoutEditor(tile == null ? null : tile.getPage(), Boolean.TRUE, tile, false, related);
     }
@@ -82,14 +90,17 @@ final class EditorWindows
         if (ui.modifyLocalLayoutMenu() != null) ui.modifyLocalLayoutMenu().setEnabled(live);
 
         // Lit with an editor open too, as it brings that editor forward
-        if (ui.managePagesItem != null) ui.managePagesItem.setEnabled(layoutCanBeEdited());
+        if (ui.managePagesItem != null)
+        {
+            ui.managePagesItem.setEnabled(layoutCanBeEdited());
+
+            // Grayed, it says why: the Edit Layout button's own reason.
+            LayoutMenus.sayWhy(ui.managePagesItem, "ui.main.toolbar.tooltip.modifyLayout", whyLayoutCannotBeEdited());
+        }
 
         // The settings panel's button goes with it: both open the same editor and ask the same guard, so it must not
         // stay lit while an editor is open (OB-057).
-        if (ui.editAutonomyFromSettings() != null)
-        {
-            ui.editAutonomyFromSettings().setEnabled(live);
-        }
+        if (ui.editAutonomyFromSettings() != null) ui.editAutonomyFromSettings().setEnabled(live);
     }
 
     /** Whether there is a track diagram of the user's own to edit (OB-126): not with a CS layout or none loaded. */
@@ -129,10 +140,7 @@ final class EditorWindows
 
     String whyLayoutCannotBeEdited()
     {
-        if (!isLayoutLoaded())
-        {
-            return "layout.ui.errorNoLayoutLoaded";
-        }
+        if (!isLayoutLoaded()) return "layout.ui.errorNoLayoutLoaded";
 
         if (!ui.isLocalLayout()) return "layout.ui.errorEditingOnlySupportedForLocalFiles";
 
@@ -168,10 +176,7 @@ final class EditorWindows
         // Not while a route runs either: the edit refusal's own sentence (`RunGates.refuseWhileARunHoldsTheSetup`)
         if (ui.aRunHoldsTheSetup()) return RunGates.NO_EDITS_WHILE_RUNNING;
 
-        if (!ui.editLayoutButton().isEnabled() && !isLayoutEditorOpen())
-        {
-            return "autosetup.ui.errorEditorAlreadyOpen";
-        }
+        if (!ui.editLayoutButton().isEnabled() && !isLayoutEditorOpen()) return "autosetup.ui.errorEditorAlreadyOpen";
 
         return null;
     }
@@ -188,7 +193,7 @@ final class EditorWindows
     }
 
     void openLayoutEditor(String page, Boolean autonomy,
-        final org.traincontrol.automationui.TileGraph.TileKey reveal)
+        final TileGraph.TileKey reveal)
     {
         openLayoutEditor(page, autonomy, reveal, false);
     }
@@ -200,7 +205,7 @@ final class EditorWindows
      * most ways in do not, and remembering them would silently change what the Edit button does next time.
      */
     void openLayoutEditor(String page, Boolean autonomy,
-        final org.traincontrol.automationui.TileGraph.TileKey reveal, boolean remember)
+        final TileGraph.TileKey reveal, boolean remember)
     {
         openLayoutEditor(page, autonomy, reveal, remember, null);
     }
@@ -209,8 +214,8 @@ final class EditorWindows
      * As above, with {@code outline}, the squares a finding names beside the revealed one, outlined with it (or null).
      */
     private void openLayoutEditor(String page, Boolean autonomy,
-        final org.traincontrol.automationui.TileGraph.TileKey reveal, boolean remember,
-        final java.util.List<org.traincontrol.automationui.TileGraph.TileKey> outline)
+        final TileGraph.TileKey reveal, boolean remember,
+        final List<TileGraph.TileKey> outline)
     {
         if (!ui.isLocalLayout())
         {
@@ -221,7 +226,7 @@ final class EditorWindows
 
         // What can be OPENED is any session at all (a setup with blocking errors will not load, and the editor is the
         // only place to fix them); what can be DEFAULTED to is a configuration actually chosen.
-        final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+        final AutonomySession session = ui.getAutonomySession();
 
         // When last time is no longer possible (a setup since unloaded): the track, silently, since the user asked to
         // edit.
@@ -284,15 +289,16 @@ final class EditorWindows
         // progress.
         ui.captureRunningLayout();
 
-        final org.traincontrol.automationui.AutonomySession opening = wantsAutonomy ? session : null;
+        final AutonomySession opening = wantsAutonomy ? session : null;
 
         // Whether a square was clicked in the editor this one replaces, asked now since the build is posted
         final boolean carried = clickCarried;
+        final String filterToCarry = filterCarried;
 
         // Set until the posted build shows the editor; every door that sends a train asks this too
         ui.editorOnItsWay = true;
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             try
             {
@@ -303,6 +309,8 @@ final class EditorWindows
                         ui.editorOnItsWay = false;
 
                         setEditLayoutEnabled(true);
+
+                        ui.editorGone();
                     }))
                 {
                     return;
@@ -323,15 +331,17 @@ final class EditorWindows
 
                 if (carried) editor.carryTheClick();
 
-                // Runs after render()'s own posted task shows the editor
-                javax.swing.SwingUtilities.invokeLater(() -> ui.editorOnItsWay = false);
+                if (filterToCarry != null) editor.carryTheFindingFilter(filterToCarry);
 
-                // Posted twice: render() and setAutonomyMode only QUEUE the work that builds the grid, so reveal must
-                // wait for it.
+                // Runs after render()'s own posted task shows the editor
+                SwingUtilities.invokeLater(() -> ui.editorOnItsWay = false);
+
+                // Posted twice: render() only QUEUES the work that builds the grid (and what that work posts), so
+                // reveal must wait for it.
                 if (reveal != null)
                 {
-                    javax.swing.SwingUtilities.invokeLater(() ->
-                        javax.swing.SwingUtilities.invokeLater(() ->
+                    SwingUtilities.invokeLater(() ->
+                        SwingUtilities.invokeLater(() ->
                         {
                             editor.reveal(reveal);
 
@@ -351,6 +361,8 @@ final class EditorWindows
 
                 ui.editorOnItsWay = false;
 
+                ui.editorGone();
+
                 // Rethrow an Error after giving the button back, or Edit would stay grayed for the session with no
                 // editor anywhere
                 if (e instanceof Error) throw (Error) e;
@@ -364,9 +376,9 @@ final class EditorWindows
      * The setup, if there is any point opening: a CHOSEN configuration even if it did not load, since the editor is the
      * only place to fix its errors.  Null when there is nothing to set up.
      */
-    org.traincontrol.automationui.AutonomySession editableAutonomySession()
+    AutonomySession editableAutonomySession()
     {
-        org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
+        AutonomySession session = ui.getAutonomySession();
 
         return session != null && session.getStore().getActiveConfiguration() != null ? session : null;
     }
@@ -385,7 +397,7 @@ final class EditorWindows
     {
         if (ui.openEditor != null && ui.openEditor.isDisplayable()) return ui.openEditor;
 
-        for (java.awt.Frame frame : java.awt.Frame.getFrames())
+        for (Frame frame : Frame.getFrames())
         {
             if (frame instanceof LayoutEditor && frame.isDisplayable() && ((LayoutEditor) frame).isEditorOf(ui))
             {
@@ -396,10 +408,15 @@ final class EditorWindows
         return null;
     }
 
-    /** An editor window has gone: Edit and the doors beside it ask again.  Called from `LayoutEditor.dispose`. */
+    /**
+     * An editor window has gone: Edit and the doors beside it ask again, and a sync owed meanwhile runs.  Called from
+     * `LayoutEditor.dispose`, which every way of closing passes through.
+     */
     void editorWindowClosed()
     {
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        ui.editorGone();
+
+        if (SwingUtilities.isEventDispatchThread())
         {
             applyLayoutEditingAvailability();
 
@@ -407,7 +424,7 @@ final class EditorWindows
         }
         else
         {
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 applyLayoutEditingAvailability();
 
@@ -431,7 +448,7 @@ final class EditorWindows
     java.awt.Window openLayoutEditorWindow()
     {
         return ui.openEditor != null && ui.openEditor.isDisplayable() && ui.openEditor.isShowing()
-            && (ui.openEditor.getExtendedState() & java.awt.Frame.ICONIFIED) == 0 ? ui.openEditor : null;
+            && (ui.openEditor.getExtendedState() & Frame.ICONIFIED) == 0 ? ui.openEditor : null;
     }
 
     /** Brings the open editor forward, for the menu item that says "it is over there". */
@@ -449,13 +466,23 @@ final class EditorWindows
     /** Whether the editor about to open starts knowing a square was clicked; set only during `openCarryingTheClick`. */
     private boolean clickCarried = false;
 
+    /** The findings filter's text the editor about to open starts with, or null; set only during `openCarryingTheClick`. */
+    private String filterCarried = null;
+
     /**
      * Opens an editor in place of one that closed itself to change page, carrying whether a square had been clicked.
      * Cleared whatever the opening does, so a refused opening cannot hand the click to the next Edit.
      */
     void openCarryingTheClick(boolean clicked, Runnable open)
     {
+        openCarryingTheClick(clicked, null, open);
+    }
+
+    /** As above, also carrying the findings filter's text to the editor that opens (FR-073); null carries none. */
+    void openCarryingTheClick(boolean clicked, String findingFilter, Runnable open)
+    {
         clickCarried = clicked;
+        filterCarried = findingFilter;
 
         try
         {
@@ -464,6 +491,7 @@ final class EditorWindows
         finally
         {
             clickCarried = false;
+            filterCarried = null;
         }
     }
 
@@ -477,7 +505,7 @@ final class EditorWindows
     {
         ui.refreshesUnderWay.incrementAndGet();
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             try
             {
@@ -510,8 +538,8 @@ final class EditorWindows
         // its copies and their names.  Not while trains are moving.
         ui.rebuildRunningLayoutFromSetup();
 
-        // The setup file is written when an editor closes, as on exit and on load (Adam's rule).  AFTER the rebuild:
-        // capturing first would fold the pre-edit running layout over the configuration.
+        // The setup file is written when an editor closes, as on exit and on load.  AFTER the rebuild: capturing first
+        // would fold the pre-edit running layout over the configuration.
         ui.captureRunningLayout();
     }
 

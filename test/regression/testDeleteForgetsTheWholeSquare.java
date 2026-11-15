@@ -6,7 +6,6 @@ import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -17,6 +16,9 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
+import support.Teardown;
 
 /**
  * Deleting a square from the diagram forgets everything the setup wrote about it, the captions too: a repair that
@@ -42,18 +44,13 @@ public class testDeleteForgetsTheWholeSquare
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the layout editor needs a display");
-        }
+        Display.needed("the layout editor needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -81,26 +78,7 @@ public class testDeleteForgetsTheWholeSquare
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (editor != null)
-            {
-                final LayoutEditor closing = editor;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, null, editor, ui);
     }
 
     /**
@@ -113,9 +91,7 @@ public class testDeleteForgetsTheWholeSquare
         // The grid is private and the delete door takes a LABEL, as every gesture in the window does.  The square is
         // chosen from the grid rather than named: the blank labels that hold the layout together are shared, so a
         // square is only usable here if the editor's two directions agree about it.
-        java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-        gridField.setAccessible(true);
+        java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
         final org.traincontrol.gui.LayoutLabel[] found = new org.traincontrol.gui.LayoutLabel[1];
         final TileKey[] chosen = new TileKey[1];
@@ -206,11 +182,8 @@ public class testDeleteForgetsTheWholeSquare
     }
 
     /**
-     * Forgetting squares nothing was ever written about reports that nothing changed.  `moveTiles` computed the answer
-     * as `builtOver != null && !builtOver.isEmpty()`, true before it had looked at anything, and four call sites read
-     * it as "something was forgotten, so write the setup to disk": deleting a piece of plain track rebuilt the graph
-     * over every page and wrote every file of the setup, once per picked square by `deleteSelection` (the Delete key
-     * and **Delete Selected**).
+     * Forgetting squares nothing was ever written about reports no change, so the caller does not rewrite the whole
+     * setup.
      *
      * MUTATION: put `return builtOver != null && !builtOver.isEmpty();` back at the top of `AutonomySession.moveTiles`
      * and the first claim fails; make `Kept.forget` return false always and the second does.

@@ -27,6 +27,9 @@ public class MarklinFeedback extends Feedback
     // threw ConcurrentModificationException there, silently killing the thread mid-refresh.
     private final Set<LayoutLabel> tiles;
         
+    // Whether the state was last changed by a frame of no change, not by an edge
+    private volatile boolean corrected;
+
     public MarklinFeedback(MarklinControlStation network, int id, CS2Message m)
     { 
         super(Integer.toString(id));
@@ -43,7 +46,6 @@ public class MarklinFeedback extends Feedback
 
     /**
      * Adds a UI tile to be updated whenever a CS2 event fires
-     * @param l 
      */
     @Override
     public void addTile(LayoutLabel l)
@@ -94,11 +96,22 @@ public class MarklinFeedback extends Feedback
                                    
                 if (id == this.UID && this.readyForUpdate(System.currentTimeMillis()))
                 {
-                    this._setState((state == 1));
+                    boolean was = this.isSet();
+
+                    // Until a connect's or reconnect's confirmation is in, a change only puts the state right (D133);
+                    // during a later sync's pass only an answer, its old state equal to its new, does (D139)
+                    boolean asking = this.network.isAskingSensors();
+                    boolean answer = m.getData()[4] == m.getData()[5];
+
+                    this.changeTo(state == 1, this.network.isConfirming() || (asking && answer));
                                         
                     this.updateTiles();
 
-                    // And anything watching for one, which today is the route editor's capture
+                    // A pass asks every sensor, and the route editor's capture must not take the answers that change
+                    // nothing
+                    if (asking && was == (state == 1)) return;
+
+                    // And anything watching for one (the route editor's capture)
                     this.network.feedbackChanged(this.getName(), state == 1);
                     
                     this.network.logf(
@@ -114,12 +127,11 @@ public class MarklinFeedback extends Feedback
     
     /**
      * Sets the feedback state
-     * @param val 
      */
     @Override
     synchronized public void setState(boolean val)
     {
-        this._setState(val);
+        this.changeTo(val, false);
 
         if (this.network.isDebug())
         {
@@ -139,9 +151,22 @@ public class MarklinFeedback extends Feedback
         this.updateTiles();
     }
     
+    /** Sets the state, noting whether a change of it is a correction rather than an edge, before waiters wake. */
+    private void changeTo(boolean set, boolean correction)
+    {
+        if (set != this.isSet()) this.corrected = correction;
+
+        this._setState(set);
+    }
+
+    /** Whether the state was last changed by a correction (OB-418), which no route takes for its trigger. */
+    public boolean isCorrected()
+    {
+        return this.corrected;
+    }
+
     /**
      * Returns the feedback identifier
-     * @return 
      */
     @Override
     public int getUID()

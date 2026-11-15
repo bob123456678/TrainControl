@@ -1,21 +1,35 @@
 package org.traincontrol.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
 import java.awt.GridLayout;
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomyChecks;
@@ -27,6 +41,8 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.util.I18n;
+import org.json.JSONObject;
+import org.traincontrol.automationui.TileGraph;
 
 /**
  * Managing a layout's autonomy configurations, from the Auto tab: choosing which one runs, moving them between
@@ -64,17 +80,15 @@ public class AutonomyViewerPanel extends JPanel
 
     // Which tile each row of the findings list refers to; null for a page heading.  Parallel to the
     // model rather than a richer element type, so the list still renders as plain strings.
-    private final List<org.traincontrol.automationui.TileGraph.TileKey> findingRows =
-        new java.util.ArrayList<>();
+    private final List<TileGraph.TileKey> findingRows = new ArrayList<>();
 
     // The squares each row's finding names beside its own - a guard's signal - for the editor to outline when a click
     // opens it there.  Parallel to the rows; null where there are none.
-    private final List<List<org.traincontrol.automationui.TileGraph.TileKey>> findingRelatedRows =
-        new java.util.ArrayList<>();
+    private final List<List<TileGraph.TileKey>> findingRelatedRows = new ArrayList<>();
 
     // What each findings row is, so the renderer can color it and a click can act on it.  Parallel
     // lists rather than a richer element type, so the list still renders as plain strings.
-    private final List<AutonomyChecks.Severity> findingSeverity = new java.util.ArrayList<>();
+    private final List<AutonomyChecks.Severity> findingSeverity = new ArrayList<>();
 
     private final JButton initialize = new JButton(I18n.t("autosetup.ui.btnInitFromLayout"));
     private final JButton enable = new JButton(I18n.t("autosetup.ui.btnEnable"));
@@ -106,7 +120,7 @@ public class AutonomyViewerPanel extends JPanel
         // White, and no inset border: this panel stands inside a white container, and a default gray
         // JPanel with padding read as a second surface floating on top of it.
         setOpaque(true);
-        setBackground(java.awt.Color.WHITE);
+        setBackground(Color.WHITE);
         setLayout(new BorderLayout(0, 6));
 
         add(buildSteps(), BorderLayout.NORTH);
@@ -123,21 +137,21 @@ public class AutonomyViewerPanel extends JPanel
 
     // Copied from the Autonomy Settings tab so the two read as one design: group headings Segoe UI Semibold 13 navy,
     // labels and controls plain 14, buttons bold 12, boxes white with a 1px (204,204,204) line border.
-    static final java.awt.Font FONT = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 14);
+    static final Font FONT = new Font("Segoe UI", Font.PLAIN, 14);
 
-    public static final java.awt.Font FONT_GROUP = new java.awt.Font("Segoe UI Semibold", java.awt.Font.PLAIN, 13);
+    public static final Font FONT_GROUP = new Font("Segoe UI Semibold", Font.PLAIN, 13);
 
-    static final java.awt.Font FONT_BOLD = new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12);
+    static final Font FONT_BOLD = new Font("Segoe UI", Font.BOLD, 12);
 
     /** The findings and roster lists only: dense reading, and at 14 a real layout's list stops fitting. */
-    static final java.awt.Font FONT_LIST = new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, 12);
+    static final Font FONT_LIST = new Font("Segoe UI", Font.PLAIN, 12);
 
-    public static final java.awt.Color HEADING_COLOUR = new java.awt.Color(0, 0, 115);
-    static final java.awt.Color BOX_BORDER = new java.awt.Color(204, 204, 204);
+    public static final Color HEADING_COLOUR = new Color(0, 0, 115);
+    static final Color BOX_BORDER = new Color(204, 204, 204);
 
-    static final java.awt.Color ERROR_COLOUR = new java.awt.Color(170, 0, 0);
-    static final java.awt.Color WARNING_COLOUR = new java.awt.Color(150, 95, 0);
-    static final java.awt.Color SUBHEADING_COLOUR = new java.awt.Color(70, 70, 70);
+    static final Color ERROR_COLOUR = new Color(170, 0, 0);
+    static final Color WARNING_COLOUR = new Color(150, 95, 0);
+    static final Color SUBHEADING_COLOUR = new Color(70, 70, 70);
 
     /**
      * Takes a whole panel out of the keyboard's reach, and returns it: the main window drives locomotives from bare key
@@ -146,16 +160,13 @@ public class AutonomyViewerPanel extends JPanel
      *
      * @param component the root to sweep, usually a panel
      */
-    public static <T extends java.awt.Component> T unfocusable(T component)
+    public static <T extends Component> T unfocusable(T component)
     {
         component.setFocusable(false);
 
-        if (component instanceof java.awt.Container)
+        if (component instanceof Container)
         {
-            for (java.awt.Component child : ((java.awt.Container) component).getComponents())
-            {
-                unfocusable(child);
-            }
+            for (Component child : ((Container) component).getComponents()) unfocusable(child);
         }
 
         return component;
@@ -191,7 +202,7 @@ public class AutonomyViewerPanel extends JPanel
     private JPanel box()
     {
         JPanel panel = new JPanel();
-        panel.setBackground(java.awt.Color.WHITE);
+        panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(BOX_BORDER),
             BorderFactory.createEmptyBorder(8, 10, 10, 10)));
@@ -222,7 +233,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         JPanel outer = new JPanel();
         outer.setOpaque(false);
-        outer.setLayout(new javax.swing.BoxLayout(outer, javax.swing.BoxLayout.Y_AXIS));
+        outer.setLayout(new BoxLayout(outer, BoxLayout.Y_AXIS));
 
         outer.add(group(I18n.t("autosetup.ui.headingConfiguration")));
         outer.add(javax.swing.Box.createVerticalStrut(3));
@@ -230,11 +241,11 @@ public class AutonomyViewerPanel extends JPanel
         JPanel panel = box();
         panel.setLayout(new java.awt.GridBagLayout());
 
-        java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
+        GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.anchor = java.awt.GridBagConstraints.WEST;
-        gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1;
 
         // --- step 1: which configuration ---
@@ -260,17 +271,10 @@ public class AutonomyViewerPanel extends JPanel
 
         // No ActionListener, deliberately: a configuration is chosen from the menu, not by selecting here.  Anything
         // that adds one needs a guard around populate(), which sets the selection itself.
-        configurations.addMouseListener(new java.awt.event.MouseAdapter()
+        configurations.addMouseListener(Listen.pressed(e ->
         {
-            @Override
-            public void mousePressed(java.awt.event.MouseEvent e)
-            {
-                if (javax.swing.SwingUtilities.isRightMouseButton(e))
-                {
-                    manageMenu().show(configurations, e.getX(), e.getY());
-                }
-            }
-        });
+            if (SwingUtilities.isRightMouseButton(e)) manageMenu().show(configurations, e.getX(), e.getY());
+        }));
 
         add(panel, gbc, choose, 0);
 
@@ -325,7 +329,7 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /** Adds one full-width row to a GridBagLayout, with a gap above it. */
-    private void add(JPanel panel, java.awt.GridBagConstraints gbc, java.awt.Component component,
+    private void add(JPanel panel, GridBagConstraints gbc, Component component,
         int gapAbove)
     {
         gbc.insets = new java.awt.Insets(gapAbove, 0, 2, 0);
@@ -333,22 +337,17 @@ public class AutonomyViewerPanel extends JPanel
         gbc.gridy++;
     }
 
-    /** Everything that manages configurations, on one menu. */
-    private javax.swing.JPopupMenu manageMenu()
+    /** Everything that manages configurations: the Autonomy menu's Manage list, built by the same method. */
+    private JPopupMenu manageMenu()
     {
-        javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+        JPopupMenu menu = new JPopupMenu();
 
-        menu.add(item(I18n.t("autosetup.ui.menuNewConfiguration"), new Runnable()
-            { public void run() { duplicate(); } }));
-        menu.add(item(I18n.t("autosetup.ui.menuRenameConfiguration"), new Runnable()
-            { public void run() { rename(); } }));
-        menu.add(item(I18n.t("autosetup.ui.menuDeleteConfiguration"), new Runnable()
-            { public void run() { delete(); } }));
-        menu.addSeparator();
-        menu.add(item(I18n.t("autosetup.ui.btnImportConfiguration"), new Runnable()
-            { public void run() { importConfiguration(); } }));
-        menu.add(item(I18n.t("autosetup.ui.btnExportConfiguration"), new Runnable()
-            { public void run() { exportConfiguration(); } }));
+        AutonomyMenu.addManageItems(menu, ui, this, session());
+
+        for (Component part : menu.getComponents())
+        {
+            if (part instanceof JMenuItem) styled((JMenuItem) part, false);
+        }
 
         // Debug builds only, last on the menu (the flag is read fresh: the menu is rebuilt on every press).  It writes
         // the derived graph as a diagnostic, so it is offered only with a setup free of blocking problems, as the
@@ -357,16 +356,15 @@ public class AutonomyViewerPanel extends JPanel
             && session().exists() && !session().hasBlockingProblems())
         {
             menu.addSeparator();
-            menu.add(item(I18n.t("autosetup.ui.menuExportRawGraph"), new Runnable()
-                { public void run() { inspect(); } }));
+            menu.add(item(I18n.t("autosetup.ui.menuExportRawGraph"), () -> inspect()));
         }
 
         return menu;
     }
 
-    private javax.swing.JMenuItem item(String text, final Runnable action)
+    private JMenuItem item(String text, final Runnable action)
     {
-        javax.swing.JMenuItem menuItem = new javax.swing.JMenuItem(text);
+        JMenuItem menuItem = new JMenuItem(text);
         menuItem.addActionListener(e -> action.run());
         return styled(menuItem, false);
     }
@@ -379,7 +377,7 @@ public class AutonomyViewerPanel extends JPanel
 
         JPanel heading = new JPanel();
         heading.setOpaque(false);
-        heading.setLayout(new javax.swing.BoxLayout(heading, javax.swing.BoxLayout.Y_AXIS));
+        heading.setLayout(new BoxLayout(heading, BoxLayout.Y_AXIS));
         heading.add(group(I18n.t("autosetup.ui.headingFindings")));
 
         hint.setFont(FONT_LIST);
@@ -393,47 +391,43 @@ public class AutonomyViewerPanel extends JPanel
         panel.setLayout(new BorderLayout(0, 6));
 
         findings.setCellRenderer(new FindingRenderer(findingSeverity, findingRows, FONT, FONT_BOLD));
-        findings.setBackground(java.awt.Color.WHITE);
+        findings.setBackground(Color.WHITE);
         findings.setFont(FONT_LIST);
 
         // One click, straight to the square it is about, with the tools that can fix it already open.
-        findings.addMouseListener(new java.awt.event.MouseAdapter()
+        findings.addMouseListener(Listen.clicked(e ->
         {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e)
+            int row = findings.locationToIndex(e.getPoint());
+
+            if (row < 0 || row >= findingRows.size()) return;
+
+            // locationToIndex answers the CLOSEST row for a click below the last one, so check the cell bounds.
+            java.awt.Rectangle bounds = findings.getCellBounds(row, row);
+
+            if (bounds == null || !bounds.contains(e.getPoint())) return;
+
+            // AND ITS TEXT ON THE CLIPBOARD, as the editor's list does (MT-767) - a notice only: a heading has no
+            // severity
+            if (row < findingSeverity.size() && findingSeverity.get(row) != null)
             {
-                int row = findings.locationToIndex(e.getPoint());
-
-                if (row < 0 || row >= findingRows.size()) return;
-
-                // locationToIndex answers the CLOSEST row for a click below the last one, so check the cell bounds.
-                java.awt.Rectangle bounds = findings.getCellBounds(row, row);
-
-                if (bounds == null || !bounds.contains(e.getPoint())) return;
-
-                // AND ITS TEXT ON THE CLIPBOARD, as the editor's list does (MT-767) - a notice only: a heading has no
-                // severity
-                if (row < findingSeverity.size() && findingSeverity.get(row) != null)
-                {
-                    AutonomyEditorPanel.copyNoticeToClipboard(findings.getModel().getElementAt(row));
-                }
-
-                org.traincontrol.automationui.TileGraph.TileKey tile = findingRows.get(row);
-
-                // With the squares it names beside its own, outlined there as the editor's own list outlines them
-                if (tile != null)
-                {
-                    ui.openAutonomyEditor(tile, row < findingRelatedRows.size() ? findingRelatedRows.get(row) : null);
-                }
+                AutonomyEditorPanel.copyNoticeToClipboard(findings.getModel().getElementAt(row));
             }
-        });
+
+            TileGraph.TileKey tile = findingRows.get(row);
+
+            // With the squares it names beside its own, outlined there as the editor's own list outlines them
+            if (tile != null)
+            {
+                ui.openAutonomyEditor(tile, row < findingRelatedRows.size() ? findingRelatedRows.get(row) : null);
+            }
+        }));
 
         // The findings are the only thing here genuinely wider than the tab, so this is the only thing
         // that scrolls sideways.  Everything else is bounded, so the tab itself never scrolls at all.
         JScrollPane scroll = new JScrollPane(findings,
             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scroll.setBorder(BorderFactory.createEmptyBorder());
-        scroll.getViewport().setBackground(java.awt.Color.WHITE);
+        scroll.getViewport().setBackground(Color.WHITE);
 
         panel.add(scroll, BorderLayout.CENTER);
 
@@ -451,7 +445,7 @@ public class AutonomyViewerPanel extends JPanel
             JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         rosterScroll.setBorder(BorderFactory.createLineBorder(BOX_BORDER));
         rosterScroll.setPreferredSize(new Dimension(10, 80));
-        rosterScroll.getViewport().setBackground(java.awt.Color.WHITE);
+        rosterScroll.getViewport().setBackground(Color.WHITE);
 
         bottom.add(rosterScroll, BorderLayout.CENTER);
 
@@ -470,15 +464,15 @@ public class AutonomyViewerPanel extends JPanel
     {
         private final List<AutonomyChecks.Severity> severities;
         private final List<?> tiles;
-        private final java.awt.Font font;
-        private final java.awt.Font headingFont;
+        private final Font font;
+        private final Font headingFont;
 
         /**
          * @param severities each row's severity, null on a heading
          * @param tiles each row's square, null on a heading and on a row about no square
          */
-        public FindingRenderer(List<AutonomyChecks.Severity> severities, List<?> tiles, java.awt.Font font,
-            java.awt.Font headingFont)
+        public FindingRenderer(List<AutonomyChecks.Severity> severities, List<?> tiles, Font font,
+            Font headingFont)
         {
             this.severities = severities;
             this.tiles = tiles;
@@ -487,7 +481,7 @@ public class AutonomyViewerPanel extends JPanel
         }
 
         @Override
-        public java.awt.Component getListCellRendererComponent(JList<?> list, Object value,
+        public Component getListCellRendererComponent(JList<?> list, Object value,
             int index, boolean isSelected, boolean cellHasFocus)
         {
             super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
@@ -505,7 +499,7 @@ public class AutonomyViewerPanel extends JPanel
                 setForeground(heading ? HEADING_COLOUR
                     : severity == AutonomyChecks.Severity.ERROR ? ERROR_COLOUR
                     : severity == AutonomyChecks.Severity.WARNING ? WARNING_COLOUR
-                    : java.awt.Color.DARK_GRAY);
+                    : Color.DARK_GRAY);
             }
 
             return this;
@@ -516,8 +510,6 @@ public class AutonomyViewerPanel extends JPanel
 
     /**
      * Points the Manage actions at a configuration, for a caller that has no combo box of its own.
-     *
-     * @param name
      */
     public void setSelectedConfiguration(String name)
     {
@@ -567,7 +559,7 @@ public class AutonomyViewerPanel extends JPanel
         // Rebuild the diagram, which makes the captions live: updateVisiblePoints only writes to labels the grid has
         // registered, so it cannot reach a station an import just created; repaintLayout rebuilds the grid and then
         // updates, in one event.
-        javax.swing.SwingUtilities.invokeLater(() -> ui.repaintLayout());
+        SwingUtilities.invokeLater(() -> ui.repaintLayout());
     }
 
     /** Loads the active configuration: the startup resume, the same as choosing what was chosen last time. */
@@ -581,16 +573,16 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /**
-     * Says why, and answers true, where something other than autonomy holds the setup
-     * (`TrainControlUI.refusedWhileSomethingElseRuns`): the question every door a user loads a configuration through
-     * asks first.  While autonomy itself is busy the load keeps its own offer to stop the trains
+     * Says why, and answers true, where an editor is open or on its way, or something other than autonomy holds the
+     * setup (`TrainControlUI.refusedWhileSomethingElseRuns`): the question every door a user loads a configuration
+     * through asks first.  While autonomy itself is busy the load keeps its own offer to stop the trains
      * (`prepareAutonomyReload`).
      *
      * @return true when the load is refused
      */
     public boolean refusedWhileRunning()
     {
-        return ui.refusedWhileSomethingElseRuns();
+        return ui.refuseWhileEditorOpen() || ui.refusedWhileSomethingElseRuns();
     }
 
     /**
@@ -725,7 +717,7 @@ public class AutonomyViewerPanel extends JPanel
         {
             try
             {
-                org.traincontrol.automation.Layout folding = ui.getModel().getAutoLayout();
+                Layout folding = ui.getModel().getAutoLayout();
 
                 // AND ITS SETTINGS AS BUILT FOLLOW (OB-343): a build the load then declines leaves this railway running
                 session().captureFromLayout(folding.toJSON(folding.getLastPointsReached()),
@@ -793,7 +785,7 @@ public class AutonomyViewerPanel extends JPanel
             // length comes up atomic, with the reason in the log.  This is the only door into `parseAuto` (OB-254).
             ui.keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack();
 
-            // remembered for next start, the way loading has always doubled as choosing
+            // remembered for next start
             save();
 
             // everything that follows success - dependent tabs, the monitor, the overlay toggle, the
@@ -829,6 +821,8 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void initialize()
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         // NOT WHILE AUTONOMY RUNS: it writes a configuration, and may tick pages out, under the railway
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
@@ -845,8 +839,7 @@ public class AutonomyViewerPanel extends JPanel
         }
         catch (IOException e)
         {
-            // Only a name collision is reported as one: initialize() also SAVES, and a full disk was announced as "in
-            // use".
+            // Only a name collision is reported as one: initialize() also SAVES, so a full disk is not a name in use.
             JOptionPane.showMessageDialog(ui, nameRefused(e, name, String.valueOf(e.getMessage())));
             return;
         }
@@ -890,7 +883,7 @@ public class AutonomyViewerPanel extends JPanel
      */
     private String suggestedConfigurationName()
     {
-        java.util.List<String> taken = session().getStore().getConfigurationNames();
+        List<String> taken = session().getStore().getConfigurationNames();
 
         for (int next = 1; next < 1000; next++)
         {
@@ -903,14 +896,14 @@ public class AutonomyViewerPanel extends JPanel
     }
 
     /** A file chooser opened where the last one was, like every other in the application. */
-    private javax.swing.JFileChooser chooser()
+    private JFileChooser chooser()
     {
         return new QuickFileChooser(TrainControlUI.getPrefs()
-            .get(TrainControlUI.LAST_USED_FOLDER, new java.io.File(".").getAbsolutePath()));
+            .get(TrainControlUI.LAST_USED_FOLDER, new File(".").getAbsolutePath()));
     }
 
     /** Remembers the folder a file was chosen in, so the next chooser opens there. */
-    private void rememberFolder(java.io.File file)
+    private void rememberFolder(File file)
     {
         if (file == null || file.getParent() == null) return;
 
@@ -925,14 +918,16 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void importConfiguration()
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         // NOT WHILE AUTONOMY RUNS, as Delete beside it is refused, and before anything is asked: an import writes the
         // setup's shared half (a station's name among it) into any configuration, and the fold after a declined reload
         // read the running railway through names it had changed.
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
-        javax.swing.JFileChooser chooser = chooser();
+        JFileChooser chooser = chooser();
 
-        if (chooser.showOpenDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+        if (chooser.showOpenDialog(ui) != JFileChooser.APPROVE_OPTION) return;
 
         rememberFolder(chooser.getSelectedFile());
 
@@ -943,15 +938,15 @@ public class AutonomyViewerPanel extends JPanel
 
         // READ BEFORE THE QUESTION BELOW, so that it can say what Yes does: a bundle replaces the configuration of that
         // name, an old autonomy.json fills in what that configuration does not already say (MT-298).
-        org.json.JSONObject file;
+        JSONObject file;
 
         AutonomySession.ImportFormat format;
 
         try
         {
-            byte[] bytes = java.nio.file.Files.readAllBytes(chooser.getSelectedFile().toPath());
+            byte[] bytes = Files.readAllBytes(chooser.getSelectedFile().toPath());
 
-            file = new org.json.JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
+            file = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
 
             // Told apart by shape, not by where it came from or what it is called: a user has one Import.
             format = AutonomySession.detectImportFormat(file);
@@ -1020,7 +1015,7 @@ public class AutonomyViewerPanel extends JPanel
 
             // AND WHICH PAGES WERE LEFT OUT, said before the save: an export describes the railway it came from, and a
             // page the setup knows about and cannot load stops every later save from tidying anything.
-            java.util.List<String> notHere = session().getPagesLeftOutOfLastImport();
+            List<String> notHere = session().getPagesLeftOutOfLastImport();
 
             if (!notHere.isEmpty())
             {
@@ -1031,7 +1026,7 @@ public class AutonomyViewerPanel extends JPanel
 
             // AND THE LOCOMOTIVES THIS DATABASE DOES NOT HOLD, out of it before the save (OB-349): the configuration
             // imported is loaded only where nothing else runs, so the load cannot be left to do it
-            java.util.List<AutonomySession.LocomotiveLeftOut> leftOut = forgetLocomotivesNotInTheDatabase(name.trim());
+            List<AutonomySession.LocomotiveLeftOut> leftOut = forgetLocomotivesNotInTheDatabase(name.trim());
 
             save();
 
@@ -1102,7 +1097,7 @@ public class AutonomyViewerPanel extends JPanel
      * @throws java.io.IOException where a configuration of that name cannot be created
      */
     static String activateTheConfigurationNamed(AutonomyCompanionStore store, String typed, String suggested)
-        throws java.io.IOException
+        throws IOException
     {
         String name = typed == null || typed.trim().isEmpty() ? suggested : typed.trim();
 
@@ -1121,7 +1116,7 @@ public class AutonomyViewerPanel extends JPanel
      * @param lines its lines
      * @return the entry
      */
-    private static String listForTheLog(String heading, java.util.List<String> lines)
+    private static String listForTheLog(String heading, List<String> lines)
     {
         StringBuilder entry = new StringBuilder(heading);
 
@@ -1134,11 +1129,11 @@ public class AutonomyViewerPanel extends JPanel
      * Takes the locomotives the database does not hold out of a configuration, says so in the log, and returns them
      * (OB-349).
      */
-    private java.util.List<AutonomySession.LocomotiveLeftOut> forgetLocomotivesNotInTheDatabase(String configuration)
+    private List<AutonomySession.LocomotiveLeftOut> forgetLocomotivesNotInTheDatabase(String configuration)
     {
         if (ui.getModel() == null) return java.util.Collections.emptyList();
 
-        java.util.List<AutonomySession.LocomotiveLeftOut> leftOut = session().forgetLocomotivesNotIn(configuration,
+        List<AutonomySession.LocomotiveLeftOut> leftOut = session().forgetLocomotivesNotIn(configuration,
             new java.util.HashSet<>(ui.getModel().getLocList()));
 
         logLocomotivesLeftOut(configuration, leftOut);
@@ -1150,7 +1145,7 @@ public class AutonomyViewerPanel extends JPanel
      * The locomotives a configuration was left without, as one log entry: a line for each, saying what it lost where
      * (OB-349).
      */
-    private void logLocomotivesLeftOut(String configuration, java.util.List<AutonomySession.LocomotiveLeftOut> leftOut)
+    private void logLocomotivesLeftOut(String configuration, List<AutonomySession.LocomotiveLeftOut> leftOut)
     {
         if (leftOut.isEmpty() || ui.getModel() == null) return;
 
@@ -1161,14 +1156,14 @@ public class AutonomyViewerPanel extends JPanel
      * The same list in a dialog, for an import; it scrolls past ten lines, as `TailCrossedPrompt`'s does.  Empty shows
      * nothing.
      */
-    private void showLocomotivesLeftOut(String configuration, java.util.List<AutonomySession.LocomotiveLeftOut> leftOut)
+    private void showLocomotivesLeftOut(String configuration, List<AutonomySession.LocomotiveLeftOut> leftOut)
     {
         if (leftOut.isEmpty()) return;
 
         showLocomotivesLeftOutLines(configuration, linesFor(leftOut));
     }
 
-    private void showLocomotivesLeftOutLines(String configuration, java.util.List<String> lines)
+    private void showLocomotivesLeftOutLines(String configuration, List<String> lines)
     {
         JOptionPane.showMessageDialog(ui,
             DetailsArea.message(I18n.f("autosetup.ui.locomotivesLeftOut", configuration), lines),
@@ -1179,19 +1174,19 @@ public class AutonomyViewerPanel extends JPanel
      * The same dialog for a load that took something out (OB-349); the dialog waits for the window if it is still
      * connecting.
      */
-    private void adviseOfLocomotivesLeftOut(String configuration, java.util.List<AutonomySession.LocomotiveLeftOut> leftOut)
+    private void adviseOfLocomotivesLeftOut(String configuration, List<AutonomySession.LocomotiveLeftOut> leftOut)
     {
         if (leftOut.isEmpty()) return;
 
-        final java.util.List<String> lines = linesFor(leftOut);
+        final List<String> lines = linesFor(leftOut);
 
         ui.whenTheConnectingNoticeIsGone(() -> showLocomotivesLeftOutLines(configuration, lines));
     }
 
     /** One line for each locomotive, in name order: its name, and what it lost where. */
-    private java.util.List<String> linesFor(java.util.List<AutonomySession.LocomotiveLeftOut> leftOut)
+    private List<String> linesFor(List<AutonomySession.LocomotiveLeftOut> leftOut)
     {
-        java.util.Map<String, java.util.List<String>> lost = new java.util.TreeMap<>();
+        Map<String, List<String>> lost = new java.util.TreeMap<>();
 
         for (AutonomySession.LocomotiveLeftOut one : leftOut)
         {
@@ -1207,14 +1202,14 @@ public class AutonomyViewerPanel extends JPanel
                 default: what = I18n.f("autosetup.ui.leftOutExcluded", where); break;
             }
 
-            java.util.List<String> its = lost.computeIfAbsent(one.locomotive, name -> new java.util.ArrayList<>());
+            List<String> its = lost.computeIfAbsent(one.locomotive, name -> new ArrayList<>());
 
             if (!its.contains(what)) its.add(what);
         }
 
-        java.util.List<String> lines = new java.util.ArrayList<>();
+        List<String> lines = new ArrayList<>();
 
-        for (java.util.Map.Entry<String, java.util.List<String>> one : lost.entrySet())
+        for (Map.Entry<String, List<String>> one : lost.entrySet())
         {
             lines.add(I18n.f("autosetup.ui.leftOutLine", one.getKey(), String.join(", ", one.getValue())));
         }
@@ -1240,7 +1235,7 @@ public class AutonomyViewerPanel extends JPanel
     /**
      * Reads an old autonomy.json (already parsed by the one Import action) onto the squares carrying the same sensors.
      */
-    private void importLegacyGraph(org.json.JSONObject file, String name)
+    private void importLegacyGraph(JSONObject file, String name)
     {
         // First, because an s88 on two squares stops an import deciding anything (those points are refused and listed):
         // shut the repeats before reading the file, and before the snapshot below (OB-302), since an exclusion is the
@@ -1256,7 +1251,7 @@ public class AutonomyViewerPanel extends JPanel
         // EVERYTHING AS IT WAS, for an import that fails part way: the configuration is created and chosen before the
         // file is read and importLegacy writes as it reads, so the failure must put all of that back, as the bundle
         // import does.
-        org.json.JSONObject was = session().snapshotSetup();
+        JSONObject was = session().snapshotSetup();
 
         // AND THE RECORD OF HOW THE RAILWAY WAS BUILT WITH IT (OB-343): the fold below updates it, and the setup put
         // back must not keep what the fold took
@@ -1274,7 +1269,7 @@ public class AutonomyViewerPanel extends JPanel
             // with I18n.t would put the placeholder on screen as the configuration's NAME.
             into = activateTheConfigurationNamed(session().getStore(), name, suggestedConfigurationName());
         }
-        catch (java.io.IOException e)
+        catch (IOException e)
         {
             // A NAME IN USE IS NOT AN UNREADABLE FILE: a configuration file of that name already sits beside
             // the setup, under another name that shares its file.
@@ -1313,7 +1308,7 @@ public class AutonomyViewerPanel extends JPanel
                 }
                 catch (Exception e)
                 {
-                    // as load() treats it: a courtesy, and failing it leaves the reload to capture, as before
+                    // as load() treats it: a courtesy
                     if (ui.getModel().isDebug()) ui.getModel().log(String.valueOf(e.getMessage()));
                 }
             }
@@ -1321,11 +1316,11 @@ public class AutonomyViewerPanel extends JPanel
             AutonomySession.LegacyImport result = session().importLegacy(file, known, !intoTheOneRunning);
 
             // Read to its end before anything is saved, so a file that throws here has changed nothing.
-            java.util.List<String> left = session().whatALegacyImportLeaves(file);
+            List<String> left = session().whatALegacyImportLeaves(file);
 
             // THE LOCOMOTIVES THIS DATABASE DOES NOT HOLD (OB-349): the trains the file stands that were not placed, and
             // whatever else the configuration now names of them - a home, a name on a list - taken out of it, in one list
-            java.util.List<AutonomySession.LocomotiveLeftOut> leftOut = new java.util.ArrayList<>(result.unknownPlacements);
+            List<AutonomySession.LocomotiveLeftOut> leftOut = new ArrayList<>(result.unknownPlacements);
 
             if (known != null) leftOut.addAll(session().forgetLocomotivesNotIn(into, known));
 
@@ -1343,7 +1338,7 @@ public class AutonomyViewerPanel extends JPanel
             // LOAD AUTONOMY IS LEFT AS IT WAS: it resumes the active setup, which the import has just made (OB-254).
 
             // The sentence counts; what it could not do goes under it in a Details list, and to the log.
-            java.util.List<String> details = new java.util.ArrayList<>();
+            List<String> details = new ArrayList<>();
 
             if (!result.unmatched.isEmpty()) details.add(String.join(", ", result.unmatched));
 
@@ -1485,6 +1480,8 @@ public class AutonomyViewerPanel extends JPanel
      */
     public void exportConfiguration()
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         // NOT WHILE A RUN HOLDS THE SETUP, as Import is not (MT-601), and before anything is asked: the export folds
         // the running railway into the setup first
         if (ui.refuseUntilTheTrainsStop(ui)) return;
@@ -1497,21 +1494,20 @@ public class AutonomyViewerPanel extends JPanel
         // holds where they stood before the last run, and the pace and the timetable as at the load
         ui.captureRunningLayout();
 
-        org.json.JSONObject configuration = session().getStore().exportBundle(name);
+        JSONObject configuration = session().getStore().exportBundle(name);
 
         if (configuration == null) return;
 
-        javax.swing.JFileChooser chooser = chooser();
-        chooser.setSelectedFile(new java.io.File(chooser.getCurrentDirectory(), name + ".json"));
+        JFileChooser chooser = chooser();
+        chooser.setSelectedFile(new File(chooser.getCurrentDirectory(), name + ".json"));
 
-        if (chooser.showSaveDialog(ui) != javax.swing.JFileChooser.APPROVE_OPTION) return;
+        if (chooser.showSaveDialog(ui) != JFileChooser.APPROVE_OPTION) return;
 
         rememberFolder(chooser.getSelectedFile());
 
         try
         {
-            java.nio.file.Files.write(chooser.getSelectedFile().toPath(),
-                configuration.toString(4).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            Files.write(chooser.getSelectedFile().toPath(), configuration.toString(4).getBytes(StandardCharsets.UTF_8));
         }
         catch (IOException e)
         {
@@ -1521,6 +1517,8 @@ public class AutonomyViewerPanel extends JPanel
 
     public void duplicate()
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         // NOT WHILE AUTONOMY RUNS, as Import, Export and Delete are not - before anything is asked
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
@@ -1605,6 +1603,8 @@ public class AutonomyViewerPanel extends JPanel
 
     public void rename()
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         // NOT WHILE AUTONOMY RUNS: it renames the running configuration's file under the railway
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
@@ -1636,20 +1636,21 @@ public class AutonomyViewerPanel extends JPanel
 
     public void delete()
     {
+        if (ui.refuseWhileEditorOpen()) return;
+
         String name = selected();
 
-        // Refused while trains are moving, as deleting the whole setup is: confirming mid-run went through to
-        // clearAutoLayout and stopped every locomotive.
+        // Refused while trains are moving, as deleting the whole setup is.
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
         // WHICH ONE, where there is a choice (OB-319): a setup that cannot be used is refused at its load and never
         // becomes the one in use, so it could not be deleted on its own.  The one in use is offered first.
-        java.util.List<String> names = new java.util.ArrayList<>(session().getStore().getConfigurationNames());
+        List<String> names = new ArrayList<>(session().getStore().getConfigurationNames());
 
         if (names.size() > 1)
         {
             Object chosen = JOptionPane.showInputDialog(ui, I18n.t("autosetup.ui.promptWhichConfigurationToDelete"),
-                I18n.t("autosetup.ui.menuDeleteConfiguration"), JOptionPane.QUESTION_MESSAGE, null, names.toArray(),
+                I18n.t("autosetup.ui.titleDeleteConfiguration"), JOptionPane.QUESTION_MESSAGE, null, names.toArray(),
                 names.contains(name) ? name : names.get(0));
 
             if (chosen == null) return;
@@ -1667,7 +1668,7 @@ public class AutonomyViewerPanel extends JPanel
         // is not undoable.
         if (JOptionPane.showOptionDialog(ui,
             I18n.f("autosetup.ui.confirmDeleteConfiguration", name),
-            I18n.t("autosetup.ui.menuDeleteConfiguration"),
+            I18n.t("autosetup.ui.titleDeleteConfiguration"),
             JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0) return;
 
@@ -1718,11 +1719,9 @@ public class AutonomyViewerPanel extends JPanel
     {
         try
         {
-            java.io.File out = new java.io.File("autonomy-derived.json").getAbsoluteFile();
+            File out = new File("autonomy-derived.json").getAbsoluteFile();
 
-            java.nio.file.Files.write(out.toPath(),
-                session().buildConfigurationForInspection().getBytes(
-                    java.nio.charset.StandardCharsets.UTF_8));
+            Files.write(out.toPath(), session().buildConfigurationForInspection().getBytes(StandardCharsets.UTF_8));
 
             // Say what happened, then show where: a bare path leaves the reader to work out whether it was written or
             // found.
@@ -1760,8 +1759,7 @@ public class AutonomyViewerPanel extends JPanel
         pagesSummary.setText(I18n.f("autosetup.ui.labelPagesSummary",
             total - session().getStore().getExcludedPages().size(), total));
 
-        // Hidden rather than disabled until it works: an enabled-looking button that goes to a tab
-        // which does not exist is what made placing look missing in the first place.
+        // Hidden rather than disabled until it works: the button goes to a tab that does not exist until then.
         stepRun.setVisible(running);
         placeLocomotives.setVisible(running);
 
@@ -1773,10 +1771,7 @@ public class AutonomyViewerPanel extends JPanel
 
         configurations.removeAllItems();
 
-        for (String name : session().getStore().getConfigurationNames())
-        {
-            configurations.addItem(name);
-        }
+        for (String name : session().getStore().getConfigurationNames()) configurations.addItem(name);
 
         String active = session().getStore().getActiveConfiguration();
 
@@ -1794,8 +1789,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         roster.clear();
 
-        // Asked, not built: `getAutoLayout` makes a Layout where there is none, so `hasAutoLayout` answered yes about
-        // an empty one as the panel is made.
+        // Asked, not built: `getAutoLayout` makes a Layout where there is none.
         Layout layout = ui.getModel() == null ? null : ui.getModel().getAutoLayoutIfLoaded();
 
         if (layout == null) return;
@@ -1850,7 +1844,7 @@ public class AutonomyViewerPanel extends JPanel
      * What a square IS, for a message that would otherwise name a coordinate: a sensor with its s88 address, a switch
      * with its address, plain track.
      */
-    private String describeTile(org.traincontrol.automationui.TileGraph.TileKey tile)
+    private String describeTile(TileGraph.TileKey tile)
     {
         String where = tile.getX() + "," + tile.getY();
 
@@ -1864,10 +1858,7 @@ public class AutonomyViewerPanel extends JPanel
 
         if (named != null && !named.trim().isEmpty()) return named.trim() + " (" + where + ")";
 
-        if (component.isFeedback())
-        {
-            return I18n.f("autosetup.ui.describeSensor", where, component.getRawAddress());
-        }
+        if (component.isFeedback()) return I18n.f("autosetup.ui.describeSensor", where, component.getRawAddress());
 
         if (component.getAccessory() != null)
         {
@@ -1892,12 +1883,11 @@ public class AutonomyViewerPanel extends JPanel
 
         for (Object[] row : rows)
         {
-            org.traincontrol.automationui.TileGraph.TileKey tile =
-                (org.traincontrol.automationui.TileGraph.TileKey) row[0];
+            TileGraph.TileKey tile = (TileGraph.TileKey) row[0];
 
             String page = tile == null ? "" : tile.getPage();
 
-            if (!byPage.containsKey(page)) byPage.put(page, new java.util.ArrayList<Object[]>());
+            if (!byPage.containsKey(page)) byPage.put(page, new ArrayList<Object[]>());
 
             byPage.get(page).add(row);
         }
@@ -1917,12 +1907,11 @@ public class AutonomyViewerPanel extends JPanel
             for (Object[] row : entry.getValue())
             {
                 findingsModel.addElement("     " + row[1]);
-                findingRows.add((org.traincontrol.automationui.TileGraph.TileKey) row[0]);
+                findingRows.add((TileGraph.TileKey) row[0]);
                 findingSeverity.add(severity);
 
                 @SuppressWarnings("unchecked")
-                List<org.traincontrol.automationui.TileGraph.TileKey> related = row.length > 2
-                    ? (List<org.traincontrol.automationui.TileGraph.TileKey>) row[2] : null;
+                List<TileGraph.TileKey> related = row.length > 2 ? (List<TileGraph.TileKey>) row[2] : null;
 
                 findingRelatedRows.add(related);
             }
@@ -1951,13 +1940,13 @@ public class AutonomyViewerPanel extends JPanel
      * @return the ERROR, WARNING and NOTICE rows, every other severity among the notices
      */
     public static Map<AutonomyChecks.Severity, List<Object[]>> findingRows(List<AutonomyChecks.Finding> findings,
-        java.util.function.Function<org.traincontrol.automationui.TileGraph.TileKey, String> describeTile)
+        java.util.function.Function<TileGraph.TileKey, String> describeTile)
     {
         Map<AutonomyChecks.Severity, List<Object[]>> sorted = new java.util.EnumMap<>(AutonomyChecks.Severity.class);
 
-        sorted.put(AutonomyChecks.Severity.ERROR, new java.util.ArrayList<>());
-        sorted.put(AutonomyChecks.Severity.WARNING, new java.util.ArrayList<>());
-        sorted.put(AutonomyChecks.Severity.NOTICE, new java.util.ArrayList<>());
+        sorted.put(AutonomyChecks.Severity.ERROR, new ArrayList<>());
+        sorted.put(AutonomyChecks.Severity.WARNING, new ArrayList<>());
+        sorted.put(AutonomyChecks.Severity.NOTICE, new ArrayList<>());
 
         for (AutonomyChecks.Finding finding : findings)
         {

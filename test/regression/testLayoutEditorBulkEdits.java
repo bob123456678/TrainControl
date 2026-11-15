@@ -7,22 +7,21 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
+import support.Diagrams;
+import support.Display;
+import support.Reflect;
 
 /**
  * Moving or copying a whole line of squares at once, and what happens to the setup underneath it.
  *
- * A bulk edit copies the whole line into place with the move flag OFF and deletes the source afterwards, so the one
- * call that carries a square's setup (a move) was never made and reconcile threw the setup away; links show it first
- * because a pairing is mutual.  The line being written ONTO is the other half: its setup is about track that is gone,
- * and reconcile cannot catch it because those squares are occupied.  Two rules, tested apart because they fail apart:
+ * A bulk edit copies the line into place with the move flag OFF and deletes the source, so the call that carries a
+ * square's setup (a move) was never made.  Two rules, tested apart because they fail apart:
  *
  *   - what is VACATED travels, on a move, and stays put on a copy
  *   - what is BUILT OVER is forgotten, on a move and on a copy alike
@@ -309,9 +308,8 @@ public class testLayoutEditorBulkEdits
 
     /**
      * A cut still carries its setup when the paste is not the very next thing the user does: `clipboardWasCut` is the
-     * only thing that carries a group cut's setup, and any edit between the halves (growing the diagram, rotating a
-     * tile) once turned the move into a delete-and-lose.  A source scan cannot see this, since the flag is read and
-     * written in the right places and what is wrong is the order.
+     * only thing that carries a group cut's setup, and an edit between the halves must not turn the move into a
+     * delete-and-lose.  A source scan cannot see this, since what is wrong is the order.
      */
     @Test
     public void testAnEditBetweenTheCutAndThePasteStillCarriesTheSetup() throws Exception
@@ -371,9 +369,8 @@ public class testLayoutEditorBulkEdits
 
     /**
      * A paste that carried nothing does not use up the cut: `cutMoves` returns an empty map after an undo or on another
-     * page, and clearing `clipboardWasCut` then made the next paste destroy the setup it should have carried.  One
-     * square, not a column, because `emptyCutOrigins` counts the column's never-occupied squares as vacated and the
-     * paste would be a real move.
+     * page, and clearing `clipboardWasCut` then destroyed the setup the next paste should carry.  One square, not a
+     * column, because `emptyCutOrigins` counts a column's never-occupied squares as vacated.
      *
      * MUTATION: clearing `clipboardWasCut` unconditionally fails this.
      */
@@ -387,9 +384,7 @@ public class testLayoutEditorBulkEdits
             try
             {
                 java.lang.reflect.Field picked =
-                    org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("selection");
-
-                picked.setAccessible(true);
+                    Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "selection");
 
                 ((org.traincontrol.base.TileSelection) picked.get(editor)).addRectangle(5, 3, 5, 3);
             }
@@ -420,11 +415,9 @@ public class testLayoutEditorBulkEdits
     }
 
     /**
-     * An undone cut is outstanding nowhere, not mostly: `emptyCutOrigins` asked each cut square "are you empty now?"
-     * and a square that was always empty answers yes whether or not the cut was undone, so a column cut then undone
-     * still moved fifteen of its sixteen squares.  The question is now asked of the squares the cut emptied of a tile.
-     *
-     * One assertion, not two: a second (the station did not travel to `9,3`) no implementation can make false.
+     * An undone cut is outstanding nowhere, not mostly: the question is asked of the squares the cut emptied of a
+     * tile, since a square that was always empty answers "empty now" whether or not the cut was undone.  One assertion,
+     * not two: a second (the station did not travel to `9,3`) no implementation can make false.
      *
      * MUTATION: dropping the `clipboardCutHadTiles` check from `emptyCutOrigins` fails this.
      */
@@ -470,15 +463,11 @@ public class testLayoutEditorBulkEdits
     /**
      * One set-up square, a real editor over it, a gesture, and a look at what the setup says after.  A LayoutEditor
      * that never shows itself and an AutonomySession in a temp folder, joined through the reflectively-set
-     * TrainControlUI field, so the call sites under test are the real ones; `folder` names the temp autonomy folder so
-     * a failure says which test left it.
+     * TrainControlUI field; `folder` names the temp autonomy folder so a failure says which test left it.
      */
     private void withEditor(String folder, Gesture gesture, Check check) throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the editor is a window");
-        }
+        Display.needed("the editor is a window");
 
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
@@ -513,8 +502,7 @@ public class testLayoutEditorBulkEdits
 
             LayoutDiagram diagram = new LayoutDiagram("Cut Page", 21, 16, null, null);
 
-            diagram.addComponent(componentType.FEEDBACK, 5, 3, 0, 0, 1, 1,
-                accessoryDecoderType.MM2, null);
+            Diagrams.feedback(diagram, 5, 3, 1, 1);
 
             // Every square counts towards the bounds, not only the one with track on it.
             diagram.setEdit(true);
@@ -527,17 +515,13 @@ public class testLayoutEditorBulkEdits
             session.getStore().setStation(at(page, 5, 3), true);
             session.getStore().setPointName(at(page, 5, 3), "Cut And Carried");
 
-            java.lang.reflect.Field sessionField =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-            sessionField.setAccessible(true);
-            sessionField.set(ui[0], session);
+            Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui[0], "autonomySession", session);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
                 editor[0] = new org.traincontrol.gui.layouteditor.LayoutEditor(diagram, 30, ui[0], 0));
 
             java.lang.reflect.Method drawGrid =
-                org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("drawGrid");
-            drawGrid.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class, "drawGrid");
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -653,11 +637,8 @@ public class testLayoutEditorBulkEdits
         {
             try
             {
-                java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-                gridField.setAccessible(true);
-
                 org.traincontrol.gui.LayoutGrid grid =
-                    (org.traincontrol.gui.LayoutGrid) gridField.get(editor);
+                    (org.traincontrol.gui.LayoutGrid) Reflect.get(LayoutEditor.class, editor, "grid");
 
                 // The fixture's diagram is 21 x 16, so the padding is row 16; asserted, or the test would look at
                 // nothing.
@@ -670,16 +651,10 @@ public class testLayoutEditorBulkEdits
 
                 assertNull(padding.getBorder(), "the padding started out with a border");
 
-                java.lang.reflect.Field landingField =
-                    LayoutEditor.class.getDeclaredField("landingSelection");
-                landingField.setAccessible(true);
-
                 org.traincontrol.base.TileSelection landing =
-                    (org.traincontrol.base.TileSelection) landingField.get(editor);
+                    (org.traincontrol.base.TileSelection) Reflect.get(LayoutEditor.class, editor, "landingSelection");
 
-                java.lang.reflect.Method refresh =
-                    LayoutEditor.class.getDeclaredMethod("refreshSelectionBorders");
-                refresh.setAccessible(true);
+                java.lang.reflect.Method refresh = Reflect.method(LayoutEditor.class, "refreshSelectionBorders");
 
                 // A group on the bottom row, dragged one row further down: the landing runs off the diagram onto the
                 // padding.

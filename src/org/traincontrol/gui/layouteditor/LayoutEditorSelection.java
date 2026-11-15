@@ -1,8 +1,18 @@
 package org.traincontrol.gui.layouteditor;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.swing.JOptionPane;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.base.LayoutDiagramComponent;
+import org.traincontrol.base.TileSelection;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.util.I18n;
 
@@ -30,11 +40,11 @@ final class LayoutEditorSelection
      * whole graph twice and wrote every file of the setup to disk, thousands of times on a select-all paste.  Saves
      * only if anything changed.
      */
-    private void forgetBuiltOver(java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> builtOver)
+    private void forgetBuiltOver(Set<TileGraph.TileKey> builtOver)
     {
         if (builtOver == null || builtOver.isEmpty()) return;
 
-        org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
+        AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
         if (autonomy == null) return;
 
@@ -64,15 +74,9 @@ final class LayoutEditorSelection
                     this.editor.getX(destLabel), this.editor.getY(destLabel)));
             }
 
-            if (newComponent.isText() && this.editor.layout.getEditHideText())
-            {
-                this.editor.toggleText();
-            }
+            if (newComponent.isText() && this.editor.layout.getEditHideText()) this.editor.toggleText();
    
-            if (move)
-            {
-                this.editor.layout.addComponent(null, this.editor.lastX, this.editor.lastY);
-            }
+            if (move) this.editor.layout.addComponent(null, this.editor.lastX, this.editor.lastY);
             
             this.editor.layout.addComponent(newComponent, this.editor.getX(destLabel), this.editor.getY(destLabel));
 
@@ -83,14 +87,14 @@ final class LayoutEditorSelection
             // stale station there because the square is not empty.
             if (!move)
             {
-                org.traincontrol.automationui.AutonomySession landing = this.editor.parent.getAutonomySession();
+                AutonomySession landing = this.editor.parent.getAutonomySession();
 
                 if (landing != null)
                 {
                     // Only if it changed anything: this is reached on every single-tile paste and palette drop, and an
                     // unconditional write puts every file of the setup on disk (the layout folder is under OneDrive).
-                    if (landing.forgetTiles(java.util.Collections.singletonList(
-                        new org.traincontrol.automationui.TileGraph.TileKey(
+                    if (landing.forgetTiles(Collections.singletonList(
+                        new TileGraph.TileKey(
                             this.editor.layout.getName(), this.editor.getX(destLabel), this.editor.getY(destLabel)))))
                     {
                         this.editor.rememberAutonomy(landing);
@@ -100,15 +104,14 @@ final class LayoutEditorSelection
 
             if (move && this.editor.lastX >= 0 && this.editor.lastY >= 0)
             {
-                org.traincontrol.automationui.AutonomySession autonomy =
-                    this.editor.parent.getAutonomySession();
+                AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
                 if (autonomy != null)
                 {
                     autonomy.moveTile(
-                        new org.traincontrol.automationui.TileGraph.TileKey(
+                        new TileGraph.TileKey(
                             this.editor.layout.getName(), this.editor.lastX, this.editor.lastY),
-                        new org.traincontrol.automationui.TileGraph.TileKey(
+                        new TileGraph.TileKey(
                             this.editor.layout.getName(), this.editor.getX(destLabel), this.editor.getY(destLabel)));
 
                     this.editor.rememberAutonomy(autonomy);
@@ -139,10 +142,7 @@ final class LayoutEditorSelection
         this.editor.refreshGrid();
     }
 
-    /**
-     * Resets the contents of the clipboard.  Under the editor's monitor: `LayoutEditor.resetClipboard` is
-     * `synchronized`.
-     */
+    /** Resets the contents of the clipboard. */
     void resetClipboard()
     {
         this.editor.lastX = -1;
@@ -167,7 +167,7 @@ final class LayoutEditorSelection
 
     /**
      * Adds this label's location to the clipboard; `component` is the component at the label location, or one that's
-     * specified.  Under the editor's monitor: `LayoutEditor.initCopy` is `synchronized`.
+     * specified.
      */
     void initCopy(LayoutLabel label, LayoutDiagramComponent component, boolean move)
     {
@@ -205,20 +205,16 @@ final class LayoutEditorSelection
         this.editor.clearBordersFromChildren(this.editor.newComponents());
     }
 
-    /**
-     * Takes a copy of everything picked, as the rectangle it occupies; true if there was something to copy.  Under the
-     * editor's monitor: `LayoutEditor.copySelection` is `synchronized`.
-     */
+    /** Takes a copy of everything picked, as the rectangle it occupies; true if there was something to copy. */
     boolean copySelection()
     {
         int[] bounds = this.editor.selection.bounds();
 
         if (bounds == null) return false;
 
-        java.util.List<LayoutEditor.CarriedTile> taken = new java.util.ArrayList<>();
+        List<LayoutEditor.CarriedTile> taken = new ArrayList<>();
 
-        java.util.List<org.traincontrol.automationui.TileGraph.TileKey> origins =
-            new java.util.ArrayList<>();
+        List<TileGraph.TileKey> origins = new ArrayList<>();
 
         try
         {
@@ -233,8 +229,7 @@ final class LayoutEditorSelection
 
                     // Square for square with `taken`, including the empty ones - an empty square can
                     // still hold a caption, so it has a setup worth moving.
-                    origins.add(new org.traincontrol.automationui.TileGraph.TileKey(
-                        this.editor.layout.getName(), x, y));
+                    origins.add(new TileGraph.TileKey(this.editor.layout.getName(), x, y));
                 }
             }
         }
@@ -263,9 +258,9 @@ final class LayoutEditorSelection
      * shares one offset, so a paste back over the origin makes the map EMPTY, which is not a move (see pasteSelection).
      * `wasCut` is decided by the caller BEFORE it snapshotted; the snapshot has cleared the field by then.
      */
-    private java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-        org.traincontrol.automationui.TileGraph.TileKey> cutMoves(int atX, int atY, boolean wasCut,
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> vacated)
+    private Map<TileGraph.TileKey,
+        TileGraph.TileKey> cutMoves(int atX, int atY, boolean wasCut,
+        Set<TileGraph.TileKey> vacated)
     {
         // The flag is passed in, not re-read: the caller decides before it snapshots, and a decision passed in cannot go
         // stale between being made and being used.
@@ -276,36 +271,26 @@ final class LayoutEditorSelection
             return null;
         }
 
-        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-            org.traincontrol.automationui.TileGraph.TileKey> moves =
-                new java.util.LinkedHashMap<>();
+        Map<TileGraph.TileKey, TileGraph.TileKey> moves = new LinkedHashMap<>();
 
         for (int at = 0; at < this.editor.groupClipboard.size(); at++)
         {
             LayoutEditor.CarriedTile tile = this.editor.groupClipboard.get(at);
 
-            org.traincontrol.automationui.TileGraph.TileKey to =
-                new org.traincontrol.automationui.TileGraph.TileKey(
-                    this.editor.layout.getName(), atX + tile.dx, atY + tile.dy);
+            TileGraph.TileKey to = new TileGraph.TileKey(this.editor.layout.getName(), atX + tile.dx, atY + tile.dy);
 
-            org.traincontrol.automationui.TileGraph.TileKey origin = this.editor.clipboardOrigins.get(at);
+            TileGraph.TileKey origin = this.editor.clipboardOrigins.get(at);
 
             // Only squares the cut actually emptied.  The clipboard covers a bounding box; the cut
             // emptied the picked squares inside it, and the rest still hold their track.
-            if (this.editor.clipboardCutSquares != null && !this.editor.clipboardCutSquares.contains(origin))
-            {
-                continue;
-            }
+            if (this.editor.clipboardCutSquares != null && !this.editor.clipboardCutSquares.contains(origin)) continue;
 
             // And only squares the cut left empty, on this page, asked of the caller before anything is placed:
             // pasteSelection places its tiles first, so an origin that is also a landing is full again by then.  Per
             // square, not assumed for the whole clipboard, because any edit snapshots and would falsify a flag.
             // A setup is not carried ACROSS pages: paste snapshots only the destination page and arriveAt discards the
             // source page's undo history, so a cross-page move could not be undone.  It stays on the source page.
-            if (!vacated.contains(origin))
-            {
-                continue;
-            }
+            if (!vacated.contains(origin)) continue;
 
             if (!to.equals(origin)) moves.put(origin, to);
         }
@@ -318,10 +303,9 @@ final class LayoutEditorSelection
      * anything: the paste refills any origin that is also a landing, and one read as "full" after that would be skipped
      * by cutMoves and then forgotten as built over.
      */
-    private java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> emptyCutOrigins()
+    private Set<TileGraph.TileKey> emptyCutOrigins()
     {
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> empty =
-            new java.util.LinkedHashSet<>();
+        Set<TileGraph.TileKey> empty = new LinkedHashSet<>();
 
         if (this.editor.clipboardCutSquares == null) return empty;
 
@@ -331,7 +315,7 @@ final class LayoutEditorSelection
         // a user redrew one square by hand: the setup then stays where it is, which loses nothing.
         if (this.editor.clipboardCutHadTiles != null)
         {
-            for (org.traincontrol.automationui.TileGraph.TileKey square : this.editor.clipboardCutHadTiles)
+            for (TileGraph.TileKey square : this.editor.clipboardCutHadTiles)
             {
                 if (this.editor.layout.getName().equals(square.getPage())
                     && this.editor.layout.getComponent(square.getX(), square.getY()) != null)
@@ -341,7 +325,7 @@ final class LayoutEditorSelection
             }
         }
 
-        for (org.traincontrol.automationui.TileGraph.TileKey square : this.editor.clipboardCutSquares)
+        for (TileGraph.TileKey square : this.editor.clipboardCutSquares)
         {
             if (this.editor.layout.getName().equals(square.getPage())
                 && this.editor.layout.getComponent(square.getX(), square.getY()) == null)
@@ -356,8 +340,7 @@ final class LayoutEditorSelection
     /**
      * Pastes a copied group with its top left corner at (atX, atY), as ONE undoable step; true if anything was pasted.
      * OVERWRITES what is there: merging would mean deciding per square whether the copy or the original wins, and
-     * overwriting is the answer the user can predict and undo takes back in one step.  Under the editor's monitor:
-     * `LayoutEditor.pasteSelection` is `synchronized`.
+     * overwriting is the answer the user can predict and undo takes back in one step.
      */
     boolean pasteSelection(int atX, int atY)
     {
@@ -375,8 +358,7 @@ final class LayoutEditorSelection
         // Squares, not pixels - see moveSelection
         if (atX + width >= this.editor.layout.getSx() || atY + height >= this.editor.layout.getSy())
         {
-            javax.swing.JOptionPane.showMessageDialog(this.editor,
-                I18n.t("layout.ui.errorPasteWouldLeaveTheDiagram"));
+            JOptionPane.showMessageDialog(this.editor, I18n.t("layout.ui.errorPasteWouldLeaveTheDiagram"));
 
             return false;
         }
@@ -387,13 +369,12 @@ final class LayoutEditorSelection
         // down).
         boolean wasCut = this.editor.clipboardWasCut;
 
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> vacated = emptyCutOrigins();
+        Set<TileGraph.TileKey> vacated = emptyCutOrigins();
 
         this.editor.snapshotLayout();
 
         // Every square this writes over, told to the setup once when the gesture is done (see forgetBuiltOver).
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> builtOver =
-            new java.util.LinkedHashSet<>();
+        Set<TileGraph.TileKey> builtOver = new LinkedHashSet<>();
 
         boolean was = this.editor.pauseRepaint;
 
@@ -401,7 +382,7 @@ final class LayoutEditorSelection
 
         try
         {
-            org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
+            AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
             for (LayoutEditor.CarriedTile tile : this.editor.groupClipboard)
             {
@@ -420,15 +401,12 @@ final class LayoutEditorSelection
                 this.editor.layout.addComponent(placing, x, y);
 
                 // Collected, not announced (see forgetBuiltOver).
-                builtOver.add(new org.traincontrol.automationui.TileGraph.TileKey(
-                    this.editor.layout.getName(), x, y));
+                builtOver.add(new TileGraph.TileKey(this.editor.layout.getName(), x, y));
             }
 
             // When the track was cut rather than copied, the setup follows it.  moveTiles is given what was built over as
             // well and does both jobs in one write, so calling forgetBuiltOver too would clear the setup just delivered.
-            java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                org.traincontrol.automationui.TileGraph.TileKey> moves = wasCut
-                    ? cutMoves(atX, atY, wasCut, vacated) : null;
+            Map<TileGraph.TileKey, TileGraph.TileKey> moves = wasCut ? cutMoves(atX, atY, wasCut, vacated) : null;
 
             if (moves != null)
             {
@@ -436,13 +414,12 @@ final class LayoutEditorSelection
                 // forgetting one whose setup is being carried onto it destroys what the move delivers.  Per square and
                 // per index, not by subtracting the origins wholesale: the origins are the bounding BOX and only the
                 // picked squares moved, so a never-cut square inside the box would escape being forgotten.
-                java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> overwritten =
-                    new java.util.LinkedHashSet<>(builtOver);
+                Set<TileGraph.TileKey> overwritten = new LinkedHashSet<>(builtOver);
 
                 for (int at = 0; at < this.editor.groupClipboard.size(); at++)
                 {
-                    org.traincontrol.automationui.TileGraph.TileKey landing =
-                        new org.traincontrol.automationui.TileGraph.TileKey(this.editor.layout.getName(),
+                    TileGraph.TileKey landing =
+                        new TileGraph.TileKey(this.editor.layout.getName(),
                             atX + this.editor.groupClipboard.get(at).dx,
                             atY + this.editor.groupClipboard.get(at).dy);
 
@@ -497,8 +474,7 @@ final class LayoutEditorSelection
      * Moves every picked square by a delta, as ONE undoable step; true if the move happened.  Reads everything first,
      * then clears, then writes: a group that overlaps where it is going (every short drag) would otherwise erase tiles
      * it had already placed.  Refused WHOLE if any square would land off the diagram, rather than clipped, which would
-     * drop a column of track off the side with nothing on screen saying so.  Under the editor's monitor:
-     * `LayoutEditor.moveSelection` is `synchronized`.
+     * drop a column of track off the side with nothing on screen saying so.
      */
     boolean moveSelection(int dx, int dy)
     {
@@ -508,8 +484,7 @@ final class LayoutEditorSelection
         // square before writing, so a refusal that never fired left the group deleted by the first write past the edge.
         if (!this.editor.selection.fitsAfterMove(dx, dy, this.editor.layout.getSx(), this.editor.layout.getSy()))
         {
-            javax.swing.JOptionPane.showMessageDialog(this.editor,
-                I18n.t("layout.ui.errorSelectionWouldLeaveTheDiagram"));
+            JOptionPane.showMessageDialog(this.editor, I18n.t("layout.ui.errorSelectionWouldLeaveTheDiagram"));
 
             return false;
         }
@@ -523,37 +498,35 @@ final class LayoutEditorSelection
         try
         {
             // Read
-            java.util.List<org.traincontrol.base.TileSelection.At> from = this.editor.selection.all();
-            java.util.List<LayoutDiagramComponent> carried = new java.util.ArrayList<>();
+            List<TileSelection.At> from = this.editor.selection.all();
+            List<LayoutDiagramComponent> carried = new ArrayList<>();
 
-            for (org.traincontrol.base.TileSelection.At at : from)
+            for (TileSelection.At at : from)
             {
                 LayoutDiagramComponent lc = this.editor.layout.getComponent(at.getX(), at.getY());
 
                 carried.add(lc == null ? null : new LayoutDiagramComponent(lc));
             }
 
-            org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
+            AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
             // What autonomy holds about these squares moves with them, ALL of it and all at once, not per tile in the
             // loops below: a group dragged one square right has every source square landing on another source square,
             // so a per-tile move reads a store the previous iteration already wrote.  The whole setup, not the caption
             // alone.
-            java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                org.traincontrol.automationui.TileGraph.TileKey> moving =
-                new java.util.LinkedHashMap<>();
+            Map<TileGraph.TileKey, TileGraph.TileKey> moving = new LinkedHashMap<>();
 
-            for (org.traincontrol.base.TileSelection.At at : from)
+            for (TileSelection.At at : from)
             {
                 moving.put(
-                    new org.traincontrol.automationui.TileGraph.TileKey(
+                    new TileGraph.TileKey(
                         this.editor.layout.getName(), at.getX(), at.getY()),
-                    new org.traincontrol.automationui.TileGraph.TileKey(
+                    new TileGraph.TileKey(
                         this.editor.layout.getName(), at.getX() + dx, at.getY() + dy));
             }
 
             // Clear
-            for (org.traincontrol.base.TileSelection.At at : from)
+            for (TileSelection.At at : from)
             {
                 this.editor.layout.addComponent(null, at.getX(), at.getY());
             }
@@ -561,7 +534,7 @@ final class LayoutEditorSelection
             // Write
             for (int i = 0; i < from.size(); i++)
             {
-                org.traincontrol.base.TileSelection.At at = from.get(i);
+                TileSelection.At at = from.get(i);
 
                 int toX = at.getX() + dx;
                 int toY = at.getY() + dy;
@@ -641,7 +614,7 @@ final class LayoutEditorSelection
     /**
      * Copies the picked squares and then clears them, as one step; true if anything was cut.  Copy first and only
      * delete if it took, because a cut that lost the tiles and kept nothing on the clipboard is the one outcome pasting
-     * cannot undo.  Under the editor's monitor: `LayoutEditor.cutSelection` is `synchronized`.
+     * cannot undo.
      */
     boolean cutSelection()
     {
@@ -651,25 +624,21 @@ final class LayoutEditorSelection
 
         // Held across the delete and put back afterwards: delete() ends by resetting the clipboard, which would wipe the
         // copy taken one line above and leave a cut with nothing to paste.
-        java.util.List<LayoutEditor.CarriedTile> carried = this.editor.groupClipboard;
+        List<LayoutEditor.CarriedTile> carried = this.editor.groupClipboard;
 
-        java.util.List<org.traincontrol.automationui.TileGraph.TileKey> from = this.editor.clipboardOrigins;
+        List<TileGraph.TileKey> from = this.editor.clipboardOrigins;
 
         // Taken BEFORE the delete, which clears the selection, and covering only the picked squares -
         // the clipboard above covers their whole bounding box.
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> emptied =
-            new java.util.LinkedHashSet<>();
+        Set<TileGraph.TileKey> emptied = new LinkedHashSet<>();
 
         // And which of them had a tile on it, which is what says later whether the cut is still
         // outstanding.  Read here because after the delete every one of them is empty.
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> hadTiles =
-            new java.util.LinkedHashSet<>();
+        Set<TileGraph.TileKey> hadTiles = new LinkedHashSet<>();
 
-        for (org.traincontrol.base.TileSelection.At at : this.editor.selection.all())
+        for (TileSelection.At at : this.editor.selection.all())
         {
-            org.traincontrol.automationui.TileGraph.TileKey square =
-                new org.traincontrol.automationui.TileGraph.TileKey(
-                    this.editor.layout.getName(), at.getX(), at.getY());
+            TileGraph.TileKey square = new TileGraph.TileKey(this.editor.layout.getName(), at.getX(), at.getY());
 
             emptied.add(square);
 
@@ -695,8 +664,7 @@ final class LayoutEditorSelection
     /**
      * Puts the armed tile on every picked square, as ONE undoable step; true if anything was filled.  Needs a tile
      * armed from the palette; with nothing armed it says so rather than clearing, because "fill with nothing" is Delete
-     * and the two should not be one gesture with a hidden mode.  Under the editor's monitor:
-     * `LayoutEditor.fillSelection` is `synchronized`.
+     * and the two should not be one gesture with a hidden mode.
      */
     boolean fillSelection()
     {
@@ -712,8 +680,7 @@ final class LayoutEditorSelection
         this.editor.snapshotLayout();
 
         // Every square this writes over, told to the setup once when the gesture is done (see forgetBuiltOver).
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> builtOver =
-            new java.util.LinkedHashSet<>();
+        Set<TileGraph.TileKey> builtOver = new LinkedHashSet<>();
 
         boolean was = this.editor.pauseRepaint;
 
@@ -721,9 +688,9 @@ final class LayoutEditorSelection
 
         try
         {
-            org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
+            AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
-            for (org.traincontrol.base.TileSelection.At at : this.editor.selection.all())
+            for (TileSelection.At at : this.editor.selection.all())
             {
                 LayoutDiagramComponent placing = new LayoutDiagramComponent(this.editor.lastComponent);
 
@@ -733,8 +700,7 @@ final class LayoutEditorSelection
                 this.editor.layout.addComponent(placing, at.getX(), at.getY());
 
                 // Collected, not announced - see pasteSelection
-                builtOver.add(new org.traincontrol.automationui.TileGraph.TileKey(
-                    this.editor.layout.getName(), at.getX(), at.getY()));
+                builtOver.add(new TileGraph.TileKey(this.editor.layout.getName(), at.getX(), at.getY()));
             }
 
             forgetBuiltOver(builtOver);
@@ -757,8 +723,7 @@ final class LayoutEditorSelection
 
     /**
      * Deletes every picked square, as ONE undoable step; true if anything was picked to delete.  One snapshot for the
-     * group rather than one per square: a user who erases a yard means the yard, not the last tile of it.  Under the
-     * editor's monitor: `LayoutEditor.deleteSelection` is `synchronized`.
+     * group rather than one per square: a user who erases a yard means the yard, not the last tile of it.
      */
     boolean deleteSelection()
     {
@@ -766,8 +731,7 @@ final class LayoutEditorSelection
     }
 
     /**
-     * Empties every picked square; true if anything was picked to delete.  Under the editor's monitor:
-     * `LayoutEditor.deleteSelection` is `synchronized`.
+     * Empties every picked square; true if anything was picked to delete.
      *
      * @param tellAutonomy whether the setup should forget what was on those squares: TRUE for a plain delete, FALSE for
      *        a CUT, where the paste that follows carries the setup and forgetting the captions here (the caption on
@@ -787,19 +751,17 @@ final class LayoutEditorSelection
         // Autonomy is told once, about the whole selection: every per-square delete rebuilds the tile graph over every
         // page.  The keys come from the SELECTION, not the labels: the grid is rebuilt on every repaint, so a label
         // held across the loop reports -1,-1 and the edit lands on the wrong square or none.
-        java.util.List<org.traincontrol.automationui.TileGraph.TileKey> emptied =
-            new java.util.ArrayList<>();
+        List<TileGraph.TileKey> emptied = new ArrayList<>();
 
         try
         {
-            for (org.traincontrol.base.TileSelection.At at : this.editor.selection.all())
+            for (TileSelection.At at : this.editor.selection.all())
             {
                 LayoutLabel label = this.editor.grid.getValueAt(at.getX(), at.getY());
 
                 if (label == null) continue;
 
-                emptied.add(new org.traincontrol.automationui.TileGraph.TileKey(
-                    this.editor.layout.getName(), at.getX(), at.getY()));
+                emptied.add(new TileGraph.TileKey(this.editor.layout.getName(), at.getX(), at.getY()));
 
                 this.editor.delete(label, false);
             }
@@ -810,13 +772,9 @@ final class LayoutEditorSelection
         }
 
         // ASKED ONLY WHEN IT WILL BE TOLD (OB-236): a cut is not, and asking builds the session where there is none
-        org.traincontrol.automationui.AutonomySession autonomy =
-            tellAutonomy && !emptied.isEmpty() ? this.editor.parent.getAutonomySession() : null;
+        AutonomySession autonomy = tellAutonomy && !emptied.isEmpty() ? this.editor.parent.getAutonomySession() : null;
 
-        if (autonomy != null && autonomy.forgetTiles(emptied))
-        {
-            this.editor.rememberAutonomy(autonomy);
-        }
+        if (autonomy != null && autonomy.forgetTiles(emptied)) this.editor.rememberAutonomy(autonomy);
 
         this.editor.clearSelection();
 
@@ -828,7 +786,7 @@ final class LayoutEditorSelection
     /**
      * Rotates every picked square where it stands, as one undoable step; true if anything was picked to rotate.  In
      * place, not around the group: turning a yard through ninety degrees would move every tile of it, a different
-     * operation.  Under the editor's monitor: `LayoutEditor.rotateSelection` is `synchronized`.
+     * operation.
      */
     boolean rotateSelection()
     {
@@ -842,7 +800,7 @@ final class LayoutEditorSelection
 
         try
         {
-            for (org.traincontrol.base.TileSelection.At at : this.editor.selection.all())
+            for (TileSelection.At at : this.editor.selection.all())
             {
                 LayoutDiagramComponent lc = this.editor.layout.getComponent(at.getX(), at.getY());
 
@@ -872,14 +830,14 @@ final class LayoutEditorSelection
         return true;
     }
 
-    /** Deletes this label from the layout.  Under the editor's monitor: `LayoutEditor.delete` is `synchronized`. */
+    /** Deletes this label from the layout. */
     void delete(LayoutLabel label)
     {
         this.editor.delete(label, true);
     }
 
     /**
-     * Deletes this label from the layout.  Under the editor's monitor: `LayoutEditor.delete` is `synchronized`.
+     * Deletes this label from the layout.
      *
      * @param tellAutonomy false when the CALLER tells the setup what happened.  A cut empties its squares one at a time
      *        and the paste that follows tells the setup where the block went (deleteSelection); announcing each delete
@@ -893,25 +851,21 @@ final class LayoutEditorSelection
         {       
             try
             {
-                if (!this.editor.pauseRepaint)
-                {
-                    this.editor.snapshotLayout();
-                }
+                if (!this.editor.pauseRepaint) this.editor.snapshotLayout();
 
                 this.editor.layout.addComponent(null, this.editor.getX(label), this.editor.getY(label));
 
                 // What autonomy had written about the square goes with it, and so does any caption elsewhere naming it:
                 // one left behind would name nothing and look like the label of the next tile put there.
-                org.traincontrol.automationui.AutonomySession autonomy =
-                    tellAutonomy ? this.editor.parent.getAutonomySession() : null;
+                AutonomySession autonomy = tellAutonomy ? this.editor.parent.getAutonomySession() : null;
 
                 // The whole square, not just its caption (forgetTiles, as execCopy, pasteSelection, fillSelection and
                 // clear do): forgetCaptionsAt would leave a deleted platform's station membership, point name, length,
                 // facing, signal pairing and the rest keyed to a square that holds nothing.  Only when something was
                 // forgotten, so deleting an empty square writes nothing.  This is the single-square door:
                 // deleteSelection makes ONE forgetTiles call and passes tellAutonomy=false to each per-square delete.
-                if (autonomy != null && autonomy.forgetTiles(java.util.Collections.singletonList(
-                        new org.traincontrol.automationui.TileGraph.TileKey(
+                if (autonomy != null && autonomy.forgetTiles(Collections.singletonList(
+                        new TileGraph.TileKey(
                             this.editor.layout.getName(), this.editor.getX(label), this.editor.getY(label)))))
                 {
                     this.editor.rememberAutonomy(autonomy);
@@ -929,7 +883,7 @@ final class LayoutEditorSelection
         }
     }
 
-    /** Rotates the specified label.  Under the editor's monitor: `LayoutEditor.rotate` is `synchronized`. */
+    /** Rotates the specified label. */
     void rotate(LayoutLabel label)
     {       
         LayoutDiagramComponent lc = this.editor.layout.getComponent(this.editor.getX(label), this.editor.getY(label));

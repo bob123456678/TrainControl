@@ -16,9 +16,7 @@ import support.SourceOf;
 public class testStationLabelDrag
 {
     /**
-     * A south or west arrow leads the name; north and east follow it.
-     *
-     * It falls out right for a rotated caption without a special case: a rotated caption reads bottom to top, so the
+     * A south or west arrow leads the name; north and east follow it.  A rotated caption reads bottom to top, so the
      * START of the string is the BOTTOM of the pill, where a downward arrow belongs.
      *
      * MUTATION: having `arrowLeads` answer for north and east instead puts every arrow on the wrong
@@ -76,8 +74,8 @@ public class testStationLabelDrag
     /**
      * The drag is attached to station captions in the autonomy editor, and to nothing else.
      *
-     * Adam: "do not make tiles or anything else movable." The label added a few lines further down the same method is
-     * the ADDRESS label (the sensor's number), which must not become draggable by being caught in the same net.
+     * Adam: "do not make tiles or anything else movable." The ADDRESS label added further down the same method must
+     * not become draggable by being caught in the same net.
      *
      * MUTATION: dropping `captioned != null` from the guard, or attaching the gesture at the second
      * add, fails this.
@@ -111,15 +109,13 @@ public class testStationLabelDrag
 
     /**
      * What the drag mark says and what the drop does are one question (OB-057, OB-090): the mark asks `canDropCaption`,
-     * and `canDropCaption` and `moveCaption` both ask `refuseCaptionDrop`; a highlight with a rule of its own would
-     * offer a square the drop then refused.
+     * and `canDropCaption` and `moveCaption` both ask `refuseCaptionDrop`.
      *
      * MUTATION: having the mark answer `over != null` fails the first assertion; giving moveCaption
      * its own copy of the checks fails the count.
      *
-     * CANNOT SEE: a mark that still CALLS canDropCaption inside a neutered expression (`over != null && false && ...`)
-     * passes, because a source scan reads names, not meaning.  It catches the call being removed or replaced, not the
-     * answer being thrown away; only driving a real drag would.
+     * CANNOT SEE: a mark that still CALLS canDropCaption inside a neutered expression passes (a source scan reads
+     * names, not meaning); only driving a real drag would.
      */
     @Test
     public void testTheDragMarkAsksTheDropItsOwnQuestion() throws Exception
@@ -145,11 +141,10 @@ public class testStationLabelDrag
     }
 
     /**
-     * The picture taken of a dragged label is the PILL, not the component around it.
+     * The picture taken of a dragged label is the PILL, not the component around it (a caption's cell runs to the
+     * bottom of the diagram).
      *
-     * Adam: "snapshot the label so users can see it is being moved (make it follow the cursor while held down)."  A
-     * caption's cell runs to the bottom of the diagram, so photographing all of it would give a ghost hundreds of
-     * pixels tall hanging a long way from the pointer.
+     * Adam: "snapshot the label so users can see it is being moved (make it follow the cursor while held down)."
      *
      * MUTATION: having `drawnBounds` return the component's own bounds fails the crop assertion - the
      * ink lands in a corner instead of the middle.
@@ -204,16 +199,11 @@ public class testStationLabelDrag
     }
 
     /**
-     * The picked-up label is always put back down.
+     * The picked-up label is always put back down: a release arrives whether or not a drag started or the drop is
+     * accepted, so no floating copy may stay on the drag layer.
      *
-     * A release arrives whether or not a drag started and whether or not the drop is accepted, so a refused drop or a
-     * press that was a click must not leave a floating copy on the window's drag layer until the editor is rebuilt.
-     *
-     * MUTATION: moving `hideCaptionGhost` below the early return fails this.
-     *
-     * `hideCaptionGhost()` is called TWICE in the method (inside the wrong-button branch, and unconditionally ahead of
-     * the real "did this actually move anything" question), so anchoring on the first occurrence of each name can never
-     * fail.  Anchored instead on `boolean moved = dragging[0];`, directly above the real put-down and nowhere else.
+     * MUTATION: moving `hideCaptionGhost` below the early return fails this.  Anchored on `boolean moved =
+     * dragging[0];` since `hideCaptionGhost()` appears twice in the method.
      */
     @Test
     public void testThePickedUpLabelIsAlwaysPutDown() throws Exception
@@ -280,12 +270,9 @@ public class testStationLabelDrag
     }
 
     /**
-     * A label cannot be dropped on the grid's spacers, which are not squares.
-     *
-     * The grid ends in a dummy row and column that stop long labels misaligning it; they are LayoutLabels with real
-     * bounds, and a spacer carries no component, so the mark would show GREEN and the label then vanish, stored against
-     * a square the drawing loop skips.  The strip along the bottom is exactly where somebody would drop a label for a
-     * station on the last row.  Read rather than run: reaching `tileUnder` needs a built grid, a window and a drag.
+     * A label cannot be dropped on the grid's spacers, which are not squares: a spacer carries no component, so the
+     * mark would show GREEN and the label then vanish.  Read rather than run: reaching `tileUnder` needs a built grid,
+     * a window and a drag.
      *
      * MUTATION: removing the spacer check from tileUnder fails this.
      */

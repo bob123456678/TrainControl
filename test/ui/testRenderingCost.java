@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyBuilder;
@@ -15,6 +14,10 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
+import static support.Diagrams.wireAccessories;
+import static support.Diagrams.accessory;
 
 /**
  * What drawing the track diagram actually costs, measured rather than guessed.
@@ -97,43 +100,6 @@ public class testRenderingCost
         // the first version of this class timed the constructor and reported 0.00ms for a reduction
         // that had not happened, which is the benchmark failure mode that looks like good news.
         reducer.reduce();
-    }
-
-    /**
-     * Gives every switch and signal tile an accessory, the way the application does when it parses a
-     * layout against a real database.  Without it the reduction has nothing to reduce.
-     */
-    private static void wireAccessories(List<LayoutDiagram> pages)
-    {
-        for (LayoutDiagram page : pages)
-        {
-            for (org.traincontrol.base.LayoutDiagramComponent c : page.getAll())
-            {
-                if (!c.isSwitch() && !c.isSignal()) continue;
-
-                if (c.getAddress() <= 0) continue;
-
-                org.traincontrol.base.Accessory.accessoryType type = c.isSignal()
-                    ? org.traincontrol.base.Accessory.accessoryType.SIGNAL
-                    : org.traincontrol.base.Accessory.accessoryType.SWITCH;
-
-                c.setAccessory(accessory(c.getAddress(), type, c.getProtocol()));
-
-                if (c.isThreeWay())
-                {
-                    c.setAccessory2(accessory(c.getAddress() + 1,
-                        org.traincontrol.base.Accessory.accessoryType.SWITCH, c.getProtocol()));
-                }
-            }
-        }
-    }
-
-    private static MarklinAccessory accessory(int logicalAddress,
-        org.traincontrol.base.Accessory.accessoryType type,
-        org.traincontrol.base.Accessory.accessoryDecoderType protocol)
-    {
-        return new MarklinAccessory(null, logicalAddress - 1, type, protocol,
-            MarklinAccessory.getNameWithProtocol(logicalAddress, type, protocol), false, 0);
     }
 
     /**
@@ -320,28 +286,18 @@ public class testRenderingCost
     }
 
     /**
-     * One accessory drawn on several squares keeps a label on every one of them.
+     * One accessory drawn on several squares keeps a label on every one of them: a real layout puts one address on
+     * several tiles, and the control station gives all of them the SAME MarklinAccessory (resolved by address), so each
+     * tile must stay registered with it or it stops being repainted when the accessory is thrown.
      *
-     * A real layout puts one address on several tiles (the sample layout has 162 on four squares of "3 - Top Parking"
-     * and five of "4 - Combined") and the control station gives all of them the SAME MarklinAccessory, because it
-     * resolves by address out of the database.  Each of those tiles has to stay registered with it or it stops being
-     * repainted when the accessory is thrown.
-     *
-     * A pruning rule keyed by SQUARE must not be reused on collections keyed by DEVICE: inside one device's entry "an
-     * older label of this window that is no longer displayable" also matches that device's OTHER squares, and
-     * LayoutGrid registers every label in its build loop and only attaches the container afterwards, so during a build
-     * none of them is displayable and only the last label would survive, and three of four tiles would stop updating.
-     *
-     * A fresh parse rather than the shared fixture, because the accessories have to be shared by address the way the
-     * control station shares them, and the fixture deliberately gives each tile its own.
+     * A pruning rule keyed by SQUARE must not be reused on collections keyed by DEVICE: `LayoutGrid` registers every
+     * label in its build loop and attaches the container afterwards, so during a build none is displayable and only the
+     * last label would survive.  A fresh parse is used, since the fixture gives each tile its own accessory.
      */
     @Test
     public void testEveryTileOfOneAccessoryStaysRegistered() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("building labels needs a display");
-        }
+        Display.needed("building labels needs a display");
 
         File folder = new File("test/test_layout");
 
@@ -444,11 +400,7 @@ public class testRenderingCost
      */
     private static int registeredTiles(MarklinAccessory accessory) throws Exception
     {
-        java.lang.reflect.Field field = MarklinAccessory.class.getDeclaredField("tiles");
-
-        field.setAccessible(true);
-
-        return ((java.util.Collection<?>) field.get(accessory)).size();
+        return ((java.util.Collection<?>) Reflect.get(MarklinAccessory.class, accessory, "tiles")).size();
     }
 
     /**
@@ -461,10 +413,7 @@ public class testRenderingCost
     @Test
     public void testLabelsBuiltPerCell() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("building labels needs a display");
-        }
+        Display.needed("building labels needs a display");
 
         final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
 
@@ -510,13 +459,9 @@ public class testRenderingCost
         final org.traincontrol.gui.TrainControlUI toClose = ui[0];
         javax.swing.SwingUtilities.invokeAndWait(() -> toClose.dispose());
 
-        // Exactly ONE label per cell, and the bound is a quarter above that (OB-084).
-        //
-        // NOT MEASURED HERE: after construction the diagram goes on rebuilding labels (OB-053); there is nothing stable
-        // to assert.
-        //
-        // MUTATION, run: building a second LayoutLabel for every populated cell in LayoutGrid takes the count to 729
-        // and fails this.
+        // Exactly ONE label per cell, bound a quarter above (OB-084).  Not measured after construction: the diagram
+        // goes on rebuilding labels (OB-053).  MUTATION: a second LayoutLabel per populated cell in LayoutGrid takes
+        // the count to 729 and fails this.
         assertTrue(built[0] <= cells * 5 / 4,
             "the grid built " + built[0]
             + " labels for " + cells + " cells.  Building it constructs exactly one label per cell, "

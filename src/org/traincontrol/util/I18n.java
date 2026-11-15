@@ -23,16 +23,13 @@ public final class I18n
     /**
      * Switch the current locale at run time.
      * Example: I18n.setLocale(new Locale("de", "DE"));
-     * @param locale
      */
     public static void setLocale(Locale locale)
     {
         bundle = ResourceBundle.getBundle(BUNDLE_NAME, locale);
     }
 
-    /**
-     * @return the locale of the messages on show
-     */
+    /** The locale of the messages on show. */
     public static Locale getLocale()
     {
         return bundle.getLocale();
@@ -66,8 +63,6 @@ public final class I18n
 
     /**
      * Fetch a plain string by key.
-     * @param key
-     * @return 
      */
     public static String t(String key)
     {
@@ -85,10 +80,6 @@ public final class I18n
      *
      * Relies on no message asking for a format of its own ({0,number} handed a String throws);
      * testMessageBundles.testNoPlaceholderAsksForItsOwnFormat holds that line.
-     *
-     * @param key
-     * @param args
-     * @return
      */
     public static String f(String key, Object... args)
     {

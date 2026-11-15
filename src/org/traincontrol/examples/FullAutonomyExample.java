@@ -91,8 +91,6 @@ public class FullAutonomyExample
     
 	/**
 	 * Main method initializes control station and executes custom code
-	 * 
-         * @param args
 	 */
 	public static void main(String[] args)
 	{            

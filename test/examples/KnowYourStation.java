@@ -18,7 +18,6 @@ public class KnowYourStation
     /**
      * @param station the Central Station to ask
      * @return a line of text for each thing found
-     * @throws Exception when the wait for the power is interrupted
      */
     public static List<String> run(MarklinControlStation station) throws Exception
     {

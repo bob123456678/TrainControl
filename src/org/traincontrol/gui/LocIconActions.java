@@ -1,24 +1,37 @@
 package org.traincontrol.gui;
 
+import java.awt.BasicStroke;
+import java.awt.Color;
 import java.awt.Component;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.Shape;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Arc2D;
+import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.locomotive.LocIconCropDialog;
 import org.traincontrol.gui.widgets.QuickFileChooser;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.ImageUtil;
 import org.traincontrol.util.Util;
 
 /**
@@ -37,12 +50,12 @@ final class LocIconActions
     }
 
     /**
-     * The revert, drawn as the wrench is: a circular arrow, most of a ring with a solid head where it ends, wider than
-     * the ring is thick and pointing the way the ring runs, so it reads as an arrow (MT-591).
+     * A mark drawn over the picture: each subclass draws it twice, a white underlay (pass 0) then the dark ink (pass 1),
+     * so it reads on any photograph.
      */
-    static final class RevertMark implements javax.swing.Icon
+    abstract static class Mark implements javax.swing.Icon
     {
-        private static final int SIZE = 15;
+        static final int SIZE = 15;
 
         @Override
         public int getIconWidth()
@@ -57,46 +70,62 @@ final class LocIconActions
         }
 
         @Override
-        public void paintIcon(java.awt.Component host, java.awt.Graphics g, int x, int y)
+        public void paintIcon(Component host, java.awt.Graphics g, int x, int y)
         {
-            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+            Graphics2D g2 = (Graphics2D) g.create();
 
-            g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-                java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(java.awt.RenderingHints.KEY_STROKE_CONTROL,
-                java.awt.RenderingHints.VALUE_STROKE_PURE);
-
-            double middle = SIZE / 2.0;
-            double radius = 4.5;
+            // Drawn where the coordinates say, so the wrench's two ends come out alike
+            if (pure()) ImageUtil.smooth(g2);
+            else ImageUtil.antialias(g2);
 
             for (int pass = 0; pass < 2; pass++)
             {
-                g2.setColor(pass == 0 ? new java.awt.Color(255, 255, 255, 200)
-                    : new java.awt.Color(51, 51, 51));
-                g2.setStroke(new java.awt.BasicStroke(pass == 0 ? 3.4f : 1.8f,
-                    java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
+                g2.setColor(pass == 0 ? new Color(255, 255, 255, 200) : new Color(51, 51, 51));
+                g2.setStroke(new BasicStroke(pass == 0 ? 3.4f : 1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
-                // The ring, open at the top right, turning anticlockwise
-                g2.draw(new java.awt.geom.Arc2D.Double(x + middle - radius, y + middle - radius, radius * 2, radius * 2,
-                    60, 270, java.awt.geom.Arc2D.OPEN));
-
-                // THE HEAD: its outline in the underlay's pass, so it reads on any picture, and filled in the ink's
-                java.awt.Shape head = java.awt.geom.AffineTransform.getTranslateInstance(x, y).createTransformedShape(head());
-
-                if (pass == 0) g2.draw(head);
-                else g2.fill(head);
+                draw(g2, x, y, pass);
             }
 
             g2.dispose();
         }
 
+        /** Whether strokes are pure; the crop mark's are not. */
+        boolean pure()
+        {
+            return true;
+        }
+
+        abstract void draw(Graphics2D g2, int x, int y, int pass);
+    }
+
+    /**
+     * The revert, drawn as the wrench is: a circular arrow, most of a ring with a solid head where it ends, wider than
+     * the ring is thick and pointing the way the ring runs, so it reads as an arrow (MT-591).
+     */
+    static final class RevertMark extends Mark
+    {
+        @Override
+        void draw(Graphics2D g2, int x, int y, int pass)
+        {
+            double middle = SIZE / 2.0;
+            double radius = 4.5;
+
+            // The ring, open at the top right, turning anticlockwise
+            g2.draw(new Arc2D.Double(x + middle - radius, y + middle - radius, radius * 2, radius * 2,
+                60, 270, Arc2D.OPEN));
+
+            // THE HEAD: its outline in the underlay's pass, so it reads on any picture, and filled in the ink's
+            Shape head = java.awt.geom.AffineTransform.getTranslateInstance(x, y).createTransformedShape(head());
+
+            if (pass == 0) g2.draw(head);
+            else g2.fill(head);
+        }
+
         /**
          * The solid head at the end of the ring, in the icon's own coordinates: a triangle whose base straddles the
          * ring's end and whose tip points the way the ring runs there.
-         *
-         * @return the head
          */
-        static java.awt.Shape head()
+        static Shape head()
         {
             double middle = SIZE / 2.0;
             double radius = 4.5;
@@ -113,7 +142,7 @@ final class LocIconActions
             double reach = 3.4;
             double half = 2.6;
 
-            java.awt.geom.Path2D.Double head = new java.awt.geom.Path2D.Double();
+            Path2D.Double head = new Path2D.Double();
 
             head.moveTo(endX + runX * reach, endY + runY * reach);
             head.lineTo(endX + acrossX * half, endY + acrossY * half);
@@ -129,58 +158,25 @@ final class LocIconActions
      * white underlay so it reads on any photograph (MT-591).  Turned half round about the middle of the square, hence
      * the half-pixel coordinates.
      */
-    static final class WrenchMark implements javax.swing.Icon
+    static final class WrenchMark extends Mark
     {
-        private static final int SIZE = 15;
-
         @Override
-        public int getIconWidth()
+        void draw(Graphics2D g2, int x, int y, int pass)
         {
-            return SIZE;
-        }
+            double middle = SIZE / 2.0;
+            double reach = 4.0;
+            double jaw = 2.6;
 
-        @Override
-        public int getIconHeight()
-        {
-            return SIZE;
-        }
+            // The handle, between the two jaws
+            g2.draw(new java.awt.geom.Line2D.Double(x + middle - reach + jaw * 0.7, y + middle + reach - jaw * 0.7,
+                x + middle + reach - jaw * 0.7, y + middle - reach + jaw * 0.7));
 
-        @Override
-        public void paintIcon(java.awt.Component host, java.awt.Graphics g, int x, int y)
-        {
-            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+            // The jaws: a ring at each end, open away from the handle - top right, and bottom left
+            g2.draw(new Arc2D.Double(x + middle + reach - jaw, y + middle - reach - jaw, jaw * 2,
+                jaw * 2, 95, 260, Arc2D.OPEN));
 
-            g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-                java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-
-            // Drawn where the coordinates say, so the two ends come out alike
-            g2.setRenderingHint(java.awt.RenderingHints.KEY_STROKE_CONTROL,
-                java.awt.RenderingHints.VALUE_STROKE_PURE);
-
-            for (int pass = 0; pass < 2; pass++)
-            {
-                g2.setColor(pass == 0 ? new java.awt.Color(255, 255, 255, 200)
-                    : new java.awt.Color(51, 51, 51));
-                g2.setStroke(new java.awt.BasicStroke(pass == 0 ? 3.4f : 1.8f,
-                    java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
-
-                double middle = SIZE / 2.0;
-                double reach = 4.0;
-                double jaw = 2.6;
-
-                // The handle, between the two jaws
-                g2.draw(new java.awt.geom.Line2D.Double(x + middle - reach + jaw * 0.7, y + middle + reach - jaw * 0.7,
-                    x + middle + reach - jaw * 0.7, y + middle - reach + jaw * 0.7));
-
-                // The jaws: a ring at each end, open away from the handle - top right, and bottom left
-                g2.draw(new java.awt.geom.Arc2D.Double(x + middle + reach - jaw, y + middle - reach - jaw, jaw * 2,
-                    jaw * 2, 95, 260, java.awt.geom.Arc2D.OPEN));
-
-                g2.draw(new java.awt.geom.Arc2D.Double(x + middle - reach - jaw, y + middle + reach - jaw, jaw * 2,
-                    jaw * 2, 275, 260, java.awt.geom.Arc2D.OPEN));
-            }
-
-            g2.dispose();
+            g2.draw(new Arc2D.Double(x + middle - reach - jaw, y + middle + reach - jaw, jaw * 2,
+                jaw * 2, 275, 260, Arc2D.OPEN));
         }
     }
 
@@ -188,52 +184,29 @@ final class LocIconActions
      * The crop mark itself, drawn rather than loaded: two overlapping right angles in eleven pixels of two lines, a
      * white line laid under the dark one so it reads on any photograph.
      */
-    static final class CropMark implements javax.swing.Icon
+    static final class CropMark extends Mark
     {
-        private static final int SIZE = 15;
-
         private static final int INSET = 4;
 
         @Override
-        public int getIconWidth()
+        boolean pure()
         {
-            return SIZE;
+            return false;
         }
 
         @Override
-        public int getIconHeight()
+        void draw(Graphics2D g2, int x, int y, int pass)
         {
-            return SIZE;
-        }
+            int near = INSET;
+            int far = SIZE - INSET;
 
-        @Override
-        public void paintIcon(java.awt.Component host, java.awt.Graphics g, int x, int y)
-        {
-            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+            // The top-left angle, and the bottom-right one, each overshooting the other's corner -
+            // which is what makes the pair read as crop marks rather than as a box.
+            g2.drawLine(x + near, y + 1, x + near, y + far);
+            g2.drawLine(x + 1, y + near, x + far, y + near);
 
-            g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-                java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
-
-            for (int pass = 0; pass < 2; pass++)
-            {
-                g2.setColor(pass == 0 ? new java.awt.Color(255, 255, 255, 200)
-                    : new java.awt.Color(51, 51, 51));
-                g2.setStroke(new java.awt.BasicStroke(pass == 0 ? 3.4f : 1.8f,
-                    java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
-
-                int near = INSET;
-                int far = SIZE - INSET;
-
-                // The top-left angle, and the bottom-right one, each overshooting the other's corner -
-                // which is what makes the pair read as crop marks rather than as a box.
-                g2.drawLine(x + near, y + 1, x + near, y + far);
-                g2.drawLine(x + 1, y + near, x + far, y + near);
-
-                g2.drawLine(x + far, y + near, x + far, y + SIZE - 1);
-                g2.drawLine(x + near, y + far, x + SIZE - 1, y + far);
-            }
-
-            g2.dispose();
+            g2.drawLine(x + far, y + near, x + far, y + SIZE - 1);
+            g2.drawLine(x + near, y + far, x + SIZE - 1, y + far);
         }
     }
 
@@ -242,7 +215,7 @@ final class LocIconActions
     {
         Component source = evt != null ? (Component) evt.getSource() : this.ui;
         
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        SwingUtilities.invokeLater(() -> 
         {
             String currentPath = null;
 
@@ -254,7 +227,7 @@ final class LocIconActions
                 File currentIcon = TrainControlUI.fileOf(l.getLocalImageURL());
 
                 if (currentIcon != null && currentIcon.exists()
-                    && !org.traincontrol.util.Util.isLocIconFile(l.getLocalImageURL()))
+                    && !Util.isLocIconFile(l.getLocalImageURL()))
                 {
                     currentPath = currentIcon.getParent();
                 }
@@ -285,15 +258,15 @@ final class LocIconActions
             // Under the file name, not in the accessory panel.  SOUTH, and the constraint is the whole of it: a
             // JFileChooser's BorderLayout CENTER holds the entire browser, so `fc.add(row)` with no constraint replaced
             // it.
-            JPanel row = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
+            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
             row.setBorder(BorderFactory.createEmptyBorder(0, 2, 4, 2));
             row.add(crop);
 
             // Clear Icon (FR-142): the menu's own clear, then the chooser closes with nothing chosen.  Disabled, not
             // hidden, when there is no icon of this computer's to clear.
-            final javax.swing.JButton clear = new javax.swing.JButton(I18n.t("loc.ui.menuClearLocalLocomotiveIcon"));
+            final JButton clear = new JButton(I18n.t("loc.ui.menuClearLocalLocomotiveIcon"));
 
-            clear.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 12));
+            clear.setFont(new Font("Segoe UI", Font.BOLD, 12));
             clear.setEnabled(l.getLocalImageURL() != null);
             clear.addActionListener(event ->
             {
@@ -349,10 +322,7 @@ final class LocIconActions
                 l.setLocalImageURL(chosenURL);
                 TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_ICON_FOLDER, f.getParent());
 
-                if (!chosenURL.equals(superseded) && Util.isLocIconFile(superseded))
-                {
-                    deleteLocIconFile(superseded);
-                }
+                if (!chosenURL.equals(superseded) && Util.isLocIconFile(superseded)) deleteLocIconFile(superseded);
 
                 this.ui.repaintLoc(true, null);
                 this.ui.repaintMappings(Collections.singletonList(l), true);
@@ -473,8 +443,8 @@ final class LocIconActions
 
         try
         {
-            // The RETURN VALUE, which ImageIO answers false with when no writer claims the format: thrown away, a
-            // zero-byte file was moved into place and the crop it replaced deleted.
+            // The RETURN VALUE, which ImageIO answers false with when no writer claims the format: ignored, a
+            // zero-byte file would be moved into place and the crop it replaced deleted.
             Util.writeAtomically(target, out ->
             {
                 if (!ImageIO.write(cropped, "png", out))
@@ -493,10 +463,7 @@ final class LocIconActions
 
         // Not when the picture cropped was itself one of our crops: a crop with no note re-crops from the crop itself,
         // and a note would name a crop the caller deletes; no note beats a wrong one.
-        if (!Util.isLocIconFile(chosen.toPath().toUri().toString()))
-        {
-            rememberCropSource(target, chosen, view);
-        }
+        if (!Util.isLocIconFile(chosen.toPath().toUri().toString())) rememberCropSource(target, chosen, view);
 
         return target.toPath().toUri().toString();
     }
@@ -520,7 +487,7 @@ final class LocIconActions
         try
         {
             Util.writeAtomically(new File(crop.getAbsolutePath() + TrainControlUI.CROP_SOURCE_SUFFIX),
-                out -> out.write(body.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+                out -> out.write(body.getBytes(StandardCharsets.UTF_8)));
         }
         catch (IOException | RuntimeException e)
         {
@@ -575,8 +542,8 @@ final class LocIconActions
 
         try
         {
-            for (String line : new String(java.nio.file.Files.readAllBytes(note.toPath()),
-                java.nio.charset.StandardCharsets.UTF_8).split("\n"))
+            for (String line : new String(Files.readAllBytes(note.toPath()),
+                StandardCharsets.UTF_8).split("\n"))
             {
                 if (line.trim().startsWith(prefix)) return line.trim().substring(prefix.length());
             }
@@ -601,7 +568,7 @@ final class LocIconActions
     /**
      * What a crop's note SAYS, whether or not the file it names is there right now: `cropSourceOf` answers null for
      * both "no note" and "the note names a photograph I cannot see at the moment" (an unplugged drive, a OneDrive
-     * folder not yet online), and a re-crop that treated the two the same threw away the only record of where the
+     * folder not yet online); a re-crop must keep the two apart, or it throws away the only record of where the
      * photograph was.
      *
      * @param url the icon currently set on the locomotive
@@ -623,8 +590,7 @@ final class LocIconActions
         {
             // The first line: a note may carry a view on a second one (OB-125), and trimming the whole file would hand
             // back both as a filename.
-            String body = new String(java.nio.file.Files.readAllBytes(note.toPath()),
-                java.nio.charset.StandardCharsets.UTF_8);
+            String body = new String(Files.readAllBytes(note.toPath()), StandardCharsets.UTF_8);
 
             String path = body.split("\n")[0].trim();
 
@@ -637,7 +603,7 @@ final class LocIconActions
     }
 
     /** `TrainControlUI.recropLocIcon`'s body. */
-    void recropLocIcon(Locomotive l, java.awt.Component parent)
+    void recropLocIcon(Locomotive l, Component parent)
     {
         // THE CENTRAL STATION'S PICTURE, where there is none of this computer's (FR-104)
         if (l != null && l.getLocalImageURL() == null && TrainControlUI.offersACrop(l))
@@ -647,7 +613,7 @@ final class LocIconActions
             return;
         }
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             if (l == null || l.getLocalImageURL() == null) return;
 
@@ -692,10 +658,7 @@ final class LocIconActions
                 if (fresh != null) rememberCropSource(fresh, remembered);
             }
 
-            if (!cropped.equals(superseded) && Util.isLocIconFile(superseded))
-            {
-                deleteLocIconFile(superseded);
-            }
+            if (!cropped.equals(superseded) && Util.isLocIconFile(superseded)) deleteLocIconFile(superseded);
 
             // Told, because the difference is invisible: re-cropping a crop cannot pan back out to anything the
             // previous crop threw away.  The message does not claim to know WHY there was no original.
@@ -713,7 +676,7 @@ final class LocIconActions
      * off the event thread and kept outside the crops proper (`Util.isLocIconFile`), so replacing a crop does not
      * delete it.
      */
-    private void cropTheCentralStationPicture(Locomotive l, java.awt.Component parent)
+    private void cropTheCentralStationPicture(Locomotive l, Component parent)
     {
         final String url = l.getImageURL();
 
@@ -721,7 +684,7 @@ final class LocIconActions
         {
             final File kept = keepTheCentralStationPicture(l, url);
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 if (kept == null)
                 {

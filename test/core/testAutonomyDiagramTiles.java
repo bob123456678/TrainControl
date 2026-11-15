@@ -22,6 +22,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Diagrams;
 
 /**
  * The tile graph: which tiles connect to which, and which way a train may move through them. Built from pages assembled
@@ -198,7 +199,7 @@ public class testAutonomyDiagramTiles
     /**
      * A walk over the track as drawn cannot change tracks at a crossing: a route from a square on the north-south line
      * to one on the east-west line must answer "no continuous track". Taking the union of every route's sides on a
-     * square would let the walk arrive along one line and leave along the other, and `applyOneWay` would skip that
+     * square would let the walk arrive along one line and leave along the other, and `recordAlong` would skip that
      * square in silence.
      */
     @Test
@@ -627,8 +628,7 @@ public class testAutonomyDiagramTiles
 
     private void feedback(LayoutDiagram page, int x, int y, int address) throws IOException
     {
-        page.addComponent(componentType.FEEDBACK, x, y, 0, 0, address, address,
-            accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, x, y, address, address);
     }
     /**
      * A link tile pointing at the nth page of the layout. {@link #add} leaves the raw destination address at zero,

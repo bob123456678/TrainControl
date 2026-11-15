@@ -2,8 +2,11 @@ package org.traincontrol.gui.widgets;
 
 import java.awt.Component;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.TrainControlUI.UpdateChoice;
 import static org.traincontrol.marklin.MarklinControlStation.RAW_VERSION;
@@ -118,7 +121,7 @@ public final class UpdateFlow
                 try
                 {
                     // A file of that name that is not the whole release, an earlier download cut short, is fetched
-                    // again rather than installed.  Download alone keeps whatever is there, as it always has.
+                    // again rather than installed.  Download alone keeps whatever is there.
                     if (install && f.exists()
                         && SelfUpdate.whyNotAWholeJar(f, TrainControlUI.LATEST_DOWNLOAD_SIZE, TrainControlUI.LATEST_DOWNLOAD_DIGEST) != null)
                     {
@@ -129,7 +132,7 @@ public final class UpdateFlow
                     {
                         Util.downloadFile(TrainControlUI.LATEST_DOWNLOAD_URL, f, percent ->
                         {
-                            javax.swing.SwingUtilities.invokeLater(() ->
+                            SwingUtilities.invokeLater(() ->
                             {
                                 this.ui.downloadUpdateMenuItem().setText(percent < 0
                                     ? I18n.t("ui.infoDownloadingUpdate")
@@ -141,7 +144,7 @@ public final class UpdateFlow
                 }
                 catch (Exception e)
                 {
-                    javax.swing.SwingUtilities.invokeLater(() ->
+                    SwingUtilities.invokeLater(() ->
                     {
                         JOptionPane.showMessageDialog(
                             this.ui,
@@ -151,10 +154,7 @@ public final class UpdateFlow
 
                     this.ui.getModel().logf("ui.errorDownloadingUpdateFile");
 
-                    if (this.ui.getModel().isDebug())
-                    {
-                        this.ui.getModel().log(e);
-                    }
+                    if (this.ui.getModel().isDebug()) this.ui.getModel().log(e);
 
                     return;
                 }
@@ -166,9 +166,9 @@ public final class UpdateFlow
                     return;
                 }
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
-                    // Wrapped: the path is one long word, and made the popup wider than the screen
+                    // Wrapped: the path is one long word and would make the popup wider than the screen
                     JOptionPane.showMessageDialog(this.ui, DetailsArea.wrapped(
                         I18n.f("ui.infoDownloadedUpdateReplaceExistingJar", f.getAbsolutePath())));
 
@@ -184,14 +184,14 @@ public final class UpdateFlow
 
                 this.ui.getModel().logf("ui.update.errorFailed", why);
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                     JOptionPane.showMessageDialog(this.ui, I18n.f("ui.update.errorFailed", why)));
             }
             finally
             {
                 if (install && !handedOver) this.ui.updateHandOver.end();
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     this.ui.downloadUpdateMenuItem().setText(I18n.t("ui.main.downloadUpdate"));
                     this.ui.downloadUpdateMenuItem().setEnabled(true);
@@ -218,15 +218,14 @@ public final class UpdateFlow
         {
             this.ui.getModel().logf("ui.update.errorNotWhole", broken);
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
                 JOptionPane.showMessageDialog(this.ui, I18n.f("ui.update.errorNotWhole", broken)));
 
             return false;
         }
 
         // What it is doing now: the backup takes a while, and the item would otherwise still read "Downloading 100%"
-        javax.swing.SwingUtilities.invokeLater(() ->
-            this.ui.downloadUpdateMenuItem().setText(I18n.t("ui.update.backingUp")));
+        SwingUtilities.invokeLater(() -> this.ui.downloadUpdateMenuItem().setText(I18n.t("ui.update.backingUp")));
 
         // The application's own data backup, and the update goes no further without it.  Incomplete counts as failed: a
         // part of a backup is not what makes an update safe to try.  An Error out of it is a failed backup too.
@@ -239,19 +238,18 @@ public final class UpdateFlow
             // Just before the backup, so a run stopped during the download is in it too
             final String[] folded = new String[1];
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> folded[0] = BackupAction.foldTheStoppedRun(this.ui));
+            SwingUtilities.invokeAndWait(() -> folded[0] = BackupAction.foldTheStoppedRun(this.ui));
 
             backup = this.ui.backupData().after(folded[0]);
 
             why = backup.isComplete() ? null
-                : backup.unsaved.isEmpty() ? I18n.t("ui.main.toolbar.backupData") : String.join(", ", backup.unsaved);
+                : backup.unsaved.isEmpty() ? I18n.t("ui.main.titleBackupData") : String.join(", ", backup.unsaved);
         }
-        catch (InterruptedException | java.lang.reflect.InvocationTargetException | RuntimeException | Error e)
+        catch (InterruptedException | InvocationTargetException | RuntimeException | Error e)
         {
             backup = null;
 
-            why = String.valueOf(e instanceof java.lang.reflect.InvocationTargetException && e.getCause() != null
-                ? e.getCause() : e);
+            why = String.valueOf(e instanceof InvocationTargetException && e.getCause() != null ? e.getCause() : e);
         }
 
         if (why != null)
@@ -260,7 +258,7 @@ public final class UpdateFlow
 
             this.ui.getModel().logf("ui.update.errorBackup", said);
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
                 JOptionPane.showMessageDialog(this.ui, I18n.f("ui.update.errorBackup", said)));
 
             return false;
@@ -268,7 +266,7 @@ public final class UpdateFlow
 
         this.ui.getModel().logf("ui.infoBackupCompleteSavedTo", backup.archive.getAbsolutePath());
 
-        javax.swing.SwingUtilities.invokeLater(() -> closeForTheUpdate(jar, download));
+        SwingUtilities.invokeLater(() -> closeForTheUpdate(jar, download));
 
         return true;
     }
@@ -286,7 +284,7 @@ public final class UpdateFlow
             return true;
         }
 
-        final javax.swing.Timer later = new javax.swing.Timer(pollMs, null);
+        final Timer later = new Timer(pollMs, null);
 
         later.addActionListener(e ->
         {

@@ -20,15 +20,16 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Trees;
+import static support.LayoutSandbox.pagesIn;
 
 /**
  * A whole setup, renamed and renamed back through the same call the menu makes (Adam: *"Do you have tests that try to
  * load an entire config, and then trigger a rename via the same function that the UI calls, and then rename it back and
  * test along the way?  This is the only way to catch bugs across these complex types of features."*).
  *
- * It calls `LayoutPageEdit.renameOrDuplicate`, what the menu item calls: every rename defect (MT-135, OB-049, OB-092)
- * lived in the ORDER of the steps or in a step nobody called.  NOT covered are the four refusals above that call,
- * which stay in the window because they raise dialogs.
+ * It calls `LayoutPageEdit.renameOrDuplicate`: every rename defect (MT-135, OB-049, OB-092) lived in the ORDER of the
+ * steps or in a step nobody called.  NOT covered are the four refusals above that call, which raise dialogs.
  */
 public class testRenameRoundTripThroughTheUIPath
 {
@@ -41,16 +42,15 @@ public class testRenameRoundTripThroughTheUIPath
     }
 
     /**
-     * Everything the setup holds for a page survives a rename and the rename back. Deliberately not a spot check: the
-     * failures this covers pruned the whole page, because the settings looked like squares that had been deleted, so
-     * every collection is loaded before and compared whole after the rename and after the way back.
+     * Everything the setup holds for a page survives a rename and the rename back.  Not a spot check: every collection
+     * is loaded before and compared whole after the rename and after the way back.
      */
     @Test
     public void testAPageSurvivesBeingRenamedAndRenamedBack() throws Exception
     {
         File folder = aWorkingCopy();
 
-        List<LayoutDiagram> pages = pagesIn(folder);
+        List<LayoutDiagram> pages = pagesIn(model, folder);
 
         AutonomySession session = new AutonomySession(folder);
         session.open(pages);
@@ -86,7 +86,7 @@ public class testRenameRoundTripThroughTheUIPath
         // would give.
         AutonomySession after = reopened(folder);
 
-        assertEquals(settingsOn(after, renamed, pagesIn(folder), renamed), before,
+        assertEquals(settingsOn(after, renamed, pagesIn(model, folder), renamed), before,
             "the renamed page did not bring its settings with it.  This is the MT-135 loss: the "
             + "settings are keyed by square, the squares are keyed by page, and a page that changed "
             + "its name without telling the setup reads as a page that was deleted");
@@ -100,21 +100,21 @@ public class testRenameRoundTripThroughTheUIPath
             + "page that takes a new number leaves its whole setup attached to a number no page "
             + "holds any more - orphaned, and pruned by the next save (MT-135)");
 
-        assertEquals(settingsOnEveryOtherPage(after, renamed, pagesIn(folder)), othersBefore,
+        assertEquals(settingsOnEveryOtherPage(after, renamed, pagesIn(model, folder)), othersBefore,
             "renaming one page changed what another page holds.  That is OB-092, where renaming a "
             + "page to \"5\" excluded the page whose ID was 5 and took its train placements with it");
 
         // AND BACK AGAIN, the same way.
         AutonomySession back = reopened(folder);
 
-        List<LayoutDiagram> nowPages = pagesIn(folder);
+        List<LayoutDiagram> nowPages = pagesIn(model, folder);
 
         LayoutPageEdit.renameOrDuplicate(namesOf(nowPages), diagram(nowPages, renamed),
             folder.getAbsolutePath(), renamed, page, true, false, false, back, model);
 
         AutonomySession finished = reopened(folder);
 
-        assertEquals(settingsOn(finished, page, pagesIn(folder), page), before,
+        assertEquals(settingsOn(finished, page, pagesIn(model, folder), page), before,
             "the page did not come back.  Adam, MT-135: \"Renaming the page back did not restore "
             + "the stations\" - which was the symptom of the settings having already been pruned "
             + "and written on the way out, so there was nothing left to restore");
@@ -122,33 +122,32 @@ public class testRenameRoundTripThroughTheUIPath
         assertEquals(idOf(folder, page), idBefore,
             "the page has a different id than it started with after a round trip");
 
-        assertEquals(settingsOnEveryOtherPage(finished, page, pagesIn(folder)), othersBefore,
+        assertEquals(settingsOnEveryOtherPage(finished, page, pagesIn(model, folder)), othersBefore,
             "another page was left changed by the round trip");
     }
 
     /**
-     * A rename carries the page's own file with it, and leaves no second copy behind. Separate from the settings
-     * because they fail independently: the setup can be carried across a rename that left two page files on disk, and
-     * the next parse would show the user both.
+     * A rename carries the page's own file with it, and leaves no second copy behind.  Separate from the settings
+     * because they fail independently.
      */
     @Test
     public void testTheRenameLeavesOnePageFileNotTwo() throws Exception
     {
         File folder = aWorkingCopy();
 
-        List<LayoutDiagram> pages = pagesIn(folder);
+        List<LayoutDiagram> pages = pagesIn(model, folder);
 
         AutonomySession session = new AutonomySession(folder);
         session.open(pages);
 
         String page = aPageWithSettings(session, pages);
 
-        int filesBefore = pagesIn(folder).size();
+        int filesBefore = pagesIn(model, folder).size();
 
         LayoutPageEdit.renameOrDuplicate(namesOf(pages), diagram(pages, page),
             folder.getAbsolutePath(), page, page + " Moved", true, false, false, session, model);
 
-        List<LayoutDiagram> now = pagesIn(folder);
+        List<LayoutDiagram> now = pagesIn(model, folder);
 
         assertEquals(now.size(), filesBefore,
             "the page count changed over a RENAME, so a copy was left behind or one went missing");
@@ -165,16 +164,16 @@ public class testRenameRoundTripThroughTheUIPath
 
     /**
      * The whole gesture, including what the window does AFTER the rename (MT-171, MT-135: *"renaming a page MOVES
-     * locomotives to other stations, not just deleted them."*).  It asserts on the CHECKS and drives the sequence the
-     * window drives: `layoutEditingComplete`, then `resetAutonomySession`.  It reproduces on the sample layout as
-     * reported: four locomotives, each in two places.
+     * locomotives to other stations, not just deleted them."*): asserts on the CHECKS and drives
+     * `layoutEditingComplete`, then `resetAutonomySession`.  Reproduces on the sample layout as reported: four
+     * locomotives, each in two places.
      */
     @Test
     public void testARenameDoesNotLeaveLocomotivesInTwoPlaces() throws Exception
     {
         File folder = aWorkingCopy();
 
-        List<LayoutDiagram> pages = pagesIn(folder);
+        List<LayoutDiagram> pages = pagesIn(model, folder);
 
         AutonomySession session = new AutonomySession(folder);
         session.open(pages);
@@ -302,13 +301,10 @@ public class testRenameRoundTripThroughTheUIPath
     }
 
     /**
-     * Everything the setup records about one page, flattened so that two of them can be compared whole: a hand-written
-     * comparison covers the collections its author thought of, and the store has eleven. The squares come from the
-     * PAGE, not the store, so a setting that moved to the wrong square shows as a difference at both ends, with no new
-     * production API.
-     *
-     * The configuration JSON is folded in as text with the page name blanked, because the per-configuration settings
-     * (terminus, reversing, home, placed locomotives) are keyed by strings containing the page name.
+     * Everything the setup records about one page, flattened so two of them can be compared whole (a hand-written
+     * comparison covers the collections its author thought of, and the store has eleven).  The squares come from the
+     * PAGE, so a setting on the wrong square shows as a difference at both ends.  The configuration JSON is folded in
+     * as text with the page name blanked, since its settings are keyed by strings containing the page name.
      */
     private static Map<String, String> settingsOn(AutonomySession session, String page,
         List<LayoutDiagram> pages, String subject)
@@ -393,8 +389,7 @@ public class testRenameRoundTripThroughTheUIPath
 
     /**
      * JSON as text with its object keys in a fixed order: org.json.JSONObject is a HashMap whose key order is not
-     * stable across two objects holding identical data, and a comparison that reports a difference where there is none
-     * gets muted.
+     * stable across two objects holding identical data.
      */
     private static String canonical(Object value)
     {
@@ -435,11 +430,9 @@ public class testRenameRoundTripThroughTheUIPath
     }
 
     /**
-     * A value as text, with both the page it belongs to and the page being renamed blanked. Blanking the SUBJECT
-     * everywhere matters: other pages point at the renamed page (a protecting signal, a blocker, a portal's far end, a
-     * caption, the configuration JSON), and after a successful rename those pointers say the new name, which is the
-     * rename WORKING. The subject goes first because the new name contains the old one ("1 - Main Renamed" contains "1
-     * - Main").
+     * A value as text, with both the page it belongs to and the page being renamed blanked: other pages point at the
+     * renamed page, and after a successful rename those pointers say the new name, which is the rename WORKING.  The
+     * subject goes first because the new name contains the old one ("1 - Main Renamed" contains "1 - Main").
      */
     private static String named(Object value, String page, String subject)
     {
@@ -530,21 +523,11 @@ public class testRenameRoundTripThroughTheUIPath
 
     // fixtures
 
-    private static List<LayoutDiagram> pagesIn(File folder) throws Exception
-    {
-        String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";
-
-        CS2File parser = new CS2File(path, model);
-        parser.setLayoutDataLoc(path);
-
-        return support.LayoutSandbox.wired(model, parser);
-    }
-
     private static AutonomySession reopened(File folder) throws Exception
     {
         AutonomySession session = new AutonomySession(folder);
 
-        session.open(pagesIn(folder));
+        session.open(pagesIn(model, folder));
 
         return session;
     }
@@ -560,29 +543,10 @@ public class testRenameRoundTripThroughTheUIPath
 
         assertTrue(temp.delete(), "making room for a directory of the same name");
 
-        copyTree(from, temp);
+        Trees.copyForTheRun(from, temp);
 
         temp.deleteOnExit();
 
         return temp;
-    }
-
-    private static void copyTree(File from, File to) throws Exception
-    {
-        assertTrue(to.mkdirs() || to.isDirectory(), "could not make " + to);
-
-        File[] children = from.listFiles();
-
-        if (children == null) return;
-
-        for (File one : children)
-        {
-            File target = new File(to, one.getName());
-
-            if (one.isDirectory()) copyTree(one, target);
-            else Files.copy(one.toPath(), target.toPath());
-
-            target.deleteOnExit();
-        }
     }
 }

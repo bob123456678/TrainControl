@@ -1,13 +1,7 @@
 package org.traincontrol.gui;
 
 import java.awt.Component;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.GridLayout;
-import java.awt.Insets;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.util.Arrays;
 import java.util.Collections;
@@ -15,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -24,25 +19,21 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LocomotiveNotes;
 import org.traincontrol.base.Route;
-import org.traincontrol.gui.locomotive.LocomotiveAddressChange;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
+import org.traincontrol.base.RouteCommand;
 
 /**
  * The locomotive operations behind the locomotive buttons' menus and the keyboard's shortcuts: jumping to a
- * locomotive by name, renaming or re-addressing one, its notes, finding similar locomotives and mapping them to a
+ * locomotive by name, writing a locomotive's name and address, finding similar locomotives and mapping them to a
  * page, and deleting one from the database.
  *
- * Every field stays on `TrainControlUI`; the dialogs are owned by the clicked component or the window, as before.
+ * Every field stays on `TrainControlUI`; the dialogs are owned by the clicked component or the window.
  */
 final class LocomotiveActions
 {
@@ -53,184 +44,332 @@ final class LocomotiveActions
         this.ui = ui;
     }
 
-    /**
-     * Prompts for a locomotive name, and activates that locomotive if found
-     */
+    /** Prompts for a locomotive name, and activates that locomotive if found. */
     void quickLocSearch()
     {
+        final java.awt.Window asked = this.ui.dialogParent();
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             String input = JOptionPane.showInputDialog(
-                this.ui,
+                this.ui.stillShowing(asked),
                 I18n.t("loc.ui.promptEnterLocomotiveNameToJumpTo")
             );
 
-            if (input != null)
-            {
-                this.ui.jumpToLocomotive(input);
-            }
+            if (input != null) this.ui.jumpToLocomotive(input);
         });
     }
 
-    void changeLocAddress(Locomotive l, MouseEvent evt)
+    /**
+     * Renames and re-addresses a locomotive: the one door the Locomotive Settings window's Save goes through.  The name
+     * is asked first (OB-301), so a refusal returns before anything has changed.  A route that drives the locomotive is
+     * asked again here, before anything is written, because it can start while a window is open.  A null name or an
+     * empty address keeps the old one; true when the write went through, false when something was refused or failed
+     * (and said so).
+     */
+    boolean writeNameAndAddress(Component source, Locomotive l, String newName, String newAddress,
+        decoderType newDecoderType)
     {
-        Component source = evt != null ? (Component) evt.getSource() : this.ui;
-
-        // The window, read now: the database's refresh below takes the tile out of it, and an error after that was
-        // owned by Swing's hidden frame.
-        final java.awt.Window around = javax.swing.SwingUtilities.getWindowAncestor(source);
-
-        final Component sourceWindow = source instanceof java.awt.Window ? source : around != null ? around : this.ui;
-        
-        if (this.ui.getModel().isAutonomyRunning())
-        {
-            JOptionPane.showMessageDialog(
-                source,
-                I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")
-            );
-            return;
-        }
-
-        // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING.  This door renames as well as re-addresses, and
-        // both rewrite what a running route is reading.
-        if (this.ui.refuseWhileARouteDrivesIt(source, l == null ? null : l.getName())) return;
-
         try
         {
-            if (l != null)
+            boolean renaming = newName != null && !l.getName().equals(newName);
+
+            if (renaming)
             {
-                LocomotiveAddressChange edit = new LocomotiveAddressChange(l);
-
-                int result = JOptionPane.showOptionDialog(
-                    source,
-                    edit,
-                    I18n.f("loc.ui.dialogChangeNameOrAddress", l.getName()),
-                    JOptionPane.OK_CANCEL_OPTION,
-                    JOptionPane.PLAIN_MESSAGE,
-                    null,
-                    TrainControlUI.OK_CANCEL_OPTS,
-                    TrainControlUI.OK_CANCEL_OPTS[0] // default selection
-                );
-
-                // The name asked first (OB-301): a name refused returns before anything has changed, not after the new
-                // address went through, which left a standing train given another's address on the railway beside it,
-                // two answering to one decoder address.
-                String newName = edit.getLocName();
-
-                boolean renaming = result == JOptionPane.OK_OPTION && newName != null && !l.getName().equals(newName);
-
-                if (renaming)
+                if (newName.trim().length() == 0)
                 {
-                    if (newName.trim().length() == 0)
-                    {
-                        JOptionPane.showMessageDialog(
-                            source,
-                            I18n.t("loc.ui.errorEmptyLocomotiveName")
-                        );
-                        return;
-                    }
-
-                    if (newName.length() > TrainControlUI.MAX_LOC_NAME_DATABASE)
-                    {
-                        JOptionPane.showMessageDialog(
-                            source,
-                            I18n.f("loc.ui.errorLocomotiveNameTooLong", TrainControlUI.MAX_LOC_NAME_DATABASE)
-                        );
-                        return;
-                    }
-
-                    if (this.ui.getModel().getLocByName(newName) != null)
-                    {
-                        JOptionPane.showMessageDialog(
-                            source,
-                            I18n.f("loc.ui.errorLocomotiveAlreadyExists", newName)
-                        );
-                        return;
-                    }
-
-                    // Routes store locomotives by name in a comma-separated text format, so renaming into a name with a
-                    // comma rewrites every command and condition into something that re-parses as a different
-                    // locomotive.  (Brackets are allowed: Adam's ruling.)  The route editor refuses these names at both
-                    // its doors; this is the third way in.
-                    if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
-                    {
-                        JOptionPane.showMessageDialog(
-                            source,
-                            I18n.t("loc.ui.errorLocomotiveNameUnusable")
-                        );
-                        return;
-                    }
+                    JOptionPane.showMessageDialog(source, I18n.t("loc.ui.errorEmptyLocomotiveName"));
+                    return false;
                 }
 
-                // Asked again after the dialog, before anything is written: an s88 trigger can start a route that
-                // drives this locomotive while it is open, and both writes below rewrite what that route is reading.
-                if (result == JOptionPane.OK_OPTION && this.ui.refuseWhileARouteDrivesIt(source, l.getName())) return;
-
-                String newAddress = edit.getAddress();
-                decoderType newDecoderType = edit.getDecoderType();
-                Integer proposedAddress;
-
-                if (result == JOptionPane.OK_OPTION && newAddress != null && !"".equals(newAddress.trim()))
+                if (newName.length() > TrainControlUI.MAX_LOC_NAME_DATABASE)
                 {
-                    proposedAddress = Conversion.parseTypedAddress(newAddress, newDecoderType == decoderType.MFX);
-
-                    if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
-                    {
-                        this.ui.getModel().changeLocAddress(l.getName(), proposedAddress, newDecoderType);
-                    }
+                    JOptionPane.showMessageDialog(
+                        source,
+                        I18n.f("loc.ui.errorLocomotiveNameTooLong", TrainControlUI.MAX_LOC_NAME_DATABASE)
+                    );
+                    return false;
                 }
 
-                if (renaming) this.ui.getModel().renameLoc(l.getName(), newName);
-
-                // Refresh everything
-                if (result == JOptionPane.OK_OPTION)
+                if (this.ui.getModel().getLocByName(newName) != null)
                 {
-                    this.ui.clearCopyTarget();
-                    this.ui.repaintLoc(true, null);
-                    this.ui.repaintMappings(null, false);
-                    this.ui.refreshRouteList();
-                    this.ui.getLocSelector().refreshLocSelectorList();
+                    JOptionPane.showMessageDialog(source, I18n.f("loc.ui.errorLocomotiveAlreadyExists", newName));
+                    return false;
+                }
 
-                    // Update locomotive on graph
-                    if (this.ui.getModel().hasAutoLayout())
-                    {
-                        this.ui.getModel().getAutoLayout().sanitizeMultiUnits(l);
-                        this.ui.getModel().getAutoLayout().refreshUI();
-
-                        // And the station labels on the track diagram (OB-081): refreshUI redraws the autonomy
-                        // surfaces, but the labels beside a station are written by updateStationLabels, which every
-                        // other door that changes which locomotive stands where calls.
-                        this.ui.updateVisiblePoints();
-                        this.ui.repaintAutoLocList(false);
-
-                        // And the timetable, which names locomotives too: the guard inside `repaintTimetable` is keyed
-                        // on a hash a rename cannot move (MT-149).
-                        this.ui.repaintTimetable();
-                    }
+                // Routes store locomotives by name in a comma-separated text format, so a name with a comma would
+                // re-parse as a different locomotive; the route editor's two doors ask the same rule.
+                if (!RouteCommand.isNameUsable(newName))
+                {
+                    JOptionPane.showMessageDialog(source, I18n.t("loc.ui.errorLocomotiveNameUnusable"));
+                    return false;
                 }
             }
+
+            if (RunGates.refuseWhileAutonomyRunning(this.ui, source)) return false;
+
+            if (this.ui.refuseWhileARouteDrivesIt(source, l.getName())) return false;
+
+            if (newAddress != null && !"".equals(newAddress.trim()))
+            {
+                Integer proposedAddress;
+
+                try
+                {
+                    proposedAddress = Conversion.parseTypedAddress(newAddress, newDecoderType == decoderType.MFX);
+                }
+                catch (NumberFormatException notANumber)
+                {
+                    JOptionPane.showMessageDialog(source, I18n.t("loc.errorAddressNotNumeric"));
+                    return false;
+                }
+
+                if (proposedAddress != l.getAddress() || newDecoderType != l.getDecoderType())
+                {
+                    if (RunGates.refuseALinkOrSyncWhileEditorOpen(this.ui, source)) return false;
+
+                    // A new address or decoder is not written under a train with a stored speed, power on or off
+                    if (LocomotiveSettings.hasSpeed(this.ui, l))
+                    {
+                        JOptionPane.showMessageDialog(source, I18n.f("loc.ui.stopToEdit", l.getName()));
+                        return false;
+                    }
+
+                    String problem = addressProblem(newAddress, newDecoderType);
+
+                    if (problem != null)
+                    {
+                        JOptionPane.showMessageDialog(source, problem);
+                        return false;
+                    }
+
+                    this.ui.getModel().changeLocAddress(l.getName(), proposedAddress, newDecoderType);
+                }
+            }
+
+            if (renaming) this.ui.getModel().renameLoc(l.getName(), newName);
+
+            // Refresh everything
+            this.ui.clearCopyTarget();
+            this.ui.repaintLoc(true, null);
+            this.ui.repaintMappings(null, false);
+            this.ui.refreshRouteList();
+            this.ui.getLocSelector().refreshLocSelectorList();
+
+            // Update locomotive on graph
+            if (this.ui.getModel().hasAutoLayout())
+            {
+                this.ui.getModel().getAutoLayout().sanitizeMultiUnits(l);
+                this.ui.getModel().getAutoLayout().refreshUI();
+
+                // And the station labels on the track diagram (OB-081): refreshUI redraws the autonomy
+                // surfaces, but the labels beside a station are written by updateStationLabels, which every
+                // other door that changes which locomotive stands where calls.
+                this.ui.updateVisiblePoints();
+                this.ui.repaintAutoLocList(false);
+
+                // And the timetable, which names locomotives too: the guard inside `repaintTimetable` is keyed
+                // on a hash a rename cannot move (MT-149).
+                this.ui.repaintTimetable();
+            }
+
+            return true;
         }
         catch (Exception e)
         {
             this.ui.getModel().log(e);
 
-            JOptionPane.showMessageDialog(
-                sourceWindow,
-                I18n.f("loc.ui.errorLocomotiveEditException", e.getMessage())
-            );
+            JOptionPane.showMessageDialog(source, I18n.f("loc.ui.errorLocomotiveEditException", e.getMessage()));
+
+            return false;
         }
     }
 
     /**
-     * Shows the user locomotives similar to searchLoc, and maps them to a page if requested
-     * @param searchLoc
-     * @param evt 
-     */ 
+     * The refusals a multi-unit edit meets, in today's order: not while autonomy runs, nor while a route drives the
+     * multi-unit or a member (OB-287), since a multi-unit's commands drive its members; nor a new member while an editor
+     * is open.  `newMembers` is null before they are chosen; true when it refused (and said so).
+     */
+    boolean refuseMultiUnitEdit(Component source, Locomotive l, java.util.Collection<String> newMembers)
+    {
+        if (this.ui.getModel().isAutonomyRunning())
+        {
+            JOptionPane.showMessageDialog(source, I18n.t("autolayout.ui.errorCannotEditMultiUnitsWhileRunning"));
+            return true;
+        }
+
+        if (newMembers != null && !l.getLinkedLocomotiveNames().keySet().containsAll(newMembers)
+            && RunGates.refuseALinkOrSyncWhileEditorOpen(this.ui, source)) return true;
+
+        Set<String> involved = new java.util.LinkedHashSet<>();
+
+        involved.add(l.getName());
+        involved.addAll(l.getLinkedLocomotiveNames().keySet());
+
+        // Asked again at OK, of every member before and after: a route can start from its s88 while this is open.
+        if (newMembers != null) involved.addAll(newMembers);
+
+        return RunGates.refuseWhileARouteDrivesAny(this.ui, source, involved);
+    }
+
+    /**
+     * Makes {@code newLinkedLocos} the members of a multi-unit and tells everything that shows it: the one write the
+     * Locomotive Settings window's Multi-Unit tab goes through on Save.  True when it was written, false when a refusal
+     * stopped it.
+     */
+    boolean applyLinkedLocomotives(Component source, Locomotive l, Map<String, Double> newLinkedLocos)
+    {
+        if (refuseMultiUnitEdit(source, l, newLinkedLocos.keySet())) return false;
+
+        // One call: syncWithCS2 rebuilds consists off this thread; a two-call form would stage on a shared field.
+        l.setLinkedLocomotives(newLinkedLocos);
+        this.ui.repaintLoc(true, null);
+
+        // Ensure there are no conflicts on the graph
+        if (this.ui.getModel().hasAutoLayout())
+        {
+            this.ui.getModel().getAutoLayout().sanitizeMultiUnits(l);
+            this.ui.repaintAutoLocListFull();
+            this.ui.getModel().getAutoLayout().refreshUI();
+        }
+
+        return true;
+    }
+
+    /** What is wrong with a typed address for this decoder type, in plain words, or null when it will do. */
+    String addressProblem(String typedAddress, decoderType type)
+    {
+        int address;
+
+        try
+        {
+            address = Math.abs(Conversion.parseTypedAddress(typedAddress, type == decoderType.MFX));
+        }
+        catch (NumberFormatException e)
+        {
+            return I18n.t("loc.errorAddressNotNumeric");
+        }
+
+        // The model's own rule, asked rather than re-stated; the message names the type's range
+        if (org.traincontrol.marklin.MarklinLocomotive.validateNewAddress(type, address)) return null;
+
+        return I18n.t(type == decoderType.MM2 ? "loc.errorMM2AddressOutOfRange"
+            : type == decoderType.DCC ? "loc.errorDCCAddressOutOfRange"
+            : type == decoderType.MFX ? "loc.errorMFXAddressOutOfRange" : "loc.errorAddressOutOfRange");
+    }
+
+    /**
+     * Add Locomotive (FR-179): makes a locomotive with the refusals Add Locomotive always asked, in its order (the
+     * name, then the address), says it was added and puts it on the selected key if that key is empty.  Answers the new
+     * locomotive, or null when something was refused (and said so).
+     */
+    Locomotive addLocomotive(Component source, String locName, String typedAddress, decoderType type)
+    {
+        // Asked at Add, whichever door opened the window and whenever: autonomy iterates the database
+        if (RunGates.refuseWhileAutonomyRunning(this.ui, source)) return null;
+
+        if (locName.trim().length() == 0)
+        {
+            JOptionPane.showMessageDialog(source, I18n.t("loc.errorNameMissing"));
+            return null;
+        }
+
+        if (locName.length() >= TrainControlUI.MAX_LOC_NAME_DATABASE)
+        {
+            JOptionPane.showMessageDialog(source, I18n.f("loc.errorNameTooLong", TrainControlUI.MAX_LOC_NAME_DATABASE));
+            return null;
+        }
+
+        if (this.ui.getModel().getLocByName(locName) != null)
+        {
+            JOptionPane.showMessageDialog(source, I18n.t("loc.errorNameExists"));
+            return null;
+        }
+
+        // A name is born usable too (MT-270): routes store locomotives by name, comma-separated
+        if (!RouteCommand.isNameUsable(locName))
+        {
+            JOptionPane.showMessageDialog(source, I18n.t("loc.ui.errorLocomotiveNameUnusable"));
+            return null;
+        }
+
+        String problem = addressProblem(typedAddress, type);
+
+        if (problem != null)
+        {
+            JOptionPane.showMessageDialog(source, problem);
+            return null;
+        }
+
+        int locAddress = Math.abs(Conversion.parseTypedAddress(typedAddress, type == decoderType.MFX));
+
+        Locomotive made = type == decoderType.MFX ? this.ui.getModel().newMFXLocomotive(locName, locAddress)
+            : type == decoderType.DCC ? this.ui.getModel().newDCCLocomotive(locName, locAddress)
+            : this.ui.getModel().newMM2Locomotive(locName, locAddress);
+
+        this.ui.getLocSelector().refreshLocSelectorList();
+
+        JOptionPane.showMessageDialog(source, I18n.t("loc.infoAddedSuccessfully"));
+
+        this.ui.mapLocToCurrentButton(locName, true);
+
+        return made;
+    }
+
+    /** Writes every address more than one locomotive shares to the log, MFX and the rest apart. */
+    void reportDuplicates()
+    {
+        Map<Integer, Set<Locomotive>> locs = this.ui.getModel().getDuplicateLocAddresses();
+
+        if (!locs.isEmpty())
+        {
+            List<Integer> sortedLocs = new java.util.ArrayList<>(locs.keySet());
+            Collections.sort(sortedLocs, Collections.reverseOrder());
+
+            this.ui.getModel().logf("loc.reportMfxHeader");
+            logShared(locs, sortedLocs, true);
+
+            this.ui.getModel().logf("loc.reportNonMfxHeader");
+            logShared(locs, sortedLocs, false);
+
+            this.ui.getModel().logf("loc.reportDuplicateSummary");
+        }
+        else
+        {
+            this.ui.getModel().logf("loc.reportNoDuplicates");
+        }
+    }
+
+    /** The report's lines for each shared address, of MFX locomotives or of the rest. */
+    private void logShared(Map<Integer, Set<Locomotive>> locs, List<Integer> addresses, boolean mfx)
+    {
+        for (Integer addr : addresses)
+        {
+            List<Locomotive> shared = locs.get(addr).stream()
+                .filter(l -> (l.getDecoderType() == decoderType.MFX) == mfx)
+                .collect(Collectors.toList());
+
+            if (shared.size() < 2) continue;
+
+            for (Locomotive l : shared)
+            {
+                this.ui.getModel().log("\t" + l.getName() + " [" + l.getDecoderTypeLabel() + "]");
+            }
+
+            this.ui.getModel().logf("loc.reportAddressSeparator", addr);
+        }
+    }
+
+    /** Shows the user locomotives similar to searchLoc, and maps them to a page if requested. */
     void findSimilarLocs(Locomotive searchLoc, MouseEvent evt)
     {
-        Component source = evt != null ? (Component) evt.getSource() : this.ui;
+        findSimilarLocs(searchLoc, searchLoc.getName(), searchLoc.getStructuredNotes(),
+            evt != null ? (Component) evt.getSource() : this.ui);
+    }
 
-        LocomotiveNotes notes = searchLoc.getStructuredNotes();
+    /** As above, with the name and notes the window holds, saved or not, and the dialogs off {@code source}. */
+    void findSimilarLocs(Locomotive searchLoc, String searchName, LocomotiveNotes notes, Component source)
+    {
         String railway = notes.getRailway();
         int startYear = notes.getStartYear();
 
@@ -295,7 +434,7 @@ final class LocomotiveActions
         int result = JOptionPane.showOptionDialog(
             source,
             inputPanel,
-            I18n.f("search.ui.dialogFindSimilarLocomotives", searchLoc.getName()),
+            I18n.f("search.ui.dialogFindSimilarLocomotives", searchName),
             JOptionPane.OK_CANCEL_OPTION,
             JOptionPane.PLAIN_MESSAGE,
             null,
@@ -329,7 +468,7 @@ final class LocomotiveActions
             boolean randomize = randomOrder.isSelected();
 
             List<Locomotive> matches = Locomotive.findSimilarLocomotives(
-                searchLoc, count, railroads, sourceLocs, randomize
+                searchLoc, notes, count, railroads, sourceLocs, randomize
             );
 
             if (matches.isEmpty())
@@ -344,14 +483,15 @@ final class LocomotiveActions
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append(I18n.t("search.ui.labelTargetLocomotive")).append("\n- ").append(searchLoc.getNotesSummaryLine());
+            sb.append(I18n.t("search.ui.labelTargetLocomotive")).append("\n- ")
+                .append(Locomotive.notesSummaryLine(searchName, notes));
             sb.append("\n\n").append(I18n.t("search.ui.labelSimilarLocomotives")).append("\n");
             for (Locomotive match : matches)
             {
                 sb.append("- ").append(match.getNotesSummaryLine()).append("\n");
                 this.ui.getModel().logf(
                     "loc.ui.infoSimilarLocomotive",
-                    searchLoc.getName(),
+                    searchName,
                     match.getNotesSummaryLine()
                 );
             }
@@ -435,157 +575,43 @@ final class LocomotiveActions
         }
     }
 
-    /**
-    * Allows the user to specify notes and metadata for the given locomotive
-    * @param l
-    * @param evt
-    */
-    void changeLocNotes(Locomotive l, MouseEvent evt)
+    void deleteLoc(String value, MouseEvent evt)
     {
-        Component source = evt != null ? (Component) evt.getSource() : this.ui;
+        deleteLoc(value, evt != null ? (Component) evt.getSource() : this.ui.dialogParent());
+    }
 
-        if (l != null)
+    /** As {@link #deleteLoc(String, Component)}, its one question led by `why`, the step the deletion is for. */
+    boolean deleteLocBecause(String why, String value, Component source)
+    {
+        this.because = why;
+
+        try
         {
-            LocomotiveNotes existing = l.getStructuredNotes();
-
-            String startYearText = existing.getStartYear() == 0 ? "" : String.valueOf(existing.getStartYear());
-            String endYearText = existing.getEndYear() == 0 ? "" : String.valueOf(existing.getEndYear());
-
-            JTextField startYearField = new JTextField(startYearText, 10);
-            startYearField.setToolTipText(I18n.t("loc.ui.tooltip.StartYear"));
-            JTextField endYearField = new JTextField(endYearText, 10);
-            endYearField.setToolTipText(I18n.t("loc.ui.tooltip.EndYear"));
-            JTextField railwayField = new JTextField(existing.getRailway(), 30);
-
-            startYearField.addKeyListener(new KeyAdapter()
-            {
-                @Override
-                public void keyReleased(KeyEvent e)
-                {
-                    TrainControlUI.validateInt(e, false);
-                    TrainControlUI.limitLength(e, 4);
-                }
-            });
-
-            endYearField.addKeyListener(new KeyAdapter()
-            {
-                @Override
-                public void keyReleased(KeyEvent e)
-                {
-                    TrainControlUI.validateInt(e, false);
-                    TrainControlUI.limitLength(e, 4);
-                }
-            });
-
-            railwayField.addKeyListener(new KeyAdapter()
-            {
-                @Override
-                public void keyReleased(KeyEvent e)
-                {
-                    TrainControlUI.limitLength(e, TrainControlUI.MAX_LOC_RAILWAY_NAME);
-                }
-            });
-
-            JTextArea textArea = new JTextArea(existing.getNotes());
-            textArea.setColumns(80);
-            textArea.setRows(15);
-            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
-            textArea.setSize(textArea.getPreferredSize().width, textArea.getPreferredSize().height);
-
-            textArea.addAncestorListener(new AncestorListener()
-            {
-                @Override public void ancestorRemoved(AncestorEvent event) {}
-                @Override public void ancestorMoved(AncestorEvent event) {}
-                @Override public void ancestorAdded(AncestorEvent event)
-                {
-                    event.getComponent().requestFocusInWindow();
-                }
-            });
-
-            JPanel panel = new JPanel(new GridBagLayout());
-
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(4, 4, 4, 4);
-            gbc.anchor = GridBagConstraints.WEST;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-
-            gbc.gridx = 0;
-            gbc.gridy = 0;
-            panel.add(new JLabel(I18n.t("loc.ui.labelStartYear")), gbc);
-            gbc.gridx = 1;
-            panel.add(startYearField, gbc);
-
-            gbc.gridx = 0;
-            gbc.gridy++;
-            panel.add(new JLabel(I18n.t("loc.ui.labelEndYear")), gbc);
-            gbc.gridx = 1;
-            panel.add(endYearField, gbc);
-
-            gbc.gridx = 0;
-            gbc.gridy++;
-            panel.add(new JLabel(I18n.t("loc.ui.labelRailwayName")), gbc);
-            gbc.gridx = 1;
-            panel.add(railwayField, gbc);
-
-            gbc.gridx = 0;
-            gbc.gridy++;
-            gbc.gridwidth = 2;
-            panel.add(new JLabel(I18n.t("loc.ui.labelNotes")), gbc);
-
-            gbc.gridy++;
-            panel.add(new JScrollPane(textArea), gbc);
-
-            int confirm = JOptionPane.showOptionDialog(
-                source,
-                panel,
-                I18n.f("loc.ui.dialogEditLocomotiveInfo", l.getName()),
-                JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                TrainControlUI.OK_CANCEL_OPTS,
-                TrainControlUI.OK_CANCEL_OPTS[0] // default selection
-            );
-
-            if (confirm == JOptionPane.YES_OPTION)
-            {
-                try
-                {
-                    String startText = startYearField.getText().trim();
-                    String endText = endYearField.getText().trim();
-
-                    int startYear = startText.isEmpty() ? 0 : Math.abs(Integer.parseInt(startText));
-                    int endYear = endText.isEmpty() ? 0 : Math.abs(Integer.parseInt(endText));
-
-                    String railway = railwayField.getText().trim().substring(0, Math.min(railwayField.getText().length(), TrainControlUI.MAX_LOC_RAILWAY_NAME));
-                    String notes = textArea.getText().substring(0, Math.min(textArea.getText().length(), TrainControlUI.MAX_LOC_NOTES_LENGTH));
-
-                    l.setStructuredNotes(startYear, endYear, railway, notes);
-                }
-                catch (NumberFormatException ex)
-                {
-                    JOptionPane.showMessageDialog(
-                        source,
-                        I18n.t("loc.ui.errorStartEndYearMustBeIntegers"),
-                        I18n.t("ui.dialogInputError"),
-                        JOptionPane.ERROR_MESSAGE
-                    );
-                }
-            }
+            return deleteLoc(value, source);
+        }
+        finally
+        {
+            this.because = null;
         }
     }
 
-    void deleteLoc(String value, MouseEvent evt)
+    /** Set, on the event thread, only for the length of `deleteLocBecause`. */
+    private String because = null;
+
+    /** Deletes a locomotive from the database after the question, from any door; true when it was deleted. */
+    boolean deleteLoc(String value, Component source)
     {
-        Component source = evt != null ? (Component) evt.getSource() : this.ui;
-        
+        // The moving rule, at every door (FR-048), and asked again at Yes.
+        if (LocomotiveSettings.refuseIfNotEditable(this.ui, this.ui.getModel().getLocByName(value), source)) return false;
+
         if (this.ui.getModel().isAutonomyRunning())
         {
             JOptionPane.showMessageDialog(source, I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"));
-            return;
+            return false;
         }
 
         // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING.
-        if (this.ui.refuseWhileARouteDrivesIt(source, value)) return;
+        if (this.ui.refuseWhileARouteDrivesIt(source, value)) return false;
         
         // The routes that drive it, counted before it goes: deleting a locomotive removes every command that drives it
         // from every route (see Route.locomotiveDeleted), and an operator who deletes and re-adds it under the same
@@ -607,7 +633,7 @@ final class LocomotiveActions
 
         if (JOptionPane.YES_OPTION == JOptionPane.showOptionDialog(
                 source,
-                question,
+                this.because == null ? question : this.because + "\n\n" + question,
                 I18n.t("layout.ui.dialogPleaseConfirm"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.PLAIN_MESSAGE,
@@ -620,17 +646,16 @@ final class LocomotiveActions
         {
             // ASKED AGAIN AT YES, BEFORE ANYTHING IS WRITTEN: the question at the top was put before this
             // confirmation opened, and an s88 trigger can start a route that drives the locomotive while it is open.
-            if (this.ui.refuseWhileARouteDrivesIt(source, value)) return;
+            if (this.ui.refuseWhileARouteDrivesIt(source, value)) return false;
 
             Locomotive l = this.ui.getModel().getLocByName(value);
+
+            if (LocomotiveSettings.refuseIfNotEditable(this.ui, l, source)) return false;
 
             if (l != null)
             {
                 // Also delete locomotive from active loc list
-                if (l.equals(this.ui.activeLoc))
-                {
-                    this.ui.activeLoc = null;
-                }
+                if (l.equals(this.ui.activeLoc)) this.ui.activeLoc = null;
 
                 // What Control+X is holding, if it is this locomotive: cut a train off a square, delete the locomotive,
                 // press Control+V, and the paste resolves a locomotive no longer in the database.  The holder is in the
@@ -647,7 +672,7 @@ final class LocomotiveActions
 
                 // Every PAGE of mappings, not only the one on screen: a button mapped on another page would keep a
                 // reference to a locomotive no longer in the database, on a button that still drives real hardware.
-                for (java.util.HashMap<javax.swing.JButton, Locomotive> page : this.ui.locMapping)
+                for (java.util.HashMap<JButton, Locomotive> page : this.ui.locMapping)
                 {
                     for (JButton key : new LinkedList<>(page.keySet()))
                     {
@@ -674,7 +699,13 @@ final class LocomotiveActions
                     this.ui.repaintAutoLocListFull();
                     this.ui.getModel().getAutoLayout().refreshUI();
                 }
+
+                this.ui.locomotiveSettingsClosedFor(l);
+
+                return true;
             }
         }
+
+        return false;
     }
 }

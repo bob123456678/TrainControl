@@ -5,7 +5,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -17,6 +16,9 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
+import support.Teardown;
 
 /**
  * OB-194: Bulk Tools says what it is about to clear, and what Cancel will do about it.  Since OB-223 Cancel in the
@@ -49,18 +51,13 @@ public class testTheBulkClearSaysWhatCancelDoes
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the autonomy editor and its menus need a display");
-        }
+        Display.needed("the autonomy editor and its menus need a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -101,28 +98,7 @@ public class testTheBulkClearSaysWhatCancelDoes
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (editor != null)
-            {
-                final LayoutEditor closing = editor;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, editor, ui);
     }
 
     /** The warning names every locomotive the clear is about to lift: a count is a number nobody can check. */
@@ -209,10 +185,9 @@ public class testTheBulkClearSaysWhatCancelDoes
     }
 
     /**
-     * The two length clears carry their sentence on the menu too, and it is the editor's one.  The track-length and
-     * maximum pairs were built by copying the `page == null` choice into four places, so a swapped pair of keys would
-     * show a clear promising a Cancel on the surface that has none.  Asked of the built menu, on the editor surface,
-     * where Cancel is real.
+     * The two length clears carry their sentence on the menu too, and it is the editor's one: a swapped pair of keys
+     * would show a clear promising a Cancel on the surface that has none.  Asked of the built menu, on the editor
+     * surface, where Cancel is real.
      */
     @Test
     public void testTheLengthClearsCarryTheEditorsSentence() throws Exception
@@ -358,8 +333,7 @@ public class testTheBulkClearSaysWhatCancelDoes
         final TileKey at = square;
         final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
         final String[] said = new String[1];
-        final java.lang.reflect.Field panel = TrainControlUI.class.getDeclaredField("autonomyTileMenus");
-        panel.setAccessible(true);
+        final java.lang.reflect.Field panel = Reflect.field(TrainControlUI.class, "autonomyTileMenus");
         // With no editor open, as a person meets the diagram's menu; built again straight after for the later claims.
         final LayoutEditor closing = editor;
         SwingUtilities.invokeAndWait(() -> closing.dispose());

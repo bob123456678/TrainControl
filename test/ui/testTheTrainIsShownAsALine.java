@@ -9,12 +9,10 @@ import java.util.Set;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
-import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagramComponent;
@@ -23,6 +21,9 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * MT-309, first half - a train is shown as a line along the track, not as a gray wash over the tile.  Asserted in
@@ -77,10 +78,7 @@ public class testTheTrainIsShownAsALine
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("painting a tile needs a display");
-        }
+        Display.needed("painting a tile needs a display");
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111): `cs2_sample_layout` moves as Adam runs trains on
         // it, and a class that skips everything reads as a green one.  `live-snapshot` is the same railway with the
@@ -94,8 +92,8 @@ public class testTheTrainIsShownAsALine
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -105,19 +103,23 @@ public class testTheTrainIsShownAsALine
             return;
         }
 
-        SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
+        SwingUtilities.invokeAndWait(() -> support.TileLengths.measureEveryTileAs(session, 1));
 
         model.parseAuto(session.buildConfiguration());
 
         layout = model.getAutoLayout();
 
-        oneTrainThatCoversSomething();
+        train = support.CoveredMarks.leaveOneTrainThatCovers(layout, 4);
 
         if (train == null)
         {
             unbuilt = "no standing train covers any track here";
             return;
         }
+
+        trainLengthWas = train.getTrainLength();
+
+        train.setTrainLength(4);
 
         refreshCoveredTrack();
 
@@ -164,7 +166,7 @@ public class testTheTrainIsShownAsALine
 
         SwingUtilities.invokeAndWait(() -> tile.refreshCoveredMark());
 
-        pump();
+        Components.drain(1);
 
         assertFalse(ui.isTrackCovered(covered),
             "the square is still reported as covered with the train's length cleared, so the second "
@@ -305,7 +307,7 @@ public class testTheTrainIsShownAsALine
         // and `support.CoveredMarks` is the one place that knows it.
         support.CoveredMarks.refresh(ui);
 
-        pump();
+        Components.drain(1);
     }
 
     /** The train made four units long, so it lies across the covered square, and the square's mark redrawn. */
@@ -317,7 +319,7 @@ public class testTheTrainIsShownAsALine
 
         SwingUtilities.invokeAndWait(() -> tile.refreshCoveredMark());
 
-        pump();
+        Components.drain(1);
     }
 
     /** The run overlay taken off the square, the train made no length again, and the square's mark redrawn. */
@@ -331,12 +333,12 @@ public class testTheTrainIsShownAsALine
 
         SwingUtilities.invokeAndWait(() -> tile.refreshCoveredMark());
 
-        pump();
+        Components.drain(1);
     }
 
     private static TileKey firstCoveredSquareWithATile()
     {
-        for (TileKey square : everyTile())
+        for (TileKey square : support.TileLengths.onTheEdges(session))
         {
             if (!ui.isTrackCovered(square)) continue;
 
@@ -373,77 +375,16 @@ public class testTheTrainIsShownAsALine
 
         long until = System.currentTimeMillis() + 30000;
 
-        while (built[0].getIcon() == null && System.currentTimeMillis() < until) pump();
+        while (built[0].getIcon() == null && System.currentTimeMillis() < until) Components.drain(1);
 
         assertNotNull(built[0].getIcon(),
             "the tile never drew its image, so every picture below would be of an empty square");
 
         SwingUtilities.invokeAndWait(() -> built[0].refreshCoveredMark());
 
-        pump();
+        Components.drain(1);
 
         return built[0];
-    }
-
-    private static Set<TileKey> everyTile()
-    {
-        return support.TileLengths.onTheEdges(session);
-    }
-
-    /**
-     * Leaves one train standing, and only one that covers track: a train whose arrival side leads nowhere covers
-     * nothing.
-     */
-    private static void oneTrainThatCoversSomething()
-    {
-        Point keep = null;
-
-        for (Point point : layout.getPoints())
-        {
-            if (point.getCurrentLocomotive() == null || point.getArrivedFrom() == null) continue;
-
-            Locomotive candidate = point.getCurrentLocomotive();
-
-            Integer was = candidate.getTrainLength();
-
-            candidate.setTrainLength(4);
-
-            boolean covers = layout.edgesCoveredByStandingTrains().containsValue(candidate);
-
-            candidate.setTrainLength(was);
-
-            if (covers)
-            {
-                keep = point;
-
-                break;
-            }
-        }
-
-        if (keep == null) return;
-
-        for (Point point : layout.getPoints())
-        {
-            if (point == keep || point.getCurrentLocomotive() == null) continue;
-
-            layout.moveLocomotive(null, point.getName(), true);
-        }
-
-        train = keep.getCurrentLocomotive();
-
-        trainLengthWas = train.getTrainLength();
-
-        train.setTrainLength(4);
-    }
-
-    private static void measureEveryTileAs(int units)
-    {
-        support.TileLengths.measureEveryTileAs(session, units);
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 
     /**
@@ -469,9 +410,7 @@ public class testTheTrainIsShownAsALine
             assertTrue(alone > 0, "precondition: no orange on the covered square");
 
             // THE ROAD THE TAIL IS DRAWN ON, and a run's reached line along it
-            java.lang.reflect.Method roads = LayoutLabel.class.getDeclaredMethod("coveredRoads");
-
-            roads.setAccessible(true);
+            java.lang.reflect.Method roads = Reflect.method(LayoutLabel.class, "coveredRoads");
 
             @SuppressWarnings("unchecked")
             java.util.List<org.traincontrol.automationui.TilePorts.Route> covering =
@@ -486,7 +425,7 @@ public class testTheTrainIsShownAsALine
                     new org.traincontrol.automationui.TileOverlay.Segment(road.getA(), road.getB(),
                         org.traincontrol.automationui.TileOverlay.State.REACHED)))));
 
-            pump();
+            Components.drain(1);
 
             BufferedImage run = support.Pixels.paint(tile, TILE);
 
@@ -504,10 +443,8 @@ public class testTheTrainIsShownAsALine
 
     /**
      * A running train's line is the orange of a standing train's: the see-through orange laid over its own dark gray
-     * run line came out a brown, rgb(178,94,38), where over the track it is rgb(209,125,69); it should match the
-     * standing color.  The covered square painted standing, and then running with the run's reached line along the road
-     * the tail lies on: the
-     * commonest orange of each within a few shades of the other.
+     * run line came out a brown, where it should match the standing color (commonest orange of each, within a few
+     * shades).
      *
      * MUTATION: draw the line over the run in the standing orange again, and this fails.
      */
@@ -524,9 +461,7 @@ public class testTheTrainIsShownAsALine
 
             int standing = commonestOrange(support.Pixels.paint(tile, TILE));
 
-            java.lang.reflect.Method roads = LayoutLabel.class.getDeclaredMethod("coveredRoads");
-
-            roads.setAccessible(true);
+            java.lang.reflect.Method roads = Reflect.method(LayoutLabel.class, "coveredRoads");
 
             @SuppressWarnings("unchecked")
             java.util.List<org.traincontrol.automationui.TilePorts.Route> covering =
@@ -541,7 +476,7 @@ public class testTheTrainIsShownAsALine
                     new org.traincontrol.automationui.TileOverlay.Segment(road.getA(), road.getB(),
                         org.traincontrol.automationui.TileOverlay.State.REACHED)))));
 
-            pump();
+            Components.drain(1);
 
             int running = commonestOrange(support.Pixels.paint(tile, TILE));
 
@@ -559,9 +494,8 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * A standing train's own square is one orange.  The line is drawn again over a run line, but the overlay of a
-     * standing train's own square has none, and drawn there the second line lay over the first (rgb(239,134,65) beside
-     * rgb(209,125,69)).  The same on the part of a run's first or last square its run line does not reach.
+     * A standing train's own square is one orange: its overlay has no run line, and the second line must not lie over
+     * the first.  The same on the part of a run's first or last square its run line does not reach.
      *
      * MUTATION: draw the second line over the whole of any square with an overlay again, and this fails.
      */
@@ -578,9 +512,7 @@ public class testTheTrainIsShownAsALine
 
             BufferedImage once = support.Pixels.paint(tile, TILE);
 
-            java.lang.reflect.Method roads = LayoutLabel.class.getDeclaredMethod("coveredRoads");
-
-            roads.setAccessible(true);
+            java.lang.reflect.Method roads = Reflect.method(LayoutLabel.class, "coveredRoads");
 
             @SuppressWarnings("unchecked")
             java.util.List<org.traincontrol.automationui.TilePorts.Route> covering =
@@ -592,7 +524,7 @@ public class testTheTrainIsShownAsALine
             SwingUtilities.invokeAndWait(() -> tile.setAutonomyOverlay(
                 org.traincontrol.automationui.TileOverlay.parked(road.getB())));
 
-            pump();
+            Components.drain(1);
 
             int standing = laidTwice(support.Pixels.paint(tile, TILE), once);
 
@@ -605,7 +537,7 @@ public class testTheTrainIsShownAsALine
                     new org.traincontrol.automationui.TileOverlay.Segment(road.getA(), null,
                         org.traincontrol.automationui.TileOverlay.State.REACHED)))));
 
-            pump();
+            Components.drain(1);
 
             int ending = laidTwice(support.Pixels.paint(tile, TILE), once);
 
@@ -643,9 +575,8 @@ public class testTheTrainIsShownAsALine
 
     /**
      * Where coaches are chosen, a train is drawn as whole coaches, one to a square, each stopping short of the square's
-     * edge, so the gaps fall at the joins on a curve as on a straight and no coach is cut short (T2 of the look's train
-     * tails).  A dash pattern would restart at every square and leave a stub, and shape must stay continuous across
-     * curves; one coach to a square has neither problem.
+     * edge, so the gaps fall at the joins on a curve as on a straight (T2 of the look's train tails); a dash pattern
+     * would restart at every square and leave a stub.
      *
      * MUTATION: draw the line edge to edge again and this fails.
      */
@@ -677,10 +608,8 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * The train's line is see-through: the track it lies on shows through it.  Adam: "can we change to the see through
-     * tail line".  Read off the picture as the commonest orange pixel (the line's own color where it crosses what is
-     * under it) rather than off the constant: a solid line's commonest pixel is the solid color, as bright as 245 or
-     * 255.
+     * The train's line is see-through.  Adam: "can we change to the see through tail line".  Read off the picture as
+     * the commonest orange pixel, not off the constant: a solid line's commonest pixel is the solid color.
      *
      * MUTATION: draw it solid, or make the soft orange the default, and this fails.
      */
@@ -775,7 +704,7 @@ public class testTheTrainIsShownAsALine
     {
         int ends = 0;
 
-        for (TileKey square : everyTile())
+        for (TileKey square : support.TileLengths.onTheEdges(session))
         {
             if (!ui.isTrackCovered(square)) continue;
 
@@ -815,11 +744,8 @@ public class testTheTrainIsShownAsALine
     }
 
     /**
-     * The train's line ends rounded where the train ends, not cut off flat on the square's edge.
-     *
-     * Each of the train's end squares - covered, beside a covered square, with a side whose square beside the train
-     * does not reach - is painted at the large size: nothing orange on that side's edge, where a line cut off there
-     * lays its whole width.
+     * The train's line ends rounded where the train ends, not cut off flat on the square's edge: each of the train's
+     * end squares is painted at the large size, with nothing orange on the edge of a side the train does not reach.
      *
      * MUTATION: run the line to the edge at the train's end as it runs between squares, and this fails.
      */
@@ -906,9 +832,8 @@ public class testTheTrainIsShownAsALine
 
     /**
      * A square whose own line did not change is redrawn when the square beside it changed: the train's last square ends
-     * rounded only while the train goes no further, so a train grown by a square has to redraw the square that was its
-     * last.  Asked of the window's own refresh, through a tile registered for that square, with Swing's repaint
-     * requests recorded.
+     * rounded only while the train goes no further.  Asked of the window's own refresh, with Swing's repaint requests
+     * recorded.
      *
      * MUTATION: redraw only the squares whose roads changed, and this fails.
      */
@@ -989,8 +914,9 @@ public class testTheTrainIsShownAsALine
 
         java.util.Map<TileKey, Set<org.traincontrol.automationui.TileGraph.RouteId>> out = new java.util.LinkedHashMap<>();
 
-        // THE SENSORS' SQUARES TOO, which `everyTile` - the squares along the roads - leaves out: a train lies across them
-        Set<TileKey> squares = new LinkedHashSet<>(everyTile());
+        // THE SENSORS' SQUARES TOO, which `TileLengths.onTheEdges` - the squares along the roads - leaves out: a train
+        // lies across them
+        Set<TileKey> squares = new LinkedHashSet<>(support.TileLengths.onTheEdges(session));
 
         squares.addAll(session.getReducer().getPoints().keySet());
 
@@ -1060,13 +986,13 @@ public class testTheTrainIsShownAsALine
 
         long until = System.currentTimeMillis() + 30000;
 
-        while (built[0].getIcon() == null && System.currentTimeMillis() < until) pump();
+        while (built[0].getIcon() == null && System.currentTimeMillis() < until) Components.drain(1);
 
         assertNotNull(built[0].getIcon(), "the tile on " + square + " never drew its image");
 
         SwingUtilities.invokeAndWait(() -> built[0].refreshCoveredMark());
 
-        pump();
+        Components.drain(1);
 
         return built[0];
     }

@@ -1,10 +1,22 @@
 package org.traincontrol.gui.autonomyeditor;
 
+import org.traincontrol.automation.Edge;
+import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomyChecks;
+import org.traincontrol.automationui.GraphReducer;
+import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileAnnotation.ToolMark;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.SettledQuestion;
 import org.traincontrol.util.I18n;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * The autonomy editor's answer to Why Not Moving?: for the train on the clicked square, every station it might be
@@ -32,7 +44,7 @@ final class EditorWhy extends SettledQuestion
      * @param byHand true when Path Type is Manual: the reasons a hand-driven send meets (MT-434)
      * @return what to say and what to draw
      */
-    AutonomyEditorPanel.WhyAnswer composeWhy(org.traincontrol.automation.Layout layout,
+    AutonomyEditorPanel.WhyAnswer composeWhy(Layout layout,
         org.traincontrol.automationui.StationIndex index, AutonomyEditorPanel.WhySetup setup, TileKey tile, boolean byHand)
     {
         // Which train is standing here, asked of the layout rather than the setup, whose opinion of where trains are
@@ -42,7 +54,7 @@ final class EditorWhy extends SettledQuestion
         // Through StationIndex, the one place that knows a square is several Points and which ones.
         for (String pointName : index.pointNamesAt(tile))
         {
-            org.traincontrol.automation.Point p = layout.getPoint(pointName);
+            Point p = layout.getPoint(pointName);
 
             if (p != null && p.getCurrentLocomotive() != null)
             {
@@ -55,17 +67,16 @@ final class EditorWhy extends SettledQuestion
         {
             // Empty, so the previous train's lines and marks go: they answered a question about another square.
             return new AutonomyEditorPanel.WhyAnswer(I18n.t("autosetup.ui.whyNoTrainHere"), false,
-                new java.util.HashMap<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>>(),
+                new HashMap<TileKey, List<TileAnnotation.Trace>>(),
                 java.util.Collections.<TileKey, ToolMark>emptyMap());
         }
 
         // The lines this answer draws, installed by the paint.  Empty rather than null from here on: an answer about a
         // train that draws nothing has to take the previous answer's lines off the diagram.
-        java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>>
-            drawn = new java.util.LinkedHashMap<>();
+        Map<TileKey, List<TileAnnotation.Trace>> drawn = new LinkedHashMap<>();
 
         // The train's square and the stations, marked by the answer (FR-159)
-        java.util.Map<TileKey, ToolMark> marks = new java.util.HashMap<>();
+        Map<TileKey, ToolMark> marks = new HashMap<>();
 
         marks.put(tile, ToolMark.PICKED);
 
@@ -81,22 +92,21 @@ final class EditorWhy extends SettledQuestion
 
         // The reasons and which autonomy would never choose, taken under one lock so a station cannot be printed under
         // the wrong heading.
-        org.traincontrol.automation.Layout.Destinations grouped = layout.explainDestinationsGrouped(standing, byHand);
+        Layout.Destinations grouped = layout.explainDestinationsGrouped(standing, byHand);
 
-        java.util.Map<String, String> reasons = grouped.getReasons();
+        Map<String, String> reasons = grouped.getReasons();
 
         // Where the train could be sent by hand right now: a barred station's own reason is its bar, which says nothing
         // of whether a route would take it there (an intermediate terminus, a length that does not fit).
-        org.traincontrol.automation.Layout.Destinations byHandToo = byHand ? grouped
-            : layout.explainDestinationsGrouped(standing, true);
+        Layout.Destinations byHandToo = byHand ? grouped : layout.explainDestinationsGrouped(standing, true);
 
-        java.util.Map<String, String> sendable = byHandToo.getReasons();
+        Map<String, String> sendable = byHandToo.getReasons();
 
         // Stations first, then berths, each alphabetical, grouped as `AutoLocomotiveStatus.whyNotReport` groups its
         // window (FR-080); by page first (MT-429); names as a person reads them (MT-865).
         final String currentPage = editor.page != null ? editor.page : tile.getPage();
 
-        final java.util.Map<String, String[]> sortKey = new java.util.HashMap<>();
+        final Map<String, String[]> sortKey = new HashMap<>();
 
         java.util.Comparator<String> byPageThenName = (a, b) ->
         {
@@ -112,20 +122,19 @@ final class EditorWhy extends SettledQuestion
             return byName != 0 ? byName : a.compareTo(b);
         };
 
-        java.util.Set<String> available = new java.util.TreeSet<>(byPageThenName);
-        java.util.Map<String, String> choosable = new java.util.TreeMap<>(byPageThenName);
-        java.util.Map<String, String> neverChosen = new java.util.TreeMap<>(byPageThenName);
+        Set<String> available = new java.util.TreeSet<>(byPageThenName);
+        Map<String, String> choosable = new TreeMap<>(byPageThenName);
+        Map<String, String> neverChosen = new TreeMap<>(byPageThenName);
 
         // The route each colored square may be drawn by, per color: the router's own, to the first of its copies
-        java.util.Map<ToolMark, java.util.Map<TileKey, java.util.List<org.traincontrol.automation.Edge>>> routeTo =
-            new java.util.EnumMap<>(ToolMark.class);
+        Map<ToolMark, Map<TileKey, List<Edge>>> routeTo = new java.util.EnumMap<>(ToolMark.class);
 
-        java.util.Set<TileKey> outOfReach = new java.util.HashSet<>();
+        Set<TileKey> outOfReach = new java.util.HashSet<>();
 
         // Collapsed to stations, as the locomotive panel's tooltip does: the reasons are keyed by the running graph's
         // Points and a square is several, so a derived-graph station would appear three times under names the user
         // never chose.
-        for (java.util.Map.Entry<String, String> entry : reasons.entrySet())
+        for (Map.Entry<String, String> entry : reasons.entrySet())
         {
             TileKey where = index.squareOf(entry.getKey());
 
@@ -153,13 +162,13 @@ final class EditorWhy extends SettledQuestion
                 markCopy(marks, outOfReach, where, mark, grouped.getBarred().contains(entry.getKey()));
 
                 // Green by autonomy's route, purple by the one a hand send would take
-                java.util.List<org.traincontrol.automation.Edge> route = mark == ToolMark.CAN_GO
+                List<Edge> route = mark == ToolMark.CAN_GO
                     ? grouped.getRoutes().get(entry.getKey())
                     : mark == ToolMark.NEVER ? byHandToo.getRoutes().get(entry.getKey()) : null;
 
                 if (route != null)
                 {
-                    routeTo.computeIfAbsent(mark, m -> new java.util.HashMap<>()).putIfAbsent(where, route);
+                    routeTo.computeIfAbsent(mark, m -> new HashMap<>()).putIfAbsent(where, route);
                 }
             }
 
@@ -177,9 +186,9 @@ final class EditorWhy extends SettledQuestion
         // route shares with a green one stays the green one's.
         for (ToolMark color : new ToolMark[] {ToolMark.CAN_GO, ToolMark.NEVER})
         {
-            for (java.util.Map.Entry<TileKey, ToolMark> square : marks.entrySet())
+            for (Map.Entry<TileKey, ToolMark> square : marks.entrySet())
             {
-                java.util.Map<TileKey, java.util.List<org.traincontrol.automation.Edge>> byColor = routeTo.get(color);
+                Map<TileKey, List<Edge>> byColor = routeTo.get(color);
 
                 if (square.getValue() == color && byColor != null && byColor.get(square.getKey()) != null)
                 {
@@ -236,16 +245,16 @@ final class EditorWhy extends SettledQuestion
      * through is already shown arriving.  Nothing where the route crosses an edge the drawing does not know.
      */
     private void drawRoute(
-        java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> drawn,
-        java.util.List<org.traincontrol.automation.Edge> route,
-        java.util.Map<String, org.traincontrol.automationui.GraphReducer.ReducedEdge> edgesByName, TileKey to,
+        Map<TileKey, List<TileAnnotation.Trace>> drawn,
+        List<Edge> route,
+        Map<String, GraphReducer.ReducedEdge> edgesByName, TileKey to,
         boolean purple)
     {
-        java.util.List<org.traincontrol.automationui.GraphReducer.ReducedEdge> run = new java.util.ArrayList<>();
+        List<GraphReducer.ReducedEdge> run = new ArrayList<>();
 
-        for (org.traincontrol.automation.Edge edge : route)
+        for (Edge edge : route)
         {
-            org.traincontrol.automationui.GraphReducer.ReducedEdge reduced = edgesByName.get(edge.getName());
+            GraphReducer.ReducedEdge reduced = edgesByName.get(edge.getName());
 
             if (reduced == null) return;
 
@@ -254,18 +263,16 @@ final class EditorWhy extends SettledQuestion
 
         if (run.isEmpty()) return;
 
-        java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> one =
-            new java.util.LinkedHashMap<>();
+        Map<TileKey, List<TileAnnotation.Trace>> one = new LinkedHashMap<>();
 
         editor.trace(one, run, run.get(0).getStart(), true, to, purple);
 
-        for (java.util.Map.Entry<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> square
+        for (Map.Entry<TileKey, List<TileAnnotation.Trace>> square
             : one.entrySet())
         {
-            java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> here =
-                drawn.computeIfAbsent(square.getKey(), k -> new java.util.ArrayList<>());
+            List<TileAnnotation.Trace> here = drawn.computeIfAbsent(square.getKey(), k -> new ArrayList<>());
 
-            for (org.traincontrol.automationui.TileAnnotation.Trace line : square.getValue()) addLine(here, line);
+            for (TileAnnotation.Trace line : square.getValue()) addLine(here, line);
         }
     }
 
@@ -273,14 +280,14 @@ final class EditorWhy extends SettledQuestion
      * One route's line added to a square's, each stretch once: a stub it runs through gives way to it where both are
      * one color; one of the other color keeps its half, and this line adds only the other half (OB-394).
      */
-    static void addLine(java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> here,
-        org.traincontrol.automationui.TileAnnotation.Trace line)
+    static void addLine(List<TileAnnotation.Trace> here,
+        TileAnnotation.Trace line)
     {
         if (alreadyDrawn(here, line)) return;
 
-        org.traincontrol.automationui.TileAnnotation.Trace stub = null;
+        TileAnnotation.Trace stub = null;
 
-        for (org.traincontrol.automationui.TileAnnotation.Trace old : here)
+        for (TileAnnotation.Trace old : here)
         {
             if ((old.getFrom() == null || old.getTo() == null) && touches(line, old)) stub = old;
         }
@@ -298,16 +305,16 @@ final class EditorWhy extends SettledQuestion
         {
             org.traincontrol.automationui.TilePorts.Side taken = stub.getFrom() != null ? stub.getFrom() : stub.getTo();
 
-            here.add(new org.traincontrol.automationui.TileAnnotation.Trace(null,
+            here.add(new TileAnnotation.Trace(null,
                 line.getFrom() == taken ? line.getTo() : line.getFrom(), true, line.isManualOnly()));
         }
     }
 
     /** Whether a square's lines already show this one: the same two sides either way round, or a stub of one. */
-    private static boolean alreadyDrawn(java.util.List<org.traincontrol.automationui.TileAnnotation.Trace> here,
-        org.traincontrol.automationui.TileAnnotation.Trace line)
+    private static boolean alreadyDrawn(List<TileAnnotation.Trace> here,
+        TileAnnotation.Trace line)
     {
-        for (org.traincontrol.automationui.TileAnnotation.Trace old : here)
+        for (TileAnnotation.Trace old : here)
         {
             boolean same = (old.getFrom() == line.getFrom() && old.getTo() == line.getTo())
                 || (old.getFrom() == line.getTo() && old.getTo() == line.getFrom());
@@ -321,8 +328,8 @@ final class EditorWhy extends SettledQuestion
     }
 
     /** Whether two lines in one square share a side. */
-    private static boolean touches(org.traincontrol.automationui.TileAnnotation.Trace a,
-        org.traincontrol.automationui.TileAnnotation.Trace b)
+    private static boolean touches(TileAnnotation.Trace a,
+        TileAnnotation.Trace b)
     {
         return (a.getFrom() != null && (a.getFrom() == b.getFrom() || a.getFrom() == b.getTo()))
             || (a.getTo() != null && (a.getTo() == b.getFrom() || a.getTo() == b.getTo()));
@@ -332,7 +339,7 @@ final class EditorWhy extends SettledQuestion
      * Marks a square with the best of its copies' answers, as the answer files a station: can go, else not now, else
      * never, in `ToolMark`'s order, where the train's own square's PICKED comes first and so keeps its outline.
      */
-    private static void settle(java.util.Map<TileKey, ToolMark> marks, TileKey square, ToolMark mark)
+    private static void settle(Map<TileKey, ToolMark> marks, TileKey square, ToolMark mark)
     {
         ToolMark had = marks.get(square);
 
@@ -343,7 +350,7 @@ final class EditorWhy extends SettledQuestion
      * One copy's mark on its square, green over gray over purple; a copy autonomy never chooses that a hand send cannot
      * reach either is held back, so it does not gray a square another copy can be sent to (OB-394).
      */
-    static void markCopy(java.util.Map<TileKey, ToolMark> marks, java.util.Set<TileKey> outOfReach, TileKey square,
+    static void markCopy(Map<TileKey, ToolMark> marks, Set<TileKey> outOfReach, TileKey square,
         ToolMark mark, boolean barred)
     {
         if (mark == ToolMark.NOT_NOW && barred) outOfReach.add(square);
@@ -351,7 +358,7 @@ final class EditorWhy extends SettledQuestion
     }
 
     /** The held-back squares no copy said more of, gray. */
-    static void finishMarks(java.util.Map<TileKey, ToolMark> marks, java.util.Set<TileKey> outOfReach)
+    static void finishMarks(Map<TileKey, ToolMark> marks, Set<TileKey> outOfReach)
     {
         for (TileKey square : outOfReach) marks.putIfAbsent(square, ToolMark.NOT_NOW);
     }
@@ -359,7 +366,7 @@ final class EditorWhy extends SettledQuestion
     /** What the stations' colors mean, naming only the colors drawn, last and after an empty line (MT-865). */
     private static String colours(java.util.Collection<ToolMark> drawn)
     {
-        java.util.List<String> said = new java.util.ArrayList<>();
+        List<String> said = new ArrayList<>();
 
         if (drawn.contains(ToolMark.CAN_GO)) said.add(I18n.t("autosetup.ui.whyColourGreen"));
         if (drawn.contains(ToolMark.NOT_NOW)) said.add(I18n.t("autosetup.ui.whyColourGray"));
@@ -389,11 +396,11 @@ final class EditorWhy extends SettledQuestion
      * store can hold a station the last build refused, and the question is why the train in front of the user is not
      * moving now.
      */
-    private static int countStations(org.traincontrol.automation.Layout layout)
+    private static int countStations(Layout layout)
     {
         int count = 0;
 
-        for (org.traincontrol.automation.Point point : layout.getPoints())
+        for (Point point : layout.getPoints())
         {
             if (point.isDestination()) count++;
         }
@@ -405,14 +412,13 @@ final class EditorWhy extends SettledQuestion
      * And how many of those a train may actually be SENT to - a station can be a place trains stop
      * without being a place autonomy chooses.
      */
-    private static int countDestinations(org.traincontrol.automation.Layout layout)
+    private static int countDestinations(Layout layout)
     {
         int count = 0;
 
-        for (org.traincontrol.automation.Point point : layout.getPoints())
+        for (Point point : layout.getPoints())
         {
-            // The rule, asked rather than spelled out again: a third copy without `!isReversing()` overcounted every
-            // reversing station.
+            // The rule, asked rather than spelled out again.
             if (layout.isSendableDestination(point)) count++;
         }
 
@@ -427,13 +433,13 @@ final class EditorWhy extends SettledQuestion
      * @param heading the group's heading, already translated
      * @param lines station to reason, in the order to show them
      */
-    private static void whyGroup(StringBuilder into, String heading, java.util.Map<String, String> lines)
+    private static void whyGroup(StringBuilder into, String heading, Map<String, String> lines)
     {
         if (lines.isEmpty()) return;
 
         into.append("<br><b>").append(AutonomyEditorPanel.escape(heading)).append("</b>");
 
-        for (java.util.Map.Entry<String, String> line : lines.entrySet())
+        for (Map.Entry<String, String> line : lines.entrySet())
         {
             into.append("<br>").append(AutonomyEditorPanel.escape(line.getKey())).append(": ").append(AutonomyEditorPanel.escape(line.getValue()));
         }
@@ -444,7 +450,7 @@ final class EditorWhy extends SettledQuestion
      * station sharing a block with the train is skipped before it is given a reason, so with one block holding all the
      * platforms the considered list comes back empty and nothing says why.
      */
-    private static String describeBlock(org.traincontrol.automation.Point standing)
+    private static String describeBlock(Point standing)
     {
         if (standing == null) return "?";
 

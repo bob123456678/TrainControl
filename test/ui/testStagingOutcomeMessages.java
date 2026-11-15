@@ -6,15 +6,16 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.gui.TrainControlUI;
+import support.Display;
+import support.Reflect;
+import static support.SandboxedWindow.build;
 
 /**
  * Every reason a return home is refused has its own sentence.
  *
- * describeStagingOutcome is a switch with a `default` arm, and the default says "no return plan
- * found" - which is the right thing for exactly one outcome and the wrong thing for every other. An
- * outcome added without a case therefore does not fail; it silently tells the operator the search ran
- * out of room, whatever actually happened. POSITION_AMBIGUOUS was added in this round and would have
- * done precisely that.
+ * describeStagingOutcome is a switch with a `default` arm, and the default says "no return plan found" - which is the
+ * right thing for exactly one outcome and the wrong thing for every other.  An outcome added without a case therefore
+ * does not fail; it silently tells the operator the search ran out of room, whatever actually happened.
  *
  * READY is exempt, and only READY: describeStagingPlan is reached from behind `if
  * (!plan.isPossible())`, so a plan that exists never asks for a sentence.
@@ -29,17 +30,12 @@ public class testStagingOutcomeMessages
     @Test
     public void testEveryRefusalHasItsOwnSentence() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("describeStagingOutcome is a method on the window");
-        }
+        Display.needed("describeStagingOutcome is a method on the window");
 
         TrainControlUI ui = build();
 
-        java.lang.reflect.Method describe = TrainControlUI.class.getDeclaredMethod(
+        java.lang.reflect.Method describe = Reflect.method(TrainControlUI.class,
             "describeStagingOutcome", HomeStaging.Outcome.class, java.util.List.class);
-
-        describe.setAccessible(true);
 
         Map<String, HomeStaging.Outcome> seen = new HashMap<>();
 
@@ -65,30 +61,5 @@ public class testStagingOutcomeMessages
 
         assertEquals(seen.size(), HomeStaging.Outcome.values().length - 1,
             "one sentence per outcome, READY excepted");
-    }
-
-    /**
-     * The window, with the layout preference pointed somewhere that is not Adam's railway (OB-111).
-     */
-    private TrainControlUI build() throws Exception
-    {
-        support.LayoutSandbox sandbox = null;
-
-        final TrainControlUI[] built = new TrainControlUI[1];
-
-        try
-        {
-            // Inside the try, so nothing between the open and the close can leave the
-            // preference behind.
-            sandbox = support.LayoutSandbox.open();
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
-
-        return built[0];
     }
 }

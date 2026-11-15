@@ -3,7 +3,6 @@ package regression;
 import java.awt.event.KeyEvent;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -13,6 +12,9 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Teardown;
 
 /**
  * FR-065: Escape closes the editor, after it has let go of whatever the editor was holding.  The order is the whole
@@ -42,18 +44,13 @@ public class testEscapeClosesTheEditor
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor's grid and its keyboard need a display");
-        }
+        Display.needed("the editor's grid and its keyboard need a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -70,21 +67,7 @@ public class testEscapeClosesTheEditor
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
     // ---------------------------------------------------------------- closing
@@ -114,8 +97,7 @@ public class testEscapeClosesTheEditor
     }
 
     /**
-     * And the autonomy editor, the same window with the autonomy column showing: this half had NO Escape handling at
-     * all.
+     * And the autonomy editor, the same window with the autonomy column showing.
      */
     @Test
     public void testEscapeClosesTheAutonomyEditor() throws Exception
@@ -144,9 +126,8 @@ public class testEscapeClosesTheEditor
     // ---------------------------------------------------------------- letting go first
 
     /**
-     * An armed tool is put down, and the window stays open: the button stayed pressed and the tool armed, so the next
-     * click on the diagram was swallowed by the gesture (a click that falls through to `cycle()` CHANGES a square).
-     * Closing instead would throw the gesture away through the unsaved-work prompt.
+     * An armed tool is put down, and the window stays open: a click that falls through to `cycle()` CHANGES a square,
+     * and closing instead would throw the gesture away through the unsaved-work prompt.
      */
     @Test
     public void testEscapePutsAnArmedToolDownRatherThanClosing() throws Exception
@@ -251,7 +232,7 @@ public class testEscapeClosesTheEditor
             if (autonomy) built[0].setAutonomyMode(session);
         });
 
-        settle();
+        Components.drain(5);
 
         return built[0];
     }
@@ -274,7 +255,7 @@ public class testEscapeClosesTheEditor
 
         SwingUtilities.invokeAndWait(() -> arming.doClick());
 
-        settle();
+        Components.drain(5);
     }
 
     /**
@@ -288,7 +269,7 @@ public class testEscapeClosesTheEditor
             KeyEvent.CHAR_UNDEFINED)));
 
         // `formKeyPressed` does all its work inside an `invokeLater`, and `confirmExit` posts again
-        settle();
+        Components.drain(5);
     }
 
     /** Disposes a window that may already have closed itself. */
@@ -296,14 +277,6 @@ public class testEscapeClosesTheEditor
     {
         SwingUtilities.invokeAndWait(() -> editor.dispose());
 
-        settle();
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 5; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
+        Components.drain(5);
     }
 }

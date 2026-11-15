@@ -110,10 +110,7 @@ public final class TileSelection
     {
         for (int x = Math.min(fromX, toX); x <= Math.max(fromX, toX); x++)
         {
-            for (int y = Math.min(fromY, toY); y <= Math.max(fromY, toY); y++)
-            {
-                add(x, y);
-            }
+            for (int y = Math.min(fromY, toY); y <= Math.max(fromY, toY); y++) add(x, y);
         }
     }
 
@@ -135,10 +132,7 @@ public final class TileSelection
     {
         for (At at : movedBy(dx, dy))
         {
-            if (at.getX() < 0 || at.getY() < 0 || at.getX() >= width || at.getY() >= height)
-            {
-                return false;
-            }
+            if (at.getX() < 0 || at.getY() < 0 || at.getX() >= width || at.getY() >= height) return false;
         }
 
         return true;
@@ -164,8 +158,7 @@ public final class TileSelection
      *
      * What a copy takes: the bounding box, INCLUDING squares inside it that were not picked, or the paste would be a
      * shape with holes.  READ THIS BEFORE PAIRING IT WITH A DELETE: delete walks the picked squares, this walks the box
-     * around them, and a cut that assumed they match carried origins for sixteen squares when two had been emptied, and
-     * moved the setup off fourteen that still held their track.
+     * around them.
      */
     public int[] bounds()
     {

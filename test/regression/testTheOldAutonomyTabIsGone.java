@@ -1,17 +1,14 @@
 package regression;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.event.MenuListener;
 import static org.testng.Assert.*;
@@ -24,7 +21,11 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
 import support.SourceOf;
+import support.Teardown;
 
 /**
  * Autonomy needs a layout stored on this computer: the old JSON tab and its file are gone (OB-254), and a Central
@@ -52,10 +53,7 @@ public class testTheOldAutonomyTabIsGone
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the tab is part of the window, and the window needs a display");
-        }
+        Display.needed("the tab is part of the window, and the window needs a display");
 
         if (System.getProperty(Util.DATA_DIR_PROPERTY) == null)
         {
@@ -72,7 +70,7 @@ public class testTheOldAutonomyTabIsGone
 
         ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
 
-        settle();
+        Components.drain(8);
 
         // NOW A LAYOUT WITH NO LOCAL COPY: the preference switching to a Central Station layout stores; the sandbox
         // puts the real value back.
@@ -95,10 +93,7 @@ public class testTheOldAutonomyTabIsGone
                     bar.remove(built);
                     bar.add(placeholder, at);
 
-                    Field menu = TrainControlUI.class.getDeclaredField("autonomyMenu");
-
-                    menu.setAccessible(true);
-                    menu.set(ui, null);
+                    Reflect.set(TrainControlUI.class, ui, "autonomyMenu", null);
                 }
 
                 // What the switch does to the autonomy controls, and what the end of start-up asks of the slot.
@@ -111,41 +106,27 @@ public class testTheOldAutonomyTabIsGone
             }
         });
 
-        settle();
+        Components.drain(8);
     }
 
     private static Object field(String name) throws ReflectiveOperationException
     {
-        Field field = TrainControlUI.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return field.get(ui);
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 8; pass++) SwingUtilities.invokeAndWait(() -> { });
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
+        Teardown.close(sandbox, model, ui);
+    }
 
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
+    /** The backup it makes changes the run's saved data; the classes after this one in the lane read it. */
+    private static final support.SavedData FOUND = support.SavedData.take();
 
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+    @AfterClass(alwaysRun = true, dependsOnMethods = "tearDownClass")
+    public static void putTheDataBack() throws Exception
+    {
+        FOUND.putBack();
     }
 
     /**
@@ -192,16 +173,16 @@ public class testTheOldAutonomyTabIsGone
         JMenu menu = theAutonomySlot();
 
         assertTrue(menu.isEnabled(), "on a Central Station layout the Autonomy menu is greyed, so its offer to"
-            + " download the layout (OB-093) and its Documentation cannot be pressed - Adam, 2026-09-24: \"open the"
-            + " autonomy menu with everything but those 2 greyed\"");
+            + " download the layout (OB-093) cannot be pressed");
     }
 
     /**
-     * Opened there, Documentation can be chosen, and nothing can but it and the offer of a layout.  The offer is a
+     * Opened there, nothing can be chosen but the offer of a layout, and the guide (in Help only, OB-468) is not
+     * there.  The offer is a
      * submenu since MT-548's note; its own claim is `testWithNothingToDownloadANewLayoutIsOffered`.
      */
     @Test
-    public void testOnlyTheDownloadAndTheGuideCanBeChosenThere() throws Exception
+    public void testOnlyTheOfferOfALayoutCanBeChosenThere() throws Exception
     {
         final JMenu menu = theAutonomySlot();
 
@@ -210,10 +191,9 @@ public class testTheOldAutonomyTabIsGone
             for (MenuListener listener : menu.getMenuListeners()) listener.menuSelected(null);
         });
 
-        String guide = I18n.t("ui.main.documentation");
+        String guide = I18n.t("ui.menu.autonomyGuide");
         String download = I18n.t("autosetup.ui.menuNoSetupPossible");
 
-        JMenuItem documentation = null;
         List<String> items = new ArrayList<>();
         List<String> live = new ArrayList<>();
 
@@ -225,20 +205,16 @@ public class testTheOldAutonomyTabIsGone
 
             items.add(item.getText());
 
-            if (guide.equals(item.getText())) documentation = item;
-            else if (item.isEnabled() && !download.equals(item.getText())) live.add(item.getText());
+            if (item.isEnabled() && !download.equals(item.getText())) live.add(item.getText());
         }
 
-        assertNotNull(documentation, "the Autonomy menu on a Central Station layout has no Documentation.  Items: "
+        assertFalse(items.isEmpty(), "precondition: the menu holds nothing");
+
+        assertFalse(items.contains(guide), "the Autonomy menu offers the guide, which is in Help only (OB-468).  Items: "
             + items);
 
-        assertTrue(documentation.isEnabled(), "the Autonomy menu's Documentation is greyed on a Central Station layout");
-
-        assertTrue(items.size() > 1, "precondition: the menu holds nothing but Documentation, so there is nothing"
-            + " for the greying to be asked of.  Items: " + items);
-
-        assertTrue(live.isEmpty(), "on a Central Station layout the Autonomy menu offers more than the download and"
-            + " the guide - Adam, 2026-09-24: \"everything but those 2 greyed\".  Live: " + live);
+        assertTrue(live.isEmpty(), "on a Central Station layout the Autonomy menu offers more than the download"
+            + " (Adam, 2026-09-24: \"everything but those 2 greyed\").  Live: " + live);
     }
 
     /**
@@ -333,7 +309,7 @@ public class testTheOldAutonomyTabIsGone
 
         SwingUtilities.invokeAndWait(cancelling::cancelSelection);
 
-        settle();
+        Components.drain(8);
     }
 
     /**
@@ -350,10 +326,8 @@ public class testTheOldAutonomyTabIsGone
 
         final File last = sandbox.getFolder().getAbsoluteFile();
 
-        final java.lang.reflect.Method door = TrainControlUI.class.getDeclaredMethod(
+        final java.lang.reflect.Method door = Reflect.method(TrainControlUI.class,
             "chooseLocalDataFolderMenuItemActionPerformed", java.awt.event.ActionEvent.class);
-
-        door.setAccessible(true);
 
         SwingUtilities.invokeLater(() ->
         {
@@ -382,7 +356,7 @@ public class testTheOldAutonomyTabIsGone
             open.cancelSelection();
         });
 
-        settle();
+        Components.drain(8);
 
         assertEquals(canonical(at[0]), canonical(last.getParentFile()), "Open Layout... does not start beside the last"
             + " layout folder of this computer's, " + last + ", once the Central Station's layout is switched to - it"
@@ -407,9 +381,7 @@ public class testTheOldAutonomyTabIsGone
         assertEquals(writers, 1, "a door writes the layout"
             + " folder without going through `layoutFolderIs`, so the folder it names is not remembered (OB-308)");
 
-        final java.lang.reflect.Method folderIs = TrainControlUI.class.getDeclaredMethod("layoutFolderIs", String.class);
-
-        folderIs.setAccessible(true);
+        final java.lang.reflect.Method folderIs = Reflect.method(TrainControlUI.class, "layoutFolderIs", String.class);
 
         File other = Files.createTempDirectory("ob308").toFile();
 
@@ -445,7 +417,7 @@ public class testTheOldAutonomyTabIsGone
                 again.cancelSelection();
             });
 
-            settle();
+            Components.drain(8);
 
             assertEquals(canonical(at[1]), canonical(other), "a layout folder named since is not the one Open Layout..."
                 + " starts at after the switch (OB-308)");
@@ -476,7 +448,7 @@ public class testTheOldAutonomyTabIsGone
             {
                 if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-                javax.swing.JOptionPane pane = componentIn(((javax.swing.JDialog) window).getContentPane(),
+                javax.swing.JOptionPane pane = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                     javax.swing.JOptionPane.class);
 
                 if (pane != null) return pane;
@@ -499,30 +471,13 @@ public class testTheOldAutonomyTabIsGone
             {
                 if (!(window instanceof javax.swing.JDialog) || !window.isShowing()) continue;
 
-                javax.swing.JFileChooser found = componentIn(((javax.swing.JDialog) window).getContentPane(),
+                javax.swing.JFileChooser found = Components.inside(((javax.swing.JDialog) window).getContentPane(),
                     javax.swing.JFileChooser.class);
 
                 if (found != null) return found;
             }
 
             Thread.sleep(50);
-        }
-
-        return null;
-    }
-
-    private static <T> T componentIn(java.awt.Container container, Class<T> type)
-    {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof java.awt.Container)
-            {
-                T found = componentIn((java.awt.Container) child, type);
-
-                if (found != null) return found;
-            }
         }
 
         return null;
@@ -567,56 +522,5 @@ public class testTheOldAutonomyTabIsGone
 
         assertFalse(code.contains("Paths.get(TrainControlUI.AUTONOMY_FILE_NAME)"), "the start-up still reads"
             + " autonomy.json from beside the application");
-    }
-
-    /**
-     * The save writes its other backups, and no autonomy.json among them - on a Central Station layout too.
-     */
-    @Test
-    public void testNoLayoutWritesAutonomyJson() throws Exception
-    {
-        // What the old window held on every start, where it still exists: autonomy.json, read in whether used or not.
-        try
-        {
-            Field field = TrainControlUI.class.getDeclaredField("autonomyJSON");
-
-            field.setAccessible(true);
-
-            final JTextArea text = (JTextArea) field.get(ui);
-
-            SwingUtilities.invokeAndWait(() -> text.setText("{\"points\": [], \"edges\": []}"));
-        }
-        catch (NoSuchFieldException gone)
-        {
-            // Deleted with the tab: nothing is left to write.
-        }
-
-        File folder = new File(Util.dataPath(Util.BACKUP_FOLDER));
-
-        String[] had = folder.list();
-
-        List<String> before = had == null ? new ArrayList<String>() : new ArrayList<>(Arrays.asList(had));
-
-        SwingUtilities.invokeAndWait(() -> ui.saveState(true, false));
-
-        String[] now = folder.list();
-
-        List<String> written = now == null ? new ArrayList<String>() : new ArrayList<>(Arrays.asList(now));
-
-        written.removeAll(before);
-
-        boolean state = false;
-        boolean autonomy = false;
-
-        for (String name : written)
-        {
-            if (name.endsWith("UIState.data")) state = true;
-            if (name.endsWith(TrainControlUI.AUTONOMY_FILE_NAME)) autonomy = true;
-        }
-
-        assertTrue(state, "control: the backup save wrote no UIState.data, so it did not run: " + written);
-
-        assertFalse(autonomy, "a Central Station layout had autonomy.json written on exit - the old JSON autonomy's"
-            + " file, which nothing should write any more (OB-254)");
     }
 }

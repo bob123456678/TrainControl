@@ -2,16 +2,19 @@ package core;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.lang.reflect.Field;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.PortUnreachableException;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -19,6 +22,8 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.marklin.udp.NetworkProxy;
+import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * Tests for NetworkProxy: the CAN listener's fault handling, and the address it reports.
@@ -50,17 +55,37 @@ public class testNetworkProxy
     private static MarklinControlStation model;
     private static NetworkProxy proxy;
 
+    private static final int ONE_MB_IN_KB = 1024;
+
+    /**
+     * What this machine grants a socket that asks for 1 MB, in KB: all of it on Windows, while Linux caps it (rmem_max)
+     * without an error.  Asked of a fresh socket that nothing is receiving on, so it answers at once.
+     */
+    private static int grantableKb() throws java.net.SocketException
+    {
+        try (java.net.DatagramSocket probe = new java.net.DatagramSocket())
+        {
+            probe.setReceiveBufferSize(ONE_MB_IN_KB * 1024);
+
+            return Math.min(ONE_MB_IN_KB, probe.getReceiveBufferSize() / 1024);
+        }
+    }
+
+    /** What the model logged from before it started, for the listener's start lines. */
+    private static final List<String> LOGGED = Collections.synchronizedList(new ArrayList<>());
+
     // Shared across the ordered tests below: installed by the first, closed by the second
     private static FaultyDatagramSocket faulty;
 
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        // Kept for the class: the JVM is this class's alone
+        Logger.getLogger(MarklinControlStation.class.getName()).addHandler(support.LogTap.messagesInto(LOGGED));
+
         model = init(null, true, false, false, true);
 
-        Field proxyField = MarklinControlStation.class.getDeclaredField("NetworkInterface");
-        proxyField.setAccessible(true);
-        proxy = (NetworkProxy) proxyField.get(model);
+        proxy = (NetworkProxy) Reflect.get(MarklinControlStation.class, model, "NetworkInterface");
 
         assertNotNull(proxy, "the model must have a network proxy");
     }
@@ -132,16 +157,12 @@ public class testNetworkProxy
 
     private static DatagramSocket socketOf(NetworkProxy p) throws Exception
     {
-        Field socketField = NetworkProxy.class.getDeclaredField("socket");
-        socketField.setAccessible(true);
-        return (DatagramSocket) socketField.get(p);
+        return (DatagramSocket) Reflect.get(NetworkProxy.class, p, "socket");
     }
 
     private static void setSocket(NetworkProxy p, DatagramSocket s) throws Exception
     {
-        Field socketField = NetworkProxy.class.getDeclaredField("socket");
-        socketField.setAccessible(true);
-        socketField.set(p, s);
+        Reflect.set(NetworkProxy.class, p, "socket", s);
     }
 
     /**
@@ -160,6 +181,49 @@ public class testNetworkProxy
 
         assertEquals(ip, java.net.InetAddress.getByName(null).getHostAddress(),
             "getIP should be the literal address, with no hostname glued on");
+    }
+
+    /**
+     * The receive socket holds at least 1 MB, so frames arriving while the listener is held up wait there rather than
+     * being dropped by the operating system, sensor changes included (OB-421).  The default is far smaller.
+     *
+     * MUTATION: in `NetworkProxy.openReceiveSocket`, take out `opened.setReceiveBufferSize(RECEIVE_BUFFER_BYTES)`.
+     */
+    @Test(priority = 0)
+    public void testTheReceiveSocketHasRoomForAStall() throws Exception
+    {
+        assertTrue(support.Components.waitFor(() -> grantedKb(LOGGED) >= 0, 5000),
+            "the listener's start line does not give the receive buffer it was granted: " + LOGGED);
+
+        assertTrue(grantedKb(LOGGED) >= grantableKb(), "the receive socket holds " + grantedKb(LOGGED)
+            + " KB, so a held-up listener loses the station's frames");
+    }
+
+    /**
+     * The receive buffer the last listener start line gives, in KB, or -1 if there is none.  Read from the log rather
+     * than the socket: `getReceiveBufferSize` waits for the listener's `receive` to return, which needs a frame.
+     */
+    private static int grantedKb(List<String> logged)
+    {
+        String[] around = I18n.f("network.canListenerRunning", "\u0001").split("\u0001");
+
+        int kb = -1;
+
+        synchronized (logged)
+        {
+            for (String line : logged)
+            {
+                if (line.startsWith(around[0]) && line.endsWith(around[1]))
+                {
+                    String digits = line.substring(around[0].length(), line.length() - around[1].length())
+                        .replaceAll("[^0-9]", "");
+
+                    if (!digits.isEmpty()) kb = Integer.parseInt(digits);
+                }
+            }
+        }
+
+        return kb;
     }
 
     /**
@@ -227,21 +291,24 @@ public class testNetworkProxy
     {
         assertTrue(socketOf(proxy).isClosed(), "precondition: the socket is closed");
 
+        LOGGED.clear();
+
         boolean sent = proxy.sendMessage(new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]));
 
         assertTrue(sent, "A8: sending should reopen the socket and succeed");
 
         assertFalse(socketOf(proxy).isClosed(), "A8: the socket should have been reopened");
 
-        // AND SOMETHING IS LISTENING ON IT AGAIN.
-        //
-        // This test asserted that transmission came back and stopped there - while the test above it
-        // had just proved the reader count was ZERO, with the helper for asking sitting in this same
-        // class.  So the state the class exists to prevent, "able to transmit but deaf", was reached
-        // and measured as a pass: the socket reopens, no listener is started, and no feedback,
-        // accessory echo or power change is ever seen again.
-        //
-        // Given time to start, the same way the priority-2 test waits for the first one.
+        // The same MUTATION as testTheReceiveSocketHasRoomForAStall: the reopen goes through the same door
+        final int grantable = grantableKb();
+
+        assertTrue(support.Components.waitFor(() -> grantedKb(LOGGED) >= grantable, 5000), "the reopened receive"
+            + " socket's listener gives no receive buffer of 1 MB or more: " + LOGGED);
+
+        // AND SOMETHING IS LISTENING ON IT AGAIN.  Asserting only that transmission came back reached the state the
+        // class exists to prevent, "able to transmit but deaf", and measured it as a pass: no listener is started, so
+        // no feedback, accessory echo or power change is ever seen again.  Given time to start, as the priority-2 test
+        // waits.
         long deadline = System.currentTimeMillis() + 5000;
 
         while (countReaderThreads() == 0 && System.currentTimeMillis() < deadline)

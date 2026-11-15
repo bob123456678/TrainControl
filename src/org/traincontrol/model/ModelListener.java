@@ -17,6 +17,9 @@ public interface ModelListener
     // Create a message object based on the buffer
     CANMessage createMessage(byte[] rawBuffer);
 
+    // The s88 contacts the model knows, for the network to ask their state after a lost connection
+    public java.util.List<Integer> knownSensors();
+
     // Logging methods
     public void logf(String key, Object... args);
     public void log(String message);

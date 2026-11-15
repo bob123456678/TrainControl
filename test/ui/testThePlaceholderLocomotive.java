@@ -111,7 +111,7 @@ public class testThePlaceholderLocomotive
 
         assertTrue(roof > 0, "there is no trapezoid above the body");
 
-        // A THIRD OF THE BODY PLUS 15%, which is what Adam asked for after seeing the first one.
+        // A THIRD OF THE BODY PLUS 15%, the proportion asked for.
         assertEquals(roof, Math.round(body / 3f * 1.15f), Math.max(2, body / 6),
             "the trapezoid is not a third of the body's height plus the 15% asked for - it is " + roof
             + " against a body of " + body);

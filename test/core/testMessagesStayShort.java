@@ -67,12 +67,12 @@ public class testMessagesStayShort
 
     /** Keys over each kind's cap, as they stand.  Lower a number whenever keys come under the cap; never raise one. */
     private static final String[] OVER_BY_KIND = {
-        "menu: 2",
+        "menu: 1",
         "tooltip: 5",
         "banner: 1",
         "exception: 0",
         "popup: 1",
-        "finding: 36",
+        "finding: 35",
         "why: 6",
         "other: 11",
     };

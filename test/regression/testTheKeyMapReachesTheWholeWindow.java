@@ -11,6 +11,9 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * The locomotive keys work from anywhere in the window, not only from whatever holds the focus.
@@ -18,17 +21,14 @@ import org.traincontrol.marklin.MarklinControlStation;
  * Adam: "it should take the keystrokes - any part of the app should respect the key mapping (locomotive selector) and
  * all related keyboard shortcuts."
  *
- * The map is a `KeyListener`, which hears only the component that holds the keyboard, and putting the focus back on the
- * tabbed pane (OB-170) cannot work when the operator is USING what has it.  `letTheWholeWindowDriveTrains` registers a
- * key event POST processor instead, for keys that came back unconsumed.  The three claims are that rule's halves: it
- * reaches a component that is not the keyboard, it does NOT fire twice when the focused component is one the map
- * already listens to, and it leaves a text component's letters alone.
+ * The map is a `KeyListener`, which hears only the component holding the keyboard, and refocusing the tabbed pane
+ * (OB-170) cannot work when the operator is USING what has it.  `letTheWholeWindowDriveTrains` registers a key event
+ * POST processor for keys that came back unconsumed.  Three claims: it reaches a component that is not the keyboard, it
+ * does NOT fire twice when the focused component is one the map listens to, and it leaves a text component's letters
+ * alone.  ON THE FROZEN RAILWAY, never `cs2_sample_layout`.
  *
- * ON THE FROZEN RAILWAY, never `cs2_sample_layout`.
- *
- * MUTATION: remove the `letTheWholeWindowDriveTrains()` call from `display()` and the first test fails, and so does the
- * third on its control; drop the `JTextComponent` guard and the third fails on its own claim.  The second test is not
- * mutation-backed and says so.
+ * MUTATION: remove the `letTheWholeWindowDriveTrains()` call from `display()` (first test, and the third's control);
+ * drop the `JTextComponent` guard (third).  The second test is not mutation-backed and says so.
  *
  * @author Adam
  */
@@ -41,10 +41,7 @@ public class testTheKeyMapReachesTheWholeWindow
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("a keyboard needs a window");
-        }
+        Display.needed("a keyboard needs a window");
 
         sandbox = support.LayoutSandbox.open();
 
@@ -66,7 +63,7 @@ public class testTheKeyMapReachesTheWholeWindow
             }
         });
 
-        settle();
+        Components.drain(5);
     }
 
     @AfterClass(alwaysRun = true)
@@ -154,26 +151,20 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
-     * A key pressed on the keyboard itself is acted on once, not twice.  The map is attached to the tabbed pane as a
-     * listener AND reachable through the post-processor; it is the same `KeyEvent` both times, which is how the second
-     * visit is dropped.
+     * A key pressed on the keyboard itself is acted on once, not twice: the map is a listener AND reachable through the
+     * post-processor; the same `KeyEvent` both times is how the second visit is dropped.  A key that COUNTS ("next
+     * keyboard page" moves one each run; on the keyboard tab, since on the LAYOUT tab it means "next layout page").
      *
-     * **A key that COUNTS, not a letter:** selecting the same locomotive twice lands in the same place, whereas "next
-     * keyboard page" moves by one each time it runs.  On the keyboard tab deliberately: the same key means "next layout
-     * page" while the LAYOUT tab is showing.
-     *
-     * **What this holds, honestly:** removing the `theKeyTheMapAlreadySaw` guard leaves it GREEN (measured on Windows),
-     * because an event the focused component's own listener has handled does not come back to the post-processor.  The
-     * guard is kept because "does a post-processor see an event the focus owner consumed" is a platform question, and
-     * being wrong means every shortcut firing twice.  So this is a regression test rather than a proof: it goes red the
-     * day that double appears.
+     * Honestly: removing the `theKeyTheMapAlreadySaw` guard leaves it GREEN (measured on Windows), because an event the
+     * focused component's listener handled does not come back to the post-processor.  The guard stays because that is a
+     * platform question; this is a regression test, red the day the double appears.
      */
     @Test
     public void testAKeyOnTheKeyboardItselfIsNotActedOnTwice() throws Exception
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> tabs().setSelectedIndex(0));
 
-        settle();
+        Components.drain(5);
 
         java.awt.Component keyboard = (java.awt.Component) field("KeyboardTab");
 
@@ -240,7 +231,7 @@ public class testTheKeyMapReachesTheWholeWindow
 
             javax.swing.SwingUtilities.invokeAndWait(() -> tabs().setSelectedIndex(back));
 
-            settle();
+            Components.drain(5);
         }
     }
 
@@ -259,7 +250,7 @@ public class testTheKeyMapReachesTheWholeWindow
 
             javax.swing.SwingUtilities.invokeAndWait(() -> tabs().setSelectedIndex(show));
 
-            settle();
+            Components.drain(5);
 
             javax.swing.text.JTextComponent found = somewhereToType(ui.getContentPane());
 
@@ -308,7 +299,7 @@ public class testTheKeyMapReachesTheWholeWindow
 
         java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(pressed);
 
-        settle();
+        Components.drain(5);
     }
 
     /**
@@ -319,7 +310,7 @@ public class testTheKeyMapReachesTheWholeWindow
     {
         javax.swing.SwingUtilities.invokeAndWait(() -> on.requestFocusInWindow());
 
-        settle();
+        Components.drain(5);
 
         // A DESKTOP THAT WILL NOT GIVE THE WINDOW THE KEYBOARD CANNOT SHOW THIS: asserted, it failed at random on a
         // loaded battery machine; skipped, the class says it could not be asked.
@@ -444,18 +435,6 @@ public class testTheKeyMapReachesTheWholeWindow
 
     private static Object field(String name) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(ui);
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 5; pass++)
-        {
-            javax.swing.SwingUtilities.invokeAndWait(() -> { });
-        }
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 }

@@ -22,18 +22,14 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * What routes does a configuration actually OFFER?
  *
  * Adam: what matters is the routing, not the graph.  Reachability says two stations are connected but not whether the
- * journey between them is one a train could make (on this layout every station pair is reachable, so it distinguishes
- * nothing).
+ * journey between them is one a train could make (on this layout every station pair is reachable).
  *
  * So this asks the running model the question a train asks - getPossiblePaths - and writes down every answer with its
  * intermediate points, for a person to check.  Mostly a REPORT: it fails if a configuration will not build, and each
- * method also asserts the one floor it can state without pre-judging Adam's layout: that the configuration it just
- * built is valid and, for the live derived configuration (where zero routes would mean the router or the config broke),
- * that it offers at least one route.
- *
- * It uses the real control station in simulation, so the accessories are the layout's own and the router is the one
- * that actually runs (a graph built by hand has a switch with no accessory, which autonomy refuses to route over).
- * Nothing here is worth reading unless the edge count is plausible.
+ * method asserts the floor it can state without pre-judging Adam's layout: the configuration is valid and, for the
+ * live derived configuration, offers at least one route.  It uses the real control station in simulation, so the
+ * accessories are the layout's own (a hand-built graph has a switch with no accessory, which autonomy refuses to route
+ * over).  Nothing here is worth reading unless the edge count is plausible.
  *
  * @author Adam
  *

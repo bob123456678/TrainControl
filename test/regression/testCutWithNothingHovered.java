@@ -3,7 +3,6 @@ package regression;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -12,6 +11,9 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
+import support.Teardown;
 
 /**
  * Cut or Copy while the pointer is not over a square must not arm a paste with nothing in it: the right-click Paste
@@ -39,18 +41,13 @@ public class testCutWithNothingHovered
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the layout editor needs a display");
-        }
+        Display.needed("the layout editor needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         page = model.getLayout(PAGE);
 
@@ -70,26 +67,7 @@ public class testCutWithNothingHovered
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (editor != null)
-            {
-                final LayoutEditor closing = editor;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, null, editor, ui);
     }
 
     /**
@@ -134,14 +112,10 @@ public class testCutWithNothingHovered
     {
         final boolean[] answer = new boolean[3];
 
-        final java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-        gridField.setAccessible(true);
+        final java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
         // The arming flag is disarmed between the claims, because `initCopy` refusing does not CLEAR what is armed.
-        final java.lang.reflect.Field toolField = LayoutEditor.class.getDeclaredField("toolFlag");
-
-        toolField.setAccessible(true);
+        final java.lang.reflect.Field toolField = Reflect.field(LayoutEditor.class, "toolFlag");
 
         SwingUtilities.invokeAndWait(() ->
         {

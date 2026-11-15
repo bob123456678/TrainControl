@@ -71,9 +71,6 @@ public class MarklinRoute extends Route
     
     /**
      * Simple constructor
-     * @param network
-     * @param name 
-     * @param id 
      */
     public MarklinRoute(MarklinControlStation network, String name, int id)
     { 
@@ -96,14 +93,6 @@ public class MarklinRoute extends Route
     
     /**
      * Complete constructor
-     * @param network
-     * @param name 
-     * @param id 
-     * @param route 
-     * @param s88 
-     * @param triggerType 
-     * @param enabled 
-     * @param conditions
      */
     public MarklinRoute(MarklinControlStation network, String name, int id, List<RouteCommand> route, int s88, s88Triggers triggerType, boolean enabled,
             NodeExpression conditions)
@@ -145,7 +134,6 @@ public class MarklinRoute extends Route
     
     /**
      * Monitors the route conditions and executes the route when appropriate
-     * @return 
      */
     public final synchronized boolean executeAutoRoute()
     {
@@ -157,10 +145,7 @@ public class MarklinRoute extends Route
             // disable/enable cycle in the meantime starts a second monitor, and the route then fires
             // once per monitor on every trigger.  applyAutonomyRouteActivations does exactly that when
             // one autonomy configuration omits the route and the next one includes it.
-            if (this.monitorThread != null && this.monitorThread.isAlive())
-            {
-                return false;
-            }
+            if (this.monitorThread != null && this.monitorThread.isAlive()) return false;
 
             this.monitorThread = new Thread(() ->
             {
@@ -185,6 +170,9 @@ public class MarklinRoute extends Route
                     
                     // Exit if the state changed
                     if (!this.enabled) return;
+
+                    // A state a sync put right is no edge: wait again from it
+                    if (this.network.isFeedbackCorrected(this.getS88String())) continue;
 
                     // Anything that goes wrong here must not end the loop.  This runs on a bare thread
                     // with no handler, so an escaping exception would silently stop this route from
@@ -241,7 +229,6 @@ public class MarklinRoute extends Route
         
     /**
      * Returns the CS2 route ID
-     * @return 
      */
     @Override
     public int getId()
@@ -270,7 +257,6 @@ public class MarklinRoute extends Route
     
     /**
      * Adds a UI tile to be updated whenever a CS2 event fires
-     * @param l 
      */
     @Override
     public void addTile(LayoutLabel l)//, boolean dynamic)
@@ -284,7 +270,6 @@ public class MarklinRoute extends Route
     
     /**
      * Wrapper for a standard execution call
-     * @param auto 
      */
     @Override
     /**
@@ -659,9 +644,8 @@ public class MarklinRoute extends Route
                             else if (rc.isStop())
                             {                        
                                 // Sent whatever the power flag says (behaviour/routes.md 7a: an emergency stop is
-                                // obeyed whatever else is true): the flag is only the last GO or STOP echo heard, so
-                                // one lost GO skipped the stop of a route fired with nobody present.  It decides the
-                                // notice and the log line only.
+                                // obeyed whatever else is true): the flag is only the last GO, STOP or Overload heard.
+                                // It decides the notice and the log line only.
                                 final boolean wasOn = this.network.getPowerState();
 
                                 this.network.stop();
@@ -860,8 +844,7 @@ public class MarklinRoute extends Route
             }
             else
             {
-                // A sensor can fire the route again before it has finished: dropped, and now said, since this door said
-                // nothing.
+                // A sensor can fire the route again before it has finished: dropped, and logged.
                 this.network.logf("route.ui.infoAlreadyRunning", this.getName());
             }
         }).start();
@@ -869,8 +852,6 @@ public class MarklinRoute extends Route
     
     /**
      * Adds a s88 condition to the route - legacy - all conditions will be ANDed
-     * @param id
-     * @param state 
      */
     public final void addConditionS88(Integer id, boolean state)
     {
@@ -883,9 +864,6 @@ public class MarklinRoute extends Route
     
     /**
      * Adds an accessory condition to the route - legacy - all conditions will be ANDed
-     * @param address
-     * @param protocol
-     * @param setting
      */
     public final void addConditionAccessory(int address, Accessory.accessoryDecoderType protocol, boolean setting)
     {
@@ -898,7 +876,6 @@ public class MarklinRoute extends Route
     
     /**
      * Sets the corresponding s88 sensor
-     * @param s88 
      */
     @Override
     public void setS88(int s88)
@@ -908,7 +885,6 @@ public class MarklinRoute extends Route
         
     /**
      * Gets the s88 sensor to trigger the route
-     * @return 
      */
     @Override
     public int getS88()
@@ -918,8 +894,6 @@ public class MarklinRoute extends Route
      
     /**
      * Sets the delay for an individual item, identified by its address
-     * @param key
-     * @param delayMs
      */
     public final void setDelay(Integer key, Integer delayMs)
     {
@@ -940,7 +914,6 @@ public class MarklinRoute extends Route
     
     /**
      * Removes from the route
-     * @param rc
      */
     @Override
     public void removeItem(RouteCommand rc)
@@ -950,7 +923,6 @@ public class MarklinRoute extends Route
     
     /**
      * Gets the s88 sensor as a string
-     * @return 
      */
     public String getS88String()
     {
@@ -959,7 +931,6 @@ public class MarklinRoute extends Route
     
     /**
      * Returns whether this route has an s88 sensor
-     * @return 
      */
     @Override
     public final boolean hasS88()
@@ -990,7 +961,6 @@ public class MarklinRoute extends Route
     
     /**
      * Returns if the automatic route is enabled
-     * @return 
      */
     @Override
     public boolean isEnabled()
@@ -1000,7 +970,6 @@ public class MarklinRoute extends Route
     
     /**
      * Returns the trigger type
-     * @return 
      */
     @Override
     public s88Triggers getTriggerType()
@@ -1010,7 +979,6 @@ public class MarklinRoute extends Route
     
     /**
      * Set the trigger type
-     * @param type
      */
     @Override
     public void setTriggerType(s88Triggers type)
@@ -1079,7 +1047,6 @@ public class MarklinRoute extends Route
      /**
      * Create a MarklinRoute object from JSON
      * @param jsonObject The JSON representation of MarklinRoute
-     * @param network
      * @return MarklinRoute object
      */
     public static MarklinRoute fromJSON(JSONObject jsonObject, MarklinControlStation network)
@@ -1122,7 +1089,6 @@ public class MarklinRoute extends Route
     
     /**
      * Gets the route condition expression
-     * @return 
      */
     @Override
     public NodeExpression getConditions()
@@ -1132,7 +1098,6 @@ public class MarklinRoute extends Route
     
     /**
      * Returns a CSV representation of the route's condition accessories
-     * @return 
      */
     @Override
     public String getConditionCSV()
@@ -1146,7 +1111,6 @@ public class MarklinRoute extends Route
     @Override
     /**
      * Returns a CSV representation of the route
-     * @return 
      */
     public String toCSV()
     {
@@ -1190,7 +1154,6 @@ public class MarklinRoute extends Route
     
     /**
      * Checks if this route has any layout tiles
-     * @return 
      */
     @Override
     public boolean hasTiles()
@@ -1200,8 +1163,6 @@ public class MarklinRoute extends Route
     
     /**
      * Checks routes for equality, but does not care about the sequence of route commands
-     * @param o
-     * @return 
      */
     public boolean equalsUnordered(Object o)
     {

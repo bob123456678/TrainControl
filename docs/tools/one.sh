@@ -334,15 +334,17 @@ JAVA_FLAGS="$JAVA_FLAGS -XX:+ExitOnOutOfMemoryError"
 #
 # So each run copies the two data files into a folder of its own and names a preference node of its
 # own, and the application reads both from there when a run says so (`Util.dataPath`,
-# `Util.preferencesFor`; with neither property set it reads what it always read).  The node starts as
-# a copy of the real one, so a class sees the settings it always saw; nothing the run writes reaches
-# the real node or the real files.  Both are removed when the run ends.
+# `Util.preferencesFor`; with neither property set it reads what it always read).  The node starts
+# empty, every setting at its default, so Adam's settings never reach a test; nothing the run
+# writes reaches the real node or the real files.  Both are removed when the run ends, and a node a
+# killed run of the same pid left behind is removed before it starts.
 #
 # The short (8.3) form of the folder, because $JAVA_FLAGS is split on spaces.
 ISOLATED="$S/state-$RUN_ID"
 
 rm -rf "$ISOLATED"
 mkdir -p "$ISOLATED"
+MSYS_NO_PATHCONV=1 reg.exe delete "HKCU\\Software\\JavaSoft\\Prefs\\traincontrol-test-runs\\$RUN_ID" /f >/dev/null 2>&1
 
 for DATA in LocDB.data UIState.data
 do
@@ -423,7 +425,7 @@ do
 
     # NO UPDATE CHECK: support.NoUpdateCheck turns it off in this run's preference node before any test (FR-136)
     "$JAVA" $JAVA_FLAGS $EXTRA -Dtraincontrol.batteryRun="$RUN_ID" \
-        -cp "$BUILD;$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop,support.DialogWatchdog $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
+        -cp "$BUILD;$CP" org.testng.TestNG -listener support.NoUpdateCheck,support.WindowsNotOnTop,support.DialogWatchdog,support.DataFolderWatch $TARGS -d "$S/oneout" > "$RUN_OUT" 2>&1 &
 
     JVM=$!
 
@@ -526,6 +528,19 @@ do
         echo "*** $T HAD A CONFIGURATION FAILURE - a @Before or @After threw ***"
         echo "    $config"
         echo "    The teardowns in this suite put Adam's signals back and clear the auto layout."
+
+        BAD=$((BAD+1))
+
+        continue
+    fi
+
+    # A CLASS THAT LEFT THE RUN'S SAVED DATA CHANGED: the classes after it read the same data folder
+    # (support.DataFolderWatch names the class and the files).
+    left=$(grep -a 'SAVED DATA LEFT CHANGED' "$S/one-run.txt" | head -1)
+
+    if [ -n "$left" ]
+    then
+        echo "$left"
 
         BAD=$((BAD+1))
 

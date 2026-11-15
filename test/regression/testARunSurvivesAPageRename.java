@@ -19,24 +19,23 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.SourceOf;
+import support.Trees;
+import static support.LayoutSandbox.pagesIn;
 
 /**
  * What a run did is folded into the setup BEFORE a page is renamed, not after.
  *
- * Stopping autonomy captures nothing (`captureFromLayout` has three callers and none is the stop button), so between
- * the end of a run and the next configuration load, exit, or diagram edit, where the trains ended up lives only in the
- * running Layout. A rename triggers the diagram-edit capture, and the session refuses a capture while its pages are
- * stale: run, stop, rename a page, and every placement the run produced is discarded on every page. That is worse than
- * losing settings: occupancy is derived from placements (`Point.isOccupied` is `currentLoc != null`, and `isPathClear`
- * never consults the s88), so the rebuilt configuration puts the trains back where they were before the run and Start
- * can route one into a block that is physically occupied.
+ * Stopping autonomy captures nothing, so between the end of a run and the next configuration load, exit, or diagram
+ * edit, where the trains ended up lives only in the running Layout.  A rename triggers the diagram-edit capture, and
+ * the session refuses a capture while its pages are stale: run, stop, rename a page, and every placement the run
+ * produced is discarded on every page.  The rebuilt configuration then puts the trains back where they were before the
+ * run, and Start can route one into a block that is physically occupied.
  *
  * The fix is an ORDER: capture while the naming and the store still agree, and let `renamePage` carry the captured
- * entries across. The stale flag stays as a backstop for the capture that follows. This test cannot press the menu
- * item, so it does what the window does in the same order and shows the ORDER decides the outcome (capture-then-rename
- * keeps the run, rename-then-capture loses it); `testTheWindowCallsThemInThatOrder` checks that the window follows it,
- * against `TrainControlUI.duplicateOrRenameCurrentLayout`, because a test that mirrors the sequence proves the sequence
- * works, not that anybody follows it.
+ * entries across.  This test cannot press the menu item, so it does what the window does in the same order and shows
+ * the ORDER decides the outcome (capture-then-rename keeps the run, rename-then-capture loses it);
+ * `testTheWindowCallsThemInThatOrder` checks that the window follows it, because a test that mirrors the sequence
+ * proves the sequence works, not that anybody follows it.
  */
 public class testARunSurvivesAPageRename
 {
@@ -107,7 +106,7 @@ public class testARunSurvivesAPageRename
     {
         File folder = aWorkingCopy();
 
-        List<LayoutDiagram> pages = pagesIn(folder);
+        List<LayoutDiagram> pages = pagesIn(model, folder);
 
         AutonomySession session = new AutonomySession(folder);
         session.open(pages);
@@ -166,7 +165,7 @@ public class testARunSurvivesAPageRename
         // THE LOAD, as a restart would give.
         AutonomySession after = new AutonomySession(folder);
 
-        after.open(pagesIn(folder));
+        after.open(pagesIn(model, folder));
 
         // Did the train end up where the run left it?
         for (Map.Entry<String, String> placed : placements(after).entrySet())
@@ -297,16 +296,6 @@ public class testARunSurvivesAPageRename
         return null;
     }
 
-    private static List<LayoutDiagram> pagesIn(File folder) throws Exception
-    {
-        String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";
-
-        CS2File parser = new CS2File(path, model);
-        parser.setLayoutDataLoc(path);
-
-        return support.LayoutSandbox.wired(model, parser);
-    }
-
     private static File aWorkingCopy() throws Exception
     {
         File from = new File(System.getProperty("user.dir"), "test/test_layout");
@@ -317,29 +306,10 @@ public class testARunSurvivesAPageRename
 
         assertTrue(temp.delete(), "making room for a directory of the same name");
 
-        copyTree(from, temp);
+        Trees.copyForTheRun(from, temp);
 
         temp.deleteOnExit();
 
         return temp;
-    }
-
-    private static void copyTree(File from, File to) throws Exception
-    {
-        assertTrue(to.mkdirs() || to.isDirectory(), "could not make " + to);
-
-        File[] children = from.listFiles();
-
-        if (children == null) return;
-
-        for (File one : children)
-        {
-            File target = new File(to, one.getName());
-
-            if (one.isDirectory()) copyTree(one, target);
-            else Files.copy(one.toPath(), target.toPath());
-
-            target.deleteOnExit();
-        }
     }
 }

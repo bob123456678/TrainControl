@@ -4,8 +4,8 @@ import java.awt.Component;
 import java.awt.Container;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -15,6 +15,9 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Display;
+import support.Reflect;
+import support.Teardown;
 
 /**
  * The autonomy editor's Test a Path button sits right under the window's heading, with only the form's own gap between,
@@ -38,18 +41,13 @@ public class testTheToolsSitUnderTheHeading
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the gap is measured in a shown window, and a window needs a display");
-        }
+        Display.needed("the gap is measured in a shown window, and a window needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -69,19 +67,10 @@ public class testTheToolsSitUnderTheHeading
         try
         {
             close(editor);
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, model, ui);
         }
     }
 
@@ -233,6 +222,165 @@ public class testTheToolsSitUnderTheHeading
         close(editor);
 
         editor = null;
+    }
+
+    /**
+     * A one-page list is still `SIDEBAR_ROWS_AT_LEAST` rows tall, filled to the bottom with empty rows, and a click or
+     * hover in the empty rows names no page.
+     *
+     * MUTATION: drop the `Math.max` in `scrollable`, or `getScrollableTracksViewportHeight` from the list, or the bounds
+     * check in the list's `locationToIndex`, and this fails.
+     */
+    @Test
+    public void testOnePageStillShowsEmptyRows() throws Exception
+    {
+        editor = shown(null);
+
+        final LayoutEditor on = editor;
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                java.lang.reflect.Method build = LayoutEditor.class.getDeclaredMethod("buildPageControl", java.util.List.class);
+                java.lang.reflect.Method wrap = LayoutEditor.class.getDeclaredMethod("scrollable", javax.swing.JComponent.class);
+                java.lang.reflect.Method rowAt = LayoutEditor.class.getDeclaredMethod("pageRowAt", java.awt.Point.class);
+
+                build.setAccessible(true);
+                wrap.setAccessible(true);
+                rowAt.setAccessible(true);
+
+                javax.swing.JList<?> list = (javax.swing.JList<?>) build.invoke(on, java.util.Collections.singletonList(PAGE));
+                javax.swing.JScrollPane scroll = (javax.swing.JScrollPane) wrap.invoke(on, list);
+
+                scroll.setSize(scroll.getPreferredSize());
+                scroll.doLayout();
+                scroll.getViewport().doLayout();
+
+                int rows = LayoutEditor.SIDEBAR_ROWS_AT_LEAST * 24;
+
+                assertEquals(scroll.getPreferredSize().height, rows, "the one-page list's height");
+                assertEquals(list.getHeight(), scroll.getViewport().getHeight(), "the list does not fill its rows");
+                assertEquals(rowAt.invoke(on, new java.awt.Point(10, 12)), 0, "the page's own row");
+                assertEquals(rowAt.invoke(on, new java.awt.Point(10, rows - 12)), -1, "an empty row names a page");
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new AssertionError(e);
+            }
+        });
+
+        close(editor);
+
+        editor = null;
+    }
+
+    /**
+     * A press in the page list's empty rows leaves the current page selected, in the track diagram and in Autonomy
+     * Setup, and the editor stays on it; in a list long enough to scroll, scrolled to its end, a press still selects the
+     * row under it.
+     *
+     * MUTATION: drop the page list's `locationToIndex` override, and this fails.
+     */
+    @Test
+    public void testAPressInAnEmptyRowSelectsNoPage() throws Exception
+    {
+        for (AutonomySession mode : new AutonomySession[] { null, session })
+        {
+            final String where = mode == null ? "the track diagram" : "Autonomy Setup";
+
+            editor = shown(mode);
+
+            final LayoutEditor on = editor;
+            final javax.swing.JList<?> list = field(on, LayoutEditor.class, "pageList");
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                int below = list.getModel().getSize() * 24 + 12;
+
+                assertTrue(below < list.getHeight(), "precondition: " + where + "'s page list has no empty row");
+
+                press(list, below, true);
+            });
+
+            support.Components.settle();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                assertEquals(list.getSelectedValue(), PAGE, "a press in " + where + "'s empty rows selected another page");
+                assertEquals(((LayoutDiagram) field(on, LayoutEditor.class, "layout")).getName(), PAGE,
+                    "a press in " + where + "'s empty rows left the page");
+            });
+
+            close(editor);
+
+            editor = null;
+        }
+
+        editor = shown(null);
+
+        final LayoutEditor on = editor;
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                java.lang.reflect.Method build = LayoutEditor.class.getDeclaredMethod("buildPageControl", java.util.List.class);
+                java.lang.reflect.Method wrap = LayoutEditor.class.getDeclaredMethod("scrollable", javax.swing.JComponent.class);
+
+                build.setAccessible(true);
+                wrap.setAccessible(true);
+
+                java.util.List<String> pages = new java.util.ArrayList<>();
+
+                for (int at = 1; at <= 40; at++) pages.add(at + " - Page");
+
+                javax.swing.JList<?> list = (javax.swing.JList<?>) build.invoke(on, pages);
+                javax.swing.JScrollPane scroll = (javax.swing.JScrollPane) wrap.invoke(on, list);
+
+                scroll.setSize(scroll.getPreferredSize());
+                scroll.doLayout();
+                scroll.getViewport().doLayout();
+
+                list.scrollRectToVisible(list.getCellBounds(39, 39));
+
+                assertTrue(scroll.getViewport().getViewPosition().y > 0, "precondition: the long list did not scroll");
+
+                // Not clicked: a click would switch to a page the editor does not have
+                press(list, 39 * 24 + 12, false);
+
+                assertEquals(list.getSelectedIndex(), 39, "a press on the scrolled list's last row did not select it");
+
+                press(list, 30 * 24 + 12, false);
+
+                assertEquals(list.getSelectedIndex(), 30, "a press on a scrolled list's row did not select it");
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new AssertionError(e);
+            }
+        });
+
+        close(editor);
+
+        editor = null;
+    }
+
+    /** A left press and release at this height in the list, and the click when asked, as the pointer delivers them. */
+    private static void press(javax.swing.JList<?> list, int y, boolean click)
+    {
+        long when = System.currentTimeMillis();
+
+        list.dispatchEvent(new java.awt.event.MouseEvent(list, java.awt.event.MouseEvent.MOUSE_PRESSED, when,
+            java.awt.event.InputEvent.BUTTON1_DOWN_MASK, 20, y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+        list.dispatchEvent(new java.awt.event.MouseEvent(list, java.awt.event.MouseEvent.MOUSE_RELEASED, when, 0, 20, y, 1,
+            false, java.awt.event.MouseEvent.BUTTON1));
+
+        if (click)
+        {
+            list.dispatchEvent(new java.awt.event.MouseEvent(list, java.awt.event.MouseEvent.MOUSE_CLICKED, when, 0, 20, y,
+                1, false, java.awt.event.MouseEvent.BUTTON1));
+        }
     }
 
     /**
@@ -537,11 +685,7 @@ public class testTheToolsSitUnderTheHeading
     {
         try
         {
-            java.lang.reflect.Field f = in.getDeclaredField(name);
-
-            f.setAccessible(true);
-
-            T value = (T) f.get(of);
+            T value = (T) Reflect.get(in, of, name);
 
             assertNotNull(value, "precondition: " + in.getSimpleName() + "." + name + " is null");
 

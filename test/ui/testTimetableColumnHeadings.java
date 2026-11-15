@@ -4,13 +4,15 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
+import support.Display;
+import support.Reflect;
+import static support.SandboxedWindow.build;
 
 /**
- * The timetable's column headings, before there is anything to put under them (Adam: "the timetable entry has default
- * table heading when blank.  make sure these are always set.").  The form designer gives every new JTable four columns
- * called "Title 1" through "Title 4", and the real headings were installed only by repaintTimetable, which needs a
- * running Layout, so a fresh installation showed the placeholder.  The headings do not depend on the data, so they are
- * set on their own.
+ * The timetable's column headings, before there is anything to put under them.  The form designer gives every new
+ * JTable four columns called "Title 1" through "Title 4", and the real headings were installed only by
+ * repaintTimetable, which needs a running Layout, so a fresh installation showed the placeholder.  The headings do not
+ * depend on the data, so they are set on their own.
  *
  * MUTATION: take the prepareTimetableColumns call out of the constructor and the table
  * comes back with four columns named after nothing.
@@ -23,10 +25,7 @@ public class testTimetableColumnHeadings
     @Test
     public void testTheTimetableIsNamedBeforeItHasAnythingInIt() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the timetable is a table in a window");
-        }
+        Display.needed("the timetable is a table in a window");
 
         javax.swing.JTable timetable = timetableOf(build());
 
@@ -56,35 +55,9 @@ public class testTimetableColumnHeadings
             + "journeys nobody has captured");
     }
 
-    /** The window, with the layout preference pointed somewhere that is not Adam's railway (OB-111). */
-    private TrainControlUI build() throws Exception
-    {
-        support.LayoutSandbox sandbox = null;
-
-        final TrainControlUI[] built = new TrainControlUI[1];
-
-        try
-        {
-            // Inside the try, so nothing between the open and the close can leave the preference behind.
-            sandbox = support.LayoutSandbox.open();
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
-
-        return built[0];
-    }
-
     /** The timetable table itself, which is a generated field and so has no accessor. */
     private javax.swing.JTable timetableOf(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("timetable");
-
-        field.setAccessible(true);
-
-        return (javax.swing.JTable) field.get(ui);
+        return (javax.swing.JTable) Reflect.get(TrainControlUI.class, ui, "timetable");
     }
 }

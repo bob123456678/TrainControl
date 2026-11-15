@@ -19,12 +19,13 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Diagrams;
+import support.Reflect;
 import support.SourceOf;
 
 /**
  * A locomotive stands in one place, a home and an arrival side keep the way its train faces, and a station demoted
- * keeps its settings.  One of the topic classes split from the former `testAutonomyDiagramSession` (FR-136).  The
- * session and layout folder every claim starts from are built by `AutonomySessionFixture`.
+ * keeps its settings (FR-136).  The session and layout folder come from `AutonomySessionFixture`.
  *
  * @author Adam
  */
@@ -33,8 +34,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A copy of a square nothing arrives at is no arrival, so a side barred while trains did arrive does not shut it
-     * (its first half).  Such a square has one copy per way out, each named after the side its train would have come in
-     * by; a bar reaching one shut it as no station, a bar the editor no longer shows and cannot clear.
+     * (its first half).  Such a square has one copy per way out, named after the side its train would have come in
+     * by; a bar reaching one shut it as no station, a bar the editor cannot clear.
      *
      * MUTATION: let a bar reach such a copy, and this fails.
      */
@@ -113,9 +114,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * The same on a feedback double curve whose two arcs each lead out one way: each copy stands for a train facing its
-     * way out, and so came in by the OTHER end of that arc, which here is no way out at all.  A copy given the side it
-     * leaves by instead of the side behind it builds two copies with no way out, and the placed train is stranded.
+     * The same on a feedback double curve whose two arcs each lead out one way: each copy came in by the OTHER end of
+     * its arc, which here is no way out.  A copy given the side it leaves by builds two copies with no way out, and
+     * the placed train is stranded.
      *
      * MUTATION: give each copy the side it leaves by, and this fails.
      */
@@ -125,10 +126,10 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         LayoutDiagram page = new LayoutDiagram("main", 6, 5, null, null);
 
         page.addComponent(componentType.FEEDBACK, 2, 0, 1, 0, 70, 70, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 2, 1, 1);
         page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, 0, 0, 71, 71, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 2, 0, 0, 72, 72, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 3, 2);
+        Diagrams.feedback(page, 4, 2, 72, 72);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
@@ -226,9 +227,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A station no track arrives at records which way the train placed on it faces, and offers it only the way out it
-     * faces (*"Go with a."*).  Built whole, a train placed on it by hand was offered both ways out and could drive off
-     * the way it does not face, since the runtime never commands a direction and the copy IS the facing.  Three
-     * stations in a row, the track either side of the middle one made one-way away from it.
+     * faces (*"Go with a."*): the runtime never commands a direction and the copy IS the facing.  Three stations in a
+     * row, the track either side of the middle one one-way away from it.
      *
      * MUTATION: emit the square whole again, and this fails.
      */
@@ -237,11 +237,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     {
         LayoutDiagram page = new LayoutDiagram("main", 7, 3, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 65, 65, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 66, 66, accessoryDecoderType.MM2, null);
+        Diagrams.row(page, 1, 1, "FSFSF", 64, 65, 66);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
@@ -559,10 +555,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A NEW occupant does not inherit the old one's tail.  Handing a square straight from one train to another is where
-     * the stale value is least visible, and `GraphLocAssign.commitAndRecord` relies on the clear happening here.  The
-     * same locomotive re-placed is asserted first: it is NOT a change of occupant, and a clear would throw away a side
-     * that is still true.
+     * A NEW occupant does not inherit the old one's tail; `GraphLocAssign.commitAndRecord` relies on the clear
+     * happening here.  The same locomotive re-placed is asserted first: it is NOT a change of occupant, and a clear
+     * would throw away a side that is still true.
      *
      * MUTATION: dropping the occupant-change clear in `placeLocomotive` fails the last assertion; clearing
      * unconditionally fails the middle one.
@@ -705,14 +700,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         LayoutDiagram page = new LayoutDiagram("main", 12, 3, null, null);
 
         page.addComponent(componentType.END, 1, 1, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 2, 1, 0, 0, 81, 81, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 82, 82, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 7, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 8, 1, 0, 0, 83, 83, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 9, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.row(page, 2, 1, "FSSFSSFS", 81, 82, 83);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
@@ -741,9 +729,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
             "main", () -> { }));
 
         java.lang.reflect.Method badgeFor =
-            org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("badgeFor", TileKey.class);
-
-        badgeFor.setAccessible(true);
+            Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "badgeFor", TileKey.class);
 
         assertEquals(((TileAnnotation.Badge) badgeFor.invoke(panel[0], open)).getDeadEnd(), Side.E, "the editor's badge"
             + " for the station whose track stops does not say which way it runs out");
@@ -896,7 +882,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
         session.setStation(station, true);
 
-        // "Trains may turn round here" (a berth or a stub platform) gives the square a turning copy of every arrival.
+        // "Trains may turn around here" (a berth or a stub platform) gives the square a turning copy of every arrival.
         session.setPointProperty(station, org.traincontrol.automationui.AutonomyBuilder.CAN_REVERSE,
             Boolean.TRUE);
 
@@ -1089,7 +1075,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * Barring a side of a station where trains turn round still loads.  "station" is per copy, but "terminus" was read
+     * Barring a side of a station where trains turn around still loads.  "station" is per copy, but "terminus" was read
      * off the SQUARE, so the reverse copy of a barred side was a terminus that is not a destination, which
      * `Point.setTerminus` refuses and `parseAuto` answers by invalidating the WHOLE layout.
      */
@@ -1110,7 +1096,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.setPointName(station, "Kopfbahnhof");
         session.setPointFlag(station, AutonomyBuilder.CAN_REVERSE, true);
 
-        assertTrue(session.isTurnAround(station), "precondition: trains may turn round here");
+        assertTrue(session.isTurnAround(station), "precondition: trains may turn around here");
 
         session.setBarredArrivals(station, new java.util.LinkedHashSet<>(
             Arrays.asList(session.arrivalSides(station).get(0))));
@@ -1240,10 +1226,10 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * A station demoted and promoted again has every setting it had as a station (OB-291): the caption, the sides it
-     * bars arrivals by, its exit guard, its entry guards, and the turn flag older setups spell "terminus", through the
-     * editor's own `setUsage`.  The caption sits two squares below the platform, where the placer never puts one, so
-     * one placed afresh on promotion cannot pass for the one kept.
+     * A station demoted and promoted again has every setting it had (OB-291): the caption, the sides it bars arrivals
+     * by, its exit and entry guards, and the turn flag older setups spell "terminus", through the editor's `setUsage`.
+     * The caption sits two squares below the platform, where the placer never puts one, so a fresh one cannot pass for
+     * the kept one.
      *
      * MUTATION: clear any of the five on demotion again, and this fails naming it.
      */
@@ -1279,8 +1265,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A double-curve station whose track runs out on the contact's curve is a terminus facing that way: `deadEndSide`
-     * must ask the contact's curve, not the square's first road.  Every orientation, the side past the contact's
-     * curve's second end left with no track is the badge's dead end.
+     * must ask the contact's curve, not the square's first road, in every orientation.
      *
      * MUTATION: ask the first road again, and this fails.
      */
@@ -1299,10 +1284,10 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
             LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
 
             if (gone != Side.N) page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
-            if (gone != Side.W) page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
+            if (gone != Side.W) Diagrams.feedback(page, 1, 2, 22, 22);
             page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, orientation, 0, 25, 25, accessoryDecoderType.MM2,
                 null);
-            if (gone != Side.E) page.addComponent(componentType.FEEDBACK, 3, 2, 0, 0, 23, 23, accessoryDecoderType.MM2, null);
+            if (gone != Side.E) Diagrams.feedback(page, 3, 2, 23, 23);
             if (gone != Side.S) page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
             page.setPageId("1");
 
@@ -1439,9 +1424,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
     /**
      * A demoted station's settings are kept and IGNORED while it is not a station: nothing builds, checks or draws
-     * them.  Each would misbehave on a plain point (a caption lights a station's name, a guard is thrown red over a
-     * square nothing is sent to, the old turn flag turns every train round), so the readers ask whether the square is a
-     * station.
+     * them (a caption would light a name, a guard throw red, the old turn flag turn every train round).
      *
      * MUTATION: hand the build every square's exit guards again, station or not, and this fails.
      */
@@ -1661,8 +1644,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
 
     /**
-     * The bulk clear touches exactly the squares the findings call homes.  `homeTiles()`, `tilesWithAHome()`,
-     * `homesElsewhere()` and `shutTiles()` are one walk, and a qualification added to one alone would have the button
+     * The bulk clear touches exactly the squares the findings call homes: `homeTiles()`, `tilesWithAHome()`,
+     * `homesElsewhere()` and `shutTiles()` are one walk, and a qualification added to one alone would make the button
      * act on a set the findings never mentioned.
      *
      * MUTATION: give either method a filter the other does not have and the first assertion fails.
@@ -1704,9 +1687,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     }
     /**
      * A facing that follows the track moves the locomotive on the running layout too (*"flipFacing should also update
-     * the running layout."*).  The copy a locomotive stands on decides where it can go next, and `captureFromLayout`
-     * derives the facing from that copy and writes it back over the setup.  Asserted as both in one call, since either
-     * alone passes while the other is wrong.
+     * the running layout."*): `captureFromLayout` derives the facing from the copy and writes it back over the setup.
+     * Asserted as both in one call, since either alone passes while the other is wrong.
      *
      * MUTATION: drop the `moveOntoFacingCopy` call and the layout half fails; drop the `setFacing` and the setup half
      * does.
@@ -1750,7 +1732,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
             "the placed locomotive was not followed at all");
 
         assertEquals(session.getFacing(tile), choices.get(1),
-            "the setup was not turned round: the recorded facing is still " + session.getFacing(tile)
+            "the setup was not turned around: the recorded facing is still " + session.getFacing(tile)
             + " and the square offers " + choices);
 
         // The call site hands the layout over, the half a session-only test cannot see: standing the whole window up

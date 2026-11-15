@@ -8,9 +8,8 @@ import org.traincontrol.automationui.AutonomyCompanionStore.Reconciliation;
 import org.traincontrol.gui.autonomy.AutonomyReport;
 
 /**
- * "The setup was left alone" is said once for a set of missing pages, not on every save (MT-380).  Adam's ruling: it
- * "should stop repeating."  A given set of missing pages is warned about once in a session, and again only when the
- * set changes.
+ * "The setup was left alone" is said once for a set of missing pages, not on every save (MT-380): a given set is
+ * warned about once in a session, and again only when the set changes.
  *
  * Asked of `AutonomyReport.worthSaying`, the rule the dialog asks, so no dialog is shown here.  Each claim uses page
  * names of its own: the memory of what has been said lasts the session.

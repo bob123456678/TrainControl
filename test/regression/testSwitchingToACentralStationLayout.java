@@ -5,12 +5,13 @@ import java.util.*;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.base.LayoutDiagram;
+import support.Reflect;
 import support.SourceOf;
 
 /**
- * OB-127: a failed switch to a Central Station layout asked about pages that had just been loaded.  The switch stores
- * an EMPTY STRING in the layout-path preference, and `isLocalLayout` and `getLocalLayoutPath` disagreed about what it
- * meant.  Two halves, tested separately because they fail separately: the mechanism, and the agreement.
+ * OB-127: a failed switch to a Central Station layout asked about pages that had just been loaded: the switch stores
+ * an EMPTY STRING in the layout-path preference, and `isLocalLayout` and `getLocalLayoutPath` disagreed about it.
+ * Two halves, tested separately because they fail separately: the mechanism, and the agreement.
  *
  * @author Adam
  */
@@ -63,9 +64,9 @@ public class testSwitchingToACentralStationLayout
             + "is lying in it (OB-127)");
 
         // The gate all three page writers come through refuses when there is no local layout.
-        String settle = SourceOf.declaration("private java.util.Collection<String> settleAbsentPages(");
+        String settle = SourceOf.plain(SourceOf.declaration("private java.util.Collection<String> settleAbsentPages("));
 
-        String gate = settle.substring(0, settle.indexOf("final java.util.List<String> absent"));
+        String gate = settle.substring(0, settle.indexOf("final List<String> absent"));
 
         assertTrue(gate.contains("!isLocalLayout()"),
             "settleAbsentPages no longer refuses when the layout is not a local one, so a failed "
@@ -75,8 +76,8 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A grayed diagram tab is not opened by the program either (OB-128): `setEnabledAt` stops only the user, and Add
-     * Blank Page used to select the tab before asking for a name.  Nine methods now come through one guarded door.
+     * A grayed diagram tab is not opened by the program either (OB-128): `setEnabledAt` stops only the user.  Nine
+     * methods come through one guarded door.
      *
      * MUTATION: dropping the isEnabledAt guard fails this.  Reverting any of the nine call sites to
      * setSelectedIndex fails the structural test below.
@@ -146,7 +147,7 @@ public class testSwitchingToACentralStationLayout
 
         // The answer is fresh when the menu opens because the menu asks `applyLayoutEditingAvailability`, the one owner
         // of that property, rather than guardLayoutMenu writing it too; that is asserted below.
-        for (String item : new String[] { "editPageMenu", "popUpAllMenuItem()" })
+        for (String item : new String[] { "exportDiagramItem" })
         {
             assertTrue(body.contains(item + ".setEnabled("),
                 "guardLayoutMenu no longer decides whether " + item + " is available, so it stays "
@@ -182,7 +183,7 @@ public class testSwitchingToACentralStationLayout
      * How many test classes build a model without a sandbox today; MODELS_WITHOUT_A_SANDBOX_NAMES pins which.  Lower
      * it when one is repaired.
      */
-    private static final int MODELS_WITHOUT_A_SANDBOX = 54;
+    private static final int MODELS_WITHOUT_A_SANDBOX = 52;
 
     /** WHICH classes, so a repair and a new violation in the same round cannot cancel out. */
     private static final String[] MODELS_WITHOUT_A_SANDBOX_NAMES = {
@@ -217,7 +218,6 @@ public class testSwitchingToACentralStationLayout
         "testLocomotive.java",
         "testLocomotiveIdentityPropagates.java",
         "testMaxActiveTrains.java",
-        "testMockCentralStation.java",
         "testMultiUnitMembership.java",
         "testNetworkProxy.java",
         "testNonReversibleTrains.java",
@@ -237,7 +237,6 @@ public class testSwitchingToACentralStationLayout
         "testTimetableCaptureThroughARealRun.java",
         "testTimetableOnDerivedGraph.java",
         "testTracedPathIsContinuous.java",
-        "testTriggerWaitsSayNothing.java",
         "testUiStateIsNotLostWhenUnreadable.java",
         "testWhyStuck.java",
     };
@@ -249,16 +248,12 @@ public class testSwitchingToACentralStationLayout
 
     private static Object field(Object target, String name) throws Exception
     {
-        java.lang.reflect.Field f = target.getClass().getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(target);
+        return Reflect.get(target.getClass(), target, name);
     }
 
     /**
-     * Start is not offered over a layout that lives on the Central Station, which Start refuses.  An `autonomy.json`
-     * can enable the button there, and `canStartAutonomy` used to ask only the button and the setup's errors.
+     * Start is not offered over a layout that lives on the Central Station, which Start refuses (an `autonomy.json`
+     * can enable the button there).
      *
      * MUTATION: take `isRemoteLayout` out of `canStartAutonomy` and this fails.
      */
@@ -300,10 +295,8 @@ public class testSwitchingToACentralStationLayout
                     + " autonomy needs a layout on this computer, which is what pressing Start says (REG2-C2)");
 
                 // AND PRESSING IT IS REFUSED SO, by the one gate every door that sends a train asks
-                final java.lang.reflect.Method gate = org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
-                    "whyNoTrainMayBeSent", boolean.class);
-
-                gate.setAccessible(true);
+                final java.lang.reflect.Method gate =
+                    Reflect.method(org.traincontrol.gui.TrainControlUI.class, "whyNoTrainMayBeSent", boolean.class);
 
                 final Object[] said = new Object[1];
 
@@ -360,9 +353,8 @@ public class testSwitchingToACentralStationLayout
             + "not refreshed where the truth moves is staler than the inference it replaced");
 
         // And each of those properties has a single writer, by the field or through the window's accessor.
-        assertEquals(SourceOf.occurrences("popUpAllMenuItem.setEnabled(")
-            + SourceOf.occurrences("popUpAllMenuItem().setEnabled("), 1,
-            "All Layouts is set from more than one place again. repaintPathLabel used to set it TRUE "
+        assertEquals(SourceOf.occurrences("exportDiagramItem.setEnabled("), 1,
+            "The picture export is set from more than one place, as All Layouts once was: repaintPathLabel set it TRUE "
             + "unconditionally for a local layout and re-enable it moments after the menu guard had "
             + "greyed it - the same two-writers fault a reviewer already fixed for Manage Pages");
     }
@@ -414,9 +406,8 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * The scanner that decides what is code does not lose its place: a CHARACTER LITERAL holding a quote (as in
-     * testARenameReachesTheTimetableOnScreen) and a STRING holding a line-comment marker each hid a window from the
-     * check that keeps the battery off Adam's own railway.
+     * The scanner that decides what is code does not lose its place: a CHARACTER LITERAL holding a quote and a STRING
+     * holding a line-comment marker each hid a window from the check that keeps the battery off Adam's own railway.
      *
      * MUTATION: reading the two in the other order, or dropping the character-literal mode, fails
      * one of the first two assertions; blanking nothing fails the third.
@@ -464,9 +455,8 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A class is exempt from the count rule only when its own sandbox is in a setup method.  A file-wide @Before, or a
-     * fixed lookback that reaches over the previous method's body, would let a plain test with three windows and one
-     * sandbox through.
+     * A class is exempt from the count rule only when its own sandbox is in a setup method: a file-wide @Before or a
+     * fixed lookback would let a plain test with three windows and one sandbox through.
      *
      * MUTATION: putting back a fixed-distance lookback fails the first assertion; bounding it so
      * tightly that a method's own annotations fall outside fails the second.
@@ -515,7 +505,6 @@ public class testSwitchingToACentralStationLayout
     /**
      * Nothing in the suite opens the operator's own railway (OB-111): building a `TrainControlUI` or calling
      * `MarklinControlStation.init` reads the layout preference, and a window can raise a MODAL offer no test answers.
-     * Asserted over every test file rather than fixed one class at a time.
      *
      * MUTATION: removing any sandbox, or moving one below the thing it protects, fails this.
      */
@@ -540,17 +529,23 @@ public class testSwitchingToACentralStationLayout
 
             String code = body.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "");
 
-            // THE WINDOW is a hard rule: it has no offenders, and it writes the folder and can raise a modal dialog
-            // into the middle of a battery.  The MODEL is a ratchet instead, below: its pre-existing violations would
-            // make a hard rule one somebody deletes rather than obeys.
-            //
-            // QUALIFIED OR NOT, AND EVERY ONE OF THEM, NOT THE FIRST: a class with several test methods needs each
-            // window checked.  THE RAW SOURCE, blanked of strings and comments by one scanner in the order the compiler
-            // reads: a regex that strips comments first loses the closing quote of `"file:///" + x`.
+            // THE WINDOW is a hard rule (no offenders; it writes the folder and can raise a modal dialog); the MODEL
+            // is a ratchet, below.  EVERY window of a class is checked, not the first.  THE RAW SOURCE is blanked of
+            // strings and comments by one scanner in the order the compiler reads: stripping comments first loses the
+            // closing quote of `"file:///" + x`.
             String scan = withoutStringsAndComments(body);
+
+            // A call to a support helper builds a window behind a sandbox it opens first (checked below), so it counts
+            // as both a window and a sandbox at the same place.
+            java.util.List<Integer> helpers = indicesOf(scan, WINDOW_HELPER_CALLED);
 
             java.util.List<Integer> windows = indicesOf(scan, WINDOW_BUILT);
             java.util.List<Integer> sandboxes = indicesOf(scan, SANDBOX_OPENED);
+
+            windows.addAll(helpers);
+            sandboxes.addAll(helpers);
+            java.util.Collections.sort(windows);
+            java.util.Collections.sort(sandboxes);
 
             if (windows.isEmpty()) continue;
 
@@ -585,6 +580,28 @@ public class testSwitchingToACentralStationLayout
                     + sandboxes.size() + " sandbox opens, and has no setup method opening one for "
                     + "the whole class - so at least one window reads the operator's own layout");
             }
+        }
+
+        // Each helper a class may call to get a window opens its sandbox before the call that builds the window.
+        for (String[] helper : WINDOW_HELPERS)
+        {
+            String source = withoutStringsAndComments(new String(java.nio.file.Files.readAllBytes(
+                new java.io.File("test/support/" + helper[0]).toPath()), java.nio.charset.StandardCharsets.UTF_8));
+
+            int start = source.indexOf(helper[1]);
+
+            assertTrue(start >= 0, helper[0] + " no longer declares `" + helper[1] + "`, so the guard cannot check it");
+
+            int end = source.indexOf(System.lineSeparator() + "    public ", start + 1);
+            String method = source.substring(start, end < 0 ? source.length() : end);
+
+            int open = method.indexOf("LayoutSandbox.open(");
+            int builds = method.indexOf(helper[2]);
+
+            assertTrue(builds >= 0, helper[0] + " `" + helper[1] + "` no longer builds a window with `" + helper[2] + "`");
+
+            assertTrue(open >= 0 && open < builds, helper[0] + " `" + helper[1] + "` builds a window without a sandbox "
+                + "opened before it, so every class that calls it reads the operator's own railway");
         }
 
         // A scan that matched nothing would pass while proving nothing, so the number is exact, not a floor: each new
@@ -664,8 +681,8 @@ public class testSwitchingToACentralStationLayout
         // placed before a safety check hides it.  Every SAFETY assertion comes first and the numbers that merely record
         // where we are come after.  Raise the count when a class that builds a window and opens its sandbox first is
         // added.
-        assertEquals(checked, 73,
-            checked + " test classes were found to build a window, not the 73 there were when this "
+        assertEquals(checked, 93,
+            checked + " test classes were found to build a window, not the 93 there were when this "
             + "was pinned. Fewer means the pattern has gone stale and is checking less than it "
             + "thinks; more means a new class builds a window and this line wants updating - and "
             + "nothing else in this method is hidden by that any more, because the checks that "
@@ -679,6 +696,19 @@ public class testSwitchingToACentralStationLayout
     /** Where a window is built, qualified or not. */
     private static final java.util.regex.Pattern WINDOW_BUILT =
         java.util.regex.Pattern.compile("new\\s+(?:org\\.traincontrol\\.gui\\.)?TrainControlUI\\s*\\(");
+
+    /** Calls to the support helpers that build a window behind their own sandbox. */
+    private static final java.util.regex.Pattern WINDOW_HELPER_CALLED = java.util.regex.Pattern.compile(
+        "FrozenEditor\\s*\\.\\s*(?:window|open)\\s*\\(|SandboxedWindow\\s*\\.\\s*build\\s*\\(|"
+        + "AskingWindows\\s*\\.\\s*openRailway\\s*\\(");
+
+    /** Each helper: its file, its declaration, and the call in it that builds the window. */
+    private static final String[][] WINDOW_HELPERS =
+    {
+        {"FrozenEditor.java", "public static FrozenEditor window(", "new TrainControlUI("},
+        {"SandboxedWindow.java", "public static TrainControlUI build(", "new TrainControlUI("},
+        {"AskingWindows.java", "public static Railway openRailway(", "TestStation.simulatedWithWindowInDebug("}
+    };
 
     /** Where a sandbox is opened, with or without arguments (LayoutSandbox.open(folder) is an overload). */
     private static final java.util.regex.Pattern SANDBOX_OPENED =
@@ -843,9 +873,8 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A first launch makes a track diagram; every later start still asks.  The half worth writing down is PRESENT
-     * versus READABLE: a database file that exists and will not load is not a first launch, and treating it as empty
-     * replaces a setup with a blank one (`testUiStateIsNotLostWhenUnreadable`).
+     * A first launch makes a track diagram; every later start still asks.  PRESENT versus READABLE: a database file
+     * that exists and will not load is not a first launch (`testUiStateIsNotLostWhenUnreadable`).
      *
      * MUTATION: passing a constant at the call site fails the last assertion.
      */
@@ -895,8 +924,7 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * Start-up shows the notice on its own window (FR-041), and never hides that window on the way in: the call that
-     * takes the notice down sat in the `finally` of the window build, so it ran on the success path too.  Read rather
+     * Start-up shows the notice on its own window (FR-041), and never hides that window on the way in.  Read rather
      * than run: a test that put a start-up notice on the screen would do it on every battery.
      *
      * MUTATION this catches: putting `connectingFailed()` back in the finally after `latch.countDown()`.
@@ -976,12 +1004,9 @@ public class testSwitchingToACentralStationLayout
     }
 
     /**
-     * A sandbox is opened inside a `try`.  Weaker than "closed on every path": it buys a handler to put the close in,
-     * and no early return between the open and that handler can skip it.  `close()` returns the machine-global layout
-     * preference to whatever the operator had; the easy-to-miss ways out are a window constructor that throws,
-     * `MarklinControlStation.init` failing to bind its port, an assertion in the set-up part of a test, and
-     * `SkipException`.  Setup methods are exempt because their `@AfterClass(alwaysRun = true)` teardown runs even when
-     * the set-up threw.
+     * A sandbox is opened inside a `try`: a handler to put `close()` in, which returns the machine-global layout
+     * preference to whatever the operator had.  Setup methods are exempt because their `@AfterClass(alwaysRun = true)`
+     * teardown runs even when the set-up threw.
      *
      * MUTATION: moving any of these opens back above its `try` fails this.
      */

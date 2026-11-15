@@ -14,6 +14,9 @@ import org.traincontrol.marklin.MarklinControlStation;
  * `close()`.  Every window this starts is the model's own (`getGUI`), so a class using it builds no `TrainControlUI`
  * itself.
  *
+ * `close()` puts the saved data files back as `open` found them: the classes after this one in a battery lane read the
+ * same data folder, and an armed route left there makes their Start ask a question nobody answers.
+ *
  *     restart = support.Restart.open(support.Scenario.folderFor("live-snapshot"));
  *     MarklinControlStation first = restart.getModel();
  *     ...
@@ -30,11 +33,14 @@ public final class Restart
 
     private final LayoutSandbox sandbox;
 
+    private final SavedData found;
+
     private MarklinControlStation model;
 
-    private Restart(LayoutSandbox sandbox)
+    private Restart(LayoutSandbox sandbox) throws java.io.IOException
     {
         this.sandbox = sandbox;
+        this.found = SavedData.take();
     }
 
     /**
@@ -104,7 +110,7 @@ public final class Restart
         return model;
     }
 
-    /** Throws the window away without saving anything, and puts the layout preference back. */
+    /** Throws the window away without saving anything, and puts the saved data files and the layout preference back. */
     public void close() throws Exception
     {
         try
@@ -115,7 +121,14 @@ public final class Restart
         }
         finally
         {
-            sandbox.close();
+            try
+            {
+                found.putBack();
+            }
+            finally
+            {
+                sandbox.close();
+            }
         }
     }
 

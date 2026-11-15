@@ -1,10 +1,12 @@
 package org.traincontrol.gui.autonomy;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.gui.LayoutLabel;
@@ -33,9 +35,6 @@ public class DiagramTileRegistry
      *
      * Called while a grid is being built, which is also the only place that knows both the page and the
      * square - a LayoutLabel is told neither.
-     *
-     * @param key
-     * @param label
      */
     public void register(TileKey key, LayoutLabel label)
     {
@@ -68,10 +67,7 @@ public class DiagramTileRegistry
         {
             LayoutLabel existing = i.next();
 
-            if (existing != label && existing.sharesWindowWith(label) && !existing.isDisplayable())
-            {
-                i.remove();
-            }
+            if (existing != label && existing.sharesWindowWith(label) && !existing.isDisplayable()) i.remove();
         }
 
         here.add(label);
@@ -82,12 +78,9 @@ public class DiagramTileRegistry
 
         if (current != null) label.setAutonomyOverlay(current);
 
-        org.traincontrol.automationui.TileAnnotation annotation = lastAnnotated.get(key);
+        TileAnnotation annotation = lastAnnotated.get(key);
 
-        if (annotation != null && annotation != BLANK && !label.isEditMode())
-        {
-            label.setAutonomyAnnotation(annotation);
-        }
+        if (annotation != null && annotation != BLANK && !label.isEditMode()) label.setAutonomyAnnotation(annotation);
     }
 
     /**
@@ -127,9 +120,7 @@ public class DiagramTileRegistry
         }
     }
 
-    /**
-     * Clears every tile, for when autonomy stops.
-     */
+    /** Clears every tile, for when autonomy stops. */
     public void clearOverlays()
     {
         publish(Collections.<TileKey, TileOverlay>emptyMap());
@@ -141,10 +132,9 @@ public class DiagramTileRegistry
      * Separate from publish(), which is the whole-layout picture of what trains are doing.  This one is
      * per tile and changes rarely, so it is pushed as it changes rather than republished wholesale.
      *
-     * @param key
      * @param annotation what to draw, or null for nothing
      */
-    public void annotate(TileKey key, org.traincontrol.automationui.TileAnnotation annotation)
+    public void annotate(TileKey key, TileAnnotation annotation)
     {
         if (key == null) return;
 
@@ -175,11 +165,9 @@ public class DiagramTileRegistry
     }
 
     // A stand-in for "nothing", because a ConcurrentHashMap cannot hold a null value
-    private static final org.traincontrol.automationui.TileAnnotation BLANK =
-        new org.traincontrol.automationui.TileAnnotation(null, -1, false);
+    private static final TileAnnotation BLANK = new TileAnnotation(null, -1, false);
 
-    private final Map<TileKey, org.traincontrol.automationui.TileAnnotation> lastAnnotated =
-        new ConcurrentHashMap<>();
+    private final Map<TileKey, TileAnnotation> lastAnnotated = new ConcurrentHashMap<>();
 
     /**
      * The labels currently showing this square, if any.
@@ -193,8 +181,7 @@ public class DiagramTileRegistry
     {
         Set<LayoutLabel> here = key == null ? null : tiles.get(key);
 
-        return here == null ? java.util.Collections.<LayoutLabel>emptySet()
-            : new java.util.LinkedHashSet<>(here);
+        return here == null ? Collections.<LayoutLabel>emptySet() : new java.util.LinkedHashSet<>(here);
     }
 
     /**
@@ -223,9 +210,9 @@ public class DiagramTileRegistry
      *
      * @param keep the squares the redraw sets
      */
-    public void clearAnnotationsExcept(java.util.Set<TileKey> keep)
+    public void clearAnnotationsExcept(Set<TileKey> keep)
     {
-        for (TileKey key : new java.util.ArrayList<>(lastAnnotated.keySet()))
+        for (TileKey key : new ArrayList<>(lastAnnotated.keySet()))
         {
             if (keep.contains(key)) continue;
 
@@ -243,10 +230,7 @@ public class DiagramTileRegistry
      */
     public void clearAnnotations()
     {
-        for (TileKey key : new java.util.ArrayList<>(lastAnnotated.keySet()))
-        {
-            annotate(key, null);
-        }
+        for (TileKey key : new ArrayList<>(lastAnnotated.keySet())) annotate(key, null);
 
         lastAnnotated.clear();
     }

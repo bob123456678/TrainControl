@@ -29,6 +29,7 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 
 /**
  * The timetable's right-click menu and its Execute button, used as the operator uses them: a right-click on an entry's
@@ -407,6 +408,18 @@ public class testTheTimetableAnswersItsMenu
     }
 
     /**
+     * MT-1001 step 3: with Toggle specified routes ticked and only R1 listed, R1 switched off and R2 on by hand, Execute
+     * Timetable switches R1 on again and R2 off, as their right-click menus read once the run is over.
+     *
+     * MUTATION: leave the `applyAutonomyRouteActivations()` call out of `Layout.executeTimetable(int)` and this fails.
+     */
+    @Test
+    public void testExecuteTimetableHoldsToTheRouteListOverTheHandSwitches() throws Exception
+    {
+        support.RouteListDoors.HandSwitched.runAndRead(ui, true, "Execute Timetable", () -> runFromThePlatform());
+    }
+
+    /**
      * Puts the train on the platform, makes its timetable one journey to the far station, sets every accessory on the
      * way the other way round, and presses Execute Timetable.
      */
@@ -505,11 +518,7 @@ public class testTheTimetableAnswersItsMenu
 
         railway().setTimetable(entries);
 
-        java.lang.reflect.Method repaint = TrainControlUI.class.getDeclaredMethod("repaintTimetable");
-
-        repaint.setAccessible(true);
-
-        repaint.invoke(ui);
+        Reflect.method(TrainControlUI.class, "repaintTimetable").invoke(ui);
 
         assertTrue(Components.waitFor(() -> rows() == 2, PATIENCE_MS), "precondition: the tab shows " + rows()
             + " rows, not the two entries");
@@ -521,11 +530,7 @@ public class testTheTimetableAnswersItsMenu
     {
         try
         {
-            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("timetable");
-
-            field.setAccessible(true);
-
-            return (JTable) field.get(ui);
+            return (JTable) Reflect.get(TrainControlUI.class, ui, "timetable");
         }
         catch (ReflectiveOperationException e)
         {
@@ -590,11 +595,7 @@ public class testTheTimetableAnswersItsMenu
     /** The Auto tab's Execute Timetable button, by its field, and saying what the operator reads on it. */
     private static AbstractButton executeButton() throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("executeTimetable");
-
-        field.setAccessible(true);
-
-        AbstractButton execute = (AbstractButton) field.get(ui);
+        AbstractButton execute = (AbstractButton) Reflect.get(TrainControlUI.class, ui, "executeTimetable");
 
         assertEquals(Components.onTheEventThread(execute::getText), I18n.t("ui.main.executeTimetable"),
             "the window's Execute Timetable does not say so");

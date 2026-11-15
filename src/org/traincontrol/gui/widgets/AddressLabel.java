@@ -2,16 +2,17 @@ package org.traincontrol.gui.widgets;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.font.TextLayout;
 import java.awt.geom.AffineTransform;
 import javax.swing.JLabel;
+import org.traincontrol.util.ImageUtil;
 
 /**
  * A square's address on the diagram: red letters with a white halo round each one, and nothing behind the rest.  A halo
@@ -29,6 +30,9 @@ public class AddressLabel extends JLabel
 
     /** The lines drawn, top to bottom. */
     private String[] lines = new String[0];
+
+    /** Its square, beyond whose right edge it takes no mouse: the text may run on over the squares to the right. */
+    private Component square;
 
     public AddressLabel()
     {
@@ -84,6 +88,18 @@ public class AddressLabel extends JLabel
         return new Dimension(wide + 2 * pad(), fm.getHeight() * lines.length + 2 * pad());
     }
 
+    /** @param square the square this is the address of, over which alone it answers the mouse */
+    public void answerOnlyOver(Component square)
+    {
+        this.square = square;
+    }
+
+    @Override
+    public boolean contains(int x, int y)
+    {
+        return super.contains(x, y) && (square == null || getX() + x < square.getX() + square.getWidth());
+    }
+
     @Override
     public Dimension getMinimumSize()
     {
@@ -99,8 +115,7 @@ public class AddressLabel extends JLabel
 
         try
         {
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            ImageUtil.smooth(g2);
 
             Font font = getFont();
             FontMetrics fm = g2.getFontMetrics(font);

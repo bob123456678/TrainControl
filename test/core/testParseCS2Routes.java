@@ -199,23 +199,13 @@ public class testParseCS2Routes
     /**
      * A route file whose FIRST route carries conditions parses, conditions and commands both.
      *
-     * **The shipped fixture cannot see this.**  ` .S88Flag` has no `=`, so it takes the array-HEADER
-     * arm of `parseFileContents`, whose character class was still `[a-z]+` while its sibling nine lines
-     * up had been widened to `[a-z0-9A-Z]+`.  The header was therefore not recognized and `lastKey` was
-     * not updated - and in `test/fahrstrassen.cs2` the first route has no conditions and opens with
-     * ` .item`, so `lastKey` already held "item" by the time the first condition arrived and everything
-     * landed in the right string by luck.  `testConditionsOnTheRealRouteFile` passes either way.
+     * **The shipped fixture cannot see this.**  ` .S88Flag` has no `=`, so it takes the array-HEADER arm of
+     * `parseFileContents`, whose character class was `[a-z]+` while its sibling had `[a-z0-9A-Z]+`; in
+     * `test/fahrstrassen.cs2` the first route has no conditions, so `lastKey` held "item" by luck.  With the
+     * conditional route FIRST the flush becomes `item.put(null, ...)` and `parseRoutes` drops the route, commands as
+     * well as conditions.  Read as TEXT through `parseFile`, since the map builders elsewhere bypass the reader.
      *
-     * Put the conditional route FIRST and the luck runs out: the flush becomes `item.put(null, ...)`,
-     * and `parseRoutes` drops any route with no `item` - **its commands as well as its conditions** -
-     * with a single log line.  Route ids are not ordered in these files, and which route is first is
-     * the operator's business.
-     *
-     * Read as TEXT, through `parseFile`, not assembled as a map: the map builders elsewhere in this
-     * class bypass the reader, which is the half being measured.
-     *
-     * MUTATION: put `[a-z]+` back in the array-header arm and this fails while every other test in the
-     * class passes.
+     * MUTATION: put `[a-z]+` back in the array-header arm and this fails while every other test passes.
      */
     @Test
     public void testAConditionalRouteFirstInTheFileIsNotDropped() throws Exception

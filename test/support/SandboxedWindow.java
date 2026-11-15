@@ -47,6 +47,16 @@ public final class SandboxedWindow
         return opened;
     }
 
+    /** Builds the main window on a station, as every window test does, holds it for {@link #close}, and returns it. */
+    public TrainControlUI openWindow(org.traincontrol.marklin.MarklinControlStation station) throws java.io.IOException
+    {
+        TrainControlUI opened = Components.onTheEventThread(TrainControlUI::new);
+
+        opened.setViewListener(station, new java.util.concurrent.CountDownLatch(1));
+
+        return hold(opened);
+    }
+
     /** The sandbox held, or null before one is. */
     public LayoutSandbox sandbox()
     {
@@ -55,8 +65,6 @@ public final class SandboxedWindow
 
     /**
      * Puts the folder back, then disposes the window held and closes the sandbox held.
-     *
-     * @throws Exception from the dispose, which runs on the event thread
      */
     public void close() throws Exception
     {
@@ -70,6 +78,31 @@ public final class SandboxedWindow
         }
 
         if (sandbox != null) sandbox.close();
+    }
+
+    /**
+     * A main window with no model, built on the event thread while a sandbox holds the layout preference (OB-111), so
+     * its constructor never reads the operator's railway; the sandbox is closed again before this returns.
+     */
+    public static TrainControlUI build() throws Exception
+    {
+        LayoutSandbox sandbox = null;
+
+        final TrainControlUI[] built = new TrainControlUI[1];
+
+        try
+        {
+            // Inside the try, so nothing between the open and the close can leave the preference behind.
+            sandbox = LayoutSandbox.open();
+
+            SwingUtilities.invokeAndWait(() -> built[0] = new TrainControlUI());
+        }
+        finally
+        {
+            if (sandbox != null) sandbox.close();
+        }
+
+        return built[0];
     }
 
     /** The chooser remembers the folder a file was chosen in; puts the operator's back, unset included. */

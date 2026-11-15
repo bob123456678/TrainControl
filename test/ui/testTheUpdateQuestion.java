@@ -18,6 +18,9 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.SelfUpdate;
+import support.Display;
+import support.Reflect;
+import support.Settle;
 
 /**
  * The update question offers Download & Update only where there is a jar to replace, and the update refuses to start
@@ -121,9 +124,7 @@ public class testTheUpdateQuestion
 
         showing.set(false);
 
-        long until = System.currentTimeMillis() + 10000;
-
-        while (ran.get() == 0 && System.currentTimeMillis() < until) Thread.sleep(20);
+        Settle.until(() -> !(ran.get() == 0), 10000);
 
         Thread.sleep(300);
 
@@ -138,16 +139,11 @@ public class testTheUpdateQuestion
 
     /**
      * A real modal dialog on screen is seen, and is not once it has closed.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testAModalDialogIsSeen() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("a modal dialog needs a display");
-        }
+        Display.needed("a modal dialog needs a display");
 
         assertFalse(TrainControlUI.aModalDialogIsShowing(), "precondition: a modal dialog is already open");
 
@@ -177,9 +173,7 @@ public class testTheUpdateQuestion
             javax.swing.SwingUtilities.invokeAndWait(() -> dialog[0].dispose());
         }
 
-        long until = System.currentTimeMillis() + 10000;
-
-        while (TrainControlUI.aModalDialogIsShowing() && System.currentTimeMillis() < until) Thread.sleep(20);
+        Settle.until(() -> !TrainControlUI.aModalDialogIsShowing(), 10000);
 
         assertFalse(TrainControlUI.aModalDialogIsShowing(), "a closed dialog still reads as open, so the update would"
             + " wait for ever");
@@ -188,8 +182,6 @@ public class testTheUpdateQuestion
     /**
      * Run from a folder of classes, as an IDE or this test runs it, there is no jar to replace; a jar in a folder that
      * can be written is one.
-     *
-     * @throws Exception from the files
      */
     @Test
     public void testRunningFromClassesIsNoJar() throws Exception
@@ -230,8 +222,6 @@ public class testTheUpdateQuestion
 
     /**
      * Download & Update is refused while autonomy, a timetable, Return Home or a route is running, and allowed at rest.
-     *
-     * @throws Exception from the model
      */
     @Test
     public void testTheUpdateIsRefusedWhileTrainsRun() throws Exception
@@ -271,9 +261,7 @@ public class testTheUpdateQuestion
             }
 
             // Autonomy or a timetable running, which is the railway's own running flag
-            java.lang.reflect.Field running = Layout.class.getDeclaredField("running");
-
-            running.setAccessible(true);
+            java.lang.reflect.Field running = Reflect.field(Layout.class, "running");
             running.setBoolean(layout, true);
 
             try

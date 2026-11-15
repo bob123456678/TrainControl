@@ -13,28 +13,16 @@ import org.traincontrol.base.NodeRouteCommand;
 import org.traincontrol.base.RouteCommand;
 
 /**
- * Conditions as an indented list, where the joining words are indented too.  A word that can be indented says which
- * level it joins at, so the shape IS the meaning:
- *
- *   Sensor 1
- *   and
- *       Sensor 2
- *       or
- *       Sensor 3
- *
- * is 1 and (2 or 3), because the "or" sits at the level of the two conditions it joins.  From that follows the one
- * rule: every word at a level must be the same word.  "and" and "or" side by side at one level is a sentence with two
- * meanings, so problems() reports it and the editor draws it in red rather than picking one quietly.
+ * Conditions as an indented list, where the joining words are indented too: a word says which level it joins at, so
+ * "Sensor 1 / and / (indented) Sensor 2 / or / Sensor 3" is 1 and (2 or 3).  Every word at a level must be the same
+ * word; "and" and "or" side by side at one level is reported by problems() and drawn in red, not picked quietly.
  */
 public class testConditionOutline
 {
     /**
-     * A group closes the bracket it opened, even when there is nothing in it (C16).  `toTextRepresentationHelper`
-     * wrote the ")" from INSIDE the loop over the children, so an empty group never closed.  It takes hand-written
-     * JSON to reach, which is an argument about how it is reached, not whether it is wrong.
-     *
-     * The one-child and two-child cases are the CONTROL: moving the append out of the loop must not emit a bracket
-     * per child.
+     * A group closes the bracket it opened, even when there is nothing in it (C16): `toTextRepresentationHelper` wrote
+     * the ")" from inside the loop over the children.  Needs hand-written JSON to reach.  The one-child and two-child
+     * cases are the CONTROL: the append must not emit a bracket per child.
      */
     @Test
     public void testAnEmptyGroupStillClosesItsBracket()
@@ -771,18 +759,13 @@ public class testConditionOutline
     }
 
     /**
-     * A bracket anywhere but at the start survives being shown as an outline.  For `3 or ((1 or 2) and 4)` the depth-1
-     * rows come out AFTER the depth-2 ones, so the reader met a jump from 0 to 2 with no depth-1 row to anchor on,
-     * consumed `1 or 2` as a sibling of `3`, and the AND became an OR silently:
+     * A bracket anywhere but at the start survives being shown as an outline.  For `3 or ((1 or 2) and 4)` the
+     * depth-1 rows come out AFTER the depth-2 ones, so the reader met a jump from 0 to 2, consumed `1 or 2` as a
+     * sibling of `3`, and the AND silently became an OR.  The family is a cross-operator child that is itself the left
+     * child of a cross-operator parent; routes written in 2.x's text editor can hold it, the new editor cannot.
      *
-     *     cond(0,3) join(0,OR) cond(2,1) join(2,OR) cond(2,2) join(1,AND) cond(1,4)
-     *
-     * The shape needs no bracket: `Or(And(Or(1,2), 4), 3)` has no `NodeGroup` and read as `or(or(or(1,2),4),3)`.  The
-     * family is a cross-operator child that is itself the left child of a cross-operator parent; one alternation is
-     * safe.  Routes written in 2.x's text editor can hold it; the new editor cannot build it.
-     *
-     * MUTATION: reading a deeper run at `row.getDepth()` instead of at `depth + 1` fails this.  The two are the same
-     * number wherever the run begins exactly one level deeper, which is why this needed depths that step by two.
+     * MUTATION: reading a deeper run at `row.getDepth()` instead of at `depth + 1` fails this; the two are the same
+     * number unless depths step by two.
      */
     @Test
     public void testABracketAfterTheStartSurvivesBeingShownAsAnOutline()
@@ -806,9 +789,8 @@ public class testConditionOutline
     }
 
     /**
-     * The same defect with no bracket anywhere in the tree: `(1 or 2) and 4, or 3` as `Or(And(Or(1,2), 4), 3)` has no
-     * `NodeGroup`, and fails the same way with the AND gone.  The step is two whenever a cross-operator child is itself
-     * the left child of a cross-operator parent, because `writeChild` bumps each of them; `Or(And(a,b), c)` is safe.
+     * The same defect with no bracket in the tree: `Or(And(Or(1,2), 4), 3)` has no `NodeGroup` and fails the same way
+     * with the AND gone, since `writeChild` bumps each cross-operator left child; `Or(And(a,b), c)` is safe.
      *
      * MUTATION: reading a deeper run at `row.getDepth()` fails this exactly as it fails the case above.
      */
@@ -912,15 +894,12 @@ public class testConditionOutline
     }
 
     /**
-     * Every condition in the operator's own routes survives the outline, parsed as 3.0.0 parses it.  A screen of the
-     * `routes.json` structure answers about a tree that no longer exists, because `NodeExpression.fromJSON` runs
-     * `normalize`, which wraps a `NodeGroup` around any cross-operator left child.  So this parses every condition in
-     * the frozen copy of his layout through `fromJSON` (the call `MarklinRoute.fromJSON` makes), then `of()` and
-     * `toExpression()`, and compares meanings.  `test/operator_layout` is a snapshot; `cs2_sample_layout` is live and
-     * moves under a test's feet.
+     * Every condition in the operator's own routes survives the outline, parsed as 3.0.0 parses it: every condition of
+     * the frozen `test/operator_layout` goes through `fromJSON` (which runs `normalize`), `of()` and `toExpression()`,
+     * and the meanings are compared.  `cs2_sample_layout` is live and moves under a test's feet.
      *
      * MUTATION: reading a deeper run at `row.getDepth()` leaves this green today, because his routes have no
-     * two-alternation condition.  This is the reachability half, not the mechanism half.
+     * two-alternation condition; this is the reachability half, not the mechanism half.
      */
     @Test
     public void testEveryConditionInTheOperatorsRoutesSurvivesTheOutline() throws Exception
@@ -976,11 +955,9 @@ public class testConditionOutline
             + "sentence (IPR-B2)");
     }
     /**
-     * Two bracketed groups at one indent are not a disagreement: `A and (B or C) and (D and E)` is buildable with
-     * ordinary gestures and `toExpression` reads it correctly, but `settled` was keyed on DEPTH ALONE across the whole
-     * list, so the editor showed a line in red and refused the save.  `read` consumes each indented run in its own
-     * call, so the check was stricter than the code it protects.  A word may still not disagree with another word in
-     * the SAME run.
+     * Two bracketed groups at one indent are not a disagreement: `A and (B or C) and (D and E)` is buildable and
+     * `toExpression` reads it correctly, but `settled` was keyed on DEPTH ALONE across the whole list, so the editor
+     * showed red and refused the save.  A word may still not disagree with another in the SAME run.
      *
      * MUTATION: going back to a single map keyed on depth flags row 7 and fails the first assertion.
      */

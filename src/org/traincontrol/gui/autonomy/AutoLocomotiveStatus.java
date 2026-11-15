@@ -6,18 +6,35 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Insets;
+import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseEvent;
+import java.awt.geom.Path2D;
+import java.util.IdentityHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import javax.swing.DefaultListModel;
+import javax.swing.Icon;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
+import javax.swing.text.SimpleAttributeSet;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.AutonomyViewerPanel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
+import org.traincontrol.automationui.AutonomySession;
 
 /**
  * Displays the status of a locomotive in autonomous operation
@@ -32,8 +49,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     
     /**
      * Creates new form AutoLocomotiveStatus
-     * @param loc
-     * @param parent
      */
     public AutoLocomotiveStatus(Locomotive loc, TrainControlUI parent)
     {
@@ -96,24 +111,14 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         });
     }
 
-    /**
-     * The "there is a reason, hover me" mark: an image rather than a character, as U+24D8 has no glyph in the UI font
-     * on some machines (OB-063).  Loaded once; a null icon is harmless to setIcon.
-     */
-    private static final javax.swing.ImageIcon INFO_ICON = loadInfoIcon();
+    /** The "there is a reason, hover me" mark (OB-063), shared as {@link org.traincontrol.gui.InfoMark}. */
+    private static final javax.swing.ImageIcon INFO_ICON = org.traincontrol.gui.InfoMark.icon();
 
     /**
      * This tab's blue, for a card's station badge and its text: the darker blue the window's own labels are written in.
      * The track diagram's captions and badges keep their brighter blue, `StationCaption.PILL`.
      */
     static final Color TAB_BLUE = AutonomyViewerPanel.HEADING_COLOUR;
-
-    private static javax.swing.ImageIcon loadInfoIcon()
-    {
-        java.net.URL url = TrainControlUI.class.getResource("resources/info.gif");
-
-        return url == null ? null : new javax.swing.ImageIcon(url);
-    }
 
     /**
      * The " -" suffix marking a station full autonomy will never send this locomotive to.
@@ -187,10 +192,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     private boolean haveGatheredTimetableStart;
 
-    /**
-     * Refreshes the available routes shown in the UI
-     * @param someLoc 
-     */
+    /** Refreshes the available routes shown in the UI */
     public void updateState(Locomotive someLoc)
     {
         updateState(someLoc, null, false);
@@ -220,8 +222,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // locomotive would get a teal badge while the graph outlined nothing.  Reading the point the locomotive
             // stands on matches the graph exactly and takes no lock (this runs on the EDT).
             final Point at = layout.getLocomotiveLocation(locomotive);
-            // Identity: see the note in HomeStaging on why the name comparison this replaced kept
-            // compiling and always answered false.
+            // Identity: see the note in HomeStaging.
             final boolean atAssignedHome = at != null && locomotive.equals(at.getHomeLoc());
 
             // Gray out locomotives on inactive points / not on the graph
@@ -315,7 +316,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
                 // Paths found off the event thread for a train now on no square are not offered; one from a square it
                 // has since left is refused when sent.
-                this.paths = answer == null || at == null ? new java.util.LinkedList<>() : answer;
+                this.paths = answer == null || at == null ? new LinkedList<>() : answer;
 
                 // The deferred build's "no answer yet": the second line waits for the search rather than say "no
                 // paths", with a reason to hover for, of a train that may have some.
@@ -358,7 +359,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 this.locStation.setToolTipText(I18n.t("autolayout.ui.tooltip.currentLocation"));
                 
                 // Sort the list
-                java.util.IdentityHashMap<List<Edge>, String> key = new java.util.IdentityHashMap<>();
+                IdentityHashMap<List<Edge>, String> key = new IdentityHashMap<>();
 
                 for (List<Edge> path : this.paths)
                 {
@@ -392,14 +393,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * The mark beside a card's second line: the house where its train stands at the home assigned to it (MT-709), the (i)
-     * where hovering there explains something, both side by side where both, and none otherwise.
-     *
-     * @param atHome whether the train stands at its assigned home
-     * @param whyNot whether the second line has a reason to show on hover
-     * @return the mark, or null
+     * The mark beside a card's second line: the house where its train stands at the home assigned to it (MT-709), the
+     * (i) where hovering there explains something, both side by side where both, and none otherwise.
      */
-    static javax.swing.Icon markFor(boolean atHome, boolean whyNot)
+    static Icon markFor(boolean atHome, boolean whyNot)
     {
         if (atHome && whyNot && INFO_ICON != null) return new BothMarks(HOUSE, INFO_ICON);
 
@@ -411,20 +408,20 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     /**
      * A little house, the (i)'s size, in the tab's blue: a roof and a body, with a door in it.
      */
-    private static final javax.swing.Icon HOUSE = new javax.swing.Icon()
+    private static final Icon HOUSE = new Icon()
     {
         @Override
-        public void paintIcon(java.awt.Component c, java.awt.Graphics g, int x, int y)
+        public void paintIcon(Component c, Graphics g, int x, int y)
         {
-            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+            Graphics2D g2 = (Graphics2D) g.create();
 
             try
             {
-                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.translate(x, y);
                 g2.setColor(TAB_BLUE);
 
-                java.awt.geom.Path2D roof = new java.awt.geom.Path2D.Double();
+                Path2D roof = new Path2D.Double();
 
                 roof.moveTo(0.5, 7);
                 roof.lineTo(7, 0.5);
@@ -459,18 +456,18 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     /**
      * Two marks side by side, a little apart.
      */
-    private static final class BothMarks implements javax.swing.Icon
+    private static final class BothMarks implements Icon
     {
-        private final javax.swing.Icon first, second;
+        private final Icon first, second;
 
-        BothMarks(javax.swing.Icon first, javax.swing.Icon second)
+        BothMarks(Icon first, Icon second)
         {
             this.first = first;
             this.second = second;
         }
 
         @Override
-        public void paintIcon(java.awt.Component c, java.awt.Graphics g, int x, int y)
+        public void paintIcon(Component c, Graphics g, int x, int y)
         {
             first.paintIcon(c, g, x, y + (getIconHeight() - first.getIconHeight()) / 2);
             second.paintIcon(c, g, x + first.getIconWidth() + 3, y + (getIconHeight() - second.getIconHeight()) / 2);
@@ -610,10 +607,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     private void showWhyNot()
     {
         // A styled pane rather than a plain text area, so the two headings can be bold (MT-160, MT-163).
-        final javax.swing.JTextPane area = new javax.swing.JTextPane();
+        final JTextPane area = new JTextPane();
 
         area.setEditable(false);
-        area.setMargin(new java.awt.Insets(6, 6, 6, 6));
+        area.setMargin(new Insets(6, 6, 6, 6));
 
         // FlatLaf derives a non-editable JTextPane's background from the panel behind it, a gray, so white is set
         // explicitly as the rest of the app does (OB-096).
@@ -623,13 +620,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         // smaller than the 14 that most Segoe UI components in the gui package are built with, so taking it whole made
         // this window smaller than its neighbors (MT-160, MT-163).  The family still comes from the look and feel, so a
         // theme's typography is followed.
-        java.awt.Font standard = javax.swing.UIManager.getFont("Label.font");
+        Font standard = javax.swing.UIManager.getFont("Label.font");
 
         if (standard == null) standard = new javax.swing.JLabel().getFont();
 
         area.setFont(standard.deriveFont(14f));
 
-        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(area);
+        JScrollPane scroll = new JScrollPane(area);
 
         scroll.setPreferredSize(new java.awt.Dimension(580, 380));
         scroll.getVerticalScrollBar().setUnitIncrement(16);
@@ -638,7 +635,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         {
             final String report = whyNotReport();
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 // No guard on which locomotive this is about: the field is final and a panel belongs to one locomotive
                 // for its whole life.  What is true is smaller: the window may be closed before the answer arrives, and
@@ -648,7 +645,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             });
         }).start();
 
-        JOptionPane.showMessageDialog(javax.swing.SwingUtilities.getWindowAncestor(this), scroll,
+        JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(this), scroll,
             I18n.f("autolayout.ui.whyTitle", locomotive == null ? "" : locomotive.getName()),
             JOptionPane.PLAIN_MESSAGE);
     }
@@ -656,15 +653,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     /**
      * Puts the report into the pane, with the group headings in bold (MT-160, MT-163).  A heading is recognized by
      * position, not by its text, which would quietly do nothing in the other seven bundles.
-     *
-     * @param pane the window's text
-     * @param report what whyNotReport produced
      */
-    private void write(javax.swing.JTextPane pane, String report)
+    private void write(JTextPane pane, String report)
     {
         javax.swing.text.StyledDocument doc = pane.getStyledDocument();
 
-        javax.swing.text.SimpleAttributeSet bold = new javax.swing.text.SimpleAttributeSet();
+        SimpleAttributeSet bold = new SimpleAttributeSet();
 
         javax.swing.text.StyleConstants.setBold(bold, true);
 
@@ -693,8 +687,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * which would be a second answer to "can autonomy pick this station" that could drift from the search's.
      * Arrival-side copies are collapsed to the station a person would recognize, and a station counts as choosable if
      * ANY of its copies is.
-     *
-     * @return the report, never null
      */
     private String whyNotReport()
     {
@@ -704,7 +696,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         {
             StringBuilder out = new StringBuilder();
 
-            org.traincontrol.automation.Point at = layout.getLocomotiveLocation(locomotive);
+            Point at = layout.getLocomotiveLocation(locomotive);
 
             if (at != null)
             {
@@ -720,15 +712,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // reason that is not about them.
             String cannotStart = layout.explainCannotStart(locomotive, byHand);
 
-            if (cannotStart != null)
-            {
-                return out.append("\n").append(cannotStart).append("\n").toString();
-            }
+            if (cannotStart != null) return out.append("\n").append(cannotStart).append("\n").toString();
 
             // Both halves under ONE acquisition of the Layout monitor: asked separately, the reasons and the grouping
             // could be computed against two states, and a line would sit under the wrong heading.
-            java.util.Map<String, String> choosable = new java.util.TreeMap<>();
-            java.util.Map<String, String> barred = new java.util.TreeMap<>();
+            Map<String, String> choosable = new TreeMap<>();
+            Map<String, String> barred = new TreeMap<>();
 
             fileByStation(layout.explainDestinationsGrouped(locomotive, byHand), choosable, barred);
 
@@ -755,13 +744,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * One headed block of "station - reason" lines, skipped entirely when the group is empty (an empty heading reads as
      * a failed load).
      */
-    private void appendGroup(StringBuilder out, String heading, java.util.Map<String, String> lines)
+    private void appendGroup(StringBuilder out, String heading, Map<String, String> lines)
     {
         if (lines.isEmpty()) return;
 
         out.append("\n").append(heading).append("\n");
 
-        for (java.util.Map.Entry<String, String> line : lines.entrySet())
+        for (Map.Entry<String, String> line : lines.entrySet())
         {
             out.append("    ").append(line.getKey()).append(" - ").append(line.getValue())
                 .append("\n");
@@ -783,13 +772,13 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
              * shows twelve stations then an ellipsis.
              */
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e)
+            public void mouseClicked(MouseEvent e)
             {
                 if (noPathsNow) showWhyNot();
             }
 
             @Override
-            public void mouseEntered(java.awt.event.MouseEvent e)
+            public void mouseEntered(MouseEvent e)
             {
                 pointerOnTheLine();
             }
@@ -800,8 +789,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     private void pointerOnTheLine()
     {
         // A pointer that says "there is something to read here", matching the mark on the text
-        locDest.setCursor(java.awt.Cursor.getPredefinedCursor(
-            noPathsNow ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
+        locDest.setCursor(Cursor.getPredefinedCursor(noPathsNow ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
 
         if (!noPathsNow)
         {
@@ -823,7 +811,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         {
             final String why = whyNotToolTip();
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 // Still in the STATE the answer was about: noPathsNow changes when a train is dispatched while the
                 // reasons are worked out, and a tooltip explaining why there are no paths does not belong on a label
@@ -837,8 +825,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * Files every Point's reason under its station name, as `Layout.Destinations.fileUnderStation` does: a station it
      * can go to by any copy is in neither map.
      */
-    private void fileByStation(Layout.Destinations destinations, java.util.Map<String, String> choosable,
-        java.util.Map<String, String> barred)
+    private void fileByStation(Layout.Destinations destinations, Map<String, String> choosable,
+        Map<String, String> barred)
     {
         java.util.Set<String> canGo = new java.util.HashSet<>();
 
@@ -867,12 +855,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
             // WRAPPED: the sentences with a remedy run to two hundred characters, on one line otherwise.
             if (cannotStart != null) return AutonomyEditorPanel.wrapped(cannotStart);
 
-            java.util.Map<String, String> choosable = new java.util.TreeMap<>();
-            java.util.Map<String, String> barred = new java.util.TreeMap<>();
+            Map<String, String> choosable = new TreeMap<>();
+            Map<String, String> barred = new TreeMap<>();
 
             fileByStation(layout.explainDestinationsGrouped(locomotive, byHand), choosable, barred);
 
-            java.util.Map<String, String> byStation = new java.util.LinkedHashMap<>(choosable);
+            Map<String, String> byStation = new java.util.LinkedHashMap<>(choosable);
             byStation.putAll(barred);
 
             if (byStation.isEmpty()) return null;
@@ -881,7 +869,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
             int shown = 0;
 
-            for (java.util.Map.Entry<String, String> entry : byStation.entrySet())
+            for (Map.Entry<String, String> entry : byStation.entrySet())
             {
                 if (shown == 12)
                 {
@@ -904,15 +892,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         }
     }
 
-    /**
-     * A path as "from -> to", with both ends named the way the diagram names them.
-     *
-     * @param path the route being described, or null
-     */
+    /** A path as "from -> to", with both ends named the way the diagram names them. */
     private String describePath(List<Edge> path)
     {
-        if (path == null || path.isEmpty()) return Edge.pathToString(path == null
-            ? new java.util.LinkedList<Edge>() : path);
+        if (path == null || path.isEmpty()) return Edge.pathToString(path == null ? new LinkedList<Edge>() : path);
 
         if (path.get(0) == null || path.get(path.size() - 1) == null) return Edge.pathToString(path);
 
@@ -924,9 +907,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      * What to call a Point when a person is reading it: the station name, not the model's copy name such as "Tunnel
      * (northbound)", since the user created a station and not two.
      */
-    private String stationName(org.traincontrol.automation.Point point)
+    private String stationName(Point point)
     {
-        org.traincontrol.automationui.AutonomySession session = parent.getAutonomySession();
+        AutonomySession session = parent.getAutonomySession();
 
         return session == null ? (point == null ? "" : point.getName())
             : session.getStationIndex().describe(point);
@@ -940,7 +923,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      */
     private List<List<Edge>> withoutGoingNowhere(List<List<Edge>> paths)
     {
-        org.traincontrol.automationui.AutonomySession session = parent.getAutonomySession();
+        AutonomySession session = parent.getAutonomySession();
 
         List<List<Edge>> distinct =
             session == null ? paths : session.getStationIndex().distinctDestinations(paths);
@@ -951,9 +934,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     /**
      * Drops the destinations this train may not be sent to at all, by `Layout.isOfferableToOperator` (OB-205); the rule
      * itself, not a copy.  Not the same question as the dash (autonomy will not choose this), and both are wanted.
-     *
-     * @param paths the paths the search returned
-     * @return the ones the operator may actually choose
      */
     private List<List<Edge>> whatTheOperatorMayChoose(List<List<Edge>> paths)
     {
@@ -977,7 +957,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     private void locAvailPathsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseClicked
         
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             JList list = (JList) evt.getSource();
 

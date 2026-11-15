@@ -21,11 +21,12 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Locomotive;
-import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import static support.Diagrams.wireAccessories;
+import static support.Diagrams.accessory;
 
 /**
  * The length guards, on the real railway, with lengths set deliberately small.
@@ -61,10 +62,8 @@ public class testTheLengthGuardsOnTheRealLayout
     private static final String MAIN = "1 - Main";
 
     /**
-     * The train this class asks with, made here rather than borrowed.  Adam: *"generate trains programmatically in the
-     * tests, and give them semantic names."*  "Whatever is standing" would assert about ONE square, chosen by the
-     * layout's enumeration order.  Deleted in `tearDown`: `MarklinControlStation.init` opens his real locomotive
-     * database, so a train left behind is a train on his railway.
+     * The train this class asks with, made here (Adam: *"generate trains programmatically in the tests, and give them
+     * semantic names."*); deleted in `tearDown`, since `init` opens his real locomotive database.
      */
     private static final String OUR_TRAIN = "length guard probe";
 
@@ -166,33 +165,20 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /*
-     * WHAT THIS CLASS BORROWS FROM ADAM'S RAILWAY: by NAME (`75 407 DB` at three sites, `2-8-4 3505 SP` at one, each
-     * behind an `assertNotNull`), with `borrowTheLengthOf` and `giveTheLengthsBack` putting every length back; not
-     * "whatever is standing", since the guard asks where the train comes to rest (MT-333).  `roomTheGuardSees` can
-     * report a SMALLER number than the guard uses, which costs a candidate, not a verdict.
+     * Borrowed from Adam's railway by NAME (`75 407 DB`, `2-8-4 3505 SP`, each behind an `assertNotNull`); the lengths
+     * are put back by `giveTheLengthsBack`.  `roomTheGuardSees` can report less than the guard uses (MT-333).
      */
 
     /**
-     * ONE TILE, THREE MEASUREMENTS, AND THE BERTH IT ACTUALLY GOVERNS.
+     * ONE TILE, THREE MEASUREMENTS: unmeasured is offered, 22,7 at one refuses a nine-unit train, at nine it is
+     * offered.
      *
      * Adam: **"Make sure you add a test case to confirm this pathing IS possible if no
-     * lengths are set anywhere, and if those lengths are set to 9."**  Both of his cases are here, with
-     * the case that separates them in the middle.
+     * lengths are set anywhere, and if those lengths are set to 9."**  `1 - Main:22,7` is the last unswitched square
+     * before BottomMainPost, so its measure is the room a train has coming to rest there.
      *
-     * `1 - Main:22,7` is the last unswitched square before BottomMainPost, so it is the room a train coming to rest
-     * there has:
-     *
-     *   - nothing measured anywhere - BottomMainPost is offered (Adam: *"generally, allow it."*): unmeasured is
-     * unknown,
-     *     not zero.
-     *   - 22,7 measured at ONE - a nine-unit train is refused: it would come to rest lying across the switch behind it.
-     *   - 22,7 measured at NINE - offered again, and exactly-fits is admitted.  Adam: *"if we made both
-     *     lengths 4, would it then be accepted?  That should be the minimum acceptable length."*
-     *
-     * Nothing but that one number changes between the three: same railway, train and start square, opposite answers.
-     *
-     * MUTATION, run: `>=` for `>` at `Layout.whyTooLongForThisRoute` fails the third case (nine into
-     * nine is refused); widening the comparison by any constant fails the second.
+     * MUTATION: `>=` for `>` at `Layout.whyTooLongForThisRoute` fails the third case; widening the comparison by any
+     * constant fails the second.
      */
     @Test
     public void testTheOneUnitAtTwentyTwoSevenDecidesBottomMainPost() throws Exception
@@ -234,8 +220,6 @@ public class testTheLengthGuardsOnTheRealLayout
      * Without this the refusal above passes on a railway that offers BottomMainPost to nobody - and the
      * claim this file used to make had no control of that kind at the berth it was about, which is how
      * it stayed green while being false.
-     *
-     * @throws Exception on a failure to build
      */
     @Test
     public void testAOneUnitTrainIsStillAdmittedToTheOneUnitBerth() throws Exception
@@ -283,13 +267,11 @@ public class testTheLengthGuardsOnTheRealLayout
 
     /**
      * A nine-unit train is offered RampDown, past the one unit at 22,7 that it only drives through (MT-333): a square a
-     * train only passes is not judged for room, the rule asking only where the train comes to rest.  The route is taken
-     * from `bfs`, not from what the railway offers, which is the thing under test, and the counts of edges are asserted
-     * rather than the names because which road is taken varies with what is measured.
+     * train only passes is not judged for room.  The route comes from `bfs`, and edge counts are asserted rather than
+     * names, since the road taken varies with what is measured.
      *
-     * MUTATION, run: taking `if (!comesToRest) continue;` out of `Layout.whyTooLongForThisRoute`,
-     * so every square the route runs through is judged again, refuses RampDown and fails the offer assertion
-     * that follows the standing-train precondition; `testExactlyFitsIsAdmittedAndOneMoreIsNot` fails with it.
+     * MUTATION: removing `if (!comesToRest) continue;` from `Layout.whyTooLongForThisRoute` refuses RampDown and
+     * fails the offer assertion.
      */
     @Test
     public void testRampDownIsOfferedPastTheOneUnitItOnlyPasses() throws Exception
@@ -502,60 +484,11 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * Attaches an accessory to every switch and signal drawn with an address.
+     * TunnelLongPark refuses this train at every measurement (two units of room or eight), so the refusal is not the
      *
-     * The application does this on load; a test that reads the diagram itself has to do it too, or the
-     * reducer cannot trace through a single switch.  Copied from
-     * `testTheCheckerAgreesWithTheBuild`, which has had it since it was written.
+     * length: it is authored as a place trains must turn (MT-309).  If this ever passes, find the rule that stopped
+     * applying.
      *
-     * @param pages the parsed diagram
-     */
-    private static void wireAccessories(List<LayoutDiagram> pages)
-    {
-        for (LayoutDiagram page : pages)
-        {
-            for (org.traincontrol.base.LayoutDiagramComponent component : page.getAll())
-            {
-                if (!component.isSwitch() && !component.isSignal()) continue;
-
-                // the application skips tiles drawn without a digital address, and so does this
-                if (component.getAddress() <= 0) continue;
-
-                org.traincontrol.base.Accessory.accessoryType type = component.isSignal()
-                    ? org.traincontrol.base.Accessory.accessoryType.SIGNAL
-                    : org.traincontrol.base.Accessory.accessoryType.SWITCH;
-
-                component.setAccessory(accessory(component.getAddress(), type,
-                    component.getProtocol()));
-
-                if (component.isThreeWay())
-                {
-                    component.setAccessory2(accessory(component.getAddress() + 1,
-                        org.traincontrol.base.Accessory.accessoryType.SWITCH,
-                        component.getProtocol()));
-                }
-            }
-        }
-    }
-
-    private static org.traincontrol.marklin.MarklinAccessory accessory(int logicalAddress,
-        org.traincontrol.base.Accessory.accessoryType type,
-        org.traincontrol.base.Accessory.accessoryDecoderType protocol)
-    {
-        return new org.traincontrol.marklin.MarklinAccessory(null, logicalAddress - 1, type, protocol,
-            org.traincontrol.marklin.MarklinAccessory.getNameWithProtocol(logicalAddress, type,
-                protocol), false, 0);
-    }
-
-    /**
-     * TunnelLongPark refuses this train at every measurement - which is worth pinning as a FACT.
-     *
-     * Measuring the approach wide enough does not get `75 407 DB` into TunnelLongPark: it is refused with two units
-     * of room and refused with eight, so whatever is refusing there is not the length.
-     *
-     * TunnelLongPark is authored as a place trains must turn, and why a berth like that refuses a locomotive is the
-     * subject of MT-309, not the length guard.  If this ever starts passing, somebody should find out which rule
-     * stopped applying.
      *
      * @throws Exception on a failure to build
      */
@@ -609,26 +542,15 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * EXACTLY FITS IS ADMITTED, and one unit more is not - on a berth this railway really offers.
+     * EXACTLY FITS IS ADMITTED, and one unit more is not, on a berth this railway really offers.
      *
      * Adam: **"if we made both lengths 4, would it then be accepted?  That should be the minimum
-     * acceptable length."** The guard agrees in code - `loc.getTrainLength() > room` refuses, so four
-     * into four is admitted - and this is the behavioral half of it.
+     * The guard agrees in code (`>` refuses, so four into four is admitted); this is the behavioral half.
      *
-     * **It names none of three things, each of which goes stale:**
+     * It names no tile, room or berth, each of which goes stale: it searches for a destination the railway offers once
+     * measured wide, reads the room back, and asserts the boundary there.
      *
-     * 1. The TILES to measure: the approach to TunnelLongPark lands on track the guard never counts.
-     * 2. The ROOM those measurements produce: `roomAtTheEnd` stops at the last switch, so how many of the units written
-     *    reach the count depends on where the switches are.  It is read back.
-     * 3. The BERTH itself: TunnelLongPark refuses this locomotive at eight units as firmly as at two, so a boundary
-     * test
-     *    that cannot get its train admitted at any measurement is testing nothing.
-     *
-     * So it searches for a destination the railway will offer once measured wide, and asserts the boundary there: the
-     * RULE is tested, not one berth.
-     *
-     * MUTATION: `>=` in place of `>` at the guard leaves no berth where exactly-fits is offered, and the search's
-     * assertion fails.
+     * MUTATION: `>=` in place of `>` at the guard leaves no berth where exactly-fits is offered.
      *
      * @throws Exception on a failure to build
      */
@@ -724,9 +646,8 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * The largest train the guard will let into a station from where this one is standing: the tightest measured
-     * stretch where the train comes to rest on the best route there (MT-333, `Layout.whyTooLongForThisRoute`).
-     * Tightest along a route, largest across routes.
+     * The largest train the guard lets into a station from where this one stands: tightest measured stretch where the
+     * train comes to rest on the best route, largest across routes (MT-333).
      *
      * @return the units the guard counts, or -1 when nothing measurable leads there
      */
@@ -888,10 +809,9 @@ public class testTheLengthGuardsOnTheRealLayout
     }
 
     /**
-     * A route from where the borrowed engine stands to a named station, over the track alone: not from what the railway
-     * offers (the thing under test), nor from `Layout.bfs`, which extends no route through a terminus that is not its
-     * end (Adam: *"Search past termini"*).  The shortest route to TunnelLongPark passes one, so `bfs` finds nothing
-     * there and the room rule is asked of the track by `aRouteOverTheTrackAlone`.
+     * A route from where the borrowed engine stands to a named station, over the track alone: `Layout.bfs` extends no
+     * route through a terminus that is not its end (Adam: *"Search past termini"*), and the shortest route to
+     * TunnelLongPark passes one.
      * @return the edges in order, or null when nothing connects
      */
     private List<Edge> theRouteOverTheTrackTo(String station) throws Exception
@@ -984,7 +904,7 @@ public class testTheLengthGuardsOnTheRealLayout
      * able to block the switch that leads to BottomMainC."**
      *
      * **Why facing could not have told us this.**  A train faces the way it will leave; its tail is
-     * behind it, and once it has been turned round the two point the same way.  Before `arrivedFrom`
+     * behind it, and once it has been turned around the two point the same way.  Before `arrivedFrom`
      * the walk looked up the track this train is about to depart along - which is clear - and reported
      * nothing blocked.  The rail it is actually lying across is the one it came in by, and only the
      * train knows that.

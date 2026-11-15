@@ -12,6 +12,8 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Diagrams;
+import support.Reflect;
 
 /**
  * A station's timetable, and the roads its trains stand on, follow it through a rename, a moved square, a ticked-out
@@ -25,7 +27,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
     /**
      * A station renamed keeps its timetable: every leg through it is carried to the new name.  Beta is somewhere trains
-     * may turn round, so two of its copies run to Alpha, and only the heading says which a leg meant.
+     * may turn around, so two of its copies run to Alpha, and only the heading says which a leg meant.
      *
      * MUTATION: carry nothing across a rebuild, or carry a leg to a copy other than the one its heading names, and this
      * fails.
@@ -264,11 +266,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         LayoutDiagram yard = new LayoutDiagram("yard", 7, 3, null, null);
 
-        yard.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 64, 64, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 65, 65, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        yard.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 66, 66, accessoryDecoderType.MM2, null);
+        Diagrams.row(yard, 1, 1, "FSFSF", 64, 65, 66);
         yard.setPageId("1");
 
         AutonomySession next = new AutonomySession(layout);
@@ -497,9 +495,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         session.endEditSession();
 
-        java.lang.reflect.Field seen = AutonomySession.class.getDeclaredField("squareOfNameSeen");
-
-        seen.setAccessible(true);
+        java.lang.reflect.Field seen = Reflect.field(AutonomySession.class, "squareOfNameSeen");
 
         assertFalse(((java.util.Map<?, ?>) seen.get(session)).containsKey("Omega"), "the memory still knows a name only the"
             + " edit gave, after the edit session: it would be the next one's opening memory (OB-343)");
@@ -697,10 +693,9 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         for (int i = 0; i < 4; i++)
         {
-            page.addComponent(componentType.FEEDBACK, 1 + 2 * i, 1, 0, 0, address + i, address + i,
-                accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, 1 + 2 * i, 1, address + i, address + i);
 
-            if (i < 3) page.addComponent(componentType.STRAIGHT, 2 + 2 * i, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            if (i < 3) Diagrams.straight(page, 2 + 2 * i, 1);
         }
 
         page.setPageId("1");
@@ -891,13 +886,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         for (LayoutDiagram page : new LayoutDiagram[] {main, second})
         {
-            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address + 1, address + 1, accessoryDecoderType.MM2,
-                null);
-            page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, address + 2, address + 2, accessoryDecoderType.MM2,
-                null);
+            Diagrams.row(page, 1, 1, "FSFSF", address, address + 1, address + 2);
 
             address += 10;
         }
@@ -1158,13 +1147,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         for (LayoutDiagram page : new LayoutDiagram[] {main, second})
         {
-            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, address, address, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, address + 1, address + 1, accessoryDecoderType.MM2,
-                null);
-            page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, address + 2, address + 2, accessoryDecoderType.MM2,
-                null);
+            Diagrams.row(page, 1, 1, "FSFSF", address, address + 1, address + 2);
 
             address += 10;
         }
@@ -1206,6 +1189,171 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         assertEquals(now.getJSONObject("second124:5,1").getJSONArray("arrivedAlong").toString(), "[[\"C1 y\",\"C1 z\"]]",
             "an undo wrote another train's road onto second124 5,1 (RSA9-C1)");
+    }
+
+    /**
+     * A fold with no chain changes no name (OB-345): the railway's legs are written as the railway wrote them, each copy
+     * of a split square included, with a plain rename waiting too, and it is the carry that takes each to the same copy,
+     * facing the same way.
+     *
+     * MUTATION: in `inTheNamesNow`, drop `read.equals(at)`, and this fails.
+     */
+    @Test
+    public void testAFoldWithNoChainWritesEveryNameAsTheRailwayDid() throws Exception
+    {
+        threeStationsInARow("no chain");
+
+        nameTheThreeStations();
+
+        TileKey beta = new TileKey("main", 3, 1);
+
+        session.setPointFlag(beta, AutonomyBuilder.CAN_REVERSE, true);
+
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        // EVERY EDGE A LEG, so every copy is named
+        List<String[]> legs = new ArrayList<>();
+
+        for (Object o : built.getJSONArray("edges"))
+        {
+            org.json.JSONObject edge = (org.json.JSONObject) o;
+
+            legs.add(new String[] {edge.getString("start"), edge.getString("end")});
+        }
+
+        built.put("timetable", aTimetableOf(legs.toArray(new String[0][])));
+
+        // WITH NOTHING RENAMED
+        session.captureTheRailwaysSettings(built.toString(), "no chain", null);
+
+        assertTrue(built.getJSONArray("timetable").similar(new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")))),
+            "a fold with nothing renamed changed the railway's names: " + session.getGlobal("timetable"));
+
+        // AND WITH A PLAIN RENAME the railway has not caught up with
+        session.setPointName(beta, "Bravo");
+
+        session.captureTheRailwaysSettings(built.toString(), "no chain", null);
+
+        assertTrue(built.getJSONArray("timetable").similar(new org.json.JSONArray(String.valueOf(session.getGlobal("timetable")))),
+            "a fold with no chain changed the railway's names: " + session.getGlobal("timetable"));
+
+        session.rebuild();
+
+        java.util.Map<String, String> facingOnTheRailway = new java.util.HashMap<>();
+
+        for (Object o : built.getJSONArray("points"))
+        {
+            org.json.JSONObject point = (org.json.JSONObject) o;
+
+            facingOnTheRailway.put(point.getString("name"), point.optString(AutonomyBuilder.COPY_FACING, null));
+        }
+
+        boolean split = false;
+
+        for (int i = 0; i < legs.size(); i++)
+        {
+            for (int end = 0; end < 2; end++)
+            {
+                String was = legs.get(i)[end];
+
+                if (!was.startsWith("Beta")) continue;
+
+                String now = legOf(session, i)[end];
+
+                assertEquals(now, "Bravo" + was.substring("Beta".length()), "the carry took a leg to another copy");
+
+                assertEquals(session.facingsFor(beta).get(now).name(), facingOnTheRailway.get(was), now + " does not face"
+                    + " the way " + was + " did");
+
+                split = true;
+            }
+        }
+
+        assertTrue(split, "precondition: no leg named the split square");
+    }
+
+    /**
+     * The fold finds a name's copy by the facing of the railway's own Point, not the memory's of the name (OB-345), as
+     * the copy is the facing: the name has moved to a curved station, where the same words face another way, and the
+     * square it stood on has lost that copy.  The memory's facing is the wrong copy of this double-curve square.
+     *
+     * MUTATION: in `inTheNamesNow`, pass `pointNamedNow` a null facing, and this fails.
+     */
+    @Test
+    public void testAFoldFindsAMovedNamesCopyByTheRailwaysFacing() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 9, null, null);
+
+        TileKey[] stations = {new TileKey("main", 1, 3), new TileKey("main", 3, 2), new TileKey("main", 3, 4),
+            new TileKey("main", 5, 3), new TileKey("main", 5, 6), new TileKey("main", 7, 7), new TileKey("main", 3, 3),
+            new TileKey("main", 7, 6)};
+
+        // A DOUBLE CURVE, west to north and east to south, with a station on each road, and a curved station, west to south
+        String[] tiles = {"FEEDBACK 1 3 0", "STRAIGHT 2 3 0", "FEEDBACK_DOUBLE_CURVE 3 3 0", "FEEDBACK 3 2 1", "FEEDBACK 3 4 1",
+            "STRAIGHT 4 3 0", "FEEDBACK 5 3 0", "FEEDBACK 5 6 0", "STRAIGHT 6 6 0", "FEEDBACK_CURVE 7 6 3", "FEEDBACK 7 7 1"};
+
+        for (int i = 0; i < tiles.length; i++)
+        {
+            String[] tile = tiles[i].split(" ");
+
+            int address = "STRAIGHT".equals(tile[0]) ? 0 : 70 + i;
+
+            page.addComponent(componentType.valueOf(tile[0]), Integer.parseInt(tile[1]), Integer.parseInt(tile[2]),
+                Integer.parseInt(tile[3]), 0, address, address, accessoryDecoderType.MM2, null);
+        }
+
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("facing");
+
+        String[] names = {"West", "North", "South", "East", "Far", "Below", "Beta", "Zed"};
+
+        for (int i = 0; i < stations.length; i++)
+        {
+            session.setStation(stations[i], true);
+            session.setPointName(stations[i], names[i]);
+        }
+
+        TileKey doubleCurve = stations[6];
+        TileKey curve = stations[7];
+
+        session.setPointFlag(doubleCurve, AutonomyBuilder.CAN_REVERSE, true);
+
+        // THE RAILWAY, whose leg ends on the double curve's copy that points north
+        org.json.JSONObject built = new org.json.JSONObject(session.buildConfiguration());
+
+        assertEquals(session.facingsFor(doubleCurve).get("Beta (eastbound)"), org.traincontrol.automationui.TilePorts.Side.N,
+            "precondition: the copy does not face north: " + session.facingsFor(doubleCurve));
+
+        built.put("timetable", aTimetableOf(new String[] {"West", "Beta (eastbound)"}));
+
+        // THAT COPY GONE, and the name now the curved station's, facing south there
+        session.setDirection(new TileKey("main", 2, 3), new org.traincontrol.automationui.TileGraph.RouteId(0, 0),
+            org.traincontrol.automationui.TileGraph.Direction.TOWARD_B);
+        session.setPointName(doubleCurve, "Bravo");
+        session.setPointName(curve, "Beta");
+
+        assertEquals(session.tileForPointName("Beta (eastbound)"), curve, "precondition: the name did not move: "
+            + session.facingsFor(curve));
+
+        assertEquals(session.facingsFor(curve).get("Beta (eastbound)"), org.traincontrol.automationui.TilePorts.Side.S,
+            "precondition: the name does not face south on the curve: " + session.facingsFor(curve));
+
+        assertTrue(session.facingsFor(doubleCurve).containsValue(org.traincontrol.automationui.TilePorts.Side.S),
+            "precondition: no copy here faces the way the memory says: " + session.facingsFor(doubleCurve));
+
+        assertFalse(session.facingsFor(doubleCurve).containsKey("Bravo (eastbound)"), "precondition: the copy did not go: "
+            + session.facingsFor(doubleCurve));
+
+        // THE FOLD
+        session.captureTheRailwaysSettings(built.toString(), "facing", null);
+
+        String taken = legOf(session, 0)[1];
+
+        assertEquals(session.facingsFor(doubleCurve).get(taken), org.traincontrol.automationui.TilePorts.Side.N, "the leg"
+            + " ends on " + taken + ", not the copy of the square that faces the way the railway's Point did: "
+            + session.facingsFor(doubleCurve));
     }
 
     /** The leg of one entry of the configuration's stored timetable. */

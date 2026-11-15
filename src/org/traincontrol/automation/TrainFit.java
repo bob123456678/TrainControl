@@ -89,10 +89,7 @@ final class TrainFit
         {
             if (sharing == null || !sharing.getLockEdges().contains(approach)) continue;
 
-            if (berth.isSamePlaceAs(sharing.getStart()) || berth.isSamePlaceAs(sharing.getEnd()))
-            {
-                continue;
-            }
+            if (berth.isSamePlaceAs(sharing.getStart()) || berth.isSamePlaceAs(sharing.getEnd())) continue;
 
             for (String place : sharing.getPlaceIds())
             {
@@ -326,7 +323,7 @@ final class TrainFit
      */
     static int askedForOnTheWayRound(List<String> askedAlong, int left, int back)
     {
-        java.util.Set<String> keys = new java.util.HashSet<>();
+        Set<String> keys = new java.util.HashSet<>();
 
         for (int g = Math.max(0, left + 1); g < back && g < askedAlong.size(); g++)
         {
@@ -358,7 +355,7 @@ final class TrainFit
         // is copied into an ArrayList because callers hand in linked lists and `subList` is asked path.size() times.
         if (loc.getTrainLength() == null || loc.getTrainLength() <= 0) return null;
 
-        List<Edge> ordered = new java.util.ArrayList<>(path);
+        List<Edge> ordered = new ArrayList<>(path);
 
         for (int i = 0; i < ordered.size(); i++)
         {
@@ -381,10 +378,7 @@ final class TrainFit
 
             // A station autonomy may choose takes a train its measured route in holds (FR-087; OB-207): it only ever
             // ALLOWS, the room rule above having already refused.  `whyABerthCannotHoldIt` is the other half.
-            if (berth && Layout.theApproachItselfHoldsIt(ordered.subList(0, i + 1), loc))
-            {
-                continue;
-            }
+            if (berth && Layout.theApproachItselfHoldsIt(ordered.subList(0, i + 1), loc)) continue;
 
             if (here == null || berth)
             {

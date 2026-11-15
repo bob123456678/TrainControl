@@ -23,37 +23,28 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.marklin.MarklinAccessory;
+import support.Diagrams;
 
 /**
- * Turning round: one sensor, two things a train may do there.
- *
- * The shape under test is taken from the sample layout.  BottomMainC and BottomMainCTerm
- * are both stations and both s88 4; both are entered from BottomMainCPre; one leaves to BottomMainPost carrying on, the
- * other to TunnelReversePre having turned round.  A single Point per sensor cannot say that, since arriving from the
- * west and going on east is the same edge set as arriving from the west and backing out west again.
- *
- * The track built here is that junction:
+ * Turning around: one sensor, two things a train may do there.  From the sample layout: BottomMainC and BottomMainCTerm
+ * are both stations and both s88 4, both entered from BottomMainCPre; one leaves to BottomMainPost carrying on, the
+ * other to TunnelReversePre having turned around.  A single Point per sensor cannot say that.
  *
  *     F11 --- x --- SW --- x --- F4 --- x --- F12        (the running line, west to east)
  *                    |
  *                   F18                                  (a siding, trailing off behind F4)
  *
- * The switch faces east, so a train running WEST out of F4 can take the siding, and one running east out of F11
- * cannot.  Reaching F18 from F11 therefore means stopping at F4 and turning round.
+ * The switch faces east, so a train running WEST out of F4 can take the siding and one running east out of F11
+ * cannot: reaching F18 from F11 means stopping at F4 and turning around.
  *
  * @author Adam
  */
 public class testAutonomyDiagramReversal
 {
     /**
-     * Nothing marked, and the impossible move is already gone.
-     *
-     * With one Point per sensor, F11 -> F4 and F4 -> F18 both existed, so a path to the siding was offered although the
-     * second leg leaves by the side the first arrived at.  Splitting every square by arrival side is what removes it,
-     * so the marking is not what fixes it.
-     *
-     * Running west, the siding is straight ahead and needs no reversal at all; running east it is
-     * behind the train.  Two copies, and only one of them can reach it.
+     * Nothing marked, and the impossible move is already gone: with one Point per sensor, F11 -> F4 and F4 -> F18 both
+     * existed though the second leg leaves by the side the first arrived at.  Splitting by arrival side removes it, not
+     * the marking.  Running west the siding is straight ahead; running east it is behind the train.
      */
     @Test
     public void testWithoutTheMarkTheReversalIsSimplyNotOffered() throws IOException
@@ -74,7 +65,7 @@ public class testAutonomyDiagramReversal
             "running west the siding is straight ahead");
 
         assertFalse(hasEdge(built, "Main4 (eastbound)", "Siding18"),
-            "running east it is behind the train, and nothing here lets it turn round");
+            "running east it is behind the train, and nothing here lets it turn around");
     }
 
     /**
@@ -106,20 +97,20 @@ public class testAutonomyDiagramReversal
 
     /**
      * Both copies hang off the same incoming point, which is what lets the path finder choose between
-     * carrying on and turning round.  BottomMainCPre reached both BottomMainC and BottomMainCTerm.
+     * carrying on and turning around.  BottomMainCPre reached both BottomMainC and BottomMainCTerm.
      */
     @Test
     public void testBothCopiesAreReachableFromTheSameIncomingPoint() throws IOException
     {
         // West11 is a buffer stop and must be marked too: track runs east from it only, so it cannot set off towards
-        // the junction until trains turn round there.  What is under test is Main4, and West11 only has to reach it.
+        // the junction until trains turn around there.  What is under test is Main4, and West11 only has to reach it.
         JSONObject built = build(junction(), stations(key("main", 5, 2)),
             marked(key("main", 5, 2), key("main", 1, 2)), extras());
 
         assertTrue(hasEdge(built, "West11", "Main4 (eastbound)"),
             "a train from the west can pass through");
         assertTrue(hasEdge(built, "West11", "Main4 (eastbound, reverse)"),
-            "or stop and turn round, from the very same place");
+            "or stop and turn around, from the very same place");
     }
 
     /**
@@ -136,19 +127,19 @@ public class testAutonomyDiagramReversal
         assertTrue(hasEdge(built, "Main4 (eastbound)", "East12"),
             "carrying on east is what the plain copy is for");
         assertFalse(hasEdge(built, "Main4 (eastbound)", "Siding18"),
-            "the siding is behind it - reaching it without turning round is the bug");
+            "the siding is behind it - reaching it without turning around is the bug");
         assertFalse(hasEdge(built, "Main4 (eastbound)", "West11"));
 
-        // arrived from the west and turned round
+        // arrived from the west and turned around
         assertTrue(hasEdge(built, "Main4 (eastbound, reverse)", "Siding18"),
-            "having turned round, the siding is straight ahead");
+            "having turned around, the siding is straight ahead");
         assertFalse(hasEdge(built, "Main4 (eastbound, reverse)", "East12"),
             "and carrying on east is exactly what it cannot do");
     }
 
     /**
      * The other direction is the mirror image, not a special case: a train that arrived from the east
-     * carries on west - to the siding or beyond - and only turns round to go back east.
+     * carries on west - to the siding or beyond - and only turns around to go back east.
      */
     @Test
     public void testTheOppositeDirectionMirrorsIt() throws IOException
@@ -224,7 +215,7 @@ public class testAutonomyDiagramReversal
         // And it has to carry what the mark means, or the platform emits no flag at all and its trains
         // run into the buffers.
         assertTrue(copies.get(0).optBoolean("terminus"),
-            "the only thing a train can do at a dead end is arrive and turn round");
+            "the only thing a train can do at a dead end is arrive and turn around");
     }
 
     /**
@@ -250,7 +241,7 @@ public class testAutonomyDiagramReversal
 
     /**
      * An authored terminus flag is not carried onto the copies either.  It described the tile; on a
-     * split tile turning round is what the COPY means, and letting it through would make the plain copy
+     * split tile turning around is what the COPY means, and letting it through would make the plain copy
      * reverse as well - which is the behavior the split exists to separate.
      */
     @Test
@@ -334,12 +325,9 @@ public class testAutonomyDiagramReversal
     }
 
     /**
-     * Marking nothing changes nothing.  The split is opt-in per tile, so a configuration that uses none of this comes
-     * out byte for byte as an unconfigured builder's.
-     *
-     * The pair, not the half: an empty mark set is already the field's initializer, so asserting only that could not
-     * fail.  Marking a real tile shows the comparison is live: if the builder ignored the set entirely, the first
-     * assertion would fail and the second go on passing.
+     * Marking nothing changes nothing: the split is opt-in per tile, so an unconfigured configuration comes out byte
+     * for byte as an unconfigured builder's.  The pair, not the half (an empty mark set is already the initializer);
+     * marking a real tile shows the comparison is live.
      */
     @Test
     public void testAnUnmarkedLayoutIsUntouched() throws IOException
@@ -362,7 +350,7 @@ public class testAutonomyDiagramReversal
             .withReversibleTiles(Collections.singleton(station)).build();
 
         assertNotEquals(withTheStationMarked, withoutFeature,
-            "control: marking a square as somewhere trains may turn round produced exactly the same "
+            "control: marking a square as somewhere trains may turn around produced exactly the same "
             + "configuration as marking nothing, so the assertion below - that marking NOTHING "
             + "changes nothing - is satisfied by a builder that ignores the set altogether");
 
@@ -444,12 +432,9 @@ public class testAutonomyDiagramReversal
     // the track
 
     /**
-     * The running line with a siding trailing off behind the junction sensor.
-     *
-     * SWITCH_LEFT at orientation 0 has its toe south, straight ahead north and its branch west; ports rotate by (4 -
-     * orientation) quarter turns clockwise (see TilePorts.ports), so orientation 1 puts the toe EAST, straight west,
-     * branch south.  A train running west out of F4 meets the toe and may diverge into the siding, while a train
-     * running east out of F11 meets the same switch trailing, so the siding is reachable only by turning round at F4.
+     * The running line with a siding trailing off behind the junction sensor.  SWITCH_LEFT at orientation 1 puts the
+     * toe EAST, straight west, branch south (ports rotate by (4 - orientation) quarter turns, see TilePorts.ports), so
+     * the siding is reachable only by turning around at F4.
      */
     private LayoutDiagram junction() throws IOException
     {
@@ -665,8 +650,7 @@ public class testAutonomyDiagramReversal
 
     private void feedback(LayoutDiagram page, int x, int y, int rawAddress) throws IOException
     {
-        page.addComponent(componentType.FEEDBACK, x, y, 0, 0, rawAddress / 2, rawAddress,
-            accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, x, y, rawAddress / 2, rawAddress);
     }
 
     private void feedbackNS(LayoutDiagram page, int x, int y, int rawAddress) throws IOException

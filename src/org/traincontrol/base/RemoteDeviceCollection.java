@@ -14,8 +14,6 @@ import java.util.List;
  * methods touch nothing but the two maps and call nothing out), so it cannot take part in a deadlock ordering.  The
  * Serializable declaration is vestigial: nothing serializes this class.
  * @author Adam
- * @param <ITEM>
- * @param <IDENTIFIER> 
  */
 public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     java.io.Serializable
@@ -38,9 +36,6 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     /**
      * Adds a device, keeping a strict one-to-one mapping between names and ids: anything the name or the id was
      * previously attached to is cleared out, so neither map can hold entries the other does not know about.
-     * @param device
-     * @param name
-     * @param id
      */
     synchronized public void add(ITEM device, String name, IDENTIFIER id)
     {
@@ -48,10 +43,7 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
 
         // Re-adding a name under a different id would otherwise strand the old device in the
         // database, where it would still be returned by getItems but not by getItemNames
-        if (existingId != null && !existingId.equals(id))
-        {
-            this.db.remove(existingId);
-        }
+        if (existingId != null && !existingId.equals(id)) this.db.remove(existingId);
 
         // Re-adding an id under a different name would otherwise strand the old name, which would
         // keep being listed by getItemNames and keep resolving - to the new device - via getByName.
@@ -65,8 +57,6 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     
     /**
      * Does the given name exist in the DB?
-     * @param name
-     * @return 
      */
     synchronized public boolean hasName(String name)
     {
@@ -75,8 +65,6 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     
     /**
      * Does the given id exist in the DB?
-     * @param id
-     * @return 
      */
     synchronized public boolean hasId(IDENTIFIER id)
     {
@@ -85,8 +73,6 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     
     /**
      * Gets a device by name
-     * @param name
-     * @return 
      */
     synchronized public ITEM getByName(String name)
     {
@@ -95,8 +81,6 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     
     /**
      * Gets a device by id
-     * @param id
-     * @return 
      */
     synchronized public ITEM getById(IDENTIFIER id)
     {
@@ -105,7 +89,6 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     
     /**
      * Returns all existing device ids
-     * @return 
      */
     synchronized public List<IDENTIFIER> getItemIds()
     {
@@ -117,7 +100,6 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     
     /**
      * Gets all existing device names
-     * @return 
      */
     synchronized public List<String> getItemNames()
     {
@@ -129,7 +111,6 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     
     /**
      * Gets all existing devices
-     * @return 
      */
     synchronized public List<ITEM> getItems()
     {
@@ -145,8 +126,6 @@ public class RemoteDeviceCollection<ITEM, IDENTIFIER> implements
     
     /**
      * Removes the specified name from the database
-     * @param name
-     * @return 
      */
     synchronized public boolean delete(String name)
     {

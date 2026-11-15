@@ -1,0 +1,283 @@
+[
+ {
+  "kennung": "0xffff",
+  "typ": "65280"
+ },
+ {
+  "kennung": "0xffff",
+  "typ": "65280"
+ },
+ {
+  "kennung": "0xffff",
+  "typ": "65280"
+ },
+ {
+  "kennung": "0x2",
+  "typ": "64",
+  "name": "LinkS88-1",
+  "kanal": [
+   {
+    "endWert": "8",
+    "max": "8",
+    "name": "Spalten Tastatur",
+    "nr": "11",
+    "startWert": "0",
+    "typ": "2"
+   },
+   {
+    "endWert": "15",
+    "max": "15",
+    "name": "Zeilen Tastatur",
+    "nr": "12",
+    "startWert": "0",
+    "typ": "2"
+   },
+   {
+    "auswahl": "Einzeln:Tastaturmatrix",
+    "name": "Auswertung 1 - 16",
+    "nr": "1",
+    "typ": "1"
+   },
+   {
+    "endWert": "31",
+    "max": "31",
+    "name": "L\u00e4nge Bus 1 (RJ45-1)",
+    "nr": "2",
+    "startWert": "0",
+    "typ": "2",
+    "wert": "2"
+   },
+   {
+    "endWert": "31",
+    "max": "31",
+    "name": "L\u00e4nge Bus 2 (RJ45-2)",
+    "nr": "3",
+    "startWert": "0",
+    "typ": "2",
+    "wert": "1"
+   },
+   {
+    "endWert": "31",
+    "max": "31",
+    "name": "L\u00e4nge Bus 3 (6-Polig)",
+    "nr": "4",
+    "startWert": "0",
+    "typ": "2",
+    "wert": "1"
+   },
+   {
+    "einheit": "ms",
+    "endWert": "1000",
+    "max": "1000",
+    "min": "10",
+    "name": "Zykluszeit Bus 1 (RJ45-1)",
+    "nr": "5",
+    "startWert": "10",
+    "typ": "2",
+    "wert": "100"
+   },
+   {
+    "einheit": "ms",
+    "endWert": "1000",
+    "max": "1000",
+    "min": "10",
+    "name": "Zykluszeit Bus 2 (RJ45-2)",
+    "nr": "6",
+    "startWert": "10",
+    "typ": "2",
+    "wert": "100"
+   },
+   {
+    "einheit": "ms",
+    "endWert": "1000",
+    "max": "1000",
+    "min": "10",
+    "name": "Zykluszeit Bus 3 (6-Polig)",
+    "nr": "7",
+    "startWert": "10",
+    "typ": "2",
+    "wert": "100"
+   },
+   {
+    "einheit": "\u00b5s",
+    "endWert": "1000",
+    "max": "1000",
+    "min": "100",
+    "name": "Bitzeit S88",
+    "nr": "8",
+    "startWert": "100",
+    "typ": "2",
+    "wert": "167"
+   },
+   {
+    "einheit": "ms",
+    "endWert": "1000",
+    "max": "1000",
+    "min": "10",
+    "name": "Zykluszeit 1 - 16",
+    "nr": "9",
+    "startWert": "10",
+    "typ": "2",
+    "wert": "100"
+   },
+   {
+    "einheit": "ms",
+    "endWert": "100",
+    "max": "100",
+    "min": "10",
+    "name": "Zykluszeit Tastatur",
+    "nr": "10",
+    "startWert": "10",
+    "typ": "2",
+    "wert": "37"
+   }
+  ]
+ },
+ {
+  "kennung": "0x1",
+  "typ": "80",
+  "name": "GFP3-1",
+  "kanal": [
+   {
+    "einheit": "\u00b5s",
+    "endWert": "1000",
+    "max": "1000",
+    "min": "100",
+    "name": "Bitzeit S88Bus",
+    "nr": "5",
+    "startWert": "100",
+    "typ": "2",
+    "wert": "167"
+   },
+   {
+    "einheit": "A",
+    "endWert": "3.50",
+    "farbeGelb": "240",
+    "farbeGruen": "48",
+    "farbeMax": "192",
+    "farbeRot": "224",
+    "name": "MAIN",
+    "nr": "1",
+    "potenz": "253",
+    "rangeGelb": "5414",
+    "rangeGruen": "5013",
+    "rangeMax": "7018",
+    "rangeRot": "6416",
+    "startWert": "0.00"
+   },
+   {
+    "einheit": "A",
+    "endWert": "2.30",
+    "farbeGelb": "240",
+    "farbeGruen": "48",
+    "farbeMax": "192",
+    "farbeRot": "224",
+    "name": "PROG",
+    "nr": "2",
+    "potenz": "253",
+    "rangeGelb": "28828",
+    "rangeGruen": "26208",
+    "rangeMax": "60278",
+    "rangeRot": "44553",
+    "startWert": "0.00"
+   },
+   {
+    "einheit": "V",
+    "endWert": "27.00",
+    "farbeGelb": "12",
+    "farbeGruen": "192",
+    "farbeMax": "192",
+    "farbeRot": "48",
+    "name": "VOLT",
+    "nr": "3",
+    "potenz": "253",
+    "rangeGelb": "3954",
+    "rangeGruen": "3620",
+    "rangeMax": "9469",
+    "rangeRot": "5570",
+    "startWert": "10.00"
+   },
+   {
+    "einheit": "C",
+    "endWert": "80.0",
+    "farbeGelb": "8",
+    "farbeGruen": "12",
+    "farbeMax": "192",
+    "farbeRot": "240",
+    "name": "TEMP",
+    "nr": "4",
+    "rangeGelb": "1233",
+    "rangeGruen": "1027",
+    "rangeMax": "1644",
+    "rangeRot": "1438",
+    "startWert": "0.0"
+   },
+   {
+    "einheit": "%",
+    "endWert": "100.",
+    "farbeGelb": "240",
+    "farbeGruen": "48",
+    "farbeMax": "192",
+    "farbeRot": "224",
+    "name": "NOISE",
+    "nr": "5",
+    "rangeGelb": "500",
+    "rangeGruen": "200",
+    "rangeMax": "10000",
+    "rangeRot": "2000",
+    "startWert": "0.0"
+   },
+   {
+    "einheit": "%",
+    "endWert": "100.",
+    "farbeGelb": "240",
+    "farbeGruen": "224",
+    "farbeMax": "48",
+    "farbeRot": "240",
+    "name": "QUAL",
+    "nr": "6",
+    "rangeGelb": "6500",
+    "rangeGruen": "5000",
+    "rangeMax": "10000",
+    "rangeRot": "8000",
+    "startWert": "0.0"
+   },
+   {
+    "auswahl": "60061:60101:L51095:60041(15V)",
+    "name": "Netzteil:",
+    "nr": "1",
+    "typ": "1"
+   },
+   {
+    "auswahl": "norm:wide",
+    "name": "6095 mix mode:",
+    "nr": "2",
+    "typ": "1"
+   },
+   {
+    "endWert": "31",
+    "max": "31",
+    "name": "L\u00e4nge S88Bus",
+    "nr": "3",
+    "startWert": "0",
+    "typ": "2",
+    "wert": "5"
+   },
+   {
+    "einheit": "ms",
+    "endWert": "1000",
+    "max": "1000",
+    "min": "10",
+    "name": "Zykluszeit S88Bus",
+    "nr": "4",
+    "startWert": "10",
+    "typ": "2",
+    "wert": "100"
+   }
+  ]
+ },
+ {
+  "kennung": "0xffff",
+  "typ": "65504"
+ }
+]

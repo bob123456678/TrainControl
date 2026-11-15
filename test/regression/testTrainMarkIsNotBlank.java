@@ -126,7 +126,9 @@ public class testTrainMarkIsNotBlank
 
             g.dispose();
 
-            assertTrue(tile.getRGB(1, 15) != java.awt.Color.WHITE.getRGB(), "a square marked " + mark + " has no border"
+            // PICKABLE's thin gray line sits on the edge itself, the others' bands one pixel in
+            assertTrue(tile.getRGB(0, 15) != java.awt.Color.WHITE.getRGB()
+                || tile.getRGB(1, 15) != java.awt.Color.WHITE.getRGB(), "a square marked " + mark + " has no border"
                 + " drawn back over a neighbor's spill");
         }
     }

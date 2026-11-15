@@ -2,9 +2,12 @@ package org.traincontrol.gui.widgets;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
@@ -29,8 +32,6 @@ public final class BackupAction
      * Puts a yes/no question on screen from whatever thread is asking, and waits for the answer.  The backup runs on its own
      * thread and can neither show a dialog directly nor carry on without the answer, so the worker blocks and the event thread
      * asks.  Must not be called ON the event thread, where invokeAndWait deadlocks outright.
-     *
-     * @param question what to ask
      * @return true only for an explicit yes
      */
     private boolean askOnEventThread(String question)
@@ -38,9 +39,9 @@ public final class BackupAction
         final boolean[] yes = new boolean[1];
 
         Runnable ask = () -> yes[0] = JOptionPane.showConfirmDialog(this.ui, question,
-            I18n.t("ui.main.toolbar.backupData"), JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+            I18n.t("ui.main.titleBackupData"), JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
 
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        if (SwingUtilities.isEventDispatchThread())
         {
             ask.run();
 
@@ -49,7 +50,7 @@ public final class BackupAction
 
         try
         {
-            javax.swing.SwingUtilities.invokeAndWait(ask);
+            SwingUtilities.invokeAndWait(ask);
         }
         catch (InterruptedException e)
         {
@@ -92,9 +93,10 @@ public final class BackupAction
      * `backupData`'s body, which only `backupData` calls.  It takes no lock of its own: it is called only through
      * `TrainControlUI.backupData`, which holds `oneBackupAtATime` around it.
      *
+     * @param offerStationLayout whether to ask about a Central Station layout: not for the safety backup of a restore
      * @return the archive, or no archive, and what could not be saved
      */
-    public BackupOutcome writeTheBackup()
+    public BackupOutcome writeTheBackup(boolean offerStationLayout)
     {
         // The track diagram and the autonomy setup beside it: for a locally stored layout, config/ holds the pages AND config/autonomy holds
         // every station name, direction, caption and configuration, and that folder is the only copy of them anywhere.
@@ -122,9 +124,18 @@ public final class BackupAction
             // Written LIVE first, so the archive holds the state as it is now.  WITHOUT the session capture: that would
             // commit whatever was open in the autonomy editor from a thread that is not the event thread, and the
             // editor's Cancel could not undo it (discardEdits re-reads the file just written).  Callers fold the run
-            // first.
-            this.ui.saveState(false, false);
-            this.ui.getModel().saveState(false);
+            // first.  A file that will not save goes in as last saved, and the backup says so: the update and the
+            // restore stop on an incomplete backup.
+            java.util.Map<String, String> notSaved = new java.util.LinkedHashMap<>();
+
+            notSaved.put(TrainControlUI.DATA_FILE_NAME, this.ui.saveState(false, false));
+            notSaved.put(MarklinControlStation.DATA_FILE_NAME, this.ui.getModel().saveState(false));
+            notSaved.values().removeIf(why -> why == null);
+
+            for (java.util.Map.Entry<String, String> e : notSaved.entrySet())
+            {
+                unsaved.add(I18n.f("ui.backupHasItAsLastSaved", e.getKey(), e.getValue()));
+            }
 
             // One archive, holding all of it (FR-015): the autonomy setup is keyed by PAGE ID and those ids are defined
             // by config/gleisbild.cs2, so setup.json alone means nothing and a gleisbild.cs2 from a different day
@@ -132,8 +143,8 @@ public final class BackupAction
             java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
 
             state.put(TrainControlUI.DATA_FILE_NAME, new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)));
-            state.put(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME,
-                new File(Util.dataPath(org.traincontrol.marklin.MarklinControlStation.DATA_FILE_NAME)));
+            state.put(MarklinControlStation.DATA_FILE_NAME,
+                new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME)));
 
             // TrainControl's OWN routes, exported as JSON (FR-021): the `fahrstrassen.cs2` in the config folder is the
             // CENTRAL STATION's copy, and this application's route database is what runs.  Written through the door the
@@ -141,10 +152,9 @@ public final class BackupAction
             // the archive still written.
             try
             {
-                routesExport = java.io.File.createTempFile("tc-routes", ".json");
+                routesExport = File.createTempFile("tc-routes", ".json");
 
-                java.nio.file.Files.write(routesExport.toPath(),
-                    this.ui.getModel().exportRoutes().getBytes(StandardCharsets.UTF_8));
+                Files.write(routesExport.toPath(), this.ui.getModel().exportRoutes().getBytes(StandardCharsets.UTF_8));
 
                 state.put("routes.json", routesExport);
             }
@@ -172,14 +182,13 @@ public final class BackupAction
             // assumed, because it is a network fetch of every page.  Not offered without a station answering (OB-098),
             // through the one predicate: `getNetworkCommState` alone says whether the last SYNC succeeded, and a
             // simulated session calls itself connected.
-            if ((localLayout == null || localLayout.isEmpty())
+            if (offerStationLayout && (localLayout == null || localLayout.isEmpty())
                 && this.ui.isCentralStationConnected()
                 && askOnEventThread(I18n.t("ui.askBackupIncludeCentralStationLayout")))
             {
                 try
                 {
-                    centralStationCopy = java.nio.file.Files
-                        .createTempDirectory("tc-cs-backup").toFile();
+                    centralStationCopy = Files.createTempDirectory("tc-cs-backup").toFile();
 
                     this.ui.getModel().downloadLayout(centralStationCopy);
 
@@ -189,7 +198,7 @@ public final class BackupAction
                 {
                     // Named in the incomplete-backup dialog like any other source that could not
                     // be read. The rest of the archive is still worth writing.
-                    unsaved.add(I18n.t("ui.main.toolbar.downloadCSLayout") + ": " + cs);
+                    unsaved.add(I18n.t("ui.main.toolbar.headingCentralStationLayout") + ": " + cs);
 
                     if (centralStationCopy != null)
                     {
@@ -222,7 +231,25 @@ public final class BackupAction
 
             backupArchive = freeArchiveName(prefixForBackup());
 
-            unsaved.addAll(Util.zipInto(backupArchive, state));
+            List<String> notCopied = Util.zipInto(backupArchive, state);
+
+            // Not saved and not copied either (or not there to copy: zipInto skips a missing file without a word):
+            // not in the archive at all, which "as last saved" would deny
+            for (java.util.Map.Entry<String, String> entry : notSaved.entrySet())
+            {
+                String name = entry.getKey();
+                String failure = notCopied.stream().filter(f -> f.startsWith(name + ": ")).findFirst().orElse(null);
+
+                if (failure == null && state.get(name).exists()) continue;
+
+                notCopied.remove(failure);
+
+                unsaved.set(unsaved.indexOf(I18n.f("ui.backupHasItAsLastSaved", name, entry.getValue())),
+                    I18n.f("ui.backupNotSavedOrCopied", name, I18n.t(failure == null ? "ui.reasonNotWritten"
+                        : failure.contains("AccessDeniedException") ? "ui.reasonNoPermission" : "ui.reasonInUse")));
+            }
+
+            unsaved.addAll(notCopied);
 
             made[0] = backupArchive;
         }
@@ -246,9 +273,7 @@ public final class BackupAction
         return new BackupOutcome(made[0], unsaved);
     }
 
-    /**
-     * What `backupData` wrote, and what it could not (FR-125).
-     */
+    /** What `backupData` wrote, and what it could not (FR-125). */
     public static final class BackupOutcome
     {
         /** The archive, or null when none was written. */
@@ -306,9 +331,7 @@ public final class BackupAction
         return String.valueOf(failed);
     }
 
-    /**
-     * File > Backup TrainControl Data: writes the backup off the event thread and says what it holds.
-     */
+    /** File > Backup TrainControl Data: writes the backup off the event thread and says what it holds. */
     public void backupDataMenuItemActionPerformed()
     {
         final String folded = foldTheStoppedRun(this.ui);
@@ -334,7 +357,7 @@ public final class BackupAction
 
             if (this.ui.getModel() != null) this.ui.getModel().logf("ui.infoBackupCompleteSavedTo", fullPath);
 
-            javax.swing.SwingUtilities.invokeLater(() ->
+            SwingUtilities.invokeLater(() ->
             {
                 // The file's NAME in the dialog, its folder behind the button.
                 final String shown = made[0] != null && made[0].isFile()
@@ -350,7 +373,7 @@ public final class BackupAction
                     unsaved.isEmpty()
                         ? I18n.f("ui.infoBackupCompleteSavedTo", shown)
                         : I18n.f("ui.warnBackupIncomplete", shown, String.join(", ", unsaved)),
-                    I18n.t("ui.main.toolbar.backupData"),
+                    I18n.t("ui.main.titleBackupData"),
                     JOptionPane.YES_NO_OPTION,
                     unsaved.isEmpty() ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE,
                     null, choices, choices[0]);

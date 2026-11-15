@@ -16,9 +16,11 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.IntConsumer;
 import org.json.JSONObject;
@@ -47,8 +49,6 @@ public class Util
 
     /**
      * Opens a URL in a browser
-     * @param url
-     * @return 
      */
     public static boolean openUrl(String url)
     {
@@ -122,48 +122,24 @@ public class Util
 
     /**
      * The preference node for a class's package: the user node, unless a test run named a node of its own in
-     * `traincontrol.preferences`.  That node starts as a copy of the real one, which is only ever read, and a run that
-     * cannot build it does not fall back to the real one.
+     * `traincontrol.preferences`.  That node starts empty, every setting at its default, so a run is the same on any
+     * machine and the user's settings never reach it; the real node is neither read nor written.
      *
      * @param owner a class in the package
      * @return the node
      */
     public static java.util.prefs.Preferences preferencesFor(Class<?> owner)
     {
-        java.util.prefs.Preferences real = java.util.prefs.Preferences.userNodeForPackage(owner);
+        return preferencesFor(owner, System.getProperty(PREFERENCES_PROPERTY));
+    }
 
-        String run = System.getProperty(PREFERENCES_PROPERTY);
+    /** {@link #preferencesFor(Class)} for a run of this name, null or blank for none. */
+    public static java.util.prefs.Preferences preferencesFor(Class<?> owner, String run)
+    {
+        if (run == null || run.trim().isEmpty()) return java.util.prefs.Preferences.userNodeForPackage(owner);
 
-        if (run == null || run.trim().isEmpty()) return real;
-
-        String path = ISOLATED_PREFERENCES_ROOT + "/" + run.trim() + real.absolutePath();
-
-        try
-        {
-            java.util.prefs.Preferences root = java.util.prefs.Preferences.userRoot();
-
-            boolean fresh = !root.nodeExists(path);
-
-            java.util.prefs.Preferences isolated = root.node(path);
-
-            if (fresh)
-            {
-                for (String key : real.keys())
-                {
-                    String value = real.get(key, null);
-
-                    if (value != null) isolated.put(key, value);
-                }
-
-                isolated.flush();
-            }
-
-            return isolated;
-        }
-        catch (java.util.prefs.BackingStoreException | IllegalArgumentException | IllegalStateException cannot)
-        {
-            throw new IllegalStateException("could not build this run's own preference node " + path, cannot);
-        }
+        return java.util.prefs.Preferences.userRoot().node(ISOLATED_PREFERENCES_ROOT + "/" + run.trim() + "/"
+            + owner.getPackage().getName().replace('.', '/'));
     }
 
     /**
@@ -177,12 +153,9 @@ public class Util
     {
         File dir = new File(dataPath(BACKUP_FOLDER));
 
-        if (dir.isDirectory() || dir.mkdirs())
-        {
-            return new File(dir, fileName).getPath();
-        }
+        if (dir.isDirectory() || dir.mkdirs()) return new File(dir, fileName).getPath();
 
-        // Folder unavailable - fall back to the current directory (the original behavior)
+        // Folder unavailable - fall back to the current directory
         return fileName;
     }
 
@@ -238,10 +211,7 @@ public class Util
     {
         File dir = locIconFolder();
 
-        if (dir.isDirectory() || dir.mkdirs())
-        {
-            return new File(dir, fileName);
-        }
+        if (dir.isDirectory() || dir.mkdirs()) return new File(dir, fileName);
 
         return null;
     }
@@ -395,15 +365,26 @@ public class Util
 
         if (parent != null) parent.mkdirs();
 
-        try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(
-            new java.io.BufferedOutputStream(new java.io.FileOutputStream(zip))))
-        {
-            for (java.util.Map.Entry<String, File> source : sources.entrySet())
-            {
-                if (source.getValue() == null || !source.getValue().exists()) continue;
+        // Each archive has a name of its own, so writeAtomically's sweep never meets a killed backup's staging file:
+        // the backup folder, ours alone, is swept of every one, the data files' backups included
+        if (parent != null && BACKUP_FOLDER.equals(parent.getName())) sweepStaleStaging(parent, ".*");
 
-                addToZip(out, source.getValue(), source.getKey(), failed, 0);
-            }
+        // Staged, so a backup cut off part way (the program closed under it) leaves nothing under the archive's name
+        try
+        {
+            writeAtomically(zip, staged ->
+            {
+                try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(
+                    new java.io.BufferedOutputStream(staged)))
+                {
+                    for (java.util.Map.Entry<String, File> source : sources.entrySet())
+                    {
+                        if (source.getValue() == null || !source.getValue().exists()) continue;
+
+                        addToZip(out, source.getValue(), source.getKey(), failed, 0);
+                    }
+                }
+            });
         }
         catch (IOException | RuntimeException e)
         {
@@ -427,18 +408,16 @@ public class Util
 
                 if (children == null) return;
 
-                for (File child : children)
-                {
-                    addToZip(out, child, name + "/" + child.getName(), failed, depth + 1);
-                }
+                for (File child : children) addToZip(out, child, name + "/" + child.getName(), failed, depth + 1);
 
                 return;
             }
 
+            // Read before the entry is begun, so a file that will not read leaves no empty entry to be restored
+            byte[] content = java.nio.file.Files.readAllBytes(source.toPath());
+
             out.putNextEntry(new java.util.zip.ZipEntry(name));
-
-            java.nio.file.Files.copy(source.toPath(), out);
-
+            out.write(content);
             out.closeEntry();
         }
         catch (IOException | RuntimeException e)
@@ -517,10 +496,7 @@ public class Util
                 return;
             }
 
-            for (File child : children)
-            {
-                copyInto(child, new File(target, child.getName()), failed, visited, depth + 1);
-            }
+            for (File child : children) copyInto(child, new File(target, child.getName()), failed, visited, depth + 1);
 
             return;
         }
@@ -570,6 +546,10 @@ public class Util
         return name.replaceAll("[\\\\/:*?\"<>|\\x00-\\x1F]", "_");
     }
 
+    /** Whether a drive's refusal to force a staged file to disk was logged; once a session is enough. */
+    private static final java.util.concurrent.atomic.AtomicBoolean forceRefusalLogged =
+        new java.util.concurrent.atomic.AtomicBoolean();
+
     /**
      * Writes a file without ever leaving the target truncated: a crash or failed write mid-way would silently lose the
      * operator's work.  The content is staged in a sibling file and moved into place only once complete, as
@@ -578,11 +558,17 @@ public class Util
      *
      * @param target the file to end up with
      * @param body writes the content to the stream it is given; need not close it
-     * @throws IOException
      */
     public static void writeAtomically(File target, StreamWriter body) throws IOException
     {
-        File staging = new File(target.getAbsolutePath() + PARTIAL_DOWNLOAD_SUFFIX);
+        File folder = target.getAbsoluteFile().getParentFile();
+
+        sweepStaleStaging(folder, java.util.regex.Pattern.quote(target.getName()));
+
+        // A name of its own, so two writes of one file at once (the exit and a backup's first save) cannot share it
+        File staging = File.createTempFile(target.getName() + ".tmp", PARTIAL_DOWNLOAD_SUFFIX, folder);
+
+        stagingInProgress.add(staging);
 
         try
         {
@@ -592,12 +578,31 @@ public class Util
 
                 out.flush();
             }
+
+            // On disk before the move, or a power cut just after it can leave the target empty.  A handle of its own,
+            // as the body may close the stream.  A drive that refuses (a network share, a OneDrive placeholder) still
+            // gets the file: the force guards against a power cut, and must not stop every save.
+            try (java.nio.channels.FileChannel written = java.nio.channels.FileChannel.open(staging.toPath(),
+                java.nio.file.StandardOpenOption.WRITE))
+            {
+                written.force(true);
+            }
+            catch (IOException refused)
+            {
+                if (!forceRefusalLogged.getAndSet(true))
+                {
+                    java.util.logging.Logger.getLogger(Util.class.getName()).log(java.util.logging.Level.WARNING,
+                        "Saved files cannot be forced to disk here; saving without", refused);
+                }
+            }
         }
         catch (IOException | RuntimeException e)
         {
             // The half-written staging file is worthless and would otherwise accumulate beside the
             // target.  The target itself has not been touched, which is the point of all this.
             staging.delete();
+
+            stagingInProgress.remove(staging);
 
             throw e;
         }
@@ -622,12 +627,40 @@ public class Util
 
             throw moveFailed;
         }
+        finally
+        {
+            stagingInProgress.remove(staging);
+        }
+    }
+
+    /** The staging files of the writes under way, which a sweep leaves alone however old. */
+    private static final Set<File> stagingInProgress = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** How old a staging file no write owns must be before the next write of its target takes it as a killed write's. */
+    private static final long STALE_STAGING_MS = 60_000;
+
+    /**
+     * Deletes the staging files a killed write left, of the targets whose names match the pattern `target`: a minute
+     * old, and owned by no write under way.
+     */
+    private static void sweepStaleStaging(File folder, String target)
+    {
+        File[] left = folder.listFiles((at, name) -> name.matches(target + "\\.tmp\\d+\\.part"));
+
+        if (left == null) return;
+
+        for (File one : left)
+        {
+            // Litter, not data: one that will not delete is tried again at the next write
+            if (!stagingInProgress.contains(one) && System.currentTimeMillis() - one.lastModified() > STALE_STAGING_MS)
+            {
+                one.delete();
+            }
+        }
     }
 
     /**
      * Downloads a file from a URL
-     * @param fileURL
-     * @param saveOutputFile
      * @throws IOException
      */
     public static void downloadFile(String fileURL, File saveOutputFile) throws IOException
@@ -639,8 +672,6 @@ public class Util
      * Downloads a file from a URL, reporting progress as it goes.
      * The output file is written under a temporary name and only renamed once complete,
      * so that an interrupted download never looks like a finished one.
-     * @param fileURL
-     * @param saveOutputFile
      * @param progress - receives the percentage downloaded, or -1 if the size is unknown
      * @throws IOException
      */
@@ -703,7 +734,6 @@ public class Util
      * rather than by the letter: a name with no "v", or another "v" ("TrainControl Preview v3.0.0"), must not throw or
      * hand back a piece of the name.  Release names are typed by hand at tag time.
      *
-     * @param gitHubReleaseInfo
      * @return the version, or null when the name carries no number
      */
     public static String parseReleaseVersion(JSONObject gitHubReleaseInfo)
@@ -720,10 +750,7 @@ public class Util
 
         while (tagged.find())
         {
-            if (anchored == null || tagged.group(1).length() > anchored.length())
-            {
-                anchored = tagged.group(1);
-            }
+            if (anchored == null || tagged.group(1).length() > anchored.length()) anchored = tagged.group(1);
         }
 
         if (anchored != null) return anchored;
@@ -746,8 +773,6 @@ public class Util
     
     /**
      * Parses the release download URL from getLatestReleaseInfo
-     * @param gitHubReleaseInfo
-     * @return 
      */
     public static String parseDownloadURL(JSONObject gitHubReleaseInfo)
     {
@@ -757,7 +782,6 @@ public class Util
     /**
      * The size in bytes of the release download, so an update can tell a whole download from one cut short (FR-125).
      *
-     * @param gitHubReleaseInfo
      * @return the size, or -1 when the release does not give one
      */
     public static long parseDownloadSize(JSONObject gitHubReleaseInfo)
@@ -768,7 +792,6 @@ public class Util
     /**
      * The release download's digest, `sha256:<hex>`, where the release gives one (FR-125).
      *
-     * @param gitHubReleaseInfo
      * @return the digest, or null
      */
     public static String parseDownloadDigest(JSONObject gitHubReleaseInfo)
@@ -780,8 +803,6 @@ public class Util
     
     /**
      * Parses the release page URL from getLatestReleaseInfo
-     * @param gitHubReleaseInfo
-     * @return 
      */
     public static String parseReleaseURL(JSONObject gitHubReleaseInfo)
     {
@@ -791,7 +812,6 @@ public class Util
     /**
      * Fetches the latest release info from github
      * @param repo "username/repo_name"
-     * @return 
      * @throws java.io.IOException 
      */
     public static JSONObject getLatestReleaseInfo(String repo) throws IOException, Exception
@@ -817,8 +837,6 @@ public class Util
     
     /**
      * Escapes data for a CSV
-     * @param input
-     * @return 
      */
     public static String escapeCsv(String input)
     {
@@ -887,5 +905,27 @@ public class Util
         int byLength = (a.length() - i) - (b.length() - j);
 
         return byLength != 0 ? byLength : a.compareTo(b);
+    }
+
+    /**
+     * Names by their letters, the same on every machine.  Both are put in lower case, lose the accents Unicode splits
+     * off ("\u00d6lberg" among the O's), and have \u00df, \u00e6, \u0153, \u00fe, \u00f0, \u0111, \u00f8 and \u0142 written as
+     * ss, ae, oe, th, d, d, o and l ("Stra\u00dfe" beside "Strasse"); then they compare character by character, so a
+     * space comes before any letter ("Main Yard" before "Mainline").  Callers break the ties.
+     *
+     * @param a one name
+     * @param b the other
+     * @return negative, zero or positive, as Comparator
+     */
+    public static int byLetters(String a, String b)
+    {
+        return plain(a).compareTo(plain(b));
+    }
+
+    private static String plain(String name)
+    {
+        return Normalizer.normalize(name.toLowerCase(Locale.ROOT), Normalizer.Form.NFD).replaceAll("\\p{M}", "")
+            .replace("\u00df", "ss").replace("\u00e6", "ae").replace("\u0153", "oe").replace("\u00fe", "th")
+            .replace("\u00f0", "d").replace("\u0111", "d").replace("\u00f8", "o").replace("\u0142", "l");
     }
 }

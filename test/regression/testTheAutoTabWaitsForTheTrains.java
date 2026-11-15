@@ -17,16 +17,15 @@ import static regression.testTheImportDoorReadsAnOldFile.closeTheEditor;
 import org.traincontrol.util.I18n;
 import static regression.testNoSetupEditDuringARun.control;
 import static regression.testTheImportDoorReadsAnOldFile.answeringYes;
+import static regression.testTheImportDoorReadsAnOldFile.onItsOwnWindow;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
+import support.Reflect;
 
 /**
- * The Auto tab waits for the trains at both ends of a run it did not see coming: a Start that starts
- * nothing gives it back, and a hand send grays it from its click.  The rule itself, and a whole run, are claimed in
- * `regression.testNoSetupEditDuringARun` (`testTheAutoTabIsGreyedWhileAutonomyIsBusy`,
- * `testARunGreysTheAutoTabAndItsStopGivesItBack`), whose helpers these share.
- *
- * Its own class because each of these drives a real run in its window, and that class already holds thirty-nine windows:
- * every window a test opens keeps its threads, and a class of many runs out of heap.
+ * The Auto tab waits for the trains at both ends of a run it did not see coming: a Start that starts nothing gives it
+ * back, and a hand send grays it from its click.  The rule itself, and a whole run, are claimed in
+ * `regression.testNoSetupEditDuringARun`, whose helpers these share.  Its own class: each test drives a real run in
+ * its window, and every window keeps its threads, so a class of many runs out of heap.
  *
  * @author Adam
  */
@@ -35,23 +34,15 @@ public class testTheAutoTabWaitsForTheTrains
 
     /**
      * A Start that starts nothing gives Start and the Auto tab back: every train to run was skipped (here each with no
-     * speed, as on a station out of service), and the railway must clear its own flag, or Start stays grayed with
-     * Graceful Stop offered over nothing and the Auto tab, which counts that offer as a run, says to wait for trains
+     * speed), and the railway must clear its own flag, or Start stays grayed and the Auto tab says to wait for trains
      * that are not moving.
      *
-     *
      * MUTATION: leave Start's buttons as they are when nothing started, or say nothing, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAStartThatStartsNothingGivesTheAutoTabBack() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
-
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         boolean echoWas = org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
@@ -59,24 +50,20 @@ public class testTheAutoTabWaitsForTheTrains
 
         final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
 
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
             // THE POWER ON, which the gate asks
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
 
-            ui[0].getModel().go();
+            ui.getModel().go();
 
             long until = System.currentTimeMillis() + 5000;
 
-            while (!ui[0].getModel().getPowerState() && System.currentTimeMillis() < until) Thread.sleep(50);
+            while (!ui.getModel().getPowerState() && System.currentTimeMillis() < until) Thread.sleep(50);
 
-            assertTrue(ui[0].getModel().getPowerState(), "precondition: the power is not on");
+            assertTrue(ui.getModel().getPowerState(), "precondition: the power is not on");
 
-            final org.traincontrol.automation.Layout railway = ui[0].getModel().getAutoLayout();
+            final org.traincontrol.automation.Layout railway = ui.getModel().getAutoLayout();
 
             // EVERY TRAIN TO RUN SKIPPED, for want of a speed
             for (org.traincontrol.base.Locomotive loc : railway.getLocomotivesToRun())
@@ -91,10 +78,10 @@ public class testTheAutoTabWaitsForTheTrains
 
             final java.util.Map<String, String> atRest = new java.util.LinkedHashMap<>();
 
-            for (String name : WAITING_FOR_THE_TRAINS) atRest.put(name, control(ui[0], name).getToolTipText());
+            for (String name : WAITING_FOR_THE_TRAINS) atRest.put(name, control(ui, name).getToolTipText());
 
             // GRACEFUL STOP WATCHED, so its offer and its going are both seen however fast they come
-            final javax.swing.JComponent stop = control(ui[0], "gracefulStop");
+            final javax.swing.JComponent stop = control(ui, "gracefulStop");
 
             final List<Object> offered = Collections.synchronizedList(new ArrayList<>());
 
@@ -103,15 +90,13 @@ public class testTheAutoTabWaitsForTheTrains
             SwingUtilities.invokeAndWait(() -> stop.addPropertyChangeListener("enabled", watch));
 
             final java.lang.reflect.Method start =
-                TrainControlUI.class.getDeclaredMethod("startAutonomyActionPerformed", java.awt.event.ActionEvent.class);
-
-            start.setAccessible(true);
+                Reflect.method(TrainControlUI.class, "startAutonomyActionPerformed", java.awt.event.ActionEvent.class);
 
             final List<String> answered = answeringYes(() ->
             {
                 try
                 {
-                    start.invoke(ui[0], new Object[] {null});
+                    start.invoke(ui, new Object[] {null});
                 }
                 catch (Exception e)
                 {
@@ -119,7 +104,7 @@ public class testTheAutoTabWaitsForTheTrains
                 }
             });
 
-            final javax.swing.JComponent startButton = control(ui[0], "startAutonomy");
+            final javax.swing.JComponent startButton = control(ui, "startAutonomy");
 
             // WHAT IT SAYS, read and closed - started once Start's own questions are answered
             final List<String> said = Collections.synchronizedList(new ArrayList<String>());
@@ -147,7 +132,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             for (String name : WAITING_FOR_THE_TRAINS)
             {
-                javax.swing.JComponent c = control(ui[0], name);
+                javax.swing.JComponent c = control(ui, name);
 
                 assertTrue(c.isEnabled(), name + " is still greyed after a Start that started nothing (RSA27-C1)");
 
@@ -168,8 +153,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             assertTrue(said.contains(nothing) || answered.contains(nothing), "a Start that started nothing said nothing"
                 + " - only the log said why: " + said + " " + answered);
-        }
-        finally
+        }, ui ->
         {
             going.set(false);
 
@@ -178,22 +162,17 @@ public class testTheAutoTabWaitsForTheTrains
                 was.getKey().setPreferredSpeed(was.getValue());
             }
 
-            if (ui[0] != null && ui[0].getModel().hasAutoLayout()) ui[0].getModel().getAutoLayout().stopLocomotives();
+            if (ui != null && ui.getModel().hasAutoLayout()) ui.getModel().getAutoLayout().stopLocomotives();
 
             org.traincontrol.marklin.MarklinControlStation.DEBUG_SIMULATE_PACKETS = echoWas;
-
-            sandboxed.close();
-        }
+        });
     }
 
     /**
      * A hand send grays the Auto tab from its click, not once its train sets off: the dispatch sets the route first
-     * (seconds on a long one), and until the railway's first refresh the settings, Execute Timetable and the capture
-     * toggle would be offered and then refused.  Given back at the train's arrival.
+     * (seconds on a long one), so the settings would be offered and then refused.  Given back at the train's arrival.
      *
      * MUTATION: leave the Auto tab to the train's departure, or never count the hand send down, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAHandSendGreysTheAutoTabFromItsClick() throws Exception
@@ -340,46 +319,34 @@ public class testTheAutoTabWaitsForTheTrains
      * the Edit button's code opens the editor used last, the track diagram's after it.
      *
      * MUTATION: send the button to the Edit button's code, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testTheSettingsTabOpensTheAutonomyEditor() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
             // THE TRACK EDITOR, USED LAST
-            answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
+            answeringYes(() -> ui.openLayoutEditor(null, Boolean.FALSE, null, true));
 
-            org.traincontrol.gui.layouteditor.LayoutEditor first = theEditor(ui[0]);
+            org.traincontrol.gui.layouteditor.LayoutEditor first = theEditor(ui);
 
             assertNotNull(first, "precondition: the track editor did not open");
 
             assertFalse(first.isAutonomyMode(), "precondition: the editor opened was not the track editor");
 
-            closeTheEditor(ui[0]);
+            closeTheEditor(ui);
 
             // THE SETTINGS TAB'S BUTTON
-            final java.lang.reflect.Method press = TrainControlUI.class.getDeclaredMethod(
+            final java.lang.reflect.Method press = Reflect.method(TrainControlUI.class,
                 "editAutonomyFromSettingsActionPerformed", java.awt.event.ActionEvent.class);
-
-            press.setAccessible(true);
 
             answeringYes(() ->
             {
                 try
                 {
-                    press.invoke(ui[0], new Object[] {null});
+                    press.invoke(ui, new Object[] {null});
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -387,52 +354,34 @@ public class testTheAutoTabWaitsForTheTrains
                 }
             });
 
-            org.traincontrol.gui.layouteditor.LayoutEditor opened = theEditor(ui[0]);
+            org.traincontrol.gui.layouteditor.LayoutEditor opened = theEditor(ui);
 
             assertNotNull(opened, "Edit Autonomy Paths in Track Diagram opened no editor");
 
             assertTrue(opened.isAutonomyMode(), "Edit Autonomy Paths in Track Diagram opened the track editor, the one used"
                 + " last, not the autonomy editor");
 
-            closeTheEditor(ui[0]);
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+            closeTheEditor(ui);
+        });
     }
 
     /**
      * An editor stays one editor through its own switches, and is counted open until it closes.
      *
-     * Each switch hands over through the main window's own teardown (`autonomyEditorClosed` for the autonomy editor,
-     * the refresh's `layoutRefreshCompleteInternal` for the track editor), which gives Edit and Edit Autonomy Paths
-     * back, and the switch's posted arrival grays them again.  A press in between opens a second editor, and closing
-     * the newer leaves a gate that asked only the newest letting Start run trains with the other still open.  So open
-     * is asked of the editor windows, and neither button is offered while one is there.
-     *
-     * Watched through Autonomy Setup to Track Diagram (with both buttons pressed in the hand-over's gap), back to
-     * Autonomy Setup, and a page switch; then the close gives both back.
+     * Each switch hands over through the main window's teardown, which gives Edit and Edit Autonomy Paths back until
+     * the posted arrival grays them again; a press in between opens a second editor, and closing the newer would let
+     * Start run trains with the other still open.  So open is asked of the editor windows.  Watched through Autonomy
+     * Setup to Track Diagram (both buttons pressed in the gap), back, and a page switch.
      *
      * MUTATION: ask the window's flag, not its editor windows, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnEditorStaysOneThroughItsSwitches() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
             // EITHER BUTTON OFFERED WHILE AN EDITOR WINDOW IS THERE
             final List<String> offered = Collections.synchronizedList(new ArrayList<String>());
 
@@ -442,7 +391,7 @@ public class testTheAutoTabWaitsForTheTrains
             {
                 try
                 {
-                    if (Boolean.TRUE.equals(e.getNewValue()) && editorWindows(ui[0]) > 0)
+                    if (Boolean.TRUE.equals(e.getNewValue()) && editorWindows(ui) > 0)
                     {
                         offered.add(((javax.swing.AbstractButton) e.getSource()).getText() + " during " + during[0]);
                     }
@@ -453,15 +402,15 @@ public class testTheAutoTabWaitsForTheTrains
                 }
             };
 
-            final javax.swing.AbstractButton edit = (javax.swing.AbstractButton) control(ui[0], "editLayoutButton");
-            final javax.swing.AbstractButton paths = (javax.swing.AbstractButton) control(ui[0], "editAutonomyFromSettings");
+            final javax.swing.AbstractButton edit = (javax.swing.AbstractButton) control(ui, "editLayoutButton");
+            final javax.swing.AbstractButton paths = (javax.swing.AbstractButton) control(ui, "editAutonomyFromSettings");
 
             edit.addPropertyChangeListener("enabled", watch);
             paths.addPropertyChangeListener("enabled", watch);
 
-            answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.TRUE, null, true));
+            answeringYes(() -> ui.openLayoutEditor(null, Boolean.TRUE, null, true));
 
-            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui[0]);
+            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui);
 
             assertNotNull(editor, "precondition: the autonomy editor did not open");
 
@@ -485,9 +434,9 @@ public class testTheAutoTabWaitsForTheTrains
                 });
             });
 
-            waitForTheSwitch(ui[0], editor);
+            waitForTheSwitch(ui, editor);
 
-            assertEquals(editorWindows(ui[0]), 1, "Edit or Edit Autonomy Paths pressed while the autonomy editor handed over to"
+            assertEquals(editorWindows(ui), 1, "Edit or Edit Autonomy Paths pressed while the autonomy editor handed over to"
                 + " Track Diagram opened a second editor (RSA28-B1)");
 
             assertFalse(editor.isAutonomyMode(), "precondition: the editor did not arrive at Track Diagram");
@@ -501,16 +450,14 @@ public class testTheAutoTabWaitsForTheTrains
 
             answeringYes(() -> setup.doClick());
 
-            waitForTheSwitch(ui[0], editor);
+            waitForTheSwitch(ui, editor);
 
             assertTrue(editor.isAutonomyMode(), "precondition: the editor did not arrive at Autonomy Setup");
 
             // A PAGE SWITCH
             during[0] = "a page switch";
 
-            final java.lang.reflect.Method step = editor.getClass().getDeclaredMethod("stepPage", int.class);
-
-            step.setAccessible(true);
+            final java.lang.reflect.Method step = Reflect.method(editor.getClass(), "stepPage", int.class);
 
             answeringYes(() ->
             {
@@ -524,12 +471,12 @@ public class testTheAutoTabWaitsForTheTrains
                 }
             });
 
-            waitForTheSwitch(ui[0], editor);
+            waitForTheSwitch(ui, editor);
 
-            assertEquals(editorWindows(ui[0]), 1, "precondition: the switches left " + editorWindows(ui[0]) + " editors");
+            assertEquals(editorWindows(ui), 1, "precondition: the switches left " + editorWindows(ui) + " editors");
 
             // THE GATE SHUT WHILE IT IS OPEN
-            assertTrue(ui[0].isLayoutEditorOpen(), "the gate does not see the editor that is open (RSA28-B1)");
+            assertTrue(ui.isLayoutEditorOpen(), "the gate does not see the editor that is open (RSA28-B1)");
 
             assertEquals(offered, new ArrayList<String>(), "Edit or Edit Autonomy Paths was offered while an editor was open"
                 + " (RSA28-B1)");
@@ -537,9 +484,7 @@ public class testTheAutoTabWaitsForTheTrains
             // AND THE CLOSE - the window's own - GIVES BOTH BACK
             during[0] = "the close";
 
-            final java.lang.reflect.Method close = editor.getClass().getDeclaredMethod("confirmExit");
-
-            close.setAccessible(true);
+            final java.lang.reflect.Method close = Reflect.method(editor.getClass(), "confirmExit");
 
             answeringYes(() ->
             {
@@ -553,9 +498,9 @@ public class testTheAutoTabWaitsForTheTrains
                 }
             });
 
-            waitForTheSwitch(ui[0], editor);
+            waitForTheSwitch(ui, editor);
 
-            assertEquals(editorWindows(ui[0]), 0, "the editor did not close");
+            assertEquals(editorWindows(ui), 0, "the editor did not close");
 
             assertTrue(edit.isEnabled() && paths.isEnabled(), "Edit or Edit Autonomy Paths is still greyed once the editor"
                 + " closed");
@@ -564,15 +509,13 @@ public class testTheAutoTabWaitsForTheTrains
             // failed: asked again once the window has gone
             during[0] = "an editor given up on";
 
-            answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
+            answeringYes(() -> ui.openLayoutEditor(null, Boolean.FALSE, null, true));
 
-            final org.traincontrol.gui.layouteditor.LayoutEditor again = theEditor(ui[0]);
+            final org.traincontrol.gui.layouteditor.LayoutEditor again = theEditor(ui);
 
             assertNotNull(again, "precondition: the track editor did not open again");
 
-            final java.lang.reflect.Method abandon = again.getClass().getDeclaredMethod("confirmExitWithoutAsking");
-
-            abandon.setAccessible(true);
+            final java.lang.reflect.Method abandon = Reflect.method(again.getClass(), "confirmExitWithoutAsking");
 
             answeringYes(() ->
             {
@@ -588,55 +531,39 @@ public class testTheAutoTabWaitsForTheTrains
 
             for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertEquals(editorWindows(ui[0]), 0, "precondition: the editor given up on is still there");
+            assertEquals(editorWindows(ui), 0, "precondition: the editor given up on is still there");
 
             assertTrue(edit.isEnabled() && paths.isEnabled(), "Edit or Edit Autonomy Paths is still greyed once an editor"
                 + " that gave them back before its window went has gone (RSA28-B1)");
 
             assertEquals(offered, new ArrayList<String>(), "Edit or Edit Autonomy Paths was offered while an editor was open"
                 + " (RSA28-B1)");
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
-     * A Save and Continue at a switch leaves nothing to ask at a close in the switch's gap.
-     *
-     * The save must take the undo point again, or until the switch arrives the window still thinks it has unsaved work
-     * and a close asks *"throw away everything changed since you last saved"* - the opposite of what was just done.
+     * A Save and Continue at a switch leaves nothing to ask at a close in the switch's gap: the save must take the undo
+     * point again, or the close asks *"throw away everything changed since you last saved"*.
      *
      * MUTATION: keep the old undo point at a Save and Continue, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testASaveAtASwitchLeavesNothingToAskAtTheClose() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            answeringYes(() -> ui.openLayoutEditor(null, Boolean.TRUE, null, true));
 
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.TRUE, null, true));
-
-            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui[0]);
+            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui);
 
             assertNotNull(editor, "precondition: the autonomy editor did not open");
 
             assertTrue(editor.isAutonomyMode(), "precondition: the editor opened was not the autonomy editor");
 
             // AN EDIT: a station's longest train
-            final org.traincontrol.automationui.AutonomySession session = ui[0].getAutonomySession();
+            final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
 
             org.traincontrol.automationui.TileGraph.TileKey station = null;
 
@@ -655,9 +582,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             SwingUtilities.invokeAndWait(() -> session.setPointProperty(edited, "maxTrainLength", length));
 
-            final java.lang.reflect.Method unsaved = editor.getClass().getDeclaredMethod("hasUnsavedAutonomyWork");
-
-            unsaved.setAccessible(true);
+            final java.lang.reflect.Method unsaved = Reflect.method(editor.getClass(), "hasUnsavedAutonomyWork");
 
             final boolean[] waiting = new boolean[1];
 
@@ -689,77 +614,49 @@ public class testTheAutoTabWaitsForTheTrains
             assertEquals(asked.get(0), I18n.t("layout.ui.confirmSwitchWithUnsavedWork"), "precondition: the switch's question"
                 + " was not the first");
 
-            waitForTheSwitch(ui[0], editor);
+            waitForTheSwitch(ui, editor);
 
             Object kept = session.getPointProperty(edited, "maxTrainLength");
 
             assertTrue(kept instanceof Number && ((Number) kept).intValue() == length, "the saved edit was lost: " + kept);
 
-            assertEquals(editorWindows(ui[0]), 0, "the editor did not close");
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+            assertEquals(editorWindows(ui), 0, "the editor did not close");
+        });
     }
 
     /**
-     * An editor that fails to build leaves no frame behind.
-     *
-     * `initComponents` makes the frame before the rest of the build runs.  The main window counts every editor frame of
-     * its own, so a frame left by a build that threw (a page gone in a reload, the one route found) keeps Edit and Edit
-     * Autonomy Paths grayed and the gate saying "Close the editor first" for the session.
-     *
-     * Driven through the real door with a page the model does not have, chosen in the page list with its listeners off.
+     * An editor that fails to build leaves no frame behind: the main window counts every editor frame, so one left by a
+     * build that threw keeps Edit grayed for the session.  Driven through the real door with a page the model does not
+     * have, chosen in the page list with its listeners off.
      *
      * MUTATION: let the build's failure leave its frame, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnEditorThatFailsToBuildLeavesNoFrame() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
             // A PAGE THE MODEL DOES NOT HAVE, chosen with the list's listeners off
-            openTheEditorOnAPageChosenWithTheListenersOff(ui[0], "No such page (RSA29-C1)");
+            openTheEditorOnAPageChosenWithTheListenersOff(ui, "No such page (RSA29-C1)");
 
-            assertEquals(editorWindows(ui[0]), 0, "an editor that failed to build left its frame (RSA29-C1)");
+            assertEquals(editorWindows(ui), 0, "an editor that failed to build left its frame (RSA29-C1)");
 
-            assertFalse(ui[0].isLayoutEditorOpen(), "the gate counts an editor that failed to build (RSA29-C1)");
+            assertFalse(ui.isLayoutEditorOpen(), "the gate counts an editor that failed to build (RSA29-C1)");
 
-            assertTrue(control(ui[0], "editLayoutButton").isEnabled()
-                && control(ui[0], "editAutonomyFromSettings").isEnabled(), "Edit or Edit Autonomy Paths is greyed after an"
+            assertTrue(control(ui, "editLayoutButton").isEnabled()
+                && control(ui, "editAutonomyFromSettings").isEnabled(), "Edit or Edit Autonomy Paths is greyed after an"
                 + " editor failed to build (RSA29-C1)");
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
-     * An editor whose build raises an Error, rather than an exception, gives Edit back and opens the gate.
-     *
-     * The fix disposes the frame and throws on, and `openLayoutEditor`'s catch gives Edit back; it must take an Error
-     * too, or Edit stays grayed and every train is refused "Close the editor first" for the session.
-     *
-     * Driven through the real door with a page the model has, whose first use raises an `AssertionError`, chosen in the
-     * page list with its listeners off.
+     * An editor whose build raises an Error, rather than an exception, gives Edit back and opens the gate:
+     * `openLayoutEditor`'s catch must take an Error too.  Driven with a page whose first use raises an
+     * `AssertionError`.
      *
      * MUTATION: catch only exceptions there again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnEditorWhoseBuildRaisesAnErrorGivesEditBack() throws Exception
@@ -781,9 +678,8 @@ public class testTheAutoTabWaitsForTheTrains
             ui[0] = sandboxed.hold(openTheWindow());
 
             // A PAGE WHOSE FIRST USE RAISES AN ERROR
-            java.lang.reflect.Field db = org.traincontrol.marklin.MarklinControlStation.class.getDeclaredField("layoutDB");
-
-            db.setAccessible(true);
+            java.lang.reflect.Field db =
+                Reflect.field(org.traincontrol.marklin.MarklinControlStation.class, "layoutDB");
 
             @SuppressWarnings("unchecked")
             org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> held =
@@ -802,9 +698,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             openTheEditorOnAPageChosenWithTheListenersOff(ui[0], failing);
 
-            java.lang.reflect.Field onItsWay = TrainControlUI.class.getDeclaredField("editorOnItsWay");
-
-            onItsWay.setAccessible(true);
+            java.lang.reflect.Field onItsWay = Reflect.field(TrainControlUI.class, "editorOnItsWay");
 
             assertEquals(editorWindows(ui[0]), 0, "an editor whose build raised an Error left its frame");
 
@@ -824,18 +718,10 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * An editor whose posted build - the drawing, after the frame is made - raises an Error gives Edit back and opens
-     * the gate.
-     *
-     * `openLayoutEditor`'s catch takes Errors, which covers the construction; the drawing runs later, in `render`'s
-     * posted body, whose catch must take them too, or the hidden frame stays counted and every train is refused "Close
-     * the editor first" for the session.
-     *
-     * Driven through the real door with a page whose size, asked by the drawing, raises an `AssertionError`.
+     * An editor whose posted build (the drawing, after the frame is made) raises an Error gives Edit back and opens
+     * the gate: `render`'s catch must take Errors too.  Driven with a page whose size raises an `AssertionError`.
      *
      * MUTATION: let `render`'s catch take exceptions only again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAnEditorWhoseDrawingRaisesAnErrorGivesEditBack() throws Exception
@@ -895,15 +781,9 @@ public class testTheAutoTabWaitsForTheTrains
 
     /**
      * A page switch that raises an Error gives the window up, as one that throws an exception does: `arriveAt` must
-     * catch more than `RuntimeException`, or the window is left half switched (one page shown, wired to another) and
-     * counted as an open editor for the session.
-     *
-     * The track editor opened on a page, then switched to a page whose size, asked by the drawing, raises an
-     * `AssertionError`.
+     * catch more than `RuntimeException`, or the window is left half switched and counted as an open editor.
      *
      * MUTATION: let `arriveAt`'s catch take exceptions only again, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testAPageSwitchThatRaisesAnErrorGivesTheWindowUp() throws Exception
@@ -934,10 +814,8 @@ public class testTheAutoTabWaitsForTheTrains
 
             pages.add(aPageThatFailsToDraw(failing, ui[0]), failing, failing);
 
-            final java.lang.reflect.Method arrive = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredMethod("arriveAt",
-                String.class, boolean.class);
-
-            arrive.setAccessible(true);
+            final java.lang.reflect.Method arrive = Reflect.method(org.traincontrol.gui.layouteditor.LayoutEditor.class,
+                "arriveAt", String.class, boolean.class);
 
             final Throwable[] thrown = new Throwable[1];
 
@@ -985,9 +863,7 @@ public class testTheAutoTabWaitsForTheTrains
     private static org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String> thePages(
         TrainControlUI ui) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field db = org.traincontrol.marklin.MarklinControlStation.class.getDeclaredField("layoutDB");
-
-        db.setAccessible(true);
+        java.lang.reflect.Field db = Reflect.field(org.traincontrol.marklin.MarklinControlStation.class, "layoutDB");
 
         return (org.traincontrol.base.RemoteDeviceCollection<org.traincontrol.base.LayoutDiagram, String>) db.get(ui.getModel());
     }
@@ -1011,49 +887,34 @@ public class testTheAutoTabWaitsForTheTrains
     }
 
     /**
-     * A Save and Continue at the track editor's switch leaves nothing to ask at a close in the switch's gap.
-     *
-     * The track editor asks a close about its undo history, which the save must clear as the arrival does, or a close
-     * right after the save asks *"Are you sure you want to close the editor without saving changes?"*.
-     *
-     * A tile turned through the editor's own `rotate`, then Autonomy Setup, Save and Continue, and the close in the
-     * gap.
+     * A Save and Continue at the track editor's switch leaves nothing to ask at a close in the switch's gap: the save
+     * must clear the undo history as the arrival does, or the close asks *"Are you sure you want to close the editor
+     * without saving changes?"*.  A tile is turned through `rotate`, then Autonomy Setup, Save and Continue.
      *
      * MUTATION: keep the undo history at a Save and Continue, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testATrackSaveAtASwitchLeavesNothingToAskAtTheClose() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            answeringYes(() -> ui.openLayoutEditor(null, Boolean.FALSE, null, true));
 
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.FALSE, null, true));
-
-            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui[0]);
+            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui);
 
             assertNotNull(editor, "precondition: the track editor did not open");
 
             assertFalse(editor.isAutonomyMode(), "precondition: the editor opened was not the track editor");
 
             // A TILE TURNED through the editor's own rotate: a station on the page shown
-            java.lang.reflect.Field shown = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("layout");
-
-            shown.setAccessible(true);
+            java.lang.reflect.Field shown =
+                Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "layout");
 
             final org.traincontrol.base.LayoutDiagram page = (org.traincontrol.base.LayoutDiagram) shown.get(editor);
 
-            final org.traincontrol.automationui.AutonomySession session = ui[0].getAutonomySession();
+            final org.traincontrol.automationui.AutonomySession session = ui.getAutonomySession();
 
             org.traincontrol.automationui.TileGraph.TileKey square = null;
 
@@ -1069,9 +930,8 @@ public class testTheAutoTabWaitsForTheTrains
 
             final int before = page.getComponent(turned.getX(), turned.getY()).getOrientation();
 
-            java.lang.reflect.Field gridField = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            java.lang.reflect.Field gridField =
+                Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "grid");
 
             final org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) gridField.get(editor);
 
@@ -1095,19 +955,15 @@ public class testTheAutoTabWaitsForTheTrains
             assertEquals(asked.get(0), I18n.t("layout.ui.confirmSwitchWithUnsavedWork"), "precondition: the switch's question"
                 + " was not the first");
 
-            waitForTheSwitch(ui[0], editor);
+            waitForTheSwitch(ui, editor);
 
-            assertEquals(editorWindows(ui[0]), 0, "the editor did not close");
+            assertEquals(editorWindows(ui), 0, "the editor did not close");
 
-            org.traincontrol.base.LayoutDiagram reread = ui[0].getModel().getLayout(turned.getPage());
+            org.traincontrol.base.LayoutDiagram reread = ui.getModel().getLayout(turned.getPage());
 
             assertTrue(reread != null && reread.getComponent(turned.getX(), turned.getY()) != null
                 && reread.getComponent(turned.getX(), turned.getY()).getOrientation() != before, "the saved turn was lost");
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -1117,9 +973,7 @@ public class testTheAutoTabWaitsForTheTrains
      */
     private static int editorWindows(TrainControlUI ui) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field parent = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("parent");
-
-        parent.setAccessible(true);
+        java.lang.reflect.Field parent = Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "parent");
 
         int count = 0;
 
@@ -1181,9 +1035,7 @@ public class testTheAutoTabWaitsForTheTrains
     private static List<String> clickAndCloseInTheSwitchsGap(final javax.swing.AbstractButton button,
         final org.traincontrol.gui.layouteditor.LayoutEditor editor) throws Exception
     {
-        final java.lang.reflect.Method close = editor.getClass().getDeclaredMethod("confirmExit");
-
-        close.setAccessible(true);
+        final java.lang.reflect.Method close = Reflect.method(editor.getClass(), "confirmExit");
 
         return answeringYes(() ->
         {
@@ -1205,17 +1057,13 @@ public class testTheAutoTabWaitsForTheTrains
      *
      * @param ui the window
      * @param editor the editor
-     * @throws Exception from the event thread
      */
     private static void waitForTheSwitch(TrainControlUI ui, org.traincontrol.gui.layouteditor.LayoutEditor editor) throws Exception
     {
-        java.lang.reflect.Field latch = org.traincontrol.gui.layouteditor.LayoutEditor.class.getDeclaredField("changingPage");
+        java.lang.reflect.Field latch =
+            Reflect.field(org.traincontrol.gui.layouteditor.LayoutEditor.class, "changingPage");
 
-        latch.setAccessible(true);
-
-        java.lang.reflect.Field refreshes = TrainControlUI.class.getDeclaredField("refreshesUnderWay");
-
-        refreshes.setAccessible(true);
+        java.lang.reflect.Field refreshes = Reflect.field(TrainControlUI.class, "refreshesUnderWay");
 
         long until = System.currentTimeMillis() + 30000;
 
@@ -1237,37 +1085,25 @@ public class testTheAutoTabWaitsForTheTrains
      * (OB-313).  Asked at the checkbox size a 100% display gives: the look and feel's own 12-point Segoe UI.
      *
      * MUTATION: hold the button to the checkbox again, and this fails.
-     *
-     * @throws Exception from the window or reflection
      */
     @Test
     public void testTheStripsButtonsAreAsTallAsThePagesOwn() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
-
-            ui[0] = sandboxed.hold(openTheWindow());
-
             final org.traincontrol.gui.AutonomyOverlayToggle strip =
-                (org.traincontrol.gui.AutonomyOverlayToggle) control(ui[0], "autonomyOverlayToggle");
+                (org.traincontrol.gui.AutonomyOverlayToggle) control(ui, "autonomyOverlayToggle");
 
             assertNotNull(strip, "precondition: the track diagram has no strip");
 
-            final javax.swing.JComponent edit = control(ui[0], "editLayoutButton");
+            final javax.swing.JComponent edit = control(ui, "editLayoutButton");
 
-            java.lang.reflect.Field showField = org.traincontrol.gui.AutonomyOverlayToggle.class.getDeclaredField("show");
-            showField.setAccessible(true);
+            java.lang.reflect.Field showField = Reflect.field(org.traincontrol.gui.AutonomyOverlayToggle.class, "show");
             final javax.swing.JCheckBox show = (javax.swing.JCheckBox) showField.get(strip);
 
-            java.lang.reflect.Field runField = org.traincontrol.gui.AutonomyOverlayToggle.class.getDeclaredField("run");
-            runField.setAccessible(true);
+            java.lang.reflect.Field runField = Reflect.field(org.traincontrol.gui.AutonomyOverlayToggle.class, "run");
             final javax.swing.JButton run = (javax.swing.JButton) runField.get(strip);
 
             final int[] heights = new int[4];
@@ -1302,11 +1138,7 @@ public class testTheAutoTabWaitsForTheTrains
 
             assertTrue(padding[0].top >= 2 && padding[0].bottom >= 2 && padding[1].top >= 2 && padding[1].bottom >= 2,
                 "the strip's buttons have no padding above and below their text: " + padding[0] + ", " + padding[1]);
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -1370,11 +1202,7 @@ public class testTheAutoTabWaitsForTheTrains
     {
         try
         {
-            java.lang.reflect.Field run = org.traincontrol.gui.AutonomyOverlayToggle.class.getDeclaredField("run");
-
-            run.setAccessible(true);
-
-            return (javax.swing.JButton) run.get(strip);
+            return (javax.swing.JButton) Reflect.get(org.traincontrol.gui.AutonomyOverlayToggle.class, strip, "run");
         }
         catch (ReflectiveOperationException e)
         {
@@ -1387,8 +1215,6 @@ public class testTheAutoTabWaitsForTheTrains
      * to 200% scaling, where the ink sits, turned back by the frame's angle, must be the same each time.
      *
      * MUTATION: draw the arc with `drawArc` on whole pixels again, and this fails.
-     *
-     * @throws Exception from the reflection
      */
     @Test
     public void testTheTurningMarkTurnsAboutItsOwnCentre() throws Exception
@@ -1398,11 +1224,9 @@ public class testTheAutoTabWaitsForTheTrains
         java.lang.reflect.Constructor<?> make = arcClass.getDeclaredConstructor(int.class);
         make.setAccessible(true);
 
-        java.lang.reflect.Method advance = arcClass.getDeclaredMethod("advance");
-        advance.setAccessible(true);
+        java.lang.reflect.Method advance = Reflect.method(arcClass, "advance");
 
-        java.lang.reflect.Field angle = arcClass.getDeclaredField("angle");
-        angle.setAccessible(true);
+        java.lang.reflect.Field angle = Reflect.field(arcClass, "angle");
 
         List<String> unsteady = new ArrayList<>();
 
@@ -1493,27 +1317,17 @@ public class testTheAutoTabWaitsForTheTrains
      * at.
      *
      * MUTATION: drop the closed-window return from `LayoutEditor.arriveAt`, and this fails.
-     *
-     * @throws Exception from the window
      */
     @Test
     public void testClosingTheEditorMidSwitchGivesTheButtonsBack() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        final TrainControlUI[] ui = new TrainControlUI[1];
-
-        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
-
-        try
+        onItsOwnWindow("live-snapshot", ui ->
         {
-            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"))).simulated();
+            answeringYes(() -> ui.openLayoutEditor(null, Boolean.TRUE, null, true));
 
-            ui[0] = sandboxed.hold(openTheWindow());
-
-            answeringYes(() -> ui[0].openLayoutEditor(null, Boolean.TRUE, null, true));
-
-            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui[0]);
+            final org.traincontrol.gui.layouteditor.LayoutEditor editor = theEditor(ui);
 
             assertNotNull(editor, "precondition: the autonomy editor did not open");
 
@@ -1527,9 +1341,7 @@ public class testTheAutoTabWaitsForTheTrains
             clickAndCloseInTheSwitchsGap(track, editor);
 
             // Until the switch has arrived, or not: its latch comes down first thing either way
-            java.lang.reflect.Field latch = editor.getClass().getDeclaredField("changingPage");
-
-            latch.setAccessible(true);
+            java.lang.reflect.Field latch = Reflect.field(editor.getClass(), "changingPage");
 
             long until = System.currentTimeMillis() + 30000;
 
@@ -1546,16 +1358,12 @@ public class testTheAutoTabWaitsForTheTrains
             assertFalse(editor.isDisplayable(), "the editor closed mid-switch was put back together after it closed"
                 + " (MT-649)");
 
-            assertTrue(control(ui[0], "editLayoutButton").isEnabled(), "Edit is greyed after the editor was closed while"
+            assertTrue(control(ui, "editLayoutButton").isEnabled(), "Edit is greyed after the editor was closed while"
                 + " it switched to Track Diagram (MT-649)");
 
-            assertTrue(control(ui[0], "editAutonomyFromSettings").isEnabled(), "Edit Autonomy Paths in Track Diagram is"
+            assertTrue(control(ui, "editAutonomyFromSettings").isEnabled(), "Edit Autonomy Paths in Track Diagram is"
                 + " greyed after the editor was closed while it switched to Track Diagram (MT-649)");
-        }
-        finally
-        {
-            sandboxed.close();
-        }
+        });
     }
 
     /**
@@ -1586,13 +1394,10 @@ public class testTheAutoTabWaitsForTheTrains
     /**
      * @param ui the window
      * @return its editor once it is showing, within twenty seconds, or null
-     * @throws Exception from the event thread
      */
     private static org.traincontrol.gui.layouteditor.LayoutEditor theEditor(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         long until = System.currentTimeMillis() + 20000;
 

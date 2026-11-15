@@ -4,16 +4,30 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Locomotive;
 
+import java.awt.AWTEvent;
+import java.awt.EventQueue;
 import java.io.File;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.Landing;
 import org.traincontrol.automationui.TileGraph.RouteId;
@@ -22,6 +36,11 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Route;
 import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.util.I18n;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.traincontrol.automation.Edge;
+import org.traincontrol.automation.Layout;
+import org.traincontrol.automation.Point;
 
 /**
  * One layout's autonomy setup, from the files on disk to the graph a train can run on: store, tile graph, reduction
@@ -94,11 +113,11 @@ public class AutonomySession
     /** Moves the railway's squares with the setup's: a load finds each train by its square. */
     private void moveTheRailwaysSquares(java.util.function.UnaryOperator<TileKey> to)
     {
-        org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
+        Layout running = runningLayout == null ? null : runningLayout.get();
 
         if (running == null) return;
 
-        for (org.traincontrol.automation.Point point : running.getPoints())
+        for (Point point : running.getPoints())
         {
             TileKey square = point.getSquare() == null ? null : AutonomyCompanionStore.parseTileKey(point.getSquare());
 
@@ -116,11 +135,11 @@ public class AutonomySession
         private final Map<String, TileKey> squares;
         private final Map<String, String> bases;
         private final Map<String, Side> facings;
-        private final Map<org.traincontrol.automation.Point, String> railway;
+        private final Map<Point, String> railway;
         private final Map<String, Map<String, String[]>> legs;
 
         Remembered(Map<String, TileKey> squares, Map<String, String> bases, Map<String, Side> facings,
-            Map<org.traincontrol.automation.Point, String> railway, Map<String, Map<String, String[]>> legs)
+            Map<Point, String> railway, Map<String, Map<String, String[]>> legs)
         {
             this.squares = squares;
             this.bases = bases;
@@ -132,17 +151,23 @@ public class AutonomySession
 
     private static final String REMEMBERED = "session";
 
+    /** A page snapshot's `turnsSoFar`. */
+    private static final String TURNS = "turns";
+
     /** The carry and the railway's squares as the edit began, for a Cancel; taken at the first move only. */
     private Remembered asTheEditBegan;
 
+    /** Whether a square moved since then, so the carry's memory no longer names the squares of the setup as it began. */
+    private boolean squareMovedInTheEdit;
+
     private Remembered remembered()
     {
-        Map<org.traincontrol.automation.Point, String> railway = new java.util.IdentityHashMap<>();
+        Map<Point, String> railway = new IdentityHashMap<>();
 
-        org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
+        Layout running = runningLayout == null ? null : runningLayout.get();
 
-        for (org.traincontrol.automation.Point point : running == null
-            ? Collections.<org.traincontrol.automation.Point>emptyList() : running.getPoints())
+        for (Point point : running == null
+            ? Collections.<Point>emptyList() : running.getPoints())
         {
             if (point.getSquare() != null) railway.put(point, point.getSquare());
         }
@@ -151,7 +176,7 @@ public class AutonomySession
 
         for (String name : store.getConfigurationNames())
         {
-            org.json.JSONObject configuration = store.getConfiguration(name);
+            JSONObject configuration = store.getConfiguration(name);
 
             if (configuration == null) continue;
 
@@ -165,8 +190,8 @@ public class AutonomySession
             legs.put(name, names);
         }
 
-        return new Remembered(new java.util.HashMap<>(squareOfNameSeen), new java.util.HashMap<>(baseOfNameSeen),
-            new java.util.HashMap<>(facingOfNameSeen), railway, legs);
+        return new Remembered(new HashMap<>(squareOfNameSeen), new HashMap<>(baseOfNameSeen),
+            new HashMap<>(facingOfNameSeen), railway, legs);
     }
 
     /**
@@ -184,7 +209,7 @@ public class AutonomySession
         facingOfNameSeen.clear();
         facingOfNameSeen.putAll(was.facings);
 
-        for (Map.Entry<org.traincontrol.automation.Point, String> said : was.railway.entrySet())
+        for (Map.Entry<Point, String> said : was.railway.entrySet())
         {
             said.getKey().setSquare(said.getValue());
         }
@@ -193,7 +218,7 @@ public class AutonomySession
 
         for (Map.Entry<String, Map<String, String[]>> each : was.legs.entrySet())
         {
-            org.json.JSONObject configuration = store.getConfiguration(each.getKey());
+            JSONObject configuration = store.getConfiguration(each.getKey());
 
             Map<String, NamedLeg> now = configuration == null ? Collections.<String, NamedLeg>emptyMap()
                 : keyedLegsOf(configuration);
@@ -376,7 +401,7 @@ public class AutonomySession
     }
 
     /** For each square: what it is, where, and the arms trains may now leave it by. */
-    private Map<TileKey, String> sentencesFor(java.util.Collection<TileKey> squares)
+    private Map<TileKey, String> sentencesFor(Collection<TileKey> squares)
     {
         Map<TileKey, String> out = new LinkedHashMap<>();
 
@@ -402,7 +427,7 @@ public class AutonomySession
     /** @return route tile to the square that took its length as this setup was opened, empty when none */
     public Map<TileKey, TileKey> getFoldedRouteTiles()
     {
-        return java.util.Collections.unmodifiableMap(foldedRouteTiles);
+        return Collections.unmodifiableMap(foldedRouteTiles);
     }
 
     /**
@@ -416,7 +441,7 @@ public class AutonomySession
 
         if (graph == null) return moved;
 
-        for (Map.Entry<TileKey, org.traincontrol.base.LayoutDiagramComponent> tile
+        for (Map.Entry<TileKey, LayoutDiagramComponent> tile
             : new LinkedHashMap<>(graph.getTiles()).entrySet())
         {
             if (tile.getValue() == null || !TilePorts.takesNoLength(tile.getValue().getType())) continue;
@@ -429,7 +454,7 @@ public class AutonomySession
 
             for (TileKey beside : graph.trackBesideARouteTile(tile.getKey()))
             {
-                org.traincontrol.base.LayoutDiagramComponent track = graph.getTiles().get(beside);
+                LayoutDiagramComponent track = graph.getTiles().get(beside);
 
                 if (track == null || track.isFeedback()) continue;
 
@@ -482,10 +507,7 @@ public class AutonomySession
 
             live.retainAll(arrivalSides(entry.getKey()));
 
-            if (live.size() != entry.getValue().size())
-            {
-                store.setBarredArrivals(entry.getKey(), live);
-            }
+            if (live.size() != entry.getValue().size()) store.setBarredArrivals(entry.getKey(), live);
         }
     }
 
@@ -511,10 +533,7 @@ public class AutonomySession
         return migratedCaptions;
     }
 
-    /**
-     * Throws away every edit since the last save by re-reading the setup, since edits go straight into the live
-     * configuration; if it cannot be re-read, nothing is changed.
-     */
+    /** Throws away every edit since the last save by re-reading the setup; nothing changes if it cannot be re-read. */
     public void discardEdits() throws IOException
     {
         store.load();
@@ -643,15 +662,15 @@ public class AutonomySession
 
         if (!anyStation) return Collections.emptySet();
 
-        Set<TileKey> out = new java.util.HashSet<>();
-        Set<TileKey> seen = new java.util.HashSet<>();
+        Set<TileKey> out = new HashSet<>();
+        Set<TileKey> seen = new HashSet<>();
 
         for (TileKey start : joined.keySet())
         {
             if (!seen.add(start)) continue;
 
             List<TileKey> piece = new ArrayList<>();
-            java.util.ArrayDeque<TileKey> next = new java.util.ArrayDeque<>();
+            ArrayDeque<TileKey> next = new ArrayDeque<>();
 
             next.add(start);
 
@@ -678,13 +697,13 @@ public class AutonomySession
     }
 
     /** Every Point name a build has emitted, to its square, so a leg naming one now gone can follow the square. */
-    private final Map<String, TileKey> squareOfNameSeen = new java.util.HashMap<>();
+    private final Map<String, TileKey> squareOfNameSeen = new HashMap<>();
 
     /** And the square's own name in that build, which the rest of the Point's name follows. */
-    private final Map<String, String> baseOfNameSeen = new java.util.HashMap<>();
+    private final Map<String, String> baseOfNameSeen = new HashMap<>();
 
     /** And the way a train standing on it faced, where that build said. */
-    private final Map<String, Side> facingOfNameSeen = new java.util.HashMap<>();
+    private final Map<String, Side> facingOfNameSeen = new HashMap<>();
 
     private Map<String, TileKey> squareOfNameNow = Collections.emptyMap();
 
@@ -698,9 +717,9 @@ public class AutonomySession
     private Map<String, String> baseOfNameNow = Collections.emptyMap();
 
     /** Names of the edit's last build that Cancel put in the carry's memory (OB-343); forgotten when the edit ends. */
-    private final Map<String, TileKey> keptSquares = new java.util.HashMap<>();
+    private final Map<String, TileKey> keptSquares = new HashMap<>();
 
-    private final Map<String, String> keptBases = new java.util.HashMap<>();
+    private final Map<String, String> keptBases = new HashMap<>();
 
     /**
      * The name the latest build gives an old Point, found by its square and facing: the name itself if still that
@@ -822,29 +841,21 @@ public class AutonomySession
 
             for (String name : store.getConfigurationNames())
             {
-                org.json.JSONObject configuration = store.getConfiguration(name);
+                JSONObject configuration = store.getConfiguration(name);
 
                 if (configuration == null) continue;
 
                 List<NamedLeg> legs = legsOf(configuration);
 
-                if (name.equals(active) ? carry(legs, tiles, bases, naming.edgesByName().keySet())
-                    : rename(legs, tiles, bases))
+                if (name.equals(active) ? carry(legs, tiles, bases, naming.edgesByName().keySet(), squareOfNameSeen,
+                    baseOfNameSeen) : rename(legs, tiles, bases, squareOfNameSeen, baseOfNameSeen))
                 {
                     dirty = true;
                 }
 
                 // And the timetable legs the edit's folds took from the railway (OB-343), carried every build so they
                 // name the latest Points when Cancel writes them back
-                org.json.JSONObject taken = takenFromTheRailway == null ? null : takenFromTheRailway.get(name);
-
-                if (taken != null && taken.has("timetable"))
-                {
-                    List<NamedLeg> takenLegs = legsOf(new org.json.JSONObject().put("globals", taken));
-
-                    if (name.equals(active)) carry(takenLegs, tiles, bases, naming.edgesByName().keySet());
-                    else rename(takenLegs, tiles, bases);
-                }
+                carryTheLegsTaken(name, naming, squareOfNameSeen, baseOfNameSeen);
             }
         }
         finally
@@ -864,13 +875,33 @@ public class AutonomySession
         }
     }
 
-    /** A pair of stored Point names: a timetable leg's two ends, or one step of a train's road. */
-    private static final class NamedLeg
+    /** The timetable legs the edit's folds took for one configuration, carried to this build's names, as read by `seen`. */
+    private void carryTheLegsTaken(String configuration, AutonomyBuilder naming, Map<String, TileKey> seen,
+        Map<String, String> basesSeen)
     {
-        private final org.json.JSONObject leg;
-        private final org.json.JSONArray step;
+        JSONObject taken = takenFromTheRailway == null ? null : takenFromTheRailway.get(configuration);
 
-        NamedLeg(org.json.JSONObject leg, org.json.JSONArray step)
+        if (taken == null || !taken.has("timetable")) return;
+
+        List<NamedLeg> legs = legsOf(new JSONObject().put("globals", taken));
+
+        if (configuration.equals(store.getActiveConfiguration()))
+        {
+            carry(legs, naming.tilesByName(), naming.uniqueNames(), naming.edgesByName().keySet(), seen, basesSeen);
+        }
+        else
+        {
+            rename(legs, naming.tilesByName(), naming.uniqueNames(), seen, basesSeen);
+        }
+    }
+
+    /** A pair of stored Point names: a timetable leg's two ends, or one step of a train's road. */
+    static final class NamedLeg
+    {
+        private final JSONObject leg;
+        private final JSONArray step;
+
+        NamedLeg(JSONObject leg, JSONArray step)
         {
             this.leg = leg;
             this.step = step;
@@ -890,45 +921,45 @@ public class AutonomySession
     }
 
     /** Every stored name pair; a load drops the entry whole where one names a Point it does not build. */
-    private static List<NamedLeg> legsOf(org.json.JSONObject configuration)
+    static List<NamedLeg> legsOf(JSONObject configuration)
     {
         return new ArrayList<>(keyedLegsOf(configuration).values());
     }
 
     /** The same, keyed "t" + entry and leg of the timetable, or "r" + square and step of a road. */
-    private static Map<String, NamedLeg> keyedLegsOf(org.json.JSONObject configuration)
+    private static Map<String, NamedLeg> keyedLegsOf(JSONObject configuration)
     {
         Map<String, NamedLeg> legs = new LinkedHashMap<>();
 
-        org.json.JSONObject globals = configuration.optJSONObject("globals");
+        JSONObject globals = configuration.optJSONObject("globals");
 
-        org.json.JSONArray table = globals == null ? null : globals.optJSONArray("timetable");
+        JSONArray table = globals == null ? null : globals.optJSONArray("timetable");
 
         for (int i = 0; table != null && i < table.length(); i++)
         {
-            org.json.JSONObject entry = table.optJSONObject(i);
+            JSONObject entry = table.optJSONObject(i);
 
-            org.json.JSONArray path = entry == null ? null : entry.optJSONArray("path");
+            JSONArray path = entry == null ? null : entry.optJSONArray("path");
 
             for (int j = 0; path != null && j < path.length(); j++)
             {
-                org.json.JSONObject leg = path.optJSONObject(j);
+                JSONObject leg = path.optJSONObject(j);
 
                 if (leg != null && leg.has("start") && leg.has("end")) legs.put("t" + i + "." + j, new NamedLeg(leg, null));
             }
         }
 
-        org.json.JSONObject points = configuration.optJSONObject("points");
+        JSONObject points = configuration.optJSONObject("points");
 
         for (String id : points == null ? Collections.<String>emptySet() : points.keySet())
         {
-            org.json.JSONObject point = points.optJSONObject(id);
+            JSONObject point = points.optJSONObject(id);
 
-            org.json.JSONArray road = point == null ? null : point.optJSONArray("arrivedAlong");
+            JSONArray road = point == null ? null : point.optJSONArray("arrivedAlong");
 
             for (int j = 0; road != null && j < road.length(); j++)
             {
-                org.json.JSONArray step = road.optJSONArray(j);
+                JSONArray step = road.optJSONArray(j);
 
                 if (step != null && step.length() == 2 && step.opt(0) instanceof String && step.opt(1) instanceof String)
                 {
@@ -940,7 +971,7 @@ public class AutonomySession
         return legs;
     }
 
-    private static int timetableLegs(java.util.Set<String> keys)
+    private static int timetableLegs(Set<String> keys)
     {
         int legs = 0;
 
@@ -975,7 +1006,8 @@ public class AutonomySession
      * Carries another configuration's names across a renamed square, in place, keeping the heading.  A name no build
      * gave is remembered by the square whose name it begins with, for a later rename.  Returns whether any changed.
      */
-    private boolean rename(List<NamedLeg> legs, Map<String, TileKey> tiles, Map<TileKey, String> bases)
+    private boolean rename(List<NamedLeg> legs, Map<String, TileKey> tiles, Map<TileKey, String> bases,
+        Map<String, TileKey> seen, Map<String, String> basesSeen)
     {
         boolean changed = false;
 
@@ -985,8 +1017,8 @@ public class AutonomySession
             {
                 String name = leg.get(end);
 
-                TileKey square = squareOfNameSeen.get(name);
-                String base = baseOfNameSeen.get(name);
+                TileKey square = seen.get(name);
+                String base = basesSeen.get(name);
 
                 // Still built on the square it named, or on one no build of this session placed
                 if (tiles.containsKey(name) && (square == null || square.equals(tiles.get(name)))) continue;
@@ -997,8 +1029,8 @@ public class AutonomySession
 
                     if (called != null)
                     {
-                        squareOfNameSeen.put(name, called.getKey());
-                        baseOfNameSeen.put(name, called.getValue());
+                        seen.put(name, called.getKey());
+                        basesSeen.put(name, called.getValue());
                     }
 
                     continue;
@@ -1019,7 +1051,7 @@ public class AutonomySession
 
     /** Carries the in-use configuration's names to this build's names, in place; returns whether any changed. */
     private boolean carry(List<NamedLeg> legs, Map<String, TileKey> tiles, Map<TileKey, String> bases,
-        java.util.Set<String> edges)
+        Set<String> edges, Map<String, TileKey> seen, Map<String, String> basesSeen)
     {
         // Every name this build lacks, or gives another square, traced to its square
         Map<String, TileKey> stale = new LinkedHashMap<>();
@@ -1031,8 +1063,8 @@ public class AutonomySession
             {
                 if (stale.containsKey(name)) continue;
 
-                TileKey square = squareOfNameSeen.get(name);
-                String base = baseOfNameSeen.get(name);
+                TileKey square = seen.get(name);
+                String base = basesSeen.get(name);
 
                 // Still built on the square it named, by the previous build's memory (written after this carry)
                 if (tiles.containsKey(name) && (square == null || square.equals(tiles.get(name)))) continue;
@@ -1196,19 +1228,19 @@ public class AutonomySession
      * Brings station names, flags and lengths across from a legacy autonomy.json, matching points by their s88.  Fills
      * gaps, never overwrites; writes nothing to disk (the caller saves or puts the setup back, so an import is whole).
      */
-    public LegacyImport importLegacy(org.json.JSONObject legacy)
+    public LegacyImport importLegacy(JSONObject legacy)
     {
         return importLegacy(legacy, null);
     }
 
     /** As above, refusing locomotives the database does not know (null: do not check). */
-    public LegacyImport importLegacy(org.json.JSONObject legacy, Set<String> knownLocomotives)
+    public LegacyImport importLegacy(JSONObject legacy, Set<String> knownLocomotives)
     {
         return importLegacy(legacy, knownLocomotives, true);
     }
 
     /** As above, told whether the file's placements are taken (never into the running configuration). */
-    public LegacyImport importLegacy(org.json.JSONObject legacy, Set<String> knownLocomotives, boolean placeTrains)
+    public LegacyImport importLegacy(JSONObject legacy, Set<String> knownLocomotives, boolean placeTrains)
     {
         return sessionImport.importLegacy(legacy, knownLocomotives, placeTrains);
     }
@@ -1249,9 +1281,9 @@ public class AutonomySession
     }
 
     /** What a legacy import deliberately leaves behind, one line per thing (MT-257); empty if the file had none. */
-    public java.util.List<String> whatALegacyImportLeaves(org.json.JSONObject legacy)
+    public List<String> whatALegacyImportLeaves(JSONObject legacy)
     {
-        java.util.List<String> out = new java.util.ArrayList<>();
+        List<String> out = new ArrayList<>();
 
         if (legacy == null) return out;
 
@@ -1260,15 +1292,15 @@ public class AutonomySession
         int withLocks = 0;
 
         // Sorted by address: the operator works down this list with Pair Signal open.
-        java.util.SortedSet<Integer> signalAddresses = new java.util.TreeSet<>();
+        java.util.SortedSet<Integer> signalAddresses = new TreeSet<>();
 
         if (legacy.has("edges"))
         {
-            org.json.JSONArray edges = legacy.getJSONArray("edges");
+            JSONArray edges = legacy.getJSONArray("edges");
 
             for (int i = 0; i < edges.length(); i++)
             {
-                org.json.JSONObject e = edges.optJSONObject(i);
+                JSONObject e = edges.optJSONObject(i);
 
                 if (e == null) continue;
 
@@ -1279,11 +1311,11 @@ public class AutonomySession
 
                     // Signals by name: a signal is driven only where the operator pairs it.  Named, not compared, as
                     // which are paired needs the reduction; an extra name costs a glance, a missing one a lying signal.
-                    org.json.JSONArray commands = e.getJSONArray("commands");
+                    JSONArray commands = e.getJSONArray("commands");
 
                     for (int c = 0; c < commands.length(); c++)
                     {
-                        org.json.JSONObject command = commands.optJSONObject(c);
+                        JSONObject command = commands.optJSONObject(c);
 
                         if (command == null) continue;
 
@@ -1331,11 +1363,11 @@ public class AutonomySession
 
         if (legacy.has("points") && legacy.optJSONArray("points") != null)
         {
-            org.json.JSONArray points = legacy.getJSONArray("points");
+            JSONArray points = legacy.getJSONArray("points");
 
             for (int i = 0; i < points.length(); i++)
             {
-                org.json.JSONObject p = points.optJSONObject(i);
+                JSONObject p = points.optJSONObject(i);
 
                 if (p == null) continue;
 
@@ -1364,21 +1396,21 @@ public class AutonomySession
     }
 
     /** Brings in an exported file and derives again, so terminus, reversing and station switches follow its flags. */
-    public int importBundle(String name, org.json.JSONObject file) throws java.io.IOException
+    public int importBundle(String name, JSONObject file) throws IOException
     {
         return sessionImport.importBundle(name, file);
     }
 
     /** @return the pages the last import described that this layout lacks and left out (MT-380); may be empty */
-    public java.util.List<String> getPagesLeftOutOfLastImport()
+    public List<String> getPagesLeftOutOfLastImport()
     {
         return store.getPagesLeftOutOfLastImport();
     }
 
     /**
-     * Shuts any page that repeats a sensor an earlier page carries (two squares, one s88, two destinations): the
-     * earliest page in layout order wins.  Run for a new configuration and for a legacy import, which may override
-     * the user's pages (OB-130); elsewhere the page checkboxes decide.
+     * Shuts any page that repeats a sensor an earlier page carries: the earliest page in layout order wins.  Run for a
+     * new configuration and for a legacy import, which may override the user's pages (OB-130); elsewhere the page
+     * checkboxes decide.
      */
     public List<String> excludeRepeatedSensorPages()
     {
@@ -1460,7 +1492,7 @@ public class AutonomySession
      * Which kind a parsed file is: BUNDLE has "configuration"; LEGACY_GRAPH has "points" as an ARRAY; CONFIGURATION has
      * "points" as an OBJECT keyed by square.
      */
-    public static ImportFormat detectImportFormat(org.json.JSONObject file)
+    public static ImportFormat detectImportFormat(JSONObject file)
     {
         return SessionImport.detectImportFormat(file);
     }
@@ -1469,7 +1501,14 @@ public class AutonomySession
      * Each copy of a square a train may be put down on (one trains may arrive at), with its facing (OB-270), in the
      * build's order.  The placement doors use `departableFacingsFor`.  With no running layout every copy is returned.
      */
-    public Map<String, Side> placeableFacingsFor(TileKey square, org.traincontrol.automation.Layout running)
+    public Map<String, Side> placeableFacingsFor(TileKey square, Layout running)
+    {
+        return facingsWhere(square, running, point -> point.isDestination());
+    }
+
+    /** Each copy of a square, with its facing, whose running Point passes the test; all of them with no layout. */
+    private Map<String, Side> facingsWhere(TileKey square, Layout running,
+        java.util.function.Predicate<Point> test)
     {
         Map<String, Side> all = square == null ? new LinkedHashMap<String, Side>() : facingsFor(square);
 
@@ -1479,9 +1518,9 @@ public class AutonomySession
 
         for (Map.Entry<String, Side> copy : all.entrySet())
         {
-            org.traincontrol.automation.Point point = running.getPoint(copy.getKey());
+            Point point = running.getPoint(copy.getKey());
 
-            if (point != null && point.isDestination()) out.put(copy.getKey(), copy.getValue());
+            if (point != null && test.test(point)) out.put(copy.getKey(), copy.getValue());
         }
 
         return out;
@@ -1491,56 +1530,39 @@ public class AutonomySession
      * Each copy of a square a train standing on it could leave, with its facing (OB-284): barred departures are
      * checked, not barred arrivals.  With no running layout every copy is returned.
      */
-    public Map<String, Side> departableFacingsFor(TileKey square, org.traincontrol.automation.Layout running)
+    public Map<String, Side> departableFacingsFor(TileKey square, Layout running)
     {
-        Map<String, Side> all = square == null ? new LinkedHashMap<String, Side>() : facingsFor(square);
-
-        if (running == null) return all;
-
-        Map<String, Side> out = new LinkedHashMap<>();
-
-        for (Map.Entry<String, Side> copy : all.entrySet())
-        {
-            org.traincontrol.automation.Point point = running.getPoint(copy.getKey());
-
-            if (point != null && !running.getNeighbors(point).isEmpty()) out.put(copy.getKey(), copy.getValue());
-        }
-
-        return out;
+        return facingsWhere(square, running, point -> !running.getNeighbors(point).isEmpty());
     }
 
     /**
      * The copy a train facing this way stands on: one trains may arrive at and not turning it, where there is one
      * (MT-368); else any copy facing that way, since the copy IS the direction.  Null when no copy faces that way.
      */
-    public org.traincontrol.automation.Point copyFacing(TileKey square, Side facing,
-        org.traincontrol.automation.Layout running)
+    public Point copyFacing(TileKey square, Side facing,
+        Layout running)
     {
         if (square == null || facing == null || running == null) return null;
 
-        org.traincontrol.automation.Point turning = null;
+        Point arriving = plainFirst(placeableFacingsFor(square, running), facing, running);
 
-        for (Map.Entry<String, Side> copy : placeableFacingsFor(square, running).entrySet())
-        {
-            if (copy.getValue() != facing) continue;
-
-            org.traincontrol.automation.Point candidate = running.getPoint(copy.getKey());
-
-            if (candidate == null) continue;
-
-            if (!candidate.isTerminus() && !candidate.isReversing()) return candidate;
-
-            if (turning == null) turning = candidate;
-        }
-
-        if (turning != null) return turning;
+        if (arriving != null) return arriving;
 
         // None a train may arrive at faces that way: any that does, the plain one first.
-        for (Map.Entry<String, Side> copy : facingsFor(square).entrySet())
+        return plainFirst(facingsFor(square), facing, running);
+    }
+
+    /** The first of these copies facing that way that does not turn trains, else the first that does; null if none. */
+    private static Point plainFirst(Map<String, Side> copies, Side facing,
+        Layout running)
+    {
+        Point turning = null;
+
+        for (Map.Entry<String, Side> copy : copies.entrySet())
         {
             if (copy.getValue() != facing) continue;
 
-            org.traincontrol.automation.Point candidate = running.getPoint(copy.getKey());
+            Point candidate = running.getPoint(copy.getKey());
 
             if (candidate == null) continue;
 
@@ -1553,18 +1575,18 @@ public class AutonomySession
     }
 
     /** The copy a train stands on when nothing says its facing: the build's `startableCopy` (OB-350); null if none. */
-    public org.traincontrol.automation.Point copyWithNoFacing(TileKey square, org.traincontrol.automation.Layout running)
+    public Point copyWithNoFacing(TileKey square, Layout running)
     {
         if (square == null || running == null || getStationIndex() == null) return null;
 
-        List<org.traincontrol.automation.Point> all = getStationIndex().pointsAt(running, square);
+        List<Point> all = getStationIndex().pointsAt(running, square);
 
-        for (org.traincontrol.automation.Point copy : all)
+        for (Point copy : all)
         {
             if (copy.isDestination() && !copy.isTerminus() && !copy.isReversing()) return copy;
         }
 
-        for (org.traincontrol.automation.Point copy : all)
+        for (Point copy : all)
         {
             if (copy.isDestination()) return copy;
         }
@@ -1573,14 +1595,14 @@ public class AutonomySession
     }
 
     /** The copy of a square on the RAILWAY holding a train (the named one, or any for null), or null. */
-    private org.traincontrol.automation.Point copyHoldingATrain(TileKey square, String locomotive,
-        org.traincontrol.automation.Layout running)
+    private Point copyHoldingATrain(TileKey square, String locomotive,
+        Layout running)
     {
         if (square == null || running == null || getStationIndex() == null) return null;
 
         for (String name : getStationIndex().pointNamesAt(square))
         {
-            org.traincontrol.automation.Point copy = running.getPoint(name);
+            Point copy = running.getPoint(name);
 
             if (copy == null || copy.getCurrentLocomotive() == null) continue;
 
@@ -1594,14 +1616,14 @@ public class AutonomySession
      * Which way a train on a square faces on the RAILWAY (the named one, or any for null): the copy it is on IS its
      * direction, and on its way the copy it will stand on (OB-314).  Null when no copy holds it.
      */
-    private Side facingOfTheTrainOn(TileKey square, String locomotive, org.traincontrol.automation.Layout running)
+    private Side facingOfTheTrainOn(TileKey square, String locomotive, Layout running)
     {
-        org.traincontrol.automation.Point copy = copyHoldingATrain(square, locomotive, running);
+        Point copy = copyHoldingATrain(square, locomotive, running);
 
         if (copy == null) return null;
 
         // On its way, the copy it will stand on, or a train sent to turn reads backwards all journey.
-        org.traincontrol.automation.Point standing = running.copyItWillStandOn(copy.getCurrentLocomotive());
+        Point standing = running.copyItWillStandOn(copy.getCurrentLocomotive());
 
         if (standing != null && standing != copy && standing.isSamePlaceAs(copy))
         {
@@ -1617,23 +1639,23 @@ public class AutonomySession
      * Stands a locomotive on the copy facing a given way.  Not `moveLocomotive`, which refuses while running, needs a
      * destination and adds to the run list.  Quiet about whatever it cannot do.
      */
-    private void moveOntoFacingCopy(org.traincontrol.automation.Layout running, String locomotive,
+    private void moveOntoFacingCopy(Layout running, String locomotive,
         TileKey tile, Side facing)
     {
         if (running == null || locomotive == null || facing == null) return;
 
-        org.traincontrol.base.Locomotive train = null;
+        Locomotive train = null;
 
         // Never a copy facing another way, even where only a barred copy faces this one (`copyFacing`)
-        org.traincontrol.automation.Point onto = copyFacing(tile, facing, running);
+        Point onto = copyFacing(tile, facing, running);
 
-        org.traincontrol.automation.Point from = null;
+        Point from = null;
 
-        java.util.List<org.traincontrol.automation.Point> here = new java.util.ArrayList<>();
+        List<Point> here = new ArrayList<>();
 
         for (Map.Entry<String, Side> copy : facingsFor(tile).entrySet())
         {
-            org.traincontrol.automation.Point point = running.getPoint(copy.getKey());
+            Point point = running.getPoint(copy.getKey());
 
             if (point == null) continue;
 
@@ -1659,16 +1681,15 @@ public class AutonomySession
         // timetable place (as `Layout.copyAfterTheTurn`)
         if (from != null && facing == facingsFor(tile).get(from.getName()) && from.isDestination()) return;
 
-        // And the tail comes with it, which `setLocomotive` clears (behaviour/facing.md 4: turning round at the
+        // And the tail comes with it, which `setLocomotive` clears (behaviour/facing.md 4: turning around at the
         // platform does not move the tail); read from the copy it was on.
         final String tail = from == null ? null : from.getArrivedFrom();
 
         // And the route it drove, which it follows back past a junction (MT-335)
-        final java.util.List<org.traincontrol.automation.Edge> along =
-            from == null ? null : from.getArrivedAlong();
+        final List<Edge> along = from == null ? null : from.getArrivedAlong();
 
         // Cleared first, so the train is never on two copies at once.
-        for (org.traincontrol.automation.Point point : here)
+        for (Point point : here)
         {
             if (point.getCurrentLocomotive() == train) point.setLocomotive(null);
         }
@@ -1688,8 +1709,8 @@ public class AutonomySession
      * relative answer is untrustworthy when `reconcileFacingWhenIdle` runs (OB-190), so applying it twice is harmless.
      * Writes the setup and the running layout (null: setup only).  Null where it cannot answer; the caller retries.
      */
-    public TileKey faceTheWayItCameIn(String locomotive, org.traincontrol.automation.Point turnedAt,
-        org.traincontrol.automation.Layout running)
+    public TileKey faceTheWayItCameIn(String locomotive, Point turnedAt,
+        Layout running)
     {
         if (locomotive == null || turnedAt == null || getStationIndex() == null) return null;
 
@@ -1730,27 +1751,22 @@ public class AutonomySession
         return tile;
     }
     /**
-     * Turns a placed locomotive round on the graph because the railway turned it, and on the running layout, whose copy
-     * decides where the train can go.  Turning it on the graph emits no locomotive command, but a locomotive direction
-     * command updates the graph if it does not match.  Flipping is "the other choice" of `facingChoices`, not the
-     * compass opposite.  Null where the answer is not obvious.
+     * Turns a placed locomotive round on the graph and on the running layout, whose copy decides where the train can
+     * go, because the railway turned it.  Emits no locomotive command; counts nothing (`turned`).  Flipping is "the
+     * other choice" of `facingChoices`; null where the answer is not obvious.
      */
-    public TileKey flipFacing(String locomotive, org.traincontrol.automation.Layout running)
+    public TileKey flipFacing(String locomotive, Layout running)
     {
         if (locomotive == null) return null;
 
         // The railway first: a reversal during a run is applied at its end, when the setup still names the start.  The
         // setup is still walked in full, so a train recorded on two squares is flipped on the decidable one.
-        java.util.List<TileKey> candidates = new java.util.ArrayList<>();
+        List<TileKey> candidates = new ArrayList<>();
 
         if (running != null && getStationIndex() != null)
         {
-            for (org.traincontrol.automation.Point point : running.getPoints())
+            for (Point point : pointsHolding(locomotive, running))
             {
-                if (point.getCurrentLocomotive() == null) continue;
-
-                if (!locomotive.equals(point.getCurrentLocomotive().getName())) continue;
-
                 TileKey where = getStationIndex().squareOf(point.getName());
 
                 if (where != null && !candidates.contains(where)) candidates.add(where);
@@ -1775,15 +1791,10 @@ public class AutonomySession
 
             if (recorded == null) recorded = getFacing(tile);
 
-            List<Side> choices = facingChoices(tile);
-
             // Carry on: a train recorded on two squares still gets the decidable one.
-            if (recorded == null || choices.size() != 2) continue;
+            final Side now = theOtherFacing(tile, recorded);
 
-            // A facing this square cannot hold (OB-177): reported by `facingsThatCannotBeHeld`, not flipped.
-            if (!choices.contains(recorded)) continue;
-
-            final Side now = choices.get(0) == recorded ? choices.get(1) : choices.get(0);
+            if (now == null) continue;
 
             setFacing(tile, now);
 
@@ -1794,10 +1805,176 @@ public class AutonomySession
 
         return null;
     }
-    /** The locomotive on a stored point, or null: the one spelling of what a blank name means. */
-    private static String namedLocomotiveOn(org.json.JSONObject point)
+
+    /**
+     * The other way a train on this square can face, from `was`; null where the square has not two, or cannot hold
+     * `was` (OB-177).
+     */
+    public Side theOtherFacing(TileKey square, Side was)
     {
-        org.json.JSONObject standing = point == null ? null : point.optJSONObject("loc");
+        return square == null ? null : otherOf(facingChoices(square), was);
+    }
+
+    /** The other of exactly two choices from `was`; null where there are not two, or `was` is not one of them. */
+    private static Side otherOf(List<Side> choices, Side was)
+    {
+        if (choices == null || choices.size() != 2 || !choices.contains(was)) return null;
+
+        return choices.get(0) == was ? choices.get(1) : choices.get(0);
+    }
+
+    /**
+     * Each placed train's square with its facing choices now, for `withTheseTrainsTurned` after the build may have been
+     * edited.
+     */
+    public Map<TileKey, List<Side>> choicesWhereTrainsStand()
+    {
+        Map<TileKey, List<Side>> out = new HashMap<>();
+
+        for (TileKey square : placedLocomotives().keySet()) out.put(square, new ArrayList<>(facingChoices(square)));
+
+        return out;
+    }
+
+    /** `choicesWhereTrainsStand` as the edit began: the build the crash note goes back to. */
+    private Map<TileKey, List<Side>> choicesAsTheEditBegan = Collections.emptyMap();
+
+    /** Each lifted train's heading where it left the setup, the other way it could face there, and its turns then. */
+    private final Map<Object, Object[]> lifted = new HashMap<>();
+
+    /**
+     * Which way a train no square holds faces, from where it was lifted (turned if turned an odd number of times
+     * since); null where unknown.
+     */
+    public Side headingOfALiftedTrain(String locomotive)
+    {
+        Object[] was = locomotive == null ? null : lifted.get(turnKey(locomotive));
+
+        if (was == null) return null;
+
+        boolean turnedSince = (turnsMade.getOrDefault(turnKey(locomotive), 0) - (Integer) was[2]) % 2 != 0;
+
+        return (Side) (turnedSince ? was[1] : was[0]);
+    }
+
+    /** Notes a train leaving a square (`was` to `now`, as stored under "loc") for `headingOfALiftedTrain`. */
+    private void noteALift(TileKey square, Object was, Object now)
+    {
+        String leaving = nameOfPlacedLocomotive(was);
+
+        if (leaving == null || leaving.equals(nameOfPlacedLocomotive(now)) || graph == null) return;
+
+        // The railway's copy first, as it IS the train's facing
+        Side heading = facingOfTheTrainOn(square, leaving, runningLayout == null ? null : runningLayout.get());
+
+        if (heading == null) heading = getFacing(square);
+
+        lifted.put(turnKey(leaving), new Object[] {heading, theOtherFacing(square, heading),
+            turnsMade.getOrDefault(turnKey(leaving), 0)});
+    }
+
+    /**
+     * Turns made this session, by locomotive (identity) so a rename keeps its count; by name where no locomotive
+     * answers.
+     */
+    private final Map<Object, Integer> turnsMade = new HashMap<>();
+
+    /** The locomotives by name, for the turn counts; null in headless use. */
+    private Function<String, Locomotive> locomotives;
+
+    /** @param source a function from locomotive name to locomotive, or null */
+    public void setLocomotiveSource(Function<String, Locomotive> source)
+    {
+        this.locomotives = source;
+    }
+
+    private Object turnKey(String name)
+    {
+        Locomotive loc = locomotives == null ? null : locomotives.apply(name);
+
+        return loc != null ? loc : name;
+    }
+
+    /** Each train's turns so far, for `turnedSince`: a discard keeps the turns made since the editor opened. */
+    public Map<Object, Integer> turnsSoFar()
+    {
+        return new HashMap<>(turnsMade);
+    }
+
+    /**
+     * The trains turned an odd number of times since `then` (a `turnsSoFar`), by their names now; a deleted one left
+     * out.
+     */
+    public Set<String> turnedSince(Object then)
+    {
+        Set<String> out = new TreeSet<>();
+
+        for (Map.Entry<Object, Integer> now : then instanceof Map ? turnsMade.entrySet()
+            : Collections.<Map.Entry<Object, Integer>>emptySet())
+        {
+            Object was = ((Map<?, ?>) then).get(now.getKey());
+            Object key = now.getKey();
+            String name = key instanceof Locomotive ? ((Locomotive) key).getName() : (String) key;
+
+            if (key instanceof Locomotive && locomotives.apply(name) != key) continue;
+
+            if ((now.getValue() - (was instanceof Integer ? (Integer) was : 0)) % 2 != 0) out.add(name);
+        }
+
+        return out;
+    }
+
+    /** Counts a turn of a train, written or not, and turns it in the crash note too, by the build as the edit began. */
+    public void turned(String locomotive)
+    {
+        turnsMade.merge(turnKey(locomotive), 1, Integer::sum);
+
+        store.rewriteTheUnfinishedEditNote(note -> turnInSetup(note, locomotive, choicesAsTheEditBegan));
+    }
+
+    /** A setup snapshot with each of these trains turned where it places them, by `choices`; a copy if any. */
+    public JSONObject withTheseTrainsTurned(JSONObject setup, Collection<String> trains,
+        Map<TileKey, List<Side>> choices)
+    {
+        if (setup == null || trains.isEmpty()) return setup;
+
+        JSONObject out = new JSONObject(setup.toString());
+
+        for (String train : trains) turnInSetup(out, train, choices);
+
+        return out;
+    }
+
+    /** Turns a train in a setup snapshot's active configuration, in place; true if it did. */
+    private boolean turnInSetup(JSONObject setup, String locomotive, Map<TileKey, List<Side>> choices)
+    {
+        JSONObject copies = setup.optJSONObject("configurations");
+        JSONObject copy = copies == null ? null : copies.optJSONObject(store.getActiveConfiguration());
+        JSONObject points = copy == null ? null : copy.optJSONObject("points");
+
+        for (String key : points == null ? Collections.<String>emptySet() : points.keySet())
+        {
+            JSONObject point = points.optJSONObject(key);
+
+            if (point == null || !locomotive.equals(nameOfPlacedLocomotive(point.opt("loc")))) continue;
+
+            Side was = sideNamed(point.opt(AutonomyBuilder.FACING));
+            Side other = otherOf(choices.get(AutonomyCompanionStore.parseTileKey(key)), was);
+
+            if (other == null) return false;
+
+            point.put(AutonomyBuilder.FACING, other.name());
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** The locomotive on a stored point, or null: the one spelling of what a blank name means. */
+    private static String namedLocomotiveOn(JSONObject point)
+    {
+        JSONObject standing = point == null ? null : point.optJSONObject("loc");
 
         if (standing == null) return null;
 
@@ -1806,11 +1983,17 @@ public class AutonomySession
         return name.trim().isEmpty() ? null : name;
     }
 
-    private org.json.JSONObject pointOf(TileKey tile)
+    /** The configuration in use, or null when there is none. */
+    private JSONObject activeConfiguration()
     {
         String active = store.getActiveConfiguration();
 
-        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+        return active == null ? null : store.getConfiguration(active);
+    }
+
+    private JSONObject pointOf(TileKey tile)
+    {
+        JSONObject configuration = activeConfiguration();
 
         if (configuration == null || !configuration.has("points")) return null;
 
@@ -1829,7 +2012,7 @@ public class AutonomySession
         {
             if (store.getExcludedPages().contains(tile.getPage())) continue;
 
-            org.json.JSONObject point = pointOf(tile);
+            JSONObject point = pointOf(tile);
 
             if (point == null) continue;
 
@@ -1985,7 +2168,7 @@ public class AutonomySession
     }
 
     /** Everything the setup holds, for a caller that may have to put it all back (`restoreSetup`). */
-    public org.json.JSONObject snapshotSetup()
+    public JSONObject snapshotSetup()
     {
         return store.snapshotSetup();
     }
@@ -1997,6 +2180,10 @@ public class AutonomySession
         forgetTheNamesKept();
 
         asTheEditBegan = remembered();
+
+        choicesAsTheEditBegan = choicesWhereTrainsStand();
+
+        squareMovedInTheEdit = false;
 
         // And what the railway changes alone from here, which Cancel keeps (OB-343)
         takenFromTheRailway = new LinkedHashMap<>();
@@ -2022,13 +2209,13 @@ public class AutonomySession
      * What the settings folds took from the railway during an edit, by configuration (JSON null: the railway stopped
      * writing one); null while none is open.  The railway's facts, so Cancel keeps them (OB-343).
      */
-    private java.util.Map<String, org.json.JSONObject> takenFromTheRailway;
+    private Map<String, JSONObject> takenFromTheRailway;
 
     /**
      * The same for paused trains, by train: each one the railway's list gained or lost against the record as built
      * (OB-343).  By name, followed through renames (`followALocomotiveName`).
      */
-    private java.util.Map<String, java.util.Map<String, Boolean>> pausesTakenFromTheRailway;
+    private Map<String, Map<String, Boolean>> pausesTakenFromTheRailway;
 
     /**
      * Follows a locomotive's rename or deletion (`to` null) into the trains the folds noted (OB-343), or it would come
@@ -2038,12 +2225,59 @@ public class AutonomySession
     {
         if (pausesTakenFromTheRailway == null || from == null) return;
 
-        for (java.util.Map<String, Boolean> pauses : pausesTakenFromTheRailway.values())
+        for (Map<String, Boolean> pauses : pausesTakenFromTheRailway.values())
         {
             Boolean paused = pauses.remove(from);
 
             if (paused != null && to != null) pauses.put(to, paused);
         }
+    }
+
+    /**
+     * Notes the pause of each of these trains that `asBuilt` does not hold: a card's, no fold has noted it, and the door
+     * about to write the train would lose it from what Cancel keeps (OB-346).  Nothing while no edit is open.
+     */
+    public void noteTheCardsPausesADoorOvertakes(Collection<Locomotive> trains, String configurationName,
+        JSONObject asBuilt)
+    {
+        if (pausesTakenFromTheRailway == null || configurationName == null || asBuilt == null) return;
+
+        Set<String> held = namesIn(asBuilt.opt(Layout.PAUSED_LOCOMOTIVES));
+
+        for (Locomotive train : trains)
+        {
+            if (train == null || train.getName() == null || train.isAutonomyPaused() == held.contains(train.getName())) continue;
+
+            pausesTakenFromTheRailway.computeIfAbsent(configurationName, name -> new TreeMap<>())
+                .put(train.getName(), train.isAutonomyPaused());
+        }
+    }
+
+    /**
+     * Whether the setup now says other than a pause Cancel would keep from the railway: a gesture overtook it, and
+     * Cancel has that to discard even where the setup reads as the editor opened it (OB-346).
+     */
+    public boolean aGestureOvertookTheRailwaysPause()
+    {
+        if (pausesTakenFromTheRailway == null) return false;
+
+        for (Map.Entry<String, Map<String, Boolean>> pauses : pausesTakenFromTheRailway.entrySet())
+        {
+            JSONObject configuration = store.getConfiguration(pauses.getKey());
+
+            if (configuration == null) continue;
+
+            JSONObject globals = configuration.optJSONObject("globals");
+
+            Set<String> listed = namesIn(globals == null ? null : globals.opt(Layout.PAUSED_LOCOMOTIVES));
+
+            for (Map.Entry<String, Boolean> pause : pauses.getValue().entrySet())
+            {
+                if (pause.getValue() != listed.contains(pause.getKey())) return true;
+            }
+        }
+
+        return false;
     }
 
     private void forgetTheNamesKept()
@@ -2066,23 +2300,16 @@ public class AutonomySession
     {
         if (takenFromTheRailway == null) return;
 
-        for (Map.Entry<String, java.util.Map<String, Boolean>> pauses : pausesTakenFromTheRailway.entrySet())
+        for (Map.Entry<String, Map<String, Boolean>> pauses : pausesTakenFromTheRailway.entrySet())
         {
-            org.json.JSONObject configuration = store.getConfiguration(pauses.getKey());
+            JSONObject configuration = store.getConfiguration(pauses.getKey());
 
             if (configuration == null) continue;
 
-            org.json.JSONObject globals = configuration.optJSONObject("globals");
+            JSONObject globals = storedGlobals(configuration);
 
-            if (globals == null)
-            {
-                globals = new org.json.JSONObject();
-
-                configuration.put("globals", globals);
-            }
-
-            Set<String> gained = new java.util.TreeSet<>();
-            Set<String> lost = new java.util.TreeSet<>();
+            Set<String> gained = new TreeSet<>();
+            Set<String> lost = new TreeSet<>();
 
             for (Map.Entry<String, Boolean> pause : pauses.getValue().entrySet())
             {
@@ -2093,26 +2320,19 @@ public class AutonomySession
             applyPauses(globals, gained, lost);
         }
 
-        for (Map.Entry<String, org.json.JSONObject> taken : takenFromTheRailway.entrySet())
+        for (Map.Entry<String, JSONObject> taken : takenFromTheRailway.entrySet())
         {
-            org.json.JSONObject configuration = store.getConfiguration(taken.getKey());
+            JSONObject configuration = store.getConfiguration(taken.getKey());
 
             if (configuration == null) continue;
 
-            org.json.JSONObject globals = configuration.optJSONObject("globals");
-
-            if (globals == null)
-            {
-                globals = new org.json.JSONObject();
-
-                configuration.put("globals", globals);
-            }
+            JSONObject globals = storedGlobals(configuration);
 
             for (String key : taken.getValue().keySet())
             {
                 Object value = taken.getValue().get(key);
 
-                if (org.json.JSONObject.NULL.equals(value)) globals.remove(key);
+                if (JSONObject.NULL.equals(value)) globals.remove(key);
                 else globals.put(key, copyOfSetting(value));
             }
         }
@@ -2133,7 +2353,7 @@ public class AutonomySession
      */
     public boolean revertUnfinishedEdit()
     {
-        org.json.JSONObject was = store.unfinishedEdit();
+        JSONObject was = store.unfinishedEdit();
 
         if (was == null) return false;
 
@@ -2156,7 +2376,7 @@ public class AutonomySession
     }
 
     /** Puts back a whole `snapshotSetup` and writes it out; returns whether it reached the file. */
-    public boolean restoreSetup(org.json.JSONObject was)
+    public boolean restoreSetup(JSONObject was)
     {
         if (was == null) return true;
 
@@ -2164,6 +2384,13 @@ public class AutonomySession
 
         // What the railway changed alone during the edit stays changed (OB-343)
         putBackWhatTheRailwayChangedAlone();
+
+        // Its legs name the last build's squares, so they are read by the memory as the edit left it, not as it began
+        // (OB-345).  Not after a move: that memory's squares are not the restored setup's.
+        boolean legsBySquare = asTheEditBegan != null && !squareMovedInTheEdit && aTimetableWasTaken();
+
+        Map<String, TileKey> squaresLeft = legsBySquare ? new HashMap<>(squareOfNameSeen) : null;
+        Map<String, String> basesLeft = legsBySquare ? new HashMap<>(baseOfNameSeen) : null;
 
         // And the carry's memory and the railway's squares as before the first move.  But the names the edit's LAST
         // build gave are kept until the session ends (`keptSquares`, OB-343): the railway's timetable names them, and
@@ -2196,25 +2423,81 @@ public class AutonomySession
 
         asTheEditBegan = null;
 
-        rebuild();
+        squareMovedInTheEdit = false;
+
+        if (legsBySquare)
+        {
+            rebuildAndCarryTheLegsTaken(squaresLeft, basesLeft);
+        }
+        else
+        {
+            rebuild();
+        }
 
         return saveQuietly();
     }
 
-    /** Everything the setup holds about one page, for the diagram editor's undo (restorePage). */
-    public java.util.Map<String, Object> snapshotPage(String page)
+    /** Whether a fold of this edit took a timetable from the railway. */
+    private boolean aTimetableWasTaken()
     {
-        java.util.Map<String, Object> snapshot = store.snapshotPage(page);
+        if (takenFromTheRailway == null) return false;
+
+        for (JSONObject taken : takenFromTheRailway.values())
+        {
+            if (taken.has("timetable")) return true;
+        }
+
+        return false;
+    }
+
+    /** The rebuild of a Cancel, with the legs taken kept from its carry, then carried by the memory given and put back. */
+    private void rebuildAndCarryTheLegsTaken(Map<String, TileKey> seen, Map<String, String> basesSeen)
+    {
+        Map<String, JSONObject> taken = takenFromTheRailway;
+
+        takenFromTheRailway = null;
+
+        try
+        {
+            rebuild();
+        }
+        finally
+        {
+            takenFromTheRailway = taken;
+        }
+
+        AutonomyBuilder naming = builder(null);
+
+        for (String configuration : taken.keySet()) carryTheLegsTaken(configuration, naming, seen, basesSeen);
+
+        putBackWhatTheRailwayChangedAlone();
+    }
+
+    /** Everything the setup holds about one page, for the diagram editor's undo (restorePage). */
+    public Map<String, Object> snapshotPage(String page)
+    {
+        Map<String, Object> snapshot = store.snapshotPage(page);
 
         // And what an edit of the page changes outside it (`Remembered`)
         snapshot.put(REMEMBERED, remembered());
 
+        snapshot.put(TURNS, turnsSoFar());
+
         return snapshot;
     }
 
-    public void restorePage(String page, java.util.Map<String, Object> snapshot)
+    /**
+     * Puts a page back as `snapshotPage` found it, but each train turned since keeps its turns, as Cancel does: turned
+     * after the rebuild, by the build the page goes back to, and stood so on the railway.
+     */
+    public void restorePage(String page, Map<String, Object> snapshot)
     {
         if (snapshot == null) return;
+
+        Set<String> turned = turnedSince(snapshot.get(TURNS));
+
+        // Once, however often it is put back
+        snapshot.put(TURNS, turnsSoFar());
 
         store.restorePage(page, snapshot);
 
@@ -2223,6 +2506,20 @@ public class AutonomySession
         if (remembered instanceof Remembered) putBack((Remembered) remembered, true);
 
         touched();
+
+        Layout running = runningLayout == null ? null : runningLayout.get();
+
+        for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
+        {
+            TileKey square = placed.getKey();
+            Side other = page.equals(square.getPage()) ? theOtherFacing(square, getFacing(square)) : null;
+
+            if (other == null || !turned.remove(placed.getValue())) continue;
+
+            setFacing(square, other);
+
+            moveOntoFacingCopy(running, placed.getValue(), square, other);
+        }
     }
 
     /**
@@ -2237,7 +2534,7 @@ public class AutonomySession
 
             return true;
         }
-        catch (java.io.IOException e)
+        catch (IOException e)
         {
             return false;
         }
@@ -2253,7 +2550,7 @@ public class AutonomySession
     }
 
     /** One diagram edit: what moved (vacated square to destination), and what was built over; either may be null. */
-    public boolean moveTiles(Map<TileKey, TileKey> moves, java.util.Collection<TileKey> builtOver)
+    public boolean moveTiles(Map<TileKey, TileKey> moves, Collection<TileKey> builtOver)
     {
         boolean any = builtOver != null && !builtOver.isEmpty();
 
@@ -2295,6 +2592,8 @@ public class AutonomySession
         {
             if (asTheEditBegan == null) asTheEditBegan = remembered();
 
+            squareMovedInTheEdit = true;
+
             moveTheRailwaysSquares(square -> moves.get(square) != null ? moves.get(square) : square);
 
         // A name made from a moved square ("page x,y") is the store's to rename, not the memory's to carry
@@ -2330,7 +2629,7 @@ public class AutonomySession
     private Set<TileKey> joiningTheirRuns = Collections.emptySet();
 
     /** Forgets what was written about squares built over: it described the old tile; reconcile clears only EMPTY. */
-    public boolean forgetTiles(java.util.Collection<TileKey> tiles)
+    public boolean forgetTiles(Collection<TileKey> tiles)
     {
         return moveTiles(null, tiles);
     }
@@ -2373,8 +2672,7 @@ public class AutonomySession
 
     /**
      * Puts an uncaptioned station's name where it is readable: plain track beside it, else an empty square beside it,
-     * else the sensor; never over somebody's caption.  With nowhere, the "not shown anywhere" warning stands.  Returns
-     * what happened, so a caller can say why nothing did.
+     * else the sensor; never over somebody's caption.  Returns what happened, so a caller can say why nothing did.
      */
     public String placeCaption(TileKey tile)
     {
@@ -2503,9 +2801,7 @@ public class AutonomySession
             if (route.touches(Side.N) && route.touches(Side.S)) vertical = true;
         }
 
-        return vertical
-            ? java.util.Arrays.asList(Side.S, Side.N, Side.W, Side.E)
-            : java.util.Arrays.asList(Side.W, Side.E, Side.S, Side.N);
+        return vertical ? Arrays.asList(Side.S, Side.N, Side.W, Side.E) : Arrays.asList(Side.W, Side.E, Side.S, Side.N);
     }
 
     /**
@@ -2648,7 +2944,7 @@ public class AutonomySession
      * The per-point keys a configuration owns.  Terminus and reversing are absent: both are derived at build, and
      * capturing one would make a may-turn square reverse every train.
      */
-    private static final List<String> POINT_OPERATIONAL_KEYS = java.util.Arrays.asList(
+    private static final List<String> POINT_OPERATIONAL_KEYS = Arrays.asList(
         "loc", "active", "maxTrainLength", "speedMultiplier",
         "priority", "home", "excludedLocs",
         // with its mode (FR-121), or a capture writes the list back read the other way
@@ -2657,16 +2953,16 @@ public class AutonomySession
         "arrivedFrom", "arrivedAlong");
 
     /** The keys that say where a train stands: the train and its tail's side and road. */
-    private static final List<String> PLACEMENT_KEYS = java.util.Arrays.asList("loc", "arrivedFrom", "arrivedAlong");
+    private static final List<String> PLACEMENT_KEYS = Arrays.asList("loc", "arrivedFrom", "arrivedAlong");
 
     /**
-     * Squares where trains turn round whose stretch back to the last switch is not fully measured, one entry each
-     * (OB-171): `Layout.isPathClear` cannot refuse a reversal into a berth it cannot measure.  The stretch is walked as
-     * `GraphReducer.roomAfterTheLastSwitch` walks it.  Maps each square to how many squares its guard still needs.
+     * Squares where trains turn around whose stretch back to the last switch is not fully measured (OB-171):
+     * `Layout.isPathClear` cannot refuse a reversal into such a berth.  Maps each square to how many squares its guard
+     * still needs.
      */
-    public java.util.Map<TileKey, Integer> reversalsWithoutLength()
+    public Map<TileKey, Integer> reversalsWithoutLength()
     {
-        java.util.Map<TileKey, Integer> out = new java.util.LinkedHashMap<>();
+        Map<TileKey, Integer> out = new LinkedHashMap<>();
 
         if (store == null || reducer == null) return out;
 
@@ -2677,7 +2973,7 @@ public class AutonomySession
         {
             if (!isTurnAround(tile)) continue;
 
-            java.util.Set<TileKey> missing = new java.util.LinkedHashSet<>();
+            Set<TileKey> missing = new LinkedHashSet<>();
 
             // The reversal square is part of the stretch (MT-364); asked alone only where no edge arrives.
             boolean anApproachExists = false;
@@ -2717,19 +3013,19 @@ public class AutonomySession
      */
     public static final class Stretch
     {
-        private final java.util.List<TileKey> tiles;
+        private final List<TileKey> tiles;
         private final TileKey from;
         private final TileKey to;
 
-        Stretch(java.util.List<TileKey> tiles, TileKey from, TileKey to)
+        Stretch(List<TileKey> tiles, TileKey from, TileKey to)
         {
-            this.tiles = java.util.Collections.unmodifiableList(new java.util.ArrayList<>(tiles));
+            this.tiles = Collections.unmodifiableList(new ArrayList<>(tiles));
             this.from = from;
             this.to = to;
         }
 
         /** @return the squares, in the order the leg runs */
-        public java.util.List<TileKey> getTiles()
+        public List<TileKey> getTiles()
         {
             return tiles;
         }
@@ -2757,20 +3053,20 @@ public class AutonomySession
      * Every piece of track a length rule reads, on the pages autonomy uses: every leg, cut at its switches, ordered by
      * page and position.  Unlike the quieter `reversalsWithoutLength` notice (MT-305), a tool for measuring everything.
      */
-    public java.util.List<Stretch> stretchesALengthRuleReads()
+    public List<Stretch> stretchesALengthRuleReads()
     {
-        java.util.List<Stretch> out = new java.util.ArrayList<>();
+        List<Stretch> out = new ArrayList<>();
 
         if (store == null || reducer == null || getGraph() == null) return out;
 
-        java.util.Set<TileKey> placed = new java.util.HashSet<>();
+        Set<TileKey> placed = new HashSet<>();
 
         // A square two legs run over is cut out, as a switch is.
-        java.util.Set<TileKey> shared = sharedSquaresALengthRuleReads();
+        Set<TileKey> shared = sharedSquaresALengthRuleReads();
 
-        for (java.util.List<TileKey> leg : legsOnce())
+        for (List<TileKey> leg : legsOnce())
         {
-            java.util.List<TileKey> piece = new java.util.ArrayList<>();
+            List<TileKey> piece = new ArrayList<>();
             int firstIndex = -1;
 
             for (int i = 0; i <= leg.size(); i++)
@@ -2799,26 +3095,26 @@ public class AutonomySession
                     out.add(new Stretch(piece, from, to));
                 }
 
-                piece = new java.util.ArrayList<>();
+                piece = new ArrayList<>();
                 firstIndex = -1;
             }
         }
 
-        java.util.Collections.sort(out, (one, two) -> compareSquares(one.getTiles().get(0), two.getTiles().get(0)));
+        Collections.sort(out, (one, two) -> compareSquares(one.getTiles().get(0), two.getTiles().get(0)));
 
         return out;
     }
 
     /** Every switch square on a leg autonomy uses, asked for on their own: one turnout length a page. */
-    public java.util.Set<TileKey> switchesALengthRuleReads()
+    public Set<TileKey> switchesALengthRuleReads()
     {
-        java.util.List<TileKey> out = new java.util.ArrayList<>();
+        List<TileKey> out = new ArrayList<>();
 
-        if (store == null || reducer == null || getGraph() == null) return new java.util.LinkedHashSet<>(out);
+        if (store == null || reducer == null || getGraph() == null) return new LinkedHashSet<>(out);
 
-        java.util.Set<TileKey> seen = new java.util.HashSet<>();
+        Set<TileKey> seen = new HashSet<>();
 
-        for (java.util.List<TileKey> leg : legsOnce())
+        for (List<TileKey> leg : legsOnce())
         {
             for (TileKey tile : leg)
             {
@@ -2826,18 +3122,18 @@ public class AutonomySession
             }
         }
 
-        java.util.Collections.sort(out, this::compareSquares);
+        Collections.sort(out, this::compareSquares);
 
-        return new java.util.LinkedHashSet<>(out);
+        return new LinkedHashSet<>(out);
     }
 
     /**
      * The pieces still needing a length, ordered as `stretchesALengthRuleReads` orders them: those whose squares add up
      * to nothing (the store keeps 0 and "not given" alike).
      */
-    public java.util.List<Stretch> stretchesNeedingALength()
+    public List<Stretch> stretchesNeedingALength()
     {
-        java.util.List<Stretch> out = new java.util.ArrayList<>();
+        List<Stretch> out = new ArrayList<>();
 
         for (Stretch stretch : stretchesALengthRuleReads())
         {
@@ -2848,9 +3144,9 @@ public class AutonomySession
     }
 
     /** The pieces needing a length with a square on this page, which Mass Assign Lengths walks. */
-    public java.util.List<Stretch> stretchesNeedingALengthOn(String page)
+    public List<Stretch> stretchesNeedingALengthOn(String page)
     {
-        java.util.List<Stretch> out = new java.util.ArrayList<>();
+        List<Stretch> out = new ArrayList<>();
 
         for (Stretch stretch : stretchesNeedingALength())
         {
@@ -2869,9 +3165,9 @@ public class AutonomySession
     }
 
     /** The switch squares on this page with no length, which Mass Assign Lengths asks for together. */
-    public java.util.Set<TileKey> switchesNeedingALengthOn(String page)
+    public Set<TileKey> switchesNeedingALengthOn(String page)
     {
-        java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
+        Set<TileKey> out = new LinkedHashSet<>();
 
         for (TileKey tile : switchesALengthRuleReads())
         {
@@ -2882,9 +3178,9 @@ public class AutonomySession
     }
 
     /** Every square Unmeasured Track highlights: pieces adding up to nothing and switches with no length. */
-    public java.util.Set<TileKey> squaresNeedingALength()
+    public Set<TileKey> squaresNeedingALength()
     {
-        java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
+        Set<TileKey> out = new LinkedHashSet<>();
 
         for (Stretch stretch : stretchesNeedingALength()) out.addAll(stretch.getTiles());
 
@@ -2930,7 +3226,7 @@ public class AutonomySession
             return true;
         }
 
-        java.util.List<TileKey> order = new java.util.ArrayList<>();
+        List<TileKey> order = new ArrayList<>();
 
         for (TileKey tile : stretch.getTiles())
         {
@@ -2945,10 +3241,7 @@ public class AutonomySession
         int each = wholeLength / order.size();
         int over = wholeLength % order.size();
 
-        for (int i = 0; i < order.size(); i++)
-        {
-            store.setTileLength(order.get(i), each + (i < over ? 1 : 0));
-        }
+        for (int i = 0; i < order.size(); i++) store.setTileLength(order.get(i), each + (i < over ? 1 : 0));
 
         touched();
 
@@ -2956,7 +3249,7 @@ public class AutonomySession
     }
 
     /** Gives one turnout length to every switch here that has none; true if it was written. */
-    public boolean assignSwitchLength(java.util.Collection<TileKey> switches, int length)
+    public boolean assignSwitchLength(Collection<TileKey> switches, int length)
     {
         if (switches == null || switches.isEmpty() || length < 0) return false;
 
@@ -2990,9 +3283,9 @@ public class AutonomySession
      * This page's stations with no maximum train length, row by row, for Mass Assign Station Max Train Lengths.  Asks
      * `hasNoMaximumTrainLength` as the notice does, without the notice's gate.
      */
-    public java.util.List<TileKey> stationsWithoutAMaximumOn(String page)
+    public List<TileKey> stationsWithoutAMaximumOn(String page)
     {
-        java.util.List<TileKey> out = new java.util.ArrayList<>();
+        List<TileKey> out = new ArrayList<>();
 
         if (reducer == null || store == null || page == null) return out;
 
@@ -3001,7 +3294,7 @@ public class AutonomySession
             if (page.equals(square.getPage()) && hasNoMaximumTrainLength(square)) out.add(square);
         }
 
-        out.sort(java.util.Comparator.comparingInt(TileKey::getY).thenComparingInt(TileKey::getX));
+        out.sort(Comparator.comparingInt(TileKey::getY).thenComparingInt(TileKey::getX));
 
         return out;
     }
@@ -3033,13 +3326,13 @@ public class AutonomySession
     }
 
     /** Every leg once, in the direction whose key sorts first, so the answer does not depend on edge order. */
-    private java.util.List<java.util.List<TileKey>> legsOnce()
+    private List<List<TileKey>> legsOnce()
     {
-        java.util.TreeMap<String, java.util.List<TileKey>> byRun = new java.util.TreeMap<>();
+        TreeMap<String, List<TileKey>> byRun = new TreeMap<>();
 
         for (GraphReducer.ReducedEdge edge : reducer.getEdges())
         {
-            java.util.List<TileKey> line = new java.util.ArrayList<>();
+            List<TileKey> line = new ArrayList<>();
 
             line.add(edge.getStart());
 
@@ -3051,7 +3344,7 @@ public class AutonomySession
 
             String direction = String.valueOf(edge.getStart()) + " > " + edge.getEnd();
 
-            java.util.List<TileKey> known = byRun.get(key);
+            List<TileKey> known = byRun.get(key);
 
             if (known == null || direction.compareTo(String.valueOf(known.get(0)) + " > " + known.get(known.size() - 1)) < 0)
             {
@@ -3059,28 +3352,28 @@ public class AutonomySession
             }
         }
 
-        return new java.util.ArrayList<>(byRun.values());
+        return new ArrayList<>(byRun.values());
     }
 
     /**
      * Squares more than one leg runs OVER (crossings, double curves with track on both roads), cut out of every piece
      * and asked for alone, or a piece's shared length would count on the other road too.  Not sensors or switches.
      */
-    public java.util.Set<TileKey> sharedSquaresALengthRuleReads()
+    public Set<TileKey> sharedSquaresALengthRuleReads()
     {
-        java.util.List<TileKey> out = new java.util.ArrayList<>();
+        List<TileKey> out = new ArrayList<>();
 
-        if (store == null || reducer == null || getGraph() == null) return new java.util.LinkedHashSet<>(out);
+        if (store == null || reducer == null || getGraph() == null) return new LinkedHashSet<>(out);
 
-        java.util.Map<TileKey, Integer> crossedBy = new java.util.LinkedHashMap<>();
+        Map<TileKey, Integer> crossedBy = new LinkedHashMap<>();
 
-        for (java.util.List<TileKey> leg : legsOnce())
+        for (List<TileKey> leg : legsOnce())
         {
             // Occurrences, not legs: a figure of eight runs one leg over its own crossing twice.
             for (int i = 1; i + 1 < leg.size(); i++) crossedBy.merge(leg.get(i), 1, Integer::sum);
         }
 
-        for (java.util.Map.Entry<TileKey, Integer> entry : crossedBy.entrySet())
+        for (Map.Entry<TileKey, Integer> entry : crossedBy.entrySet())
         {
             // Not a route tile: it takes no length (OB-273).
             if (entry.getValue() > 1 && !isSwitchSquare(entry.getKey())
@@ -3091,15 +3384,15 @@ public class AutonomySession
             }
         }
 
-        java.util.Collections.sort(out, this::compareSquares);
+        Collections.sort(out, this::compareSquares);
 
-        return new java.util.LinkedHashSet<>(out);
+        return new LinkedHashSet<>(out);
     }
 
     /** The shared squares on this page with no length, which Mass Assign Lengths asks for together. */
-    public java.util.Set<TileKey> sharedSquaresNeedingALengthOn(String page)
+    public Set<TileKey> sharedSquaresNeedingALengthOn(String page)
     {
-        java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
+        Set<TileKey> out = new LinkedHashSet<>();
 
         for (TileKey tile : sharedSquaresALengthRuleReads())
         {
@@ -3111,7 +3404,7 @@ public class AutonomySession
 
     private boolean takesNoLength(TileKey tile)
     {
-        org.traincontrol.base.LayoutDiagramComponent component = getGraph().getTiles().get(tile);
+        LayoutDiagramComponent component = getGraph().getTiles().get(tile);
 
         return component != null && TilePorts.takesNoLength(component.getType());
     }
@@ -3122,7 +3415,7 @@ public class AutonomySession
      */
     private boolean isSwitchSquare(TileKey tile)
     {
-        org.traincontrol.base.LayoutDiagramComponent component = getGraph().getTiles().get(tile);
+        LayoutDiagramComponent component = getGraph().getTiles().get(tile);
 
         if (component == null || getGraph().crossingPartner(tile) != null) return false;
 
@@ -3135,7 +3428,7 @@ public class AutonomySession
      */
     private boolean endsTheBerthsRoom(TileKey tile, TileKey berth)
     {
-        org.traincontrol.base.LayoutDiagramComponent component = getGraph().getTiles().get(tile);
+        LayoutDiagramComponent component = getGraph().getTiles().get(tile);
 
         if (component == null) return false;
 
@@ -3144,8 +3437,7 @@ public class AutonomySession
 
         if (component.isSwitch() || TileGraph.isPermanentTurnout(component.getType())) return true;
 
-        return component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.CROSSING
-            && anotherRoadRunsOver(tile, berth);
+        return component.getType() == LayoutDiagramComponent.componentType.CROSSING && anotherRoadRunsOver(tile, berth);
     }
 
     /** Whether a road not starting or ending at this berth runs over this square (`Layout.whyABerthCannotHoldIt`). */
@@ -3177,9 +3469,9 @@ public class AutonomySession
         return Integer.compare(x.getX(), y.getX());
     }
 
-    private static String sortedNames(java.util.Collection<TileKey> tiles)
+    private static String sortedNames(Collection<TileKey> tiles)
     {
-        java.util.TreeSet<String> names = new java.util.TreeSet<>();
+        TreeSet<String> names = new TreeSet<>();
 
         for (TileKey tile : tiles) names.add(String.valueOf(tile));
 
@@ -3209,10 +3501,7 @@ public class AutonomySession
     {
         int total = 0;
 
-        for (TileKey tile : stretch.getTiles())
-        {
-            total += Math.max(0, store.getTileLength(tile));
-        }
+        for (TileKey tile : stretch.getTiles()) total += Math.max(0, store.getTileLength(tile));
 
         return total;
     }
@@ -3221,14 +3510,14 @@ public class AutonomySession
      * Squares with an arrival copy a train can be sent to and never leave, read off the graph as built (square-level
      * checks pass while one copy is stuck).  Maps each to the copy at fault.
      */
-    public java.util.Map<TileKey, String> destinationCopiesWithNoWayOut()
+    public Map<TileKey, String> destinationCopiesWithNoWayOut()
     {
         return badCopies(true, builtForInspection(), null);
     }
 
     /** The same, over a graph somebody has already built (a null `built` or `byName` is built or asked for here). */
-    java.util.Map<TileKey, String> destinationCopiesWithNoWayOut(org.json.JSONObject built,
-        java.util.Map<String, TileKey> byName)
+    Map<TileKey, String> destinationCopiesWithNoWayOut(JSONObject built,
+        Map<String, TileKey> byName)
     {
         return badCopies(true, built, byName);
     }
@@ -3237,56 +3526,56 @@ public class AutonomySession
      * The same for a copy nothing can reach: a train left there by hand is one Return Home never moves, so on a through
      * route it blocks everything behind it.
      */
-    public java.util.Map<TileKey, String> destinationCopiesWithNoWayIn()
+    public Map<TileKey, String> destinationCopiesWithNoWayIn()
     {
         return badCopies(false, builtForInspection(), null);
     }
 
     /** The same, over a graph somebody has already built (a null `built` or `byName` is built or asked for here). */
-    java.util.Map<TileKey, String> destinationCopiesWithNoWayIn(org.json.JSONObject built,
-        java.util.Map<String, TileKey> byName)
+    Map<TileKey, String> destinationCopiesWithNoWayIn(JSONObject built,
+        Map<String, TileKey> byName)
     {
         return badCopies(false, built, byName);
     }
 
     /** Reads the built configuration for destination copies with no way out (`wantNoWayOut`) or none in. */
-    private java.util.Map<TileKey, String> badCopies(boolean wantNoWayOut,
-        org.json.JSONObject built, java.util.Map<String, TileKey> named)
+    private Map<TileKey, String> badCopies(boolean wantNoWayOut,
+        JSONObject built, Map<String, TileKey> named)
     {
-        java.util.Map<TileKey, String> out = new java.util.LinkedHashMap<>();
+        Map<TileKey, String> out = new LinkedHashMap<>();
 
         if (reducer == null) return out;
 
         if (built == null || !built.has("points") || !built.has("edges")) return out;
 
-        java.util.Set<String> stations = new java.util.HashSet<>();
+        Set<String> stations = new HashSet<>();
 
-        org.json.JSONArray points = built.getJSONArray("points");
+        JSONArray points = built.getJSONArray("points");
 
         for (int i = 0; i < points.length(); i++)
         {
-            org.json.JSONObject p = points.getJSONObject(i);
+            JSONObject p = points.getJSONObject(i);
 
             if (p.optBoolean("station", false)) stations.add(p.getString("name"));
         }
 
-        java.util.Set<String> hasOut = new java.util.HashSet<>();
-        java.util.Set<String> hasIn = new java.util.HashSet<>();
+        Set<String> hasOut = new HashSet<>();
+        Set<String> hasIn = new HashSet<>();
 
-        org.json.JSONArray edges = built.getJSONArray("edges");
+        JSONArray edges = built.getJSONArray("edges");
 
         for (int i = 0; i < edges.length(); i++)
         {
-            org.json.JSONObject e = edges.getJSONObject(i);
+            JSONObject e = edges.getJSONObject(i);
 
             hasOut.add(e.getString("start"));
             hasIn.add(e.getString("end"));
         }
 
         // The builder's own mapping: a copy name taken apart finds nothing on an unnamed square.
-        java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
+        Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
 
-        java.util.Set<String> good = wantNoWayOut ? hasOut : hasIn;
+        Set<String> good = wantNoWayOut ? hasOut : hasIn;
 
         for (String copy : stations)
         {
@@ -3309,27 +3598,27 @@ public class AutonomySession
      * Stations whose arrival copy has no outgoing edge, for arrivals a train can make (OB-361), with the sides those
      * arrivals come in by (OB-201).  Empty when the setup will not build.
      */
-    private Map<TileKey, Set<Side>> tilesWithATrappedArrival(org.json.JSONObject built,
-        java.util.Map<String, TileKey> named, java.util.Map<String, Side> arrivals)
+    private Map<TileKey, Set<Side>> tilesWithATrappedArrival(JSONObject built,
+        Map<String, TileKey> named, Map<String, Side> arrivals)
     {
         Map<TileKey, Set<Side>> out = new LinkedHashMap<>();
 
         if (built == null || !built.has("points") || !built.has("edges")) return out;
 
-        java.util.Set<String> hasOut = new java.util.HashSet<>();
+        Set<String> hasOut = new HashSet<>();
 
-        org.json.JSONArray edges = built.getJSONArray("edges");
+        JSONArray edges = built.getJSONArray("edges");
 
         for (int i = 0; i < edges.length(); i++)
         {
             hasOut.add(edges.getJSONObject(i).getString("start"));
         }
 
-        java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
+        Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
 
-        org.json.JSONArray points = built.getJSONArray("points");
+        JSONArray points = built.getJSONArray("points");
 
-        java.util.Set<String> reached = copiesATrainReaches(built);
+        Set<String> reached = copiesATrainReaches(built);
 
         for (int i = 0; i < points.length(); i++)
         {
@@ -3370,28 +3659,28 @@ public class AutonomySession
     }
 
     /** The copies a train can arrive at on the built railway, walking on from stations and standing trains (OB-361). */
-    private static java.util.Set<String> copiesATrainReaches(org.json.JSONObject built)
+    private static Set<String> copiesATrainReaches(JSONObject built)
     {
-        Map<String, List<String>> onward = new java.util.HashMap<>();
+        Map<String, List<String>> onward = new HashMap<>();
 
-        org.json.JSONArray edges = built.getJSONArray("edges");
+        JSONArray edges = built.getJSONArray("edges");
 
         for (int i = 0; i < edges.length(); i++)
         {
-            org.json.JSONObject edge = edges.getJSONObject(i);
+            JSONObject edge = edges.getJSONObject(i);
 
             onward.computeIfAbsent(edge.getString("start"), k -> new ArrayList<String>()).add(edge.getString("end"));
         }
 
-        java.util.Set<String> reached = new java.util.HashSet<>();
-        java.util.Set<String> seen = new java.util.HashSet<>();
-        java.util.Deque<String> toVisit = new java.util.ArrayDeque<>();
+        Set<String> reached = new HashSet<>();
+        Set<String> seen = new HashSet<>();
+        Deque<String> toVisit = new ArrayDeque<>();
 
-        org.json.JSONArray points = built.getJSONArray("points");
+        JSONArray points = built.getJSONArray("points");
 
         for (int i = 0; i < points.length(); i++)
         {
-            org.json.JSONObject point = points.getJSONObject(i);
+            JSONObject point = points.getJSONObject(i);
 
             boolean standing = point.has(AutonomyBuilder.LOCOMOTIVE);
 
@@ -3436,11 +3725,8 @@ public class AutonomySession
     /**
      * Whether the arrivals menu can close these sides too: a station with more than one way in keeps one open.  The
      * menu's rule, asked by the trapped-arrival finding too, so its advice is advice the menu takes.
-     * @param tile the square
-     * @param sides the sides to close
-     * @return whether they can be
      */
-    public boolean arrivalsCanBeClosed(TileKey tile, java.util.Collection<Side> sides)
+    public boolean arrivalsCanBeClosed(TileKey tile, Collection<Side> sides)
     {
         if (!store.isStation(tile)) return false;
 
@@ -3459,39 +3745,39 @@ public class AutonomySession
      * on a terminus sets off turned, and each reversing point turns it again (MT-245); never through a terminus or a
      * square out of service, never straight back from a reversing point (a stub).  Null with no build to walk.
      */
-    public static java.util.Set<TileKey> berthsATrainCanBackInto(org.json.JSONObject built,
-        java.util.Map<String, TileKey> tiles)
+    public static Set<TileKey> berthsATrainCanBackInto(JSONObject built,
+        Map<String, TileKey> tiles)
     {
         if (built == null || tiles == null) return null;
 
-        org.json.JSONArray points = built.optJSONArray("points");
-        org.json.JSONArray edges = built.optJSONArray("edges");
+        JSONArray points = built.optJSONArray("points");
+        JSONArray edges = built.optJSONArray("edges");
 
         if (points == null || edges == null) return null;
 
-        java.util.Map<String, org.json.JSONObject> byName = new java.util.LinkedHashMap<>();
+        Map<String, JSONObject> byName = new LinkedHashMap<>();
 
         for (int i = 0; i < points.length(); i++)
         {
-            org.json.JSONObject point = points.optJSONObject(i);
+            JSONObject point = points.optJSONObject(i);
 
             if (point != null && point.has("name")) byName.put(point.getString("name"), point);
         }
 
-        java.util.Map<String, java.util.List<String>> onwards = new java.util.HashMap<>();
+        Map<String, List<String>> onwards = new HashMap<>();
 
         for (int i = 0; i < edges.length(); i++)
         {
-            org.json.JSONObject edge = edges.optJSONObject(i);
+            JSONObject edge = edges.optJSONObject(i);
 
             if (edge == null) continue;
 
-            onwards.computeIfAbsent(edge.optString("start"), k -> new java.util.ArrayList<>()).add(edge.optString("end"));
+            onwards.computeIfAbsent(edge.optString("start"), k -> new ArrayList<>()).add(edge.optString("end"));
         }
 
-        java.util.Set<TileKey> out = new java.util.LinkedHashSet<>();
+        Set<TileKey> out = new LinkedHashSet<>();
 
-        for (org.json.JSONObject start : byName.values())
+        for (JSONObject start : byName.values())
         {
             if (!start.optBoolean("active", true)) continue;
 
@@ -3502,8 +3788,8 @@ public class AutonomySession
             boolean turned = start.optBoolean("terminus", false);
 
             // each state: where, turned an odd number of times, and the square before it
-            java.util.Set<String> seen = new java.util.HashSet<>();
-            java.util.Deque<Object[]> queue = new java.util.ArrayDeque<>();
+            Set<String> seen = new HashSet<>();
+            Deque<Object[]> queue = new ArrayDeque<>();
 
             queue.add(new Object[] {from, turned, null});
             seen.add(from + "|" + turned + "|null");
@@ -3518,9 +3804,9 @@ public class AutonomySession
 
                 boolean turnsHere = byName.get(here).optBoolean("reversing", false);
 
-                for (String name : onwards.getOrDefault(here, java.util.Collections.emptyList()))
+                for (String name : onwards.getOrDefault(here, Collections.emptyList()))
                 {
-                    org.json.JSONObject next = byName.get(name);
+                    JSONObject next = byName.get(name);
 
                     if (next == null || !next.optBoolean("active", true)) continue;
 
@@ -3549,14 +3835,14 @@ public class AutonomySession
     }
 
     /**
-     * The built graph as JSON for the copy checks, or null when the setup will not build: an unsaved session's build
-     * has no edges and on a test machine reached the real railway, and its louder problems are reported already.
+     * The built graph as JSON for the copy checks, or null when the setup will not build (its louder problems are
+     * reported already).
      */
-    private org.json.JSONObject builtForInspection()
+    private JSONObject builtForInspection()
     {
         try
         {
-            return new org.json.JSONObject(buildConfigurationForInspection());
+            return new JSONObject(buildConfigurationForInspection());
         }
         catch (RuntimeException malformed)
         {
@@ -3568,28 +3854,28 @@ public class AutonomySession
      * Station copies a train can leave but from which it reaches no other station square (its own turning twin does not
      * count).  Copies with no way out at all are left to the check above.  Empty when the setup will not build.
      */
-    public java.util.Map<TileKey, String> destinationCopiesReachingNoStation()
+    public Map<TileKey, String> destinationCopiesReachingNoStation()
     {
         return destinationCopiesReachingNoStation(builtForInspection(), null);
     }
 
     /** The same, over a graph somebody has already built (a null `built` or `named` is built or asked for here). */
-    java.util.Map<TileKey, String> destinationCopiesReachingNoStation(org.json.JSONObject built,
-        java.util.Map<String, TileKey> named)
+    Map<TileKey, String> destinationCopiesReachingNoStation(JSONObject built,
+        Map<String, TileKey> named)
     {
-        java.util.Map<TileKey, String> out = new java.util.LinkedHashMap<>();
+        Map<TileKey, String> out = new LinkedHashMap<>();
 
         if (reducer == null) return out;
 
         if (built == null || !built.has("points") || !built.has("edges")) return out;
 
-        java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
+        Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
 
         BuiltReach reach = BuiltReach.of(built, byName);
 
-        java.util.Set<String> stations = new java.util.HashSet<>();
+        Set<String> stations = new HashSet<>();
 
-        org.json.JSONArray points = built.getJSONArray("points");
+        JSONArray points = built.getJSONArray("points");
 
         for (int i = 0; i < points.length(); i++)
         {
@@ -3634,7 +3920,7 @@ public class AutonomySession
      * Each square to the other stations a train there can be sent to, off the build (`BuiltReach.bySquare`): the one
      * answer every reachability finding reads.  Null where the setup does not build.
      */
-    Map<TileKey, Set<TileKey>> reachForInspection(org.json.JSONObject built, java.util.Map<String, TileKey> named)
+    Map<TileKey, Set<TileKey>> reachForInspection(JSONObject built, Map<String, TileKey> named)
     {
         if (reducer == null || built == null) return null;
 
@@ -3652,7 +3938,7 @@ public class AutonomySession
     {
         Map<TileKey, Set<Side>> out = new LinkedHashMap<>();
 
-        org.json.JSONObject built = reducer == null ? null : builtForInspection();
+        JSONObject built = reducer == null ? null : builtForInspection();
 
         if (built == null) return out;
 
@@ -3680,8 +3966,8 @@ public class AutonomySession
     }
 
     /** Whether another copy of the square is in `good` (copies with a way out, or in). */
-    private boolean hasAHealthySibling(String copy, TileKey tile, java.util.Set<String> good,
-        java.util.Set<String> stations, java.util.Map<String, TileKey> byName)
+    private boolean hasAHealthySibling(String copy, TileKey tile, Set<String> good,
+        Set<String> stations, Map<String, TileKey> byName)
     {
         for (String sibling : stations)
         {
@@ -3722,9 +4008,9 @@ public class AutonomySession
     }
 
     /** What Mass Assign Lengths asks a length for, square to answer key (OB-297): pieces, page switches, crossings. */
-    private java.util.Map<TileKey, String> piecesToMeasure()
+    private Map<TileKey, String> piecesToMeasure()
     {
-        java.util.Map<TileKey, String> out = new LinkedHashMap<>();
+        Map<TileKey, String> out = new LinkedHashMap<>();
 
         int piece = 0;
 
@@ -3789,7 +4075,7 @@ public class AutonomySession
     }
 
     /** @return every square switched out of service (`active` FALSE), empty when none is */
-    public java.util.Set<TileKey> shutTiles()
+    public Set<TileKey> shutTiles()
     {
         // FALSE.equals: absent, or not a boolean, means in service
         return new LinkedHashSet<>(
@@ -3895,7 +4181,7 @@ public class AutonomySession
      */
     public List<Side> unbarredArrivalSides(TileKey tile)
     {
-        List<Side> sides = new java.util.ArrayList<>(arrivalSides(tile));
+        List<Side> sides = new ArrayList<>(arrivalSides(tile));
 
         sides.removeAll(getBarredArrivals(tile));
 
@@ -3919,10 +4205,7 @@ public class AutonomySession
         StationIndex current = stationIndex;
 
         // Only before the first rebuild, when nothing runs; otherwise derived eagerly (`deriveStationIndex`).
-        if (current == null)
-        {
-            current = deriveStationIndex();
-        }
+        if (current == null) current = deriveStationIndex();
 
         return current;
     }
@@ -3991,15 +4274,14 @@ public class AutonomySession
 
         if (named != null && !named.trim().isEmpty()) return named.trim();
 
-        org.traincontrol.base.LayoutDiagramComponent component =
-            getGraph() == null ? null : getGraph().getTiles().get(tile);
+        LayoutDiagramComponent component = getGraph() == null ? null : getGraph().getTiles().get(tile);
 
         return component != null && component.isFeedback()
             ? "s88 " + component.getRawAddress() : tile.getX() + "," + tile.getY();
     }
 
     /**
-     * Squares where a train may turn round, emitted as several Points each: a TERMINUS station (as one Point it would
+     * Squares where a train may turn around, emitted as several Points each: a TERMINUS station (as one Point it would
      * block every path through it), and anything marked CAN REVERSE.
      */
     public Set<TileKey> reversibleTiles()
@@ -4030,7 +4312,7 @@ public class AutonomySession
         return out;
     }
 
-    /** Whether every train arriving here must turn round, rather than merely being able to. */
+    /** Whether every train arriving here must turn around, rather than merely being able to. */
     public boolean isMustTurnAround(TileKey tile)
     {
         return Boolean.TRUE.equals(getPointProperty(tile, AutonomyBuilder.MUST_REVERSE));
@@ -4092,7 +4374,7 @@ public class AutonomySession
     }
 
     /**
-     * Whether trains may turn round on this square, reading the older "terminus" and "reversing" keys too, or an older
+     * Whether trains may turn around on this square, reading the older "terminus" and "reversing" keys too, or an older
      * setup would lose its termini at the first rebuild.  The first edit writes the new spelling.
      */
     public boolean isTurnAround(TileKey tile)
@@ -4135,6 +4417,123 @@ public class AutonomySession
         setPointProperty(tile, "reversing", null);
     }
 
+    /**
+     * Whether this square is a stop-only station: in service, trains stop here and none may run through (FR-111).  An
+     * old station reads false with no conversion, as the setting is stored only when off.
+     */
+    public boolean isStopOnly(TileKey tile)
+    {
+        return store.isStation(tile) && !Boolean.FALSE.equals(getPointProperty(tile, "active"))
+            && Boolean.FALSE.equals(getPointProperty(tile, Point.RUN_THROUGH));
+    }
+
+    /**
+     * Sets the two boxes of a square's use (FR-111): both ticked a station, only `stops` a stop-only station, only
+     * `runsThrough` a pass-through, neither Nothing Can Pass, which leaves what the square is alone so that ticking a
+     * box again brings it back.  Names nothing: a square becoming a station needs its name set first by whoever asks.
+     *
+     * @param tile the square, a sensor where `stops` is set
+     */
+    public void setStopsAndRunsThrough(TileKey tile, boolean stops, boolean runsThrough)
+    {
+        if (!stops && !runsThrough)
+        {
+            setPointProperty(tile, "active", Boolean.FALSE);
+
+            return;
+        }
+
+        setStation(tile, stops);
+
+        setPointProperty(tile, "active", null);
+
+        setPointProperty(tile, Point.RUN_THROUGH, runsThrough ? null : Boolean.FALSE);
+    }
+
+    /** Which trains a square's list applies to (FR-111); the three share one list. */
+    public enum WhichTrains
+    {
+        /** Every train; the list is remembered and keeps nobody out. */
+        ALL,
+        /** Every train but those listed. */
+        BLACKLIST,
+        /** Only those listed; an empty list keeps every train out (`Point.excludes`). */
+        WHITELIST
+    }
+
+    /** @return which trains this square lets in; a square with no list in force reads ALL */
+    public WhichTrains getWhichTrains(TileKey tile)
+    {
+        if (Point.ALLOW_ONLY_LISTED.equals(
+            getPointProperty(tile, Point.EXCLUDED_LOCS_MODE)))
+        {
+            return WhichTrains.WHITELIST;
+        }
+
+        return namesUnder(tile, "excludedLocs").isEmpty() ? WhichTrains.ALL : WhichTrains.BLACKLIST;
+    }
+
+    /** @return this square's one list of locomotives, by name, whichever of the three is chosen */
+    public List<String> getTrainList(TileKey tile)
+    {
+        List<String> inForce = namesUnder(tile, "excludedLocs");
+
+        return !inForce.isEmpty() || getWhichTrains(tile) != WhichTrains.ALL
+            ? inForce : namesUnder(tile, AutonomyBuilder.REMEMBERED_LOCS);
+    }
+
+    /** Replaces this square's one list, under whichever of the three is chosen. */
+    public void setTrainList(TileKey tile, Collection<String> names)
+    {
+        storeTrains(tile, getWhichTrains(tile), names);
+    }
+
+    /**
+     * Chooses which trains this square lets in, keeping its one list: All keeps it under a key the build leaves out and
+     * an older build does not read, so a list held back is never a list in force.  Blacklist with an empty list reads
+     * All again, as nothing distinguishes the two; a window asks for a list first.
+     */
+    public void setWhichTrains(TileKey tile, WhichTrains which)
+    {
+        storeTrains(tile, which, getTrainList(tile));
+    }
+
+    /** Chooses which trains this square lets in and its list, together. */
+    public void setWhichTrains(TileKey tile, WhichTrains which, Collection<String> names)
+    {
+        storeTrains(tile, which, names);
+    }
+
+    private void storeTrains(TileKey tile, WhichTrains which, Collection<String> names)
+    {
+        JSONArray listed = names == null || names.isEmpty() ? null : new JSONArray(names);
+
+        setPointProperty(tile, "excludedLocs", which == WhichTrains.ALL ? null : listed);
+
+        setPointProperty(tile, Point.EXCLUDED_LOCS_MODE,
+            which == WhichTrains.WHITELIST ? Point.ALLOW_ONLY_LISTED : null);
+
+        setPointProperty(tile, AutonomyBuilder.REMEMBERED_LOCS, which == WhichTrains.ALL ? listed : null);
+    }
+
+    /** The names stored under a key of this square, in order; empty where there are none. */
+    private List<String> namesUnder(TileKey tile, String key)
+    {
+        List<String> out = new ArrayList<>();
+
+        Object value = getPointProperty(tile, key);
+
+        if (value instanceof JSONArray)
+        {
+            for (Object name : (JSONArray) value)
+            {
+                if (name instanceof String) out.add((String) name);
+            }
+        }
+
+        return out;
+    }
+
     /** Sets one of the three switches (CAN_REVERSE or PARKING), clearing the older spellings. */
     public void setPointFlag(TileKey tile, String key, boolean on)
     {
@@ -4159,24 +4558,17 @@ public class AutonomySession
     }
 
     /** The per-point operational data of the active configuration, for the builder to merge in. */
-    private Map<String, org.json.JSONObject> pointExtras()
+    private Map<String, JSONObject> pointExtras()
     {
-        Map<String, org.json.JSONObject> out = new LinkedHashMap<>();
+        Map<String, JSONObject> out = new LinkedHashMap<>();
 
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return out;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        JSONObject configuration = activeConfiguration();
 
         if (configuration == null || !configuration.has("points")) return out;
 
-        org.json.JSONObject points = configuration.getJSONObject("points");
+        JSONObject points = configuration.getJSONObject("points");
 
-        for (String key : points.keySet())
-        {
-            out.put(key, points.getJSONObject(key));
-        }
+        for (String key : points.keySet()) out.put(key, points.getJSONObject(key));
 
         return out;
     }
@@ -4198,13 +4590,13 @@ public class AutonomySession
     }
 
     /** The same, bringing `asBuilt` (the railway's settings as built, or null) up to what the fold wrote (OB-343). */
-    public void captureFromLayout(String layoutJson, String configurationName, org.json.JSONObject asBuilt)
+    public void captureFromLayout(String layoutJson, String configurationName, JSONObject asBuilt)
     {
         capture(layoutJson, configurationName, false, asBuilt);
     }
 
     /** `captureFromLayout`; with `placementsOnly`, just each square's train, tail and facing. */
-    private void capture(String layoutJson, String configurationName, boolean placementsOnly, org.json.JSONObject asBuilt)
+    private void capture(String layoutJson, String configurationName, boolean placementsOnly, JSONObject asBuilt)
     {
         if (layoutJson == null || reducer == null || configurationName == null) return;
 
@@ -4212,11 +4604,11 @@ public class AutonomySession
         // Nothing is lost: the store was written and the session is about to be rebuilt.
         if (pagesStale || squaresMoved) return;
 
-        org.json.JSONObject configuration = store.getConfiguration(configurationName);
+        JSONObject configuration = store.getConfiguration(configurationName);
 
         if (configuration == null) return;
 
-        org.json.JSONObject root = new org.json.JSONObject(layoutJson);
+        JSONObject root = new JSONObject(layoutJson);
 
         Map<String, TileKey> tilesByName = new LinkedHashMap<>();
 
@@ -4228,13 +4620,13 @@ public class AutonomySession
 
         Set<TileKey> diagram = squaresOfTheDiagram();
 
-        org.json.JSONObject points = new org.json.JSONObject();
+        JSONObject points = new JSONObject();
 
         if (root.has("points"))
         {
             for (Object o : root.getJSONArray("points"))
             {
-                org.json.JSONObject point = (org.json.JSONObject) o;
+                JSONObject point = (JSONObject) o;
 
                 // By the square the running Point copies, not today's naming of its name, which may have moved.
                 TileKey tile = squareOf(point, diagram);
@@ -4243,20 +4635,20 @@ public class AutonomySession
 
                 if (tile == null) continue;
 
-                org.json.JSONObject extras = new org.json.JSONObject();
+                JSONObject extras = new JSONObject();
 
                 for (String key : placementsOnly ? PLACEMENT_KEYS : POINT_OPERATIONAL_KEYS)
                 {
                     if (!point.has(key) || point.isNull(key)) continue;
 
                     // Only WHICH locomotive: `Point.toJSON`'s length, speed and functions would revert LocDB edits.
-                    if ("loc".equals(key) && point.get(key) instanceof org.json.JSONObject)
+                    if ("loc".equals(key) && point.get(key) instanceof JSONObject)
                     {
-                        org.json.JSONObject loc = point.getJSONObject(key);
+                        JSONObject loc = point.getJSONObject(key);
 
                         if (!loc.has("name")) continue;
 
-                        extras.put(key, new org.json.JSONObject().put("name", loc.getString("name")));
+                        extras.put(key, new JSONObject().put("name", loc.getString("name")));
 
                         continue;
                     }
@@ -4275,10 +4667,7 @@ public class AutonomySession
                     facing = facings.get(point.optString("name"));
                 }
 
-                if (facing != null && extras.has("loc"))
-                {
-                    extras.put(AutonomyBuilder.FACING, facing.name());
-                }
+                if (facing != null && extras.has("loc")) extras.put(AutonomyBuilder.FACING, facing.name());
 
                 // And a home's facing where the railway holds the home to a copy (OB-282)
                 if (facing != null && extras.has("home") && point.optBoolean(AutonomyBuilder.HOME_FACING_FIXED, false))
@@ -4290,8 +4679,7 @@ public class AutonomySession
                 // square is visited once per copy and only one carries the locomotive.
                 String id = tile.toString();
 
-                org.json.JSONObject into = points.has(id)
-                    ? points.getJSONObject(id) : new org.json.JSONObject();
+                JSONObject into = points.has(id) ? points.getJSONObject(id) : new JSONObject();
 
                 for (String key : extras.keySet()) into.put(key, extras.get(key));
 
@@ -4300,15 +4688,14 @@ public class AutonomySession
         }
 
         // Merged per point: the running layout predates the editor's edits, which must survive.
-        org.json.JSONObject existing = configuration.has("points")
-            ? configuration.getJSONObject("points") : new org.json.JSONObject();
+        JSONObject existing = configuration.has("points") ? configuration.getJSONObject("points") : new JSONObject();
 
         // A train the railway cannot stand (its facing has no copy) stays where the setup has it, unless the railway
         // has it elsewhere.
-        java.util.Set<TileKey> unheld = configurationName.equals(store.getActiveConfiguration())
-            ? facingsThatCannotBeHeld() : java.util.Collections.<TileKey>emptySet();
+        Set<TileKey> unheld = configurationName.equals(store.getActiveConfiguration())
+            ? facingsThatCannotBeHeld() : Collections.<TileKey>emptySet();
 
-        java.util.Set<String> capturedTrains = new java.util.HashSet<>();
+        Set<String> capturedTrains = new HashSet<>();
 
         for (String id : points.keySet())
         {
@@ -4319,9 +4706,8 @@ public class AutonomySession
 
         for (String id : points.keySet())
         {
-            org.json.JSONObject captured = points.getJSONObject(id);
-            org.json.JSONObject before = existing.has(id)
-                ? existing.getJSONObject(id) : new org.json.JSONObject();
+            JSONObject captured = points.getJSONObject(id);
+            JSONObject before = existing.has(id) ? existing.getJSONObject(id) : new JSONObject();
 
             String recorded = nameOfPlacedLocomotive(before.opt("loc"));
 
@@ -4408,7 +4794,7 @@ public class AutonomySession
             return;
         }
 
-        org.json.JSONObject globals = globalsOf(root);
+        JSONObject globals = globalsOf(root);
 
         configuration.put("globals", globals);
 
@@ -4424,9 +4810,9 @@ public class AutonomySession
     }
 
     /** The top of a running layout's file: pace, speeds, the rest of the settings panel, and the timetable. */
-    public static org.json.JSONObject globalsOf(org.json.JSONObject root)
+    public static JSONObject globalsOf(JSONObject root)
     {
-        org.json.JSONObject globals = new org.json.JSONObject();
+        JSONObject globals = new JSONObject();
 
         for (String key : root.keySet())
         {
@@ -4436,11 +4822,26 @@ public class AutonomySession
         return globals;
     }
 
+    /** A stored configuration's globals, put in place empty when it has none. */
+    static JSONObject storedGlobals(JSONObject configuration)
+    {
+        JSONObject globals = configuration.optJSONObject("globals");
+
+        if (globals == null)
+        {
+            globals = new JSONObject();
+
+            configuration.put("globals", globals);
+        }
+
+        return globals;
+    }
+
     /**
      * Folds what the railway owns and nothing the setup gained since it was built: train placements and the settings
      * and timetable a run writes.  For a setup newer than the railway.  A null `asBuilt` takes every setting.
      */
-    public void captureWhatTheRailwayOwns(String layoutJson, String configurationName, org.json.JSONObject asBuilt)
+    public void captureWhatTheRailwayOwns(String layoutJson, String configurationName, JSONObject asBuilt)
     {
         capture(layoutJson, configurationName, true, null);
 
@@ -4451,24 +4852,19 @@ public class AutonomySession
      * Folds the railway's settings and timetable alone, before a rebuild throws them away.  With a record of how the
      * railway was built, only those it changed since (OB-343); a null `asBuilt` takes every setting.
      */
-    public void captureTheRailwaysSettings(String layoutJson, String configurationName, org.json.JSONObject asBuilt)
+    public void captureTheRailwaysSettings(String layoutJson, String configurationName, JSONObject asBuilt)
     {
         if (layoutJson == null || configurationName == null) return;
 
-        org.json.JSONObject configuration = store.getConfiguration(configurationName);
+        JSONObject configuration = store.getConfiguration(configurationName);
 
         if (configuration == null) return;
 
-        org.json.JSONObject now = globalsOf(new org.json.JSONObject(layoutJson));
+        JSONObject root = new JSONObject(layoutJson);
 
-        org.json.JSONObject globals = configuration.optJSONObject("globals");
+        JSONObject now = globalsOf(root);
 
-        if (globals == null)
-        {
-            globals = new org.json.JSONObject();
-
-            configuration.put("globals", globals);
-        }
+        JSONObject globals = storedGlobals(configuration);
 
         for (String key : now.keySet())
         {
@@ -4477,16 +4873,18 @@ public class AutonomySession
             // Not the timetable while pages are stale: the railway still has the old Point names.
             if ((pagesStale || squaresMoved) && "timetable".equals(key)) continue;
 
-            if (org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES.equals(key))
+            if (Layout.PAUSED_LOCOMOTIVES.equals(key))
             {
                 takePausesByTrain(configurationName, globals, asBuilt == null ? null : asBuilt.opt(key), now.get(key),
                     asBuilt == null);
             }
             else
             {
-                globals.put(key, now.get(key));
+                Object taken = "timetable".equals(key) ? inTheNamesNow(now.get(key), root) : now.get(key);
 
-                takenFromTheRailway(configurationName, key, now.get(key));
+                globals.put(key, taken);
+
+                takenFromTheRailway(configurationName, key, taken);
             }
 
             if (asBuilt != null) asBuilt.put(key, copyOfSetting(now.get(key)));
@@ -4499,15 +4897,15 @@ public class AutonomySession
             {
                 if (now.has(key)) continue;
 
-                if (org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES.equals(key))
+                if (Layout.PAUSED_LOCOMOTIVES.equals(key))
                 {
-                    takePausesByTrain(configurationName, globals, asBuilt.opt(key), org.json.JSONObject.NULL, false);
+                    takePausesByTrain(configurationName, globals, asBuilt.opt(key), JSONObject.NULL, false);
                 }
                 else
                 {
                     globals.remove(key);
 
-                    takenFromTheRailway(configurationName, key, org.json.JSONObject.NULL);
+                    takenFromTheRailway(configurationName, key, JSONObject.NULL);
                 }
 
                 asBuilt.remove(key);
@@ -4518,17 +4916,59 @@ public class AutonomySession
     }
 
     /**
+     * The railway's timetable, as a copy, with each name the carry's memory would read as another square than the
+     * railway's own Point stands on written in the latest build's name (OB-345).  Every other name is the carry's.
+     */
+    private Object inTheNamesNow(Object timetable, JSONObject railway)
+    {
+        Object table = copyOfSetting(timetable);
+
+        JSONArray built = railway.optJSONArray("points");
+
+        Map<String, JSONObject> points = new HashMap<>();
+
+        for (int i = 0; built != null && i < built.length(); i++)
+        {
+            JSONObject point = built.optJSONObject(i);
+
+            if (point != null) points.put(point.optString("name"), point);
+        }
+
+        JSONObject globals = new JSONObject().put("timetable", table);
+
+        for (NamedLeg leg : legsOf(new JSONObject().put("globals", globals)))
+        {
+            for (int end = 0; end < 2; end++)
+            {
+                String name = leg.get(end);
+                JSONObject point = points.get(name);
+                String square = point == null ? null : point.optString("square", null);
+                TileKey at = square == null ? null : AutonomyCompanionStore.parseTileKey(square);
+                TileKey read = squareOfNameSeen.get(name);
+
+                if (at == null || read == null || read.equals(at)) continue;
+
+                String now = pointNamedNow(name, square, point.optString(AutonomyBuilder.COPY_FACING, null));
+
+                if (now != null) leg.set(end, now);
+            }
+        }
+
+        return table;
+    }
+
+    /**
      * Takes the railway's paused trains into the setup's list by train (OB-343); `wholesale` (no record) takes the
      * railway's list as it is.
      */
-    private void takePausesByTrain(String configurationName, org.json.JSONObject globals, Object recorded, Object value,
+    private void takePausesByTrain(String configurationName, JSONObject globals, Object recorded, Object value,
         boolean wholesale)
     {
         Set<String> before = namesIn(recorded);
         Set<String> after = namesIn(value);
 
-        Set<String> gained = new java.util.TreeSet<>(after);
-        Set<String> lost = new java.util.TreeSet<>(before);
+        Set<String> gained = new TreeSet<>(after);
+        Set<String> lost = new TreeSet<>(before);
 
         gained.removeAll(before);
         lost.removeAll(after);
@@ -4538,11 +4978,11 @@ public class AutonomySession
 
         if (pausesTakenFromTheRailway == null) return;
 
-        java.util.Map<String, Boolean> pauses = pausesTakenFromTheRailway.get(configurationName);
+        Map<String, Boolean> pauses = pausesTakenFromTheRailway.get(configurationName);
 
         if (pauses == null)
         {
-            pauses = new java.util.TreeMap<>();
+            pauses = new TreeMap<>();
 
             pausesTakenFromTheRailway.put(configurationName, pauses);
         }
@@ -4552,9 +4992,9 @@ public class AutonomySession
         for (String name : lost) pauses.put(name, Boolean.FALSE);
     }
 
-    private static void applyPauses(org.json.JSONObject globals, Set<String> gained, Set<String> lost)
+    private static void applyPauses(JSONObject globals, Set<String> gained, Set<String> lost)
     {
-        Set<String> names = namesIn(globals.opt(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES));
+        Set<String> names = namesIn(globals.opt(Layout.PAUSED_LOCOMOTIVES));
 
         names.addAll(gained);
         names.removeAll(lost);
@@ -4563,10 +5003,10 @@ public class AutonomySession
     }
 
     /** The setup's list of the paused, as the railway writes it: sorted, and not at all while it names nobody. */
-    private static void putPausedNames(org.json.JSONObject globals, Set<String> names)
+    private static void putPausedNames(JSONObject globals, Set<String> names)
     {
-        if (names.isEmpty()) globals.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
-        else globals.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(names));
+        if (names.isEmpty()) globals.remove(Layout.PAUSED_LOCOMOTIVES);
+        else globals.put(Layout.PAUSED_LOCOMOTIVES, new JSONArray(names));
     }
 
     /** Notes a setting a fold took during an edit session; JSON null where the railway stopped writing it. */
@@ -4576,11 +5016,11 @@ public class AutonomySession
 
         value = copyOfSetting(value);
 
-        org.json.JSONObject taken = takenFromTheRailway.get(configurationName);
+        JSONObject taken = takenFromTheRailway.get(configurationName);
 
         if (taken == null)
         {
-            taken = new org.json.JSONObject();
+            taken = new JSONObject();
 
             takenFromTheRailway.put(configurationName, taken);
         }
@@ -4591,11 +5031,11 @@ public class AutonomySession
     /** The names in a list of trains as the setup keeps it, sorted; none for anything else. */
     private static Set<String> namesIn(Object list)
     {
-        Set<String> names = new java.util.TreeSet<>();
+        Set<String> names = new TreeSet<>();
 
-        if (list instanceof org.json.JSONArray)
+        if (list instanceof JSONArray)
         {
-            for (Object name : (org.json.JSONArray) list)
+            for (Object name : (JSONArray) list)
             {
                 if (name instanceof String) names.add((String) name);
             }
@@ -4607,23 +5047,23 @@ public class AutonomySession
     /** A setting's value as a copy, so the record never shares an array with the setup. */
     private static Object copyOfSetting(Object value)
     {
-        if (value instanceof org.json.JSONObject) return new org.json.JSONObject(value.toString());
+        if (value instanceof JSONObject) return new JSONObject(value.toString());
 
-        if (value instanceof org.json.JSONArray) return new org.json.JSONArray(value.toString());
+        if (value instanceof JSONArray) return new JSONArray(value.toString());
 
         return value;
     }
 
     private static boolean sameSetting(Object a, Object b)
     {
-        if (a instanceof org.json.JSONObject && b instanceof org.json.JSONObject)
+        if (a instanceof JSONObject && b instanceof JSONObject)
         {
-            return ((org.json.JSONObject) a).similar(b);
+            return ((JSONObject) a).similar(b);
         }
 
-        if (a instanceof org.json.JSONArray && b instanceof org.json.JSONArray)
+        if (a instanceof JSONArray && b instanceof JSONArray)
         {
-            return ((org.json.JSONArray) a).similar(b);
+            return ((JSONArray) a).similar(b);
         }
 
         return String.valueOf(a).equals(String.valueOf(b));
@@ -4632,7 +5072,7 @@ public class AutonomySession
     /** Named squares on pages out of autonomy: they still take their turn in the naming. */
     private Map<TileKey, String> namesOutOfPlay()
     {
-        Set<String> out = new java.util.HashSet<>(store.getExcludedPages());
+        Set<String> out = new HashSet<>(store.getExcludedPages());
 
         if (out.isEmpty()) return Collections.emptyMap();
 
@@ -4656,7 +5096,7 @@ public class AutonomySession
     }
 
     /** The square of the diagram a running Point says it is a copy of, where the diagram has it, or null. */
-    private static TileKey squareOf(org.json.JSONObject point, Set<TileKey> diagram)
+    private static TileKey squareOf(JSONObject point, Set<TileKey> diagram)
     {
         String square = point.optString("square", null);
 
@@ -4668,7 +5108,7 @@ public class AutonomySession
     /** Every square of the diagram, including pages out of autonomy. */
     private Set<TileKey> squaresOfTheDiagram()
     {
-        Set<TileKey> out = new java.util.HashSet<>();
+        Set<TileKey> out = new HashSet<>();
 
         for (LayoutDiagram page : pages)
         {
@@ -4684,7 +5124,7 @@ public class AutonomySession
     /** Clears the in-use configuration's timetable and saves; false if there was no configuration. */
     public boolean clearTheTimetable() throws IOException
     {
-        return setGlobal("timetable", new org.json.JSONArray());
+        return setGlobal("timetable", new JSONArray());
     }
 
     /**
@@ -4694,18 +5134,11 @@ public class AutonomySession
      */
     public boolean setGlobal(String key, Object value) throws IOException
     {
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return false;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        JSONObject configuration = activeConfiguration();
 
         if (configuration == null) return false;
 
-        if (!configuration.has("globals"))
-        {
-            configuration.put("globals", new org.json.JSONObject());
-        }
+        if (!configuration.has("globals")) configuration.put("globals", new JSONObject());
 
         configuration.getJSONObject("globals").put(key, value);
 
@@ -4718,18 +5151,15 @@ public class AutonomySession
      * The trains this configuration pauses, by name, sorted (FR-117).  Kept under `Layout.PAUSED_LOCOMOTIVES`, so build
      * and fold carry it like any setting.  Empty where no configuration is active or it pauses nobody.
      */
-    public java.util.Set<String> getPausedLocomotives()
+    public Set<String> getPausedLocomotives()
     {
-        java.util.Set<String> names = new java.util.TreeSet<>();
+        Set<String> names = new TreeSet<>();
 
-        String active = store.getActiveConfiguration();
+        JSONObject configuration = activeConfiguration();
 
-        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+        JSONObject globals = configuration == null ? null : configuration.optJSONObject("globals");
 
-        org.json.JSONObject globals = configuration == null ? null : configuration.optJSONObject("globals");
-
-        org.json.JSONArray list = globals == null ? null
-            : globals.optJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+        JSONArray list = globals == null ? null : globals.optJSONArray(Layout.PAUSED_LOCOMOTIVES);
 
         for (int i = 0; list != null && i < list.length(); i++)
         {
@@ -4746,13 +5176,13 @@ public class AutonomySession
     {
         if (name == null) return false;
 
-        return setLocomotivesPaused(java.util.Collections.singletonList(name), paused);
+        return setLocomotivesPaused(Collections.singletonList(name), paused);
     }
 
     /** The same for several trains, saved once (FR-126). */
-    public boolean setLocomotivesPaused(java.util.Collection<String> names, boolean paused) throws IOException
+    public boolean setLocomotivesPaused(Collection<String> names, boolean paused) throws IOException
     {
-        java.util.Set<String> listed = getPausedLocomotives();
+        Set<String> listed = getPausedLocomotives();
 
         for (String name : names)
         {
@@ -4762,8 +5192,7 @@ public class AutonomySession
             else listed.remove(name);
         }
 
-        return setGlobal(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES,
-            listed.isEmpty() ? null : new org.json.JSONArray(listed));
+        return setGlobal(Layout.PAUSED_LOCOMOTIVES, listed.isEmpty() ? null : new JSONArray(listed));
     }
 
     /**
@@ -4774,13 +5203,13 @@ public class AutonomySession
     {
         if (train == null) return;
 
-        setTrainsActive(java.util.Collections.singletonList(train), active);
+        setTrainsActive(Collections.singletonList(train), active);
     }
 
     /** The same for several trains, saved once (FR-126). */
-    public void setTrainsActive(java.util.Collection<Locomotive> trains, boolean active) throws IOException
+    public void setTrainsActive(Collection<Locomotive> trains, boolean active) throws IOException
     {
-        java.util.List<String> names = new java.util.ArrayList<>();
+        List<String> names = new ArrayList<>();
 
         for (Locomotive train : trains)
         {
@@ -4800,15 +5229,11 @@ public class AutonomySession
      */
     public String getGlobal(String key)
     {
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return null;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        JSONObject configuration = activeConfiguration();
 
         if (configuration == null) return null;
 
-        org.json.JSONObject globals = configuration.optJSONObject("globals");
+        JSONObject globals = configuration.optJSONObject("globals");
 
         if (globals == null) return null;
 
@@ -4819,22 +5244,38 @@ public class AutonomySession
     {
         AutonomyBuilder.Globals globals = new AutonomyBuilder.Globals();
 
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return globals;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        JSONObject configuration = activeConfiguration();
 
         if (configuration == null || !configuration.has("globals")) return globals;
 
-        org.json.JSONObject stored = configuration.getJSONObject("globals");
+        JSONObject stored = configuration.getJSONObject("globals");
 
-        for (String key : stored.keySet())
-        {
-            globals.set(key, stored.get(key));
-        }
+        for (String key : stored.keySet()) globals.set(key, stored.get(key));
 
         return globals;
+    }
+
+    /** @return every stop-only station (`isStopOnly`): somewhere to stop, never a way through */
+    public Set<TileKey> stopOnlyTiles()
+    {
+        Set<TileKey> out = new HashSet<>();
+
+        for (TileKey tile : reducer == null ? Collections.<TileKey>emptySet() : reducer.getPoints().keySet())
+        {
+            if (isStopOnly(tile)) out.add(tile);
+        }
+
+        return out;
+    }
+
+    /**
+     * The editor's Test a Path from one square to another, or null where there is none: the search with the sets the
+     * build reads, starting on the copies a train stands on, so the path drawn agrees with the findings.
+     */
+    public List<GraphReducer.ReducedEdge> testPath(TileKey from, TileKey to)
+    {
+        return reducer == null ? null : reducer.findPath(from, to, mayTurnTiles(), mandatoryTurnTiles(), barredArrivals(),
+            shutTiles(), stopOnlyTiles(), startingArrivals().get(from));
     }
 
     /**
@@ -4849,15 +5290,81 @@ public class AutonomySession
 
         if (component == null) return false;
 
-        if (org.traincontrol.automationui.TilePorts.hasPortal(component.getType())) return false;
+        if (TilePorts.hasPortal(component.getType())) return false;
 
         return !getRoutes(tile).isEmpty();
     }
 
-    /** Stations with no protecting signal at all: ordinary, listed rather than warned about. */
-    private java.util.Set<TileKey> stationsWithNoSignal()
+    /** Whether a square is an s88 sensor's: a click on it opens Station Settings (OB-472). */
+    public boolean isSensorSquare(TileKey tile)
     {
-        java.util.Set<TileKey> out = new LinkedHashSet<>();
+        LayoutDiagramComponent component = graph == null || tile == null ? null : graph.getTiles().get(tile);
+
+        return component != null && component.isFeedback();
+    }
+
+    /**
+     * Pairs of s88 squares joined with no track square between them, a link's or tunnel's jump counting as none
+     * (OB-472): the join between them has no square to carry a direction.
+     */
+    private List<List<TileKey>> sensorSquaresTouching()
+    {
+        List<List<TileKey>> out = new ArrayList<>();
+
+        Set<TileKey> done = new HashSet<>();
+
+        for (TileKey sensor : sensorSquaresInReadingOrder())
+        {
+            done.add(sensor);
+
+            Set<TileKey> beside = new LinkedHashSet<>();
+
+            for (Route road : getRoutes(sensor).values())
+            {
+                for (Side side : new Side[] {road.getA(), road.getB()}) beside.add(squareBeyond(sensor, side));
+            }
+
+            for (TileKey other : beside)
+            {
+                if (isSensorSquare(other) && !done.contains(other)) out.add(Arrays.asList(sensor, other));
+            }
+        }
+
+        return out;
+    }
+
+    /** The square leaving by a side lands on, through a link's or tunnel's jump where it lands on one; or null. */
+    private TileKey squareBeyond(TileKey tile, Side side)
+    {
+        Landing next = graph.landing(tile, side);
+
+        if (next == null) return null;
+
+        if (!TilePorts.hasPortal(graph.getTiles().get(next.getTile()).getType())) return next.getTile();
+
+        Landing jump = isDisabledLink(next.getTile()) ? null : graph.landing(next.getTile(), null);
+
+        if (jump == null || isDisabledLink(jump.getTile()) || getRoutes(jump.getTile()).isEmpty()) return null;
+
+        Landing out = graph.landing(jump.getTile(), getRoutes(jump.getTile()).values().iterator().next().getA());
+
+        return out == null ? null : out.getTile();
+    }
+
+    private List<TileKey> sensorSquaresInReadingOrder()
+    {
+        List<TileKey> sensors = graph == null ? new ArrayList<>() : graph.getFeedbackTiles();
+
+        sensors.sort(Comparator.comparing(TileKey::getPage).thenComparingInt(TileKey::getY)
+            .thenComparingInt(TileKey::getX));
+
+        return sensors;
+    }
+
+    /** Stations with no protecting signal at all: ordinary, listed rather than warned about. */
+    private Set<TileKey> stationsWithNoSignal()
+    {
+        Set<TileKey> out = new LinkedHashSet<>();
 
         if (graph == null) return out;
 
@@ -4875,9 +5382,9 @@ public class AutonomySession
      * Squares whose recorded facing no copy can hold: the build falls back to `startableCopy` and the train quietly
      * turns.  Reported, not corrected: only the operator knows which way it points.
      */
-    private java.util.Set<TileKey> facingsThatCannotBeHeld()
+    private Set<TileKey> facingsThatCannotBeHeld()
     {
-        java.util.Set<TileKey> out = new LinkedHashSet<>();
+        Set<TileKey> out = new LinkedHashSet<>();
 
         Map<String, Object[]> railway = railwayTrains();
 
@@ -4906,9 +5413,9 @@ public class AutonomySession
     }
 
     /** Stations whose paired signal no longer resolves to an accessory, which the build drops silently. */
-    private java.util.Set<TileKey> signalsThatAreGone()
+    private Set<TileKey> signalsThatAreGone()
     {
-        java.util.Set<TileKey> out = new LinkedHashSet<>();
+        Set<TileKey> out = new LinkedHashSet<>();
 
         if (graph == null) return out;
 
@@ -4918,7 +5425,7 @@ public class AutonomySession
         for (Map.Entry<TileKey, List<TileKey>> entry : stationsOnly(store.getEntrySignals()).entrySet())
         {
             List<TileKey> merged = new ArrayList<>(both.containsKey(entry.getKey())
-                ? both.get(entry.getKey()) : java.util.Collections.<TileKey>emptyList());
+                ? both.get(entry.getKey()) : Collections.<TileKey>emptyList());
 
             for (TileKey signal : entry.getValue()) if (!merged.contains(signal)) merged.add(signal);
 
@@ -4948,7 +5455,7 @@ public class AutonomySession
     }
 
     /**
-     * Whether every train arriving here must turn round (OB-123), so "may change direction here" offers no choice.
+     * Whether every train arriving here must turn around (OB-123), so "may change direction here" offers no choice.
      * Departures as `departureSides` gathers them, as the trapped-arrival check does.
      */
     private boolean everyArrivalMustTurn(TileGraph graph, GraphReducer reducer, TileKey tile)
@@ -4957,13 +5464,10 @@ public class AutonomySession
 
         for (GraphReducer.ReducedEdge edge : reducer.getEdges())
         {
-            if (edge.getStart().equals(tile) && edge.getExitSide() != null)
-            {
-                departures.add(edge.getExitSide());
-            }
+            if (edge.getStart().equals(tile) && edge.getExitSide() != null) departures.add(edge.getExitSide());
         }
 
-        java.util.Collection<Side> arrivals = arrivalSides(tile);
+        Collection<Side> arrivals = arrivalSides(tile);
 
         // Nothing arrives: the unreachable-square checks' business.
         if (arrivals.isEmpty()) return false;
@@ -4974,10 +5478,7 @@ public class AutonomySession
 
             for (TileGraph.Exit exit : graph.exits(tile, arrival))
             {
-                if (exit.getSide() != null && departures.contains(exit.getSide()))
-                {
-                    onwards.add(exit.getSide());
-                }
+                if (exit.getSide() != null && departures.contains(exit.getSide())) onwards.add(exit.getSide());
             }
 
             onwards.remove(arrival);
@@ -4992,22 +5493,20 @@ public class AutonomySession
      * The squares of the active configuration whose stored point passes a test: the one walk the home and shut queries
      * share, so they agree.  Keys split on the LAST colon (the store's rule), as page names may hold one.
      */
-    private java.util.List<TileKey> tilesWhere(
-        java.util.function.BiPredicate<String, org.json.JSONObject> wanted)
+    private List<TileKey> tilesWhere(
+        java.util.function.BiPredicate<String, JSONObject> wanted)
     {
-        java.util.List<TileKey> out = new java.util.ArrayList<>();
+        List<TileKey> out = new ArrayList<>();
 
-        String active = store.getActiveConfiguration();
-
-        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
+        JSONObject configuration = activeConfiguration();
 
         if (configuration == null || !configuration.has("points")) return out;
 
-        org.json.JSONObject points = configuration.getJSONObject("points");
+        JSONObject points = configuration.getJSONObject("points");
 
         for (String key : points.keySet())
         {
-            org.json.JSONObject point = points.optJSONObject(key);
+            JSONObject point = points.optJSONObject(key);
 
             if (point == null || !wanted.test(key, point)) continue;
 
@@ -5020,23 +5519,23 @@ public class AutonomySession
     }
 
     /** @return what `homeTiles()` answers, for a test that it matches `tilesWithAHome()` */
-    public java.util.Set<TileKey> homesForFindings()
+    public Set<TileKey> homesForFindings()
     {
         return homeTiles();
     }
 
     /** `homesElsewhere` under a name a test can call. */
-    public java.util.List<TileKey> homesElsewhereForTest(TileKey tile, String locomotive)
+    public List<TileKey> homesElsewhereForTest(TileKey tile, String locomotive)
     {
         return homesElsewhere(tile, locomotive);
     }
     /** Whether a stored point records a home locomotive (a blank is none). */
-    private static boolean carriesAHome(org.json.JSONObject point)
+    private static boolean carriesAHome(JSONObject point)
     {
         return !point.optString("home", "").trim().isEmpty();
     }
     /** The squares an authored home lives at: `tilesWithAHome` as a set, so it cannot drift from `check()`. */
-    private java.util.Set<TileKey> homeTiles()
+    private Set<TileKey> homeTiles()
     {
         return new LinkedHashSet<>(tilesWithAHome());
     }
@@ -5045,7 +5544,7 @@ public class AutonomySession
      * The last check's findings, kept for the rest of the event that asked (one click asked twenty times) while nothing
      * `whatTheCheckReads` covers changes; off the event thread nothing is kept.
      */
-    private java.lang.ref.WeakReference<java.awt.AWTEvent> findingsEvent;
+    private WeakReference<AWTEvent> findingsEvent;
 
     /** What the check read when the kept findings were worked out. */
     private List<Object> findingsKey;
@@ -5066,7 +5565,7 @@ public class AutonomySession
         key.add(new Same(stationIndex));
         key.add(store.snapshotSetup().toString());
 
-        org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
+        Layout running = runningLayout == null ? null : runningLayout.get();
 
         key.add(new Same(running));
 
@@ -5131,7 +5630,7 @@ public class AutonomySession
     /** Everything wrong or worth knowing about the setup as it stands. */
     public List<AutonomyChecks.Finding> check()
     {
-        java.awt.AWTEvent event = java.awt.EventQueue.isDispatchThread() ? java.awt.EventQueue.getCurrentEvent() : null;
+        AWTEvent event = EventQueue.isDispatchThread() ? EventQueue.getCurrentEvent() : null;
 
         if (event == null || graph == null || reducer == null) return checkAfresh();
 
@@ -5141,7 +5640,7 @@ public class AutonomySession
         {
             List<AutonomyChecks.Finding> found = checkAfresh();
 
-            findingsEvent = new java.lang.ref.WeakReference<>(event);
+            findingsEvent = new WeakReference<>(event);
             findingsKey = key;
             findingsKept = found;
         }
@@ -5163,7 +5662,7 @@ public class AutonomySession
             if (store.isStation(tile) && Boolean.TRUE.equals(getPointProperty(tile, "terminus"))) termini.add(tile);
         }
 
-        // "May turn round here" where no arriving train could do anything else (OB-123), judged per ARRIVAL against
+        // "May turn around here" where no arriving train could do anything else (OB-123), judged per ARRIVAL against
         // the build's own sides: it tests for two outgoing paths, not two incoming.
         Set<TileKey> pointless = new LinkedHashSet<>();
 
@@ -5176,16 +5675,14 @@ public class AutonomySession
 
         // Built once: the checks ask the build rather than derive a second answer.  With an ERROR there is no build,
         // and those checks reason about the diagram.
-        org.json.JSONObject inspected = builtForInspection();
+        JSONObject inspected = builtForInspection();
 
-        java.util.Map<String, TileKey> namesForInspection =
-            inspected == null ? null : builder(null).tilesByName();
+        Map<String, TileKey> namesForInspection = inspected == null ? null : builder(null).tilesByName();
 
         GuardNotices guards = guardNotices(inspected, namesForInspection);
 
         // and each copy's arrival side, which names a trapped arrival (OB-201)
-        java.util.Map<String, Side> arrivalsForInspection =
-            inspected == null ? null : builder(null).arrivalByName();
+        Map<String, Side> arrivalsForInspection = inspected == null ? null : builder(null).arrivalByName();
 
         // Squares a train can reach and then not leave, off the built graph
         Map<TileKey, Set<Side>> trapped = tilesWithATrappedArrival(inspected, namesForInspection, arrivalsForInspection);
@@ -5211,9 +5708,9 @@ public class AutonomySession
         }
 
 
-        java.util.Set<TileKey> givenNoRoom = new LinkedHashSet<>();
+        Set<TileKey> givenNoRoom = new LinkedHashSet<>();
 
-        java.util.Map<TileKey, int[]> runIns = runInFigures(givenNoRoom, inspected, namesForInspection);
+        Map<TileKey, int[]> runIns = runInFigures(givenNoRoom, inspected, namesForInspection);
 
         List<AutonomyChecks.Finding> found = AutonomyChecks.run(graph, reducer, termini, getLabelledStationTiles(), pointless,
             trapped, arrivalsClosableAt(trapped), covered, placedLocomotives(), shutStations(),
@@ -5240,7 +5737,7 @@ public class AutonomySession
 
         // Said, not refused
         found.addAll(AutonomyChecks.checkTrainsFacingTrackTowardsThem(reducer, trainsFacingTrackTowardsThem()));
-        java.util.Set<TileKey> endsOfLines = stationsAtTheEndOfALine();
+        Set<TileKey> endsOfLines = stationsAtTheEndOfALine();
 
         found.addAll(AutonomyChecks.checkStationsAtTheEndOfALine(reducer, endsOfLines));
 
@@ -5249,6 +5746,8 @@ public class AutonomySession
         found.addAll(AutonomyChecks.checkRunsPointingOppositeWays(runsPointingOppositeWays()));
 
         found.addAll(AutonomyChecks.checkSensorAddressesShared(sensorAddressesSharedByPlaces()));
+
+        found.addAll(AutonomyChecks.checkSensorsTouching(sensorSquaresTouching(), this::describeTile));
 
         // One finding for a station at the end of a line: "may" would draw a notice saying "must", and its error
         // already says no train sent there can leave
@@ -5283,7 +5782,7 @@ public class AutonomySession
      */
     private Map<TileKey, List<TileKey>> stationsShownMoreThanOnce()
     {
-        java.util.Comparator<TileKey> readingOrder = java.util.Comparator.comparing(TileKey::getPage)
+        Comparator<TileKey> readingOrder = Comparator.comparing(TileKey::getPage)
             .thenComparingInt(TileKey::getY).thenComparingInt(TileKey::getX);
 
         List<TileKey> stations = new ArrayList<>(new LinkedHashSet<>(store.getCaptions().values()));
@@ -5391,46 +5890,46 @@ public class AutonomySession
      * Noticed: an entry guard no way in commands; an exit guard no route commands, one only other stations' routes
      * command, and one a way in commands.  None with no build.
      */
-    private GuardNotices guardNotices(org.json.JSONObject built, Map<String, TileKey> named)
+    private GuardNotices guardNotices(JSONObject built, Map<String, TileKey> named)
     {
         GuardNotices out = new GuardNotices();
 
         if (graph == null || built == null || named == null || !built.has("points") || !built.has("edges")) return out;
 
-        Map<String, Boolean> stops = new java.util.HashMap<>();
+        Map<String, Boolean> stops = new HashMap<>();
 
-        org.json.JSONArray points = built.getJSONArray("points");
+        JSONArray points = built.getJSONArray("points");
 
         for (int i = 0; i < points.length(); i++)
         {
-            org.json.JSONObject point = points.getJSONObject(i);
+            JSONObject point = points.getJSONObject(i);
 
             stops.put(point.getString("name"), point.optBoolean("station", false));
         }
 
-        org.json.JSONArray edges = built.getJSONArray("edges");
+        JSONArray edges = built.getJSONArray("edges");
 
         String[] from = new String[edges.length()];
         String[] to = new String[edges.length()];
-        List<java.util.Set<String>> commands = new ArrayList<>();
+        List<Set<String>> commands = new ArrayList<>();
 
         for (int i = 0; i < edges.length(); i++)
         {
-            org.json.JSONObject edge = edges.getJSONObject(i);
+            JSONObject edge = edges.getJSONObject(i);
 
             from[i] = edge.getString("start");
             to[i] = edge.getString("end");
 
-            java.util.Set<String> accessories = new java.util.HashSet<>();
+            Set<String> accessories = new HashSet<>();
 
-            org.json.JSONArray said = edge.optJSONArray("commands");
+            JSONArray said = edge.optJSONArray("commands");
 
             for (int j = 0; said != null && j < said.length(); j++) accessories.add(said.getJSONObject(j).getString("acc"));
 
             commands.add(accessories);
         }
 
-        java.util.Set<TileKey> stations = new LinkedHashSet<>(store.getEntrySignals().keySet());
+        Set<TileKey> stations = new LinkedHashSet<>(store.getEntrySignals().keySet());
 
         stations.addAll(store.getProtectingSignals().keySet());
 
@@ -5440,8 +5939,8 @@ public class AutonomySession
 
             if (!store.isStation(station)) continue;
 
-            java.util.Set<Integer> in = waysAt(station, true, from, to, named, stops);
-            java.util.Set<Integer> outOf = waysAt(station, false, from, to, named, stops);
+            Set<Integer> in = waysAt(station, true, from, to, named, stops);
+            Set<Integer> outOf = waysAt(station, false, from, to, named, stops);
 
             // A station no route reaches or leaves is cut off, which its own check says
             if (in.isEmpty() && outOf.isEmpty()) continue;
@@ -5463,7 +5962,7 @@ public class AutonomySession
                 String accessory = accessoryOf(signal);
 
                 // Elsewhere: not a way in or out, nor over the station (unsettable under a standing train)
-                java.util.Set<Integer> elsewhere = new java.util.HashSet<>();
+                Set<Integer> elsewhere = new HashSet<>();
 
                 for (int i = 0; i < commands.size(); i++)
                 {
@@ -5472,7 +5971,7 @@ public class AutonomySession
                 }
 
                 // On a way in (OB-361), except where that way starts at a station this signal is the exit guard of
-                java.util.Set<Integer> comingIn = new java.util.HashSet<>();
+                Set<Integer> comingIn = new HashSet<>();
 
                 for (Integer i : in)
                 {
@@ -5499,12 +5998,12 @@ public class AutonomySession
      * The built edges on a station's ways in (back from its stopping copies, `in` true) or out (on from any copy),
      * through every point a train passes to the first stop; `stops` says whether a train stops at each copy.
      */
-    private static java.util.Set<Integer> waysAt(TileKey station, boolean in, String[] from, String[] to,
+    private static Set<Integer> waysAt(TileKey station, boolean in, String[] from, String[] to,
         Map<String, TileKey> named, Map<String, Boolean> stops)
     {
-        java.util.Set<Integer> found = new java.util.HashSet<>();
-        java.util.Deque<String> toVisit = new java.util.ArrayDeque<>();
-        java.util.Set<String> seen = new java.util.HashSet<>();
+        Set<Integer> found = new HashSet<>();
+        Deque<String> toVisit = new ArrayDeque<>();
+        Set<String> seen = new HashSet<>();
 
         for (Map.Entry<String, TileKey> copy : named.entrySet())
         {
@@ -5549,7 +6048,7 @@ public class AutonomySession
         return false;
     }
 
-    private static boolean commandedBy(String accessory, java.util.Set<Integer> edges, List<java.util.Set<String>> commands)
+    private static boolean commandedBy(String accessory, Set<Integer> edges, List<Set<String>> commands)
     {
         if (accessory == null) return false;
 
@@ -5561,20 +6060,20 @@ public class AutonomySession
     /** The accessory a signal's square carries, or null: routes command accessories by name. */
     private String accessoryOf(TileKey signal)
     {
-        org.traincontrol.base.LayoutDiagramComponent component = graph == null ? null : graph.getTiles().get(signal);
+        LayoutDiagramComponent component = graph == null ? null : graph.getTiles().get(signal);
 
         return component == null || component.getAccessory() == null ? null : component.getAccessory().getName();
     }
 
     private static <T> List<T> nonNull(List<T> list)
     {
-        return list == null ? java.util.Collections.<T>emptyList() : list;
+        return list == null ? Collections.<T>emptyList() : list;
     }
 
     /** A signal's name as the diagram knows it, or its square's */
     private String signalName(TileKey signal)
     {
-        org.traincontrol.base.LayoutDiagramComponent component = graph == null ? null : graph.getTiles().get(signal);
+        LayoutDiagramComponent component = graph == null ? null : graph.getTiles().get(signal);
 
         if (component != null && component.getAccessory() != null) return component.getAccessory().getName();
 
@@ -5686,7 +6185,7 @@ public class AutonomySession
     {
         Map<TileKey, Side> out = new LinkedHashMap<>();
 
-        java.util.Set<String> onTheRailway = railwayTrains().keySet();
+        Set<String> onTheRailway = railwayTrains().keySet();
 
         Map<TileKey, String> placed = placedLocomotives();
 
@@ -5705,11 +6204,11 @@ public class AutonomySession
     }
 
     /** The squares of `trainsOnNoPoint` whose train this configuration pauses, by the setup's list. */
-    public java.util.Set<TileKey> pausedTrainsOnNoPoint()
+    public Set<TileKey> pausedTrainsOnNoPoint()
     {
-        java.util.Set<TileKey> out = new LinkedHashSet<>();
+        Set<TileKey> out = new LinkedHashSet<>();
 
-        java.util.Set<String> paused = getPausedLocomotives();
+        Set<String> paused = getPausedLocomotives();
 
         if (paused.isEmpty()) return out;
 
@@ -5750,7 +6249,7 @@ public class AutonomySession
 
             if (train.getValue().length > 3 && train.getValue()[3] != null)
             {
-                setPointProperty(square, "arrivedAlong", new org.json.JSONArray((String) train.getValue()[3]));
+                setPointProperty(square, "arrivedAlong", new JSONArray((String) train.getValue()[3]));
             }
         }
     }
@@ -5784,11 +6283,11 @@ public class AutonomySession
     {
         Map<String, Object[]> standing = new LinkedHashMap<>();
 
-        org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
+        Layout running = runningLayout == null ? null : runningLayout.get();
 
         if (running == null) return standing;
 
-        for (org.traincontrol.automation.Point point : running.getPoints())
+        for (Point point : running.getPoints())
         {
             Locomotive loc = point.getCurrentLocomotive();
 
@@ -5801,7 +6300,7 @@ public class AutonomySession
             if (loc == null || loc.getName() == null || square == null) continue;
 
             standing.putIfAbsent(loc.getName(), new Object[] {square, facing, point.getArrivedFrom(),
-                org.traincontrol.automation.Layout.namesOfRoad(point.getArrivedAlong())});
+                Layout.namesOfRoad(point.getArrivedAlong())});
         }
 
         return standing;
@@ -5812,11 +6311,9 @@ public class AutonomySession
     {
         Map<String, Object[]> standing = railwayTrains();
 
-        String active = store.getActiveConfiguration();
+        JSONObject configuration = activeConfiguration();
 
-        org.json.JSONObject configuration = active == null ? null : store.getConfiguration(active);
-
-        org.json.JSONObject points = configuration == null ? null : configuration.optJSONObject("points");
+        JSONObject points = configuration == null ? null : configuration.optJSONObject("points");
 
         for (String id : points == null ? Collections.<String>emptySet() : points.keySet())
         {
@@ -6115,8 +6612,9 @@ public class AutonomySession
 
         Object existing = getPointProperty(tile, "loc");
 
-        org.json.JSONObject loc = existing instanceof org.json.JSONObject
-            ? new org.json.JSONObject(existing.toString()) : new org.json.JSONObject();
+        // The settings of the train standing here belong to it: a different train starts from none (FR-160).
+        JSONObject loc = existing instanceof JSONObject && name.equals(nameOfPlacedLocomotive(existing))
+            ? new JSONObject(existing.toString()) : new JSONObject();
 
         loc.put("name", name);
 
@@ -6136,7 +6634,7 @@ public class AutonomySession
     /** Takes every locomotive off the setup, re-deriving once, through the single-square door's writer. */
     public int clearEveryPlacement()
     {
-        java.util.List<TileKey> placed = new java.util.ArrayList<>(placedLocomotives().keySet());
+        List<TileKey> placed = new ArrayList<>(placedLocomotives().keySet());
 
         for (TileKey tile : placed)
         {
@@ -6183,17 +6681,17 @@ public class AutonomySession
      * Takes every locomotive the database lacks out of a configuration (OB-349): placements, homes, names on square
      * lists.  Returns what was let go of, by locomotive and then square.
      */
-    public java.util.List<LocomotiveLeftOut> forgetLocomotivesNotIn(String configuration,
-        java.util.Collection<String> known)
+    public List<LocomotiveLeftOut> forgetLocomotivesNotIn(String configuration,
+        Collection<String> known)
     {
-        java.util.List<LocomotiveLeftOut> out = new java.util.ArrayList<>();
+        List<LocomotiveLeftOut> out = new ArrayList<>();
 
         // Nothing against an empty database, which would empty the setup and save it.
         if (known == null || known.isEmpty()) return out;
 
-        org.json.JSONObject held = configuration == null ? null : store.getConfiguration(configuration);
+        JSONObject held = configuration == null ? null : store.getConfiguration(configuration);
 
-        org.json.JSONObject points = held == null ? null : held.optJSONObject("points");
+        JSONObject points = held == null ? null : held.optJSONObject("points");
 
         if (points == null) return out;
 
@@ -6201,7 +6699,7 @@ public class AutonomySession
 
         for (String key : points.keySet())
         {
-            org.json.JSONObject point = points.optJSONObject(key);
+            JSONObject point = points.optJSONObject(key);
 
             TileKey square = AutonomyCompanionStore.parseTileKey(key);
 
@@ -6230,14 +6728,13 @@ public class AutonomySession
             }
 
             // The square's list, either mode (FR-121); emptied as the editor empties it, mode kept.
-            org.json.JSONArray listed = point.optJSONArray("excludedLocs");
+            JSONArray listed = point.optJSONArray("excludedLocs");
 
             if (listed != null)
             {
-                boolean allowOnly = org.traincontrol.automation.Point.ALLOW_ONLY_LISTED.equals(
-                    point.optString(org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE, null));
+                boolean allowOnly = Point.ALLOW_ONLY_LISTED.equals(point.optString(Point.EXCLUDED_LOCS_MODE, null));
 
-                org.json.JSONArray kept = new org.json.JSONArray();
+                JSONArray kept = new JSONArray();
 
                 for (int at = 0; at < listed.length(); at++)
                 {
@@ -6270,7 +6767,7 @@ public class AutonomySession
 
         if (configuration.equals(store.getActiveConfiguration())) deriveStationIndex();
 
-        out.sort(java.util.Comparator.<LocomotiveLeftOut, String>comparing(left -> left.locomotive)
+        out.sort(Comparator.<LocomotiveLeftOut, String>comparing(left -> left.locomotive)
             .thenComparing(left -> left.what).thenComparing(left -> left.square.toString()));
 
         return out;
@@ -6286,10 +6783,10 @@ public class AutonomySession
 
         String name;
 
-        if (placement instanceof org.json.JSONObject)
+        if (placement instanceof JSONObject)
         {
             // optString: a hand-edited file can omit the name.
-            name = ((org.json.JSONObject) placement).optString("name", null);
+            name = ((JSONObject) placement).optString("name", null);
         }
         else
         {
@@ -6305,17 +6802,13 @@ public class AutonomySession
     }
 
     /** Takes a locomotive off every other square, carrying what was recorded with it into the new placement `into`. */
-    private void forgetPlacementsElsewhere(TileKey keep, String name, org.json.JSONObject into)
+    private void forgetPlacementsElsewhere(TileKey keep, String name, JSONObject into)
     {
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        JSONObject configuration = activeConfiguration();
 
         if (configuration == null || !configuration.has("points")) return;
 
-        org.json.JSONObject points = configuration.getJSONObject("points");
+        JSONObject points = configuration.getJSONObject("points");
 
         boolean swept = false;
 
@@ -6323,11 +6816,11 @@ public class AutonomySession
         {
             if (keep != null && key.equals(keep.toString())) continue;
 
-            org.json.JSONObject extras = points.optJSONObject(key);
+            JSONObject extras = points.optJSONObject(key);
 
             if (extras == null) continue;
 
-            org.json.JSONObject standing = extras.optJSONObject("loc");
+            JSONObject standing = extras.optJSONObject("loc");
 
             if (standing == null || !name.equals(standing.optString("name", null))) continue;
 
@@ -6360,7 +6853,7 @@ public class AutonomySession
         //
         // the onward side (MT-125); the arrival side on a turn-around square (OB-145); the plain copy first; nothing on
         // a square emitted whole.
-        Set<Side> out = new java.util.LinkedHashSet<>(facingsFor(tile).values());
+        Set<Side> out = new LinkedHashSet<>(facingsFor(tile).values());
 
         return new ArrayList<>(out);
     }
@@ -6377,17 +6870,14 @@ public class AutonomySession
      * @param running the layout, which is what knows where the trains are
      * @return the squares to draw as covered, empty when nothing is
      */
-    public Set<TileKey> tilesCoveredByStandingTrains(org.traincontrol.automation.Layout running)
+    public Set<TileKey> tilesCoveredByStandingTrains(Layout running)
     {
         return routesCoveredByStandingTrains(running).keySet();
     }
 
-    /**
-     * The same, saying which road of each square the train is on (MT-309): a line is drawn, not the whole tile shaded,
-     * which reads as confusing on double curve tiles.
-     */
+    /** The same, saying which road of each square the train is on (MT-309): a line is drawn, not the whole tile. */
     public Map<TileKey, Set<RouteId>> routesCoveredByStandingTrains(
-        org.traincontrol.automation.Layout running)
+        Layout running)
     {
         Map<TileKey, Set<RouteId>> out = new LinkedHashMap<>();
 
@@ -6395,12 +6885,12 @@ public class AutonomySession
 
         // By train, as the walk goes back from each, and kept as the reduction's own edges (OB-239): the end squares
         // alone cannot tell two roads between one pair of sensors apart.
-        Map<org.traincontrol.base.Locomotive, List<GraphReducer.ReducedEdge>> reach = new LinkedHashMap<>();
+        Map<Locomotive, List<GraphReducer.ReducedEdge>> reach = new LinkedHashMap<>();
 
-        for (Map.Entry<org.traincontrol.automation.Edge, org.traincontrol.base.Locomotive> covered
+        for (Map.Entry<Edge, Locomotive> covered
             : running.edgesCoveredByStandingTrains().entrySet())
         {
-            org.traincontrol.automation.Edge edge = covered.getKey();
+            Edge edge = covered.getKey();
 
             if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
 
@@ -6421,7 +6911,7 @@ public class AutonomySession
             if (!rails.contains(rail)) rails.add(rail);
         }
 
-        for (Map.Entry<org.traincontrol.base.Locomotive, List<GraphReducer.ReducedEdge>> train : reach.entrySet())
+        for (Map.Entry<Locomotive, List<GraphReducer.ReducedEdge>> train : reach.entrySet())
         {
             walkBackFrom(running, train.getKey(), train.getValue(), out);
         }
@@ -6435,12 +6925,12 @@ public class AutonomySession
      * Draws the trains the walk above cannot (a tail stopping at a fork covers no edge, OB-290) from their claimed
      * places (MT-477), along the road every rail over the claims agrees on (OB-348); where they disagree, no line.
      */
-    private void drawTheTrainsThatCoverNoEdge(org.traincontrol.automation.Layout running,
-        Set<org.traincontrol.base.Locomotive> drawn, Map<TileKey, Set<RouteId>> out)
+    private void drawTheTrainsThatCoverNoEdge(Layout running,
+        Set<Locomotive> drawn, Map<TileKey, Set<RouteId>> out)
     {
-        Map<org.traincontrol.base.Locomotive, Set<String>> claimedBy = new LinkedHashMap<>();
+        Map<Locomotive, Set<String>> claimedBy = new LinkedHashMap<>();
 
-        for (Map.Entry<String, org.traincontrol.base.Locomotive> claim
+        for (Map.Entry<String, Locomotive> claim
             : running.placesCoveredByStandingTrains().entrySet())
         {
             if (drawn.contains(claim.getValue())) continue;
@@ -6449,7 +6939,7 @@ public class AutonomySession
 
             if (claims == null)
             {
-                claims = new java.util.HashSet<>();
+                claims = new HashSet<>();
 
                 claimedBy.put(claim.getValue(), claims);
             }
@@ -6457,7 +6947,7 @@ public class AutonomySession
             claims.add(claim.getKey());
         }
 
-        for (Map.Entry<org.traincontrol.base.Locomotive, Set<String>> train : claimedBy.entrySet())
+        for (Map.Entry<Locomotive, Set<String>> train : claimedBy.entrySet())
         {
             Set<String> claimed = train.getValue();
 
@@ -6542,10 +7032,10 @@ public class AutonomySession
      * The rails a train with no covered edge can lie along (OB-348): every reduced rail into its square, by arrival
      * side where known, over every claimed place, including rails the build leaves out.  Null means every edge.
      */
-    private List<GraphReducer.ReducedEdge> railsATailLiesAlong(org.traincontrol.automation.Layout running,
-        org.traincontrol.base.Locomotive train, Set<String> claimed)
+    private List<GraphReducer.ReducedEdge> railsATailLiesAlong(Layout running,
+        Locomotive train, Set<String> claimed)
     {
-        org.traincontrol.automation.Point standing = running.whereTheTrainIs(train);
+        Point standing = running.whereTheTrainIs(train);
 
         TileKey at = standing == null ? null : getStationIndex().squareOf(standing.getName());
 
@@ -6556,12 +7046,12 @@ public class AutonomySession
 
         boolean sideRunsOverAll = false;
 
-        for (GraphReducer.ReducedEdge edge : at == null ? java.util.Collections.<GraphReducer.ReducedEdge>emptyList()
+        for (GraphReducer.ReducedEdge edge : at == null ? Collections.<GraphReducer.ReducedEdge>emptyList()
             : reducer.getEdges())
         {
             if (!at.equals(edge.getEnd())) continue;
 
-            Set<String> along = new java.util.HashSet<>();
+            Set<String> along = new HashSet<>();
 
             for (GraphReducer.Place place : reducer.placesAlong(edge)) along.add(place.getId());
 
@@ -6586,7 +7076,7 @@ public class AutonomySession
      * The tiles standing trains have BLOCKED, for graying (OB-280): the places `Layout.placesCoveredByStandingTrains`
      * claims, as squares.  Whether autonomy is running is the caller's question.
      */
-    public Set<TileKey> tilesBlockedByStandingTrains(org.traincontrol.automation.Layout running)
+    public Set<TileKey> tilesBlockedByStandingTrains(Layout running)
     {
         return routesBlockedByStandingTrains(running).keySet();
     }
@@ -6596,7 +7086,7 @@ public class AutonomySession
      * by the ids `GraphReducer.placesAlong` built; per road where the place is per road (double curve, overpass), else
      * the whole square, no road named.
      */
-    public Map<TileKey, Set<RouteId>> routesBlockedByStandingTrains(org.traincontrol.automation.Layout running)
+    public Map<TileKey, Set<RouteId>> routesBlockedByStandingTrains(Layout running)
     {
         Map<TileKey, Set<RouteId>> out = new LinkedHashMap<>();
 
@@ -6648,8 +7138,8 @@ public class AutonomySession
      * Paints one train's length back along the edges the railway holds covered (MT-309, OB-239), square by square,
      * spending each square's length until it is used up; unmeasured squares cost nothing.
      */
-    private void walkBackFrom(org.traincontrol.automation.Layout running,
-        org.traincontrol.base.Locomotive train, List<GraphReducer.ReducedEdge> covered,
+    private void walkBackFrom(Layout running,
+        Locomotive train, List<GraphReducer.ReducedEdge> covered,
         Map<TileKey, Set<RouteId>> out)
     {
         if (train == null || train.getTrainLength() == null) return;
@@ -6659,7 +7149,7 @@ public class AutonomySession
         if (remaining <= 0) return;
 
         // Where the train IS (`whereTheTrainIs`), not the first Point of its locked path
-        org.traincontrol.automation.Point standing = running.whereTheTrainIs(train);
+        Point standing = running.whereTheTrainIs(train);
 
         if (standing == null) return;
 
@@ -6728,7 +7218,7 @@ public class AutonomySession
      * The reduction's own edge for a covered railway edge, matched by its places in order (OB-239), or by squares and
      * direction where it carries none; null where none matches (a railway built before a redraw), not drawn.
      */
-    private GraphReducer.ReducedEdge reducedEdgeOf(org.traincontrol.automation.Edge covered)
+    private GraphReducer.ReducedEdge reducedEdgeOf(Edge covered)
     {
         TileKey from = getStationIndex().squareOf(covered.getStart().getName());
         TileKey to = getStationIndex().squareOf(covered.getEnd().getName());
@@ -6788,7 +7278,7 @@ public class AutonomySession
             steps.add(step);
         }
 
-        if (from.equals(rail.getEnd())) java.util.Collections.reverse(steps);
+        if (from.equals(rail.getEnd())) Collections.reverse(steps);
 
         return steps;
     }
@@ -6836,17 +7326,17 @@ public class AutonomySession
      * @param tile the square
      * @return true when at least one copy of it has somewhere to go
      */
-    public boolean canDepartFrom(org.traincontrol.automation.Layout running, TileKey tile)
+    public boolean canDepartFrom(Layout running, TileKey tile)
     {
         if (running == null || tile == null) return false;
 
         for (String name : facingsFor(tile).keySet())
         {
-            org.traincontrol.automation.Point point = running.getPoint(name);
+            Point point = running.getPoint(name);
 
             if (point == null) continue;
 
-            java.util.List<org.traincontrol.automation.Edge> out = running.getNeighbors(point);
+            List<Edge> out = running.getNeighbors(point);
 
             if (out != null && !out.isEmpty()) return true;
         }
@@ -6866,7 +7356,7 @@ public class AutonomySession
      * @param target the square it is being placed on
      * @return the side to record, or null when the target has no named copies at all
      */
-    public Side facingByPath(org.traincontrol.automation.Layout running, String locomotive,
+    public Side facingByPath(Layout running, String locomotive,
         TileKey target)
     {
         if (target == null) return null;
@@ -6884,16 +7374,15 @@ public class AutonomySession
         if (arrived != null) return arrived;
 
         // NO WAY THERE FACING THIS WAY.  A legal heading, chosen without pretending it was derived.
-        java.util.List<Side> departable = new java.util.ArrayList<>();
+        List<Side> departable = new ArrayList<>();
 
         for (Map.Entry<String, Side> copy : copies.entrySet())
         {
-            org.traincontrol.automation.Point point =
-                running == null ? null : running.getPoint(copy.getKey());
+            Point point = running == null ? null : running.getPoint(copy.getKey());
 
             if (point == null) continue;
 
-            java.util.List<org.traincontrol.automation.Edge> out = running.getNeighbors(point);
+            List<Edge> out = running.getNeighbors(point);
 
             if (out != null && !out.isEmpty()) departable.add(copy.getValue());
         }
@@ -6909,6 +7398,23 @@ public class AutonomySession
         return departable.get(0);
     }
 
+    /** The running Points whose locomotive has this name, in the layout's order. */
+    private static List<Point> pointsHolding(String locomotive,
+        Layout running)
+    {
+        List<Point> out = new ArrayList<>();
+
+        for (Point point : running.getPoints())
+        {
+            if (point.getCurrentLocomotive() != null && locomotive.equals(point.getCurrentLocomotive().getName()))
+            {
+                out.add(point);
+            }
+        }
+
+        return out;
+    }
+
     /**
      * The breadth-first half: from where this train stands to the nearest copy of the target a train could stand on.
      * `getNeighbors` shuffles, so ties are broken by rule: the plain copy over its turning twin, as a paste is no
@@ -6918,22 +7424,17 @@ public class AutonomySession
      * @param locomotive the train
      * @param target the square being walked to
      * @param copies the target's copies, by name, in build order, which makes the last tie-break repeatable
-     * @return the side of the nearest copy that can be driven to, or null when none can be
      */
-    private Side walkTo(org.traincontrol.automation.Layout running, String locomotive,
+    private Side walkTo(Layout running, String locomotive,
         TileKey target, Map<String, Side> copies)
     {
         if (running == null || locomotive == null) return null;
 
         // Where the train IS, not every point of its locked path: an occupied square breaks the tie, else the first.
-        org.traincontrol.automation.Point from = null;
+        Point from = null;
 
-        for (org.traincontrol.automation.Point point : running.getPoints())
+        for (Point point : pointsHolding(locomotive, running))
         {
-            if (point.getCurrentLocomotive() == null) continue;
-
-            if (!locomotive.equals(point.getCurrentLocomotive().getName())) continue;
-
             if (from == null) from = point;
 
             if (point.isOccupied())
@@ -6951,30 +7452,28 @@ public class AutonomySession
 
     /**
      * The walk itself, from a Point the caller names (OB-270), so a train Control+X took off can walk from its square.
-     * @param copies the target's copies, by name, in the order the build made them
-     * @return the side of the nearest copy that can be driven to, or null when none can be
      */
-    private Side walkFrom(org.traincontrol.automation.Layout running, org.traincontrol.automation.Point from,
+    private Side walkFrom(Layout running, Point from,
         Map<String, Side> copies)
     {
         // The whole walk, then the choice: breadth-first distances are true whatever order the shuffle gives.
         Map<String, Integer> away = new LinkedHashMap<>();
-        java.util.Deque<org.traincontrol.automation.Point> queue = new java.util.ArrayDeque<>();
+        Deque<Point> queue = new ArrayDeque<>();
 
         away.put(from.getName(), 0);
         queue.add(from);
 
         while (!queue.isEmpty())
         {
-            org.traincontrol.automation.Point here = queue.poll();
+            Point here = queue.poll();
 
-            java.util.List<org.traincontrol.automation.Edge> out = running.getNeighbors(here);
+            List<Edge> out = running.getNeighbors(here);
 
             if (out == null) continue;
 
-            for (org.traincontrol.automation.Edge edge : out)
+            for (Edge edge : out)
             {
-                org.traincontrol.automation.Point next = edge.getEnd();
+                Point next = edge.getEnd();
 
                 if (next == null || away.containsKey(next.getName())) continue;
 
@@ -7008,9 +7507,9 @@ public class AutonomySession
 
             if (at == null || at != nearest) continue;
 
-            org.traincontrol.automation.Point point = running.getPoint(copy.getKey());
+            Point point = running.getPoint(copy.getKey());
 
-            // Standing beats turned round, at the same distance.
+            // Standing beats turned around, at the same distance.
             if (point != null && !point.isTerminus() && !point.isReversing()) return copy.getValue();
 
             // The first turning copy, in build order, in case that is all there is (a compulsory turn).
@@ -7024,7 +7523,7 @@ public class AutonomySession
      * Which way a train cut from one square would face on another if it drove there (OB-270), walking from the square
      * it was cut from.  Null means no path, and the caller keeps the heading it was cut with (MT-368).
      */
-    public Side facingByPathFrom(org.traincontrol.automation.Layout running, String fromPoint, TileKey target)
+    public Side facingByPathFrom(Layout running, String fromPoint, TileKey target)
     {
         if (running == null || fromPoint == null || target == null) return null;
 
@@ -7032,7 +7531,7 @@ public class AutonomySession
 
         if (copies.isEmpty()) return null;
 
-        org.traincontrol.automation.Point from = running.getPoint(fromPoint);
+        Point from = running.getPoint(fromPoint);
 
         if (from == null) return null;
 
@@ -7093,19 +7592,15 @@ public class AutonomySession
      * @param running the layout, or null when there is none to ask
      * @return its heading, or null when nothing knows
      */
-    public Side facingOf(String locomotive, org.traincontrol.automation.Layout running)
+    public Side facingOf(String locomotive, Layout running)
     {
         if (locomotive == null) return null;
 
         // WHERE IT IS, from the thing that knows.
         if (running != null && getStationIndex() != null)
         {
-            for (org.traincontrol.automation.Point point : running.getPoints())
+            for (Point point : pointsHolding(locomotive, running))
             {
-                if (point.getCurrentLocomotive() == null) continue;
-
-                if (!locomotive.equals(point.getCurrentLocomotive().getName())) continue;
-
                 TileKey where = getStationIndex().squareOf(point.getName());
 
                 if (where == null) continue;
@@ -7135,7 +7630,7 @@ public class AutonomySession
      * captured once would go stale and quietly move trains on a graph nobody is looking at.  Null until the window sets
      * it, as in every headless use.
      */
-    private java.util.function.Supplier<org.traincontrol.automation.Layout> runningLayout;
+    private Supplier<Layout> runningLayout;
 
     /**
      * Tells this session where the running layout is, so that setup changes can reach it.
@@ -7143,7 +7638,7 @@ public class AutonomySession
      * @param source how to fetch the current layout, or null when there is none
      */
     public void setRunningLayoutSource(
-        java.util.function.Supplier<org.traincontrol.automation.Layout> source)
+        Supplier<Layout> source)
     {
         this.runningLayout = source;
     }
@@ -7162,25 +7657,25 @@ public class AutonomySession
      */
     public void setFacingAndMove(TileKey tile, Side facing)
     {
-        org.traincontrol.automation.Layout running =
-            runningLayout == null ? null : runningLayout.get();
+        Layout running = runningLayout == null ? null : runningLayout.get();
 
         String inTheSetup = getLocomotiveNameAt(tile);
         String onTheRailway = trainOnTheRailway(tile, running);
+        String name = onTheRailway != null ? onTheRailway : inTheSetup;
+        Side was = onTheRailway != null ? facingOnTheRailway(tile, running) : getFacing(tile);
 
         if (onTheRailway == null || onTheRailway.equals(inTheSetup)) setFacing(tile, facing);
 
-        if (running == null || facing == null) return;
+        if (running != null && facing != null && name != null) moveOntoFacingCopy(running, name, tile, facing);
 
-        String name = onTheRailway != null ? onTheRailway : inTheSetup;
-
-        if (name != null) moveOntoFacingCopy(running, name, tile, facing);
+        // A turn where it stands, as the throttle's is
+        if (name != null && was != null && facing != null && was != facing) turned(name);
     }
 
     /** The train standing on any copy of a square on the RAILWAY, or null; after a run the setup's need not be it. */
-    public String trainOnTheRailway(TileKey square, org.traincontrol.automation.Layout running)
+    public String trainOnTheRailway(TileKey square, Layout running)
     {
-        org.traincontrol.automation.Point copy = copyHoldingATrain(square, null, running);
+        Point copy = copyHoldingATrain(square, null, running);
 
         return copy == null ? null : copy.getCurrentLocomotive().getName();
     }
@@ -7205,7 +7700,7 @@ public class AutonomySession
      */
     public void setArrivedAlong(TileKey tile, String road)
     {
-        setPointProperty(tile, "arrivedAlong", road == null ? null : new org.json.JSONArray(road));
+        setPointProperty(tile, "arrivedAlong", road == null ? null : new JSONArray(road));
     }
 
     /** The recorded road as a JSON array string, or null. */
@@ -7232,7 +7727,7 @@ public class AutonomySession
      * and the facing menu both read it (OB-181).  Null when no copy holds a train; the caller falls back to the setup.
      */
     public Side facingOnTheRailway(TileKey square,
-        org.traincontrol.automation.Layout running)
+        Layout running)
     {
         return facingOfTheTrainOn(square, null, running);
     }
@@ -7278,7 +7773,7 @@ public class AutonomySession
 
     /**
      * The setup's recorded facing for the train here where the track runs that way, else null (OB-348); the record as
-     * it stands where the track cannot be asked.  The icon, caption and Is Facing menu all read this.
+     * it stands where the track cannot be asked.  The icon, caption and Change Direction menu all read this.
      */
     public Side recordedFacingAlongTheTrack(TileKey square)
     {
@@ -7298,7 +7793,7 @@ public class AutonomySession
 
         Map<RouteId, Route> routes = square == null ? null : getRoutes(square);
 
-        for (Route route : routes == null ? java.util.Collections.<Route>emptyList() : routes.values())
+        for (Route route : routes == null ? Collections.<Route>emptyList() : routes.values())
         {
             for (Side end : new Side[] {route.getA(), route.getB()})
             {
@@ -7343,9 +7838,9 @@ public class AutonomySession
     }
 
     /** The ways a locomotive may be homed facing here (OB-282, `AutonomyBuilder.homeFacingsAt`); empty if not split. */
-    public java.util.Set<Side> homeFacingsFor(TileKey tile)
+    public Set<Side> homeFacingsFor(TileKey tile)
     {
-        return reducer == null ? java.util.Collections.<Side>emptySet() : builder(null).homeFacingsAt(tile);
+        return reducer == null ? Collections.<Side>emptySet() : builder(null).homeFacingsAt(tile);
     }
 
     /** `setHome` without re-deriving, for callers making several (`homeEveryPlacedTrain`). */
@@ -7392,16 +7887,16 @@ public class AutonomySession
 
         Object loc = getPointProperty(tile, "loc");
 
-        String standing = loc instanceof org.json.JSONObject ? ((org.json.JSONObject) loc).optString("name", null) : null;
+        String standing = loc instanceof JSONObject ? ((JSONObject) loc).optString("name", null) : null;
 
         // The railway first, as `facingOf` reads it: after a run the setup's facing is the way it set off.
-        org.traincontrol.automation.Layout running = runningLayout == null ? null : runningLayout.get();
+        Layout running = runningLayout == null ? null : runningLayout.get();
 
         boolean onTheRailway = false;
 
         if (running != null && getStationIndex() != null)
         {
-            for (org.traincontrol.automation.Point point : running.getPoints())
+            for (Point point : running.getPoints())
             {
                 if (point.getCurrentLocomotive() == null || !locomotive.equals(point.getCurrentLocomotive().getName()))
                 {
@@ -7431,7 +7926,7 @@ public class AutonomySession
     /** Takes the home off every square, re-deriving once, through the single-square writer. */
     public int clearEveryHome()
     {
-        java.util.List<TileKey> homed = tilesWithAHome();
+        List<TileKey> homed = tilesWithAHome();
 
         for (TileKey tile : homed)
         {
@@ -7448,7 +7943,7 @@ public class AutonomySession
      * Every station with a maximum train length above 0, and every square with a negative one, which `Layout.fromJSON`
      * refuses outright.
      */
-    public java.util.List<TileKey> tilesWithAMaxTrainLength()
+    public List<TileKey> tilesWithAMaxTrainLength()
     {
         return tilesWhere((key, point) ->
         {
@@ -7466,12 +7961,9 @@ public class AutonomySession
     /** Takes the maximum train length off every square, re-deriving once. */
     public int clearEveryMaxTrainLength()
     {
-        java.util.List<TileKey> limited = tilesWithAMaxTrainLength();
+        List<TileKey> limited = tilesWithAMaxTrainLength();
 
-        for (TileKey tile : limited)
-        {
-            writePointProperty(tile, "maxTrainLength", null);
-        }
+        for (TileKey tile : limited) writePointProperty(tile, "maxTrainLength", null);
 
         deriveStationIndex();
 
@@ -7553,18 +8045,18 @@ public class AutonomySession
     {
         try
         {
-            org.json.JSONArray emitted = new org.json.JSONObject(buildConfiguration()).getJSONArray("points");
+            JSONArray emitted = new JSONObject(buildConfiguration()).getJSONArray("points");
 
-            Map<String, org.json.JSONObject> byName = new java.util.HashMap<>();
+            Map<String, JSONObject> byName = new HashMap<>();
 
             for (int at = 0; at < emitted.length(); at++)
             {
-                org.json.JSONObject point = emitted.getJSONObject(at);
+                JSONObject point = emitted.getJSONObject(at);
 
                 byName.put(point.getString("name"), point);
             }
 
-            for (org.json.JSONObject point : byName.values())
+            for (JSONObject point : byName.values())
             {
                 if (!point.has("home") || point.optString("home", "").trim().isEmpty()) continue;
 
@@ -7585,11 +8077,11 @@ public class AutonomySession
      * Puts every homed locomotive on its home and takes every other off its station, in the SETUP only (FR-115).
      * Returns every locomotive put on a home or taken off a station.
      */
-    public java.util.Set<String> placeEveryTrainAtHome(Map<TileKey, Side> fallbackFacings)
+    public Set<String> placeEveryTrainAtHome(Map<TileKey, Side> fallbackFacings)
     {
         Map<TileKey, String> homes = homesToPlace();
 
-        java.util.Set<String> touched = new LinkedHashSet<>();
+        Set<String> touched = new LinkedHashSet<>();
 
         for (String standing : trainsWhereTheyStand().values())
         {
@@ -7597,15 +8089,15 @@ public class AutonomySession
         }
 
         // Off every station, settings kept for the home
-        Map<String, org.json.JSONObject> settings = new LinkedHashMap<>();
+        Map<String, JSONObject> settings = new LinkedHashMap<>();
 
         for (Map.Entry<TileKey, String> placed : placedLocomotives().entrySet())
         {
             Object loc = getPointProperty(placed.getKey(), "loc");
 
-            if (loc instanceof org.json.JSONObject && placed.getValue() != null)
+            if (loc instanceof JSONObject && placed.getValue() != null)
             {
-                settings.putIfAbsent(placed.getValue(), new org.json.JSONObject(loc.toString()));
+                settings.putIfAbsent(placed.getValue(), new JSONObject(loc.toString()));
             }
 
             writePointProperty(placed.getKey(), "loc", null);
@@ -7618,8 +8110,7 @@ public class AutonomySession
 
         for (Map.Entry<TileKey, String> home : homes.entrySet())
         {
-            org.json.JSONObject loc = settings.containsKey(home.getValue())
-                ? settings.get(home.getValue()) : new org.json.JSONObject();
+            JSONObject loc = settings.containsKey(home.getValue()) ? settings.get(home.getValue()) : new JSONObject();
 
             loc.put("name", home.getValue());
 
@@ -7657,15 +8148,15 @@ public class AutonomySession
     /** Where this locomotive is already at home other than `tile`, for the menu's warning; null if nowhere. */
     public TileKey homeElsewhere(TileKey tile, String locomotive)
     {
-        java.util.List<TileKey> found = homesElsewhere(tile, locomotive);
+        List<TileKey> found = homesElsewhere(tile, locomotive);
 
         return found.isEmpty() ? null : found.get(0);
     }
 
     /** Every other square homed to that locomotive: a hand-edited setup can hold several. */
-    private java.util.List<TileKey> homesElsewhere(TileKey tile, String locomotive)
+    private List<TileKey> homesElsewhere(TileKey tile, String locomotive)
     {
-        if (locomotive == null) return new java.util.ArrayList<>();
+        if (locomotive == null) return new ArrayList<>();
 
         return tilesWhere((key, point) ->
             (tile == null || !tile.toString().equals(key))
@@ -7673,13 +8164,13 @@ public class AutonomySession
     }
 
     /** @return every square the active configuration homes a locomotive on, in no particular order; may be empty */
-    public java.util.List<TileKey> tilesWithAHome()
+    public List<TileKey> tilesWithAHome()
     {
         return tilesWhere((key, point) -> carriesAHome(point));
     }
 
     /** @return every square the active configuration places a locomotive on (MT-257), in no particular order */
-    public java.util.List<TileKey> tilesWithALocomotive()
+    public List<TileKey> tilesWithALocomotive()
     {
         return tilesWhere((key, point) -> namedLocomotiveOn(point) != null);
     }
@@ -7697,24 +8188,57 @@ public class AutonomySession
         deriveStationIndex();
     }
 
+    /**
+     * {@link #updateStoredRecord} for the preset speed: 0 removes it, so a load gives the layout's default.
+     *
+     * @return true when a stored speed was changed
+     */
+    public boolean updateStoredSpeed(String locomotive, int speed)
+    {
+        return updateStoredRecord(locomotive, "speed", speed > 0 ? speed : null);
+    }
+
+    /**
+     * Puts a value saved for a locomotive (its Settings window, Save Current Speed as Preset) over the stale copy an
+     * old-format setup keeps of a standing train under `key` (as `Point.toJSON` names it), which a load would otherwise
+     * read back.  Every configuration is walked, excluded pages included; a record that stores no such key, or already
+     * stores this value, is left alone.
+     *
+     * @param value the value, or null to remove the key, which a load reads as "keep the train's own"
+     */
+    public boolean updateStoredRecord(String locomotive, String key, Object value)
+    {
+        boolean changed = false;
+
+        for (String name : store.getConfigurationNames())
+        {
+            JSONObject configuration = store.getConfiguration(name);
+            JSONObject points = configuration == null ? null : configuration.optJSONObject("points");
+
+            changed |= AutonomyCompanionStore.updateRecordInPoints(points, locomotive, key, value);
+        }
+
+        if (changed) dirty = true;
+
+        return changed;
+    }
+
     /** The write alone, for a caller making several and re-deriving once. */
     private void writePointProperty(TileKey tile, String key, Object value)
     {
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        JSONObject configuration = activeConfiguration();
 
         if (configuration == null) return;
 
-        if (!configuration.has("points")) configuration.put("points", new org.json.JSONObject());
+        if (!configuration.has("points")) configuration.put("points", new JSONObject());
 
-        org.json.JSONObject points = configuration.getJSONObject("points");
+        JSONObject points = configuration.getJSONObject("points");
 
         String id = tile.toString();
 
-        if (!points.has(id)) points.put(id, new org.json.JSONObject());
+        if (!points.has(id)) points.put(id, new JSONObject());
+
+        if ("loc".equals(key)) noteALift(tile, points.getJSONObject(id).opt(key), value);
 
         if (value == null) points.getJSONObject(id).remove(key);
         else points.getJSONObject(id).put(key, value);
@@ -7725,21 +8249,17 @@ public class AutonomySession
     /** @return the stored value, or null when this Point has no such property */
     public Object getPointProperty(TileKey tile, String key)
     {
-        String active = store.getActiveConfiguration();
-
-        if (active == null) return null;
-
-        org.json.JSONObject configuration = store.getConfiguration(active);
+        JSONObject configuration = activeConfiguration();
 
         if (configuration == null || !configuration.has("points")) return null;
 
-        org.json.JSONObject points = configuration.getJSONObject("points");
+        JSONObject points = configuration.getJSONObject("points");
 
         String id = tile.toString();
 
         if (!points.has(id)) return null;
 
-        org.json.JSONObject point = points.getJSONObject(id);
+        JSONObject point = points.getJSONObject(id);
 
         return point.has(key) ? point.get(key) : null;
     }
@@ -7792,7 +8312,7 @@ public class AutonomySession
     }
 
     /**
-     * Records one way along a run's OWN tiles, not a path re-derived from its ends (see `applyOneWay`): its boundaries
+     * Records one way along a run's OWN tiles, not a path re-derived from its ends (see `recordAlong`): its boundaries
      * say which way the end tiles go, and one that is null (track that simply stops) is left out (OB-361).
      */
     Set<TileKey> recordAlongTheRun(TileGraph.Run run, boolean towardEnd)
@@ -7820,14 +8340,6 @@ public class AutonomySession
         }
 
         return recordAlong(path, first, last);
-    }
-
-    /** Sets one direction along a known path, the track between its two ends. */
-    private int applyOneWay(List<TileKey> path)
-    {
-        int changed = recordAlong(path, 1, path.size() - 2).size();
-
-        return directionsTouched() ? changed : 0;
     }
 
     /**
@@ -7884,7 +8396,7 @@ public class AutonomySession
     }
 
     /** Answers these squares 0 on purpose (OB-274), re-deriving once; `setTileLength(tile, 0)` removes the answer. */
-    public void answerTileLengthsZero(java.util.Collection<TileKey> tiles)
+    public void answerTileLengthsZero(Collection<TileKey> tiles)
     {
         if (tiles == null || tiles.isEmpty()) return;
 
@@ -7898,11 +8410,11 @@ public class AutonomySession
     }
 
     /** Writes several squares' lengths and re-derives once. */
-    public void setTileLengths(java.util.Map<TileKey, Integer> lengths)
+    public void setTileLengths(Map<TileKey, Integer> lengths)
     {
         if (lengths == null || lengths.isEmpty()) return;
 
-        for (java.util.Map.Entry<TileKey, Integer> square : lengths.entrySet())
+        for (Map.Entry<TileKey, Integer> square : lengths.entrySet())
         {
             store.setTileLength(square.getKey(), square.getValue() == null ? 0 : square.getValue());
         }
@@ -7910,7 +8422,7 @@ public class AutonomySession
         touched();
     }
 
-    public java.util.List<TileKey> tilesWithALength()
+    public List<TileKey> tilesWithALength()
     {
         return store.tilesWithALength();
     }
@@ -8058,7 +8570,7 @@ public class AutonomySession
      * first square draws the run.  Restrictions (`arrows`, with the station ingress arrows) and allowances
      * (`allowedToo`, the green arrows) are chosen apart (MT-675).  Null where a square has nothing to say.
      */
-    public Map<TileKey, TileAnnotation> staticAnnotations(java.util.Collection<TileKey> squares, boolean arrows,
+    public Map<TileKey, TileAnnotation> staticAnnotations(Collection<TileKey> squares, boolean arrows,
         boolean allowedToo)
     {
         return sessionRuns.staticAnnotations(squares, arrows, allowedToo);
@@ -8205,10 +8717,7 @@ public class AutonomySession
 
         if (!always && barred.isEmpty()) return out;
 
-        for (Side side : arrivalSides(tile))
-        {
-            out.add(new TileAnnotation.Arrival(side, !barred.contains(side)));
-        }
+        for (Side side : arrivalSides(tile)) out.add(new TileAnnotation.Arrival(side, !barred.contains(side)));
 
         return out;
     }
@@ -8226,12 +8735,11 @@ public class AutonomySession
 
     /**
      * The road a Point's badge is drawn on: its sensor's contact road (`TilePorts.contactRoad`, MT-712), else the
-     * first.
-     * @return the road, or null where the square has none in the graph
+     * first; null where the square has none in the graph.
      */
     public Route stationRoad(TileKey tile)
     {
-        org.traincontrol.base.LayoutDiagramComponent square = graph == null ? null : graph.getTiles().get(tile);
+        LayoutDiagramComponent square = graph == null ? null : graph.getTiles().get(tile);
 
         if (square != null && square.isFeedback())
         {
@@ -8239,7 +8747,7 @@ public class AutonomySession
 
             Map<RouteId, Route> routes = graph.getRoutes(tile);
 
-            for (Route road : routes == null ? java.util.Collections.<Route>emptyList() : routes.values())
+            for (Route road : routes == null ? Collections.<Route>emptyList() : routes.values())
             {
                 if (contact != null && (road.getA() == contact.getA() && road.getB() == contact.getB()
                     || road.getA() == contact.getB() && road.getB() == contact.getA()))
@@ -8255,16 +8763,16 @@ public class AutonomySession
     /** Whether a square is one of the four curved types, whose arrows lie along their chords (MT-712). */
     public boolean isCurveSquare(TileKey tile)
     {
-        org.traincontrol.base.LayoutDiagramComponent square = graph == null ? null : graph.getTiles().get(tile);
+        LayoutDiagramComponent square = graph == null ? null : graph.getTiles().get(tile);
 
         if (square == null) return false;
 
-        org.traincontrol.base.LayoutDiagramComponent.componentType type = square.getType();
+        LayoutDiagramComponent.componentType type = square.getType();
 
-        return type == org.traincontrol.base.LayoutDiagramComponent.componentType.CURVE
-            || type == org.traincontrol.base.LayoutDiagramComponent.componentType.DOUBLE_CURVE
-            || type == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_CURVE
-            || type == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE;
+        return type == LayoutDiagramComponent.componentType.CURVE
+            || type == LayoutDiagramComponent.componentType.DOUBLE_CURVE
+            || type == LayoutDiagramComponent.componentType.FEEDBACK_CURVE
+            || type == LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE;
     }
 
     /** The tile's first route, where a non-sensor's badge is drawn. */
@@ -8295,7 +8803,7 @@ public class AutonomySession
      */
     public boolean pagesSafeToJudge()
     {
-        java.util.Set<String> loadedNames = new LinkedHashSet<>();
+        Set<String> loadedNames = new LinkedHashSet<>();
 
         for (LayoutDiagram page : pages)
         {
@@ -8322,16 +8830,13 @@ public class AutonomySession
         {
             for (LayoutDiagramComponent component : page.getAll())
             {
-                if (component != null)
-                {
-                    existing.add(new TileKey(page.getName(), component.getX(), component.getY()));
-                }
+                if (component != null) existing.add(new TileKey(page.getName(), component.getX(), component.getY()));
             }
         }
 
         // Not while the numbering is suspect or a known page is missing (OB-068): its every entry would read as deleted
         // and be pruned.  Saving still happens; only the deleting waits.
-        java.util.Set<String> loadedNames = new LinkedHashSet<>();
+        Set<String> loadedNames = new LinkedHashSet<>();
 
         for (LayoutDiagram page : pages)
         {
@@ -8341,7 +8846,7 @@ public class AutonomySession
             loadedNames.add(page.getName());
         }
 
-        java.util.List<String> absent = store.pagesNotLoaded(loadedNames);
+        List<String> absent = store.pagesNotLoaded(loadedNames);
 
         boolean incomplete = !pagesSafeToJudge();
 
@@ -8376,17 +8881,16 @@ public class AutonomySession
      * How to look a train's length up (FR-046): a function, as the length lives on the Locomotive.  Null until
      * installed, and the checks using it are silent meanwhile.
      */
-    private java.util.function.Function<String, Integer> trainLengths;
+    private Function<String, Integer> trainLengths;
 
     /** @param lengths a function from locomotive name to length, or null to stop asking */
-    public void setTrainLengthSource(java.util.function.Function<String, Integer> lengths)
+    public void setTrainLengthSource(Function<String, Integer> lengths)
     {
         this.trainLengths = lengths;
     }
 
     /**
      * Who stands where: the railway's trains, then the setup's placements of trains it lacks on squares it leaves free.
-     * @return square to train
      */
     public Map<TileKey, String> trainsWhereTheyStand()
     {
@@ -8469,9 +8973,9 @@ public class AutonomySession
      * `maxTrainLength` compares only with the train's own length.  Empty when the layout models no lengths anywhere.
      */
 
-    private java.util.Set<TileKey> stationsWithoutMaxLength()
+    private Set<TileKey> stationsWithoutMaxLength()
     {
-        java.util.Set<TileKey> out = new LinkedHashSet<>();
+        Set<TileKey> out = new LinkedHashSet<>();
 
         if (reducer == null || store == null) return out;
 
@@ -8486,7 +8990,7 @@ public class AutonomySession
     }
 
     /** Whether any length-taking square of a leg has a length, which makes the berth rule judge it (OB-273). */
-    private boolean anythingMeasuredOn(java.util.List<TileKey> squares)
+    private boolean anythingMeasuredOn(List<TileKey> squares)
     {
         // A leg answered 0 throughout is measured, at no length (`Edge.isMeasured`).
         boolean anySquare = false;
@@ -8511,7 +9015,7 @@ public class AutonomySession
      * `Layout.whyABerthCannotHoldIt` spends it.  Returns {measured length before the stop, squares before it with no
      * length, how it stops}.
      */
-    private int[] berthTrackBeforeTheStop(java.util.List<TileKey> squares)
+    private int[] berthTrackBeforeTheStop(List<TileKey> squares)
     {
         int held = 0;
         int unmeasured = 0;
@@ -8545,9 +9049,9 @@ public class AutonomySession
      * against the station's longest train (OB-288, MT-552).  Maps each station to how many squares of its approach
      * before the stop still have no length.
      */
-    public java.util.Map<TileKey, Integer> stationsWithAHalfMeasuredApproach()
+    public Map<TileKey, Integer> stationsWithAHalfMeasuredApproach()
     {
-        java.util.Map<TileKey, Integer> out = new LinkedHashMap<>();
+        Map<TileKey, Integer> out = new LinkedHashMap<>();
 
         if (reducer == null || store == null) return out;
 
@@ -8575,7 +9079,7 @@ public class AutonomySession
                 boolean anyMeasured = false;
 
                 // The path and the berth itself, which the walk spends first (OB-278).
-                java.util.List<TileKey> squares = new java.util.ArrayList<>();
+                List<TileKey> squares = new ArrayList<>();
 
                 for (GraphReducer.TileStep step : arriving.getPath()) squares.add(step.getTile());
 
@@ -8606,7 +9110,7 @@ public class AutonomySession
      * maximum, the smallest measured room}, and at a platform with a refusing figure under its maximum, that figure
      * third.  Silent without a maximum or with no track measured.
      */
-    java.util.Map<TileKey, int[]> runInsShorterThanTheBerth()
+    Map<TileKey, int[]> runInsShorterThanTheBerth()
     {
         return runInFigures(null, builtForInspection(), null);
     }
@@ -8616,12 +9120,12 @@ public class AutonomySession
      * berths given no room by a way in answered 0 throughout.  `built` and `named` (null: asked of the builder) give
      * the refusing figures.
      */
-    private java.util.Map<TileKey, int[]> runInFigures(java.util.Set<TileKey> givenNoRoom, org.json.JSONObject built,
-        java.util.Map<String, TileKey> named)
+    private Map<TileKey, int[]> runInFigures(Set<TileKey> givenNoRoom, JSONObject built,
+        Map<String, TileKey> named)
     {
-        java.util.Map<TileKey, int[]> out = new LinkedHashMap<>();
+        Map<TileKey, int[]> out = new LinkedHashMap<>();
 
-        java.util.Map<TileKey, Integer> refusing = refusingFigures(built, named);
+        Map<TileKey, Integer> refusing = refusingFigures(built, named);
 
         if (reducer == null || store == null) return out;
 
@@ -8654,7 +9158,7 @@ public class AutonomySession
 
                 if (!isAutoDestination(square))
                 {
-                    java.util.List<TileKey> squares = new java.util.ArrayList<>();
+                    List<TileKey> squares = new ArrayList<>();
 
                     for (GraphReducer.TileStep step : arriving.getPath()) squares.add(step.getTile());
 
@@ -8712,25 +9216,25 @@ public class AutonomySession
      * (`roomTheNoticeQuotes`), of what `Layout.whyTooLongForThisRoute` refuses above (FR-087).  Off the built railway,
      * as a square's copies are its directions.  Empty when the setup does not build.
      */
-    private java.util.Map<TileKey, Integer> refusingFigures(org.json.JSONObject built, java.util.Map<String, TileKey> named)
+    private Map<TileKey, Integer> refusingFigures(JSONObject built, Map<String, TileKey> named)
     {
-        java.util.Map<TileKey, Integer> out = new java.util.HashMap<>();
+        Map<TileKey, Integer> out = new HashMap<>();
 
         if (built == null || !built.has("points") || !built.has("edges")) return out;
 
-        java.util.Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
+        Map<String, TileKey> byName = named != null ? named : builder(null).tilesByName();
 
         // Where a train stops, where the route in stops (started or turned there), and where nothing runs.
-        java.util.Set<String> stops = new java.util.HashSet<>();
-        java.util.Set<String> setsOff = new java.util.HashSet<>();
-        java.util.Set<String> turns = new java.util.HashSet<>();
-        java.util.Set<String> off = new java.util.HashSet<>();
+        Set<String> stops = new HashSet<>();
+        Set<String> setsOff = new HashSet<>();
+        Set<String> turns = new HashSet<>();
+        Set<String> off = new HashSet<>();
 
-        org.json.JSONArray points = built.getJSONArray("points");
+        JSONArray points = built.getJSONArray("points");
 
         for (int i = 0; i < points.length(); i++)
         {
-            org.json.JSONObject point = points.getJSONObject(i);
+            JSONObject point = points.getJSONObject(i);
 
             String name = point.getString("name");
 
@@ -8748,14 +9252,14 @@ public class AutonomySession
             if (point.optBoolean("reversing", false) || point.optBoolean("terminus", false)) turns.add(name);
         }
 
-        java.util.List<org.json.JSONObject> legs = new java.util.ArrayList<>();
-        java.util.Map<TileKey, java.util.List<org.json.JSONObject>> waysIn = new java.util.LinkedHashMap<>();
+        List<JSONObject> legs = new ArrayList<>();
+        Map<TileKey, List<JSONObject>> waysIn = new LinkedHashMap<>();
 
-        org.json.JSONArray edges = built.getJSONArray("edges");
+        JSONArray edges = built.getJSONArray("edges");
 
         for (int i = 0; i < edges.length(); i++)
         {
-            org.json.JSONObject edge = edges.getJSONObject(i);
+            JSONObject edge = edges.getJSONObject(i);
 
             // Into a switched-off point no leg runs; out of one, only the first.
             if (off.contains(edge.getString("end"))) continue;
@@ -8768,15 +9272,15 @@ public class AutonomySession
 
             if (square != null && roomTheNoticeQuotes(edge, turns) > 0)
             {
-                waysIn.computeIfAbsent(square, k -> new java.util.ArrayList<>()).add(edge);
+                waysIn.computeIfAbsent(square, k -> new ArrayList<>()).add(edge);
             }
         }
 
-        for (java.util.Map.Entry<TileKey, java.util.List<org.json.JSONObject>> platform : waysIn.entrySet())
+        for (Map.Entry<TileKey, List<JSONObject>> platform : waysIn.entrySet())
         {
-            java.util.Map<org.json.JSONObject, Integer> routeIn = routesIn(platform.getKey(), byName, legs, stops, setsOff);
+            Map<JSONObject, Integer> routeIn = routesIn(platform.getKey(), byName, legs, stops, setsOff);
 
-            for (org.json.JSONObject edge : platform.getValue())
+            for (JSONObject edge : platform.getValue())
             {
                 Integer walked = routeIn.get(edge);
 
@@ -8794,7 +9298,7 @@ public class AutonomySession
      * from a copy trains turn at, the leg's length; else 0, as the room walk keeps walking back.
      * @return the room, 0 or less where it gives none
      */
-    private static int roomTheNoticeQuotes(org.json.JSONObject leg, java.util.Set<String> turns)
+    private static int roomTheNoticeQuotes(JSONObject leg, Set<String> turns)
     {
         if (leg.has("roomAtTheEnd")) return leg.optInt("roomAtTheEnd", -1);
 
@@ -8802,9 +9306,9 @@ public class AutonomySession
     }
 
     /** Whether a built leg was answered 0 at every place (`Edge.isMeasured`). */
-    private static boolean answeredThroughout(org.json.JSONObject leg)
+    private static boolean answeredThroughout(JSONObject leg)
     {
-        org.json.JSONArray places = leg.optJSONArray("places");
+        JSONArray places = leg.optJSONArray("places");
 
         if (places == null || places.length() == 0) return false;
 
@@ -8821,28 +9325,28 @@ public class AutonomySession
      * (`Layout.measuredRouteIn`), lowered until nothing changes so a loop of sensors is walked whole.  The route in
      * stops at a start or turn copy (`setsOff`) and at an unmeasured leg; never through the platform's own square.
      */
-    private static java.util.Map<org.json.JSONObject, Integer> routesIn(TileKey platform,
-        java.util.Map<String, TileKey> byName, java.util.List<org.json.JSONObject> legs, java.util.Set<String> stops,
-        java.util.Set<String> setsOff)
+    private static Map<JSONObject, Integer> routesIn(TileKey platform,
+        Map<String, TileKey> byName, List<JSONObject> legs, Set<String> stops,
+        Set<String> setsOff)
     {
-        java.util.Set<String> own = new java.util.HashSet<>();
+        Set<String> own = new HashSet<>();
 
-        for (java.util.Map.Entry<String, TileKey> point : byName.entrySet())
+        for (Map.Entry<String, TileKey> point : byName.entrySet())
         {
             if (platform.equals(point.getValue())) own.add(point.getKey());
         }
 
-        java.util.Map<String, java.util.List<org.json.JSONObject>> into = new java.util.HashMap<>();
-        java.util.Map<String, java.util.List<String>> onward = new java.util.HashMap<>();
+        Map<String, List<JSONObject>> into = new HashMap<>();
+        Map<String, List<String>> onward = new HashMap<>();
 
-        for (org.json.JSONObject leg : legs)
+        for (JSONObject leg : legs)
         {
-            into.computeIfAbsent(leg.getString("end"), k -> new java.util.ArrayList<>()).add(leg);
-            onward.computeIfAbsent(leg.getString("start"), k -> new java.util.ArrayList<>()).add(leg.getString("end"));
+            into.computeIfAbsent(leg.getString("end"), k -> new ArrayList<>()).add(leg);
+            onward.computeIfAbsent(leg.getString("start"), k -> new ArrayList<>()).add(leg.getString("end"));
         }
 
-        java.util.Set<String> reached = new java.util.HashSet<>();
-        java.util.Deque<String> todo = new java.util.ArrayDeque<>();
+        Set<String> reached = new HashSet<>();
+        Deque<String> todo = new ArrayDeque<>();
 
         for (String stop : stops)
         {
@@ -8851,13 +9355,13 @@ public class AutonomySession
 
         while (!todo.isEmpty())
         {
-            for (String next : onward.getOrDefault(todo.pop(), java.util.Collections.<String>emptyList()))
+            for (String next : onward.getOrDefault(todo.pop(), Collections.<String>emptyList()))
             {
                 if (!own.contains(next) && reached.add(next)) todo.push(next);
             }
         }
 
-        java.util.Map<org.json.JSONObject, Integer> way = new java.util.IdentityHashMap<>();
+        Map<JSONObject, Integer> way = new IdentityHashMap<>();
 
         boolean lowered = true;
 
@@ -8865,7 +9369,7 @@ public class AutonomySession
         {
             lowered = false;
 
-            for (org.json.JSONObject leg : legs)
+            for (JSONObject leg : legs)
             {
                 String from = leg.getString("start");
 
@@ -8887,8 +9391,8 @@ public class AutonomySession
                 {
                     Integer before = null;
 
-                    for (org.json.JSONObject previous : into.getOrDefault(from,
-                        java.util.Collections.<org.json.JSONObject>emptyList()))
+                    for (JSONObject previous : into.getOrDefault(from,
+                        Collections.<JSONObject>emptyList()))
                     {
                         Integer known = way.get(previous);
 
@@ -8916,19 +9420,19 @@ public class AutonomySession
      * Must-turn stations reached by more than one unbarred side (MT-361), an ERROR the user has to fix.  Counted as
      * sides, not edges (a portal arrives by a real side).  Maps each square to how many unbarred sides reach it.
      */
-    public java.util.Map<TileKey, Integer> terminiWithTwoWaysIn()
+    public Map<TileKey, Integer> terminiWithTwoWaysIn()
     {
-        java.util.Map<TileKey, Integer> out = new LinkedHashMap<>();
+        Map<TileKey, Integer> out = new LinkedHashMap<>();
 
         if (reducer == null || store == null) return out;
 
-        java.util.Map<TileKey, java.util.Set<Side>> barred = barredArrivals();
+        Map<TileKey, Set<Side>> barred = barredArrivals();
 
         for (TileKey tile : mandatoryTurnTiles())
         {
             if (!store.isStation(tile)) continue;
 
-            java.util.Set<Side> sides = new LinkedHashSet<>();
+            Set<Side> sides = new LinkedHashSet<>();
 
             for (GraphReducer.ReducedEdge arriving : reducer.getEdges())
             {
@@ -8938,7 +9442,7 @@ public class AutonomySession
 
                 if (entry == null) continue;
 
-                java.util.Set<Side> shut = barred.get(tile);
+                Set<Side> shut = barred.get(tile);
 
                 if (shut != null && shut.contains(entry)) continue;
 
@@ -8961,7 +9465,7 @@ public class AutonomySession
 
         if (pages == null) return new LinkedHashMap<>();
 
-        Set<String> repeating = new java.util.HashSet<>();
+        Set<String> repeating = new HashSet<>();
 
         for (TileKey square : repeatedSensorPages().keySet()) repeating.add(square.getPage());
 
@@ -8982,7 +9486,7 @@ public class AutonomySession
             }
         }
 
-        java.util.Comparator<TileKey> readingOrder = java.util.Comparator.comparing(TileKey::getPage)
+        Comparator<TileKey> readingOrder = Comparator.comparing(TileKey::getPage)
             .thenComparingInt(TileKey::getY).thenComparingInt(TileKey::getX);
 
         Map<Integer, List<TileKey>> shared = new LinkedHashMap<>();

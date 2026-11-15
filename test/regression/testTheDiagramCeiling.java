@@ -4,7 +4,6 @@ import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -13,6 +12,8 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Teardown;
 
 /**
  * One ceiling, asked by everything that grows the page, about the right dimension.  The one predicate takes the two
@@ -35,36 +36,19 @@ public class testTheDiagramCeiling
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the layout editor needs a display");
-        }
+        Display.needed("the layout editor needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("single-switch");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
     }
 
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, null, ui);
     }
 
     /**
@@ -178,9 +162,8 @@ public class testTheDiagramCeiling
     }
 
     /**
-     * A page at the ceiling in ONE dimension can still grow in the other (at the call site). The test below pins the
-     * predicate, which was not what changed: `addRowsAndColumns` asked it about `(1, 1)` and then added `rows` and
-     * `cols`, so that test passes with the defect put back.
+     * A page at the ceiling in ONE dimension can still grow in the other (at the call site).  The test below pins the
+     * predicate alone, so it passes if `addRowsAndColumns` asks `(1, 1)`.
      *
      * Asserted in the SUCCESS direction, on purpose: the refusal branch is the modal `JOptionPane.showMessageDialog`,
      * which parks the event thread until somebody clicks OK. A page at the row ceiling growing sideways is refused by
@@ -210,11 +193,8 @@ public class testTheDiagramCeiling
                 "precondition: the question the guard used to ask - room for one more of EACH - is no "
                 + "on this page, which is what makes this test able to tell the two apart");
 
-            // Measured either side of the call, in one task: building an editor also grows the page to fit its viewport
-            // (`growEdges`) by an amount that depends on the window's geometry, which differs in a battery from a class
-            // run alone, so reading the width before the call and comparing after it measured that growth as well.
-            // Taken inside the same invokeAndWait, the assertion is about the difference rather than an absolute width
-            // this test does not control.
+            // Measured either side of the call in one task: building an editor also grows the page to fit its viewport
+            // by an amount that depends on the window's geometry, so the assertion is about the difference.
             final int[] wide = new int[2];
             final int[] tall = new int[2];
 
@@ -248,9 +228,9 @@ public class testTheDiagramCeiling
     }
 
     /**
-     * The ceiling is asked about the amount being added, not about one: `LayoutEditor.addRowsAndColumns(rows, cols)`
-     * asked `roomToGrow(1, 1)` and then added `rows` and `cols`. It cannot overflow today because its only caller pads
-     * a blank page to 16 x 21, so this is a trap rather than a defect.
+     * The ceiling is asked about the amount being added, not about one: `addRowsAndColumns(rows, cols)` must not ask
+     * `roomToGrow(1, 1)` and then add `rows` and `cols`.  Its only caller cannot overflow today, so this is a trap
+     * rather than a defect.
      *
      * Asserted at the predicate, because the refusal cannot be driven from a test: its failure branch is the modal
      * `JOptionPane.showMessageDialog`, so driving it hangs rather than fails. What is pinned is that the predicate
@@ -298,17 +278,6 @@ public class testTheDiagramCeiling
         });
 
         return built[0];
-    }
-
-    /**
-     * Lets everything the editor posted for itself finish: several passes, because a posted task may post another.
-     */
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 5; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
     }
 
     /** Puts the editor's idea of where the pointer is onto a real square (private fields a mouse event sets). */

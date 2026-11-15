@@ -8,7 +8,6 @@ import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.geom.Path2D;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -27,8 +26,10 @@ import javax.swing.Icon;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.ImageUtil;
 
 /**
  * The locomotive usage chart: run time per day, week or month, over a range the operator picks, with Previous and Next
@@ -102,11 +103,7 @@ public class UsageChart extends JFrame
     /** Whole periods back from the current one. */
     private long page = 0;
 
-    /**
-     * Builds the chart on the 30 days ending today; the caller shows it.
-     *
-     * @param tcui the main window, whose model has the figures
-     */
+    /** Builds the chart on the 30 days ending today; the caller shows it. */
     public UsageChart(TrainControlUI tcui)
     {
         super(I18n.t("stats.chart.title"));
@@ -192,7 +189,7 @@ public class UsageChart extends JFrame
 
     private static JButton pagingButton(String textKey, String name)
     {
-        JButton b = new JButton(I18n.t(textKey));
+        JButton b = UiStyle.button(new JButton(I18n.t(textKey)));
 
         b.setName(name);
         b.setFocusable(false);
@@ -229,8 +226,7 @@ public class UsageChart extends JFrame
 
             try
             {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                ImageUtil.smooth(g2);
                 g2.setColor(c.isEnabled() ? c.getForeground() : UIManager.getColor("Button.disabledText"));
                 g2.setStroke(new BasicStroke(UIScale.scale(1.6f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
@@ -329,10 +325,7 @@ public class UsageChart extends JFrame
         {
             LocalDate end = today.minusDays(page * range.days());
 
-            for (int i = range.days() - 1; i >= 0; i--)
-            {
-                spans.add(new LocalDate[] {end.minusDays(i), end.minusDays(i)});
-            }
+            for (int i = range.days() - 1; i >= 0; i--) spans.add(new LocalDate[] {end.minusDays(i), end.minusDays(i)});
         }
         else if (range == Range.YEAR)
         {

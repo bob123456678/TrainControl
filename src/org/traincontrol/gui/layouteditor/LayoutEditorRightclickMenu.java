@@ -24,6 +24,34 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
      */
     private final LayoutEditor owner;
 
+    /** What an item does; a failure is said over the editor. */
+    private interface Action
+    {
+        void run() throws Exception;
+    }
+
+    /** An item doing `action`, showing the key the editor's key handler acts on for it, display only. */
+    private JMenuItem keyed(String text, javax.swing.KeyStroke key, Action action)
+    {
+        JMenuItem item = new JMenuItem(text);
+
+        item.addActionListener(event ->
+        {
+            try
+            {
+                action.run();
+            }
+            catch (Exception e)
+            {
+                JOptionPane.showMessageDialog(this.owner, e.getMessage());
+            }
+        });
+
+        TrainControlUI.showShortcut(item, key);
+
+        return item;
+    }
+
     public LayoutEditorRightclickMenu(LayoutEditor edit, TrainControlUI ui, LayoutLabel label, LayoutDiagramComponent component)
     {        
         this.owner = edit;
@@ -40,9 +68,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             addSeparator();
         }
         
-        // Paste, singular, by design: row and column variants filled to the edge of the diagram, so a mis-aimed one
-        // wrote over a whole row of track.  Selecting the squares and dragging says the same thing and can be corrected
-        // before it happens.
+        // Paste, singular, by design: a row or column variant would fill to the edge of the diagram, and a mis-aimed
+        // one would write over a whole row of track.  Selecting the squares and dragging says the same thing and can
+        // be corrected before it happens.
         JMenuItem pasteMenuItem = new JMenuItem(I18n.t("ui.paste"));
 
         pasteMenuItem.addActionListener(event ->
@@ -66,7 +94,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             }
         });
 
-        pasteMenuItem.setToolTipText("Control+V");
+        TrainControlUI.showShortcut(pasteMenuItem, LayoutEditor.PASTE_KEY);
         pasteMenuItem.setEnabled(edit.hasToolFlag() || edit.hasGroupClipboard());
 
         add(pasteMenuItem);
@@ -113,17 +141,13 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
             boolean anyPicked = !edit.getSelection().isEmpty();
 
-            JMenuItem copySelected = new JMenuItem(I18n.t("ui.copy"));
-            copySelected.addActionListener(event -> edit.copySelection());
-            copySelected.setToolTipText("Control+C");
+            JMenuItem copySelected = keyed(I18n.t("ui.copy"), LayoutEditor.COPY_KEY, edit::copySelection);
             copySelected.setEnabled(anyPicked);
             selectionMenu.add(copySelected);
 
             // Cut: moving a run of track otherwise meant copying, pasting and deleting the originals, and the last step
             // is the one that gets forgotten and leaves a duplicate railway behind.
-            JMenuItem cutSelected = new JMenuItem(I18n.t("ui.cut"));
-            cutSelected.addActionListener(event -> edit.cutSelection());
-            cutSelected.setToolTipText("Control+X");
+            JMenuItem cutSelected = keyed(I18n.t("ui.cut"), LayoutEditor.CUT_KEY, edit::cutSelection);
             cutSelected.setEnabled(anyPicked);
             selectionMenu.add(cutSelected);
 
@@ -132,14 +156,11 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             fillSelected.setEnabled(anyPicked && edit.hasToolFlag());
             selectionMenu.add(fillSelected);
 
-            JMenuItem rotateSelected = new JMenuItem(I18n.t("ui.rotate"));
-            rotateSelected.addActionListener(event -> edit.rotateSelection());
+            JMenuItem rotateSelected = keyed(I18n.t("ui.rotate"), LayoutEditor.ROTATE_KEY, edit::rotateSelection);
             rotateSelected.setEnabled(anyPicked);
             selectionMenu.add(rotateSelected);
 
-            JMenuItem deleteSelected = new JMenuItem(I18n.t("ui.delete"));
-            deleteSelected.addActionListener(event -> edit.deleteSelection());
-            deleteSelected.setToolTipText("Delete");
+            JMenuItem deleteSelected = keyed(I18n.t("ui.delete"), LayoutEditor.DELETE_KEY, edit::deleteSelection);
             deleteSelected.setEnabled(anyPicked);
             selectionMenu.add(deleteSelected);
 
@@ -151,82 +172,25 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
             // than leaving a mode running.
             JMenuItem oneBox = new JMenuItem(I18n.t("layout.ui.menuSelectByDragging"));
             oneBox.addActionListener(event -> edit.selectOnce());
-            oneBox.setToolTipText(I18n.t("layout.ui.tooltipSelectByDragging") + "  ("
-                + LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING + ")");
+            TrainControlUI.showShortcut(oneBox, LayoutEditor.SELECT_BY_DRAGGING_KEY);
+            oneBox.setToolTipText(I18n.t("layout.ui.tooltipSelectByDragging"));
             add(oneBox);
         }
         
-        menuItem = new JMenuItem(I18n.t("ui.undo"));
-        menuItem.addActionListener(event -> 
-        {
-            try
-            {
-                edit.undo();
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(edit, e.getMessage());
-            }
-        });
-        
-        if (!edit.canUndo()) menuItem.setEnabled(false);
-        menuItem.setToolTipText("Control+Z");
-        
+        menuItem = keyed(I18n.t("ui.undo"), LayoutEditor.UNDO_KEY, edit::undo);
+        menuItem.setEnabled(edit.canUndo());
         add(menuItem);
-        
-        menuItem = new JMenuItem(I18n.t("ui.redo"));
-        menuItem.addActionListener(event -> 
-        {
-            try
-            {
-                edit.redo();
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(edit, e.getMessage());
-            }
-        });
-        
-        if (!edit.canRedo()) menuItem.setEnabled(false);
-        menuItem.setToolTipText("Control+Y");
-        
+
+        menuItem = keyed(I18n.t("ui.redo"), LayoutEditor.REDO_KEY, edit::redo);
+        menuItem.setEnabled(edit.canRedo());
         add(menuItem);
         
         if (component != null)
         {
             addSeparator();
             
-            menuItem = new JMenuItem(I18n.t("ui.cut"));
-            menuItem.addActionListener(event -> 
-            {
-                try
-                {
-                    edit.initCopy(label, null, true);
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(edit, e.getMessage());
-                }
-            });
-            menuItem.setToolTipText("Control+X");
-
-            add(menuItem);
-
-            menuItem = new JMenuItem(I18n.t("ui.copy"));
-            menuItem.addActionListener(event -> 
-            {
-                try
-                {
-                    edit.initCopy(label, null, false);
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(edit, e.getMessage());
-                }
-            });
-            menuItem.setToolTipText("Control+C");
-
-            add(menuItem);
+            add(keyed(I18n.t("ui.cut"), LayoutEditor.CUT_KEY, () -> edit.initCopy(label, null, true)));
+            add(keyed(I18n.t("ui.copy"), LayoutEditor.COPY_KEY, () -> edit.initCopy(label, null, false)));
             
             // Text can't be rotated
             if (!component.isText()
@@ -234,24 +198,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                 && component.getNumOrientations() > 1
             )
             {
-                menuItem = new JMenuItem(I18n.t("ui.rotate"));
-                menuItem.addActionListener(event ->
-                {
-                    try
-                    {
-                        edit.rotate(label);
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog(edit, e.getMessage());
-                    }
-                });
-                menuItem.setToolTipText("Control+R");
-
-                // add() belongs inside this block: for a text tile or a symmetric one (no Rotate) menuItem still names
-                // the Copy item added above, and Container.add() on a component already in the menu silently moves it
-                // to the end.
-                add(menuItem);
+                add(keyed(I18n.t("ui.rotate"), LayoutEditor.ROTATE_KEY, () -> edit.rotate(label)));
             }
 
             if (component.isClickable())
@@ -280,29 +227,9 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                     addressLabel = I18n.t("layout.ui.addressLabelFeedbackAddress");
                 }
 
-                menuItem = new JMenuItem(
-                    I18n.f(
-                        "layout.ui.menuEditAddressLabel",
-                        addressLabel,
-                        component.getLogicalAddress(),
-                        protocol
-                    )
-                );
-
-                menuItem.addActionListener(event -> 
-                {
-                    try
-                    {
-                        edit.editAddress(label);
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog(edit, e.getMessage());
-                    }
-                });
-                menuItem.setToolTipText("Control+A");
-
-                add(menuItem);
+                add(keyed(I18n.f("layout.ui.menuEditAddressLabel", addressLabel,
+                    component.isLink() ? linkLabel(component) : String.valueOf(component.getLogicalAddress()), protocol),
+                    LayoutEditor.ADDRESS_KEY, () -> edit.editAddress(label)));
                 
                 // Shortcut to edit routes
                 if (component.isRoute())
@@ -319,7 +246,7 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
                             {
                                 javax.swing.SwingUtilities.invokeLater(() -> 
                                 {
-                                    ui.editRoute(route.getName());
+                                    ui.pressFromWindow(edit, () -> ui.editRoute(route.getName()));
                                 });
                             }
                             catch (Exception e)
@@ -338,41 +265,13 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
 
             addSeparator();
 
-            menuItem = new JMenuItem(I18n.t("layout.ui.editTextLabel"));
-            menuItem.addActionListener(event -> 
-            {
-                try
-                {
-                    edit.editText(label);
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(edit, e.getMessage());
-                }
-            });
-            menuItem.setToolTipText("Control+T");
-            add(menuItem);
+            add(keyed(I18n.t("layout.ui.editTextLabel"), LayoutEditor.TEXT_KEY, () -> edit.editText(label)));
             
-            // Station labels are placed in the autonomy editor, where the stations are decided; this item wrote a
-            // "Point:" label from the LEGACY graph's point names.  Its Control+S shortcut is gone with it.
+            // Station labels are placed in the autonomy editor, where the stations are decided.
 
             addSeparator();
             
-            menuItem = new JMenuItem(I18n.t("ui.delete"));
-            menuItem.addActionListener(event -> 
-            {
-                try
-                {
-                    edit.delete(label);
-                }
-                catch (Exception e)
-                {
-                    JOptionPane.showMessageDialog(edit, e.getMessage());
-                }
-            });
-            
-            menuItem.setToolTipText("Delete");
-            add(menuItem);
+            add(keyed(I18n.t("ui.delete"), LayoutEditor.DELETE_KEY, () -> edit.delete(label)));
         }
         
         addSeparator();
@@ -419,8 +318,8 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         // and swaps the tooltip to the reason.
         boolean canGrow = edit.roomToGrow(1, 1);
         menuItem.setEnabled(canGrow);
-        menuItem.setToolTipText(canGrow ? "Control+I"
-            : I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));
+        TrainControlUI.showShortcut(menuItem, LayoutEditor.GROW_KEY);
+        if (!canGrow) menuItem.setToolTipText(I18n.f("layout.ui.errorMaxSizeExceeded", LayoutEditor.MAX_SIZE));
         diagramSubmenu.add(menuItem);
 
         menuItem = new JMenuItem(I18n.t("layout.ui.menuDecreaseSize"));
@@ -480,9 +379,15 @@ final class LayoutEditorRightclickMenu extends JPopupMenu
         
         add(diagramSubmenu);
 
-        // SHOW COORDINATES IS NOT HERE ANY MORE (OB-179).  Adam: "hide the show coordinates right click menu option...
-        // this is tied to the show grid option and will be toggled on and off together with the grid."  See
-        // `LayoutGrid.coordinatesVisible`.
+        // Show Coordinates is not here: it follows the grid (OB-179), see `LayoutGrid.coordinatesVisible`.
+    }
+
+    /** What the Edit Linked Page item shows: the page's name, or why there is none. */
+    private static String linkLabel(LayoutDiagramComponent link)
+    {
+        if (link.getLinkPageName() != null) return link.getLinkPageName();
+
+        return link.linksToAPageThatIsGone() ? I18n.t("layout.linkPageGone") : I18n.t("autosetup.ui.labelNone");
     }
 
     /** One of the four shift items, written once: they differ only in their words and the method they call. */

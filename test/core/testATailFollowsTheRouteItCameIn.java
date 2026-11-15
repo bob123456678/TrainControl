@@ -14,6 +14,7 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import static support.Settle.until;
 
 /**
  * A standing train's tail follows the route it arrived along, past a junction (MT-333, MT-335): a tail that runs past a
@@ -90,7 +91,7 @@ public class testATailFollowsTheRouteItCameIn
 
         try
         {
-            assertTrue(waitFor(() -> running.isRunning() && loc.getSpeed() > 0, 15000),
+            assertTrue(until(() -> running.isRunning() && loc.getSpeed() > 0, 15000),
                 "the train never set off, so there was no arrival for this claim to be about");
 
             // THROUGH THE JUNCTION'S OWN SENSOR FIRST.  The route passes J, and the run waits for each
@@ -98,12 +99,12 @@ public class testATailFollowsTheRouteItCameIn
             model.setFeedbackState(layout.getPoint("TF_J").getS88(), true);
             model.setFeedbackState(a.getS88(), false);
 
-            waitFor(() -> false, 500);
+            until(() -> false, 500);
 
             model.setFeedbackState(s.getS88(), true);
             model.setFeedbackState(layout.getPoint("TF_J").getS88(), false);
 
-            assertTrue(waitFor(() -> !run.isAlive(), 30000),
+            assertTrue(until(() -> !run.isAlive(), 30000),
                 "the run never finished after the destination's sensor went on");
         }
         finally
@@ -188,28 +189,5 @@ public class testATailFollowsTheRouteItCameIn
         built.getEdge("TF_J", "TF_S").setEntrySide("W");
 
         return built;
-    }
-
-    private static boolean waitFor(BooleanSupplier until, long ms)
-    {
-        long deadline = System.currentTimeMillis() + ms;
-
-        while (System.currentTimeMillis() < deadline)
-        {
-            if (until.getAsBoolean()) return true;
-
-            try
-            {
-                Thread.sleep(50);
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-
-                return false;
-            }
-        }
-
-        return until.getAsBoolean();
     }
 }

@@ -9,7 +9,6 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -26,6 +25,8 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
 
 /**
  * A route that would switch track a train is on, fired at each of its doors on the real window: by its sensor (MT-506),
@@ -62,10 +63,7 @@ public class testARouteOverATrainAtItsDoors
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the doors belong to a window, and a window needs a display");
-        }
+        Display.needed("the doors belong to a window, and a window needs a display");
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -81,8 +79,8 @@ public class testARouteOverATrainAtItsDoors
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         tap = new Handler()
         {
@@ -156,7 +154,6 @@ public class testARouteOverATrainAtItsDoors
 
         onARouteOverATrain((underTheTrain, otherSwitch) ->
         {
-            // STEP 2: the route, with an s88 trigger, armed.
             MarklinRoute route = new MarklinRoute(model, ROUTE, 84907, commands(true), Integer.parseInt(ROUTE_S88),
                 MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, true, null);
 
@@ -166,7 +163,6 @@ public class testARouteOverATrainAtItsDoors
             {
                 Thread.sleep(500);
 
-                // STEP 3: the sensor set.
                 model.setFeedbackState(ROUTE_S88, true);
 
                 long until = System.currentTimeMillis() + POWER_PATIENCE_MS;
@@ -653,21 +649,21 @@ public class testARouteOverATrainAtItsDoors
 
     private static String textOf(javax.swing.JDialog dialog)
     {
-        javax.swing.JOptionPane pane = find(dialog.getContentPane(), javax.swing.JOptionPane.class);
+        javax.swing.JOptionPane pane = Components.inside(dialog.getContentPane(), javax.swing.JOptionPane.class);
 
         return pane == null ? null : String.valueOf(pane.getMessage());
     }
 
     private static Object initialValueOf(javax.swing.JDialog dialog)
     {
-        javax.swing.JOptionPane pane = find(dialog.getContentPane(), javax.swing.JOptionPane.class);
+        javax.swing.JOptionPane pane = Components.inside(dialog.getContentPane(), javax.swing.JOptionPane.class);
 
         return pane == null ? null : pane.getInitialValue();
     }
 
     private static void press(javax.swing.JDialog dialog, String button) throws Exception
     {
-        final javax.swing.JOptionPane pane = find(dialog.getContentPane(), javax.swing.JOptionPane.class);
+        final javax.swing.JOptionPane pane = Components.inside(dialog.getContentPane(), javax.swing.JOptionPane.class);
 
         assertNotNull(pane, "the question has no buttons");
 
@@ -678,27 +674,5 @@ public class testARouteOverATrainAtItsDoors
                 if (button.equals(String.valueOf(option))) pane.setValue(option);
             }
         });
-    }
-
-    private static <T> T find(java.awt.Container container, Class<T> type)
-    {
-        for (java.awt.Component child : container.getComponents())
-        {
-            if (type.isInstance(child)) return type.cast(child);
-
-            if (child instanceof java.awt.Container)
-            {
-                T found = find((java.awt.Container) child, type);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

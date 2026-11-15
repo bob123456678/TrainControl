@@ -1,8 +1,13 @@
 package org.traincontrol.gui.autonomy;
 
 import java.awt.Component;
+import java.util.List;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import org.traincontrol.automation.Edge;
+import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
@@ -36,12 +41,12 @@ public final class ManualReversalPrompt
      * @param railway the railway the path was offered on, or null
      * @return the policy to hand to executePath
      */
-    public static org.traincontrol.automation.Layout.ReversalPolicy forJourney(
-        final org.traincontrol.automationui.AutonomySession session, final Component parent,
-        final java.util.List<org.traincontrol.automation.Edge> path, final Locomotive loc,
-        final org.traincontrol.automation.Layout railway)
+    public static Layout.ReversalPolicy forJourney(
+        final AutonomySession session, final Component parent,
+        final List<Edge> path, final Locomotive loc,
+        final Layout railway)
     {
-        final org.traincontrol.automation.Layout.ReversalPolicy asking = forOperator(session, parent);
+        final Layout.ReversalPolicy asking = forOperator(session, parent);
 
         Point first = null;
 
@@ -52,7 +57,7 @@ public final class ManualReversalPrompt
         // `testATrainThatCannotReverseMayBackIntoATerminus`).
         if (path != null && !path.isEmpty())
         {
-            org.traincontrol.automation.Edge last = path.get(path.size() - 1);
+            Edge last = path.get(path.size() - 1);
 
             // UNLESS THE DOOR ASKS ABOUT IT (OB-205): `isTerminus()` is true at the turning copy of a MAY-turn square
             // as well as at a real terminus, while `asksAbout` is answered from the setup (`mayTurnTiles()`, the
@@ -70,8 +75,8 @@ public final class ManualReversalPrompt
         // destination, since that dictates where the train can go, and where it is facing."**
         //
         // An intermediate turning copy exists BECAUSE the path chose to turn there, which is the route's business:
-        // asking about one let "keep direction" (the default, Escape and cannot-ask answer) strand the train off its
-        // path.
+        // asking about one would let "keep direction" (the default, Escape and cannot-ask answer) strand the train off
+        // its path.
         first = destinationAskedAbout(asking, railway, path);
 
         // AND A TRAIN THAT CANNOT REVERSE IS NOT ASKED (MT-368): a square that MAY turn is a preference, and a
@@ -89,7 +94,7 @@ public final class ManualReversalPrompt
 
         final boolean turn = ask(parent, loc, first);
 
-        return new org.traincontrol.automation.Layout.ReversalPolicy()
+        return new Layout.ReversalPolicy()
         {
             @Override
             public boolean shouldReverse(Locomotive train, Point at)
@@ -123,8 +128,8 @@ public final class ManualReversalPrompt
      * @param path the journey
      * @return the Point asked about, or null
      */
-    public static Point destinationAskedAbout(org.traincontrol.automation.Layout.ReversalPolicy asking,
-        org.traincontrol.automation.Layout railway, java.util.List<org.traincontrol.automation.Edge> path)
+    public static Point destinationAskedAbout(Layout.ReversalPolicy asking,
+        Layout railway, List<Edge> path)
     {
         Point arrival = path == null || path.isEmpty() ? null
             : path.get(path.size() - 1).getEnd();
@@ -146,8 +151,8 @@ public final class ManualReversalPrompt
      *
      * Keeps the direction and asks about nothing, so an ordinary send neither stops nor prompts.
      */
-    public static final org.traincontrol.automation.Layout.ReversalPolicy KEEP_DIRECTION =
-        new org.traincontrol.automation.Layout.ReversalPolicy()
+    public static final Layout.ReversalPolicy KEEP_DIRECTION =
+        new Layout.ReversalPolicy()
         {
             @Override
             public boolean shouldReverse(Locomotive loc, Point at)
@@ -164,17 +169,17 @@ public final class ManualReversalPrompt
 
     /**
      * The policy both hand-driven doors hand to `executePath`.  `asksAbout` is answered from the SETUP because the
-     * runtime cannot answer it: the operator's "trains may turn round here" is `canReverse`, which `AutonomyBuilder`
+     * runtime cannot answer it: the operator's "trains may turn around here" is `canReverse`, which `AutonomyBuilder`
      * never emits (it is the instruction to split), so where a square cannot be split the instruction leaves no trace.
      *
      * @param session the setup, which knows what the operator marked
      * @param parent what to center the dialog on
      * @return the policy
      */
-    public static org.traincontrol.automation.Layout.ReversalPolicy forOperator(
-        final org.traincontrol.automationui.AutonomySession session, final Component parent)
+    public static Layout.ReversalPolicy forOperator(
+        final AutonomySession session, final Component parent)
     {
-        return new org.traincontrol.automation.Layout.ReversalPolicy()
+        return new Layout.ReversalPolicy()
         {
             @Override
             public boolean shouldReverse(Locomotive loc, Point at)
@@ -266,7 +271,8 @@ public final class ManualReversalPrompt
                 // showOptionDialog with the application's own words, NOT showConfirmDialog: a plain confirmation takes
                 // its buttons from the look-and-feel, which follows the SYSTEM language (`testMessageBundles` enforces
                 // this).  It returns an INDEX into the array, not YES_OPTION.
-                int chose = JOptionPane.showOptionDialog(parent,
+                int chose = JOptionPane.showOptionDialog(
+                    parent instanceof TrainControlUI ? ((TrainControlUI) parent).dialogParent() : parent,
                     I18n.f("autolayout.ui.confirmManualReversal", train.getName(), where.getName()),
                     I18n.t("autolayout.ui.confirmManualReversalTitle"),
                     JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
@@ -275,14 +281,14 @@ public final class ManualReversalPrompt
                 // "KEEP DIRECTION?" - so YES means do NOT reverse: index 0 is Yes and the default, and keeping the
                 // direction changes nothing on the railway, so dismissing this dialog with the keyboard is safe.
                 //
-                // The test is for the ANSWER, not against its opposite (`chose != 0` turned the train on Escape, since
-                // -1 is not 0): only an explicit No reverses.  Yes, Escape, the X or a dialog that could not be shown
-                // leaves the train pointing the way it already points.
+                // The test is for the ANSWER, not against its opposite (`chose != 0` would turn the train on Escape,
+                // since -1 is not 0): only an explicit No reverses.  Yes, Escape, the X or a dialog that could not be
+                // shown leaves the train pointing the way it already points.
                 answer[0] = reverseFor(chose);
             };
 
-            if (javax.swing.SwingUtilities.isEventDispatchThread()) prompt.run();
-            else javax.swing.SwingUtilities.invokeAndWait(prompt);
+            if (SwingUtilities.isEventDispatchThread()) prompt.run();
+            else SwingUtilities.invokeAndWait(prompt);
         }
         catch (Exception cannotAsk)
         {

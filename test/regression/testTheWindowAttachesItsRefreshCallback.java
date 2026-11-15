@@ -37,9 +37,7 @@ public class testTheWindowAttachesItsRefreshCallback
 
         // A locomotive rename repairs the setup and must then say so (MT-153).  repairAutonomyLocomotive rewrites the
         // placements, homes and exclusions that name the locomotive, but the station labels and the locomotive panel
-        // are written by methods that only run when something calls them.  Adam: "I renamed MY 1106 to MY Y1106. It
-        // vanished from autonomy, with MY 1106 still placed and at location ???? in the UI."  The method itself,
-        // comments blanked.
+        // are written by methods that only run when something calls them.  The method itself, comments blanked.
         String body = SourceOf.withoutComments(SourceOf.declaration("    void repairAutonomyLocomotive("));
 
         // The CALL, with its parentheses, comments stripped first: a body that merely mentions "updateVisiblePoints" in

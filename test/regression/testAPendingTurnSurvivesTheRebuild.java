@@ -7,7 +7,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -16,17 +15,16 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
+import support.Settle;
 
 /**
- * A destination turn nobody has managed to write down yet survives a setup rebuild.
- *
- * `Layout.reversedOnArrival` holds the reversals the railway performed at a destination and has not yet drained into
- * the setup.  `rebuildRunningLayoutFromSetup` replaces the `Layout` wholesale, so the carry (OB-183) must keep them: a
- * turn destroyed mid-drain never self-heals (OB-189).
- *
- * The rebuild is RUN, not modeled (a hand-built `Layout` cannot show a call site that does not carry something), and
- * cannot pass vacuously: it is a no-op with no active configuration, with autonomy busy or with no viewer panel, so the
- * `assertNotSame` below says it really happened.
+ * A destination turn nobody has managed to write down yet survives a setup rebuild.  `Layout.reversedOnArrival` holds
+ * reversals not yet drained into the setup, and `rebuildRunningLayoutFromSetup` replaces the `Layout` wholesale, so
+ * the carry (OB-183) must keep them: a turn destroyed mid-drain never self-heals (OB-189).  The rebuild is RUN, and
+ * the `assertNotSame` shows it really happened (it is a no-op with no configuration, autonomy busy or no viewer).
  *
  * MUTATION: take the `takeThePendingTurns()` / `putThePendingTurnsBack(...)` pair out of
  * `RunningLayoutSync.rebuildRunningLayoutFromSetup` and this fails, with the record gone.
@@ -52,10 +50,7 @@ public class testAPendingTurnSurvivesTheRebuild
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the rebuild is a method on the window");
-        }
+        Display.needed("the rebuild is a method on the window");
 
         // The frozen copy, never the operator's own railway.  `Scenario.folderFor` cannot spell its way out to
         // `cs2_sample_layout`, and the sandbox is opened BEFORE `init`, which reads the layout preference (OB-111).
@@ -69,8 +64,8 @@ public class testAPendingTurnSurvivesTheRebuild
         assertNotNull(ui, "there is no window, so the rebuild this class is about cannot be reached");
 
         // `init` posts `display()` to the event thread without waiting for it.
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -87,12 +82,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             assertNotNull(active, "the snapshot names no active configuration");
 
-            java.lang.reflect.Field field =
-                TrainControlUI.class.getDeclaredField("activeDiagramConfiguration");
-
-            field.setAccessible(true);
-
-            field.set(ui, active);
+            Reflect.set(TrainControlUI.class, ui, "activeDiagramConfiguration", active);
         }
     }
 
@@ -129,7 +119,7 @@ public class testAPendingTurnSurvivesTheRebuild
             // final assertion would be a race.
             ui.reconcileFacingWhenIdle();
 
-            pump();
+            Components.drain(1);
 
             Map<String, String> stillOwed = before.takeReversalsOnArrival();
 
@@ -142,7 +132,7 @@ public class testAPendingTurnSurvivesTheRebuild
             // THE REBUILD: the same call every setup gesture on the diagram's right-click menu makes.
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            pump();
+            Components.drain(1);
 
             Layout after = model.getAutoLayout();
 
@@ -202,7 +192,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         javax.swing.SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        pump();
+        Components.drain(1);
 
         assertNotSame(model.getAutoLayout(), before,
             "the window's rebuild did not produce a new Layout, so the carry this class tests has"
@@ -322,9 +312,7 @@ public class testAPendingTurnSurvivesTheRebuild
         String restrictionsWere = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
         String allowedWere = prefs.get(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, null);
 
-        java.lang.reflect.Field flag = Layout.class.getDeclaredField("running");
-
-        flag.setAccessible(true);
+        java.lang.reflect.Field flag = Reflect.field(Layout.class, "running");
 
         final javax.swing.JButton graceful = (javax.swing.JButton) windowField("gracefulStop");
 
@@ -434,9 +422,7 @@ public class testAPendingTurnSurvivesTheRebuild
     /** The refresh that turns the spinner on Start or stops it, as the window makes it where what runs changes. */
     private static void theSpinnersRefresh() throws Exception
     {
-        final java.lang.reflect.Method refresh = TrainControlUI.class.getDeclaredMethod("refreshWhatWaitsForTheTrains");
-
-        refresh.setAccessible(true);
+        final java.lang.reflect.Method refresh = Reflect.method(TrainControlUI.class, "refreshWhatWaitsForTheTrains");
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
@@ -456,9 +442,8 @@ public class testAPendingTurnSurvivesTheRebuild
     /** How many red or green pixels the track diagram's marks paint over every square it marks, each on black. */
     private static int arrowPixels() throws Exception
     {
-        java.lang.reflect.Field last = org.traincontrol.gui.autonomy.DiagramTileRegistry.class.getDeclaredField("lastAnnotated");
-
-        last.setAccessible(true);
+        java.lang.reflect.Field last =
+            Reflect.field(org.traincontrol.gui.autonomy.DiagramTileRegistry.class, "lastAnnotated");
 
         final java.util.Map<?, ?> marks = new java.util.HashMap<>((java.util.Map<?, ?>) last.get(ui.getDiagramTileRegistry()));
 
@@ -804,8 +789,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
     /**
      * A build keeps both of its captions of a station captioned on two squares (a long platform labeled at both ends),
-     * and a later build's caption still takes an earlier build's place; registering one used to let go of every other
-     * of the same window not on screen.
+     * and a later build's caption still takes an earlier build's place.
      *
      * MUTATION: let a build evict its own caption again, or no caption evict another, and this fails.
      */
@@ -854,10 +838,9 @@ public class testAPendingTurnSurvivesTheRebuild
     }
 
     /**
-     * A station captioned on two pages keeps a caption on each, and both are written (OB-341).  The station map is
-     * keyed by the STATION's square, and a label is let go of only by a successor on the SAME page.  Two detached
-     * labels of one station on two pages under one owner; then the window writes its captions, as it does on every
-     * publish of the running diagram.
+     * A station captioned on two pages keeps a caption on each, and both are written (OB-341): the station map is
+     * keyed by the STATION's square, and a label is let go of only by a successor on the SAME page.
+     *
      * MUTATION: let a later page's label evict another page's, and this fails.
      */
     @Test
@@ -891,8 +874,8 @@ public class testAPendingTurnSurvivesTheRebuild
             // THE WINDOW WRITES ITS CAPTIONS
             ui.updateVisiblePoints();
 
-            pump();
-            pump();
+            Components.drain(1);
+            Components.drain(1);
 
             String shown = null;
 
@@ -954,8 +937,8 @@ public class testAPendingTurnSurvivesTheRebuild
 
         try
         {
-            pump();
-            pump();
+            Components.drain(1);
+            Components.drain(1);
 
             assertTrue(labelsInPopup(station, popup) > 0, "precondition: the pop-up draws no caption of " + station);
 
@@ -964,7 +947,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupChanged());
 
-            for (int i = 0; i < 20; i++) pump();
+            for (int i = 0; i < 20; i++) Components.drain(1);
 
             assertEquals(labelsInPopup(station, popup), 0, "the pop-up still holds a caption of " + station + " that was taken"
                 + " off the setup, and goes on writing the station into it");
@@ -977,7 +960,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             javax.swing.SwingUtilities.invokeAndWait(popup::dispose);
 
-            pump();
+            Components.drain(1);
         }
     }
 
@@ -1021,8 +1004,8 @@ public class testAPendingTurnSurvivesTheRebuild
 
             for (String suffix : new String[] {"_x", "_y", "_width", "_height", "_state"}) prefs.remove(kept + suffix);
 
-            pump();
-            pump();
+            Components.drain(1);
+            Components.drain(1);
 
             final java.awt.Dimension[] natural = new java.awt.Dimension[1];
             final java.awt.Dimension[] sized = new java.awt.Dimension[1];
@@ -1037,7 +1020,7 @@ public class testAPendingTurnSurvivesTheRebuild
                 window.setLocation(window.getX() + 37, window.getY() + 23);
             });
 
-            for (int i = 0; i < 10; i++) pump();
+            for (int i = 0; i < 10; i++) Components.drain(1);
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -1056,11 +1039,11 @@ public class testAPendingTurnSurvivesTheRebuild
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomySetupChanged());
 
-            for (int i = 0; i < 20; i++) pump();
+            for (int i = 0; i < 20; i++) Components.drain(1);
 
             Thread.sleep(500);
 
-            for (int i = 0; i < 5; i++) pump();
+            for (int i = 0; i < 5; i++) Components.drain(1);
 
             // IT WAS REDRAWN, or what follows would pass for a window nothing touched
             assertEquals(labelsInPopup(station, window), 0, "precondition: the pop-up was not redrawn, so nothing here was"
@@ -1092,7 +1075,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             window.goToLayoutPage(shown);
 
-            for (int i = 0; i < 20; i++) pump();
+            for (int i = 0; i < 20; i++) Components.drain(1);
 
             // The resize can follow the pumps on a busy machine: waited for, and judged below either way
             support.Components.waitFor(() -> natural[0].equals(support.Components.onTheEventThread(window::getSize)), 5000);
@@ -1122,7 +1105,7 @@ public class testAPendingTurnSurvivesTheRebuild
             if (rememberWas == null) prefs.remove(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
             else prefs.put(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberWas);
 
-            pump();
+            Components.drain(1);
         }
     }
 
@@ -1146,10 +1129,7 @@ public class testAPendingTurnSurvivesTheRebuild
     /** The Medium button's pop-up of the page shown, once it is up. */
     private static org.traincontrol.gui.LayoutPopupUI openAMediumPopUp() throws Exception
     {
-        java.lang.reflect.Field buttonField = TrainControlUI.class.getDeclaredField("mediumButton");
-        buttonField.setAccessible(true);
-
-        final javax.swing.JButton medium = (javax.swing.JButton) buttonField.get(ui);
+        final javax.swing.JButton medium = (javax.swing.JButton) Reflect.get(TrainControlUI.class, ui, "mediumButton");
 
         java.util.Set<java.awt.Window> before = new java.util.HashSet<>(java.util.Arrays.asList(java.awt.Window.getWindows()));
 
@@ -1321,9 +1301,7 @@ public class testAPendingTurnSurvivesTheRebuild
     /** Asks the window which captions to hide, as a setup change does, and waits for its worker's answer to be painted. */
     private static void captionsSettled() throws Exception
     {
-        java.lang.reflect.Method ask = TrainControlUI.class.getDeclaredMethod("refreshCaptionVisibility");
-
-        ask.setAccessible(true);
+        java.lang.reflect.Method ask = Reflect.method(TrainControlUI.class, "refreshCaptionVisibility");
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
@@ -1342,15 +1320,13 @@ public class testAPendingTurnSurvivesTheRebuild
         java.util.concurrent.atomic.AtomicBoolean dirty =
             (java.util.concurrent.atomic.AtomicBoolean) windowField("captionVisibilityDirty");
 
-        long until = System.currentTimeMillis() + 30000;
-
-        while ((busy.get() || dirty.get()) && System.currentTimeMillis() < until) Thread.sleep(20);
+        Settle.until(() -> !(busy.get() || dirty.get()), 30000);
 
         assertFalse(busy.get() || dirty.get(), "precondition: the window never finished working out which captions to"
             + " hide");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
     }
 
     /** What the visible captions of a station say, together. */
@@ -1491,11 +1467,7 @@ public class testAPendingTurnSurvivesTheRebuild
     /** One of the window's own fields. */
     private static Object windowField(String name) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return field.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     /** Lets a setup change finish on the window: the posted refresh, the grid renderer's job, and the grid it posts. */
@@ -1506,20 +1478,14 @@ public class testAPendingTurnSurvivesTheRebuild
 
         for (int round = 0; round < 3; round++)
         {
-            pump();
-            pump();
+            Components.drain(1);
+            Components.drain(1);
 
             renderer.submit(() -> { }).get(30, java.util.concurrent.TimeUnit.SECONDS);
 
-            pump();
-            pump();
+            Components.drain(1);
+            Components.drain(1);
         }
-    }
-
-    /** Lets the event thread finish what it has been given. */
-    private static void pump() throws Exception
-    {
-        javax.swing.SwingUtilities.invokeAndWait(() -> { });
     }
 
     /**
@@ -1567,7 +1533,7 @@ public class testAPendingTurnSurvivesTheRebuild
             // THE PRECONDITION, MEASURED: nobody can write it, so it is still owed at the rename
             ui.reconcileFacingWhenIdle();
 
-            pump();
+            Components.drain(1);
 
             Map<String, String> stillOwed = before.takeReversalsOnArrival();
 
@@ -1583,7 +1549,7 @@ public class testAPendingTurnSurvivesTheRebuild
                 ui.rebuildRunningLayoutFromSetup(true, null);
             });
 
-            pump();
+            Components.drain(1);
 
             Layout after = model.getAutoLayout();
 
@@ -1614,7 +1580,7 @@ public class testAPendingTurnSurvivesTheRebuild
                 ui.rebuildRunningLayoutFromSetup(true, null);
             });
 
-            pump();
+            Components.drain(1);
 
             if (model.hasAutoLayout())
             {
@@ -1641,11 +1607,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         assertNotNull(made, "precondition: the window made no session");
 
-        java.lang.reflect.Field source = AutonomySession.class.getDeclaredField("runningLayout");
-
-        source.setAccessible(true);
-
-        Object supplier = source.get(made);
+        Object supplier = Reflect.get(AutonomySession.class, made, "runningLayout");
 
         assertTrue(supplier != null && ((java.util.function.Supplier<?>) supplier).get() == model.getAutoLayoutIfLoaded(),
             "the session the window made cannot see the running railway, so a direction refused over a train the run"

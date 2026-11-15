@@ -14,8 +14,8 @@ public class testTheBuildSaysWhatItIs
 {
     /**
      * The build id describes the artifact being run, not what a build script recorded about it: taken from the code
-     * source this class was loaded from (the jar's timestamp or, in an IDE run, the class file's).  The misleading
-     * MT-273 stamp was a commit id, which describes an input rather than the thing that ran.
+     * source this class was loaded from (the jar's timestamp or, in an IDE run, the class file's), not a commit id,
+     * which describes an input rather than the thing that ran.
      */
     @Test
     public void testTheBuildIdIsReadFromWhatIsRunning()

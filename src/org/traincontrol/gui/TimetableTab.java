@@ -3,9 +3,11 @@ package org.traincontrol.gui;
 import java.awt.event.MouseEvent;
 import java.util.List;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.TimetablePath;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 
@@ -35,7 +37,7 @@ final class TimetableTab
 
         String name = start ? path.getStartName() : path.getEndName();
 
-        org.traincontrol.automationui.AutonomySession session = this.ui.autonomySession();
+        AutonomySession session = this.ui.autonomySession();
 
         String base = session == null || name == null ? null : session.baseNameOf(name);
 
@@ -44,19 +46,16 @@ final class TimetableTab
 
     void repaintTimetable()
     {
-        // The snapshot must not be taken on the EDT: getTimetableSnapshot holds the Layout monitor, and
-        // configureAndLockPath holds that same monitor across its per-command sleeps (half a second to two seconds a
-        // path, because locking a path has to be atomic).  This runs at every path start and end, so with two or more
-        // trains one is regularly mid-configuration when another's callback lands here, and taken on the EDT the UI
-        // froze for the length of someone else's switch-throwing.  The callback thread pays that wait instead, where
-        // contention for this monitor is already the design (activeLocomotives -> Layout is the order the completion
-        // block establishes).  The UI callers' busy guard does not make the monitor free: three hold a modal dialog
-        // between the check and the snapshot, and a dispatch started meanwhile takes it.  Bouncing off the EDT costs
-        // one short-lived thread on a user action, and the callers still marshal their own work through the invokeLater
-        // below.
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        // Not on the EDT: getTimetableSnapshot holds the Layout monitor, which configureAndLockPath holds across its
+        // per-command sleeps (half a second to two seconds a path, because locking a path has to be atomic), so taken
+        // on the EDT the UI freezes for the length of someone else's switch-throwing.  The panels' worker pays that
+        // wait instead, where contention for this monitor is already the design (activeLocomotives -> Layout is the
+        // order the completion block establishes).  The UI callers' busy guard does not make the monitor free: three
+        // hold a modal dialog between the check and the snapshot, and a dispatch started meanwhile takes it.  The
+        // callers still marshal their own work through the invokeLater below.
+        if (SwingUtilities.isEventDispatchThread())
         {
-            new Thread(() -> this.repaintTimetable()).start();
+            this.ui.autonomyRenderer().submit(this::repaintTimetable);
             return;
         }
 
@@ -66,17 +65,17 @@ final class TimetableTab
         final List<TimetablePath> timeTable =
             shown == null ? java.util.Collections.<TimetablePath>emptyList() : shown.getTimetableSnapshot();
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
         {
             this.ui.prepareTimetableColumns();
 
             // Update the data
             this.ui.timetableCapture().setSelected(shown != null && shown.isTimetableCapture());
             
-            // Do nothing if what the table shows has not changed (MT-149): comparing `timeTable.hashCode()` failed,
-            // since a locomotive hashes by identity (so renaming one cannot move it out of the consists and run lists
-            // that hold it) and a rename changed every row and no hash (Adam: "the timetable is not updated").  Keyed
-            // on the text of the rows instead, one string per repaint of a list tens of entries long.
+            // Do nothing if what the table shows has not changed (MT-149): keyed on the text of the rows, since a
+            // locomotive hashes by identity (so renaming one cannot move it out of the consists and run lists that hold
+            // it) and `timeTable.hashCode()` would miss a rename.  One string per repaint of a list tens of entries
+            // long.
             String showing = this.ui.timetableSignature(timeTable);
 
             if (showing.equals(this.ui.lastTimetableState)) return;
@@ -99,7 +98,7 @@ final class TimetableTab
 
     void clearTimetable()
     {
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        SwingUtilities.invokeLater(() -> 
         {
             if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
 
@@ -115,14 +114,14 @@ final class TimetableTab
                 TrainControlUI.YES_NO_OPTS[1]
             );
 
-            // Anything but Yes: this wipes the whole captured timetable with no undo, and Escape (no) was reaching it.
+            // Anything but Yes: this wipes the whole captured timetable with no undo.
             if (dialogResult != JOptionPane.YES_OPTION) return;
 
             // ASKED AGAIN AFTER THE QUESTION, as Delete Entry asks (OB-260): it can stay open as long as the
             // operator likes, and a run may have started meanwhile
             if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
 
-            final org.traincontrol.automation.Layout layout = this.ui.getModel().getAutoLayout();
+            final Layout layout = this.ui.getModel().getAutoLayout();
 
             // UNDER THE RAILWAY'S LOCK, which capture appends under from locomotive threads - so off this thread, as every
             // door onto that lock from the window is (OB-192)
@@ -130,11 +129,11 @@ final class TimetableTab
             {
                 layout.emptyTimetable();
 
-                javax.swing.SwingUtilities.invokeLater(() ->
+                SwingUtilities.invokeLater(() ->
                 {
                     // AND THE TIMETABLE THE CONFIGURATION KEEPS, at once: left to the next fold, a Clear pressed
                     // while a page was out came back with the page
-                    org.traincontrol.automationui.AutonomySession keeping = this.ui.autonomySession();
+                    AutonomySession keeping = this.ui.autonomySession();
 
                     if (keeping != null && this.ui.getActiveDiagramConfiguration() != null)
                     {
@@ -193,7 +192,7 @@ final class TimetableTab
 
                 if (!(shown instanceof TimetablePath)) return;
 
-                final org.traincontrol.automation.Layout layout = this.ui.getModel().getAutoLayout();
+                final Layout layout = this.ui.getModel().getAutoLayout();
                 final int row = index;
 
                 // UNDER THE RAILWAY'S LOCK, which capture appends under from locomotive threads - so off this thread, as
@@ -202,7 +201,7 @@ final class TimetableTab
                 {
                     layout.removeTimetableEntry(row, (TimetablePath) shown);
 
-                    javax.swing.SwingUtilities.invokeLater(this::repaintTimetable);
+                    SwingUtilities.invokeLater(this::repaintTimetable);
                 }, "Timetable entry removal").start();
             }
         }
@@ -254,7 +253,7 @@ final class TimetableTab
      */
     void restartTimetable()
     {
-        javax.swing.SwingUtilities.invokeLater(() -> 
+        SwingUtilities.invokeLater(() -> 
         {
             if (this.ui.refuseWhileARunHoldsTheSetup(this.ui)) return;
             

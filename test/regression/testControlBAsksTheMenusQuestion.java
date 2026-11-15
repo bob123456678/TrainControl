@@ -9,10 +9,9 @@ import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
-import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import support.Trees;
+import static support.Diagrams.aPageWithARunAndALabel;
 
 /**
  * Control+B acts exactly where the right-click menu offers a maximum train length, and nowhere else (MT-313).  A key
@@ -45,7 +44,8 @@ public class testControlBAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithAStationAndAPlainSensor("main")));
+            // Two sensors: one becomes a station and the other does not, the pair the interesting claim needs.
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             session.initialize("CtrlB");
 
@@ -60,8 +60,6 @@ public class testControlBAsksTheMenusQuestion
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-            String prefix = menuPrefix();
-
             java.util.List<String> disagreed = new java.util.ArrayList<>();
 
             int offered = 0;
@@ -73,18 +71,16 @@ public class testControlBAsksTheMenusQuestion
                 {
                     TileKey tile = new TileKey("main", x, y);
 
-                    javax.swing.JPopupMenu menu = panel.buildTileMenu(tile, null);
-
-                    boolean onTheMenu = menu != null && offersMaximum(menu, prefix);
+                    boolean inTheWindow = support.StationDoors.offeredInTheWindow(panel, tile, "station.maxLength");
 
                     boolean theKeyActs = panel.offersAMaximumTrainLength(tile);
 
-                    if (onTheMenu) offered++;
+                    if (inTheWindow) offered++;
                     else refused++;
 
-                    if (onTheMenu != theKeyActs)
+                    if (inTheWindow != theKeyActs)
                     {
-                        disagreed.add(tile + ": menu " + (onTheMenu ? "offers" : "does not offer")
+                        disagreed.add(tile + ": the window " + (inTheWindow ? "offers" : "does not offer")
                             + " a maximum, the key " + (theKeyActs ? "acts" : "does not act"));
                     }
 
@@ -106,8 +102,8 @@ public class testControlBAsksTheMenusQuestion
             }
 
             assertEquals(disagreed, new java.util.ArrayList<String>(),
-                "the right-click menu and Control+B disagree about " + disagreed.size() + " squares: "
-                + disagreed + ". They are meant to be one question - the menu adds its item inside the"
+                "Station Settings and Control+B disagree about " + disagreed.size() + " squares: "
+                + disagreed + ". They are meant to be one question - the window's field is live inside the"
                 + " conditions `offersAMaximumTrainLength` encodes - so a disagreement is a second copy"
                 + " having grown back, which is how MT-313 and Control+E's text-label defect both began");
 
@@ -121,7 +117,7 @@ public class testControlBAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -141,7 +137,7 @@ public class testControlBAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithAStationAndAPlainSensor("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             session.initialize("CtrlB");
 
@@ -163,7 +159,7 @@ public class testControlBAsksTheMenusQuestion
             assertFalse(panel.offersAMaximumTrainLength(plainSensor),
                 "Control+B offers to set a maximum train length on a sensor no train stops at. The"
                 + " number decides which trains may STOP somewhere; on a square nothing stops at it is"
-                + " a setting the model never reads, and the menu does not offer it there");
+                + " a setting the model never reads, and the window grays it there");
 
             // AND THE CONTROL, on the same page and the same kind of square: the station takes it.
             assertTrue(panel.offersAMaximumTrainLength(station),
@@ -172,16 +168,16 @@ public class testControlBAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
     /**
-     * The tooltip Adam asked for exists, in every language: `core.testMessageBundles` checks that a key present in one
+     * The tooltip exists in every language: `core.testMessageBundles` checks that a key present in one
      * bundle is present in all, so what is left is whether the key is used at all.
      */
     @Test
-    public void testTheMenuItemCarriesItsTooltip() throws Exception
+    public void testTheFieldCarriesItsTooltip() throws Exception
     {
         needsADisplay();
 
@@ -191,7 +187,7 @@ public class testControlBAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithAStationAndAPlainSensor("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             session.initialize("CtrlB");
 
@@ -202,107 +198,24 @@ public class testControlBAsksTheMenusQuestion
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-            javax.swing.JMenuItem maximum =
-                findItem(panel.buildTileMenu(station, null), menuPrefix());
+            org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.open(panel, station);
 
-            assertNotNull(maximum, "the station's menu carries no Maximum Train Length item at all, so"
-                + " there is nothing for a tooltip to be on");
+            javax.swing.JTextField maximum = support.StationDoors.part(window, "station.maxLength", javax.swing.JTextField.class);
 
-            assertNotNull(maximum.getToolTipText(),
-                "the Maximum Train Length item has no tooltip. The label carries the number and the"
-                + " units are the operator's own, so \"4\" alone says nothing about what it counts -"
-                + " and nothing on screen says the shortcut exists (Adam, 2026-09-12)");
+            assertNotNull(window.flyoverForTest("maxLength"),
+                "the Maximum Train Length row has no flyover. The field carries the number and the"
+                + " units are the operator's own, so \"4\" alone says nothing about what it counts"
+                + " (Adam, 2026-09-12)");
 
-            assertTrue(maximum.getToolTipText().contains("B"),
-                "the tooltip does not mention the shortcut: " + maximum.getToolTipText());
+            assertTrue(maximum.getToolTipText() != null && maximum.getToolTipText().contains("B"),
+                "nothing on screen says the shortcut exists: " + maximum.getToolTipText());
+
+            support.StationDoors.close(window);
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
-    }
-
-    /**
-     * The menu item's label up to its number, taken from the bundle so a reworded item does not quietly stop being
-     * found (which would make the walk compare "false" against "false" on every square).
-     */
-    private static String menuPrefix()
-    {
-        String pattern = org.traincontrol.util.I18n.t("autolayout.ui.menuMaxTrainLength");
-
-        int at = pattern.indexOf("{0}");
-
-        return at < 0 ? pattern : pattern.substring(0, at);
-    }
-
-    /** Whether this menu, or any submenu of it, offers the maximum: the item lives inside the station submenu. */
-    private static boolean offersMaximum(javax.swing.JPopupMenu menu, String prefix)
-    {
-        return findItem(menu, prefix) != null;
-    }
-
-    private static javax.swing.JMenuItem findItem(javax.swing.JPopupMenu menu, String prefix)
-    {
-        if (menu == null) return null;
-
-        for (java.awt.Component each : menu.getComponents())
-        {
-            javax.swing.JMenuItem found = findItem(each, prefix);
-
-            if (found != null) return found;
-        }
-
-        return null;
-    }
-
-    private static javax.swing.JMenuItem findItem(java.awt.Component component, String prefix)
-    {
-        if (component instanceof javax.swing.JMenu)
-        {
-            javax.swing.JMenu menu = (javax.swing.JMenu) component;
-
-            for (java.awt.Component child : menu.getMenuComponents())
-            {
-                javax.swing.JMenuItem found = findItem(child, prefix);
-
-                if (found != null) return found;
-            }
-
-            return null;
-        }
-
-        if (component instanceof javax.swing.JMenuItem)
-        {
-            javax.swing.JMenuItem item = (javax.swing.JMenuItem) component;
-
-            if (item.getText() != null && item.getText().startsWith(prefix)) return item;
-        }
-
-        return null;
-    }
-
-    /**
-     * A page with two sensors and a run of plain track between them, plus a text label: one sensor becomes a station
-     * and the other does not, the pair the interesting claim needs.
-     */
-    private static LayoutDiagram aPageWithAStationAndAPlainSensor(String name) throws java.io.IOException
-    {
-        LayoutDiagram page = new LayoutDiagram(name, 12, 4, null, null);
-
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-
-        for (int x = 2; x <= 5; x++)
-        {
-            page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        }
-
-        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-
-        page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
-
-        page.setPageId(name);
-
-        return page;
     }
 
     /** `AutonomyEditorPanel` builds real Swing components, so this needs a display. */
@@ -313,18 +226,5 @@ public class testControlBAsksTheMenusQuestion
             throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs a"
                 + " display");
         }
-    }
-
-    /** A temporary directory and everything under it. */
-    private static void deleteRecursively(java.io.File file)
-    {
-        java.io.File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteRecursively(child);
-        }
-
-        file.delete();
     }
 }

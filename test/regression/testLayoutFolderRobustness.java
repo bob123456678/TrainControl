@@ -11,12 +11,13 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
+import support.Diagrams;
+import support.Reflect;
+import support.Trees;
 
 /**
  * A layout folder that is not perfect, and what TrainControl does about it, from hands-on tests 39, 40 and 38: a page
@@ -54,7 +55,7 @@ public class testLayoutFolderRobustness
             LayoutDiagram page = new LayoutDiagram("Up/Down", 8, 6,
                 placeholder.toURI().toURL().toString(), null);
 
-            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, 1, 1, 5, 11);
 
             page.setPageId("1");
             page.checkBounds();
@@ -72,7 +73,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -124,13 +125,12 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
     /**
-     * A setup file that cannot be read leaves the layout alone.  Adam: "make a similar test to ensure autonomy is
-     * unloaded (or regenerated, if the app is running) gracefully if its config files are corrupt or manually removed."
+     * A setup file that cannot be read leaves the layout alone.
      * The store reads before it clears, so a file it cannot parse leaves the previous contents in place and reports the
      * failure, instead of handing the caller a blank setup that the next save would write over the real one.
      */
@@ -175,7 +175,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -219,7 +219,59 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
+        }
+    }
+
+    /**
+     * A sensor a route triggers on, or names in its condition, survives a complete read that draws it on no page: the
+     * route's monitor waits on the sensor's record, and a sensor re-created by its next frame is created already
+     * occupied, so a "clear, then occupied" route would miss that arrival.  A sensor no route uses still goes.
+     *
+     * MUTATION: drop `&& !routesUse.contains(feedbackId)` from the prune in `MarklinControlStation.syncLayouts`.
+     */
+    @Test
+    public void testASensorARouteUsesSurvivesThePrune() throws Exception
+    {
+        File folder = onePageThatReads();
+
+        final String route = "Prune probe route";
+
+        try
+        {
+            MarklinControlStation model = support.TestStation.simulated();
+
+            try
+            {
+                for (int s = 5; s <= 8; s++) model.newFeedback(s, null);
+
+                List<org.traincontrol.base.RouteCommand> condition = Arrays.asList(
+                    org.traincontrol.base.RouteCommand.RouteCommandFeedback(7, true));
+
+                assertTrue(model.newRoute(route, new LinkedList<>(), 6,
+                    org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
+                    org.traincontrol.base.NodeExpression.fromList(condition)), "precondition: the route was not added");
+
+                syncFrom(model, folder);
+
+                assertTrue(model.isFeedbackSet("6"), "the sensor a route triggers on was deleted because no page draws"
+                    + " it, so the route's next arrival is missed");
+
+                assertTrue(model.isFeedbackSet("7"), "the sensor a route's condition names was deleted because no page"
+                    + " draws it, so the condition reads clear while a train stands there");
+
+                assertFalse(model.isFeedbackSet("8"), "a sensor on no page and in no route survived a complete read");
+            }
+            finally
+            {
+                model.deleteRoute(route);
+
+                model.stop();
+            }
+        }
+        finally
+        {
+            Trees.delete(folder);
         }
     }
 
@@ -258,7 +310,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -309,7 +361,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -357,7 +409,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -430,16 +482,10 @@ public class testLayoutFolderRobustness
     {
         String path = "file:///" + folder.getAbsolutePath().replace('\\', '/') + "/";
 
-        java.lang.reflect.Field parserField =
-            MarklinControlStation.class.getDeclaredField("fileParser");
-        parserField.setAccessible(true);
-
-        CS2File parser = (CS2File) parserField.get(model);
+        CS2File parser = (CS2File) Reflect.get(MarklinControlStation.class, model, "fileParser");
         parser.setLayoutDataLoc(path);
 
-        java.lang.reflect.Method sync =
-            MarklinControlStation.class.getDeclaredMethod("syncLayouts");
-        sync.setAccessible(true);
+        java.lang.reflect.Method sync = Reflect.method(MarklinControlStation.class, "syncLayouts");
 
         try
         {
@@ -471,7 +517,7 @@ public class testLayoutFolderRobustness
             session.getStore().setStation(new TileKey("main", 1, 1), true);
             session.getStore().save();
 
-            delete(new File(folder, "config/autonomy"));
+            Trees.delete(new File(folder, "config/autonomy"));
 
             AutonomySession after = new AutonomySession(folder);
 
@@ -493,7 +539,7 @@ public class testLayoutFolderRobustness
         }
         finally
         {
-            delete(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -501,8 +547,8 @@ public class testLayoutFolderRobustness
     {
         LayoutDiagram page = new LayoutDiagram(name, 8, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
 
         page.setPageId("1");
 
@@ -516,12 +562,45 @@ public class testLayoutFolderRobustness
         Files.write(file.toPath(), text.getBytes(StandardCharsets.UTF_8));
     }
 
-    private static void delete(File file)
+    /**
+     * A layout from before FR-175 opened while one page will not read is not marked as going by page ID, so the
+     * conversion runs again once the page reads: marked, that page's arrows would be read by an ID never written for
+     * them.
+     *
+     * MUTATION: in `LayoutDiagram.writeLinkPageIdsIntoFile`, return 0 for an unreadable page instead of throwing, and
+     * the layout is marked with the page unread.
+     */
+    @Test
+    public void testTheLinkConversionWaitsForEveryPageToRead() throws Exception
     {
-        File[] kids = file.listFiles();
+        File folder = brokenSecondPage();
 
-        if (kids != null) for (File kid : kids) delete(kid);
+        try
+        {
+            MarklinControlStation model = support.TestStation.simulated();
 
-        file.delete();
+            try
+            {
+                syncFrom(model, folder);
+
+                assertFalse(LayoutDiagram.linksGoByPageId(folder.getPath()), "the layout was marked as converted to page"
+                    + " IDs while a page could not be read, so that page is never converted");
+
+                write(new File(folder, "config/gleisbilder/Broken.cs2"), page(6));
+
+                syncFrom(model, folder);
+
+                assertTrue(LayoutDiagram.linksGoByPageId(folder.getPath()), "the layout was not converted once every"
+                    + " page read");
+            }
+            finally
+            {
+                model.stop();
+            }
+        }
+        finally
+        {
+            Trees.delete(folder);
+        }
     }
 }

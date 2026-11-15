@@ -8,7 +8,6 @@ import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import javax.swing.event.MenuListener;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -17,13 +16,15 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
-import support.SourceOf;
+import support.Display;
+import support.Reflect;
+import support.Teardown;
 
 /**
- * The Autonomy menu has a Documentation item, opening the guide the old tab's link opened (OB-254).
+ * The Autonomy menu has no guide item: Help has it (OB-468), and an open editor grays everything else on the menu.
  *
- * MUTATION: leave the item out, or point it elsewhere, and the first claim fails; let the editor guard gray it with
- * the rest, and the second does.
+ * MUTATION: put the Autonomy Guide item back in `AutonomyMenu.rebuild`, and the first claim fails; leave an item live
+ * under an open editor, and the second does.
  *
  * @author Adam
  */
@@ -36,19 +37,14 @@ public class testTheAutonomyMenuLinksItsDocumentation
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the menu is part of the window, and the window needs a display");
-        }
+        Display.needed("the menu is part of the window, and the window needs a display");
 
         // BEFORE init, which opens whatever the layout preference names (OB-111).
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("single-switch");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         for (int pass = 0; pass < 8; pass++) SwingUtilities.invokeAndWait(() -> { });
     }
@@ -56,57 +52,26 @@ public class testTheAutonomyMenuLinksItsDocumentation
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
-    /** Opened, the Autonomy menu offers Documentation, and it can be chosen. */
+    /** Opened, the Autonomy menu offers items but not the guide, which Help holds (OB-468). */
     @Test
-    public void testTheAutonomyMenuOffersDocumentation() throws Exception
+    public void testTheAutonomyMenuHasNoGuideItem() throws Exception
     {
-        List<String> items = new ArrayList<>();
+        List<String> items = texts(opened());
 
-        JMenuItem documentation = documentation(opened(), items);
+        assertFalse(items.isEmpty(), "precondition: the Autonomy menu is empty");
 
-        assertNotNull(documentation, "the Autonomy menu has no Documentation item (Adam, 2026-09-24).  Items: " + items);
-
-        assertTrue(documentation.isEnabled(), "the Autonomy menu's Documentation item is greyed");
-
-        // THE SAME PLACE THE OLD TAB'S LINK OPENED - asked of the source, since pressing it opens a browser.
-        String code = SourceOf.allCode();
-
-        assertTrue(code.contains("Util.openUrl(TrainControlUI.README_URL)"), "the Documentation item does not open"
-            + " TrainControlUI.README_URL, the guide the old tab's link opened");
-
-        // On a thread of its own (Adam on MT-546: "can it get its own thread?"): opening a browser is a call into
-        // Windows.
-        assertTrue(code.contains("new Thread(() -> Util.openUrl(TrainControlUI.README_URL)"), "the Documentation item"
-            + " opens the guide on the event thread - Adam, 2026-09-24: \"can it get its own thread?\"");
+        assertFalse(items.contains(I18n.t("ui.menu.autonomyGuide")), "the Autonomy menu offers the guide, which is in"
+            + " Help only.  Items: " + items);
     }
 
-    /**
-     * With an editor open, everything else on the menu is grayed and Documentation is not: each of the others saves the
-     * setup or rebuilds the window under an editor that has not saved (MT-111).
-     */
+    /** With an editor open, nothing on the menu is live: each item saves the setup or rebuilds the window (MT-111). */
     @Test
-    public void testDocumentationStaysUsableWhileAnEditorIsOpen() throws Exception
+    public void testEveryItemIsGrayedWhileAnEditorIsOpen() throws Exception
     {
-        Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         final Object was = open.get(ui);
         final LayoutEditor[] built = new LayoutEditor[1];
@@ -126,26 +91,20 @@ public class testTheAutonomyMenuLinksItsDocumentation
 
             JMenu menu = opened();
 
-            List<String> items = new ArrayList<>();
-            List<String> greyed = new ArrayList<>();
-
-            JMenuItem documentation = documentation(menu, items);
+            List<String> live = new ArrayList<>();
 
             for (int i = 0; i < menu.getItemCount(); i++)
             {
                 JMenuItem item = menu.getItem(i);
 
-                if (item != null && !item.isEnabled()) greyed.add(item.getText());
+                // Go to the Opened Editor is the one thing that can be done
+                if (item != null && item.isEnabled() && !I18n.t("autosetup.ui.menuGoToOpenEditor").equals(item.getText()))
+                {
+                    live.add(item.getText());
+                }
             }
 
-            assertFalse(greyed.isEmpty(), "precondition: nothing on the menu was greyed, so the open editor's guard"
-                + " did not run.  Items: " + items);
-
-            assertNotNull(documentation, "with an editor open the Autonomy menu has no Documentation item.  Items: "
-                + items);
-
-            assertTrue(documentation.isEnabled(), "an open editor greys the Autonomy menu's Documentation item with the"
-                + " rest - but reading the guide saves nothing and rebuilds nothing.  Greyed: " + greyed);
+            assertTrue(live.isEmpty(), "an open editor leaves these Autonomy menu items live: " + live);
         }
         finally
         {
@@ -166,11 +125,7 @@ public class testTheAutonomyMenuLinksItsDocumentation
     /** The Autonomy menu, built as opening it builds it: from its own listener, when it is selected. */
     private static JMenu opened() throws Exception
     {
-        Field field = TrainControlUI.class.getDeclaredField("autonomyMenu");
-
-        field.setAccessible(true);
-
-        final JMenu menu = (JMenu) field.get(ui);
+        final JMenu menu = (JMenu) Reflect.get(TrainControlUI.class, ui, "autonomyMenu");
 
         assertNotNull(menu, "precondition: the window has no Autonomy menu on a layout stored on this computer");
 
@@ -182,22 +137,16 @@ public class testTheAutonomyMenuLinksItsDocumentation
         return menu;
     }
 
-    /** The menu's Documentation item, or null; every item's text is added to `items` for the failure messages. */
-    private static JMenuItem documentation(JMenu menu, List<String> items)
+    /** The text of every item on the menu. */
+    private static List<String> texts(JMenu menu)
     {
-        JMenuItem found = null;
+        List<String> items = new ArrayList<>();
 
         for (int i = 0; i < menu.getItemCount(); i++)
         {
-            JMenuItem item = menu.getItem(i);
-
-            if (item == null) continue;
-
-            items.add(item.getText());
-
-            if (I18n.t("ui.main.documentation").equals(item.getText())) found = item;
+            if (menu.getItem(i) != null) items.add(menu.getItem(i).getText());
         }
 
-        return found;
+        return items;
     }
 }

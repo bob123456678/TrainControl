@@ -19,6 +19,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Reflect;
 
 /**
  * A train turned where it stands is not sent out into another train's tail (OB-285): its tail is on the side it will
@@ -230,14 +231,10 @@ public class testATurnedTrainIsNotSentIntoAnotherTail
 
         HomeStaging staging = HomeStaging.snapshot(layout);
 
-        Method passes = HomeStaging.class.getDeclaredMethod("passesTheTailsOfTrainsThatHaveNotMoved", Edge.class,
-            Locomotive.class, Map.class);
+        Method passes = Reflect.method(HomeStaging.class,
+            "passesTheTailsOfTrainsThatHaveNotMoved", Edge.class, Locomotive.class, Map.class);
 
-        passes.setAccessible(true);
-
-        Field startField = HomeStaging.class.getDeclaredField("start");
-
-        startField.setAccessible(true);
+        Field startField = Reflect.field(HomeStaging.class, "start");
 
         @SuppressWarnings("unchecked")
         Map<Point, Locomotive> start = new LinkedHashMap<>((Map<Point, Locomotive>) startField.get(staging));

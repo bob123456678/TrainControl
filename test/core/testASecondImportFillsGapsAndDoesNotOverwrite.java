@@ -12,7 +12,9 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Reflect;
 import support.SourceOf;
+import support.Teardown;
 
 /**
  * Importing the same 2.7.4c file twice fills what is missing and leaves what is there (MT-298): an import is safe to
@@ -66,9 +68,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        if (model != null) model.stop();
-
-        if (sandbox != null) sandbox.close();
+        Teardown.close(sandbox, model);
     }
 
     /**
@@ -124,8 +124,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
     /**
      * A second import of the same file counts in {4} the squares that had a name, once each, and says again the old
      * points that shared a square.  Names are shared by every configuration, so such a square was counted once for each
-     * old point on it: the frozen railway's file, imported twice, said 18 squares already had a name, of the 16 it had
-     * named.
+     * old point on it.
      *
      * MUTATION: count a square named before the import once for each old point on it, or leave its further points
      * unsaid, and this fails.
@@ -168,7 +167,7 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
     /**
      * One old point that shared a square, or one thing left behind, is said in the singular, in the form each language
-     * takes for the number (`I18n.countForm`): the dialog said "1 old points" and "1 things" (Adam: "Fix them").
+     * takes for the number (`I18n.countForm`).
      *
      * MUTATION: give either sentence one form for every number, and this fails.
      */
@@ -177,10 +176,8 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
     {
         for (String sentence : new String[] {"sharedSquaresSentence", "leftBehindSentence"})
         {
-            java.lang.reflect.Method say = org.traincontrol.gui.AutonomyViewerPanel.class.getDeclaredMethod(sentence,
-                int.class);
-
-            say.setAccessible(true);
+            java.lang.reflect.Method say =
+                Reflect.method(org.traincontrol.gui.AutonomyViewerPanel.class, sentence, int.class);
 
             String one = (String) say.invoke(null, 1);
             String two = (String) say.invoke(null, 2);
@@ -212,10 +209,8 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
 
                 for (String[] key : keys)
                 {
-                    java.lang.reflect.Method say = org.traincontrol.gui.AutonomyViewerPanel.class.getDeclaredMethod(key[0],
-                        int.class);
-
-                    say.setAccessible(true);
+                    java.lang.reflect.Method say =
+                        Reflect.method(org.traincontrol.gui.AutonomyViewerPanel.class, key[0], int.class);
 
                     assertEquals((String) say.invoke(null, n), org.traincontrol.util.I18n.f(key[1] + form[2], n), key[0]
                         + " in " + form[0] + " for " + n + " is not the bundle's " + (((String) form[2]).isEmpty() ? "plain"
@@ -240,10 +235,9 @@ public class testASecondImportFillsGapsAndDoesNotOverwrite
     }
 
     /**
-     * An old autonomy.json is imported into the configuration named at the prompt, and the one in use is left as it was
-     * (Adam: "(a)", choosing between honoring the name and not asking for one).  The Import asks for a configuration
-     * name, and on a layout that already had configurations the placements, homes and facings were written into the one
-     * in use, the name thrown away.
+     * An old autonomy.json is imported into the configuration named at the prompt, and the one in use is left as it
+     * was.  The Import asks for a configuration name: on a layout that already had configurations, the placements,
+     * homes and facings were written into the one in use, the name thrown away.
      *
      * MUTATION: write into the configuration in use, or have the door import before choosing, and this fails.
      */

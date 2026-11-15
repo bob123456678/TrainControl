@@ -1,12 +1,10 @@
 package regression;
 
-import java.lang.reflect.Field;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -14,6 +12,8 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -39,10 +39,7 @@ public class testTheDebugMenuSwitchesTheEcho
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the menu is part of the window, and the window needs a display");
-        }
+        Display.needed("the menu is part of the window, and the window needs a display");
 
         echoWas = MarklinControlStation.DEBUG_SIMULATE_PACKETS;
 
@@ -175,26 +172,26 @@ public class testTheDebugMenuSwitchesTheEcho
 
         assertNotNull(turnout, "precondition: the scenario's turnout, accessory 1, is not in the model");
 
-        final javax.swing.AbstractButton key = (javax.swing.AbstractButton) windowField("SwitchButton1");
+        final org.traincontrol.gui.AccessoryKeyboard key = (org.traincontrol.gui.AccessoryKeyboard) windowField("keyboardKeys");
 
-        assertEquals(support.Components.onTheEventThread(key::getText), "1", "precondition: the keyboard does not show"
+        assertEquals(support.Components.onTheEventThread(() -> key.numberOf(1)), "1", "precondition: the keyboard does not show"
             + " accessory 1 on its first key");
 
         try
         {
             model.receiveMessage(support.Packets.accessoryEcho(turnout, false));
 
-            assertTrue(support.Components.waitFor(() -> !selected(key), 10000), "precondition: the key does not show the"
+            assertTrue(support.Components.waitFor(() -> !thrown(key), 10000), "precondition: the key does not show the"
                 + " turnout straight");
 
             model.receiveMessage(support.Packets.accessoryEcho(turnout, true));
 
-            assertTrue(support.Components.waitFor(() -> selected(key), 10000), "the station threw the turnout and its key"
+            assertTrue(support.Components.waitFor(() -> thrown(key), 10000), "the station threw the turnout and its key"
                 + " still shows it straight");
 
             model.receiveMessage(support.Packets.accessoryEcho(turnout, false));
 
-            assertTrue(support.Components.waitFor(() -> !selected(key), 10000), "the station put the turnout straight and"
+            assertTrue(support.Components.waitFor(() -> !thrown(key), 10000), "the station put the turnout straight and"
                 + " its key still shows it thrown");
         }
         finally
@@ -317,11 +314,7 @@ public class testTheDebugMenuSwitchesTheEcho
 
     private static Object windowField(String name) throws Exception
     {
-        Field field = TrainControlUI.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return field.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     private static boolean enabled(javax.swing.AbstractButton button)
@@ -329,18 +322,15 @@ public class testTheDebugMenuSwitchesTheEcho
         return support.Components.onTheEventThread(button::isEnabled);
     }
 
-    private static boolean selected(javax.swing.AbstractButton button)
+    /** Whether the keyboard's first key shows its accessory thrown: the red half is the lit one. */
+    private static boolean thrown(org.traincontrol.gui.AccessoryKeyboard keys)
     {
-        return support.Components.onTheEventThread(button::isSelected);
+        return support.Components.onTheEventThread(() -> keys.isLit(1, true));
     }
 
     private static JMenu debugMenu() throws Exception
     {
-        Field field = TrainControlUI.class.getDeclaredField("interfaceMenu");
-
-        field.setAccessible(true);
-
-        JMenu preferences = (JMenu) field.get(ui);
+        JMenu preferences = (JMenu) Reflect.get(TrainControlUI.class, ui, "interfaceMenu");
 
         String name = I18n.t("ui.main.toolbar.debug");
 

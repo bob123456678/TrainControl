@@ -5,7 +5,6 @@ import java.util.List;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -23,11 +22,15 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
+import support.Teardown;
 
 /**
  * The farthest sensor a standing train's tail has crossed can be given in the autonomy editor, from the right-click
  * menu or by clicking the sensor on the diagram.  Each claim puts the setup back as it found it (OB-111).  Asked
- * through the real doors: the menu `AutonomyEditorPanel.buildFacingMenu` serves both surfaces, and the diagram click
+ * through the real doors: the items `AutonomyEditorPanel.addFacingItems` adds on both surfaces, and the diagram click
  * is `tileClicked`.
  *
  * @author Adam
@@ -45,17 +48,13 @@ public class testTheTailCanBeGivenInTheEditor
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor and its menus need a display");
-        }
+        Display.needed("the editor and its menus need a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-        model = support.TestStation.simulatedInDebug();
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -70,7 +69,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-            settle();
+            Components.drain(8);
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
@@ -79,21 +78,7 @@ public class testTheTailCanBeGivenInTheEditor
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
     /** The menu lists every sensor the tail can have crossed, Not Known, and a way to pick on the diagram. */
@@ -104,24 +89,188 @@ public class testTheTailCanBeGivenInTheEditor
 
         try
         {
+            // menu() fails where the train's menu does not ask how far back its tail reaches
             List<String> texts = texts(f.menu());
-
-            int heading = texts.indexOf(I18n.t("autosetup.ui.headingTailCrossed"));
-
-            assertTrue(heading >= 0, "the menu of a train whose tail can have crossed a sensor past a junction does not"
-                + " ask how far back it reaches. Items: " + texts);
 
             for (TailCrossedPrompt.Choice choice : f.choices())
             {
-                assertTrue(texts.subList(heading, texts.size()).contains(choice.getLabel()),
+                assertTrue(texts.contains(choice.getLabel()),
                     "the menu does not offer " + choice.getLabel() + ", a sensor the tail can have crossed. Items: " + texts);
             }
 
-            assertTrue(texts.subList(heading, texts.size()).contains(I18n.t("autosetup.ui.tailCrossedNotKnown")),
+            assertTrue(texts.contains(I18n.t("autosetup.ui.tailCrossedNotKnown")),
                 "the menu does not offer Not Known. Items: " + texts);
 
-            assertTrue(texts.subList(heading, texts.size()).contains(I18n.t("autosetup.ui.menuPickTailCrossed")),
+            assertTrue(texts.contains(I18n.t("autosetup.ui.menuPickTailCrossed")),
                 "the editor's menu does not offer picking the sensor on the diagram. Items: " + texts);
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * How far back the tail reaches is a submenu on the station's own menu, in the editor and on the track diagram, only
+     * where there is a choice: the same train made too short to reach past the junction is not asked (FR-181).
+     *
+     * MUTATION: let `tailFacts` answer where `TailCrossedPrompt.wouldAsk` says no, and this fails.
+     */
+    @Test
+    public void testTheTailIsAskedOnlyWhereThereIsAChoice() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            final String title = I18n.f("autosetup.ui.menuTailCrossedGroup", f.train.getName());
+
+            assertTrue(offers(editorMenu(f), title), "the editor's menu at " + f.tile + " does not ask how far back the"
+                + " tail of " + f.train.getName() + " reaches: no " + title);
+
+            f.train.setTrainLength(1);
+
+            Point point = f.standing();
+
+            assertFalse(TailCrossedPrompt.wouldAsk(model.getAutoLayout(), point, point.getArrivedFrom(), 1),
+                "precondition: a train of one unit at " + f.tile + " still has two roads back");
+
+            assertFalse(offers(editorMenu(f), title), "the editor's menu asks how far back the tail of a train reaches"
+                + " where there is only one answer");
+
+            f.closeTheEditorForTheDiagram();
+
+            assertFalse(offers(support.StationDoors.diagramMenu(ui, f.tile), title), "the track diagram's menu asks how"
+                + " far back the tail of a train reaches where there is only one answer");
+
+            f.train.setTrainLength(LONG);
+
+            assertTrue(offers(support.StationDoors.diagramMenu(ui, f.tile), title), "the track diagram's menu at "
+                + f.tile + " does not ask how far back the tail reaches: no " + title);
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * The train window's tail row, where the tail has a choice, ends in a Pick button in the application's button font,
+     * Segoe UI Bold 12, as the Locomotive Settings button above it.
+     *
+     * MUTATION: give `train.tailPick` a Plain 13 font again in `TrainTab.addTailChoices`, and this fails.
+     */
+    @Test
+    public void testTheTrainWindowsPickButtonWearsTheButtonFont() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            javax.swing.AbstractButton pick = support.StationDoors.part(window, "train.tailPick",
+                javax.swing.AbstractButton.class);
+
+            assertEquals(pick.getFont(), org.traincontrol.gui.widgets.UiStyle.BUTTON_FONT, "Pick is not Bold 12");
+
+            support.StationDoors.close(window);
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * On Station Settings' Train tab each answer of Tail lies stands on a line of its own, one under the other (Adam: "put
+     * each radio button for 'tail lies' on its own line, so that wide station names don't further widen the window").
+     *
+     * MUTATION: lay `train.tail` out as a row again (`FlowLayout`) in `TrainTab`, and this fails.
+     */
+    @Test
+    public void testEachTailAnswerStandsOnItsOwnLine() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            java.awt.Window window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            List<java.awt.Point> at = Components.onTheEventThread(() ->
+            {
+                List<java.awt.Point> out = new ArrayList<>();
+
+                for (javax.swing.JRadioButton each : Components.all(Components.named(window, "train.tail",
+                    java.awt.Container.class), javax.swing.JRadioButton.class, null)) out.add(each.getLocation());
+
+                return out;
+            });
+
+            assertTrue(at.size() >= 3, "precondition: Tail lies has not two sensors and Not known: " + at);
+
+            for (int i = 1; i < at.size(); i++)
+            {
+                assertEquals(at.get(i).x, at.get(0).x, "the answers of Tail lies do not start at one left edge: " + at);
+                assertTrue(at.get(i).y > at.get(i - 1).y, "an answer of Tail lies is not on a line below the last: " + at);
+            }
+
+            support.StationDoors.close(window);
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * A station named at great length, among Tail lies' answers, leaves Station Settings as wide as it opened before
+     * (FR-195): the Train tab takes the room the window has and asks for none.
+     *
+     * MUTATION: have `TrainTab` extend `JPanel`, which asks for its width, rather than `RoomyPanel`, and this fails.
+     */
+    @Test
+    public void testALongStationNameDoesNotWidenTheWindow() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            int before = Components.onTheEventThread(window::getWidth);
+
+            support.StationDoors.close(window);
+
+            TileKey named = session.getStationIndex().squareOf(f.choices().get(0).getFarthest());
+
+            assertNotNull(named, "precondition: the first answer of Tail lies has no square to name");
+
+            // Longer than the window is wide, so a tab that asked for its width would have to widen it
+            String longName = "Upper Ballymacarrett Junction Carriage Sidings and Goods Yard (Northbound Loop), beside"
+                + " the Lower Ballymacarrett Junction Carriage Sidings and Goods Yard (Southbound Loop)";
+
+            window = support.StationDoors.open(f.panel, named);
+
+            support.StationDoors.typeAndEnter(window, "station.name", longName);
+
+            support.StationDoors.close(window);
+
+            window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            final java.awt.Window shown = window;
+
+            javax.swing.JRadioButton carrying = Components.onTheEventThread(() -> Components.find(Components.named(shown,
+                "train.tail", java.awt.Container.class), javax.swing.JRadioButton.class, r -> r.getText().contains(longName)));
+
+            assertNotNull(carrying, "precondition: no answer of Tail lies carries the long name");
+
+            assertTrue(Components.onTheEventThread(() -> carrying.getPreferredSize().width) > before,
+                "precondition: the long name is not wider than the window");
+
+            assertEquals((int) Components.onTheEventThread(window::getWidth), before, "a long station name widened the window");
+
+            support.StationDoors.close(window);
         }
         finally
         {
@@ -145,7 +294,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(item::doClick);
 
-            settle();
+            Components.drain(8);
 
             f.assertRecorded(farthest, "chosen from the menu");
         }
@@ -165,37 +314,7 @@ public class testTheTailCanBeGivenInTheEditor
         {
             f.arm();
 
-            TailCrossedPrompt.Choice target = null;
-            TileKey square = null;
-
-            for (TailCrossedPrompt.Choice choice : f.choices())
-            {
-                TileKey at = session.getStationIndex().squareOf(choice.getFarthest());
-
-                if (at == null || !f.panel.tailPickSquares().contains(at)) continue;
-
-                int onThatSquare = 0;
-
-                for (TailCrossedPrompt.Choice other : f.choices())
-                {
-                    if (at.equals(session.getStationIndex().squareOf(other.getFarthest()))) onThatSquare++;
-                }
-
-                if (onThatSquare == 1)
-                {
-                    target = choice;
-                    square = at;
-                }
-            }
-
-            assertNotNull(square, "precondition: no outlined sensor is reached by exactly one road, so a click would ask"
-                + " again. Outlined: " + f.panel.tailPickSquares());
-
-            final TileKey clicked = square;
-
-            SwingUtilities.invokeAndWait(() -> f.panel.tileClicked(clicked, null, false));
-
-            settle();
+            TailCrossedPrompt.Choice target = f.clickOnTheOnlyRoad();
 
             assertNull(f.panel.tailPickFor(), "the click on an outlined sensor did not end the pick");
 
@@ -223,7 +342,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(() -> f.panel.tileClicked(f.tile, null, false));
 
-            settle();
+            Components.drain(8);
 
             assertEquals(f.panel.tailPickFor(), f.tile,
                 "a click on a square the tail cannot have crossed dropped the pick, so a near miss costs the whole menu");
@@ -241,6 +360,189 @@ public class testTheTailCanBeGivenInTheEditor
         {
             f.close();
         }
+    }
+
+    /**
+     * Closing Station Settings ends the tail pick waiting about its square, by Done Editing or the close box, however
+     * the pick began (its Train tab's Pick on the Diagram, or the square's menu): nothing waits for a click and no
+     * sensor stays outlined (MT-959).
+     *
+     * MUTATION: drop the `endTailPick` call in `StationWindows.closed`, or have the Train tab's Pick on the Diagram
+     * arm nothing, and this fails.
+     */
+    @Test
+    public void testClosingStationSettingsEndsTheTailPick() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            for (String route : new String[] {"tab, Done Editing", "tab, close box", "menu, Done Editing"})
+            {
+                final org.traincontrol.gui.autonomyeditor.StationSettingsWindow window =
+                    support.StationDoors.openTrain(f.panel, f.tile);
+
+                if (route.startsWith("menu")) f.arm();
+                else pressPick(f, window);
+
+                assertNotNull(f.panel.tailPickFor(), route + ": precondition: the pick did not begin");
+
+                List<TileKey> outlined = new ArrayList<>(f.panel.tailPickSquares());
+
+                assertFalse(outlined.isEmpty(), route + ": precondition: the pick outlined no sensor");
+
+                if (route.endsWith("close box"))
+                {
+                    SwingUtilities.invokeAndWait(() -> window.dispatchEvent(
+                        new java.awt.event.WindowEvent(window, java.awt.event.WindowEvent.WINDOW_CLOSING)));
+                }
+                else support.StationDoors.close(window);
+
+                Components.drain(8);
+
+                assertFalse(Components.onTheEventThread(window::isShowing), route + ": precondition: the window stayed open");
+                assertNull(f.panel.tailPickFor(), route + ": the pick still waits for a click after the window closed");
+                assertEquals(stillOutlined(f, outlined), new ArrayList<TileKey>(), route + ": sensors stay outlined");
+            }
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * Pick on the Diagram stays pressed in while the pick waits; pressing it again ends the pick and takes the outlines
+     * down, and the window stays open (MT-959).
+     *
+     * MUTATION: have the button's press arm the pick again without asking `endTailPick` first, and this fails.
+     */
+    @Test
+    public void testPickOnTheDiagramPressedAgainEndsThePick() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            pressPick(f, window);
+
+            assertTrue(support.StationDoors.on(window, "train.tailPick"), "Pick on the Diagram is not pressed in while it waits");
+
+            List<TileKey> outlined = new ArrayList<>(f.panel.tailPickSquares());
+
+            pressPick(f, window);
+
+            assertNull(f.panel.tailPickFor(), "pressing Pick on the Diagram again did not end the pick");
+            assertEquals(stillOutlined(f, outlined), new ArrayList<TileKey>(), "pressing it again left sensors outlined");
+            assertFalse(support.StationDoors.on(window, "train.tailPick"), "the button stayed pressed in after the pick ended");
+            assertTrue(Components.onTheEventThread(window::isShowing), "pressing it again closed the window");
+
+            support.StationDoors.close(window);
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * Escape ends the tail pick: in Station Settings, which stays open until a second Escape, and in the editor
+     * (`putToolsDown`, what its Escape runs), after which the window's button is up again (MT-959).
+     *
+     * MUTATION: bind Escape in `StationWindowBase` to `closeWindow` alone again, and this fails.
+     */
+    @Test
+    public void testEscapeEndsThePickInEitherWindow() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            pressPick(f, window);
+
+            List<TileKey> outlined = new ArrayList<>(f.panel.tailPickSquares());
+
+            support.Keys.press(window.getRootPane(), java.awt.event.KeyEvent.VK_ESCAPE);
+            Components.drain(8);
+
+            assertNull(f.panel.tailPickFor(), "Escape in Station Settings did not end the pick");
+            assertEquals(stillOutlined(f, outlined), new ArrayList<TileKey>(), "Escape there left sensors outlined");
+            assertTrue(Components.onTheEventThread(window::isShowing), "Escape closed Station Settings with a pick to end");
+
+            pressPick(f, window);
+
+            SwingUtilities.invokeAndWait(() -> f.panel.putToolsDown());
+            Components.drain(8);
+
+            assertNull(f.panel.tailPickFor(), "Escape in the editor did not end the pick");
+            assertFalse(support.StationDoors.on(window, "train.tailPick"), "the button stayed pressed in after Escape in the editor");
+
+            support.Keys.press(window.getRootPane(), java.awt.event.KeyEvent.VK_ESCAPE);
+            Components.drain(8);
+
+            assertFalse(Components.onTheEventThread(window::isShowing), "with no pick waiting, Escape did not close the window");
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
+     * A road picked on the diagram from the Train tab stays when Station Settings closes afterward: ending the pick puts
+     * nothing back (MT-959).
+     *
+     * MUTATION: have `StationWindows.closed` record Not Known for its square (`recordTailRoad(square, null)`), and this
+     * fails.
+     */
+    @Test
+    public void testClosingKeepsTheRoadAlreadyPicked() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+
+            pressPick(f, window);
+
+            TailCrossedPrompt.Choice target = f.clickOnTheOnlyRoad();
+
+            support.StationDoors.close(window);
+            Components.drain(8);
+
+            f.assertRecorded(target, "clicked on the diagram before Station Settings closed");
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /** Presses the Train tab's Pick on the Diagram, as a click does, and waits for the window to read it back. */
+    private static void pressPick(Fixture f, java.awt.Window window) throws Exception
+    {
+        support.StationDoors.press(window, "train.tailPick");
+        Components.drain(8);
+
+        if (f.panel.tailPickFor() != null) assertFalse(f.panel.tailPickSquares().isEmpty(), "the pick outlined no sensor");
+    }
+
+    /** Which of these squares the editor still draws outlined. */
+    private static List<TileKey> stillOutlined(Fixture f, List<TileKey> squares)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            List<TileKey> out = new ArrayList<>();
+
+            for (TileKey each : squares) if (f.panel.isOutlined(each)) out.add(each);
+
+            return out;
+        });
     }
 
     /**
@@ -276,18 +578,16 @@ public class testTheTailCanBeGivenInTheEditor
             // OFF THE RAILWAY AND ON THE CLIPBOARD, which is what Control+X leaves behind.
             SwingUtilities.invokeAndWait(() -> model.getAutoLayout().moveLocomotive(null, before.getName(), true));
 
-            settle();
+            Components.drain(8);
 
             org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(side);
             org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(heading);
             TailCrossedPrompt.answerForTests(farthest.getFarthest().getName());
 
-            final java.lang.reflect.Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
-            cut.setAccessible(true);
+            final java.lang.reflect.Field cut = Reflect.field(TrainControlUI.class, "cutLocomotive");
 
-            final java.lang.reflect.Method gesture = TrainControlUI.class.getDeclaredMethod(
-                "locomotiveGestureOnDiagram", int.class, boolean.class);
-            gesture.setAccessible(true);
+            final java.lang.reflect.Method gesture =
+                Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
             final Object[] handled = new Object[1];
 
@@ -305,7 +605,7 @@ public class testTheTailCanBeGivenInTheEditor
                 }
             });
 
-            settle();
+            Components.drain(8);
 
             assertEquals(handled[0], Boolean.TRUE, "the diagram's paste door did not take Control+V: " + handled[0]);
 
@@ -439,12 +739,10 @@ public class testTheTailCanBeGivenInTheEditor
     }
 
     /**
-     * The arrival-side menu is not offered for a square no train is standing on.
-     *
-     * The item appears when the SETUP says a locomotive is at the square, but it writes to a Point on the running
-     * layout chosen by `pointOnTheLayout`, which falls back to ANY copy: with a train assigned in the setup and not
-     * placed, the side went onto an empty Point that nothing reads or saves.  The rule matches the method's javadoc:
-     * "a tail belongs to a train, and a square with none has nothing to say".
+     * The arrival-side menu is not offered for a square no train is standing on: the item appears when the SETUP says a
+     * locomotive is there, but it writes to a Point chosen by `pointOnTheLayout`, which falls back to ANY copy, so the
+     * side went onto an empty Point nothing reads or saves.  Matches the method's javadoc: "a tail belongs to a train,
+     * and a square with none has nothing to say".
      */
     @Test
     public void testTheArrivalSideIsNotOfferedForAnEmptySquare() throws Exception
@@ -538,7 +836,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
 
             Layout running = model.getAutoLayout();
 
@@ -589,7 +887,7 @@ public class testTheTailCanBeGivenInTheEditor
                 built[0].setAutonomyMode(session);
             });
 
-            settle();
+            Components.drain(8);
 
             return new Fixture(asFound, built[0], at, train, lengthWas);
         }
@@ -609,7 +907,7 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(() -> model.getAutoLayout().moveLocomotive(null, before.getName(), true));
 
-            settle();
+            Components.drain(8);
 
             org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests(side);
             org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(heading);
@@ -617,12 +915,10 @@ public class testTheTailCanBeGivenInTheEditor
 
             try
             {
-                final java.lang.reflect.Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
-                cut.setAccessible(true);
+                final java.lang.reflect.Field cut = Reflect.field(TrainControlUI.class, "cutLocomotive");
 
-                final java.lang.reflect.Method gesture = TrainControlUI.class.getDeclaredMethod(
-                    "locomotiveGestureOnDiagram", int.class, boolean.class);
-                gesture.setAccessible(true);
+                final java.lang.reflect.Method gesture =
+                    Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
                 final Object[] handled = new Object[1];
 
@@ -640,7 +936,7 @@ public class testTheTailCanBeGivenInTheEditor
                     }
                 });
 
-                settle();
+                Components.drain(8);
 
                 assertEquals(handled[0], Boolean.TRUE, "the diagram's paste door did not take Control+V: " + handled[0]);
                 assertNotNull(standing(), "precondition: the paste put the train nowhere");
@@ -672,12 +968,10 @@ public class testTheTailCanBeGivenInTheEditor
 
             try
             {
-                final java.lang.reflect.Field cut = TrainControlUI.class.getDeclaredField("cutLocomotive");
-                cut.setAccessible(true);
+                final java.lang.reflect.Field cut = Reflect.field(TrainControlUI.class, "cutLocomotive");
 
-                final java.lang.reflect.Method gesture = TrainControlUI.class.getDeclaredMethod(
-                    "locomotiveGestureOnDiagram", int.class, boolean.class);
-                gesture.setAccessible(true);
+                final java.lang.reflect.Method gesture =
+                    Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
                 final Object[] handled = new Object[1];
 
@@ -695,7 +989,7 @@ public class testTheTailCanBeGivenInTheEditor
                     }
                 });
 
-                settle();
+                Components.drain(8);
 
                 assertEquals(handled[0], Boolean.TRUE, "the diagram's paste door did not take Control+V: " + handled[0]);
                 assertNotNull(standing(), "precondition: the paste put the train nowhere");
@@ -740,15 +1034,21 @@ public class testTheTailCanBeGivenInTheEditor
                 session::baseNameOf);
         }
 
+        /** The "...'s Tail Reaches Back To..." submenu of the train's items (FR-181); fails where there is none. */
         javax.swing.JMenu menu() throws Exception
         {
-            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu items = new javax.swing.JPopupMenu();
 
-            SwingUtilities.invokeAndWait(() -> menu[0] = panel.buildFacingMenu(tile));
+            SwingUtilities.invokeAndWait(() -> panel.addFacingItems(items, tile));
 
-            assertNotNull(menu[0], "precondition: no facing menu for the train at " + tile);
+            final String title = I18n.f("autosetup.ui.menuTailCrossedGroup", train.getName());
 
-            return menu[0];
+            javax.swing.JMenu tail = support.Components.find(items, javax.swing.JMenu.class, m -> title.equals(m.getText()));
+
+            assertNotNull(tail, "the menu of a train whose tail can have crossed a sensor past a junction does not ask how"
+                + " far back it reaches: no " + title + " at " + tile);
+
+            return tail;
         }
 
         void arm() throws Exception
@@ -759,11 +1059,49 @@ public class testTheTailCanBeGivenInTheEditor
 
             SwingUtilities.invokeAndWait(pick::doClick);
 
-            settle();
+            Components.drain(8);
 
             assertEquals(panel.tailPickFor(), tile, "picking on the diagram did not wait for a click about " + tile);
 
             assertFalse(panel.tailPickSquares().isEmpty(), "picking on the diagram outlined no sensor");
+        }
+
+        /** With a pick armed, clicks the outlined sensor reached by one road alone, so no list asks; its choice. */
+        TailCrossedPrompt.Choice clickOnTheOnlyRoad() throws Exception
+        {
+            TailCrossedPrompt.Choice target = null;
+            TileKey square = null;
+
+            for (TailCrossedPrompt.Choice choice : choices())
+            {
+                TileKey at = session.getStationIndex().squareOf(choice.getFarthest());
+
+                if (at == null || !panel.tailPickSquares().contains(at)) continue;
+
+                int onThatSquare = 0;
+
+                for (TailCrossedPrompt.Choice other : choices())
+                {
+                    if (at.equals(session.getStationIndex().squareOf(other.getFarthest()))) onThatSquare++;
+                }
+
+                if (onThatSquare == 1)
+                {
+                    target = choice;
+                    square = at;
+                }
+            }
+
+            assertNotNull(square, "precondition: no outlined sensor is reached by exactly one road, so a click would ask"
+                + " again. Outlined: " + panel.tailPickSquares());
+
+            final TileKey clicked = square;
+
+            SwingUtilities.invokeAndWait(() -> panel.tileClicked(clicked, null, false));
+
+            Components.drain(8);
+
+            return target;
         }
 
         void assertRecorded(TailCrossedPrompt.Choice chosen, String how) throws Exception
@@ -789,7 +1127,7 @@ public class testTheTailCanBeGivenInTheEditor
         {
             SwingUtilities.invokeAndWait(() -> editor.dispose());
 
-            settle();
+            Components.drain(8);
         }
 
         void close() throws Exception
@@ -798,7 +1136,7 @@ public class testTheTailCanBeGivenInTheEditor
             {
                 SwingUtilities.invokeAndWait(() -> editor.dispose());
 
-                settle();
+                Components.drain(8);
             }
             finally
             {
@@ -807,6 +1145,22 @@ public class testTheTailCanBeGivenInTheEditor
                 session.restoreSetup(asFound);
             }
         }
+    }
+
+    private static javax.swing.JPopupMenu editorMenu(Fixture f)
+    {
+        return support.Components.onTheEventThread(() -> f.panel.buildTileMenu(f.tile, null));
+    }
+
+    /** Whether the menu itself, not a submenu of it, has an item saying this. */
+    private static boolean offers(javax.swing.JPopupMenu menu, String text)
+    {
+        for (java.awt.Component part : menu.getComponents())
+        {
+            if (part instanceof JMenuItem && text.equals(((JMenuItem) part).getText())) return true;
+        }
+
+        return false;
     }
 
     private static List<String> texts(javax.swing.JMenu menu)
@@ -833,13 +1187,5 @@ public class testTheTailCanBeGivenInTheEditor
         }
 
         return null;
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 8; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
     }
 }

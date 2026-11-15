@@ -84,10 +84,7 @@ final class SessionRuns
 
         for (Map.Entry<TileKey, Run> entry : runs().entrySet())
         {
-            for (TileKey tile : entry.getValue().getTiles())
-            {
-                out.put(tile, entry.getKey());
-            }
+            for (TileKey tile : entry.getValue().getTiles()) out.put(tile, entry.getKey());
         }
 
         return out;

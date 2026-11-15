@@ -28,6 +28,7 @@ import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
 import support.Mouse;
+import support.Reflect;
 import support.Settle;
 
 /**
@@ -150,7 +151,8 @@ public class testTheAutoTabSaysWhyATrainWaits
                 && reasons.get("Approach (eastbound)") != null,
                 "precondition: Approach is not reachable by one copy and refused by the other: " + reasons);
 
-            AutoLocomotiveStatus card = card(mover);
+            // The card is built once its search lands; read before then, there is no card to ask
+            AutoLocomotiveStatus card = refreshedUntil(mover, I18n.t("autolayout.ui.doubleClickExecute"));
 
             String window = (String) said(card, "whyNotReport");
             String tooltip = (String) said(card, "whyNotToolTip");
@@ -193,9 +195,7 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             SwingUtilities.invokeAndWait(() -> card.updateState(mover, late, true));
 
-            Field list = AutoLocomotiveStatus.class.getDeclaredField("locAvailPaths");
-
-            list.setAccessible(true);
+            Field list = Reflect.field(AutoLocomotiveStatus.class, "locAvailPaths");
 
             assertEquals(((javax.swing.JList<?>) list.get(card)).getModel().getSize(), 0,
                 "paths that arrived after the train left its square are offered to double-click");
@@ -262,9 +262,7 @@ public class testTheAutoTabSaysWhyATrainWaits
     /** What a card's private answer method says, asked on the event thread as the card asks it. */
     private static Object said(final AutoLocomotiveStatus card, String method) throws Exception
     {
-        final java.lang.reflect.Method asked = AutoLocomotiveStatus.class.getDeclaredMethod(method);
-
-        asked.setAccessible(true);
+        final java.lang.reflect.Method asked = Reflect.method(AutoLocomotiveStatus.class, method);
 
         final Object[] out = new Object[1];
 
@@ -912,11 +910,7 @@ public class testTheAutoTabSaysWhyATrainWaits
 
     private static JButton startButton() throws Exception
     {
-        Field field = TrainControlUI.class.getDeclaredField("startAutonomy");
-
-        field.setAccessible(true);
-
-        return (JButton) field.get(ui);
+        return (JButton) Reflect.get(TrainControlUI.class, ui, "startAutonomy");
     }
 
     // ---------------------------------------------------------------- the Auto tab
@@ -985,10 +979,6 @@ public class testTheAutoTabSaysWhyATrainWaits
     /** The card's second line, the one the user hovers and clicks. */
     private static JLabel secondLine(AutoLocomotiveStatus card) throws Exception
     {
-        Field field = AutoLocomotiveStatus.class.getDeclaredField("locDest");
-
-        field.setAccessible(true);
-
-        return (JLabel) field.get(card);
+        return (JLabel) Reflect.get(AutoLocomotiveStatus.class, card, "locDest");
     }
 }

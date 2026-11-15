@@ -17,7 +17,11 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
 import support.SourceOf;
+import support.Trees;
+import static support.LayoutSandbox.pagesIn;
 
 /**
  * What a run did is folded into the setup BEFORE the editor snapshots it, not after (OB-144).
@@ -155,7 +159,7 @@ public class testARunSurvivesADiagramEdit
     {
         File folder = aWorkingCopy();
 
-        List<LayoutDiagram> pages = pagesIn(folder);
+        List<LayoutDiagram> pages = pagesIn(model, folder);
 
         AutonomySession session = new AutonomySession(folder);
         session.open(pages);
@@ -229,21 +233,11 @@ public class testARunSurvivesADiagramEdit
     }
 
     /**
-     * The window's own capture method actually captures - and refuses while trains are moving (A105).
-     *
-     * `runThenEdit` above tests the RULE and `testTheWindowCapturesBeforeItOpensTheEditor` tests that
-     * the window asks for it, by reading the source. Nothing ran `captureRunningLayout` itself. It is
-     * six conditions and a call, and every one of the six is a way for the fix to be silently absent:
-     * the whole body is `if (...) return;` followed by the thing that matters.
-     *
-     * Both directions, because either alone is satisfiable by a broken method. A capture that always
-     * runs would pass the first assertion and lose the "not while running" rule, which exists because
-     * a snapshot of a moving railway is a snapshot of a state no longer true by the time it lands. A
-     * capture that never runs would pass the second.
-     *
-     * Driven through the private method by reflection rather than through the window's menus: the
-     * doors that call it are dialogs and a page change, and this is a claim about the method they all
-     * share.
+     * The window's own capture method actually captures, and refuses while trains are moving: `runThenEdit` tests the
+     * RULE and `testTheWindowCapturesBeforeItOpensTheEditor` reads the source, but nothing ran `captureRunningLayout`
+     * itself.  Both directions, since either alone is satisfiable by a broken method; the "not while running" rule
+     * exists because a snapshot of a moving railway is stale when it lands.  Driven by reflection: the doors that call
+     * it are dialogs, and this is a claim about the method they share.
      *
      * MUTATION this catches: deleting the `captureFromLayout` call fails the first assertion; deleting
      * `|| this.model.getAutoLayout().isRunning()` from the guard fails the second.
@@ -251,15 +245,12 @@ public class testARunSurvivesADiagramEdit
     @Test
     public void testTheWindowsCaptureActuallyCapturesAndStopsWhenTrainsMove() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("captureRunningLayout is a method on the window");
-        }
+        Display.needed("captureRunningLayout is a method on the window");
 
         File folder = aWorkingCopy();
 
         AutonomySession session = new AutonomySession(folder);
-        session.open(pagesIn(folder));
+        session.open(pagesIn(model, folder));
 
         String active = session.getStore().getActiveConfiguration();
 
@@ -278,18 +269,14 @@ public class testARunSurvivesADiagramEdit
 
         try
         {
-            // THE MODEL TOO, which the guard reads first.
-            //
-            // A bare window has none - setViewListener wires it, and that starts the threads a window
-            // needs to be a window.  The field is what captureRunningLayout actually asks, so it is
-            // what this sets: the claim is about the method's six conditions, not about start-up.
+            // THE MODEL TOO, which the guard reads first: a bare window has none (setViewListener wires it), and the
+            // field is what captureRunningLayout asks, so it is what this sets.
             set(ui[0], "model", model);
             set(ui[0], "autonomySession", session);
             set(ui[0], "activeDiagramConfiguration", active);
 
             java.lang.reflect.Method capture =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
-            capture.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "captureRunningLayout");
 
             // The run: a train ends up somewhere it did not start.
             org.traincontrol.automation.Point from = occupiedPoint(layout);
@@ -315,14 +302,9 @@ public class testARunSurvivesADiagramEdit
                 + "the train back where it started - which is OB-144, through the method every door "
                 + "that fixes it calls");
 
-            // and NOT while the railway is moving
-            //
-            // ON THE CURRENT LAYOUT, not the one above.  whereItIsAfterARebuild calls parseAuto, which
-            // REPLACES the Layout object - so a second move made on the old one, and a running flag
-            // set on the old one, are made to something the window no longer holds.  The window then
-            // captures the new layout, which nothing has touched, and the assertion passes whatever
-            // the guard does.  It did: mutating the guard away left this test green until the second
-            // half was rewritten to re-read.
+            // and NOT while the railway is moving.  Re-read the layout: whereItIsAfterARebuild calls parseAuto, which
+            // REPLACES the Layout object, so a flag set on the old one is invisible to the window and the assertion
+            // would pass whatever the guard does.
             org.traincontrol.automation.Layout current = model.getAutoLayout();
 
             assertNotNull(current, "the rebuild left no layout");
@@ -378,8 +360,7 @@ public class testARunSurvivesADiagramEdit
     }
 
     /**
-     * Where the setup says a locomotive is, asked the way the editor's close asks it - by rebuilding
-     * the running layout from what was saved.
+     * Where the setup says a locomotive is, asked as the editor's close asks it: by rebuilding the running layout.
      *
      * @param session the setup
      * @param locName the locomotive
@@ -406,10 +387,7 @@ public class testARunSurvivesADiagramEdit
     /** Sets a private field on the window, which is how the running application wires these two. */
     private static void set(Object on, String field, Object value) throws Exception
     {
-        java.lang.reflect.Field f = on.getClass().getDeclaredField(field);
-
-        f.setAccessible(true);
-        f.set(on, value);
+        Reflect.set(on.getClass(), on, field, value);
     }
 
     /**
@@ -421,10 +399,7 @@ public class testARunSurvivesADiagramEdit
     private static void setRunning(org.traincontrol.automation.Layout layout, boolean running)
         throws Exception
     {
-        java.lang.reflect.Field f =
-            org.traincontrol.automation.Layout.class.getDeclaredField("running");
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(org.traincontrol.automation.Layout.class, "running");
         f.setBoolean(layout, running);
     }
 
@@ -454,16 +429,6 @@ public class testARunSurvivesADiagramEdit
 
     // the fixture
 
-    private static List<LayoutDiagram> pagesIn(File folder) throws Exception
-    {
-        String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";
-
-        CS2File parser = new CS2File(path, model);
-        parser.setLayoutDataLoc(path);
-
-        return support.LayoutSandbox.wired(model, parser);
-    }
-
     private static File aWorkingCopy() throws Exception
     {
         File from = new File(System.getProperty("user.dir"), "test/test_layout");
@@ -474,29 +439,10 @@ public class testARunSurvivesADiagramEdit
 
         assertTrue(temp.delete(), "making room for a directory of the same name");
 
-        copyTree(from, temp);
+        Trees.copyForTheRun(from, temp);
 
         temp.deleteOnExit();
 
         return temp;
-    }
-
-    private static void copyTree(File from, File to) throws Exception
-    {
-        assertTrue(to.mkdirs() || to.isDirectory(), "could not make " + to);
-
-        File[] children = from.listFiles();
-
-        if (children == null) return;
-
-        for (File one : children)
-        {
-            File target = new File(to, one.getName());
-
-            if (one.isDirectory()) copyTree(one, target);
-            else Files.copy(one.toPath(), target.toPath());
-
-            target.deleteOnExit();
-        }
     }
 }

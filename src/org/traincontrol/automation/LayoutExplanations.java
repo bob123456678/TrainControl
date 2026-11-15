@@ -57,7 +57,7 @@ final class LayoutExplanations
      *
      * @return the reason, or null where a station can be reached
      */
-    private String whyItReachesNoStation(Point at)
+    String whyItReachesNoStation(Point at)
     {
         if (at == null || owner.canReachAnyDestination(at)) return null;
 
@@ -95,7 +95,7 @@ final class LayoutExplanations
         }
 
         // NEITHER WAY: what a reachable station needs - switched on, Can Be Chosen ticked, and the side a train would
-        // arrive on open, unless every train turns round there.  The exception is in the words because this sentence
+        // arrive on open, unless every train turns around there.  The exception is in the words because this sentence
         // does not know which station is meant.
         return I18n.f("autolayout.why.startReachesNoStationEitherWay", Layout.placeNameOf(at),
             I18n.t("autosetup.ui.menuAutoDestination"), I18n.t("autosetup.ui.menuArrivalsGroup"));
@@ -115,14 +115,14 @@ final class LayoutExplanations
      * Why autonomy starts no train from this copy of a square, or null where it may: the square's own start rules,
      * asked of a train standing there and of the copy Why not Moving? would turn one round onto - one rule for both.
      */
-    private String whyNoTrainIsStartedFrom(Point at)
+    String whyNoTrainIsStartedFrom(Point at)
     {
         // FACING THE WAY TRAINS MAY NOT ARRIVE, AT A STATION: named as the square, with what to do - turn it round, or
         // open that side.
         if (owner.isABarredCopyOfAStation(at))
         {
-            // NOT "OPEN THAT SIDE" WHERE EVERY TRAIN TURNS (Adam: "offer the other two remedies only"): a terminus
-            // reached from two sides is the terminus error, whose own remedy is to close one.
+            // NOT "OPEN THAT SIDE" WHERE EVERY TRAIN TURNS: a terminus reached from two
+            // sides is the terminus error, whose own remedy is to close one.
             if (owner.turnsEveryTrainAt(at)) return I18n.f("autolayout.why.startFacingBarredMustTurn", Layout.placeNameOf(at));
 
             return I18n.f("autolayout.why.startFacingBarred", Layout.placeNameOf(at), I18n.t("autosetup.ui.menuArrivalsGroup"));
@@ -142,17 +142,23 @@ final class LayoutExplanations
 
         if (loc != null && end.excludes(loc)) return I18n.f("autolayout.why.excluded", loc.getName());
 
-        // A TERMINUS A TRAIN THAT CANNOT REVERSE WOULD BE STRANDED AT (OB-205), unless it is a berth: a square autonomy
-        // never chooses.  It is a question about the square, not this copy of it: `isTerminus()` cannot be read for
-        // this, so ask whether any way of standing on the square does not turn a train round (MT-367).
-        if (loc != null && !loc.isReversible() && (end.isTerminus() || end.isReversing())
-            && end.isAutoDestination()
-            && (!owner.hasAWayThrough(end) || owner.noCopyFacesOnFromAnyWayIn(end)))
+        if (loc != null && !loc.isReversible() && strandsATrainThatCannotReverse(end))
         {
             return I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", loc.getName());
         }
 
         return null;
+    }
+
+    /**
+     * A terminus a train that cannot reverse would be stranded at (OB-205), unless it is a berth.  Asks whether any way of
+     * standing on the square does not turn a train round, as `isTerminus()` is per copy (MT-367).
+     */
+    boolean strandsATrainThatCannotReverse(Point end)
+    {
+        return (end.isTerminus() || end.isReversing())
+            && end.isAutoDestination()
+            && (!owner.hasAWayThrough(end) || owner.noCopyFacesOnFromAnyWayIn(end));
     }
 
     /** The body of `Layout.whyNoRouteFitsTo`. */

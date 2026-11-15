@@ -1,14 +1,14 @@
 package org.traincontrol.gui.locomotive;
 
 import java.awt.event.MouseEvent;
-import javax.swing.JButton;
 import javax.swing.JMenuItem;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 
 /**
- * The menu items that belong to a locomotive rather than to the place it was right-clicked (FR-047), shared by
+ * The menu items that belong to a locomotive rather than to the place it was right-clicked, shared by
  * {@link RightClickMenuListener} and {@link RightClickSelectorMenu}.  The order is deliberately NOT consolidated: each
  * menu adds these among its own items and separators.
  *
@@ -20,67 +20,13 @@ final class LocomotiveMenuItems
     {
     }
 
-    /**
-     * @param ui the main window
-     * @param loc the locomotive
-     * @param evt the click, so a dialog opens near it, or null to let the window place it
-     * @return the item
-     */
-    static JMenuItem setLocalIcon(TrainControlUI ui, Locomotive loc, MouseEvent evt)
+    /** Locomotive Settings..., which opens the window on its first tab; a locomotive that cannot be edited opens locked. */
+    static JMenuItem settings(TrainControlUI ui, Locomotive loc)
     {
-        JMenuItem item = new JMenuItem(I18n.t("loc.ui.menuSetLocalLocomotiveIcon"));
+        JMenuItem item = new JMenuItem(I18n.t("loc.ui.menuLocomotiveSettings"));
 
-        item.addActionListener(event -> ui.setLocIcon(loc, evt));
-
-        return item;
-    }
-
-    static JMenuItem clearLocalIcon(TrainControlUI ui, Locomotive loc)
-    {
-        JMenuItem item = new JMenuItem(I18n.t("loc.ui.menuClearLocalLocomotiveIcon"));
-
-        item.addActionListener(event -> ui.clearLocIcon(loc));
-
-        return item;
-    }
-
-    /**
-     * @param source the button the icons are being customized from, or null when there is none
-     */
-    static JMenuItem customiseFunctionIcons(TrainControlUI ui, Locomotive loc, JButton source,
-        MouseEvent evt)
-    {
-        JMenuItem item = new JMenuItem(I18n.t("loc.ui.menuCustomizeFunctionIcons"));
-
-        item.addActionListener(event -> ui.setFunctionIcon(loc, source, evt));
-
-        return item;
-    }
-
-    static JMenuItem editNameAddressDecoder(TrainControlUI ui, Locomotive loc, MouseEvent evt)
-    {
-        JMenuItem item = new JMenuItem(I18n.t("loc.ui.menuEditNameAddressDecoder"));
-
-        item.addActionListener(event -> ui.changeLocAddress(loc, evt));
-
-        return item;
-    }
-
-    static JMenuItem editNotes(TrainControlUI ui, Locomotive loc, MouseEvent evt)
-    {
-        JMenuItem item = new JMenuItem(I18n.t("loc.ui.menuEditNotes"));
-
-        item.addActionListener(event -> ui.changeLocNotes(loc, evt));
-
-        return item;
-    }
-
-    static JMenuItem findSimilar(TrainControlUI ui, Locomotive loc, MouseEvent evt)
-    {
-        JMenuItem item = new JMenuItem(I18n.t("loc.ui.menuFindSimilarLocomotives"));
-
-        item.setToolTipText(I18n.t("loc.ui.tooltip.findSimilarHint"));
-        item.addActionListener(event -> ui.findSimilarLocs(loc, evt));
+        item.setName("menu.locomotiveSettings");
+        item.addActionListener(event -> ui.openLocomotiveSettings(loc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null));
 
         return item;
     }
@@ -111,32 +57,8 @@ final class LocomotiveMenuItems
 
         JMenuItem item = new JMenuItem(text);
 
-        item.addActionListener(event -> ui.changeLinkedLocomotives(loc));
-
-        return item;
-    }
-
-    /**
-     * How long this train is, or null when there is no reason to ask (FR-047).  Null rather than a disabled item,
-     * because a grayed entry invites "why not" and this menu cannot say there is no autonomy.
-     *
-     * @return the item, or null when autonomy is not loaded
-     */
-    static JMenuItem trainLength(TrainControlUI ui, Locomotive loc, MouseEvent evt)
-    {
-        if (ui == null || loc == null) return null;
-
-        // Loaded, not merely available: hasAutoLayout() is true whenever a graph exists, including one whose setup
-        // nobody has loaded.
-        if (!ui.isAutonomyLoaded()) return null;
-
-        Integer length = loc.getTrainLength();
-
-        JMenuItem item = new JMenuItem(I18n.f("loc.ui.menuAutonomyTrainLength",
-            length == null || length <= 0
-                ? I18n.t("loc.ui.trainLengthNotSet") : String.valueOf(length)));
-
-        item.addActionListener(event -> ui.promptTrainLength(loc, evt));
+        item.setName("menu.multiUnit");
+        item.addActionListener(event -> ui.openLocomotiveSettings(loc, LocomotiveSettingsFrame.Tab.MULTI_UNIT, null));
 
         return item;
     }

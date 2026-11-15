@@ -8,11 +8,11 @@
 #
 # Found by searching test/ for requestFocus, isFocusOwner, getFocusOwner, isFocused, KeyboardFocusManager,
 # toFront, postEvent, getSystemClipboard and java.awt.Robot (none uses Robot).  A new class that uses any of them
-# belongs here.  One class per line; the text after # says why.
+# belongs here (`regression.testEveryTestIsInTheBattery` checks).  One class per line; the text after # says why.
 
-core.testASignalGuardsItsStationAndTheNoticeNamesIt  # reads the system clipboard back after a copy
-core.testMassAssignLengths                   # waits for its prompt to have the keyboard focus, and skips without it
+core.testClickingANoticeCopiesItsText        # reads the system clipboard back after a copy
 regression.testTheKeyMapReachesTheWholeWindow  # posts key events, which go to whichever component has the focus
 regression.testTheWindowTakesTheKeyboard     # asks which component has the keyboard focus
 ui.testTheKeyboardDrag                       # reads the system clipboard back after a drag
-ui.testTheLengthPromptHasTheKeyboard         # brings its window to the front and asks for the keyboard focus
+ui.testTheLengthPromptHasTheKeyboard         # brings its window to the front and asks for the keyboard focus, for all three walks
+ui.testTheEditorsFindingsCanBeFiltered       # reads and sets the system clipboard, and asks whether a box can take the keyboard

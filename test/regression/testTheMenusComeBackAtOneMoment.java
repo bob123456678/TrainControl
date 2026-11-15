@@ -2,6 +2,8 @@ package regression;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import support.Display;
+import support.Reflect;
 
 /**
  * OB-187: the menus stopped being gray in stages as the connect finished.  The autonomy menu is not on the bar when
@@ -21,10 +23,7 @@ public class testTheMenusComeBackAtOneMoment
     @Test
     public void testAMenuMountedDuringTheConnectWaitsForTheOthers() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("a menu bar is on a window");
-        }
+        Display.needed("a menu bar is on a window");
 
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
@@ -138,10 +137,10 @@ public class testTheMenusComeBackAtOneMoment
     /**
      * "Combine linked pages" sits immediately after "Duplicate Current Page".
      *
-     * Appending put it at the BOTTOM of Manage Pages, past Delete, in the group about destroying a page; combining
-     * pages is the same kind of act as duplicating one.  Found by searching for the item rather than by index, which
-     * moves whenever somebody adds an item in the designer.  Both adjacent claims are needed: "after Duplicate" alone
-     * passes for an item at the bottom of a menu whose last entry is Duplicate, "not last" alone for one in the middle.
+     * Combining pages is the same kind of act as duplicating one.  Found by searching for the item rather than by
+     * index, which moves whenever somebody adds an item in the designer.  Both adjacent claims are needed: "after
+     * Duplicate" alone passes for an item at the bottom of a menu whose last entry is Duplicate, "not last" alone for
+     * one in the middle.
      *
      * MUTATION: move `modifyLocalLayoutMenu.add(combineLinkedPagesMenuItem)` below Delete in
      * `initComponents` and this fails, naming where the item landed.
@@ -149,10 +148,7 @@ public class testTheMenusComeBackAtOneMoment
     @Test
     public void testCombineSitsRightAfterDuplicateCurrentPage() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("a menu is on a window");
-        }
+        Display.needed("a menu is on a window");
 
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
@@ -246,12 +242,7 @@ public class testTheMenusComeBackAtOneMoment
     private static <T> T field(org.traincontrol.gui.TrainControlUI on, String name, Class<T> kind)
         throws Exception
     {
-        java.lang.reflect.Field f =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return kind.cast(f.get(on));
+        return kind.cast(Reflect.get(org.traincontrol.gui.TrainControlUI.class, on, name));
     }
 
     /** Where a component sits on a menu, or -1. */
@@ -298,10 +289,7 @@ public class testTheMenusComeBackAtOneMoment
     /** A private no-argument method of the window, by name, on the event thread. */
     private static void call(org.traincontrol.gui.TrainControlUI on, String name) throws Exception
     {
-        final java.lang.reflect.Method m =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(name);
-
-        m.setAccessible(true);
+        final java.lang.reflect.Method m = Reflect.method(org.traincontrol.gui.TrainControlUI.class, name);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
@@ -326,10 +314,7 @@ public class testTheMenusComeBackAtOneMoment
     @Test
     public void testTheMenuBarsTooltipsAreShortAndWrapped() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("a menu bar is on a window");
-        }
+        Display.needed("a menu bar is on a window");
 
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
@@ -420,8 +405,9 @@ public class testTheMenusComeBackAtOneMoment
     {
         try
         {
-            java.lang.reflect.Method rule = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredMethod("fitsOnOneLine", String.class);
-            rule.setAccessible(true);
+            java.lang.reflect.Method rule =
+                Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class,
+                    "fitsOnOneLine", String.class);
 
             return (Boolean) rule.invoke(null, text);
         }

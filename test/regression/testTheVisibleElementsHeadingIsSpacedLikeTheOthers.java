@@ -3,7 +3,6 @@ package regression;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Point;
-import java.lang.reflect.Field;
 import javax.swing.AbstractButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -19,6 +18,8 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
 
 /**
  * Under Visible Elements, the first control is as far from the heading as under the editor's other headings (OB-289),
@@ -44,15 +45,12 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor is a window, and the window needs a display");
-        }
+        Display.needed("the editor is a window, and the window needs a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
 
-        // THE EDITOR AT ITS OWN SIZE, NOT THE OPERATOR'S: the run copies his settings for this folder, and with "remember window
-        // location" on, the editor opens at his saved bounds, where nothing may lie under the band.  Set, never toggled.
+        // THE EDITOR AT ITS OWN SIZE: with "remember window location" on, the editor opens at saved bounds, where nothing
+        // may lie under the band.  Set, never toggled.
         rememberedWas = TrainControlUI.getPrefs().get(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
 
         TrainControlUI.getPrefs().putBoolean(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, false);
@@ -145,12 +143,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * The autonomy editor, shrunk as far as it will go in both directions, still shows every control (OB-342): HEIGHT
-     * shows Cancel, the last control, and the status line; WIDTH, the status line's minimum must not be its text's (the
-     * sentence here is longer than any language's, so the claim does not depend on the railway's words); SCALE, the
-     * floor is in pixels and the window is not, so it is asked at 100%, 125% and 150% (`flatlaf.uiScale`), with the
-     * look and feel installed again and put back at the end.  Asked at each of the three diagram sizes, of every
-     * control outside the scroll panes.
+     * The autonomy editor, shrunk as far as it will go, still shows every control (OB-342): HEIGHT shows Cancel and the
+     * status line; WIDTH, the status line's minimum must not be its text's; SCALE, the floor is in pixels, so it is
+     * asked at 100%, 125% and 150% (`flatlaf.uiScale`, look and feel put back at the end).
      *
      * MUTATION: take out the floor the window's own layout asks for in `sizeForDiagram`, or give the status line in
      * `AutonomyEditorPanel` its text's width as its minimum again, and this fails.
@@ -494,10 +489,9 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
-     * An autonomy editor on a 768-pixel screen (720 pixels of work area, under Windows' 48-pixel taskbar) is no taller
-     * than the work area, and Save Changes and Cancel lie wholly inside its content, as it opens and shrunk to its
-     * smallest size (OB-399; Adam: "ensure the autonomy editor window has a min height to prevent the cancel button from
-     * being hidden").  The smallest size is the column's own height, so it fits the screen rather than being cut to it.
+     * An autonomy editor on a 768-pixel screen (720 pixels of work area) is no taller than the work area, and Save
+     * Changes and Cancel lie wholly inside its content, as it opens and shrunk to its smallest size (OB-399; Adam:
+     * "ensure the autonomy editor window has a min height to prevent the cancel button from being hidden").
      *
      * MUTATION: give `AutonomyEditorPanel` its 640-pixel preferred and 240-pixel minimum height again, and this fails.
      */
@@ -1332,11 +1326,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     private static Object field(LayoutEditor editor, String name) throws ReflectiveOperationException
     {
-        Field field = LayoutEditor.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-
-        return field.get(editor);
+        return Reflect.get(LayoutEditor.class, editor, name);
     }
 
     /**

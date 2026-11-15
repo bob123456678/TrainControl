@@ -126,14 +126,12 @@ public class testTrainsComeHomeFromAPinnedArrangement
 
         assertEquals(STARTED_AT.size(), PLATFORMS.length, "not every train was placed, so this proves nothing");
 
-        // Displaced by hand, one platform left free, and no move landing on an occupied square.  A rotation among five
-        // occupied platforms has NO collision-free order in either direction, and shifting all five onto the next
-        // platform is a closed cycle with no spare square (Return Home answered NO_PLAN_FOUND, which may well be right:
-        // shunting needs somewhere to shunt to).  Four shifted up with the fifth left at home puts the fourth onto the
-        // fifth's platform, and `moveLocomotive` DISPLACES whoever is there.  So train 0 goes somewhere that is
-        // nobody's home, then trains 1 to 4 walk DOWN onto the platform below each, every target having just been
-        // vacated: four end one platform down, the top platform is free, and no move displaces anybody, which the
-        // assertion in the loop holds.
+        // Displaced by hand, one platform left free, and no move landing on an occupied square: a rotation among five
+        // occupied platforms has NO collision-free order and shifting all five is a closed cycle with no spare square
+        // (Return Home answered NO_PLAN_FOUND).  So train 0 goes somewhere that is nobody's home, then trains 1 to 4
+        // walk DOWN onto the platform below each, every target having just been vacated: four end one platform down,
+        // the top platform is free, and no move displaces anybody (`moveLocomotive` DISPLACES whoever is there), which
+        // the assertion in the loop holds.
         List<String> displacedTo = new ArrayList<>();
 
         Point elsewhere = aStationThatIsNobodysHome();

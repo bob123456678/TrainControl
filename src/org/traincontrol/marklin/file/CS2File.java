@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -37,6 +38,9 @@ public final class CS2File
     // network, but reads are given time to transfer potentially large database files.
     public static final int CONNECT_TIMEOUT_MS = 2000;
     public static final int READ_TIMEOUT_MS = 15000;
+
+    /** The pause before a body that ended short is asked for again. */
+    private static final int RETRY_PAUSE_MS = 300;
 
     // IP address for our HTTP requests
     private final String IP;
@@ -179,10 +183,89 @@ public final class CS2File
     {
         return getLayoutMasterURL(this.layoutDataLoc);
     }
+
+    /** Whether the layout is read from the Central Station itself, not from a folder of ours. */
+    public boolean isFromStation()
+    {
+        return getDefaultLayoutDataLoc().equals(this.layoutDataLoc);
+    }
+
+    /** @return the layout folder's path when it is one of ours, null for the station */
+    public String localLayoutFolder()
+    {
+        if (isFromStation()) return null;
+
+        try
+        {
+            return java.nio.file.Paths.get(new URL(this.layoutDataLoc.replaceAll(" ", "%20")).toURI()).toString();
+        }
+        catch (Exception notAFolder)
+        {
+            return null;
+        }
+    }
     
     public static String getLayoutMasterURL(String dataPath)
     {
         return dataPath + "/config/gleisbild.cs2";
+    }
+
+    /** Whether a folder holds a layout: its page index, which a download overwrites. */
+    public static boolean holdsALayout(File folder)
+    {
+        return new File(folder, "config/gleisbild.cs2").isFile();
+    }
+
+    /**
+     * Whether a folder opens as a layout, read as the sync reads it: its index, and a page that reads.  A door asks
+     * before it switches, as a folder whose every page fails sends the sync back to the station's layout; one unreadable
+     * page costs that page only (OB-408).
+     */
+    public static boolean opensAsALayout(File folder)
+    {
+        if (!holdsALayout(folder)) return false;
+
+        CS2File reader = new CS2File(null, null);
+
+        reader.setLayoutDataLoc("file:///" + folder.getPath() + "/");
+
+        try
+        {
+            return !reader.readNoPage(reader.parseLayout(reader.layoutAccessories()));
+        }
+        catch (Exception unreadable)
+        {
+            return false;
+        }
+    }
+
+    /**
+     * Whether the last parseLayout read no page although the index named some.  Neither an exception nor an empty list
+     * says so, as a page that will not read comes back as a blank stand-in, and an index this parser does not
+     * understand yields no pages and no failures.  An index that names no page is the empty layout it is.
+     */
+    public boolean readNoPage(List<LayoutDiagram> parsed)
+    {
+        return parsed.stream().allMatch(LayoutDiagram::isUnreadable)
+            && (this.pagesThatCouldNotBeRead > 0 || this.pagesTheIndexNamed > 0);
+    }
+
+    /**
+     * The accessory list a layout's squares are read with: none when the file is missing, while any other failure
+     * throws, as every square would otherwise be built as MM2.
+     */
+    public List<MarklinAccessory> layoutAccessories() throws Exception
+    {
+        try
+        {
+            return getMagList(true);
+        }
+        catch (FileNotFoundException none)
+        {
+            logMessage(I18n.t("layout.noDCC"), null, true);
+
+            return new ArrayList<>();
+        }
     }
     
     public String getLayoutURL(String layoutName)
@@ -240,9 +323,107 @@ public final class CS2File
         return "http://" + this.IP + "/app/api/automatics";
     }
     
+    public String getCS3InfoUrl()
+    {
+        return "http://" + this.IP + "/app/api/info";
+    }
+
     public String getCS3MagDBUrl()
     {
         return "http://" + this.IP + "/app/api/mags";
+    }
+
+    public String getCS3DevicesUrl()
+    {
+        return "http://" + this.IP + "/app/api/devs";
+    }
+
+    /**
+     * Each contact's s88 device from the CS3's device list, by its "kennung": a Link S88 (typ 64) has 1-16 unless its
+     * "Auswertung 1 - 16" is the keyboard matrix, and 16 contacts a module from 1001, 2001 and 3001 for its three
+     * buses.  Link S88s only: the station's own bus may be configured with nothing on it, so a contact there is placed
+     * only by an event.  A contact two Link S88s have is left out.  Empty when the list cannot be read (OB-418).
+     */
+    public Map<Integer, Integer> parseS88DevicesCS3()
+    {
+        Map<Integer, Integer> owner = new HashMap<>();
+        java.util.Set<Integer> shared = new java.util.HashSet<>();
+
+        try (BufferedReader in = fetchURL(getCS3DevicesUrl()))
+        {
+            JSONArray devices = readList(in, null);
+
+            for (int i = 0; i < devices.length(); i++)
+            {
+                JSONObject d = devices.optJSONObject(i);
+                Integer device = d == null ? null : number(d.opt("kennung"));
+
+                if (device == null || device == 0xffff) continue;
+
+                for (int contact : contactsOf(d))
+                {
+                    Integer was = owner.put(contact, device);
+
+                    if (was != null && !was.equals(device)) shared.add(contact);
+                }
+            }
+        }
+        catch (Exception unreadable)
+        {
+            return new HashMap<>();
+        }
+
+        owner.keySet().removeAll(shared);
+        return owner;
+    }
+
+    /** The contacts of one entry of the device list: none unless it is a Link S88. */
+    private static List<Integer> contactsOf(JSONObject device)
+    {
+        List<Integer> out = new ArrayList<>();
+        JSONArray channels = device.optJSONArray("kanal");
+
+        if ("64".equals(device.optString("typ")))
+        {
+            if (setting(channels, "Auswertung 1 - 16") == 0) modules(out, 1, 1);
+
+            for (int bus = 1; bus <= 3; bus++) modules(out, bus * 1000 + 1, setting(channels, "nge Bus " + bus));
+        }
+
+        return out;
+    }
+
+    /** Adds the contacts of `count` modules of 16 from `first`. */
+    private static void modules(List<Integer> out, int first, int count)
+    {
+        for (int c = 0; c < 16 * Math.min(count, 31); c++) out.add(first + c);
+    }
+
+    /** The "wert" of the first channel whose name holds `name` (matched past its umlaut), or 0. */
+    private static int setting(JSONArray channels, String name)
+    {
+        for (int i = 0; channels != null && i < channels.length(); i++)
+        {
+            JSONObject c = channels.optJSONObject(i);
+
+            if (c != null && c.optString("name").contains(name)) return Math.max(0, c.optInt("wert", 0));
+        }
+
+        return 0;
+    }
+
+    /** A number given as one, or as a decimal or 0x hex string; null for anything else. */
+    private static Integer number(Object value)
+    {
+        try
+        {
+            return value instanceof Number ? Integer.valueOf(((Number) value).intValue())
+                : Integer.decode(String.valueOf(value).trim());
+        }
+        catch (NumberFormatException notANumber)
+        {
+            return null;
+        }
     }
             
     /**
@@ -291,21 +472,122 @@ public final class CS2File
         return false;
     }
     
-    /** Opens a URL and returns a string stream */
+    /**
+     * Opens a URL and returns its whole body as a string stream.  A body that ends short of its Content-Length is an
+     * error, not a smaller file: it is asked for again, twice at most, after a pause.  A body that then comes whole is
+     * used; the same short bytes every time are the station's wrong length, read as sent and logged; anything else
+     * fails.
+     */
     public static BufferedReader fetchURL(String url) throws Exception
     {
-        URL website = new URL(url);
-        URLConnection connection = website.openConnection();
+        final Body first = readBody(url);
+        Body last = first;
+
+        for (int retry = 0; retry < 2 && last.isShort(); retry++)
+        {
+            // Not at once: a station briefly unable to send the file would answer all three the same
+            Thread.sleep(RETRY_PAUSE_MS);
+            last = readBody(url);
+
+            if (last.isShort() && !last.sameAs(first)) throw last.endedShort(url);
+        }
+
+        if (last.isShort())
+        {
+            if (last.bytes.length == 0) throw last.endedShort(url);
+
+            MarklinControlStation.logThroughLatest(I18n.f("network.stationFileReadAsSent", url,
+                String.valueOf(last.bytes.length), String.valueOf(last.promised)));
+        }
+
+        return new BufferedReader(new java.io.StringReader(decode(last.bytes, url)));
+    }
+
+    /** A file that ended short of the length promised; the message is for the log, the sync tells the user plainly. */
+    public static final class CutOffException extends IOException
+    {
+        public final String url;
+
+        CutOffException(String url, String message)
+        {
+            super(message);
+            this.url = url;
+        }
+    }
+
+    /** One fetch's body and the length its headers promised (-1 when none). */
+    private static final class Body
+    {
+        final byte[] bytes;
+        final long promised;
+
+        Body(byte[] bytes, long promised)
+        {
+            this.bytes = bytes;
+            this.promised = promised;
+        }
+
+        boolean isShort()
+        {
+            return this.promised >= 0 && this.bytes.length < this.promised;
+        }
+
+        boolean sameAs(Body other)
+        {
+            return this.promised == other.promised && Arrays.equals(this.bytes, other.bytes);
+        }
+
+        IOException endedShort(String url)
+        {
+            return new CutOffException(url, I18n.f("network.errorStationFileEndedShort", url,
+                String.valueOf(this.bytes.length), String.valueOf(this.promised)));
+        }
+    }
+
+    private static Body readBody(String url) throws Exception
+    {
+        URLConnection connection = openWithTimeouts(url);
+        final long promised = connection.getContentLengthLong();
+        java.io.ByteArrayOutputStream whole = new java.io.ByteArrayOutputStream();
+
+        try (InputStream in = connection.getInputStream())
+        {
+            byte[] chunk = new byte[8192];
+            int n;
+
+            while ((n = in.read(chunk)) >= 0) whole.write(chunk, 0, n);
+        }
+
+        return new Body(whole.toByteArray(), promised);
+    }
+
+    private static URLConnection openWithTimeouts(String url) throws IOException
+    {
+        URLConnection connection = new URL(url).openConnection();
 
         // Without these, an unreachable Central Station blocks the caller until the OS abandons the connection.
         // Ignored for local files, which are read through this method when a layout override path is set.
         connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
         connection.setReadTimeout(READ_TIMEOUT_MS);
 
-        return new BufferedReader(
-            new InputStreamReader(
-                connection.getInputStream(), StandardCharsets.UTF_8)
-        );
+        return connection;
+    }
+
+    /** UTF-8 when the bytes are valid UTF-8, otherwise ISO-8859-1: names come out right whichever a station sends. */
+    private static String decode(byte[] bytes, String url)
+    {
+        try
+        {
+            return StandardCharsets.UTF_8.newDecoder().onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+                .decode(java.nio.ByteBuffer.wrap(bytes)).toString();
+        }
+        catch (java.nio.charset.CharacterCodingException notUtf8)
+        {
+            java.util.logging.Logger.getLogger(CS2File.class.getName()).info(url + " is not UTF-8; read as ISO-8859-1");
+
+            return new String(bytes, StandardCharsets.ISO_8859_1);
+        }
     }
 
     /** Parses a CS2 config file into a string map */
@@ -316,6 +598,16 @@ public final class CS2File
             return parseFileContents(reader);
         }
     }
+
+    /**
+     * The shapes of a config file's lines, compiled once for `parseFileContents`: `String.matches` and the String form
+     * of `replace` compile a pattern on every call, about half of what a sync or a layout load spends parsing.
+     */
+    private static final Pattern ARRAY_ENTRY = Pattern.compile("^ \\.\\.[a-z0-9A-Z]+=.+$");
+    private static final Pattern BLOCK_NAME = Pattern.compile("^[a-zA-Z]+$");
+    private static final Pattern KEY_AND_VALUE = Pattern.compile("^ \\.[a-z0-9A-Z]+=.+$");
+    private static final Pattern KEY_ALONE = Pattern.compile("^ \\.[a-z0-9A-Z]+$");
+    private static final Pattern BARE_KEY = Pattern.compile("^[a-zA-Z0-9_]+=.*$");
 
     /** The body of parseFile.  Call parseFile, which closes the reader whatever happens. */
     private static List<Map<String, String> > parseFileContents(BufferedReader in) throws Exception
@@ -342,9 +634,9 @@ public final class CS2File
             }
             
             // F17-32 get a different key on the CS2
-            s = s.replace(".funktionen_2", ".funktionen");
+            if (s.contains(".funktionen_2")) s = s.replace(".funktionen_2", ".funktionen");
                         
-            if (s.matches("^ \\.\\.[a-z0-9A-Z]+=.+$"))
+            if (ARRAY_ENTRY.matcher(s).matches())
             {
                 // Limit of 2, for the same reason as the ordinary key=value branch below: the one array
                 // key that carries free text is lokname, the name of a multi-unit member, which
@@ -389,7 +681,7 @@ public final class CS2File
                 
                 // Case-insensitive, like `LayoutDiagram.readLayoutIndexIds`: firmware casing varies (`Version`,
                 // `version`), and a capitalized block name would otherwise give an empty diagram with no message.
-                if (s.matches("^[a-zA-Z]+$"))
+                if (BLOCK_NAME.matcher(s).matches())
                 {
                     if (item != null)
                     {
@@ -415,7 +707,7 @@ public final class CS2File
                     // every reader (OB-406).
                     if (!s.equals(s.toLowerCase())) item.put("_typeAsWritten", s);
                 }
-                else if (s.matches("^ \\.[a-z0-9A-Z]+=.+$"))
+                else if (KEY_AND_VALUE.matcher(s).matches())
                 {
                     // Limit of 2, so that a route or locomotive name containing an equals sign is not truncated
                     String[] parts = s.substring(2).split("=", 2);
@@ -425,14 +717,14 @@ public final class CS2File
                         item.put(parts[0], parts[1]);
                     }
                 }   
-                else if (s.matches("^ \\.[a-z0-9A-Z]+$"))
+                else if (KEY_ALONE.matcher(s).matches())
                 {
                     // Same character class as the arm above: a route's condition block ` .S88Flag` has no `=` and lands
                     // here; if it did not match, the `..kont=` group after it would be flushed under the wrong key and
                     // `parseRoutes` would drop the route.
                     lastKey = s.substring(2);
                 }
-                else if (s.matches("^[a-zA-Z0-9_]+=.*$"))
+                else if (BARE_KEY.matcher(s).matches())
                 {
                     // A key at the left margin (`page=1` in a genuine page export): neither block name, key nor array
                     // header.  Collected into an item of its own, which `LayoutDiagram.addBareKey` puts back after the
@@ -517,21 +809,60 @@ public final class CS2File
      */
     private BufferedReader fetchCS3LocDB() throws Exception
     {
-        return fetchURL(getCS3LocDBUrl());
+        return openCS3Locos(isCS3Version260OrAbove());
+    }
+
+    /**
+     * The locomotive list of the endpoint the firmware version names.  If that answers not found, the old probe decides
+     * which endpoint the station has, once, and its answer replaces the version for this parser; a station that has
+     * neither is not found (FR-170).
+     */
+    private BufferedReader openCS3Locos(boolean is260) throws Exception
+    {
+        try
+        {
+            return fetchURL(getCS3LocDBUrl(is260 ? 260 : 250));
+        }
+        catch (FileNotFoundException notThere)
+        {
+            boolean probed = !isNotFoundError(getCS3LocDBUrl(260));
+            this.cs3Firmware = new FirmwareVersion(2, probed ? 6 : 5, 0);
+
+            if (probed == is260) throw notThere;
+
+            return fetchURL(getCS3LocDBUrl(probed ? 260 : 250));
+        }
     }
 
     public List<MarklinLocomotive> parseLocomotivesCS3() throws Exception
     {
-        return parseLocomotivesCS3(parseJSONArray(fetchCS3LocDB()));
+        return parseLocomotivesCS3(readList(fetchCS3LocDB(), null));
     }
 
     /**
-     * The same, for a caller that probed the firmware once for the whole sync.
+     * Whether some record of the locomotive list lacks one of the keys as text; with "internname" and "name", which the
+     * members of a multi-unit and the locomotives of a route are named by, a member or a locomotive that is not found
+     * may be that record, and what names it is left as it is (FR-169).
+     */
+    private static boolean hasUnnameableRecord(JSONArray locomotives, String... keys)
+    {
+        for (int i = 0; i < locomotives.length(); i++)
+        {
+            JSONObject loc = locomotives.optJSONObject(i);
+
+            if (loc == null || Arrays.stream(keys).anyMatch(k -> text(loc, k) == null)) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * The same, for a caller that already knows the firmware.
      * @param is260 what isCS3Version260OrAbove answered
      */
     public List<MarklinLocomotive> parseLocomotivesCS3(boolean is260) throws Exception
     {
-        return parseLocomotivesCS3(parseJSONArray(fetchURL(getCS3LocDBUrl(is260 ? 260 : 250))));
+        return parseLocomotivesCS3(readList(openCS3Locos(is260), null));
     }
     
     // The accessory list the route import read, for the positions read after it in the same sync
@@ -555,15 +886,24 @@ public final class CS2File
         }
 
         Map<String, String> stateById = new HashMap<>();
-        JSONArray states = new JSONArray(body);
+        JSONArray states = new JSONArray();
+
+        try
+        {
+            states = new JSONArray(body);
+        }
+        catch (JSONException unreadable)
+        {
+            // An answer that will not read changes no position
+        }
 
         for (int i = 0; i < states.length(); i++)
         {
             JSONArray pair = states.optJSONArray(i);
 
-            if (pair != null && pair.optJSONObject(1) != null)
+            if (pair != null && pair.length() > 0 && pair.optJSONObject(1) != null)
             {
-                stateById.put(String.valueOf(pair.get(0)), pair.getJSONObject(1).optString("state", ""));
+                stateById.put(String.valueOf(pair.opt(0)), pair.optJSONObject(1).optString("state", ""));
             }
         }
 
@@ -573,7 +913,7 @@ public final class CS2File
         {
             try (BufferedReader in = fetchURL(getCS3MagDBUrl()))
             {
-                mags = parseJSONArray(in);
+                mags = readList(in, null);
             }
         }
 
@@ -582,9 +922,9 @@ public final class CS2File
         for (int i = 0; i < mags.length(); i++)
         {
             JSONObject a = mags.optJSONObject(i);
-            String state = a == null ? null : stateById.get(String.valueOf(a.opt("id")));
+            String state = a == null ? null : positionOf(stateById.get(String.valueOf(a.opt("id"))));
 
-            if (a != null && a.optInt("states") == 2 && a.optInt("address") > 0 && ("0".equals(state) || "1".equals(state))
+            if (a != null && a.optInt("states") == 2 && a.optInt("address") > 0 && state != null
                 && ("mm".equals(a.optString("prot")) || "dcc".equals(a.optString("prot"))))
             {
                 out.put(MarklinAccessory.UIDfromAddress(a.optInt("address") - 1, "dcc".equals(a.optString("prot"))
@@ -595,21 +935,67 @@ public final class CS2File
         return out;
     }
 
+    /**
+     * "0" or "1" for a position the CS3 reports, which is 128 plus the position while the solenoid is energized
+     * (FR-169); null for anything else, which is skipped.
+     */
+    private static String positionOf(String reported)
+    {
+        String plain = reported == null ? "" : reported.trim();
+
+        return "0".equals(plain) || "128".equals(plain) ? "0" : "1".equals(plain) || "129".equals(plain) ? "1" : null;
+    }
+
+    /** Whether the CS3 runs firmware 2.6 or later, which serves its locomotives and routes differently. */
     public boolean isCS3Version260OrAbove() throws Exception
     {
-        return !isNotFoundError(getCS3LocDBUrl(260));
+        return cs3Firmware().atLeast(2, 6);
+    }
+
+    // The CS3's firmware, found once for this parser: a sync makes a new parser, and the actions after it reuse the
+    // answer (FR-170)
+    private volatile FirmwareVersion cs3Firmware;
+
+    /**
+     * The CS3's firmware, read from /app/api/info; if that cannot be read, 2.6.0 or 2.5.0 by whether the 2.6
+     * locomotive endpoint answers.
+     */
+    private FirmwareVersion cs3Firmware() throws Exception
+    {
+        FirmwareVersion found = this.cs3Firmware;
+
+        if (found == null)
+        {
+            String said = null;
+
+            try (BufferedReader in = fetchURL(getCS3InfoUrl()))
+            {
+                said = parseJSONObject(in).optString("softwareVersion", null);
+                found = FirmwareVersion.parse(said);
+            }
+            catch (Exception unreadable)
+            {
+                found = null;
+            }
+
+            if (found != null && this.control != null) this.control.logTheFirmware(said.trim());
+
+            if (found == null) found = new FirmwareVersion(2, isNotFoundError(getCS3LocDBUrl(260)) ? 5 : 6, 0);
+
+            this.cs3Firmware = found;
+        }
+
+        return found;
     }
 
     public List<MarklinRoute> parseRoutesCS3() throws Exception
     {
-        // Probed once and passed explicitly: the no-argument getCS3LocDBUrl() would probe again.
-        boolean is260 = isCS3Version260OrAbove();
-
-        return parseRoutesCS3(is260);
+        return parseRoutesCS3(isCS3Version260OrAbove());
     }
 
     /**
-     * The same, for a caller that probed the firmware once for the whole sync (each probe reads the locomotive list).
+     * The same, for a caller that already knows the firmware.  Routes need all three lists: if any cannot be read, this
+     * throws UnreadableAnswerException and the caller leaves its routes as they are (FR-169).
      * @param is260 what isCS3Version260OrAbove answered
      */
     public List<MarklinRoute> parseRoutesCS3(boolean is260) throws Exception
@@ -617,28 +1003,60 @@ public final class CS2File
         // All three in one try-with-resources, so an exception after the first is opened leaks none of them.
         try (BufferedReader routeBR = fetchURL(getCS3RouteDBUrl());
              BufferedReader magBR   = fetchURL(getCS3MagDBUrl());
-             BufferedReader locBR   = fetchURL(getCS3LocDBUrl(is260 ? 260 : 250)))
+             BufferedReader locBR   = openCS3Locos(is260))
         {
-            // Now parse routes based on the loc DB version
-            if (is260)
+            // The routes are the list itself from firmware 2.6, and under "automatics" before; either is read
+            return parseRoutesCS3(readList(routeBR, "automatics"), readList(magBR, null), readList(locBR, null));
+        }
+    }
+
+    /**
+     * Whether an accessory a route names may be missing from the list: a record isn't an object with a numeric id.  An
+     * empty list is the station's whole answer, so its routes import without their switches.
+     */
+    private static boolean mayLackAccessories(JSONArray mags)
+    {
+        for (int i = 0; i < mags.length(); i++)
+        {
+            JSONObject o = mags.optJSONObject(i);
+
+            if (o == null || o.optInt("id", Integer.MIN_VALUE) == Integer.MIN_VALUE) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * A CS3 list: the array itself, or the array under `key` of an object.  Anything else, including an empty answer or
+     * one cut off without a Content-Length, is not a list (FR-169); one cut off short of its length fails in fetchURL.
+     */
+    private static JSONArray readList(BufferedReader in, String key) throws IOException
+    {
+        String body = readAndClose(in);
+
+        try
+        {
+            Object value = new JSONTokener(body).nextValue();
+
+            if (value instanceof JSONArray) return (JSONArray) value;
+
+            if (key != null && value instanceof JSONObject && ((JSONObject) value).optJSONArray(key) != null)
             {
-                // New firmware (260+): route DB is an array
-                return parseRoutesCS3(
-                    parseJSONArray(routeBR),
-                    parseJSONArray(magBR),
-                    parseJSONArray(locBR)
-                );
-            }
-            else
-            {
-                // Old firmware: route DB is an object
-                return parseRoutesCS3(
-                    parseJSONObject(routeBR).getJSONArray("automatics"),
-                    parseJSONArray(magBR),
-                    parseJSONArray(locBR)
-                );
+                return ((JSONObject) value).optJSONArray(key);
             }
         }
+        catch (JSONException unreadable)
+        {
+            // Not a list, below
+        }
+
+        throw new UnreadableAnswerException("the answer is not a list");
+    }
+
+    /** The string under a key, or null if there is none or it is not a string. */
+    private static String text(JSONObject o, String key)
+    {
+        return o.opt(key) instanceof String ? (String) o.opt(key) : null;
     }
     
     /**
@@ -729,10 +1147,7 @@ public final class CS2File
                     // `kont`.
                     StringBuilder both = new StringBuilder();
 
-                    if (m.get("S88Flag") != null)
-                    {
-                        both.append(m.get("S88Flag")).append("|");
-                    }
+                    if (m.get("S88Flag") != null) both.append(m.get("S88Flag")).append("|");
 
                     both.append(m.get("item"));
 
@@ -999,52 +1414,114 @@ public final class CS2File
     
     private JSONObject getCS3MagById(int searchId, JSONArray mags)
     {
-        // Cache accessories by ID
-        if (this.magList.containsKey(searchId))
-        {
-            return this.magList.get(searchId);
-        }
-        
-        for (int i = 0 ; i < mags.length(); i++)
-        {
-            JSONObject obj = mags.getJSONObject(i);
-            
-            if (searchId == obj.getInt("id"))
-            {
-                this.magList.put(searchId, obj);
-                
-                return obj;
-            }
-        }
-        
-        return null;   
+        return findCS3(this.magList, searchId, mags, o -> o.optInt("id", Integer.MIN_VALUE) == searchId);
     }
     
     private JSONObject getCS3LocById(String searchId, JSONArray locs)
     {
-        if (this.locList.containsKey(searchId))
+        return findCS3(this.locList, searchId, locs, o -> searchId.equals(text(o, "internname")));
+    }
+
+    /** The first record of a CS3 list that matches, remembered by the key it was asked for; records that are not objects are passed over. */
+    private <K> JSONObject findCS3(Map<K, JSONObject> found, K key, JSONArray list, java.util.function.Predicate<JSONObject> matches)
+    {
+        if (found.containsKey(key))
         {
-            return this.locList.get(searchId);
+            return found.get(key);
         }
-        
-        for (int i = 0 ; i < locs.length(); i++)
+
+        for (int i = 0 ; i < list.length(); i++)
         {
-            JSONObject obj = locs.getJSONObject(i);
-            
-            if (searchId.equals(obj.getString("internname")))
+            JSONObject obj = list.optJSONObject(i);
+
+            if (obj != null && matches.test(obj))
             {
-                this.locList.put(searchId, obj);
-                
+                found.put(key, obj);
+
                 return obj;
             }
         }
-        
-        return null;   
+
+        return null;
     }
     
+    // The ids of the routes of the last parse that would not read: the sync keeps those it holds locked
+    private final List<Integer> unreadableRouteIds = new ArrayList<>();
+
+    /** The ids of the routes the last CS3 route parse had to skip, so that the routes held under them are left alone. */
+    public List<Integer> getUnreadableRouteIds()
+    {
+        return new ArrayList<>(this.unreadableRouteIds);
+    }
+
+    // Whether a route of the last parse that would not read has no id to keep it by, and how many skipped records of
+    // routes and locomotives the start-up warns of
+    private boolean unreadableRouteWithoutId;
+
+    private int unreadableRecords;
+
+    /** Whether a route that would not read had no readable id: then the routes held cannot be told apart from deleted ones. */
+    public boolean hasUnreadableRouteWithoutId()
+    {
+        return this.unreadableRouteWithoutId;
+    }
+
+    /** How many skipped route and locomotive records the start-up warns of (countUnreadable). */
+    public int getUnreadableRecords()
+    {
+        return this.unreadableRecords;
+    }
+
+    /** What skips a unit or route held back because it may name a record that would not read (FR-169). */
+    private static final class HeldBack extends JSONException
+    {
+        HeldBack(String message)
+        {
+            super(message);
+        }
+    }
+
+    /** A skipped record is warned of when held back or not of the shape read; one whose keys fail is logged alone. */
+    private void countUnreadable(RuntimeException e)
+    {
+        if (e instanceof HeldBack || e instanceof ClassCastException) this.unreadableRecords++;
+    }
+
+    /**
+     * The name of the locomotive a route item names, or null with a warning if the list has none by that name; if some
+     * record of the list would not read, it may be that one, and the route is skipped with `heldBack` instead (FR-169).
+     */
+    private String routeLocomotiveName(JSONObject item, JSONArray locs, JSONException heldBack)
+    {
+        JSONObject found = this.getCS3LocById(item.getString("lok"), locs);
+
+        if (found != null)
+        {
+            return found.getString("name");
+        }
+
+        if (heldBack != null)
+        {
+            throw heldBack;
+        }
+
+        logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
+        return null;
+    }
+
     public List<MarklinRoute> parseRoutesCS3(JSONArray routeList, JSONArray mags, JSONArray locs)
     {
         this.cs3Mags = mags;
+        this.unreadableRouteIds.clear();
+        this.unreadableRouteWithoutId = false;
+
+        // A route held back while some record has no internal name is logged alone (FR-169)
+        String why = "the locomotive may be a record that would not read";
+        JSONException heldBack = !hasUnnameableRecord(locs, "internname", "name") ? null
+            : hasUnnameableRecord(locs, "internname") ? new JSONException(why) : new HeldBack(why);
+
+        // An accessory not found holds back its route only while the list may lack it
+        JSONException magHeldBack = mayLackAccessories(mags) ? new HeldBack("the accessory may be missing") : null;
 
         if (locs.isEmpty())
         {
@@ -1069,14 +1546,11 @@ public final class CS2File
                     {
                         JSONObject item = items.getJSONObject(j);
 
+                        // An item of no known type, or a train command without its locomotive, is left out, as a func
+                        // item is; a train command must say what it is, or its route is skipped
                         if (item.has("lok") && "speed".equals(item.getString("typ")) && item.has("lok"))
                         {
-                            String locName = null;
-
-                            if (this.getCS3LocById(item.getString("lok"), locs) != null)
-                            {
-                                locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
-                            }
+                            String locName = routeLocomotiveName(item, locs, heldBack);
 
                             if (locName != null)
                             {
@@ -1098,74 +1572,19 @@ public final class CS2File
 
                                 r.addItem(rc);
                             }
-                            else
-                            {
-                                logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
-                            }
                         }
 
-                        // This is disabled becuase the JSON does not appear to convey the function number (only the icon, which is non-unique)
-                        /* 
-                        else if (item.has("lok") && "func".equals(item.getString("typ")) && item.has("lok"))
-                        {
-                            String locName = null;
-
-                            if (this.getCS3LocById(item.getString("lok"), locs) != null)
-                            {
-                                locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
-                            }
-
-                            if (locName != null)
-                            {
-                                // wert is on, default 0 but cant be on
-                                // icon is (almost) fno, default 0
-                                int fNo = 0;
-                                boolean fActive = false;
-
-                                if (item.has("icon"))
-                                {
-                                    fNo = item.getInt("icon");
-                                }
-
-                                if (item.has("wert") && "1".equals(item.get("wert")))
-                                {
-                                    fActive = true;
-                                }
-
-                                RouteCommand rc = RouteCommand.RouteCommandFunction(locName, fNo, fActive);
-
-                                if (item.has("sekunde") && item.getFloat("sekunde") > 0)
-                                {
-                                    rc.setDelay(Float.valueOf(item.getFloat("sekunde") * 1000).intValue());
-                                }
-
-                                r.addItem(rc);
-                            }
-                            else
-                            {
-                                logMessage("Warning: route locomotive does not exist in database " + item.getString("lok"));
-                            }
-                        } */
+                        // A "func" item is not read: the JSON does not appear to convey the function number (only the
+                        // icon, which is non-unique).
                         else if (item.has("lok") && "dir".equals(item.getString("typ")) && item.has("lok"))
                         {
-                            String locName = null;
-
-                            if (this.getCS3LocById(item.getString("lok"), locs) != null)
-                            {
-                                locName = this.getCS3LocById(item.getString("lok"), locs).getString("name");
-                            }
+                            String locName = routeLocomotiveName(item, locs, heldBack);
 
                             if (locName != null)
                             {
-                                // wert is on, default 0 but cant be on
-                                // icon is fno, defualt 0
-                                // int fNo = 0;
-                                Locomotive.locDirection dir = Locomotive.locDirection.DIR_FORWARD;
-
-                                if (item.has("wert") && "1".equals(item.get("wert")))
-                                {
-                                    dir = Locomotive.locDirection.DIR_BACKWARD;
-                                }
+                                // wert 1, as a number or as text, is backward; 0, omitted or any other value is forward
+                                Locomotive.locDirection dir = item.optDouble("wert", 0) == 1
+                                    ? Locomotive.locDirection.DIR_BACKWARD : Locomotive.locDirection.DIR_FORWARD;
 
                                 RouteCommand rc = RouteCommand.RouteCommandLocomotiveDirection(locName, dir);
 
@@ -1176,15 +1595,13 @@ public final class CS2File
 
                                 r.addItem(rc);
                             }
-                            else
-                            {
-                                logMessage(I18n.f("route.warningLocomotiveNotExistInDb", item.getString("lok")));
-                            }
                         }
                         else if (item.has("typ") && "mag".equals(item.getString("typ")) && item.has("magnetartikel"))
                         {
                             // To get the address, we need to look up this accessory in the accessory DB
-                            JSONObject accessory = getCS3MagById(item.getInt("magnetartikel"), mags); 
+                            JSONObject accessory = getCS3MagById(item.getInt("magnetartikel"), mags);
+
+                            if (accessory == null && magHeldBack != null) throw magHeldBack;
 
                             if (accessory != null)
                             {
@@ -1357,8 +1774,20 @@ public final class CS2File
 
                     out.add(r);
                 }
-                catch (NumberFormatException | JSONException e)
+                catch (NumberFormatException | JSONException | ClassCastException e)
                 {
+                    JSONObject skipped = routeList.optJSONObject(i);
+                    countUnreadable(e);
+
+                    if (skipped != null && skipped.optInt("id", Integer.MIN_VALUE) != Integer.MIN_VALUE)
+                    {
+                        this.unreadableRouteIds.add(skipped.optInt("id"));
+                    }
+                    else
+                    {
+                        this.unreadableRouteWithoutId = true;
+                    }
+
                     logMessage(
                         I18n.f("route.invalidCs3Route",
                             describeCS3Field(routeList, i, "name"),
@@ -1389,10 +1818,7 @@ public final class CS2File
         {
             JSONObject entry = list.getJSONObject(index);
 
-            if (entry.has(key))
-            {
-                return entry.get(key).toString();
-            }
+            if (entry.has(key)) return entry.get(key).toString();
         }
         catch (JSONException e)
         {
@@ -1411,21 +1837,16 @@ public final class CS2File
         // For multi-units, we need to parse the internal CS3 locomotive names
         for (int i = 0 ; i < locomotiveList.length(); i++)
         {
-            try
+            JSONObject loc = locomotiveList.optJSONObject(i);
+
+            if (loc != null && text(loc, "name") != null && text(loc, "internname") != null)
             {
-                JSONObject loc = locomotiveList.getJSONObject(i);
-                internalNames.put(loc.getString("internname"), loc.getString("name"));
-            }
-            catch (JSONException e)
-            {
-                logMessage(
-                    I18n.f("loc.errorPreParsingLocomotives"),
-                    e,
-                    false
-                );
+                internalNames.put(text(loc, "internname"), text(loc, "name"));
             }
         }
-        
+
+        boolean unnameable = hasUnnameableRecord(locomotiveList, "internname", "name");
+
         for (int i = 0 ; i < locomotiveList.length(); i++)
         {
             try
@@ -1435,7 +1856,7 @@ public final class CS2File
                 Integer uid = Integer.decode(loc.getString("uid"));
 
                 String name = loc.getString("name");
-                String icon = loc.getString("icon");
+                String icon = text(loc, "icon");
                 
                 // dir and speed may now be available from v260+
 
@@ -1470,10 +1891,13 @@ public final class CS2File
                             }
                             else
                             {
+                                // Not found because its record would not read: the unit is skipped, keeping its members
+                                if (unnameable) throw new HeldBack("a member may be a record that would not read");
+
                                 logMessage(
                                     I18n.f("loc.warningUnmatchedMultiUnitIdentifier", identifier)
                                 );
-                            }   
+                            }
                         }
                     }
                     // CS3 v2.5.x and older
@@ -1489,9 +1913,12 @@ public final class CS2File
                             }
                             else
                             {
+                                // Not found because its record would not read: the unit is skipped, keeping its members
+                                if (unnameable) throw new HeldBack("a member may be a record that would not read");
+
                                 logMessage(
                                     I18n.f("loc.warningUnmatchedMultiUnitIdentifier", identifier)
-                                );                        
+                                );
                             }
                         }
                     }
@@ -1527,6 +1954,7 @@ public final class CS2File
                 List<Integer> functionTypes = new ArrayList<>();
                 List<Integer> functionTriggerTypes = new ArrayList<>();
 
+                // Every function must read: a locomotive with a function missing would overwrite the functions it holds
                 for (Object readArr : loc.getJSONArray("funktionen"))
                 {                
                     JSONObject fInfo = (JSONObject) readArr;
@@ -1569,8 +1997,10 @@ public final class CS2File
 
                 out.add(newLoc);
             }
-            catch (NumberFormatException | JSONException e)
+            catch (NumberFormatException | JSONException | ClassCastException e)
             {
+                countUnreadable(e);
+
                 logMessage(
                     I18n.f("loc.invalidCs3Locomotive",
                         describeCS3Field(locomotiveList, i, "name"),
@@ -1659,10 +2089,7 @@ public final class CS2File
 
                             // As in the DCC branch below: with no address field the UID was used, and a UID is past the
                             // highest MFX address (only setAddress validates).
-                            if (address > MarklinLocomotive.MFX_MAX_ADDR)
-                            {
-                                address -= MarklinLocomotive.MFX_BASE;
-                            }
+                            if (address > MarklinLocomotive.MFX_MAX_ADDR) address -= MarklinLocomotive.MFX_BASE;
                         }
                         else if ("dcc".equals(m.get("typ")))
                         {
@@ -1742,7 +2169,9 @@ public final class CS2File
         }
         
         File masterLayoutFile = new File(configDir, "gleisbild.cs2");
-        copyAtomically(gleisbild, masterLayoutFile);
+
+        // Read now, written with the pages once every page has its protocols: a plan that fails writes nothing
+        String indexText = readAll(gleisbild);
         
         // Process layout list and write files to localPath/config/gleisbilder/<layoutName>.cs2
         File layoutsDir = new File(configDir, "gleisbilder");
@@ -1751,20 +2180,84 @@ public final class CS2File
             layoutsDir.mkdirs();
         }
         
-        for (String layoutName : parseLayoutList())
+        // A station's copy is read as a local layout, so it is given the station's page IDs as this build reads them,
+        // each arrow the ID it goes to there, and the mark that its arrows go by ID: they go where the station's do
+        final boolean fromStation = isFromStation();
+
+        List<Map<String, String>> index = parseLayoutIndex();
+
+        // Each page as the station serves it now, by name, in the order a CS2 has always been asked
+        Map<String, String> served = new HashMap<>();
+
+        for (Map<String, String> page : index)
         {
+            String layoutName = page.get("name");
+
             // Sanitized, and matching what getLayoutURL will look for when this folder is read back.
             // The remote fetch above is unaffected: it goes through sanitizeURL on the http branch.
             File layoutFile = new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2");
 
-            copyAtomically(getLayoutURL(layoutName), layoutFile);
+            if (fromStation) served.put(layoutName, readAll(getLayoutURL(layoutName)));
+            else copyAtomically(getLayoutURL(layoutName), layoutFile);
+        }
+
+        File magsFile = new File(configDir, "magnetartikel.cs2");
+        String mags = readAll(this.getMagURL(false));
+
+        // Each page parsed again from what was just served, with the accessory list and the CS3's plan as they are now,
+        // by a parser of its own: a page changed at the station since it was read gets each square's protocol as it
+        // is today (OB-465)
+        CS2File today = new CS2File(this.IP, this.control);
+        List<MarklinAccessory> accDB = fromStation ? parseMags(parseFile(new BufferedReader(new StringReader(mags))))
+            : null;
+        Map<Integer, String> twoProtocols = fromStation && this.control != null && this.control.isCS3()
+            ? addressesWithTwoProtocols(accDB) : new HashMap<>();
+        Map<File, String> pages = new java.util.LinkedHashMap<>();
+
+        for (Map<String, String> page : index)
+        {
+            String layoutName = page.get("name");
+            String text = served.get(layoutName);
+
+            if (text == null) continue;
+
+            String withIds = org.traincontrol.base.LayoutDiagram.withLinkPageIds(text, keys ->
+                LayoutDiagramComponent.stationLinkPageId(LayoutDiagramComponent.pageIdFromText(keys.get("zielseite")),
+                    LayoutDiagramComponent.artikelNumber(keys.get("artikel"))));
+
+            // Each accessory square with the protocol it has on the station, as a save writes it; a page that will not
+            // parse is written as served, as a sync shows it unreadable
+            try
+            {
+                withIds = today.parsePage(layoutName, getLayoutURL(layoutName), page.get("id"),
+                    parseFile(new BufferedReader(new StringReader(text))), accDB, twoProtocols).withSavedProtocols(withIds);
+            }
+            catch (Exception unreadable)
+            {
+                logMessage(I18n.f("layout.warningPageCouldNotBeRead", layoutName, String.valueOf(unreadable)), null, false);
+            }
+
+            pages.put(new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2"), withIds);
+        }
+
+        // As a sync fails on a plan that would not read: the squares it was needed for would carry a guess
+        if (today.trackPlanFailure != null) throw today.trackPlanFailure;
+
+        copyAtomically(new BufferedReader(new StringReader(indexText)), masterLayoutFile);
+        copyAtomically(new BufferedReader(new StringReader(mags)), magsFile);
+
+        for (Map.Entry<File, String> page : pages.entrySet())
+        {
+            copyAtomically(new BufferedReader(new StringReader(page.getValue())), page.getKey());
+        }
+
+        if (fromStation)
+        {
+            giveTheCopyTheStationsPageIds(masterLayoutFile, index, localPath.getAbsolutePath());
+
+            org.traincontrol.base.LayoutDiagram.markLinksByPageId(localPath.getAbsolutePath());
         }
         
-        // Download the accessory file      
-        File magsFile = new File(configDir, "magnetartikel.cs2");
-
-        copyAtomically(this.getMagURL(false), magsFile);
-
         // And the routes (FR-021): tolerated when absent, unlike the three above, since a station with no routes
         // defined is ordinary.
         try
@@ -1804,7 +2297,10 @@ public final class CS2File
             // And the locomotives (OB-099): a CS3 keeps its locomotive database only in this JSON.
             try
             {
-                copyAtomically(this.getCS3LocDBUrl(), new File(configDir, "CS3_locos.json"));
+                try (BufferedReader locos = openCS3Locos(isCS3Version260OrAbove()))
+                {
+                    copyAtomically(locos, new File(configDir, "CS3_locos.json"));
+                }
             }
             catch (Exception noCS3Locs)
             {
@@ -1815,6 +2311,60 @@ public final class CS2File
     }
 
     /**
+     * Rewrites the `.id` of each page in a downloaded index whose ID read as a local layout would differ from the
+     * station's: a station numbers pages that state none, and tells apart pages that share one, in memory only.
+     */
+    private static void giveTheCopyTheStationsPageIds(File copy, List<Map<String, String>> index, String folder)
+        throws Exception
+    {
+        Map<String, Integer> local = org.traincontrol.base.LayoutDiagram.readLayoutIndexIds(folder);
+
+        Map<String, String> wanted = new HashMap<>();
+
+        for (Map<String, String> page : index)
+        {
+            if (!page.get("id").equals(String.valueOf(local.get(page.get("name"))))) wanted.put(page.get("name"), page.get("id"));
+        }
+
+        if (wanted.isEmpty()) return;
+
+        List<String> lines = Files.readAllLines(copy.toPath(), StandardCharsets.UTF_8);
+
+        List<String> out = new ArrayList<>();
+
+        int start = 0;
+
+        while (start < lines.size())
+        {
+            int end = start + 1;
+
+            while (end < lines.size() && (lines.get(end).trim().isEmpty() || lines.get(end).trim().startsWith("."))) end++;
+
+            List<String> block = new ArrayList<>(lines.subList(start, end));
+
+            String name = null;
+
+            for (String line : block) if (line.trim().toLowerCase(java.util.Locale.ROOT).startsWith(".name=")) name = line.trim().substring(6);
+
+            if ("seite".equalsIgnoreCase(block.get(0).trim()) && wanted.containsKey(name))
+            {
+                block.removeIf(line -> line.trim().toLowerCase(java.util.Locale.ROOT).startsWith(".id="));
+
+                block.add(1, " .id=" + wanted.get(name));
+            }
+
+            out.addAll(block);
+
+            start = end;
+        }
+
+        org.traincontrol.util.Util.writeAtomically(copy, stream ->
+        {
+            for (String line : out) stream.write((line + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+        });
+    }
+
+    /**
      * Fetches a URL into a file, all of it or none of it: staged through a sibling file and moved into place, so a
      * transfer that stops part way leaves the previous file.  Written as UTF-8, matching fetchURL's decoder.
      */
@@ -1822,39 +2372,48 @@ public final class CS2File
     {
         try (BufferedReader reader = fetchURL(url))
         {
-            Util.writeAtomically(target, out ->
-            {
-                try (BufferedWriter writer = new BufferedWriter(
-                    new java.io.OutputStreamWriter(out, java.nio.charset.StandardCharsets.UTF_8)))
-                {
-                    String line;
-
-                    while ((line = reader.readLine()) != null)
-                    {
-                        writer.write(line);
-                        writer.newLine();
-                    }
-                }
-                catch (Exception e)
-                {
-                    // As an IOException, as the staging write contracts: throwing at all discards the staged file and
-                    // keeps the previous one.
-                    throw new java.io.IOException(e);
-                }
-            });
+            copyAtomically(reader, target);
         }
     }
 
-    private List<String> parseLayoutList() throws Exception
+    /** The whole of a file, each line ended by a newline. */
+    private static String readAll(String url) throws Exception
     {
-        List<String> out = new ArrayList<>();
-
-        for (Map<String, String> page : parseLayoutIndex())
+        try (BufferedReader reader = fetchURL(url))
         {
-            out.add(page.get("name"));
-        }
+            StringBuilder text = new StringBuilder();
 
-        return out;
+            String line;
+
+            while ((line = reader.readLine()) != null) text.append(line).append('\n');
+
+            return text.toString();
+        }
+    }
+
+    /** The same, from a reader already open. */
+    private void copyAtomically(BufferedReader reader, File target) throws Exception
+    {
+        Util.writeAtomically(target, out ->
+        {
+            try (BufferedWriter writer = new BufferedWriter(
+                new java.io.OutputStreamWriter(out, java.nio.charset.StandardCharsets.UTF_8)))
+            {
+                String line;
+
+                while ((line = reader.readLine()) != null)
+                {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+            catch (Exception e)
+            {
+                // As an IOException, as the staging write contracts: throwing at all discards the staged file and
+                // keeps the previous one.
+                throw new java.io.IOException(e);
+            }
+        });
     }
 
     /**
@@ -1864,11 +2423,17 @@ public final class CS2File
      */
     private List<Map<String, String>> parseLayoutIndex() throws Exception
     {
+        final boolean fromStation = isFromStation();
+
         List<Map<String, String> > l = parseFile(fetchURL(getLayoutMasterURL()));
 
         List<Map<String, String>> out = new ArrayList<>();
 
         int position = 0;
+
+        boolean statesAnId = false;
+
+        for (Map<String, String> m : l) if ("seite".equals(m.get("_type")) && m.get("id") != null) statesAnId = true;
 
         for (Map<String, String> m : l)
         {
@@ -1887,8 +2452,26 @@ public final class CS2File
                 page.put("id", String.valueOf(
                     org.traincontrol.base.LayoutDiagram.pageIdOrPosition(m.get("id"), position)));
 
+                // A station index that states no ID at all is numbered in file order from 0, so its first page is 0
+                // either way; otherwise an absent ID is 0 and the dedupe below separates any it shares
+                if (fromStation && !statesAnId) page.put("id", String.valueOf(position - 1));
+
                 out.add(page);
             }
+        }
+
+        // The station's own file cannot be written, so two pages sharing an ID are told apart here, in memory only, by
+        // the same rule every sync (name order breaks the tie)
+        if (fromStation)
+        {
+            Map<String, Integer> byName = new java.util.LinkedHashMap<>();
+
+            for (Map<String, String> page : out) byName.put(page.get("name"), Integer.valueOf(page.get("id")));
+
+            Map<String, Integer> deduped = org.traincontrol.base.LayoutDiagram.dedupeIds(byName,
+                new java.util.TreeMap<Integer, String>(), 0);
+
+            for (Map<String, String> page : out) page.put("id", String.valueOf(deduped.get(page.get("name"))));
         }
 
         return out;
@@ -2092,10 +2675,7 @@ public final class CS2File
 
         List<String> names = new ArrayList<>();
 
-        for (Map<String, String> page : index)
-        {
-            names.add(page.get("name"));
-        }
+        for (Map<String, String> page : index) names.add(page.get("name"));
 
         this.pagesTheIndexNamed = names.size();
         
@@ -2109,6 +2689,7 @@ public final class CS2File
         Map<Integer, String> twoProtocols = control != null && control.isCS3() ? addressesWithTwoProtocols(accDB)
             : new HashMap<>();
         this.trackPlan = null;
+        this.trackPlanFailure = null;
         
         for (String name : names)
         {
@@ -2130,222 +2711,8 @@ public final class CS2File
                     );            
                 }
             
-                List<Map<String, String> > l = parseFile(fetchURL(url));
-                        
-                Map<Integer, MarklinAccessory> addressMap = accDB.stream()
-                    .collect(Collectors.toMap(
-                            MarklinAccessory::getAddress, 
-                            accessory -> accessory,
-                            (existing, replacement) -> existing // uncouplers will have the same ID
-                    ));
-            
-                int maxX = 0;
-                int maxY = 0;
-            
-                for (Map<String, String> m : l)
-                {
-                    if ("element".equals(m.get("_type")))
-                    {
-                        Integer coord = 0;
-
-                        if (m.get("id") != null)
-                        {
-                            coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
-                        }
-                        else
-                        {
-                            logMessage(
-                                I18n.f("layout.warningElementNoCoordinateInfoAssumingZeroZero", m),
-                                null,
-                                true
-                            );
-                        }
-                    
-                        Integer x = coord % 256;
-                        Integer y = (coord >> 8) % 256;
-
-                        if (x > maxX)
-                        {
-                            maxX = x;
-                        }
-
-                        if (y > maxY)
-                        {
-                            maxY = y;
-                        }
-                    }
-                }
-            
-                LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
-
-                layout.setPageId(index.get(pageIndex).get("id"));
-
-                List<LayoutDiagramComponent> unresolved = new ArrayList<>();
-                        
-                for (Map<String, String> m : l)
-                {
-                    // The left-margin keys (`page=1`), which are not a block and must not be written as one.
-                    if ("_bareKeys".equals(m.get("_type")))
-                    {
-                        for (Map.Entry<String, String> bare : m.entrySet())
-                        {
-                            layout.addBareKey(bare.getKey(), bare.getValue());
-                        }
-
-                        continue;
-                    }
-
-                    // The blocks above the elements (version, groesse, whatever a later firmware adds), kept so that
-                    // saving the page does not delete them.
-                    if (!"element".equals(m.get("_type")))
-                    {
-                        layout.addUnmodelledBlock(m);
-                        continue;
-                    }
-
-                    if ("element".equals(m.get("_type")))
-                    {
-                        Integer coord = 0;
-
-                        if (m.get("id") != null)
-                        {
-                            coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
-                        }
-
-                        Integer x = coord % 256;
-                        Integer y = (coord >> 8) % 256;
-
-                        Integer orient = 0;
-                        Integer state = 0;
-                        String type = m.get("typ");
-                    
-                        // Handle missing type
-                        if (type == null)
-                        {
-                            if (m.get("text") != null)
-                            {
-                                type = "text";
-                            }
-                            else
-                            {
-                                type = "unknown";
-                            }
-                        }
-                    
-                        Integer rawAddress = 0;
-                    
-                        try
-                        {
-                            rawAddress = Integer.valueOf(m.get("artikel"));
-                        }
-                        catch (NumberFormatException e)
-                        {
-                            if (!"text".equals(type))
-                            {
-                                logMessage(
-                                    I18n.f("layout.errorComponentNoAddressAtCoordinates", type, x, y)
-                                );
-                            }
-                        }
-                    
-                        Integer address = rawAddress;
-                    
-                        if (!"fahrstrasse".equals(type))
-                        {
-                            if (address % 2 == 0)
-                            {
-                                address = (address / 2);
-                            }
-                            else
-                            {
-                                address = (address - 1) / 2;
-                            }
-                        }
-                                        
-                        if (m.get("drehung") != null)
-                        {
-                            orient = Integer.valueOf(m.get("drehung")); 
-                        }
-                   
-                        if (m.get("zustand") != null)
-                        {
-                            state = Integer.valueOf(m.get("zustand"));
-                        }
-                    
-                        // Workaround for incorrectly oriented semaphore signals, which are rotated +90 degrees in the CS2 UI
-                        if (type.contains("_f_"))
-                        {
-                            orient = Math.floorMod(orient - 1, 4);
-                        }
-                    
-                        Accessory.accessoryDecoderType protocol = Accessory.accessoryDecoderType.MM2;
-                    
-                        // Read protocol from mags file
-                        if (addressMap.get(address) != null)
-                        {
-                            protocol = addressMap.get(address).getDecoderType();
-                        }
-                    
-                        // Custom - read protocol from the local layout files
-                        if (m.get("prot") != null)
-                        {
-                            if (MarklinAccessory.stringToAccessoryDecoderType(m.get("prot")) != null)
-                            {
-                                protocol = MarklinAccessory.stringToAccessoryDecoderType(m.get("prot"));
-                            }
-                            else
-                            {
-                                logMessage(
-                                    I18n.f("acc.errorUnknownProtocol", m.get("prot"))
-                                );
-                            }
-                        }
-                    
-                        LayoutDiagramComponent.componentType modelled = getComponentType(type, address);
-
-                        if (modelled != null)
-                        {
-                            layout.addComponent(
-                               modelled,
-                               x, y, orient, state, address, rawAddress, protocol, m.get("text")
-                            );
-
-                            // Whatever else the file said about this square: saving regenerates the page from the
-                            // model, so a key nobody carries would be deleted from the user's diagram.
-                            LayoutDiagramComponent added = layout.getComponent(x, y);
-
-                            if (added != null)
-                            {
-                                added.setUnmodelledKeys(m);
-
-                                // And the file's own word for the type: the type mapping is many-to-one, so writing the
-                                // canonical word back would collapse every variant the file distinguished.
-                                added.setOriginalTyp(m.get("typ"));
-
-                                if (twoProtocols.containsKey(address) && m.get("prot") == null
-                                    && added.isAccessory())
-                                {
-                                    unresolved.add(added);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Not a component this program knows, so not one it may delete: kept verbatim and put back
-                            // on save.
-                            layout.addUnmodelledElement(m);
-                        }
-                    }
-                }
-            
-                layout.checkBounds();
-
-                if (!unresolved.isEmpty())
-                {
-                    resolveTwoProtocolTiles(layout, unresolved, twoProtocols, accDB);
-                }
-            
-                out.add(layout);
+                out.add(parsePage(name, url, index.get(pageIndex).get("id"), parseFile(fetchURL(url)), accDB,
+                    twoProtocols));
             }
             catch (Exception | Error bad)
             {
@@ -2355,7 +2722,7 @@ public final class CS2File
                 logMessage(I18n.f("layout.warningPageCouldNotBeRead", name, String.valueOf(bad)),
                     null, false);
 
-                // The page keeps its place in the list (a link tile holds a position in it) as a blank page with a
+                // The page keeps its place in the name-sorted list (a link tile holds a position in it) as a blank page with a
                 // label saying it could not be loaded, carrying the page's id so its autonomy setup stays attached.
                 // Marked unreadable so nothing saves the blank over the file being recovered (OB-408).
                 try
@@ -2380,13 +2747,241 @@ public final class CS2File
                 }
             }
         }
-        
+
+        if (this.trackPlanFailure != null) throw this.trackPlanFailure;
+
         return out;
+    }
+
+    /**
+     * One page from its parsed file: each square with the protocol the accessory list gives its address, a `.prot` in
+     * the file first, and an address's two protocols told apart by the CS3's plan.
+     */
+    private LayoutDiagram parsePage(String name, String url, String pageId, List<Map<String, String>> l,
+        List<MarklinAccessory> accDB, Map<Integer, String> twoProtocols) throws Exception
+    {
+
+        Map<Integer, MarklinAccessory> addressMap = accDB.stream()
+            .collect(Collectors.toMap(
+                    MarklinAccessory::getAddress, 
+                    accessory -> accessory,
+                    (existing, replacement) -> existing // uncouplers will have the same ID
+            ));
+
+        int maxX = 0;
+        int maxY = 0;
+
+        for (Map<String, String> m : l)
+        {
+            if ("element".equals(m.get("_type")))
+            {
+                Integer coord = 0;
+
+                if (m.get("id") != null)
+                {
+                    coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
+                }
+                else
+                {
+                    logMessage(
+                        I18n.f("layout.warningElementNoCoordinateInfoAssumingZeroZero", m),
+                        null,
+                        true
+                    );
+                }
+
+                Integer x = coord % 256;
+                Integer y = (coord >> 8) % 256;
+
+                if (x > maxX)
+                {
+                    maxX = x;
+                }
+
+                if (y > maxY)
+                {
+                    maxY = y;
+                }
+            }
+        }
+
+        LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
+
+        layout.setPageId(pageId);
+
+        List<LayoutDiagramComponent> unresolved = new ArrayList<>();
+
+        for (Map<String, String> m : l)
+        {
+            // The left-margin keys (`page=1`), which are not a block and must not be written as one.
+            if ("_bareKeys".equals(m.get("_type")))
+            {
+                for (Map.Entry<String, String> bare : m.entrySet())
+                {
+                    layout.addBareKey(bare.getKey(), bare.getValue());
+                }
+
+                continue;
+            }
+
+            // The blocks above the elements (version, groesse, whatever a later firmware adds), kept so that
+            // saving the page does not delete them.
+            if (!"element".equals(m.get("_type")))
+            {
+                layout.addUnmodelledBlock(m);
+                continue;
+            }
+
+            if ("element".equals(m.get("_type")))
+            {
+                Integer coord = 0;
+
+                if (m.get("id") != null)
+                {
+                    coord = Integer.valueOf(m.get("id").replace("0x", ""), 16);
+                }
+
+                Integer x = coord % 256;
+                Integer y = (coord >> 8) % 256;
+
+                Integer orient = 0;
+                Integer state = 0;
+                String type = m.get("typ");
+
+                // Handle missing type
+                if (type == null)
+                {
+                    if (m.get("text") != null)
+                    {
+                        type = "text";
+                    }
+                    else
+                    {
+                        type = "unknown";
+                    }
+                }
+
+                Integer rawAddress = 0;
+
+                try
+                {
+                    rawAddress = Integer.valueOf(m.get("artikel"));
+                }
+                catch (NumberFormatException e)
+                {
+                    if (!"text".equals(type))
+                    {
+                        logMessage(
+                            I18n.f("layout.errorComponentNoAddressAtCoordinates", type, x, y)
+                        );
+                    }
+                }
+
+                Integer address = rawAddress;
+
+                if (!"fahrstrasse".equals(type))
+                {
+                    if (address % 2 == 0)
+                    {
+                        address = (address / 2);
+                    }
+                    else
+                    {
+                        address = (address - 1) / 2;
+                    }
+                }
+
+                if (m.get("drehung") != null)
+                {
+                    orient = Integer.valueOf(m.get("drehung")); 
+                }
+
+                if (m.get("zustand") != null)
+                {
+                    state = Integer.valueOf(m.get("zustand"));
+                }
+
+                // Workaround for incorrectly oriented semaphore signals, which are rotated +90 degrees in the CS2 UI
+                if (type.contains("_f_"))
+                {
+                    orient = Math.floorMod(orient - 1, 4);
+                }
+
+                Accessory.accessoryDecoderType protocol = Accessory.accessoryDecoderType.MM2;
+
+                // Read protocol from mags file
+                if (addressMap.get(address) != null)
+                {
+                    protocol = addressMap.get(address).getDecoderType();
+                }
+
+                // Custom - read protocol from the local layout files
+                if (m.get("prot") != null)
+                {
+                    if (MarklinAccessory.stringToAccessoryDecoderType(m.get("prot")) != null)
+                    {
+                        protocol = MarklinAccessory.stringToAccessoryDecoderType(m.get("prot"));
+                    }
+                    else
+                    {
+                        logMessage(
+                            I18n.f("acc.errorUnknownProtocol", m.get("prot"))
+                        );
+                    }
+                }
+
+                LayoutDiagramComponent.componentType modelled = getComponentType(type, address);
+
+                if (modelled != null)
+                {
+                    layout.addComponent(
+                       modelled,
+                       x, y, orient, state, address, rawAddress, protocol, m.get("text")
+                    );
+
+                    // Whatever else the file said about this square: saving regenerates the page from the
+                    // model, so a key nobody carries would be deleted from the user's diagram.
+                    LayoutDiagramComponent added = layout.getComponent(x, y);
+
+                    if (added != null)
+                    {
+                        added.setUnmodelledKeys(m);
+
+                        // The page a link goes to, when the file gives its ID
+                        added.setLinkPageIdFromFile(m.get("zielseite"), m.get("zielartikel"));
+
+                        // And the file's own word for the type: the type mapping is many-to-one, so writing the
+                        // canonical word back would collapse every variant the file distinguished.
+                        added.setOriginalTyp(m.get("typ"));
+
+                        if (twoProtocols.containsKey(address) && m.get("prot") == null
+                            && added.isAccessory())
+                        {
+                            unresolved.add(added);
+                        }
+                    }
+                }
+                else
+                {
+                    // Not a component this program knows, so not one it may delete: kept verbatim and put back
+                    // on save.
+                    layout.addUnmodelledElement(m);
+                }
+            }
+        }
+
+        layout.checkBounds();
+
+        if (!unresolved.isEmpty()) resolveTwoProtocolTiles(layout, unresolved, twoProtocols, accDB);
+
+        return layout;
     }
 
     // The CS3's own track plans (/app/api/gbs): fetched at most once per parse, and only for an address with two
     // protocols
     private CS3TrackPlan trackPlan;
+
+    private IOException trackPlanFailure;
 
     // The addresses with two protocols this parser has warned about, by address and page, so a refresh after each edit
     // does not repeat them
@@ -2463,10 +3058,7 @@ public final class CS2File
 
         for (Map.Entry<Integer, List<String>> e : untold.entrySet())
         {
-            if (!this.twoProtocolsWarned.add(e.getKey() + " " + page.getName()))
-            {
-                continue;
-            }
+            if (!this.twoProtocolsWarned.add(e.getKey() + " " + page.getName())) continue;
 
             logMessage(I18n.f(fromStation ? "layout.cs3TwoProtocolsUnresolved" : "layout.cs3TwoProtocolsNotChecked",
                 twoProtocols.get(e.getKey()), e.getKey(), page.getName(), String.join(" ", e.getValue()),
@@ -2474,7 +3066,10 @@ public final class CS2File
         }
     }
 
-    /** The station's track plans, read once per parse; a failed read gives a plan with no pages. */
+    /**
+     * The station's track plans, read once per parse; a failed read gives a plan with no pages.  A fetch that fails
+     * other than as not found is kept in trackPlanFailure, which fails the parse once its pages are read.
+     */
     private CS3TrackPlan trackPlan()
     {
         if (this.trackPlan == null)
@@ -2488,6 +3083,8 @@ public final class CS2File
             catch (Exception e)
             {
                 logMessage(I18n.f("layout.cs3TrackPlanUnreadable", e), e, true);
+
+                if (e instanceof IOException && !(e instanceof FileNotFoundException)) this.trackPlanFailure = (IOException) e;
             }
 
             this.trackPlan = new CS3TrackPlan(gbs);
@@ -2501,15 +3098,24 @@ public final class CS2File
     */
     public static boolean ping(String host)
     {
-       // try-with-resources: this is called in a retry loop at startup, and each attempt used to leave
-       // its connection open
-       try (BufferedReader reachable = CS2File.fetchURL(CS2File.getPingIP(host)))
-       {
-           return reachable != null;
-       }
-       catch (Exception e)
-       {
-           return false;
-       }
+        // Answered once the headers arrive: the body is not read, and the connection is closed on every attempt, since
+        // this is called in a retry loop at start-up
+        URLConnection connection = null;
+
+        try
+        {
+            connection = openWithTimeouts(CS2File.getPingIP(host));
+            connection.getInputStream().close();
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+        finally
+        {
+            if (connection instanceof HttpURLConnection) ((HttpURLConnection) connection).disconnect();
+        }
     }
 }

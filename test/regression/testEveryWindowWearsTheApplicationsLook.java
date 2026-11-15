@@ -10,8 +10,9 @@ import java.util.Map;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
+import support.Display;
+import support.Reflect;
 
 /**
  * A window of this application looks the same whoever built it, and is the same SIZE.
@@ -19,10 +20,9 @@ import org.testng.annotations.Test;
  * Adam: "Some tests start with the small font in the UI menu bar (suggesting the UI isn't initialized the same way as
  * in the production app), while others have the same font as the production app. Can you make this be consistent?"
  *
- * The look and feel is installed by `MarklinControlStation.init` and by `TrainControlUI`'s constructor, so a window
- * built by a test without either was drawn in Metal.  The fix is in the windows: every top-level window asks for the
- * look and feel before it builds itself, at CLASS LOAD.  The claims measure the SIZE and the window's chrome, not only
- * whether the look and feel is FlatLaf, which was true in every failing case:
+ * The look and feel is installed by `MarklinControlStation.init` and by `TrainControlUI`'s constructor, so every
+ * top-level window asks for it before it builds itself, at CLASS LOAD.  The claims measure the SIZE and the window's
+ * chrome, not only whether the look and feel is FlatLaf, which was true in every failing case:
  *
  * <pre>
  *   a Swing component built, then the install ... scale 1.25, every font 15
@@ -52,10 +52,7 @@ public class testEveryWindowWearsTheApplicationsLook
     @Test
     public void testAWindowBuiltColdStillWearsTheApplicationsLook() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("a look and feel needs a display");
-        }
+        Display.needed("a look and feel needs a display");
 
         assertFalse(javax.swing.UIManager.getLookAndFeel() instanceof com.formdev.flatlaf.FlatLightLaf,
             "the application's look and feel was already installed before this test built anything, so "
@@ -101,9 +98,8 @@ public class testEveryWindowWearsTheApplicationsLook
 
             try
             {
-                java.lang.reflect.Method states = org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod("uiScaleFor", int.class);
-
-                states.setAccessible(true);
+                java.lang.reflect.Method states =
+                    Reflect.method(org.traincontrol.gui.TrainControlUI.class, "uiScaleFor", int.class);
 
                 expected = Double.parseDouble((String) states.invoke(null,
                     java.awt.Toolkit.getDefaultToolkit().getScreenResolution()));

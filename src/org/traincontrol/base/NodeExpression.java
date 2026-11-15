@@ -85,10 +85,7 @@ public abstract class NodeExpression implements Serializable
             NodeExpression left = normalize(((NodeAnd) expr).getLeft());
             NodeExpression right = normalize(((NodeAnd) expr).getRight());
 
-            if (left instanceof NodeOr)
-            {
-                left = new NodeGroup(java.util.Arrays.asList(left));
-            }
+            if (left instanceof NodeOr) left = new NodeGroup(java.util.Arrays.asList(left));
 
             return new NodeAnd(left, right);
         }
@@ -97,10 +94,7 @@ public abstract class NodeExpression implements Serializable
             NodeExpression left = normalize(((NodeOr) expr).getLeft());
             NodeExpression right = normalize(((NodeOr) expr).getRight());
 
-            if (left instanceof NodeAnd)
-            {
-                left = new NodeGroup(java.util.Arrays.asList(left));
-            }
+            if (left instanceof NodeAnd) left = new NodeGroup(java.util.Arrays.asList(left));
 
             return new NodeOr(left, right);
         }
@@ -108,10 +102,7 @@ public abstract class NodeExpression implements Serializable
         {
             List<NodeExpression> normalized = new ArrayList<>();
 
-            for (NodeExpression child : ((NodeGroup) expr).getExpressions())
-            {
-                normalized.add(normalize(child));
-            }
+            for (NodeExpression child : ((NodeGroup) expr).getExpressions()) normalized.add(normalize(child));
 
             return new NodeGroup(normalized);
         }
@@ -143,9 +134,6 @@ public abstract class NodeExpression implements Serializable
     
     /**
      * Converts this expression to a parseable text representation
-     * @param expression
-     * @param network
-     * @return 
      */
     public static String toTextRepresentation(NodeExpression expression, ViewListener network)
     {
@@ -191,8 +179,7 @@ public abstract class NodeExpression implements Serializable
         else if (node instanceof NodeGroup)
         {
             // The closing bracket belongs to the group, not to its last child: appended from inside the loop, a group
-            // with no children never wrote it, and every later bracket was read against the wrong opener.  No path
-            // builds an empty group today, but the correction costs nothing.
+            // with no children would never write it, and every later bracket would be read against the wrong opener.
             sb.append("(");
 
             for (NodeExpression child : ((NodeGroup) node).getExpressions())
@@ -206,9 +193,6 @@ public abstract class NodeExpression implements Serializable
 
     /**
      * Converts a text representation into a complete expression
-     * @param text
-     * @param network
-     * @return
      * @throws Exception 
      */
     public static NodeExpression fromTextRepresentation(String text, ViewListener network) throws Exception 

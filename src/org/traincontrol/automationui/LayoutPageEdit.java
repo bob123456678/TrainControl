@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.model.ViewListener;
+import org.traincontrol.util.Util;
 
 /**
  * Renaming, duplicating and blanking a layout page, as one operation that can be run without a window.
@@ -24,7 +25,6 @@ public class LayoutPageEdit
      * again after one write: harmless for a DELETED page, not for a page whose FILE was merely absent, whose settings
      * are still in the setup under its old number.  The setup remembers, so it is asked; zero when there is no session.
      *
-     * @param session the session already built, or null
      * @return the highest page id the autonomy setup has ever recorded, or 0
      */
     public static int pageIdFloor(AutonomySession session)
@@ -52,13 +52,13 @@ public class LayoutPageEdit
     {
         if (layoutList == null || name == null) return null;
 
-        String wanted = org.traincontrol.util.Util.sanitizeFilename(name);
+        String wanted = Util.sanitizeFilename(name);
 
         for (String page : layoutList)
         {
             if (page == null || page.equals(except)) continue;
 
-            if (org.traincontrol.util.Util.sanitizeFilename(page).equalsIgnoreCase(wanted)) return page;
+            if (Util.sanitizeFilename(page).equalsIgnoreCase(wanted)) return page;
         }
 
         return null;
@@ -109,8 +109,6 @@ public class LayoutPageEdit
     /**
      * The same, told which absent pages the operator has said are coming back (FR-018); callers without one retire an
      * absent page's id.
-     *
-     * @param keepAbsent names to keep in the index though they are not in the list; null for the behavior above
      */
     public static void renameOrDuplicate(List<String> layoutList, LayoutDiagram page,
         String layoutPath, String currentLayout, String newLayoutName, boolean rename,
@@ -122,10 +120,7 @@ public class LayoutPageEdit
         // so ids that shift would reattach the whole setup to the wrong pages (MT-135).
         int renamedAt = rename ? layoutList.indexOf(currentLayout) : -1;
 
-        if (rename)
-        {
-            layoutList.remove(currentLayout);
-        }
+        if (rename) layoutList.remove(currentLayout);
 
         // Back in its own slot so the page keeps its id; a duplicate or new page goes at the end.  This is above the
         // write because the arrows must be re-aimed first and that needs the final list.
@@ -183,10 +178,7 @@ public class LayoutPageEdit
             }
         }
 
-        if (blank)
-        {
-            page.clear();
-        }
+        if (blank) page.clear();
 
         page.saveChanges(newLayoutName, duplicate);
 
@@ -210,8 +202,7 @@ public class LayoutPageEdit
                 if (session == null)
                 {
                     // No session: rewrite the file itself, which writes nothing unless the setup is already there.
-                    AutonomyCompanionStore.renamePageOnDisk(new java.io.File(layoutPath),
-                        currentLayout, newLayoutName);
+                    AutonomyCompanionStore.renamePageOnDisk(new java.io.File(layoutPath), currentLayout, newLayoutName);
                 }
                 else if (session.exists())
                 {

@@ -255,10 +255,8 @@ public class testATailPastASwitchIsAskedAbout
     }
 
     /**
-     * With no answer, or Not known, a tail past switch 51 stops at the switch (Adam: "stop at the switch").  Every
-     * other fork stops the tail where the roads part; with no road to follow, this one took the first rail by that side
-     * and claimed track the train may not be on.  So the squares both rails share are claimed, up to and including the
-     * switch, and none that only one of them runs over.
+     * With no answer, or Not known, a tail past switch 51 stops at the switch (Adam: "stop at the switch"): the squares
+     * both rails share are claimed, up to and including the switch, and none that only one of them runs over.
      *
      * MUTATION: take the first rail by the side again, and this fails.
      */

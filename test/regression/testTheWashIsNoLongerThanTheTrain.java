@@ -29,6 +29,8 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Reflect;
 
 /**
  * MT-309, second half: the wash is as long as the train, not as long as the edge.  Coverage is recorded per EDGE, so a
@@ -92,8 +94,8 @@ public class testTheWashIsNoLongerThanTheTrain
         assertNotNull(ui, "there is no window, so nothing here can reach the drawing path");
 
         // init returns with display() still queued.
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -101,7 +103,8 @@ public class testTheWashIsNoLongerThanTheTrain
 
         watchdog = Executors.newSingleThreadExecutor();
 
-        SwingUtilities.invokeAndWait(() -> measureEveryTileAs(TILE_LENGTH));
+        // Every tile measured, because the tail walk stops at the first unmeasured segment.
+        SwingUtilities.invokeAndWait(() -> support.TileLengths.measureEveryTileAs(session, TILE_LENGTH));
 
         model.parseAuto(session.buildConfiguration());
 
@@ -310,16 +313,11 @@ public class testTheWashIsNoLongerThanTheTrain
 
     /**
      * A path locked ahead of the train does not move the wash (MT-438): a locked path reserves every Point on it, so an
-     * anchor taken from `Layout.getLocomotiveLocation` could be the destination the train has not reached.
-     * `Layout.whereTheTrainIs` is the one rule for this walk, `DiagramMonitor` and `AutoLocomotiveStatus`.
+     * anchor taken from `Layout.getLocomotiveLocation` could be a destination the train has not reached
+     * (`Layout.whereTheTrainIs` is the one rule).  A LOCK rather than a run, because a lock returns with the train
+     * still standing; the placement AND the arrival record are captured before it and written back.
      *
-     * The test tries candidate destinations until the anchor moves off the square the train stands on, and fails if
-     * none can.  A LOCK rather than a run, because a lock returns with the train still standing; `unlockPath` keeps the
-     * ARRIVAL of the path it is given, so the placement AND the arrival record are captured before the lock and written
-     * back.
-     *
-     * MUTATION: anchor `walkBackFrom` at `getLocomotiveLocation` again and this goes red: the wash moves onto the
-     * locked path ahead, which `edgesCoveredByStandingTrains` does not hold covered.
+     * MUTATION: anchor `walkBackFrom` at `getLocomotiveLocation` again and this goes red.
      */
     @Test(dependsOnMethods = "testALongerTrainCoversMoreOfIt")
     public void testAPathLockedAheadDoesNotMoveTheWash() throws Exception
@@ -487,7 +485,7 @@ public class testTheWashIsNoLongerThanTheTrain
         // reading are two moments, and `support.CoveredMarks` knows it.
         support.CoveredMarks.refresh(ui);
 
-        pump();
+        Components.drain(1);
     }
 
     /**
@@ -663,7 +661,7 @@ public class testTheWashIsNoLongerThanTheTrain
             ui.getDiagramTileRegistry().register(square, label);
         }
 
-        pump();
+        Components.drain(1);
     }
 
     /** The tiles this test registered for these squares, drawn and ready to be asked what they show. */
@@ -679,7 +677,7 @@ public class testTheWashIsNoLongerThanTheTrain
             {
                 while (bareIconOf(label) == null && System.currentTimeMillis() < until)
                 {
-                    pump();
+                    Components.drain(1);
                 }
 
                 if (bareIconOf(label) == null) continue;
@@ -690,7 +688,7 @@ public class testTheWashIsNoLongerThanTheTrain
             }
         }
 
-        pump();
+        Components.drain(1);
 
         assertFalse(out.isEmpty(),
             "none of " + squares + " has a drawn tile, so there is nothing an operator could have "
@@ -710,11 +708,7 @@ public class testTheWashIsNoLongerThanTheTrain
 
     private static Icon bareIconOf(LayoutLabel label) throws Exception
     {
-        java.lang.reflect.Field lastIcon = LayoutLabel.class.getDeclaredField("lastIcon");
-
-        lastIcon.setAccessible(true);
-
-        return (Icon) lastIcon.get(label);
+        return (Icon) Reflect.get(LayoutLabel.class, label, "lastIcon");
     }
 
     /** Lets the production monitor tick and the event thread catch up. */
@@ -726,13 +720,8 @@ public class testTheWashIsNoLongerThanTheTrain
         {
             Thread.sleep(50);
 
-            pump();
+            Components.drain(1);
         }
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 
     // ---------------------------------------------------------------- the fixture
@@ -761,14 +750,5 @@ public class testTheWashIsNoLongerThanTheTrain
         train = keep.getCurrentLocomotive();
 
         trainLengthWas = train.getTrainLength();
-    }
-
-    /**
-     * Measures every tile, because the tail walk stops at the first unmeasured segment; written after collecting, as
-     * setTileLength rebuilds the reducer.
-     */
-    private static void measureEveryTileAs(int units)
-    {
-        support.TileLengths.measureEveryTileAs(session, units);
     }
 }

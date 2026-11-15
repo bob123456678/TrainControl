@@ -38,9 +38,7 @@ public class testSidebarIcons
      * Each icon is a single color on transparency.
      *
      * A flat mark reads at 30 pixels; a picture does not.  Partial alpha is allowed (the edges are antialiased) but
-     * every pixel with any opacity at all has to be the same color underneath.  The generator draws at four times the
-     * size and reduces with LANCZOS, because PIL does not antialias shape edges and a lamp punched out of a signal head
-     * came out with a stepped edge that survived the scale down.
+     * every pixel with any opacity at all has to be the same color underneath.
      */
     @Test
     public void testEverySidebarIconIsOneFlatColour() throws Exception
@@ -91,7 +89,7 @@ public class testSidebarIcons
      *
      * The sidebar is built by the GUI designer, which fixes the order the panels are added in, and the icons are
      * applied afterwards BY INDEX, so a tab moved without recounting wears the wrong icon with correct tooltips and
-     * nothing throws.  Adam asked for exactly such a move: "swap the position of the route tab with the keyboard tab".
+     * nothing throws.
      *
      * This reads the source, which is weaker than running it: the reorder happens in `setViewListener`, not in the
      * constructor, so a window built as the other tests here build one has the DESIGNER's order, and reaching the real

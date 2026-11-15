@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -18,6 +17,8 @@ import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Teardown;
 
 /**
  * MT-337, second half: a station named twice draws its home locomotive twice.  The home appears once, on the caption
@@ -97,20 +98,15 @@ public class testTheHomeLabelIsDrawnOnce
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("reading what the editor drew needs a display");
-        }
+        Display.needed("reading what the editor drew needs a display");
 
         // The operator's own railway, COPIED: the frozen `live-snapshot` (OB-111), never written in place.  It carries
         // a doubly captioned station, and reading the live folder made a sibling class red when his trains moved.
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        model = support.TestStation.simulatedInDebug();
-
-        javax.swing.SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -214,6 +210,7 @@ public class testTheHomeLabelIsDrawnOnce
             built[0] = new LayoutEditor(page, 30, ui, 0);
             built[0].render();
             built[0].setAutonomyMode(session);
+            captionWas = captions(built[0], org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.CAPTIONS_HOMES);
             built[0].getAutonomyPanel().getShowHomeLocomotives().setSelected(true);
         });
 
@@ -229,23 +226,9 @@ public class testTheHomeLabelIsDrawnOnce
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        if (editor != null)
-        {
-            final LayoutEditor closing = editor;
+        if (editor != null) javax.swing.SwingUtilities.invokeAndWait(() -> captions(editor, captionWas));
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
-        }
-
-        if (ui != null)
-        {
-            final TrainControlUI closing = ui;
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
-        }
-
-        if (model != null) model.stop();
-
-        if (sandbox != null) sandbox.close();
+        Teardown.close(sandbox, model, editor, ui);
     }
 
     /** The defect: one station, two captions, one home written on the diagram twice. */
@@ -502,5 +485,22 @@ public class testTheHomeLabelIsDrawnOnce
         settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
 
         javax.swing.SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** The caption choice before this class picked Homes, put back after */
+    private static int captionWas;
+
+    /**
+     * Picks a caption mode through the editor's choice, the user's door: a run starts at the default (Stations), which
+     * re-applies over a box ticked directly.  On the event thread.
+     *
+     * @return the mode it replaced
+     */
+    private static int captions(LayoutEditor on, int mode)
+    {
+        javax.swing.JComboBox<String> choice = on.getAutonomyPanel().getCaptionChoice();
+        int was = choice.getSelectedIndex();
+        choice.setSelectedIndex(mode);
+        return was;
     }
 }

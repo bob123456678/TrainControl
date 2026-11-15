@@ -14,11 +14,9 @@ import support.SourceOf;
  * refusal has to be in the method."*): Execute Timetable and Return Home must not start trains under an open editor,
  * and switching layouts or swapping the layout folder must not replace the diagram during a run.
  *
- * This pins the half that goes wrong: a door that forgets to ask. It does NOT pin the two guards' own bodies:
- * `refuseWhileAutonomyRunning` is `model.isAutonomyRunning()`, asserted behaviorally by `core.testHomeStaging` and
- * `regression.testARouteDoesNotThrowSwitchesUnderATrain`; `refuseWhileEditorOpen` is `isLayoutEditorOpen()`, pinned by
- * shape in `testEditorSurfaceRules`.  A behavioral test would have to raise each refusal's modal dialog, which strands
- * a battery runner.
+ * Pins the half that goes wrong, a door that forgets to ask, not the guards' own bodies (asserted by
+ * `core.testHomeStaging`, `regression.testARouteDoesNotThrowSwitchesUnderATrain` and `testEditorSurfaceRules`); a
+ * behavioral test would have to raise a modal dialog, which strands a battery runner.
  *
  * MUTATION: delete the `refusedToSendATrain(` call from `requestReturnToHome` and the first test fails, naming it.
  *
@@ -52,6 +50,22 @@ public class testTheRefusalsAreAskedAtTheDoors
 
         assertNull(org.traincontrol.automationui.LayoutPageEdit.pageUsingTheFileOf(pages, "2 - Bottom", null),
             "a name no page's file has was refused");
+    }
+
+    /**
+     * Every page edit that rewrites the index asks the shared refusals first (`refusedAsAPageEdit`): the DOORS list
+     * checks the helper's content, and this checks that its callers call it.
+     *
+     * MUTATION: take the call out of `duplicateOrRenameCurrentLayout` or `reorder`, and this names it.
+     */
+    @Test
+    public void testEveryPageEditCallsTheSharedRefusals() throws Exception
+    {
+        for (String door : new String[] {"    void duplicateOrRenameCurrentLayout(", "    private void reorder("})
+        {
+            assertTrue(code(door).contains("refusedAsAPageEdit("), door.trim() + " does not ask the page edits' shared"
+                + " refusals before it writes");
+        }
     }
 
     /**
@@ -124,8 +138,44 @@ public class testTheRefusalsAreAskedAtTheDoors
             "a recent layout swaps the layout folder, as Open Layout does (FR-145)"},
         {"private void mountRestoreFromBackup(", SETUP + "|" + EDITOR,
             "Restore from Backup replaces the layout folder and the data, then closes TrainControl (FR-124)"},
-        {"    void initializeLocalLayoutMenuItemActionPerformed(", SETUP,
-            "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2)"},
+        {"    void initializeLocalLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
+            "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2); under an open editor it switched first and was refused at the sync"},
+        {"    void downloadCSLayoutMenuItemActionPerformed(", EDITOR,
+            "Download Central Station Layout switches the layout to the downloaded folder, under an open editor as well"},
+        {"    private void downloadAndOpen(", EDITOR,
+            "the downloaded copy is opened after the fetch, which runs behind a spinner; asked again then"},
+
+        // The Autonomy tab's Manage list and the configuration list's right-click menu, which the menu bar grays and
+        // these doors must refuse by themselves.
+        {"    public void initialize()", EDITOR,
+            "a first configuration is written into the setup an open editor holds"},
+        {"    public void importConfiguration()", EDITOR,
+            "an import writes the setup's shared half under an open editor"},
+        {"    public void exportConfiguration()", EDITOR,
+            "an export folds the running railway into the setup first"},
+        {"    public void duplicate()", EDITOR,
+            "a new configuration is written into the setup an open editor holds"},
+        {"    public void rename()", EDITOR,
+            "renaming the running configuration leaves the editor's Cancel restoring a name the window no longer runs"},
+        {"    public void delete()", EDITOR,
+            "deleting resets the session, and the editor's Cancel recreates the configuration"},
+        {"    private static void deleteEverything(", EDITOR,
+            "deleting the whole setup under an open editor"},
+        {"    boolean unloadAutonomy()", EDITOR,
+            "Stop Using Autonomy resets the session under an open editor"},
+        {"    public boolean refusedWhileRunning()", EDITOR,
+            "every door that loads a configuration asks here, and a load saves the setup under an open editor"},
+        {"    private JMenu pagesMenu(", EDITOR,
+            "ticking a page in or out saves the setup with a reconcile and reloads the configuration under an open"
+            + " editor"},
+
+        // Grayed or emptied for an editor on its way as well as one open: the gate every sending door asks.
+        {"    void guardLayoutMenu()", "anEditorIsOpenOrOnItsWay()",
+            "the Layout menu's saves and rebuilds commit work an editor has not saved"},
+        {"    private static PathOptions gatherPathOptions(", "anEditorIsOpenOrOnItsWay()",
+            "the right-click menu gathers on a worker, so it can be built between Edit and the editor showing"},
+        {"    private LayoutRightclickAutonomyMenu(TrainControlUI ui,", "anEditorIsOpenOrOnItsWay()",
+            "anything done from the right-click menu is overwritten by the editor's own copy of the setup"},
 
         // And the rest.
         {"private void startAutonomyActionPerformed(", GATE,
@@ -135,6 +185,9 @@ public class testTheRefusalsAreAskedAtTheDoors
             + " tab's own copy never asked about an editor (RLV12-B1)"},
         {"private void addLocomotiveMenuItemActionPerformed(", AUTONOMY,
             "MT-141: no modification to the locomotive database while the layout is running"},
+        {"    Locomotive addLocomotive(Component source, String locName,", AUTONOMY,
+            "the same, at Add, for every door into Add mode (Ctrl+D, the database window's button) and for a window"
+            + " open when a run began (FR-179)"},
         {"public void promptTrainLength(", AUTONOMY,
             "RSA-A1, MT-141: a train's length is part of the locomotive database, and a run hands the track behind a"
             + " train back by it"},
@@ -142,10 +195,12 @@ public class testTheRefusalsAreAskedAtTheDoors
             "the same, at OK, for a dialog that was open when a run began (RSA-A1)"},
         {"private void syncFullLocStateMenuItemActionPerformed(", AUTONOMY,
             "a full sync rewrites the locomotive database under a running railway"},
+        {"private void checkForRenameMenuItemActionPerformed(", AUTONOMY,
+            "Check for Renamed Locomotives renames locomotives in the database a run is driving"},
         {"private void deleteLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "deleting a page the running railway or an open editor is using"},
-        {"    void duplicateOrRenameCurrentLayout(", SETUP + "|" + EDITOR,
-            "renaming a page moves what the setup and the editor both point at"},
+        {"    private boolean refusedAsAPageEdit(", SETUP + "|" + EDITOR,
+            "renaming, duplicating, adding and moving pages move what the setup and the editor both point at"},
         {"    void combineLinkedPages(", SETUP + "|" + EDITOR,
             "combining rewrites several pages into one"},
         {"private void AddRouteButtonActionPerformed(", EDITOR,
@@ -155,6 +210,12 @@ public class testTheRefusalsAreAskedAtTheDoors
             + "refusal posts its dialog rather than showing it"},
         {"public void doSync(", AUTONOMY,
             "a Central Station sync replaces the databases underneath a running railway"},
+        {"    boolean writeNameAndAddress(Component source, Locomotive l,", AUTONOMY,
+            "renaming or re-addressing a locomotive rewrites the database; the Locomotive Settings window's Save asks"
+            + " here, at the write, as a run can begin while the window is open (MT-141)"},
+        {"    static void open(TrainControlUI ui, Component source)", AUTONOMY,
+            "Import from CSV adds, merges and re-addresses locomotives (FR-049); asked again after its question, as a"
+            + " run can begin behind it"},
         // Not the excluded-page label (`openAutonomyEditorIfItCan`): opening with an editor already open is not refused
         // anywhere (`openLayoutEditor` brings that window forward), and asking the refusal first would show "Close the
         // editor first" in exactly the state that item handles.
@@ -247,22 +308,26 @@ public class testTheRefusalsAreAskedAtTheDoors
     }
 
     /**
-     * The two locomotive doors that ask a modal question ask again after it, before they write:
-     * `refuseWhileARouteDrivesIt` is asked as each door opens, and the edit dialog and delete confirmation then wait
-     * long enough for an s88 trigger to start a route that drives the locomotive. Read from the source, as the other
-     * doors are: a behavioral test would have to hold a modal dialog open while a route starts.
+     * The two locomotive write doors ask whether a route drives the locomotive after anything modal, before they
+     * write: the delete confirmation waits long enough for an s88 trigger to start a route, and the Locomotive
+     * Settings window's Save goes through `writeNameAndAddress`, which asks at the write itself and has no dialog
+     * of its own. Read from the source, as the other doors are: a behavioral test would have to hold a modal dialog
+     * open while a route starts.
      *
-     * MUTATION: take the second `refuseWhileARouteDrivesIt` out of either door, and this fails naming it.
+     * MUTATION: take the second `refuseWhileARouteDrivesIt` out of the delete door, or the only one out of
+     * `writeNameAndAddress`, and this fails naming it.
      */
     @Test
     public void testTheRouteRefusalIsAskedAgainAfterTheDialog() throws Exception
     {
-        // The door, what it is for, and what it writes
+        // The door, what it is for, and what it writes; a door with no question of its own is marked "no dialog" in
+        // its purpose, and must ask before its first write.
         String[][] doors =
         {
-            {"    void changeLocAddress(Locomotive l, MouseEvent evt)", "renaming or re-addressing a locomotive",
+            {"    boolean writeNameAndAddress(Component source, Locomotive l,",
+                "renaming or re-addressing a locomotive (no dialog)",
                 "this.ui.getModel().changeLocAddress(", "this.ui.getModel().renameLoc("},
-            {"    void deleteLoc(String value, MouseEvent evt)", "deleting a locomotive",
+            {"    boolean deleteLoc(String value, Component source)", "deleting a locomotive",
                 "this.ui.activeLoc = null;", "this.ui.cutLocomotive = null;", "this.ui.getModel().deleteLoc("},
         };
 
@@ -284,14 +349,17 @@ public class testTheRefusalsAreAskedAtTheDoors
                 firstWrite = Math.min(firstWrite, at);
             }
 
-            int dialog = body.lastIndexOf("showOptionDialog(", firstWrite);
+            boolean noDialog = door[1].endsWith("(no dialog)");
 
-            assertTrue(dialog >= 0, "precondition: " + door[0] + " no longer asks its question before it writes");
+            int dialog = noDialog ? -1 : body.lastIndexOf("showOptionDialog(", firstWrite);
+
+            assertTrue(noDialog || dialog >= 0,
+                "precondition: " + door[0] + " no longer asks its question before it writes");
 
             // The last time it asks before it writes, which has to be after the question
             int asked = body.lastIndexOf("refuseWhileARouteDrivesIt(", firstWrite);
 
-            if (asked < dialog) wrong.add(door[1] + " (" + door[0] + ")");
+            if (asked < 0 || asked < dialog) wrong.add(door[1] + " (" + door[0] + ")");
         }
 
         assertEquals(wrong.toString(), "[]", "these doors ask whether a running route drives the locomotive only before"
@@ -343,21 +411,17 @@ public class testTheRefusalsAreAskedAtTheDoors
 
     /**
      * Every door that puts a train down uses the railway's answer (`behaviour/facing.md` section 4: *"nothing about a
-     * placement is recorded until the railway has accepted it"*). `Layout.moveLocomotive` returns false rather than
-     * throwing when it refuses, and a door that discarded that answer wrote the placement into the setup AND SAVED it,
-     * so the next build emitted the train on a square it was never put on.
+     * placement is recorded until the railway has accepted it"*): `Layout.moveLocomotive` returns false when it
+     * refuses, and a door that discarded that wrote the placement into the setup AND SAVED it.  A named list, and every
+     * door on it guards.
      *
-     * A named list, and every door on it guards, `GraphLocAssign.commitChanges` too: recording no placement for a
-     * refused move keeps the setup honest but not the locomotive, whose dialog values would be written to a train the
-     * railway refused to place.
-     *
-     * MUTATION: drop the `if (!` from any of the three doors, and this names it.
+     * MUTATION: drop the `if (!` from any of the doors, and this names it.
      */
     @Test
     public void testEveryPlacementDoorUsesTheRailwaysAnswer() throws Exception
     {
-        // The doors, for the report: the diagram menu's Place and Remove items, the diagram's paste door, and the
-        // assign dialog.  Asked of the whole program, so a door that moves to another file is still counted.
+        // The doors, for the report: the diagram menu's Place and Remove items, the diagram's paste door and the
+        // rebuild's put-back.  Asked of the whole program, so a door that moves to another file is still counted.
         List<String> wrong = new ArrayList<>();
 
         String source = SourceOf.allCode();
@@ -372,19 +436,18 @@ public class testTheRefusalsAreAskedAtTheDoors
                 + " being kept");
         }
 
-        if (guarded < 5)
+        if (guarded < 4)
         {
-            wrong.add("only " + guarded + " calls of moveLocomotive use its answer, where the diagram menu's two, the assign"
-                + " dialog's one and the window's paste and put-back made five");
+            wrong.add("only " + guarded + " calls of moveLocomotive use its answer, where the diagram menu's two and the"
+                + " window's paste and put-back made four");
         }
 
-        // And each of the five still does, door by door (FR-136): a total holds when one door drops its guard and a
+        // And each of the four still does, door by door (FR-136): a total holds when one door drops its guard and a
         // guarded call is added elsewhere.
         final String[][] doors =
         {
             {"private void placeFacing(String locName, String pointName,", "the diagram menu's Place"},
             {"private void removeLocomotiveHere(Point current)", "the diagram menu's Remove"},
-            {"public boolean commitChanges()", "the assign dialog"},
             {"    boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)", "the window's paste"},
             {"    static java.util.Set<String> putTheTrainsBack(org.traincontrol.automation.Layout built,"
                 + "\n        java.util.Map<String, String[]> standing, java.util.function.Consumer<String> log,"
@@ -419,17 +482,16 @@ public class testTheRefusalsAreAskedAtTheDoors
         // declaration and one use inside the session, `departableFacingsFor` by its declaration and the six places the
         // four doors ask it.
         assertEquals(SourceOf.occurrences("placeableFacingsFor("), 2, "a door chooses a placed train's heading among"
-            + " the ways trains may arrive in, which turns round a train that can leave the way it faces (OB-284)");
-        assertTrue(SourceOf.occurrences("departableFacingsFor(") >= 7, "a door no longer asks which headings a train can"
+            + " the ways trains may arrive in, which turns around a train that can leave the way it faces (OB-284)");
+        assertTrue(SourceOf.occurrences("departableFacingsFor(") >= 5, "a door no longer asks which headings a train can"
             + " leave by (OB-284)");
 
         // And each place still asks it (FR-136): a total holds when one door stops asking and another call is added
         // elsewhere, so the places are named with the calls each makes.
         final Object[][] places =
         {
-            {"    void placeLocomotive(TileKey tile)", 1},
-            {"public static void commitAndRecord(GraphLocAssign edit)", 2},
-            {"private LayoutRightclickAutonomyMenu(TrainControlUI ui,", 1},
+            {"    void placeLocomotive(TileKey tile, String name)", 1},
+            {"private void addHandDoors(", 1},
             {"static String copyToPlaceOn(", 1},
             {"private java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> placeableFacings(", 1},
         };
@@ -498,8 +560,7 @@ public class testTheRefusalsAreAskedAtTheDoors
         // The calls, whichever file holds them.
         java.util.Collections.sort(found);
 
-        assertEquals(found.toString(), "[moveLocomotive(getLoc(), p.getName(), false, true), "
-            + "moveLocomotive(locName, pointName, false, true), "
+        assertEquals(found.toString(), "[moveLocomotive(locName, pointName, false, true), "
             + "moveLocomotive(locomotive, targetPoint, purge, evenOntoABarredCopy, false), "
             + "moveLocomotive(placing.getName(), point.getName(), false, true), "
             + "moveLocomotive(was.getKey(), back.getName(), false, true, true)]",

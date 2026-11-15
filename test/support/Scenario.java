@@ -12,20 +12,15 @@ import org.traincontrol.marklin.MarklinControlStation;
 
 /**
  * A named railway of a known SHAPE, opened in one call (Adam: "a folder in the test folder to house many different
- * scenarios, each linked to a test case", "hand-authored for topology, lengths in code").
+ * scenarios, each linked to a test case", "hand-authored for topology, lengths in code").  A scenario is real CS2
+ * files, checked in and frozen, so a test gets realistic geometry without the operator's live railway.
  *
- * It gives a test realistic geometry without the operator's live railway, whose ground truth moves as he operates
- * it.  A scenario is real CS2 files, checked in, hand-authored for one shape, and frozen.
+ * The TOPOLOGY, station names and s88 addresses are authored in the files (each scenario's `README.md` states which a
+ * test may rely on).  Lengths, train placements and locomotive properties are deliberately NOT: a test sets them
+ * itself (`session.setTileLength`, `loc.setTrainLength`, `point.setLocomotive`).
  *
- * The TOPOLOGY, the station names and the s88 addresses are authored in the files and a test may rely on them (each
- * scenario's `README.md` states which).  Lengths, train placements and locomotive properties are deliberately NOT in
- * the files: a test sets them itself (`session.setTileLength`, `loc.setTrainLength`, `point.setLocomotive`), so no two
- * tests inherit one author's choice.
- *
- * Built ON `LayoutSandbox`, not beside it, so its safety rules (the copy, the preference put back, `setUnattended`)
- * are reached rather than repeated.  The one rule added: a scenario can only name a folder under `test/layouts`.
- *
- * Usage, in `@BeforeClass` and `@AfterClass`:
+ * Built ON `LayoutSandbox`, so its safety rules are reached rather than repeated; the one rule added: a scenario can
+ * only name a folder under `test/layouts`.  Usage, in `@BeforeClass` and `@AfterClass`:
  *
  *     scenario = support.Scenario.open("single-switch");
  *     Layout built = scenario.build();
@@ -55,6 +50,8 @@ public final class Scenario
 
     private final List<LayoutDiagram> pages;
 
+    private final List<String> trainsMade = new ArrayList<>();
+
     private Scenario(String name, LayoutSandbox sandbox, MarklinControlStation model,
         AutonomySession session, List<LayoutDiagram> pages)
     {
@@ -75,8 +72,23 @@ public final class Scenario
      */
     public static Scenario open(String name) throws Exception
     {
-        File folder = folderFor(name);
+        return open(name, folderFor(name), false);
+    }
 
+    /** The same in debug, which `Layout.setSimulate` requires, for a test that runs simulated trains. */
+    public static Scenario openSimulated(String name) throws Exception
+    {
+        return open(name, folderFor(name), true);
+    }
+
+    /** The same over any layout folder, read from a copy: a fixture outside the library, for a comparison between builds. */
+    public static Scenario openSimulated(File folder) throws Exception
+    {
+        return open(folder.getName(), folder, true);
+    }
+
+    private static Scenario open(String name, File folder, boolean debug) throws Exception
+    {
         // INSIDE THE TRY, and closed again if anything below throws: this is not a setup method, so a caller that never
         // receives a Scenario has nothing to call `close()` on, and the machine-global layout preference would be left
         // pointing at a folder under %TEMP%.
@@ -87,7 +99,8 @@ public final class Scenario
             // BEFORE the model, always (OB-111).
             sandbox = LayoutSandbox.open(folder);
 
-            MarklinControlStation model = MarklinControlStation.init(null, true, false, false, false);
+            MarklinControlStation model = debug ? TestStation.simulatedInDebug()
+                : MarklinControlStation.init(null, true, false, false, false);
 
             List<LayoutDiagram> pages = LayoutSandbox.wiredPages(model);
 
@@ -169,6 +182,18 @@ public final class Scenario
         return built;
     }
 
+    /** `build`, then simulated and unpaced, so a trip runs to its end at once; for a scenario opened simulated. */
+    public Layout buildSimulated() throws Exception
+    {
+        Layout built = build();
+
+        built.setSimulate(true);
+        built.setMinDelay(0);
+        built.setMaxDelay(0);
+
+        return built;
+    }
+
     /** A square on the scenario's FIRST page, which is the only page the hand-authored scenarios have. */
     public TileKey tile(int x, int y)
     {
@@ -198,6 +223,40 @@ public final class Scenario
         return sandbox.getFolder();
     }
 
+    /**
+     * A locomotive of the test's own, reversible and with a speed, deleted again when the scenario closes.
+     *
+     * @param name its name
+     * @param address its address, high enough not to meet the database's
+     * @return the locomotive
+     */
+    public org.traincontrol.base.Locomotive newTrain(String name, int address)
+    {
+        org.traincontrol.base.Locomotive train = model.newMM2Locomotive(name, address);
+
+        train.setReversible(true);
+        train.setPreferredSpeed(50);
+
+        trainsMade.add(name);
+
+        return train;
+    }
+
+    /** Where the railway would send this train if asked now, by name, sorted: what the right-click menu offers. */
+    public static List<String> endsOffered(Layout railway, org.traincontrol.base.Locomotive train)
+    {
+        List<String> ends = new ArrayList<>();
+
+        for (List<org.traincontrol.automation.Edge> path : railway.getPossiblePaths(train, true))
+        {
+            ends.add(path.get(path.size() - 1).getEnd().getName());
+        }
+
+        Collections.sort(ends);
+
+        return ends;
+    }
+
     /** The control station, in simulation, with no window. */
     public MarklinControlStation getModel()
     {
@@ -222,6 +281,8 @@ public final class Scenario
      */
     public void close()
     {
+        for (String train : trainsMade) model.deleteLoc(train);
+
         if (sandbox != null) sandbox.close();
     }
 }

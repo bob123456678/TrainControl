@@ -215,7 +215,7 @@ public class testALocomotiveDoesNotEvictItself
     }
 
     /**
-     * A member of a standing multi-unit given, in Change Name or Address, the address of another train that stands
+     * A member of a standing multi-unit given, in the Locomotive Settings window, the address of another train that stands
      * takes that other train off the graph - as putting the multi-unit down again would.
      *
      * The member stands nowhere, but it is driven: every command to its head reaches its decoder, and so does the other
@@ -271,7 +271,7 @@ public class testALocomotiveDoesNotEvictItself
     }
 
     /**
-     * The same for a Central Station multi-unit: a member given, in Change Name or Address, the address of another
+     * The same for a Central Station multi-unit: a member given, in the Locomotive Settings window, the address of another
      * train that stands takes that train off the graph.
      *
      * A Central Station multi-unit commands its members through the Central Station's own list, not TrainControl's

@@ -15,11 +15,11 @@ import org.traincontrol.automationui.TileGraph.TileKey;
  * A station switched out of service is one autonomy will not choose, and the editor has to say so.
  *
  * `AutonomySession.stationsAutonomyWillNotChoose` is the editor's statement of the runtime's rule,
- * `Layout.isSendableDestination` (`isDestination() && isActive() && isAutoDestination() && !isReversing()`).  The
- * editor asked one of those four: `!isReversing()` genuinely cannot be asked of a square (it is a property of a COPY),
- * but `isActive` is a square-level property, so a station Adam had shut was reported as one autonomy WILL choose, in
- * the panel he opens to find out why a train is not moving.  Three readers had it: the Path Type note on the Auto
- * setting, the magenta leg color, and `AutonomyChecks.checkReversingGoesSomewhere`.
+ * `Layout.isSendableDestination` (`isDestination() && isActive() && isAutoDestination() && !isReversing()`).
+ * `!isReversing()` genuinely cannot be asked of a square (it is a property of a COPY), but `isActive` is a square-level
+ * property, so a station the operator has shut must not be reported as one autonomy WILL choose, in the panel he opens
+ * to find out why a train is not moving.  Three readers use it: the Path Type note on the Auto setting, the magenta leg
+ * color, and `AutonomyChecks.checkReversingGoesSomewhere`.
  *
  * The guard written to catch this could not: `core.testTheAutoTierScopeMatchesTheRuntime`'s paraphrase of the runtime
  * omitted the same clause.  This is the deterministic case, since whether the operator's railway has a shut station is

@@ -63,19 +63,16 @@ public interface View
     
     /**
      * Logs a message
-     * @param message 
      */
     public void log(String message);
     
     /**
      * Callback with latency info
-     * @param latency 
      */
     public void updateLatency(double latency);
     
     /**
      * Alerts that an emergency stop condition was triggered
-     * @param r 
      */
     public void emergencyStopTriggered(Route r);
 
@@ -124,6 +121,20 @@ public interface View
      * @return true to sync again; false to exit, which is also what closing the window means
      */
     public boolean offerResync(String error);
+
+    /**
+     * Tells the user the sync reached the Central Station but could not read part of what it sent, which was left as it
+     * was (FR-169).  Must not block the calling thread.
+     */
+    public void showSyncPartial();
+
+    /**
+     * Warns that the Central Station cut the track power by itself after a short circuit (OB-426).  Must not block the
+     * calling thread.
+     *
+     * @param channel the output that tripped, as the station numbers it
+     */
+    public void showPowerCut(int channel);
 
     // Tells us which key(s) a locomotive is bound to
     public List<String> getAllLocButtonMappings(Locomotive l);

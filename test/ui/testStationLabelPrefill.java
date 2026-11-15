@@ -6,11 +6,12 @@ import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import support.Diagrams;
+import support.Reflect;
 import support.SourceOf;
+import support.Trees;
 
 /**
  * FR-034: "Show station label here" opens on the station the square is next to.
@@ -150,27 +151,22 @@ public class testStationLabelPrefill
         {
             LayoutDiagram page = new LayoutDiagram("main", 12, 3, null, null);
 
-            page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2,
-                null);
+            Diagrams.feedback(page, 1, 1, 5, 11);
 
             for (int x = 2; x <= 4; x++)
             {
-                page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0,
-                    accessoryDecoderType.MM2, null);
+                Diagrams.straight(page, x, 1);
             }
 
             // The excluded point: an ordinary feedback tile, never marked as a station.
-            page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2,
-                null);
+            Diagrams.feedback(page, 5, 1, 6, 12);
 
             for (int x = 6; x <= 9; x++)
             {
-                page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0,
-                    accessoryDecoderType.MM2, null);
+                Diagrams.straight(page, x, 1);
             }
 
-            page.addComponent(componentType.FEEDBACK, 10, 1, 0, 0, 7, 13, accessoryDecoderType.MM2,
-                null);
+            Diagrams.feedback(page, 10, 1, 7, 13);
 
             page.setPageId("1");
 
@@ -196,8 +192,7 @@ public class testStationLabelPrefill
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
             java.lang.reflect.Method nearestStation =
-                AutonomyEditorPanel.class.getDeclaredMethod("nearestStation", TileKey.class);
-            nearestStation.setAccessible(true);
+                Reflect.method(AutonomyEditorPanel.class, "nearestStation", TileKey.class);
 
             // Right beside the excluded point and further from both real stations, so a filter that let it through
             // would win on distance alone.
@@ -212,20 +207,7 @@ public class testStationLabelPrefill
         }
         finally
         {
-            deleteRecursively(layout);
+            Trees.delete(layout);
         }
-    }
-
-    /** A temporary directory and everything under it. */
-    private static void deleteRecursively(java.io.File file)
-    {
-        java.io.File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteRecursively(child);
-        }
-
-        file.delete();
     }
 }

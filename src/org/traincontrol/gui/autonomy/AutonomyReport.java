@@ -1,6 +1,7 @@
 package org.traincontrol.gui.autonomy;
 
 import java.awt.Component;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.swing.JOptionPane;
@@ -8,11 +9,10 @@ import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.util.I18n;
 
 /**
- * Shows what a save of the autonomy setup did, or says why it declined to do anything.  One display for six doors: five
- * of the six callers of `AutonomySession.save` threw the `Reconciliation` away, against its own javadoc: *"Nothing here
- * is acted on silently: the whole point is that a diagram changing under a setup should be visible."*  The refusal
- * matters more than the pruning: a save declines to reconcile while a page the setup knows about is not loaded (which
- * stops a OneDrive placeholder costing a page's settings), and putting the file back is the moment that fixes it.
+ * Shows what a save of the autonomy setup did, or says why it declined to do anything: one display for every door
+ * that saves, so a diagram changing under a setup is never changed silently.  The refusal matters more than the
+ * pruning: a save declines to reconcile while a page the setup knows about is not loaded (which stops a OneDrive
+ * placeholder costing a page's settings), and putting the file back is the moment that fixes it.
  *
  * @author Adam
  */
@@ -23,7 +23,7 @@ public class AutonomyReport
      * DIFFERENT set is a new thing to say.
      */
     private static final java.util.Set<String> ALREADY_SAID =
-        java.util.Collections.synchronizedSet(new java.util.LinkedHashSet<String>());
+        Collections.synchronizedSet(new java.util.LinkedHashSet<String>());
 
     /**
      * Whether a declined save is worth a dialog: the first time a set of missing pages is reported in this session, not
@@ -37,7 +37,7 @@ public class AutonomyReport
 
         List<String> pages = new java.util.ArrayList<>(report.getDeclinedBecauseAbsent());
 
-        java.util.Collections.sort(pages);
+        Collections.sort(pages);
 
         return ALREADY_SAID.add(String.join("\n", pages));
     }
@@ -64,10 +64,7 @@ public class AutonomyReport
 
             StringBuilder names = new StringBuilder();
 
-            for (String page : report.getDeclinedBecauseAbsent())
-            {
-                names.append("\n    ").append(page);
-            }
+            for (String page : report.getDeclinedBecauseAbsent()) names.append("\n    ").append(page);
 
             JOptionPane.showMessageDialog(owner,
                 I18n.f("autosetup.ui.infoSetupNotTidied", names.toString()),
@@ -89,28 +86,21 @@ public class AutonomyReport
 
     /**
      * What the dialog would say about a reconciliation, or an empty string for nothing worth saying.  Separated from
-     * the dialog so it can be tested: `isClean()` counts three lists, and a text built from two showed nothing for a
-     * save whose only casualty was track lengths and directions.
-     *
-     * @return the text, empty when there is nothing to say
+     * the dialog so it can be tested: the text must cover all three lists `isClean()` counts.
      */
     public static String describe(AutonomyCompanionStore.Reconciliation report)
     {
         if (report == null) return "";
 
-        // Say WHAT happened and WHY, not just a list of names (OB-052).  Adam: "I got a popup message with no context
-        // and just a list of stations. unclear why."  The two lists mean opposite things (stations FORGOTTEN, stations
-        // KEPT because something still refers to them), so they need headings.
+        // Say WHAT happened and WHY, not just a list of names (OB-052): the two lists mean opposite things (stations
+        // FORGOTTEN, stations KEPT because something still refers to them), so they need headings.
         StringBuilder text = new StringBuilder();
 
         if (!report.getForgottenNames().isEmpty())
         {
             text.append(I18n.t("autosetup.ui.infoNamesForgotten")).append("\n\n");
 
-            for (String forgotten : report.getForgottenNames())
-            {
-                text.append("    ").append(forgotten).append("\n");
-            }
+            for (String forgotten : report.getForgottenNames()) text.append("    ").append(forgotten).append("\n");
         }
 
         if (!report.getNamesStillReferenced().isEmpty())
@@ -135,10 +125,7 @@ public class AutonomyReport
 
             text.append(I18n.t("autosetup.ui.infoTilePropertiesDropped")).append("\n\n");
 
-            for (String dropped : report.getDroppedTileProperties())
-            {
-                text.append("    ").append(dropped).append("\n");
-            }
+            for (String dropped : report.getDroppedTileProperties()) text.append("    ").append(dropped).append("\n");
         }
 
         return text.toString();

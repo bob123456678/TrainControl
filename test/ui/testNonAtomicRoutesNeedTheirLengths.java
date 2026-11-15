@@ -15,28 +15,27 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Components;
+import support.Display;
 import support.SourceOf;
 
 /**
  * Atomic Routes cannot be switched off while the railway could release track under a train: refused at the checkbox
- * when there are unmeasured segments in what's walkable via the autonomy editor, and for a setup loaded from a file the
- * setting is enabled with a warning in the log.
+ * when unmeasured segments are walkable via the autonomy editor, and for a setup loaded from a file the setting is
+ * enabled with a warning in the log.
  *
- * The escape has two clauses: `Layout.tailHasProvablyPassed` hands an edge back when `pathIsUnmeasured` OR when `behind
- * >= trainLength`, and a locomotive's length is 0 until set, so an unmeasured TRAIN releases the whole railway.  The
- * track half is narrower than "any unmeasured edge": `Layout.unmeasuredTrackThatCouldBeReleased` walks back from the
- * active destinations over unmeasured edges.  The controls are the claims that could go wrong: each half is asked with
- * the railway put right first, and the door must be OPEN.
+ * `Layout.tailHasProvablyPassed` hands an edge back when `pathIsUnmeasured` OR `behind >= trainLength`, and a train's
+ * length is 0 until set, so an unmeasured TRAIN releases the whole railway.  The track half is narrower than "any
+ * unmeasured edge" (`Layout.unmeasuredTrackThatCouldBeReleased` walks back from active destinations).  Controls: each
+ * half is asked with the railway put right first, and the door must be OPEN.
  *
- * MUTATION: make `whyNonAtomicRoutesAreRefused` return a sentence unconditionally and the two controls go red; return
- * null unconditionally and the two refusals do; drop the `trainsWithNoLength` term from the checkbox's question and the
- * train claim goes red, and from `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` (its `&& trains.isEmpty()`) and
- * the file door's train claim does; count every unmeasured edge rather than the reachable ones and the claims in
- * `core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack` do.
+ * MUTATION: make `whyNonAtomicRoutesAreRefused` return a sentence unconditionally (the two controls) or null (the two
+ * refusals); drop the `trainsWithNoLength` term from the checkbox's question (train claim), or `&& trains.isEmpty()`
+ * from `keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack` (file door's train claim); count every unmeasured edge
+ * rather than the reachable ones (`core.testAutoLayout.testARailwayCountsItsUnmeasuredDrivableTrack`).
  *
  * @author Adam
  */
@@ -61,10 +60,7 @@ public class testNonAtomicRoutesNeedTheirLengths
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the door is a checkbox on a window, and a window needs a display");
-        }
+        Display.needed("the door is a checkbox on a window, and a window needs a display");
 
         // THE FROZEN COPY of the operator's railway, not the railway he is operating (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -77,8 +73,8 @@ public class testNonAtomicRoutesNeedTheirLengths
 
         assertNotNull(ui, "there is no window, so the door this is about does not exist");
 
-        settle();
-        settle();
+        Components.drain(1);
+        Components.drain(1);
 
         assertTrue(model.hasAutoLayout(), "the sandbox copy holds no autonomy setup");
 
@@ -374,14 +370,13 @@ public class testNonAtomicRoutesNeedTheirLengths
     }
 
     /**
-     * AND THE START BUTTON ASKS THE SAME QUESTION, kept for the reason only it gives: a TRAIN length is written on the
-     * live layout by `applyTrainLength` and `GraphLocAssign.commitChanges`, neither of which rebuilds anything, so a
-     * length cleared after the checkbox was unticked puts `behind >= trainLength` back to `0 >= 0`.  A text claim,
-     * because pressing Start here would dispatch Adam's trains: the handler asks before it hands anything to
-     * `runLocomotives`.
+     * The Start button asks the same question, for the reason only it gives: a TRAIN length is written on the live
+     * layout by `applyTrainLength` and `GraphLocAssign.commitChanges`, neither rebuilding anything, so a length cleared
+     * after unticking puts `behind >= trainLength` back to `0 >= 0`.  A text claim (pressing Start would dispatch
+     * Adam's trains): the handler asks before it hands anything to `runLocomotives`.
      *
-     * MUTATION: delete the call from `startAutonomyActionPerformed` and this goes red; move it below
-     * the `runLocomotives` call and it goes red too, which is the half a `contains` would miss.
+     * MUTATION: delete the call from `startAutonomyActionPerformed`; move it below `runLocomotives` (the half a
+     * `contains` would miss).
      */
     @Test
     public void testStartAsksBeforeItDispatchesAnything() throws Exception
@@ -404,12 +399,11 @@ public class testNonAtomicRoutesNeedTheirLengths
     }
 
     /**
-     * EVERY DOOR THAT DISPATCHES A TRAIN ASKS THE GATE, AND THIS IS THE LIST: the release lives in
-     * `Layout.executePathInternal`, which Execute Timetable, Return Home and the hand dispatch reach without passing
-     * Start.  A source-shape rule can only know the doors it names, so the failure message says to add a new door here
-     * as well.
+     * Every door that dispatches a train asks the gate, and this is the list: the release lives in
+     * `Layout.executePathInternal`, which Execute Timetable, Return Home and the hand dispatch reach without Start.  A
+     * source-shape rule only knows the doors it names, so a new door must be added here.
      *
-     * MUTATION: delete the call from any one of the four and this names that one.
+     * MUTATION: delete the call from any one of the four.
      */
     @Test
     public void testEveryDispatchDoorAsksTheGate() throws Exception
@@ -645,11 +639,5 @@ public class testNonAtomicRoutesNeedTheirLengths
     private static void remember(Locomotive loc)
     {
         if (!trainsWere.containsKey(loc)) trainsWere.put(loc, loc.getTrainLength());
-    }
-
-    /** Lets the event thread catch up, twice being what the window needs after init (OB-192). */
-    private static void settle() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

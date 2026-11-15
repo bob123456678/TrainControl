@@ -86,8 +86,8 @@ public class testFindRoute
     }
 
     /**
-     * Several candidates come back as several, so the user can be asked (MT-218): a fragment that fitted more than one
-     * route used to give up; the third option besides refusing and guessing is to put the list in front of the user.
+     * Several candidates come back as several, so the user can be asked (MT-218). The alternatives to asking are
+     * refusing and guessing.
      */
     @Test
     public void testEveryCandidateComesBackWhenThereIsMoreThanOne()

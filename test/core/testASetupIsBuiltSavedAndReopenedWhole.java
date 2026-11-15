@@ -8,14 +8,13 @@ import java.util.List;
 import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Diagrams;
 import support.SourceOf;
 
 /**
@@ -424,8 +423,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         LayoutDiagram other = new LayoutDiagram("other", 6, 4, null, null);
 
         // 11 is the first page's own sensor, so this page repeats it and is the one shut out
-        other.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        other.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(other, 1, 1, 5, 11);
+        Diagrams.straight(other, 2, 1);
 
         other.setPageId("2");
         other.checkBounds();
@@ -631,7 +630,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         assertEquals(extras.getJSONObject("loc").getString("name"), "BR 218");
         assertFalse(extras.has("station"), "structural fields are the reduction's, not captured");
 
-        // Terminus is the builder's answer, not the user's: read back, it would turn round every train that passed.
+        // Terminus is the builder's answer, not the user's: read back, it would turn around every train that passed.
         assertFalse(extras.has("terminus"), "derived flags are not lifted off the running layout");
 
         // pace settings land in globals, and points/edges do not
@@ -1078,5 +1077,44 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
 
         assertFalse(body.contains("getAutoLayout()"), "the diagram's path gather asks the model for the railway again on"
             + " its worker, where Unload can leave it building an empty one (RSA2-C5)");
+    }
+
+    /**
+     * Every per-station key survives the session's own round trip: set, built into the railway, captured back, saved
+     * and reopened as a fresh session, one row per key of the matrix.  `facing` and `homeFacing` need a train standing
+     * there to be built or captured, so their rows cover save and reopen only.
+     *
+     * MUTATION: skip one of the ten operational keys in `AutonomySession.capture`'s copy loop, or leave it out of
+     * `AutonomyBuilder`'s point output, and this fails on that key.
+     */
+    @Test
+    public void testEveryStationKeySurvivesBuildCaptureSaveAndReopen() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack(), secondPage()));
+        session.initialize("Evening");
+
+        TileKey station = new TileKey("main", 1, 1);
+
+        session.setStation(station, true);
+        session.setPointName(station, "Platform 1");
+
+        for (java.util.Map.Entry<String, Object> row : regression.testAutonomyStoreSettingsMatrix.STATION_KEY_VALUES.entrySet())
+        {
+            session.setPointProperty(station, row.getKey(), row.getValue());
+        }
+
+        session.captureFromLayout(session.buildConfiguration());
+        session.save();
+
+        AutonomySession reopened = new AutonomySession(layout);
+
+        reopened.open(Arrays.asList(runOfTrack(), secondPage()));
+
+        for (String key : regression.testAutonomyStoreSettingsMatrix.stationKeys())
+        {
+            assertEquals(String.valueOf(reopened.getPointProperty(station, key)),
+                String.valueOf(regression.testAutonomyStoreSettingsMatrix.STATION_KEY_VALUES.get(key)),
+                "the station key '" + key + "' did not survive being built, captured, saved and reopened");
+        }
     }
 }

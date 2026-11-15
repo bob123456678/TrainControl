@@ -14,7 +14,6 @@ import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -25,12 +24,15 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Display;
 import support.Mouse;
+import support.Teardown;
 
 /**
  * The track diagram editor, driven as the user drives it: the Edit button, the pointer over a square, the keys, the
@@ -58,18 +60,13 @@ public class testTheTrackEditorByHand
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor is a window, and its squares take the mouse");
-        }
+        Display.needed("the editor is a window, and its squares take the mouse");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("single-switch"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("single-switch");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         // The Edit button opens whichever editor was used last; these claims are about the track editor.  Set, and put
         // back, in this run's own preference node.
@@ -84,19 +81,10 @@ public class testTheTrackEditorByHand
         try
         {
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.LAST_EDITOR_AUTONOMY_PREF, lastEditorWasAutonomy);
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, model, ui);
         }
     }
 
@@ -160,8 +148,8 @@ public class testTheTrackEditorByHand
     }
 
     /**
-     * Control+Z takes the last edit back and Control+Y does it again, and the editor's own menu shows the stack: Undo
-     * on after an edit, Redo on after an undo.  Discarded, the file is as it was.
+     * Control+Z takes the last edit back and Control+Y does it again, and the editor's own menu shows the stack.
+     * Discarded, the file is as it was.
      *
      * MUTATION: make Control+Z call `redo`, or Control+Y call `undo`, and the heading is wrong after the key; leave the
      * menu's Undo always on and the untouched editor offers it.
@@ -273,6 +261,63 @@ public class testTheTrackEditorByHand
         discard(editor);
 
         assertNotNull(saved().getComponent(5, 2), "a discarded delete reached the page file");
+    }
+
+    /**
+     * With two squares picked, Control+R turns both and leaves the one under the pointer; one Control+Z turns both back,
+     * as Copy, Cut and Delete act on the selection when there is one.
+     *
+     * MUTATION: make the Control+R key skip its selection branch, and the hovered turnout turns while the picked stay.
+     */
+    @Test
+    public void testControlRTurnsThePickedSquaresNotTheOneUnderThePointer() throws Exception
+    {
+        LayoutEditor editor = open();
+
+        LayoutDiagram page = editor.getMarklinLayout();
+
+        List<LayoutDiagramComponent> picked = new java.util.ArrayList<>();
+
+        for (LayoutDiagramComponent c : page.getAll())
+        {
+            if (c.getNumOrientations() > 1 && !(c.getX() == SWITCH_X && c.getY() == SWITCH_Y) && picked.size() < 2)
+            {
+                picked.add(c);
+            }
+        }
+
+        assertEquals(picked.size(), 2, "precondition: " + PAGE + " has no two other squares that turn");
+
+        java.util.Map<String, Integer> was = headings(page);
+
+        for (LayoutDiagramComponent c : picked)
+        {
+            Mouse.click(square(editor, c.getX(), c.getY()), MouseEvent.BUTTON1, 1, InputEvent.SHIFT_DOWN_MASK);
+        }
+
+        assertEquals(editor.getSelection().size(), 2, "shift-clicking two squares did not pick them");
+
+        Mouse.enter(square(editor, SWITCH_X, SWITCH_Y));
+
+        key(editor, KeyEvent.VK_R, true);
+
+        for (LayoutDiagramComponent c : picked)
+        {
+            LayoutDiagramComponent now = editor.getMarklinLayout().getComponent(c.getX(), c.getY());
+
+            assertEquals(now.getOrientation(), (was.get(c.getX() + "," + c.getY()) + 1) % now.getNumOrientations(),
+                "Control+R did not turn the picked square at " + c.getX() + "," + c.getY());
+        }
+
+        assertEquals(editor.getMarklinLayout().getComponent(SWITCH_X, SWITCH_Y).getOrientation(),
+            (int) was.get(SWITCH_X + "," + SWITCH_Y),
+            "Control+R turned the square under the pointer although squares were picked");
+
+        key(editor, KeyEvent.VK_Z, true);
+
+        assertEquals(headings(editor.getMarklinLayout()), was, "one Control+Z did not turn both picked squares back");
+
+        discard(editor);
     }
 
     /**
@@ -1171,8 +1216,7 @@ public class testTheTrackEditorByHand
 
     /**
      * Switching the editor between Track Diagram and Autonomy Setup a few times leaves no listener behind on the
-     * diagram's viewport: each entry floats a new strip that follows the viewport's size, and leaving must let go of
-     * it.
+     * diagram's viewport.
      *
      * MUTATION: drop the `autonomyBanner.letGoOfTheDiagram()` call in LayoutEditor.setAutonomyMode and the count grows
      * with each round trip.
@@ -1237,10 +1281,8 @@ public class testTheTrackEditorByHand
     }
 
     /**
-     * The track editor's Text Labels box says whether the page's text is shown, after the autonomy editor has hidden it.
-     *
-     * The autonomy editor's unticked Text Labels box hides the page's text (FR-133) and closing it leaves it hidden, so
-     * the next track editor must open with its box unticked too (OB-364).
+     * The track editor's Text Labels box says whether the page's text is shown, after the autonomy editor has hidden it
+     * (FR-133, OB-364).
      *
      * MUTATION: drop the `showTextCheckbox.setSelected(!l.getEditHideText())` line in the LayoutEditor constructor and
      * the box opens ticked over hidden text.
@@ -1285,6 +1327,274 @@ public class testTheTrackEditorByHand
 
         assertEquals(box.isSelected(), !editor.getMarklinLayout().getEditHideText(),
             "the Text Labels box is ticked while the page's text is hidden");
+    }
+
+    /**
+     * A text label being dragged is carried where it was taken hold of, under the pointer, as the diagram draws it: the
+     * labels' own font at this zoom, with their white halo (OB-478).  On a page of its own, in memory.
+     *
+     * MUTATION: hold the picture at 0,0 instead of `grab` in `LayoutEditor.pickUpText`, and this fails.
+     */
+    @Test
+    public void testADraggedTextLabelStaysUnderThePointer() throws Exception
+    {
+        final LayoutEditor editor = aTextTileEditor();
+
+        try
+        {
+            String failure = Components.onTheEventThread(() ->
+            {
+                LayoutLabel label = square(editor, 3, 2);
+
+                StationCaption drawn = Components.find(label.getParent(), StationCaption.class,
+                    c -> TEXT.equals(c.getText()));
+
+                if (drawn == null) return "precondition: the diagram draws no words for the text tile";
+
+                java.awt.Point press = new java.awt.Point(6, label.getHeight() / 2);
+                java.awt.Point to = new java.awt.Point(press.x + 47, press.y + 31);
+
+                editor.beginDrag(mouse(label, MouseEvent.MOUSE_PRESSED, press), label);
+                editor.updateDrag(mouse(label, MouseEvent.MOUSE_DRAGGED, to), label);
+
+                javax.swing.JLabel ghost = carried(editor);
+
+                editor.endDrag(mouse(label, MouseEvent.MOUSE_RELEASED, to), label);
+
+                if (ghost == null) return "nothing is carried on the editor's drag layer while the label is dragged";
+
+                java.awt.Point was = SwingUtilities.convertPoint(drawn, 0, 0, editor.getLayeredPane());
+                java.awt.Point at = ghost.getLocation();
+
+                if (Math.abs(at.x - (was.x + 47)) > 2 || Math.abs(at.y - (was.y + 31)) > 2)
+                {
+                    return "the dragged label is at " + at + ", not where the pointer carried it from " + was
+                        + " (47 across, 31 down)";
+                }
+
+                // The same picture as the diagram's own: its font, size, color and halo
+                java.awt.image.BufferedImage own = new java.awt.image.BufferedImage(drawn.getWidth(),
+                    drawn.getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+                java.awt.Graphics2D g = own.createGraphics();
+
+                drawn.paint(g);
+                g.dispose();
+
+                java.awt.Image carried = ((javax.swing.ImageIcon) ghost.getIcon()).getImage();
+
+                java.awt.image.BufferedImage copy = new java.awt.image.BufferedImage(own.getWidth(), own.getHeight(),
+                    java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+                g = copy.createGraphics();
+                g.drawImage(carried, 0, 0, null);
+                g.dispose();
+
+                if (carried.getWidth(null) != own.getWidth()) return "the dragged label is not the size the diagram draws";
+
+                for (int x = 0; x < own.getWidth(); x++)
+                {
+                    for (int y = 0; y < own.getHeight(); y++)
+                    {
+                        if (own.getRGB(x, y) != copy.getRGB(x, y))
+                        {
+                            return "the dragged label is not drawn as the diagram draws it (font, color or halo), at "
+                                + x + "," + y;
+                        }
+                    }
+                }
+
+                return null;
+            });
+
+            assertNull(failure, String.valueOf(failure));
+
+            assertNull(carried(editor), "the dragged label stayed on the window after the release");
+        }
+        finally
+        {
+            dispose(editor);
+        }
+    }
+
+    /**
+     * A text label pressed and not yet moved is held where it lies, not at the window's corner, and a plain click leaves
+     * nothing behind (OB-478).
+     *
+     * MUTATION: drop the `moveCaptionGhost` call from `LayoutEditor.pickUpText`, and this fails.
+     */
+    @Test
+    public void testAPressedTextLabelIsHeldWhereItLies() throws Exception
+    {
+        final LayoutEditor editor = aTextTileEditor();
+
+        try
+        {
+            String failure = Components.onTheEventThread(() ->
+            {
+                LayoutLabel label = square(editor, 3, 2);
+                java.awt.Point press = new java.awt.Point(6, label.getHeight() / 2);
+
+                editor.beginDrag(mouse(label, MouseEvent.MOUSE_PRESSED, press), label);
+
+                javax.swing.JLabel ghost = carried(editor);
+                java.awt.Point at = ghost == null ? null : ghost.getLocation();
+
+                editor.endDrag(mouse(label, MouseEvent.MOUSE_RELEASED, press), label);
+
+                java.awt.Point lies = SwingUtilities.convertPoint(Components.find(label.getParent(), StationCaption.class,
+                    c -> TEXT.equals(c.getText())), 0, 0, editor.getLayeredPane());
+
+                if (at == null) return "nothing is held on the press";
+
+                return Math.abs(at.x - lies.x) > 2 || Math.abs(at.y - lies.y) > 2
+                    ? "the pressed label is held at " + at + ", not where it lies, " + lies : null;
+            });
+
+            assertNull(failure, String.valueOf(failure));
+            assertNull(carried(editor), "a click on the label left a copy of it on the window");
+        }
+        finally
+        {
+            dispose(editor);
+        }
+    }
+
+    /**
+     * Escape while a text label, or a piece of track, is being dragged puts it down where it was: the copy and the
+     * "copied" outline go, the release that follows moves nothing and leaves nothing to undo, and the next click places
+     * nothing (OB-478).
+     *
+     * MUTATION: drop the single-tile branch from `LayoutEditor.letGoOfWhateverIsHeld`, or its `refreshSelectionBorders`
+     * or `resetClipboard`, and this fails.
+     */
+    @Test
+    public void testEscapePutsADraggedTextLabelBack() throws Exception
+    {
+        final LayoutEditor editor = aTextTileEditor();
+
+        try
+        {
+            escapeADragFrom(editor, 3, 2);
+            escapeADragFrom(editor, 1, 4);
+        }
+        finally
+        {
+            dispose(editor);
+        }
+    }
+
+    /** Picks up the tile at x,y, drags it over 7,4, presses Escape, releases, and checks that nothing moved. */
+    private static void escapeADragFrom(final LayoutEditor editor, int x, int y) throws Exception
+    {
+        final LayoutLabel label = square(editor, x, y);
+        final LayoutLabel over = square(editor, 7, 4);
+        final java.awt.Point press = new java.awt.Point(6, label.getHeight() / 2);
+        final LayoutDiagramComponent.componentType type = editor.getMarklinLayout().getComponent(x, y).getType();
+
+        Components.onTheEventThread(() ->
+        {
+            editor.beginDrag(mouse(label, MouseEvent.MOUSE_PRESSED, press), label);
+            editor.updateDrag(mouse(label, MouseEvent.MOUSE_DRAGGED, new java.awt.Point(press.x + 160, press.y + 80)),
+                label);
+            editor.receiveMoveEvent(mouse(over, MouseEvent.MOUSE_MOVED, press), over);
+
+            editor.dispatchEvent(new KeyEvent(editor, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0,
+                KeyEvent.VK_ESCAPE, KeyEvent.CHAR_UNDEFINED));
+
+            return null;
+        });
+
+        Components.drain(5);
+
+        assertTrue(editor.isDisplayable(), "Escape closed the editor instead of putting the " + type + " down");
+        assertNull(carried(editor), "Escape left the dragged " + type + " on the window");
+
+        javax.swing.border.Border outline = Components.onTheEventThread(() -> square(editor, x, y).getBorder());
+
+        assertFalse(outline instanceof javax.swing.border.LineBorder
+            && java.awt.Color.RED.equals(((javax.swing.border.LineBorder) outline).getLineColor()),
+            "the " + type + " kept its \"copied\" outline after Escape");
+
+        Components.onTheEventThread(() ->
+        {
+            editor.endDrag(mouse(label, MouseEvent.MOUSE_RELEASED, press), label);
+
+            return null;
+        });
+
+        Components.drain(5);
+
+        LayoutDiagramComponent still = editor.getMarklinLayout().getComponent(x, y);
+
+        assertTrue(still != null && still.getType() == type, "the " + type + " left its square after Escape");
+        assertNull(editor.getMarklinLayout().getComponent(7, 4), "the release after Escape dropped the " + type);
+        assertFalse(editor.canUndo(), "the release after Escape left a step to undo");
+
+        // And disarmed: the next click elsewhere places nothing
+        Components.onTheEventThread(() ->
+        {
+            editor.receiveClickEvent(mouse(over, MouseEvent.MOUSE_CLICKED, press), over);
+
+            return null;
+        });
+
+        Components.drain(5);
+
+        assertNull(editor.getMarklinLayout().getComponent(7, 4), "a click after Escape put the " + type + " down");
+        assertEquals(editor.getMarklinLayout().getComponent(x, y).getType(), type,
+            "a click after Escape moved the " + type);
+    }
+
+    /** The words on the text tile the claims below drag. */
+    private static final String TEXT = "Yard sidings";
+
+    /** A track editor, on a page of its own in memory, with a text tile at 3,2, a straight at 1,4 and nothing else. */
+    private static LayoutEditor aTextTileEditor() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("OB-478", 12, 6, null, null);
+
+        page.addComponent(LayoutDiagramComponent.componentType.TEXT, 3, 2, 0, 0, 0, 0,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, TEXT);
+        support.Diagrams.straight(page, 1, 4);
+
+        final LayoutEditor editor = Components.onTheEventThread(() ->
+        {
+            LayoutEditor made = new LayoutEditor(page, 40, ui, 0);
+
+            made.render();
+
+            return made;
+        });
+
+        assertTrue(Components.waitFor(() -> square(editor, 3, 2) != null, 30000), "the editor drew no squares");
+
+        Components.settle();
+
+        return editor;
+    }
+
+    private static void dispose(final LayoutEditor editor)
+    {
+        Components.onTheEventThread(() ->
+        {
+            editor.dispose();
+
+            return null;
+        });
+    }
+
+    /** What the editor carries on its drag layer, or null. */
+    private static javax.swing.JLabel carried(final LayoutEditor editor)
+    {
+        return Components.find(editor.getLayeredPane(), javax.swing.JLabel.class,
+            g -> editor.getLayeredPane().getLayer(g) == javax.swing.JLayeredPane.DRAG_LAYER);
+    }
+
+    /** A left-button mouse event at a point on a square, which is all the editor's drag handlers read off it. */
+    private static MouseEvent mouse(LayoutLabel on, int id, java.awt.Point at)
+    {
+        return new MouseEvent(on, id, 0L, InputEvent.BUTTON1_DOWN_MASK, at.x, at.y, 1, false, MouseEvent.BUTTON1);
     }
 
     // ---------------------------------------------------------------- the editor

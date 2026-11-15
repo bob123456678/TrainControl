@@ -11,6 +11,7 @@ import org.traincontrol.automationui.TilePorts.Side;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * The editor's Test a Path starts a train where the setup check does: on the copies a train sent to the square stands
@@ -26,7 +27,7 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
     /**
      * Middle refuses arrivals from the east, so a train sent there came in from the west and faces east, into a dead
      * end.  Only the barred copy faces west, to WestEnd, and no train is sent onto it.  So nothing is drawn from Middle,
-     * as the check says, while WestEnd, which can turn round and leave, still draws its way to Middle.
+     * as the check says, while WestEnd, which can turn around and leave, still draws its way to Middle.
      *
      * MUTATION: pass null for the starting sides in `AutonomyEditorPanel.applyTest`, so the walk starts facing every
      * way, and this fails.
@@ -60,12 +61,12 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
                 + " the setup check says Middle reaches nothing");
 
         assertNotEquals(legs[1], I18n.t("autosetup.ui.testLegBlocked"),
-            "WestEnd can turn round and reach Middle from the west, and Test a Path drew no route back");
+            "WestEnd can turn around and reach Middle from the west, and Test a Path drew no route back");
     }
 
     /**
      * Middle is reached from the east only, as the run west of it is one way westward: its one copy faces west, into a
-     * dead end.  EastEnd, which can turn round, still draws its way to Middle.
+     * dead end.  EastEnd, which can turn around, still draws its way to Middle.
      *
      * MUTATION: pass null for the starting sides in `AutonomyEditorPanel.applyTest`, and this fails.
      */
@@ -103,7 +104,7 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
                 + " says Middle reaches nothing");
 
         assertNotEquals(legs[1], I18n.t("autosetup.ui.testLegBlocked"),
-            "EastEnd can turn round and reach Middle, and Test a Path drew no route back");
+            "EastEnd can turn around and reach Middle, and Test a Path drew no route back");
     }
 
     /**
@@ -205,9 +206,7 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
     {
         AutonomyEditorPanel panel = new AutonomyEditorPanel(session, null, () -> { });
 
-        java.lang.reflect.Field button = AutonomyEditorPanel.class.getDeclaredField("testButton");
-        button.setAccessible(true);
-        ((javax.swing.AbstractButton) button.get(panel)).doClick();
+        ((javax.swing.AbstractButton) Reflect.get(AutonomyEditorPanel.class, panel, "testButton")).doClick();
 
         return panel;
     }
@@ -224,9 +223,7 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
         panel.tileClicked(from, session.getGraph().getTiles().get(from), false);
         panel.tileClicked(to, session.getGraph().getTiles().get(to), false);
 
-        java.lang.reflect.Field hint = AutonomyEditorPanel.class.getDeclaredField("hint");
-        hint.setAccessible(true);
-        String said = ((javax.swing.JLabel) hint.get(panel)).getText();
+        String said = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
 
         // The legs read out between the message's fixed words, so the claim holds in any language
         String shape = I18n.f("autosetup.ui.testBothWays", session.describeTile(from), session.describeTile(to),

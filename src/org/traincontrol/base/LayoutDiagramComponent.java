@@ -61,14 +61,6 @@ public class LayoutDiagramComponent
     
     /**
      * Constructor
-     * @param type
-     * @param x
-     * @param y
-     * @param orientation
-     * @param state
-     * @param address
-     * @param rawAddress
-     * @param protocol
      * @throws IOException 
      */
     public LayoutDiagramComponent(componentType type, int x, int y, 
@@ -109,15 +101,17 @@ public class LayoutDiagramComponent
         this.label = original.label;
 
         // What the file said and this class cannot express: the editor copies constantly (deepCopyLayout builds every
-        // undo state through this constructor), so a copy without these stripped the page and the next Save deleted it
-        // from the file.
+        // undo state through this constructor), and a copy without these loses them at the next Save.
         this.originalTyp = original.originalTyp;
 
         this.unmodelledKeys = original.unmodelledKeys == null
             ? null : new TreeMap<>(original.unmodelledKeys);
 
+        this.linkPageId = original.linkPageId;
+        this.linkPageName = original.linkPageName;
+
         // What the tile is tied to: set when a page is read, by address, and not set again by the editor, so a copy
-        // without them was a switch tied to no accessory.
+        // must carry it.
         this.accessory = original.accessory;
         this.accessory2 = original.accessory2;
         this.feedback = original.feedback;
@@ -301,8 +295,6 @@ public class LayoutDiagramComponent
     
     /**
      * Generates a buffered image for rotation
-     * @param img
-     * @return 
      */
     public static BufferedImage toBufferedImage(Image img)
     {
@@ -330,9 +322,7 @@ public class LayoutDiagramComponent
     
     /**
      * Gets the image corresponding to the current state of the accessory
-     * @param size
      * @param ignoreState true to never display the active icon (useful for editing)
-     * @return 
      */
     public String getImageName(int size, boolean ignoreState)
     {        
@@ -384,21 +374,28 @@ public class LayoutDiagramComponent
         return RESOURCE_PATH + Integer.toString(artSize(size)) + "/" + this.getTypeName() + stateString + ".gif";
     }
     
+    /** Each icon file as read, by name: one file serves every rotation and size drawn from it.  Never drawn on. */
+    private static final Map<String, BufferedImage> SOURCES = new java.util.concurrent.ConcurrentHashMap<>();
+
     public Image getImage(int size, boolean ignoreState) throws IOException
-    {  
-         String imageName = getImageName(size, ignoreState);
-         java.net.URL icon = LayoutDiagramComponent.class.getResource(imageName);
+    {
+        return getImage(getImageName(size, ignoreState), size);
+    }
 
-         if (icon == null)
-         {
-             throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
-         }
-
-         Image img = ImageIO.read(icon);
+    /** The picture `getImageName` named, at `size` and turned to this square, so key and picture share one state. */
+    public Image getImage(String imageName, int size) throws IOException
+    {
+         Image img = SOURCES.get(imageName);
 
          if (img == null)
          {
-             throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
+            java.net.URL icon = LayoutDiagramComponent.class.getResource(imageName);
+            BufferedImage read = icon == null ? null : ImageIO.read(icon);
+
+            if (read == null) throw new IOException(I18n.f("error.missingLayoutIcon", imageName));
+
+            SOURCES.putIfAbsent(imageName, read);
+            img = read;
          }
 
          // Resize only if we don't have the right icon
@@ -424,7 +421,6 @@ public class LayoutDiagramComponent
     
     /**
      * The name of the icon file used for this component
-     * @return 
      */
     public String getTypeName()
     {
@@ -487,7 +483,6 @@ public class LayoutDiagramComponent
     
     /**
      * A user-friendly description of the component
-     * @return 
      */
     public String getUserFriendlyTypeName()
     {
@@ -558,7 +553,6 @@ public class LayoutDiagramComponent
    
     /**
      * The low-level address, i.e. separate addresses for red and green
-     * @return 
      */
     public int getRawAddress()
     {
@@ -587,7 +581,112 @@ public class LayoutDiagramComponent
      */
     public boolean linksNowhere()
     {
-        return this.isLink() && this.rawAddress < 0;
+        return this.isLink() && this.rawAddress < 0 && this.linkPageId == null;
+    }
+
+    /** The ID of the page a link goes to, or null (FR-175); the number beside it is for 3.0.8. */
+    private Integer linkPageId = null;
+
+    /** The name of the page that ID is, as the layout last resolved it; null when no page has it. */
+    private String linkPageName = null;
+
+    /** @return the page ID this link goes to, or null when it has none */
+    public Integer getLinkPageId()
+    {
+        return this.linkPageId;
+    }
+
+    /** @return the name of the page the link goes to, or null when no page has its ID or it has none */
+    public String getLinkPageName()
+    {
+        return this.linkPageName;
+    }
+
+    /** Whether this link goes by an ID that no page has any more. */
+    public boolean linksToAPageThatIsGone()
+    {
+        return this.isLink() && this.linkPageId != null && this.linkPageName == null;
+    }
+
+    /**
+     * Points a link at a page by ID.  `number` is the page's place in the name-sorted list, which 3.0.8 reads from
+     * `.artikel`, or -1 when no page has the ID.
+     *
+     * @param id the page's ID, or null for no page
+     * @param name the page's name, or null when no page has the ID
+     * @param number what is written to `.artikel` beside the ID
+     */
+    public void setLinkTarget(Integer id, String name, int number)
+    {
+        if (!this.isLink()) return;
+
+        this.linkPageId = id;
+        this.linkPageName = name;
+        this.rawAddress = number < 0 ? -1 : number;
+        this.address = this.rawAddress;
+    }
+
+    /**
+     * Sets the ID from what the file said (`.zielseite`), leaving it null for a key that is not a number.  When the
+     * number saved beside it (`.zielartikel`) is not this link's `.artikel`, 3.0.8 or a hand edit re-aimed the link
+     * since, so the ID is dropped and the number decides (FR-175).
+     *
+     * @param text the `.zielseite` value, or null
+     * @param savedNumber the `.zielartikel` value, or null when the file has none
+     */
+    public void setLinkPageIdFromFile(String text, String savedNumber)
+    {
+        if (!this.isLink() || text == null) return;
+
+        // A saved number that is not a number is absent, as an absent `.zielseite` is
+        Integer saved = pageIdFromText(savedNumber);
+
+        if (saved != null && saved != this.rawAddress) return;
+
+        this.linkPageId = pageIdFromText(text);
+    }
+
+    /** @return an `.artikel` value as the page parser reads it: 0 when absent or not a number */
+    public static int artikelNumber(String text)
+    {
+        try
+        {
+            return Integer.parseInt(text);
+        }
+        catch (NumberFormatException none)
+        {
+            return 0;
+        }
+    }
+
+    /** @return the page ID a `.zielseite` value states, or null when it is absent or not a number */
+    public static Integer pageIdFromText(String text)
+    {
+        if (text == null) return null;
+
+        try
+        {
+            return Integer.valueOf(text.trim());
+        }
+        catch (NumberFormatException notANumber)
+        {
+            return null;
+        }
+    }
+
+    /**
+     * The page a link on a station's own layout goes to: the ID it carries, else its number, which on a station is a
+     * page ID; a negative number is no page.
+     *
+     * @param carried the ID the link carries, or null
+     * @param number its `.artikel`
+     * @return the page ID, or null for none
+     */
+    public static Integer stationLinkPageId(Integer carried, int number)
+    {
+        if (carried != null) return carried;
+
+        return number >= 0 ? Integer.valueOf(number) : null;
     }
     
     public Accessory getAccessory()
@@ -645,11 +744,6 @@ public class LayoutDiagramComponent
         this.y = y;
     }
 
-    public void setType(componentType type)
-    {
-        this.type = type;
-    }
-    
     public void setRoute(Route route)
     {
         this.route = route;
@@ -709,7 +803,6 @@ public class LayoutDiagramComponent
     
     /**
      * Basic description for the UI
-     * @return 
      */
     public String toSimpleString()
     {        
@@ -737,6 +830,9 @@ public class LayoutDiagramComponent
         }
         else if (this.isFeedback())
         {
+            // A square with no sensor bound has nothing to name (OB-401)
+            if (this.getFeedback() == null) return "";
+
             return I18n.f("layout.feedbackUid", this.getFeedback().getUID());
         }
         else if (this.isSignal())
@@ -751,9 +847,12 @@ public class LayoutDiagramComponent
         {
             // The page it pointed at was deleted: say so, since an arrow that silently did nothing would read as
             // broken.
+            if (this.linksToAPageThatIsGone()) return I18n.t("layout.linkPageGone");
+
             if (this.linksNowhere()) return I18n.t("layout.linkPageNone");
 
-            return I18n.f("layout.linkPage", this.getRawAddress() + 1);
+            return I18n.f("layout.linkPage", this.linkPageName != null ? this.linkPageName
+                : String.valueOf(this.getRawAddress() + 1));
         }
         else
         {
@@ -763,14 +862,17 @@ public class LayoutDiagramComponent
     
     /**
      * Returns a unique string for this component's image, suitable for caching
-     * @param size
-     * @param ignoreState
-     * @return 
      */
     public String getImageKey(int size, boolean ignoreState)
     {
         // and the size it is drawn at: two sizes drawn from one icon set are two pictures (FR-122)
-        return this.getImageName(size, ignoreState) + "_" + Integer.toString(orientation) + "_" + Integer.toString(size);
+        return getImageKey(this.getImageName(size, ignoreState), size);
+    }
+
+    /** The cache key of the picture `getImageName` named, at `size` on this square. */
+    public String getImageKey(String imageName, int size)
+    {
+        return imageName + "_" + Integer.toString(orientation) + "_" + Integer.toString(size);
     }
 
     /**
@@ -848,12 +950,23 @@ public class LayoutDiagramComponent
      * The keys this class reads out of a CS2 element and can therefore write back on its own.
      */
     private static final List<String> MODELLED_KEYS = Arrays.asList(
-        "_type", "id", "typ", "drehung", "prot", "artikel", "zustand", "text");
+        "_type", "id", "typ", "drehung", "prot", "artikel", "zielseite", "zielartikel", "zustand", "text");
+
+    /**
+     * The protocol saving this square writes as `.prot`, or null for none: every addressed accessory's, MM2 included,
+     * so the square keeps the protocol it was saved with (OB-402); any other square's only when not MM2.
+     */
+    public Accessory.accessoryDecoderType savedProtocol()
+    {
+        boolean written = this.protocol != Accessory.accessoryDecoderType.MM2
+            || (this.address > 0 && this.isAccessory());
+
+        return written ? this.protocol : null;
+    }
 
     /**
      * Exports this component in the CS2 file format
      * Limited to the component types supported in TrainControl
-     * @return
      * @throws Exception
      */
     public String exportToCS2TextFormat() throws Exception
@@ -879,7 +992,7 @@ public class LayoutDiagramComponent
         }
         
         // .typ: the file's own word wherever this component still IS what was read.  getComponentType is many-to-one,
-        // so writing the canonical name collapsed every variant (fifteen signal types became "signal").  Only while the
+        // so the canonical name would collapse every variant (fifteen signal types to "signal").  Only while the
         // type is unchanged (a redrawn square is a different component), and decided before the rotation is written,
         // because a rotation number only means something beside its word.
         String writtenTyp = originalTyp != null && getComponentTypeOf(originalTyp) == this.type
@@ -901,17 +1014,11 @@ public class LayoutDiagramComponent
             builder.append(" .drehung=").append(fileRotation).append("\n");
         }
         
-        // Custom state
-        if (this.protocol != null && this.protocol != Accessory.accessoryDecoderType.MM2)
+        if (savedProtocol() != null)
         {
-            builder.append(" .prot=").append(this.protocol.toString()).append("\n");
+            builder.append(" .prot=").append(savedProtocol().toString()).append("\n");
         }
-        else if (this.protocol != null && this.address > 0 && this.isAccessory())
-        {
-            // MM2 too on every addressed accessory tile, so the tile keeps the protocol it was saved with (OB-402)
-            builder.append(" .prot=").append(this.protocol.toString()).append("\n");
-        }
-        
+
         // Add .artikel (raw address)  
         if (this.type != componentType.TEXT)
         {
@@ -922,6 +1029,14 @@ public class LayoutDiagramComponent
             builder.append(" .artikel=-1").append("\n");
         }
         
+        // The page a link goes to, by ID; `.artikel` above stays the number 3.0.8 reads, which keeps that version right.
+        // `.zielartikel` is that number again, which tells a later read whether 3.0.8 has re-aimed the link since.
+        if (this.isLink() && this.linkPageId != null)
+        {
+            builder.append(" .zielseite=").append(this.linkPageId).append("\n");
+            builder.append(" .zielartikel=").append(this.rawAddress).append("\n");
+        }
+
         // Add state
         if (this.state > 0)
         {
@@ -994,8 +1109,6 @@ public class LayoutDiagramComponent
 
     /**
      * Converts the internal type to the Marklin format
-     * @param type
-     * @return
      * @throws Exception 
      */
     public static String getTypeString(LayoutDiagramComponent.componentType type) throws Exception
@@ -1066,7 +1179,6 @@ public class LayoutDiagramComponent
     
     /**
      * Gets the number of possible orientations for this tile type
-     * @return 
      */
     public int getNumOrientations()
     {
@@ -1110,8 +1222,6 @@ public class LayoutDiagramComponent
     
     /**
      * Updates the component's address
-     * @param address 
-     * @param protocol 
      * @param isGreen used for uncouplers
      * @throws java.lang.Exception 
      */
@@ -1130,8 +1240,7 @@ public class LayoutDiagramComponent
 
             // The logical address, which is what the file parser derives (rawAddress / 2, floored) and
             // what every consumer of getAddress() assumes - syncLayouts passes it as the logical address
-            // and getAddress() - 1 as the raw one.  This used to be set to address * 2 as well, leaving
-            // the two fields equal and getAddress() returning double the truth.
+            // and getAddress() - 1 as the raw one.  Never address * 2: getAddress() would return double the truth.
             this.address = address;
 
             if (this.isUncoupler() && isGreen)
@@ -1161,7 +1270,6 @@ public class LayoutDiagramComponent
     
     /**
      * Odd addresses are controlled by the green button - used for uncouplers
-     * @return 
      */
     public boolean isLogicalGreen()
     {
@@ -1170,7 +1278,6 @@ public class LayoutDiagramComponent
     
     /**
      * Gets the human readable version of the address
-     * @return 
      */
     public int getLogicalAddress()
     {
@@ -1180,7 +1287,8 @@ public class LayoutDiagramComponent
         }
         else if (this.isLink())
         {
-            return this.rawAddress + 1;
+            // The page's ID, one up so that 0 can mean no page (an absent ID is 0)
+            return this.linkPageId == null ? 0 : this.linkPageId + 1;
         }
         else
         {

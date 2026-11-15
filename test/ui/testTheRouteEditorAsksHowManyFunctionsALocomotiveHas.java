@@ -14,21 +14,19 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Display;
 
 /**
- * The route editor refuses a function number the locomotive has not got (MT-464).
+ * The route editor refuses a function number the locomotive has not got (MT-464).  Not a claim in
+ * `testRouteEditorValidation` (`new RouteEditorFrame(null, null)`: `problemsWith` returns before any per-row rule when
+ * the parent is null); this pays for a real window and locomotive database and goes through the CELL.  The third claim
+ * is about the command table's row mark (OB-246).
  *
- * Not a claim in `testRouteEditorValidation`: that class builds `new RouteEditorFrame(null, null)`, and `problemsWith`
- * returns before any per-row rule when the parent is null.  This one pays for a real window and a real locomotive
- * database, and goes through the CELL, not a built row.  The command table also marks the row (OB-246); the third claim
- * below is about it.
- *
- * MUTATION: drop `|| number >= loco.getNumF()` from the FUNCTION rule in `problemsWith` and the first claim goes red;
- * drop the whole rule and the control below still passes, which is what makes the pair worth having.
+ * MUTATION: drop `|| number >= loco.getNumF()` from the FUNCTION rule in `problemsWith` (first claim); dropping the
+ * whole rule leaves the control green, which is why the pair is worth having.
  *
  * @author Adam
  */
@@ -56,10 +54,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("this asks a real editor window, and a window needs a display");
-        }
+        Display.needed("this asks a real editor window, and a window needs a display");
 
         // BEFORE init, which opens whatever the layout preference names - Adam's own railway on his
         // machine (OB-111).
@@ -177,12 +172,10 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
     /**
      * A row Save would refuse is marked as it is typed, and a row Save accepts is not (OB-246): marked rather than
      * hidden, since dropping a name would refuse a legal selection with nothing shown.  Asserted through the table's
-     * own renderer, because what is claimed is what the user SEES; the third assertion pins the mark as the SAME answer
-     * as the gate by name.
+     * own renderer (what the user SEES); the third assertion pins the mark as the SAME answer as the gate by name.
      *
-     * MUTATION: have `settle` record nothing and the first claim fails.  Mark on the answer alone - drop the `named`
-     * clause - and the fourth claim fails: a row nobody has filled in yet is red the moment it is added, and a mark
-     * that is always there is a mark nobody reads.  Stop `unshaded` clearing the tooltip and the + row claim fails.
+     * MUTATION: have `settle` record nothing (first claim); drop the `named` clause (fourth: a row nobody has filled in
+     * would be red when added); stop `unshaded` clearing the tooltip (+ row claim).
      */
     @Test
     public void testARowSaveWouldRefuseIsMarkedAsItIsTyped() throws Exception
@@ -296,12 +289,11 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
 
     /**
      * The function column offers that locomotive's functions, and keeps a number already in the row (OB-090): a combo
-     * box handed a value it has not got keeps whatever was selected, so a route carrying F32 on a five-function
-     * locomotive would be rewritten to F0 (the lights) by a click and a click away.  Where the target is not a
-     * locomotive this database has, a typed number is still taken.
+     * box handed a value it has not got keeps its selection, so F32 on a five-function locomotive would be rewritten to
+     * F0 by a click.  Where the target is not a locomotive this database has, a typed number is still taken.
      *
-     * MUTATION: put `column == NUMBER` back on the `digitsOnly()` line and the first claim goes red; drop
-     * the "keep what is there" clause from `functionsOffered` and the second does.
+     * MUTATION: put `column == NUMBER` back on the `digitsOnly()` line (first claim); drop the "keep what is there"
+     * clause from `functionsOffered` (second).
      */
     @Test
     public void testTheFunctionCellOffersWhatThatLocomotiveHas() throws Exception

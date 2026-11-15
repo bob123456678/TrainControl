@@ -20,7 +20,11 @@ import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
+import support.Diagrams;
+import support.Reflect;
 import support.SourceOf;
+import support.Trees;
 
 /**
  * Mass Assign Lengths and the Unmeasured Track display: which squares they ask for, and how a piece's whole length is
@@ -45,14 +49,13 @@ public class testMassAssignLengths
     @AfterMethod
     public void tearDown()
     {
-        delete(folder);
+        Trees.delete(folder);
     }
 
     /**
      * How many squares of Adam's own **1 - Main** the crossing prompt really asks about (MT-459 says "which may be
-     * fewer").  The page has four squares shaped like a crossing, and the walk asks only about those trains run over on
-     * BOTH roads.  Read off the frozen snapshot, since the number is a fact about his layout; if the reduction stops
-     * seeing one of those roads, this says so as the manual test goes stale.
+     * fewer"): only those four crossing-shaped squares that trains run over on BOTH roads.  Read off the frozen
+     * snapshot.
      */
     @Test
     public void testHowManySharedSquaresHisOwnMainPageAsksAbout() throws Exception
@@ -166,11 +169,11 @@ public class testMassAssignLengths
         // trail it only, from 5,1 to 1,1.
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.CUSTOM_PERM_LEFT, 3, 1, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -392,9 +395,7 @@ public class testMassAssignLengths
 
         session.setTileLength(key(4, 1), 3);
 
-        java.lang.reflect.Method setupChanged = AutonomyEditorPanel.class.getDeclaredMethod("setupChanged");
-        setupChanged.setAccessible(true);
-        setupChanged.invoke(panel);
+        Reflect.method(AutonomyEditorPanel.class, "setupChanged").invoke(panel);
 
         assertFalse(marked(panel, key(4, 1)), "the square was measured through Control+E's path and is still amber");
         assertFalse(marked(panel, key(5, 1)), "the rest of a piece that now has a length is still amber");
@@ -432,10 +433,8 @@ public class testMassAssignLengths
     }
 
     /**
-     * The walk's prompt comes back where it was left, and a new round starts it afresh (Adam, MT-454: *"make sure it
-     * remembers its location unless I reopen a new mass assignment round from the right click menu."*).  Asked of the
-     * real walk: move the prompt, press Skip, read where the next prompt opened, then Cancel and start a second round,
-     * whose first prompt must NOT open where the first round left it.
+     * The walk's prompt comes back where it was left, and a new round starts afresh (Adam, MT-454: *"make sure it
+     * remembers its location unless I reopen a new mass assignment round from the right click menu."*).
      */
     @Test
     public void testTheWalkPromptStaysWhereItWasLeftUntilANewRound() throws Exception
@@ -484,15 +483,9 @@ public class testMassAssignLengths
         assertNotEquals(freshAt[0], movedTo, "a new round from the menu opened where the last round left its prompt");
     }
 
-    /**
-     * The number field has the keyboard focus, and Enter after typing a number submits it and moves on (Adam, MT-454:
-     * *"make sure the entry field is focused, and when I hit enter after typing the number, it submits and goes to the
-     * next one"*).  `JOptionPane` gives the focus to the OK button when the dialog gains it, so the field takes it once
-     * the dialog is on screen.  A desktop that never gives the window focus says so as a skip, which is why this is the
-     * ONLY test here that presses Enter.
-     */
+    /** A number typed and answered with OK is the first piece's length, and the walk moves on (MT-454). */
     @Test
-    public void testTheNumberFieldHasFocusAndEnterSubmits() throws Exception
+    public void testTheNumberTypedInTheLengthsWalkIsWritten() throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new org.testng.SkipException("the walk's prompt needs a display");
 
@@ -504,51 +497,8 @@ public class testMassAssignLengths
 
         final javax.swing.JDialog first = awaitPrompt(null);
 
-        final java.awt.Component[] owner = new java.awt.Component[1];
-        final boolean[] focused = new boolean[1];
-        long giveUp = System.currentTimeMillis() + 5000;
-
-        while (System.currentTimeMillis() < giveUp)
-        {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                focused[0] = first.isFocused();
-                owner[0] = first.getFocusOwner();
-            });
-
-            if (focused[0] && owner[0] instanceof javax.swing.JTextField) break;
-
-            Thread.sleep(50);
-        }
-
-        if (!focused[0])
-        {
-            answer(first, org.traincontrol.util.I18n.t("ui.cancel"));
-            awaitNoPrompt();
-
-            throw new org.testng.SkipException("this desktop did not give the prompt the keyboard focus, so where the focus"
-                + " goes inside it cannot be seen");
-        }
-
-        final javax.swing.JTextField field = owner[0] instanceof javax.swing.JTextField
-            ? (javax.swing.JTextField) owner[0] : null;
-
-        if (field == null)
-        {
-            answer(first, org.traincontrol.util.I18n.t("ui.cancel"));
-            awaitNoPrompt();
-
-            fail("the prompt has the focus but the number field does not - it is on " + owner[0]
-                + ", so what is typed goes nowhere (Adam: \"make sure the entry field is focused\")");
-        }
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            field.setText("3");
-
-            field.dispatchEvent(new java.awt.event.KeyEvent(field, java.awt.event.KeyEvent.KEY_PRESSED,
-                System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ENTER, java.awt.event.KeyEvent.CHAR_UNDEFINED));
-        });
+        type(first, "3");
+        answer(first, org.traincontrol.util.I18n.t("ui.ok"));
 
         javax.swing.JDialog second = awaitPrompt(first);
 
@@ -566,7 +516,7 @@ public class testMassAssignLengths
             if (total == 3) written++;
         }
 
-        assertEquals(written, 1, "Enter after typing 3 did not give the first piece its length before moving on");
+        assertEquals(written, 1, "OK after typing 3 did not give the first piece its length before moving on");
     }
 
     // ------------------------------------------------------------------------------------------------ station maxima
@@ -619,9 +569,8 @@ public class testMassAssignLengths
     }
 
     /**
-     * The walk itself: a maximum typed and entered is written to the station asked about, and the walk moves on.  It
-     * presses OK rather than Enter, which needs a focused text component that a battery machine does not always give;
-     * `testTheNumberFieldHasFocusAndEnterSubmits` is where Enter is pinned.
+     * The walk itself: a maximum typed and answered with OK is written to the station asked about, and the walk moves
+     * on.
      */
     @Test
     public void testTheMaximumWalkWritesWhatIsTypedAndMovesOn() throws Exception
@@ -763,8 +712,8 @@ public class testMassAssignLengths
 
     /**
      * On the frozen copy of Adam's railway, Clear All Station Max Train Lengths asks first; No changes nothing, and Yes
-     * takes the maximum off every station on every page and says how many (MT-518, MT-519).  Each maximum is read where
-     * the steps read it: the Maximum Train Length item on the Station menu of its own page.
+     * takes the maximum off every station on every page and says how many (MT-518, MT-519).  Each maximum is read from
+     * the station's Maximum train length field (FR-111).
      *
      * MUTATION: clear on No, clear one page only, or say a count other than the item's, and this fails naming it.
      */
@@ -823,10 +772,10 @@ public class testMassAssignLengths
 
                 assertEquals(maxima(), before, "answered No, Clear All Station Max Train Lengths changed a maximum (MT-518)");
 
-                assertEquals(maximumShown(MAIN, onMain), shownAs(before.get(onMain)), "answered No, the Station menu of "
+                assertEquals(maximumShown(MAIN, onMain), shownAs(before.get(onMain)), "answered No, Station Settings of "
                     + session.getStore().getPointName(onMain) + " does not show its maximum (MT-518 step 4)");
 
-                assertEquals(maximumShown(BOTTOM, onBottom), shownAs(before.get(onBottom)), "answered No, the Station menu"
+                assertEquals(maximumShown(BOTTOM, onBottom), shownAs(before.get(onBottom)), "answered No, Station Settings"
                     + " of " + session.getStore().getPointName(onBottom) + " does not show its maximum (MT-518 step 4)");
 
                 javax.swing.SwingUtilities.invokeLater(item::doClick);
@@ -847,10 +796,10 @@ public class testMassAssignLengths
 
                 String any = shownAs(0);
 
-                assertEquals(maximumShown(MAIN, onMain), any, "answered Yes, the Station menu of "
+                assertEquals(maximumShown(MAIN, onMain), any, "answered Yes, Station Settings of "
                     + session.getStore().getPointName(onMain) + " on " + MAIN + " does not show any length (MT-519 step 4)");
 
-                assertEquals(maximumShown(BOTTOM, onBottom), any, "answered Yes, the Station menu of "
+                assertEquals(maximumShown(BOTTOM, onBottom), any, "answered Yes, Station Settings of "
                     + session.getStore().getPointName(onBottom) + " on " + BOTTOM + " does not show any length (MT-519"
                     + " step 4)");
             }
@@ -869,10 +818,9 @@ public class testMassAssignLengths
     }
 
     /**
-     * On the frozen railway with every maximum cleared, as MT-519 leaves it, Mass Assign Station Max Train Lengths on 1
-     * - Main asks about each station in turn, naming it and outlining it, refuses 0 and asks again, takes a number
-     * typed without a click and entered with Enter, and ends on Escape (MT-520, MT-521).  A desktop that gives the
-     * prompt no focus cannot show that, and this then skips, as `testTheNumberFieldHasFocusAndEnterSubmits` does.
+     * On the frozen railway with every maximum cleared (MT-519), Mass Assign Station Max Train Lengths on 1 - Main asks
+     * about each station in turn, naming and outlining it, refuses 0, takes a number answered with OK, and ends on
+     * Cancel (MT-520, MT-521).
      *
      * MUTATION: write the refused 0, stop outlining the station, or name another in the prompt, and this fails.
      */
@@ -935,24 +883,16 @@ public class testMassAssignLengths
                 assertEquals(session.getPointProperty(first, "maxTrainLength"), firstBefore, "a refused 0 was written"
                     + " (MT-521)");
 
-                final javax.swing.JTextField field = awaitTheKeyboard(prompt);
-
-                javax.swing.SwingUtilities.invokeAndWait(() ->
-                {
-                    field.setText("7");
-
-                    press(field, java.awt.event.KeyEvent.VK_ENTER);
-                });
+                type(prompt, "7");
+                answer(prompt, org.traincontrol.util.I18n.t("ui.ok"));
 
                 javax.swing.JDialog next = awaitPrompt(prompt, MAXIMA);
 
                 assertEquals(promptText(next).trim(), org.traincontrol.util.I18n.f("autosetup.ui.promptMassAssignMaxTrainLength",
-                    2, stations.size(), nameForPrompt(panel, second)), "after Enter the walk did not move on to the next"
+                    2, stations.size(), nameForPrompt(panel, second)), "after OK the walk did not move on to the next"
                     + " station (MT-520 step 3)");
 
-                final javax.swing.JTextField nextField = awaitTheKeyboard(next);
-
-                javax.swing.SwingUtilities.invokeAndWait(() -> press(nextField, java.awt.event.KeyEvent.VK_ESCAPE));
+                answer(next, org.traincontrol.util.I18n.t("ui.cancel"));
 
                 awaitNoPrompt(MAXIMA);
 
@@ -961,10 +901,10 @@ public class testMassAssignLengths
                 assertEquals(session.getPointProperty(first, "maxTrainLength"), 7, "the number typed and entered was not"
                     + " recorded for " + session.getStore().getPointName(first) + " (MT-520)");
 
-                assertEquals(maximumShown(MAIN, first), shownAs(7), "the Station menu of "
+                assertEquals(maximumShown(MAIN, first), shownAs(7), "Station Settings of "
                     + session.getStore().getPointName(first) + " does not show the number typed (MT-520 step 5)");
 
-                assertEquals(session.getPointProperty(second, "maxTrainLength"), secondBefore, "Escape gave the next station"
+                assertEquals(session.getPointProperty(second, "maxTrainLength"), secondBefore, "Cancel gave the next station"
                     + " a maximum");
 
                 assertTrue(selectionOf(panel).isEmpty(), "the outline stayed on the diagram after the walk ended");
@@ -985,8 +925,8 @@ public class testMassAssignLengths
 
     /**
      * On the frozen railway's 2 - Bottom, after Clear All Track Lengths, Mass Assign Lengths asks for the squares two
-     * roads cross on their own, and one length typed there goes to every one of them and takes their highlight away
-     * (MT-530).  Skip is pressed until the crossing prompt, as the steps say.
+     * roads cross on their own; one length typed there goes to every one of them and takes their highlight away
+     * (MT-530).
      *
      * MUTATION: put a crossing back into a stretch, give the answer to one crossing only, or leave it highlighted, and
      * this fails.
@@ -1123,9 +1063,8 @@ public class testMassAssignLengths
     }
 
     /**
-     * On the frozen railway, One-Way Run is grayed on 4 - Combined, which is left out of autonomy (the button, and the
-     * Bulk Tools item with a tooltip saying so); armed on 1 - Main, it is put down and grayed when Exclude Page is
-     * ticked and answered Yes, and the hint stops asking for the first square (MT-568).
+     * On the frozen railway, One-Way Run is grayed on 4 - Combined (left out of autonomy), button and Bulk Tools item;
+     * armed on 1 - Main, it is put down and grayed when Exclude Page is ticked and answered Yes (MT-568).
      * `testTheOneWayButtonIsGreyedAndPutDownOnAPageLeftOut` holds the same on a fixture.
      *
      * MUTATION: leave the button live or armed on a page left out, or drop the item's tooltip, and this fails.
@@ -1172,9 +1111,7 @@ public class testMassAssignLengths
                 assertTrue(oneWay.isSelected() && String.valueOf(hintOf(main)).contains(first), "precondition: One-Way Run"
                     + " did not arm on " + MAIN + ", or does not ask for the first square: " + hintOf(main));
 
-                java.lang.reflect.Field boxField = AutonomyEditorPanel.class.getDeclaredField("excludePage");
-
-                boxField.setAccessible(true);
+                java.lang.reflect.Field boxField = Reflect.field(AutonomyEditorPanel.class, "excludePage");
 
                 final javax.swing.AbstractButton box = (javax.swing.AbstractButton) boxField.get(main);
 
@@ -1218,11 +1155,7 @@ public class testMassAssignLengths
 
     private static javax.swing.AbstractButton oneWayButtonOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("oneWayButton");
-
-        field.setAccessible(true);
-
-        return (javax.swing.AbstractButton) field.get(panel);
+        return (javax.swing.AbstractButton) Reflect.get(AutonomyEditorPanel.class, panel, "oneWayButton");
     }
 
     private static String stripped(String html)
@@ -1312,57 +1245,43 @@ public class testMassAssignLengths
         return first;
     }
 
-    /** The Maximum Train Length item's label for this maximum, as the Station menu writes it. */
+    /** The Maximum train length field's text for this maximum: blank for any length. */
     private static String shownAs(Object maximum)
     {
         int value = maximum instanceof Number ? ((Number) maximum).intValue() : 0;
 
-        return org.traincontrol.util.I18n.f("autolayout.ui.menuMaxTrainLength",
-            value == 0 ? org.traincontrol.util.I18n.t("autolayout.ui.any") : String.valueOf(value));
+        return value == 0 ? "" : String.valueOf(value);
     }
 
-    /** The label of the Maximum Train Length item on this station's Station menu, on an editor showing its page. */
+    /** The Maximum train length field of Station Settings, opened from the station's right-click menu on its page. */
     private String maximumShown(String page, TileKey station) throws Exception
     {
-        final String[] label = new String[1];
-
         final AutonomyEditorPanel onItsPage = new AutonomyEditorPanel(session, page, () -> { });
 
-        String pattern = org.traincontrol.util.I18n.t("autolayout.ui.menuMaxTrainLength");
-
-        final String prefix = pattern.substring(0, pattern.indexOf("{0}"));
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
+        support.Components.onTheEventThread(() ->
         {
-            javax.swing.JMenuItem found = itemStarting(onItsPage.buildTileMenu(station, null), prefix);
+            javax.swing.AbstractButton item = support.Components.withText(onItsPage.buildTileMenu(station, null),
+                org.traincontrol.util.I18n.t("autosetup.ui.menuStationSettings"));
 
-            label[0] = found == null ? "no Maximum Train Length item" : found.getText();
+            if (item != null) item.doClick();
+
+            return null;
         });
 
-        return label[0];
-    }
+        StationSettingsWindow window = support.StationDoors.showing(StationSettingsWindow.class);
 
-    private static javax.swing.JMenuItem itemStarting(java.awt.Container menu, String prefix)
-    {
-        java.awt.Component[] children = menu instanceof javax.swing.JMenu
-            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
+        if (window == null) return "no Station Settings item";
 
-        for (java.awt.Component child : children)
+        try
         {
-            if (child instanceof javax.swing.JMenu)
-            {
-                javax.swing.JMenuItem found = itemStarting((javax.swing.JMenu) child, prefix);
+            support.StationDoors.current(window);
 
-                if (found != null) return found;
-            }
-            else if (child instanceof javax.swing.JMenuItem && ((javax.swing.JMenuItem) child).getText() != null
-                && ((javax.swing.JMenuItem) child).getText().startsWith(prefix))
-            {
-                return (javax.swing.JMenuItem) child;
-            }
+            return support.StationDoors.text(window, "station.maxLength");
         }
-
-        return null;
+        finally
+        {
+            support.StationDoors.close(window);
+        }
     }
 
     /** The Bulk Tools item whose text starts so - for an item that carries a count. */
@@ -1389,11 +1308,7 @@ public class testMassAssignLengths
 
     private static String hintOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field hintField = AutonomyEditorPanel.class.getDeclaredField("hint");
-
-        hintField.setAccessible(true);
-
-        String text = ((javax.swing.JLabel) hintField.get(panel)).getText();
+        String text = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
 
         return text == null ? null : text.replaceAll("<[^>]*>", "").replace("&lt;", "<").replace("&gt;", ">")
             .replace("&amp;", "&").trim();
@@ -1402,9 +1317,7 @@ public class testMassAssignLengths
     @SuppressWarnings("unchecked")
     private static Set<TileKey> selectionOf(AutonomyEditorPanel panel) throws Exception
     {
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("selection");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "selection");
 
         final Set<TileKey> out = new java.util.LinkedHashSet<>();
 
@@ -1425,11 +1338,7 @@ public class testMassAssignLengths
 
     private static String nameForPrompt(AutonomyEditorPanel panel, TileKey tile) throws Exception
     {
-        java.lang.reflect.Method name = AutonomyEditorPanel.class.getDeclaredMethod("nameForPrompt", TileKey.class);
-
-        name.setAccessible(true);
-
-        return (String) name.invoke(panel, tile);
+        return (String) Reflect.method(AutonomyEditorPanel.class, "nameForPrompt", TileKey.class).invoke(panel, tile);
     }
 
     private static Object initialValueOf(final javax.swing.JDialog dialog) throws Exception
@@ -1489,52 +1398,6 @@ public class testMassAssignLengths
         }
 
         fail("the dialog titled \"" + title + "\" did not close");
-    }
-
-    /**
-     * The prompt's number field once the prompt has the keyboard; skips, after stopping the walk, where this desktop
-     * gives it none.
-     */
-    private static javax.swing.JTextField awaitTheKeyboard(final javax.swing.JDialog prompt) throws Exception
-    {
-        final java.awt.Component[] owner = new java.awt.Component[1];
-        final boolean[] focused = new boolean[1];
-
-        long giveUp = System.currentTimeMillis() + 5000;
-
-        while (System.currentTimeMillis() < giveUp)
-        {
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                focused[0] = prompt.isFocused();
-                owner[0] = prompt.getFocusOwner();
-            });
-
-            if (focused[0] && owner[0] instanceof javax.swing.JTextField) return (javax.swing.JTextField) owner[0];
-
-            Thread.sleep(50);
-        }
-
-        String title = prompt.getTitle();
-
-        answer(prompt, org.traincontrol.util.I18n.t("ui.cancel"));
-
-        if (!focused[0])
-        {
-            throw new org.testng.SkipException("this desktop did not give the \"" + title + "\" prompt the keyboard, so"
-                + " typing without a click cannot be seen");
-        }
-
-        fail("the prompt has the keyboard but its number field does not - it is on " + owner[0]);
-
-        return null;
-    }
-
-    /** One key pressed on the component, as the keyboard presses it. */
-    private static void press(java.awt.Component on, int key)
-    {
-        on.dispatchEvent(new java.awt.event.KeyEvent(on, java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0,
-            key, java.awt.event.KeyEvent.CHAR_UNDEFINED));
     }
 
     /** Escape on whatever Mass Assign Lengths asks after this prompt, until it asks nothing. */
@@ -1690,11 +1553,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.ROUTE, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 5, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
         wire(page, 3, 1, 7);
@@ -1730,11 +1593,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.ROUTE, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -1746,8 +1609,7 @@ public class testMassAssignLengths
 
     /**
      * A route tile's place reaches the railway as answered, so a leg answered 0 around it counts as measured there
-     * (*"0 lengths count as measures"*; OB-273).  A route tile is never asked, so a leg whose every other square was
-     * answered 0 would still have one place with no answer.
+     * (*"0 lengths count as measures"*; OB-273).
      *
      * MUTATION: mark only the squares answered 0, and this fails.
      */
@@ -1777,8 +1639,7 @@ public class testMassAssignLengths
 
     /**
      * The build marks, on each edge, the places Mass Assign Lengths would ask a length for, which the own-tail note
-     * counts (OB-297).  A reading of the runtime's own would call a piece with a route tile measured, and a short piece
-     * whose units went on the station's square first unmeasured from the edge leaving the station.
+     * counts (OB-297).
      *
      * MUTATION: mark the pieces from the runtime's own reading, or mark the route tile, and this fails.
      */
@@ -1863,9 +1724,7 @@ public class testMassAssignLengths
     {
         openTwoSwitchesBackToBack();
 
-        java.lang.reflect.Method asked = AutonomySession.class.getDeclaredMethod("piecesToMeasure");
-
-        asked.setAccessible(true);
+        java.lang.reflect.Method asked = Reflect.method(AutonomySession.class, "piecesToMeasure");
 
         java.util.Map<TileKey, String> keys = (java.util.Map<TileKey, String>) asked.invoke(session);
 
@@ -1890,11 +1749,7 @@ public class testMassAssignLengths
 
     private org.json.JSONObject inspected() throws Exception
     {
-        java.lang.reflect.Method built = AutonomySession.class.getDeclaredMethod("builtForInspection");
-
-        built.setAccessible(true);
-
-        return (org.json.JSONObject) built.invoke(session);
+        return (org.json.JSONObject) Reflect.method(AutonomySession.class, "builtForInspection").invoke(session);
     }
 
     private static org.json.JSONArray placesEndingAt(org.json.JSONObject built, String end)
@@ -1920,8 +1775,7 @@ public class testMassAssignLengths
 
     /**
      * A route tile's length is folded into the track beside it when the setup is opened, keeping the total (*"Fold
-     * them, they were likely auto set during the mass assignment run."*).  Written to the file and read back, because
-     * the fold is what opening a setup does.
+     * them, they were likely auto set during the mass assignment run."*); written to the file and read back.
      *
      * MUTATION: dropping the fold from `open` leaves the route tile's length where it was.
      */
@@ -1938,11 +1792,11 @@ public class testMassAssignLengths
 
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.ROUTE, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -1961,9 +1815,8 @@ public class testMassAssignLengths
     }
 
     /**
-     * The fold never puts a length on a sensor square (OB-278): its length is the last place of every rail arriving at
-     * it, so a unit folded onto it lengthens every OTHER approach to that sensor.  Here the route tile has a sensor on
-     * the side asked first and a straight on the other, and the straight takes the unit.
+     * The fold never puts a length on a sensor square (OB-278): that would lengthen every OTHER approach to the sensor,
+     * so the straight on the other side takes the unit.
      *
      * MUTATION: let the fold take a sensor square again and this fails.
      */
@@ -1972,12 +1825,12 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.ROUTE, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 4, 1, 6, 12);
+        Diagrams.straight(page, 5, 1);
+        Diagrams.feedback(page, 6, 1, 7, 13);
 
         page.setPageId("1");
 
@@ -1999,8 +1852,8 @@ public class testMassAssignLengths
     }
 
     /**
-     * Opening Adam's own railway folds his five route tiles, and no other square (*"Fold them"*).  Taken from the
-     * railway as frozen before the fold first ran (`unfolded-route-tiles`): the fold rewrites the file it reads.
+     * Opening Adam's own railway folds his five route tiles, and no other square (*"Fold them"*), taken from the
+     * railway as frozen before the fold first ran (`unfolded-route-tiles`).
      *
      * MUTATION: dropping the fold from `open` folds nothing, and this fails.
      */
@@ -2044,9 +1897,9 @@ public class testMassAssignLengths
         LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
 
         page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 2, 22, 22);
         page.addComponent(componentType.ROUTE, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 2, 0, 0, 23, 23, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 3, 2, 23, 23);
         page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
 
         page.setPageId("1");
@@ -2106,8 +1959,7 @@ public class testMassAssignLengths
     /** Starts the named mass-assign walk of the panel on the event thread without waiting for it, as its menu item does. */
     private static void startTheWalk(final AutonomyEditorPanel panel, String name) throws Exception
     {
-        final java.lang.reflect.Method walk = AutonomyEditorPanel.class.getDeclaredMethod(name);
-        walk.setAccessible(true);
+        final java.lang.reflect.Method walk = Reflect.method(AutonomyEditorPanel.class, name);
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
@@ -2234,7 +2086,7 @@ public class testMassAssignLengths
     }
 
     /**
-     * The Bulk Tools item is never grayed, and says in its label how many trains are missing a length (MT-533): *"This
+     * The Bulk Tools item is never grayed, and its label counts the trains missing a length (MT-533): *"This
      * option should never be greyed out completely (show the number of missing trains in parens)."*
      *
      * MUTATION: gray it again with none missing, or drop the count from its label, and this fails.
@@ -2350,9 +2202,9 @@ public class testMassAssignLengths
     }
 
     /**
-     * In its every-train mode the walk says what is true of the trains it goes through (MT-533): not "0 means the train
-     * has no length, which is what it has now" of a train its own prompt has just said has one, and not a tooltip
-     * saying every locomotive has a length while a click says none is placed.
+     * In its every-train mode the walk says what is true of the trains it goes through (MT-533): no "0 means the train
+     * has no length" for a train that has one, and no tooltip claiming every locomotive has a length while a click says
+     * none is placed.
      *
      * MUTATION: answer 0 in that mode with the missing-length sentence, or choose the tooltip on the missing count
      * alone, and this fails.
@@ -2463,9 +2315,8 @@ public class testMassAssignLengths
     }
 
     /**
-     * The One-Way Run BUTTON is grayed on a page left out too, and a run armed when the page is left out is put down
-     * (OB-235, MT-568).  Un-pressing a toggle fires no action, so a tool left armed with its button up would wait for
-     * the next click once the page is ticked back in; the prompt it put up for its first square goes with it.
+     * The One-Way Run BUTTON is grayed on a page left out too, and a run armed when the page is left out is put down,
+     * with its prompt (OB-235, MT-568): un-pressing a toggle fires no action.
      *
      * MUTATION: leave the button enabled on a page left out, leave it armed, put the button down and leave the tool,
      * or leave the prompt, and this fails.
@@ -2477,9 +2328,7 @@ public class testMassAssignLengths
 
         final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("oneWayButton");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "oneWayButton");
 
         final javax.swing.AbstractButton oneWay = (javax.swing.AbstractButton) field.get(panel);
 
@@ -2498,19 +2347,13 @@ public class testMassAssignLengths
         assertFalse(oneWay.isSelected(), "One-Way Run was left armed on a page left out of autonomy - a click there waits"
             + " for its second square (OB-235)");
 
-        java.lang.reflect.Field toolField = AutonomyEditorPanel.class.getDeclaredField("tool");
-
-        toolField.setAccessible(true);
+        java.lang.reflect.Field toolField = Reflect.field(AutonomyEditorPanel.class, "tool");
 
         assertEquals(String.valueOf(toolField.get(panel)), "NONE", "the One-Way Run button was put down on a page left"
             + " out, and the tool it arms was not - tick the page back in and the next click starts a one-way run with"
             + " nothing pressed (TDD2-C7)");
 
-        java.lang.reflect.Field hintField = AutonomyEditorPanel.class.getDeclaredField("hint");
-
-        hintField.setAccessible(true);
-
-        String hint = ((javax.swing.JLabel) hintField.get(panel)).getText();
+        String hint = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
 
         assertFalse(hint != null && hint.contains(org.traincontrol.util.I18n.t("autosetup.ui.promptOneWayFrom")),
             "One-Way Run was put down on a page left out and its prompt still asks for the first square (TDD2-C7): "
@@ -2541,8 +2384,7 @@ public class testMassAssignLengths
     /**
      * The door the main window supplies asks the list the Atomic Routes refusal names, and writes through the one
      * train-length door (FR-094).  Read from the source because the window is the half these claims replace with a
-     * stand-in: `applyTrainLength` is where the findings and the gray are told, so a walk that set the field itself
-     * would leave both describing the length before last.
+     * stand-in.
      */
     @Test
     public void testTheWalkAsksTheRefusalsListAndWritesThroughTheOneDoor() throws Exception
@@ -2658,9 +2500,7 @@ public class testMassAssignLengths
 
     /**
      * A square two roads cross is in no piece, is asked for on its own, and counts on both roads (Adam: *"For
-     * crossings: if its length is set, count that length once in each direction."*).  The reduction already counts it
-     * on both roads, so the walk must not put it inside one road's piece, whose whole length is then shared over its
-     * squares.
+     * crossings: if its length is set, count that length once in each direction."*).
      */
     @Test
     public void testACrossingIsCutOutOfEveryPieceAndCountsOnBothRoads() throws IOException
@@ -2732,11 +2572,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 2, 5, 11);
+        Diagrams.straight(page, 2, 2);
         page.addComponent(componentType.CROSSING, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 2, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 2);
+        Diagrams.feedback(page, 5, 2, 6, 12);
 
         page.setPageId("1");
 
@@ -2765,15 +2605,15 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 2, 5, 11);
+        Diagrams.straight(page, 2, 2);
         page.addComponent(componentType.CROSSING, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 2, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 2);
+        Diagrams.feedback(page, 5, 2, 6, 12);
 
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 3, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 3, 1, 1);
+        Diagrams.straight(page, 3, 3, 1);
         page.addComponent(componentType.FEEDBACK, 3, 4, 1, 0, 8, 14, accessoryDecoderType.MM2, null);
 
         page.setPageId("1");
@@ -2814,11 +2654,9 @@ public class testMassAssignLengths
     }
 
     /**
-     * After a walk, Segment Length shows the whole run and writes the whole run.  Mass Assign Lengths shares a piece's
-     * whole length over every square, so the leader holds only a share, yet the dialog must open on what the run
-     * measures (`behaviour/length.md` section 5b: *"a run of plain track has one square that speaks for it, and both
-     * doors write there, so measuring a run through both does not count it twice."*) and writing 4 must leave the run
-     * at 4.
+     * After a walk, Segment Length shows the whole run and writes the whole run, though the leader holds only a share
+     * (`behaviour/length.md` section 5b: *"a run of plain track has one square that speaks for it, and both
+     * doors write there, so measuring a run through both does not count it twice."*).
      */
     @Test
     public void testTheSingleDoorSpeaksForTheWholeRunAfterAWalk() throws Exception
@@ -2854,9 +2692,8 @@ public class testMassAssignLengths
     }
 
     /**
-     * Segment Length's 0 is a deliberate 0, and Clear takes the length away.  A 0 answered in Mass Assign Lengths is
-     * kept as an answer (OB-274), and Segment Length does the same (*"no, add a clear button."*): 0 records every
-     * square of the run as answered, and clearing is a button of its own, which also answers an empty field.
+     * Segment Length's 0 is a deliberate 0, and Clear takes the length away (OB-274; Adam: *"no, add a clear
+     * button."*).
      *
      * MUTATION: `applyLengthAnswer` writing 0 as a plain length again leaves the run unanswered; Clear answering 0
      * leaves it answered.
@@ -2889,6 +2726,60 @@ public class testMassAssignLengths
             assertFalse(session.getStore().isTileLengthAnswered(square),
                 "Clear left " + square + " answered, so there is no way back from a deliberate 0 to \"not given\"");
         }
+    }
+
+    /**
+     * A length typed for a selection is written to every square in one re-derivation of the setup, not one per square:
+     * each re-derivation rebuilds the whole graph, so ten squares took ten.
+     *
+     * MUTATION: write the selection's squares through `setTileLength` one by one again, and this fails.
+     */
+    @Test
+    public void testALengthForASelectionRebuildsTheSetupOnce() throws Exception
+    {
+        final Set<Object> graphs = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+        // Each door re-derives once, so the graphs it leaves behind count the re-derivations.
+        session = new AutonomySession(folder)
+        {
+            @Override
+            public void setTileLength(TileKey tile, int length)
+            {
+                super.setTileLength(tile, length);
+                graphs.add(getGraph());
+            }
+
+            @Override
+            public void setTileLengths(java.util.Map<TileKey, Integer> lengths)
+            {
+                super.setTileLengths(lengths);
+                graphs.add(getGraph());
+            }
+        };
+
+        openARunOfTwoPlainSquares();
+
+        AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
+
+        TileKey[] picked = { key(2, 1), key(3, 1) };
+
+        // Picked out with a shift-click, as a length for several squares is
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            for (TileKey square : picked) panel.tileClicked(square, null, true);
+        });
+
+        assertEquals(panel.getSelection().size(), 2, "precondition: the two squares were not picked out");
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel.applyLengthAnswer(key(3, 1), 5));
+
+        for (TileKey square : picked)
+        {
+            assertEquals(session.getStore().getTileLength(square), 5, square + " did not get the length typed");
+        }
+
+        assertEquals(graphs.size(), 1, "a length for two selected squares re-derived the setup " + graphs.size()
+            + " times: once per square, where one re-derivation writes them all");
     }
 
     /**
@@ -3028,8 +2919,7 @@ public class testMassAssignLengths
     /**
      * With nothing spent before the crossing, a parking berth refuses every train there: answered 0, it is a warning of
      * its own (*"Give it its own sentence as a warning, make it sound intuitive (the effective specified length of the
-     * track is 0)."*); unanswered, the half-measured warning names the squares.  The run-in notice must not quote the
-     * room walk's 4 back to the switch, nor say 0 in a sentence written for a berth that holds something.
+     * track is 0)."*); unanswered, the half-measured warning names the squares.
      *
      * MUTATION: leave the answered berth to the run-in notice, or grade its sentence a notice, and this fails.
      */
@@ -3242,10 +3132,9 @@ public class testMassAssignLengths
     }
 
     /**
-     * A parking berth whose approach was answered 0 throughout, nothing measured on it, is warned about as one given no
-     * room, as where something was measured (*"we can't possibly have positive lengths everywhere because the tracks
-     * just aren't that long.  We need to find a way to allow trains in atomic mode in as well if the total track
-     * lengths allow"*).
+     * A parking berth whose approach was answered 0 throughout is warned about as one given no room (*"we can't
+     * possibly have positive lengths everywhere because the tracks just aren't that long.  We need to find a way to
+     * allow trains in atomic mode in as well if the total track lengths allow"*).
      *
      * MUTATION: have the editor's test of a measured approach ignore answered zeros, and this fails.
      */
@@ -3275,10 +3164,8 @@ public class testMassAssignLengths
     @SuppressWarnings("unchecked")
     private java.util.Map<TileKey, int[]> runInsSaid() throws Exception
     {
-        java.lang.reflect.Method runIns = org.traincontrol.automationui.AutonomySession.class.getDeclaredMethod(
-            "runInsShorterThanTheBerth");
-
-        runIns.setAccessible(true);
+        java.lang.reflect.Method runIns =
+            Reflect.method(org.traincontrol.automationui.AutonomySession.class, "runInsShorterThanTheBerth");
 
         return (java.util.Map<TileKey, int[]>) runIns.invoke(session);
     }
@@ -3377,9 +3264,7 @@ public class testMassAssignLengths
 
     /**
      * A parking berth's run-in notice stops where the berth rule does, at a crossing as well as at a switch, and does
-     * not quote the room back to the switch.  With every square measured and 2 of them before the crossing, a berth set
-     * to take a train of 3 refuses it, and 6 of room to the switch is not short of 3.  A platform autonomy may choose
-     * keeps the room rule's number.
+     * not quote the room back to the switch; a platform autonomy may choose keeps the room rule's number.
      *
      * MUTATION: take the room to the switch alone again, and this fails.
      */
@@ -3422,13 +3307,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 11, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(atThree, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.row(page, 4, 1, "SSS");
+        Diagrams.feedback(page, 7, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
         if (atThree == componentType.SWITCH_LEFT) wire(page, 3, 1, 7);
@@ -3460,8 +3343,8 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 11, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
 
         if (withTheSwitch)
         {
@@ -3470,18 +3353,18 @@ public class testMassAssignLengths
         }
         else
         {
-            page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.FEEDBACK, 1, 0, 0, 0, 10, 16, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.STRAIGHT, 2, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.STRAIGHT, 3, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.straight(page, 3, 1);
+            Diagrams.feedback(page, 1, 0, 10, 16);
+            Diagrams.straight(page, 2, 0);
+            Diagrams.straight(page, 3, 0);
         }
 
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
         page.addComponent(componentType.CROSSING, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 6, 1);
+        Diagrams.feedback(page, 7, 1, 6, 12);
 
-        page.addComponent(componentType.FEEDBACK, 4, 0, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 4, 0, 7, 13);
         page.addComponent(componentType.CURVE, 5, 0, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 5, 2, 1, 0, 9, 15, accessoryDecoderType.MM2, null);
 
@@ -3505,13 +3388,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 11, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 7, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.row(page, 4, 1, "SSS");
+        Diagrams.feedback(page, 7, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
         wire(page, 3, 1, 7);
@@ -3530,10 +3411,10 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.straight(page, 3, 1);
+        Diagrams.feedback(page, 4, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -3659,11 +3540,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
         wire(page, 3, 1, 7);
@@ -3682,11 +3563,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
         page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 1);
+        Diagrams.feedback(page, 5, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
 
         wire(page, 3, 1, 7);
@@ -3695,9 +3576,7 @@ public class testMassAssignLengths
 
         LayoutDiagram other = new LayoutDiagram("other", 9, 4, null, null);
 
-        other.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 21, 21, accessoryDecoderType.MM2, null);
-        other.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        other.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 22, 22, accessoryDecoderType.MM2, null);
+        Diagrams.row(other, 1, 1, "FSF", 21, 22);
 
         other.setPageId("2");
 
@@ -3713,10 +3592,10 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
         page.addComponent(componentType.SWITCH_LEFT, 2, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 8, 8, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 4, 1, 6, 12);
         page.addComponent(componentType.FEEDBACK, 2, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 8, 14, accessoryDecoderType.MM2, null);
 
@@ -3828,25 +3707,11 @@ public class testMassAssignLengths
         return out.append("]").toString();
     }
 
-    private static void delete(File file)
-    {
-        if (file == null) return;
-
-        File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (File child : children) delete(child);
-        }
-
-        file.delete();
-    }
-
     /**
-     * A square that stops being a station remembers its maximum train length, and has it again when it is made a
-     * station again (OB-291): *"make max train length be remembered if a station is changed to a non-station, and then
+     * A square that stops being a station remembers its maximum train length, and has it again when made a station
+     * again (OB-291): *"make max train length be remembered if a station is changed to a non-station, and then
      * restored if it is changed back to a station.  don't modify the behavior of this attribute: it is still to be
-     * ignored for non-stations."*  The bulk clear counts only stations, since it says "on {0} stations".
+     * ignored for non-stations."*  The bulk clear counts only stations.
      *
      * MUTATION: clear the maximum in `AutonomySession.setStation` again, or count every square that carries one, and
      * this fails.
@@ -3877,9 +3742,8 @@ public class testMassAssignLengths
     }
 
     /**
-     * A NEGATIVE maximum is counted by the bulk clear on any square, station or not (OB-291): `Layout.fromJSON` refuses
-     * a maximum below 0 on any point and invalidates the whole configuration, and the bulk clear is the door that takes
-     * one off.
+     * A NEGATIVE maximum is counted by the bulk clear on any square (OB-291): `Layout.fromJSON` refuses one on any
+     * point, and the bulk clear is the door that takes it off.
      *
      * MUTATION: count stations only, negatives included, and this fails.
      */
@@ -3903,10 +3767,9 @@ public class testMassAssignLengths
     }
 
     /**
-     * A maximum remembered on a square that is not a station does not make the railway one that models lengths
-     * (OB-291).  *"No max train length"* is listed for every station only on a railway that models lengths somewhere,
-     * and a maximum on a non-station decides nothing (*"it is still to be ignored for non-stations"*).  The control
-     * first: with the maximum on a station, the other station IS listed.
+     * A maximum remembered on a non-station does not make the railway one that models lengths (OB-291): *"No max train
+     * length"* is listed for every station only where some station has one.  The control: with the maximum on a
+     * station, the other station IS listed.
      *
      * MUTATION: let `modelsAnyLength` read a maximum off any square, and this fails.
      */
@@ -3955,17 +3818,17 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 9, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 2, 5, 11);
+        Diagrams.straight(page, 2, 2);
         page.addComponent(componentType.CROSSING, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 2);
 
         page.addComponent(componentType.CURVE, 5, 2, 2, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 5, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 5, 1, 1);
         page.addComponent(componentType.CURVE, 5, 0, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 4, 0);
         page.addComponent(componentType.CURVE, 3, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(page, 3, 1, 1);
 
         // The second sensor sits directly below the crossing, so the crossing is the last intermediate square on the
         // leg: only then does the off-by-one (`i + 1 < leg.size() - 1`, dropping that square) differ from the rule.
@@ -4046,10 +3909,8 @@ public class testMassAssignLengths
 
     /**
      * A berth whose approach is half measured is warned about, and a whole one is not (*"As long as lengths are
-     * specified on the berth, it will work, right?  We want clear warnings to the user if so, then it's fine."*).  Half
-     * measured is the trap: the room walk judges as soon as anything is measured, so the berth takes no train at all.
-     * Three states: nothing measured (no warning), the switch measured and the piece not (warned), everything measured
-     * (no warning).
+     * specified on the berth, it will work, right?  We want clear warnings to the user if so, then it's fine."*): the
+     * room walk judges as soon as anything is measured.  Three states: nothing, switch only, everything.
      */
     @Test
     public void testAHalfMeasuredApproachIsWarnedAbout() throws IOException
@@ -4110,8 +3971,7 @@ public class testMassAssignLengths
     }
 
     /**
-     * The berth's own square counts, as the berth rule counts it (OB-278): measured alone it makes the approach half
-     * measured, and unmeasured it is one of the squares still to measure.  The leg's path leaves out the square the leg
+     * The berth's own square counts, as the berth rule counts it (OB-278): the leg's path leaves out the square the leg
      * ends on, so the notice looks at that square too.
      *
      * MUTATION: stop the notice looking at the leg's end and both claims fail.
@@ -4138,9 +3998,8 @@ public class testMassAssignLengths
     }
 
     /**
-     * Segment Length opens empty on a run with no length and no answer, so pressing OK untouched records nothing: a 0
-     * submitted there is an answer (*"no, add a clear button"*), so a box prefilled "0" would let Enter write a
-     * deliberate answer nobody gave.  An answered 0 still shows as 0, and a length as itself.
+     * Segment Length opens empty on a run with no length and no answer, so pressing OK untouched records nothing; an
+     * answered 0 still shows as 0 (*"no, add a clear button"*).
      *
      * MUTATION: prefill the measured length whatever it is, as it was, and the first claim fails.
      */

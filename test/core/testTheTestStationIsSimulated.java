@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
+import support.Reflect;
 import support.TestStation;
 import support.TestStationAddress;
 import static org.testng.Assert.assertEquals;
@@ -100,10 +101,6 @@ public class testTheTestStationIsSimulated
 
     private static String syncedFrom(MarklinControlStation station) throws Exception
     {
-        java.lang.reflect.Field parser = MarklinControlStation.class.getDeclaredField("fileParser");
-
-        parser.setAccessible(true);
-
-        return ((CS2File) parser.get(station)).getLocURL();
+        return ((CS2File) Reflect.get(MarklinControlStation.class, station, "fileParser")).getLocURL();
     }
 }

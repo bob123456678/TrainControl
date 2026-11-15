@@ -39,8 +39,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame
         
     /**
      * Creates new form LocomotiveSelector
-     * @param model
-     * @param ui
      */
     public LocomotiveSelector(ViewListener model, TrainControlUI ui)
     {
@@ -52,7 +50,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     
     /**
      * Gets the assignment checkbox
-     * @return 
      */
     public JCheckBox getClickToAssign()
     {
@@ -61,7 +58,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     
     /**
      * Returns the list of locomotives
-     * @return 
      */
     public JPanel getMainLocList()
     {
@@ -70,7 +66,6 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     
     /**
      * Returns the main UI
-     * @return 
      */
     public TrainControlUI getUI()
     {
@@ -91,8 +86,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
 
     public synchronized void refreshLocSelectorList()
     {
-        // singlePass, not invokeLater: see TrainControlUI.singlePass.  A caller that refreshes this
-        // and the route list together now gets both in one pass instead of two.
+        // singlePass, not invokeLater: see TrainControlUI.singlePass.
         TrainControlUI.singlePass(() -> 
         {
             this.MainLocList.removeAll();
@@ -372,9 +366,8 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     }//GEN-LAST:event_LocFilterBoxKeyReleased
 
     private void LocFilterBoxKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_LocFilterBoxKeyTyped
-        // getKeyCode() is VK_UNDEFINED for every KEY_TYPED event, so the Escape branch this
-        // used to have could never fire - dead code, not a missing feature. Escape is already handled
-        // for this window by LocFilterBoxKeyReleased, formKeyPressed and MainLocListKeyPressed.
+        // getKeyCode() is VK_UNDEFINED for every KEY_TYPED event, so Escape cannot be handled here: it is handled for
+        // this window by LocFilterBoxKeyReleased, formKeyPressed and MainLocListKeyPressed.
         filterLocList();
     }//GEN-LAST:event_LocFilterBoxKeyTyped
 
@@ -402,7 +395,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
     private void addLocomotiveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addLocomotiveActionPerformed
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            this.parent.getLocAdder().setVisible(true);
+            this.parent.openAddLocomotive();
 
             // this.toBack();
             // this.parent.showTab("Tools");

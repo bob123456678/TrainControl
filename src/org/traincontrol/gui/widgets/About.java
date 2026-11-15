@@ -99,7 +99,7 @@ public class About extends javax.swing.JPanel
     private void linkLabelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_linkLabelMouseClicked
         try 
         {
-            Desktop.getDesktop().browse(new URI("https://github.com/bob123456678/TrainControl/tree/master#readme"));
+            Desktop.getDesktop().browse(new URI(org.traincontrol.gui.TrainControlUI.USER_GUIDE_URL));
         } catch (IOException | URISyntaxException e1) { }
     }//GEN-LAST:event_linkLabelMouseClicked
 

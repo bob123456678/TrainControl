@@ -28,7 +28,6 @@ public final class ReportsStarted
 
     /**
      * @param args the mode and its arguments
-     * @throws Exception from the files or the process
      */
     public static void main(String[] args) throws Exception
     {

@@ -13,6 +13,8 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Display;
+import support.Reflect;
 
 /**
  * Dragging a locomotive from one keyboard key to another.
@@ -20,16 +22,12 @@ import org.testng.annotations.Test;
  * Adam, on C26 (the drag writing the locomotive's name to the system clipboard): "c26 is deliberate, that is the
  * dragging functionality you implemented on the keyboard. there should be tests to ensure no regression there."
  *
- * `setCopyTarget`, `doPaste`, `getSwapTarget` and `clearCopyTarget` carry copy, cut, move and swap across fifty pages.
- * The four gestures are asserted through the public surface, on a real window; what they do to the MAPPING is what
- * matters, since a wrong mapping is a locomotive that answers to somebody else's key.
+ * `setCopyTarget`, `doPaste`, `getSwapTarget` and `clearCopyTarget` carry copy, cut, move and swap across fifty pages,
+ * asserted through the public surface on a real window; what they do to the MAPPING is what matters.  A copy remembers
+ * its page, so a paste after flipping pages must clear or swap the SOURCE on its own page.
  *
- * **The page is the hard part.** A copy remembers which page it started on, and a paste made after the user has flipped
- * pages has to clear or swap the SOURCE on its own page rather than on whichever one is showing.
- *
- * **These tests DO write to the system clipboard**, because the real gesture puts the locomotive name on it (C26,
- * deliberate).  `build` saves whatever text was on the clipboard and restores it afterwards; a non-text clipboard
- * cannot be restored.  No assertion here reads the clipboard: the write itself is pinned in `testEditorSurfaceRules`.
+ * These tests DO write to the system clipboard (C26, deliberate): `build` saves the text on it and restores it (a
+ * non-text clipboard cannot be restored).  No assertion reads it: the write is pinned in `testEditorSurfaceRules`.
  *
  * @author Adam
  */
@@ -243,10 +241,7 @@ public class testTheKeyboardDrag
      */
     private TrainControlUI build() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the keyboard is on a window");
-        }
+        Display.needed("the keyboard is on a window");
 
         // BEFORE the window: its constructor reads the machine-global layout preference and would open Adam's real
         // railway (OB-111).
@@ -265,10 +260,7 @@ public class testTheKeyboardDrag
             if (sandbox != null) sandbox.close();
         }
 
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField("model");
-
-        f.setAccessible(true);
-        f.set(built[0], model);
+        Reflect.set(TrainControlUI.class, built[0], "model", model);
 
         // WHATEVER WAS ON THE CLIPBOARD, so the battery can be run without losing it; put back by
         // `giveTheClipboardBack`.
@@ -331,9 +323,7 @@ public class testTheKeyboardDrag
     @SuppressWarnings("unchecked")
     private List<JButton> keysOf(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField("buttonMapping");
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(TrainControlUI.class, "buttonMapping");
 
         HashMap<Integer, JButton> board = (HashMap<Integer, JButton>) f.get(ui);
 
@@ -363,9 +353,7 @@ public class testTheKeyboardDrag
     @SuppressWarnings("unchecked")
     private void put(TrainControlUI ui, int page, JButton key, Locomotive loc) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField("locMapping");
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(TrainControlUI.class, "locMapping");
 
         ((List<HashMap<JButton, Locomotive>>) f.get(ui)).get(page - 1).put(key, loc);
     }
@@ -377,9 +365,7 @@ public class testTheKeyboardDrag
     @SuppressWarnings("unchecked")
     private Locomotive at(TrainControlUI ui, int page, JButton key) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField("locMapping");
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(TrainControlUI.class, "locMapping");
 
         return ((List<HashMap<JButton, Locomotive>>) f.get(ui)).get(page - 1).get(key);
     }
@@ -390,14 +376,10 @@ public class testTheKeyboardDrag
      */
     private void page(TrainControlUI ui, int page) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField("locMappingNumber");
-
-        f.setAccessible(true);
+        java.lang.reflect.Field f = Reflect.field(TrainControlUI.class, "locMappingNumber");
         f.setInt(ui, page);
 
-        java.lang.reflect.Field count = TrainControlUI.class.getDeclaredField("numLocMappings");
-
-        count.setAccessible(true);
+        java.lang.reflect.Field count = Reflect.field(TrainControlUI.class, "numLocMappings");
 
         if (count.getInt(ui) < page) count.setInt(ui, page);
     }

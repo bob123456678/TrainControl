@@ -122,11 +122,64 @@ public class testAPausedTrainStaysPaused
     }
 
     /**
+     * The pause is read and set without the locomotive's monitor, which a command holds for as long as its network
+     * write is stuck: the Train tab reads it every second on the event thread, and must not freeze behind that write.
+     *
+     * MUTATION: put `synchronized (this)` back around the read in `Locomotive.isAutonomyPaused`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testThePauseIsReadWithoutTheLocomotivesMonitor() throws Exception
+    {
+        final MarklinLocomotive train = model.getLocByName(ALPHA);
+        final java.util.concurrent.CountDownLatch held = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.ExecutorService asking = java.util.concurrent.Executors.newSingleThreadExecutor();
+
+        // A command stuck in its write, holding the locomotive's monitor
+        Thread stuck = new Thread(() ->
+        {
+            synchronized (train)
+            {
+                held.countDown();
+
+                try
+                {
+                    release.await();
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+
+        stuck.start();
+
+        try
+        {
+            assertTrue(held.await(10, java.util.concurrent.TimeUnit.SECONDS), "precondition: the monitor was not held");
+
+            asking.submit(() -> train.setAutonomyPaused(true)).get(2, java.util.concurrent.TimeUnit.SECONDS);
+
+            assertTrue(asking.submit(train::isAutonomyPaused).get(2, java.util.concurrent.TimeUnit.SECONDS),
+                "the pause just set did not read back");
+        }
+        catch (java.util.concurrent.TimeoutException e)
+        {
+            throw new AssertionError("the pause waited for the locomotive's monitor, which a stuck command holds", e);
+        }
+        finally
+        {
+            release.countDown();
+            asking.shutdownNow();
+            stuck.join(10000);
+        }
+    }
+
+    /**
      * The railway's file lists the paused trains, and a file read back pauses those and sets every other train going.
      *
      * MUTATION: leave the list out of the file, or leave a train the file does not list as it was, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testThePauseIsWrittenWithTheRailwayAndReadBack() throws Exception
@@ -340,8 +393,6 @@ public class testAPausedTrainStaysPaused
      * the Auto tab's button - is taken into the setup by the fold, and taken out by it too.
      *
      * MUTATION: leave the setup's list out of what is built, or out of what the fold takes, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheSetupKeepsThePauseAndTheRailwayReadsIt() throws Exception
@@ -422,13 +473,9 @@ public class testAPausedTrainStaysPaused
 
     /**
      * A fold brings the record of how the railway was built up to date with what it takes (OB-343): left behind, a
-     * pause the fold took and then undone on the railway read to the next fold as the railway unchanged from how it was
-     * built, and the setup's older answer stood.  The settings fold, the whole fold, and a setting the railway stopped
-     * writing.
+     * pause the fold took and then undone on the railway read as unchanged, and the setup's older answer stood.
      *
      * MUTATION: leave the record as it was after a fold, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAFoldBringsTheRecordOfHowTheRailwayWasBuiltUpToDate() throws Exception
@@ -505,13 +552,10 @@ public class testAPausedTrainStaysPaused
     }
 
     /**
-     * An edit session's Cancel puts the setup back and keeps what the railway changed alone while it was open (OB-343):
-     * the settings a fold took from the railway are the railway's, not the edit's, to undo.  The pause stays and the
-     * edit goes; outside an edit session, putting a snapshot back is exactly that.
+     * An edit session's Cancel puts the setup back and keeps what the railway changed alone while it was open
+     * (OB-343): the settings a fold took are the railway's, not the edit's, to undo.
      *
      * MUTATION: leave what the fold took out of the restore, or keep the edit, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAnEditSessionsRestoreKeepsWhatTheRailwayChangedAlone() throws Exception
@@ -632,8 +676,6 @@ public class testAPausedTrainStaysPaused
      * the record do not have stays, and a record with no list at all is every train gained.
      *
      * MUTATION: put the railway's whole list in the setup in a fold, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAFoldTakesThePausedListByTrain() throws Exception
@@ -680,8 +722,6 @@ public class testAPausedTrainStaysPaused
      * turned off).
      *
      * MUTATION: leave a loss out of what Cancel puts back, or a setting the railway stopped writing, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAnEditSessionsRestoreKeepsACardsUnpauseAndAStoppedSimulation() throws Exception
@@ -755,8 +795,6 @@ public class testAPausedTrainStaysPaused
      *
      * MUTATION: take only the settings that differ from an empty record, or leave the pauses out of what Cancel keeps,
      * and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAFoldWithNoRecordTakesEverySettingAndCancelKeepsIt() throws Exception

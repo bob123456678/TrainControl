@@ -25,10 +25,9 @@ public class TimetablePath
     // operator's seconds); renaming it would touch nine call sites that are all right.
     private long secondsToNext = 0;
 
-    // An entry the railway cannot build, kept as it was written ("Just keep the entries, and if a path is run that
-    // contains a point on a disabled page, reject it with an error as we do with other autonomy paths"): a Point on a
-    // page left out of autonomy is not on the railway, so its path has no edges.  Dropped at the load, it would be gone
-    // for good at the next fold.
+    // An entry the railway cannot build, kept as it was written: a Point on a page left out of autonomy is not on the
+    // railway, so its path has no edges, and a path run that contains one is rejected with an error.  Dropped at the
+    // load, it would be gone for good at the next fold.
     private final JSONObject unbuilt;
     private final String whyNot;
 
@@ -36,6 +35,8 @@ public class TimetablePath
     // its path, or null for one recorded from autonomy or written before this was kept.  Played back, it is answered
     // again, so the train ends facing and standing as it did when it was recorded.
     private Boolean turnAtTheEnd = null;
+
+    private boolean returnHome = false;
 
     public TimetablePath(Locomotive loc, List<Edge> path, long executionTime)
     {
@@ -94,6 +95,18 @@ public class TimetablePath
     public void setTurnAtTheEnd(Boolean turnAtTheEnd)
     {
         this.turnAtTheEnd = turnAtTheEnd;
+    }
+
+    /** Whether this entry is a leg of a Return Home plan, which alone may run through a stop-only station (FR-111). */
+    public boolean isReturnHome()
+    {
+        return returnHome;
+    }
+
+    /** Marks this entry as a leg of a Return Home plan; never saved, as a plan is never kept as a timetable. */
+    void setReturnHome(boolean returnHome)
+    {
+        this.returnHome = returnHome;
     }
 
     /** Whether the railway can run this entry. */
@@ -211,17 +224,13 @@ public class TimetablePath
         {
             return false;
         }
-        if (!Objects.equals(this.turnAtTheEnd, other.turnAtTheEnd))
-        {
-            return false;
-        }
+        if (!Objects.equals(this.turnAtTheEnd, other.turnAtTheEnd)) return false;
         
         return Objects.equals(this.path, other.path);
     }
     
     /**
      * Writes a path entry to JSON
-     * @return
      * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws NoSuchFieldException 
@@ -262,10 +271,6 @@ public class TimetablePath
     
     /**
      * Reads a path entry from JSON
-     * @param jsonString
-     * @param model
-     * @param layout
-     * @return
      * @throws Exception 
      */
     public static TimetablePath fromJSON(String jsonString, ViewListener model, Layout layout) throws Exception
@@ -328,10 +333,7 @@ public class TimetablePath
         }
 
         // WHAT THE ARRIVAL WAS TOLD, where it was recorded by hand
-        if (json.has("turnAtTheEnd"))
-        {
-            ttp.setTurnAtTheEnd(json.getBoolean("turnAtTheEnd"));
-        }
+        if (json.has("turnAtTheEnd")) ttp.setTurnAtTheEnd(json.getBoolean("turnAtTheEnd"));
         
         return ttp;
     }

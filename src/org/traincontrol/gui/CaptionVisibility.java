@@ -1,5 +1,8 @@
 package org.traincontrol.gui;
 
+import java.util.Set;
+import org.traincontrol.automationui.TileGraph;
+
 /**
  * Which station captions autonomy can never choose, worked out on `CoveredTrackRenderer` rather than on the event
  * thread, coalesced as the covered marks are, and painted on the event thread when the answer lands.
@@ -62,16 +65,15 @@ final class CaptionVisibility
     {
         TrainControlUI.CoveredTrackAsk ask = this.ui.captionVisibilitySubject;
 
-        java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> cannot = null;
+        Set<TileGraph.TileKey> cannot = null;
 
         if (ask != null && ask.railway != null && ask.setup != null)
         {
-            java.util.Set<org.traincontrol.automationui.TileGraph.TileKey> found =
-                new java.util.HashSet<>();
+            Set<TileGraph.TileKey> found = new java.util.HashSet<>();
 
             try
             {
-                for (org.traincontrol.automationui.TileGraph.TileKey square
+                for (TileGraph.TileKey square
                     : ask.setup.getStationIndex().squares())
                 {
                     boolean choosable = false;

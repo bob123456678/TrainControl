@@ -18,7 +18,7 @@ import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * A route drawn on the diagram is one line, with nothing missing out of the middle of it.  Adam reported gaps in the
+ * A route drawn on the diagram is one line, with nothing missing out of the middle of it.  The gaps were seen in the
  * line the autonomy editor draws when a path is tested ("drawn segments are not connected over route tiles"), only in
  * the editor's testing mode.
  *

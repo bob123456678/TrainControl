@@ -2,6 +2,9 @@ package org.traincontrol.gui.layouteditor;
 
 import javax.swing.JOptionPane;
 import org.traincontrol.util.I18n;
+import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph;
+import java.util.Map;
 
 /**
  * What the track editor does to the whole page at once: shifting everything past the hovered square up, down, left or
@@ -24,8 +27,6 @@ final class LayoutEditorReshape
      * Whether shiftUp would do anything.  Public because the menu asks it before offering the item and the method asks
      * it before acting: ONE predicate, so the two cannot drift.  False on the edge, where there is no row below to move
      * up into.
-     *
-     * @return true when there is a hovered square this can work from
      */
     boolean canShiftUp()
     {
@@ -33,13 +34,9 @@ final class LayoutEditorReshape
     }
 
     /**
-     * Whether the page has room to grow by this much: ONE predicate for every gesture that grows the page, asked by the
-     * menu before offering an item and by the methods before acting.  Neither `LayoutDiagram.shiftDown` nor the model's
-     * own grower knows the limit.
-     *
-     * @param rows how many rows the gesture would add
-     * @param columns how many columns it would add
-     * @return true when the result would still be within MAX_SIZE
+     * Whether the page has room to grow by `rows` and `columns` (the result stays within MAX_SIZE): ONE predicate for
+     * every gesture that grows the page, asked by the menu before offering an item and by the methods before acting.
+     * Neither `LayoutDiagram.shiftDown` nor the model's own grower knows the limit.
      */
     boolean roomToGrow(int rows, int columns)
     {
@@ -57,8 +54,6 @@ final class LayoutEditorReshape
      * Whether shiftLeft would do anything.  Public because the menu asks it before offering the item and the method
      * asks it before acting: ONE predicate, so the two cannot drift.  False on the edge, where there is no column to
      * its right to move left into.
-     *
-     * @return true when there is a hovered square this can work from
      */
     boolean canShiftLeft()
     {
@@ -68,8 +63,6 @@ final class LayoutEditorReshape
     /**
      * Whether shiftDown would do anything.  Asked by addShift alongside canShiftUp and canShiftLeft, and the answer
      * goes straight to setEnabled; nearly always true, because opening the popup sets the hovered position.
-     *
-     * @return true when there is a hovered square this can work from
      */
     boolean canShiftDown()
     {
@@ -78,11 +71,7 @@ final class LayoutEditorReshape
         return this.editor.lastHoveredY >= 0 && roomToGrow(1, 0);
     }
 
-    /**
-     * Whether shiftRight would do anything; asked as canShiftDown is.
-     *
-     * @return true when there is a hovered square this can work from
-     */
+    /** Whether shiftRight would do anything; asked as canShiftDown is. */
     boolean canShiftRight()
     {
         // And the ceiling, as in canShiftDown: this grows the page by a column.
@@ -148,10 +137,8 @@ final class LayoutEditorReshape
 
     /**
      * Shifts everything past the hovered row or column by one and carries the setup's keys with it, so every station,
-     * name, facing and restriction stays on its track.
-     *
-     * @param across true for columns, false for rows
-     * @param step -1 to shift up or left (the lines after the hovered one move), 1 for down or right (from it on)
+     * name, facing and restriction stays on its track.  `across` is true for columns, false for rows; `step` is -1 to
+     * shift up or left (the lines after the hovered one move), 1 for down or right (from it on).
      */
     private void shiftAndCarry(boolean across, int step, Shift shift)
     {
@@ -163,8 +150,8 @@ final class LayoutEditorReshape
             {
                 // Worked out BEFORE the shift: shifting down or right grows the page, so afterwards the dimensions
                 // describe a diagram this map is not about.
-                java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-                    org.traincontrol.automationui.TileGraph.TileKey> moving =
+                Map<TileGraph.TileKey,
+                    TileGraph.TileKey> moving =
                     setupShift(across, step < 0 ? hovered + 1 : hovered,
                         (across ? this.editor.layout.getSx() : this.editor.layout.getSy()) - 1,
                         across ? step : 0, across ? 0 : step);
@@ -172,7 +159,7 @@ final class LayoutEditorReshape
                 shift.at(hovered);
 
                 // And applied after, so the graph is rebuilt from a diagram that has already moved.
-                org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
+                AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
                 if (autonomy != null)
                 {
@@ -196,12 +183,11 @@ final class LayoutEditorReshape
      * `dy`).  A square not in the range is left out rather than mapped to itself, so moveTiles can tell a square that
      * moved from one something arrived on.
      */
-    private java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-        org.traincontrol.automationui.TileGraph.TileKey> setupShift(boolean across, int from, int to,
+    private Map<TileGraph.TileKey,
+        TileGraph.TileKey> setupShift(boolean across, int from, int to,
         int dx, int dy)
     {
-        java.util.Map<org.traincontrol.automationui.TileGraph.TileKey,
-            org.traincontrol.automationui.TileGraph.TileKey> moving = new java.util.LinkedHashMap<>();
+        Map<TileGraph.TileKey, TileGraph.TileKey> moving = new java.util.LinkedHashMap<>();
 
         int otherEnd = across ? this.editor.layout.getSy() - 1 : this.editor.layout.getSx() - 1;
 
@@ -213,8 +199,8 @@ final class LayoutEditorReshape
                 int y = across ? other : line;
 
                 moving.put(
-                    new org.traincontrol.automationui.TileGraph.TileKey(this.editor.layout.getName(), x, y),
-                    new org.traincontrol.automationui.TileGraph.TileKey(
+                    new TileGraph.TileKey(this.editor.layout.getName(), x, y),
+                    new TileGraph.TileKey(
                         this.editor.layout.getName(), x + dx, y + dy));
             }
         }
@@ -265,7 +251,7 @@ final class LayoutEditorReshape
      */
     private void forgetCaptionsOnTrimmedEdge()
     {
-        org.traincontrol.automationui.AutonomySession autonomy = this.editor.parent.getAutonomySession();
+        AutonomySession autonomy = this.editor.parent.getAutonomySession();
 
         if (autonomy == null) return;
 
@@ -273,13 +259,13 @@ final class LayoutEditorReshape
 
         for (int y = 0; y < this.editor.layout.getSy(); y++)
         {
-            changed |= autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
+            changed |= autonomy.forgetCaptionsAt(new TileGraph.TileKey(
                 this.editor.layout.getName(), this.editor.layout.getSx() - 1, y));
         }
 
         for (int x = 0; x < this.editor.layout.getSx(); x++)
         {
-            changed |= autonomy.forgetCaptionsAt(new org.traincontrol.automationui.TileGraph.TileKey(
+            changed |= autonomy.forgetCaptionsAt(new TileGraph.TileKey(
                 this.editor.layout.getName(), x, this.editor.layout.getSy() - 1));
         }
 

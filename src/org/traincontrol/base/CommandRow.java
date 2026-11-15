@@ -151,9 +151,8 @@ public final class CommandRow
     }
 
     /**
-     * Whether this kind is something a route can DO, as against something it can ask about.  Adam: "a route command
-     * should not be able to contain s88 sensors. these should only be in the conditions only." (OB-141)  A row that
-     * already holds one still opens and shows.
+     * Whether this kind is something a route can DO, as against something it can ask about (OB-141): s88 sensors
+     * belong in conditions only.  A row that already holds one still opens and shows.
      */
     public static boolean canBeACommand(Kind kind)
     {
@@ -341,9 +340,9 @@ public final class CommandRow
      * @return the commands, in the order they must be sent
      * @throws IllegalArgumentException when the row cannot be made into commands
      */
-    public java.util.List<RouteCommand> toCommands(Accessory.accessoryDecoderType protocol)
+    public List<RouteCommand> toCommands(Accessory.accessoryDecoderType protocol)
     {
-        java.util.List<RouteCommand> out = new java.util.ArrayList<>();
+        List<RouteCommand> out = new ArrayList<>();
 
         if (kind == Kind.THREE_WAY)
         {
@@ -496,10 +495,7 @@ public final class CommandRow
 
     private void requireName()
     {
-        if (target.trim().isEmpty())
-        {
-            throw new IllegalArgumentException(I18n.t("route.errorRowNeedsALocomotive"));
-        }
+        if (target.trim().isEmpty()) throw new IllegalArgumentException(I18n.t("route.errorRowNeedsALocomotive"));
     }
 
     /**

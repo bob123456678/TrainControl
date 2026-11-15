@@ -10,18 +10,16 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
+import static support.Trees.delete;
 
 /**
- * The name of a placed locomotive, as the diagram has to draw it.
- *
- * Instead of "EN57-203" in the caption in the track diagram's own style, the autonomy editor drew
- * {"name":"EN57-203"} in a box wide enough to cover three neighboring tiles.  A placement is stored as an OBJECT
- * ({"name": ..., "speed": ..., "arrivalFunc": ...}) because parseAuto resets whatever a placement omits, and the label
- * called String.valueOf on what came back.  The unwrapping already existed twice (AutonomyEditorPanel.locomotiveAt and
- * Layout.parseAuto); the label was a third copy that got it wrong, so the shape is now in one place and all three ask.
+ * The name of a placed locomotive, as the diagram has to draw it: "EN57-203" in the caption in the track diagram's own
+ * style, not {"name":"EN57-203"} in a box wide enough to cover three neighboring tiles.  A placement is stored as an
+ * OBJECT ({"name": ..., "speed": ..., "arrivalFunc": ...}) because parseAuto resets whatever a placement omits, so the
+ * label has to unwrap it.  The unwrapping is in one place, which AutonomyEditorPanel.locomotiveAt, Layout.parseAuto and
+ * the label all ask.
  *
  * What this pins is that asking the session for a name yields a NAME.
  *
@@ -187,25 +185,13 @@ public class testAutonomyLabelShowsLocomotiveName
     {
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.straight(page, 3, 1);
+        Diagrams.feedback(page, 4, 1, 6, 12);
 
         page.setPageId("1");
 
         return page;
-    }
-
-    private void delete(File f)
-    {
-        if (f.isDirectory())
-        {
-            File[] kids = f.listFiles();
-
-            if (kids != null) for (File kid : kids) delete(kid);
-        }
-
-        f.delete();
     }
 }

@@ -1,11 +1,15 @@
 package org.traincontrol.automationui;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession.ImportFormat;
 import org.traincontrol.automationui.AutonomySession.LegacyImport;
 import org.traincontrol.automationui.AutonomySession.LocomotiveLeftOut;
@@ -31,17 +35,17 @@ final class SessionImport
     }
 
     /** The active configuration's run-wide settings object, created on demand; null when none is active. */
-    private org.json.JSONObject configurationGlobals()
+    private JSONObject configurationGlobals()
     {
         String active = owner.store.getActiveConfiguration();
 
         if (active == null) return null;
 
-        org.json.JSONObject configuration = owner.store.getConfiguration(active);
+        JSONObject configuration = owner.store.getConfiguration(active);
 
         if (configuration == null) return null;
 
-        if (!configuration.has("globals")) configuration.put("globals", new org.json.JSONObject());
+        if (!configuration.has("globals")) configuration.put("globals", new JSONObject());
 
         return configuration.getJSONObject("globals");
     }
@@ -50,21 +54,21 @@ final class SessionImport
      * The active configuration's data for one square, created on demand; null when none is active.  A placement belongs
      * to a configuration, not the shared half, and is keyed by tile so a Point renamed later keeps what stands on it.
      */
-    private org.json.JSONObject configurationExtras(TileKey tile)
+    private JSONObject configurationExtras(TileKey tile)
     {
         String active = owner.store.getActiveConfiguration();
 
         if (active == null) return null;
 
-        org.json.JSONObject configuration = owner.store.getConfiguration(active);
+        JSONObject configuration = owner.store.getConfiguration(active);
 
         if (configuration == null) return null;
 
-        if (!configuration.has("points")) configuration.put("points", new org.json.JSONObject());
+        if (!configuration.has("points")) configuration.put("points", new JSONObject());
 
-        org.json.JSONObject points = configuration.getJSONObject("points");
+        JSONObject points = configuration.getJSONObject("points");
 
-        if (!points.has(tile.toString())) points.put(tile.toString(), new org.json.JSONObject());
+        if (!points.has(tile.toString())) points.put(tile.toString(), new JSONObject());
 
         return points.getJSONObject(tile.toString());
     }
@@ -80,7 +84,7 @@ final class SessionImport
         {
             TileKey tile = each.getKey();
 
-            java.util.List<Side> ways = new ArrayList<>(owner.facingsFor(tile).values());
+            List<Side> ways = new ArrayList<>(owner.facingsFor(tile).values());
 
             Side ran = sideTheEdgesLeaveBy(tile, edgesLeadTo.get(each.getValue()), pointSquares);
 
@@ -91,7 +95,7 @@ final class SessionImport
                 continue;
             }
 
-            java.util.Set<Side> mayArrive = owner.homeFacingsFor(tile);
+            Set<Side> mayArrive = owner.homeFacingsFor(tile);
 
             // Where the file cannot say, a facing the square records stays if the guess below could make it (OB-304):
             // kept unasked, a facing trains may not arrive in would stand the train where autonomy will not start it.
@@ -169,7 +173,7 @@ final class SessionImport
 
             if (path == null) continue;
 
-            // As `applyOneWay` does, between the two ends only.
+            // As `recordAlong(path, 1, path.size() - 2)` would: between the two ends only.
             for (int i = 1; i < path.size() - 1; i++)
             {
                 TileKey tile = path.get(i);
@@ -288,7 +292,7 @@ final class SessionImport
     }
 
     /** The body of `AutonomySession.importLegacy(JSONObject, Set, boolean)`. */
-    LegacyImport importLegacy(org.json.JSONObject legacy, Set<String> knownLocomotives, boolean placeTrains)
+    LegacyImport importLegacy(JSONObject legacy, Set<String> knownLocomotives, boolean placeTrains)
     {
         LegacyImport result = new LegacyImport();
 
@@ -308,19 +312,19 @@ final class SessionImport
 
         String into = owner.store.getActiveConfiguration();
 
-        org.json.JSONObject intoConfiguration = into == null ? null : owner.store.getConfiguration(into);
+        JSONObject intoConfiguration = into == null ? null : owner.store.getConfiguration(into);
 
-        org.json.JSONObject intoPoints = intoConfiguration == null ? null : intoConfiguration.optJSONObject("points");
+        JSONObject intoPoints = intoConfiguration == null ? null : intoConfiguration.optJSONObject("points");
 
         if (intoPoints != null)
         {
             for (String square : intoPoints.keySet())
             {
-                org.json.JSONObject extras = intoPoints.optJSONObject(square);
+                JSONObject extras = intoPoints.optJSONObject(square);
 
                 if (extras == null) continue;
 
-                org.json.JSONObject stands = extras.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+                JSONObject stands = extras.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
 
                 if (stands != null && !stands.optString("name", "").trim().isEmpty())
                 {
@@ -331,7 +335,7 @@ final class SessionImport
             }
         }
 
-        org.json.JSONArray points = legacy.optJSONArray("points");
+        JSONArray points = legacy.optJSONArray("points");
 
         if (points == null || owner.reducer == null) return result;
 
@@ -354,11 +358,11 @@ final class SessionImport
 
         // Where each point's edges lead: a 2.8.1 graph states direction as one-way edges, which say which way a train
         // standing there drives.  null for an end this diagram does not draw.
-        Map<String, TileKey> squareOfPoint = new java.util.HashMap<>();
+        Map<String, TileKey> squareOfPoint = new HashMap<>();
 
         for (int i = 0; i < points.length(); i++)
         {
-            org.json.JSONObject point = points.optJSONObject(i);
+            JSONObject point = points.optJSONObject(i);
 
             if (point == null) continue;
 
@@ -367,15 +371,15 @@ final class SessionImport
             squareOfPoint.put(point.optString("name", ""), sensor > 0 ? bySensor.get(sensor) : null);
         }
 
-        Map<String, List<TileKey>> edgesLeadTo = new java.util.HashMap<>();
+        Map<String, List<TileKey>> edgesLeadTo = new HashMap<>();
 
         List<TileKey[]> oldEdges = new ArrayList<>();
 
-        org.json.JSONArray edges = legacy.optJSONArray("edges");
+        JSONArray edges = legacy.optJSONArray("edges");
 
         for (int i = 0; edges != null && i < edges.length(); i++)
         {
-            org.json.JSONObject edge = edges.optJSONObject(i);
+            JSONObject edge = edges.optJSONObject(i);
 
             if (edge == null) continue;
 
@@ -399,7 +403,7 @@ final class SessionImport
 
         for (int i = 0; i < points.length(); i++)
         {
-            org.json.JSONObject point = points.optJSONObject(i);
+            JSONObject point = points.optJSONObject(i);
 
             if (point == null) continue;
 
@@ -420,7 +424,7 @@ final class SessionImport
 
             // Before the name: a placement is about the SQUARE, so an already named square still gets its locomotive
             // back.
-            org.json.JSONObject standing = point.optJSONObject("loc");
+            JSONObject standing = point.optJSONObject("loc");
 
             String home = point.optString("home", "");
 
@@ -433,7 +437,7 @@ final class SessionImport
 
             if (standing != null || !home.trim().isEmpty() || anySetting)
             {
-                org.json.JSONObject extras = configurationExtras(tile);
+                JSONObject extras = configurationExtras(tile);
 
                 if (extras != null)
                 {
@@ -468,8 +472,7 @@ final class SessionImport
                         else
                         {
                             // Copied whole: the builder reads back exactly this shape (speed, functions, train length).
-                            extras.put(AutonomyBuilder.LOCOMOTIVE,
-                                new org.json.JSONObject(standing.toString()));
+                            extras.put(AutonomyBuilder.LOCOMOTIVE, new JSONObject(standing.toString()));
 
                             // Facing is found after the loop, from the file whatever the square records: a facing on an
                             // empty square is its last occupant's (`findTheImportedFacings`).
@@ -485,7 +488,7 @@ final class SessionImport
                     {
                         String locName = standing.optString("name", "").trim();
 
-                        org.json.JSONObject there = extras.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
+                        JSONObject there = extras.optJSONObject(AutonomyBuilder.LOCOMOTIVE);
 
                         String standsThere = there == null ? "" : there.optString("name", "").trim();
 
@@ -536,8 +539,8 @@ final class SessionImport
 
                         // An allow-only square keeps its list: an old file's list names the locomotives kept OUT.
                         if ("excludedLocs".equals(key)
-                            && org.traincontrol.automation.Point.ALLOW_ONLY_LISTED.equals(
-                                extras.optString(org.traincontrol.automation.Point.EXCLUDED_LOCS_MODE, null)))
+                            && Point.ALLOW_ONLY_LISTED.equals(
+                                extras.optString(Point.EXCLUDED_LOCS_MODE, null)))
                         {
                             continue;
                         }
@@ -557,13 +560,13 @@ final class SessionImport
                         }
 
                         // Copied, not shared: a handed-over array would be the caller's parsed object.
-                        if (value instanceof org.json.JSONArray)
+                        if (value instanceof JSONArray)
                         {
-                            value = new org.json.JSONArray(value.toString());
+                            value = new JSONArray(value.toString());
                         }
-                        else if (value instanceof org.json.JSONObject)
+                        else if (value instanceof JSONObject)
                         {
-                            value = new org.json.JSONObject(value.toString());
+                            value = new JSONObject(value.toString());
                         }
 
                         extras.put(key, value);
@@ -574,7 +577,7 @@ final class SessionImport
             }
 
             // Terminus and reversing are derived, so neither can be written down: what the old graph recorded is that
-            // every train arriving here turns round (mustReverse).  An old "reversing station" also meant autonomy
+            // every train arriving here turns around (mustReverse).  An old "reversing station" also meant autonomy
             // never chooses it, so it takes the parking flag as well, or a shunting neck would become a destination.
             boolean turnsTrains = point.optBoolean("terminus", false)
                 || point.optBoolean("reversing", false);
@@ -640,7 +643,7 @@ final class SessionImport
         // And the settings above the points (pace, default speed, trains allowed, timetable): all that is not the setup
         // comes across gap-filled, as `captureFromLayout` does.  Not the edges' lengths: the file records length per
         // EDGE and the diagram per SQUARE, which cannot be resolved without guessing.
-        org.json.JSONObject settings = configurationGlobals();
+        JSONObject settings = configurationGlobals();
 
         if (settings != null)
         {
@@ -664,13 +667,13 @@ final class SessionImport
                 Object value = legacy.get(key);
 
                 // Copied, not shared, as above.
-                if (value instanceof org.json.JSONArray)
+                if (value instanceof JSONArray)
                 {
-                    value = new org.json.JSONArray(value.toString());
+                    value = new JSONArray(value.toString());
                 }
-                else if (value instanceof org.json.JSONObject)
+                else if (value instanceof JSONObject)
                 {
-                    value = new org.json.JSONObject(value.toString());
+                    value = new JSONObject(value.toString());
                 }
 
                 settings.put(key, value);
@@ -689,7 +692,7 @@ final class SessionImport
     }
 
     /** The body of `AutonomySession.importBundle`. */
-    int importBundle(String name, org.json.JSONObject file) throws java.io.IOException
+    int importBundle(String name, JSONObject file) throws java.io.IOException
     {
         int filled = owner.store.importBundle(name, file);
 
@@ -699,14 +702,11 @@ final class SessionImport
     }
 
     /** The body of `AutonomySession.detectImportFormat`. */
-    static ImportFormat detectImportFormat(org.json.JSONObject file)
+    static ImportFormat detectImportFormat(JSONObject file)
     {
         if (file == null) return ImportFormat.UNKNOWN;
 
-        if (file.optJSONObject(AutonomyCompanionStore.EXPORT_CONFIGURATION) != null)
-        {
-            return ImportFormat.BUNDLE;
-        }
+        if (file.optJSONObject(AutonomyCompanionStore.EXPORT_CONFIGURATION) != null) return ImportFormat.BUNDLE;
 
         // A list of Points, which is the old graph and nothing else
         if (file.optJSONArray("points") != null) return ImportFormat.LEGACY_GRAPH;

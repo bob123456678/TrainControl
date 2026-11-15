@@ -71,6 +71,19 @@ public final class Mouse
     }
 
     /**
+     * One left click at a point of the component, such as a list's row: the pointer enters, then press, release and
+     * click there.
+     */
+    public static void clickAt(Component on, Point at)
+    {
+        enter(on);
+
+        post(on, MouseEvent.MOUSE_PRESSED, at, InputEvent.BUTTON1_DOWN_MASK, 1, MouseEvent.BUTTON1, false);
+        post(on, MouseEvent.MOUSE_RELEASED, at, 0, 1, MouseEvent.BUTTON1, false);
+        post(on, MouseEvent.MOUSE_CLICKED, at, 0, 1, MouseEvent.BUTTON1, false);
+    }
+
+    /**
      * Presses a button over the component and holds it.
      */
     public static void press(Component on, int button)

@@ -47,6 +47,7 @@ import org.traincontrol.util.SelfUpdate;
 import org.traincontrol.util.Util;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 
 /**
  * Help > Download Update > Download & Update, from a jar it can replace: each way it stops short of the exit says why
@@ -182,6 +183,9 @@ public class testDownloadAndUpdateFromAJar
         TrainControlUI.LATEST_DOWNLOAD_DIGEST = null;
     }
 
+    /** The update rewrites the run's saved data, which the next classes in the lane read. */
+    private static final support.SavedData FOUND = support.SavedData.take();
+
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
@@ -207,7 +211,14 @@ public class testDownloadAndUpdateFromAJar
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            try
+            {
+                if (sandbox != null) sandbox.close();
+            }
+            finally
+            {
+                FOUND.putBack();
+            }
         }
     }
 
@@ -691,7 +702,7 @@ public class testDownloadAndUpdateFromAJar
 
             final org.traincontrol.gui.layouteditor.LayoutEditor editing = editor;
 
-            final String remove = I18n.f("autosetup.ui.menuRemoveLocomotive", train);
+            final String remove = I18n.f("layout.ui.menuRemoveLocomotive", train);
 
             final javax.swing.JMenuItem[] removeItem = new javax.swing.JMenuItem[1];
 
@@ -708,11 +719,7 @@ public class testDownloadAndUpdateFromAJar
 
             assertNotNull(removeItem[0], "precondition: the editor's setup does not have " + train + " on " + where[1]);
 
-            java.lang.reflect.Field saveField = editing.getClass().getDeclaredField("saveButton");
-
-            saveField.setAccessible(true);
-
-            final AbstractButton save = (AbstractButton) saveField.get(editing);
+            final AbstractButton save = (AbstractButton) Reflect.get(editing.getClass(), editing, "saveButton");
 
             gate = new CountDownLatch(1);
 

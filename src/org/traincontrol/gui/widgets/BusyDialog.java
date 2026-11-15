@@ -31,6 +31,8 @@ public final class BusyDialog extends JDialog
         if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
     }
 
+    private final JLabel says;
+
     private BusyDialog(Window parent, String message)
     {
         super(parent, Dialog.ModalityType.APPLICATION_MODAL);
@@ -42,6 +44,9 @@ public final class BusyDialog extends JDialog
         setUndecorated(true);
         setResizable(false);
 
+        // With no window of ours behind it (start-up), another program's window would hide it for good (OB-480).
+        if (parent == null) setAlwaysOnTop(true);
+
         JPanel content = new JPanel(new BorderLayout(0, 8));
         content.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(java.awt.Color.GRAY),
@@ -50,7 +55,7 @@ public final class BusyDialog extends JDialog
         LoadingSpinner spinner = new LoadingSpinner();
         spinner.setPreferredSize(new java.awt.Dimension(64, 64));
 
-        JLabel says = new JLabel(message, SwingConstants.CENTER);
+        says = new JLabel(message, SwingConstants.CENTER);
         says.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         content.add(spinner, BorderLayout.CENTER);
@@ -65,10 +70,6 @@ public final class BusyDialog extends JDialog
      * Puts the spinner up now, and hands back the thing that takes it down (OB-140), for a caller already on a
      * background thread doing the slow thing itself, where `run` would return before the value arrived.  Safe to close
      * from any thread, and before the dialog has appeared.
-     *
-     * @param parent the window to center on
-     * @param message what is happening, in words
-     * @return the handle that dismisses it
      */
     public static Closer showUntilClosed(Window parent, String message)
     {
@@ -87,7 +88,7 @@ public final class BusyDialog extends JDialog
     public static final class Closer
     {
         private final Window parent;
-        private final String message;
+        private String message;
 
         private BusyDialog dialog;
         private boolean closed;
@@ -117,6 +118,24 @@ public final class BusyDialog extends JDialog
             dialog.setVisible(true);
         }
 
+        /** Changes what it says, as the work moves on (OB-480).  Callable from any thread, before it has appeared too. */
+        public void say(String now)
+        {
+            SwingUtilities.invokeLater(() ->
+            {
+                synchronized (this)
+                {
+                    message = now;
+
+                    if (dialog == null || closed) return;
+                }
+
+                dialog.says.setText(now);
+                dialog.pack();
+                dialog.setLocationRelativeTo(parent);
+            });
+        }
+
         /**
          * Takes it down.  Callable from any thread, and more than once.
          */
@@ -138,12 +157,9 @@ public final class BusyDialog extends JDialog
     }
 
     /**
-     * Runs slow work behind a spinner, then hands back to the event thread.
-     *
-     * @param parent the window to center on
-     * @param message what is happening, in words - a spinner alone says only "wait"
-     * @param work the slow part.  Runs off the event thread, so it must not touch Swing
-     * @param whenDone what to do with the result, on the event thread.  May be null
+     * Runs slow work behind a spinner, then hands back to the event thread.  `message` says what is happening (a
+     * spinner alone says only "wait"); `work` runs off the event thread, so it must not touch Swing; `whenDone` takes
+     * the result on the event thread and may be null.
      */
     public static void run(Window parent, String message, Runnable work, Runnable whenDone)
     {

@@ -1,8 +1,8 @@
 package core;
 
 import support.CS3TestServer;
+import support.Reflect;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -68,7 +68,7 @@ public class testImportRename
     /** Everything these tests create.  Cleared before each one - see clearTestLocomotives. */
     private static final String[] TEST_LOCS = {
         "IR mismatch", CS_NAME, "IR head", "IR member", "IR dupe one", "IR dupe two",
-        "IR cs dupe", "IR chain tail", CS_TEN, CS_TWENTYONE, "IR unknown" };
+        "IR cs dupe", "IR chain tail", CS_TEN, CS_TWENTYONE, "IR unknown", "IR old" };
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -122,10 +122,7 @@ public class testImportRename
 
     private static void set(String field, Object value) throws Exception
     {
-        Field f = MarklinControlStation.class.getDeclaredField(field);
-
-        f.setAccessible(true);
-        f.set(model, value);
+        Reflect.set(MarklinControlStation.class, model, field, value);
     }
 
     /**
@@ -471,13 +468,35 @@ public class testImportRename
     }
 
     /**
-     * A locomotive the Central Station has never heard of is left alone.
+     * Two locomotives at one address, one under the Central Station's name and one under a name the station no longer
+     * has: the station renamed it (and the sync added the new name beside it), or it was renamed here (and the sync
+     * gave back the station's name).  The station's name wins: the other is proposed for renaming onto it, the tool's
+     * rename deleting the holder.  Where both names are the station's, the pair stays ambiguous.
      *
-     * An empty proposal list used to pass this test just as well as a correct one, since
-     * nothing forced the loop below to run over anything.  "IR mismatch" guarantees at least one real
-     * proposal (the floor assertion below proves the loop actually ran), and "IR unknown" is a DCC
-     * locomotive at an address the CS3 fixture never mentions - DCC_BASE (0xc000) plus 999, and the
-     * fixture's only DCC locomotive is at 112 - so its UID cannot collide with anything parsed.
+     * MUTATION: drop the `renamedAwayFrom` branch from `getRenameProposals`, and the pair is refused as ambiguous.
+     */
+    @Test
+    public void testAPairWhoseOtherNameTheStationDroppedIsProposed() throws Exception
+    {
+        installAtReferenceAddress("IR old");
+        installAtReferenceAddress(CS_NAME);
+
+        assertEquals(renameTargetsFor("IR old"), java.util.Collections.singletonList(CS_NAME),
+            "the locomotive whose name the Central Station no longer has was not proposed for its station name");
+
+        assertTrue(renameTargetsFor(CS_NAME).isEmpty(), "the locomotive already under the station's name was proposed");
+
+        model.deleteLoc("IR old");
+        installAtReferenceAddress(CS_TEN);
+
+        assertTrue(renameTargetsFor(CS_TEN).isEmpty(), "a pair whose two names are both the station's was proposed");
+    }
+
+    /**
+     * A locomotive the Central Station has never heard of is left alone.
+     * "IR mismatch" guarantees at least one real proposal (the floor assertion proves the loop ran), and "IR unknown"
+     * is a DCC locomotive at an address the CS3 fixture never mentions (DCC_BASE plus 999; the fixture's only DCC
+     * locomotive is at 112), so its UID cannot collide with anything parsed.
      */
     @Test
     public void testUnknownLocomotiveIsNotProposed() throws Exception

@@ -17,17 +17,13 @@ import org.traincontrol.util.I18n;
  */
 final class LayoutRightclickAutonomyMenu extends JPopupMenu
 {    
-    /**
-     * Its tooltips wrapped where a line will not hold them, as it is shown (FR-112) - whatever set them.
-     *
-     * @param invoker where it is shown
-     * @param x where it is shown
-     * @param y where it is shown
-     */
+    /** Its tooltips wrapped where a line will not hold them, as it is shown (FR-112) - whatever set them. */
     @Override
     public void show(java.awt.Component invoker, int x, int y)
     {
         AutonomyEditorPanel.wrapTheTooltips(this);
+
+        ui.itemsPressFromWindow(this, javax.swing.SwingUtilities.getWindowAncestor(invoker));
 
         super.show(invoker, x, y);
     }
@@ -65,6 +61,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // the setup.
         if ((station != null || here != null) && (ui == null || !ui.isAutonomyLoaded())) return;
 
+        if (ui != null) ui.stationWindowsFollow(here != null ? here : station);
+
         // The railway is asked first, off the event thread (OB-192): `getPossiblePaths` is `synchronized` on the
         // `Layout`, and a dispatch holds that monitor across a `CONFIGURE_SLEEP` per accessory.  The square is resolved
         // here, on the event thread, as `getAutonomyPointForTile` goes through the LAZY `getAutonomySession()`; only
@@ -78,6 +76,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
             javax.swing.SwingUtilities.invokeLater(() ->
             {
+                if (options != null) options.sortAsRead(ui.getAutonomySession());
+
                 LayoutRightclickAutonomyMenu menu = new LayoutRightclickAutonomyMenu(ui, station, here, options);
 
                 // An empty menu is not worth showing.
@@ -127,27 +127,32 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             this.shown = shown;
             this.other = other;
         }
+
+        /**
+         * By the name shown, as read (OB-450: ParkingTrack4 before ParkingTrack10), the rule Why not Moving? sorts by.
+         * On the event thread, which owns the setup's station index.
+         */
+        void sortAsRead(org.traincontrol.automationui.AutonomySession setup)
+        {
+            java.util.Comparator<List<Edge>> asRead = java.util.Comparator.comparing(
+                (List<Edge> path) -> stationName(setup, path.get(path.size() - 1).getEnd()),
+                org.traincontrol.util.Util::compareAsRead).thenComparing(Edge::pathToString);
+
+            shown.sort(asRead);
+            other.sort(asRead);
+        }
     }
 
     /**
      * Whether the menu offers the "..." at the foot of the list: only when there were more destinations than fitted
      * (FR-058), counting only those this menu could have shown (OB-205).
-     *
-     * @param offered how many ordinary destinations this menu has to show, after its own filtering
-     * @param shown how many of them are on screen
-     * @param inMoreDestinations how many are in the submenu
-     * @return whether to add the item
      */
     static boolean theListWasCutShort(int offered, int shown, int inMoreDestinations)
     {
         return offered > shown + inMoreDestinations;
     }
 
-    /**
-     * Whether a setup edit from this menu is refused because trains are running, having said so.
-     *
-     * @return true where the edit is refused
-     */
+    /** Whether a setup edit from this menu is refused because trains are running, having said so. */
     private boolean refusedWhileRunning()
     {
         return ui.refuseWhileARunHoldsTheSetup(ui);
@@ -157,17 +162,12 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
      * Asks the railway everything the paths section needs, on the caller's thread.  MUST NOT BE CALLED ON THE EVENT
      * THREAD (`showFor` arranges that): every call in here is `synchronized` on the `Layout`.  Answers null wherever
      * there is nothing to list.
-     *
-     * @param ui the application
-     * @param current the Point standing on the clicked square, resolved by `showFor` on the event
-     *        thread, or null where there is none
-     * @return the answers, or null when this square has no paths to offer
      */
     private static PathOptions gatherPathOptions(TrainControlUI ui, Point current)
     {
-        // The same gates the constructor applies, in the same order, so a gather never takes the railway's monitor for
+        // The constructor's first gates, so a gather never takes the railway's monitor for
         // a menu that will not draw it.
-        if (ui == null || current == null || ui.isLayoutEditorOpen()) return null;
+        if (ui == null || current == null || ui.anEditorIsOpenOrOnItsWay()) return null;
 
         // ASKED ONCE, NOT BUILT: this runs on a worker, and Unload can clear the model between asking whether
         // there is a railway and asking for it
@@ -176,21 +176,12 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (running == null) return null;
 
-        if (ui.isAutonomyBusy()) return null;
-
-        if (!current.isDestination() && current.getCurrentLocomotive() == null) return null;
-
         Locomotive locomotive = current.getCurrentLocomotive();
 
-        if (locomotive == null) return null;
-
-        // If we want to view paths, locomotive must not be running: a per-locomotive gate (OB-164).
-        if (running.getActiveLocomotives().containsKey(locomotive)) return null;
+        // Per train, as its Auto tab card: another train sent by hand does not hide this one's (FR-187)
+        if (locomotive == null || !RunGates.mayBeSentByHandNow(ui, running, locomotive)) return null;
 
         List<List<Edge>> paths = withoutGoingNowhere(ui, running.getPossiblePaths(locomotive, true));
-
-        paths.sort((List<Edge> p1, List<Edge> p2) -> Edge.pathToString(p1).compareTo(Edge.pathToString(p2)));
-
 
         // Switched-off squares are only in the autonomy tab; filtered rather than grayed.
         List<List<Edge>> shownPaths = new java.util.ArrayList<>();
@@ -204,10 +195,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             Point end = path.get(path.size() - 1).getEnd();
 
             // Off this menu altogether (switched off, or excluded for this train), not counted towards the ellipsis.
-            if (!running.isOfferableToOperator(end, locomotive))
-            {
-                continue;
-            }
+            if (!running.isOfferableToOperator(end, locomotive)) continue;
 
             // Asked of the square, not of this train (which `isOfferableToOperator` has covered).
             if (running.isChoosableByAutonomy(end))
@@ -224,9 +212,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * Puts the clicked square's name at the top, grayed and bold like the autonomy editor's own menu (OB-112).  The
-     * name comes from the session so the two menus cannot call one square by different names; inserted rather than
-     * added, because the menu is already built when this runs.
+     * Puts the clicked square's name on top of every square's menu, grayed and bold like the editor's (OB-112), with
+     * Station Settings... right under it where offered (MT-957); plain track is headed with its kind (OB-451).
+     * Inserted, as the menu is already built.
      */
     private void headline()
     {
@@ -234,22 +222,27 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
 
         if (subject == null || session == null) return;
 
-        JMenuItem heading = new JMenuItem(session.describeTile(subject));
+        JMenuItem heading = new JMenuItem(headingText != null ? headingText : ui.squareHeading(subject));
 
         heading.setEnabled(false);
         heading.setFont(heading.getFont().deriveFont(java.awt.Font.BOLD));
 
+        boolean settingsFirst = getComponent(0) instanceof JMenuItem
+            && I18n.t("autosetup.ui.menuStationSettings").equals(((JMenuItem) getComponent(0)).getText());
+
         insert(heading, 0);
-        insert(new JPopupMenu.Separator(), 1);
+
+        if (!settingsFirst) insert(new JPopupMenu.Separator(), 1);
     }
 
+    /** The station's name, where the menu is about a station rather than the square. */
+    private String headingText;
+
     /**
-     * @param station the sensor the caption is about, or null for the diagram-wide menu.  A square rather than a name:
-     * a station is several Points and none is called what the caption says.
-     * @param here the square that was clicked, or null where the click was not on one
-     * @param options what the railway answered about this square's paths, gathered off the event thread by
-     *        `showFor`, or null where there is nothing to list.  NOTHING IN THIS CONSTRUCTOR MAY ASK THE RAILWAY
-     *        ITSELF (see `showFor`).
+     * `station` is the sensor the caption is about, or null for the diagram-wide menu: a square rather than a name,
+     * since a station is several Points and none is called what the caption says.  `here` is the square that was
+     * clicked, or null where the click was not on one.  `options` is what `showFor` gathered off the event thread, or
+     * null where there is nothing to list.  NOTHING IN THIS CONSTRUCTOR MAY ASK THE RAILWAY ITSELF (see `showFor`).
      */
     private LayoutRightclickAutonomyMenu(TrainControlUI ui,
         org.traincontrol.automationui.TileGraph.TileKey station,
@@ -264,331 +257,269 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         JMenuItem menuItem;
 
         // Nothing here while an editor has the diagram: it holds its own unsaved copy of the setup, so anything done
-        // from this menu would be overwritten.  Shown and disabled with the reason, so it does not read as broken.
-        if (ui.isLayoutEditorOpen())
+        // from this menu would be overwritten.  Says so, and offers the way there.
+        if (ui.anEditorIsOpenOrOnItsWay())
         {
-            menuItem = new JMenuItem(I18n.t("autosetup.ui.menuEditorOpen"));
+            menuItem = new JMenuItem(I18n.t("autosetup.ui.menuEditorIsOpen"));
             menuItem.setEnabled(false);
             add(menuItem);
 
+            add(AutonomyMenu.goToOpenEditorItem(ui));
+
             return;
         }
-        
-        if (!ui.getModel().hasAutoLayout())
+
+        final boolean ready = ui.getModel().hasAutoLayout();
+
+        // Start versus Graceful Stop asks isAutonomyBusy(), as every item in this branch does: isAutoRunning() clears the
+        // instant Graceful Stop is pressed while trains coast, so Stop stays offered and Start does not appear.
+        final boolean busy = ready && ui.isAutonomyBusy();
+
+        final boolean held = ui.aRunHoldsTheSetup();
+
+        // Found from the SQUARE, not the station, which is null on a pass-through Point (MT-069).
+        final Point current = ready ? ui.getAutonomyPointForTile(station != null ? station : here) : null;
+
+        // A destination, or anywhere a train stands: a copy barred as a non-destination can hold one placed by hand.
+        final boolean stationHere = current != null && (current.isDestination() || current.getCurrentLocomotive() != null);
+
+        final Locomotive locomotive = stationHere ? current.getCurrentLocomotive() : null;
+
+        // The STATION's name, not the copy's (FR-182).
+        if (stationHere) headingText = stationName(current);
+
+        // The clicked square's items first, autonomy as a whole last; headline() puts the name on top.
+        JMenuItem settings = ui.stationSettingsItem(here);
+
+        if (settings != null) add(settings);
+
+        addSeparator();
+
+        // Is Active tops the train's own items (FR-182)
+        if (locomotive != null) addActive(locomotive);
+
+        if (here != null && !held) ui.addAutonomyFacingItems(this, here);
+
+        addSeparator();
+
+        if (stationHere) addDestinations(locomotive, options);
+
+        addSeparator();
+
+        addHandDoors(current, locomotive, stationHere, busy, held);
+
+        addSeparator();
+
+        addSetupMenu();
+
+        addSeparator();
+
+        if (ready && !busy)
         {
-            // Nothing is running because nothing is set up, which is when somebody needs the setup menu most.
-            addSetupMenu();
+            menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
+
+            // Grayed when it could not start (OB-050): canStartAutonomy asks the predicate the guard asks.  Asked once:
+            // AutonomySession.check() is not cached and walks every point on the event thread.
+            boolean canStart = ui.canStartAutonomy();
+
+            // Both sentences from one reading: Start's tooltip and the Return Home item's.
+            String[] why = canStart ? null : ui.whyStartAndAHandSendAreRefused();
+
+            menuItem.setEnabled(canStart);
+
+            // Which of the four reasons it is, through the one rule (MT-263).
+            if (!canStart) menuItem.setToolTipText(AutonomyEditorPanel.wrapped(why[0]));
+
+            menuItem.addActionListener(event ->
+            {
+                try
+                {
+                    ui.requestStartAutonomy();
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(ui.dialogParent(), e.getMessage());
+                }
+            });
+
+            add(menuItem);
+
+            // The hand doors' sentence, from the same reading
+            String broken = why == null ? null : why[1];
+
+            HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken);
+        }
+        else if (ready)
+        {
+            menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStopAutonomyGracefully"));
+            menuItem.addActionListener(event ->
+            {
+                try
+                {
+                    ui.requestStopAutonomy();
+                }
+                catch (Exception e)
+                {
+                    JOptionPane.showMessageDialog(ui.dialogParent(), e.getMessage());
+                }
+            });
+
+            add(menuItem);
         }
 
-        if (ui.getModel().hasAutoLayout())
+        tidy(this);
+    }
+
+    /** No divider first, last or twice in a row: each group above adds its own, empty or not. */
+    private static void tidy(JPopupMenu menu)
+    {
+        for (int at = menu.getComponentCount() - 1; at >= 0; at--)
         {
-            // Start versus Graceful Stop asks isAutonomyBusy(), as every item in this branch does: isAutoRunning()
-            // clears the instant Graceful Stop is pressed while trains coast, so Stop stays offered and Start does not
-            // appear.
-            if (!ui.isAutonomyBusy())
-            {
-                menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
+            boolean divider = menu.getComponent(at) instanceof javax.swing.JSeparator;
 
-                // Grayed when it could not start (OB-050): canStartAutonomy asks the predicate the guard asks.  Asked
-                // once: AutonomySession.check() is not cached and walks every point on the event thread.
-                boolean canStart = ui.canStartAutonomy();
-
-                // Both sentences from one reading: Start's tooltip and the Return Home item's, where Start is not
-                // offered.
-                String[] why = canStart ? null : ui.whyStartAndAHandSendAreRefused();
-
-                menuItem.setEnabled(canStart);
-
-                if (!canStart)
-                {
-                    // And say which of the four reasons it is: the tooltip must not be the waiting-for-trains message
-                    // whenever Start is off for another reason, such as `hasErrors()` on a graph that will not build.
-                    // Through the one rule (MT-263): the wording asks how many blocking problems there were.
-                    menuItem.setToolTipText(AutonomyEditorPanel.wrapped(why[0]));
-                }
-
-                menuItem.addActionListener(event -> 
-                {
-                    try
-                    {
-                        ui.requestStartAutonomy();
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog(ui, e.getMessage());
-                    }
-                });
-
-                add(menuItem);
-
-                // THE HAND DOORS' SENTENCE, from the same reading.
-                String broken = why == null ? null : why[1];
-
-                HomeLocomotiveMenu.addReturnHomeItem(this, ui, broken);
-
-                // The Point standing on that square, preferring one with a train on it, from the SQUARE rather than the
-                // station (MT-069): `station` is null on a pass-through Point.
-                Point current = ui.getAutonomyPointForTile(station != null ? station : here);
-
-                // A destination, or anywhere a train is actually standing: a copy made a non-destination by barring a
-                // side can still hold a train placed by hand.
-                if (current != null && (current.isDestination() || current.getCurrentLocomotive() != null))
-                {
-                    // Get the locomotive at this station
-                    Locomotive locomotive = current.getCurrentLocomotive();
-
-                    // If we want to view paths, locomotive must not be running
-                    //
-                    // A per-locomotive gate, where AutoLocomotiveStatus asks isAutoRunning() about the whole layout, so
-                    // the two disagree, by design (OB-164).  The answer is the one gathered for this train: equality
-                    // says it is about the locomotive standing here now.
-                    if (locomotive != null && options != null && locomotive.equals(options.locomotive))
-                    {
-                        List<List<Edge>> paths = options.shown;
-
-
-                        List<List<Edge>> otherPaths = options.other;
-
-                        if (!paths.isEmpty())
-                        {
-                            addSeparator();
-
-                            // Show the locomotive name for reference
-                            menuItem = new JMenuItem(locomotive.getName());
-                            menuItem.setEnabled(false);
-                            add(menuItem);
-                        }
-
-                        // Counted rather than measured off the menu, which also holds other items.
-                        int shown = 0;
-
-                        for (List<Edge> path : paths)
-                        {
-                            add(destinationItem(ui, options.railway, path, locomotive));
-
-                            // The way through whenever there were more destinations than fitted (FR-058); comparing
-                            // against `shown` alone would fire on essentially every right-click.
-                            if (++shown >= Math.min(MAX_PATHS, paths.size())
-                                && theListWasCutShort(paths.size() + otherPaths.size(), shown,
-                                    otherPaths.size()))
-                            {
-                                menuItem = new JMenuItem("...");
-                                menuItem.addActionListener(event -> 
-                                {
-                                    try
-                                    {
-                                        ui.jumpToAutonomyLocTab();
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        JOptionPane.showMessageDialog(ui, e.getMessage());
-                                    }
-                                });    
-
-                                add(menuItem);
-                                break;
-                            }
-                        }
-
-                        // More Destinations (FR-058) holds everything valid but not automatic: a reversing point, and a
-                        // square marked as not an automatic destination ("filtering at selection, never refusing at
-                        // execution").  A terminus is not here (a non-reversible train may back into one); nor is an
-                        // excluded square.  Uncapped: Swing gives an over-tall JMenu no scroller, so a railway
-                        // exceeding a screen would want one rather than a second ellipsis.
-                        if (!otherPaths.isEmpty())
-                        {
-                            // The heading, when the top-level list did not add it, so no bare "More Destinations".
-                            if (paths.isEmpty())
-                            {
-                                addSeparator();
-
-                                javax.swing.JMenuItem whose =
-                                    new javax.swing.JMenuItem(locomotive.getName());
-
-                                whose.setEnabled(false);
-
-                                add(whose);
-                            }
-
-                            javax.swing.JMenu more =
-                                new javax.swing.JMenu(I18n.t("autolayout.ui.menuMoreDestinations"));
-
-                            for (List<Edge> path : otherPaths)
-                            {
-                                more.add(destinationItem(ui, options.railway, path, locomotive));
-                            }
-
-                            add(more);
-
-                        }
-
-                        // There is no second way out: the item is decided in ONE place, the loop above through
-                        // `theListWasCutShort`, and `regression.testTheDestinationDoorsAgree` asserts there is only
-                        // one.
-                    }
-
-                    addSeparator();
-
-                    // Station name label
-                    // The STATION's name, not the copy's: a square is several Points named apart for the running log.
-                    menuItem = new JMenuItem(stationName(current));
-                    menuItem.setEnabled(false);
-                    add(menuItem);
-
-                    // Place a different locomotive at this station, FACING a chosen way.  A square is several Points,
-                    // one per side a train can arrive by, each leaving only the way its own facing allows, so "put it
-                    // here" must pick the copy.  Offered only on a destination.  Which copy the train stands on is its
-                    // heading's (below), including a copy trains may not arrive at (OB-284).
-                    if (ui.getActiveLoc() != null
-                        && current.isDestination()
-                        && !ui.aRunHoldsTheSetup()
-                        && !ui.getActiveLoc().equals(locomotive))
-                    {
-                        // Chosen for them, from the ways a train could actually leave: the copy facing the way the
-                        // train already faces, wherever that copy has a way out (OB-284), otherwise the first this menu
-                        // offers (OB-296: "Yes, keep the train's heading.").  Where no copy can leave, offered all the
-                        // same, as the editor's Place is (OB-350): `placeSomewhereLegal` stands the train where the
-                        // build would and records no facing.
-                        final java.util.List<String> usable = placeableCopies();
-
-                        // Offered on the action's own question: every copy the train could leave by, including one
-                        // trains may not arrive at (`placeableCopies` never offers one).
-                        final java.util.Map<String, org.traincontrol.automationui.TilePorts.Side> departable =
-                            session == null || !ui.getModel().hasAutoLayout()
-                                ? new java.util.LinkedHashMap<String, org.traincontrol.automationui.TilePorts.Side>()
-                                : session.departableFacingsFor(station, ui.getModel().getAutoLayout());
-
-                        final java.util.List<String> offered = new java.util.ArrayList<>(usable);
-
-                        for (String copy : departable.keySet())
-                        {
-                            if (!offered.contains(copy)) offered.add(copy);
-                        }
-
-                        menuItem = new JMenuItem(
-                            I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName())
-                        );
-
-                        menuItem.addActionListener(event -> placeSomewhereLegal(offered));
-
-                        add(menuItem);
-                    }
-
-                    // Turn the standing train round: placing keeps the heading the train had, so there has to be a way
-                    // to say "it faces the other way".  Only the copies it could leave from; left out while a route
-                    // runs.
-                    if (current.getCurrentLocomotive() != null && !ui.aRunHoldsTheSetup())
-                    {
-                        // There is one "Facing" menu, the one further down (MT-086), the same menu the setup editor
-                        // offers.
-
-                        menuItem = new JMenuItem(
-                            I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName())
-                        );
-                        // A method rather than a lambda, so this constructor asks the railway nothing (`moveLocomotive`
-                        // is `synchronized` on the `Layout`).
-                        menuItem.addActionListener(event -> removeLocomotiveHere(current));
-
-                        add(menuItem); 
-                    }
-                    
-                    if (!ui.getModel().getAutoLayout().getLocomotivesToRun().isEmpty() && !ui.aRunHoldsTheSetup())
-                    {
-                        // Edit locomotive
-                        menuItem = new JMenuItem(GraphLocAssign.menuLabelFor(current));
-                        menuItem.addActionListener(event ->
-                        {
-                            // Not while trains run: a click after a run began would write the placement, facing and
-                            // tail into the setup.  Asked at the click and again at OK.
-                            if (refusedWhileRunning()) return;
-
-                            // The setup goes in with it: the dialog works this square's sides out from the build.
-                            GraphLocAssign edit = new GraphLocAssign(ui, current,
-                                ui.getAutonomySession(),
-                                ui.getModel() == null ? null : ui.getModel().getAutoLayout());
-
-                            int dialogResult = JOptionPane.showOptionDialog(
-                                ui,
-                                // The form with the arrival side under it (`asDialogContent`).
-                                edit.asDialogContent(),
-                                I18n.f("autolayout.ui.dialogEditOrAssignLocomotive",
-                                    stationName(current)),
-                                JOptionPane.OK_CANCEL_OPTION,
-                                JOptionPane.PLAIN_MESSAGE,
-                                null,
-                                TrainControlUI.OK_CANCEL_OPTS,
-                                TrainControlUI.OK_CANCEL_OPTS[0]
-                            );
-
-                            if (dialogResult == JOptionPane.OK_OPTION)
-                            {
-                                if (refusedWhileRunning()) return;
-
-                                // And into the setup, through the shared door, so an assignment survives the next load.
-                                GraphLocAssign.commitAndRecord(edit);
-
-                                ui.updateVisiblePoints();
-                                ui.repaintAutoLocList(false);
-                            }
-                        }); 
-
-                        add(menuItem);
-                    }
-
-                    // Whether it runs (FR-117): an "active" checkbox, only at rest; while trains run the Auto tab's
-                    // pause button says the same.
-                    if (locomotive != null && !ui.aRunHoldsTheSetup())
-                    {
-                        final Locomotive standing = locomotive;
-
-                        final javax.swing.JCheckBoxMenuItem active = new javax.swing.JCheckBoxMenuItem(
-                            I18n.f("autolayout.ui.menuLocomotiveActive", standing.getName()),
-                            !standing.isAutonomyPaused());
-
-                        active.setToolTipText(I18n.t("autolayout.ui.hintLocomotiveActive"));
-
-                        active.addActionListener(event -> setActive(standing, active.isSelected()));
-
-                        add(active);
-                    }
-
-                    // Which locomotive belongs here is offered from the setup menu below, which works from the SQUARE.
-                }
-
-                // Which way round the train is standing, beside the other things about the train.
-                javax.swing.JMenu facing = ui.aRunHoldsTheSetup() ? null : ui.buildAutonomyFacingMenu(here);
-
-                if (facing != null)
-                {
-                    add(facing);
-                }
-
-                addSetupMenu();
-            }
-            else
-            {
-                menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStopAutonomyGracefully"));
-                menuItem.addActionListener(event -> 
-                {
-                    try
-                    {
-                        ui.requestStopAutonomy();
-                    }
-                    catch (Exception e)
-                    {
-                        JOptionPane.showMessageDialog(ui, e.getMessage());
-                    }
-                });    
-
-                add(menuItem);
-            }
+            if (divider && (at == 0 || at == menu.getComponentCount() - 1
+                || menu.getComponent(at - 1) instanceof javax.swing.JSeparator)) menu.remove(at);
         }
     }
 
     /**
-     * Everything the autonomy editor offers on this square, folded into this menu: borrowed from the panel that builds
-     * it, so the two never drift.  Under a parent entry, because it is a long menu and most right-clicks on a running
-     * layout are about sending a train.  Nothing while autonomy is running.
+     * Change Train at... first, Place <active> Here, Remove, Place Another Locomotive Here... last, then Edit
+     * <name>..., never grouped with the autonomy items (FR-182).
+     */
+    private void addHandDoors(final Point current, Locomotive locomotive, boolean stationHere, boolean busy, boolean held)
+    {
+        // Station Settings' Train tab; while autonomy runs, only over a train (FR-111).
+        JMenuItem trainWindow = here == null || locomotive == null && (stationHere ? busy : held) ? null
+            : ui.trainWindowItem(here);
+
+        boolean placesOne = trainWindow != null && I18n.t("autosetup.ui.menuPlaceHere").equals(trainWindow.getText());
+
+        if (trainWindow != null && !placesOne) add(trainWindow);
+
+        // Place a different locomotive here, FACING a chosen way: a square is several Points, one per arrival side, so
+        // the copy must be picked.  Offered only on a destination (OB-284), the active one directly (FR-048).
+        boolean placesTheActive = stationHere && ui.getActiveLoc() != null && current.isDestination() && !held
+            && !ui.getActiveLoc().equals(locomotive);
+
+        if (placesTheActive)
+        {
+            // The copy facing the way the train already faces if it has a way out, else the first offered; where none
+            // can leave, offered all the same and `placeSomewhereLegal` records no facing.
+            final java.util.List<String> offered = new java.util.ArrayList<>(placeableCopies());
+
+            // Every copy the train could leave by, including one `placeableCopies` never offers.
+            if (session != null)
+            {
+                for (String copy : session.departableFacingsFor(station, ui.getModel().getAutoLayout()).keySet())
+                {
+                    if (!offered.contains(copy)) offered.add(copy);
+                }
+            }
+
+            JMenuItem place = new JMenuItem(I18n.f("layout.ui.menuPlaceLocomotive", ui.getActiveLoc().getName()));
+
+            place.addActionListener(event -> placeSomewhereLegal(offered));
+
+            add(place);
+        }
+
+        // Left out while a route runs.  Turning it is Change Direction (MT-086).
+        if (stationHere && current.getCurrentLocomotive() != null && !held)
+        {
+            JMenuItem remove = new JMenuItem(I18n.f("layout.ui.menuRemoveLocomotive", current.getCurrentLocomotive().getName()));
+
+            // A method, so this constructor asks the railway nothing (`moveLocomotive` takes the `Layout` monitor).
+            remove.addActionListener(event -> removeLocomotiveHere(current));
+
+            add(remove);
+        }
+
+        if (placesOne)
+        {
+            // Beside Place <active> Here, it says it is for any other.
+            if (placesTheActive) trainWindow.setText(I18n.t("autosetup.ui.menuPlaceAnotherHere"));
+
+            add(trainWindow);
+        }
+
+        if (locomotive != null) add(editLocomotiveItem(locomotive));
+    }
+
+    /**
+     * The standing train's destinations under "Send <name> To:" (MT-922), from the answer gathered for it (equality says it is about the
+     * train standing here now); true when it added any.
+     */
+    private boolean addDestinations(Locomotive locomotive, PathOptions options)
+    {
+        if (locomotive == null || options == null || !locomotive.equals(options.locomotive)
+            || options.shown.isEmpty() && options.other.isEmpty()) return false;
+
+        JMenuItem whose = new JMenuItem(I18n.f("autolayout.ui.menuSendTo", locomotive.getName()));
+        whose.setEnabled(false);
+        add(whose);
+
+        // Counted rather than measured off the menu, which also holds other items.
+        int shown = 0;
+
+        for (List<Edge> path : options.shown)
+        {
+            add(destinationItem(ui, options.railway, path, locomotive));
+
+            // The way through whenever there were more destinations than fitted (FR-058), decided here alone
+            if (++shown >= Math.min(MAX_PATHS, options.shown.size())
+                && theListWasCutShort(options.shown.size() + options.other.size(), shown, options.other.size()))
+            {
+                JMenuItem rest = new JMenuItem("...");
+                rest.addActionListener(event -> ui.jumpToAutonomyLocTab());
+                add(rest);
+                break;
+            }
+        }
+
+        // More Destinations (FR-058): everything valid but not automatic, such as a reversing point or a square marked
+        // as no automatic destination.  Uncapped: Swing gives an over-tall JMenu no scroller.
+        if (!options.other.isEmpty())
+        {
+            javax.swing.JMenu more = new javax.swing.JMenu(I18n.t("autolayout.ui.menuMoreDestinations"));
+
+            for (List<Edge> path : options.other) more.add(destinationItem(ui, options.railway, path, locomotive));
+
+            add(more);
+        }
+
+        return true;
+    }
+
+    /** The Is Active tick (FR-117), as the train's Auto tab card has it. */
+    private void addActive(final Locomotive train)
+    {
+        final javax.swing.JCheckBoxMenuItem active = new javax.swing.JCheckBoxMenuItem(
+            I18n.f("autolayout.ui.menuLocomotiveActive", train.getName()), !train.isAutonomyPaused());
+
+        active.setToolTipText(I18n.t("autolayout.ui.hintLocomotiveActive"));
+
+        active.addActionListener(event -> setActive(train, active.isSelected()));
+
+        add(active);
+    }
+
+    /**
+     * The standing train's own settings (FR-048), on every menu over a train (Adam: "there should always be an edit
+     * loc"); during a run the window opens locked.
+     */
+    private JMenuItem editLocomotiveItem(final Locomotive standing)
+    {
+        JMenuItem edit = new JMenuItem(I18n.f("autolayout.ui.menuEditLocomotive", standing.getName()));
+
+        edit.addActionListener(event -> ui.openLocomotiveSettings(standing, LocomotiveSettingsFrame.Tab.AUTONOMY, null));
+
+        return edit;
+    }
+
+    /**
+     * Autonomy Setup >, at the foot of every square's menu: what the editor's menu offers on this square, borrowed
+     * from the panel that builds it so the two never drift, then Bulk Tools and the full editor.  Not while a run holds
+     * the setup.
      */
     private void addSetupMenu()
     {
@@ -603,11 +534,28 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // getComponents hands back a copy, so moving each out from under the popup does not walk the array being read.
         for (java.awt.Component part : built.getComponents())
         {
+            // The editor's heading and Station Settings are on this menu already (OB-451)
+            if (setup.getMenuComponentCount() == 0 && (part instanceof javax.swing.JSeparator || !part.isEnabled())
+                || part instanceof JMenuItem
+                && I18n.t("autosetup.ui.menuStationSettings").equals(((JMenuItem) part).getText())) continue;
+
             setup.add(part);
         }
 
-        // FR-026: the way out to the full editor, live exactly when pressing it would work and giving the window's own
-        // refusal reason when it is not.
+        setup.addSeparator();
+        setup.add(openFullEditorItem());
+
+        tidy(setup.getPopupMenu());
+
+        add(setup);
+    }
+
+    /**
+     * FR-026: the way out to the full editor, live exactly when pressing it would work and giving the window's own
+     * refusal reason when it is not.
+     */
+    private JMenuItem openFullEditorItem()
+    {
         String refusal = ui.whyAutonomyEditorCannotOpen();
 
         JMenuItem openEditor = new JMenuItem(I18n.t("autosetup.ui.menuOpenFullEditor"));
@@ -624,22 +572,13 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             openEditor.setToolTipText(I18n.t(refusal));
         }
 
-        setup.addSeparator();
-        setup.add(openEditor);
-
-        if (getComponentCount() > 0) addSeparator();
-
-        add(setup);
+        return openEditor;
     }
 
     /**
      * Drops the paths that end where the train already is.  A square is several Points, so a train at BottomMainB must
      * not be offered BottomMainB, the copy facing the other way.  Filtered here rather than in the layout, which cannot
      * tell: only the setup knows that two Points built from one square are one place.
-     *
-     * @param ui the window, which owns the setup
-     * @param paths what the layout offered
-     * @return the ones that actually go somewhere
      */
     private static List<List<Edge>> withoutGoingNowhere(TrainControlUI ui, List<List<Edge>> paths)
     {
@@ -651,11 +590,13 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * What to call a Point when a person is reading it: the station name, not the built graph's per-copy name.  Falls
      * back to the Point's own name when the setup cannot be asked.
-     *
-     * @param point a Point of the running graph
-     * @return the station name a reader would recognize
      */
     private String stationName(Point point)
+    {
+        return stationName(session, point);
+    }
+
+    private static String stationName(org.traincontrol.automationui.AutonomySession session, Point point)
     {
         return session == null ? (point == null ? "" : point.getName())
             : session.getStationIndex().describe(point);
@@ -664,8 +605,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * The copies of this square a train could actually be driven away from: a copy with no outgoing edge is one the
      * split made arrivable and not leavable, and a train placed there cannot move.
-     *
-     * @return the point names, empty when nothing here can move
      */
     private java.util.List<String> placeableCopies()
     {
@@ -720,8 +659,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * Places the active locomotive on the copy it could leave from that faces the way it already faces (OB-296); where
      * no copy can leave, on the copy the build stands an unfaced train on, with no facing recorded (OB-350).
-     *
-     * @param usable the copies a train can be driven away from, empty where there are none
      */
     private void placeSomewhereLegal(java.util.List<String> usable)
     {
@@ -778,11 +715,9 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * Whether the operator marked this square as one trains may turn round at.  Asked of the SETUP, because
+     * Whether the operator marked this square as one trains may turn around at.  Asked of the SETUP, because
      * `canReverse` never reaches the running layout (the builder splits the square); the same answer as
-     * `TrainControlUI.mayTurnHere` and `GraphLocAssign`.
-     *
-     * @return true when trains may turn there
+     * `TrainControlUI.mayTurnHere`.
      */
     private boolean mayTurnHere()
     {
@@ -818,7 +753,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // a dismissal can leave the railway as it was.  The unbarred sides here and in the `wouldAsk` below must be
             // the same list (OB-204).
             tail = org.traincontrol.gui.autonomy.ArrivalSidePrompt.forPlacement(running, landing,
-                facing == null ? null : facing.name(), mayTurnHere(), ui,
+                facing == null ? null : facing.name(), mayTurnHere(), ui.dialogParent(),
                 session == null ? null : session.unbarredArrivalSides(station));
 
             // A dismissal, and not the other two nulls: `forPlacement` also answers null when the square offers nothing
@@ -875,13 +810,13 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             {
                 setupStands = org.traincontrol.gui.TailCrossedPrompt.recordTheTail(session, station, running, landing,
                     tail, locName, roadBefore, station != null && station.equals(squareBefore), sideBefore, ui,
-                    saved -> savedEarly[0] = saved);
+                    ui, saved -> savedEarly[0] = saved);
             }
         }
 
         // WHAT THE SAVE BEFORE THE TAIL QUESTION RECONCILED (OB-305), shown once here: the save below then finds
         // nothing more (MT-380).
-        AutonomyReport.show(ui, savedEarly[0]);
+        AutonomyReport.show(ui.dialogParent(), savedEarly[0]);
 
         // Not a setup the window has let go in the wait; the placement above is written either way (OB-373).
         if (session != null && setupStands)
@@ -889,7 +824,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             try
             {
                 // The reconciliation the save returns is shown, not dropped: it reports what the save had to let go.
-                AutonomyReport.show(ui, session.save());
+                AutonomyReport.show(ui.dialogParent(), session.save());
             }
             catch (java.io.IOException e)
             {
@@ -908,12 +843,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     /**
      * One "-> somewhere" item, dispatching this locomotive along this path; shared by the top-level list and `More
      * Destinations` (FR-058), so the checks and the dispatch cannot fall out of step.
-     *
-     * @param ui the window, for the model and for the dialogs
-     * @param railway the railway the path was found on, which it is sent on
-     * @param path the route to take
-     * @param locomotive the train to send
-     * @return the item
      */
     private JMenuItem destinationItem(TrainControlUI ui, org.traincontrol.automation.Layout railway, List<Edge> path,
         Locomotive locomotive)
@@ -928,25 +857,19 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
     }
 
     /**
-     * The Is Active tick (FR-117), asked again at the click as Edit Locomotive is: a run may have started since the menu
-     * opened.
-     *
-     * @param train the train standing here
-     * @param active whether autonomy may run it
+     * The Is Active tick (FR-117), decided at the click: while a run holds the setup it pauses the train alone, as the
+     * card's button does (FR-187); at rest the setup records it.
      */
     private void setActive(Locomotive train, boolean active)
     {
-        if (refusedWhileRunning()) return;
-
-        ui.setLocomotiveActive(session, train, active);
+        if (ui.aRunHoldsTheSetup()) ui.pauseTrainWhileRunning(train, !active);
+        else ui.setLocomotiveActive(session, train, active);
     }
 
     /**
      * Takes the standing train off this square, and off the setup with it.  On the event thread, deliberately: it is a
      * click, offered only when `isAutonomyBusy()` is false, and a worker would let the repaint below run before the
      * change.
-     *
-     * @param current the Point the train is standing on
      */
     private void removeLocomotiveHere(Point current)
     {
@@ -968,7 +891,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             // save a removed train is back at the next launch.
             try
             {
-                AutonomyReport.show(ui, session.save());
+                AutonomyReport.show(ui.dialogParent(), session.save());
             }
             catch (java.io.IOException e)
             {

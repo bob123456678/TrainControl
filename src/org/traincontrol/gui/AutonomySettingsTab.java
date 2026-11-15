@@ -1,8 +1,10 @@
 package org.traincontrol.gui;
 
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import org.traincontrol.base.Route;
 
 /**
@@ -22,12 +24,12 @@ final class AutonomySettingsTab
     /**
      * The route list, let go: arms the routes picked for autonomy, or puts the picks back when a run holds the setup.
      */
-    void autoRouteListMouseReleased(java.awt.event.MouseEvent evt)
+    void autoRouteListMouseReleased(MouseEvent evt)
     {
         if (TrainControlUI.onAGreyedControl(evt)) return;
 
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
             {
                 if (this.ui.getModel().hasAutoLayout())
                 {
@@ -36,10 +38,7 @@ final class AutonomySettingsTab
                         // Collect IDs of all selected routes
                         List<Integer> activateRouteIDs = new ArrayList<>();
 
-                        for (Route r:  this.ui.autoRouteList().getSelectedValuesList())
-                        {
-                            activateRouteIDs.add(r.getId());
-                        }
+                        for (Route r:  this.ui.autoRouteList().getSelectedValuesList()) activateRouteIDs.add(r.getId());
 
                         // Push back into the model
                         this.ui.getModel().getAutoLayout().setActivateRouteIDs(activateRouteIDs);
@@ -53,11 +52,11 @@ final class AutonomySettingsTab
     /**
      * Activate Routes, let go: switches arming the picked routes on or off, unless a run holds the setup.
      */
-    void toggleSpecifiedRoutesMouseReleased(java.awt.event.MouseEvent evt)
+    void toggleSpecifiedRoutesMouseReleased(MouseEvent evt)
     {
         if (TrainControlUI.onAGreyedControl(evt)) return;
 
-        javax.swing.SwingUtilities.invokeLater(() ->
+        SwingUtilities.invokeLater(() ->
             {
                 if (!this.ui.refuseWhileARunHoldsTheSetup(this.ui))
                 {
@@ -71,35 +70,17 @@ final class AutonomySettingsTab
             });
     }
 
-    /**
-     * The trains-at-once slider, let go.
-     */
-    void maxActiveTrainsMouseReleased(java.awt.event.MouseEvent evt)
+    /** A setting written from its control; an exception refuses it, and its message is shown. */
+    private interface Setting
     {
-        if (TrainControlUI.onAGreyedControl(evt))
-        {
-            loadAutoLayoutSettings();
-            return;
-        }
-
-        if (!this.ui.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.ui.getModel().getAutoLayout().setMaxActiveTrains(this.ui.maxActiveTrains().getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this.ui, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
+        void write() throws Exception;
     }
 
     /**
-     * The maximum latency slider, let go.
+     * A setting's control, let go: a grayed control, or a write that fails, puts the tab back from the railway, and
+     * nothing is written while a run holds the setup.
      */
-    void maximumLatencyMouseReleased(java.awt.event.MouseEvent evt)
+    private void letGo(MouseEvent evt, Setting setting)
     {
         if (TrainControlUI.onAGreyedControl(evt))
         {
@@ -107,262 +88,113 @@ final class AutonomySettingsTab
             return;
         }
 
+        if (this.ui.isAutoLayoutRunning()) return;
 
-        if (!this.ui.isAutoLayoutRunning())
+        try
         {
-            try
-            {
-                this.ui.getModel().getAutoLayout().setMaxLatency(this.ui.maximumLatency().getValue());
-                this.ui.maximumLatency().setValue(this.ui.getModel().getAutoLayout().getMaxLatency());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this.ui, e.getMessage());
-                loadAutoLayoutSettings();
-            }
+            setting.write();
+        }
+        catch (Exception e)
+        {
+            JOptionPane.showMessageDialog(this.ui, e.getMessage());
+            loadAutoLayoutSettings();
         }
     }
 
-    /**
-     * The functions-on-departure box, let go.
-     */
-    void turnOnFunctionsOnDepartureMouseReleased(java.awt.event.MouseEvent evt)
+    /** The trains-at-once slider, let go. */
+    void maxActiveTrainsMouseReleased(MouseEvent evt)
     {
-        if (TrainControlUI.onAGreyedControl(evt))
-        {
-            loadAutoLayoutSettings();
-            return;
-        }
-
-        if (!this.ui.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.ui.getModel().getAutoLayout().setTurnOnFunctionsOnDeparture(this.ui.turnOnFunctionsOnDeparture().isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this.ui, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
+        letGo(evt, () -> this.ui.getModel().getAutoLayout().setMaxActiveTrains(this.ui.maxActiveTrains().getValue()));
     }
 
-    /**
-     * The simulate box, let go.
-     */
-    void simulateMouseReleased(java.awt.event.MouseEvent evt)
+    /** The maximum latency slider, let go. */
+    void maximumLatencyMouseReleased(MouseEvent evt)
     {
-        if (TrainControlUI.onAGreyedControl(evt))
+        letGo(evt, () ->
         {
-            loadAutoLayoutSettings();
-            return;
-        }
-
-        if (!this.ui.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.ui.getModel().getAutoLayout().setSimulate(this.ui.simulate().isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this.ui, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
+            this.ui.getModel().getAutoLayout().setMaxLatency(this.ui.maximumLatency().getValue());
+            this.ui.maximumLatency().setValue(this.ui.getModel().getAutoLayout().getMaxLatency());
+        });
     }
 
-    /**
-     * The functions-off-on-arrival box, let go.
-     */
-    void turnOffFunctionsOnArrivalMouseReleased(java.awt.event.MouseEvent evt)
+    /** The functions-on-departure box, let go. */
+    void turnOnFunctionsOnDepartureMouseReleased(MouseEvent evt)
     {
-        if (TrainControlUI.onAGreyedControl(evt))
-        {
-            loadAutoLayoutSettings();
-            return;
-        }
+        letGo(evt, () -> this.ui.getModel().getAutoLayout()
+            .setTurnOnFunctionsOnDeparture(this.ui.turnOnFunctionsOnDeparture().isSelected()));
+    }
 
-        if (!this.ui.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.ui.getModel().getAutoLayout().setTurnOffFunctionsOnArrival(this.ui.turnOffFunctionsOnArrival().isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this.ui, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
+    /** The simulate box, let go. */
+    void simulateMouseReleased(MouseEvent evt)
+    {
+        letGo(evt, () -> this.ui.getModel().getAutoLayout().setSimulate(this.ui.simulate().isSelected()));
+    }
+
+    /** The functions-off-on-arrival box, let go. */
+    void turnOffFunctionsOnArrivalMouseReleased(MouseEvent evt)
+    {
+        letGo(evt, () -> this.ui.getModel().getAutoLayout()
+            .setTurnOffFunctionsOnArrival(this.ui.turnOffFunctionsOnArrival().isSelected()));
     }
 
     /**
      * The atomic routes box, let go: switching it off is refused while the railway lacks the lengths that needs.
      */
-    void atomicRoutesMouseReleased(java.awt.event.MouseEvent evt)
+    void atomicRoutesMouseReleased(MouseEvent evt)
     {
-        if (TrainControlUI.onAGreyedControl(evt))
+        letGo(evt, () ->
         {
-            loadAutoLayoutSettings();
-            return;
-        }
-
-        if (!this.ui.isAutoLayoutRunning())
-        {
-            try
+            // Only switching OFF can be refused (while lengths are missing); going back to atomic is always safe.
+            if (!this.ui.atomicRoutes().isSelected())
             {
-                // Not without lengths (Adam): asked only when switching OFF; going back to atomic is always safe.
-                if (!this.ui.atomicRoutes().isSelected())
+                String why = this.ui.whyNonAtomicRoutesAreRefused();
+
+                if (why != null)
                 {
-                    String why = this.ui.whyNonAtomicRoutesAreRefused();
+                    JOptionPane.showMessageDialog(this.ui, why);
 
-                    if (why != null)
-                    {
-                        JOptionPane.showMessageDialog(this.ui, why);
+                    // The tick goes back, as every other refusal on this panel puts it; the setting is never
+                    // touched.
+                    loadAutoLayoutSettings();
 
-                        // The tick goes back, as every other refusal on this panel puts it; the setting is never
-                        // touched.
-                        loadAutoLayoutSettings();
-
-                        return;
-                    }
+                    return;
                 }
+            }
 
-                this.ui.getModel().getAutoLayout().setAtomicRoutes(this.ui.atomicRoutes().isSelected());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this.ui, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
+            this.ui.getModel().getAutoLayout().setAtomicRoutes(this.ui.atomicRoutes().isSelected());
+        });
     }
 
-    /**
-     * The pre-arrival speed reduction slider, let go.
-     */
-    void preArrivalSpeedReductionMouseReleased(java.awt.event.MouseEvent evt)
+    /** The pre-arrival speed reduction slider, let go. */
+    void preArrivalSpeedReductionMouseReleased(MouseEvent evt)
     {
-        if (TrainControlUI.onAGreyedControl(evt))
-        {
-            loadAutoLayoutSettings();
-            return;
-        }
-
-        if (!this.ui.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.ui.getModel().getAutoLayout().setPreArrivalSpeedReduction(Double.valueOf(this.ui.preArrivalSpeedReduction().getValue()) / 100);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this.ui, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
+        letGo(evt, () -> this.ui.getModel().getAutoLayout()
+            .setPreArrivalSpeedReduction(Double.valueOf(this.ui.preArrivalSpeedReduction().getValue()) / 100));
     }
 
-    /**
-     * The default speed slider, let go.
-     */
-    void defaultLocSpeedMouseReleased(java.awt.event.MouseEvent evt)
+    /** The default speed slider, let go. */
+    void defaultLocSpeedMouseReleased(MouseEvent evt)
     {
-        if (TrainControlUI.onAGreyedControl(evt))
-        {
-            loadAutoLayoutSettings();
-            return;
-        }
-
-        if (!this.ui.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.ui.getModel().getAutoLayout().setDefaultLocSpeed(this.ui.defaultLocSpeed().getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this.ui, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
+        letGo(evt, () -> this.ui.getModel().getAutoLayout().setDefaultLocSpeed(this.ui.defaultLocSpeed().getValue()));
     }
 
-    /**
-     * The maximum delay slider, let go.
-     */
-    void maxDelayMouseReleased(java.awt.event.MouseEvent evt)
+    /** The maximum delay slider, let go. */
+    void maxDelayMouseReleased(MouseEvent evt)
     {
-        if (TrainControlUI.onAGreyedControl(evt))
-        {
-            loadAutoLayoutSettings();
-            return;
-        }
-
-        if (!this.ui.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.ui.getModel().getAutoLayout().setMaxDelay(this.ui.maxDelay().getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this.ui, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
+        letGo(evt, () -> this.ui.getModel().getAutoLayout().setMaxDelay(this.ui.maxDelay().getValue()));
     }
 
-    /**
-     * The inactive-minutes slider, let go.
-     */
-    void maxLocInactiveSecondsMouseReleased(java.awt.event.MouseEvent evt)
+    /** The inactive-minutes slider, let go. */
+    void maxLocInactiveSecondsMouseReleased(MouseEvent evt)
     {
-        if (TrainControlUI.onAGreyedControl(evt))
-        {
-            loadAutoLayoutSettings();
-            return;
-        }
-
-        if (!this.ui.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.ui.getModel().getAutoLayout().setMaxLocInactiveSeconds(this.ui.maxLocInactiveSeconds().getValue() * 60);
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this.ui, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
+        letGo(evt, () -> this.ui.getModel().getAutoLayout()
+            .setMaxLocInactiveSeconds(this.ui.maxLocInactiveSeconds().getValue() * 60));
     }
 
-    /**
-     * The minimum delay slider, let go.
-     */
-    void minDelayMouseReleased(java.awt.event.MouseEvent evt)
+    /** The minimum delay slider, let go. */
+    void minDelayMouseReleased(MouseEvent evt)
     {
-        if (TrainControlUI.onAGreyedControl(evt))
-        {
-            loadAutoLayoutSettings();
-            return;
-        }
-
-        if (!this.ui.isAutoLayoutRunning())
-        {
-            try
-            {
-                this.ui.getModel().getAutoLayout().setMinDelay(this.ui.minDelay().getValue());
-            }
-            catch (Exception e)
-            {
-                JOptionPane.showMessageDialog(this.ui, e.getMessage());
-                loadAutoLayoutSettings();
-            }
-        }
+        letGo(evt, () -> this.ui.getModel().getAutoLayout().setMinDelay(this.ui.minDelay().getValue()));
     }
 
     /**
@@ -370,20 +202,22 @@ final class AutonomySettingsTab
      */
     void loadAutoLayoutSettings()
     {
-        this.ui.minDelay().setValue(this.ui.getModel().getAutoLayout().getMinDelay());
-        this.ui.maxDelay().setValue(this.ui.getModel().getAutoLayout().getMaxDelay());
-        this.ui.defaultLocSpeed().setValue(this.ui.getModel().getAutoLayout().getDefaultLocSpeed());
-        this.ui.preArrivalSpeedReduction().setValue(Double.valueOf(this.ui.getModel().getAutoLayout().getPreArrivalSpeedReduction() * 100).intValue());
-        this.ui.maxLocInactiveSeconds().setValue(Double.valueOf(this.ui.getModel().getAutoLayout().getMaxLocInactiveSeconds() / 60).intValue());
-        this.ui.maxActiveTrains().setValue(this.ui.getModel().getAutoLayout().getMaxActiveTrains());
-        this.ui.simulate().setSelected(this.ui.getModel().getAutoLayout().isSimulate());
-        this.ui.atomicRoutes().setSelected(this.ui.getModel().getAutoLayout().isAtomicRoutes());
-        this.ui.turnOffFunctionsOnArrival().setSelected(this.ui.getModel().getAutoLayout().isTurnOffFunctionsOnArrival());
-        this.ui.turnOnFunctionsOnDeparture().setSelected(this.ui.getModel().getAutoLayout().isTurnOnFunctionsOnDeparture());
-        this.ui.maximumLatency().setValue(this.ui.getModel().getAutoLayout().getMaxLatency());
+        org.traincontrol.automation.Layout auto = this.ui.getModel().getAutoLayout();
 
-        // The routing rule, pulled from the layout like every other setting here (MT-226): a menu read the layout when
-        // it happened to be opened, so the control could show one configuration's rule while another runs.
+        this.ui.minDelay().setValue(auto.getMinDelay());
+        this.ui.maxDelay().setValue(auto.getMaxDelay());
+        this.ui.defaultLocSpeed().setValue(auto.getDefaultLocSpeed());
+        this.ui.preArrivalSpeedReduction().setValue((int) Math.round(auto.getPreArrivalSpeedReduction() * 100));
+        this.ui.maxLocInactiveSeconds().setValue(Double.valueOf(auto.getMaxLocInactiveSeconds() / 60).intValue());
+        this.ui.maxActiveTrains().setValue(auto.getMaxActiveTrains());
+        this.ui.simulate().setSelected(auto.isSimulate());
+        this.ui.atomicRoutes().setSelected(auto.isAtomicRoutes());
+        this.ui.turnOffFunctionsOnArrival().setSelected(auto.isTurnOffFunctionsOnArrival());
+        this.ui.turnOnFunctionsOnDeparture().setSelected(auto.isTurnOnFunctionsOnDeparture());
+        this.ui.maximumLatency().setValue(auto.getMaxLatency());
+
+        // The routing rule, pulled from the layout like every other setting here (MT-226), so the control shows the
+        // rule of the configuration that runs.
         if (this.ui.algorithmType() != null)
         {
             this.ui.migrateStoredPathPreference(this.ui.getModel().getAutoLayout());

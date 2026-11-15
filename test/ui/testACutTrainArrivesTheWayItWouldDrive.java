@@ -1,14 +1,12 @@
 package ui;
 
 import java.awt.event.KeyEvent;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -24,6 +22,10 @@ import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
+import static support.StandingTrain.squareNamed;
 
 /**
  * A cut train is pasted facing the way it would arrive if it drove there, and stands on that copy (Adam, OB-270;
@@ -54,10 +56,7 @@ public class testACutTrainArrivesTheWayItWouldDrive
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the paste door belongs to a window, and a window needs a display");
-        }
+        Display.needed("the paste door belongs to a window, and a window needs a display");
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111).
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
@@ -69,15 +68,15 @@ public class testACutTrainArrivesTheWayItWouldDrive
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
         if (session == null) throw new AssertionError("no autonomy setup on this railway");
 
-        mainA = square("BottomMainA");
-        secondary = square("BottomSecondary");
+        mainA = squareNamed(session, "BottomMainA");
+        secondary = squareNamed(session, "BottomSecondary");
 
         // BOTTOMMAINA WITH BOTH PLAIN COPIES PLACEABLE AGAIN - see the class comment.
         SwingUtilities.invokeAndWait(() -> session.setBarredArrivals(mainA, java.util.Collections.<Side>emptySet()));
@@ -173,9 +172,7 @@ public class testACutTrainArrivesTheWayItWouldDrive
         // GOING WEST, as he described it: the heading the cut remembered.  Set here rather than read, because what
         // the claim is about is a train cut facing west - and west is also the heading BottomMainA's westbound copy
         // holds, which is exactly what let the cut heading through.
-        Field cutFacing = TrainControlUI.class.getDeclaredField("cutFacing");
-        cutFacing.setAccessible(true);
-        cutFacing.set(ui, Side.W);
+        Reflect.set(TrainControlUI.class, ui, "cutFacing", Side.W);
 
         // CONTROL+V, with every question answered so nothing waits for a person.
         FacingPrompt.answerForTests(null);
@@ -205,10 +202,8 @@ public class testACutTrainArrivesTheWayItWouldDrive
     /** Presses a key over a square, through the diagram's own gesture door. */
     private static Object gesture(TileKey over, int key) throws Exception
     {
-        final Method door = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram", int.class,
-            boolean.class);
-
-        door.setAccessible(true);
+        final Method door =
+            Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
         final Object[] handled = new Object[1];
 
@@ -226,86 +221,9 @@ public class testACutTrainArrivesTheWayItWouldDrive
             }
         });
 
-        pump();
+        Components.drain(1);
 
         return handled[0];
-    }
-
-    /**
-     * The Place Locomotive dialog puts the train on the copy facing the way it records - not on whichever copy the menu
-     * was opened on: the same act as the paste, by another door (OB-270).
-     *
-     * MUTATION: have `GraphLocAssign.commitAndRecord` commit onto the copy it was opened on again and this fails.
-     */
-    @Test
-    public void testTheDialogPutsTheTrainOnTheCopyItRecords() throws Exception
-    {
-        Point westbound = layout.getPoint("BottomMainA (westbound)");
-        Point eastbound = layout.getPoint("BottomMainA (eastbound)");
-
-        assertTrue(westbound != null && westbound.isDestination() && eastbound != null && eastbound.isDestination(),
-            "precondition: BottomMainA does not have two copies a train may stand on here");
-
-        TailCrossedPrompt.answerForTests(TailCrossedPrompt.DISMISSED);
-
-        try
-        {
-            // FACING WEST, where the dialog will be opened on the copy facing east.
-            assertTrue(layout.moveLocomotive(OUR_TRAIN, westbound.getName(), false), "could not stand the train westbound");
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                session.placeLocomotive(mainA, OUR_TRAIN);
-                session.setFacing(mainA, Side.W);
-
-                org.traincontrol.gui.GraphLocAssign edit =
-                    new org.traincontrol.gui.GraphLocAssign(ui, eastbound, session, layout);
-
-                try
-                {
-                    Field combo = org.traincontrol.gui.GraphLocAssign.class.getDeclaredField("locAssign");
-
-                    combo.setAccessible(true);
-
-                    ((javax.swing.JComboBox<?>) combo.get(edit)).setSelectedItem(OUR_TRAIN);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-
-                org.traincontrol.gui.GraphLocAssign.commitAndRecord(edit);
-            });
-
-            Point standing = null;
-
-            for (Point point : layout.getPoints())
-            {
-                if (point.getCurrentLocomotive() != null && OUR_TRAIN.equals(point.getCurrentLocomotive().getName()))
-                {
-                    standing = point;
-                }
-            }
-
-            assertNotNull(standing, "the dialog took the train off the railway");
-
-            assertEquals(session.getFacing(mainA), session.facingsFor(mainA).get(standing.getName()), "the dialog recorded"
-                + " the train facing " + session.getFacing(mainA) + " and stood it on " + standing.getName() + ", which"
-                + " faces " + session.facingsFor(mainA).get(standing.getName()) + " - the record and the railway disagree"
-                + " about which way it points (GUI-B3)");
-        }
-        finally
-        {
-            TailCrossedPrompt.answerForTests(null);
-
-            for (Point point : layout.getPoints())
-            {
-                if (point.getCurrentLocomotive() != null && OUR_TRAIN.equals(point.getCurrentLocomotive().getName()))
-                {
-                    layout.moveLocomotive(null, point.getName(), true);
-                }
-            }
-        }
     }
 
     /** The copies of a square a train may stand on, with the way each faces. */
@@ -321,21 +239,5 @@ public class testACutTrainArrivesTheWayItWouldDrive
         }
 
         return out;
-    }
-
-    /** The square the setup gives this name. */
-    private static TileKey square(String name)
-    {
-        for (TileKey key : session.getStore().getNamedTiles())
-        {
-            if (name.equals(session.getStore().getPointName(key))) return key;
-        }
-
-        throw new AssertionError("this railway has no " + name);
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
     }
 }

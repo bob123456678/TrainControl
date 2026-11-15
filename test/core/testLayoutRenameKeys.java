@@ -1,7 +1,6 @@
 package core;
 
 import org.traincontrol.automation.Edge;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,6 +14,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Reflect;
 
 /**
  * Renaming a locomotive must not lose it from the collections that are keyed on the locomotive object.
@@ -84,11 +84,7 @@ public class testLayoutRenameKeys
 
     private static Layout readAutoLayout() throws Exception
     {
-        Field field = MarklinControlStation.class.getDeclaredField("autoLayout");
-
-        field.setAccessible(true);
-
-        return (Layout) field.get(model);
+        return (Layout) Reflect.get(MarklinControlStation.class, model, "autoLayout");
     }
 
     /**
@@ -98,10 +94,7 @@ public class testLayoutRenameKeys
      */
     private static void attach(Layout layout) throws Exception
     {
-        Field field = MarklinControlStation.class.getDeclaredField("autoLayout");
-
-        field.setAccessible(true);
-        field.set(model, layout);
+        Reflect.set(MarklinControlStation.class, model, "autoLayout", layout);
     }
 
     /**

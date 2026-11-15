@@ -12,7 +12,6 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -25,14 +24,17 @@ import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
+import support.Settle;
 import support.SourceOf;
+import static support.Components.itemNamed;
 
 /**
  * The tail question is put on the diagram: the sensors are lit, and a click on one answers it (FR-100).
  *
  * On the frozen railway (OB-111): a five-unit train at Tunnel from the north has reached TunnelPre on the one rail and
- * 12,7 on the other, both on 1 - Main.  The question is asked off the event thread so the test can click
- * (`testAQuestionAskedOnTheEventThreadIsAnsweredByAClick` covers the event thread).
+ * 12,7 on the other, both on 1 - Main.  The question is asked off the event thread so the test can click.
  *
  * MUTATION: ask with the list again, and the click answers nothing.
  *
@@ -47,18 +49,13 @@ public class testTheTailIsPickedOnTheDiagram
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("clicking the diagram needs a display");
-        }
+        Display.needed("clicking the diagram needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        model = support.TestStation.simulatedInDebug();
-
-        javax.swing.SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         final java.util.concurrent.CountDownLatch settled = new java.util.concurrent.CountDownLatch(1);
 
@@ -248,8 +245,8 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * A double-click on a lit sensor answers the question and does not then flip the sensor: the second click must not
-     * reach the sensor's own click, which would flip it as a real sensor change that an armed route acts on.
+     * A double-click on a lit sensor answers the question and does not then flip the sensor (which an armed route
+     * would act on).
      *
      * MUTATION: let the second click of a double-click reach the sensor, and this fails.
      */
@@ -319,14 +316,10 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The paste door reads every part of its landing before the question is asked: a second Control+V in the wait runs
-     * the paste door again and writes the same fields for its own train, so the first train's road, side and facing
-     * must be read first.  Asked of the source, since the wait is a secondary loop a test cannot hold open while it
-     * pastes.
+     * The paste door reads every part of its landing before the question is asked: a second Control+V in the wait
+     * writes the same fields for its own train.  Asked of the source, since the wait cannot be held open.
      *
      * MUTATION: read any of them after the question again, and this fails.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testThePasteReadsItsLandingBeforeTheQuestionIsAsked() throws Exception
@@ -351,11 +344,10 @@ public class testTheTailIsPickedOnTheDiagram
     private static final String PASTE_DOOR = "private void rememberPlacement(";
 
     /**
-     * The three doors that put a train down and ask the tail question (the paste, the right-click Place and the
-     * locomotive dialog), each named by its declaration.
+     * The doors that put a train down and ask the tail question (the paste and the right-click Place), each named by its
+     * declaration.
      */
-    private static final String[] PLACEMENT_DOORS = {PASTE_DOOR, "private void placeFacing(",
-        "public static void commitAndRecord(GraphLocAssign edit)"};
+    private static final String[] PLACEMENT_DOORS = {PASTE_DOOR, "private void placeFacing("};
 
     /** What each door does once its train is down: the tail's side, the save, the question and its answer. */
     private static final String RECORD_TAIL = "static boolean recordTheTail(";
@@ -400,9 +392,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             click(q.label, 1);
 
-            long giveUp = System.currentTimeMillis() + 10000;
-
-            while (got.get() == null && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+            Settle.until(() -> !(got.get() == null), 10000);
 
             assertNotNull(got.get(), "asked on the event thread, the tail question was not answered by a click on TunnelPre"
                 + " - the secondary loop did not hand the answer back");
@@ -418,9 +408,8 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * With an editor open the question is the list, not the main window's diagram: from the autonomy editor's Place
-     * door the editor's squares are lit too and do not take the click, and the small window would sit at the top of a
-     * main window the editor covers.
+     * With an editor open the question is the list, not the main window's diagram: the editor's squares are lit too
+     * and do not take the click.
      *
      * MUTATION: put the question on the diagram with an editor open, and this fails.
      */
@@ -433,13 +422,9 @@ public class testTheTailIsPickedOnTheDiagram
 
         final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
-        open.setAccessible(true);
-
-        java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
-
-        armed.setAccessible(true);
+        java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
 
         ExecutorService asker = Executors.newSingleThreadExecutor();
 
@@ -493,8 +478,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * A tail question answered after the square has changed writes nothing onto whatever stands there by then (FR-100):
-     * a run may bring another train onto the same copy while the question waits, and Cancel must not write the first
-     * train's (empty) road over the second train's driven one.
+     * Cancel must not write the first train's (empty) road over a second train's driven one.
      *
      * MUTATION: write the answer without asking whether the placement still stands, and this fails.
      */
@@ -523,18 +507,13 @@ public class testTheTailIsPickedOnTheDiagram
 
             final TileKey tile = ui.getAutonomySession().getStationIndex().squareOf(q.tunnel.getName());
 
-            java.lang.reflect.Field tailField = TrainControlUI.class.getDeclaredField("tailAtTheLanding");
-            tailField.setAccessible(true);
-            tailField.set(ui, "N");
+            Reflect.set(TrainControlUI.class, ui, "tailAtTheLanding", "N");
 
             // The paste door is DiagramLocGestures', which the window holds
-            final java.lang.reflect.Field held = TrainControlUI.class.getDeclaredField("diagramLocGestures");
-            held.setAccessible(true);
-            final Object gestures = held.get(ui);
+            final Object gestures = Reflect.get(TrainControlUI.class, ui, "diagramLocGestures");
 
-            final java.lang.reflect.Method remember = gestures.getClass().getDeclaredMethod("rememberPlacement",
-                Point.class, TileKey.class);
-            remember.setAccessible(true);
+            final java.lang.reflect.Method remember =
+                Reflect.method(gestures.getClass(), "rememberPlacement", Point.class, TileKey.class);
 
             // THE PASTE DOOR, on the event thread as it runs: it asks, and the question waits on the diagram.
             javax.swing.SwingUtilities.invokeLater(() ->
@@ -555,8 +534,7 @@ public class testTheTailIsPickedOnTheDiagram
 
             Thread.sleep(2000);
 
-            java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
-            armed.setAccessible(true);
+            java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
 
             assertNotNull(armed.get(null), "precondition: the paste door's tail question is not waiting on the diagram");
 
@@ -588,9 +566,7 @@ public class testTheTailIsPickedOnTheDiagram
                 }
             });
 
-            long giveUp = System.currentTimeMillis() + 10000;
-
-            while (!returned.get() && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+            Settle.until(() -> returned.get(), 10000);
 
             assertTrue(returned.get(), "precondition: the paste door did not return after Cancel");
 
@@ -613,7 +589,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * Every placement door asks whether its placement still stands between the question and its writes; the paste door
-     * is asked by the claim above, the others here, of their source, because each needs a menu or a dialog to reach.
+     * is claimed above, the others here, of their source.
      *
      * MUTATION: write either door's answer without asking, and this fails naming it.
      */
@@ -641,7 +617,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * Every placement door saves what it wrote before it asks the tail question, through the one helper (OB-305); the
-     * paste door is asked by the claim below, the others here, of their source.
+     * paste door is claimed below, the others here, of their source.
      *
      * MUTATION: take the save out of any door, and this fails naming it.
      */
@@ -668,9 +644,8 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * While the tail question waits, the setup on disk already has the train where it was put (OB-305): every placement
-     * door must save before the question is answered, or a crash in that wait would start the next session without the
-     * train where it stands.
+     * While the tail question waits, the setup on disk already has the train where it was put (OB-305), so a crash in
+     * the wait loses nothing.
      *
      * MUTATION: save only after the answer again, and this fails.
      */
@@ -687,10 +662,8 @@ public class testTheTailIsPickedOnTheDiagram
             {
                 AutonomySession session = ui.getAutonomySession();
 
-                java.lang.reflect.Method fileOf = session.getStore().getClass().getDeclaredMethod("configurationFile",
-                    String.class);
-
-                fileOf.setAccessible(true);
+                java.lang.reflect.Method fileOf =
+                    Reflect.method(session.getStore().getClass(), "configurationFile", String.class);
 
                 java.io.File file = (java.io.File) fileOf.invoke(session.getStore(),
                     session.getStore().getActiveConfiguration());
@@ -772,14 +745,12 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * The paste door asks for a five-unit train at Tunnel from the north; `meanwhile` runs while the question waits;
-     * then TunnelPre is clicked - read again from the diagram, since a rebuild may have drawn it anew - or the small
-     * window is canceled; and the door returns.
+     * then TunnelPre is clicked (read again from the diagram) or the small window is canceled.
      *
      * @param train the train pasted
      * @param meanwhile what happens in the wait
      * @param click true to click TunnelPre, false to cancel
      * @return what the answer found
-     * @throws Exception from the event thread
      */
     private LateAnswer pasteAndAnswerLate(org.traincontrol.base.Locomotive train, java.util.concurrent.Callable<Void> meanwhile,
         boolean click) throws Exception
@@ -801,18 +772,13 @@ public class testTheTailIsPickedOnTheDiagram
 
         final TileKey tile = ui.getAutonomySession().getStationIndex().squareOf(q.tunnel.getName());
 
-        java.lang.reflect.Field tailField = TrainControlUI.class.getDeclaredField("tailAtTheLanding");
-        tailField.setAccessible(true);
-        tailField.set(ui, "N");
+        Reflect.set(TrainControlUI.class, ui, "tailAtTheLanding", "N");
 
         // The paste door is DiagramLocGestures', which the window holds
-        final java.lang.reflect.Field held = TrainControlUI.class.getDeclaredField("diagramLocGestures");
-        held.setAccessible(true);
-        final Object gestures = held.get(ui);
+        final Object gestures = Reflect.get(TrainControlUI.class, ui, "diagramLocGestures");
 
-        final java.lang.reflect.Method remember = gestures.getClass().getDeclaredMethod("rememberPlacement",
-            Point.class, TileKey.class);
-        remember.setAccessible(true);
+        final java.lang.reflect.Method remember =
+            Reflect.method(gestures.getClass(), "rememberPlacement", Point.class, TileKey.class);
 
         final java.util.concurrent.atomic.AtomicBoolean returned = new java.util.concurrent.atomic.AtomicBoolean(false);
 
@@ -834,8 +800,7 @@ public class testTheTailIsPickedOnTheDiagram
 
         Thread.sleep(2000);
 
-        java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
-        armed.setAccessible(true);
+        java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
 
         assertNotNull(armed.get(null), "precondition: the paste door's tail question is not waiting on the diagram");
 
@@ -871,9 +836,7 @@ public class testTheTailIsPickedOnTheDiagram
             cancelTheQuestion();
         }
 
-        long giveUp = System.currentTimeMillis() + 10000;
-
-        while (!returned.get() && System.currentTimeMillis() < giveUp) Thread.sleep(50);
+        Settle.until(() -> returned.get(), 10000);
 
         assertTrue(returned.get(), "precondition: the paste door did not return after the answer");
 
@@ -884,9 +847,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * Another configuration loaded in the wait, holding the same train on the same copy: the answer follows the train,
-     * into the configuration loaded now and onto the railway running (Adam: *"Follow the train."*).  Otherwise the
-     * running copy would hold the train with no road, and the track beyond the switch would be free to route another
-     * train over.
+     * into the configuration loaded now and onto the railway running (Adam: *"Follow the train."*).
      *
      * MUTATION: ask whether the configuration is the one the question was asked in, and this fails.
      */
@@ -980,10 +941,8 @@ public class testTheTailIsPickedOnTheDiagram
 
                 assertTrue(ui.getAutonomySession() != before, "precondition: the setup was not replaced");
 
-                java.lang.reflect.Method fileOf = before.getStore().getClass().getDeclaredMethod("configurationFile",
-                    String.class);
-
-                fileOf.setAccessible(true);
+                java.lang.reflect.Method fileOf =
+                    Reflect.method(before.getStore().getClass(), "configurationFile", String.class);
 
                 file[0] = (java.io.File) fileOf.invoke(before.getStore(), active);
                 saved[0] = file[0].lastModified();
@@ -1045,9 +1004,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     private static java.lang.reflect.Field facingField() throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("facingChosenAtTheLanding");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(TrainControlUI.class, "facingChosenAtTheLanding");
 
         return field;
     }
@@ -1147,7 +1104,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * The right-click and locomotive-dialog doors ask the railway running when the answer comes back, not the one they
-     * held before the question - read, as the pin above is, because each needs a menu or a dialog to reach.
+     * held before the question (read from source, as the pin above is).
      *
      * MUTATION: pass either door the railway it held before the question, and this fails naming it.
      */
@@ -1171,9 +1128,8 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The configuration renamed in the wait - the railway not rebuilt - keeps the answer: the same setup, under a new
-     * name.  Asked only by the configuration's name, the check would drop the answer from the railway and from the
-     * setup.
+     * The configuration renamed in the wait (the railway not rebuilt) keeps the answer: the same setup under a new
+     * name.
      *
      * MUTATION: ask for anything beyond the session - the configuration's name, the railway running - and this fails
      * (the answer follows the train).
@@ -1221,20 +1177,18 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The right-click and locomotive-dialog doors keep every late-answer rule the paste door is claimed for above: the
-     * facing written before the question, the save skipped for a setup let go, only an answer logged, the square named
-     * as the diagram names it, and a write only where the answer goes somewhere.  Read, because each door needs a menu
-     * or a dialog.
+     * The right-click door keeps every late-answer rule the paste door is claimed for above: the facing written before
+     * the question, the save skipped for a setup let go, only an answer logged, the square named as the diagram names
+     * it, and a write only where the answer goes somewhere.  Read from source.
      *
-     * MUTATION: undo any of the five at either door, and this fails naming it.
+     * MUTATION: undo any of the five at the door, and this fails naming it.
      */
     @Test
     public void testTheOtherDoorsKeepTheLateAnswerRules() throws Exception
     {
         String[][] doors = {
             {PLACEMENT_DOORS[1], "session.setFacing(station, facing)",
-                "if (session != null && setupStands)"},
-            {PLACEMENT_DOORS[2], "session.setFacing(tile,", "if (!setupStands) return;"}};
+                "if (session != null && setupStands)"}};
 
         // At each door: the facing before the question, and the door's own save guarded.
         for (String[] door : doors)
@@ -1313,14 +1267,10 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * A tail answer given after the placement changed is written where the train now stands, or not at all (MT-576),
-     * driven by the gestures its steps make: a train of length 5 pasted at Tunnel from the north with Control+X and
-     * Control+V, the question left waiting on the diagram.  (a) While it waits, a setting on another station is changed
-     * from the right-click, which rebuilds the railway, and TunnelPre is clicked: the new railway's Tunnel gets
-     * TunnelPre's road.  (b) Pasted again; the train is taken off Tunnel with its right-click Remove and TunnelPre
-     * clicked: nothing is written, and the log says Tunnel changed while the question waited.
-     *
-     * `testAnAnswerAfterARebuildReachesTheRailway` and `testOnlyADroppedAnswerIsLogged` hold the same two rules with
-     * the wait's events made by calls; this makes them by the gestures.
+     * driven by the gestures its steps make.  (a) While it waits, a setting on another station is changed from the
+     * right-click, which rebuilds the railway, and TunnelPre is clicked: the new railway's Tunnel gets the road.
+     * (b) The train is taken off Tunnel with its right-click Remove and TunnelPre clicked: nothing is written, and the
+     * log says Tunnel changed while the question waited.
      *
      * MUTATION: write the answer to the copy the paste placed the train on, or write it after the train was taken off,
      * and this fails.
@@ -1456,11 +1406,9 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * An answer given after an editor was opened in the wait is not written into the setup, and the log says why.  The
-     * editor holds the setup as it was when it opened and its Cancel puts that back, so a road written meanwhile would
-     * be taken back out silently.  Every main-window door that writes the setup refuses while an editor is open; this
-     * one's late answer must ask too.  His 75 407 DB, a train of length 5 pasted at Tunnel from the north with the
-     * question left waiting; the autonomy editor opened as Autonomy > Edit Autonomy opens it; TunnelPre clicked.
+     * An answer given after an editor was opened in the wait is not written into the setup, and the log says why: the
+     * editor's Cancel would silently take the road back out.  His 75 407 DB, a train of length 5 pasted at Tunnel from
+     * the north; the autonomy editor opened as Autonomy > Edit Autonomy opens it; TunnelPre clicked.
      *
      * MUTATION: write the late answer whatever opened in the wait, and this fails.
      */
@@ -1630,10 +1578,8 @@ public class testTheTailIsPickedOnTheDiagram
     private static java.util.concurrent.atomic.AtomicBoolean pasteAtTunnelFromTheNorth(
         org.traincontrol.base.Locomotive train, TileKey from, TileKey tunnel) throws Exception
     {
-        final java.lang.reflect.Method door = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram",
-            int.class, boolean.class);
-
-        door.setAccessible(true);
+        final java.lang.reflect.Method door =
+            Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
         final Object[] cut = new Object[1];
 
@@ -1654,10 +1600,7 @@ public class testTheTailIsPickedOnTheDiagram
         assertEquals(cut[0], Boolean.TRUE, "Control+X over the train was not taken");
 
         // FACING SOUTH, the way a train that came in from the north faces: what the cut remembered.
-        java.lang.reflect.Field cutFacing = TrainControlUI.class.getDeclaredField("cutFacing");
-
-        cutFacing.setAccessible(true);
-        cutFacing.set(ui, org.traincontrol.automationui.TilePorts.Side.S);
+        Reflect.set(TrainControlUI.class, ui, "cutFacing", org.traincontrol.automationui.TilePorts.Side.S);
 
         org.traincontrol.gui.autonomy.FacingPrompt.answerForTests(org.traincontrol.automationui.TilePorts.Side.S);
         org.traincontrol.gui.autonomy.ArrivalSidePrompt.answerForTests("N");
@@ -1684,9 +1627,7 @@ public class testTheTailIsPickedOnTheDiagram
             }
         });
 
-        java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
-
-        armed.setAccessible(true);
+        java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
 
         for (long end = System.currentTimeMillis() + 15000; armed.get(null) == null && !returned.get()
             && System.currentTimeMillis() < end; ) Thread.sleep(50);
@@ -1702,10 +1643,8 @@ public class testTheTailIsPickedOnTheDiagram
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
-            Point.class);
-
-        gather.setAccessible(true);
+        final java.lang.reflect.Method gather =
+            Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
             TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
@@ -1735,39 +1674,23 @@ public class testTheTailIsPickedOnTheDiagram
         return menu[0];
     }
 
-    private static javax.swing.JMenuItem itemNamed(java.awt.Container menu, String text)
-    {
-        java.awt.Component[] children = menu instanceof javax.swing.JMenu
-            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
-
-        for (java.awt.Component child : children)
-        {
-            if (child instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) child).getText()))
-            {
-                return (javax.swing.JMenuItem) child;
-            }
-
-            if (child instanceof javax.swing.JMenu)
-            {
-                javax.swing.JMenuItem found = itemNamed((javax.swing.JMenu) child, text);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
-    }
-
     /** "Can Be Chosen in Full Autonomy" on the square's right-click, under its setup menu, flipped. */
     private static void flipAutoDestination(TileKey square) throws Exception
     {
         javax.swing.JPopupMenu menu = rightClickMenu(square);
 
-        final javax.swing.JMenuItem item = itemNamed(menu, org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination"));
+        final javax.swing.JMenuItem item = itemNamed(menu, org.traincontrol.util.I18n.t("autosetup.ui.menuStationSettings"));
 
-        assertNotNull(item, "the diagram's right-click on " + square + " has no Can Be Chosen in Full Autonomy item");
+        assertNotNull(item, "the diagram's right-click on " + square + " has no Station Settings item");
 
-        javax.swing.SwingUtilities.invokeLater(item::doClick);
+        javax.swing.SwingUtilities.invokeAndWait(item::doClick);
+
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window =
+            support.StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class);
+
+        support.StationDoors.press(window, "station.fullAutonomy");
+
+        support.StationDoors.close(window);
 
         for (int turn = 0; turn < 6; turn++) javax.swing.SwingUtilities.invokeAndWait(() -> { });
     }
@@ -1852,10 +1775,8 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * An answer given after the running railway was rebuilt reaches the railway: a rebuild in the wait builds new
-     * copies of every square and puts each train back on its new one.  The door must ask the running railway's copy,
-     * not the one it placed the train on, or the railway's own Tunnel never gets the road and another train is routable
-     * into the train's tail.
+     * An answer given after the running railway was rebuilt reaches the railway: the door must ask the running
+     * railway's copy, not the one it placed the train on, or the railway's own Tunnel never gets the road.
      *
      * MUTATION: ask the copy the door placed the train on rather than the running railway's, and this fails.
      */
@@ -1904,8 +1825,8 @@ public class testTheTailIsPickedOnTheDiagram
     }
 
     /**
-     * The same train on the copy, from the same side, with a road it did not have when the question was asked - the
-     * road a run brings it back by: a late Cancel leaves that road (the road condition alone).
+     * The same train on the copy, from the same side, with a road it did not have when the question was asked: a late
+     * Cancel leaves that road (the road condition alone).
      *
      * MUTATION: drop the road from `placementStillStands`, and this fails.
      */
@@ -2009,8 +1930,7 @@ public class testTheTailIsPickedOnTheDiagram
 
     /**
      * The tail question offers Cancel and no "Not known", on the diagram and as the list (Adam: "drop not known, keep
-     * cancel").  Asked for real, as a placement asks it: on the diagram, its buttons; with an editor open, which puts
-     * it as the list, the list's.  Cancel is no answer in both, so a train keeps whatever road it had.
+     * cancel").  Cancel is no answer in both, so a train keeps whatever road it had.
      *
      * MUTATION: put Not known back on either, and this fails.
      */
@@ -2024,17 +1944,13 @@ public class testTheTailIsPickedOnTheDiagram
         final String notKnown = org.traincontrol.util.I18n.t("autosetup.ui.tailCrossedNotKnown");
         final String cancel = org.traincontrol.util.I18n.t("ui.cancel");
 
-        java.lang.reflect.Field armed = TailCrossedPrompt.class.getDeclaredField("armed");
-
-        armed.setAccessible(true);
+        java.lang.reflect.Field armed = Reflect.field(TailCrossedPrompt.class, "armed");
 
         ExecutorService asker = Executors.newSingleThreadExecutor();
 
         final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         try
         {
@@ -2115,8 +2031,6 @@ public class testTheTailIsPickedOnTheDiagram
      * HTML had no width and the question was over 1,000 px wide.
      *
      * MUTATION: take the width off the question's HTML, and this fails.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testTheListQuestionFitsTheScreen() throws Exception
@@ -2129,9 +2043,7 @@ public class testTheTailIsPickedOnTheDiagram
 
         final org.traincontrol.gui.layouteditor.LayoutEditor[] editor = new org.traincontrol.gui.layouteditor.LayoutEditor[1];
 
-        java.lang.reflect.Field open = TrainControlUI.class.getDeclaredField("openEditor");
-
-        open.setAccessible(true);
+        java.lang.reflect.Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
         try
         {

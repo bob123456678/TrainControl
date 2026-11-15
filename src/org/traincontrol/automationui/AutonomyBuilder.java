@@ -5,15 +5,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.base.Accessory.accessorySetting;
 import org.traincontrol.automationui.GraphReducer.ReducedEdge;
 import org.traincontrol.automationui.GraphReducer.ReducedPoint;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.base.LayoutDiagramComponent;
 
 /**
  * The compile step: turns a reduced diagram into the autonomy JSON the existing model already reads.
@@ -66,7 +69,7 @@ public class AutonomyBuilder
         /** which side a train arrived by, or null when the tile is not split */
         private final TilePorts.Side arrival;
 
-        /** whether this is the copy a train turns round at */
+        /** whether this is the copy a train turns around at */
         private final boolean reverse;
 
         /**
@@ -119,10 +122,10 @@ public class AutonomyBuilder
         }
     }
 
-    /** The authored key marking a tile where a train may turn round; never emitted, as it only shapes the graph. */
+    /** The authored key marking a tile where a train may turn around; never emitted, as it only shapes the graph. */
     public static final String CAN_REVERSE = "canReverse";
 
-    /** The authored key marking a square where a train must turn round; only the turning copies are emitted. */
+    /** The authored key marking a square where a train must turn around; only the turning copies are emitted. */
     public static final String MUST_REVERSE = "mustReverse";
 
     /** The authored key marking a berth trains are only sent to on purpose; emitted as `autoDestination` false. */
@@ -158,19 +161,25 @@ public class AutonomyBuilder
      */
     private static final List<String> DERIVED = Arrays.asList("terminus", "reversing");
 
+    /**
+     * The key of a list a square remembers while Allowed trains says All (FR-111): the setup's alone, never emitted, so
+     * the list keeps nobody out and an older build, which does not know the key, reads the square as open to all.
+     */
+    public static final String REMEMBERED_LOCS = "rememberedLocs";
+
     private final GraphReducer reducer;
     private final Globals globals;
 
     private List<String> coordinatePages = null;
 
-    // Tiles the user marked as somewhere a train may turn round.  See Node.
+    // Tiles the user marked as somewhere a train may turn around.  See Node.
     private Set<TileKey> reversible = Collections.emptySet();
 
     // Stations autonomy may not choose for itself: emitted with autoDestination false and otherwise ordinary (a route
     // the user picks reaches them, Return Home fills them, and nothing about them stops a split).
     private Set<TileKey> manualOnly = Collections.emptySet();
 
-    // Squares where turning round is not optional: only the turning copies are emitted.
+    // Squares where turning around is not optional: only the turning copies are emitted.
     private Set<TileKey> mandatory = Collections.emptySet();
 
     // Per-point operational data from the active configuration - placements, homes, termini and the
@@ -211,7 +220,7 @@ public class AutonomyBuilder
     }
 
     /**
-     * The tiles (null for none) where a train may turn round, which gain a turning copy of every arrival.  Every tile
+     * The tiles (null for none) where a train may turn around, which gain a turning copy of every arrival.  Every tile
      * is split by arrival side whether or not it is marked.
      */
     public AutonomyBuilder withReversibleTiles(Set<TileKey> tiles)
@@ -221,7 +230,7 @@ public class AutonomyBuilder
         return this;
     }
 
-    /** The squares (null for none) where every arriving train must turn round. */
+    /** The squares (null for none) where every arriving train must turn around. */
     public AutonomyBuilder withMandatoryTurns(Set<TileKey> tiles)
     {
         this.mandatory = tiles == null ? Collections.<TileKey>emptySet() : tiles;
@@ -339,7 +348,7 @@ public class AutonomyBuilder
      */
     private List<TilePorts.Side> splitSides(TileKey tile)
     {
-        Set<TilePorts.Side> sides = new java.util.TreeSet<>();
+        Set<TilePorts.Side> sides = new TreeSet<>();
 
         for (ReducedEdge edge : reducer.getEdges())
         {
@@ -364,17 +373,16 @@ public class AutonomyBuilder
      */
     private String blockFor(TileKey tile, Node node, List<Node> nodes)
     {
-        org.traincontrol.base.LayoutDiagramComponent component = reducer.getGraph() == null
-            ? null : reducer.getGraph().getTiles().get(tile);
+        LayoutDiagramComponent component = reducer.getGraph() == null ? null : reducer.getGraph().getTiles().get(tile);
 
         boolean neverMeet = node.getArrival() != null && component != null
-            && (component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.DOUBLE_CURVE
-            || component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE
-            || component.getType() == org.traincontrol.base.LayoutDiagramComponent.componentType.OVERPASS);
+            && (component.getType() == LayoutDiagramComponent.componentType.DOUBLE_CURVE
+            || component.getType() == LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE
+            || component.getType() == LayoutDiagramComponent.componentType.OVERPASS);
 
         if (!neverMeet) return nodes.size() > 1 ? tile.toString() : null;
 
-        java.util.SortedSet<TilePorts.Side> road = new java.util.TreeSet<>();
+        java.util.SortedSet<TilePorts.Side> road = new TreeSet<>();
 
         road.add(node.getArrival());
         road.addAll(onwardFrom(tile, node.getArrival()));
@@ -395,7 +403,7 @@ public class AutonomyBuilder
      */
     private Set<TilePorts.Side> onwardFrom(TileKey tile, TilePorts.Side arrival)
     {
-        Set<TilePorts.Side> out = new java.util.LinkedHashSet<>();
+        Set<TilePorts.Side> out = new LinkedHashSet<>();
 
         if (arrival == null || reducer.getGraph() == null) return out;
 
@@ -410,14 +418,11 @@ public class AutonomyBuilder
     /** The sides trains leave this tile by. */
     private Set<TilePorts.Side> departureSides(TileKey tile)
     {
-        Set<TilePorts.Side> sides = new java.util.TreeSet<>();
+        Set<TilePorts.Side> sides = new TreeSet<>();
 
         for (ReducedEdge edge : reducer.getEdges())
         {
-            if (edge.getStart().equals(tile) && edge.getExitSide() != null)
-            {
-                sides.add(edge.getExitSide());
-            }
+            if (edge.getStart().equals(tile) && edge.getExitSide() != null) sides.add(edge.getExitSide());
         }
 
         return sides;
@@ -459,7 +464,7 @@ public class AutonomyBuilder
     }
 
     /**
-     * Every Point a tile is emitted as: one per arrival side, and a second per side where trains may turn round.  A
+     * Every Point a tile is emitted as: one per arrival side, and a second per side where trains may turn around.  A
      * tile nothing arrives at is one Point where one way or none leads out, else one copy per way out, so the copy a
      * train stands on says which way it faces.
      */
@@ -511,7 +516,7 @@ public class AutonomyBuilder
                 }
 
                 // The plain copy lets a train pass straight through.  Where turning is compulsory it is not emitted, so
-                // the path finder has nothing else to choose: the difference between "may turn round here" and "must".
+                // the path finder has nothing else to choose: the difference between "may turn around here" and "must".
                 // Nor where it would have no way out (a dead end would be a destination that can be reached and never
                 // left), and only where a turning copy carries the arrival: an unmarked dead end keeps its plain copy
                 // so the sensor stays in the graph, and the trapped-arrival check puts that in front of the user.
@@ -558,17 +563,7 @@ public class AutonomyBuilder
             }
         }
 
-        for (int copy = 0; copy < nodes.size(); copy++)
-        {
-            if (!nodes.get(copy).reverse && arrivalAllowed(nodes.get(copy))) return copy;
-        }
-
-        for (int copy = 0; copy < nodes.size(); copy++)
-        {
-            if (arrivalAllowed(nodes.get(copy))) return copy;
-        }
-
-        return 0;
+        return startableCopy(nodes);
     }
 
     /** The facing a square's home was set with, or null when the setup does not say */
@@ -598,12 +593,12 @@ public class AutonomyBuilder
         if (facing == null) return startableCopy(nodes);
 
         // Matched on the facing each copy stands for, not its arrival side: those differ on a turning copy, so a facing
-        // learned from a train that had just turned round would match no copy and put the locomotive on the copy
+        // learned from a train that had just turned around would match no copy and put the locomotive on the copy
         // pointing the opposite way.  Among the copies facing that way, one trains may arrive at first, as `homeCopy`
         // asks.
         for (int copy = 0; copy < nodes.size(); copy++)
         {
-            // The plain copy in preference to the turning one: a train standing where it MAY turn round has not turned
+            // The plain copy in preference to the turning one: a train standing where it MAY turn around has not turned
             // yet
             if (facingOf(nodes.get(copy)) == facing && !nodes.get(copy).reverse && arrivalAllowed(nodes.get(copy)))
             {
@@ -670,7 +665,7 @@ public class AutonomyBuilder
     {
         if (node.arrival == null) return null;
 
-        // Turned round: pointing back at the side it came in by, whatever the track does
+        // Turned around: pointing back at the side it came in by, whatever the track does
         if (node.reverse) return node.arrival;
 
         Map<TileGraph.RouteId, TilePorts.Route> routes =
@@ -736,6 +731,20 @@ public class AutonomyBuilder
         return !name.equals(base) && taken.contains(name);
     }
 
+    /** Edges by their start square, then their end: the order the build writes edges and locks in. */
+    private static final Comparator<ReducedEdge> BY_START_THEN_END = new Comparator<ReducedEdge>()
+    {
+        @Override
+        public int compare(ReducedEdge a, ReducedEdge b)
+        {
+            int byStart = a.getStart().toString().compareTo(b.getStart().toString());
+
+            if (byStart != 0) return byStart;
+
+            return a.getEnd().toString().compareTo(b.getEnd().toString());
+        }
+    };
+
     /** Every square's name, for nodeName, worked out once by each caller from its own uniqueNames(). */
     private static Set<String> namesTaken(Map<TileKey, String> names)
     {
@@ -758,11 +767,7 @@ public class AutonomyBuilder
         }
     }
 
-    /**
-     * Builds the autonomy JSON.
-     *
-     * @return a string suitable for parseAuto
-     */
+    /** Builds the autonomy JSON, in the form parseAuto reads. */
     public String build()
     {
         JSONObject root = new JSONObject();
@@ -911,13 +916,19 @@ public class AutonomyBuilder
                         // most locomotives can reach it.  See homeCopy.
                         if (HOME.equals(key) && copy != homeOn) continue;
 
-                        // On a split tile, turning round is what the copy means, so the authored flag is carried onto
+                        // On a split tile, turning around is what the copy means, so the authored flag is carried onto
                         // neither: it would make the plain copy reverse too.  CAN_REVERSE never goes out; it is the
                         // instruction to split.
                         if (CAN_REVERSE.equals(key) || PARKING.equals(key)
                                 || FACING.equals(key) || AUTO_DESTINATION.equals(key) || HOME_FACING.equals(key)) continue;
 
                         if (DERIVED.contains(key)) continue;
+
+                        if (REMEMBERED_LOCS.equals(key)) continue;
+
+                        // Stop-only means a station (FR-111), on every copy including a barred side's: a square that
+                        // is no station lets trains through, whatever it remembers from when it was one.
+                        if (org.traincontrol.automation.Point.RUN_THROUGH.equals(key) && !point.isStation()) continue;
 
                         // Active is carried on every square, not only a station: the usage menu writes `active` alone
                         // for Out of service on any square, and `Layout.isPathClear` refuses a path through an inactive
@@ -927,7 +938,7 @@ public class AutonomyBuilder
                     }
                 }
 
-                // A station turns round at a terminus, anything else at a reversing point: a terminus is a destination
+                // A station turns around at a terminus, anything else at a reversing point: a terminus is a destination
                 // that reverses on arrival, a reversing point one autonomy never chooses to stop at.  Either the copy
                 // that exists to turn trains round, or, where the square was marked and nothing arrives at it by a side
                 // of the grid, the single Point it became (must, not may: the flag means every arriving train reverses,
@@ -943,10 +954,7 @@ public class AutonomyBuilder
 
                 // A berth is an ordinary station that autonomy is told not to choose, not a reversing one (which would
                 // drag along reversing on arrival and no path routed through): a terminus and a shut arm say those.
-                if (manualOnly.contains(point.getTile()))
-                {
-                    json.put(AUTO_DESTINATION, false);
-                }
+                if (manualOnly.contains(point.getTile())) json.put(AUTO_DESTINATION, false);
 
                 // Which way a train on this copy points, on a split square (OB-282): what Return Home compares to tell
                 // whether a train is home facing the way it was homed.  The facing, not the arrival side: a turning
@@ -969,18 +977,7 @@ public class AutonomyBuilder
         root.put("points", pointList);
 
         List<ReducedEdge> edges = new ArrayList<>(reducer.getEdges());
-        Collections.sort(edges, new Comparator<ReducedEdge>()
-        {
-            @Override
-            public int compare(ReducedEdge a, ReducedEdge b)
-            {
-                int byStart = a.getStart().toString().compareTo(b.getStart().toString());
-
-                if (byStart != 0) return byStart;
-
-                return a.getEnd().toString().compareTo(b.getEnd().toString());
-            }
-        });
+        Collections.sort(edges, BY_START_THEN_END);
 
         JSONArray edgeList = new JSONArray();
 
@@ -994,10 +991,7 @@ public class AutonomyBuilder
 
             for (Node from : nodesFor(edge.getStart()))
             {
-                if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival)))
-                {
-                    continue;
-                }
+                if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival))) continue;
 
                 for (Node to : nodesFor(edge.getEnd()))
                 {
@@ -1080,10 +1074,7 @@ public class AutonomyBuilder
                 commands.put(command);
             }
 
-            if (commands.length() > 0)
-            {
-                json.put("commands", commands);
-            }
+            if (commands.length() > 0) json.put("commands", commands);
 
             JSONArray lockEdges = new JSONArray();
 
@@ -1092,18 +1083,7 @@ public class AutonomyBuilder
             if (locked != null)
             {
                 List<ReducedEdge> sorted = new ArrayList<>(locked);
-                Collections.sort(sorted, new Comparator<ReducedEdge>()
-                {
-                    @Override
-                    public int compare(ReducedEdge a, ReducedEdge b)
-                    {
-                        int byStart = a.getStart().toString().compareTo(b.getStart().toString());
-
-                        if (byStart != 0) return byStart;
-
-                        return a.getEnd().toString().compareTo(b.getEnd().toString());
-                    }
-                });
+                Collections.sort(sorted, BY_START_THEN_END);
 
                 for (ReducedEdge other : sorted)
                 {
@@ -1149,10 +1129,7 @@ public class AutonomyBuilder
                 }
             }
 
-            if (lockEdges.length() > 0)
-            {
-                json.put("lockedges", lockEdges);
-            }
+            if (lockEdges.length() > 0) json.put("lockedges", lockEdges);
 
             edgeList.put(json);
           }
@@ -1172,17 +1149,7 @@ public class AutonomyBuilder
     {
         Map<String, TileKey> out = new LinkedHashMap<>();
 
-        Map<TileKey, String> names = uniqueNames();
-
-        Set<String> taken = namesTaken(names);
-
-        for (Map.Entry<TileKey, String> entry : names.entrySet())
-        {
-            for (Node node : nodesFor(entry.getKey()))
-            {
-                out.put(nodeName(entry.getValue(), node, taken), entry.getKey());
-            }
-        }
+        forEachEmittedName((name, square, base, node) -> out.put(name, square));
 
         return out;
     }
@@ -1196,17 +1163,7 @@ public class AutonomyBuilder
     {
         Map<String, String> out = new LinkedHashMap<>();
 
-        Map<TileKey, String> names = uniqueNames();
-
-        Set<String> taken = namesTaken(names);
-
-        for (Map.Entry<TileKey, String> entry : names.entrySet())
-        {
-            for (Node node : nodesFor(entry.getKey()))
-            {
-                out.put(nodeName(entry.getValue(), node, taken), entry.getValue());
-            }
-        }
+        forEachEmittedName((name, square, base, node) -> out.put(name, base));
 
         return out;
     }
@@ -1216,9 +1173,9 @@ public class AutonomyBuilder
      *
      * @return the facings, empty on a square that is not split
      */
-    public java.util.Set<TilePorts.Side> homeFacingsAt(TileKey tile)
+    public Set<TilePorts.Side> homeFacingsAt(TileKey tile)
     {
-        java.util.Set<TilePorts.Side> out = new java.util.LinkedHashSet<>();
+        Set<TilePorts.Side> out = new LinkedHashSet<>();
 
         for (Node node : nodesFor(tile))
         {
@@ -1239,19 +1196,10 @@ public class AutonomyBuilder
     {
         Map<String, TilePorts.Side> out = new LinkedHashMap<>();
 
-        Map<TileKey, String> names = uniqueNames();
-
-        Set<String> taken = namesTaken(names);
-
-        for (Map.Entry<TileKey, String> entry : names.entrySet())
+        forEachEmittedName((name, square, base, node) ->
         {
-            for (Node node : nodesFor(entry.getKey()))
-            {
-                if (node.arrival == null) continue;
-
-                out.put(nodeName(entry.getValue(), node, taken), facingOf(node));
-            }
-        }
+            if (node.arrival != null) out.put(name, facingOf(node));
+        });
 
         return out;
     }
@@ -1264,19 +1212,10 @@ public class AutonomyBuilder
     {
         Map<String, TilePorts.Side> out = new LinkedHashMap<>();
 
-        Map<TileKey, String> names = uniqueNames();
-
-        Set<String> taken = namesTaken(names);
-
-        for (Map.Entry<TileKey, String> entry : names.entrySet())
+        forEachEmittedName((name, square, base, node) ->
         {
-            for (Node node : nodesFor(entry.getKey()))
-            {
-                if (node.arrival == null) continue;
-
-                out.put(nodeName(entry.getValue(), node, taken), node.arrival);
-            }
-        }
+            if (node.arrival != null) out.put(name, node.arrival);
+        });
 
         return out;
     }
@@ -1292,11 +1231,28 @@ public class AutonomyBuilder
         return behind.size() == 1 ? facingOf(new Node(tile, behind.get(0), false)) : null;
     }
 
-    /** Every emitted name of a turning copy: a train that came in and turned round there. */
+    /** Every emitted name of a turning copy: a train that came in and turned around there. */
     public Set<String> turningNames()
     {
-        Set<String> out = new java.util.LinkedHashSet<>();
+        Set<String> out = new LinkedHashSet<>();
 
+        forEachEmittedName((name, square, base, node) ->
+        {
+            if (node.reverse) out.add(name);
+        });
+
+        return out;
+    }
+
+    /** What `forEachEmittedName` hands each emitted Point: its name, its square, the square's name and its copy. */
+    private interface EmittedName
+    {
+        void visit(String name, TileKey square, String base, Node node);
+    }
+
+    /** Every Point this builder would emit, in the build's order, split copies included. */
+    private void forEachEmittedName(EmittedName visitor)
+    {
         Map<TileKey, String> names = uniqueNames();
 
         Set<String> taken = namesTaken(names);
@@ -1305,11 +1261,9 @@ public class AutonomyBuilder
         {
             for (Node node : nodesFor(entry.getKey()))
             {
-                if (node.reverse) out.add(nodeName(entry.getValue(), node, taken));
+                visitor.visit(nodeName(entry.getValue(), node, taken), entry.getKey(), entry.getValue(), node);
             }
         }
-
-        return out;
     }
 
     /**
@@ -1340,10 +1294,7 @@ public class AutonomyBuilder
 
             for (Node from : nodesFor(edge.getStart()))
             {
-                if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival)))
-                {
-                    continue;
-                }
+                if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival))) continue;
 
                 for (Node to : nodesFor(edge.getEnd()))
                 {
@@ -1405,10 +1356,7 @@ public class AutonomyBuilder
             int suffix = count + 1;
             String candidate = base + " (" + suffix + ")";
 
-            while (seen.containsKey(candidate))
-            {
-                candidate = base + " (" + (++suffix) + ")";
-            }
+            while (seen.containsKey(candidate)) candidate = base + " (" + (++suffix) + ")";
 
             seen.put(base, suffix);
             seen.put(candidate, 1);

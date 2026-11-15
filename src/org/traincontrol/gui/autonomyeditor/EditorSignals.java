@@ -3,20 +3,29 @@ package org.traincontrol.gui.autonomyeditor;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Window;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntConsumer;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
+import org.traincontrol.gui.widgets.UiStyle;
 
 /**
  * The autonomy editor's pairing of a station with its signals: the exit guard that is red while the platform is
@@ -37,7 +46,7 @@ final class EditorSignals
      * @param station the station's square
      * @return the signals on it
      */
-    private java.util.List<TileKey> signalsOf(AutonomyEditorPanel.Guard guard, TileKey station)
+    private List<TileKey> signalsOf(AutonomyEditorPanel.Guard guard, TileKey station)
     {
         return guard == AutonomyEditorPanel.Guard.ENTRY ? editor.session.getEntrySignals(station) : editor.session.getProtectingSignals(station);
     }
@@ -90,25 +99,20 @@ final class EditorSignals
     void askAboutSignals(final AutonomyEditorPanel.Guard guard, TileKey station)
     {
         // A dialog of its own, held open while the list is worked on: an option pane re-shown in a loop blinks.
-        final javax.swing.JDialog dialog = new javax.swing.JDialog(
+        final JDialog dialog = new JDialog(
             editor.ownerWindow(),
             I18n.t(guard.title),
             java.awt.Dialog.ModalityType.APPLICATION_MODAL);
 
         TrainControlUI.applyWindowIcon(dialog);
 
-        final javax.swing.DefaultListModel<String> model = new javax.swing.DefaultListModel<>();
-        final javax.swing.JList<String> list = new javax.swing.JList<>(model);
-        final javax.swing.JLabel heading = new javax.swing.JLabel();
+        final DefaultListModel<String> model = new DefaultListModel<>();
+        final RemovableList list = new RemovableList(model);
+        final JLabel heading = new JLabel();
 
-        final javax.swing.JButton byClick =
-            new javax.swing.JButton(I18n.t("autosetup.ui.optionClickSignal"));
-        final javax.swing.JButton byAddress =
-            new javax.swing.JButton(I18n.t("autosetup.ui.optionSignalAddress"));
-        final javax.swing.JButton remove =
-            new javax.swing.JButton(I18n.t("autosetup.ui.optionRemoveSignal"));
-        final javax.swing.JButton done =
-            new javax.swing.JButton(I18n.t("autosetup.ui.optionSignalsDone"));
+        final JButton byClick = UiStyle.button(new JButton(I18n.t("autosetup.ui.optionClickSignal")));
+        final JButton byAddress = UiStyle.button(new JButton(I18n.t("autosetup.ui.optionSignalAddress")));
+        final JButton done = UiStyle.button(new JButton(I18n.t("autosetup.ui.optionSignalsDone")));
 
         // How wide the heading wraps - set once the buttons are laid out, below (MT-479).
         final int[] headingWidth = {0};
@@ -117,7 +121,7 @@ final class EditorSignals
         // rather than rebuilding the window.
         final Runnable show = () ->
         {
-            java.util.List<TileKey> paired = signalsOf(guard, station);
+            List<TileKey> paired = signalsOf(guard, station);
 
             editor.highlightedSignals.clear();
             editor.highlightedSignals.addAll(paired);
@@ -138,37 +142,41 @@ final class EditorSignals
                 : I18n.f(guard.paired, editor.describeTile(station)), headingWidth[0]));
 
             list.setEnabled(!paired.isEmpty());
-            remove.setEnabled(!paired.isEmpty());
 
             if (!paired.isEmpty()) list.setSelectedIndex(0);
         };
 
-        list.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         list.setVisibleRowCount(6);
+        list.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
 
-        javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 6));
+        list.onRemove(at ->
+        {
+            List<TileKey> paired = signalsOf(guard, station);
 
-        panel.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.add(heading, java.awt.BorderLayout.NORTH);
-        panel.add(new javax.swing.JScrollPane(list), java.awt.BorderLayout.CENTER);
+            if (at < paired.size()) removeGuardSignal(guard, station, paired.get(at));
 
-        javax.swing.JPanel buttons = new javax.swing.JPanel(
-            new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 6, 0));
+            show.run();
+        });
+
+        JPanel panel = new JPanel(new BorderLayout(0, 6));
+
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panel.add(heading, BorderLayout.NORTH);
+        panel.add(new JScrollPane(list), BorderLayout.CENTER);
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
 
         buttons.add(byClick);
         buttons.add(byAddress);
-        buttons.add(remove);
         buttons.add(done);
 
-        panel.add(buttons, java.awt.BorderLayout.SOUTH);
+        panel.add(buttons, BorderLayout.SOUTH);
 
-        // THE SENTENCE ON TWO LINES, NOT ONE (MT-479): the heading wraps at half the first sentence, never narrower
-        // than the row of buttons, and keeps the taller of the two heights, so pairing the first signal changes the
-        // words and not the window.
+        // As wide as the row of buttons, up to `GUARD_WIDTH`, the sentence wrapping (MT-948); the heading keeps the
+        // taller of its two sentences, so pairing the first signal changes the words and not the window (MT-479).
         String[] sentences = { I18n.f(guard.how, editor.describeTile(station)), I18n.f(guard.paired, editor.describeTile(station)) };
 
-        headingWidth[0] = AutonomyEditorPanel.twoLineWidth(heading.getFontMetrics(heading.getFont()), buttons.getPreferredSize().width,
-            sentences[0]);
+        headingWidth[0] = StationWindowBase.wrapWithin(Math.min(GUARD_WIDTH, buttons.getPreferredSize().width));
 
         int tallest = 0;
 
@@ -179,22 +187,11 @@ final class EditorSignals
             tallest = Math.max(tallest, heading.getPreferredSize().height);
         }
 
-        heading.setPreferredSize(new java.awt.Dimension(heading.getPreferredSize().width, tallest));
+        heading.setPreferredSize(new Dimension(heading.getPreferredSize().width, tallest));
 
         byAddress.addActionListener(e ->
         {
             pairSignalsByAddress(guard, station);
-
-            show.run();
-        });
-
-        remove.addActionListener(e ->
-        {
-            java.util.List<TileKey> paired = signalsOf(guard, station);
-
-            int at = list.getSelectedIndex();
-
-            if (at >= 0 && at < paired.size()) removeGuardSignal(guard, station, paired.get(at));
 
             show.run();
         });
@@ -224,7 +221,7 @@ final class EditorSignals
         // Escape closes it, which means the same as Done: every change was applied as it was made, so
         // there is nothing half-finished to discard.
         dialog.getRootPane().registerKeyboardAction(e -> dialog.dispose(),
-            javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0),
+            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
             javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         dialog.getRootPane().setDefaultButton(done);
@@ -237,31 +234,123 @@ final class EditorSignals
         // Not smaller than it packed to (OB-107): dragging the edge up would hide the buttons that finish the pairing.
         dialog.setMinimumSize(dialog.getSize());
 
-        // Beside the diagram rather than on top of it (OB-107): this window's text says the signals "are outlined on
-        // the diagram behind this window", so centring would cover them.
-        placeBesideOwner(dialog);
+        place(dialog, station);
 
         dialog.setVisible(true);
     }
 
+    /** At most this wide, its sentence wrapping, unless its buttons need more (MT-948). */
+    static final int GUARD_WIDTH = 420;
+
     /**
-     * Puts a dialog beside the diagram rather than over the middle of it, for the windows that describe something drawn
-     * behind them (OB-107).
-     *
-     * @param dialog a packed dialog, ready to show
+     * Under Station Settings on this station, hidden meanwhile (MT-956), where it opened before (MT-948); without one,
+     * beside the diagram rather than over the middle of it, as its text says the signals are outlined behind it (OB-107).
      */
-    private void placeBesideOwner(java.awt.Window dialog)
+    private void place(Window dialog, TileKey station)
     {
-        java.awt.Window parent = editor.ownerWindow();
+        StationSettingsWindow settings = editor.stationWindows.stationWindow();
+        Window parent = editor.ownerWindow();
 
-        if (parent == null)
+        if (settings != null && settings.isDisplayable() && station.equals(settings.tile))
         {
-            dialog.setLocationRelativeTo(editor.owner());
+            dialog.setLocation(AutonomyEditorPanel.under(settings.getBounds(), dialog.getSize(), AutonomyEditorPanel.screenOf(settings)));
+        }
+        else if (parent == null) dialog.setLocationRelativeTo(editor.owner());
+        else dialog.setLocation(AutonomyEditorPanel.besideOwner(parent.getBounds(), dialog.getSize()));
+    }
 
-            return;
+    /**
+     * The paired signals, each row with a red X at its right end that removes it, Remove as the X's tooltip (MT-948).
+     * Grayed, as it is while it only says none is paired, it shows no X.
+     */
+    static final class RemovableList extends JList<String>
+    {
+        /** The X's room at a row's right end. */
+        private static final int MARK = 26;
+
+        private transient IntConsumer remove = at -> { };
+
+        RemovableList(DefaultListModel<String> model)
+        {
+            super(model);
+
+            final JLabel mark = new JLabel(org.traincontrol.gui.widgets.RowIcons.cross(14));
+            final javax.swing.ListCellRenderer<? super String> plain = getCellRenderer();
+
+            mark.setPreferredSize(new Dimension(MARK, 14));
+
+            setCellRenderer((shown, value, index, selected, focused) ->
+            {
+                java.awt.Component text = plain.getListCellRendererComponent(shown, value, index, selected, focused);
+                JPanel row = new JPanel(new BorderLayout());
+
+                row.setBackground(text.getBackground());
+                row.add(text, BorderLayout.CENTER);
+
+                if (shown.isEnabled()) row.add(mark, BorderLayout.EAST);
+
+                return row;
+            });
+
+            // A left press and release on the same row's X, the first click only: the list rebuilds at once, and a
+            // double click's second click would land on the next row's X
+            addMouseListener(new java.awt.event.MouseAdapter()
+            {
+                private int pressed = -1;
+
+                @Override
+                public void mousePressed(MouseEvent e)
+                {
+                    pressed = SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 1 ? crossAt(e.getPoint()) : -1;
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e)
+                {
+                    int at = pressed;
+
+                    pressed = -1;
+
+                    if (at >= 0 && SwingUtilities.isLeftMouseButton(e) && crossAt(e.getPoint()) == at) remove.accept(at);
+                }
+            });
+
+            // And from the keyboard, the row chosen
+            javax.swing.Action removeChosen = new javax.swing.AbstractAction()
+            {
+                @Override
+                public void actionPerformed(java.awt.event.ActionEvent e)
+                {
+                    if (isEnabled() && getSelectedIndex() >= 0) remove.accept(getSelectedIndex());
+                }
+            };
+
+            getActionMap().put("removeChosen", removeChosen);
+            getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "removeChosen");
+            getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0), "removeChosen");
+
+            setToolTipText("");
         }
 
-        dialog.setLocation(AutonomyEditorPanel.besideOwner(parent.getBounds(), dialog.getSize()));
+        void onRemove(IntConsumer remove)
+        {
+            this.remove = remove;
+        }
+
+        /** @return the row whose X is at this point, or -1 */
+        int crossAt(java.awt.Point p)
+        {
+            int at = isEnabled() ? locationToIndex(p) : -1;
+            java.awt.Rectangle cell = at < 0 ? null : getCellBounds(at, at);
+
+            return cell != null && cell.contains(p) && p.x >= cell.x + cell.width - MARK ? at : -1;
+        }
+
+        @Override
+        public String getToolTipText(MouseEvent e)
+        {
+            return crossAt(e.getPoint()) >= 0 ? I18n.t("autosetup.ui.optionRemoveSignal") : null;
+        }
     }
 
     /**
@@ -280,9 +369,9 @@ final class EditorSignals
 
         if (typed == null) return;
 
-        java.util.List<String> notNumbers = new java.util.ArrayList<>();
-        java.util.List<String> notFound = new java.util.ArrayList<>();
-        java.util.List<TileKey> found = new java.util.ArrayList<>();
+        List<String> notNumbers = new ArrayList<>();
+        List<String> notFound = new ArrayList<>();
+        List<TileKey> found = new ArrayList<>();
 
         for (String piece : typed.split("[,;\\s]+"))
         {
@@ -306,9 +395,8 @@ final class EditorSignals
             else if (!found.contains(at)) found.add(at);
         }
 
-        // A SIGNAL FOUND AND REFUSED is said with the addresses that found nothing (MT-505); on the gray line alone it
-        // was behind this window.
-        java.util.List<String> refused = new java.util.ArrayList<>();
+        // A SIGNAL FOUND AND REFUSED is said with the addresses that found nothing (MT-505).
+        List<String> refused = new ArrayList<>();
 
         for (TileKey one : found)
         {
@@ -357,7 +445,7 @@ final class EditorSignals
     {
         if (editor.session.getGraph() == null) return null;
 
-        for (java.util.Map.Entry<TileKey, LayoutDiagramComponent> entry
+        for (Map.Entry<TileKey, LayoutDiagramComponent> entry
             : editor.session.getGraph().getTiles().entrySet())
         {
             if (!editor.isPairableSignal(entry.getValue())) continue;
@@ -379,13 +467,9 @@ final class EditorSignals
      */
     String addGuardSignal(AutonomyEditorPanel.Guard guard, TileKey station, TileKey signal, boolean redraw)
     {
-        java.util.List<TileKey> paired
-            = new java.util.ArrayList<>(signalsOf(guard, station));
+        List<TileKey> paired = new ArrayList<>(signalsOf(guard, station));
 
-        if (paired.contains(signal))
-        {
-            return I18n.f("autosetup.ui.signalAlreadyPaired", editor.addressOf(signal));
-        }
+        if (paired.contains(signal)) return I18n.f("autosetup.ui.signalAlreadyPaired", editor.addressOf(signal));
 
         // NOT THE STATION'S OTHER GUARD (*"make sure the entry guard can never be the same as the exit guard"*).
         // The store refuses it as well; this is where the operator is told why.
@@ -419,8 +503,7 @@ final class EditorSignals
      */
     private void removeGuardSignal(AutonomyEditorPanel.Guard guard, TileKey station, TileKey signal)
     {
-        java.util.List<TileKey> paired
-            = new java.util.ArrayList<>(signalsOf(guard, station));
+        List<TileKey> paired = new ArrayList<>(signalsOf(guard, station));
 
         if (!paired.remove(signal)) return;
 
@@ -441,19 +524,16 @@ final class EditorSignals
      * @param signals squares carrying signals
      * @return their addresses, for a menu label
      */
-    String signalAddresses(java.util.List<TileKey> signals)
+    String signalAddresses(List<TileKey> signals)
     {
-        java.util.List<String> out = new java.util.ArrayList<>();
+        List<String> out = new ArrayList<>();
 
-        for (TileKey one : signals)
-        {
-            out.add(editor.addressOf(one));
-        }
+        for (TileKey one : signals) out.add(editor.addressOf(one));
 
         return joined(out);
     }
 
-    private static String joined(java.util.List<String> pieces)
+    private static String joined(List<String> pieces)
     {
         StringBuilder out = new StringBuilder();
 

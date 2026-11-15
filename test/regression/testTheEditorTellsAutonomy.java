@@ -5,25 +5,20 @@ import org.testng.annotations.Test;
 import support.SourceOf;
 
 /**
- * The track-diagram editor must tell the autonomy setup what it did to the track: five findings from the LayoutEditor
- * review, one test class because they are one question asked of five gestures (when the diagram changes, does anything
- * carry the setup that was keyed to it?).
+ * The track-diagram editor must tell the autonomy setup what it did to the track: five gestures, one question (when the
+ * diagram changes, does anything carry the setup that was keyed to it?).
  *
- * READ FROM THE SOURCE, not by driving the editor: LayoutEditor is a Swing component wired to a live window, so this
- * follows the bounded source scan `testARunSurvivesADiagramEdit` uses. These assert that the CALL is in the right
- * place, not that it does the right thing; that is covered by `testAStationsTimetableFollowsItThroughRenamesAndEdits`
- * (moveTiles, forgetTiles) and `testACaptionStaysWithItsSquare` (forgetCaptionsAt).
- *
- * Each scan is bounded to one method body, or it would find the term anywhere in a six-thousand-line file and pass
- * while the method does nothing. Both terms of every ordering assertion are proved present before they are compared,
- * because an absent term's index is -1, less than every real index, which makes a reversed call pass in silence.
+ * READ FROM THE SOURCE, as the bounded scan in `testARunSurvivesADiagramEdit` does: these assert that the CALL is in
+ * the right place; that it does the right thing is covered by `testAStationsTimetableFollowsItThroughRenamesAndEdits`
+ * (moveTiles, forgetTiles) and `testACaptionStaysWithItsSquare` (forgetCaptionsAt).  Each scan is bounded to one
+ * method body, and both terms of every ordering assertion are proved present first (an absent term's index is -1,
+ * which makes a reversed call pass in silence).
  */
 public class testTheEditorTellsAutonomy
 {
     /**
      * A group cut and paste has to carry the setup, the way every other move does: a cut that did not left the station,
-     * name, length, facings, barred arrivals, protecting signal, portal partner and placed locomotive keyed to the
-     * emptied squares, and the next reconciling save pruned them.
+     * name, length, facings, barred arrivals, signal, portal partner and locomotive keyed to the emptied squares.
      *
      * MUTATION this catches: delete the moveTiles call from pasteSelection, or stop cutSelection setting
      * clipboardWasCut - either leaves the paste with nothing to carry.
@@ -115,11 +110,10 @@ public class testTheEditorTellsAutonomy
             "copySelection must clear the cut flag, or pasting a COPY would move the original's setup "
             + "onto the copy and leave the original squares bare (LE-A1)");
 
-        // Undo making the cut untrue is not pinned here, deliberately: the rule is the per-square emptiness test above,
-        // which undo satisfies by refilling the squares. It is tested by RUNNING it, in
-        // `regression.testLayoutEditorBulkEdits.testUndoingTheCutBeforeThePasteLeavesTheSetupWhereItIs`, and its
-        // sibling asserts an unrelated edit does NOT cost the move; a scan for a line of text could not tell those
-        // apart.
+        // Undo making the cut untrue is not pinned here: the rule is the per-square emptiness test above, which undo
+        // satisfies by refilling the squares.  It is RUN in
+        // `regression.testLayoutEditorBulkEdits.testUndoingTheCutBeforeThePasteLeavesTheSetupWhereItIs`; a text scan
+        // could not tell it from its sibling (an unrelated edit does NOT cost the move).
     }
 
     /**

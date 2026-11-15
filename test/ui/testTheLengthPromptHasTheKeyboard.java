@@ -20,14 +20,15 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Teardown;
 
 /**
  * Mass Assign Locomotive Train Lengths' prompt has the keyboard in the real editor window - on the first train, after a
  * length is refused, and on the next train (MT-474).
  *
- * Adam: "Works, make sure the text field is focused by default."  `core.testMassAssignLengths` asks the same of a
- * panel with no window round it, which is not where he met it.  A desktop that will not give the editor the keyboard at
- * all says so as a skip; the naming claims type their answer into the prompt, so there they fail.
+ * Adam: "Works, make sure the text field is focused by default."  A desktop that will not give the editor the keyboard
+ * at all says so as a skip; the naming claims type their answer into the prompt, so there they fail.
  *
  * On the frozen railway (OB-111).  The two trains measured here are given back their lengths afterwards.
  *
@@ -50,10 +51,7 @@ public class testTheLengthPromptHasTheKeyboard
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the autonomy editor and its prompts need a display");
-        }
+        Display.needed("the autonomy editor and its prompts need a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
@@ -127,26 +125,10 @@ public class testTheLengthPromptHasTheKeyboard
             closeEveryPrompt();
 
             for (int i = 0; i < unmeasured.size(); i++) unmeasured.get(i).setTrainLength(theirLengths.get(i));
-
-            if (editor != null)
-            {
-                final LayoutEditor closing = editor;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, model, editor, ui);
         }
     }
 
@@ -479,87 +461,45 @@ public class testTheLengthPromptHasTheKeyboard
     }
 
     /**
-     * Rename... on a square's right-click menu refuses a name another square already has, says so, and renames nothing
-     * (OB-376, the walk's sibling door).
+     * Mass Assign Lengths and Mass Assign Station Max Train Lengths ask in the same prompt: the number field has the
+     * keyboard, Enter after a number submits it and the walk moves on, and Escape on the next prompt stops the walk
+     * (MT-454, MT-520).  The railway's lengths and maxima are cleared so there is something to ask, and the setup is put
+     * back after.
      *
-     * MUTATION: `promptName` asking `AutonomySession.whyNotAPointName(name)` instead of `whyNotNamed`: red, as no
-     * refusal appears and the square takes the other's name.
+     * MUTATION: in `askInWalkPrompt` give the option pane `answers[0]` as its initial value instead of null and drop the
+     * two `field.requestFocusInWindow()` calls, and the keyboard goes to the OK button; make the field's Enter answer
+     * `answers[2]`, and no second prompt comes.
      */
     @Test
-    public void testRenameRefusesATakenName() throws Exception
+    public void testTheLengthsAndMaximaWalksTakeEnterAndEscapeInTheFocusedField() throws Exception
     {
-        // A NAMED SQUARE ON THE PAGE, and A NAME ANOTHER SQUARE HAS, plain text so the refusal's markup is not in the way
-        final org.traincontrol.automationui.TileGraph.TileKey[] target = new org.traincontrol.automationui.TileGraph.TileKey[1];
-        final String[] itsName = new String[1];
-        final String[] taken = new String[1];
-        final javax.swing.JMenuItem[] rename = new javax.swing.JMenuItem[1];
+        awaitTheEditorFocused();
 
-        SwingUtilities.invokeAndWait(() ->
-        {
-            for (org.traincontrol.automationui.GraphReducer.ReducedPoint point : session.getReducer().getPoints().values())
-            {
-                String name = session.getStore().getPointName(point.getTile());
-
-                if (target[0] == null && PAGE.equals(point.getTile().getPage()) && name != null && !name.trim().isEmpty()
-                    && editor.getAutonomyPanel().canBeNamed(point.getTile()))
-                {
-                    target[0] = point.getTile();
-                    itsName[0] = name;
-                }
-            }
-
-            if (target[0] == null) return;
-
-            for (org.traincontrol.automationui.TileGraph.TileKey other : session.getStore().getNamedTiles())
-            {
-                String name = session.getStore().getPointName(other);
-
-                if (taken[0] == null && !other.equals(target[0]) && name != null && name.trim().matches("[A-Za-z0-9 ]+")
-                    && !name.trim().equalsIgnoreCase(itsName[0].trim()))
-                {
-                    taken[0] = name.trim();
-                }
-            }
-
-            // THE REAL MENU's item, as the right-click builds it
-            javax.swing.JPopupMenu menu = editor.getAutonomyPanel().buildTileMenu(target[0],
-                model.getLayout(PAGE).getComponent(target[0].getX(), target[0].getY()));
-
-            for (java.awt.Component c : menu.getComponents())
-            {
-                if (c instanceof javax.swing.JMenuItem
-                    && I18n.t("autosetup.ui.menuRename").equals(((javax.swing.JMenuItem) c).getText()))
-                {
-                    rename[0] = (javax.swing.JMenuItem) c;
-                }
-            }
-        });
-
-        assertNotNull(target[0], "precondition: " + PAGE + " has no named square that can be renamed");
-        assertNotNull(taken[0], "precondition: no other square has a plain name to reuse");
-        assertNotNull(rename[0], "precondition: " + target[0] + "'s menu has no Rename... item");
+        final org.json.JSONObject was = session.snapshotSetup();
 
         try
         {
-            SwingUtilities.invokeLater(rename[0]::doClick);
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.clearEveryTileLength();
+                session.clearEveryMaxTrainLength();
+            });
 
-            javax.swing.JDialog prompt = awaitInputPrompt();
+            for (String key : new String[] {"autosetup.ui.menuMassAssignLengths", "autosetup.ui.menuMassAssignMaxTrainLengths"})
+            {
+                javax.swing.JDialog first = startedFrom(bulkItem(key), key);
 
-            type(fieldIn(prompt), taken[0]);
+                type(focusedField(first, "the first prompt of " + I18n.t(key)), "3");
 
-            javax.swing.JDialog refusal = awaitMessage(prompt, prompt.getTitle(), "\"" + taken[0] + "\", another"
-                + " square's name, was typed into Rename... and no refusal appeared");
+                final javax.swing.JDialog second = awaitPrompt(first, I18n.t(key));
 
-            final String said = readAndClose(refusal);
+                final javax.swing.JTextField next = focusedField(second, "the prompt after Enter in " + I18n.t(key));
 
-            assertTrue(said.contains(I18n.f("autosetup.ui.errorPointNameTaken", taken[0])),
-                "Rename's refusal of a taken name does not say it is taken: " + said);
+                SwingUtilities.invokeAndWait(() -> press(next, java.awt.event.KeyEvent.VK_ESCAPE));
 
-            final String[] now = new String[1];
-
-            SwingUtilities.invokeAndWait(() -> now[0] = session.getStore().getPointName(target[0]));
-
-            assertEquals(now[0], itsName[0], "Rename... gave " + target[0] + " another square's name");
+                assertTrue(support.Components.waitFor(() -> !support.Components.onTheEventThread(second::isShowing), 5000),
+                    "Escape did not close the " + I18n.t(key) + " prompt");
+            }
         }
         finally
         {
@@ -567,48 +507,23 @@ public class testTheLengthPromptHasTheKeyboard
 
             SwingUtilities.invokeAndWait(() ->
             {
-                session.setPointName(target[0], itsName[0]);
+                session.restoreSetup(was);
                 editor.getAutonomyPanel().refresh();
             });
         }
     }
 
-    /** A showing option pane that asks for text: Rename's prompt. */
-    private static javax.swing.JDialog awaitInputPrompt() throws Exception
+    /** Clicks the Bulk Tools item and waits for the walk's first prompt, titled by the item's key. */
+    private static javax.swing.JDialog startedFrom(javax.swing.JMenuItem item, String key) throws Exception
     {
-        long giveUp = System.currentTimeMillis() + 10000;
+        assertNotNull(item, "precondition: Bulk Tools has no " + I18n.t(key) + " item");
+        assertTrue(item.isEnabled(), "precondition: " + I18n.t(key) + " is grayed with everything cleared");
 
-        while (System.currentTimeMillis() < giveUp)
-        {
-            final javax.swing.JDialog[] found = new javax.swing.JDialog[1];
+        SwingUtilities.invokeLater(item::doClick);
 
-            SwingUtilities.invokeAndWait(() ->
-            {
-                for (java.awt.Window window : java.awt.Window.getWindows())
-                {
-                    if (window instanceof javax.swing.JDialog && window.isShowing())
-                    {
-                        JOptionPane pane = findPane(((javax.swing.JDialog) window).getContentPane());
-
-                        if (pane != null && pane.getWantsInput()) found[0] = (javax.swing.JDialog) window;
-                    }
-                }
-            });
-
-            if (found[0] != null) return found[0];
-
-            Thread.sleep(50);
-        }
-
-        fail("Rename... showed no prompt.  Showing now: " + showing());
-
-        return null;
+        return awaitPrompt(null, I18n.t(key));
     }
 
-    /**
-     * The prompt's text field, once it has the keyboard: an Enter typed before the field holds it does not reach the
-     * prompt, so no refusal comes (OB-387).
-     */
     private static javax.swing.JTextField fieldIn(javax.swing.JDialog prompt) throws Exception
     {
         return focusedField(prompt, "the prompt that is typed into");
@@ -677,9 +592,15 @@ public class testTheLengthPromptHasTheKeyboard
         {
             field.setText(text);
 
-            field.dispatchEvent(new java.awt.event.KeyEvent(field, java.awt.event.KeyEvent.KEY_PRESSED,
-                System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ENTER, java.awt.event.KeyEvent.CHAR_UNDEFINED));
+            press(field, java.awt.event.KeyEvent.VK_ENTER);
         });
+    }
+
+    /** One key pressed on the field, as the keyboard presses it; on the event thread. */
+    private static void press(javax.swing.JTextField field, int key)
+    {
+        field.dispatchEvent(new java.awt.event.KeyEvent(field, java.awt.event.KeyEvent.KEY_PRESSED,
+            System.currentTimeMillis(), 0, key, java.awt.event.KeyEvent.CHAR_UNDEFINED));
     }
 
     private static javax.swing.JMenuItem bulkItem(String key) throws Exception

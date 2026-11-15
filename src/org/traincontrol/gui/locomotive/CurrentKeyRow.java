@@ -10,7 +10,9 @@ import java.awt.RenderingHints;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.Area;
 import java.awt.geom.RoundRectangle2D;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
+import javax.accessibility.AccessibleRole;
 import javax.swing.JComponent;
 import javax.swing.UIManager;
 import org.traincontrol.util.I18n;
@@ -26,7 +28,7 @@ import org.traincontrol.util.I18n;
  */
 public class CurrentKeyRow extends JComponent
 {
-    /** The decoder pill's fill: the exact navy of the old line's text, `CurrentKeyLabel`'s foreground (Adam's choice). */
+    /** The decoder pill's fill: the exact navy of `CurrentKeyLabel`'s foreground. */
     public static final Color DECODER_FILL = new Color(0, 0, 115);
 
     /** The words on the decoder pill, and the line between its two parts. */
@@ -59,7 +61,7 @@ public class CurrentKeyRow extends JComponent
     /** The ellipsis a cut page name ends in. */
     public static final String ELLIPSIS = String.valueOf((char) 0x2026);
 
-    /** The separator in the tooltip, the one the old line used between its parts. */
+    /** The separator in the tooltip between its parts. */
     private static final String BULLET = " " + (char) 0x2022 + " ";
 
     /** Measured as drawn (anti-aliased, fractional advances), so a width taken here is the width on screen. */
@@ -262,7 +264,7 @@ public class CurrentKeyRow extends JComponent
         @Override
         public int hashCode()
         {
-            return java.util.Objects.hash(key, page, name, decoderType, address, showNumber);
+            return Objects.hash(key, page, name, decoderType, address, showNumber);
         }
 
         @Override
@@ -376,9 +378,9 @@ public class CurrentKeyRow extends JComponent
             accessibleContext = new AccessibleJComponent()
             {
                 @Override
-                public javax.accessibility.AccessibleRole getAccessibleRole()
+                public AccessibleRole getAccessibleRole()
                 {
-                    return javax.accessibility.AccessibleRole.LABEL;
+                    return AccessibleRole.LABEL;
                 }
             };
         }
@@ -425,7 +427,7 @@ public class CurrentKeyRow extends JComponent
      */
     public void setContent(Content content)
     {
-        if (java.util.Objects.equals(this.content, content)) return;
+        if (Objects.equals(this.content, content)) return;
 
         this.content = content;
 
@@ -591,32 +593,21 @@ public class CurrentKeyRow extends JComponent
 
         if (at == null) return;
 
-        Graphics2D g2 = (Graphics2D) g.create();
+        Graphics2D g2 = smooth(g);
 
         try
         {
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-
             // Whatever happens to the numbers, nothing is drawn past the slot
             g2.clipRect(0, 0, getWidth(), getHeight());
 
             Color text = foreground();
             Color edge = outline();
 
-            if (at.keycap != null)
-            {
-                paintKeycap(g2, at, edge, text);
-            }
+            if (at.keycap != null) paintKeycap(g2, at, edge, text);
 
             paintPage(g2, at);
 
-            if (at.decoder != null)
-            {
-                paintDecoder(g2, at);
-            }
+            if (at.decoder != null) paintDecoder(g2, at);
         }
         finally
         {
@@ -642,23 +633,99 @@ public class CurrentKeyRow extends JComponent
     {
         Rectangle d = at.decoder;
 
-        g2.setColor(DECODER_FILL);
-        g2.fill(new RoundRectangle2D.Double(d.x, d.y, d.width, d.height, d.height, d.height));
+        paintPill(g2, d, DECODER_FILL, DECODER_TEXT);
 
-        g2.setColor(DECODER_TEXT);
-
-        if (at.divider != null)
-        {
-            g2.fillRect(at.divider.x, at.divider.y, at.divider.width, at.divider.height);
-        }
-
-        g2.setFont(TEXT_FONT);
+        if (at.divider != null) g2.fillRect(at.divider.x, at.divider.y, at.divider.width, at.divider.height);
 
         double base = baseline(d.y, d.height, TEXT_FONT);
 
         if (!at.decoderType.isEmpty()) g2.drawString(at.decoderType, (float) at.typeX, (float) base);
 
         if (!at.decoderAddress.isEmpty()) g2.drawString(at.decoderAddress, (float) at.addressX, (float) base);
+    }
+
+    /** The decoder pill's shape in this box and fill, leaving the words' color and font set. */
+    private static void paintPill(Graphics2D g2, Rectangle d, Color fill, Color ink)
+    {
+        g2.setColor(fill);
+        g2.fill(new RoundRectangle2D.Double(d.x, d.y, d.width, d.height, d.height, d.height));
+        g2.setColor(ink);
+        g2.setFont(TEXT_FONT);
+    }
+
+    /** A graphics drawn smooth, as the pills are; the caller disposes of it. */
+    private static Graphics2D smooth(Graphics g)
+    {
+        Graphics2D g2 = (Graphics2D) g.create();
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+
+        return g2;
+    }
+
+    /**
+     * One part of words in the decoder pill's shape and font, in colors of its own, as tall as the row's pills:
+     * Locomotive Settings' picture source (MT-924).  Hidden while it has no words.
+     */
+    public static final class Pill extends JComponent
+    {
+        private final Color fill;
+        private final Color ink;
+        private String words = "";
+
+        public Pill(Color fill, Color ink)
+        {
+            this.fill = fill;
+            this.ink = ink;
+            setVisible(false);
+        }
+
+        /** Shows these words, or hides the pill when text is null. */
+        public void setText(String text)
+        {
+            String now = text == null ? "" : text;
+
+            if (now.equals(words) && isVisible() == (text != null)) return;
+
+            words = now;
+            setVisible(text != null);
+            revalidate();
+            repaint();
+        }
+
+        /** The words shown, or "" while hidden. */
+        public String getText()
+        {
+            return words;
+        }
+
+        @Override
+        public Dimension getPreferredSize()
+        {
+            if (isPreferredSizeSet()) return super.getPreferredSize();
+
+            return new Dimension(Math.max(PILL_HEIGHT, (int) Math.ceil(advance(TEXT_FONT, words)) + 2 * PAD), PILL_HEIGHT);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g)
+        {
+            Graphics2D g2 = smooth(g);
+
+            try
+            {
+                paintPill(g2, new Rectangle(0, 0, getWidth(), getHeight()), fill, ink);
+                g2.drawString(words, (float) ((getWidth() - advance(TEXT_FONT, words)) / 2),
+                    (float) baseline(0, getHeight(), TEXT_FONT));
+            }
+            finally
+            {
+                g2.dispose();
+            }
+        }
     }
 
     /**

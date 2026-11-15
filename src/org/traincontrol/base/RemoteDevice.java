@@ -10,19 +10,16 @@ public interface RemoteDevice<DEVICE, MESSAGE>
 {
     /**
      * Transmits device's state to the network
-     * @return 
      */
     public DEVICE syncFromState();
     
     /**
      * Update state based on network message
-     * @param m 
      */
     public void parseMessage(MESSAGE m);
     
     /**
      * Synchronizes device's state based on network state
-     * @return 
      */
     public DEVICE syncFromNetwork();    
 }

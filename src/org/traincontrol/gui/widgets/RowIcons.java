@@ -7,6 +7,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Arc2D;
+import java.awt.geom.Area;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Path2D;
+import java.awt.geom.Rectangle2D;
+import java.awt.geom.RoundRectangle2D;
 import javax.swing.Icon;
 
 /**
@@ -26,12 +33,7 @@ public final class RowIcons
     {
     }
 
-    /**
-     * A waste basket: lid, body, and two lines down it.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** A waste basket: lid, body, and two lines down it. */
     public static Icon trash(final int size)
     {
         return trash(size, WARN);
@@ -111,10 +113,6 @@ public final class RowIcons
     /**
      * Where the copy mark's front sheet is drawn in an icon of this size; the sheet behind is drawn from the same
      * figures, a gap up and to the left.
-     *
-     * @param width the icon's width
-     * @param height the icon's height
-     * @return the front sheet's outline
      */
     static Rectangle frontSheet(int width, int height)
     {
@@ -123,12 +121,7 @@ public final class RowIcons
         return new Rectangle(1 + gap, 1 + gap, Math.round(width * 0.52f), Math.round(height * 0.62f));
     }
 
-    /**
-     * A plus.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** A plus. */
     public static Icon plus(final int size)
     {
         return plus(size, new Color(0, 120, 40));
@@ -137,9 +130,6 @@ public final class RowIcons
     /**
      * The same, in a color of the caller's choosing, for a SELECTED row: a mid-green plus is nearly invisible against
      * the look-and-feel's selection blue.
-     *
-     * @param colour what to draw it in
-     * @return the icon
      */
     public static Icon plus(final int size, final Color colour)
     {
@@ -159,24 +149,32 @@ public final class RowIcons
         };
     }
 
-    /**
-     * A solid triangle pointing up or down.
-     *
-     * @param size how many pixels square
-     * @param up true for up
-     * @return the icon
-     */
+    /** A red X, for the mark that removes its row. */
+    public static Icon cross(final int size)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                g.setColor(new Color(204, 40, 40));
+                g.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                int pad = width / 4;
+
+                g.drawLine(pad, pad, width - pad, height - pad);
+                g.drawLine(pad, height - pad, width - pad, pad);
+            }
+        };
+    }
+
+    /** A solid triangle pointing up or down. */
     public static Icon arrow(final int size, final boolean up)
     {
         return arrow(size, up, QUIET);
     }
 
-    /**
-     * The same, in a given color: a mark in a fixed gray disappears into a selected row's selection colors.
-     *
-     * @param colour what to draw it in
-     * @return the icon
-     */
+    /** The same, in a given color: a mark in a fixed gray disappears into a selected row's selection colors. */
     public static Icon arrow(final int size, final boolean up, final Color colour)
     {
         return new Painted(size)
@@ -198,12 +196,7 @@ public final class RowIcons
         };
     }
 
-    /**
-     * Six dots in two columns, the grip a row is dragged by.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** Six dots in two columns, the grip a row is dragged by. */
     public static Icon grip(final int size)
     {
         return new Painted(size)
@@ -217,7 +210,7 @@ public final class RowIcons
                 {
                     for (int row = -1; row <= 1; row++)
                     {
-                        g.fill(new java.awt.geom.Ellipse2D.Float(width / 2f + column * 2.5f - 1.1f,
+                        g.fill(new Ellipse2D.Float(width / 2f + column * 2.5f - 1.1f,
                             height / 2f + row * 4f - 1.1f, 2.2f, 2.2f));
                     }
                 }
@@ -225,70 +218,74 @@ public final class RowIcons
         };
     }
 
-    /**
-     * Two lines inside a rounded outline: put rows in a group of their own.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** What a table of answers can say. */
+    public enum Answer
+    {
+        YES, SOME, NO
+    }
+
+    /** A tick for a yes, a ring with its left half filled for a "some", and a dash for a no. */
+    public static Icon answer(final int size, final Answer answer, final Color colour)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(answer == Answer.SOME ? 1.4f : 2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                if (answer == Answer.NO)
+                {
+                    g.drawLine(width / 5, height / 2, 4 * width / 5, height / 2);
+                }
+                else if (answer == Answer.SOME)
+                {
+                    int inset = width / 7;
+
+                    g.drawOval(inset, inset, width - 2 * inset, height - 2 * inset);
+                    g.fillArc(inset, inset, width - 2 * inset, height - 2 * inset, 90, 180);
+                }
+                else
+                {
+                    g.drawPolyline(new int[] {width / 7, 3 * width / 7, 6 * width / 7},
+                        new int[] {height / 2, 11 * height / 14, 3 * height / 14}, 3);
+                }
+            }
+        };
+    }
+
+    /** Two lines inside a rounded outline: put rows in a group of their own. */
     public static Icon group(final int size)
     {
         return group(size, QUIET);
     }
 
-    /**
-     * The same, in a given color.
-     *
-     * @param size how many pixels square
-     * @param colour what to draw it in
-     * @return the icon
-     */
+    /** The same, in a given color. */
     public static Icon group(final int size, final Color colour)
     {
         return outlined(size, colour, false);
     }
 
-    /**
-     * The same two lines with the outline broken: take a group apart.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** The same two lines with the outline broken: take a group apart. */
     public static Icon ungroup(final int size)
     {
         return ungroup(size, QUIET);
     }
 
-    /**
-     * The same, in a given color.
-     *
-     * @param size how many pixels square
-     * @param colour what to draw it in
-     * @return the icon
-     */
+    /** The same, in a given color. */
     public static Icon ungroup(final int size, final Color colour)
     {
         return outlined(size, colour, true);
     }
 
-    /**
-     * Two small outlines one above the other, a line in each: cut a group in two (OB-396).
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** Two small outlines one above the other, a line in each: cut a group in two (OB-396). */
     public static Icon split(final int size)
     {
         return split(size, QUIET);
     }
 
-    /**
-     * The same, in a given color.
-     *
-     * @param size how many pixels square
-     * @param colour what to draw it in
-     * @return the icon
-     */
+    /** The same, in a given color. */
     public static Icon split(final int size, final Color colour)
     {
         return new Painted(size)
@@ -312,25 +309,13 @@ public final class RowIcons
         };
     }
 
-    /**
-     * A hooked arrow pointing back: Undo (FR-161).
-     *
-     * @param size how many pixels square
-     * @param colour what to draw it in
-     * @return the icon
-     */
+    /** A hooked arrow pointing back: Undo (FR-161). */
     public static Icon undo(final int size, final Color colour)
     {
         return hooked(size, colour, false);
     }
 
-    /**
-     * Undo's arrow, mirrored: Redo (FR-161).
-     *
-     * @param size how many pixels square
-     * @param colour what to draw it in
-     * @return the icon
-     */
+    /** Undo's arrow, mirrored: Redo (FR-161). */
     public static Icon redo(final int size, final Color colour)
     {
         return hooked(size, colour, true);
@@ -349,7 +334,7 @@ public final class RowIcons
                     g.scale(-1, 1);
                 }
 
-                java.awt.geom.Path2D.Float hook = new java.awt.geom.Path2D.Float();
+                Path2D.Float hook = new Path2D.Float();
 
                 hook.moveTo(width * 0.32f, height * 0.38f);
                 hook.lineTo(width * 0.58f, height * 0.38f);
@@ -360,7 +345,7 @@ public final class RowIcons
                 g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g.draw(hook);
 
-                java.awt.geom.Path2D.Float head = new java.awt.geom.Path2D.Float();
+                Path2D.Float head = new Path2D.Float();
 
                 head.moveTo(width * 0.08f, height * 0.38f);
                 head.lineTo(width * 0.38f, height * 0.16f);
@@ -391,12 +376,7 @@ public final class RowIcons
         };
     }
 
-    /**
-     * A warning triangle: amber, a dark edge and an exclamation mark - beside a line that is wrong.
-     *
-     * @param size how many pixels square
-     * @return the icon
-     */
+    /** A warning triangle: amber, a dark edge and an exclamation mark - beside a line that is wrong. */
     public static Icon warning(final int size)
     {
         return new Painted(size)
@@ -404,7 +384,10 @@ public final class RowIcons
             @Override
             void draw(Graphics2D g, int width, int height)
             {
-                java.awt.geom.Path2D.Float triangle = new java.awt.geom.Path2D.Float();
+                // Strokes left where they are drawn: the default nudges the edge half a pixel off the mark's middle
+                g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+                Path2D.Float triangle = new Path2D.Float();
 
                 triangle.moveTo(width / 2f, 1f);
                 triangle.lineTo(width - 1f, height - 1.5f);
@@ -418,53 +401,170 @@ public final class RowIcons
                 g.setStroke(new BasicStroke(1.1f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g.draw(triangle);
 
-                float middle = width / 2f;
+                // The mark on whole pixels, two wide about the middle: a dot a pixel clear of the base, a gap, the bar
+                float left = width / 2f - 1;
+                int dot = height - 5;
+                int bar = dot - 1 - (height - 4) / 3;
 
                 g.setColor(new Color(40, 30, 0));
-                g.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                g.draw(new java.awt.geom.Line2D.Float(middle, height * 0.38f, middle, height * 0.64f));
-                g.fill(new java.awt.geom.Ellipse2D.Float(middle - 0.95f, height * 0.73f, 1.9f, 1.9f));
+                g.fill(new RoundRectangle2D.Float(left, bar, 2, dot - 1 - bar, 1, 1));
+                g.fill(new RoundRectangle2D.Float(left, dot, 2, 2, 1, 1));
             }
         };
     }
 
-    /**
-     * A wrench, head to the upper right, for the mark that opens a row to be edited (FR-164).
-     *
-     * @param size how many pixels square
-     * @param colour what it is drawn in
-     * @return the icon
-     */
+    /** A wrench, head to the upper right, for the mark that opens a row to be edited (FR-164). */
     public static Icon wrench(final int size, final Color colour)
+    {
+        Area shape = new Area(new Ellipse2D.Float(-3.3f, -7.8f, 6.6f, 6.6f));
+
+        shape.add(new Area(new RoundRectangle2D.Float(-1.35f, -5f, 2.7f, 12.5f, 2.7f, 2.7f)));
+        shape.subtract(new Area(new Rectangle2D.Float(-1.3f, -8.5f, 2.6f, 4.4f)));
+
+        return turned(size, colour, shape);
+    }
+
+    /**
+     * A shape drawn upright on a 13-unit grid around the origin, filled once turned a half right angle and scaled to
+     * the icon.
+     */
+    private static Icon turned(final int size, final Color colour, final java.awt.Shape upright)
     {
         return new Painted(size)
         {
             @Override
             void draw(Graphics2D g, int width, int height)
             {
-                // Drawn upright on a 13-unit grid around the origin, then turned a half right angle and scaled
-                java.awt.geom.Area shape = new java.awt.geom.Area(
-                    new java.awt.geom.Ellipse2D.Float(-3.3f, -7.8f, 6.6f, 6.6f));
-
-                shape.add(new java.awt.geom.Area(
-                    new java.awt.geom.RoundRectangle2D.Float(-1.35f, -5f, 2.7f, 12.5f, 2.7f, 2.7f)));
-                shape.subtract(new java.awt.geom.Area(
-                    new java.awt.geom.Rectangle2D.Float(-1.3f, -8.5f, 2.6f, 4.4f)));
-
-                java.awt.geom.AffineTransform turn = new java.awt.geom.AffineTransform();
+                AffineTransform turn = new AffineTransform();
 
                 turn.translate(width / 2.0, height / 2.0);
                 turn.scale(width / 13.0, height / 13.0);
                 turn.rotate(Math.PI / 4);
 
                 g.setColor(colour);
-                g.fill(turn.createTransformedShape(shape));
+                g.fill(turn.createTransformedShape(upright));
+            }
+        };
+    }
+
+    /** A pencil, tip to the lower left, for the mark that renames. */
+    public static Icon pencil(final int size)
+    {
+        return pencil(size, QUIET);
+    }
+
+    /** The same, in a color of the caller's choosing. */
+    public static Icon pencil(final int size, final Color colour)
+    {
+        // Tip down: the body, the tip cut from it, and a gap where the eraser is set off
+        Area shape = new Area(new RoundRectangle2D.Float(-2f, -6.5f, 4f, 10f, 1.6f, 1.6f));
+
+        Path2D.Float tip = new Path2D.Float();
+
+        tip.moveTo(-2f, 3f);
+        tip.lineTo(2f, 3f);
+        tip.lineTo(0f, 6.8f);
+        tip.closePath();
+
+        shape.add(new Area(tip));
+        shape.subtract(new Area(new Rectangle2D.Float(-2.2f, -4.6f, 4.4f, 0.9f)));
+
+        return turned(size, colour, shape);
+    }
+
+    /** The green of a function's play icon. */
+    private static final Color PLAY = new Color(46, 160, 67);
+
+    /** How a play icon reads: an outline when off, solid when on, a turning arc while a momentary function fires. */
+    public enum PlayState
+    {
+        OFF, ON, FIRING, DISABLED
+    }
+
+    /**
+     * A play triangle that says whether the function is on by its fill.
+     *
+     * @param size how many pixels square
+     * @param state how the function stands
+     * @param phase the spinner's turn in degrees while {@code FIRING}; unused otherwise
+     * @return the icon
+     */
+    public static Icon play(final int size, final PlayState state, final int phase)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                Color colour = state == PlayState.DISABLED ? new Color(175, 175, 175) : PLAY;
+
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(Math.max(1.4f, width / 10f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+                if (state == PlayState.FIRING)
+                {
+                    float inset = width * 0.16f;
+
+                    // Pure strokes: normalizing snaps each turn's ring to whole pixels and it wobbles (OB-458)
+                    g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+                    g.draw(new Arc2D.Float(inset, inset, width - 2 * inset, height - 2 * inset, -phase, 270,
+                        Arc2D.OPEN));
+
+                    return;
+                }
+
+                Path2D.Float triangle = new Path2D.Float();
+
+                triangle.moveTo(width * 0.24f, height * 0.14f);
+                triangle.lineTo(width * 0.84f, height * 0.5f);
+                triangle.lineTo(width * 0.24f, height * 0.86f);
+                triangle.closePath();
+
+                if (state == PlayState.ON) g.fill(triangle);
+
+                g.draw(triangle);
+            }
+        };
+    }
+
+    /** A ring open at the upper left with an arrowhead at 12 o'clock pointing left: put back what was. */
+    public static Icon revert(final int size, final Color colour)
+    {
+        return new Painted(size)
+        {
+            @Override
+            void draw(Graphics2D g, int width, int height)
+            {
+                float radius = width * 0.30f;
+                float centre = width * 0.5f;
+
+                // Pure strokes: the default normalizing snaps the arc to whole pixels and the ring comes out uneven
+                g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                g.setColor(colour);
+                g.setStroke(new BasicStroke(Math.max(1.5f, width / 9f), BasicStroke.CAP_BUTT, BasicStroke.JOIN_ROUND));
+
+                // Counterclockwise from the upper left round to 12 o'clock, where the head takes over
+                g.draw(new Arc2D.Float(centre - radius, centre - radius, 2 * radius, 2 * radius, 168, 282, Arc2D.OPEN));
+
+                // The head at 12 o'clock pointing straight left along the tangent; its base straddles the ring's end,
+                // square to it
+                float px = centre;
+                float py = centre - radius;
+                Path2D.Float head = new Path2D.Float();
+
+                head.moveTo(px - 0.20f * width, py);
+                head.lineTo(px, py + 0.17f * width);
+                head.lineTo(px, py - 0.17f * width);
+                head.closePath();
+
+                g.fill(head);
             }
         };
     }
 
     /** An icon that paints itself, antialiased, on a graphics it is handed. */
-    private abstract static class Painted implements Icon
+    abstract static class Painted implements Icon
     {
         private final int size;
 

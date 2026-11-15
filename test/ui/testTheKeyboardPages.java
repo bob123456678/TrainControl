@@ -14,7 +14,6 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -52,19 +51,15 @@ import support.Answering;
 import support.Components;
 import support.Keys;
 import support.Mouse;
+import support.Reflect;
 
 /**
  * The locomotive keyboard's pages as the operator works them: deleting a page from the page menu, jumping to a
  * locomotive with Quick Find, mapping the unassigned locomotives, and dragging a locomotive from one key to another.
  *
- * Every claim starts from six empty pages with no names.  The page count is a preference, so the class puts Adam's
- * value back (or removes it, when he has none) and never saves the window's state.
- *
- * A real pointer drag hands the drag to the operating system and never gives it back.  So a drag is made the way Swing
- * makes it, against the real handler and each component's own drop target: the pick-up, the pointer resting over a
- * page control, the drop on a key, and the end of a drag dropped nowhere.
- *
- * MUTATION: each claim names the change to the program that turns it red.
+ * Every claim starts from six empty pages with no names; the page count is a preference, so the class puts Adam's
+ * value back and never saves the window's state.  A real pointer drag hands the drag to the operating system, so a
+ * drag is made the way Swing makes it, against the real handler and each component's own drop target.
  *
  * @author Adam
  */
@@ -1200,9 +1195,7 @@ public class testTheKeyboardPages
 
             Class<?> contextPeer = Class.forName("java.awt.dnd.peer.DropTargetContextPeer");
 
-            Method notify = DropTargetContext.class.getDeclaredMethod("addNotify", contextPeer);
-
-            notify.setAccessible(true);
+            Method notify = Reflect.method(DropTargetContext.class, "addNotify", contextPeer);
             notify.invoke(context, Proxy.newProxyInstance(contextPeer.getClassLoader(), new Class<?>[] {contextPeer},
                 peer));
 
@@ -1221,9 +1214,7 @@ public class testTheKeyboardPages
         {
             javax.swing.TransferHandler handler = from.getTransferHandler();
 
-            Method make = javax.swing.TransferHandler.class.getDeclaredMethod("createTransferable", JComponent.class);
-
-            make.setAccessible(true);
+            Method make = Reflect.method(javax.swing.TransferHandler.class, "createTransferable", JComponent.class);
 
             return (Transferable) make.invoke(handler, from);
         });
@@ -1234,10 +1225,8 @@ public class testTheKeyboardPages
     {
         Components.onTheEventThread(() ->
         {
-            Method done = javax.swing.TransferHandler.class.getDeclaredMethod("exportDone", JComponent.class,
-                Transferable.class, int.class);
-
-            done.setAccessible(true);
+            Method done = Reflect.method(javax.swing.TransferHandler.class,
+                "exportDone", JComponent.class, Transferable.class, int.class);
             done.invoke(from.getTransferHandler(), from, held, action);
 
             return null;
@@ -1346,10 +1335,7 @@ public class testTheKeyboardPages
     {
         try
         {
-            Method m = TrainControlUI.class.getDeclaredMethod(method);
-
-            m.setAccessible(true);
-            m.invoke(ui);
+            Reflect.method(TrainControlUI.class, method).invoke(ui);
         }
         catch (ReflectiveOperationException e)
         {
@@ -1359,19 +1345,12 @@ public class testTheKeyboardPages
 
     private static Object field(String name) throws Exception
     {
-        Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     private static void setField(String name, Object value) throws Exception
     {
-        Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-        f.set(ui, value);
+        Reflect.set(TrainControlUI.class, ui, name, value);
     }
 
     private static Object field0(String name)

@@ -25,10 +25,6 @@ public class AutoJSONExport extends javax.swing.JPanel
     
     /**
      * Creates new form AutoJSONExport
-     * @param text
-     * @param tcui
-     * @param prefix
-     * @param extension
      */
     public AutoJSONExport(String text, TrainControlUI tcui, String prefix, String extension)
     {

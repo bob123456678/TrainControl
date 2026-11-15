@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import javax.swing.AbstractButton;
 import javax.swing.JButton;
-import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -26,7 +25,9 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Reflect;
 import support.Settle;
+import support.Teardown;
 
 /**
  * Start Autonomous Operation and its stops, pressed as the user presses them, and what each leaves (FR-136 Phase 6).
@@ -56,13 +57,11 @@ public class testStartingAutonomyFromTheWindow
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -80,19 +79,10 @@ public class testStartingAutonomyFromTheWindow
         try
         {
             if (model != null && model.hasAutoLayout()) Settle.gracefully(model.getAutoLayout(), Settle.PATIENCE_MS);
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, model, ui);
         }
     }
 
@@ -125,9 +115,8 @@ public class testStartingAutonomyFromTheWindow
     {
         if (model.hasAutoLayout()) Settle.gracefully(model.getAutoLayout(), Settle.PATIENCE_MS);
 
+        // The next test's `atRest` asserts Start is offered
         if (model.getRoute(ARMED) != null) model.deleteRoute(ARMED);
-
-        Settle.until(() -> start().isEnabled(), 30000);
     }
 
     /**
@@ -243,6 +232,123 @@ public class testStartingAutonomyFromTheWindow
     @Test
     public void testTheDiagramsMenuStartsAndStopsTheRun() throws Exception
     {
+        runAndStopFromTheDiagram();
+    }
+
+    /**
+     * Once Gracefully Stop Autonomy from the diagram's menu has brought every train in, a station's menu is the menu at
+     * rest in every group, not half of it (OB-449): Start live, the train's Remove and Autonomy Setup.
+     *
+     * MUTATION: leave Graceful Stop offered once pressed (drop `this.gracefulStop.setEnabled(false)` in
+     * `gracefulStopActionPerformed`), and the menu keeps Start live but loses Remove and Autonomy Setup.
+     */
+    @Test
+    public void testAfterAGracefulStopTheDiagramsMenuIsAtRest() throws Exception
+    {
+        Layout layout = runAndStopFromTheDiagram();
+
+        // Where a train stands now, on the railway: the run has moved them
+        TileKey standing = null;
+
+        for (Point each : layout.getPoints())
+        {
+            if (standing == null && each.getCurrentLocomotive() != null && each.isDestination())
+            {
+                standing = session.getStationIndex().squareOf(each);
+            }
+        }
+
+        assertNotNull(standing, "precondition: no train stands at a station after the run");
+
+        java.util.List<String> live = new ArrayList<>();
+
+        for (AbstractButton item : Components.all(diagramItem(standing, I18n.t("autosetup.ui.menuStationSettings"))
+            .getParent(), AbstractButton.class, b -> b.isEnabled())) live.add(item.getText());
+
+        String remove = I18n.f("layout.ui.menuRemoveLocomotive", "#").split("#")[0];
+
+        assertTrue(live.containsAll(java.util.Arrays.asList(I18n.t("autosetup.ui.menuAutonomySetup"),
+            I18n.t("autolayout.ui.menuStartAutonomy"))) && live.stream().anyMatch(text -> text.startsWith(remove)),
+            "after the trains came in, the menu on " + standing + " is not the menu at rest: " + live);
+    }
+
+    // ---------------------------------------------------------------- doors
+
+    /**
+     * MT-1001 steps 1 and 2: with Toggle specified routes ticked and only R1 listed, R1 switched off and R2 on by hand,
+     * Start Autonomous Operation switches R1 on again and R2 off, as their right-click menus read.
+     *
+     * MUTATION: leave the `applyAutonomyRouteActivations()` call out of `Layout.runLocomotives` and this fails.
+     */
+    @Test
+    public void testStartHoldsToTheRouteListOverTheHandSwitches() throws Exception
+    {
+        onScreen(true);
+    }
+
+    /**
+     * MT-1001 step 5: with Toggle specified routes unticked, Start leaves the hand switches as they were.
+     *
+     * MUTATION: in `MarklinControlStation.applyAutonomyRouteActivations`, drop the `isActivateRoutes()` check and this
+     * fails.
+     */
+    @Test
+    public void testStartLeavesTheHandSwitchesWithToggleUnticked() throws Exception
+    {
+        onScreen(false);
+    }
+
+    /**
+     * MT-1001's check with Start as the run's door, the window shown for it: the route list's right-click menu only
+     * opens on a window on screen, and this class's window is otherwise never shown.
+     */
+    private static void onScreen(boolean toggled) throws Exception
+    {
+        Components.onTheEventThread(() ->
+        {
+            ui.setVisible(true);
+
+            return null;
+        });
+
+        try
+        {
+            support.RouteListDoors.HandSwitched.runAndRead(ui, toggled, "Start", () -> startAnsweredYes());
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                ui.setVisible(false);
+
+                return null;
+            });
+        }
+    }
+
+    /** Presses Start, answers its question Yes, and waits for the run; `stopAndTidy` stops it. */
+    private static Object startAnsweredYes()
+    {
+        try (Answering answering = Answering.start(message ->
+            Answering.press(String.valueOf(TrainControlUI.YES_NO_OPTS[0]))))
+        {
+            Components.press(start());
+
+            assertTrue(Settle.until(() -> model.getAutoLayout().isAutoRunning(), 30000), "autonomy did not start: "
+                + answering.asked());
+        }
+
+        return null;
+    }
+
+    private interface Pressing
+    {
+        List<String> press() throws Exception;
+    }
+
+    /** Starts the run and stops it gracefully from the diagram's menu, and waits until it rests with nothing held. */
+    private static Layout runAndStopFromTheDiagram() throws Exception
+    {
         final TileKey square = aStationWithATrain();
 
         Layout layout = startTheRun(() -> press(diagramItem(square, I18n.t("autolayout.ui.menuStartAutonomy")),
@@ -251,13 +357,8 @@ public class testStartingAutonomyFromTheWindow
         press(diagramItem(square, I18n.t("autolayout.ui.menuStopAutonomyGracefully")), message -> null);
 
         assertRestsWithNothingHeld(layout, "the diagram's Gracefully Stop Autonomy");
-    }
 
-    // ---------------------------------------------------------------- doors
-
-    private interface Pressing
-    {
-        List<String> press() throws Exception;
+        return layout;
     }
 
     /** Starts the run through a door, and waits until autonomy runs with a train under way. */
@@ -317,11 +418,7 @@ public class testStartingAutonomyFromTheWindow
     {
         try
         {
-            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
-
-            field.setAccessible(true);
-
-            return (JButton) field.get(ui);
+            return (JButton) Reflect.get(TrainControlUI.class, ui, name);
         }
         catch (ReflectiveOperationException e)
         {
@@ -345,10 +442,8 @@ public class testStartingAutonomyFromTheWindow
     {
         final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        final java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
-            Point.class);
-
-        gather.setAccessible(true);
+        final java.lang.reflect.Method gather =
+            Reflect.method(menuClass, "gatherPathOptions", TrainControlUI.class, Point.class);
 
         final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
             TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));

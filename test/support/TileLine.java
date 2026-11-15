@@ -10,10 +10,8 @@ import org.traincontrol.automationui.TileGraph.TileKey;
  * A whole line of squares moved or copied at once, in the two halves the setup store is handed: the squares that
  * travel, and the squares built over.
  *
- * The editor's whole-row and whole-column gesture built this with `LayoutEditor.planBulkLine` until the gesture was
- * replaced by multi-select (6f60b118) and its unreachable code was removed.  Dragging or pasting a
- * selected column still asks `AutonomyCompanionStore.moveTiles` the same question, so the store's rules are tested
- * with lines built here.
+ * Dragging or pasting a selected column asks `AutonomyCompanionStore.moveTiles` about a whole line, so the store's
+ * rules are tested with lines built here.
  *
  * @author Adam
  */

@@ -11,12 +11,12 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
+import static support.Trees.delete;
 
 /**
- * MT-062: delete and the line inserts, which had not had the move audit.
+ * MT-062: delete and the line inserts.
  *
  * Everything the setup holds is keyed by SQUARE, so any operation that relocates or destroys track has to tell the
  * setup.  `testAutonomyStoreSettingsMatrix` pins the RULES; this pins that delete and insert produce the right moves
@@ -117,24 +117,12 @@ public class testDeleteAndInsertKeepTheSetup
     {
         LayoutDiagram page = new LayoutDiagram("main", 10, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.feedback(page, 3, 1, 6, 12);
 
         page.setPageId("1");
 
         return page;
-    }
-
-    private void delete(File f)
-    {
-        if (f.isDirectory())
-        {
-            File[] kids = f.listFiles();
-
-            if (kids != null) for (File kid : kids) delete(kid);
-        }
-
-        f.delete();
     }
 }

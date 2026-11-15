@@ -1,22 +1,15 @@
 package ui;
 
 import java.awt.Color;
-import java.awt.Window;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.List;
-import java.util.function.Predicate;
 import javax.swing.AbstractButton;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
+import javax.swing.JTable;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
@@ -37,6 +30,9 @@ import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import support.Components;
 import support.Mouse;
+import support.Reflect;
+import support.SettingsWindow;
+import support.Answering;
 
 /**
  * Right-clicking a function button on the locomotive panel: the menu it opens, the dialog behind "Edit Function", and
@@ -169,322 +165,365 @@ public class testTheFunctionButtonMenu
         closeEverythingOpen();
     }
 
-    // The menu
+    // The right-click
 
     /**
-     * A right click on a function button opens the menu for that function: Edit Function F-number first, then the
-     * function and speed presets, the last carrying the speed the train has saved.  A function the train does not have
-     * opens none.
+     * A right click on a function button opens the Locomotive Settings window on the Functions tab, on that function,
+     * with no menu in between.  A function the train does not have opens nothing.
      *
-     * MUTATION: in `TrainControlUI.EditFunction`, drop the `b.isEnabled()` test, or in `FunctionPopupMenu` give the
-     * Edit item `fNumber + 1`, and this fails.
+     * MUTATION: in `TrainControlUI.EditFunction`, drop the `b.isEnabled()` test, or aim the window at `fNumber + 1`,
+     * and this fails.
      */
     @Test
-    public void testARightClickOpensTheMenuForThatFunction() throws Exception
+    public void testARightClickOpensTheFunctionsTabOnThatFunction() throws Exception
     {
-        loc.setPreferredSpeed(37);
+        assertNull(rightClick(button(F), 1500), "a right click on F" + F + " opened a menu: the old menu is meant to be gone");
 
-        JPopupMenu menu = rightClick(button(F));
+        assertNotNull(SettingsWindow.awaited(), "a right click on F" + F + " opened no window");
+        assertEquals(SettingsWindow.tabShowing(), 1, "the window did not open on the Functions tab");
 
-        assertNotNull(menu, "a right click on F" + F + " opened no menu");
+        JTable table = SettingsWindow.part("functions.table", JTable.class);
 
-        assertTrue(Components.withText(menu, I18n.f("loc.ui.editFunction", F)) != null,
-            "the menu has no \"" + I18n.f("loc.ui.editFunction", F) + "\"");
+        assertEquals((int) Components.onTheEventThread(table::getSelectedRow), F, "the Functions tab is not on F" + F);
 
-        for (String key : new String[] {"loc.ui.menuApplySavedFunctionPreset", "loc.ui.menuSaveFunctionsAsPreset",
-            "loc.ui.menuTurnOffFunctions", "loc.ui.menuSaveSpeedAsPreset"})
-        {
-            assertNotNull(Components.withText(menu, I18n.t(key)), "the menu has no \"" + I18n.t(key) + "\"");
-        }
-
-        assertNotNull(Components.withText(menu, I18n.f("loc.ui.menuApplySavedSpeedPreset", 37)),
-            "the speed preset item does not name the speed the train has saved");
-
-        assertEquals(itemsOf(menu).get(0).getText(), I18n.f("loc.ui.editFunction", F),
-            "Edit Function is not the first thing the menu offers");
-
-        Mouse.closeMenus();
+        SettingsWindow.closeIfOpen();
 
         // F30 is past the 29 functions of a DCC decoder: grayed, and a right click on it opens nothing
         final JToggleButton beyond = button(30);
 
         assertFalse(Components.onTheEventThread(beyond::isEnabled), "precondition: F30 is enabled on a DCC train");
 
-        assertNull(rightClick(beyond, 1500), "a right click on a grayed function button opened a menu");
+        rightClick(beyond, 1500);
+
+        Components.settle();
+
+        assertNull(SettingsWindow.showing(), "a right click on a grayed function button opened the window");
+    }
+
+    /** Whether the Functions table has this function's row selected and wholly inside what it shows. */
+    private static boolean rowOnShow(JTable table, int row)
+    {
+        return Components.onTheEventThread(() -> table.getSelectedRow() == row
+            && table.getVisibleRect().contains(table.getCellRect(row, 0, true)));
     }
 
     /**
-     * The presets in the menu act on the train that is showing: Save Current Functions keeps what is on, Turn Off
-     * Functions switches them off, Apply puts the saved ones back, and the speed pair does the same for the speed.
+     * A right click on a high function button opens the window with that function's row selected and scrolled into view;
+     * with the window already open on another tab, or scrolled elsewhere, a right click on another function brings that
+     * row into view too.
      *
-     * MUTATION: connect Turn Off Functions to `tcui.applyPreferredFunctions` in `FunctionPopupMenu`, and this fails.
+     * MUTATION: drop the `scrollRectToVisible` from `LocomotiveFunctionsTab.select`, or ask for it before the tab is
+     * laid out, and this fails.
      */
     @Test
-    public void testTheMenuPresetsActOnTheTrain() throws Exception
+    public void testARightClickScrollsToThatFunction() throws Exception
+    {
+        final int high = 28;
+
+        rightClick(button(high));
+
+        assertNotNull(SettingsWindow.awaited(), "a right click on F" + high + " opened no window");
+
+        JTable table = SettingsWindow.part("functions.table", JTable.class);
+
+        assertTrue(Components.waitFor(() -> rowOnShow(table, high), WAIT), "F" + high + " is not selected and on show");
+
+        // Already open on another tab: switched to Functions, and the row brought in
+        SettingsWindow.selectTab(0);
+
+        Components.onTheEventThread(() ->
+        {
+            table.scrollRectToVisible(table.getCellRect(0, 0, true));
+
+            return null;
+        });
+
+        rightClick(button(25));
+
+        assertTrue(Components.waitFor(() -> SettingsWindow.tabShowing() == 1, WAIT), "the window stayed on its other tab");
+        assertTrue(Components.waitFor(() -> rowOnShow(SettingsWindow.part("functions.table", JTable.class), 25), WAIT),
+            "F25 is not selected and on show after the tab changed");
+
+        // Scrolled to the bottom, then a function at the top
+        Components.onTheEventThread(() ->
+        {
+            table.scrollRectToVisible(table.getCellRect(high, 0, true));
+
+            return null;
+        });
+
+        rightClick(button(F));
+
+        assertTrue(Components.waitFor(() -> rowOnShow(SettingsWindow.part("functions.table", JTable.class), F), WAIT),
+            "F" + F + " is not on show after the table was scrolled to the bottom");
+    }
+
+    /**
+     * The presets act on the train that is showing, from the key menu where they live now: Save Current Functions
+     * keeps what is on, Turn Off Functions switches them off, Apply puts the saved ones back, and the speed pair does
+     * the same for the speed.
+     *
+     * MUTATION: connect Turn Off Functions to `ui.applyPreferredFunctions` in `RightClickMenuListener`, and this fails.
+     */
+    @Test
+    public void testThePresetsActOnTheTrain() throws Exception
     {
         loc.setF(1, true);
         loc.setF(F, true);
 
         assertTrue(Components.waitFor(() -> loc.getF(1) && loc.getF(F), WAIT), "precondition: f1 and f3 did not switch on");
 
-        choose(F, I18n.t("loc.ui.menuSaveFunctionsAsPreset"));
+        choose(I18n.t("loc.ui.menuSaveFunctionsAsPreset"));
 
         assertTrue(Components.waitFor(() -> saved(1) && saved(F), WAIT), "Save Current Functions as Preset did not save f1 and f3");
 
-        choose(F, I18n.t("loc.ui.menuTurnOffFunctions"));
+        choose(I18n.t("loc.ui.menuTurnOffFunctions"));
 
         assertTrue(Components.waitFor(() -> !loc.getF(1) && !loc.getF(F), WAIT), "Turn Off Functions left a function on");
 
-        choose(F, I18n.t("loc.ui.menuApplySavedFunctionPreset"));
+        choose(I18n.t("loc.ui.menuApplySavedFunctionPreset"));
 
         assertTrue(Components.waitFor(() -> loc.getF(1) && loc.getF(F), WAIT * 4),
             "Apply Saved Function Preset did not put the saved functions back");
 
         loc.setSpeed(41);
 
-        choose(F, I18n.t("loc.ui.menuSaveSpeedAsPreset"));
+        choose(I18n.t("loc.ui.menuSaveSpeedAsPreset"));
 
         assertTrue(Components.waitFor(() -> loc.getPreferredSpeed() == 41, WAIT), "Save Current Speed as Preset did not keep 41");
 
         loc.setSpeed(0);
 
-        choose(F, I18n.f("loc.ui.menuApplySavedSpeedPreset", 41));
+        choose(I18n.f("loc.ui.menuApplySavedSpeedPreset", 41));
 
         assertTrue(Components.waitFor(() -> loc.getSpeed() == 41, WAIT), "Apply Saved Speed Preset did not drive the train at 41");
     }
 
     /**
-     * With autonomy loaded the menu also holds the two ticks for the function autonomy uses on departure and on
-     * arrival: ticking one makes this function the train's, a function that holds the slot names itself on the other,
-     * and unticking clears it.  Without autonomy the menu holds neither.
+     * An error thrown while a sensor message is handled is written to TrainControl's log window, naming the thread, and
+     * its stack trace is printed on the console, rather than being lost in a Future nobody reads.
      *
-     * MUTATION: in `autonomySlot`, write the arrival slot from the departure item (`activeLoc.setDepartureFunc(now)` in
-     * both arms), and this fails.
+     * MUTATION: in `MarklinControlStation.receiveMessage`, `feedbackMessageProcessor.execute(` to `.submit(`; or drop
+     * `thread.setUncaughtExceptionHandler(THREAD_ERRORS)` from `messageProcessor`, or the `station.log(said)` in the
+     * handler.
      */
     @Test
-    public void testTheMenuTicksTheAutonomyFunctions() throws Exception
+    public void testAFailureInASensorTaskReachesTheLogWindow() throws Exception
     {
-        String departure = I18n.t("loc.ui.menuAutonomyDepartureFunction");
-        String arrival = I18n.t("loc.ui.menuAutonomyArrivalFunction");
+        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
 
-        assertTrue(ui.isAutonomyLoaded(), "precondition: the fixture window has no autonomy loaded");
+        // A sensor frame with no payload: the task reads the sensor number from it and fails on the message thread.
+        model.receiveMessage(new org.traincontrol.marklin.udp.CS2Message(
+            org.traincontrol.marklin.udp.CS2Message.CMD_ACC_SENSOR, 0x7b34, true, new byte[0]));
 
-        // With none loaded, neither is offered
-        setAutonomyLoaded(false);
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::getText).contains("cs2-feedback-messages"),
+            30000), "an error thrown while a sensor message was handled never reached the log window: submit keeps it "
+            + "in a Future nobody reads, and without the thread's handler nothing is written");
+    }
+
+    /**
+     * An error that ends a picture-loading task is written to the log window, naming the thread.
+     *
+     * MUTATION: drop `thread.setUncaughtExceptionHandler(...)` from `TrainControlUI.pictureLoader`.
+     */
+    @Test
+    public void testAnErrorInAPictureTaskReachesTheLogWindow() throws Exception
+    {
+        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+
+        ui.getImageLoader().execute(() -> { throw new IllegalStateException("picture task boom"); });
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::getText).contains("picture task boom"), WAIT),
+            "an error that ended a picture task never reached the log window");
+    }
+
+    /**
+     * A locomotive picture that cannot be loaded is said in the log window, and the train shows no picture.
+     *
+     * MUTATION: drop `this.model.logf("loc.ui.errorImageLoad", url)` from the `IOException` catch in
+     * `TrainControlUI.repaintLoc`.
+     */
+    @Test
+    public void testAPictureThatCannotBeLoadedIsSaidInTheLogWindow() throws Exception
+    {
+        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+
+        String missing = new File(folder, "no such picture.png").toURI().toString();
+
+        String imageWas = loc.getImageURL();
+
+        loc.setImageURL(missing);
 
         try
         {
-            JPopupMenu without = rightClick(button(F));
+            ui.repaintLoc(true, null);
 
-            assertNull(Components.withText(without, departure), "the menu offers the departure tick with no autonomy loaded");
-            assertNull(Components.withText(without, arrival), "the menu offers the arrival tick with no autonomy loaded");
-
-            Mouse.closeMenus();
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(area::getText).contains(I18n.f("loc.ui.errorImageLoad", missing)), WAIT),
+                "a picture that could not be loaded was not said in the log window");
         }
         finally
         {
-            setAutonomyLoaded(true);
+            loc.setImageURL(imageWas);
+        }
+    }
+
+    /**
+     * A train deselected while its picture task runs: the task runs to its end, here saying the picture is missing,
+     * as it reads the shown train once; a second read would end it with a NullPointerException first.  The train
+     * deselects itself when the task first asks for its picture, once the render that queued the task is done.
+     *
+     * MUTATION: in `TrainControlUI.renderActiveLoc`'s picture task, read `this.activeLoc.getImageURL()` again after
+     * the null test, and this fails.
+     */
+    @Test
+    public void testATrainDeselectedWhileItsPictureLoadsLeavesNoError() throws Exception
+    {
+        javax.swing.JTextArea area = support.WindowField.of(ui, "debugArea");
+        final String missing = new File(folder, "deselected meanwhile.png").toURI().toString();
+        final java.util.concurrent.atomic.AtomicBoolean deselected = new java.util.concurrent.atomic.AtomicBoolean();
+        final Object shownWas = Reflect.get(TrainControlUI.class, ui, "activeLoc");
+
+        // Named as the class's train, so the render finds it in the model
+        MarklinLocomotive train = new MarklinLocomotive(model, ADDRESS, MarklinLocomotive.decoderType.MM2, NAME)
+        {
+            @Override
+            public String getImageURL()
+            {
+                if (onThePictureTask() && deselected.compareAndSet(false, true))
+                {
+                    try
+                    {
+                        SwingUtilities.invokeAndWait(() -> { });
+                        Reflect.set(TrainControlUI.class, ui, "activeLoc", null);
+                    }
+                    catch (InterruptedException | ReflectiveOperationException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                }
+
+                return missing;
+            }
+        };
+
+        try
+        {
+            Reflect.set(TrainControlUI.class, ui, "activeLoc", train);
+            ui.repaintLoc(true, null);
+
+            // The window keeps only its latest lines, so the file's own line is looked for, not what came after a mark
+            boolean ended = Components.waitFor(() -> Components.onTheEventThread(area::getText)
+                .contains(I18n.f("loc.ui.errorImageLoad", missing)), WAIT);
+
+            assertTrue(deselected.get(), "precondition: the picture task never asked for the train's picture");
+            assertTrue(ended, "a train deselected while its picture loaded ended the picture task before it loaded the"
+                + " picture, with an error");
+        }
+        finally
+        {
+            Reflect.set(TrainControlUI.class, ui, "activeLoc", shownWas);
+            ui.repaintLoc(true, null);
+        }
+    }
+
+    /** Whether the caller is the active train's picture task: a window task off the event thread, not a key's. */
+    private static boolean onThePictureTask()
+    {
+        if (SwingUtilities.isEventDispatchThread()) return false;
+
+        boolean inATask = false;
+
+        for (StackTraceElement frame : Thread.currentThread().getStackTrace())
+        {
+            if (frame.getMethodName().contains("repaintIcon")) return false;
+
+            inATask |= frame.getClassName().equals(TrainControlUI.class.getName())
+                && frame.getMethodName().startsWith("lambda$");
         }
 
-        JPopupMenu menu = rightClick(button(F));
-
-        JCheckBoxMenuItem dep = (JCheckBoxMenuItem) Components.withText(menu, departure);
-        JCheckBoxMenuItem arr = (JCheckBoxMenuItem) Components.withText(menu, arrival);
-
-        assertNotNull(dep, "the menu has no departure tick with autonomy loaded");
-        assertNotNull(arr, "the menu has no arrival tick with autonomy loaded");
-
-        assertFalse(dep.isSelected() || arr.isSelected(), "a tick is set before anything was ticked");
-
-        Mouse.choose(dep);
-
-        assertEquals(loc.getDepartureFunc(), Integer.valueOf(F), "ticking departure did not make F" + F + " the departure function");
-        assertNull(loc.getArrivalFunc(), "ticking departure set the arrival function as well");
-
-        // Another function's menu shows who holds the slot, unticked
-        menu = rightClick(button(F + 1));
-
-        dep = (JCheckBoxMenuItem) Components.withText(menu, departure + "  (F" + F + ")");
-
-        assertNotNull(dep, "another function's menu does not name F" + F + " as the departure function");
-        assertFalse(dep.isSelected(), "another function's menu shows the departure tick as its own");
-
-        Mouse.closeMenus();
-
-        // And F3's own menu shows it ticked, and unticking clears it
-        menu = rightClick(button(F));
-
-        dep = (JCheckBoxMenuItem) Components.withText(menu, departure);
-
-        assertTrue(dep != null && dep.isSelected(), "the function that holds the departure slot does not show it ticked");
-
-        Mouse.choose(dep);
-
-        assertNull(loc.getDepartureFunc(), "unticking the departure function did not clear it");
-
-        // The arrival slot is its own
-        menu = rightClick(button(F));
-
-        Mouse.choose((JMenuItem) Components.withText(menu, arrival));
-
-        assertEquals(loc.getArrivalFunc(), Integer.valueOf(F), "ticking arrival did not make F" + F + " the arrival function");
-        assertNull(loc.getDepartureFunc(), "ticking arrival set the departure function");
-    }
-
-    // The dialog behind Edit Function
-
-    /**
-     * Edit Function opens the function editor for that function, titled with the train; picking another icon and a
-     * momentary trigger and pressing OK gives the train that icon and trigger for that function and puts the icon on
-     * the button.
-     *
-     * MUTATION: in `openEditDialog`, test for `JOptionPane.CANCEL_OPTION` where it tests for `OK_OPTION`, and this
-     * fails.
-     */
-    @Test
-    public void testOkOnTheEditorChangesTheFunctionAndItsButton() throws Exception
-    {
-        int was = loc.getFunctionType(F);
-        int icon = (was + 7) % 100 + 1;
-
-        JDialog dialog = openTheEditor(F);
-
-        JComboBox<?> icons = iconsIn(dialog);
-        JComboBox<?> trigger = triggerIn(dialog);
-
-        Components.onTheEventThread(() ->
-        {
-            icons.setSelectedIndex(icon);
-            trigger.setSelectedIndex(1);
-
-            return null;
-        });
-
-        press(dialog, I18n.t("ui.ok"));
-
-        assertTrue(Components.waitFor(() -> loc.getFunctionType(F) == icon, WAIT),
-            "OK on the editor did not give F" + F + " the icon chosen: it has " + loc.getFunctionType(F));
-
-        assertTrue(loc.isFunctionPulse(F), "OK on the editor did not make F" + F + " momentary, as chosen");
-        assertTrue(loc.isCustomFunctions(), "a train with a changed function is not marked as customized");
-
-        assertTrue(Components.waitFor(() -> shows(button(F), currentIcon(F)), WAIT),
-            "the button for F" + F + " does not show the icon chosen in the editor");
+        return inATask;
     }
 
     /**
-     * Cancel on the editor changes nothing, though an icon and a trigger were chosen in it.
+     * A picture that will not decode shows the placeholder, as a train with no picture does, with no error in the log
+     * window.
      *
-     * MUTATION: in `openEditDialog`, call `edit.doApply()` in the Cancel branch as well, and this fails.
+     * MUTATION: in `TrainControlUI.repaintLoc`'s picture task, hand `getLocImageMaxHeight`'s null to `ImageIcon`.
      */
     @Test
-    public void testCancelOnTheEditorChangesNothing() throws Exception
+    public void testAPictureThatWillNotDecodeShowsThePlaceholder() throws Exception
     {
-        int was = loc.getFunctionType(F);
-        int[] types = loc.getFunctionTypes().clone();
+        final javax.swing.JLabel shown = support.WindowField.of(ui, "locIcon");
+        File text = new File(folder, "not a picture.png");
 
-        JDialog dialog = openTheEditor(F);
+        java.nio.file.Files.write(text.toPath(), "not a picture".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
 
-        JComboBox<?> icons = iconsIn(dialog);
-        JComboBox<?> trigger = triggerIn(dialog);
+        String imageWas = loc.getImageURL();
 
-        Components.onTheEventThread(() ->
+        loc.setImageURL(text.toURI().toString());
+
+        try
         {
-            icons.setSelectedIndex((was + 7) % 100 + 1);
-            trigger.setSelectedIndex(1);
+            SwingUtilities.invokeAndWait(() -> shown.setIcon(null));
+            ui.repaintLoc(true, null);
 
-            return null;
-        });
+            Components.waitFor(() -> shown.getIcon() != null, WAIT);
 
-        press(dialog, I18n.t("ui.cancel"));
-
-        assertClosed(dialog, "Cancel did not close the editor");
-
-        Components.settle();
-
-        assertEquals(loc.getFunctionTypes(), types, "Cancel on the editor changed the function types");
-        assertFalse(loc.isFunctionPulse(F), "Cancel on the editor made F" + F + " momentary");
-        assertFalse(loc.isCustomFunctions(), "Cancel on the editor marked the train as customized");
+            assertNotNull(shown.getIcon(), "a picture that will not decode showed nothing, not the placeholder: its"
+                + " task ended with an error");
+        }
+        finally
+        {
+            loc.setImageURL(imageWas);
+        }
     }
 
     /**
-     * With autonomy loaded the editor carries the two ticks as well: they follow the function the editor shows, write
-     * to the train at once, and Cancel puts them back as they were.
+     * A train with no saved speed preset has nothing to apply: the menu item is grayed and says why.
      *
-     * MUTATION: delete the two `activeLoc.setDepartureFunc(departureWas)` / `setArrivalFunc(arrivalWas)` lines of the
-     * Cancel branch, and this fails.
+     * MUTATION: drop the `getPreferredSpeed() < 1` test in `RightClickMenuListener`, and this fails.
      */
     @Test
-    public void testCancelPutsTheAutonomyTicksBack() throws Exception
+    public void testApplyingNoSpeedPresetIsGrayedOut() throws Exception
     {
-        assertTrue(ui.isAutonomyLoaded(), "precondition: the fixture window has no autonomy loaded");
+        loc.setPreferredSpeed(0);
 
-        loc.setArrivalFunc(2);
+        JPopupMenu menu = SettingsWindow.rightClickKey(SettingsWindow.key(ui, java.awt.event.KeyEvent.VK_A));
 
-        JDialog dialog = openTheEditor(F);
+        assertNotNull(menu, "a right click on the key opened no menu");
 
-        String departure = I18n.t("loc.ui.menuAutonomyDepartureFunction");
-        String arrival = I18n.t("loc.ui.menuAutonomyArrivalFunction");
+        JMenuItem item = (JMenuItem) Components.withText(menu, I18n.f("loc.ui.menuApplySavedSpeedPreset", 0));
 
-        AbstractButton dep = Components.withText(dialog, departure);
-        AbstractButton arr = Components.withText(dialog, arrival + "  (F2)");
-
-        assertNotNull(dep, "the editor has no departure tick with autonomy loaded");
-        assertNotNull(arr, "the editor's arrival tick does not name F2, which holds the slot");
-
-        Components.onTheEventThread(() ->
-        {
-            dep.doClick(0);
-            arr.doClick(0);
-
-            return null;
-        });
-
-        assertEquals(loc.getDepartureFunc(), Integer.valueOf(F), "ticking departure in the editor did not reach the train");
-        assertEquals(loc.getArrivalFunc(), Integer.valueOf(F), "ticking arrival in the editor did not move the slot here");
-
-        press(dialog, I18n.t("ui.cancel"));
-
-        assertClosed(dialog, "Cancel did not close the editor");
-
-        Components.settle();
-
-        assertNull(loc.getDepartureFunc(), "Cancel kept the departure tick");
-        assertEquals(loc.getArrivalFunc(), Integer.valueOf(2), "Cancel did not give the arrival slot back to F2");
+        assertNotNull(item, "the key's menu has no Apply Saved Speed Preset");
+        assertFalse(Components.onTheEventThread(item::isEnabled), "Apply Saved Speed Preset is enabled with no preset saved");
+        assertEquals(Components.onTheEventThread(item::getToolTipText), I18n.t("loc.ui.tooltip.noSpeedPreset"),
+            "the grayed item does not say why");
     }
 
     // A picture of one's own for the button
 
     /**
-     * Use Custom Icon in the editor opens the chooser; the picture picked shows in the editor, and OK gives the
-     * function that picture, which the button then shows.  The train is then customized, and the chooser starts in the
-     * picture's folder next time.
+     * The wrench in a row opens the chooser; the picture picked shows in the table, and Save gives the function that
+     * picture, which the button then shows.  The train is then customized.
      *
-     * MUTATION: in `useCustomFunctionIconActionPerformed`, leave `customIconPath` unassigned when the chooser is
-     * approved, and this fails.
+     * MUTATION: leave the picked image out of the row in `useOwnImage`, and this fails.
      */
     @Test
-    public void testACustomIconPickedInTheEditorReachesTheButton() throws Exception
+    public void testACustomIconPickedOnTheTabReachesTheButton() throws Exception
     {
-        File picture = picture("green.png", Color.GREEN);
+        File picture = SettingsWindow.picture(folder, "green.png", Color.GREEN);
         String url = picture.toPath().toUri().toString();
 
-        JDialog dialog = openTheEditor(F);
+        openTheTab(F);
 
-        pickACustomIcon(dialog, picture);
+        SettingsWindow.pickAnImage(F, picture);
 
-        JLabel shown = customIconIn(dialog);
+        assertNull(loc.getLocalFunctionImageURL(F), "the picture was given to the function before Save");
 
-        assertTrue(Components.waitFor(() -> shown.getIcon() != null, WAIT), "the editor does not show the picture chosen");
-        assertTrue(Components.onTheEventThread(() -> Components.withText(dialog, I18n.t("loc.ui.clearCustomIcon")).isVisible()),
-            "with a picture chosen the editor offers no Clear Custom Icon");
-
-        assertNull(loc.getLocalFunctionImageURL(F), "the picture was given to the function before OK");
-
-        press(dialog, I18n.t("ui.ok"));
+        SettingsWindow.press(SettingsWindow.save());
 
         assertTrue(Components.waitFor(() -> url.equals(loc.getLocalFunctionImageURL(F)), WAIT),
-            "OK did not give F" + F + " the picture chosen: it has " + loc.getLocalFunctionImageURL(F));
+            "Save did not give F" + F + " the picture chosen: it has " + loc.getLocalFunctionImageURL(F));
 
         assertTrue(loc.isCustomFunctions(), "a train with a custom icon is not marked as customized");
 
@@ -493,40 +532,15 @@ public class testTheFunctionButtonMenu
     }
 
     /**
-     * Cancel after choosing a picture leaves the function with the icon it had.
+     * Picking a standard icon in the row of a function that has a picture of one's own replaces the picture at Save, and
+     * the button goes back to the icon its type gives; the picture itself is the user's file and stays.
      *
-     * MUTATION: in `useCustomFunctionIconActionPerformed`, call `loc.setLocalFunctionImageURL` as the picture is picked,
-     * and this fails.
+     * MUTATION: keep the picture when a standard icon is picked, in `useStandardIcon`, and this fails.
      */
     @Test
-    public void testACanceledCustomIconIsNotKept() throws Exception
+    public void testAStandardIconGivesTheButtonItsOwnBack() throws Exception
     {
-        File picture = picture("red.png", Color.RED);
-
-        JDialog dialog = openTheEditor(F);
-
-        pickACustomIcon(dialog, picture);
-
-        press(dialog, I18n.t("ui.cancel"));
-
-        assertClosed(dialog, "Cancel did not close the editor");
-
-        Components.settle();
-
-        assertNull(loc.getLocalFunctionImageURL(F), "Cancel kept the picture chosen in the editor");
-        assertFalse(loc.isCustomFunctions(), "Cancel left the train marked as customized");
-    }
-
-    /**
-     * Clear Custom Icon, then OK, takes the picture off the function and the button goes back to the icon its type
-     * gives; the picture itself is the user's file and stays.
-     *
-     * MUTATION: have `applyCustomFunctionIcon` skip `unsetLocalFunctionImageURL` for "reset", and this fails.
-     */
-    @Test
-    public void testClearingACustomIconGivesTheButtonItsOwnBack() throws Exception
-    {
-        File picture = picture("blue.png", Color.BLUE);
+        File picture = SettingsWindow.picture(folder, "blue.png", Color.BLUE);
 
         loc.setFunctionType(F, 5, Locomotive.FUNCTION_TOGGLE);
         loc.setLocalFunctionImageURL(F, picture.toURI().toString());
@@ -535,103 +549,92 @@ public class testTheFunctionButtonMenu
 
         assertTrue(Components.waitFor(() -> centerIs(button(F), Color.BLUE), WAIT), "precondition: the button does not show the picture");
 
-        JDialog dialog = openTheEditor(F);
+        openTheTab(F);
 
-        AbstractButton clear = Components.withText(dialog, I18n.t("loc.ui.clearCustomIcon"));
+        SettingsWindow.pickIcon(F, 5);
 
-        assertTrue(Components.onTheEventThread(clear::isVisible), "precondition: no Clear Custom Icon beside a function with a picture");
-
-        Components.press(clear);
-        Components.settle();
-
-        press(dialog, I18n.t("ui.ok"));
+        SettingsWindow.press(SettingsWindow.save());
 
         assertTrue(Components.waitFor(() -> loc.getLocalFunctionImageURL(F) == null, WAIT),
-            "OK after Clear Custom Icon left the picture on the function");
+            "Save after picking a standard icon left the picture on the function");
 
         assertTrue(Components.waitFor(() -> shows(button(F), currentIcon(F)), WAIT),
             "the button does not go back to the icon the function's type gives");
 
-        assertTrue(picture.isFile(), "clearing the icon deleted the user's picture");
+        assertTrue(picture.isFile(), "replacing the picture deleted the user's file");
     }
 
     // Reset
 
     /**
-     * Reset All Customizations asks first: No changes nothing; Yes takes the custom functions and pictures off the
-     * train and the button goes back to the Central Station's icon.  Grayed on a train that is not customized.
+     * Reset All Customizations asks first: No changes nothing; Yes marks the train for Save, which takes the custom
+     * functions and pictures off it and the button goes back to the Central Station's icon.  Grayed on a train that is
+     * not customized.
      *
-     * MUTATION: in `resetButtonActionPerformed`, test for `JOptionPane.NO_OPTION` instead of `YES_OPTION`, and this
-     * fails.
+     * MUTATION: in `resetEverything`, test for `JOptionPane.NO_OPTION` instead of `YES_OPTION`, and this fails.
      */
     @Test
     public void testResetAsksAndThenGivesTheStationsFunctionsBack() throws Exception
     {
-        File picture = picture("yellow.png", Color.YELLOW);
+        File picture = SettingsWindow.picture(folder, "yellow.png", Color.YELLOW);
 
-        JDialog dialog = openTheEditor(F);
+        openTheTab(F);
 
-        AbstractButton reset = Components.withText(dialog, I18n.t("loc.ui.resetAllCustomizations"));
+        assertFalse(Components.onTheEventThread(SettingsWindow.part("functions.resetAll", JButton.class)::isEnabled),
+            "Reset is offered on a train that is not customized");
 
-        assertFalse(Components.onTheEventThread(reset::isEnabled), "Reset is offered on a train that is not customized");
-
-        press(dialog, I18n.t("ui.cancel"));
-
-        assertClosed(dialog, "Cancel did not close the editor");
+        SettingsWindow.closeIfOpen();
 
         loc.setFunctionType(F, 9, Locomotive.FUNCTION_PULSE);
         loc.setLocalFunctionImageURL(F + 1, picture.toURI().toString());
 
         ui.repaintLoc(true, null);
 
-        dialog = openTheEditor(F);
+        openTheTab(F);
 
-        reset = Components.withText(dialog, I18n.t("loc.ui.resetAllCustomizations"));
+        JButton reset = SettingsWindow.part("functions.resetAll", JButton.class);
 
-        final AbstractButton resetting = reset;
-
-        assertTrue(Components.onTheEventThread(resetting::isEnabled), "Reset is grayed on a customized train");
+        assertTrue(Components.onTheEventThread(reset::isEnabled), "Reset is grayed on a customized train");
 
         // NO: nothing changes
-        Components.press(reset);
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.no"))))
+        {
+            Components.press(reset);
 
-        JDialog question = questionShowing(I18n.t("loc.ui.confirmResetFunctionsToCentralStation"));
-
-        assertNotNull(question, "Reset asked no question");
-
-        press(question, I18n.t("ui.no"));
-
-        assertClosed(question, "No did not close the question");
+            assertTrue(answering.awaitAsked(1, WAIT), "Reset asked no question");
+            assertEquals(answering.asked(), java.util.Arrays.asList(I18n.t("loc.ui.confirmResetFunctionsToCentralStation")));
+        }
 
         Components.settle();
+
+        SettingsWindow.closeIfOpen();
 
         assertTrue(loc.isCustomFunctions(), "No on the Reset question took the customizations off");
         assertNotNull(loc.getLocalFunctionImageURL(F + 1), "No on the Reset question took a picture off");
         assertEquals(loc.getFunctionType(F), 9, "No on the Reset question changed a function's icon");
 
-        assertTrue(Components.waitFor(() -> Components.onTheEventThread(resetting::isEnabled), WAIT),
-            "Reset stayed grayed after No");
+        // YES: the train is the station's again, at Save
+        openTheTab(F);
 
-        // YES: the train is the station's again
-        Components.press(reset);
+        reset = SettingsWindow.part("functions.resetAll", JButton.class);
 
-        question = questionShowing(I18n.t("loc.ui.confirmResetFunctionsToCentralStation"));
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
+        {
+            Components.press(reset);
 
-        assertNotNull(question, "Reset asked no question the second time");
+            assertTrue(answering.awaitAsked(1, WAIT), "Reset asked no question the second time");
+        }
 
-        press(question, I18n.t("ui.yes"));
+        Components.settle();
+
+        assertTrue(loc.isCustomFunctions(), "Yes on the Reset question reset the train before Save");
+
+        SettingsWindow.press(SettingsWindow.save());
 
         assertTrue(Components.waitFor(() -> !loc.isCustomFunctions(), WAIT),
-            "Yes on the Reset question left the train customized");
+            "Save after Yes on the Reset question left the train customized");
 
-        assertTrue(loc.getLocalFunctionImageURLs().isEmpty(), "Yes on the Reset question left a picture on a function");
-
-        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> !resetting.isEnabled()), WAIT),
-            "Reset is still offered after it reset everything");
-
-        press(dialog, I18n.t("ui.cancel"));
-
-        assertClosed(dialog, "Cancel did not close the editor");
+        assertTrue(loc.getLocalFunctionImageURLs().isEmpty(), "Save after Yes on the Reset question left a picture on a function");
 
         assertTrue(Components.waitFor(() -> shows(button(F), currentIcon(F)), WAIT),
             "the button does not show the icon its function type gives after Reset");
@@ -642,6 +645,8 @@ public class testTheFunctionButtonMenu
     /** Makes the train the one on show, as choosing it on the keyboard does. */
     private static void showTheTrain() throws Exception
     {
+        SettingsWindow.showOnKeyA(ui, loc);
+
         Components.onTheEventThread(() ->
         {
             if (ui.getActiveLoc() != loc) ui.mapLocToCurrentButton(NAME);
@@ -663,11 +668,7 @@ public class testTheFunctionButtonMenu
     /** The loaded state autonomy is in, as far as the menu and the editor ask: set by the window's own field. */
     private static void setAutonomyLoaded(boolean loaded) throws Exception
     {
-        java.lang.reflect.Field name = TrainControlUI.class.getDeclaredField("activeDiagramConfiguration");
-
-        name.setAccessible(true);
-
-        name.set(ui, loaded ? "fmenu" : null);
+        Reflect.set(TrainControlUI.class, ui, "activeDiagramConfiguration", loaded ? "fmenu" : null);
 
         assertEquals(ui.isAutonomyLoaded(), loaded, "precondition: the window's autonomy state was not set");
     }
@@ -676,11 +677,7 @@ public class testTheFunctionButtonMenu
     {
         try
         {
-            java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField("F" + function);
-
-            f.setAccessible(true);
-
-            return (JToggleButton) f.get(ui);
+            return (JToggleButton) Reflect.get(TrainControlUI.class, ui, "F" + function);
         }
         catch (ReflectiveOperationException e)
         {
@@ -688,11 +685,15 @@ public class testTheFunctionButtonMenu
         }
     }
 
-    private static JPopupMenu rightClick(JToggleButton button)
+    /** A right click that is to open the Settings window: waits for the window, not for a menu. */
+    private static void rightClick(JToggleButton button)
     {
-        return rightClick(button, WAIT);
+        rightClick(button, 0);
+
+        Components.waitFor(() -> SettingsWindow.showing() != null, WAIT);
     }
 
+    /** A right click, and the menu it opened within `millis`, or null. */
     private static JPopupMenu rightClick(JToggleButton button, long millis)
     {
         Components.select(button);
@@ -700,166 +701,48 @@ public class testTheFunctionButtonMenu
         return Mouse.rightClick(button, millis);
     }
 
-    /** Right-clicks a function button and chooses an item of the menu that opens. */
-    private static void choose(int function, String item)
+    /** Opens the key's menu and chooses an item of it. */
+    private static void choose(String item) throws Exception
     {
-        JPopupMenu menu = rightClick(button(function));
+        JPopupMenu menu = SettingsWindow.rightClickKey(SettingsWindow.key(ui, java.awt.event.KeyEvent.VK_A));
 
-        assertNotNull(menu, "a right click on F" + function + " opened no menu");
+        assertNotNull(menu, "a right click on the key opened no menu");
 
         JMenuItem found = (JMenuItem) Components.withText(menu, item);
 
-        assertNotNull(found, "the menu has no \"" + item + "\"");
+        assertNotNull(found, "the key's menu has no \"" + item + "\"");
 
         Mouse.choose(found);
     }
 
-    private static List<JMenuItem> itemsOf(JPopupMenu menu)
+    /** The right-click on a function's button, and the window it opens. */
+    private static void openTheTab(int function) throws Exception
     {
-        return Components.all(menu, JMenuItem.class, i -> true);
-    }
+        rightClick(button(function));
 
-    /** Edit Function from the menu of a function's button, and the editor that opens. */
-    private static JDialog openTheEditor(int function) throws Exception
-    {
-        choose(function, I18n.f("loc.ui.editFunction", function));
-
-        JDialog dialog = dialogShowing(d -> I18n.f("loc.ui.dialogEditLocomotiveFunctions", NAME).equals(d.getTitle()));
-
-        assertNotNull(dialog, "Edit Function F" + function + " opened no editor");
+        assertNotNull(SettingsWindow.awaited(), "a right click on F" + function + " opened no window");
 
         // Its icons load after it opens, and choosing one before they have replaced the list is lost
-        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> loaded(dialog)), WAIT),
-            "the editor never finished loading its icons");
-
-        return dialog;
-    }
-
-    private static boolean loaded(JDialog dialog)
-    {
-        for (JLabel label : Components.all(dialog, JLabel.class, l -> true))
-        {
-            if (label.getText() != null && label.getText().contains(I18n.t("loc.ui.loadingMessage"))) return false;
-        }
-
-        return true;
-    }
-
-    /** The icon list of the editor: the combo box whose entries are pictures. */
-    private static JComboBox<?> iconsIn(JDialog dialog)
-    {
-        return Components.find(dialog, JComboBox.class, c -> c.getItemCount() > 50);
-    }
-
-    /** The trigger list: the combo box that starts with Toggle. */
-    private static JComboBox<?> triggerIn(JDialog dialog)
-    {
-        return Components.find(dialog, JComboBox.class, c -> c.getItemCount() > 0
-            && I18n.t("function.ui.toggle").equals(c.getItemAt(0)));
-    }
-
-    /** The label that shows the chosen picture, beside the buttons Use Custom Icon and Clear Custom Icon. */
-    private static JLabel customIconIn(JDialog dialog)
-    {
-        return Components.find(dialog, JLabel.class, l -> l.getText() == null || l.getText().isEmpty());
-    }
-
-    /** Presses Use Custom Icon and picks this file in the chooser it opens. */
-    private static void pickACustomIcon(JDialog dialog, File picture) throws Exception
-    {
-        AbstractButton use = Components.withText(dialog, I18n.t("loc.ui.useCustomIcon"));
-
-        assertNotNull(use, "the editor has no Use Custom Icon");
-
-        Components.press(use);
-
-        JFileChooser[] chooser = new JFileChooser[1];
-
-        assertTrue(Components.waitFor(() -> (chooser[0] = chooserShowing()) != null, WAIT), "Use Custom Icon opened no chooser");
-
-        SwingUtilities.invokeLater(() ->
-        {
-            chooser[0].setSelectedFile(picture);
-            chooser[0].approveSelection();
-        });
-
-        assertTrue(Components.waitFor(() -> chooserShowing() == null, WAIT), "the chooser did not close once a picture was picked");
-
+        Components.settle();
         Components.settle();
     }
 
-    private static JFileChooser chooserShowing()
-    {
-        return Components.onTheEventThread(() ->
-        {
-            for (Window w : Window.getWindows())
-            {
-                if (!(w instanceof JDialog) || !w.isShowing()) continue;
 
-                JFileChooser found = Components.find(w, JFileChooser.class, null);
 
-                if (found != null) return found;
-            }
 
-            return null;
-        });
-    }
-
-    private static JDialog dialogShowing(Predicate<JDialog> which)
-    {
-        JDialog[] found = new JDialog[1];
-
-        Components.waitFor(() -> (found[0] = Components.onTheEventThread(() ->
-        {
-            for (Window w : Window.getWindows())
-            {
-                if (w instanceof JDialog && w.isShowing() && which.test((JDialog) w)) return (JDialog) w;
-            }
-
-            return null;
-        })) != null, WAIT);
-
-        return found[0];
-    }
-
-    /** The question whose message is exactly this. */
-    private static JDialog questionShowing(String message)
-    {
-        return dialogShowing(d ->
-        {
-            JOptionPane pane = Components.find(d, JOptionPane.class, null);
-
-            return pane != null && message.equals(pane.getMessage());
-        });
-    }
-
-    private static void assertClosed(JDialog dialog, String message)
-    {
-        assertTrue(Components.waitFor(() -> !dialog.isShowing(), WAIT), message);
-    }
-
-    /** Presses the button of a dialog that says this. */
-    private static void press(JDialog dialog, String text)
-    {
-        AbstractButton b = Components.find(dialog, JButton.class, x -> text.equals(x.getText()));
-
-        assertNotNull(b, "the dialog has no \"" + text + "\" button");
-
-        Components.press(b);
-
-        Components.settle();
-    }
 
     /** Whatever is open is closed, as a stray window would be by the operator. */
     private static void closeEverythingOpen()
     {
         Mouse.closeMenus();
 
+        SettingsWindow.closeIfOpen();
+
         Components.onTheEventThread(() ->
         {
-            for (Window w : Window.getWindows())
+            for (java.awt.Window w : java.awt.Window.getWindows())
             {
-                if (w instanceof JDialog && w.isShowing()) w.dispose();
+                if (w instanceof javax.swing.JDialog && w.isShowing()) w.dispose();
             }
 
             return null;
@@ -877,22 +760,6 @@ public class testTheFunctionButtonMenu
 
     // Pictures
 
-    private static File picture(String name, Color color) throws Exception
-    {
-        BufferedImage drawn = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
-
-        java.awt.Graphics2D g = drawn.createGraphics();
-
-        g.setColor(color);
-        g.fillRect(0, 0, 40, 40);
-        g.dispose();
-
-        File file = new File(folder, name);
-
-        assertTrue(javax.imageio.ImageIO.write(drawn, "png", file), "precondition: the picture was not written");
-
-        return file;
-    }
 
     /** What the window itself loads for a function's current icon: the same picture the button shows. */
     private static java.awt.Image currentIcon(int function)

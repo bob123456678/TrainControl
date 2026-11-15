@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -18,6 +17,8 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Teardown;
 
 /**
  * MT-334 - changing one pathing arrow repaints the arrows, not every tile on the page (OB-185).  The panel's light
@@ -66,21 +67,15 @@ public class testTheDiagramIsNotRebuiltForAnArrow
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor's grid needs a display");
-        }
+        Display.needed("the editor's grid needs a display");
 
         // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, `test/layouts/live-snapshot`): the SHAPE is what
-        // this class is about; where his trains stand, how long they are and which side they came in by are not, and
-        // reading those off the live folder made a fixture that says something different every week.
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
+        // this class is about; where his trains stand, how long they are and which side they came in by are not.
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        model = support.TestStation.simulatedInDebug();
-
-        javax.swing.SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -132,23 +127,7 @@ public class testTheDiagramIsNotRebuiltForAnArrow
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        if (editor != null)
-        {
-            final LayoutEditor closing = editor;
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
-        }
-
-        if (ui != null)
-        {
-            final TrainControlUI closing = ui;
-
-            javax.swing.SwingUtilities.invokeAndWait(() -> closing.dispose());
-        }
-
-        if (model != null) model.stop();
-
-        if (sandbox != null) sandbox.close();
+        Teardown.close(sandbox, model, editor, ui);
     }
 
     /**

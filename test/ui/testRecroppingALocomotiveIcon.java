@@ -36,6 +36,7 @@ import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 import support.Components;
 import support.Mouse;
+import support.Reflect;
 
 /**
  * Re-cropping a locomotive's icon from the crop mark over the picture: the crop window opens over the photograph, the
@@ -447,21 +448,19 @@ public class testRecroppingALocomotiveIcon
 
     // The window
 
-    /** Left-clicks the crop mark over the picture, and the crop window that opens. */
+    /** Left-clicks the crop mark over the picture in Locomotive Settings, and the crop window that opens. */
     private static JDialog openTheCrop() throws Exception
     {
-        java.lang.reflect.Field mark = TrainControlUI.class.getDeclaredField("cropOverlay");
+        support.SettingsWindow.closeIfOpen();
 
-        mark.setAccessible(true);
+        assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+            "the settings window did not open");
+        assertNotNull(support.SettingsWindow.awaited(), "the settings window is not on screen");
 
-        final JLabel overlay = (JLabel) mark.get(ui);
+        final JLabel overlay = support.SettingsWindow.part("settings.crop", JLabel.class);
 
-        Components.onTheEventThread(() ->
-        {
-            overlay.setVisible(true);
-
-            return null;
-        });
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(overlay::isVisible), WAIT),
+            "the crop mark is not shown over the picture");
 
         Mouse.click(overlay);
 
@@ -596,9 +595,7 @@ public class testRecroppingALocomotiveIcon
     /** The file beside a crop that names the photograph it was cut from. */
     private static File noteOf(File crop) throws Exception
     {
-        java.lang.reflect.Field suffix = TrainControlUI.class.getDeclaredField("CROP_SOURCE_SUFFIX");
-
-        suffix.setAccessible(true);
+        java.lang.reflect.Field suffix = Reflect.field(TrainControlUI.class, "CROP_SOURCE_SUFFIX");
 
         return new File(crop.getAbsolutePath() + suffix.get(null));
     }
@@ -624,11 +621,7 @@ public class testRecroppingALocomotiveIcon
 
     private static Object field(String name) throws Exception
     {
-        java.lang.reflect.Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     private static boolean isColor(int argb, Color color)
@@ -640,6 +633,7 @@ public class testRecroppingALocomotiveIcon
     private static void closeEverythingOpen()
     {
         Mouse.closeMenus();
+        support.SettingsWindow.closeIfOpen();
 
         Components.onTheEventThread(() ->
         {

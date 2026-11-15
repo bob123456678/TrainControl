@@ -195,8 +195,6 @@ public class PositionAwareJFrame extends JFrame
     /**
      * Shows or hides the window - and, shown, maximizes it where it was remembered maximized, and brings it forward
      * (OB-328).
-     *
-     * @param visible whether to show it
      */
     @Override
     public void setVisible(boolean visible)
@@ -217,7 +215,6 @@ public class PositionAwareJFrame extends JFrame
 
     /**
      * Sets a custom index for this window, in case there are multiple of one class
-     * @param thisWindowIndex 
      */
     public void setWindowIndex(String thisWindowIndex)
     {
@@ -285,7 +282,6 @@ public class PositionAwareJFrame extends JFrame
 
     /**
      * Checks if the loadWindowBounds method has previously been called
-     * @return 
      */
     protected boolean isLoaded()
     {
@@ -294,7 +290,6 @@ public class PositionAwareJFrame extends JFrame
     
     /**
      * Gets the fully qualified window name, including the index if set
-     * @return 
      */
     private String getWindowName()
     {

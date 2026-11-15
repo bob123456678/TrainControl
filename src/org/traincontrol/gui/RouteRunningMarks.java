@@ -52,11 +52,7 @@ final class RouteRunningMarks
         this.routeNamed = routeNamed;
     }
 
-    /**
-     * A route has begun running.  May be called from the route's thread.
-     *
-     * @param name the route's name
-     */
+    /** A route has begun running.  May be called from the route's thread. */
     void started(String name)
     {
         if (name == null) return;
@@ -70,8 +66,6 @@ final class RouteRunningMarks
      * A route has ended.  May be called from the route's thread.  The name is not taken out here: `check` does that on
      * the event thread, since a route started again before this call is executing once more and its mark would be left
      * still.
-     *
-     * @param name the route's name
      */
     void finished(String name)
     {
@@ -99,9 +93,7 @@ final class RouteRunningMarks
         arc.paintIcon(null, g, strip.x - SLOT + (SLOT - SIZE) / 2, strip.y + (strip.height - SIZE) / 2);
     }
 
-    /**
-     * Starts or stops the animation to match what still runs, and shows the result.  Event thread only.
-     */
+    /** Starts or stops the animation to match what still runs, and shows the result.  Event thread only. */
     private void check()
     {
         for (Iterator<String> names = running.iterator(); names.hasNext(); )

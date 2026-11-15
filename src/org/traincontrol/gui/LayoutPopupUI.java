@@ -20,16 +20,13 @@ public class LayoutPopupUI extends PositionAwareJFrame
     private final TrainControlUI parent;
     private final int size;
     private LayoutDiagram layout;
-    private int pageIndex;
     
     /**
      * Popup window showing train layouts
      * @param l reference to the layout
      * @param size size of each tile, in pixels
-     * @param ui
-     * @param pageIndex
      */
-    public LayoutPopupUI(LayoutDiagram l, int size, TrainControlUI ui, int pageIndex)
+    public LayoutPopupUI(LayoutDiagram l, int size, TrainControlUI ui)
     {
         initComponents();
         
@@ -37,7 +34,6 @@ public class LayoutPopupUI extends PositionAwareJFrame
         this.parent = ui;
         this.size = size;
         this.layout = l;
-        this.pageIndex = pageIndex;
     }
 
     // The grid on screen now, so that the next one can tell it to stop
@@ -73,7 +69,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
         setTitle(titleWith(this.parent.getWindowTitleString()));
 
         // A caption redraw is not a new page: the window stays as the operator left it and what is remembered for it is
-        // theirs; packing it to its natural size and saving that undid a size they had chosen (OB-341).
+        // theirs; packing it to its natural size and saving that would undo a size they had chosen (OB-341).
         if (fit)
         {
             // Scale the popup according to the size of the layout
@@ -103,6 +99,55 @@ public class LayoutPopupUI extends PositionAwareJFrame
     boolean captionsAreAsBuilt()
     {
         return this.grid != null && this.grid.captionsAreAsBuilt();
+    }
+
+    /** The grid on screen, or null before the first drawing. */
+    LayoutGrid grid()
+    {
+        return this.grid;
+    }
+
+    /**
+     * Whether the model holds this window's page as a new object, found as `pageNow` finds it: a sync from a local
+     * folder reads every page again, a page renamed there too.
+     */
+    boolean showsAPageReadAgain()
+    {
+        LayoutDiagram now = pageNow();
+
+        return now != null && now != this.layout;
+    }
+
+    /** Whether the model has this window's page no longer (OB-466). */
+    boolean showsAPageThatIsGone()
+    {
+        return pageNow() == null;
+    }
+
+    /** This window's page as the model holds it now, by name, else by page ID (a rename keeps it); null once gone. */
+    private LayoutDiagram pageNow()
+    {
+        LayoutDiagram byName = this.parent.getModel().getLayout(this.layout.getName());
+
+        if (byName != null || this.layout.getPageId() == null) return byName;
+
+        for (String name : this.parent.getModel().getLayoutList())
+        {
+            LayoutDiagram page = this.parent.getModel().getLayout(name);
+
+            if (page != null && this.layout.getPageId().equals(page.getPageId())) return page;
+        }
+
+        return null;
+    }
+
+    /** Closes the window for good, its grid stopped first. */
+    void close()
+    {
+        if (this.grid != null) this.grid.discard();
+
+        setVisible(false);
+        dispose();
     }
 
     public String getLayoutTitle()
@@ -153,12 +198,24 @@ public class LayoutPopupUI extends PositionAwareJFrame
         });
     }
     
-    /**
-     * Refreshes the contents of the layout
-     */
+    /** Draws the page again after an edit, sized to it again only when its size changed: a size chosen stays. */
     public void refreshDiagram()
     {
-        this.goToLayoutPage(this.pageIndex);
+        LayoutDiagram now = pageNow();
+
+        this.goToLayoutPage(shownPlace(), now != null
+            && (now.getSx() != this.layout.getSx() || now.getSy() != this.layout.getSy()));
+    }
+
+    /**
+     * This window's page in the shown list, found as `pageNow` finds it, or -1 once it is gone: a place saved earlier
+     * is stale once pages have moved, and an arrow's number is a place in another list.
+     */
+    private int shownPlace()
+    {
+        LayoutDiagram now = pageNow();
+
+        return now == null ? -1 : this.parent.getModel().getLayoutList().indexOf(now.getName());
     }
 
     /**
@@ -167,16 +224,34 @@ public class LayoutPopupUI extends PositionAwareJFrame
      */
     void refreshCaptions()
     {
-        this.goToLayoutPage(this.pageIndex, false);
+        this.goToLayoutPage(shownPlace(), false);
     }
     
     /**
      * Updates the layout page
-     * @param index
+     * @param index the page's place in the list the window shows
      */
     public void goToLayoutPage(int index)
     {
         this.goToLayoutPage(index, true);
+    }
+
+    /**
+     * Goes to the page a link tile leads to, found by the page ID it carries (FR-175); a link to nothing clicks to
+     * nothing, and one to a page that is gone says so in the log.
+     */
+    public void followLink(org.traincontrol.base.LayoutDiagramComponent link)
+    {
+        String page = link.getLinkPageName();
+
+        if (page == null)
+        {
+            if (link.linksToAPageThatIsGone()) this.parent.getModel().logf("layout.ui.errorLinkedPageGone", link.getLinkPageId());
+
+            return;
+        }
+
+        this.goToLayoutPage(this.parent.getModel().getLayoutList().indexOf(page), true);
     }
 
     /**
@@ -201,20 +276,12 @@ public class LayoutPopupUI extends PositionAwareJFrame
 
                 drawGrid(fit);
                 this.repaint();
-
-                // Update saved index
-                this.pageIndex = index;
             }
             else
             {
                 this.parent.getModel().logf("layout.ui.logPopupLayoutPageNotExist", page);
             }
         });
-    }
-    
-    public JPanel getPanel()
-    {
-        return this.ExtLayoutPanel;
     }
     
     public int getLayoutSize()

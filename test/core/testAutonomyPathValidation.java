@@ -15,6 +15,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
+import support.Reflect;
 
 /**
  * Verifies the configureAndLockPath guard in Layout: autonomy trains must not be released until the
@@ -190,10 +191,9 @@ public class testAutonomyPathValidation
             model.setFeedbackState(fb.getName(), false);
         }
 
-        // A destination needs a sensor; the ORIGIN is where the train starts and needs none, so it is the one point
-        // here that is not a station.  FOUR edges, not two: a two-edge run in simulation is over in a second and
-        // unlockPath releases everything at the end, so it could not tell "given back early" from "given back at the
-        // end", which is the whole question.
+        // The ORIGIN needs no sensor, so it is the one point here that is not a station.  FOUR edges, not two: a
+        // two-edge run is over in a second and unlockPath releases everything at the end, so it could not tell "given
+        // back early" from "given back at the end", which is the whole question.
         layout.createPoint("NA_A", false, null);
         layout.createPoint("NA_B", true, first.getName());
         layout.createPoint("NA_C", true, second.getName());
@@ -394,14 +394,14 @@ public class testAutonomyPathValidation
 
         MarklinLocomotive loc = dummyLoc();
 
-        // A freshly-built dummyLoc() already sits at speed 0, so asserting getSpeed() == 0
-        // afterwards proved nothing about handleMisconfiguredPath's loc.setSpeed(0) (Layout.java:2772) -
-        // deleting that production line would leave this test green.  Giving the locomotive a nonzero
-        // speed here means the closing assertion below can only pass if the guard actually stopped it.
+        // A fresh dummyLoc() already sits at speed 0, so asserting getSpeed() == 0 would prove nothing about
+        // handleMisconfiguredPath's loc.setSpeed(0).  A nonzero speed here means the closing assertion can only pass
+        // if the guard stopped it.
         loc.setSpeed(30);
         assertTrue(loc.getSpeed() == 30, "precondition: the locomotive must be moving before the fault");
 
         boolean result;
+        long start = System.currentTimeMillis();
 
         try
         {
@@ -415,6 +415,11 @@ public class testAutonomyPathValidation
         // Validation failed, so the path is not executed
         assertFalse(result, "configureAndLockPath must return false when the path cannot be confirmed");
 
+        // On time: the path's own switches answering in the wrong state do not count as a busy station (OB-425).
+        // MUTATION: in `Layout.validatePathActuation`, extend the deadline for every echo; this waits out the cap.
+        assertTrue(System.currentTimeMillis() - start < 3000,
+            "a path switched back by someone else must fail at its first deadline, not after the busy-station cap");
+
         // Power stays on - the guard stops the loco and releases its locks instead of cutting power, so
         // other locomotives are unaffected
         assertTrue(model.getPowerState(), "Power must stay on after a misconfigured path");
@@ -424,6 +429,171 @@ public class testAutonomyPathValidation
             "The locomotive must be stopped - it was moving at 30 before the fault, so this can only "
                 + "pass if handleMisconfiguredPath actually stopped it");
         assertFalse(tp.path.get(0).isOccupied(dummyLoc()), "The failed path's edge must be released");
+    }
+
+    /**
+     * A station still answering is waited for (OB-425): a CS3 switches one accessory at a time, about a second each,
+     * so a path's three switches come back one by one after another train's backlog, long after
+     * PATH_VALIDATION_MS * (switches + 1).
+     * MUTATION: in `Layout.validatePathActuation`, extend the deadline only for echoes of accessories not on the path;
+     * the third switch lands after it.
+     */
+    @Test
+    public void testABusyStationIsWaitedFor() throws Exception
+    {
+        TestPath tp = buildPath(140, "_busy");
+        MarklinAccessory third = model.newSwitch(142, MM2, false);
+        tp.path.get(0).addConfigCommand(third.getName(), accessorySetting.TURN);
+
+        long[] outcome = behindABusyStation(tp, 145, 30, () -> {}, tp.acc1, tp.acc2, third);
+
+        assertEquals(outcome[0], 1L, "A path whose switches are answered after a busy station's backlog must pass");
+    }
+
+    /**
+     * The wait has an end: a station busy for good with other accessories fails the path at PATH_VALIDATION_BUSY_MAX.
+     * MUTATION: drop the `Math.min` with the cap in `Layout.validatePathActuation`; it waits as long as the station
+     * is busy.
+     */
+    @Test
+    public void testABusyStationIsWaitedForOnlySoLong() throws Exception
+    {
+        long[] outcome = behindABusyStation(buildPath(150, "_capped"), 155, 200, () -> {});
+
+        assertEquals(outcome[0], 0L, "Switches never answered must fail the path");
+        assertTrue(outcome[1] < (Layout.PATH_VALIDATION_BUSY_MAX + 15) * (long) Layout.PATH_VALIDATION_MS,
+            "The wait must end at the cap, not when the station falls quiet: it took " + outcome[1] + " ms");
+    }
+
+    /**
+     * A Stop at the station ends the wait at once, rather than after the station's backlog, and the train goes back
+     * unrun without counting against the accessories.
+     * MUTATION: in `Layout.validatePathActuation`, take `this.control.getPowerEpoch() != power` out of the loop's test;
+     * the wait runs on.  Or call `handleMisconfiguredPath` whatever ended the wait; the failure is counted.
+     */
+    @Test
+    public void testAStopEndsTheWait() throws Exception
+    {
+        TestPath tp = buildPath(160, "_stopped");
+
+        try
+        {
+            assertEndedUncounted(tp, behindABusyStation(tp, 165, 200, () -> model.receiveMessage(support.Packets.powerStop())));
+        }
+        finally
+        {
+            model.go();
+            waitForPower(true, 1000);
+        }
+    }
+
+    /**
+     * And so does stopping every train where it is, as a reload or an Unload does.
+     * MUTATION: in `Layout.validatePathActuation`, take `this.stopsOrdered.get() != stops` out of the loop's test.
+     */
+    @Test
+    public void testStoppingEveryTrainEndsTheWait() throws Exception
+    {
+        TestPath tp = buildPath(170, "_halted");
+
+        assertEndedUncounted(tp, behindABusyStation(tp, 175, 200, tp.layout::stopEveryTrainWhereItIs));
+    }
+
+    /**
+     * A power cut while the switches are still being set (CONFIGURE_SLEEP an edge) is a power cut too: the switches
+     * never confirm, and the train goes back unrun without counting against the accessories.
+     * MUTATION: in `Layout.configureAndLockPath`, read `stops` and `power` after the lock loop instead of beside
+     * `replacements`; the wait runs to its deadline and the failure is counted.
+     */
+    @Test
+    public void testAPowerCutWhileTheSwitchesAreSetEndsTheWait() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildThreePointPath(180, "_cutWhileSet");
+        MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
+
+        // Within the first edge's CONFIGURE_SLEEP, as the path has two
+        java.util.concurrent.ScheduledExecutorService station =
+            java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+        station.schedule(() -> model.receiveMessage(support.Packets.powerStop()), 50,
+            java.util.concurrent.TimeUnit.MILLISECONDS);
+
+        try
+        {
+            long start = System.currentTimeMillis();
+            boolean passed = tp.layout.configureAndLockPath(tp.path, dummyLoc());
+
+            assertEndedUncounted(tp, new long[] {passed ? 1 : 0, System.currentTimeMillis() - start});
+        }
+        finally
+        {
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+            station.shutdownNow();
+            station.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS);
+            model.go();
+            waitForPower(true, 1000);
+        }
+    }
+
+    private static void assertEndedUncounted(TestPath tp, long[] outcome)
+    {
+        assertEquals(outcome[0], 0L, "A path still waiting when the trains are stopped must not be released");
+        assertTrue(outcome[1] < 3000, "The stop must end the wait at once: it took " + outcome[1] + " ms");
+        assertEquals(tp.layout.getPathValidationFailureCount(), 0,
+            "A stop is not a misconfigured path, so it must not count toward the accessories warning");
+    }
+
+    /**
+     * Configures the path while a "station" answers switch `other` every 50 ms, `busy` times, runs `halfway` after
+     * the tenth, and then answers `answered` 95 ms apart, a CS3's pace at PATH_VALIDATION_MS 100.  The path's own
+     * commands go unanswered until then.
+     *
+     * @return {1 if the path passed, else 0; how long configureAndLockPath took in ms}
+     */
+    private long[] behindABusyStation(TestPath tp, int other, int busy, Runnable halfway, MarklinAccessory... answered)
+        throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        MarklinAccessory busyOne = model.newSwitch(other, MM2, false);
+        MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
+
+        // Each answer at its own time, as the station paces them
+        java.util.concurrent.ScheduledExecutorService station =
+            java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+
+        for (int i = 0; i < busy; i++)
+        {
+            boolean switched = i % 2 == 0;
+            station.schedule(() -> model.receiveMessage(support.Packets.accessoryEcho(busyOne, switched)), i * 50L,
+                java.util.concurrent.TimeUnit.MILLISECONDS);
+        }
+
+        station.schedule(halfway, 10 * 50L + 25, java.util.concurrent.TimeUnit.MILLISECONDS);
+
+        for (int i = 0; i < answered.length; i++)
+        {
+            MarklinAccessory a = answered[i];
+            station.schedule(() -> model.receiveMessage(support.Packets.accessoryEcho(a, true)), busy * 50L + i * 95L,
+                java.util.concurrent.TimeUnit.MILLISECONDS);
+        }
+
+        try
+        {
+            long start = System.currentTimeMillis();
+            boolean passed = tp.layout.configureAndLockPath(tp.path, dummyLoc());
+
+            return new long[] {passed ? 1 : 0, System.currentTimeMillis() - start};
+        }
+        finally
+        {
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+            station.shutdownNow();
+            station.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS);
+        }
     }
 
     /**
@@ -671,20 +841,11 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * A path does not give up an edge twice, because the second time it may not be its own.  With atomicRoutes off,
-     * executePath releases each edge the moment the train's tail has provably passed it - keeping that edge's own lock
-     * edges held, since a crossing behind the train may still be in use - and unlockPath releases everything again at
-     * the end: two releases per edge, which a boolean could not tell from one.
-     *
-     * The sequence, in the order the railway performs it:
-     *
-     *   A locks an edge with no lock edges of its own.
-     *   A's tail passes it, so it is released early.
-     *   B locks a DIFFERENT edge that names A's edge as a lock edge, so it is protected again.
-     *   A reaches its destination and unlockPath walks A's path.
-     *
-     * The last step must not touch it.  It is not A's any more.  The asymmetry this needs (B's edge names A's, A's
-     * names nothing) is what GraphEdgeEdit writes.
+     * A path does not give up an edge twice, because the second time it may not be its own: with atomicRoutes off,
+     * executePath releases each edge once the tail has passed (keeping its lock edges) and unlockPath releases
+     * everything again at the end.  A locks an edge, releases it early, B locks a DIFFERENT edge naming A's edge as a
+     * lock edge, then A's unlockPath must not touch it.  B's edge naming A's and not the reverse is what
+     * GraphEdgeEdit writes.
      */
     @Test
     public void testAPathDoesNotReleaseAnEdgeItHasAlreadyReleased() throws Exception
@@ -723,12 +884,9 @@ public class testAutonomyPathValidation
 
         // What executePath does once the tail has provably passed: release the edge, and record that
         // it has been released.  Both halves, because unlockPath reads the record.
-        java.lang.reflect.Field clearedField = Layout.class.getDeclaredField("clearedEdges");
-        clearedField.setAccessible(true);
-
         java.util.Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>> cleared =
             (java.util.Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>>)
-                clearedField.get(layout);
+                Reflect.get(Layout.class, layout, "clearedEdges");
 
         cleared.put(first, java.util.concurrent.ConcurrentHashMap.<Edge>newKeySet());
         cleared.get(first).add(shared);
@@ -736,12 +894,9 @@ public class testAutonomyPathValidation
         // AND THE RECORD OF WHAT WAS GIVEN BACK, which is the one `unlockPath` reads: the cleared set is
         // kept in atomic mode too, where nothing in it has been released, so it cannot say what a run still holds.
         // `executePath` writes both on an early release; this writes both.
-        java.lang.reflect.Field releasedField = Layout.class.getDeclaredField("releasedEarly");
-        releasedField.setAccessible(true);
-
         java.util.Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>> released =
             (java.util.Map<org.traincontrol.base.Locomotive, java.util.Set<Edge>>)
-                releasedField.get(layout);
+                Reflect.get(Layout.class, layout, "releasedEarly");
 
         released.put(first, java.util.concurrent.ConcurrentHashMap.<Edge>newKeySet());
         released.get(first).add(shared);
@@ -831,13 +986,10 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * Two different locomotives cannot end up on one square, however they are put there.  The sweep in setLocomotive
-     * enforces "one locomotive, one place"; this is the other invariant, "one square, one locomotive", which hand
-     * placement can still break (autonomy is refused by the block occupancy check long before).
-     *
-     * Placing by hand displaces, deliberately: it is a person saying where a train actually is.  But a square is
-     * several Points, so putting a second train on the OTHER copy of an occupied platform left both standing on one
-     * piece of track, and on the diagram a caption naming two trains where the menu can only answer for one.
+     * Two different locomotives cannot end up on one square, however they are put there: "one square, one
+     * locomotive", the invariant hand placement can break (setLocomotive's sweep enforces "one locomotive, one
+     * place").  Placing by hand displaces deliberately, but the OTHER copy of an occupied platform left both trains
+     * on one piece of track.
      */
     @Test
     public void testHandPlacingOnAnOccupiedSquareDisplacesWhoeverIsThere() throws Exception
@@ -881,12 +1033,9 @@ public class testAutonomyPathValidation
 
     /**
      * A lock edge refuses a route when another route HOLDS it, and not merely because a train is parked at the point
-     * it leads to.  The two halves are one test on purpose: dropping the parked-train refusal is only safe because the
-     * held-lock refusal exists, so one place shows what it was traded against.
-     *
-     * The parked train cannot be on the track the lock protects: reduction cuts an edge at every sensor, so a Point's
-     * tile is an endpoint of the edges meeting there and part of the path of none of them.  Counted as an obstruction
-     * anyway, a train standing next to a junction was a permanent roadblock, and two such trains deadlocked.
+     * it leads to.  One test on purpose: dropping the parked-train refusal is only safe because the held-lock refusal
+     * exists.  The parked train cannot be on the protected track (reduction cuts an edge at every sensor); counted as
+     * an obstruction, a train next to a junction was a permanent roadblock.
      */
     @Test
     public void testALockEdgeRefusesAHeldRouteButNotAParkedTrain() throws Exception

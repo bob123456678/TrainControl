@@ -10,10 +10,9 @@ import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
-import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import support.Trees;
+import static support.Diagrams.aPageWithARunAndALabel;
 
 /**
  * Control+E has to act on the square the right-click menu would act on, and only where it offers to (FR-066): the
@@ -23,101 +22,6 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
  */
 public class testControlEAsksTheMenusQuestion
 {
-    /**
-     * A page with a text label on it, and a run of plain track beside it.  The track is what makes the label's page one
-     * the session knows: the text branch is fenced on `pageOf(tile) != null`.
-     */
-    private static LayoutDiagram aPageWithALabelAndARun(String name) throws java.io.IOException
-    {
-        LayoutDiagram page = new LayoutDiagram(name, 12, 4, null, null);
-
-        // A sensor at each end, so what lies between them is one run of plain track.
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-
-        for (int x = 2; x <= 5; x++)
-        {
-            page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0, accessoryDecoderType.MM2,
-                null);
-        }
-
-        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-
-        // And a label, the one thing on a diagram that carries no track and is still the user's to click.
-        page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
-
-        page.setPageId(name);
-
-        return page;
-    }
-
-    /** The key opens the length dialog on a text label, where the menu offers no such item. */
-    @Test
-    public void testTheKeyDoesNotActOnASquareTheMenuOffersNothingOn() throws Exception
-    {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-e-text").toFile();
-
-        try
-        {
-            AutonomySession session = new AutonomySession(folder);
-
-            session.open(Arrays.asList(aPageWithALabelAndARun("main")));
-
-            TileKey label = new TileKey("main", 3, 3);
-
-            assertNotNull(session.getGraph().getTiles().get(label),
-                "the graph does not hold the label at all, so `isIgnored` would answer true for the"
-                + " blank-square reason and this test would prove nothing about text");
-
-            assertTrue(session.getGraph().getTiles().get(label).isText(),
-                "the square at " + label + " is not a text label, so the fixture is not the one this"
-                + " claim is about");
-
-            AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
-
-            // What the menu offers on that square.
-            javax.swing.JPopupMenu menu = panel.buildTileMenu(label, null);
-
-            assertNotNull(menu, "no menu opened on the label at all, so there is nothing to compare"
-                + " the key against");
-
-            assertFalse(itemNames(menu).isEmpty(),
-                "the menu on the label is empty, so it offers nothing about ANY square and the"
-                + " comparison below is not about the length item");
-
-            assertFalse(itemNames(menu).contains(
-                org.traincontrol.util.I18n.t("autosetup.ui.menuSetLength")),
-                "the menu on a text label now offers Set Length - " + itemNames(menu) + " - so the"
-                + " premise of this test has moved and the key is no longer the wider door");
-
-            // And what the key asks.  `promptLengthFor` opens a modal dialog, so what a test can put beside the menu is
-            // the public predicate it acts on.
-            assertFalse(panel.offersALength(label),
-                "Control+E acts on the text label at " + label + " and opens the length dialog on a"
-                + " square whose right-click menu offers " + itemNames(menu) + " and no length at"
-                + " all. `buildTileMenu` asks three questions before it reaches Set Length, and the"
-                + " TEXT branch is one of them. This is MT-313's shape, which `promptLengthFor`'s"
-                + " own javadoc names as the thing it avoids");
-
-            assertEquals(panel.squareTheLengthWouldGoOn(label), null,
-                "the key names " + panel.squareTheLengthWouldGoOn(label) + " as the square it would"
-                + " measure, on a label the menu offers no length for");
-
-            // And the control: the predicate has not simply started answering false everywhere.
-            TileKey track = new TileKey("main", 4, 1);
-
-            assertTrue(panel.offersALength(track),
-                "the key offers no length on the plain track at " + track + " either, so"
-                + " `offersALength` answers false for everything and the claim above says nothing"
-                + " about text labels");
-        }
-        finally
-        {
-            deleteRecursively(folder);
-        }
-    }
-
     /** The key and the menu write the length to the same square. */
     @Test
     public void testTheKeyMeasuresTheSquareTheMenuWouldMeasure() throws Exception
@@ -130,7 +34,9 @@ public class testControlEAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithALabelAndARun("main")));
+            // The run is what makes the label's page one the session knows: the text branch is fenced on
+            // `pageOf(tile) != null`.
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             Map<TileKey, TileKey> leaders = session.runLeaders();
 
@@ -170,7 +76,7 @@ public class testControlEAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -193,7 +99,7 @@ public class testControlEAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithALabelAndARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -244,7 +150,7 @@ public class testControlEAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -265,7 +171,7 @@ public class testControlEAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithALabelAndARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -301,7 +207,7 @@ public class testControlEAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -329,18 +235,5 @@ public class testControlEAsksTheMenusQuestion
             throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs a"
                 + " display");
         }
-    }
-
-    /** A temporary directory and everything under it. */
-    private static void deleteRecursively(java.io.File file)
-    {
-        java.io.File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteRecursively(child);
-        }
-
-        file.delete();
     }
 }

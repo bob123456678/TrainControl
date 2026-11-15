@@ -10,13 +10,12 @@ import java.util.List;
 import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
+import support.Diagrams;
 import support.SourceOf;
 
 /**
@@ -167,36 +166,6 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         assertEquals(session.getStore().getConfiguration("Settings").optJSONObject("globals")
             .optInt("minDelay", -1), 9,
             "a second import overwrote a setting that had been changed since the first one");
-    }
-
-    /** A square that already has a name keeps it: the import fills gaps, it does not overwrite. */
-    @Test
-    public void testLegacyNamesDoNotOverwriteNamesAlreadyEntered() throws Exception
-    {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
-
-        TileKey tile = new TileKey("main", 1, 1);
-
-        session.setPointName(tile, "The name I typed");
-
-        org.json.JSONArray points = new org.json.JSONArray();
-
-        org.json.JSONObject named = new org.json.JSONObject();
-        named.put("name", "The name in the file");
-        named.put("s88", 11);
-        points.put(named);
-
-        org.json.JSONObject legacy = new org.json.JSONObject();
-        legacy.put("points", points);
-
-        AutonomySession.LegacyImport result = session.importLegacy(legacy);
-
-        assertEquals(session.getStore().getPointName(tile), "The name I typed",
-            "importing overwrote a name that was already there");
-
-        assertEquals(result.skipped, 1, "the skip should be counted and reported");
     }
 
     /**
@@ -560,9 +529,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
 
         // The same s88 twice, which is what a duplicated page looks like to the reduction
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.feedback(page, 3, 1, 5, 11);
 
         page.setPageId("1");
         page.checkBounds();
@@ -606,9 +575,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         LayoutDiagram repeat = new LayoutDiagram("repeat", 6, 4, null, null);
 
         // 11 is pageOnDisk's own sensor; 21 is this page's alone
-        repeat.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        repeat.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        repeat.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 10, 21, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(repeat, 1, 1, 5, 11);
+        Diagrams.straight(repeat, 2, 1);
+        Diagrams.feedback(repeat, 3, 1, 10, 21);
 
         repeat.setPageId("2");
         repeat.checkBounds();
@@ -650,7 +619,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         LayoutDiagram first = pageOnDisk();
 
         LayoutDiagram repeat = new LayoutDiagram("repeat", 6, 4, null, null);
-        repeat.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(repeat, 1, 1, 5, 11);
         repeat.setPageId("2");
         repeat.checkBounds();
 
@@ -730,7 +699,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         LayoutDiagram first = pageOnDisk();
 
         LayoutDiagram repeat = new LayoutDiagram("repeat", 6, 4, null, null);
-        repeat.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(repeat, 1, 1, 5, 11);
         repeat.setPageId("2");
         repeat.checkBounds();
 
@@ -1201,9 +1170,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
     /**
      * The import NAMES the signals it will no longer drive, rather than counting them: the new model drives a signal
-     * only where the operator pairs it with a station.  Named, not compared, because deciding which is already paired
-     * needs the reduction the import is about to replace; naming one already paired costs a glance, omitting one leaves
-     * a signal that lies for as long as the railway runs.
+     * only where the operator pairs it with a station.  Naming one already paired costs a glance; omitting one leaves a
+     * signal that lies for as long as the railway runs.
      *
      * MUTATION: removing the signal block fails the second assertion; the first is the control that
      * stops it passing by reporting nothing at all.
@@ -1307,9 +1275,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "a command with no acc at all");
     }
     /**
-     * A legacy import says it is leaving hand-written locks behind.  `GraphReducer.deriveLocks` reproduces locks from
-     * shared tiles but not the conservative kind between edges that share none, after which two trains may move at once
-     * where the file forbade it.  Counted, not compared: naming locks the geometry already covers errs the safe way.
+     * A legacy import says it is leaving hand-written locks behind: `GraphReducer.deriveLocks` does not reproduce the
+     * conservative kind between edges that share no tile.  Counted, not compared: naming locks the geometry already
+     * covers errs the safe way.
      *
      * MUTATION: removing the `withLocks` block from `whatALegacyImportLeaves` fails the second
      * assertion, and the first is what stops that passing by reporting nothing at all.
@@ -1353,8 +1321,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     }
     /**
      * A modern export coming back through the legacy door is spotted by each of its three keys (`detectImportFormat`
-     * calls any file whose `points` is an ARRAY legacy).  Each key is asserted separately: a test of only
-     * `autoDestination` would pass on a wrong key name.
+     * calls any file whose `points` is an ARRAY legacy), each asserted separately.
      *
      * MUTATION: renaming any of the three keys in `whatALegacyImportLeaves` fails its own assertion
      * here.

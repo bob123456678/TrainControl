@@ -3,7 +3,6 @@ package regression;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -20,20 +19,24 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
+import support.Settle;
+import support.Teardown;
 
 /**
  * After a run, the Facing menu is about the train the railway has on the square, and turns that one.
  *
- * After a run the setup still names each square's pre-run occupant (behaviour/editing-while-running.md 6a).  The menu
- * took its train from the setup: with P placed in the setup and T standing there on the railway, it was titled "P is
- * facing" and a click moved P, found on no copy of the square, so T was not turned and the correction was dropped
- * silently.  The same shape one door along: `flipFacing` is keyed on the railway's train, and this menu was not.
+ * After a run the setup still names each square's pre-run occupant (behaviour/editing-while-running.md 6a), and the
+ * menu took its train from the setup: with P placed in the setup and T standing there on the railway, a click moved P,
+ * found on no copy of the square, so T was not turned and the correction was dropped silently.  `flipFacing` is keyed
+ * on the railway's train, and this menu was not.
  *
- * Asked through the real door, as `testTheTailCanBeGivenInTheEditor` asks it: `AutonomyEditorPanel.buildFacingMenu`,
- * which both surfaces serve, and its item clicked.
+ * Asked through the real door: the editor's right-click menu, whose Change Direction both surfaces serve
+ * (`AutonomyEditorPanel.addFacingItems`), clicked.
  *
- * MUTATION: take the menu's train from the setup again, and the title claim fails; move the setup's train on a click,
- * and the turn claim fails.
+ * MUTATION: move the setup's train on a click, and the turn claim fails.
  *
  * @author Adam
  */
@@ -47,17 +50,13 @@ public class testTheFacingMenuIsAboutTheTrainThere
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the editor and its menus need a display");
-        }
+        Display.needed("the editor and its menus need a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-        model = support.TestStation.simulatedInDebug();
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -72,7 +71,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-            settle();
+            Components.drain(8);
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
@@ -81,21 +80,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, ui);
     }
 
     /**
@@ -112,7 +97,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         {
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
 
             Layout running = model.getAutoLayout();
 
@@ -133,7 +118,8 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
                 if (!loc.getName().equals(session.getLocomotiveNameAt(at))) continue;
 
-                if (session.facingChoices(at).size() < 2) continue;
+                // Two exactly: Change Direction is then one click to the other (FR-181)
+                if (session.facingChoices(at).size() != 2) continue;
 
                 square = at;
                 copy = point;
@@ -190,27 +176,29 @@ public class testTheFacingMenuIsAboutTheTrainThere
                 editor[0].setAutonomyMode(session);
             });
 
-            settle();
+            Components.drain(8);
 
             final AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
             final TileKey target = square;
-            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
 
-            SwingUtilities.invokeAndWait(() -> menu[0] = panel.buildFacingMenu(target));
+            SwingUtilities.invokeAndWait(() -> menu[0] = panel.buildTileMenu(target, null));
 
-            assertNotNull(menu[0], "no Facing menu for " + onTheRailway + ", standing at " + square + " on the railway");
+            assertNotNull(menu[0], "no menu for " + onTheRailway + ", standing at " + square + " on the railway");
 
-            assertEquals(menu[0].getText(), I18n.f("autosetup.ui.menuFacingGroup", onTheRailway), "the Facing menu at "
-                + square + " names the setup's train, " + inTheSetup + ", while the railway has " + onTheRailway
-                + " there (TDY4-C5)");
+            // The label reads the railway's train: "now facing" its facing, which is the one a click turns from.
+            String label = I18n.f("autosetup.ui.menuChangeDirection", org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.menuSide(facingWas.name()));
 
-            JMenuItem choice = find(menu[0], I18n.t("autosetup.ui.facing" + turnTo.name()));
+            JMenuItem choice = find(menu[0], label);
 
-            assertNotNull(choice, "precondition: the menu does not offer " + turnTo);
+            assertNotNull(choice, "the menu at " + square + " has no " + label + " for " + onTheRailway + ", the train"
+                + " the railway has there while the setup has " + inTheSetup + " (TDY4-C5): "
+                + support.Components.all(menu[0], JMenuItem.class, null).stream().map(JMenuItem::getText)
+                    .collect(java.util.stream.Collectors.toList()));
 
             SwingUtilities.invokeAndWait(choice::doClick);
 
-            settle();
+            Components.drain(8);
 
             Layout now = model.getAutoLayout();
 
@@ -238,13 +226,13 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
         }
     }
 
     /**
-     * A train standing on a square no track leads out of gets the Facing menu grayed, with the reason in its tooltip,
-     * rather than no menu (OB-347).
+     * A train standing on a square no track leads out of gets Change Direction grayed, with the reason in its tooltip,
+     * rather than no item (OB-347).
      *
      * MUTATION: return null for no facing again, and this fails.
      */
@@ -258,7 +246,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         {
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
 
             Layout running = model.getAutoLayout();
 
@@ -312,24 +300,27 @@ public class testTheFacingMenuIsAboutTheTrainThere
                 editor[0].setAutonomyMode(session);
             });
 
-            settle();
+            Components.drain(8);
 
             final AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
             final TileKey target = square;
-            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-            SwingUtilities.invokeAndWait(() -> menu[0] = panel.buildFacingMenu(target));
+            SwingUtilities.invokeAndWait(() -> panel.addFacingItems(menu, target));
 
-            assertNotNull(menu[0], "the Facing menu is hidden for " + named + " on " + square + ", which no track leads"
-                + " out of - Adam: \"rather than hiding it, grey it out\" (OB-347)");
+            assertTrue(menu.getComponentCount() > 0, "Change Direction is hidden for " + named + " on " + square
+                + ", which no track leads out of - Adam: \"rather than hiding it, grey it out\" (OB-347)");
 
-            assertEquals(menu[0].getText(), I18n.f("autosetup.ui.menuFacingGroup", named));
+            JMenuItem change = (JMenuItem) menu.getComponent(0);
 
-            assertFalse(menu[0].isEnabled(), "the Facing menu on a square with no way out is not greyed (OB-347)");
+            assertTrue(change.getText().startsWith(I18n.t("autosetup.ui.menuChangeDirectionUnknown")), "the first item"
+                + " about " + named + " is not Change Direction: " + change.getText());
 
-            assertTrue(menu[0].getToolTipText() != null && menu[0].getToolTipText().contains(
-                I18n.t("autosetup.ui.hintFacingNoWayOut").substring(0, 20)), "the greyed menu does not say why: "
-                + menu[0].getToolTipText());
+            assertFalse(change.isEnabled(), "Change Direction on a square with no way out is not greyed (OB-347)");
+
+            assertTrue(change.getToolTipText() != null && change.getToolTipText().contains(
+                I18n.t("autosetup.ui.hintFacingNoWayOut").substring(0, 20)), "the greyed item does not say why: "
+                + change.getToolTipText());
         }
         finally
         {
@@ -344,7 +335,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
         }
     }
 
@@ -466,15 +457,9 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
         Layout.ReversalPolicy keepDirection = keepingDirectionAt(turning);
 
-        java.lang.reflect.Field journeysField = org.traincontrol.automation.Layout.class.getDeclaredField("activeLocomotives");
+        final Object journeys = Reflect.get(org.traincontrol.automation.Layout.class, running, "activeLocomotives");
 
-        journeysField.setAccessible(true);
-
-        final Object journeys = journeysField.get(running);
-
-        java.lang.reflect.Field takingField = org.traincontrol.automation.Layout.class.getDeclaredField("takingPath");
-
-        takingField.setAccessible(true);
+        java.lang.reflect.Field takingField = Reflect.field(org.traincontrol.automation.Layout.class, "takingPath");
 
         final java.util.Map<?, ?> taking = (java.util.Map<?, ?>) takingField.get(running);
 
@@ -598,7 +583,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
 
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-            settle();
+            Components.drain(8);
         }
 
         assertEquals(flipped[0], square, "precondition: the flip did not act on " + square);
@@ -763,9 +748,7 @@ public class testTheFacingMenuIsAboutTheTrainThere
         model.setFeedbackState(at.turning.getS88(), true);
         model.setFeedbackState(at.approach.getS88(), false);
 
-        long until = System.currentTimeMillis() + 30000;
-
-        while (run != null && run.isAlive() && System.currentTimeMillis() < until) Thread.sleep(100);
+        Settle.until(() -> !(run != null && run.isAlive()), 30000);
 
         running.moveLocomotive(null, at.turning.getName(), false);
         running.moveLocomotive(null, at.plain.getName(), false);
@@ -786,23 +769,9 @@ public class testTheFacingMenuIsAboutTheTrainThere
         return stack.length > 0 && "executePathInternal".equals(stack[0].getMethodName());
     }
 
-    private static JMenuItem find(javax.swing.JMenu menu, String text)
+    /** The item that says this, on the menu or in one of its submenus; null when none does. */
+    private static JMenuItem find(java.awt.Container menu, String text)
     {
-        for (int i = 0; i < menu.getItemCount(); i++)
-        {
-            JMenuItem item = menu.getItem(i);
-
-            if (item != null && text.equals(item.getText())) return item;
-        }
-
-        return null;
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 8; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
+        return support.Components.find(menu, JMenuItem.class, item -> text.equals(item.getText()));
     }
 }

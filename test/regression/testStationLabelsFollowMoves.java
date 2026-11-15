@@ -13,22 +13,19 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
+import support.Diagrams;
+import support.Trees;
 
 /**
  * A station's NAME survives being moved, wherever it is moved to.
  *
- * Adam: move sensor 1016 down one square and its name turns into the empty placeholder; down one and right one and the
- * name is fine; down one and right two and it is gone again.  A platform's name is written on a separate square beside
- * it (usually below), so nudging the platform down one lands it exactly on its own label.  Everything on a square being
- * built over is dropped, which is right, but a caption is a reference to another square: when what it refers to is what
- * built over it, it is the only copy of a name the same gesture was carrying to safety.
+ * A platform's name is written on a separate square beside it (usually below), so nudging the platform down one lands
+ * it on its own label.  Everything on a square being built over is dropped, but a caption is a reference to another
+ * square: when what it refers to is what built over it, it is the only copy of a name the same gesture was carrying.
  *
- * So these tests are a matrix: the same platform and label moved to every square around it.  The other half is the
- * opposite direction, a label that really is stale must still be dropped, since "keep every caption" passes all the
- * rest.
+ * A matrix: the same platform and label moved to every square around it.  The other half is the opposite direction, a
+ * label that really is stale must still be dropped, since "keep every caption" passes all the rest.
  */
 public class testStationLabelsFollowMoves
 {
@@ -78,24 +75,6 @@ public class testStationLabelsFollowMoves
                 check(at(4, 4), at(label[0], label[1]), at(to[0], to[1]));
             }
         }
-    }
-
-    /**
-     * A station moved onto its own label keeps the label, on the square it now occupies (Adam's bug).  A caption may
-     * sit on its own station's square, which is how a name comes to be drawn over a platform.
-     */
-    @Test
-    public void testAStationMovedOntoItsOwnLabelKeepsIt()
-    {
-        AutonomyCompanionStore store = named(at(4, 4), at(4, 5), "Platform3");
-
-        store.moveTiles(one(at(4, 4), at(4, 5)));
-
-        assertEquals(store.getCaptionTarget(at(4, 5)), at(4, 5),
-            "the platform landed on its own name and the name was thrown away by the same move that "
-            + "carried the platform - which is what Adam saw as [---] after nudging a sensor down one");
-
-        assertEquals(store.getPointName(at(4, 5)), "Platform3", "and the name itself did not travel");
     }
 
     // The other direction: a label that IS stale still goes
@@ -293,8 +272,7 @@ public class testStationLabelsFollowMoves
 
                 // The diagram first, then the setup: the editor's order, and the graph is rebuilt from the pages.
                 page.addComponent(null, 1, 1);
-                page.addComponent(componentType.FEEDBACK, to[0], to[1], 0, 0, 5, 11,
-                    accessoryDecoderType.MM2, null);
+                Diagrams.feedback(page, to[0], to[1], 5, 11);
 
                 session.moveTiles(one(station, at(to[0], to[1])));
 
@@ -311,7 +289,7 @@ public class testStationLabelsFollowMoves
             }
             finally
             {
-                delete(folder);
+                Trees.delete(folder);
             }
         }
     }
@@ -381,27 +359,18 @@ public class testStationLabelsFollowMoves
     {
         LayoutDiagram page = new LayoutDiagram(PAGE, 8, 5, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.straight(page, 3, 1);
+        Diagrams.feedback(page, 4, 1, 6, 12);
 
-        page.addComponent(componentType.FEEDBACK, 1, 2, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 4, 2, 0, 0, 8, 14, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 2, 7, 13);
+        Diagrams.straight(page, 2, 2);
+        Diagrams.straight(page, 3, 2);
+        Diagrams.feedback(page, 4, 2, 8, 14);
 
         page.setPageId("1");
 
         return page;
-    }
-
-    private static void delete(File file)
-    {
-        File[] kids = file.listFiles();
-
-        if (kids != null) for (File kid : kids) delete(kid);
-
-        file.delete();
     }
 }

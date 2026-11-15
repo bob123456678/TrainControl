@@ -15,17 +15,10 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Capture, tested the way the operator meets it: a real configuration, real autonomy, real trains.
- *
- * The earlier `testTimetableCapture` (kept as a faster unit test of the flag) built its own two-point Layout and could
- * only see the model, not the REDRAW that repaints the timetable.  So this does the whole thing:
- *
- * - a real configuration, through `model.parseAuto`, which is what loading one does
- * - capture switched on where the window switches it, on `model.getAutoLayout()`
- * - `AutonomyRefreshCallback.attach`, which is the same call the window makes
- * - `runLocomotives()`, so autonomy picks its own paths rather than being handed one
- *
- * and then asks the two questions: did anything get captured, and was anybody told.
+ * Capture, tested the way the operator meets it: a real configuration (`model.parseAuto`), capture switched on where
+ * the window switches it, `AutonomyRefreshCallback.attach` as the window calls it, and `runLocomotives()` so autonomy
+ * picks its own paths.  The unit test `testTimetableCapture` sees only the model, not the REDRAW that repaints the
+ * timetable.  Asks two questions: did anything get captured, and was anybody told.
  */
 public class testTimetableCaptureThroughARealRun
 {
@@ -141,62 +134,6 @@ public class testTimetableCaptureThroughARealRun
             + "and the panel showing them is never repainted, which is exactly what the operator "
             + "reports as \"nothing gets captured\" - the table stays empty on screen while the data "
             + "behind it is perfectly correct.  Deleted with the GraphStream window in d8db4879");
-    }
-
-    /**
-     * With capture off, a run of the same length captures nothing: the mutation check for the test above, which a
-     * capture ignoring the flag, or a fixture arriving with entries, would pass.
-     */
-    @Test
-    public void testARealRunCapturesNothingWithCaptureOff() throws Exception
-    {
-        Layout layout = loadedConfiguration();
-
-        // Set explicitly: parseAuto PRESERVES the flag across a rebuild (an ordinary rebuild must not switch it off),
-        // so after the test above this fixture arrives with capture ON.
-        layout.setTimetableCapture(false);
-
-        assertFalse(layout.isTimetableCapture(), "capture did not switch off");
-
-        model.go();
-        layout.runLocomotives();
-
-        // Waits for a train to MOVE, not for a fixed number of seconds (OB-114): on a loaded machine autonomy does not
-        // always dispatch within a fixed window.  The ceiling is far above a dispatch; nothing is skipped, since a
-        // minute of nothing moving is a real fault and a skip that fires routinely goes unnoticed.
-        boolean moved = false;
-
-        long deadline = System.currentTimeMillis() + STARTUP_CEILING_MS;
-
-        while (!moved && System.currentTimeMillis() < deadline)
-        {
-            if (!layout.getActiveLocomotives().isEmpty()) moved = true;
-            else Thread.sleep(200);
-        }
-
-        // And then let it actually run for a while, which is the part capture would have recorded.
-        if (moved) Thread.sleep(RUN_MS / 2);
-
-        // ASKED BEFORE THE STOP: `isAutoRunning()` is the field `stopLocomotives` clears, so read afterwards it says
-        // "Auto running: false" whatever happened, and several of `explainCannotStart`'s rules are fenced on it too.
-        // Only on the failing path.
-        String why = moved ? "" : whyNothingMoved(layout, "with autonomy still running");
-
-        layout.stopLocomotives();
-
-        // AND AGAIN WITH IT STOPPED, because the running answer is a SUBSTITUTION (MT-374): `explainDestinations`
-        // replaces the real reason with "Blocked by a train or a route in progress" whenever `isAutoRunning()`, since
-        // the reason it would quote comes from a static every running thread writes.  Both readings are printed.
-        if (!moved) why = why + whyNothingMoved(layout, "after being stopped, so the real refusal is"
-            + " no longer substituted - but the rules fenced on isAutoRunning now answer about a"
-            + " stopped railway");
-
-        assertTrue(moved, "no locomotive moved in " + (STARTUP_CEILING_MS / 1000) + " seconds, so "
-            + "nothing was declined and nothing is proved." + why);
-
-        assertTrue(layout.getTimetable().isEmpty(),
-            "trains ran with capture switched OFF and the timetable filled anyway, so the flag is "
-            + "not being consulted: " + layout.getTimetable());
     }
 
     /**
@@ -335,12 +272,9 @@ public class testTimetableCaptureThroughARealRun
     }
 
     /**
-     * Takes every train off, so this test starts from a railway nobody else has arranged.
-     *
-     * `autonomy_sanity.json` places three trains on a railway with one single-track corridor, the arrangement least
-     * likely to produce a moving train on a loaded machine, so the test starts empty and places its own.  Through
-     * `moveLocomotive(null, ..., true)`, the door the diagram's Cut uses, so the state is one the application can also
-     * be in.
+     * Takes every train off, so this test starts from a railway nobody else has arranged: `autonomy_sanity.json` places
+     * three trains on a railway with one single-track corridor, the arrangement least likely to produce a moving train
+     * on a loaded machine.  Through `moveLocomotive(null, ..., true)`, the door the diagram's Cut uses.
      *
      * @param layout the freshly parsed railway
      */

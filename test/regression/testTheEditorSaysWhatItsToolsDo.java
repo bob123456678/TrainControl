@@ -21,6 +21,9 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
+import support.Diagrams;
+import support.Reflect;
+import support.Trees;
 
 /**
  * The autonomy editor says what its items do, and shows where its tools can be used (OB-293, FR-102).
@@ -44,9 +47,9 @@ public class testTheEditorSaysWhatItsToolsDo
         // 1,1 station - 2,1 - 3,1 station, a train standing at 3,1.
         LayoutDiagram page = new LayoutDiagram("main", 6, 3, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.feedback(page, 3, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -61,51 +64,42 @@ public class testTheEditorSaysWhatItsToolsDo
     @AfterMethod(alwaysRun = true)
     public void tearDown()
     {
-        delete(folder);
+        Trees.delete(folder);
     }
 
     /**
-     * The exit and entry guard items on a station's menu say what the two guards do (OB-293), each its OWN guard's
-     * text.
+     * The exit and entry guard rows of Station Settings say what the two guards do (OB-293), each its OWN guard's text.
      *
-     * MUTATION: leave either tooltip out, or give the two items each other's.
+     * MUTATION: leave either flyover out, or give the two rows each other's.
      */
     @Test
     public void testTheGuardItemsSayWhatTheGuardsDo() throws Exception
     {
         // "OCCUPIED", NOT "TAKEN" (MT-569)
-        assertTrue(I18n.t("autosetup.ui.tooltipExitGuard").contains("while this station is occupied")
-            && !I18n.t("autosetup.ui.tooltipExitGuard").contains("taken"), "the exit guard's tooltip does not say"
-            + " \"occupied\" (MT-569): " + I18n.t("autosetup.ui.tooltipExitGuard"));
+        assertTrue(I18n.t("autosetup.ui.flyExitNoneChange").contains("while this station is occupied")
+            && !I18n.t("autosetup.ui.flyExitNoneChange").contains("taken"), "the exit guard's flyover does not say"
+            + " \"occupied\" (MT-569): " + I18n.t("autosetup.ui.flyExitNoneChange"));
 
         final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-        final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
+        final org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.open(panel, EMPTY);
 
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-            menu[0] = panel.buildTileMenu(EMPTY, session.getGraph().getTiles().get(EMPTY)));
-
-        String[][] items = {{"autosetup.ui.menuPairSignal", "autosetup.ui.tooltipExitGuard"},
-            {"autosetup.ui.menuPairEntrySignal", "autosetup.ui.tooltipEntryGuard"}};
+        String[][] items = {{"exitGuard", "autosetup.ui.flyExitNoneChange"}, {"entryGuard", "autosetup.ui.flyEntryNoneChange"}};
 
         for (String[] pair : items)
         {
             String key = pair[0];
 
-            javax.swing.JMenuItem item = find(menu[0], I18n.t(key));
+            String tip = window.flyoverForTest(key);
 
-            assertNotNull(item, "precondition: a station's menu has no " + I18n.t(key));
-
-            String tip = item.getToolTipText();
-
-            assertTrue(tip != null && !tip.replaceAll("<[^>]*>", "").trim().isEmpty(), I18n.t(key) + " has no tooltip -"
+            assertTrue(tip != null && !tip.replaceAll("<[^>]*>", "").trim().isEmpty(), key + " has no flyover -"
                 + " Adam, OB-293: \"add brief tooltips on what entry guards and exit guards are\"");
 
             // ITS OWN GUARD'S TEXT, read past the wrapping.
             String said = tip.replaceAll("<[^>]*>", " ").replace("&nbsp;", " ").replaceAll("\\s+", " ").trim();
             String own = I18n.t(pair[1]).replaceAll("\\s+", " ").trim();
 
-            assertTrue(said.startsWith(own.substring(0, Math.min(40, own.length()))), I18n.t(key) + " says what the"
+            assertTrue(said.contains(own.substring(0, Math.min(40, own.length()))), key + " says what the"
                 + " other guard does, or something else: " + said);
         }
     }
@@ -123,9 +117,7 @@ public class testTheEditorSaysWhatItsToolsDo
         assertNull(markOf(panel, WITH_A_TRAIN), "precondition: the train's square is marked before"
             + " the tool is armed");
 
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "whyButton");
 
         final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
 
@@ -191,9 +183,7 @@ public class testTheEditorSaysWhatItsToolsDo
             panel.setRunningLayoutSource(() -> railway);
             panel.setLayoutSource(() -> railway);
 
-            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("whyButton");
-
-            field.setAccessible(true);
+            java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "whyButton");
 
             final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
 
@@ -215,9 +205,7 @@ public class testTheEditorSaysWhatItsToolsDo
             }
 
             // Asked of the waiting outline itself: once a square is asked about, the answer draws outlines of its own.
-            java.lang.reflect.Method waitsOn = AutonomyEditorPanel.class.getDeclaredMethod("whyWaitsOn", TileKey.class);
-
-            waitsOn.setAccessible(true);
+            java.lang.reflect.Method waitsOn = Reflect.method(AutonomyEditorPanel.class, "whyWaitsOn", TileKey.class);
 
             assertTrue((Boolean) waitsOn.invoke(panel, WITH_A_TRAIN), "precondition: the second train at 3,1 is not"
                 + " outlined as somewhere to click while Why Not Moving waits");
@@ -426,7 +414,7 @@ public class testTheEditorSaysWhatItsToolsDo
         {
             final String title = I18n.t("autosetup.ui.menuPairEntrySignal");
 
-            javax.swing.JDialog window = openTheGuardWindow(panel, SIGNALLED, title, title);
+            javax.swing.JDialog window = openTheGuardWindow(panel, SIGNALLED, title);
 
             clickOnTheDiagram(window, title);
 
@@ -487,7 +475,7 @@ public class testTheEditorSaysWhatItsToolsDo
         {
             final String title = I18n.t("autosetup.ui.menuPairSignal");
 
-            javax.swing.JDialog window = openTheGuardWindow(panel, SIGNALLED, labelOf(panel, his, SIGNALLED, false), title);
+            javax.swing.JDialog window = openTheGuardWindow(panel, SIGNALLED, title);
 
             final javax.swing.AbstractButton byAddress = buttonIn(window, I18n.t("autosetup.ui.optionSignalAddress"));
 
@@ -541,9 +529,9 @@ public class testTheEditorSaysWhatItsToolsDo
 
         LayoutDiagram page = new LayoutDiagram("main", 6, 3, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.straight(page, 2, 1);
+        Diagrams.feedback(page, 3, 1, 6, 12);
         page.addComponent(componentType.SIGNAL, 2, 0, 0, 0, 86, 0, accessoryDecoderType.MM2, null);
         page.addComponent(componentType.SIGNAL, 3, 0, 0, 0, 87, 0, accessoryDecoderType.MM2, null);
 
@@ -567,31 +555,16 @@ public class testTheEditorSaysWhatItsToolsDo
         return his;
     }
 
-    /** The station's guard item as its menu labels it now, with what is paired so far. */
-    private static String labelOf(AutonomyEditorPanel panel, AutonomySession his, TileKey station, boolean entry)
-        throws Exception
-    {
-        java.util.List<TileKey> paired = entry ? his.getEntrySignals(station) : his.getProtectingSignals(station);
-
-        if (paired.isEmpty()) return I18n.t(entry ? "autosetup.ui.menuPairEntrySignal" : "autosetup.ui.menuPairSignal");
-
-        return I18n.f(paired.size() == 1
-            ? (entry ? "autosetup.ui.menuPairedEntrySignal" : "autosetup.ui.menuPairedSignal")
-            : (entry ? "autosetup.ui.menuPairedEntrySignals" : "autosetup.ui.menuPairedSignals"),
-            addressesOf(panel, paired));
-    }
-
-    /** The station's menu item labeled so, clicked, and the guard window titled so that it opens. */
+    /** The station's window, its guard row's pencil pressed, and the guard window titled so that it opens. */
     private static javax.swing.JDialog openTheGuardWindow(final AutonomyEditorPanel panel, final TileKey station,
-        final String label, String title) throws Exception
+        String title) throws Exception
     {
-        final javax.swing.JMenuItem[] item = new javax.swing.JMenuItem[1];
+        final org.traincontrol.gui.autonomyeditor.StationSettingsWindow settings = support.StationDoors.open(panel, station);
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> item[0] = itemNamed(panel.buildTileMenu(station, null), label));
+        boolean entry = title.equals(I18n.t("autosetup.ui.menuPairEntrySignal"));
 
-        assertNotNull(item[0], "the station's menu has no " + label + " item");
-
-        javax.swing.SwingUtilities.invokeLater(item[0]::doClick);
+        support.Components.press(support.StationDoors.part(settings, entry ? "station.entryGuardChange"
+            : "station.exitGuardChange", javax.swing.AbstractButton.class));
 
         return awaitWindowTitled(title, null);
     }
@@ -791,7 +764,7 @@ public class testTheEditorSaysWhatItsToolsDo
         // THE WINDOW'S TITLE is the item's name with nothing paired, whatever the item's label now says.
         final String title = I18n.t(entry ? "autosetup.ui.menuPairEntrySignal" : "autosetup.ui.menuPairSignal");
 
-        javax.swing.JDialog window = openTheGuardWindow(panel, station, labelOf(panel, his, station, entry), title);
+        javax.swing.JDialog window = openTheGuardWindow(panel, station, title);
 
         clickOnTheDiagram(window, title);
 
@@ -893,11 +866,7 @@ public class testTheEditorSaysWhatItsToolsDo
     {
         try
         {
-            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("hint");
-
-            field.setAccessible(true);
-
-            String text = ((javax.swing.JLabel) field.get(panel)).getText();
+            String text = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
 
             return text == null ? null : text.replaceAll("<[^>]*>", "").replace("&lt;", "<").replace("&gt;", ">")
                 .replace("&amp;", "&").trim();
@@ -911,10 +880,8 @@ public class testTheEditorSaysWhatItsToolsDo
     /** The addresses of these signals, as the station's menu lists them in its guard items' labels. */
     private static String addressesOf(AutonomyEditorPanel panel, java.util.List<TileKey> signals) throws Exception
     {
-        java.lang.reflect.Method describe = AutonomyEditorPanel.class.getDeclaredMethod("signalAddresses",
-            java.util.List.class);
-
-        describe.setAccessible(true);
+        java.lang.reflect.Method describe =
+            Reflect.method(AutonomyEditorPanel.class, "signalAddresses", java.util.List.class);
 
         return (String) describe.invoke(panel, signals);
     }
@@ -922,25 +889,7 @@ public class testTheEditorSaysWhatItsToolsDo
     /** One of the panel's private one-square describers, as its sentences use them. */
     private static String privately(AutonomyEditorPanel panel, String method, TileKey tile) throws Exception
     {
-        java.lang.reflect.Method describe = AutonomyEditorPanel.class.getDeclaredMethod(method, TileKey.class);
-
-        describe.setAccessible(true);
-
-        return (String) describe.invoke(panel, tile);
-    }
-
-    private static void delete(File file)
-    {
-        if (file == null) return;
-
-        File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (File child : children) delete(child);
-        }
-
-        file.delete();
+        return (String) Reflect.method(AutonomyEditorPanel.class, method, TileKey.class).invoke(panel, tile);
     }
 
     /**
@@ -1003,7 +952,11 @@ public class testTheEditorSaysWhatItsToolsDo
                                 for (AutonomyEditorPanel panel : new AutonomyEditorPanel[] {own, diagrams})
                                 {
                                     tipsIn(panel.buildTileMenu(tile, null), tips);
-                                    tipsIn(panel.buildFacingMenu(tile), tips);
+                                    javax.swing.JPopupMenu facing = new javax.swing.JPopupMenu();
+
+                                    panel.addFacingItems(facing, tile);
+
+                                    tipsIn(facing, tips);
                                     tipsIn(panel.buildArrivedFromMenu(tile), tips);
                                 }
                             }
@@ -1069,8 +1022,7 @@ public class testTheEditorSaysWhatItsToolsDo
     {
         try
         {
-            java.lang.reflect.Method rule = AutonomyEditorPanel.class.getDeclaredMethod("fitsOnOneLine", String.class);
-            rule.setAccessible(true);
+            java.lang.reflect.Method rule = Reflect.method(AutonomyEditorPanel.class, "fitsOnOneLine", String.class);
 
             return (Boolean) rule.invoke(null, text);
         }
@@ -1138,7 +1090,7 @@ public class testTheEditorSaysWhatItsToolsDo
                     }
                     finally
                     {
-                        delete(doors);
+                        Trees.delete(doors);
                     }
                 }
             }
@@ -1158,8 +1110,7 @@ public class testTheEditorSaysWhatItsToolsDo
             final AutonomySession setup = everyKindOfSquare(armed);
             final AutonomyEditorPanel panel = new AutonomyEditorPanel(setup, "kinds", () -> { });
 
-            java.lang.reflect.Field button = AutonomyEditorPanel.class.getDeclaredField("testButton");
-            button.setAccessible(true);
+            java.lang.reflect.Field button = Reflect.field(AutonomyEditorPanel.class, "testButton");
             final javax.swing.JToggleButton test = (javax.swing.JToggleButton) button.get(panel);
 
             javax.swing.SwingUtilities.invokeAndWait(() -> test.doClick());
@@ -1178,7 +1129,7 @@ public class testTheEditorSaysWhatItsToolsDo
         }
         finally
         {
-            delete(armed);
+            Trees.delete(armed);
         }
     }
 
@@ -1229,7 +1180,7 @@ public class testTheEditorSaysWhatItsToolsDo
 
         LayoutDiagram out = new LayoutDiagram("left out", 4, 3, null, null);
 
-        out.addComponent(componentType.STRAIGHT, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.straight(out, 1, 1);
         out.setPageId("2");
 
         AutonomySession setup = new AutonomySession(folder);

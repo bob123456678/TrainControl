@@ -558,6 +558,55 @@ try:
     for cmd in ['cd ' + clone + ' && git push origin dev', 'cd ' + clone + ' && git checkout dev && git push',
                 'cd ' + clone + ' && git merge x && git commit -m y']:
         check('clone: ' + cmd.replace(clone, '<clone>'), sh(cmd, cwd=OUT), 'pass')
+
+    # A cd places what follows only when it surely runs in this shell and surely succeeds (RSA108).  X exists;
+    # from OUT, rm -rf build asks unless the cd placed it in X.
+    X = os.path.join(fake, 'x').replace('\\', '/')
+    os.makedirs(os.path.join(fake, 'x', 'my dir'))
+    os.makedirs(os.path.join(fake, 'x', 'old'))
+    XW = X.replace('/', '\\')
+    for cmd in ['[ -d X ] || { mkdir -p X; cd X; }; rm -rf build', 'test -f X/done || { echo run; cd X; }; rm -rf build',
+                'false && { echo go; cd X; }; rm -rf build', '[ -d X ] || {\n  echo making\n  cd X\n}\nrm -rf build',
+                'f() { cd X; }; rm -rf build', 'function f { cd X; }; rm -rf build', 'go() {\n  cd X || return\n}\nrm -rf b',
+                'if [ "$CI" = 1 ]; then cd X || exit 1; fi; rm -rf build', 'while false; do cd X || exit; done; rm -rf b',
+                'bash -c "rm -rf build"; cd X; ls', 'eval "rm -rf build"; cd X', 'bash -c "cd X"; bash -c "rm -rf build"',
+                'bash -c "cd X"; rm -rf build', '(false) && cd X; rm -rf build', 'v=$(false) && cd X; rm -rf build',
+                '! true && cd X; rm -rf build', '`cd X`; rm -rf build', 'v=$(cd X); rm -rf build',
+                'pushd X; pushd; rm -rf build', 'pushd -n X; rm -rf build', 'cd X extra; rm -rf build',
+                'D="X/my dir"; cd $D; rm -rf build', 'env cd X; rm -rf build', 'timeout 5 cd X; rm -rf build',
+                'nohup cd X; rm -rf build', 'exec cd X; rm -rf build', 'rm -rf X; cd X; rm -rf build',
+                'mv X X2; cd X; rm -rf build', 'rm -rf X/..; cd X; rm -rf build', 'S=X && cd $S; rm -rf build',
+                'make && cd X; rm -rf build', 'cd ' + NONE + ' || { echo no; }; rm -rf build',
+                'cd ' + NONE + ' || { echo no; false && exit 1; }; rm -rf build', 'cd ' + NONE + ' || { (exit 1); }; rm -rf b',
+                'if x; then cd ' + NONE + ' || { exit 1; }; fi; rm -rf build']:
+        check('trust less: ' + cmd.replace(NONE, '<none>'), sh(cmd.replace('X', X), cwd=OUT), 'ask')
+    for cmd in ['powershell -Command "Remove-Item build -Recurse"; Set-Location X',
+                'Remove-Item -Recurse X; Set-Location X; Remove-Item build', 'if ($x) { Set-Location X }; Remove-Item b']:
+        check('trust less: PowerShell ' + cmd, ps(cmd.replace('X', XW), cwd=OUT), 'ask')
+    for cmd in ['git -C ' + wt + ' diff --quiet || { echo dirty; cd ' + wt + '; }; git checkout -- src',
+                '[ -d ' + wt + ' ] || { echo none; cd ' + wt + '; }; cp test/LocDB.data LocDB.data',
+                'f() { cd ' + wt + '; }; git checkout -- src', 'bash -c "git checkout -- src"; cd ' + wt,
+                'if git -C ' + wt + ' diff --quiet; then echo clean; else cd ' + wt + ' || exit 1; fi; git checkout -- src',
+                'git worktree remove --force ' + wt + '; cd ' + wt + '; git checkout -- src',
+                'git checkout master || git checkout dev; git merge release',
+                'if git diff --quiet; then git checkout master; else git checkout dev; fi; git merge release']:
+        check('trust less: ' + cmd.replace(wt, '<wt>'), sh(cmd), 'ask')
+    for cmd in ['test -d ' + off + ' || { echo; cd ' + off + '; }; git merge release',
+                'f() { cd ' + off + '; }; git merge release']:
+        check('trust less, on master: ' + cmd.replace(off, '<d>'), sh(cmd, cwd=on), 'ask')
+    for cmd in ['bash -c "cd X && rm -rf build"', 'cd X && bash -c "rm -rf build"', 'S=X && cd $S && rm -rf build',
+                'cd X; v=$(git rev-parse HEAD); rm -rf build', 'pushd X; rm -rf build; popd', 'rm -rf X/old; cd X; rm -rf b',
+                'mkdir -p X/new && cd X/new && rm -rf build', 'command cd X; rm -rf build', 'builtin cd X; rm -rf build',
+                'cd X && { echo; rm -rf build; }', '{ cd X; rm -rf build; }', 'cd X || { echo no; exit 1; }; rm -rf b',
+                'cd ' + NONE + ' || { echo no; exit 1; }; rm -rf build', 'cd ' + NONE + ' 2>/dev/null || { exit 1; }; rm -rf b',
+                'cd ' + NONE + ' || { echo no >&2; return 1; }; rm -rf build', 'cd "X/my dir" && rm -rf build']:
+        check('trust less, still placed: ' + cmd.replace(NONE, '<none>'), sh(cmd.replace('X', X), cwd=OUT), 'pass')
+    check('trust less, still placed: PowerShell -ErrorAction',
+          ps('Set-Location -Path ' + XW + ' -ErrorAction SilentlyContinue; Remove-Item build -Recurse', cwd=OUT), 'pass')
+    for cmd in ['cd ' + wt + ' || { echo no; exit 1; }; git checkout -- src', 'git checkout master && git checkout dev && git merge x',
+                'git checkout master; git checkout dev; git merge x', 'if x; then git checkout dev; fi; git merge x',
+                'git worktree add --detach ' + NONE + ' HEAD; cd ' + NONE + ' || { echo no; exit 1; }; git checkout -- src']:
+        check('trust less, still placed: ' + cmd.replace(wt, '<wt>').replace(NONE, '<none>'), sh(cmd), 'pass')
 finally:
     shutil.rmtree(fake, ignore_errors=True)
 

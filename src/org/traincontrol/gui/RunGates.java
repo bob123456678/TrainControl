@@ -2,6 +2,7 @@ package org.traincontrol.gui;
 
 import java.awt.Component;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import org.traincontrol.util.I18n;
 
 /**
@@ -28,7 +29,7 @@ public final class RunGates
 
         if (running == null) return false;
 
-        JOptionPane.showMessageDialog(source == null ? ui : source,
+        JOptionPane.showMessageDialog(over(ui, source),
             I18n.f("loc.ui.errorLocomotiveDrivenByARunningRoute", name, running.getName()));
 
         return true;
@@ -54,11 +55,20 @@ public final class RunGates
 
     static boolean refuseWhileAutonomyRunning(TrainControlUI ui, Component source)
     {
-        if (ui.getModel() == null || !ui.getModel().isAutonomyRunning()) return false;
+        String why = whyAutonomyRunningRefuses(ui);
 
-        JOptionPane.showMessageDialog(over(ui, source), I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning"));
+        if (why == null) return false;
+
+        JOptionPane.showMessageDialog(over(ui, source), I18n.t(why));
 
         return true;
+    }
+
+    /** The message key `refuseWhileAutonomyRunning` would show now, or null: what grays its doors' menu items. */
+    static String whyAutonomyRunningRefuses(TrainControlUI ui)
+    {
+        return ui.getModel() != null && ui.getModel().isAutonomyRunning()
+            ? "autolayout.ui.errorCannotEditLocomotivesWhileRunning" : null;
     }
 
     /** What a door that edits the setup, the diagram, the timetable or the settings says while a run holds the setup. */
@@ -83,6 +93,12 @@ public final class RunGates
         return refuseWhileHeld(ui, source, null, WAIT_FOR_THE_TRAINS);
     }
 
+    /** The message key `refuseWhileARunHoldsTheSetup` would show now, or null: what grays its doors' menu items. */
+    static String whyARunHoldingTheSetupRefuses(TrainControlUI ui)
+    {
+        return ui.aRunHoldsTheSetup() ? NO_EDITS_WHILE_RUNNING : null;
+    }
+
     private static boolean refuseWhileHeld(TrainControlUI ui, Component source, Runnable putBack, String key)
     {
         if (!ui.aRunHoldsTheSetup()) return false;
@@ -95,12 +111,13 @@ public final class RunGates
     }
 
     /**
-     * Over the main window where the source is not showing (MT-703): a menu's item has left its window by the time it
-     * runs, and the message went to Swing's hidden frame, under an always-on-top main window.
+     * Over the source; else the window whose door is being pressed, or the main window (OB-324): where the source is
+     * not showing (MT-703), as a menu's item has left its window by the time it runs, the message went to Swing's
+     * hidden frame, under an always-on-top main window.
      */
     private static Component over(TrainControlUI ui, Component source)
     {
-        return source == null || !source.isShowing() ? ui : source;
+        return source == null || source == ui || !source.isShowing() ? ui.dialogParent() : source;
     }
 
     /**
@@ -108,23 +125,41 @@ public final class RunGates
      * the state it guards against, and loading would save the setup against a diagram somebody is editing (discarding
      * tiles they meant to Cancel) and rebuild the window under the open editor.  True when the caller must not proceed.
      */
-    static boolean refuseWhileEditorOpen(TrainControlUI ui)
+    static boolean refuseWhileEditorOpen(TrainControlUI ui, java.awt.Window asked)
     {
-        if (!ui.isLayoutEditorOpen()) return false;
+        if (!ui.anEditorIsOpenOrOnItsWay()) return false;
 
         // The dialog goes to the event thread; the ANSWER does not wait for it (OB-078): two callers ask this from a
         // raw worker thread, and a modal JOptionPane built off the EDT mispaints and can deadlock.  invokeLater rather
         // than invokeAndWait: blocking until a dialog is dismissed would hold a worker and, from the EDT, deadlock
         // outright.
-        if (javax.swing.SwingUtilities.isEventDispatchThread())
+        if (SwingUtilities.isEventDispatchThread())
         {
-            JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.menuEditorOpen"));
+            JOptionPane.showMessageDialog(ui.stillShowing(asked), I18n.t("autosetup.ui.menuEditorOpen"));
         }
         else
         {
-            javax.swing.SwingUtilities.invokeLater(() ->
-                JOptionPane.showMessageDialog(ui, I18n.t("autosetup.ui.menuEditorOpen")));
+            SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(ui.stillShowing(asked), I18n.t("autosetup.ui.menuEditorOpen")));
         }
+
+        return true;
+    }
+
+    /**
+     * Refuses a multi-unit link, an address change or a Central Station sync while an editor is open or on its way: each
+     * can take a standing train off the railway, which the editor's Cancel would stand back over another.  Any thread;
+     * true when the caller must not proceed.
+     */
+    static boolean refuseALinkOrSyncWhileEditorOpen(TrainControlUI ui, Component source)
+    {
+        if (!ui.anEditorIsOpenOrOnItsWay()) return false;
+
+        Runnable say = () -> JOptionPane.showMessageDialog(over(ui, source),
+            I18n.t("loc.ui.errorEditorOpenNoLinkOrSync"));
+
+        if (SwingUtilities.isEventDispatchThread()) say.run();
+        else SwingUtilities.invokeLater(say);
 
         return true;
     }
@@ -158,10 +193,19 @@ public final class RunGates
     }
 
     /**
+     * Whether this train may be sent by hand now as far as runs go: not while autonomy, a timetable or Return Home runs
+     * or plans, nor while it is out itself; another train sent by hand does not stop it (FR-187).  Takes no monitor.
+     */
+    static boolean mayBeSentByHandNow(TrainControlUI ui, org.traincontrol.automation.Layout railway,
+        org.traincontrol.base.Locomotive train)
+    {
+        return !ui.stagingFlowActive && !railway.isAutoRunning() && !railway.isStagingInProgress()
+            && !railway.isAlreadyUnderway(train);
+    }
+
+    /**
      * Why a train may not be sent by hand right now, or null when it may (MT-263): a hand send is refused on the
      * question Start is refused on, `autonomyHasErrors`, asked before the reversal question.
-     *
-     * @return the sentence to show, or null
      */
     static String whyAHandSendIsRefused(TrainControlUI ui)
     {

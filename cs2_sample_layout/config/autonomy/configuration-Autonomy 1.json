@@ -44,17 +44,17 @@
       "canReverse": true
     },
     "3 - Top Parking:4,9": {},
-    "1 - Main:7,7": {
-      "maxTrainLength": 5,
-      "priority": -2
-    },
-    "1 - Main:5,9": {},
     "2 - Bottom:16,5": {
       "parking": true,
       "mustReverse": true,
       "maxTrainLength": 2,
       "autoDestination": false
     },
+    "1 - Main:7,7": {
+      "maxTrainLength": 5,
+      "priority": -2
+    },
+    "1 - Main:5,9": {},
     "2 - Bottom:14,4": {
       "parking": true,
       "mustReverse": true,
@@ -70,9 +70,10 @@
     "1 - Main:0,3": {},
     "1 - Main:2,1": {},
     "3 - Top Parking:17,10": {},
-    "1 - Main:1,10": {
+    "1 - Main:2,7": {
+      "mustReverse": true,
       "maxTrainLength": 4,
-      "priority": -2
+      "autoDestination": false
     },
     "1 - Main:4,5": {
       "mustReverse": true,
@@ -80,9 +81,14 @@
       "autoDestination": false,
       "priority": 1
     },
-    "1 - Main:2,7": {
-      "mustReverse": true,
+    "1 - Main:1,10": {
       "maxTrainLength": 4,
+      "priority": -2
+    },
+    "2 - Bottom:16,9": {
+      "parking": true,
+      "mustReverse": true,
+      "maxTrainLength": 3,
       "autoDestination": false
     },
     "1 - Main:6,4": {
@@ -91,19 +97,13 @@
       "priority": 1,
       "home": "2-8-4 3505 SP"
     },
-    "2 - Bottom:16,9": {
-      "parking": true,
-      "mustReverse": true,
-      "maxTrainLength": 3,
-      "autoDestination": false
-    },
-    "3 - Top Parking:17,12": {},
     "1 - Main:4,3": {},
     "1 - Main:2,5": {
       "mustReverse": true,
       "maxTrainLength": 3,
       "autoDestination": false
     },
+    "3 - Top Parking:17,12": {},
     "1 - Main:18,7": {"excludedLocs": [
       "EA 3005 DSB",
       "MY 1150 DSB",
@@ -255,8 +255,8 @@
       "autoDestination": false
     },
     "3 - Top Parking:19,15": {},
-    "3 - Top Parking:11,10": {},
     "1 - Main:7,1": {},
+    "3 - Top Parking:11,10": {},
     "3 - Top Parking:5,17": {},
     "3 - Top Parking:19,11": {},
     "3 - Top Parking:5,16": {},
@@ -268,9 +268,8 @@
     },
     "2 - Bottom:7,12": {},
     "2 - Bottom:4,6": {},
-    "2 - Bottom:14,10": {},
     "1 - Main:19,7": {},
-    "2 - Bottom:11,13": {},
+    "2 - Bottom:14,10": {},
     "1 - Main:13,9": {
       "maxTrainLength": 3,
       "homeFacing": "W",
@@ -285,6 +284,7 @@
       "priority": -3,
       "home": "02 0314-1 DDR"
     },
+    "2 - Bottom:11,13": {},
     "1 - Main:11,7": {"speedMultiplier": 0.9}
   }
 }

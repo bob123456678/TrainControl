@@ -88,11 +88,65 @@ public final class Answering implements AutoCloseable
         return new Answer(null, 0, text);
     }
 
+    /** One question as it stood on screen, read before it was answered. */
+    public static final class Question
+    {
+        /** The window that owns the question's dialog, or null. */
+        public final Window owner;
+
+        /** Whether that owner was on screen when the question was. */
+        public final boolean ownerShowing;
+
+        /** Whether the dialog stood above other programs. */
+        public final boolean alwaysOnTop;
+
+        /** Which windows the dialog blocked. */
+        public final java.awt.Dialog.ModalityType modality;
+
+        /** Whether its owner was minimized while it asked. */
+        public final boolean ownerMinimized;
+
+        /** The dialog's title. */
+        public final String title;
+
+        /** What it says, as `asked` keeps it. */
+        public final String message;
+
+        /** Its `JOptionPane` message type. */
+        public final int type;
+
+        /** Its buttons' text, in order. */
+        public final List<String> buttons;
+
+        /** The text of the button it starts on, or null for a question whose buttons are the look-and-feel's. */
+        public final String startsOn;
+
+        private Question(JDialog dialog, JOptionPane pane, String message)
+        {
+            this.owner = dialog.getOwner();
+            this.ownerShowing = this.owner != null && this.owner.isShowing();
+            this.alwaysOnTop = dialog.isAlwaysOnTop();
+            this.modality = dialog.getModalityType();
+            this.ownerMinimized = this.owner instanceof java.awt.Frame
+                && (((java.awt.Frame) this.owner).getExtendedState() & java.awt.Frame.ICONIFIED) != 0;
+            this.title = dialog.getTitle();
+            this.message = message;
+            this.type = pane.getMessageType();
+            this.buttons = new ArrayList<>();
+
+            for (JButton button : buttonsOf(pane)) this.buttons.add(button.getText());
+
+            this.startsOn = pane.getInitialValue() == null ? null : String.valueOf(pane.getInitialValue());
+        }
+    }
+
+    private final List<Question> questions = Collections.synchronizedList(new ArrayList<>());
     private final List<String> asked = Collections.synchronizedList(new ArrayList<>());
     private final List<PopupShape> shapes = Collections.synchronizedList(new ArrayList<>());
     private final AtomicBoolean going = new AtomicBoolean(true);
     private volatile Thread watching;
     private volatile File toChoose;
+    private volatile java.util.function.Consumer<JDialog> look;
 
     private Answering()
     {
@@ -124,8 +178,11 @@ public final class Answering implements AutoCloseable
                     {
                         String message = textOf(pane.getMessage());
 
+                        answering.questions.add(new Question((JDialog) window, pane, message));
                         answering.shapes.add(PopupShape.of(pane));
                         answering.asked.add(message);
+
+                        if (answering.look != null) lookAt(answering.look, (JDialog) window);
 
                         answer(pane, rule.apply(message), answering.asked);
                     }
@@ -164,6 +221,29 @@ public final class Answering implements AutoCloseable
     }
 
     /**
+     * Hands every question's dialog to `look` on the event thread, before it is answered; a look that throws is printed
+     * and the question still answered, so the watcher never leaves a modal dialog standing.
+     */
+    public Answering looking(java.util.function.Consumer<JDialog> look)
+    {
+        this.look = look;
+
+        return this;
+    }
+
+    private static void lookAt(java.util.function.Consumer<JDialog> look, JDialog dialog)
+    {
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> look.accept(dialog));
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * @return every question's message so far, in the order asked
      */
     public List<String> asked()
@@ -171,6 +251,17 @@ public final class Answering implements AutoCloseable
         synchronized (asked)
         {
             return new ArrayList<>(asked);
+        }
+    }
+
+    /**
+     * @return each question as it stood on screen, in the order asked
+     */
+    public List<Question> questions()
+    {
+        synchronized (questions)
+        {
+            return new ArrayList<>(questions);
         }
     }
 

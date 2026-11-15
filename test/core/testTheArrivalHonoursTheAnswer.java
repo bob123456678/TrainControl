@@ -13,6 +13,8 @@ import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
+import support.Reflect;
+import static support.Settle.until;
 
 /**
  * A train turned at the end of a journey is turned because the answer said so (Adam, MT-368).  The decision is
@@ -48,30 +50,6 @@ public class testTheArrivalHonoursTheAnswer
                 return at == askedAbout;
             }
         };
-    }
-
-    /** A bounded wait rather than a sleep: the railway's timings are its own. */
-    private static boolean waitFor(java.util.function.BooleanSupplier until, long ceilingMs)
-    {
-        long deadline = System.currentTimeMillis() + ceilingMs;
-
-        while (System.currentTimeMillis() < deadline)
-        {
-            if (until.getAsBoolean()) return true;
-
-            try
-            {
-                Thread.sleep(50);
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-
-                return false;
-            }
-        }
-
-        return until.getAsBoolean();
     }
 
     @BeforeClass
@@ -166,14 +144,10 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A train that declines the turn is not left standing on the copy that expected it to turn.
-     *
-     * The path offered to a may-turn square routinely ends on the TURNING copy (`StationIndex.distinctDestinations`
-     * keeps the first path per square), so a train that declines the turn would face one way while the Point it stands
-     * on says the other, and its next dispatch would read the wrong outgoing edges. The mirror case, a train that DOES
-     * turn, is re-stood by `AutonomySession.faceTheWayItCameIn`.
-     *
-     * Driven through `executePath` rather than by asking the rule, so the call site is covered.
+     * A train that declines the turn is not left standing on the copy that expected it to turn: the path offered to a
+     * may-turn square routinely ends on the TURNING copy (`StationIndex.distinctDestinations`).  The mirror case, a
+     * train that DOES turn, is re-stood by `AutonomySession.faceTheWayItCameIn`.  Driven through `executePath`, so the
+     * call site is covered.
      */
     @Test
     public void testDecliningTheTurnDoesNotLeaveItOnTheTurningCopy() throws Exception
@@ -222,7 +196,7 @@ public class testTheArrivalHonoursTheAnswer
 
         try
         {
-            assertTrue(waitFor(() -> running.isRunning() && driver.getSpeed() > 0, 15000),
+            assertTrue(until(() -> running.isRunning() && driver.getSpeed() > 0, 15000),
                 "the train never set off, so no arrival happened and this claim tested nothing");
 
             // On its way the railway already knows the copy it will stand on (OB-314), not the turning copy its path
@@ -234,7 +208,7 @@ public class testTheArrivalHonoursTheAnswer
             model.setFeedbackState(turning.getS88(), true);
             model.setFeedbackState(arrive.getS88(), false);
 
-            assertTrue(waitFor(() -> !run.isAlive(), 30000),
+            assertTrue(until(() -> !run.isAlive(), 30000),
                 "the run never finished after the destination's sensor went on, so the arrival this"
                 + " claim is about was never reached");
         }
@@ -405,14 +379,14 @@ public class testTheArrivalHonoursTheAnswer
         }
     }
 
-    /** And "turn round" at the same square turns it, so the answer is read in both directions. */
+    /** And "turn around" at the same square turns it, so the answer is read in both directions. */
     @Test
     public void testTurnRoundIsHonouredAtTheSameSquare() throws Exception
     {
         Point may = layout.getPoint("MT368_MAY");
 
         assertTrue(layout.turnsOnArrival(may, loc, answering(true, may)),
-            "the operator said TURN ROUND at a square trains may turn at and the train was not"
+            "the operator said TURN AROUND at a square trains may turn at and the train was not"
             + " turned, so the answer is ignored in both directions rather than honoured");
     }
 
@@ -459,9 +433,8 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * A train arriving on a railway retired on its way is not turned: the milestones' check stops such a train, but
-     * Unload could land in the pause between the last check and the turn, leaving the train facing the other way from
-     * the folded record. The railway is retired from the arrival's own callback, between the last check and the turn.
+     * A train arriving on a railway retired on its way is not turned: Unload could land between the milestones' last
+     * check and the turn.  The railway is retired from the arrival's own callback.
      *
      * MUTATION: turn a train at its destination without asking whether its railway is still the current one, and this
      * fails.
@@ -490,9 +463,7 @@ public class testTheArrivalHonoursTheAnswer
 
         final boolean forward = loc.goingForward();
 
-        final java.lang.reflect.Field version = Layout.class.getDeclaredField("version");
-
-        version.setAccessible(true);
+        final java.lang.reflect.Field version = Reflect.field(Layout.class, "version");
 
         final int current = version.getInt(layout);
 
@@ -534,13 +505,13 @@ public class testTheArrivalHonoursTheAnswer
 
         try
         {
-            assertTrue(waitFor(() -> running.isRunning() && driver.getSpeed() > 0, 15000),
+            assertTrue(until(() -> running.isRunning() && driver.getSpeed() > 0, 15000),
                 "the train never set off, so no arrival happened and this claim tested nothing");
 
             model.setFeedbackState(end.getS88(), true);
             model.setFeedbackState(from.getS88(), false);
 
-            assertTrue(waitFor(() -> !run.isAlive(), 30000), "the run never finished after the destination's sensor went"
+            assertTrue(until(() -> !run.isAlive(), 30000), "the run never finished after the destination's sensor went"
                 + " on, so the arrival this claim is about was never reached");
 
             assertTrue(version.getInt(layout) != current, "precondition: the arrival's callback never retired the"
@@ -570,8 +541,7 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * A train that kept its direction is stood on the plain copy without the square ever reading empty (the platform's
-     * exit-guard signal follows the square and was commanded GREEN then RED over the standing train): it is put on the
-     * plain copy, with the side and road it came in by, before it is taken off the turning one.
+     * exit-guard signal would be commanded GREEN then RED over the standing train).
      *
      * MUTATION: take the train off the turning copy before putting it on the plain one, and this fails.
      */
@@ -849,8 +819,8 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * A train told to keep its direction at a square it may turn at is turned all the same where no copy of that square
-     * faces on from the way it came (MT-245): such a square is a compulsory turn in all but its flag.  Two shapes, each
-     * sent with the answer keep: no other copy at all, and a plain copy the train's approach cannot reach.
+     * faces on from the way it came (MT-245): a compulsory turn in all but its flag.  Two shapes: no other copy at all,
+     * and a plain copy the train's approach cannot reach.
      *
      * MUTATION: take the compulsory turn out of `Layout.turnsOnArrival`, and this fails.
      */
@@ -940,7 +910,7 @@ public class testTheArrivalHonoursTheAnswer
         journey.setDaemon(true);
         journey.start();
 
-        assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+        assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
             "precondition (" + shape + "): the train was not sent: " + Layout.getLastError());
 
         model.setFeedbackState(arrive.getName(), true);
@@ -960,9 +930,8 @@ public class testTheArrivalHonoursTheAnswer
     }
 
     /**
-     * The operator is not asked about a destination where no copy faces on from the train's approach, since the answer
-     * could not be honored there, and still is where one does. Asked of `ManualReversalPrompt.destinationAskedAbout`,
-     * because asking puts up a modal dialog.
+     * The operator is not asked about a destination where no copy faces on from the train's approach, and still is
+     * where one does.  Asked of `ManualReversalPrompt.destinationAskedAbout`, because asking puts up a modal dialog.
      *
      * MUTATION: ask about such a destination again, and this fails.
      */
@@ -1023,8 +992,7 @@ public class testTheArrivalHonoursTheAnswer
 
     /**
      * A timetable recorded by hand through a may-turn square plays back what was decided there: the entry keeps the
-     * answer the arrival was given and is played back with it, so playback does not turn a train the recording did not
-     * (the next entry starts on the plain copy).
+     * answer the arrival was given, so playback does not turn a train the recording did not.
      *
      * MUTATION: record no answer, or play every entry back as autonomy again, and this fails.
      */
@@ -1124,12 +1092,12 @@ public class testTheArrivalHonoursTheAnswer
             runner.start();
 
             // THE FIRST ENTRY: to the square, and kept as recorded
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the first entry did not start: " + Layout.getLastError());
 
             model.setFeedbackState(m.getName(), true);
 
-            assertTrue(waitFor(() -> plain.getCurrentLocomotive() == x || (turning.getCurrentLocomotive() == x
+            assertTrue(until(() -> plain.getCurrentLocomotive() == x || (turning.getCurrentLocomotive() == x
                 && !rail.getActiveLocomotives().containsKey(x)), 15000), "precondition: the first entry did not end");
 
             model.setFeedbackState(m.getName(), false);
@@ -1141,12 +1109,12 @@ public class testTheArrivalHonoursTheAnswer
                 + " had it stood on the plain one, so the next entry cannot start (RSA49-B1)");
 
             // THE SECOND ENTRY, from the plain copy, as recorded
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
                 "the second entry, recorded from the plain copy, never started (RSA49-B1): " + Layout.getLastError());
 
             model.setFeedbackState(c.getName(), true);
 
-            assertTrue(waitFor(() -> onward.getCurrentLocomotive() == x && !rail.getActiveLocomotives().containsKey(x),
+            assertTrue(until(() -> onward.getCurrentLocomotive() == x && !rail.getActiveLocomotives().containsKey(x),
                 15000), "the second entry did not arrive");
         }
         finally
@@ -1173,7 +1141,7 @@ public class testTheArrivalHonoursTheAnswer
         journey.setDaemon(true);
         journey.start();
 
-        assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+        assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
             "precondition: the hand send did not start: " + Layout.getLastError());
 
         model.setFeedbackState(arrive.getName(), true);

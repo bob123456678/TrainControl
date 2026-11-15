@@ -24,6 +24,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import static regression.testTheImportDoorReadsAnOldFile.itemCalled;
 import static regression.testTheImportDoorReadsAnOldFile.openTheWindow;
+import support.Reflect;
 
 /**
  * Autonomy > Manage > Delete asks which configuration, and is offered while none is loaded (OB-319).  Here nothing is
@@ -180,11 +181,7 @@ public class testDeleteAsksWhichConfiguration
     /** Whatever stands in the menu bar's Autonomy slot. */
     private static JMenu theAutonomySlot(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("mainMenuBar");
-
-        field.setAccessible(true);
-
-        JMenuBar bar = (JMenuBar) field.get(ui);
+        JMenuBar bar = (JMenuBar) Reflect.get(TrainControlUI.class, ui, "mainMenuBar");
 
         String heading = I18n.t("autosetup.ui.menuAutonomy");
 

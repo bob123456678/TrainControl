@@ -30,16 +30,11 @@ public final class CS3TrackPlan
         {
             JSONObject plan = plans.optJSONObject(i);
 
-            if (plan != null)
-            {
-                this.pages.putIfAbsent(plan.optString("name"), new Page(plan));
-            }
+            if (plan != null) this.pages.putIfAbsent(plan.optString("name"), new Page(plan));
         }
     }
 
-    /**
-     * The plan of the named page, or null if the station has none.
-     */
+    /** The plan of the named page, or null if the station has none. */
     public Page page(String name)
     {
         return this.pages.get(name);
@@ -60,9 +55,7 @@ public final class CS3TrackPlan
         }
     }
 
-    /**
-     * One page's plan: which articles it holds, and the square of each on its grid.
-     */
+    /** One page's plan: which articles it holds, and the square of each on its grid. */
     public static final class Page
     {
         private final boolean grid;
@@ -117,10 +110,7 @@ public final class CS3TrackPlan
          */
         public Point gridOffset(Map<String, List<Point>> squaresByArticle)
         {
-            if (!this.grid)
-            {
-                return null;
-            }
+            if (!this.grid) return null;
 
             Map<Point, Integer> votes = new HashMap<>();
 

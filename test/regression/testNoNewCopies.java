@@ -1,7 +1,10 @@
 package regression;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -11,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import support.CopyScan;
@@ -27,59 +31,42 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 127;
+    private static final int GROUPS_ALLOWED = 83;
 
-    /** The tokens standing in a second or later copy in `test/`, summed over its groups.  Never raise it. */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 278195;
+    /**
+     * The tokens standing in a second or later copy in `test/`, summed over its groups: an upper bound, so a commit that
+     * removes copies need not touch it.  Never raise it; `docs/tools/codesize.py` prints the figure now, to lower it to.
+     */
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 204606;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
-        "ArrivalSidePrompt:1,FacingPrompt:1 (69)",
-        "ArrivalSidePrompt:1,FacingPrompt:1 (60)",
         "AutonomyBuilder:1,AutonomyChecks:1 (75)",
-        "AutonomyBuilder:2 (80)",
-        "AutonomyBuilder:2 (78)",
-        "AutonomyBuilder:2 (64)",
-        "AutonomyBuilder:4 (84)",
-        "AutonomyChecks:2 (83)",
+        "AutonomyBuilder:2 (62)",
         "AutonomyChecks:2 (63)",
-        "AutonomyChecks:3 (108)",
-        "AutonomyCompanionStore:1,AutonomySession:2 (99)",
-        "AutonomyCompanionStore:2 (85)",
-        "AutonomyCompanionStore:2 (77)",
-        "AutonomyCompanionStore:2 (71)",
         "AutonomyCompanionStore:2 (67)",
         "AutonomyCompanionStore:2 (65)",
         "AutonomyCompanionStore:2 (63)",
-        "AutonomyCompanionStore:2 (61)",
-        "AutonomyCompanionStore:3 (136)",
-        "AutonomyCompanionStore:3 (86)",
-        "AutonomyCompanionStore:5 (185)",
+        "AutonomyCompanionStore:3 (118)",
+        "AutonomyCompanionStore:5 (173)",
         "AutonomyEditorPanel:1,EditorPrompts:1 (80)",
         "AutonomyEditorPanel:2 (66)",
         "AutonomyEditorPanel:3 (108)",
-        "AutonomyEditorPanel:4 (146)",
+        "AutonomyEditorPanel:4 (136)",
         "AutonomyEditorPanel:4 (98)",
-        "AutonomyMenu:2 (64)",
-        "AutonomySession:2 (93)",
-        "AutonomySession:2 (77)",
         "AutonomySession:2 (76)",
-        "AutonomySession:2 (71)",
+        "AutonomySession:2 (73)",
         "AutonomySession:2 (70)",
         "AutonomySession:2 (68)",
         "AutonomySession:2 (67)",
-        "AutonomySession:2 (66)",
+        "AutonomySession:2 (67)",
         "AutonomySession:2 (64)",
         "AutonomySession:2 (64)",
         "AutonomySession:2 (63)",
-        "AutonomySession:2 (60)",
         "AutonomySession:3 (67)",
-        "AutonomySettingsTab:11 (315)",
-        "AutonomySettingsTab:2 (145)",
-        "AutonomyViewerPanel:3 (62)",
-        "CS2File:2 (98)",
+        "AutonomySettingsTab:2 (138)",
+        "CS2File:2 (83)",
         "CS2File:2 (79)",
-        "CS2File:2 (76)",
         "CS2Message:1,LayoutDiagramComponent:2 (101)",
         "CS2Message:1,RouteCommand:1 (91)",
         "CS2Message:2 (242)",
@@ -87,31 +74,21 @@ public class testNoNewCopies
         "CurrentKeyRow:1,TileAnnotation:1 (89)",
         "EditorMassAssign:2 (74)",
         "FeedbackEvents:1,FullAutonomyExample:1 (60)",
-        "GraphLocAssign:1,LayoutRightclickAutonomyMenu:1 (72)",
-        "HomeStaging:2 (72)",
-        "HomeStaging:2 (64)",
+        "HomeStaging:2 (60)",
         "ImageUtil:2 (113)",
         "Layout:1,TrainControlUI:1 (94)",
-        "Layout:2 (85)",
         "Layout:2 (63)",
-        "Layout:4 (189)",
         "LayoutDiagram:2 (122)",
         "LayoutDiagram:2 (78)",
         "LayoutDiagramComponent:2 (189)",
         "LayoutDiagramComponent:2 (171)",
         "LayoutEditor:2 (73)",
-        "LayoutEditor:3 (86)",
-        "LayoutEditorRightclickMenu:2 (65)",
-        "LayoutEditorUndo:2 (84)",
+        "LayoutEditorUndo:2 (82)",
         "LayoutEditorUndo:2 (67)",
-        "LayoutFileActions:2 (74)",
         "LayoutLabel:2 (63)",
-        "LocIconActions:3 (83)",
-        "LocIconActions:3 (75)",
         "LocIconCropDialog:1,TileAnnotation:1 (95)",
         "LocIconCropDialog:2 (66)",
         "LocomotiveKeyboardMapping:1,MarklinAccessory:1,TimetablePath:1 (105)",
-        "MarklinControlStation:1,TrainControlUI:1 (72)",
         "MarklinControlStation:1,TrainControlUI:1 (72)",
         "MarklinControlStation:3 (64)",
         "MarklinLocomotive:2 (75)",
@@ -119,48 +96,34 @@ public class testNoNewCopies
         "MarklinSimpleComponent:2 (88)",
         "NodeAnd:1,NodeOr:1 (82)",
         "NodeAnd:1,NodeOr:1,NodeRouteCommand:1 (207)",
-        "NodeExpression:2 (71)",
+        "NodeExpression:2 (69)",
         "NodeExpression:2 (66)",
-        "RightClickMenuListener:2 (64)",
         "RouteCommand:1,TrainControlUI:1 (138)",
         "RouteCommand:2 (109)",
         "RouteCommand:2 (64)",
         "RouteEditorFrame:2 (73)",
         "RouteEditorFrame:2 (65)",
         "RowIcons:2 (64)",
-        "StationCaption:2 (86)",
         "TileAnnotation:1,TileOverlay:1 (101)",
         "TileAnnotation:2 (84)",
         "TileAnnotation:2 (68)",
         "TileAnnotation:3,TileOverlay:1 (86)",
         "TileGraph:1,TilePorts:1 (80)",
         "TileGraph:1,TileSelection:1 (72)",
-        "TileGraph:2 (65)",
-        "TileGraph:2 (64)",
         "TrainControlUI:2 (225)",
         "TrainControlUI:2 (209)",
         "TrainControlUI:4 (192)", // the form-accessor runs the gui collaborators read through, lately AutonomyLifecycle
         "TrainControlUI:2 (93)",
-        "TrainControlUI:2 (89)",
-        "TrainControlUI:2 (83)",
         "TrainControlUI:2 (81)",
-        "TrainControlUI:2 (79)",
         "TrainControlUI:2 (69)",
         "TrainControlUI:2 (67)",
-        "TrainControlUI:2 (65)",
         "TrainControlUI:2 (62)",
         "TrainControlUI:2 (61)",
         "TrainControlUI:2 (60)",
         "TrainControlUI:2 (60)",
-        "TrainControlUI:3 (168)",
         "TrainControlUI:3 (123)",
         "TrainControlUI:3 (101)",
-        "TrainControlUI:3 (96)",
         "TrainControlUI:3 (95)",
-        "TrainControlUI:3 (75)",
-        "TrainControlUI:3 (66)",
-        "TrainControlUI:4 (294)",
-        "TrainControlUI:4 (276)",
     };
 
     private static final String ADVICE = "Call the method that already does it, or move the code into one both call "
@@ -192,24 +155,110 @@ public class testNoNewCopies
             }
         });
 
-        StringBuilder largest = new StringBuilder();
+        if (copied <= TEST_COPIED_TOKENS_ALLOWED) return;
 
-        for (int i = 0; i < Math.min(5, found.size()); i++)
+        Set<String> changed = changedFiles();
+
+        Map<String, CopyScan.Group> largest = new LinkedHashMap<>();
+
+        for (int i = 0; i < found.size(); i++)
         {
-            List<String> places = found.get(i).places;
+            CopyScan.Group g = found.get(i);
 
-            largest.append("\n  ").append(found.get(i).entry()).append(" in ")
-                .append(places.subList(0, Math.min(6, places.size()))).append(places.size() > 6 ? " ..." : "");
+            List<String> places = g.places;
+
+            if (i < 5 || touches(g, changed))
+            {
+                largest.put(g.entry() + " in " + places.subList(0, Math.min(6, places.size()))
+                    + (places.size() > 6 ? " ..." : ""), g);
+            }
         }
 
-        assertFalse(copied > TEST_COPIED_TOKENS_ALLOWED, "test copies rose: " + copied + " tokens stand in a second"
-            + " copy, against " + TEST_COPIED_TOKENS_ALLOWED + " pinned.  The largest groups:" + largest + "\nA claim's"
-            + " own set-up may stay written in it; shared steps belong in a helper (test/support, or the class).  Do not"
-            + " raise TEST_COPIED_TOKENS_ALLOWED.");
+        fail("test copies rose: " + copied + " tokens stand in a second copy, against " + TEST_COPIED_TOKENS_ALLOWED
+            + " pinned.  The groups with a copy in a file changed on this branch, then the largest:" + "\n" + "  "
+            + mineFirst(largest, changed) + "\n" + "A claim's own set-up may stay written in it; shared steps belong in a"
+            + " helper (test/support, or the class).  Do not raise TEST_COPIED_TOKENS_ALLOWED.");
+    }
 
-        assertFalse(copied < TEST_COPIED_TOKENS_ALLOWED, "test copies fell to " + copied + " tokens, fewer than the "
-            + TEST_COPIED_TOKENS_ALLOWED + " pinned.  Lower TEST_COPIED_TOKENS_ALLOWED to " + copied
-            + " so the gain is kept.");
+    private static Set<String> changedNames;
+
+    /** The base names of the files this branch changed against dev, untracked ones too; empty when git cannot say. */
+    private static synchronized Set<String> changedFiles()
+    {
+        if (changedNames != null) return changedNames;
+
+        changedNames = new HashSet<>();
+
+        String[][] asks = {{"diff", "--name-only", "dev"}, {"diff", "--name-only", "HEAD"},
+            {"ls-files", "--others", "--exclude-standard"}};
+
+        for (int i = 0; i < asks.length; i++)
+        {
+            try
+            {
+                File out = File.createTempFile("copies-git", ".txt");
+
+                try
+                {
+                    List<String> command = new ArrayList<>(Arrays.asList("git"));
+
+                    command.addAll(Arrays.asList(asks[i]));
+
+                    Process process = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(out).start();
+
+                    process.getOutputStream().close();
+
+                    if (!process.waitFor(30, TimeUnit.SECONDS))
+                    {
+                        process.destroyForcibly();
+                    }
+                    else if (process.exitValue() == 0)
+                    {
+                        for (String line : Files.readAllLines(out.toPath(), StandardCharsets.UTF_8))
+                        {
+                            changedNames.add(line.substring(line.lastIndexOf('/') + 1));
+                        }
+
+                        if (i == 0) i++;  // dev named the whole branch; HEAD would add nothing
+                    }
+                }
+                finally
+                {
+                    out.delete();
+                }
+            }
+            catch (Exception e)
+            {
+                // no git: the groups then come in the scan's order
+            }
+        }
+
+        return changedNames;
+    }
+
+    private static boolean touches(CopyScan.Group g, Set<String> changed)
+    {
+        for (String place : g.places) if (changed.contains(place.substring(0, place.indexOf(':')))) return true;
+
+        return false;
+    }
+
+    /** The listed groups, those with a copy in one of the `changed` files first and marked, then the rest. */
+    static String mineFirst(Map<String, CopyScan.Group> lines, Set<String> changed)
+    {
+        List<String> mine = new ArrayList<>();
+        List<String> rest = new ArrayList<>();
+
+        for (Map.Entry<String, CopyScan.Group> e : lines.entrySet())
+        {
+            boolean here = touches(e.getValue(), changed);
+
+            (here ? mine : rest).add((here ? "(in a file you changed) " : "") + e.getKey());
+        }
+
+        mine.addAll(rest);
+
+        return String.join("\n  ", mine);
     }
 
     /**
@@ -249,7 +298,7 @@ public class testNoNewCopies
             now.get(g.key()).add(g);
         }
 
-        List<String> rose = new ArrayList<>();
+        Map<String, CopyScan.Group> rose = new LinkedHashMap<>();
         List<String> fell = new ArrayList<>();
 
         Set<String> keys = new TreeSet<>(now.keySet());
@@ -277,7 +326,7 @@ public class testNoNewCopies
             {
                 if (i >= was.size())
                 {
-                    rose.add("NEW " + here.get(i).entry() + " in " + here.get(i).places);
+                    rose.put("NEW " + here.get(i).entry() + " in " + here.get(i).places, here.get(i));
                 }
                 else if (i >= here.size())
                 {
@@ -285,7 +334,8 @@ public class testNoNewCopies
                 }
                 else if (here.get(i).tokens > was.get(i))
                 {
-                    rose.add("GREW from " + was.get(i) + ": " + here.get(i).entry() + " in " + here.get(i).places);
+                    rose.put("GREW from " + was.get(i) + ": " + here.get(i).entry() + " in " + here.get(i).places,
+                        here.get(i));
                 }
                 else if (here.get(i).tokens < was.get(i))
                 {
@@ -294,9 +344,12 @@ public class testNoNewCopies
             }
         }
 
-        assertTrue(rose.isEmpty() && found.size() <= GROUPS_ALLOWED,
-            "copies: there are " + found.size() + " groups of 60 or more copied tokens, against " + GROUPS_ALLOWED
-            + " pinned.  These are new or longer than pinned:\n  " + String.join("\n  ", rose) + "\n" + ADVICE);
+        if (!rose.isEmpty() || found.size() > GROUPS_ALLOWED)
+        {
+            fail("copies: there are " + found.size() + " groups of 60 or more copied tokens, against " + GROUPS_ALLOWED
+                + " pinned.  These are new or longer than pinned, those with a copy in a file changed on this branch"
+                + " first:" + "\n" + "  " + mineFirst(rose, changedFiles()) + "\n" + ADVICE);
+        }
 
         assertTrue(fell.isEmpty() && found.size() == GROUPS_ALLOWED,
             "copies: " + found.size() + " groups remain, fewer than the " + GROUPS_ALLOWED + " recorded.  Lower "
@@ -337,6 +390,35 @@ public class testNoNewCopies
         shorter.put("org/x/two/B.java", source("two", "B", "omega", 2, 8, ""));
 
         assertEquals(CopyScan.scan(shorter).size(), 0, "a run under 60 tokens is not a copy");
+    }
+
+    /**
+     * The failure message names first the group with a copy in a file the branch changed.
+     *
+     * MUTATION: listing the groups in scan order, not changed ones first, fails this.
+     */
+    @Test
+    public void testTheMessageNamesTheChangedFilesGroupFirst()
+    {
+        Map<String, String> sources = new LinkedHashMap<>();
+
+        for (String c : new String[] {"A", "B", "C", "D"})
+        {
+            String text = source(c.toLowerCase(), c, c, 1, 12, "");
+
+            sources.put(c + ".java", c.compareTo("C") < 0 ? text : text.replace(" + ", " - "));
+        }
+
+        Map<String, CopyScan.Group> lines = new LinkedHashMap<>();
+
+        for (CopyScan.Group g : CopyScan.scan(sources)) lines.put("NEW " + g.entry() + " in " + g.places, g);
+
+        assertEquals(lines.size(), 2, "two groups of copies");
+
+        String text = mineFirst(lines, new HashSet<>(Arrays.asList("D.java")));
+
+        assertTrue(text.startsWith("(in a file you changed) NEW C:1,D:1"), "the changed file's group first: " + text);
+        assertTrue(text.contains("\n  NEW A:1,B:1"), "then the other: " + text);
     }
 
     /** A class with one method of `statements` statements of 6 tokens each, and 6 more around them. */

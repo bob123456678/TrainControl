@@ -17,10 +17,9 @@ import org.testng.annotations.Test;
 /**
  * The scenario library cannot rot: no orphan fixtures, and no README that lies about who uses it.
  *
- * An ORPHAN FIXTURE is a checked-in railway nothing runs against: `test/` already had seven ad-hoc layout folders named
- * for who made them, four of them the same five pages, each added for one test and outliving it.  A STALE "USED BY"
- * LIST goes out of date first, because it changes when a DIFFERENT file changes, so it is not maintained by hand and
- * checked by eye but compared, here, with what the test sources say.
+ * An ORPHAN FIXTURE is a checked-in railway nothing runs against.  A STALE "USED BY" LIST goes out of date first,
+ * because it changes when a DIFFERENT file changes, so it is not kept by eye but compared, here, with what the test
+ * sources say.
  *
  * **The link is a name in the source, not a call:** a test that writes the scenario's name in a comment counts as a
  * user, deliberately, since its author will want to know when the railway changes.

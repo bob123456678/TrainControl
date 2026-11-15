@@ -4,17 +4,23 @@ import org.traincontrol.util.I18n;
 import org.traincontrol.base.LayoutDiagram;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.automationui.TileGraph.Direction;
@@ -24,6 +30,8 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.Util;
+import org.json.JSONException;
+import org.traincontrol.automation.Layout;
 
 /**
  * What the diagram cannot say: names, stations, lengths, directions, and where the locomotives go.  Geometry is
@@ -43,11 +51,7 @@ import org.traincontrol.util.Util;
  */
 public class AutonomyCompanionStore
 {
-    /**
-     * The highest schema this class can read.  A newer file is refused rather than read partially, since dropping
-     * fields it does not recognize would lose the user's work on the next save.  2 is "a station may carry several
-     * protecting signals" (an array in stationSignals).
-     */
+    /** The highest schema readable; a newer file is refused, as a partial read would drop fields on the next save. */
     public static final int VERSION = 2;
 
     public static final String ERROR_VERSION = "autosetup.ui.errorCompanionVersion";
@@ -97,10 +101,7 @@ public class AutonomyCompanionStore
     private final Map<TileKey, Integer> tileLengths = new LinkedHashMap<>();
     private final Map<DirectionKey, String> tileDirections = new LinkedHashMap<>();
 
-    /**
-     * Which sides a station refuses to let trains ARRIVE by, keyed by square: the barred sides rather than the allowed
-     * ones, so a station nobody restricted stores nothing and a side added later is open.  Comma-separated side names.
-     */
+    /** The sides a station refuses ARRIVALS by (comma-separated names); an unrestricted station stores nothing. */
     private final Map<TileKey, String> barredArrivals = new LinkedHashMap<>();
 
     /** Which sides trains may not arrive by; empty when the station takes trains from anywhere. */
@@ -171,9 +172,8 @@ public class AutonomyCompanionStore
     private final Map<TileKey, TileKey> portals = new LinkedHashMap<>();
 
     /**
-     * The signals that protect each station, square to squares, so it survives a page rename and is reconciled away
-     * with the station.  Paired by hand: the nearest signal on the approach is not always the protecting one, and a
-     * wrong guess throws a real signal.  Several per station (one per approach); a bare string is still read as one.
+     * The signals protecting each station, square to squares.  Paired by hand (the nearest signal is not always the
+     * protecting one); several per station; a bare string is still read as one.
      */
     private final Map<TileKey, List<TileKey>> stationSignals = new LinkedHashMap<>();
 
@@ -181,27 +181,42 @@ public class AutonomyCompanionStore
     private final Map<TileKey, List<TileKey>> blockedPoints = new LinkedHashMap<>();
 
     /**
-     * The signals thrown red when a train ARRIVES at a station as the end of its journey (FR-096); nothing turns one
-     * green again but the next route.  Apart from `stationSignals`, an aspect derived from the platform being claimed.
+     * Signals thrown red when a train ARRIVES at a station ending its journey (FR-096); only the next route clears one.
      */
     private final Map<TileKey, List<TileKey>> entrySignals = new LinkedHashMap<>();
 
     /** The squares that make a station unavailable while occupied, in the order they were added. */
     public List<TileKey> getBlockingPoints(TileKey station)
     {
+        return listOf(blockedPoints, station);
+    }
+
+    /** A station's list in one of the square-to-squares maps, as a copy without nulls; empty for none. */
+    private static List<TileKey> listOf(Map<TileKey, List<TileKey>> map, TileKey station)
+    {
         List<TileKey> out = new ArrayList<>();
 
         if (station == null) return out;
 
-        List<TileKey> keys = blockedPoints.get(station);
+        List<TileKey> keys = map.get(station);
 
-        if (keys == null) return out;
+        if (keys != null) for (TileKey key : keys) if (key != null) out.add(key);
 
-        for (TileKey key : keys)
+        return out;
+    }
+
+    /** Every station with a list in one of the square-to-squares maps, against that list as `listOf` gives it. */
+    private static Map<TileKey, List<TileKey>> listsOf(Map<TileKey, List<TileKey>> map)
+    {
+        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
+
+        for (TileKey station : map.keySet())
         {
-            TileKey blocker = key;
+            if (station == null) continue;
 
-            if (blocker != null) out.add(blocker);
+            List<TileKey> squares = listOf(map, station);
+
+            if (!squares.isEmpty()) out.put(station, squares);
         }
 
         return out;
@@ -210,44 +225,35 @@ public class AutonomyCompanionStore
     /** Replaces the squares that hold a station back; empty or null clears the restriction. */
     public void setBlockingPoints(TileKey station, List<TileKey> blockers)
     {
+        // De-duplicated here rather than in the picker, and never the station itself: standing at a station already
+        // decides whether it is free, so watching it from itself would leave nothing able to be sent there.
+        putList(blockedPoints, station, blockers, blocker -> blocker.equals(station));
+    }
+
+    /**
+     * Stores a station's list in one of the square-to-squares maps, de-duplicated, without nulls or what `refused`
+     * turns away; an empty list clears the station's entry.
+     */
+    private static void putList(Map<TileKey, List<TileKey>> into, TileKey station, List<TileKey> given,
+        Predicate<TileKey> refused)
+    {
         if (station == null) return;
 
         List<TileKey> keys = new ArrayList<>();
 
-        if (blockers != null)
+        if (given != null)
         {
-            for (TileKey blocker : blockers)
-            {
-                // De-duplicated here rather than in the picker, and never the station itself: standing at a station
-                // already decides whether it is free, so watching it from itself would leave nothing able to be sent there.
-                if (blocker != null && !blocker.equals(station) && !keys.contains(blocker))
-                {
-                    keys.add(blocker);
-                }
-            }
+            for (TileKey one : given) if (one != null && !keys.contains(one) && !refused.test(one)) keys.add(one);
         }
 
-        if (keys.isEmpty()) blockedPoints.remove(station);
-        else blockedPoints.put(station, keys);
+        if (keys.isEmpty()) into.remove(station);
+        else into.put(station, keys);
     }
 
     /** Every station held back by something, against the squares watched for it. */
     public Map<TileKey, List<TileKey>> getBlockingPoints()
     {
-        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
-
-        for (TileKey key : blockedPoints.keySet())
-        {
-            TileKey station = key;
-
-            if (station == null) continue;
-
-            List<TileKey> blockers = getBlockingPoints(station);
-
-            if (!blockers.isEmpty()) out.put(station, blockers);
-        }
-
-        return out;
+        return listsOf(blockedPoints);
     }
 
     /** The square of the first signal protecting a station, or null. */
@@ -261,22 +267,7 @@ public class AutonomyCompanionStore
     /** The squares of every signal protecting a station, in the order they were paired. */
     public List<TileKey> getProtectingSignals(TileKey station)
     {
-        List<TileKey> out = new ArrayList<>();
-
-        if (station == null) return out;
-
-        List<TileKey> keys = stationSignals.get(station);
-
-        if (keys == null) return out;
-
-        for (TileKey key : keys)
-        {
-            TileKey signal = key;
-
-            if (signal != null) out.add(signal);
-        }
-
-        return out;
+        return listOf(stationSignals, station);
     }
 
     /** Pairs one signal with a station; a null signal unpairs everything. */
@@ -289,83 +280,29 @@ public class AutonomyCompanionStore
     /** Replaces every signal protecting a station; empty or null unpairs. */
     public void setProtectingSignals(TileKey station, List<TileKey> signals)
     {
-        if (station == null) return;
-
-        List<TileKey> keys = new ArrayList<>();
-
-        if (signals != null)
-        {
-            for (TileKey signal : signals)
-            {
-                // De-duplicated here so no writer (an import, a restored snapshot) can leave one signal twice; never
-                // the station's own entry guard.
-                if (signal != null && !keys.contains(signal) && !onList(entrySignals, station, signal)) keys.add(signal);
-            }
-        }
-
-        if (keys.isEmpty())
-        {
-            stationSignals.remove(station);
-        }
-        else
-        {
-            stationSignals.put(station, keys);
-        }
+        // De-duplicated here so no writer (an import, a restored snapshot) can leave one signal twice; never the
+        // station's own entry guard.
+        putList(stationSignals, station, signals, signal -> onList(entrySignals, station, signal));
     }
 
     /** Every station that has protecting signals, against those signals' squares. */
     public Map<TileKey, List<TileKey>> getProtectingSignals()
     {
-        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
-
-        for (TileKey key : stationSignals.keySet())
-        {
-            TileKey station = key;
-
-            if (station == null) continue;
-
-            List<TileKey> signals = getProtectingSignals(station);
-
-            if (!signals.isEmpty()) out.put(station, signals);
-        }
-
-        return out;
+        return listsOf(stationSignals);
     }
 
     /** The squares of every signal guarding the way into a station (FR-096), in the order they were paired. */
     public List<TileKey> getEntrySignals(TileKey station)
     {
-        List<TileKey> out = new ArrayList<>();
-
-        if (station == null) return out;
-
-        List<TileKey> keys = entrySignals.get(station);
-
-        if (keys != null) for (TileKey key : keys) if (key != null) out.add(key);
-
-        return out;
+        return listOf(entrySignals, station);
     }
 
     /** Replaces every signal guarding the way into a station (FR-096); empty or null unpairs. */
     public void setEntrySignals(TileKey station, List<TileKey> signals)
     {
-        if (station == null) return;
-
-        List<TileKey> keys = new ArrayList<>();
-
-        if (signals != null)
-        {
-            // De-duplicated as the protecting list is, and never the station's own exit guard: a signal on both lists
-            // is thrown red on arrival and then set by the platform's occupancy.  Refused in both setters; the editor
-            // says why.
-            for (TileKey signal : signals)
-            {
-                if (signal != null && !keys.contains(signal) && !onList(stationSignals, station, signal)) keys.add(signal);
-            }
-        }
-
-        if (keys.isEmpty()) entrySignals.remove(station);
-        else entrySignals.put(station, keys);
+        // De-duplicated as the protecting list is, and never the station's own exit guard: a signal on both lists is
+        // thrown red on arrival and then set by the platform's occupancy.  Refused in both setters; the editor says why.
+        putList(entrySignals, station, signals, signal -> onList(stationSignals, station, signal));
     }
 
     /** Whether a station's list in one of the two guard maps holds this signal */
@@ -379,23 +316,12 @@ public class AutonomyCompanionStore
     /** Every station with entry-guard signals, against those signals' squares (FR-096). */
     public Map<TileKey, List<TileKey>> getEntrySignals()
     {
-        Map<TileKey, List<TileKey>> out = new LinkedHashMap<>();
-
-        for (TileKey station : entrySignals.keySet())
-        {
-            if (station == null) continue;
-
-            List<TileKey> signals = getEntrySignals(station);
-
-            if (!signals.isEmpty()) out.put(station, signals);
-        }
-
-        return out;
+        return listsOf(entrySignals);
     }
 
     /**
-     * Where each station caption is drawn and which square it is about: caption square to sensor square.  Kept here
-     * because a label bound to a Point BY NAME broke on every rename or station split.
+     * Caption square to the sensor square it is about; kept here because a label bound to a Point BY NAME broke on
+     * rename.
      */
     private final Map<TileKey, TileKey> captions = new LinkedHashMap<>();
     private final Map<TileKey, String> linkNames = new LinkedHashMap<>();
@@ -431,9 +357,7 @@ public class AutonomyCompanionStore
     private final Map<String, String> pageIdConflicts = new LinkedHashMap<>();
 
     /**
-     * Entries for pages the index cannot resolve, written back verbatim (OB-067).  Ids and names can collide (a page
-     * may be called "2"), so such an entry waits here as the JSON it arrived as, merged back on save; field name to
-     * the JSONObject or JSONArray held for it.
+     * Entries for pages the index cannot resolve, held as the JSON they arrived as and merged back on save (OB-067).
      */
     private final Map<String, Object> heldForAbsentPages = new LinkedHashMap<>();
 
@@ -444,11 +368,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Tells the store which page id belongs to which page name.  Entries are stored against the id so a rename does
-     * not orphan a page of settings; the id alone is not trusted (a reorder could reattach settings to the wrong page),
-     * so the name each id had is recorded and a mismatch is reported at load.
-     *
-     * @param nameToId from the parsed layouts, LayoutDiagram.getPageId()
+     * Tells the store which page id belongs to which page name.  Entries are stored against the id, which alone is not
+     * trusted (a reorder could reattach settings), so the name each id had is recorded and a mismatch reported at load.
      */
     public void setPageIds(Map<String, String> nameToId)
     {
@@ -467,16 +388,14 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The highest page id this setup has ever recorded, live or absent: `writeLayoutIndex` numbers a new page above
-     * the highest id in the index FILE, which would reuse a retired id whose settings are still held here (OB-067).
-     * A non-numeric id is skipped; 0 when nothing is known.
+     * The highest page id ever recorded, live or absent, so a new page never reuses a retired one (OB-067); 0 if none.
      */
     public int highestPageIdSeen()
     {
         int highest = 0;
 
-        for (java.util.Collection<String> ids
-            : java.util.Arrays.asList(pageNamesWhenWritten.keySet(), pageIdToName.keySet()))
+        for (Collection<String> ids
+            : Arrays.asList(pageNamesWhenWritten.keySet(), pageIdToName.keySet()))
         {
             for (String id : ids)
             {
@@ -494,14 +413,10 @@ public class AutonomyCompanionStore
         return highest;
     }
 
-    /**
-     * The known page names not in `loaded`, empty when the picture is complete.  A caller with an incomplete picture
-     * (CS2File skips a page that will not parse) must not prune on "this square does not exist" (OB-068): save, but do
-     * not prune.
-     */
-    public java.util.List<String> pagesNotLoaded(java.util.Collection<String> loaded)
+    /** The known page names not in `loaded`.  A caller with an incomplete picture must save but not prune (OB-068). */
+    public List<String> pagesNotLoaded(Collection<String> loaded)
     {
-        java.util.List<String> missing = new ArrayList<>();
+        List<String> missing = new ArrayList<>();
 
         if (loaded == null) return missing;
 
@@ -511,9 +426,7 @@ public class AutonomyCompanionStore
 
             if (name == null || loaded.contains(name)) continue;
 
-            // A page renamed outside TrainControl is still loaded: the Central Station keeps the id and changes the
-            // name, so ask by id too, by the rule `resolvePage` uses.  Not `pageIsHere`: the index holds a stand-in for
-            // a page that would not read (MT-135).
+            // Ask by id too, as `resolvePage` does: a page renamed outside TrainControl keeps its id (MT-135).
             String nowCalled = resolvePage(written.getKey());
 
             if (nowCalled != null && loaded.contains(nowCalled)) continue;
@@ -525,15 +438,14 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Drops everything held for pages the operator has said are gone for good (FR-018); called only with that answer,
-     * never inferred, since a page absent from disk is held (OB-067).  Answers how many held entries were dropped.
+     * Drops everything held for pages the operator said are gone for good (FR-018), never inferred (OB-067); returns
+     * the count.
      */
-    public int forgetHeldPages(java.util.Collection<String> goneByName)
+    public int forgetHeldPages(Collection<String> goneByName)
     {
         if (goneByName == null || goneByName.isEmpty()) return 0;
 
-        // The IDS the file recorded these pages under, not the names: a page may legally be called "5" (OB-092), and
-        // declaring that name gone would delete the entries held for the page with ID 5.
+        // The ids, not the names: a page may legally be called "5" (OB-092).
         Set<String> parts = new LinkedHashSet<>();
 
         for (Map.Entry<String, String> was : pageNamesWhenWritten.entrySet())
@@ -615,9 +527,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Whether this setup's keys can be trusted to mean the pages they name.  After a renumber entries still land by
-     * recorded name (`resolvePage`) but nothing may delete on "this square does not exist".  True while a renumber is
-     * outstanding.
+     * Whether keys can be trusted to mean the pages they name; false while a renumber is outstanding: nothing may
+     * delete.
      */
     public boolean isPageNumberingSuspect()
     {
@@ -634,8 +545,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Whether this layout can hold an autonomy setup at all: the files live beside the diagram, so a layout read from
-     * the Central Station has none until it is downloaded.
+     * Whether this layout can hold a setup: the files live beside the diagram, so a layout read from the CS has none.
      */
     public boolean isUsable()
     {
@@ -663,8 +573,7 @@ public class AutonomyCompanionStore
             return;
         }
 
-        // Read and parse BEFORE anything is thrown away: a failed load (sync lock, truncated write, setup from a newer
-        // TrainControl) must leave the setup exactly as it was.
+        // Read and parse BEFORE anything is thrown away: a failed load must leave the setup as it was.
         String contents = new String(
             Files.readAllBytes(setupFile().toPath()), StandardCharsets.UTF_8);
 
@@ -674,20 +583,17 @@ public class AutonomyCompanionStore
         {
             root = new JSONObject(contents);
         }
-        catch (org.json.JSONException e)
+        catch (JSONException e)
         {
             throw new IOException(String.valueOf(e.getMessage()), e);
         }
 
         int version = root.optInt("version", VERSION);
 
-        if (version > VERSION)
-        {
-            throw new IOException(ERROR_VERSION + " (" + version + " > " + VERSION + ")");
-        }
+        if (version > VERSION) throw new IOException(ERROR_VERSION + " (" + version + " > " + VERSION + ")");
 
-        // Parsed before anything is thrown away too.  A bare JSONException is unchecked and would walk out through the
-        // IOException catches that expect a failed load to change nothing.
+        // Parsed before anything is thrown away too; a bare JSONException is unchecked and would escape the IOException
+        // catches.
         Map<String, JSONObject> loaded = new LinkedHashMap<>();
 
         File[] files = folder().listFiles();
@@ -707,10 +613,9 @@ public class AutonomyCompanionStore
                     configuration = new JSONObject(
                         new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
                 }
-                catch (org.json.JSONException e)
+                catch (JSONException e)
                 {
-                    // Named, as an IOException: which file is unreadable tells the user what to do, and callers already
-                    // survive that form.
+                    // Named, as an IOException, so the user learns which file is unreadable.
                     throw new IOException(
                         I18n.f("autosetup.ui.errorConfigurationUnreadable", name,
                             String.valueOf(e.getMessage())), e);
@@ -725,8 +630,7 @@ public class AutonomyCompanionStore
             }
         }
 
-        // What is here now, so a failure in the READ can put it back: readShared runs after clear() and its strict
-        // accessors throw part way for a setup.json this build did not write.
+        // What is here now, so a failure in the READ can put it back.
         JSONObject wasThere = snapshotSetup();
 
         clear();
@@ -746,10 +650,7 @@ public class AutonomyCompanionStore
             throw e;
         }
 
-        if (activeConfiguration != null && !configurations.containsKey(activeConfiguration))
-        {
-            activeConfiguration = null;
-        }
+        if (activeConfiguration != null && !configurations.containsKey(activeConfiguration)) activeConfiguration = null;
 
         if (activeConfiguration == null && !configurations.isEmpty())
         {
@@ -757,10 +658,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    /**
-     * Writes the setup and every configuration through Util.writeAtomically: a half-written file would read as a
-     * layout nobody had set up.
-     */
+    /** Writes the setup and every configuration through Util.writeAtomically, so no half-written file is left. */
     public void save() throws IOException
     {
         if (!isUsable()) throw new IOException(ERROR_NOT_LOCAL);
@@ -791,8 +689,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Every square that has been given a name, in the order they were named, for pickers of POINTS: an unnamed
-     * square cannot be recognized in a list.
+     * Every named square, in naming order, for pickers of POINTS (an unnamed square cannot be recognized in a list).
      */
     public List<TileKey> getNamedTiles()
     {
@@ -808,10 +705,7 @@ public class AutonomyCompanionStore
         return out;
     }
 
-    /**
-     * Every square that has been given a name, printed.  Kept in the PRINTED form (FR-013): callers key their own maps
-     * by these strings, and converting would ripple into callers that have no reason to change.
-     */
+    /** Every named square, in the PRINTED form (FR-013): callers key their own maps by these strings. */
     public Map<String, String> getPointNames()
     {
         Map<String, String> out = new LinkedHashMap<>();
@@ -853,10 +747,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    /**
-     * Whether this layout records any track length at all.  Asked of what was RECORDED, not of the graph's points: a
-     * length belongs to a square and most squares carry no point.
-     */
+    /** Whether this layout records any track length; asked of what was RECORDED, as most squares carry no point. */
     public boolean measuresAnyTrack()
     {
         for (Integer length : tileLengths.values())
@@ -876,9 +767,9 @@ public class AutonomyCompanionStore
     }
 
     /** Every square with a length recorded (FR-069), in the order they were measured. */
-    public java.util.List<TileKey> tilesWithALength()
+    public List<TileKey> tilesWithALength()
     {
-        java.util.List<TileKey> out = new java.util.ArrayList<>();
+        List<TileKey> out = new ArrayList<>();
 
         for (Map.Entry<TileKey, Integer> each : tileLengths.entrySet())
         {
@@ -899,9 +790,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Records that a square's length was answered 0 on purpose (OB-274), for adjacent tracks.  Unlike `setTileLength`
-     * the 0 is KEPT: `isTileLengthAnswered` tells it from "never answered", and the reducer reads it as measured
-     * track of no length (`Edge.isMeasured`, OB-300).
+     * Records that a square's length was answered 0 on purpose (OB-274): unlike `setTileLength` the 0 is KEPT, and the
+     * reducer reads it as measured track of no length (OB-300).
      */
     public void answerTileLengthZero(TileKey tile)
     {
@@ -920,10 +810,7 @@ public class AutonomyCompanionStore
         return tile != null && tileLengths.containsKey(tile);
     }
 
-    /**
-     * Lengths of 0 are not stored: 0 is what an unassigned tile means, so writing 0 here CLEARS a square, a deliberate
-     * 0 included.  The one way a 0 is kept is `answerTileLengthZero` (OB-274).
-     */
+    /** 0 means unassigned and is not stored: writing 0 CLEARS a square; `answerTileLengthZero` keeps one (OB-274). */
     public void setTileLength(TileKey tile, int length)
     {
         if (length <= 0)
@@ -958,10 +845,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    /**
-     * Records a direction.  Null clears it, returning the route to the graph's default, which is not always BOTH, so a
-     * default is never written as if it were a choice.
-     */
+    /** Records a direction; null clears it back to the graph's default (not always BOTH), which is never written. */
     public void setTileDirection(TileKey tile, RouteId routeId, Direction direction)
     {
         if (direction == null)
@@ -1000,17 +884,13 @@ public class AutonomyCompanionStore
 
         if (disabledPortals.contains(tile)) return true;
 
-        // The PARTNER too, as TileGraph.portalClosed asks: a setup with one end off and the other on would draw the far
-        // end as a live door over track no train can pass.
+        // The PARTNER too, as TileGraph.portalClosed asks: one end off, one on, would draw a live door over dead track.
         TileKey partner = getPortalPartner(tile);
 
         return partner != null && disabledPortals.contains(partner);
     }
 
-    /**
-     * Switches a link in or out of the railway, and its partner with it (OB-041): shut at one end only, a pair would
-     * be a route that exists one way.  Here because this is where the partner is known.
-     */
+    /** Switches a link and its partner in or out of the railway (OB-041); a pair shut at one end is a one-way route. */
     public void setPortalDisabled(TileKey tile, boolean disabled)
     {
         set(tile, disabled);
@@ -1056,9 +936,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Repairs a setup that nothing has open, in place on disk, so a locomotive rename reaches the placement, home and
-     * exclusions (OB-062).  A bare store, not a session: a session would fabricate a setup.json on a layout never set
-     * up.
+     * Repairs a setup nothing has open, on disk, so a locomotive rename reaches the placement, home and exclusions
+     * (OB-062).  A bare store, not a session, which would fabricate a setup.json.
      *
      * @param to the new name, or null when the locomotive is being deleted
      * @return true when a setup was found and rewritten, false when there was nothing to repair
@@ -1111,8 +990,7 @@ public class AutonomyCompanionStore
 
         store.load();
 
-        // Give it back the numbering the FILE was written under: nobody calls setPageIds on a bare store, and saving
-        // would replace the file's record of what each id was called with {}, disarming the renumber detection.
+        // Restore the numbering the FILE was written under, or saving replaces its id-to-name record with {}.
         Map<String, String> nameToId = new LinkedHashMap<>();
 
         for (Map.Entry<String, String> page : store.pageNamesWhenWritten.entrySet())
@@ -1122,8 +1000,7 @@ public class AutonomyCompanionStore
 
         store.setPageIds(nameToId);
 
-        // Read AGAIN, now that the pages have names: the first read had no numbering and returned id-form keys, which
-        // renamePage and deletePage (working on NAMES) would silently ignore.
+        // Read AGAIN now that pages have names: the first read returned id-form keys that name-based edits ignore.
         store.load();
 
         what.apply(store);
@@ -1134,9 +1011,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Follows a locomotive's new name into every configuration, inactive ones included (captureFromLayout launders
-     * only the active one).  The placement, the home assignment and the exclusion list hold it by NAME, and a stale
-     * name invalidates the whole layout in parseAuto.
+     * Follows a locomotive's new name into every configuration, inactive ones too; a stale name voids the layout in
+     * parseAuto.
      */
     public void locomotiveRenamed(String from, String to)
     {
@@ -1146,8 +1022,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Takes a deleted locomotive out of every configuration: the placement and the home go and the exclusion is
-     * dropped, since any of them would name a locomotive that resolves to nothing.
+     * Takes a deleted locomotive out of every configuration (placement, home, exclusion), as each would name nothing.
      */
     public void locomotiveDeleted(String name)
     {
@@ -1159,17 +1034,14 @@ public class AutonomyCompanionStore
     /** Renames the locomotive in every configuration; a null `to` removes it. */
     private void repairLocomotive(String from, String to)
     {
-        for (JSONObject configuration : configurations.values())
-        {
-            repairLocomotiveIn(configuration, from, to);
-        }
+        for (JSONObject configuration : configurations.values()) repairLocomotiveIn(configuration, from, to);
 
         repairTheUnfinishedEditNote(from, to);
     }
 
     /**
-     * Whether the last rename or deletion failed to reach the pre-edit note: not fatal, but the revert on the next
-     * start would put back a name the database no longer has.  Recorded rather than logged: this class has no logger.
+     * Whether the last rename or deletion missed the pre-edit note, so a later revert would restore a stale name; no
+     * logger here.
      */
     private boolean noteRepairFailed;
 
@@ -1177,23 +1049,30 @@ public class AutonomyCompanionStore
     {
         return noteRepairFailed;
     }
-    /**
-     * Follows a locomotive's new name into `config/autonomy/setup-before-edit.json`, which outlives the editor window:
-     * after a rename and a crash, `revertUnfinishedEdit` would write the old name back.  An unreadable note is left.
-     */
+    /** Follows a locomotive's new name into `config/autonomy/setup-before-edit.json`, so a crash revert keeps it. */
     private void repairTheUnfinishedEditNote(String from, String to)
     {
-        if (from == null || from.equals(to) || !beforeEditFile().isFile()) return;
+        if (from == null || from.equals(to)) return;
+
+        rewriteTheUnfinishedEditNote(note -> { repairLocomotiveInSetup(note, from, to); return true; });
+    }
+
+    /** Puts a value saved for a locomotive over its copies in the pre-edit note, so a revert after a crash keeps it. */
+    public void updateRecordInTheUnfinishedEditNote(String locomotive, String key, Object value)
+    {
+        rewriteTheUnfinishedEditNote(note -> updateRecordInSetup(note, locomotive, key, value));
+    }
+
+    /** Applies a change to the pre-edit note, if one reads, and writes it back when the change says it changed. */
+    void rewriteTheUnfinishedEditNote(Predicate<JSONObject> change)
+    {
+        if (!beforeEditFile().isFile()) return;
 
         JSONObject note = unfinishedEdit();
 
-        if (note == null) return;
+        if (note == null || !change.test(note)) return;
 
-        repairLocomotiveInSetup(note, from, to);
-
-        // In place, not through rememberBeforeEdit: its atomic Files.move(REPLACE_EXISTING) needs DELETE access, which
-        // a OneDrive lock withholds, and it swallows the failure.  Serialized BEFORE the stream is opened, since
-        // `new FileOutputStream` truncates and `toString(2)` can throw, which would leave a zero-byte note.
+        // Serialized BEFORE any stream is opened, as the in-place write below truncates.
         byte[] bytes;
 
         try
@@ -1207,11 +1086,20 @@ public class AutonomyCompanionStore
             return;
         }
 
-        try (java.io.FileOutputStream out = new java.io.FileOutputStream(beforeEditFile()))
+        try
+        {
+            Util.writeAtomically(beforeEditFile(), out -> out.write(bytes));
+
+            return;
+        }
+        catch (IOException staged)
+        {
+            // In place only when the staged move is refused (a OneDrive lock withholds the DELETE access it needs)
+        }
+
+        try (FileOutputStream out = new FileOutputStream(beforeEditFile()))
         {
             out.write(bytes);
-
-            out.flush();
         }
         catch (IOException | RuntimeException couldNotWrite)
         {
@@ -1221,10 +1109,10 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The same repair over the diagram editor's snapshot (what Cancel puts back), in the shape snapshotSetup returns;
-     * public and static because the holder is in another package.
+     * The same repair over the editor's Cancel snapshot (snapshotSetup's shape); public and static because the holder
+     * is in another package.
      *
-     * @param setup what snapshotSetup returned; changed in place
+     * @param setup changed in place
      */
     public static void repairLocomotiveInSetup(JSONObject setup, String from, String to)
     {
@@ -1242,15 +1130,84 @@ public class AutonomyCompanionStore
         }
     }
 
+    /**
+     * `AutonomySession.updateStoredRecord`'s write over a snapshot in snapshotSetup's shape, in place; true if changed.
+     */
+    public static boolean updateRecordInSetup(JSONObject setup, String locomotive, String key, Object value)
+    {
+        JSONObject copies = setup == null ? null : setup.optJSONObject("configurations");
+
+        if (copies == null) return false;
+
+        boolean changed = false;
+
+        for (String name : copies.keySet())
+        {
+            JSONObject configuration = copies.optJSONObject(name);
+
+            if (configuration == null) continue;
+
+            changed |= updateRecordInPoints(configuration.optJSONObject("points"), locomotive, key, value);
+        }
+
+        return changed;
+    }
+
+    /** The same over a page snapshot (what snapshotPage returns and the editor's undo holds), changed in place. */
+    @SuppressWarnings("unchecked")
+    public static void updateRecordInPageSnapshot(Map<String, Object> snapshot, String locomotive, String key,
+        Object value)
+    {
+        Object configurations = snapshot == null ? null : snapshot.get("configurations");
+
+        if (!(configurations instanceof Map)) return;
+
+        for (Object points : ((Map<String, JSONObject>) configurations).values())
+        {
+            if (points instanceof JSONObject) updateRecordInPoints((JSONObject) points, locomotive, key, value);
+        }
+    }
+
+    /**
+     * Puts `value` under `key` in each standing-train record of `points` naming `locomotive` that already stores that
+     * key; null removes it.
+     */
+    public static boolean updateRecordInPoints(JSONObject points, String locomotive, String key, Object value)
+    {
+        if (points == null) return false;
+
+        boolean changed = false;
+
+        for (String id : new ArrayList<>(points.keySet()))
+        {
+            JSONObject point = points.optJSONObject(id);
+            JSONObject stored = point == null ? null : point.optJSONObject("loc");
+
+            if (stored == null || !locomotive.equals(stored.optString("name", null)) || !stored.has(key)) continue;
+
+            if (value != null)
+            {
+                if (String.valueOf(stored.opt(key)).equals(String.valueOf(value))) continue;
+
+                stored.put(key, value);
+            }
+            else
+            {
+                stored.remove(key);
+            }
+
+            changed = true;
+        }
+
+        return changed;
+    }
+
     /** One configuration's placements, homes and exclusion lists. */
     private static void repairLocomotiveIn(JSONObject configuration, String from, String to)
     {
         if (configuration == null) return;
 
-        if (configuration.has("points"))
-        {
-            repairLocomotiveInPoints(configuration.getJSONObject("points"), from, to);
-        }
+        if (configuration.has("points")) repairLocomotiveInPoints(configuration.getJSONObject("points"), from, to);
 
         repairLocomotiveInTimetable(configuration, from, to);
 
@@ -1258,8 +1215,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The fifth holder of a locomotive's name: the paused trains in "globals" (FR-117).  A rename carries across it, a
-     * deletion takes the train off.  Written back sorted, and not at all once empty, as the railway writes it.
+     * The fifth holder of a locomotive's name: paused trains in "globals" (FR-117); rename carries across, delete
+     * removes.
      */
     private static void repairLocomotiveInPausedTrains(JSONObject configuration, String from, String to)
     {
@@ -1267,17 +1224,15 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The same for any settings that hold the list: a configuration's "globals", or the window's record of the settings
-     * its railway was built with (OB-343).  Modified in place; null is allowed.
+     * The same for any settings holding the list: a configuration's "globals" or the window's record of them (OB-343).
      */
     public static void repairLocomotiveInPausedList(JSONObject globals, String from, String to)
     {
-        org.json.JSONArray list = globals == null ? null
-            : globals.optJSONArray(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+        JSONArray list = globals == null ? null : globals.optJSONArray(Layout.PAUSED_LOCOMOTIVES);
 
         if (list == null) return;
 
-        java.util.Set<String> names = new java.util.TreeSet<>();
+        Set<String> names = new java.util.TreeSet<>();
 
         boolean named = false;
 
@@ -1297,14 +1252,13 @@ public class AutonomyCompanionStore
 
         if (!named) return;
 
-        if (names.isEmpty()) globals.remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
-        else globals.put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES, new org.json.JSONArray(names));
+        if (names.isEmpty()) globals.remove(Layout.PAUSED_LOCOMOTIVES);
+        else globals.put(Layout.PAUSED_LOCOMOTIVES, new JSONArray(names));
     }
 
     /**
-     * The fourth holder of a locomotive's name: the captured timetable in "globals".  A rename is carried across every
-     * entry (OB-069), a delete removes the entry.  Entries also name POINTS, which a station rename breaks the same
-     * way; that half is not repaired here (the loader drops the one entry, not the list).
+     * The fourth holder: the captured timetable in "globals".  A rename is carried across every entry (OB-069), a
+     * delete removes it; POINT names in entries are not repaired here.
      */
     private static void repairLocomotiveInTimetable(JSONObject configuration, String from, String to)
     {
@@ -1314,11 +1268,11 @@ public class AutonomyCompanionStore
 
         if (globals == null || !globals.has("timetable")) return;
 
-        org.json.JSONArray timetable = globals.optJSONArray("timetable");
+        JSONArray timetable = globals.optJSONArray("timetable");
 
         if (timetable == null) return;
 
-        org.json.JSONArray kept = new org.json.JSONArray();
+        JSONArray kept = new JSONArray();
 
         for (int at = 0; at < timetable.length(); at++)
         {
@@ -1340,8 +1294,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Follows a rename into one page snapshot (what snapshotPage returns and the editor's undo holds): the holder that
-     * reaches DISK, since Ctrl+Z puts a snapshot back and saves.
+     * Follows a rename into one page snapshot (the editor's undo holds it): the holder that reaches DISK, as Ctrl+Z
+     * saves.
      */
     @SuppressWarnings("unchecked")
     public static void repairLocomotiveInPageSnapshot(Map<String, Object> snapshot, String from,
@@ -1384,24 +1338,33 @@ public class AutonomyCompanionStore
                 else point.put(HOME_KEY, to);
             }
 
-            JSONArray excluded = point.optJSONArray(EXCLUDED_LOCS_KEY);
+            renameInList(point, EXCLUDED_LOCS_KEY, from, to);
 
-            if (excluded == null) continue;
-
-            JSONArray kept = new JSONArray();
-
-            for (int at = 0; at < excluded.length(); at++)
-            {
-                String was = excluded.optString(at, null);
-
-                if (was == null) continue;
-
-                if (!from.equals(was)) kept.put(was);
-                else if (to != null) kept.put(to);
-            }
-
-            point.put(EXCLUDED_LOCS_KEY, kept);
+            // And a list remembered while Allowed trains says All (FR-111), or it comes back naming a train that is gone
+            renameInList(point, AutonomyBuilder.REMEMBERED_LOCS, from, to);
         }
+    }
+
+    /** One square's list of locomotives under a key, with `from` renamed to `to`, or dropped for a null `to`. */
+    private static void renameInList(JSONObject point, String key, String from, String to)
+    {
+        JSONArray listed = point.optJSONArray(key);
+
+        if (listed == null) return;
+
+        JSONArray kept = new JSONArray();
+
+        for (int at = 0; at < listed.length(); at++)
+        {
+            String was = listed.optString(at, null);
+
+            if (was == null) continue;
+
+            if (!from.equals(was)) kept.put(was);
+            else if (to != null) kept.put(to);
+        }
+
+        point.put(key, kept);
     }
 
     /** Named here rather than borrowed: AutonomyBuilder keeps its copy private. */
@@ -1460,8 +1423,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Everything this setup holds that is not one configuration: the decisions about the TRACK.  Named apart from
-     * save() because exporting needs exactly this set too.
+     * Everything this setup holds that is not one configuration: the decisions about the TRACK; exporting needs the
+     * same set.
      */
     private JSONObject sharedFields()
     {
@@ -1472,13 +1435,10 @@ public class AutonomyCompanionStore
         // what each id was called when this was written, so a renumber can be told from a rename
         Map<String, String> pages = new LinkedHashMap<>();
 
-        for (Map.Entry<String, String> entry : pageIdToName.entrySet())
-        {
-            pages.put(entry.getKey(), entry.getValue());
-        }
+        for (Map.Entry<String, String> entry : pageIdToName.entrySet()) pages.put(entry.getKey(), entry.getValue());
 
-        // And what the file already knew about ids NOT in the index right now (heldForAbsentPages): one save during a
-        // page's absence would otherwise drop the record that tells a renumber from a rename.  Never over a live id.
+        // Also what the file knew about ids NOT in the index now, never over a live id, or a renumber looks like a
+        // rename.
         for (Map.Entry<String, String> entry : pageNamesWhenWritten.entrySet())
         {
             if (!pages.containsKey(entry.getKey())) pages.put(entry.getKey(), entry.getValue());
@@ -1486,16 +1446,11 @@ public class AutonomyCompanionStore
 
         root.put("pages", new JSONObject(pages));
 
-        // Each collection writes itself under its FILE name (`disabledPortals` goes out as `disabledLinks`), stated
-        // once in the registry, and keyed by page ID so a rename cannot orphan it.
+        // Each collection writes under its FILE name (stated once in the registry), keyed by page ID.
         for (Kept k : kept()) k.write(root);
 
-        // Whatever was held back because its page is not loaded goes back in exactly as it came (OB-067): one save while
-        // a page's file is missing would otherwise delete that page's whole setup.
-        for (String field : HELD_FIELDS.keySet())
-        {
-            mergeHeld(root, field);
-        }
+        // Held-back entries for unloaded pages go back as they came (OB-067), or one save deletes that page's setup.
+        for (String field : HELD_FIELDS.keySet()) mergeHeld(root, field);
 
         // written back last, so a field this build does not model survives a round trip
         for (Map.Entry<String, Object> entry : unknownSharedFields.entrySet())
@@ -1512,10 +1467,7 @@ public class AutonomyCompanionStore
     /** The key an exported file carries the track decisions under. */
     public static final String EXPORT_SHARED = "shared";
 
-    /**
-     * A configuration together with the track decisions it refers to, ready to be written to a file: a configuration
-     * alone would refer to squares the receiving setup had never heard of.  Null when there is no such configuration.
-     */
+    /** A configuration with the track decisions it refers to, ready to write to a file; null when there is none. */
     public JSONObject exportBundle(String name)
     {
         JSONObject configuration = configurations.get(name);
@@ -1532,10 +1484,9 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Brings in an exported file, bundled or the bare configuration written before.  The shared half is merged, not
-     * adopted: only the gaps are filled, so a working setup's stations are not silently renamed.  Left out: pages this
-     * layout does not have (`getPagesLeftOutOfLastImport`) and a field a NEWER build wrote.  Answers how many shared
-     * entries were filled in.
+     * Brings in an exported file, bundled or the bare older configuration.  The shared half is merged, filling only
+     * gaps, so a working setup's stations are not renamed.  Left out: pages this layout lacks
+     * (`getPagesLeftOutOfLastImport`) and fields a NEWER build wrote.  Returns the shared entries filled in.
      */
     public int importBundle(String name, JSONObject file) throws IOException
     {
@@ -1553,8 +1504,7 @@ public class AutonomyCompanionStore
         // Whether this name was already here, so the rollback knows if removing it takes away something of the user's.
         boolean existed = configurations.containsKey(name);
 
-        // A COPY of what is being replaced, for the rollback: importing over a name consents to a GOOD file, not to
-        // losing the configuration to an unreadable one.
+        // A COPY of what is replaced, for the rollback: importing over a name does not consent to an unreadable file.
         JSONObject replaced = existed ? new JSONObject(configurations.get(name).toString()) : null;
 
         importConfiguration(name, configuration);
@@ -1563,10 +1513,9 @@ public class AutonomyCompanionStore
 
         if (incoming == null) return 0;
 
-        // THEIR PAGE IDS, TRANSLATED INTO MINE BY PAGE NAME, before anything is merged: an export keys squares by the
-        // EXPORTER's ids, numbered from the same start on every railway, so adopted per id their "Yard" (1) would land
-        // on my "Main" (1).  A name this layout does not have maps to nothing, and their page record is never merged.
-        // Only when both sides have a numbering (a OneDrive start has an empty index and a full record).
+        // THEIR PAGE IDS, TRANSLATED INTO MINE BY NAME, before merging: an export keys squares by the EXPORTER's ids,
+        // so their "Yard" (1) would land on my "Main" (1).  A name not here maps to nothing.  Only when both sides have
+        // a numbering (a OneDrive start has an empty index).
         JSONObject theirPages = incoming.optJSONObject("pages");
 
         boolean iKnowMyPages = !pageIdToName.isEmpty() || !pageNamesWhenWritten.isEmpty();
@@ -1613,14 +1562,12 @@ public class AutonomyCompanionStore
             // Their page record is how their ids were translated, not a setting to adopt.
             if (theirIdToMine != null && "pages".equals(key)) continue;
 
-            // A field this version does not model is left out while translating: its shape is unknown, so it cannot be
-            // put into this layout's numbering, and merged as it came it would be saved in the EXPORTER's ids.
+            // A field this version does not model is left out when translating: its shape is unknown.
             if (theirIdToMine != null && !knownShared().contains(key)) continue;
 
             Object value = intoThisLayoutsPages(key, incoming.get(key), theirIdToMine);
 
-            // THEIR PAGE RECORD, ADOPTED - reachable only for a store that knows no page by any number: there is no
-            // record of mine to re-label, so theirs wins per id (ids only I have are kept).
+            // THEIR PAGE RECORD, ADOPTED: only for a store that knows no page by number, so theirs wins per id.
             if ("pages".equals(key) && value instanceof JSONObject)
             {
                 JSONObject mine = merged.optJSONObject(key);
@@ -1631,10 +1578,7 @@ public class AutonomyCompanionStore
                 }
                 else
                 {
-                    for (String id : ((JSONObject) value).keySet())
-                    {
-                        mine.put(id, ((JSONObject) value).get(id));
-                    }
+                    for (String id : ((JSONObject) value).keySet()) mine.put(id, ((JSONObject) value).get(id));
                 }
 
                 continue;
@@ -1651,9 +1595,7 @@ public class AutonomyCompanionStore
                     continue;
                 }
 
-                // ONE CAPTION PER STATION PER PAGE (OB-341).  A square the setup has no caption on is no gap when the
-                // station is captioned on that page already, so captions take only stations not yet captioned ON THEIR
-                // PAGE, in the order of the squares (org.json holds keys in no order).
+                // ONE CAPTION PER STATION PER PAGE (OB-341): take only stations not yet captioned ON THEIR PAGE.
                 Set<String> captioned = null;
 
                 List<String> inners = new ArrayList<>(((JSONObject) value).keySet());
@@ -1715,9 +1657,7 @@ public class AutonomyCompanionStore
 
         if (filled > 0)
         {
-            // What the store holds now, in the shape readShared takes, so an import that turns out unreadable can be
-            // put back: readShared's strict accessors throw part way on anything unexpected, and the merged object is
-            // assembled from somebody else's file.
+            // What the store holds now, in readShared's shape, so an unreadable import can be put back.
             JSONObject wasThere = sharedFields();
 
             try
@@ -1731,8 +1671,8 @@ public class AutonomyCompanionStore
                 clearShared();
                 readShared(wasThere);
 
-                // And the configuration, installed before any of this: removed when the import added it, restored from
-                // the copy when it replaced one, else it would be listed with placements for points just taken away.
+                // The configuration, installed before any of this: removed if the import added it, restored if it
+                // replaced one.
                 if (existed) configurations.put(name, replaced);
                 else forgetConfiguration(name);
 
@@ -1745,10 +1685,9 @@ public class AutonomyCompanionStore
 
     /**
      * One incoming shared field, rewritten from the exporter's page ids into this layout's, with only the PIECES naming
-     * a page this layout does not have taken out.  Read by the field's declared shape in `HELD_FIELDS`, so a value is
-     * a square only where the field says so (a station named "2" is not a page id): keyed fields drop an entry whose
-     * KEY is foreign; square lists translate each member and drop a foreign one (an emptied list goes too); page lists
-     * translate each id and drop a foreign one.  A square whose page the file's record does not name is left as is.
+     * a page this layout lacks taken out.  Read by the field's shape in `HELD_FIELDS` (a station named "2" is not a
+     * page id): keyed fields drop an entry with a foreign KEY; square and page lists translate each member and drop a
+     * foreign one.  A square whose page the file's record does not name is left as is.
      *
      * @param theirIdToMine their id to this layout's, a null value for a page not here; null to translate nothing
      */
@@ -1846,10 +1785,7 @@ public class AutonomyCompanionStore
         return theirIdToMine.containsKey(theirs) ? theirIdToMine.get(theirs) : theirs;
     }
 
-    /**
-     * Everything this store holds, as JSON, for a caller that may have to put it back (the diagram editor's Cancel
-     * re-reads the DIAGRAM but not the setup).  Deep copies, so editing cannot change the snapshot.
-     */
+    /** Everything this store holds, as deep-copied JSON, for a caller that may put it back (the editor's Cancel). */
     public JSONObject snapshotSetup()
     {
         JSONObject out = new JSONObject();
@@ -1874,9 +1810,8 @@ public class AutonomyCompanionStore
     {
         if (was == null) return;
 
-        // WHAT IS HERE NOW FIRST, so a snapshot this build cannot read changes nothing: the read below empties the
-        // store and uses strict accessors, which is not safe for a snapshot off disk (the pre-edit note
-        // `AutonomySession.revertUnfinishedEdit` applies may come from another build).  Same promise as `load()`.
+        // What is here now FIRST, so an unreadable snapshot (the pre-edit note may come from another build) changes
+        // nothing, as `load()` promises.
         JSONObject wasThere = snapshotSetup();
 
         try
@@ -1892,8 +1827,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Replaces the whole setup with a snapshot: shared half, every configuration, the chosen one.  Empties before it
-     * reads, so it is only safe beside a snapshot taken first.
+     * Replaces the whole setup with a snapshot; empties before it reads, so only safe beside a snapshot taken first.
      */
     private void readSnapshot(JSONObject was)
     {
@@ -1923,18 +1857,14 @@ public class AutonomyCompanionStore
         pageIdConflicts.clear();
     }
 
-    /**
-     * Creates a configuration, optionally as a copy of an existing one (null copyFrom for an empty one).  A copy takes
-     * everything, because a configuration exists to differ in where the locomotives are.
-     */
+    /** Creates a configuration, optionally as a copy of one (null copyFrom for empty); a copy takes everything. */
     public void createConfiguration(String name, String copyFrom) throws IOException
     {
         createConfiguration(name, copyFrom, true);
     }
 
     /**
-     * The same, choosing whether the copy takes where the trains stand and the timetable; false leaves out every
-     * placement (with its facing and arrival) and the timetable.
+     * The same, choosing whether the copy takes where the trains stand and the timetable.
      *
      * @throws IOException when the name is in use
      */
@@ -1962,8 +1892,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Takes every train and the timetable out of a configuration, in place: each placement with its facing and arrival,
-     * the timetable, and any entries an older build set aside.
+     * Takes every train and the timetable out of a configuration, in place, including entries an older build set aside.
      */
     private static void withoutTrains(JSONObject configuration)
     {
@@ -1992,9 +1921,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Brings in a configuration from an exported file under the given name.  A name that sanitizes to another
-     * configuration's file is refused, as in `createConfiguration` and `renameConfiguration`: `load()` would find only
-     * one of them.
+     * Brings in a configuration from an exported file under the given name; a name sharing another configuration's file
+     * is refused, as in `createConfiguration`.
      *
      * @throws IOException when the name would share a file with a configuration already here
      */
@@ -2013,15 +1941,14 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Takes back a configuration this class has just put in, without touching any file, for the import rollback:
-     * deleteConfiguration also deletes the FILE, and an import that has not reached a save has written none.
+     * Takes back a configuration just put in, touching no file, for the import rollback (deleteConfiguration deletes
+     * the FILE).
      */
     private void forgetConfiguration(String name)
     {
         configurations.remove(name);
 
-        // importConfiguration makes it active when nothing else was, so taking it back has to leave
-        // that pointing at something that exists.
+        // importConfiguration makes it active when nothing else was, so leave the pointer on something that exists.
         if (name.equals(activeConfiguration))
         {
             activeConfiguration = configurations.isEmpty()
@@ -2031,12 +1958,8 @@ public class AutonomyCompanionStore
 
     public void renameConfiguration(String from, String to) throws IOException
     {
-        // Refused rather than allowed to overwrite: renaming A to an existing B would replace B and then delete B's file,
-        // destroying a configuration the user never named in the gesture.
-        if (!from.equals(to) && configurations.containsKey(to))
-        {
-            throw new IOException(ERROR_NAME_IN_USE);
-        }
+        // Refused, not overwritten: renaming A onto B would replace B and delete B's file.
+        if (!from.equals(to) && configurations.containsKey(to)) throw new IOException(ERROR_NAME_IN_USE);
 
         // ANOTHER CONFIGURATION'S FILE, refused as that and naming it
         if (!from.equals(to)) refuseASharedFile(to, from);
@@ -2053,27 +1976,21 @@ public class AutonomyCompanionStore
         File old = configurationFile(from);
         File now = configurationFile(to);
 
-        // MOVED and rewritten, not deleted: deleting the old file first would leave a window in which the configuration
-        // was on disk nowhere, and load() scans the folder.  The rewrite makes the file agree with its own name (load()
-        // takes the name from INSIDE it).  A failure is raised, not swallowed: memory and disk must keep saying the
-        // same.
+        // MOVED and rewritten, not deleted first (the configuration would be on disk nowhere, and load() scans the
+        // folder); the rewrite makes the file agree with its name.  A failure is raised, so memory and disk agree.
         if (old.isFile())
         {
             try
             {
-                // Only when there is somewhere to move TO: two names can resolve to one file (File.equals is
-                // case-insensitive on Windows), but the REWRITE still has to happen.
-                if (!old.equals(now))
-                {
-                    Files.move(old.toPath(), now.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
+                // Only when there is somewhere to move TO (File.equals is case-insensitive on Windows); the REWRITE
+                // still happens.
+                if (!old.equals(now)) Files.move(old.toPath(), now.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
                 writeJson(now, configuration);
             }
             catch (IOException e)
             {
-                // Back to exactly where we were, on disk and in memory: a file left at the new name holding the old
-                // name would be saved again under the old name and load() would find the configuration twice.
+                // Back to where we were, on disk and in memory, or load() would find the configuration twice.
                 if (now.isFile() && !old.isFile())
                 {
                     try
@@ -2098,8 +2015,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Deletes a configuration, refusing the last one: a layout with a setup but no configuration is a state nothing in
-     * the UI could act on.
+     * Deletes a configuration, refusing the last: a setup with no configuration is a state no UI acts on.
      *
      * @throws IOException if it is the only configuration left
      */
@@ -2107,8 +2023,7 @@ public class AutonomyCompanionStore
     {
         if (!configurations.containsKey(name)) return;
 
-        // The FILE decides, because load() rebuilds the list by scanning the folder: a file that could not be deleted
-        // (held open by a sync client) would return next session as though nothing had happened.
+        // The FILE decides, as load() scans the folder: a file held open by a sync client would return next session.
         File file = configurationFile(name);
 
         if (file.isFile() && !file.delete())
@@ -2121,19 +2036,16 @@ public class AutonomyCompanionStore
 
         if (name.equals(activeConfiguration))
         {
-        // The last one may go, so a layout somebody experimented on does not keep a configuration for ever; with none
-        // left nothing is active, the state every layout starts in.
+        // The last may go; with none left nothing is active, as every layout starts.
             activeConfiguration = configurations.isEmpty()
                 ? null : configurations.keySet().iterator().next();
         }
     }
 
     /**
-     * Removes the whole setup: every configuration, every decision, and the files holding them, as the way back out of
-     * having set autonomy up.  The diagram is not touched; captions live here, so they go with it.
+     * Removes the whole setup: every configuration, decision and file; the diagram is untouched (captions live here).
      *
-     * @throws IOException if a file could not be removed; memory is cleared either way, so what remains on disk is not
-     *         read back
+     * @throws IOException if a file could not be removed; memory is cleared either way
      */
     public void deleteEverything() throws IOException
     {
@@ -2164,28 +2076,23 @@ public class AutonomyCompanionStore
 
         if (folder.isDirectory() && left != null && left.length == 0) folder.delete();
 
-        if (!failed.isEmpty())
-        {
-            throw new IOException(String.join(", ", failed));
-        }
+        if (!failed.isEmpty()) throw new IOException(String.join(", ", failed));
     }
 
     // keeping up with the diagram
 
     /**
-     * Follows a page being renamed.  Every key begins with a page name, so a rename would otherwise orphan every name,
-     * length, direction and pairing on that page; it is rewritten across the shared file and every configuration.
+     * Follows a page being renamed: every key begins with a page name, so it is rewritten across the shared file and
+     * every configuration.
      */
     public void renamePage(String from, String to)
     {
-        // Each collection knows which of its halves name a square: a caption is keyed by the square the text sits on
-        // AND points at a station's square, and a switched-off link is remembered by its square.
+        // Each collection knows which of its halves name a square (a caption is keyed by its text's square AND points
+        // at a station's).
         for (Kept k : kept()) k.renamePage(from, to);
 
-        // AND the numbering, which every translation asks (OB-092): else `pageNameToId` keeps the old name, the next
-        // save finds no id, and `translatePages` writes the bare NAME into excludedPages, which `untranslatePages`
-        // reads as an ID (a page renamed to "5" came back as page 5, excluded).  A rename moves the name and leaves the
-        // number.
+        // AND the numbering (OB-092): else the next save finds no id and writes the bare NAME into excludedPages, which
+        // reads back as an ID.  A rename moves the name, not the number.
         String renamedId = pageNameToId.remove(from);
 
         if (renamedId != null)
@@ -2193,13 +2100,12 @@ public class AutonomyCompanionStore
             pageNameToId.put(to, renamedId);
             pageIdToName.put(renamedId, to);
 
-            // And what that id was CALLED when the file was written, or saves before the next load decline to reconcile
-            // and warn under the name it no longer has.  Transient: sharedFields rewrites the map at the next save.
+            // And what that id was CALLED when written, or saves before the next load warn under a stale name;
+            // transient.
             pageNamesWhenWritten.put(renamedId, to);
         }
 
-        // Configurations key by tile too ("page:x,y"), so they are rewritten here, or a rename drops every placement,
-        // home, terminus and length in every configuration.
+        // Configurations key by tile too, or a rename drops every placement, home, terminus and length.
         for (JSONObject configuration : configurations.values())
         {
             if (!configuration.has("points")) continue;
@@ -2207,18 +2113,13 @@ public class AutonomyCompanionStore
             JSONObject points = configuration.getJSONObject("points");
             JSONObject renamedPoints = new JSONObject();
 
-            for (String key : points.keySet())
-            {
-                renamedPoints.put(rekeyOne(key, from, to), points.get(key));
-            }
+            for (String key : points.keySet()) renamedPoints.put(rekeyOne(key, from, to), points.get(key));
 
             configuration.put("points", renamedPoints);
         }
 
-        // AND THE NAMES MADE FROM THE PAGE'S NAME, where a timetable leg or a train's road stores them: a square with
-        // no name of its own is named "page x,y", so the rename renamed its Points.
-        final java.util.regex.Pattern made = java.util.regex.Pattern.compile("^" + java.util.regex.Pattern.quote(from)
-            + " (\\d+,\\d+)( \\(.*)?$");
+        // AND the names made from the page's name (timetable legs, a train's road): an unnamed square is "page x,y".
+        final Pattern made = Pattern.compile("^" + Pattern.quote(from) + " (\\d+,\\d+)( \\(.*)?$");
 
         for (JSONObject configuration : configurations.values())
         {
@@ -2232,58 +2133,25 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Every Point name a configuration stores by name (its timetable's legs and each standing train's road) through a
-     * rename, in place.  Everything else in it is keyed by square.
+     * Every Point name a configuration stores by name (timetable legs, standing trains' roads) through a rename, in
+     * place; the rest is keyed by square.
      */
     static void renameStoredPoints(JSONObject configuration, java.util.function.UnaryOperator<String> rename)
     {
-        JSONObject globals = configuration.optJSONObject("globals");
-
-        JSONArray table = globals == null ? null : globals.optJSONArray("timetable");
-
-        List<JSONObject> entries = new ArrayList<>();
-
-        for (int i = 0; table != null && i < table.length(); i++) entries.add(table.optJSONObject(i));
-
-        for (JSONObject entry : entries)
+        for (AutonomySession.NamedLeg leg : AutonomySession.legsOf(configuration))
         {
-            JSONArray path = entry == null ? null : entry.optJSONArray("path");
-
-            for (int j = 0; path != null && j < path.length(); j++)
+            for (int end = 0; end < 2; end++)
             {
-                JSONObject leg = path.optJSONObject(j);
+                String name = leg.get(end), renamed = rename.apply(name);
 
-                for (String end : new String[] {"start", "end"})
-                {
-                    if (leg != null && leg.opt(end) instanceof String) leg.put(end, rename.apply(leg.getString(end)));
-                }
-            }
-        }
-
-        JSONObject points = configuration.optJSONObject("points");
-
-        for (String id : points == null ? java.util.Collections.<String>emptySet() : points.keySet())
-        {
-            JSONObject point = points.optJSONObject(id);
-
-            JSONArray road = point == null ? null : point.optJSONArray("arrivedAlong");
-
-            for (int j = 0; road != null && j < road.length(); j++)
-            {
-                JSONArray step = road.optJSONArray(j);
-
-                for (int k = 0; step != null && k < step.length(); k++)
-                {
-                    if (step.opt(k) instanceof String) step.put(k, rename.apply(step.getString(k)));
-                }
+                if (!renamed.equals(name)) leg.set(end, renamed);
             }
         }
     }
 
     /**
-     * Forgets everything about a deleted page (renamePage's counterpart; its id is retired).  Removal is by
-     * forgetSquares, which also takes out what NAMES a square on this page from OTHER pages (a caption, a protecting
-     * signal, the far end of a portal).  Answers the number of squares whose setup was forgotten.
+     * Forgets everything about a deleted page (renamePage's counterpart), including names for its squares held on OTHER
+     * pages; returns the squares forgotten.
      */
     public int deletePage(String page)
     {
@@ -2291,26 +2159,24 @@ public class AutonomyCompanionStore
 
         Set<TileKey> squares = new LinkedHashSet<>();
 
-        // Every square this page names, as a key OR as a value: a protecting signal, a blocker or the far end of a
-        // portal can sit here with no entry of its own, and a direction is keyed by square AND route.
+        // Every square this page names, as a key OR a value (a signal, blocker or portal far end can have no entry of
+        // its own).
         for (Kept k : kept()) k.squaresOn(page, squares);
 
         forgetSquares(squares);
 
-        // Keyed by PAGE, not square, so forgetSquares does not see it; left behind, a later page of that name would
-        // start excluded.
+        // Keyed by PAGE, not square, so forgetSquares misses it; a later page of that name would start excluded.
         excludedPages.remove(page);
 
         // A page that is gone cannot be one the operator is keeping; the name would apply to the next page created.
         keptDespiteRepeats.remove(page);
 
-        // And the record of what that page was called (as forgetHeldPages ends): `pagesNotLoaded` walks it, so a stale
-        // entry would name a DELETED page as one that failed to load and warn on every editor save for the layout's
-        // life.  FR-018 cannot clear it, as a deleted page is not in the index.
+        // And the record of its name: `pagesNotLoaded` walks it, so a stale entry would warn on every editor save
+        // (FR-018 cannot clear it).
         pageNamesWhenWritten.values().remove(page);
 
-        // And out of the index this store holds, which `sharedFields` rebuilds the file's "pages" map from.  Safe for
-        // the id floor (`highestPageIdSeen`): this page's settings are forgotten, so a reissued id collects nothing.
+        // And out of the index `sharedFields` rebuilds "pages" from; safe for the id floor, as this page's settings are
+        // forgotten.
         String deletedId = pageNameToId.remove(page);
 
         if (deletedId != null) pageIdToName.remove(deletedId);
@@ -2334,15 +2200,15 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Squares that have been built over, whose setup is therefore about track that is gone.  moveTiles covers the
-     * squares a move LANDS on; a paste, a copied tile and a palette drop write over squares too.
+     * Squares built over, whose setup is about track that is gone: paste, copy and palette drops (moveTiles covers
+     * moves).
      */
-    public void forgetTiles(java.util.Collection<TileKey> tiles)
+    public void forgetTiles(Collection<TileKey> tiles)
     {
         moveTiles(null, tiles);
     }
 
-    private static Set<TileKey> asKeys(java.util.Collection<TileKey> tiles)
+    private static Set<TileKey> asKeys(Collection<TileKey> tiles)
     {
         Set<TileKey> keys = new LinkedHashSet<>();
 
@@ -2357,13 +2223,12 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Follows tiles being moved on the diagram: everything here is keyed by SQUARE, so a moved tile would leave its
-     * setup at the old coordinates, where the next reconcile would drop it.
+     * Follows tiles being moved: everything is keyed by SQUARE, so a moved tile would otherwise leave its setup behind.
      *
      * The whole set in one call: in a group dragged one square right every source lands on another source, so moving
-     * them in sequence makes each write destroy data the next read needed.  A moving square takes what is written
-     * about it; a square only NAMED by something else (a caption, protecting signal, portal partner) is repointed where
-     * it stands.  A tile moved onto a square that is not moving replaces what was there, as the diagram does.
+     * them in sequence destroys data the next read needs.  A moving square takes what is written about it; a square
+     * only NAMED by something else is repointed where it stands; a tile moved onto a non-moving square replaces what
+     * was there.
      */
     public void moveTiles(Map<TileKey, TileKey> moves)
     {
@@ -2371,10 +2236,10 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * One diagram edit: what moved, and what else was built over (either may be null), in one call so no caller has to
-     * get the ORDER right (forget first, or the arriving setup is wiped).  A pure forget is this with no moves.
+     * One diagram edit: what moved and what was built over (either may be null) in one call, so no caller gets the
+     * ORDER wrong.
      */
-    public boolean moveTiles(Map<TileKey, TileKey> moves, java.util.Collection<TileKey> builtOver)
+    public boolean moveTiles(Map<TileKey, TileKey> moves, Collection<TileKey> builtOver)
     {
         Map<TileKey, TileKey> byKey = new LinkedHashMap<>();
 
@@ -2390,10 +2255,9 @@ public class AutonomyCompanionStore
             }
         }
 
-        // Every square being LANDED ON that is not itself moving away: the diagram writes the arriving tile over
-        // whatever was there, and the loops below only overwrite a landing square when the source had something, so
-        // plain track dragged onto a station would keep the station's name, signals and restrictions.  A landing square
-        // that is also a source travels with its own entry.
+        // Every square LANDED ON that is not moving away: the arriving tile overwrites it, but the loops below only
+        // overwrite when the source had something, so plain track dragged onto a station would keep its name and
+        // signals.  A landing square that is also a source travels with its own entry.
         Set<TileKey> landing = new LinkedHashSet<>();
 
         for (TileKey to : byKey.values())
@@ -2407,15 +2271,14 @@ public class AutonomyCompanionStore
             if (!byKey.containsKey(over)) landing.add(over);
         }
 
-        // Sparing the labels of the tiles that are arriving (see forgetSquares): a platform nudged down one lands ON
-        // its own label.  The answer is WHETHER IT FOUND ANYTHING, which the caller's "did this change something" uses.
+        // Sparing the labels of arriving tiles (see forgetSquares): a platform nudged down lands ON its own label.
+        // The answer is WHETHER ANYTHING WAS FOUND, for the caller's "did this change something".
         boolean changed = forgetSquares(landing, byKey);
 
         if (byKey.isEmpty()) return changed;
 
-        // Where both halves name a square, both follow, the value REPOINTED rather than moved: a caption on a square
-        // that stayed put, naming a station that moved, still names that station.  A direction belongs to a square AND
-        // a route, so moveKeys asks a key which square it is on (FR-013).
+        // Both halves follow, the value REPOINTED (a caption on a square that stayed still names the station that
+        // moved); moveKeys asks a key which square it is on (FR-013).
         for (Kept k : kept()) k.move(byKey);
 
         // The configurations key by tile as well (see renamePage).
@@ -2426,9 +2289,8 @@ public class AutonomyCompanionStore
             JSONObject points = configuration.getJSONObject("points");
             JSONObject moved = new JSONObject();
 
-            // The ones staying put first, so a tile arriving on a square that is not moving replaces what was there.
-            // The configuration's keys are the PRINTED form (JSON), so each is parsed before being asked about
-            // (FR-013): `byKey.containsKey(aString)` compiles, because containsKey takes Object, and is always false.
+            // The ones staying put first, so an arriving tile replaces what was there.  Keys are the PRINTED form, so
+            // each is parsed before asking `byKey` (FR-013): containsKey(aString) compiles but is always false.
             for (String key : points.keySet())
             {
                 TileKey tile = parseTileKey(key);
@@ -2440,17 +2302,14 @@ public class AutonomyCompanionStore
             {
                 TileKey tile = parseTileKey(key);
 
-                if (tile != null && byKey.containsKey(tile))
-                {
-                    moved.put(byKey.get(tile).toString(), points.get(key));
-                }
+                if (tile != null && byKey.containsKey(tile)) moved.put(byKey.get(tile).toString(), points.get(key));
             }
 
             configuration.put("points", moved);
         }
 
-        // AND THE NAMES MADE FROM WHERE A MOVED SQUARE WAS, where a timetable leg or a train's road stores them:
-        // a square with no name of its own is named "page x,y", so a move renamed its Points
+        // AND the names made from where a moved square was (timetable legs, a train's road): an unnamed square is "page
+        // x,y"
         for (JSONObject configuration : configurations.values())
         {
             renameStoredPoints(configuration, name ->
@@ -2473,18 +2332,15 @@ public class AutonomyCompanionStore
         return true;
     }
 
-    /**
-     * Everything this store holds about one page, as something that can be put back for the diagram editor's undo; the
-     * shape goes straight back into restorePage and nowhere else.
-     */
+    /** Everything held about one page, as something restorePage (only) can put back for the editor's undo. */
     public Map<String, Object> snapshotPage(String page)
     {
         Map<String, Object> out = new LinkedHashMap<>();
 
         if (page == null) return out;
 
-        // Keyed by the collection's file name, which restorePage asks for.  A collection with nothing to snapshot
-        // (`excludedPages`) puts null.  The lists are COPIED: edited in place they would change the snapshot too.
+        // Keyed by the collections' file names; a collection with nothing to snapshot (`excludedPages`) puts null.
+        // Lists are COPIED, or editing them would change the snapshot.
         for (Kept k : kept()) out.put(k.json, k.snapshotOf(page));
 
         // The configurations key by tile too: a snapshot without them restores half a station.
@@ -2499,8 +2355,7 @@ public class AutonomyCompanionStore
 
             for (String key : from.keySet())
             {
-                // Deep: setPointProperty writes the facings, placements, homes and maximum lengths with
-                // points.getJSONObject(id).put(...), straight into the object a shared snapshot would be holding.
+                // Deep: setPointProperty writes straight into the object a shared snapshot would hold.
                 if (!isOnPage(key, page)) continue;
 
                 Object value = from.get(key);
@@ -2517,17 +2372,13 @@ public class AutonomyCompanionStore
         return out;
     }
 
-    /**
-     * Puts a page back as snapshotPage found it: everything keyed to that page is dropped first, so a square that has
-     * GAINED something since loses it again.  Other pages are not touched; a null snapshot does nothing.
-     */
+    /** Puts a page back as snapshotPage found it: everything keyed to that page is dropped first; null does nothing. */
     @SuppressWarnings("unchecked")
     public void restorePage(String page, Map<String, Object> snapshot)
     {
         if (page == null || snapshot == null) return;
 
-        // By the same names snapshotPage wrote, which are the collections' file names.  A snapshot taken by an older build
-        // has no entry for a collection added since, and each kind's put-back treats absent as "this page had none".
+        // By the names snapshotPage wrote; an older build's snapshot lacks collections added since, read as "none".
         for (Kept k : kept()) k.restoreTo(page, snapshot.get(k.json));
 
         Map<String, JSONObject> points = (Map<String, JSONObject>) snapshot.get("configurations");
@@ -2550,8 +2401,7 @@ public class AutonomyCompanionStore
 
             if (was != null)
             {
-                // Copied on the way back as well: the snapshot is held as long as the editor might undo, and the next
-                // edit would write through it.
+                // Copied on the way back too: the editor may undo again, and the next edit would write through it.
                 for (String key : was.keySet())
                 {
                     Object value = was.get(key);
@@ -2571,9 +2421,15 @@ public class AutonomyCompanionStore
         return key != null && key.getPage().equals(page);
     }
 
+    /** Adds the squares of `from` on this page to `into`, read from a copy of `from`. */
+    private static void addOnPage(Collection<TileKey> from, String page, Set<TileKey> into)
+    {
+        for (TileKey key : new ArrayList<>(from)) if (isOnPage(key, page)) into.add(key);
+    }
+
     /**
-     * Whether a stored key belongs to this page, by what the key PARSES to, not what it starts with: a page may be
-     * called "Yard: Upper", and "Yard: Upper:2,3" starts with "Yard:".  parseTileKey splits on the LAST colon.
+     * Whether a stored key belongs to this page by what it PARSES to: a page may be called "Yard: Upper"; parseTileKey
+     * splits on the LAST colon.
      */
     private static boolean isOnPage(String key, String page)
     {
@@ -2605,8 +2461,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The entries of one collection that live on one page.  Generic over {@link SquareKeyed} (FR-013) because erasure
-     * makes {@code Map<String, T>} and {@code Map<TileKey, T>} the same signature, so they could not be overloaded.
+     * The entries of one collection on one page; generic over {@link SquareKeyed} (FR-013) because erasure makes the
+     * Map signatures equal.
      */
     private static <K extends SquareKeyed<K>, T> Map<K, T> onPage(Map<K, T> from, String page)
     {
@@ -2621,9 +2477,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * One page's entries from a map whose VALUES are squares too: `onPage` asks only about the key, but portals,
-     * protecting signals and blocked points cross pages, so snapshot and restore must capture every entry that MENTIONS
-     * this page.
+     * One page's entries from a map whose VALUES are squares too: portals, signals and blocked points cross pages, so
+     * every entry that MENTIONS the page is captured.
      */
     private static Map<TileKey, TileKey> onPageEitherEnd(Map<TileKey, TileKey> from, String page)
     {
@@ -2641,6 +2496,16 @@ public class AutonomyCompanionStore
         return out;
     }
 
+    /** Whether a square, or any square on its list, is on the page. */
+    private static boolean mentionsPage(TileKey key, List<TileKey> held, String page)
+    {
+        if (isOnPage(key, page)) return true;
+
+        if (held != null) for (TileKey one : held) if (isOnPage(one, page)) return true;
+
+        return false;
+    }
+
     /** The same, for a map of squares to LISTS of squares. */
     private static Map<TileKey, List<TileKey>> onPageEitherEnd(
         Map<TileKey, List<TileKey>> from, String page, boolean lists)
@@ -2649,34 +2514,20 @@ public class AutonomyCompanionStore
 
         for (Map.Entry<TileKey, List<TileKey>> entry : from.entrySet())
         {
-            boolean mentions = isOnPage(entry.getKey(), page);
-
-            if (!mentions && entry.getValue() != null)
-            {
-                for (TileKey held : entry.getValue())
-                {
-                    if (isOnPage(held, page))
-                    {
-                        mentions = true;
-                        break;
-                    }
-                }
-            }
-
-            if (mentions) out.put(entry.getKey(), entry.getValue());
+            if (mentionsPage(entry.getKey(), entry.getValue(), page)) out.put(entry.getKey(), entry.getValue());
         }
 
         return out;
     }
 
     /**
-     * Puts back a page's entries in a collection whose values are squares too: everything MENTIONING the page goes,
-     * then the snapshot goes back, so an entry on another page that pointed here is restored, not left dangling.
+     * Puts back a page's entries where values are squares too: everything MENTIONING the page goes, then the snapshot
+     * returns, so no entry dangles.
      */
     private static void putBackEitherEnd(Map<TileKey, TileKey> into, String page,
         Map<TileKey, TileKey> was)
     {
-        for (java.util.Iterator<Map.Entry<TileKey, TileKey>> pairs = into.entrySet().iterator();
+        for (Iterator<Map.Entry<TileKey, TileKey>> pairs = into.entrySet().iterator();
             pairs.hasNext();)
         {
             Map.Entry<TileKey, TileKey> pair = pairs.next();
@@ -2695,26 +2546,12 @@ public class AutonomyCompanionStore
     private static void putBackEitherEnd(Map<TileKey, List<TileKey>> into, String page,
         Map<TileKey, List<TileKey>> was, boolean lists)
     {
-        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
+        for (Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
             = into.entrySet().iterator(); pairs.hasNext();)
         {
             Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
 
-            boolean mentions = isOnPage(pair.getKey(), page);
-
-            if (!mentions && pair.getValue() != null)
-            {
-                for (TileKey held : pair.getValue())
-                {
-                    if (isOnPage(held, page))
-                    {
-                        mentions = true;
-                        break;
-                    }
-                }
-            }
-
-            if (mentions) pairs.remove();
+            if (mentionsPage(pair.getKey(), pair.getValue(), page)) pairs.remove();
         }
 
         if (was != null) into.putAll(was);
@@ -2736,7 +2573,7 @@ public class AutonomyCompanionStore
     private static <K extends SquareKeyed<K>, T> void putBack(Map<K, T> into, String page,
         Map<K, T> was)
     {
-        for (java.util.Iterator<K> keys = into.keySet().iterator(); keys.hasNext();)
+        for (Iterator<K> keys = into.keySet().iterator(); keys.hasNext();)
         {
             if (isOnPage(keys.next().square(), page)) keys.remove();
         }
@@ -2746,7 +2583,7 @@ public class AutonomyCompanionStore
 
     private static void putMembersBack(Set<TileKey> into, String page, Set<TileKey> was)
     {
-        for (java.util.Iterator<TileKey> keys = into.iterator(); keys.hasNext();)
+        for (Iterator<TileKey> keys = into.iterator(); keys.hasNext();)
         {
             if (isOnPage(keys.next(), page)) keys.remove();
         }
@@ -2755,8 +2592,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The same, for a set whose members are PAIRED ACROSS PAGES (`disabledPortals`: `setPortalDisabled` writes both
-     * ends).  Capturing at either end is required, or undo removes one half of the pair and puts nothing back.
+     * The same for a set PAIRED ACROSS PAGES (`disabledPortals`): capture at either end, or undo restores half a pair.
      */
     private Set<TileKey> membersOnPageEitherEnd(Set<TileKey> from, String page)
     {
@@ -2771,12 +2607,12 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Puts a paired set's page back, both ends of every pair with it.  The pairing is read as it stands NOW, which is
-     * correct: `portals` is restored before `disabledLinks` in the registry order, so it is already the snapshot's.
+     * Puts a paired set's page back, both ends of every pair; the pairing is read as it stands NOW, as `portals` is
+     * restored first.
      */
     private void putPairedMembersBack(Set<TileKey> into, String page, Set<TileKey> was)
     {
-        for (java.util.Iterator<TileKey> keys = into.iterator(); keys.hasNext();)
+        for (Iterator<TileKey> keys = into.iterator(); keys.hasNext();)
         {
             TileKey key = keys.next();
 
@@ -2787,8 +2623,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Lets go of everything the setup holds about a set of squares: what is written ABOUT the square, and what
-     * elsewhere POINTS AT it (a caption naming a station built over, a pairing to a signal that is gone).
+     * Lets go of everything held ABOUT a set of squares and what POINTS AT them (a caption naming a station built
+     * over).
      */
     private boolean forgetSquares(Set<TileKey> squares)
     {
@@ -2796,21 +2632,18 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * As above, with `arriving` (each MOVING square and where it is going) telling a label about to be built over by
-     * the very thing it names from one that is merely stale: nudging a platform down one lands it on its own label,
-     * which must survive.  The test is that the station arrives on THIS square, not that it is moving at all.
+     * As above; `arriving` (each MOVING square and its destination) spares a label about to be built over by what it
+     * names.
      */
     private boolean forgetSquares(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
     {
         if (squares == null || squares.isEmpty()) return false;
 
-        // WHETHER ANYTHING WAS ACTUALLY REMOVED (see `Kept.forget`): four callers write the whole setup to disk on
-        // true.
+        // WHETHER ANYTHING WAS REMOVED (see `Kept.forget`): four callers write the whole setup to disk on true.
         boolean any = false;
 
-        // Each collection drops what it knows about these squares AND anything POINTING at them: a pointer at gone
-        // track is one nothing can satisfy or clear.  Captions are the exception via `arriving`, for the KEY half only;
-        // a vacated square is never in this set, because moveTiles builds it by excluding them.
+        // Each collection drops what it knows about these squares AND anything POINTING at them.  Captions are the
+        // exception via `arriving`, KEY half only; a vacated square is never in this set.
         for (Kept k : kept()) any |= k.forget(squares, arriving);
 
         // The configurations key by square as well - facings, placements, homes, lengths
@@ -2820,19 +2653,15 @@ public class AutonomyCompanionStore
 
             JSONObject points = configuration.getJSONObject("points");
 
-            for (TileKey key : squares)
-            {
-                any |= points.remove(key.toString()) != null;
-            }
+            for (TileKey key : squares) any |= points.remove(key.toString()) != null;
         }
 
         return any;
     }
 
     /**
-     * Follows squares dragged to new coordinates, moved keys winning over ones that merely stayed.  For a key that is a
-     * square plus something else, that something travels unchanged (FR-013).  Two passes: an entry moving ONTO a
-     * square another is moving off must not be overwritten by the one leaving.
+     * Follows squares dragged to new coordinates, moved keys winning over ones that stayed; the rest of a key travels
+     * unchanged (FR-013).  Two passes, so an entry moving ONTO a square being vacated is not overwritten.
      */
     private static <K extends SquareKeyed<K>, T> void moveKeys(Map<K, T> map,
         Map<TileKey, TileKey> moves)
@@ -2914,8 +2743,8 @@ public class AutonomyCompanionStore
         private final List<String> declinedBecauseAbsent = new ArrayList<>();
 
         /**
-         * A reconciliation that did not happen, and the pages that stopped it: a refusal to tidy is the one moment
-         * somebody could put the missing page back before its id is retired.
+         * A reconciliation that did not happen, with the pages that stopped it, so the missing page can be put back
+         * before its id is retired.
          *
          * @param absent the pages the setup knows about that are not loaded; empty when a suspect numbering refused
          */
@@ -2929,8 +2758,8 @@ public class AutonomyCompanionStore
         }
 
         /**
-         * Pages that were not loaded when a save declined to reconcile; empty when nothing was declined, or when the
-         * refusal was a suspect numbering rather than a missing page.
+         * Pages not loaded when a save declined to reconcile; empty when nothing was declined or a suspect numbering
+         * refused.
          */
         public List<String> getDeclinedBecauseAbsent()
         {
@@ -2956,8 +2785,8 @@ public class AutonomyCompanionStore
         }
 
         /**
-         * Names whose tile is gone but which are still referenced (by a timetable, a home or a placement), name to what
-         * refers to it.  Kept AND named for a person to resolve: dropping one would break its referrer unexplained.
+         * Names whose tile is gone but still referenced (timetable, home, placement), name to referrers; kept for a
+         * person to resolve.
          */
         public Map<String, List<String>> getNamesStillReferenced()
         {
@@ -2972,9 +2801,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Brings the setup back into line with a diagram that has changed underneath it.  A length or a direction belongs
-     * to a tile and goes with it, but a NAME is referred to from timetables, homes and placements, so it is kept only
-     * if something still refers to it.  Either way it is reported.
+     * Brings the setup into line with a changed diagram: lengths and directions go with their tile; a NAME is kept only
+     * if something refers to it.  All is reported.
      */
     public Reconciliation reconcile(Set<TileKey> existing)
     {
@@ -2982,36 +2810,31 @@ public class AutonomyCompanionStore
 
         Set<TileKey> keys = new LinkedHashSet<>();
 
-        for (TileKey tile : existing)
-        {
-            keys.add(tile);
-        }
+        for (TileKey tile : existing) keys.add(tile);
 
         report.droppedTileProperties.addAll(asStrings(dropMissing(tileLengths, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(tileDirections, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(barredArrivals, keys)));
-        // dropMissing tests the KEY, the station's square; the VALUES are squares too.  forgetSquares covers a signal
-        // that is BUILT OVER, but a plain deletion would leave the pairing in the file to be INHERITED by whatever is
-        // drawn there next, and autonomy would throw an accessory nobody paired.
+        // dropMissing tests the KEY; the VALUES are squares too, or a plain deletion leaves a pairing for whatever is
+        // drawn there next to INHERIT.
         report.droppedTileProperties.addAll(asStrings(dropMissing(stationSignals, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(blockedPoints, keys)));
         report.droppedTileProperties.addAll(asStrings(dropMissing(entrySignals, keys)));
 
-        // THE ENTRY GUARD'S SIGNAL SQUARES TOO (FR-096), on the protecting list's rule: a pairing to a gone square
-        // would be inherited by whatever is drawn there next, and this list commands real hardware as well.
+        // THE ENTRY GUARD'S SIGNAL SQUARES TOO (FR-096), on the same rule; this list commands real hardware.
         dropPointers(entrySignals, signal -> !keys.contains(signal),
             signal -> report.droppedTileProperties.add("entry guard signal at " + signal));
 
         dropPointers(stationSignals, signal -> !keys.contains(signal),
             signal -> report.droppedTileProperties.add("protecting signal at " + signal));
 
-        // And the squares a station is held back by, for the same reason: a restriction watching a square that no
-        // longer exists cannot be satisfied and would be INHERITED by whatever is drawn there next.
+        // And the squares a station is held back by: a restriction on a gone square cannot be satisfied and would be
+        // INHERITED.
         dropPointers(blockedPoints, blocker -> !keys.contains(blocker),
             blocker -> report.droppedTileProperties.add("restriction watching " + blocker));
 
-        // linkNames and disabledPortals, both remembered BY SQUARE: a name and a switched-off flag for gone track would
-        // be INHERITED by the next link drawn there.  Reported, so a lost link name is visible.
+        // linkNames and disabledPortals, remembered BY SQUARE, would be INHERITED by the next link drawn there;
+        // reported.
         report.droppedTileProperties.addAll(asStrings(dropMissing(linkNames, keys)));
 
         for (TileKey key : dropMissingMembers(disabledPortals, keys))
@@ -3029,8 +2852,8 @@ public class AutonomyCompanionStore
             if (!keys.contains(key)) goneTiles.add(key);
         }
 
-        // Squares, not their printed form (FR-013): `pointNames.get(aString)` and `stations.remove(aString)` compile,
-        // as Map.get and Set.remove take Object, and do nothing.  The report is printed where it is written.
+        // Squares, not their printed form (FR-013): `pointNames.get(aString)` compiles (it takes Object) and does
+        // nothing.
         for (TileKey key : goneTiles)
         {
             String name = pointNames.get(key);
@@ -3049,10 +2872,9 @@ public class AutonomyCompanionStore
             }
         }
 
-        // A station that was never NAMED is not covered by the loop above (it walks names whose square has gone).  An
-        // unnamed station is an ordinary state (setStation asks for no name); left behind, a sensor drawn there later
-        // is silently a station again and checkNames raises a blocking UNNAMED_STATION about a square nobody can see.
-        // Only the unnamed ones: a named station is kept above when a configuration still refers to it.
+        // A station never NAMED is not covered by the loop above (it walks names).  Left behind, a sensor drawn there
+        // later is silently a station and checkNames raises a blocking UNNAMED_STATION.  Only unnamed ones: a named
+        // station is kept above while referenced.
         List<TileKey> orphanStations = new ArrayList<>();
 
         for (TileKey key : stations)
@@ -3088,8 +2910,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Everything in the configurations that names this Point.  Deliberately textual: a configuration is stored as it
-     * was written, and parsing each shape would mean knowing the schema of things this class only stores.
+     * Everything in the configurations that names this Point; deliberately textual, as this class does not know those
+     * schemas.
      */
     private List<String> whatReferences(String pointName)
     {
@@ -3169,33 +2991,32 @@ public class AutonomyCompanionStore
             }
         }
 
-        // AND A CROSSING'S TWO HALVES AGREE: a direction stored on one square of a two-square crossing while it
-        // was a permanent turnout ran its track one way on that square alone
+        // AND A CROSSING'S TWO HALVES AGREE: a direction stored on one square of a crossing that was once a turnout ran
+        // one way there alone
         graph.settleCrossingHalves();
 
-        // AND EVERY SQUARE RUNS AS ITS ARROWS SHOW (OB-351): a road shut a way its square's arrow draws open is opened,
-        // whatever door or file put it there.  The session writes what changed back into this store.
+        // EVERY SQUARE RUNS AS ITS ARROWS SHOW (OB-351): a road shut where its arrow draws open is opened; the session
+        // writes changes back here.
         graph.normalizeToArms();
 
-        // AND EVERY RUN RUNS ONE WAY ALONG ITS LENGTH (OB-361): a square that says more than the run it is part of is given
-        // the run's direction, its narrowest, so what each square says is what a train finds.  Written back the same way.
+        // EVERY RUN RUNS ONE WAY ALONG ITS LENGTH (OB-361): a square saying more than its run is given the run's
+        // narrowest direction.  Written back likewise.
         graph.normalizeRuns();
     }
 
     // internals
 
     /**
-     * Every shared field this version writes.  A field NOT listed here is treated as something a newer TrainControl
-     * wrote, kept aside on load and written back on save, so an omission is quietly destructive: the stale copy is
-     * written after the real one and reverts every edit to that field.  Anything added to save() has to be added here.
+     * Every shared field this version writes.  A field NOT listed is treated as a newer build's, kept aside on load and
+     * written back after the real one, reverting edits to it: anything added to save() has to be added here.
      */
     private static final Set<String> KNOWN_SHARED_NOT_A_COLLECTION =
-        new LinkedHashSet<>(java.util.Arrays.asList("version", "activeConfiguration", "pages"));
+        new LinkedHashSet<>(Arrays.asList("version", "activeConfiguration", "pages"));
 
     /**
-     * Every field name this build understands in the shared file, by its name in the FILE.  Anything else is a field a
-     * NEWER build wrote: a LOAD keeps it verbatim and an id-translating import leaves it out.  Derived from the
-     * registry rather than listed, so a collection missing here cannot be read as unknown AND into its own collection.
+     * Every shared field name this build understands, by its name in the FILE; anything else was written by a NEWER
+     * build (a LOAD keeps it, an id-translating import leaves it out).  Derived from the registry so a collection
+     * cannot be read as unknown.
      */
     private Set<String> knownShared()
     {
@@ -3207,10 +3028,7 @@ public class AutonomyCompanionStore
     }
 
 
-    /**
-     * What a held field's values are made of.  PLAIN is keyed by a square with a value that is nobody's business here;
-     * the rest name squares as well, and an entry is held when ANY square it names belongs to a page not loaded.
-     */
+    /** What a held field's values are made of; an entry is held when ANY square it names is on a page not loaded. */
     private enum Held
     {
         /** keyed by a square; the value is not one */
@@ -3227,15 +3045,14 @@ public class AutonomyCompanionStore
 
     /**
      * Every shared field that can be held for an absent page, and what its values are made of.  ONE list, read by both
-     * the hold and the merge: a field in only one would come back with a page ID where a page NAME belongs, or be
-     * deleted from disk by a save while a page's file was missing (OB-067).
+     * hold and merge, or a field in only one comes back with an ID where a NAME belongs, or is deleted by a save
+     * (OB-067).
      */
     private static final Map<String, Held> HELD_FIELDS = heldFields();
 
     /**
-     * Which collections are held back when their page is not loaded, and in what shape they have in the FILE.  A
-     * METHOD rather than a static block so the guard that insists every kept collection is handled everywhere can
-     * address it by name; static, so the OB-025 registry (`kept()`) does not cover it.
+     * Which collections are held back when their page is not loaded, and their shape in the FILE.  A METHOD so the
+     * guard can address it by name; static, so the OB-025 registry does not cover it.
      */
     private static Map<String, Held> heldFields()
     {
@@ -3256,13 +3073,12 @@ public class AutonomyCompanionStore
         fields.put("excludedPages", Held.PAGE_LIST);
         fields.put("keptDespiteRepeats", Held.PAGE_LIST);
 
-        return java.util.Collections.unmodifiableMap(fields);
+        return Collections.unmodifiableMap(fields);
     }
 
     /**
-     * The shared object with every entry naming an absent page taken out of it and held.  Only when the numbering is
-     * known at all: a store loaded with no index (the on-disk repair path's first read) knows no page, and holding
-     * everything would empty it.  Answers a copy safe to read into the live collections.
+     * The shared object with every entry naming an absent page taken out and held; only when the numbering is known at
+     * all (the on-disk repair path's first read knows no page).  Returns a copy safe to read into the live collections.
      */
     private JSONObject withoutAbsentPages(JSONObject root)
     {
@@ -3272,10 +3088,7 @@ public class AutonomyCompanionStore
 
         JSONObject out = new JSONObject();
 
-        for (String field : root.keySet())
-        {
-            out.put(field, root.get(field));
-        }
+        for (String field : root.keySet()) out.put(field, root.get(field));
 
         for (Map.Entry<String, Held> field : HELD_FIELDS.entrySet())
         {
@@ -3335,10 +3148,7 @@ public class AutonomyCompanionStore
                 {
                     JSONArray each = (JSONArray) value;
 
-                    for (int at = 0; here && at < each.length(); at++)
-                    {
-                        here = allHere(String.valueOf(each.get(at)));
-                    }
+                    for (int at = 0; here && at < each.length(); at++) here = allHere(String.valueOf(each.get(at)));
                 }
             }
 
@@ -3375,8 +3185,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Puts the held entries of one field back into what is about to be written, never over a live one: a page that has
-     * come back is authoritative, and the held copy is older by definition.
+     * Puts a field's held entries back into what is about to be written, never over a live one: a returned page is
+     * authoritative.
      */
     private void mergeHeld(JSONObject root, String field)
     {
@@ -3409,26 +3219,22 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Reads the shared half of a setup object in, over a store already emptied of it.  Split out of load() so importing
-     * can put a MERGED object through the same reading, page-id translation and renumber detection included.  The
-     * active configuration is not read: importing must not change which one is running.
+     * Reads the shared half of a setup object in, over a store already emptied of it; split from load() so importing
+     * can put a MERGED object through the same reading.  The active configuration is not read.
      *
-     * @param wholeRoot the shared object as it came off disk.  The local `root` below is NOT this: it is the copy with
-     *     absent pages filtered out, and the difference between the two names is load-bearing here.
+     * @param wholeRoot the shared object as it came off disk, NOT the local `root` (the copy with absent pages
+     *     filtered out); the difference is load-bearing
      */
     private void readShared(JSONObject wholeRoot)
     {
-        // FIRST: everything below is translated out of page ids and needs what those ids were called when this file was
-        // written (the tileLengths loop is translated inline).
+        // FIRST: everything below is translated out of page ids and needs what they were called when written.
         readStringMap(wholeRoot, "pages", pageNamesWhenWritten);
 
-        // Everything naming a page that is not loaded is taken out and held, not read in with the file's id standing in
-        // for a page name (OB-067).  See heldForAbsentPages.
+        // Entries naming a page not loaded are held, not read with the file's id standing in for a name (OB-067).
         JSONObject root = withoutAbsentPages(wholeRoot);
 
-        // Read AND translated in one step, per field (FR-013): no window holds stored keys in a field the rest of the
-        // class reads as memory keys (the state OB-067 was about).  `excludedPages` is the exception and says why for
-        // itself: it holds page NAMES, so it is read raw and translated in its own read().
+        // Read AND translated per field (FR-013), so no stored keys sit in a field read as memory keys (OB-067);
+        // `excludedPages` holds page NAMES and says why itself.
         for (Kept k : kept()) k.read(root);
 
         pageIdConflicts.clear();
@@ -3439,14 +3245,9 @@ public class AutonomyCompanionStore
 
             if (nowCalled == null || nowCalled.equals(entry.getValue())) continue;
 
-            // The id now carries a different name: renamed (the same page, called something else: the old name is gone
-            // from the index and the settings are still that page's) or renumbered (a DIFFERENT page holds this id: the
-            // old name is still in the index under another id, and adopting the settings would attach them to the wrong
-            // track).
-            if (pageNameToId.containsKey(entry.getValue()))
-            {
-                pageIdConflicts.put(entry.getValue(), nowCalled);
-            }
+            // The id now carries a different name: renamed (same page, old name gone from the index) or renumbered (a
+            // DIFFERENT page holds this id, so adopting its settings would attach them to the wrong track).
+            if (pageNameToId.containsKey(entry.getValue())) pageIdConflicts.put(entry.getValue(), nowCalled);
         }
 
         // From the whole object, not the filtered copy: an unmodeled field is written back verbatim.
@@ -3460,10 +3261,9 @@ public class AutonomyCompanionStore
     // The kept collections (OB-025)
 
     /**
-     * One collection of settings the store keeps, and everything the bookkeeping sites need of it: saving, loading,
-     * clearing, renaming a page, moving or forgetting squares, snapshotting and restoring a page, deleting a page.
-     * `testStoreCollectionsAreHandledEverywhere` makes an omission loud.  `reconcile` and `applyTo` stay written out by
-     * hand: they ask what a square's absence means per collection, and populate the tile GRAPH.
+     * One collection of settings the store keeps, with everything the bookkeeping sites need of it (save, load, clear,
+     * rename, move, forget, snapshot, restore, delete page).  `testStoreCollectionsAreHandledEverywhere` makes an
+     * omission loud; `reconcile` and `applyTo` stay written by hand.
      */
     private abstract class Kept
     {
@@ -3491,11 +3291,10 @@ public class AutonomyCompanionStore
         abstract void move(Map<TileKey, TileKey> byKey);
 
         /**
-         * Drops everything about squares that are gone, and everything POINTING at them.  Reports whether it removed
-         * anything: four call sites write the setup to disk on true, so deleting plain track must not rebuild the
-         * graph and rewrite every file once per square.
+         * Drops everything about gone squares and everything POINTING at them; true if anything was removed (four
+         * callers write the setup to disk on true).
          *
-         * @param arriving the moves in progress, so a label being landed on by its own tile is spared
+         * @param arriving the moves in progress, so a label landed on by its own tile is spared
          */
         abstract boolean forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving);
 
@@ -3505,16 +3304,13 @@ public class AutonomyCompanionStore
         /** Puts one page back as snapshotOf found it. */
         abstract void restoreTo(String page, Object snapshot);
 
-        /**
-         * Adds every square on this page that this collection names, as a key OR as a value (a protecting signal, a
-         * blocker or the far end of a portal can sit on a page with no entry of its own).
-         */
+        /** Adds every square on this page that this collection names, as a key OR a value. */
         abstract void squaresOn(String page, Set<TileKey> into);
     }
 
     /**
-     * A map from a square to something that is not a square - a name, a length, a restriction.  Only how the value is
-     * written and read differs, and that is left to the subclass.
+     * A map from a square to something that is not a square (name, length, restriction); subclasses write and read the
+     * value.
      */
     private abstract class SquareMapKept<V> extends Kept
     {
@@ -3551,10 +3347,7 @@ public class AutonomyCompanionStore
 
         @Override void squaresOn(String page, Set<TileKey> into)
         {
-            for (TileKey key : new LinkedHashSet<>(map.keySet()))
-            {
-                if (isOnPage(key, page)) into.add(key);
-            }
+            addOnPage(map.keySet(), page, into);
         }
     }
 
@@ -3582,8 +3375,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * A square AND a route across it, to the way the track faces on that route.  The key is a square plus a route, so
-     * a bare square never matches it and the bookkeeping must ask the key which square it is on (FR-013).
+     * A square AND a route across it, to the way the track faces on that route; ask the key which square it is on
+     * (FR-013).
      */
     private class DirectionMapKept extends Kept
     {
@@ -3609,7 +3402,7 @@ public class AutonomyCompanionStore
         {
             boolean any = false;
 
-            for (java.util.Iterator<DirectionKey> keys = map.keySet().iterator(); keys.hasNext();)
+            for (Iterator<DirectionKey> keys = map.keySet().iterator(); keys.hasNext();)
             {
                 if (squares.contains(keys.next().square()))
                 {
@@ -3641,17 +3434,14 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * A square to another square: a portal to its far end, a caption to the station it names.  Both halves are squares,
-     * so both follow a rename and a move.
+     * A square to another square (a portal to its far end, a caption to its station); both halves follow a rename and a
+     * move.
      */
     private class PairMapKept extends Kept
     {
         final Map<TileKey, TileKey> map;
 
-        /**
-         * Whether a landing square keeps its entry when the tile arriving on it is what the entry points at: captions
-         * only.
-         */
+        /** Whether a landing square keeps its entry when the arriving tile is what it points at: captions only. */
         final boolean spareArriving;
 
         PairMapKept(String json, Map<TileKey, TileKey> map, boolean spareArriving)
@@ -3695,9 +3485,8 @@ public class AutonomyCompanionStore
                 any |= map.remove(key) != null;
             }
 
-            // And anything pointing AT a square that is gone.  No exception for the arriving tiles here: a square being
-            // vacated is never in this set, because moveTiles builds it by excluding them.
-            for (java.util.Iterator<Map.Entry<TileKey, TileKey>> pairs = map.entrySet().iterator();
+            // And anything pointing AT a gone square; no arriving exception, as a vacated square is never in this set.
+            for (Iterator<Map.Entry<TileKey, TileKey>> pairs = map.entrySet().iterator();
                 pairs.hasNext();)
             {
                 if (squares.contains(pairs.next().getValue()))
@@ -3721,21 +3510,14 @@ public class AutonomyCompanionStore
 
         @Override void squaresOn(String page, Set<TileKey> into)
         {
-            for (TileKey key : new LinkedHashSet<>(map.keySet()))
-            {
-                if (isOnPage(key, page)) into.add(key);
-            }
-
-            for (TileKey value : new ArrayList<>(map.values()))
-            {
-                if (isOnPage(value, page)) into.add(value);
-            }
+            addOnPage(map.keySet(), page, into);
+            addOnPage(map.values(), page, into);
         }
     }
 
     /**
-     * A square to a list of squares: the signals protecting a station, the squares holding it back.  The snapshot copies
-     * the lists, so nothing that edits one in place can reach an undo.
+     * A square to a list of squares (signals protecting a station, squares holding it back); the snapshot copies the
+     * lists.
      */
     private class ListMapKept extends Kept
     {
@@ -3792,10 +3574,7 @@ public class AutonomyCompanionStore
 
         @Override void squaresOn(String page, Set<TileKey> into)
         {
-            for (TileKey key : new LinkedHashSet<>(map.keySet()))
-            {
-                if (isOnPage(key, page)) into.add(key);
-            }
+            addOnPage(map.keySet(), page, into);
 
             for (List<TileKey> pointed : new ArrayList<>(map.values()))
             {
@@ -3862,16 +3641,13 @@ public class AutonomyCompanionStore
 
         @Override void squaresOn(String page, Set<TileKey> into)
         {
-            for (TileKey key : new LinkedHashSet<>(set))
-            {
-                if (isOnPage(key, page)) into.add(key);
-            }
+            addOnPage(set, page, into);
         }
     }
 
     /**
-     * A set of whole PAGES rather than of squares: which pages autonomy is told to ignore.  Every square-level site
-     * does nothing here, by decision.  It is translated by page id on write, so a rename carries the decision with it.
+     * A set of whole PAGES (which pages autonomy ignores); square-level sites do nothing here, by decision.  Translated
+     * by page id on write.
      */
     private class PageSetKept extends Kept
     {
@@ -3889,8 +3665,7 @@ public class AutonomyCompanionStore
 
         @Override void read(JSONObject root)
         {
-            // Read raw and translated afterwards - it holds page names, not squares, so the reader
-            // that translates as it goes has nothing to translate with.
+            // Read raw and translated afterwards: it holds page names, not squares.
             readStringSet(root, json, set);
             untranslatePages(set);
         }
@@ -3915,8 +3690,8 @@ public class AutonomyCompanionStore
     private List<Kept> kept;
 
     /**
-     * Every collection of settings the store keeps.  This is the list to add to: clearing, saving, loading, renames,
-     * moves, deletions, snapshots and page deletion all walk it.
+     * Every collection of settings the store keeps; the list to add to, as clearing, saving, loading, renames, moves,
+     * deletions and snapshots walk it.
      */
     private List<Kept> kept()
     {
@@ -3949,8 +3724,7 @@ public class AutonomyCompanionStore
 
     private void clear()
     {
-        // One list, walked by clear and clearShared alike: a hand-kept list missing a collection would let a pairing
-        // made since the last save survive a discard and be written to disk.
+        // One list, walked by clear and clearShared alike, or a pairing made since the last save survives a discard.
         for (Kept k : kept()) k.clear();
 
         unknownSharedFields.clear();
@@ -3973,9 +3747,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Writes down what the setup looked like before the layout editor started changing it (OB-108), on disk so a
-     * process dying while the editor is open loses nothing.  Put back if still there next time.  Answers whether it
-     * reached the disk.
+     * Writes down the setup as it was before the layout editor started changing it (OB-108), so a dying process loses
+     * nothing; put back if still there next time.  Returns whether it reached disk.
      */
     public boolean rememberBeforeEdit(JSONObject was)
     {
@@ -3991,15 +3764,14 @@ public class AutonomyCompanionStore
         }
         catch (IOException couldNotWrite)
         {
-            // The edit goes ahead either way: refusing to edit because a safety net could not be written would be a
-            // worse trade than the net being absent.
+            // The edit goes ahead either way: a safety net that cannot be written is no reason to refuse.
             return false;
         }
     }
 
     /**
-     * Forgets the pre-edit snapshot because the editing session ended properly: Save, or Cancel (the editor already
-     * put the setup back).  Nothing else may clear it; "still here" means the last session did not finish.
+     * Forgets the pre-edit snapshot when the editing session ended properly (Save, or Cancel after the editor put the
+     * setup back); "still here" means the last session did not finish.
      */
     public boolean forgetBeforeEdit()
     {
@@ -4010,10 +3782,10 @@ public class AutonomyCompanionStore
         if (was.delete()) return true;
 
         // The delete failed (not exotic under OneDrive), and a note that cannot be removed will be APPLIED, undoing the
-        // work just saved after a clean Save.  So it is overwritten with the setup as it stands now, IN PLACE: not
-        // through writeAtomically, whose move needs the DELETE access that just failed.  A torn write is acceptable: a
-        // half-written note fails unfinishedEdit's shape check and is refused, kept and reported.
-        try (java.io.FileOutputStream out = new java.io.FileOutputStream(was))
+        // saved work.  So it is overwritten with the current setup IN PLACE, not through writeAtomically (its move
+        // needs the DELETE access that just failed); a torn write fails unfinishedEdit's shape check and is kept and
+        // reported.
+        try (FileOutputStream out = new FileOutputStream(was))
         {
             out.write(snapshotSetup().toString(2).getBytes(StandardCharsets.UTF_8));
 
@@ -4029,9 +3801,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Whether a pre-edit note is on disk at all, whatever this build can make of it: `unfinishedEdit` returning null
-     * means no note (silent) or one that cannot be used, which is worth a log line or it is refused in silence at
-     * every start.
+     * Whether a pre-edit note is on disk, whatever this build makes of it: `unfinishedEdit` returns null for none or an
+     * unusable one, and the latter deserves a log line.
      */
     public boolean hasUnfinishedEditNote()
     {
@@ -4054,15 +3825,13 @@ public class AutonomyCompanionStore
         }
         catch (IOException | RuntimeException unreadable)
         {
-            // Unreadable is not absent, but the safe answer is the same: leave the setup alone, since reverting to
-            // something that will not parse would be the loss this is meant to prevent.
+            // Unreadable is not absent, but the answer is the same: leave the setup alone.
             return null;
         }
 
-        // And the same checks `load()` makes: `restoreSetup` clears the store and then reads, which is safe for what
-        // `snapshotSetup` produces and unsafe for a note off a disk written by another run or build (`{}`, an empty
-        // setup, a version 99 file `load()` would refuse).  Refused and KEPT, not deleted: a note this build cannot
-        // read may belong to the newer TrainControl run next, and deleting it would throw away that build's safety net.
+        // The same checks `load()` makes: `restoreSetup` is safe for snapshotSetup's output, not for a note off disk
+        // from another run or build (`{}`, version 99).  Refused and KEPT, as it may belong to the newer build run
+        // next.
         if (!(note.opt("shared") instanceof JSONObject)
             || !(note.opt("configurations") instanceof JSONObject)
             || note.getJSONObject("shared").optInt("version", VERSION) > VERSION)
@@ -4074,9 +3843,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The lowest version that can read what is about to be written: 2 where some station carries more than one signal,
-     * 1 otherwise.  Not simply VERSION: bumping every file to 2 would make most setups unreadable by the previous
-     * build.
+     * The lowest version that can read what is about to be written: 2 where a station carries several signals, else 1,
+     * so most setups stay readable by the previous build.
      */
     private int versionWritten()
     {
@@ -4099,10 +3867,9 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Whether another configuration would be written to the same file as this name.  Sanitizing is many to one
-     * ("Night: Yard" and "Night_ Yard" are one file), so saving would write the second over the first.  Checked at the
-     * three doors a name comes in by (create, import, rename).  Answers the configuration that already owns that file,
-     * or null; `except` may share it (the one being renamed away from).
+     * Whether another configuration would be written to the same file as this name (sanitizing is many to one: "Night:
+     * Yard" and "Night_ Yard"); checked at create, import and rename.  Returns the owner of that file or null; `except`
+     * may share it.
      */
     private String fileNameTaken(String name, String except)
     {
@@ -4119,9 +3886,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Refuses a name that would be saved in another configuration's file, naming that configuration.  Its own refusal
-     * rather than `ERROR_NAME_IN_USE`, which would say "already exists" about a name that is exactly the one that does
-     * not.
+     * Refuses a name that would be saved in another configuration's file, naming it (not `ERROR_NAME_IN_USE`, which
+     * would mislead).
      *
      * @throws IOException a `NameSharesAFile`, naming the configuration that already owns that file
      */
@@ -4147,20 +3913,18 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * A key as it is stored: the page id where one is known, the page name otherwise, so a page added since the index
-     * was read still round trips.  A page whose NAME equals another's ID misroutes this and pageOf (OB-067); FR-013
-     * replaces these keys with TileKey.
+     * A key as it is stored: the page id where known, else the name, so a page added since the index was read still
+     * round trips.  A page NAME equal to another's ID misroutes this and pageOf (OB-067); FR-013 replaces these keys.
      */
     private String toStored(String key)
     {
         // The LAST colon, as parseTileKey, isOnPage and rekeyOne do (OB-071): a page name may contain one ("Yard:
-        // Upper"), and splitting on the first would store its squares under another page's id.
+        // Upper").
         int colon = key.lastIndexOf(':');
 
         if (colon < 0) return key;
 
-        // Every key in memory belongs to a loaded page: anything else was held back at read time (OB-067, see
-        // heldForAbsentPages), so this map is the right one to ask.
+        // Every in-memory key belongs to a loaded page (the rest was held back at read time, OB-067).
         String id = pageNameToId.get(key.substring(0, colon));
 
         return id == null ? key : id + key.substring(colon);
@@ -4177,8 +3941,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The page a stored key's page part (an id, or a name on a file old enough) names, or null when the index does not
-     * know it.  The ONE place that answers "which page is this", so the two methods below cannot drift.
+     * The page a stored key's page part (an id, or an old file's name) names, or null; the ONE place that answers
+     * "which page is this".
      */
     private String resolvePage(String stored)
     {
@@ -4187,16 +3951,14 @@ public class AutonomyCompanionStore
         // RENUMBERED: the name the file recorded is still in the index, under whatever number.
         if (whenWritten != null && pageNameToId.containsKey(whenWritten)) return whenWritten;
 
-        // RENAMED, or simply unmoved: the index knows this id (the case page ids exist for; leaving it out would hold
-        // back a renamed page, MT-135).
+        // RENAMED, or simply unmoved: the index knows this id (leaving it out would hold back a renamed page, MT-135).
         return pageIdToName.get(stored);
     }
 
     /**
-     * What page a stored id means, which is not always the page that holds that id now.  If the name this id used to
-     * carry still exists somewhere (the question pageIdConflicts asks) the page was RENUMBERED and the NAME is
-     * followed; otherwise it was renamed and the current index is right.  Reading through the index regardless would
-     * reattach the setup to the wrong page.  Answers the id itself when nothing is known about it.
+     * What page a stored id means: if the name this id used to carry still exists (see pageIdConflicts) the page was
+     * RENUMBERED and the NAME is followed; otherwise renamed and the index is right.  Returns the id when nothing is
+     * known.
      */
     private String pageOf(String id)
     {
@@ -4207,8 +3969,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Whether a stored page part names a page that is actually here, which `pageOf` cannot answer by its return value:
-     * it hands back the id when it fails, and an id is a legal page name.
+     * Whether a stored page part names a page that is here, which `pageOf` cannot say by return value (an id is a legal
+     * page name).
      */
     private boolean pageIsHere(String stored)
     {
@@ -4217,15 +3979,13 @@ public class AutonomyCompanionStore
         // The file names this id and neither question found it: the page is genuinely not loaded.
         if (pageNamesWhenWritten.get(stored) != null) return false;
 
-        // Otherwise it is a NAME, and unambiguous: files written before keys were stored by id hold names, and a page
-        // added since the index was read has no id yet (testAnExcludedPageWithNoIdKeepsItsName).
+        // Otherwise it is an unambiguous NAME: older files, or a page added since the index was read, have no id.
         return true;
     }
 
     /**
-     * Whether every square a stored entry names (`parts`: its key, and any square it names) belongs to a page that is
-     * here.  The VALUE side matters as much as the key: half-translating an entry anchored on a loaded page that names
-     * an absent one would leave the id-as-name this mechanism exists to prevent.
+     * Whether every square a stored entry names (`parts`) is on a page that is here; the VALUE side matters as much as
+     * the key.
      */
     private boolean allHere(String... parts)
     {
@@ -4241,10 +4001,7 @@ public class AutonomyCompanionStore
         return true;
     }
 
-    /**
-     * A collection's keys in the form they go on disk - page ID rather than page name.  Generic over
-     * {@link SquareKeyed} (FR-013), so one method serves a square and a square plus a route.
-     */
+    /** A collection's keys as they go on disk (page ID, not name); generic over {@link SquareKeyed} (FR-013). */
     private <K extends SquareKeyed<K>> Map<String, String> translateKeys(Map<K, String> map)
     {
         Map<String, String> out = new LinkedHashMap<>();
@@ -4258,9 +4015,9 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Reads the directions in, translating each key as it is read: the counterpart of readSquareMap for the one
-     * collection keyed by a square AND a route.  One pass is the point: `Map.get` and `Set.contains` take Object, so a
-     * stored key left in a memory-keyed field silently answers false.  A key that will not parse is dropped.
+     * Reads the directions in, translating each key as it is read: the one collection keyed by a square AND a route.
+     * One pass, since `Map.get` takes Object and a stored key in a memory-keyed field silently misses; a key that will
+     * not parse is dropped.
      */
     private void readDirectionMap(JSONObject root, String field, Map<DirectionKey, String> into)
     {
@@ -4305,13 +4062,9 @@ public class AutonomyCompanionStore
         {
             List<String> values = new ArrayList<>();
 
-            for (TileKey value : entry.getValue())
-            {
-                values.add(toStored(value.toString()));
-            }
+            for (TileKey value : entry.getValue()) values.add(toStored(value.toString()));
 
-            // One is written as a bare string, as every earlier version wrote; an array only where a second signal is
-            // paired.
+            // A bare string, as every earlier version wrote; an array only where a second signal is paired.
             out.put(toStored(entry.getKey().toString()), values.size() == 1 ? values.get(0) : new JSONArray(values));
         }
 
@@ -4331,8 +4084,7 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * The same for a set of whole PAGES.  toStored and fromStored leave anything without a colon alone, so a bare page
-     * name passes unchanged; a page the index has never heard of keeps its name.
+     * The same for a set of whole PAGES; a bare page name passes unchanged, as does a page the index has not heard of.
      */
     private Set<String> translatePages(Set<String> pages)
     {
@@ -4354,10 +4106,8 @@ public class AutonomyCompanionStore
 
         for (String stored : pages)
         {
-            // The same question as fromStored: an excluded page is named by id like everything else, and getting it
-            // wrong silently re-includes a page in autonomy.  But ONLY when the file itself recorded that id (OB-092):
-            // `translatePages` falls back to a bare page NAME, and a name that looks like a number would be read back
-            // as somebody else's id.  The file's own `pages` record is the discriminator.
+            // As fromStored: excluded pages are named by id, but ONLY when the file recorded that id (OB-092), as
+            // `translatePages` falls back to a bare NAME that may look like a number.
             out.add(pageNamesWhenWritten.containsKey(stored) ? pageOf(stored) : stored);
         }
 
@@ -4369,17 +4119,14 @@ public class AutonomyCompanionStore
     {
         Set<String> out = new LinkedHashSet<>();
 
-        for (TileKey key : set)
-        {
-            out.add(toStored(key.toString()));
-        }
+        for (TileKey key : set) out.add(toStored(key.toString()));
 
         return out;
     }
 
     /**
-     * Takes the map rather than reaching for the field: a helper that works for one entry breaks the registry's
-     * promise that one entry is enough, as a second int-valued collection would be written under the first one's name.
+     * Takes the map rather than reaching for the field, so a second int-valued collection is not written under the
+     * first one's name.
      */
     private Map<String, Integer> translateLengths(Map<TileKey, Integer> lengths)
     {
@@ -4404,9 +4151,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Draws a station's caption on a square (a null stationTile clears).  One caption per square, while several squares
-     * may name one station as far as this store goes: the session takes the old ones off when a new one is chosen
-     * (OB-256), and the setup check reports a station drawn twice on one page (OB-341).
+     * Draws a station's caption on a square (null stationTile clears).  One caption per square; the session removes old
+     * ones when a new one is chosen (OB-256), and the setup check reports a station drawn twice on a page (OB-341).
      */
     public void setCaption(TileKey captionTile, TileKey stationTile)
     {
@@ -4428,8 +4174,8 @@ public class AutonomyCompanionStore
 
         if (stationTile == null) return out;
 
-        // Compared as SQUARES (FR-013): comparing the printed form, `wanted.equals(entry.getValue())` compiles, as
-        // String.equals takes Object, and is false for every entry once the values are squares.
+        // Compared as SQUARES (FR-013): `wanted.equals(entry.getValue())` on printed forms compiles and is always
+        // false.
         for (Map.Entry<TileKey, TileKey> entry : captions.entrySet())
         {
             if (stationTile.equals(entry.getValue()))
@@ -4460,9 +4206,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Forgets every caption whose station, or whose page, is no longer on the diagram, and answers which were dropped.
-     * A caption goes when the STATION is gone, not before: the square the text sits on is deliberately not required to
-     * hold anything (placeCaption prefers blank space), or the next save would delete the captions just placed.
+     * Forgets every caption whose station or page is gone, returning which; the square the text sits on is NOT required
+     * to hold anything.
      */
     private List<String> reconcileCaptions(Set<TileKey> existing)
     {
@@ -4499,8 +4244,8 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Two keys in the file in the order of their squares: by page id, as text, so "10" comes before "2", then row, then
-     * column.  A key that is no square comes after those, as text, so the order is total.
+     * Two file keys in square order: page id as text ("10" before "2"), then row, then column; a non-square key comes
+     * after.
      */
     private static int bySquare(String a, String b)
     {
@@ -4603,10 +4348,7 @@ public class AutonomyCompanionStore
         {
             List<TileKey> out = new ArrayList<>();
 
-            for (TileKey value : entry.getValue())
-            {
-                out.add(rekeyOne(value, fromPage, toPage));
-            }
+            for (TileKey value : entry.getValue()) out.add(rekeyOne(value, fromPage, toPage));
 
             entry.setValue(out);
         }
@@ -4617,10 +4359,7 @@ public class AutonomyCompanionStore
     {
         List<String> out = new ArrayList<>();
 
-        for (K key : keys)
-        {
-            out.add(key.toString());
-        }
+        for (K key : keys) out.add(key.toString());
 
         return out;
     }
@@ -4651,24 +4390,21 @@ public class AutonomyCompanionStore
             if (!existing.contains(key.square())) gone.add(key);
         }
 
-        for (K key : gone)
-        {
-            map.remove(key);
-        }
+        for (K key : gone) map.remove(key);
 
         return gone;
     }
 
     /**
-     * Drops the pointers at squares that are gone from each list of a square-to-squares collection, and the entries left
-     * with none, telling `dropped` each; true if anything went.  A NEW list each time, never an edit of the one held.
+     * Drops pointers at gone squares from each list of a square-to-squares collection, and entries left empty, telling
+     * `dropped` each; true if anything went.  A NEW list each time.
      */
     private static boolean dropPointers(Map<TileKey, List<TileKey>> map,
-        java.util.function.Predicate<TileKey> gone, java.util.function.Consumer<TileKey> dropped)
+        Predicate<TileKey> gone, java.util.function.Consumer<TileKey> dropped)
     {
         boolean any = false;
 
-        for (java.util.Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
+        for (Iterator<Map.Entry<TileKey, List<TileKey>>> pairs
             = map.entrySet().iterator(); pairs.hasNext();)
         {
             Map.Entry<TileKey, List<TileKey>> pair = pairs.next();
@@ -4697,26 +4433,24 @@ public class AutonomyCompanionStore
     }
 
     /**
-     * Reads a square-keyed field, translating each key as it arrives (FR-013): stored keys in a field the rest of the
-     * class reads as memory keys never match (OB-067).  A key that will not parse is dropped.
+     * Reads a square-keyed field, translating each key as it arrives (FR-013, OB-067); a key that will not parse is
+     * dropped.
      */
     private void readSquareMap(JSONObject root, String field, Map<TileKey, String> into)
     {
-        JSONObject object = root.optJSONObject(field);
-
-        if (object == null) return;
-
-        for (String key : object.keySet())
-        {
-            TileKey tile = parseTileKey(fromStored(key));
-
-            if (tile != null) into.put(tile, object.getString(key));
-        }
+        readSquareValues(root, field, into, JSONObject::getString);
     }
 
     /** The same, for the one field whose values are numbers. */
     private void readSquareIntMap(JSONObject root, String field, Map<TileKey, Integer> into)
     {
+        readSquareValues(root, field, into, JSONObject::getInt);
+    }
+
+    /** The two above: each key translated as it arrives, its value read only where the key parses. */
+    private <V> void readSquareValues(JSONObject root, String field, Map<TileKey, V> into,
+        java.util.function.BiFunction<JSONObject, String, V> value)
+    {
         JSONObject object = root.optJSONObject(field);
 
         if (object == null) return;
@@ -4725,14 +4459,11 @@ public class AutonomyCompanionStore
         {
             TileKey tile = parseTileKey(fromStored(key));
 
-            if (tile != null) into.put(tile, object.getInt(key));
+            if (tile != null) into.put(tile, value.apply(object, key));
         }
     }
 
-    /**
-     * The same, where the VALUE is a square as well - a portal's partner, a caption's station.  An entry whose value
-     * will not parse is dropped whole: half a pairing is worse than none.
-     */
+    /** The same where the VALUE is a square too; an entry whose value will not parse is dropped whole. */
     private void readSquarePairMap(JSONObject root, String field, Map<TileKey, TileKey> into)
     {
         JSONObject object = root.optJSONObject(field);
@@ -4748,10 +4479,7 @@ public class AutonomyCompanionStore
         }
     }
 
-    /**
-     * The same, where the value is one square or an array of them.  A member that will not parse is dropped and the
-     * rest kept, so one bad name does not cost a station its whole set of protecting signals.
-     */
+    /** The same where the value is one square or an array; a bad member is dropped and the rest kept. */
     private void readSquareListMap(JSONObject root, String field, Map<TileKey, List<TileKey>> into)
     {
         JSONObject object = root.optJSONObject(field);
@@ -4786,8 +4514,8 @@ public class AutonomyCompanionStore
                 if (only != null) values.add(only);
             }
 
-            // An entry whose members ALL failed to parse is dropped, not stored empty: `"key": []` is the array form
-            // this file only gained at version 2, which the version gate exists to keep from an older TrainControl.
+            // An entry whose members ALL failed is dropped, not stored empty: `"key": []` is the array form gained at
+            // version 2.
             if (!values.isEmpty()) into.put(tile, values);
         }
     }
@@ -4813,10 +4541,7 @@ public class AutonomyCompanionStore
 
         if (object == null) return;
 
-        for (String key : object.keySet())
-        {
-            into.put(key, object.getString(key));
-        }
+        for (String key : object.keySet()) into.put(key, object.getString(key));
     }
 
     private static void readStringSet(JSONObject root, String field, Set<String> into)
@@ -4825,16 +4550,12 @@ public class AutonomyCompanionStore
 
         if (array == null) return;
 
-        for (int i = 0; i < array.length(); i++)
-        {
-            into.add(array.getString(i));
-        }
+        for (int i = 0; i < array.length(); i++) into.add(array.getString(i));
     }
 
     /**
-     * Folds the timetable entries an earlier build set aside for pages out of autonomy back into the configuration's
-     * timetable, each after the entry it followed (first where it followed none, last where that entry is gone), and
-     * forgets the list.
+     * Folds the timetable entries an earlier build set aside back into the timetable, each after the entry it followed
+     * (first if none, last if that is gone), and forgets the list.
      */
     static void bringBackTheEntriesSetAside(JSONObject configuration)
     {
@@ -4844,14 +4565,7 @@ public class AutonomyCompanionStore
 
         if (aside == null || aside.length() == 0) return;
 
-        JSONObject globals = configuration.optJSONObject("globals");
-
-        if (globals == null)
-        {
-            globals = new JSONObject();
-
-            configuration.put("globals", globals);
-        }
+        JSONObject globals = AutonomySession.storedGlobals(configuration);
 
         JSONArray table = globals.optJSONArray("timetable");
 
@@ -4859,7 +4573,7 @@ public class AutonomyCompanionStore
 
         for (int i = 0; table != null && i < table.length(); i++) kept.add(table.get(i));
 
-        java.util.Set<Object> broughtBack = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        Set<Object> broughtBack = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
         for (int i = 0; i < aside.length(); i++)
         {

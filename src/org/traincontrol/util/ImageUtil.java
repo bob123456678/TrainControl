@@ -30,10 +30,6 @@ public class ImageUtil
 
     /**
      * https://stackoverflow.com/questions/15975610/java-image-scaling-improve-quality
-     * @param image
-     * @param width
-     * @param height
-     * @return 
      */
     public static BufferedImage getScaledImage(BufferedImage image, int width, int height)
     {
@@ -83,16 +79,6 @@ public class ImageUtil
     
     /**
      * Generates an image with a rectangle matching the size of the string
-     * @param text
-     * @param textColor
-     * @param font
-     * @param width
-     * @param height
-     * @param xOffset
-     * @param yOffset
-     * @param widthAdjust
-     * @param heightAdjust
-     * @return 
      */
     public static BufferedImage generateImageWithRect(String text, Color textColor, Font font, int width, int height, int xOffset, int yOffset,
             int widthAdjust, int heightAdjust)
@@ -124,14 +110,6 @@ public class ImageUtil
     
     /**
      * Generates an image with text with the passed font and offset relative to the center of the canvas
-     * @param text
-     * @param textColor
-     * @param font
-     * @param width
-     * @param height
-     * @param xOffset
-     * @param yOffset
-     * @return 
      */
     public static BufferedImage generateImageWithText(String text, Color textColor, Font font, int width, int height, int xOffset, int yOffset)
     {
@@ -162,9 +140,6 @@ public class ImageUtil
     
     /**
      * Combines two images
-     * @param image1
-     * @param image2
-     * @return 
      */
     public static BufferedImage mergeImages(BufferedImage image1, BufferedImage image2)
     {
@@ -203,8 +178,6 @@ public class ImageUtil
 
     /**
      * Highlights an icon
-     * @param originalIcon
-     * @return 
      */
     public static ImageIcon addHighlightOverlay(ImageIcon originalIcon)
     {
@@ -212,13 +185,8 @@ public class ImageUtil
     }
 
     /**
-     * The same wash in a color of the caller's choosing.
-     *
-     * A second color lets a route's COMMANDED squares and the ones it only LOOKS AT be told apart.
-     *
-     * @param originalIcon the tile as it is drawn
-     * @param wash the color to lay over it, alpha included
-     * @return a new icon; the original is not touched
+     * The same wash in a color of the caller's choosing (alpha included), so a route's COMMANDED squares and the ones
+     * it only LOOKS AT can be told apart.  Answers a new icon; the original is not touched.
      */
     public static ImageIcon addHighlightOverlay(ImageIcon originalIcon, Color wash)
     {
@@ -245,4 +213,48 @@ public class ImageUtil
 
     /** And what a route only looks at */
     public static final Color HIGHLIGHT_CONDITION = new Color(255, 140, 0, 140);
+
+    /**
+     * Paints `art` into `at` without its color, at g's scale: into a picture of its own, never a shared one, so no
+     * cached tile image is grayed.
+     */
+    public static void inGray(Graphics2D g, java.awt.Rectangle at, java.util.function.Consumer<Graphics2D> art)
+    {
+        double scale = Math.max(1, g.getTransform().getScaleX());
+
+        BufferedImage image = new BufferedImage((int) Math.ceil(at.width * scale), (int) Math.ceil(at.height * scale),
+            BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D on = image.createGraphics();
+
+        on.scale(scale, scale);
+        art.accept(on);
+        on.dispose();
+
+        for (int y = 0; y < image.getHeight(); y++)
+        {
+            for (int x = 0; x < image.getWidth(); x++)
+            {
+                int argb = image.getRGB(x, y);
+                int light = (((argb >> 16) & 0xff) * 299 + ((argb >> 8) & 0xff) * 587 + (argb & 0xff) * 114) / 1000;
+
+                image.setRGB(x, y, (argb & 0xff000000) | light << 16 | light << 8 | light);
+            }
+        }
+
+        g.drawImage(image, at.x, at.y, at.width, at.height, null);
+    }
+
+    /** Antialiased shapes. */
+    public static void antialias(Graphics2D g)
+    {
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    }
+
+    /** Antialiased shapes drawn where the coordinates say (pure strokes), as the hand-drawn icons and marks are. */
+    public static void smooth(Graphics2D g)
+    {
+        antialias(g);
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+    }
 }

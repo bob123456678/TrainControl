@@ -28,6 +28,7 @@ import org.traincontrol.gui.TrainControlUI;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
+import support.Reflect;
 
 /**
  * An active sensor's red arrows on a curve show beside an autonomy train parked on it (OB-400): out from the contact,
@@ -324,9 +325,6 @@ public class testACurvedSensorShowsItsArrowsBesideAParkedTrain
 
     private static void setOn(TrainControlUI window, String name, Object value) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField(name);
-
-        field.setAccessible(true);
-        field.set(window, value);
+        Reflect.set(TrainControlUI.class, window, name, value);
     }
 }

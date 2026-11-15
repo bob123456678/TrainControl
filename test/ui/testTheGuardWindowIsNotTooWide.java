@@ -14,23 +14,22 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
-import org.traincontrol.base.Accessory.accessoryDecoderType;
 import org.traincontrol.base.LayoutDiagram;
-import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
+import support.Diagrams;
+import support.Reflect;
 
 /**
  * The Exit and Entry Guard Signal windows put their sentence on two lines rather than one wide one (MT-479): "the
  * editor window for entry/exit guards is much too wide.  make the sentence split over 2 lines so the window isn't too
- * wide."  The heading was a plain label, so the window was as wide as its sentence.
+ * wide."
  *
  * The real window, opened through the method the menu item calls, on a panel with a station of its own.  Two claims:
- * the entry window is narrower than its sentence on one line; and neither window's first sentence (the one before a
- * signal is paired) takes more than two lines.
+ * the entry window is narrower than its sentence on one line; and neither window is wider than its row of buttons
+ * needs, its sentence wrapping instead (MT-948, which retired MT-479's two lines).
  *
- * MUTATION: wrap it at no width, as it was, and the first claim fails; wrap it at a tooltip's 320 pixels and the second
- * does.
+ * MUTATION: wrap it at no width and the first claim fails; wrap it at half its sentence and the second does.
  *
  * @author Adam
  */
@@ -52,11 +51,9 @@ public class testTheGuardWindowIsNotTooWide
         // 1,1 sensor - 2,1 - 3,1 - 4,1 - 5,1 sensor, the station.
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 2, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.STRAIGHT, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 1, 1, 5, 11);
+        Diagrams.row(page, 2, 1, "SSS");
+        Diagrams.feedback(page, 5, 1, 6, 12);
 
         page.setPageId("1");
 
@@ -90,18 +87,19 @@ public class testTheGuardWindowIsNotTooWide
             + " sentence.  Adam, MT-479: \"make the sentence split over 2 lines so the window isn't too wide\"");
     }
 
-    /** Neither window's first sentence takes more than two lines. */
+    /** Neither window is wider than its row of buttons and its border; the sentence wraps instead. */
     @Test
-    public void testNeitherFirstSentenceTakesMoreThanTwoLines() throws Exception
+    public void testNeitherWindowIsWiderThanItsButtons() throws Exception
     {
         for (String[] guard : new String[][] { { "EXIT", "autosetup.ui.menuPairSignal" },
             { "ENTRY", "autosetup.ui.menuPairEntrySignal" } })
         {
             Measured window = open(guard[0], guard[1]);
 
-            assertTrue(window.sentenceHeight <= window.lineHeight * 5 / 2, "the " + I18n.t(guard[1]) + " window's"
-                + " sentence is " + window.sentenceHeight + " pixels tall at " + window.lineHeight + " a line - more than"
-                + " the two lines Adam asked for, which trades a wide window for a tall one");
+            assertTrue(window.width <= window.buttons + 60, "the " + I18n.t(guard[1]) + " window is " + window.width
+                + " pixels wide for " + window.buttons + " of buttons.  Adam, MT-948: \"make the 'exit guard signal' and"
+                + " 'entry guard signal' windows narrower\"");
+            assertTrue(window.sentenceHeight > window.lineHeight, "precondition: the sentence does not wrap");
 
             closeTheWindows();
         }
@@ -114,6 +112,7 @@ public class testTheGuardWindowIsNotTooWide
         int sentenceOnOneLine;
         int sentenceHeight;
         int lineHeight;
+        int buttons;
     }
 
     /** Opens one guard's window through `askAboutSignals`, which the menu item calls, and measures it. */
@@ -141,9 +140,8 @@ public class testTheGuardWindowIsNotTooWide
 
         final Object chosen = which;
 
-        final java.lang.reflect.Method ask = AutonomyEditorPanel.class.getDeclaredMethod("askAboutSignals", kind, TileKey.class);
-
-        ask.setAccessible(true);
+        final java.lang.reflect.Method ask =
+            Reflect.method(AutonomyEditorPanel.class, "askAboutSignals", kind, TileKey.class);
 
         SwingUtilities.invokeLater(() ->
         {
@@ -192,6 +190,7 @@ public class testTheGuardWindowIsNotTooWide
             measured.sentenceHeight = view == null ? heading.getPreferredSize().height
                 : (int) Math.ceil(view.getPreferredSpan(javax.swing.text.View.Y_AXIS));
             measured.lineHeight = metrics.getHeight();
+            measured.buttons = support.Components.withText(open, I18n.t("autosetup.ui.optionSignalsDone")).getParent().getPreferredSize().width;
         });
 
         return measured;

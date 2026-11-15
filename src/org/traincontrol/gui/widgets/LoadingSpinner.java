@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.geom.Area;
 import java.awt.geom.Line2D;
@@ -80,7 +81,6 @@ public class LoadingSpinner extends JPanel
      * Which frame is due after a given time on screen.  Static and taking the elapsed time so the clock can be checked
      * without waiting for one.
      *
-     * @param elapsedMs milliseconds since the animation started
      * @return the frame to draw, within the two cycles the drawing alternates over
      */
     public static int frameAt(long elapsedMs)
@@ -155,12 +155,9 @@ public class LoadingSpinner extends JPanel
             // Centered on the VISIBLE part of this component: it is sized to the whole diagram page, so on a page
             // bigger than the viewport the glass's true center is off whatever screenful the operator is scrolled to
             // (OB-129).  getVisibleRect() degrades to the full bounds outside a JScrollPane.
-            java.awt.Rectangle visible = getVisibleRect();
+            Rectangle visible = getVisibleRect();
 
-            if (visible.isEmpty())
-            {
-                visible = new java.awt.Rectangle(0, 0, getWidth(), getHeight());
-            }
+            if (visible.isEmpty()) visible = new Rectangle(0, 0, getWidth(), getHeight());
 
             // Sized off whichever way round the visible space is tighter, so it never overhangs.
             double glassH = Math.max(18.0,
@@ -181,11 +178,6 @@ public class LoadingSpinner extends JPanel
     /**
      * Draws the glass and its sand, centered on the origin of the transform it is given.  Kept apart from the frame
      * arithmetic so the shape is a function of the three numbers passed in.
-     *
-     * @param g2 a graphics already translated to the center and rotated to the current turn
-     * @param glassW the width across the plates
-     * @param glassH the height from plate to plate
-     * @param drained how much of the sand has run through, 0 for none and 1 for all of it
      */
     private void drawHourglass(Graphics2D g2, double glassW, double glassH, double drained)
     {
@@ -260,16 +252,6 @@ public class LoadingSpinner extends JPanel
         // The plates, filled rather than stroked so they read as the solid ends of the thing.
         g2.fill(new Rectangle2D.Double(-halfW - line / 2, -halfH, glassW + line, cap));
         g2.fill(new Rectangle2D.Double(-halfW - line / 2, halfH - cap, glassW + line, cap));
-    }
-
-    /**
-     * Whether the sand is running, for a test that wants to know the animation is live.
-     *
-     * @return true while the timer is advancing frames
-     */
-    public boolean isAnimating()
-    {
-        return timer.isRunning();
     }
 
     /**

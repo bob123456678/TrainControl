@@ -118,6 +118,17 @@ public final class Packets
         return system(CS2Message.CMD_SYSSUB_GO);
     }
 
+    /**
+     * The station cutting the track power by itself after a short circuit, as a CS3 says it (OB-426).
+     *
+     * @param channel the output that tripped
+     */
+    public static CS2Message overload(int channel)
+    {
+        return frame(CS2Message.CMD_SYSTEM, true, new byte[] {0x63, 0x73, 0x40, (byte) 0xEA,
+            (byte) CS2Message.CMD_SYSSUB_OVERLOAD, (byte) channel});
+    }
+
     private static CS2Message system(int subCommand)
     {
         return frame(CS2Message.CMD_SYSTEM, true, new byte[] {0, 0, 0, 0, (byte) subCommand});

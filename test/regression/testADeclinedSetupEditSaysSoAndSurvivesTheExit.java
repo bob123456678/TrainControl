@@ -12,11 +12,14 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Components;
+import support.Display;
+import support.Reflect;
 import support.SourceOf;
+import support.Teardown;
 
 /**
  * A setup edit that could not be applied says so, and is still there after the exit (MT-267, MT-326).  The message
@@ -38,17 +41,13 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the viewer panel this asks about needs a display");
-        }
+        Display.needed("the viewer panel this asks about needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-        model = support.TestStation.simulatedInDebug();
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -63,7 +62,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-            settle();
+            Components.drain(3);
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
@@ -72,21 +71,16 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
+        Teardown.close(sandbox, model, ui);
+    }
 
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
+    /** The window's save changes the run's saved data; the classes after this one in the lane read it. */
+    private static final support.SavedData FOUND = support.SavedData.take();
 
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+    @AfterClass(alwaysRun = true, dependsOnMethods = "tearDownClass")
+    public static void putTheDataBack() throws Exception
+    {
+        FOUND.putBack();
     }
 
     /** A rebuild refused because the railway is busy logs the sentence, and records that it was refused (MT-267). */
@@ -101,7 +95,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         {
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true, null));
 
-            settle();
+            Components.drain(3);
 
             assertTrue(said(heard, "autosetup.log.setupEditNotApplied"),
                 "the rebuild was refused because the railway is busy and said nothing, so the edit looks"
@@ -134,7 +128,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         {
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(false, null));
 
-            settle();
+            Components.drain(3);
 
             assertFalse(said(heard, "autosetup.log.setupEditNotApplied"),
                 "a door carrying no edit was told an edit could not be applied.  Heard: " + heard);
@@ -161,7 +155,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         {
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(true, null));
 
-            settle();
+            Components.drain(3);
 
             assertFalse(said(heard, "autosetup.log.setupEditNotApplied"),
                 "an ordinary rebuild, with nothing running, reported that the edit could not be applied."
@@ -179,18 +173,14 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     /** Makes `isAutonomyBusy()` answer as asked, through `stagingFlowActive`, a plain flag the predicate also reads. */
     private static void busy(boolean running) throws Exception
     {
-        Field flag = TrainControlUI.class.getDeclaredField("stagingFlowActive");
-
-        flag.setAccessible(true);
+        Field flag = Reflect.field(TrainControlUI.class, "stagingFlowActive");
         flag.setBoolean(ui, running);
     }
 
     /** Whether a decline has been recorded against the exit save. */
     private static boolean declined() throws Exception
     {
-        Field flag = TrainControlUI.class.getDeclaredField("setupEditDeclinedDuringRun");
-
-        flag.setAccessible(true);
+        Field flag = Reflect.field(TrainControlUI.class, "setupEditDeclinedDuringRun");
 
         return flag.getBoolean(ui);
     }
@@ -199,9 +189,8 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     private static void forget() throws Exception
     {
         // Through the one door the flag is set by, so the track diagram's notice is cleared with it
-        java.lang.reflect.Method newer = TrainControlUI.class.getDeclaredMethod("setupNewerThanTheRailway", boolean.class);
-
-        newer.setAccessible(true);
+        java.lang.reflect.Method newer =
+            Reflect.method(TrainControlUI.class, "setupNewerThanTheRailway", boolean.class);
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -264,16 +253,9 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
         return false;
     }
 
-    /** Lets the event thread finish what this gesture posted. */
-    private static void settle() throws Exception
-    {
-        for (int i = 0; i < 3; i++) SwingUtilities.invokeAndWait(() -> { });
-    }
-
     /**
      * A setup edit whose load is declined (a link unpaired) puts nothing back and records nothing over the railway it
-     * did not replace: every train whose copy the edit renamed was once taken off that railway and recorded where
-     * nothing kept it.
+     * did not replace.
      *
      * MUTATION: put the trains back whatever the load did, and this fails.
      */
@@ -310,7 +292,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             assertSame(model.getAutoLayout(), railway, "precondition: the load was not declined, so this is not the case");
 
@@ -324,10 +306,8 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             assertTrue(onIt, train + " was taken off the railway a declined load left as it was (RSA18-A1)");
 
             // AND THE OTHER DOOR THAT PUTS THE TRAINS BACK AFTER A LOAD (`carryTheTrainsAcross`), its load declined too
-            final java.lang.reflect.Method carry = TrainControlUI.class.getDeclaredMethod("carryTheTrainsAcross",
-                Runnable.class);
-
-            carry.setAccessible(true);
+            final java.lang.reflect.Method carry =
+                Reflect.method(TrainControlUI.class, "carryTheTrainsAcross", Runnable.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -341,7 +321,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 }
             });
 
-            settle();
+            Components.drain(3);
 
             boolean stillOnIt = false;
 
@@ -365,13 +345,12 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
         }
     }
 
     /**
-     * A train the rebuild records where it stands (its turning taken away, no copy facing its way) is drawn there: the
-     * diagram once learned which trains stand on no Point inside the load, before the record.
+     * A train the rebuild records where it stands (its turning taken away, no copy facing its way) is drawn there.
      *
      * MUTATION: leave the diagram untold after the record, and this fails.
      */
@@ -417,7 +396,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             assertEquals(session.getLocomotiveNameAt(square), train, "precondition: " + train + " is not recorded on"
                 + " BottomMainB, where it stands: " + session.trainsOnNoPoint());
@@ -448,14 +427,14 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
         }
     }
 
     /**
-     * An edit made while the setup cannot be built survives the next fold of the railway built before it: the railway
-     * was not replaced and nothing marked the setup newer, so the editor's opening and closing, Export, New
-     * Configuration and the exit wrote that railway's settings back over the edit.
+     * An edit made while the setup cannot be built survives the next fold of the railway built before it: nothing
+     * marked the setup newer, so the editor, Export, New Configuration and the exit wrote the railway's settings over
+     * it.
      *
      * MUTATION: leave the setup unmarked when the load is declined, and this fails.
      */
@@ -473,9 +452,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         final Object lengthWas = session.getPointProperty(station, "maxTrainLength");
 
-        final java.lang.reflect.Method capture = TrainControlUI.class.getDeclaredMethod("captureRunningLayout");
-
-        capture.setAccessible(true);
+        final java.lang.reflect.Method capture = Reflect.method(TrainControlUI.class, "captureRunningLayout");
 
         final String tableWas = session.getGlobal("timetable");
 
@@ -491,7 +468,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             assertSame(model.getAutoLayout(), railway, "precondition: the load was not declined, so this is not the case");
 
@@ -554,7 +531,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 }
             });
 
-            settle();
+            Components.drain(3);
 
             assertEquals(String.valueOf(set[0]), "9", "precondition: the edit was not made");
 
@@ -587,7 +564,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.saveState(false, true);
             });
 
-            settle();
+            Components.drain(3);
 
             assertEquals(session.getGlobal("maxDelay"), String.valueOf(delayWas + 4), "the exit's fold while the setup is"
                 + " newer wrote nothing of the railway's settings (RSA20-A1)");
@@ -613,7 +590,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
         }
     }
 
@@ -651,7 +628,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             ui.rebuildRunningLayoutFromSetup(false, null);
         });
 
-        settle();
+        Components.drain(3);
 
         try
         {
@@ -686,7 +663,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
         }
     }
 
@@ -720,7 +697,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             final org.traincontrol.automation.Layout railway = model.getAutoLayout();
 
@@ -741,7 +718,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             assertTrue(model.getAutoLayout() != railway, "precondition: the railway was not rebuilt");
 
@@ -802,7 +779,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             final org.traincontrol.automation.Layout railway = model.getAutoLayout();
 
@@ -812,7 +789,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             // A GESTURE ON THE DIAGRAM'S MENU, nobody touching atomic routes
             SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup(false, null));
 
-            settle();
+            Components.drain(3);
 
             assertTrue(model.getAutoLayout() != railway, "precondition: the railway was not rebuilt");
 
@@ -912,7 +889,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
             ui.rebuildRunningLayoutFromSetup(false, null);
         });
 
-        settle();
+        Components.drain(3);
     }
 
     /**
@@ -931,9 +908,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         assertNotNull(partner, "precondition: the link at 1 - Main:12,1 is not paired on the snapshot");
 
-        Field field = TrainControlUI.class.getDeclaredField("autonomyOverlayToggle");
-
-        field.setAccessible(true);
+        Field field = Reflect.field(TrainControlUI.class, "autonomyOverlayToggle");
 
         final org.traincontrol.gui.AutonomyOverlayToggle strip = (org.traincontrol.gui.AutonomyOverlayToggle) field.get(ui);
 
@@ -954,7 +929,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
 
             assertTrue(declined(), "precondition: the rebuild was not declined");
 
@@ -970,7 +945,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
                 ui.rebuildRunningLayoutFromSetup(false, null);
             });
 
-            settle();
+            Components.drain(3);
         }
 
         assertFalse(strip.isSetupWaitingShown(), "the track diagram still says the setup is not applied after a load took"
@@ -1194,11 +1169,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     /** The Auto tab's timetable table. */
     private static javax.swing.JTable timetableTable() throws Exception
     {
-        Field table = TrainControlUI.class.getDeclaredField("timetable");
-
-        table.setAccessible(true);
-
-        return (javax.swing.JTable) table.get(ui);
+        return (javax.swing.JTable) Reflect.get(TrainControlUI.class, ui, "timetable");
     }
 
     /** How many rows a table shows, read on the event thread. */
@@ -1216,11 +1187,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     {
         try
         {
-            java.lang.reflect.Method repaint = TrainControlUI.class.getDeclaredMethod("repaintTimetable");
-
-            repaint.setAccessible(true);
-
-            repaint.invoke(ui);
+            Reflect.method(TrainControlUI.class, "repaintTimetable").invoke(ui);
         }
         catch (ReflectiveOperationException e)
         {
@@ -1241,9 +1208,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
         assertNotNull(railway, "precondition: no running layout to be running");
 
-        Field running = org.traincontrol.automation.Layout.class.getDeclaredField("running");
-
-        running.setAccessible(true);
+        Field running = Reflect.field(org.traincontrol.automation.Layout.class, "running");
 
         final boolean was = running.getBoolean(railway);
 
@@ -1253,9 +1218,7 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
 
             for (String item : new String[] {"syncFullLocStateMenuItem", "addLocomotiveMenuItem"})
             {
-                Field field = TrainControlUI.class.getDeclaredField(item);
-
-                field.setAccessible(true);
+                Field field = Reflect.field(TrainControlUI.class, item);
 
                 final javax.swing.JMenuItem menuItem = (javax.swing.JMenuItem) field.get(ui);
 
@@ -1281,16 +1244,18 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     {
         final boolean was = ui.isAlwaysOnTop();
 
-        final org.traincontrol.gui.locomotive.AddLocomotive[] child = new org.traincontrol.gui.locomotive.AddLocomotive[1];
+        final java.awt.Window[] child = new java.awt.Window[1];
 
         SwingUtilities.invokeAndWait(() ->
         {
             ui.setAlwaysOnTop(false);
 
-            child[0] = new org.traincontrol.gui.locomotive.AddLocomotive(model, ui);
-
-            child[0].pack();
+            ui.openAddLocomotive();
         });
+
+        child[0] = support.SettingsWindow.awaited();
+
+        assertNotNull(child[0], "precondition: Add Locomotive did not open");
 
         try
         {
@@ -1352,34 +1317,27 @@ public class testADeclinedSetupEditSaysSoAndSurvivesTheExit
     }
 
     /**
-     * Edit Name/Address/Decoder's error is owned by the window the operator clicked in, read before the locomotive
-     * database refreshes (MT-703), which replaces every tile.  Read off the source, because only a failure of the
-     * database reaches that error.
+     * The Locomotive Settings window's Save says what went wrong over the window itself, which the locomotive
+     * database's refresh does not replace (MT-703: an error said over a clicked tile was ownerless once the refresh took
+     * the tile out of its window).  Read off the source, because only a failure of the database reaches that error.
      *
-     * MUTATION: say the error over the clicked tile again, and this fails.
+     * MUTATION: have Save hand `writeNameAndAddress` another component than the window (`main`, say), and this fails.
      */
     @Test
     public void testAnAddressEditsErrorIsOwnedByTheWindowItWasClickedIn() throws Exception
     {
-        final String body = SourceOf.declaration("    void changeLocAddress(Locomotive l, MouseEvent evt)")
+        final String save = SourceOf.declaration("\n    boolean write()\n").replaceAll("//[^\n]*", "")
+            .replaceAll("\\s+", "");
+
+        assertTrue(save.contains("writeNameAndAddress(this,loc,"), "Save no longer says what went wrong over the window"
+            + " it was pressed in - an error said over another owner can hide under an always-on-top main window");
+
+        final String body = SourceOf.declaration("    boolean writeNameAndAddress(Component source, Locomotive l,")
             .replaceAll("//[^\n]*", "");
 
-        final int refresh = body.indexOf("refreshLocSelectorList()");
+        final String after = body.substring(body.indexOf("refreshLocSelectorList()")).replaceAll("\\s+", "");
 
-        assertTrue(refresh > 0, "precondition: the address edit no longer refreshes the locomotive database");
-
-        final int read = body.indexOf("getWindowAncestor(source)");
-
-        assertTrue(read > 0 && read < refresh, "the address edit looks for the clicked tile's window after the database"
-            + " has refreshed - by then the tile is out of it");
-
-        final String after = body.substring(refresh).replaceAll("\\s+", "");
-
-        assertTrue(after.contains("showMessageDialog(sourceWindow,"), "precondition: no message after the refresh is"
-            + " said over the window read before it");
-
-        assertFalse(after.contains("showMessageDialog(source,"), "a message after the locomotive database's refresh is"
-            + " said over the clicked tile, which the refresh has taken out of its window - so Swing's hidden frame owns"
-            + " it, under an always-on-top main window");
+        assertTrue(after.contains("showMessageDialog(source,"), "precondition: no message after the database's refresh is"
+            + " said over the window that asked");
     }
 }

@@ -18,6 +18,7 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import static support.Settle.until;
 
 /**
  * A train part-way through a run has ONE tail, behind where it is now (MT-438).
@@ -94,9 +95,7 @@ public class testARunningTrainHasOneTail
 
         // AND THE DEPARTURE SQUARE KEEPS A ROAD, or two of the claims below cannot fail: `moveLocomotive` clears
         // `arrivedFrom` and `arrivedAlong` on a change of occupant and only a completed run writes them, so a
-        // hand-placed train's square records no road and the tail walk meets the fork rule there.  A train that had
-        // DRIVEN in would carry the record, as on Adam's railway; the lock's `reserve` does not clear it, because the
-        // occupant does not change.
+        // hand-placed train's square records no road and the tail walk meets the fork rule there.
         start.setArrivedFrom("W");
         start.setArrivedAlong(java.util.Arrays.asList(layout.getEdge("TR_B", "TR_A")));
 
@@ -116,7 +115,7 @@ public class testARunningTrainHasOneTail
 
         try
         {
-            assertTrue(waitFor(() -> running.isRunning() && loc.getSpeed() > 0, 15000),
+            assertTrue(until(() -> running.isRunning() && loc.getSpeed() > 0, 15000),
                 "the train never set off, so there is no run for this claim to be about");
 
             // THE TRAIN IS AT THE JUNCTION NOW: its own sensor on, the one it came from off.
@@ -125,7 +124,7 @@ public class testARunningTrainHasOneTail
 
             // REACHED, NOT RESERVED: `junction.getCurrentLocomotive()` is true the moment the path is LOCKED, which
             // reserves every point on it, so the milestones are what the run reports having reached.
-            assertTrue(waitFor(() -> reached(junction), 15000),
+            assertTrue(until(() -> reached(junction), 15000),
                 "the train never reached the junction, so this is not about a run in progress."
                 + "  Milestones: " + names(running.getReachedMilestones(loc)));
 
@@ -174,18 +173,14 @@ public class testARunningTrainHasOneTail
 
     /**
      * A milestone part-way along a run is ordinary block, and so is the square a train comes to rest on (OB-278).
-     *
      * Every square a body lies over is spent, the one it stands on first (Adam: *"the 2 length tile with the s88
-     * consumes 2 units of the train"*), so the running train and the train at rest are the same arithmetic, and this
-     * asks both.
+     * consumes 2 units of the train"*), so the running train and the train at rest are the same arithmetic.
      *
-     * Two units, and the milestone measures two, so the train's whole body is the milestone and nothing is left to
-     * reach `MR_B>MR_A` with.  The first claim is what makes the second one about the rule: a walk that produced
-     * nothing at all would satisfy a negative claim on its own.
+     * Two units, and the milestone measures two, so nothing is left to reach `MR_B>MR_A` with.  The first claim makes
+     * the second one about the rule: a walk that produced nothing would satisfy a negative claim on its own.
      *
-     * MUTATION: leaving the square a train stands on unspent in `Layout.walkOneTail` fails the second claim and the
-     * third, each naming `MR_B>MR_A` - one unit survives the milestone and the walk carries on to the leg behind the
-     * departure square.
+     * MUTATION: leaving the square a train stands on unspent in `Layout.walkOneTail` fails the second and third claims,
+     * each naming `MR_B>MR_A`.
      */
     @Test
     public void testAMidRunMilestoneIsNotAnAllowance() throws Exception
@@ -222,7 +217,7 @@ public class testARunningTrainHasOneTail
 
         try
         {
-            assertTrue(waitFor(() -> running.isRunning() && loc.getSpeed() > 0, 15000),
+            assertTrue(until(() -> running.isRunning() && loc.getSpeed() > 0, 15000),
                 "the train never set off, so there is no run for this claim to be about");
 
             // THE TRAIN IS AT THE MILESTONE NOW: its own sensor on, the one it came from off.
@@ -230,7 +225,7 @@ public class testARunningTrainHasOneTail
             model.setFeedbackState(start.getS88(), false);
 
             // REACHED, NOT RESERVED - see the note beside the claim above.
-            assertTrue(waitFor(() -> reached(milestone), 15000),
+            assertTrue(until(() -> reached(milestone), 15000),
                 "the train never reached the milestone, so this is not about a run in progress."
                 + "  Milestones: " + names(running.getReachedMilestones(loc)));
 
@@ -378,29 +373,5 @@ public class testARunningTrainHasOneTail
             java.util.Arrays.asList(1, 2));
 
         return built;
-    }
-
-    /** Waits for a condition, polling; says whether it came true. */
-    private static boolean waitFor(BooleanSupplier until, long millis)
-    {
-        long deadline = System.currentTimeMillis() + millis;
-
-        while (System.currentTimeMillis() < deadline)
-        {
-            if (until.getAsBoolean()) return true;
-
-            try
-            {
-                Thread.sleep(50);
-            }
-            catch (InterruptedException stopped)
-            {
-                Thread.currentThread().interrupt();
-
-                return false;
-            }
-        }
-
-        return until.getAsBoolean();
     }
 }

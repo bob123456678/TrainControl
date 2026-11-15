@@ -10,6 +10,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.udp.CS2Message;
+import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
@@ -228,10 +229,8 @@ public class testControlStationFaults
     }
 
     /**
-     * A database file that reads, and holds something other than a locomotive list, is unreadable too.
-     *
-     * `restoreState` logged success for any deserialized object, leaving the exit-save guard clear, so the save wrote
-     * an empty database over the file with no copy kept.  Written to a temporary file this test owns.
+     * A database file that reads, and holds something other than a locomotive list, is unreadable too, or the exit
+     * save writes an empty database over it.  Written to a temporary file this test owns.
      *
      * MUTATION: drop `this.databaseLoadFailed = true;` from `restoreState`'s branch for an object that is not a List,
      * and this fails.
@@ -406,11 +405,9 @@ public class testControlStationFaults
         return raw;
     }
     /**
-     * A locomotive database that will not read is not saved over while its copy cannot be kept.
-     *
-     * The save cleared its "unreadable" mark before making the copy, so a failed copy let the save replace the file.
-     * The copy alone is made to fail by a folder at every name it could be given in the next minute; it writes the
-     * database file, so it runs only where the run has its own copy (one.sh, battery.sh).
+     * A locomotive database that will not read is not saved over while its copy cannot be kept.  The copy alone is made
+     * to fail by a folder at every name it could be given in the next minute; it writes the database file, so it runs
+     * only where the run has its own copy (one.sh, battery.sh).
      *
      * MUTATION: clear the mark before the copy, or save on after a failed copy, and this fails.
      */
@@ -473,10 +470,8 @@ public class testControlStationFaults
     }
 
     /**
-     * A UI state file that will not read is not saved over while its copy cannot be kept.
-     *
-     * The same order fault as the database's.  The window is one allocated without its constructor, holding only what
-     * its save reads, over a model that answers nothing.
+     * A UI state file that will not read is not saved over while its copy cannot be kept: the same order fault as the
+     * database's, on a window allocated without its constructor.
      *
      * MUTATION: clear the mark before the copy, or save on after a failed copy, and this fails.
      */
@@ -556,9 +551,123 @@ public class testControlStationFaults
     }
 
     /**
-     * A first sync that fails is asked about until it works (OB-338): the user is asked after each failure, with its
-     * reason, and the sync is repeated while the answer is to try again.  Staged with a sync that fails twice and then
-     * works: two questions each carrying its own reason, three syncs, no exit, and a connection result.
+     * A locomotive database another program holds open is not saved, and the save says why, for the exit and the
+     * backup to tell the user; once it is free, the save goes ahead and says nothing.
+     *
+     * MUTATION: in `MarklinControlStation.saveState`, return null from the catch around the write, and this fails.
+     */
+    @Test
+    public void testAHeldDatabaseSaysWhyItWasNotSaved() throws Exception
+    {
+        java.io.File live = runsOwnFile(MarklinControlStation.DATA_FILE_NAME);
+
+        byte[] was = live.exists() ? java.nio.file.Files.readAllBytes(live.toPath()) : null;
+
+        try
+        {
+            if (was == null) java.nio.file.Files.write(live.toPath(), new byte[]{ 1 });
+
+            byte[] before = java.nio.file.Files.readAllBytes(live.toPath());
+
+            String why;
+
+            try (java.io.FileInputStream holding = new java.io.FileInputStream(live))
+            {
+                why = model.saveState(false);
+            }
+
+            assertEquals(java.nio.file.Files.readAllBytes(live.toPath()), before, "precondition: the held file was"
+                + " written after all");
+
+            assertNotNull(why, "the save of a held locomotive database said nothing, so the exit closes and the"
+                + " session's locomotive changes are lost unseen");
+
+            assertNull(model.saveState(false), "the save of a free locomotive database said it failed");
+        }
+        finally
+        {
+            putBack(live, was);
+        }
+    }
+
+    /**
+     * A backup taken while the locomotive database will not save does not call itself complete: it names the file and
+     * says the archive holds it as last saved.  An update and a restore stop on an incomplete backup, so neither goes
+     * ahead on an archive missing this session's database.
+     *
+     * MUTATION: in `BackupAction.writeTheBackup`, ignore what `getModel().saveState(false)` answers, and the backup
+     * reports itself complete.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testABackupAfterAFailedSaveSaysItHoldsTheFileAsLastSaved() throws Exception
+    {
+        java.io.File live = runsOwnFile(MarklinControlStation.DATA_FILE_NAME);
+        java.io.File windowState = runsOwnFile("UIState.data");
+
+        // The UI state's save writes the diagram windows' titles into the preferences: a run's own node only
+        if (System.getProperty(org.traincontrol.util.Util.PREFERENCES_PROPERTY) == null)
+        {
+            throw new org.testng.SkipException("Not run here: saving the UI state can write the preferences, so this runs"
+                + " only where the run has its own (one.sh, battery.sh)");
+        }
+
+        org.traincontrol.gui.TrainControlUI ui = windowless();
+
+        set(ui, "model", model);
+        set(ui, "buttonMapping", new java.util.HashMap<Integer, javax.swing.JButton>());
+        set(ui, "pageNames", new java.util.HashMap<Integer, String>());
+        set(ui, "locMapping", new java.util.ArrayList<>(java.util.Collections.singletonList(
+            new java.util.HashMap<javax.swing.JButton, org.traincontrol.base.Locomotive>())));
+        set(ui, "popups", new java.util.ArrayList<>());
+        set(ui, "backupDataMenuItem", new javax.swing.JMenuItem());
+
+        byte[] was = live.exists() ? java.nio.file.Files.readAllBytes(live.toPath()) : null;
+        byte[] windowStateWas = windowState.exists() ? java.nio.file.Files.readAllBytes(windowState.toPath()) : null;
+
+        java.io.File backups = new java.io.File(org.traincontrol.util.Util.dataPath(org.traincontrol.util.Util.BACKUP_FOLDER));
+        boolean hadBackups = backups.isDirectory();
+        java.util.Set<String> before = names(backups);
+
+        try
+        {
+            if (was == null) java.nio.file.Files.write(live.toPath(), new byte[]{ 1 });
+
+            Object outcome;
+
+            try (java.io.FileInputStream holding = new java.io.FileInputStream(live))
+            {
+                outcome = new org.traincontrol.gui.widgets.BackupAction(ui).writeTheBackup(false);
+            }
+
+            Class<?> outcomes = org.traincontrol.gui.widgets.BackupAction.BackupOutcome.class;
+
+            java.util.List<String> unsaved = (java.util.List<String>) Reflect.get(outcomes, outcome, "unsaved");
+
+            assertFalse((Boolean) Reflect.method(outcomes, "isComplete").invoke(outcome), "a backup taken while the"
+                + " locomotive database could not be saved called itself complete, and holds the database from the last"
+                + " exit: " + unsaved);
+
+            String said = org.traincontrol.util.I18n.f("ui.backupHasItAsLastSaved", MarklinControlStation.DATA_FILE_NAME,
+                "\n");
+
+            String lead = said.substring(0, said.indexOf('\n'));
+
+            assertTrue(unsaved.stream().anyMatch(part -> part.startsWith(lead)), "the backup does not say it holds the"
+                + " locomotive database as last saved: " + unsaved);
+        }
+        finally
+        {
+            putBack(live, was);
+            putBack(windowState, windowStateWas);
+
+            forgetNew(backups, before, hadBackups);
+        }
+    }
+
+    /**
+     * A first sync that fails is asked about until it works (OB-338): staged with a sync that fails twice, two
+     * questions each carrying its own reason, three syncs, no exit, and a connection result.
      *
      * MUTATION: sync only once, or ask with the first failure's reason both times, and this fails.
      */
@@ -702,9 +811,8 @@ public class testControlStationFaults
     }
 
     /**
-     * Nothing is asked without a station to reach, a window to ask in, or in a simulation (OB-338).
-     *
-     * Each is its own case with the other two present, so only one differs; the control is the full case, which asks.
+     * Nothing is asked without a station to reach, a window to ask in, or in a simulation (OB-338): each its own case
+     * with the other two present; the control is the full case, which asks.
      *
      * MUTATION: ask in a simulation, or without a window, or without an address, and this fails.
      */
@@ -759,9 +867,7 @@ public class testControlStationFaults
     }
 
     /**
-     * A failed sync keeps its reason where the start-up can read it (OB-338).
-     *
-     * Pointed at a port nothing listens on: a station that is there and will not talk.
+     * A failed sync keeps its reason where the start-up can read it (OB-338), pointed at a port nothing listens on.
      *
      * MUTATION: leave the field unset in the catch, and this fails.
      */
@@ -771,8 +877,7 @@ public class testControlStationFaults
         String was = support.TestStationAddress.get();
 
         // The sync replaces the model's file parser, which every test here shares: put back as it was, with the address
-        java.lang.reflect.Field parser = MarklinControlStation.class.getDeclaredField("fileParser");
-        parser.setAccessible(true);
+        java.lang.reflect.Field parser = Reflect.field(MarklinControlStation.class, "fileParser");
         Object parserWas = parser.get(model);
 
         try
@@ -795,9 +900,8 @@ public class testControlStationFaults
     }
 
     /**
-     * The traincontrol.failFirstSyncs switch fails the first N syncs, in debug mode only (OB-338).  A real CS3 cannot
-     * be made to fail its first sync on purpose; the switch is read as debug mode is entered (debug(true)), so the
-     * claim arms it the same way and builds no second station.  With debug off the switch is ignored though armed.
+     * The traincontrol.failFirstSyncs switch fails the first N syncs, in debug mode only (OB-338).  It is read as debug
+     * mode is entered, so the claim arms it the same way; with debug off it is ignored though armed.
      *
      * MUTATION: fail in every mode, fail other than N times, or leave the switch's name out of the reason, and this
      * fails.
@@ -811,13 +915,12 @@ public class testControlStationFaults
         final String switchName = "traincontrol.failFirstSyncs";
 
         // The sync replaces the model's file parser, which every test here shares: put back as it was, with the address
-        java.lang.reflect.Field parser = MarklinControlStation.class.getDeclaredField("fileParser");
-        parser.setAccessible(true);
+        java.lang.reflect.Field parser = Reflect.field(MarklinControlStation.class, "fileParser");
         Object parserWas = parser.get(model);
 
         try
         {
-            support.TestStationAddress.set("127.0.0.1:1");
+            support.TestStationAddress.set(support.TestStationAddress.NOWHERE);
 
             System.setProperty(switchName, "2");
             model.debug(true);
@@ -859,9 +962,8 @@ public class testControlStationFaults
     }
 
     /**
-     * A simulation never forgets the saved Central Station address (OB-339): forgetting it on no connection wiped it
-     * for someone trying the program out.  Asked of the rule `init` applies, over the starts that matter and the one
-     * that cannot happen.
+     * A simulation never forgets the saved Central Station address (OB-339), asked of the rule `init` applies, over the
+     * starts that matter and the one that cannot happen.
      *
      * MUTATION: forget whenever communication is off, simulation or not, and this fails.
      */
@@ -879,8 +981,7 @@ public class testControlStationFaults
 
     /**
      * The first sync of a start goes through the question, and the start says whether it is a simulation (OB-338).  The
-     * constructor binds the network and the exit ends the process, so its text is read, with the comments out: a bare
-     * sync there, or `init` passing false, would leave every other claim green.
+     * constructor binds the network and the exit ends the process, so its text is read, with the comments out.
      *
      * MUTATION: put the restore path back to `if (syncWithCS2() >= 0)`, or pass anything but `simulate` from `init`,
      * and this fails.
@@ -930,10 +1031,9 @@ public class testControlStationFaults
     }
 
     /**
-     * Exit forgets the saved address, then ends the application, once each (OB-338).  Runs the two halves through the
-     * arguments the method takes, on a throwaway node under a test-only path with an exit that only counts.  The
-     * address must be gone before the exit runs, and the exit must run even when the preferences refuse the removal.
-     * Other settings in the node stay.
+     * Exit forgets the saved address, then ends the application, once each (OB-338): on a throwaway node with an exit
+     * that only counts.  The address must be gone before the exit runs, and the exit must run even when the preferences
+     * refuse the removal.
      *
      * MUTATION: drop the `remove`, drop the `exit.run()`, run it before the `remove`, or take the `try` off the
      * `remove`, and this fails.
@@ -1010,10 +1110,8 @@ public class testControlStationFaults
     }
 
     /**
-     * The Exit the dialog reaches is the one that forgets the real address and ends with code 1 (OB-338).
-     *
-     * The text is read, with the comments out, as `testTheFirstSyncOfAStartGoesThroughTheQuestion` reads the
-     * constructor's: another node or code would leave the claim above green.
+     * The Exit the dialog reaches is the one that forgets the real address and ends with code 1 (OB-338); the text is
+     * read, with the comments out.
      *
      * MUTATION: wire the constructor to anything but `exitUnconnected`, or pass another node, another code or another
      * exit in the no-argument method, and this fails.
@@ -1032,10 +1130,8 @@ public class testControlStationFaults
     }
 
     /**
-     * The popup answers by its buttons: Resync resyncs, and Exit or the close box leave (OB-338).
-     *
-     * Calls the real `offerResync` from a non-event thread, finds the dialog by its title and answers it three ways;
-     * also reads what it says about the failure, and that it stands over the window and on top of it.
+     * The popup answers by its buttons: Resync resyncs, and Exit or the close box leave (OB-338).  Calls the real
+     * `offerResync` from a non-event thread, and also reads what it says and that it stands over the window.
      *
      * MUTATION: map any of the three answers the other way in `offerResync`, and this fails.
      */
@@ -1202,9 +1298,7 @@ public class testControlStationFaults
      */
     private static long millisOf(String nanosConstant) throws Exception
     {
-        java.lang.reflect.Field window = MarklinControlStation.class.getDeclaredField(nanosConstant);
-
-        window.setAccessible(true);
+        java.lang.reflect.Field window = Reflect.field(MarklinControlStation.class, nanosConstant);
 
         return window.getLong(null) / 1000000L;
     }
@@ -1348,17 +1442,71 @@ public class testControlStationFaults
     {
         // Reached reflectively so that the compiler does not warn about the internal class
         Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
-        java.lang.reflect.Field theUnsafe = unsafeClass.getDeclaredField("theUnsafe");
-        theUnsafe.setAccessible(true);
-
         return (org.traincontrol.gui.TrainControlUI) unsafeClass.getMethod("allocateInstance", Class.class)
-            .invoke(theUnsafe.get(null), org.traincontrol.gui.TrainControlUI.class);
+            .invoke(Reflect.get(unsafeClass, null, "theUnsafe"), org.traincontrol.gui.TrainControlUI.class);
     }
 
     private static void set(Object target, String name, Object value) throws Exception
     {
-        java.lang.reflect.Field field = org.traincontrol.gui.TrainControlUI.class.getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(target, value);
+        Reflect.set(org.traincontrol.gui.TrainControlUI.class, target, name, value);
+    }
+
+    /**
+     * A failed sync names what went wrong in one plain sentence by the kind of failure, never the exception, a URL or a
+     * byte count: no answer from a port nothing listens on, then each other kind from the shape the JDK gives it.
+     *
+     * MUTATION: return `failure.toString()` from `MarklinControlStation.describe`, or send one kind to another kind's
+     * sentence, and this fails.
+     */
+    @Test
+    public void testAFailedSyncSaysWhatWentWrongInPlainWords() throws Exception
+    {
+        String was = support.TestStationAddress.get();
+        java.lang.reflect.Field parser = Reflect.field(MarklinControlStation.class, "fileParser");
+        Object parserWas = parser.get(model);
+
+        try
+        {
+            support.TestStationAddress.set("127.0.0.1:1");
+            assertTrue(model.syncWithCS2() < 0);
+            assertEquals(model.getLastSyncError(), org.traincontrol.util.I18n.t("sync.failedNoAnswer"));
+        }
+        finally
+        {
+            support.TestStationAddress.set(was);
+            parser.set(model, parserWas);
+        }
+
+        java.lang.reflect.Method describe = MarklinControlStation.class.getDeclaredMethod("describe", Exception.class);
+        describe.setAccessible(true);
+
+        java.lang.reflect.Constructor<?> cutOff = CS2File.CutOffException.class.getDeclaredConstructor(String.class,
+            String.class);
+        cutOff.setAccessible(true);
+
+        Object[][] cases =
+        {
+            { new java.net.SocketException("Unexpected end of file from server"), "sync.failedInterrupted", new String[0] },
+            { new java.net.SocketTimeoutException("Read timed out"), "sync.failedInterrupted", new String[0] },
+            { new java.net.SocketTimeoutException("connect timed out"), "sync.failedNoAnswer", new String[0] },
+            { new java.net.UnknownHostException("cs3"), "sync.failedNoAnswer", new String[0] },
+            { cutOff.newInstance("http://10.0.0.5/config/magnetartikel.cs2", "stopped after 0 of 13044 bytes"),
+                "sync.failedCutOff", new String[] { "magnetartikel.cs2" } },
+            { new java.io.IOException("Server returned HTTP response code: 403 for URL: http://10.0.0.5/config/geraet.vrs"),
+                "sync.failedRefused", new String[] { "geraet.vrs", "403" } },
+            { new java.io.FileNotFoundException("http://10.0.0.5/config/lokomotive.cs2"), "sync.failedMissing",
+                new String[] { "lokomotive.cs2" } },
+            { new org.json.JSONException("Expected a ',' or '}'"), "sync.failedUnreadable", new String[0] },
+        };
+
+        for (Object[] c : cases)
+        {
+            String said = (String) describe.invoke(null, c[0]);
+            String[] args = (String[]) c[2];
+
+            assertEquals(said, args.length == 0 ? org.traincontrol.util.I18n.t((String) c[1])
+                : org.traincontrol.util.I18n.f((String) c[1], (Object[]) args), "for " + c[0]);
+            assertFalse(said.contains("Exception") || said.contains("http") || said.contains("bytes"), "plain: " + said);
+        }
     }
 }

@@ -1,8 +1,10 @@
 package org.traincontrol.gui.autonomy;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.swing.SwingUtilities;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automationui.AutonomyBuilder;
@@ -11,6 +13,7 @@ import org.traincontrol.automationui.DiagramMonitor;
 import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TileOverlay;
+import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.gui.TrainControlUI;
 
 /**
@@ -37,10 +40,10 @@ public class DiagramMonitorDriver
 
     // What the last bind's builder says each Point faces, the Points it says nothing about, with their squares, the setup
     // they were bound with, and the facings last handed to the monitor (OB-348).  Written and read on the event thread.
-    private Map<String, org.traincontrol.automationui.TilePorts.Side> built;
-    private Map<String, TileKey> guessed = new java.util.LinkedHashMap<>();
+    private Map<String, TilePorts.Side> built;
+    private Map<String, TileKey> guessed = new LinkedHashMap<>();
     private AutonomySession boundTo;
-    private Map<String, org.traincontrol.automationui.TilePorts.Side> facingsShown;
+    private Map<String, TilePorts.Side> facingsShown;
     private volatile Timer timer;
 
     // Whether monitoring is wanted at all; separate from the timer running, so turning the layer off keeps the wiring.
@@ -50,8 +53,7 @@ public class DiagramMonitorDriver
      * Which wipe the overlays on screen belong to: a tick computes on the timer thread and paints on the event thread,
      * so comparing this on both sides lets a wipe asked for in between win over a picture computed before it.
      */
-    private final java.util.concurrent.atomic.AtomicLong generation =
-        new java.util.concurrent.atomic.AtomicLong();
+    private final AtomicLong generation = new AtomicLong();
 
     public DiagramMonitorDriver(TrainControlUI ui, DiagramTileRegistry registry)
     {
@@ -63,8 +65,6 @@ public class DiagramMonitorDriver
      * Points the monitor at a reduction, and at the layout currently built from it.  Called after every rebuild and
      * configuration load; rebinding rather than making a new driver keeps the timer running with no window where
      * movement goes unnoticed.
-     *
-     * @param session the setup the running layout was generated from
      */
     public void bind(AutonomySession session)
     {
@@ -86,24 +86,10 @@ public class DiagramMonitorDriver
         if (monitor == null)
         {
             monitor = new DiagramMonitor(
-                new DiagramMonitor.LayoutSource()
-                {
-                    @Override
-                    public Layout get()
-                    {
-                        return currentLayout();
-                    }
-                },
+                () -> currentLayout(),
                 builder.edgesByName(),
                 names,
-                new DiagramMonitor.Publisher()
-                {
-                    @Override
-                    public void publish(final Map<TileKey, TileOverlay> overlays)
-                    {
-                        onEventThread(overlays);
-                    }
-                });
+                overlays -> onEventThread(overlays));
         }
         else
         {
@@ -114,7 +100,7 @@ public class DiagramMonitorDriver
 
         // THE SQUARES WHOSE FACING IS THE SETUP'S, or a guess along their track (OB-348): asked again whenever the captions
         // are, so the icon follows a facing a door writes (`recordedFacingsChanged`)
-        Map<String, TileKey> guesses = new java.util.LinkedHashMap<>();
+        Map<String, TileKey> guesses = new LinkedHashMap<>();
 
         for (Map.Entry<String, TileKey> entry : names.entrySet())
         {
@@ -158,22 +144,19 @@ public class DiagramMonitorDriver
 
     /**
      * Which way a train standing on each Point faces, from the builder that named them: a split copy's own facing, and
-     * a single copy's only way out where it has one (the icon of a parked train turns to it).
-     *
-     * @param builder the builder the names came from
-     * @param names every Point name and its square
-     * @return Point name to the side a train's front faces there
+     * a single copy's only way out where it has one (the icon of a parked train turns to it).  Answers Point name to
+     * the side a train's front faces there.
      */
-    private static Map<String, org.traincontrol.automationui.TilePorts.Side> facingsOf(AutonomyBuilder builder,
+    private static Map<String, TilePorts.Side> facingsOf(AutonomyBuilder builder,
         Map<String, TileKey> names)
     {
-        Map<String, org.traincontrol.automationui.TilePorts.Side> out = new java.util.LinkedHashMap<>(builder.facingByName());
+        Map<String, TilePorts.Side> out = new LinkedHashMap<>(builder.facingByName());
 
         for (Map.Entry<String, TileKey> entry : names.entrySet())
         {
             if (out.containsKey(entry.getKey())) continue;
 
-            org.traincontrol.automationui.TilePorts.Side only = builder.onlyWayOutFacing(entry.getValue());
+            TilePorts.Side only = builder.onlyWayOutFacing(entry.getValue());
 
             if (only != null) out.put(entry.getKey(), only);
         }
@@ -193,11 +176,11 @@ public class DiagramMonitorDriver
 
         if (current == null || session == null || built == null) return;
 
-        Map<String, org.traincontrol.automationui.TilePorts.Side> facings = new java.util.LinkedHashMap<>(built);
+        Map<String, TilePorts.Side> facings = new LinkedHashMap<>(built);
 
         for (Map.Entry<String, TileKey> entry : guessed.entrySet())
         {
-            org.traincontrol.automationui.TilePorts.Side guess = session.facingWhereNoCopySays(entry.getValue());
+            TilePorts.Side guess = session.facingWhereNoCopySays(entry.getValue());
 
             if (guess != null) facings.put(entry.getKey(), guess);
         }
@@ -264,11 +247,7 @@ public class DiagramMonitorDriver
         return timer != null;
     }
 
-    /**
-     * Turns the monitoring layer on or off without unwiring anything.
-     *
-     * @param enabled
-     */
+    /** Turns the monitoring layer on or off without unwiring anything. */
     public void setEnabled(boolean enabled)
     {
         if (this.enabled == enabled) return;
@@ -310,10 +289,7 @@ public class DiagramMonitorDriver
         }
         catch (Exception e)
         {
-            if (ui != null && ui.getModel() != null && ui.getModel().isDebug())
-            {
-                ui.getModel().log(e);
-            }
+            if (ui != null && ui.getModel() != null && ui.getModel().isDebug()) ui.getModel().log(e);
         }
     }
 
@@ -324,25 +300,21 @@ public class DiagramMonitorDriver
         // Read on the thread that computed this picture, so it records the world this picture is of
         final long computedAt = generation.get();
 
-        SwingUtilities.invokeLater(new Runnable()
+        SwingUtilities.invokeLater(() ->
         {
-            @Override
-            public void run()
-            {
-                // Re-checked HERE, on the event thread: timer.cancel does not wait for a tick already running, so its
-                // publish can arrive after stop()'s clear.
-                if (timer == null || !enabled) return;
+            // Re-checked HERE, on the event thread: timer.cancel does not wait for a tick already running, so its
+            // publish can arrive after stop()'s clear.
+            if (timer == null || !enabled) return;
 
-                // And the same for a wipe that is not a stop, or a wipe landing first leaves stale trains over an
-                // emptied diagram and landing second leaves it blank while the monitor believes it published.
-                if (generation.get() != computedAt) return;
+            // And the same for a wipe that is not a stop, or a wipe landing first leaves stale trains over an
+            // emptied diagram and landing second leaves it blank while the monitor believes it published.
+            if (generation.get() != computedAt) return;
 
-                registry.publish(overlays);
+            registry.publish(overlays);
 
-                // The station labels show which locomotive is where it is heading; nothing else drives them on this
-                // path.
-                if (ui != null) ui.updateVisiblePoints();
-            }
+            // The station labels show which locomotive is where it is heading; nothing else drives them on this
+            // path.
+            if (ui != null) ui.updateVisiblePoints();
         });
     }
 
@@ -354,20 +326,16 @@ public class DiagramMonitorDriver
         // wipe.
         generation.incrementAndGet();
 
-        SwingUtilities.invokeLater(new Runnable()
+        SwingUtilities.invokeLater(() ->
         {
-            @Override
-            public void run()
-            {
-                registry.clearOverlays();
+            registry.clearOverlays();
 
-                // AFTER the wipe, on the thread that does it: the monitor suppresses an unchanged picture, which is
-                // wrong for a screen just emptied.  Forgetting what was published makes the next refresh arrive, and
-                // doing it here stops a tick already in flight from writing its picture into that memory afterwards.
-                DiagramMonitor current = monitor;
+            // AFTER the wipe, on the thread that does it: the monitor suppresses an unchanged picture, which is
+            // wrong for a screen just emptied.  Forgetting what was published makes the next refresh arrive, and
+            // doing it here stops a tick already in flight from writing its picture into that memory afterwards.
+            DiagramMonitor current = monitor;
 
-                if (current != null) current.invalidate();
-            }
+            if (current != null) current.invalidate();
         });
     }
 

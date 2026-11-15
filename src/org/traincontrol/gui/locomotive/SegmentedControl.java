@@ -6,7 +6,6 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
-import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
@@ -17,6 +16,8 @@ import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.UIManager;
 import javax.swing.plaf.basic.BasicGraphicsUtils;
+import org.traincontrol.util.ImageUtil;
+import org.traincontrol.gui.widgets.UiStyle;
 
 /**
  * Toggle buttons drawn as one rounded outline with a thin divider between segments, the chosen segment filled with the
@@ -37,9 +38,6 @@ public class SegmentedControl extends JPanel
     /**
      * Adds a segment at the right-hand end.
      *
-     * @param text what it says
-     * @param name its component name
-     * @param chosen whether it is the chosen one
      * @return the segment, whose action listeners are the caller's
      */
     public JToggleButton addSegment(String text, String name, boolean chosen)
@@ -64,7 +62,8 @@ public class SegmentedControl extends JPanel
         return new RoundRectangle2D.Double(inset, inset, getWidth() - 2 * inset, getHeight() - 2 * inset, arc, arc);
     }
 
-    private static Color themeColor(Color fallback, String... keys)
+    /** The first of the look and feel's colors under these keys, else the fallback. */
+    public static Color themeColor(Color fallback, String... keys)
     {
         for (String key : keys)
         {
@@ -85,6 +84,12 @@ public class SegmentedControl extends JPanel
     /** The color of the chosen segment. */
     public Color chosenColor()
     {
+        return accent();
+    }
+
+    /** The theme's accent blue, as the chosen segment and a lit pill wear it. */
+    public static Color accent()
+    {
         return themeColor(new Color(0x26, 0x75, 0xBF), "Component.accentColor", "Button.default.background");
     }
 
@@ -97,8 +102,7 @@ public class SegmentedControl extends JPanel
 
         try
         {
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            ImageUtil.smooth(g2);
             g2.setColor(lineColor());
 
             for (int i = 1; i < getComponentCount(); i++)
@@ -129,6 +133,7 @@ public class SegmentedControl extends JPanel
         {
             super.updateUI();
 
+            setFont(UiStyle.BUTTON_FONT);
             setBorder(null);
             setContentAreaFilled(false);
             setOpaque(false);
@@ -140,7 +145,7 @@ public class SegmentedControl extends JPanel
         {
             FontMetrics fm = getFontMetrics(getFont());
 
-            return new Dimension(fm.stringWidth(getText()) + 32, new JButton(getText()).getPreferredSize().height);
+            return new Dimension(fm.stringWidth(getText()) + 32, UiStyle.button(new JButton(getText())).getPreferredSize().height);
         }
 
         @Override
@@ -150,7 +155,7 @@ public class SegmentedControl extends JPanel
 
             try
             {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                ImageUtil.antialias(g2);
 
                 Color fill = themeColor(Color.WHITE, "Button.background");
 
@@ -163,19 +168,26 @@ public class SegmentedControl extends JPanel
                 g2.setColor(fill);
                 g2.fillRect(0, 0, getWidth(), getHeight());
 
-                g2.setColor(isSelected() ? inkOn(fill) : themeColor(getForeground(), "Button.foreground"));
-                g2.setFont(getFont());
-
-                FontMetrics fm = g2.getFontMetrics();
-
-                BasicGraphicsUtils.drawStringUnderlineCharAt(g2, getText(), -1, (getWidth() - fm.stringWidth(getText())) / 2,
-                    (getHeight() - fm.getHeight()) / 2 + fm.getAscent());
+                drawCentered(g2, this, isSelected() ? inkOn(fill) : themeColor(getForeground(), "Button.foreground"));
             }
             finally
             {
                 g2.dispose();
             }
         }
+    }
+
+    /** Draws a button's text in this color, centered in the button, in the button's font. */
+    public static void drawCentered(Graphics2D g2, javax.swing.AbstractButton button, Color ink)
+    {
+        g2.setColor(ink);
+        g2.setFont(button.getFont());
+
+        FontMetrics fm = g2.getFontMetrics();
+
+        BasicGraphicsUtils.drawStringUnderlineCharAt(g2, button.getText(), -1,
+            (button.getWidth() - fm.stringWidth(button.getText())) / 2,
+            (button.getHeight() - fm.getHeight()) / 2 + fm.getAscent());
     }
 
     /** Black or white, whichever reads on this color. */

@@ -20,6 +20,8 @@ import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Trees;
+import static support.LayoutSandbox.pagesIn;
 
 /**
  * A station, and the train standing on it, travel with the tile when it is dragged (MT-171).
@@ -65,7 +67,7 @@ public class testAMovedTileCarriesItsSetup
     {
         File folder = aWorkingCopy();
 
-        List<LayoutDiagram> pages = pagesIn(folder);
+        List<LayoutDiagram> pages = pagesIn(model, folder);
 
         AutonomySession session = open(folder, pages);
 
@@ -128,7 +130,7 @@ public class testAMovedTileCarriesItsSetup
         page.saveChanges(null, false);
 
         // THE LOAD.
-        AutonomySession after = open(folder, pagesIn(folder));
+        AutonomySession after = open(folder, pagesIn(model, folder));
 
         assertTrue(after.getStore().isStation(to),
             "the station did not survive the save and reload at its new square");
@@ -160,8 +162,8 @@ public class testAMovedTileCarriesItsSetup
 
         assertTrue(appeared.isEmpty(), "moving a tile added errors to the setup: " + appeared);
 
-        // AND BACK AGAIN, which is where Adam reports losing the locomotive.
-        List<LayoutDiagram> now = pagesIn(folder);
+        // AND BACK AGAIN.
+        List<LayoutDiagram> now = pagesIn(model, folder);
 
         LayoutDiagram samePage = diagram(now, from.getPage());
 
@@ -186,7 +188,7 @@ public class testAMovedTileCarriesItsSetup
         back.save();
         samePage.saveChanges(null, false);
 
-        AutonomySession finished = open(folder, pagesIn(folder));
+        AutonomySession finished = open(folder, pagesIn(model, folder));
 
         assertTrue(finished.getStore().isStation(from), "the station did not come back");
 
@@ -312,16 +314,6 @@ public class testAMovedTileCarriesItsSetup
         return null;
     }
 
-    private static List<LayoutDiagram> pagesIn(File folder) throws Exception
-    {
-        String path = "file:///" + folder.getAbsolutePath().replace(File.separatorChar, '/') + "/";
-
-        CS2File parser = new CS2File(path, model);
-        parser.setLayoutDataLoc(path);
-
-        return support.LayoutSandbox.wired(model, parser);
-    }
-
     private static AutonomySession open(File folder, List<LayoutDiagram> pages) throws Exception
     {
         AutonomySession session = new AutonomySession(folder);
@@ -341,29 +333,10 @@ public class testAMovedTileCarriesItsSetup
 
         assertTrue(temp.delete(), "making room for a directory of the same name");
 
-        copyTree(from, temp);
+        Trees.copyForTheRun(from, temp);
 
         temp.deleteOnExit();
 
         return temp;
-    }
-
-    private static void copyTree(File from, File to) throws Exception
-    {
-        assertTrue(to.mkdirs() || to.isDirectory(), "could not make " + to);
-
-        File[] children = from.listFiles();
-
-        if (children == null) return;
-
-        for (File one : children)
-        {
-            File target = new File(to, one.getName());
-
-            if (one.isDirectory()) copyTree(one, target);
-            else Files.copy(one.toPath(), target.toPath());
-
-            target.deleteOnExit();
-        }
     }
 }

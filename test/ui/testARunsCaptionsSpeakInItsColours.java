@@ -22,6 +22,7 @@ import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * A running route's captions speak the route's colors, its destination is a warm yellow, and the Auto tab's station
@@ -154,9 +155,7 @@ public class testARunsCaptionsSpeakInItsColours
             run.setDaemon(true);
             run.start();
 
-            Field pendingField = Layout.class.getDeclaredField("locomotivePendingS88");
-            pendingField.setAccessible(true);
-            Map<?, ?> pending = (Map<?, ?>) pendingField.get(layout);
+            Map<?, ?> pending = (Map<?, ?>) Reflect.get(Layout.class, layout, "locomotivePendingS88");
 
             String startedAt = layout.getLatestMilestoneS88(mover);
 
@@ -165,8 +164,7 @@ public class testARunsCaptionsSpeakInItsColours
             while ((pending.get(mover) == null || pending.get(mover).equals(startedAt))
                 && System.currentTimeMillis() < until) Thread.sleep(5);
 
-            Field simulate = Layout.class.getDeclaredField("simulate");
-            simulate.setAccessible(true);
+            Field simulate = Reflect.field(Layout.class, "simulate");
             simulate.setBoolean(layout, false);
 
             Thread.sleep(3000);
@@ -178,8 +176,7 @@ public class testARunsCaptionsSpeakInItsColours
 
             settle(1200);
 
-            Field stations = TrainControlUI.class.getDeclaredField("layoutStations");
-            stations.setAccessible(true);
+            Field stations = Reflect.field(TrainControlUI.class, "layoutStations");
 
             final List<StationCaption> pills = new ArrayList<>();
 
@@ -251,11 +248,9 @@ public class testARunsCaptionsSpeakInItsColours
 
             assertFalse(cards.isEmpty(), "precondition: the Auto tab has no locomotive cards");
 
-            Field badgeField = AutoLocomotiveStatus.class.getDeclaredField("locStation");
-            badgeField.setAccessible(true);
+            Field badgeField = Reflect.field(AutoLocomotiveStatus.class, "locStation");
 
-            Field destinationField = AutoLocomotiveStatus.class.getDeclaredField("locDest");
-            destinationField.setAccessible(true);
+            Field destinationField = Reflect.field(AutoLocomotiveStatus.class, "locDest");
 
             int blueBadges = 0;
 
@@ -350,8 +345,7 @@ public class testARunsCaptionsSpeakInItsColours
 
             settle(1000);
 
-            Field stations = TrainControlUI.class.getDeclaredField("layoutStations");
-            stations.setAccessible(true);
+            Field stations = Reflect.field(TrainControlUI.class, "layoutStations");
 
             final List<StationCaption> pills = new ArrayList<>();
             final TrainControlUI window = ui;

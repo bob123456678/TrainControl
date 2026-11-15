@@ -19,24 +19,21 @@ import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Reflect;
 import support.SourceOf;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import static support.Settle.until;
 
 /**
  * One locomotive is dispatched onto one path at a time.  The guard is `Layout.isAlreadyUnderway`, and this is its test.
  *
- * A locomotive joins `activeLocomotives` only after `configureAndLockPath` RETURNS, and that call is seconds long (it
- * throws every turnout and signal on the path), so for that window "is it running" answers no.  Two states therefore:
+ * A locomotive joins `activeLocomotives` only after `configureAndLockPath` RETURNS (seconds), so two states count:
+ * **claiming** (route locked, nothing registered yet; reached by a race) and **running** (registered and moving;
+ * reachable with no race, since the diagram's right-click items do not re-check when clicked).
  *
- * - **claiming** - the route is locked, the accessories are being thrown, nothing is registered yet.  Reached by a
- *   race, and the case the guard was written for.
- * - **running** - registered and moving.  Reachable with no race: the diagram's right-click items do not re-check when
- *   clicked, so a menu opened while a train was idle and clicked after it set off is one gesture, not two threads.
- *
- * Both put two driving threads on one train (the invariant `Point.reserve` describes).  The refusal is timed rather
- * than asserted false: with the guard gone, `executePath` waits on sensors nothing here sets, so a plain `assertFalse`
- * would hang the battery; "did not refuse promptly" is the failure.  The control is the predicate's own two-sidedness:
- * false before the claim, true during it, false once the path is released, so a predicate stuck at true fails too.
+ * The refusal is timed rather than asserted false: with the guard gone, `executePath` waits on sensors nothing here
+ * sets, so a plain `assertFalse` would hang; "did not refuse promptly" is the failure.  The control is the predicate's
+ * two-sidedness: false before the claim, true during it, false once released.
  *
  * MUTATION: make `isAlreadyUnderway` return false and both tests fail on the deadline; make it return true and both
  * fail on their release claims.
@@ -86,13 +83,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A reader that finds a train's route finds the run's own reversal answer with it.  The answer is written BEFORE
-     * the route: a reader between the two writes would find the new route with the previous run's answer.  The claims'
-     * map is replaced by one that reads, as the route is written, the answer a reader would find.
+     * A reader that finds a train's route finds the run's own reversal answer with it: the answer is written BEFORE
+     * the route, so a reader between the two writes never sees the new route with the previous run's answer.
      *
      * MUTATION: write the route before the answer again, and this fails.
-     *
-     * @throws Exception from the fixture or reflection
      */
     @Test
     public void testTheRouteIsNeverSeenWithoutItsAnswer() throws Exception
@@ -101,9 +95,7 @@ public class testATrainIsDispatchedOnce
 
         final Locomotive train = aTrainAtTheStart(layout);
 
-        java.lang.reflect.Field answersField = Layout.class.getDeclaredField("runPolicies");
-
-        answersField.setAccessible(true);
+        java.lang.reflect.Field answersField = Reflect.field(Layout.class, "runPolicies");
 
         @SuppressWarnings("unchecked")
         final java.util.Map<Locomotive, Object> answers = (java.util.Map<Locomotive, Object>) answersField.get(layout);
@@ -143,21 +135,15 @@ public class testATrainIsDispatchedOnce
             }
         };
 
-        java.lang.reflect.Field claimsField = Layout.class.getDeclaredField("takingPath");
+        java.lang.reflect.Field claimsField = Reflect.field(Layout.class, "takingPath");
 
-        claimsField.setAccessible(true);
-
-        java.lang.reflect.Field modifiers = java.lang.reflect.Field.class.getDeclaredField("modifiers");
-
-        modifiers.setAccessible(true);
+        java.lang.reflect.Field modifiers = Reflect.field(java.lang.reflect.Field.class, "modifiers");
         modifiers.setInt(claimsField, claimsField.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
 
         claimsField.set(layout, claims);
 
-        java.lang.reflect.Method lock = Layout.class.getDeclaredMethod("configureAndLockPath", List.class, Locomotive.class,
-            Layout.ReversalPolicy.class);
-
-        lock.setAccessible(true);
+        java.lang.reflect.Method lock = Reflect.method(Layout.class,
+            "configureAndLockPath", List.class, Locomotive.class, Layout.ReversalPolicy.class);
 
         boolean locked = (boolean) lock.invoke(layout, theRoute(layout), train, thisRuns);
 
@@ -213,13 +199,9 @@ public class testATrainIsDispatchedOnce
 
     /**
      * The lock itself refuses a locomotive already claiming a route, where a race has let a second dispatch past the
-     * check outside it.  The claim `executePath` asks about is taken inside the lock's monitor, seconds later; two
-     * dispatches of one train in that window both pass the outer check, and where the routes share no track both
-     * locked and two threads drove one train.  So the lock asks again, in the monitor where the claim is taken.
+     * check outside it: the lock asks again, in the monitor where the claim is taken.
      *
      * MUTATION: take the check out of `configureAndLockPath` and this fails.
-     *
-     * @throws Exception on a failure to build the fixture
      */
     @Test
     public void testTheLockRefusesALocomotiveAlreadyClaimingARoute() throws Exception
@@ -292,18 +274,12 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A duplicate dispatch refused inside the lock leaves the winner's claim alone, on the same route too.  A refused
-     * dispatch must not remove the claim by value: `takingPath.remove(loc, path)` compares by value, and a double
-     * dispatch of ONE route (a double click, or a hand send racing autonomy) would remove the winner's claim while it
-     * was still locking, leaving the train in neither map.
-     *
-     * Two threads dispatch the same route while this thread holds the layout's monitor and the run list's until both
-     * are parked on it: the winner waits before it registers and the loser is refused in that window.  Then the claim
-     * is read, the winner let go, and its run finished by setting the sensor it waits for.
+     * A duplicate dispatch refused inside the lock leaves the winner's claim alone, on the same route too: a refused
+     * dispatch must not remove the claim by value (`takingPath.remove(loc, path)`), or a double dispatch of ONE route
+     * would leave the train in neither map.  Two threads dispatch while this thread holds the layout's monitor and the
+     * run list's until both are parked.
      *
      * MUTATION: put back the caller's `takingPath.remove(loc, path)` and this fails.
-     *
-     * @throws Exception on a failure to build the fixture or to finish the winner's run
      */
     @Test
     public void testARefusedDuplicateLeavesTheWinnersClaim() throws Exception
@@ -384,12 +360,9 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A train under way is last known where it set off, or at the last station on its path whose sensor it has tripped,
-     * not at a point with no sensor it has only passed into, nor at a sensor that is no station.
-     * `Layout.getLastPointsReached` is that choice, and every carry across a reload reads it.
+     * not at a sensor-less point it has only passed into.  `Layout.getLastPointsReached` is that choice.
      *
      * MUTATION: keep it at its last milestone whatever that is, and this fails.
-     *
-     * @throws Exception from the dispatch
      */
     @Test
     public void testATrainUnderWayIsWhereItWasLastSeen() throws Exception
@@ -468,12 +441,9 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A railway loaded into an empty model is the current one, even when something asked the model for its railway
-     * while the load was being parsed (asking an empty model builds a newer railway, which would leave the loaded one
-     * retired, so no train it sent would get under way).  The seam runs where the lookup would land.
+     * while the load was being parsed (which builds a newer railway and would retire the loaded one).
      *
      * MUTATION: assign the parsed railway without making it the current one, and this fails.
-     *
-     * @throws Exception from the parse
      */
     @Test
     public void testARailwayLoadedIsCurrentThoughOneWasBuiltDuringItsParse() throws Exception
@@ -512,15 +482,11 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A train under way whose last station a release has cleared, atomic routes off, is read there, and written there
-     * by a fold, though another train's path now runs through it.  A train only passing through stands elsewhere: the
-     * carry must not skip the first train wherever the point has any occupant, the fold must not write the second
-     * train there as if it stood, and the side RC_x records (its occupant's) is not written as the kept train's.  Built
-     * by hand, as a run would leave it: the maps a dispatch writes, set directly.
+     * by a fold, though another train's path now runs through it; a train only passing through stands elsewhere.
+     * Built by hand, as a run would leave it.
      *
      * MUTATION: skip wherever the point has an occupant, write each point's occupant, or write a point's side for
      * whichever train the fold writes there, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testATrainIsReadWhereItWasLastSeenThoughAnotherPassesThere() throws Exception
@@ -615,13 +581,10 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A train under way whose last station another train has since stopped on, atomic routes off, is kept on the first
-     * station ahead on its path that it still holds, read there by the carry and written there by a fold.  Kept on no
-     * point, a fold would erase it from the configuration; and a fold writes no train the railway no longer shows.
+     * station ahead on its path that it still holds, read there by the carry and written there by a fold.
      *
      * MUTATION: keep it on the point another stands on, or write a kept train the railway does not show, and this
      * fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testATrainWhoseLastStationAnotherHasStoppedOnIsKeptOnTheStationAheadItHolds() throws Exception
@@ -703,18 +666,13 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The station ahead a train is kept on is not one another train under way is kept at, whichever of the two the map
-     * yields first; and it is a station, not the first point it holds.
-     *
-     * A set off from TA along TA-TJ-TS-TB and B has since stopped on TA; C set off from TS towards TC, TS released
-     * behind it and then locked through for A.  A's station ahead that it holds is TS, where C is kept, so which of the
-     * two keeps it must not follow the map's order.  Over every ordered pair of seven locomotives as A and C, both
-     * orders come up.  TJ, a point that is no station, is held by A and nearer.
+     * The station ahead a train is kept on is not one another train under way is kept at, whichever the map yields
+     * first; and it is a station, not the first point it holds.  A set off from TA along TA-TJ-TS-TB, B has stopped on
+     * TA; C set off from TS, released behind it and locked through for A.  Run over every ordered pair of seven
+     * locomotives so both map orders come up.
      *
      * MUTATION: decide against the map as it is rewritten, keep a train on a station another is kept at, or on the
      * first point ahead it holds, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testTheStationAheadIsNotAnotherTrainsKeptPoint() throws Exception
@@ -806,16 +764,11 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A train bound for the station another train was last seen at takes it, and the other, past it since the station
-     * was released behind it and then locked for the first, is kept on the station ahead it holds.  The rule ahead must
-     * not pass over another's kept point where that is the only station the first train holds, its destination.
-     *
-     * A set off from TA along TA-TJ-TS and B has since stopped on TA; C set off from TS towards TC, TS released behind
-     * it and locked for A.
+     * A train bound for the station another train was last seen at takes it, and the other is kept on the station
+     * ahead it holds; the rule must not pass over another's kept point where that is the only station the first train
+     * holds, its destination.  A set off from TA along TA-TJ-TS, B stopped on TA; C set off from TS, released behind.
      *
      * MUTATION: pass over another's kept point with no way to move that one on, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testATrainBoundForAnothersKeptStationTakesItAndTheOtherGoesOn() throws Exception
@@ -883,12 +836,9 @@ public class testATrainIsDispatchedOnce
 
     /**
      * Two trains under way last seen at one station that neither holds and nobody stands on are both kept, on different
-     * points, and the carry and a fold keep the same ones: one keeps the station, the other the station ahead it holds.
-     * K1 set off from KP towards KS1 and K2 towards KS2, each past no sensor, and KP was released behind both.
+     * points, and the carry and a fold keep the same ones.
      *
      * MUTATION: leave two trains kept at one point, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testTwoTrainsLastSeenAtOneStationAreBothKept() throws Exception
@@ -973,13 +923,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A chain of trains under way is moved on along it.  Z stands on P1, where A set off; B set off from P2, which A
-     * now holds, and C from P3, which B now holds.  A can take P2 only if B goes on to P3, and B only if C goes on to
-     * P4; moving a train on one step only would leave A on Z's station and the fold would write it nowhere.
+     * A chain of trains under way is moved on along it: A can take P2 only if B goes on to P3, and B only if C goes on
+     * to P4; moving a train on one step only would leave A on Z's station and the fold would write it nowhere.
      *
      * MUTATION: move a train on one step only, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testAChainOfTrainsUnderWayIsMovedOnAlongIt() throws Exception
@@ -1052,14 +999,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A train under way is not kept on a square a standing train stands on, whichever copy either is on.  SE and SW are
-     * two copies of one square; A set off from SE towards T and SE was released behind it; Z has since stopped on SW.
-     * Kept at SE, A would stand on Z's square: the fold would write two trains on one square and the carry would take Z
-     * off the railway.
+     * A train under way is not kept on a square a standing train stands on, whichever copy either is on (SE and SW are
+     * two copies of one square): the fold would write two trains on one square.
      *
      * MUTATION: keep trains apart by point rather than by square, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testATrainUnderWayIsNotKeptOnTheSquareAStandingTrainStandsOn() throws Exception
@@ -1116,11 +1059,9 @@ public class testATrainIsDispatchedOnce
 
     /**
      * Two trains under way last seen at the two copies of one square are not both kept there: one keeps its copy and
-     * the other the station ahead it holds.  Both kept there, the fold would write two trains on one square.
+     * the other the station ahead it holds.
      *
      * MUTATION: keep trains apart by point rather than by square, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testTwoTrainsUnderWayAreNotKeptOnOneSquare() throws Exception
@@ -1184,14 +1125,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * Of two trains last seen at one station, the one the station still records keeps it.  X tripped OP's sensor, is
-     * passing through it and holds it; Y set off from OP before X locked it.  X is kept at OP and Y goes on to the
-     * station ahead it holds, in every order of their names: a rule by name alone passes a claim where no point records
-     * the train kept there.
+     * Of two trains last seen at one station, the one the station still records keeps it, in every order of their
+     * names: a rule by name alone passes a claim where no point records the train kept there.
      *
      * MUTATION: prefer by name alone, and this fails.
-     *
-     * @throws Exception from reflection
      */
     @Test
     public void testTheTrainItsStationStillRecordsKeepsIt() throws Exception
@@ -1302,10 +1239,8 @@ public class testATrainIsDispatchedOnce
     /** Records the train on each of the points, as locking a path does. */
     private static void reserve(Layout layout, Locomotive loc, String... points) throws Exception
     {
-        java.lang.reflect.Method reserve = org.traincontrol.automation.Point.class.getDeclaredMethod("reserve",
-            Locomotive.class);
-
-        reserve.setAccessible(true);
+        java.lang.reflect.Method reserve =
+            Reflect.method(org.traincontrol.automation.Point.class, "reserve", Locomotive.class);
 
         for (String point : points) reserve.invoke(layout.getPoint(point), loc);
     }
@@ -1384,11 +1319,7 @@ public class testATrainIsDispatchedOnce
 
     private static Object field(Object target, String name) throws Exception
     {
-        java.lang.reflect.Field f = target.getClass().getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(target);
+        return Reflect.get(target.getClass(), target, name);
     }
 
     private static void waitUntil(java.util.function.BooleanSupplier condition, String what) throws Exception
@@ -1407,8 +1338,8 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * Asserts that a dispatch is refused, and refused quickly: a missing guard does not make this return true but lets
-     * the dispatch wait on sensors nothing here will set, so the deadline IS the assertion for that case.
+     * Asserts that a dispatch is refused, and refused quickly: a missing guard lets the dispatch wait on sensors
+     * nothing here sets, so the deadline IS the assertion.
      *
      * @param layout the railway
      * @param train the locomotive that is already under way
@@ -1463,13 +1394,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A tail answered while Return Home is planning is not written.  Return Home plans with nothing yet running, so the
-     * railway's `isRunning` reads false while the flow is under way; every other refusal of a setup edit asks whether
-     * autonomy is busy, which counts the planning, and `whereTheAnswerGoes` must ask that, not `isRunning` alone.
+     * A tail answered while Return Home is planning is not written: `isRunning` reads false then, so
+     * `whereTheAnswerGoes` must ask whether autonomy is busy, which counts the planning.
      *
      * MUTATION: let `whereTheAnswerGoes` answer while a staging flow owns the railway, and this fails.
-     *
-     * @throws Exception from the fixture
      */
     @Test
     public void testATailAnsweredWhileReturnHomePlansIsNotWritten() throws Exception
@@ -1503,14 +1431,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A retired railway's journey ends with its railway.  The reload's and Unload's Yes stop every train between two
-     * sensors; each journey's thread then waits for a sensor its stopped train will not reach, and would stop a
-     * locomotive the next railway was driving, left standing mid-route with its route held.  So a retirement wakes
-     * every wait, and a journey whose railway has gone ends there.
+     * A retired railway's journey ends with its railway: a retirement wakes every wait, and a journey whose railway
+     * has gone ends there rather than stopping a locomotive the next railway is driving.
      *
      * MUTATION: let a retirement wake nothing, or let the wait go on past its railway, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testARetiredRailwaysJourneyEndsWithItsRailway() throws Exception
@@ -1533,7 +1457,7 @@ public class testATrainIsDispatchedOnce
 
             before = sendOn(old, Arrays.asList(old.getEdge("GA", "GB"), old.getEdge("GB", "GC")), x);
 
-            assertTrue(waitFor(() -> x.getSpeed() == 30 && old.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() == 30 && old.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the train was not sent on the old railway");
 
             // THE YES, as the reload's door answers it, and then the next railway
@@ -1551,14 +1475,14 @@ public class testATrainIsDispatchedOnce
             final Thread waiting = before;
 
             // Two seconds, under the wait's five-second poll: it is the retirement that must end it, not the clock
-            assertTrue(waitFor(() -> !waiting.isAlive(), 2000), "the retired railway's journey is still waiting on "
+            assertTrue(until(() -> !waiting.isAlive(), 2000), "the retired railway's journey is still waiting on "
                 + s[1].getName() + ", a sensor its stopped train will not reach, and when anything occupies it the"
                 + " thread will stop its locomotive - whichever railway is driving it then (RSA-B1)");
 
             // THE NEXT RAILWAY SENDS THE SAME TRAIN ELSEWHERE, and another train then crosses the old journey's sensor
             after = sendOn(fresh, Arrays.asList(fresh.getEdge("GA", "GD")), x);
 
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && fresh.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() > 0 && fresh.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the next railway did not send the train");
 
             model.setFeedbackState(s[1].getName(), true);
@@ -1582,13 +1506,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The reload's Yes stops a train still claiming its route.  One still locking its route (seconds, on a path with
-     * switches) would otherwise set off when the lock came through; a claim that completes after the Yes is given back
+     * The reload's Yes stops a train still claiming its route: a claim that completes after the Yes is given back
      * unrun, and the train stands where it was.
      *
      * MUTATION: let a claim completed after the Yes go on to run, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesStopsATrainStillClaimingItsRoute() throws Exception
@@ -1618,14 +1539,14 @@ public class testATrainIsDispatchedOnce
 
                 final Thread blocked = claiming;
 
-                assertTrue(waitFor(() -> blocked.getState() == Thread.State.BLOCKED, 5000),
+                assertTrue(until(() -> blocked.getState() == Thread.State.BLOCKED, 5000),
                     "precondition: the dispatch did not reach its claim");
 
                 // THE YES
                 theYes(rail);
             }
 
-            assertFalse(waitFor(() -> y.getSpeed() > 0, 2000), "a train still claiming its route when the operator"
+            assertFalse(until(() -> y.getSpeed() > 0, 2000), "a train still claiming its route when the operator"
                 + " answered Yes set off once the claim came through (RSA-C1, GS-C1)");
 
             assertFalse(rail.getActiveLocomotives().containsKey(y), "a claim completed after the Yes was kept as a"
@@ -1652,8 +1573,6 @@ public class testATrainIsDispatchedOnce
      * asked of the Yes as every other speed is.
      *
      * MUTATION: let the departure write its speed whatever the Yes said, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesStopsATrainAtItsDeparture() throws Exception
@@ -1680,10 +1599,10 @@ public class testATrainIsDispatchedOnce
 
             departing = sendOn(rail, through(rail, "LA", "LB", "LC"), w);
 
-            assertTrue(waitFor(() -> rail.getActiveLocomotives().containsKey(w), 5000), "precondition: the journey was not"
+            assertTrue(until(() -> rail.getActiveLocomotives().containsKey(w), 5000), "precondition: the journey was not"
                 + " counted");
 
-            assertFalse(waitFor(() -> w.getSpeed() > 0, 2000), "a train whose journey was counted when the operator"
+            assertFalse(until(() -> w.getSpeed() > 0, 2000), "a train whose journey was counted when the operator"
                 + " answered Yes set off after it (RSA-C1, GS-C1)");
         }
         finally
@@ -1695,13 +1614,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The reload's Yes is not undone at the next sensor.  A train the Yes stopped between two sensors, braking onto the
-     * one ahead before any load has retired its railway, must not be given its speed back by its own journey: the next
-     * leg's, or then the pre-arrival speed.
+     * The reload's Yes is not undone at the next sensor: a train the Yes stopped between two sensors must not be given
+     * its speed back by its own journey (the next leg's, or the pre-arrival speed).
      *
      * MUTATION: let the next leg's speed, or the pre-arrival speed, be written whatever the Yes said, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesIsNotUndoneAtTheNextSensor() throws Exception
@@ -1722,7 +1638,7 @@ public class testATrainIsDispatchedOnce
 
             running = sendOn(rail, through(rail, "IA", "IB", "IC", "ID"), z);
 
-            assertTrue(waitFor(() -> z.getSpeed() == 30 && rail.getActiveLocomotives().containsKey(z), 10000),
+            assertTrue(until(() -> z.getSpeed() == 30 && rail.getActiveLocomotives().containsKey(z), 10000),
                 "precondition: the train was not sent");
 
             theYes(rail);
@@ -1753,14 +1669,11 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The reload's Yes stops a train still choosing its route.  Autonomy's thread chooses a route and then sends it,
-     * asking again in between whether the railway is still running, so a train whose choice was under way when the Yes
-     * came is not sent after it.
+     * The reload's Yes stops a train still choosing its route: autonomy's thread asks again whether the railway still
+     * runs between choosing and sending.
      *
      * MUTATION: let autonomy's thread send the route it chose without asking whether the railway still runs, and this
      * fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesStopsATrainStillChoosingItsRoute() throws Exception
@@ -1787,13 +1700,13 @@ public class testATrainIsDispatchedOnce
             {
                 rail.runLocomotives();
 
-                assertTrue(waitFor(() -> aThreadIsBlockedIn("pickPath"), 5000), "precondition: autonomy's thread did"
+                assertTrue(until(() -> aThreadIsBlockedIn("pickPath"), 5000), "precondition: autonomy's thread did"
                     + " not reach its choice");
 
                 theYes(rail);
             }
 
-            assertFalse(waitFor(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 2000), "a train autonomy was"
+            assertFalse(until(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 2000), "a train autonomy was"
                 + " choosing a route for when the operator answered Yes was sent along it after the Yes (RSA-C1)");
         }
         finally
@@ -1810,8 +1723,6 @@ public class testATrainIsDispatchedOnce
      * The reload's door stops the trains through the railway's own stop, the one every journey asks.
      *
      * MUTATION: let the door stop the trains itself, one speed at a time, and this fails.
-     *
-     * @throws Exception on a failure to read the source
      */
     @Test
     public void testTheReloadsYesIsTheRailwaysOwnStop() throws Exception
@@ -1829,13 +1740,10 @@ public class testATrainIsDispatchedOnce
      *
      * @param name the constant's name in Layout
      * @return its value
-     * @throws Exception when Layout has no such constant
      */
     private static int layoutConstant(String name) throws Exception
     {
-        java.lang.reflect.Field field = Layout.class.getDeclaredField(name);
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(Layout.class, name);
 
         return field.getInt(null);
     }
@@ -1875,7 +1783,14 @@ public class testATrainIsDispatchedOnce
     /** A railway, made current: one line through the points named, one sensor each, its two ends stations. */
     private static Layout aLine(org.traincontrol.marklin.MarklinFeedback[] s, String... names) throws Exception
     {
-        Layout railway = new Layout(model);
+        return aLine(model, s, names);
+    }
+
+    /** The same, on a control of the test's own. */
+    private static Layout aLine(org.traincontrol.model.ViewListener control, org.traincontrol.marklin.MarklinFeedback[] s,
+        String... names) throws Exception
+    {
+        Layout railway = new Layout(control);
 
         for (int i = 0; i < names.length; i++)
         {
@@ -1929,6 +1844,22 @@ public class testATrainIsDispatchedOnce
         }
     }
 
+    /** The threads with the method named on their stack. */
+    private static List<Thread> threadsIn(String method)
+    {
+        List<Thread> found = new ArrayList<>();
+
+        for (java.util.Map.Entry<Thread, StackTraceElement[]> each : Thread.getAllStackTraces().entrySet())
+        {
+            for (StackTraceElement frame : each.getValue())
+            {
+                if (method.equals(frame.getMethodName())) found.add(each.getKey());
+            }
+        }
+
+        return found;
+    }
+
     /** Whether some thread is waiting for a monitor inside the method named. */
     private static boolean aThreadIsBlockedIn(String method)
     {
@@ -1943,21 +1874,6 @@ public class testATrainIsDispatchedOnce
         }
 
         return false;
-    }
-
-    /** Waits for a condition, polling. */
-    private static boolean waitFor(java.util.function.BooleanSupplier condition, long ms) throws InterruptedException
-    {
-        long until = System.currentTimeMillis() + ms;
-
-        while (System.currentTimeMillis() < until)
-        {
-            if (condition.getAsBoolean()) return true;
-
-            Thread.sleep(20);
-        }
-
-        return condition.getAsBoolean();
     }
 
     /** Ends whatever a claim left: a newer railway retires its journeys, the sensors clear, the train stands. */
@@ -1980,8 +1896,6 @@ public class testATrainIsDispatchedOnce
      * sensor must be kept apart, or the first arrival ends both journeys.
      *
      * MUTATION: let a route wait on a sensor another train's route is waiting on, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testARouteMayNotWaitOnASensorAnotherTrainAwaits() throws Exception
@@ -2026,7 +1940,7 @@ public class testATrainIsDispatchedOnce
             // X SENT TO ONE: its journey now waits on the shared sensor
             sent = sendOn(rail, through(rail, "SXA", "ONE"), x);
 
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the first train was not sent");
 
             assertFalse(rail.isPathClear(toTheOtherArc, y, false), "a second train was offered the other place on the"
@@ -2054,14 +1968,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The reload's Yes ends a Return Home that was still planning.  Return Home plans on a worker with nothing yet
-     * moving; where a load chosen then is refused nothing is retired, so the plan must not run, or trains would move
-     * after a Yes that said the run was abandoned.  The timetable is run with the stops counted when Return Home was
-     * pressed, and a stop ordered since starts nothing.
+     * The reload's Yes ends a Return Home that was still planning: the timetable runs with the stops counted when
+     * Return Home was pressed, and a stop ordered since starts nothing.
      *
      * MUTATION: let a timetable start after a stop ordered since it was chosen, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesEndsAReturnHomeStillPlanning() throws Exception
@@ -2117,7 +2027,7 @@ public class testATrainIsDispatchedOnce
 
             final Thread timetable = running;
 
-            assertTrue(waitFor(() -> !timetable.isAlive(), 5000), "the timetable Return Home planned did not end after the"
+            assertTrue(until(() -> !timetable.isAlive(), 5000), "the timetable Return Home planned did not end after the"
                 + " operator's Yes: it keeps trying to send trains (RSA2-C1)");
 
             assertTrue(completed[0], "the timetable after the Yes reported a move abandoned, where it should have started"
@@ -2139,14 +2049,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A journey chosen before the Yes is not sent after it.  Autonomy's thread asks whether it still runs, but a
-     * journey that read the stops only when it began would let a thread held between the two send its train after the
-     * Yes.  A journey carries the stops counted where it was chosen, and one chosen before a stop sends nothing and
-     * says so in the log.
+     * A journey chosen before the Yes is not sent after it: a journey carries the stops counted where it was chosen,
+     * and one chosen before a stop sends nothing and says so in the log.
      *
      * MUTATION: let a journey chosen before a stop claim its route, or send it without a word, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAJourneyChosenBeforeTheYesIsNotSent() throws Exception
@@ -2210,7 +2116,7 @@ public class testATrainIsDispatchedOnce
 
             final Thread sending = journey;
 
-            assertTrue(waitFor(() -> !sending.isAlive(), 5000), "a journey chosen before the operator's Yes was sent"
+            assertTrue(until(() -> !sending.isAlive(), 5000), "a journey chosen before the operator's Yes was sent"
                 + " after it, and is under way (RSA2-C2)");
 
             assertEquals(sent[0], Boolean.FALSE, "a journey chosen before the operator's Yes was sent after it"
@@ -2237,13 +2143,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A turn's wait for its resumed speed gives up on a stop or a retirement.  A turn resumes its speed and waits for
-     * the train to reach it; a Yes landing between the two must not leave the wait untimed and woken by nothing, or the
-     * thread outlives its railway and then stops the train.
+     * A turn's wait for its resumed speed gives up on a stop or a retirement: a Yes landing between resuming and
+     * waiting must not leave the wait untimed and woken by nothing.
      *
      * MUTATION: let the wait ignore what it is told to give up on, or let a retirement not wake it, and this fails.
-     *
-     * @throws Exception from the locomotive
      */
     @Test
     public void testATurnsResumeWaitGivesUpWhenItIsTold() throws Exception
@@ -2287,7 +2190,7 @@ public class testATrainIsDispatchedOnce
 
             final Thread asked = waiting;
 
-            assertTrue(waitFor(() -> !asked.isAlive(), 1000), "a turn's wait for its resumed speed went on after it was"
+            assertTrue(until(() -> !asked.isAlive(), 1000), "a turn's wait for its resumed speed went on after it was"
                 + " told to give up and woken, waiting for a speed only the next driver would give (RSA2-C2)");
         }
         finally
@@ -2301,13 +2204,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * Each retirement wakes the journeys waiting on its railway, once their waits have gone untimed.  A wait polls
-     * until its advisory is given and then waits untimed, so after five minutes only a wake ends it.  Each door is
-     * claimed alone here, with the advisory lowered so the wait is untimed at once.
+     * Each retirement wakes the journeys waiting on its railway, once their waits have gone untimed (after five
+     * minutes only a wake ends one).  Each door is claimed alone, with the advisory lowered so the wait is untimed.
      *
      * MUTATION: take the wake out of Unload's retirement, a load made current, or a railway built, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testEachRetirementWakesAnUntimedWait() throws Exception
@@ -2373,7 +2273,7 @@ public class testATrainIsDispatchedOnce
 
             journey = sendOn(rail, through(rail, "UWA" + firstSensor, "UWB" + firstSensor), w);
 
-            assertTrue(waitFor(() -> w.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(w), 10000),
+            assertTrue(until(() -> w.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(w), 10000),
                 "precondition (" + door + "): the train was not sent");
 
             // Past its advisory: the wait is untimed now
@@ -2385,7 +2285,7 @@ public class testATrainIsDispatchedOnce
 
             final Thread waiting = journey;
 
-            return waitFor(() -> !waiting.isAlive(), 2000);
+            return until(() -> !waiting.isAlive(), 2000);
         }
         finally
         {
@@ -2401,8 +2301,6 @@ public class testATrainIsDispatchedOnce
      * the power on.
      *
      * MUTATION: take the wait out of autonomy's loop (`waitWhileThePowerIsOff` in `runLocomotive`), and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAutonomySendsNothingWhileThePowerIsOff() throws Exception
@@ -2415,9 +2313,7 @@ public class testATrainIsDispatchedOnce
 
         final Layout rail = aLine(s, "PWA", "PWB");
 
-        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        final java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
         final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
 
@@ -2438,7 +2334,7 @@ public class testATrainIsDispatchedOnce
 
             assertTrue(rail.isAutoRunning(), "precondition: autonomy did not start, so nothing here is asked");
 
-            assertFalse(waitFor(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 2000), "autonomy chose a journey and"
+            assertFalse(until(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 2000), "autonomy chose a journey and"
                 + " sent its train with the track power off - its route's switches commanded on a railway with no power to"
                 + " move them, and the train set going the moment the power came back (GST-B1)");
 
@@ -2461,7 +2357,7 @@ public class testATrainIsDispatchedOnce
             // AND ON AGAIN, as the GO echo leaves it: the run goes on
             power.setBoolean(model, true);
 
-            assertTrue(waitFor(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 5000), "the power came back on and"
+            assertTrue(until(() -> v.getSpeed() > 0 || rail.isAlreadyUnderway(v), 5000), "the power came back on and"
                 + " autonomy still sent nothing - it is to wait while the power is off, and go on once it is back");
         }
         finally
@@ -2484,8 +2380,6 @@ public class testATrainIsDispatchedOnce
      *
      * MUTATION: take the wait out of the timetable's own loop (`waitWhileThePowerIsOff` in `executeTimetableInternal`),
      * and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATimetableStartsNothingWhileThePowerIsOff() throws Exception
@@ -2498,9 +2392,7 @@ public class testATrainIsDispatchedOnce
 
         final Layout rail = aLine(s, "PTA", "PTB");
 
-        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        final java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
         Thread executor = null;
 
@@ -2523,9 +2415,9 @@ public class testATrainIsDispatchedOnce
             executor.setDaemon(true);
             executor.start();
 
-            assertTrue(waitFor(() -> rail.isAutoRunning(), 5000), "precondition: the timetable did not start");
+            assertTrue(until(() -> rail.isAutoRunning(), 5000), "precondition: the timetable did not start");
 
-            assertFalse(waitFor(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t) || entry.getExecutionTime() != 0,
+            assertFalse(until(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t) || entry.getExecutionTime() != 0,
                 2000), "a timetable started its entry with the track power off - its route's switches commanded on a"
                 + " railway with no power to move them (GST-B1)");
 
@@ -2534,7 +2426,7 @@ public class testATrainIsDispatchedOnce
             // AND ON AGAIN: the entry starts
             power.setBoolean(model, true);
 
-            assertTrue(waitFor(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t), 5000), "the power came back on and the"
+            assertTrue(until(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t), 5000), "the power came back on and the"
                 + " timetable still started nothing - it is to wait while the power is off, and go on once it is back");
         }
         finally
@@ -2549,16 +2441,400 @@ public class testATrainIsDispatchedOnce
         }
     }
 
+    /** Sets whether the model's proxy is replacing a lost TCP connection, as its listener does (FR-186). */
+    private static void replacing(boolean on) throws Exception
+    {
+        Object proxy = Reflect.get(MarklinControlStation.class, model, "NetworkInterface");
+
+        Reflect.set(proxy.getClass(), proxy, "replacing", on);
+    }
+
+    private interface WhileReplacing
+    {
+        void run(Layout rail, Locomotive train, List<String> said) throws Exception;
+    }
+
     /**
-     * Nor is a journey set going when the track power goes off while its route is being set.  Setting a long route
-     * takes a second and more (a switch every `CONFIGURE_SLEEP`), so a power cut in that window must not leave the
-     * journey to throw the rest of its switches and give its train a speed that takes effect when the power comes back.
-     * With Path Integrity Validation off (a preference, skipped in simulation).  Eight edges, a switch on each, the
-     * power cut as the route is set: the train is given no speed, and the journey is not under way.
+     * Runs a claim with a train standing at the start of a line of two points, the log tapped and the connection being
+     * replaced, and puts everything back after.
+     */
+    private static void whileReplacing(int firstSensor, int loco, String from, String to, WhileReplacing claim)
+        throws Exception
+    {
+        whileReplacing(firstSensor, loco, from, to, model, claim);
+    }
+
+    /** The same, the line built on a control of the test's own. */
+    private static void whileReplacing(int firstSensor, int loco, String from, String to,
+        org.traincontrol.model.ViewListener control, WhileReplacing claim) throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(firstSensor, 2);
+        final Locomotive train = model.getLocByName(model.getLocList().get(loco));
+        final int preferredWas = train.getPreferredSpeed();
+        final Layout rail = aLine(control, s, from, to);
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
+        java.util.logging.Handler tap = aTapOn(said);
+
+        try
+        {
+            train.setSpeed(0);
+            train.setPreferredSpeed(30);
+            rail.getPoint(from).setLocomotive(train);
+            replacing(true);
+
+            claim.run(rail, train, said);
+        }
+        finally
+        {
+            replacing(false);
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+            rail.stopLocomotives();
+            train.setPreferredSpeed(preferredWas);
+            letGo(s, train, null);
+        }
+    }
+
+    /**
+     * A run started while the connection is being replaced sets no train going and says once that new routes are
+     * held; once the connection is back it starts its train and says so.
+     */
+    private static void heldUntilReconnected(Layout rail, Locomotive train, List<String> said, Runnable start,
+        String run) throws Exception
+    {
+        String held = org.traincontrol.util.I18n.t("autolayout.infoRoutesHeld");
+
+        start.run();
+
+        assertTrue(until(() -> rail.isAutoRunning(), 5000), "precondition: the " + run + " did not start");
+        assertFalse(until(() -> train.getSpeed() > 0 || rail.isAlreadyUnderway(train), 2000), "the " + run
+            + " set a train going while the connection to the station was being replaced (FR-186)");
+        assertTrue(rail.isAutoRunning(), "the " + run + " stopped for the lost connection: it is to hold new routes,"
+            + " not stop");
+        assertEquals(java.util.Collections.frequency(new ArrayList<>(said), held), 1, "the " + run + " did not say once"
+            + " that new routes are held: " + said);
+
+        replacing(false);
+
+        assertTrue(until(() -> train.getSpeed() > 0 || rail.isAlreadyUnderway(train), 5000), "the connection came back"
+            + " and the " + run + " still started nothing");
+        assertTrue(until(() -> said.contains(org.traincontrol.util.I18n.t("autolayout.infoRoutesResumed")), 2000),
+            "the " + run + " did not say that new routes start again: " + said);
+    }
+
+    /** The model as a layout's control, but answering `replacing` when asked whether the connection is replaced. */
+    private static org.traincontrol.model.ViewListener answering(java.util.function.BooleanSupplier replacing)
+    {
+        return (org.traincontrol.model.ViewListener) java.lang.reflect.Proxy.newProxyInstance(
+            org.traincontrol.model.ViewListener.class.getClassLoader(),
+            new Class<?>[] {org.traincontrol.model.ViewListener.class}, (proxy, method, args) ->
+                method.getName().equals("isReplacingConnection") ? replacing.getAsBoolean() : method.invoke(model, args));
+    }
+
+    /** Asserts a hand send is refused at once, says why, and sets nothing going; `what` names the send. */
+    private static void refusedForTheConnection(Layout rail, Locomotive train, String from, String to, List<String> said,
+        String what) throws Exception
+    {
+        refusedForTheConnection(rail, train, through(rail, from, to), said, what);
+    }
+
+    /** The same, along a path. */
+    private static void refusedForTheConnection(Layout rail, Locomotive train, List<Edge> path, List<String> said,
+        String what) throws Exception
+    {
+        Future<Boolean> sent = dispatcher.submit(() -> rail.executePathByHand(path, train, 30, null, -1));
+        Boolean answer;
+
+        try
+        {
+            answer = sent.get(5, TimeUnit.SECONDS);
+        }
+        catch (TimeoutException tookTheRoute)
+        {
+            answer = null;
+        }
+
+        assertEquals(answer, Boolean.FALSE, what + " went ahead (FR-186)");
+        assertTrue(said.contains(org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", train.getName())),
+            what + " did not say why it was refused: " + said);
+        assertFalse(rail.isAlreadyUnderway(train) || train.getSpeed() > 0, what + " took its route or set its train"
+            + " going");
+    }
+
+    /**
+     * Autonomy starts no route while the lost connection to the station is replaced, and starts once it is back.
+     *
+     * MUTATION: take `isReplacingConnection()` out of `waitWhileThePowerIsOff`'s loop condition, and this fails.
+     */
+    @Test
+    public void testAutonomyStartsNoRouteWhileTheConnectionIsReplaced() throws Exception
+    {
+        whileReplacing(2081, 5, "DRA", "DRB", (rail, v, said) ->
+        {
+            rail.setLocomotivesToRun(Arrays.asList(v));
+            heldUntilReconnected(rail, v, said, rail::runLocomotives, "autonomy run");
+        });
+    }
+
+    /**
+     * Nor does a timetable (Execute Timetable, and Return Home, whose plan runs as one) start its entry then.
+     *
+     * MUTATION: take `isReplacingConnection()` out of `waitWhileThePowerIsOff`'s loop condition, and this fails.
+     */
+    @Test
+    public void testATimetableStartsNothingWhileTheConnectionIsReplaced() throws Exception
+    {
+        whileReplacing(2091, 16, "DTA", "DTB", (rail, t, said) ->
+        {
+            rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, "DTA", "DTB"),
+                0)));
+
+            heldUntilReconnected(rail, t, said, () ->
+            {
+                Thread executor = new Thread(rail::executeTimetable, "a timetable run while the connection is replaced");
+                executor.setDaemon(true);
+                executor.start();
+            }, "timetable");
+        });
+    }
+
+    /**
+     * A hand send while the lost connection to the station is replaced is refused at once, says why in the log, and
+     * takes no track (FR-186).
+     *
+     * MUTATION: take the `isReplacingConnection()` refusal out of `executePathInternal`, and this fails.
+     */
+    @Test
+    public void testAHandSendIsRefusedWhileTheConnectionIsReplaced() throws Exception
+    {
+        whileReplacing(2101, 7, "DHA", "DHB", (rail, h, said) ->
+            refusedForTheConnection(rail, h, "DHA", "DHB", said, "a hand send while the connection was being replaced"));
+    }
+
+    /** Starts Return Home's plan of one leg, `from` to `to`, on a thread of its own named `thread`. */
+    private static void startReturnHome(Layout rail, Locomotive t, String from, String to, String thread)
+    {
+        rail.setTimetable(Arrays.asList(new org.traincontrol.automation.TimetablePath(t, through(rail, from, to), 0)));
+        rail.setTimetableSequential(true);
+
+        Thread executor = new Thread(rail::executeTimetable, thread);
+        executor.setDaemon(true);
+        executor.start();
+
+        // The claims read a stopped run as given up, so the run must be under way first
+        assertTrue(until(rail::isAutoRunning, 5000), "precondition: " + thread + " did not start");
+    }
+
+    /**
+     * Return Home spends no attempt on a send refused while the connection is being replaced: with the connection lost
+     * each time after the wait and before the send, the run goes on past its attempts, and starts its entry once the
+     * connection is back (FR-186).
+     *
+     * MUTATION: take `isReplacingConnection()` out of the timetable's `cut`, and this fails.
+     */
+    @Test
+    public void testReturnHomeSpendsNoAttemptOnAHeldSend() throws Exception
+    {
+        final int attempts = layoutConstant("STAGING_MAX_ATTEMPTS");
+        final boolean[] lost = {true};
+
+        // The wait sees the connection; the send, and the count after it, see it being replaced
+        whileReplacing(2111, 9, "DSA", "DSB", answering(() -> lost[0] && !calledFrom("waitWhileThePowerIsOff")),
+            (rail, t, said) ->
+        {
+            final String refused = org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", t.getName());
+
+            startReturnHome(rail, t, "DSA", "DSB", "Return Home while the connection is replaced");
+
+            assertTrue(until(() -> java.util.Collections.frequency(new ArrayList<>(said), refused) > attempts, 20000),
+                "Return Home gave up on sends refused while the connection was being replaced: " + said);
+            assertTrue(rail.isAutoRunning(), "Return Home stopped while the connection was being replaced");
+
+            lost[0] = false;
+
+            assertTrue(until(() -> t.getSpeed() > 0 || rail.isAlreadyUnderway(t), 10000), "the connection came back and"
+                + " Return Home still started nothing");
+        });
+    }
+
+    /**
+     * Nor is a send whose connection begins to be replaced while its route is set: it is given back, no speed sent and
+     * its track released, and the train goes once the connection is back (FR-186).
+     *
+     * MUTATION: take the `isReplacingConnection()` check after `configureAndLockPath` out of `executePathInternal`.
+     */
+    @Test
+    public void testASendWhoseConnectionIsLostWhileItsRouteIsSetIsGivenBack() throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicInteger asked = new java.util.concurrent.atomic.AtomicInteger();
+        final boolean[] lost = {true};
+
+        // Lost after the gate: the first question is answered no, every later one yes
+        whileReplacing(2121, 10, "DLA", "DLB", answering(() -> lost[0] && asked.incrementAndGet() > 1),
+            (rail, l, said) ->
+        {
+            refusedForTheConnection(rail, l, "DLA", "DLB", said, "a send whose connection began to be replaced while"
+                + " its route was set");
+
+            lost[0] = false;
+            sendOn(rail, through(rail, "DLA", "DLB"), l);
+
+            assertTrue(until(() -> l.getSpeed() > 0 || rail.isAlreadyUnderway(l), 5000), "the connection came back and"
+                + " the train could not be sent: its route was not given back");
+        });
+    }
+
+    /**
+     * The model as a layout's control, with the connection replaced and back inside the method named: asked there, it
+     * is being replaced, and each call from there counts in `replacements`, the count the control reports.
+     */
+    private static org.traincontrol.model.ViewListener replacedWhile(String method,
+        java.util.concurrent.atomic.AtomicInteger replacements)
+    {
+        return (org.traincontrol.model.ViewListener) java.lang.reflect.Proxy.newProxyInstance(
+            org.traincontrol.model.ViewListener.class.getClassLoader(),
+            new Class<?>[] {org.traincontrol.model.ViewListener.class}, (proxy, call, args) ->
+        {
+            boolean inside = calledFrom(method);
+
+            if (inside) replacements.incrementAndGet();
+
+            if (call.getName().equals("isReplacingConnection")) return inside;
+
+            return call.getName().equals("getReplacementEpoch") ? replacements.get() : call.invoke(model, args);
+        });
+    }
+
+    /**
+     * Nor is a send whose connection is replaced and back while its route is set, though the connection is live by the
+     * check after the lock: a switch frame written into the lost connection is not sent again (FR-186), so the train
+     * would set off over a switch the station never threw.  Path Integrity Validation off; five edges, a switch on each.
+     *
+     * MUTATION: after `configureAndLockPath`, ask only `isReplacingConnection()`, not the replacements counted since
+     * the dispatch, and this fails.
+     */
+    @Test
+    public void testASendWhoseConnectionIsReplacedAndBackWhileItsRouteIsSetIsGivenBack() throws Exception
+    {
+        org.traincontrol.marklin.MarklinFeedback[] s = sensors(2131, 6);
+        final Locomotive train = model.getLocByName(model.getLocList().get(11));
+        final String[] names = {"DBA", "DB1", "DB2", "DB3", "DB4", "DBB"};
+        final java.util.concurrent.atomic.AtomicInteger replacements = new java.util.concurrent.atomic.AtomicInteger();
+        final Layout rail = aLine(replacedWhile("configureEdge", replacements), s, names);
+        final List<Edge> path = through(rail, names);
+        final List<String> said = java.util.Collections.synchronizedList(new ArrayList<String>());
+        java.util.logging.Handler tap = aTapOn(said);
+        final boolean validatingWas = Layout.PATH_INTEGRITY_VALIDATION;
+
+        aSwitchOnEach(path, 301);
+
+        try
+        {
+            Layout.PATH_INTEGRITY_VALIDATION = false;
+            train.setSpeed(0);
+            rail.getPoint("DBA").setLocomotive(train);
+
+            refusedForTheConnection(rail, train, path, said, "a send over switches set while the connection to the"
+                + " station was replaced");
+
+            assertTrue(replacements.get() > 0, "precondition: the route's switches were not set");
+        }
+        finally
+        {
+            Layout.PATH_INTEGRITY_VALIDATION = validatingWas;
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName()).removeHandler(tap);
+            letGo(s, train, null);
+        }
+    }
+
+    /**
+     * A send whose connection is replaced while its switches are awaited is given back as one refused for the
+     * connection, not reported as misconfigured accessories nor counted toward that alert.  A simulated station sends
+     * no echo, so the wait fails.
+     *
+     * MUTATION: take the replacement test out of `configureAndLockPath`'s failure branch, and this fails.
+     */
+    @Test
+    public void testASendWhoseConnectionIsReplacedWhileItsSwitchesAreAwaitedIsNotMisconfigured() throws Exception
+    {
+        final java.util.concurrent.atomic.AtomicInteger replacements = new java.util.concurrent.atomic.AtomicInteger();
+
+        whileReplacing(2141, 12, "DVA", "DVB", replacedWhile("validatePathActuation", replacements), (rail, v, said) ->
+        {
+            aSwitchOnEach(through(rail, "DVA", "DVB"), 311);
+
+            refusedForTheConnection(rail, v, "DVA", "DVB", said, "a send whose connection was replaced while its switches"
+                + " were awaited");
+
+            assertTrue(replacements.get() > 0, "precondition: the switches were not awaited");
+            assertEquals(rail.getPathValidationFailureCount(), 0, "a send given back for the connection counted toward"
+                + " the misconfigured-accessories alert: " + said);
+        });
+    }
+
+    /**
+     * Return Home spends no attempt on a send given back because the connection was replaced while its switches were
+     * awaited, though the replacement is over by the time the attempt is counted.
+     *
+     * MUTATION: in the timetable's `cut`, drop the replacements counted since the attempt began, and this fails.
+     */
+    @Test
+    public void testReturnHomeSpendsNoAttemptOnASendReplacedWhileItsSwitchesWereAwaited() throws Exception
+    {
+        final int attempts = layoutConstant("STAGING_MAX_ATTEMPTS");
+
+        whileReplacing(2151, 13, "DWA", "DWB", replacedWhile("validatePathActuation",
+            new java.util.concurrent.atomic.AtomicInteger()), (rail, t, said) ->
+        {
+            final String refused = org.traincontrol.util.I18n.f("autolayout.log.notSentReconnecting", t.getName());
+
+            aSwitchOnEach(through(rail, "DWA", "DWB"), 313);
+
+            startReturnHome(rail, t, "DWA", "DWB", "Return Home while its switches are awaited");
+
+            assertTrue(until(() -> java.util.Collections.frequency(new ArrayList<>(said), refused) > attempts
+                || !rail.isAutoRunning(), 30000), "Return Home neither gave up nor went on: " + said);
+            assertTrue(rail.isAutoRunning(), "Return Home gave up on sends given back for the replaced connection: "
+                + said);
+        });
+    }
+
+    /**
+     * A run stopped while new routes are held leaves nothing held: the next run, the connection back, does not say the
+     * connection is back.
+     *
+     * MUTATION: in `waitWhileThePowerIsOff`, leave `routesHeld` set when the run has stopped, and this fails.
+     */
+    @Test
+    public void testARunStoppedWhileRoutesAreHeldLeavesNothingHeld() throws Exception
+    {
+        whileReplacing(2161, 14, "DXA", "DXB", (rail, x, said) ->
+        {
+            rail.setLocomotivesToRun(Arrays.asList(x));
+            rail.runLocomotives();
+
+            assertTrue(until(() -> said.contains(org.traincontrol.util.I18n.t("autolayout.infoRoutesHeld")), 5000),
+                "precondition: the run held no routes: " + said);
+
+            rail.stopLocomotives();
+
+            assertTrue(until(() -> !rail.isRunning(), 5000), "precondition: the run did not stop");
+
+            replacing(false);
+            said.clear();
+            rail.runLocomotives();
+
+            assertTrue(until(() -> x.getSpeed() > 0 || rail.isAlreadyUnderway(x), 5000),
+                "precondition: the next run started nothing");
+            assertFalse(said.contains(org.traincontrol.util.I18n.t("autolayout.infoRoutesResumed")), "the next run said"
+                + " the connection is back, though it held no route: " + said);
+        });
+    }
+
+    /**
+     * Nor is a journey set going when the track power goes off while its route is being set: the train is given no
+     * speed and the journey is not under way.  Path Integrity Validation off; eight edges, a switch on each.
      *
      * MUTATION: drop the power's second question, after the route is set, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAJourneyIsNotSetGoingIfThePowerWentOffWhileItsRouteWasSet() throws Exception
@@ -2575,9 +2851,7 @@ public class testATrainIsDispatchedOnce
 
         aSwitchOnEach(path, 241);
 
-        final java.lang.reflect.Field power = MarklinControlStation.class.getDeclaredField("powerState");
-
-        power.setAccessible(true);
+        final java.lang.reflect.Field power = Reflect.field(MarklinControlStation.class, "powerState");
 
         Thread journey = null;
 
@@ -2601,12 +2875,12 @@ public class testATrainIsDispatchedOnce
             // UNTIL THE JOURNEY HAS ENDED rather than for six seconds: only its own thread gives its train a speed (FR-136)
             final Thread running = journey;
 
-            waitFor(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
+            until(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
 
             assertFalse(v.getSpeed() > 0, "a journey whose route was being set when the power went"
                 + " off gave its train its speed during the cut, to take effect the moment the power came back (RSA61-C1)");
 
-            assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
+            assertTrue(until(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
                 + " whose route was being set when the power went off is still under way, waiting to set off when the"
                 + " power comes back (RSA61-C1)");
         }
@@ -2621,15 +2895,11 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * Nor when the power goes off and on again while its route is being set: a cut that comes and goes in the second or
-     * two the route takes must be seen, as the switches commanded during it do not move.  The cuts are counted as the
-     * Central Station reports them, and a journey compares the count where it was dispatched with the count once its
-     * route is set.  The power back on 300 ms after it went: the train is given no speed, the journey is not under way,
-     * and the log says why.
+     * Nor when the power goes off and on again while its route is being set: the cuts are counted as the Central
+     * Station reports them, and a journey compares the count at dispatch with the count once its route is set.  Power
+     * back on 300 ms after it went: no speed, not under way, and the log says why.
      *
      * MUTATION: ask only whether the power is on now, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAJourneyIsNotSetGoingIfThePowerWentOffAndOnWhileItsRouteWasSet() throws Exception
@@ -2679,13 +2949,13 @@ public class testATrainIsDispatchedOnce
             // UNTIL THE JOURNEY HAS ENDED rather than for six seconds: only its own thread gives its train a speed (FR-136)
             final Thread running = journey;
 
-            waitFor(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
+            until(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
 
             assertFalse(v.getSpeed() > 0, "a journey whose route was being set when the power went off"
                 + " and came back gave its train its speed over the switches commanded with no power to move them"
                 + " (RSA62-C2)");
 
-            assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
+            assertTrue(until(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
                 + " whose route was being set when the power went off and came back is still under way (RSA62-C2)");
 
             String why = org.traincontrol.util.I18n.f("autolayout.log.notSentPowerOff", v.getName());
@@ -2707,14 +2977,10 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A Return Home leg whose route setting the power cuts three times is still run once the power stays on: a
-     * give-back for the power must not count as a refused attempt, or three of them end Return Home with "the path
-     * stayed blocked ... move the train out of the way by hand" for a train in nobody's way.  A one-leg plan run one
-     * train at a time, as Return Home's is; each attempt's route cut 300 ms in for three seconds: the leg sets off once
-     * the cuts stop.
+     * give-back for the power must not count as a refused attempt, or three end Return Home with "the path stayed
+     * blocked".
      *
      * MUTATION: count an attempt the power cut as a refusal again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testPowerCutsDoNotEndAReturnHomeLeg() throws Exception
@@ -2805,13 +3071,13 @@ public class testATrainIsDispatchedOnce
             executor.setDaemon(true);
             executor.start();
 
-            assertTrue(waitFor(() -> attempts.get() >= maxAttempts, 20000), "precondition: the leg was not tried "
+            assertTrue(until(() -> attempts.get() >= maxAttempts, 20000), "precondition: the leg was not tried "
                 + maxAttempts + " times - "
                 + attempts.get() + " attempts seen");
 
             // RUNNING - given its speed, or counted among the trains running - and not merely claiming its route, which
             // `isAlreadyUnderway` counts too
-            assertTrue(waitFor(() -> t.getSpeed() > 0 || rail.getActiveLocomotives().containsKey(t), 20000), "a Return Home"
+            assertTrue(until(() -> t.getSpeed() > 0 || rail.getActiveLocomotives().containsKey(t), 20000), "a Return Home"
                 + " leg whose route"
                 + " setting the power cut three times was given up, not run once the power stayed on (RSA62-C3): " + said);
 
@@ -2839,12 +3105,9 @@ public class testATrainIsDispatchedOnce
 
     /**
      * The power's state and its cuts are one number, read once: it changes at every cut and every return, and is odd
-     * while the power is off.  Read as two, a STOP landing between the reads was taken as a cut that had not happened
-     * yet, with the power on.
+     * while the power is off.
      *
      * MUTATION: let a second STOP while the power is off move it, or leave it even while off, and this fails.
-     *
-     * @throws Exception reflection
      */
     @Test
     public void testThePowersEpochIsOddWhileThePowerIsOff() throws Exception
@@ -2887,12 +3150,9 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A journey dispatched in the instant the power went off (its epoch already odd, the state not yet written) is
-     * given back once its route is set, though the power is back by then.  The instant is forced by setting the epoch
-     * alone: odd at dispatch, then on again 300 ms into the route; the state reads on throughout.
+     * given back once its route is set, though the power is back by then; forced by setting the epoch alone.
      *
      * MUTATION: ask only whether the power is on now, not whether its epoch moved since dispatch, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAJourneyDispatchedAsThePowerWentOffIsGivenBack() throws Exception
@@ -2909,12 +3169,8 @@ public class testATrainIsDispatchedOnce
 
         aSwitchOnEach(path, 271);
 
-        final java.lang.reflect.Field epochField = MarklinControlStation.class.getDeclaredField("powerEpoch");
-
-        epochField.setAccessible(true);
-
         final java.util.concurrent.atomic.AtomicInteger epoch =
-            (java.util.concurrent.atomic.AtomicInteger) epochField.get(model);
+            (java.util.concurrent.atomic.AtomicInteger) Reflect.get(MarklinControlStation.class, model, "powerEpoch");
 
         Thread journey = null;
 
@@ -2943,12 +3199,12 @@ public class testATrainIsDispatchedOnce
             // UNTIL THE JOURNEY HAS ENDED rather than for six seconds: only its own thread gives its train a speed (FR-136)
             final Thread running = journey;
 
-            waitFor(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
+            until(() -> v.getSpeed() > 0 || !running.isAlive(), 9000);
 
             assertFalse(v.getSpeed() > 0, "a journey dispatched in the instant the power went off was"
                 + " given its speed over the route set while it was off (RSA63-C1)");
 
-            assertTrue(waitFor(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
+            assertTrue(until(() -> !running.isAlive(), 3000) && !rail.getActiveLocomotives().containsKey(v), "a journey"
                 + " dispatched in the instant the power went off is still under way (RSA63-C1)");
         }
         finally
@@ -2976,9 +3232,7 @@ public class testATrainIsDispatchedOnce
     /** The model's way of taking in the Central Station's stop and go. */
     private static java.lang.reflect.Method setPowerState() throws Exception
     {
-        java.lang.reflect.Method power = MarklinControlStation.class.getDeclaredMethod("setPowerState", boolean.class);
-
-        power.setAccessible(true);
+        java.lang.reflect.Method power = Reflect.method(MarklinControlStation.class, "setPowerState", boolean.class);
 
         return power;
     }
@@ -2995,13 +3249,10 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A sensor another train's journey has passed is free again for other routes once the rail to it is given back
-     * (Adam: *"that is OK as long as non-atomic rules are respected (it should be allowed once unlocked)"*).  Held from
-     * the head's arrival until that release (`testASensorIsHeldUntilTheRailToItIsGivenBack`); the track here
-     * unmeasured, the release comes one sensor on.
+     * (Adam: *"that is OK as long as non-atomic rules are respected (it should be allowed once unlocked)"*).  See
+     * `testASensorIsHeldUntilTheRailToItIsGivenBack`.
      *
      * MUTATION: let a journey count a sensor it has passed as one it still waits on, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testASensorAJourneyHasPassedIsFreeAgain() throws Exception
@@ -3042,7 +3293,7 @@ public class testATrainIsDispatchedOnce
 
             sent = sendOn(rail, through(rail, "PXA", "PXM", "PXN", "PXB"), x);
 
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the first train was not sent");
 
             assertFalse(rail.isPathClear(toTheSharedSensor, y, false), "precondition: the sensor ahead of the first"
@@ -3051,7 +3302,7 @@ public class testATrainIsDispatchedOnce
             // ITS HEAD PASSES THE SHARED SENSOR
             model.setFeedbackState(s[1].getName(), true);
 
-            assertTrue(waitFor(() -> rail.getReachedMilestones(x) != null
+            assertTrue(until(() -> rail.getReachedMilestones(x) != null
                 && rail.getReachedMilestones(x).contains(rail.getPoint("PXM")), 5000),
                 "precondition: the first train's journey did not record passing the shared sensor");
 
@@ -3060,13 +3311,13 @@ public class testATrainIsDispatchedOnce
             // AND ONE SENSOR ON, where the rail to the shared sensor is given back
             model.setFeedbackState(s[4].getName(), true);
 
-            assertTrue(waitFor(() -> !rail.getEdge("PXA", "PXM").isRunOver(x), 5000), "precondition: the rail to the"
+            assertTrue(until(() -> !rail.getEdge("PXA", "PXM").isRunOver(x), 5000), "precondition: the rail to the"
                 + " shared sensor was not given back one sensor on");
 
             model.setFeedbackState(s[4].getName(), false);
 
             // THE RELEASE RECORDED a moment after the rail reads free: until then the sensor is refused, the safe way
-            waitFor(() -> rail.isPathClear(toTheSharedSensor, y, false), 5000);
+            until(() -> rail.isPathClear(toTheSharedSensor, y, false), 5000);
 
             assertTrue(rail.isPathClear(toTheSharedSensor, y, false), "a sensor the first train has already passed is"
                 + " still refused to another route, though its journey waits on it no more: " + Layout.getLastError());
@@ -3080,15 +3331,11 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The sensor rule sees a train handing over from claim to journey: a check made across the hand-over is refused, as
-     * it is before and after it.  The hand-over writes the train into the journeys and then takes its claim away, so
-     * the rule must read the claims first and the journeys second, or a check whose first read came before the
-     * hand-over and second after would see the train in neither.  Held exactly: X at the first statement of its
-     * hand-over, and the check let on to its second read only once the hand-over has finished.
+     * The sensor rule sees a train handing over from claim to journey: the rule must read the claims first and the
+     * journeys second, or a check straddling the hand-over would see the train in neither.  Held exactly: X at the
+     * first statement of its hand-over.
      *
      * MUTATION: read the journeys before the claims again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheSensorRuleSeesATrainHandingOver() throws Exception
@@ -3105,8 +3352,6 @@ public class testATrainIsDispatchedOnce
      * second dispatch must refuse.
      *
      * MUTATION: ask the journeys before the claims again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATrainHandingOverIsStillUnderWay() throws Exception
@@ -3121,15 +3366,11 @@ public class testATrainIsDispatchedOnce
      * A train handing over from claim to journey is counted, for the cap on trains out.
      *
      * MUTATION: count the journeys before the claims again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATrainHandingOverIsCounted() throws Exception
     {
-        final java.lang.reflect.Method count = Layout.class.getDeclaredMethod("trainsUnderway");
-
-        count.setAccessible(true);
+        final java.lang.reflect.Method count = Reflect.method(Layout.class, "trainsUnderway");
 
         Object answer = acrossAHandOver(1921, "trainsUnderway", (rail, x, y) -> count.invoke(rail));
 
@@ -3138,14 +3379,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A route may not wait on a sensor another train is still CLAIMING a route to: the claim half of the sensor rule,
-     * which keeps two trains off one sensor while a route's switches are confirmed.  On a real railway the claim lasts
-     * as long as the Central Station takes to confirm the accessories; in a simulation it has no length, so it is held
-     * here at its end: the first train locked, not yet a journey.
+     * A route may not wait on a sensor another train is still CLAIMING a route to: the claim half of the sensor rule.
+     * A simulation's claim has no length, so it is held at its end: the first train locked, not yet a journey.
      *
      * MUTATION: leave the claims out of the sensor rule, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testARouteMayNotWaitOnASensorAClaimAwaits() throws Exception
@@ -3165,8 +3402,8 @@ public class testATrainIsDispatchedOnce
 
     /**
      * X claims PXA -> PXM and is held at the first statement of its hand-over; Y stands at PYA, whose road ends at PYP,
-     * a second place on PXM's sensor.  Then the question is asked on this thread, and where a method is named, the
-     * hand-over is let run to its end the moment that method reads the second of the two maps.
+     * a second place on PXM's sensor.  The question is asked on this thread, and where a method is named the hand-over
+     * is let run the moment that method reads the second of the two maps.
      *
      * @return the answer
      */
@@ -3385,23 +3622,14 @@ public class testATrainIsDispatchedOnce
 
     private static void swap(Layout layout, String field, Object value) throws Exception
     {
-        java.lang.reflect.Field f = Layout.class.getDeclaredField(field);
-
-        f.setAccessible(true);
-
-        f.set(layout, value);
+        Reflect.set(Layout.class, layout, field, value);
     }
 
     /**
-     * A sensor is held for the train whose route runs to it until the rail to it is given back, not just until its head
-     * has reached it (Adam: *"it should be allowed once unlocked"*).  Between the head's arrival and the release only
-     * the sensor's own reading would keep a second train off the other place on it, and a gap between two axles reads
-     * clear.  Non-atomic, the track unmeasured: the rail is given back one sensor on, as
-     * `testASensorAJourneyHasPassedIsFreeAgain` holds to.
+     * A sensor is held for the train whose route runs to it until the rail to it is given back, not just until its
+     * head has reached it (Adam: *"it should be allowed once unlocked"*): a gap between two axles reads clear.
      *
      * MUTATION: free the sensor when the head reaches it, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testASensorIsHeldUntilTheRailToItIsGivenBack() throws Exception
@@ -3442,13 +3670,13 @@ public class testATrainIsDispatchedOnce
 
             sent = sendOn(rail, through(rail, "PXA", "PXM", "PXN", "PXB"), x);
 
-            assertTrue(waitFor(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
+            assertTrue(until(() -> x.getSpeed() > 0 && rail.getActiveLocomotives().containsKey(x), 10000),
                 "precondition: the first train was not sent");
 
             // ITS HEAD REACHES THE SHARED SENSOR, and a gap between two axles reads clear
             model.setFeedbackState(s[1].getName(), true);
 
-            assertTrue(waitFor(() -> rail.getReachedMilestones(x) != null
+            assertTrue(until(() -> rail.getReachedMilestones(x) != null
                 && rail.getReachedMilestones(x).contains(rail.getPoint("PXM")), 5000),
                 "precondition: the first train's journey did not record reaching the shared sensor");
 
@@ -3470,14 +3698,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The Yes takes no lock an arriving journey holds: on the event thread, it may not wait for another train to finish
-     * throwing its switches.  An arrival takes the journeys' lock and then the railway's monitor, which a dispatch
-     * holds while it throws a route's switches.  Held here: the journeys' lock taken by another thread, and the Yes
-     * asked.
+     * The Yes takes no lock an arriving journey holds: on the event thread it may not wait for another train to finish
+     * throwing its switches (an arrival takes the journeys' lock, then the railway's monitor).
      *
      * MUTATION: take the journeys' lock in the Yes again, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesWaitsForNoLockAnArrivalHolds() throws Exception
@@ -3536,12 +3760,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A timetable the stop count refuses at its start leaves nothing running: it sets `running` before it asks
-     * the count - so a Yes between the two is seen either way - and clears it again where the count has moved.
+     * A timetable the stop count refuses at its start leaves nothing running: it sets `running` before it asks the
+     * count, so a Yes between the two is seen either way, and clears it where the count has moved.
      *
      * MUTATION: return without clearing it, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATimetableTheCountRefusesLeavesNothingRunning() throws Exception
@@ -3592,11 +3814,9 @@ public class testATrainIsDispatchedOnce
 
     /**
      * A timetable entry is running until it has left: after a stop, as it finishes, the railway is not yet idle, so no
-     * door can start the next run while it is still there.  Held at its last line, where it says its path is finished.
+     * door can start the next run while it is still there.
      *
      * MUTATION: count an entry not at all, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testAnEntryIsRunningUntilItHasLeft() throws Exception
@@ -3701,13 +3921,11 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A timetable entry the Yes found refusing leaves with its run: it does not wake into the next run and stop it at
-     * its stuck limit, blaming the track.  An entry is counted while it lives, and a stop wakes it to leave; an entry
-     * paused between refusals that nothing counted would let the run read idle and the next run begin.
+     * A timetable entry the Yes found refusing leaves with its run rather than waking into the next one: an entry is
+     * counted while it lives, and a stop wakes it to leave.
      *
-     * MUTATION: let a stop not wake a pausing entry, or count it not at all, and this fails.
-     *
-     * @throws Exception from the railway
+     * MUTATION: let a stop not wake a pausing entry, and the call returns late; with the entry not counted either, it
+     * wakes into the next run and stops it.
      */
     @Test
     public void testAnEntryTheYesFoundRefusingLeavesWithItsRun() throws Exception
@@ -3758,9 +3976,11 @@ public class testATrainIsDispatchedOnce
             executor.setDaemon(true);
             executor.start();
 
-            Thread.sleep(600);
+            assertTrue(until(() -> !threadsIn("pauseUnlessStopped").isEmpty(), 5000), "precondition: no entry is pausing");
 
             assertTrue(rail.isAutoRunning(), "precondition: the timetable is not running");
+
+            final List<Thread> pausing = threadsIn("pauseUnlessStopped");
 
             // THE YES
             final long yes = System.currentTimeMillis();
@@ -3781,7 +4001,8 @@ public class testATrainIsDispatchedOnce
             rail.setLocomotivesToRun(new ArrayList<Locomotive>());
             rail.runLocomotives();
 
-            Thread.sleep(7000);
+            // The entry that was pausing has left, or has gone on into this run and stopped it
+            until(() -> pausing.stream().noneMatch(Thread::isAlive), 10000);
 
             assertTrue(rail.isAutoRunning(), "the next run was stopped by an entry of the run the Yes ended (RSA3-C5):"
                 + " " + said);
@@ -3814,12 +4035,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * The route guard's list of switches in use sees a train handing over from claim to journey: a route set by a
-     * sensor asks it before it throws a switch, and a train in neither map had its route's switches missing.
+     * The route guard's list of switches in use sees a train handing over from claim to journey: a train in neither
+     * map had its route's switches missing.
      *
      * MUTATION: read the journeys before the claims in `getActiveAccs`, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheRouteGuardSeesATrainHandingOver() throws Exception
@@ -3898,13 +4117,10 @@ public class testATrainIsDispatchedOnce
 
     /**
      * The tail rule sees a train handing over from claim to journey: the track behind its start, which its body lies
-     * across, stays refused to a second train's route throughout.  Across the hand-over the walk must not find the
-     * train in neither map and anchor its tail at whichever reserved Point the railway's map gives first (the start is
-     * named so that another comes first), which would leave the track behind the start claimed by nobody.
+     * across, stays refused to a second train's route throughout.  The walk must not find the train in neither map and
+     * anchor its tail at whichever reserved Point comes first.
      *
      * MUTATION: read the journeys before the claims for the path a train holds, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheTailRuleSeesATrainHandingOver() throws Exception
@@ -3920,8 +4136,6 @@ public class testATrainIsDispatchedOnce
      * Where a train handing over from claim to journey is, for the tail overlay, is its start.
      *
      * MUTATION: read the journeys before the claims for the path a train holds, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testWhereATrainHandingOverIsIsItsStart() throws Exception
@@ -3949,9 +4163,9 @@ public class testATrainIsDispatchedOnce
 
     /**
      * PV - PW - start - PXM - PXN in a line, every rail 100 long; X, 150 long, stands at the start come in from the
-     * west, its tail over PW -> start and PV -> PW; Y stands at PU, whose road runs PU -> PV -> PW.  X is sent start ->
-     * PXM -> PXN and held at its hand-over, and the question is asked with the hand-over let run to its end the moment
-     * the method named reads the second of the two maps.  The start is not the first of X's reserved Points in the map.
+     * west, its tail over PW -> start and PV -> PW; Y stands at PU.  X is sent start -> PXM -> PXN and held at its
+     * hand-over; the hand-over runs on when the named method reads the second map.  The start is not the first of X's
+     * reserved Points in the map.
      */
     private static Object acrossATailedHandOver(int firstSensor, String inside, AskedAcrossATail question) throws Exception
     {
@@ -4064,14 +4278,10 @@ public class testATrainIsDispatchedOnce
     }
 
     /**
-     * A timetable's own loop is running until it has stopped dispatching, and a stop wakes its pause: after a stop with
-     * no train moving the railway reads busy while the loop is still inside the timetable, so no door starts a run it
-     * could join, and the loop leaves at once.  Two entries, the second five seconds after the first: the first ran and
-     * arrived, the loop pausing before the second, held with the pause's monitor taken.
+     * A timetable's own loop is running until it has stopped dispatching, and a stop wakes its pause: after a stop the
+     * railway reads busy while the loop is inside the timetable, so no door starts a run it could join.
      *
      * MUTATION: count the loop not at all, or pause it in a sleep no stop wakes, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testATimetablesLoopIsRunningUntilItHasStopped() throws Exception
@@ -4128,12 +4338,12 @@ public class testATrainIsDispatchedOnce
             executor.start();
 
             // THE FIRST ENTRY RUNS AND ARRIVES, its sensor left occupied: the train stands there
-            assertTrue(waitFor(() -> rail.getActiveLocomotives().containsKey(t), 10000), "precondition: the first entry"
+            assertTrue(until(() -> rail.getActiveLocomotives().containsKey(t), 10000), "precondition: the first entry"
                 + " was not sent");
 
             model.setFeedbackState(s[1].getName(), true);
 
-            assertTrue(waitFor(() -> !rail.getActiveLocomotives().containsKey(t), 10000), "precondition: the first entry"
+            assertTrue(until(() -> !rail.getActiveLocomotives().containsKey(t), 10000), "precondition: the first entry"
                 + " did not arrive");
 
             Thread.sleep(500);
@@ -4170,7 +4380,7 @@ public class testATrainIsDispatchedOnce
             stopping.setDaemon(true);
             stopping.start();
 
-            assertTrue(waitFor(() -> !rail.isAutoRunning(), 5000), "precondition: the stop did not clear running");
+            assertTrue(until(() -> !rail.isAutoRunning(), 5000), "precondition: the stop did not clear running");
 
             assertTrue(rail.isRunning(), "a timetable's loop still inside the timetable after a stop is not counted as"
                 + " running, so Start can come back and begin a run the loop then joins (RSA4-C1)");
@@ -4213,13 +4423,9 @@ public class testATrainIsDispatchedOnce
 
     /**
      * The Yes and a timetable's start cannot straddle each other: a Yes that has cleared `running` and not yet counted
-     * holds back a timetable starting, which then reads the new count and starts nothing.  Held exactly: the Yes is
-     * made with the pause's monitor taken, so it blocks between clearing `running` and counting; a timetable is started
-     * meanwhile, with the count read before the Yes; then the Yes is let go.
+     * holds back a timetable starting, which then reads the new count and starts nothing.
      *
      * MUTATION: let the timetable set `running` and read the count with nothing held, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testTheYesAndATimetablesStartCannotStraddle() throws Exception
@@ -4296,7 +4502,7 @@ public class testATrainIsDispatchedOnce
 
             final Thread asking = yes;
 
-            assertTrue(waitFor(() -> asking.getState() == Thread.State.BLOCKED, 5000), "precondition: the Yes did not"
+            assertTrue(until(() -> asking.getState() == Thread.State.BLOCKED, 5000), "precondition: the Yes did not"
                 + " block between clearing running and counting");
 
             assertEquals(rail.stopsOrdered(), chosen, "precondition: the Yes counted before it was held");

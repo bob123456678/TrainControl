@@ -89,8 +89,6 @@ public class FeedbackEvents
     
 	/**
 	 * Main method initialized control station and executes custom code
-	 * 
-         * @param args
 	 */
 	public static void main(String[] args)
 	{            

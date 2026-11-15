@@ -19,10 +19,9 @@ import support.SourceOf;
 
 /**
  * One-click updates are wired together end to end (FR-125): `core.testTheUpdaterSwapsTheJar` hands the updater its
- * launcher, mover and starter, so it says nothing about the real ones or the places that call them.  The callers
- * cannot be run without starting TrainControl or ending this JVM, so their order is read from the source, as
- * `regression.testEditorSurfaceRules` reads `WindowClosed`'s: that catches a line moved or dropped, not one that
- * behaves differently at the same place.
+ * launcher, mover and starter, so it says nothing about the real ones or their callers.  The callers cannot be run
+ * without starting TrainControl or ending this JVM, so their order is read from the source: that catches a line moved
+ * or dropped, not one that behaves differently at the same place.
  */
 public class testTheUpdateIsWiredEndToEnd
 {
@@ -182,9 +181,7 @@ public class testTheUpdateIsWiredEndToEnd
         assertFalse(init.substring(display, report).contains("});"), "the start is not reported in the same step"
             + " that shows the window");
 
-        // Split, so the look-and-feel check (testEveryWindowWearsTheApplicationsLook) does not read this search for the
-        // dialog as a dialog this class opens: it opens none
-        int cancelled = init.indexOf("JOptionPane" + ".showMessageDialog(null, I18n.t(\"ui.noIpEnteredShutdown\"))");
+        int cancelled = init.indexOf("tellAtStartUp(I18n.t(\"ui.noIpEnteredShutdown\"))");
 
         assertTrue(cancelled >= 0, "precondition: the IP question's cancel is not where it was");
 
@@ -242,6 +239,35 @@ public class testTheUpdateIsWiredEndToEnd
     }
 
     /**
+     * Once the updater is started the exit ends whatever the open editor's discard throws: the updater holds the update
+     * lock until this process ends, and an exit that returned instead would leave it held, every later Download &amp;
+     * Update refused as already under way.  Pinned by reading: the exit cannot be run to its end in a test.
+     *
+     * MUTATION: take `System.exit(0)` out of the `finally` around the editor's discard, and this fails.
+     */
+    @Test
+    public void testTheExitEndsEvenWhenTheEditorThrows() throws Exception
+    {
+        String exit = bodyOf("private void WindowClosed(java.awt.event.WindowEvent evt)");
+
+        inOrder(exit, "the exit", "SelfUpdate.startUpdater(", "completeExitDiscard()", "finally", "System.exit(0)");
+
+        String last = exit.substring(exit.indexOf("finally", exit.indexOf("completeExitDiscard()")));
+
+        int depth = 0;
+        int end = -1;
+
+        for (int i = last.indexOf('{'); i >= 0 && i < last.length() && end < 0; i++)
+        {
+            if (last.charAt(i) == '{') depth++;
+            if (last.charAt(i) == '}' && --depth == 0) end = i;
+        }
+
+        assertTrue(end > 0 && last.substring(0, end).contains("System.exit(0)"), "the exit after the editor's discard"
+            + " is not in a finally, so a discard that throws leaves the update lock held");
+    }
+
+    /**
      * The update's last step waits out an open dialog, asks what the Auto tab asks, and leaves through the exit with
      * the update armed only for as long as that exit runs; the update is one at a time from its question on.  Pinned
      * by reading.
@@ -282,9 +308,9 @@ public class testTheUpdateIsWiredEndToEnd
     @Test
     public void testOneBackupAtATime() throws Exception
     {
-        String backup = bodyOf("BackupAction.BackupOutcome backupData()");
+        String backup = bodyOf("BackupAction.BackupOutcome backupData(boolean offerStationLayout)");
 
-        assertTrue(backup.contains("synchronized (this.oneBackupAtATime)") && backup.contains("writeTheBackup()"),
+        assertTrue(backup.contains("synchronized (this.oneBackupAtATime)") && backup.contains("writeTheBackup("),
             "backupData no longer holds one backup at a time");
 
         // Asked of the whole program's code: the declaration and the one call.

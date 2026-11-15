@@ -20,6 +20,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
+import org.traincontrol.gui.LayoutPopupUI;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
@@ -56,20 +57,7 @@ public class testRecentLayouts
 
         sandbox = support.LayoutSandbox.open();
 
-        second = Files.createTempDirectory("tc-recent-layout");
-
-        Path from = new File("test/test_layout").toPath();
-
-        try (java.util.stream.Stream<Path> walk = Files.walk(from))
-        {
-            for (Path p : (Iterable<Path>) walk::iterator)
-            {
-                Path to = second.resolve(from.relativize(p).toString());
-
-                if (Files.isDirectory(p)) Files.createDirectories(to);
-                else Files.copy(p, to);
-            }
-        }
+        second = copyOfTheTestLayout("tc-recent-layout");
 
         model = support.TestStation.simulatedWithWindow();
 
@@ -134,6 +122,84 @@ public class testRecentLayouts
     }
 
     /**
+     * Opening another layout closes the page windows of the one left and forgets them, so a start restores none of them
+     * on the layout opened (OB-466), though B's pages have A's names.
+     *
+     * MUTATION: leave out `closeThePageWindows()` in `TrainControlUI.sourceIsNow`, and A's page window stays open.
+     */
+    @Test
+    public void testOpeningAnotherLayoutClosesThePageWindowsOfTheOneLeft() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        String b = second.toFile().getAbsolutePath();
+        boolean rememberWas = TrainControlUI.getPrefs().getBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, false);
+
+        assertEquals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath(), a, "precondition: A is not open");
+
+        TrainControlUI.getPrefs().putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, true);
+
+        try
+        {
+            record(b);
+
+            LayoutPopupUI window = support.AskingWindows.openThePage(ui);
+
+            // Remembered as the application's exit remembers it
+            SwingUtilities.invokeAndWait(() -> invoke("saveLayoutTitles"));
+
+            open(b);
+
+            assertEquals(pageWindows(), new ArrayList<String>(), "a page window of the layout left is still open");
+            assertFalse(window.isShowing(), "the page window of the layout left is still open");
+
+            // What a start does with the page windows remembered
+            SwingUtilities.invokeAndWait(ui::restoreLayoutTitles);
+            Components.settle();
+
+            assertEquals(pageWindows(), new ArrayList<String>(), "a start reopens the page windows of the layout left");
+        }
+        finally
+        {
+            TrainControlUI.getPrefs().putBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, rememberWas);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupUI) w.dispose();
+            });
+
+            if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath())) open(a);
+        }
+    }
+
+    /** The pages of the page windows showing. */
+    private static List<String> pageWindows()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            List<String> pages = new ArrayList<>();
+
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (w instanceof LayoutPopupUI && w.isShowing()) pages.add(((LayoutPopupUI) w).getLayoutTitle());
+            }
+
+            return pages;
+        });
+    }
+
+    private static void invoke(String method)
+    {
+        try
+        {
+            support.Reflect.method(TrainControlUI.class, method).invoke(ui);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
      * The layout open when TrainControl started is listed once another is opened, though it was never recorded
      * (OB-378).
      *
@@ -190,10 +256,18 @@ public class testRecentLayouts
 
         record(a);
 
-        shown();
+        assertEquals(shown(), new ArrayList<String>(), "Recent Layouts lists the open layout");
 
-        assertFalse(Components.onTheEventThread(recentMenu()::isEnabled), "Recent Layouts is not grayed with nothing to"
+        // Live, with one gray line saying why there is nothing to open.
+        assertTrue(Components.onTheEventThread(recentMenu()::isEnabled), "Recent Layouts is grayed with nothing to"
             + " list");
+
+        JMenuItem first = Components.onTheEventThread(() -> recentMenu().getItem(0));
+
+        assertEquals(first.getText(), I18n.t("ui.main.toolbar.noOtherLayouts"), "Recent Layouts does not say it has"
+            + " no other layout");
+
+        assertFalse(first.isEnabled(), "the line saying there is no other layout can be chosen");
     }
 
     /**
@@ -357,8 +431,8 @@ public class testRecentLayouts
     }
 
     /**
-     * While a route runs Recent Layouts is grayed with the run's reason, and a recent layout refuses as Open Layout
-     * does.
+     * While a route runs each listed layout is grayed with the run's reason, the folder under them staying live, and a
+     * recent layout refuses as Open Layout does.
      *
      * MUTATION: take `refuseWhileARunHoldsTheSetup` out of `openRecentLayout`.
      */
@@ -379,14 +453,28 @@ public class testRecentLayouts
 
         try
         {
-            assertTrue(model.getRoute(PROBE).setExecuting(), "precondition: the probe route would not run");
-
             assertEquals(shown(), Collections.singletonList(b), "precondition: Recent Layouts does not list B");
 
-            assertFalse(Components.onTheEventThread(recentMenu()::isEnabled), "Recent Layouts is not grayed while a"
-                + " route runs");
+            assertTrue(model.getRoute(PROBE).setExecuting(), "precondition: the probe route would not run");
 
-            List<String> said = click(b);
+            // The run's reason replaces the tip that names the folder, so B is the one item listed.
+            assertEquals(listed(item -> item.isEnabled() + " " + item.getToolTipText().replaceAll("<[^>]*>", " ")
+                .replaceAll("\\s+", " ").trim()), Collections.singletonList("false " + I18n.t("ui.main.errorNoEditsWhileRunning")),
+                "a recent layout is not grayed with the run's reason while a route runs");
+
+            JMenuItem folder = Components.onTheEventThread(() ->
+                recentMenu().getItem(recentMenu().getItemCount() - 1));
+
+            assertEquals(folder.getText(), I18n.t("ui.main.toolbar.showCurrentLayoutFolder"));
+
+            assertTrue(folder.isEnabled(), "Show Current Layout Folder is grayed while a route runs");
+
+            // The click's own refusal is the backstop behind the gray.
+            JMenuItem waiting = Components.onTheEventThread(() -> recentMenu().getItem(0));
+
+            Components.onTheEventThread(() -> { waiting.setEnabled(true); return null; });
+
+            List<String> said = click(waiting);
 
             assertEquals(said, Collections.singletonList(I18n.t("ui.main.errorNoEditsWhileRunning")), "a recent layout"
                 + " did not refuse, before anything else, while a route runs");
@@ -398,6 +486,187 @@ public class testRecentLayouts
             model.getRoute(PROBE).stopExecuting();
             model.deleteRoute(PROBE);
         }
+    }
+
+    /**
+     * A folder that holds no layout is refused with the message before anything changes: the layout in use and its
+     * pages stay; going ahead, the failed read would send the sync to the Central Station's layout.
+     *
+     * MUTATION: drop the `config/gleisbild.cs2` check at the top of `TrainControlUI.openLayoutFolder`.
+     */
+    @Test(timeOut = 120000)
+    public void testAFolderWithNoLayoutIsRefusedAndNothingChanges() throws Exception
+    {
+        File empty = Files.createTempDirectory("tc-not-a-layout").toFile();
+
+        try
+        {
+            refusedAndNothingChanges(empty, "a folder with no layout");
+        }
+        finally
+        {
+            Util.deleteTree(empty, 0);
+        }
+    }
+
+    /**
+     * A folder with a page index whose every page fails to read is refused the same way, before anything changes:
+     * going ahead, the sync's failed read would send it to the Central Station's layout.
+     *
+     * MUTATION: in `TrainControlUI.openLayoutFolder`, ask `CS2File.holdsALayout` again instead of `opensAsALayout`.
+     */
+    @Test(timeOut = 120000)
+    public void testAFolderWhosePagesWillNotReadIsRefusedAndNothingChanges() throws Exception
+    {
+        File broken = Files.createTempDirectory("tc-pages-unread").toFile();
+
+        try
+        {
+            File config = new File(broken, "config");
+
+            assertTrue(config.mkdirs(), "cannot make " + config);
+
+            Files.copy(new File("test/test_layout/config/gleisbild.cs2").toPath(),
+                new File(config, "gleisbild.cs2").toPath());
+
+            refusedAndNothingChanges(broken, "a folder whose pages will not read");
+        }
+        finally
+        {
+            Util.deleteTree(broken, 0);
+        }
+    }
+
+    /** Opens the folder from Recent Layouts, with A open: refused with the message, and the layout and pages stay. */
+    private static void refusedAndNothingChanges(File folder, String what) throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        String path = folder.getAbsolutePath();
+
+        record(path, a);
+
+        assertEquals(shown(), Collections.singletonList(path), "precondition: Recent Layouts does not list the folder");
+
+        List<String> pagesWere = new ArrayList<>(model.getLayoutList());
+
+        assertEquals(click(path), Collections.singletonList(I18n.t("layout.ui.errorInvalidPathOrCorruptData")),
+            what + " was not refused with the message");
+
+        nothingChanged(a, pagesWere, "opening " + what);
+    }
+
+    /** The layout in use is still A, with the pages it had. */
+    private static void nothingChanged(String a, List<String> pagesWere, String doing)
+    {
+        assertEquals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath(), a,
+            doing + " changed the layout in use");
+
+        assertEquals(new ArrayList<>(model.getLayoutList()), pagesWere, doing + " changed the pages");
+    }
+
+    /**
+     * A folder with one page that will not read still opens, with a placeholder in that page's place: an unreadable
+     * page costs that page only (OB-408), so the refusal above is for a folder where no page reads.
+     *
+     * MUTATION: in `CS2File.readNoPage`, ask `anyMatch` instead of `allMatch`, and the folder is refused.
+     */
+    @Test(timeOut = 180000)
+    public void testAFolderWithOneUnreadablePageStillOpens() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        Path partial = copyOfTheTestLayout("tc-one-page-unread");
+
+        try
+        {
+            Files.delete(partial.resolve("config/gleisbilder/5 - Test.cs2"));
+
+            String path = partial.toFile().getAbsolutePath();
+
+            record(path, a);
+
+            open(path);
+
+            assertEquals(model.getLayoutList().size(), 5, "the pages that read, and the placeholder, are not all there: "
+                + model.getLayoutList());
+
+            assertTrue(model.getLayout("5 - Test").isUnreadable(), "the page that will not read has no placeholder");
+        }
+        finally
+        {
+            try
+            {
+                if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath())) open(a);
+            }
+            finally
+            {
+                Util.deleteTree(partial.toFile(), 0);
+            }
+        }
+    }
+
+    /**
+     * Create New Layout into a folder the sample will not unpack into whole (a file stands where its `config` folder
+     * goes) says so, and nothing changes: the layout in use and its pages stay.  Taken as success, the half-unpacked
+     * folder became the layout, and its failed read sent the sync to the Central Station's layout.
+     *
+     * MUTATION: in `LayoutFileActions.unzipFile`, catch and log the IOException again, and the layout in use changes.
+     */
+    @Test(timeOut = 120000)
+    public void testANewLayoutThatWillNotUnpackIsSaidAndNothingChanges() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        File blocked = Files.createTempDirectory("tc-new-layout-blocked").toFile();
+
+        try
+        {
+            Files.write(new File(blocked, "config").toPath(),
+                "in the way".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            List<String> pagesWere = new ArrayList<>(model.getLayoutList());
+            List<String> said;
+
+            JMenuItem create = (JMenuItem) Components.withText(ui, I18n.t("ui.main.toolbar.createLayout"));
+
+            try (Answering answering = Answering.start(message -> Answering.pressAt(0)).choosing(blocked))
+            {
+                SwingUtilities.invokeAndWait(create::doClick);
+
+                answering.awaitAsked(2, 30000);
+
+                Components.settle();
+
+                said = answering.asked();
+            }
+
+            assertTrue(said.contains(I18n.t("layout.ui.errorInitializeDemoLayout")),
+                "a layout that did not unpack whole was not said to have failed: " + said);
+
+            nothingChanged(a, pagesWere, "a layout that did not unpack whole");
+        }
+        finally
+        {
+            Util.deleteTree(blocked, 0);
+        }
+    }
+
+    /** A copy of the test layout in a temporary folder of its own. */
+    private static Path copyOfTheTestLayout(String prefix) throws java.io.IOException
+    {
+        Path copy = Files.createTempDirectory(prefix);
+        Path from = new File("test/test_layout").toPath();
+
+        try (java.util.stream.Stream<Path> walk = Files.walk(from))
+        {
+            for (Path p : (Iterable<Path>) walk::iterator)
+            {
+                Path to = copy.resolve(from.relativize(p).toString());
+
+                if (Files.isDirectory(p)) Files.createDirectories(to);
+                else Files.copy(p, to);
+            }
+        }
+
+        return copy;
     }
 
     private static void record(String... folders)
@@ -439,7 +708,7 @@ public class testRecentLayouts
 
             List<String> read = new ArrayList<>();
 
-            for (int i = 0; i < recentMenu().getItemCount(); i++) read.add(reading.apply(recentMenu().getItem(i)));
+            for (JMenuItem item : layoutItems()) read.add(reading.apply(item));
 
             return read;
         });
@@ -450,9 +719,9 @@ public class testRecentLayouts
     {
         JMenuItem item = Components.onTheEventThread(() ->
         {
-            for (int i = 0; i < recentMenu().getItemCount(); i++)
+            for (JMenuItem each : layoutItems())
             {
-                if (folder.equals(pathOf(recentMenu().getItem(i)))) return recentMenu().getItem(i);
+                if (folder.equals(pathOf(each))) return each;
             }
 
             return null;
@@ -463,10 +732,30 @@ public class testRecentLayouts
         return item;
     }
 
+    /** The items that each open a listed layout, numbered; not the line for none, nor the folder under them. */
+    private static List<JMenuItem> layoutItems()
+    {
+        List<JMenuItem> items = new ArrayList<>();
+
+        for (int i = 0; i < recentMenu().getItemCount(); i++)
+        {
+            JMenuItem item = recentMenu().getItem(i);
+
+            if (item != null && item.getText().matches("\\d+\\. .*")) items.add(item);
+        }
+
+        return items;
+    }
+
     /** Clicks the listed folder, and gives back what was asked. */
     private static List<String> click(String folder) throws Exception
     {
-        JMenuItem item = listedItem(folder);
+        return click(listedItem(folder));
+    }
+
+    /** Clicks the item, and gives back what was asked. */
+    private static List<String> click(JMenuItem item) throws Exception
+    {
 
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {

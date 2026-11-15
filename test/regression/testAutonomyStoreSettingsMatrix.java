@@ -17,24 +17,22 @@ import java.util.function.BiFunction;
 import static org.testng.Assert.*;
 import org.json.JSONObject;
 import org.testng.annotations.Test;
+import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.AutonomyCompanionStore;
+import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts;
+import support.Trees;
 
 /**
  * Every setting the store holds, against every structural thing that can happen to a diagram.
  *
- * The store keeps eleven separate collections of settings, all keyed by square, and a diagram edit has to do the right
- * thing to every one of them.  Tests written one setting at a time left misses of one shape: a collection that some
- * operation forgot (`tileDirections` left behind by every move because their keys carry a suffix; `captions` dropped by
- * a move that landed on them).  So this is a matrix, settings down one side and operations along the other, every cell
- * asserted.
- *
- * The last test is the important one for the future: it reflects over the store's own fields and refuses to pass
- * unless every collection is in the matrix or on the list of things not keyed by square, so adding a setting without
- * deciding which fails the build.
+ * The store keeps eleven collections of settings, all keyed by square, and a diagram edit has to do the right thing to
+ * every one: a matrix, settings down one side and operations along the other, every cell asserted.  The last test
+ * reflects over the store's own fields and fails unless every collection is in the matrix or on the list of things not
+ * keyed by square, so adding a setting without deciding which fails the build.
  */
 public class testAutonomyStoreSettingsMatrix
 {
@@ -225,11 +223,9 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * Every setting is forgotten when the page it is on is deleted.
-     *
-     * `deletePage` gathers the page's squares by naming every collection, so testStoreCollectionsAreHandledEverywhere's
-     * textual guard governs it; but that guard only requires the NAME to appear.  The setting would then survive the
-     * page and, by page-id reuse (testPageIdsAreDurable), go to whatever page arrives next.
+     * Every setting is forgotten when the page it is on is deleted.  The textual guard of
+     * testStoreCollectionsAreHandledEverywhere only requires the NAME to appear, and a surviving setting would, by
+     * page-id reuse (testPageIdsAreDurable), go to whatever page arrives next.
      *
      * MUTATION: in `AutonomyCompanionStore.deletePage`, neuter one gathering loop while still naming its collection
      * (`for (TileKey key : new LinkedHashSet<>(disabledPortals)) if (isOnPage(key, page)) squares.add(key);` becomes
@@ -339,15 +335,11 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * Every setting survives being written to disk and read back, with page ids set.
-     *
-     * The store keys by page NAME in memory and by page ID on disk, and `setPageIds` tells it the mapping; without it
-     * `toStored` and `fromStored` pass keys through, `withoutAbsentPages` returns early and the held path never runs,
-     * so the round trip ran with the translation layer switched off.
+     * Every setting survives being written to disk and read back, with page ids set (the store keys by page NAME in
+     * memory and by page ID on disk; without `setPageIds` the translation layer is off).
      *
      * MUTATION: making `fromStored` return its argument unchanged fails this test.  Making `toStored` return its
-     * argument (the written-raw defect itself) does NOT fail this or the renumber test: a file written with page NAMES
-     * round-trips while names do not change.  Only a RENAME exposes it, which is what the third test below is for.
+     * argument does NOT fail this or the renumber test: only a RENAME exposes it (the third test below).
      */
     @Test
     public void testEverySettingSurvivesASaveAndLoad() throws IOException
@@ -374,7 +366,98 @@ public class testAutonomyStoreSettingsMatrix
             }
             finally
             {
-                delete(folder);
+                Trees.delete(folder);
+            }
+        }
+    }
+
+    /** A non-default value for every key of a station's setup, by key; facing and homeFacing live outside the constant. */
+    public static final Map<String, Object> STATION_KEY_VALUES = new LinkedHashMap<>();
+
+    static
+    {
+        STATION_KEY_VALUES.put("loc", new JSONObject().put("name", "BR 218"));
+        STATION_KEY_VALUES.put("active", false);
+        STATION_KEY_VALUES.put("maxTrainLength", 7);
+        STATION_KEY_VALUES.put("speedMultiplier", 0.5);
+        STATION_KEY_VALUES.put("priority", 3);
+        STATION_KEY_VALUES.put("home", "BR 232");
+        STATION_KEY_VALUES.put("excludedLocs", new org.json.JSONArray().put("BR 03"));
+        STATION_KEY_VALUES.put("excludedLocsMode", "only");
+        STATION_KEY_VALUES.put("arrivedFrom", "N");
+        STATION_KEY_VALUES.put("arrivedAlong", new org.json.JSONArray().put(new org.json.JSONArray().put("a rail")));
+        STATION_KEY_VALUES.put(AutonomyBuilder.FACING, "W");
+        STATION_KEY_VALUES.put(AutonomyBuilder.HOME_FACING, "W");
+    }
+
+    /** Every per-station key the session captures, plus facing and homeFacing, read off the session's own list. */
+    @SuppressWarnings("unchecked")
+    public static Set<String> stationKeys() throws Exception
+    {
+        Field constant = AutonomySession.class.getDeclaredField("POINT_OPERATIONAL_KEYS");
+
+        constant.setAccessible(true);
+
+        Set<String> keys = new LinkedHashSet<>((List<String>) constant.get(null));
+
+        keys.add(AutonomyBuilder.FACING);
+        keys.add(AutonomyBuilder.HOME_FACING);
+
+        return keys;
+    }
+
+    /**
+     * Every per-station key `AutonomySession` captures (and facing and homeFacing) is written to the file and read back,
+     * one row each, the rows driven by the session's own list: a key added there without a row here fails.
+     *
+     * MUTATION: adding a key to `AutonomySession.POINT_OPERATIONAL_KEYS` with no row fails this; so does a store that
+     * writes or reads a configuration's `points` object without its stations' settings.
+     */
+    @Test
+    public void testEveryStationKeySurvivesASaveAndLoad() throws Exception
+    {
+        Set<String> keys = stationKeys();
+
+        for (String key : keys)
+        {
+            assertTrue(STATION_KEY_VALUES.containsKey(key), "the station key '" + key + "' has no row in "
+                + "STATION_KEY_VALUES: add a non-default value for it so that its save and load is checked");
+        }
+
+        TileKey was = at(4, 4);
+
+        for (String key : keys)
+        {
+            File folder = Files.createTempDirectory("tc-matrix-station").toFile();
+
+            try
+            {
+                AutonomyCompanionStore store = new AutonomyCompanionStore(folder);
+
+                store.setPageIds(pageIds());
+                store.createConfiguration(CONFIGURATION, null);
+                store.setActiveConfiguration(CONFIGURATION);
+
+                configurationPoints(store).put(was.toString(), new JSONObject().put(key, STATION_KEY_VALUES.get(key)));
+
+                store.save();
+
+                AutonomyCompanionStore reloaded = new AutonomyCompanionStore(folder);
+
+                reloaded.setPageIds(pageIds());
+                reloaded.load();
+
+                JSONObject points = reloaded.getConfiguration(CONFIGURATION).optJSONObject("points");
+                JSONObject point = points == null ? null : points.optJSONObject(was.toString());
+
+                assertNotNull(point, "the station's setup was not read back at all: " + key);
+                assertTrue(point.has(key), "the station key '" + key + "' was not written to the file, or not read back");
+                assertEquals(String.valueOf(point.get(key)), String.valueOf(STATION_KEY_VALUES.get(key)),
+                    "the station key '" + key + "' came back changed");
+            }
+            finally
+            {
+                Trees.delete(folder);
             }
         }
     }
@@ -525,9 +608,8 @@ public class testAutonomyStoreSettingsMatrix
     }
 
     /**
-     * Every setting survives its page being RENUMBERED while the file sits on disk.  The save-and-load test above
-     * translates through the same numbering both ways, so a store that wrote names would still pass it; this one
-     * changes the numbers between the save and the load (the MT-135 loss in miniature).
+     * Every setting survives its page being RENUMBERED while the file sits on disk (the MT-135 loss in miniature): the
+     * save-and-load test above translates through the same numbering both ways, so a store that wrote names would pass.
      *
      * MUTATION: making `fromStored` return its argument unchanged fails this test and NOT the save-and-load test above.
      */
@@ -566,22 +648,19 @@ public class testAutonomyStoreSettingsMatrix
             }
             finally
             {
-                delete(folder);
+                Trees.delete(folder);
             }
         }
     }
 
     /**
-     * Every setting survives its page being RENAMED while the file sits on disk.  The rename is driven as the
-     * application drives it - `renamePage` in memory, then a save, then a load under the new name.
+     * Every setting survives its page being RENAMED while the file sits on disk, driven as the application drives it:
+     * `renamePage` in memory, then a save, then a load under the new name.  Skipping `renamePage` orphans the
+     * configuration (keyed by page NAME on disk, never translated).
      *
-     * Skipping the in-memory `renamePage` and reloading under the new index fails "what a configuration says about the
-     * square": the configurations are keyed by page NAME on disk and never translated, so a rename by any path that
-     * does not call `renamePage` orphans the configuration and nothing else.
-     *
-     * MUTATION: this test does NOT catch `toStored` returning its argument unchanged (the class then reports one
-     * failure, `testEveryIdKeyedSettingSurvivesARenameNothingSaw`): renaming IN MEMORY first puts the new name in the
-     * keys, so nothing needs translating.  What it does catch is a setting that does not survive a rename at all.
+     * MUTATION: this does NOT catch `toStored` returning its argument unchanged (renaming IN MEMORY first puts the new
+     * name in the keys; `testEveryIdKeyedSettingSurvivesARenameNothingSaw` catches that); it catches a setting that
+     * does not survive a rename at all.
      */
     @Test
     public void testEverySettingSurvivesItsPageBeingRenamedOnDisk() throws IOException
@@ -622,18 +701,15 @@ public class testAutonomyStoreSettingsMatrix
             }
             finally
             {
-                delete(folder);
+                Trees.delete(folder);
             }
         }
     }
 
     /**
-     * Every id-keyed setting survives a rename that happened while nothing was running: the column that catches a raw
-     * write, since the other three rename IN MEMORY first.  setup.json holds keys under the OLD name, the index offers
-     * only the new one, and only the id can reunite them.
-     *
-     * The configuration row is excluded by name: it is keyed by page NAME on disk and never translated, a dependency
-     * nothing stated (every path that renames a page rekeys the configurations first).
+     * Every id-keyed setting survives a rename that happened while nothing was running: setup.json holds keys under
+     * the OLD name, the index offers only the new one, and only the id can reunite them.  The configuration row is
+     * excluded: it is keyed by page NAME and every path that renames a page rekeys it first.
      *
      * MUTATION: making `toStored` return its argument unchanged fails this test on the eleven id-keyed settings, and
      * none of the other three columns.
@@ -681,7 +757,7 @@ public class testAutonomyStoreSettingsMatrix
             }
             finally
             {
-                delete(folder);
+                Trees.delete(folder);
             }
         }
 
@@ -713,14 +789,5 @@ public class testAutonomyStoreSettingsMatrix
     private static TileKey on(String page, int x, int y)
     {
         return new TileKey(page, x, y);
-    }
-
-    private static void delete(File file)
-    {
-        File[] kids = file.listFiles();
-
-        if (kids != null) for (File kid : kids) delete(kid);
-
-        file.delete();
     }
 }

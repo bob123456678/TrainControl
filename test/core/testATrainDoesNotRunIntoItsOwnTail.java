@@ -18,6 +18,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * A train is not sent round a loop into its own tail (OB-294).
@@ -387,10 +388,8 @@ public class testATrainDoesNotRunIntoItsOwnTail
     @Test
     public void testALoopAnsweredZeroThroughoutIsJudged() throws Exception
     {
-        java.lang.reflect.Method rule = Layout.class.getDeclaredMethod("whyItWouldMeetItsOwnTail", List.class,
-            Locomotive.class, Map.class);
-
-        rule.setAccessible(true);
+        java.lang.reflect.Method rule =
+            Reflect.method(Layout.class, "whyItWouldMeetItsOwnTail", List.class, Locomotive.class, Map.class);
 
         Map<String, Integer> body = new java.util.LinkedHashMap<>();
 
@@ -618,14 +617,10 @@ public class testATrainDoesNotRunIntoItsOwnTail
     @SuppressWarnings("unchecked")
     public void testReturnHomePlansNoRouteIntoItsOwnTail() throws Exception
     {
-        java.lang.reflect.Method route = org.traincontrol.automation.HomeStaging.class.getDeclaredMethod("firstClearRoute",
-            Map.class, java.util.Set.class, Locomotive.class, Point.class, Point.class);
+        java.lang.reflect.Method route = Reflect.method(org.traincontrol.automation.HomeStaging.class,
+            "firstClearRoute", Map.class, java.util.Set.class, Locomotive.class, Point.class, Point.class);
 
-        route.setAccessible(true);
-
-        java.lang.reflect.Field startField = org.traincontrol.automation.HomeStaging.class.getDeclaredField("start");
-
-        startField.setAccessible(true);
+        java.lang.reflect.Field startField = Reflect.field(org.traincontrol.automation.HomeStaging.class, "start");
 
         // THE CONTROL: four units is gone in time, and the planner finds a way.
         standItAsArrived(4);
@@ -679,14 +674,10 @@ public class testATrainDoesNotRunIntoItsOwnTail
     @SuppressWarnings("unchecked")
     public void testReturnHomeJudgesAMovedTrainByTheRoadItCameAlong() throws Exception
     {
-        java.lang.reflect.Method route = org.traincontrol.automation.HomeStaging.class.getDeclaredMethod("firstClearRoute",
-            Map.class, java.util.Set.class, Locomotive.class, Point.class, Point.class);
+        java.lang.reflect.Method route = Reflect.method(org.traincontrol.automation.HomeStaging.class,
+            "firstClearRoute", Map.class, java.util.Set.class, Locomotive.class, Point.class, Point.class);
 
-        route.setAccessible(true);
-
-        java.lang.reflect.Field moved = org.traincontrol.automation.HomeStaging.class.getDeclaredField("movedAlong");
-
-        moved.setAccessible(true);
+        java.lang.reflect.Field moved = Reflect.field(org.traincontrol.automation.HomeStaging.class, "movedAlong");
 
         // Nothing on the railway at BottomSecondary: the train is there only in the plan.
         clearTheRailway();

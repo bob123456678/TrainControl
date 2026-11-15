@@ -43,7 +43,6 @@ It also produces something else the suite has never had by hand: **a split squar
 
 ## Used by
 
-- `core.testTwoRoutesShareOneSwitch`
 - `core.testACoveredSwitchClosesTheOtherRoad`
 - `core.testALongTrainIsOfferedNothingOnAOneUnitRailway`
 - `core.testATrainIsJudgedOnlyWhereItStops`
@@ -68,3 +67,14 @@ It also produces something else the suite has never had by hand: **a split squar
 - `core.testARunLeavesItsStateBehind` - a simulated run and a Return Home over the switch, read afterwards (FR-136)
 - `ui.testTheAutoTabSaysWhyATrainWaits`
 - `ui.testTheAutonomyEditorsBulkDoors`
+- `core.testATrainMustStopAndCannotPassThrough`
+- `core.testWhichTrainsKeepsOneList`
+- `ui.testTheKeyboardAsksDuringAnAutonomyRun`
+- `ui.testAPageWindowsSquaresAskOverIt`
+- `ui.testTheLocomotiveDoorsAskOverTheirWindow`
+- `ui.testATimetableEntryKeepsItsSquaresThroughRenames`
+- `core.testStandingRulesAnswerAsTheDoorsDo`
+- `ui.testPageLinksGoByPageId`
+- `ui.testAShortCircuitCutsThePower`
+- `ui.testTheWindowShowsTheConnection`
+- `ui.testTheLogTabScrollsSideways`

@@ -10,12 +10,14 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.I18n;
 
@@ -49,17 +51,23 @@ public class CSDetect
         return checkWebServer(host, CS2File.getLayoutMasterURL(""));
     }
 
-    public static String detectCentralStation()
+    /** Test hooks (OB-480): when not empty, the subnets searched in place of the adapters' own, and how many hosts of each. */
+    static List<String> subnetsForATest = Collections.emptyList();
+    static int hostsPerSubnet = 254;
+
+    /** Searches these subnets in turn; `searching` is told each one ("192.168.1.x") as the search reaches it. */
+    public static String detectCentralStation(List<String> subnets, Consumer<String> searching)
     {
-        for (String subnet : getLocalSubnet())
+        for (String subnet : subnets)
         {
             System.out.println(I18n.f("network.detectedLocalSubnet", subnet));
+            searching.accept(subnet + "x");
 
             String urlPath = CS2File.getLayoutMasterURL("");
             ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
             List<Future<String>> futures = new ArrayList<>();
 
-            for (int i = 1; i < 255; i++)
+            for (int i = 1; i <= hostsPerSubnet; i++)
             {
                 final String host = subnet + i;
                 
@@ -109,15 +117,13 @@ public class CSDetect
         return null;
     }
     
-    public static boolean hasLocalSubnets()
+    /** The site-local subnets whose gateway answers a ping, each as "192.168.1.". */
+    public static List<String> getLocalSubnet()
     {
-        return !getLocalSubnet().isEmpty();
-    }
+        if (!subnetsForATest.isEmpty()) return new ArrayList<>(subnetsForATest);
 
-    private static List<String> getLocalSubnet()
-    {
         List<String> out = new ArrayList<>();
-        
+
         try
         {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -186,26 +192,16 @@ public class CSDetect
     }
     
     /**
-     * Whether there is a Central Station web server on this host, retried (MT-060).  The retry lives in the name every
-     * caller already uses, so no call site has to remember a second method.
-     *
-     * @param host the host, which may carry a port for a test
-     * @param path the path that identifies a Central Station
-     * @return whether one answered
+     * Whether there is a Central Station web server on this host (which may carry a port for a test), retried (MT-060).
+     * The retry lives in the name every caller already uses, so no call site has to remember a second method.  `path`
+     * identifies a Central Station.
      */
     public static boolean checkWebServer(String host, String path)
     {
         return checkWebServer(host, path, WEB_RETRY);
     }
 
-    /**
-     * The same, with the number of attempts named - the way in for a test (MT-060).
-     *
-     * @param host the host, which may carry a port
-     * @param path the path that identifies a Central Station
-     * @param attempts how many times to ask before giving up
-     * @return whether one answered
-     */
+    /** The same, with the number of attempts named - the way in for a test (MT-060). */
     public static boolean checkWebServer(String host, String path, int attempts)
     {
         for (int tries = 0; tries < Math.max(1, attempts); tries++)
@@ -251,10 +247,7 @@ public class CSDetect
         }
         finally
         {
-            if (connection != null)
-            {
-                connection.disconnect();
-            }
+            if (connection != null) connection.disconnect();
         }
 
         return false;

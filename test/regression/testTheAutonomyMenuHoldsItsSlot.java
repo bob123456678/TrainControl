@@ -4,12 +4,13 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
+import support.Display;
+import support.Teardown;
 
 /**
  * The Autonomy menu is in the bar from the first frame, and the real one takes its place (OB-202): the form holds a
@@ -32,10 +33,7 @@ public class testTheAutonomyMenuHoldsItsSlot
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("a menu bar needs a window");
-        }
+        Display.needed("a menu bar needs a window");
 
         // The window follows a saved preference and would otherwise open the operator's own railway.
         sandbox = support.LayoutSandbox.open();
@@ -56,14 +54,7 @@ public class testTheAutonomyMenuHoldsItsSlot
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (ui != null) javax.swing.SwingUtilities.invokeAndWait(() -> ui.dispose());
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, null, ui);
     }
 
     /**

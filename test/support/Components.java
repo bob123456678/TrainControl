@@ -10,6 +10,7 @@ import java.util.function.Predicate;
 import javax.swing.AbstractButton;
 import javax.swing.JComboBox;
 import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JTabbedPane;
 import javax.swing.MenuElement;
@@ -98,6 +99,32 @@ public final class Components
         return null;
     }
 
+    /**
+     * The menu item that says exactly this, through a menu's items and its submenus' (a container's children
+     * otherwise), on the calling thread; null when none.
+     */
+    public static JMenuItem itemNamed(Container menu, String text)
+    {
+        Component[] children = menu instanceof JMenu ? ((JMenu) menu).getMenuComponents() : menu.getComponents();
+
+        for (Component child : children)
+        {
+            if (child instanceof JMenuItem && text.equals(((JMenuItem) child).getText()))
+            {
+                return (JMenuItem) child;
+            }
+
+            if (child instanceof JMenu)
+            {
+                JMenuItem found = itemNamed((JMenu) child, text);
+
+                if (found != null) return found;
+            }
+        }
+
+        return null;
+    }
+
     /** Presses a button or menu item, as a click does: posted to the event thread, and returning at once. */
     public static void press(final AbstractButton button)
     {
@@ -149,6 +176,12 @@ public final class Components
         for (int turn = 0; turn < 6; turn++) onTheEventThread(() -> null);
     }
 
+    /** Waits for this many empty turns of the event thread, one after the other. */
+    public static void drain(int turns) throws Exception
+    {
+        for (int turn = 0; turn < turns; turn++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
     /** Waits for a condition, asking it every 25 ms; whether it came true in time. */
     public static boolean waitFor(BooleanSupplier condition, long millis)
     {
@@ -171,6 +204,39 @@ public final class Components
         }
 
         return true;
+    }
+
+    /** Waits until no live thread has this name, so work a click handed to a background thread has finished. */
+    public static boolean waitForThreadsNamed(String name, long millis)
+    {
+        return waitFor(() ->
+        {
+            for (Thread thread : Thread.getAllStackTraces().keySet())
+            {
+                if (thread.isAlive() && name.equals(thread.getName())) return false;
+            }
+
+            return true;
+        }, millis);
+    }
+
+    /** Waits until the diagram's switching thread has run everything queued on it so far. */
+    public static boolean switchingIdle(long millis)
+    {
+        final java.util.concurrent.CountDownLatch reached = new java.util.concurrent.CountDownLatch(1);
+
+        org.traincontrol.gui.LayoutLabel.submitSwitching(reached::countDown);
+
+        try
+        {
+            return reached.await(millis, java.util.concurrent.TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+
+            return false;
+        }
     }
 
     /**

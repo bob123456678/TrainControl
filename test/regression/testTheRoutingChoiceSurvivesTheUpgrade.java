@@ -4,17 +4,18 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import support.Diagrams;
+import support.Display;
+import support.Reflect;
 
 /**
- * A routing rule chosen before 3.0.0 has to reach the configuration, or wait until it can.  The rule was a
- * java Preference pushed into a static on Layout and is now a per-configuration setting, so an upgrading user's
- * choice has to be carried across; if there is no configuration to carry it into, the old key must survive so that
- * it can be carried tomorrow, or RANDOM takes its place silently, for ever.
+ * A routing rule chosen before 3.0.0 has to reach the configuration, or wait until it can.  It was a java Preference
+ * pushed into a static on Layout and is now a per-configuration setting; with no configuration to carry it into the old
+ * key must survive, or RANDOM takes its place silently, for ever.
  *
- * The success path deletes the key only once persistPathPreference answers true.  The branch above it asked whether
- * the migration was needed by looking at the LIVE layout, which carries what this same method wrote into it on the
- * previous call, so the second call concluded the configuration had answered and deleted the key.  The second call
- * is not exotic: the migration runs from loadAutoLayoutSettings, which has fourteen callers.
+ * The success path deletes the key only once persistPathPreference answers true.  The branch above it once looked at
+ * the LIVE layout, which carries what this method wrote on the previous call, so the second call deleted the key (the
+ * migration runs from loadAutoLayoutSettings, which has fourteen callers).
  */
 public class testTheRoutingChoiceSurvivesTheUpgrade
 {
@@ -25,23 +26,18 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     private static java.util.prefs.Preferences ourPrefs;
 
     /**
-     * Gives this class its own preference node, so nothing it writes can reach the operator.  Writing to
-     * TrainControlUI's node and restoring afterwards looks safe and is not: TrainControl started DURING a battery run
-     * read the key, migrated it, and stored it into the operator's live configuration over the rule he had chosen.
-     *
-     * So the field is swapped rather than the value.  `prefs` is private static final, which JDK 8 lets us reassign by
-     * clearing the final bit; from JDK 12 that is refused, and this asserts rather than falling back, because a guard
-     * that silently stops guarding is worse than none.
+     * Gives this class its own preference node, so nothing it writes can reach the operator: a TrainControl started
+     * DURING a battery run read the key from TrainControlUI's node and stored it into the operator's live
+     * configuration.  So the field is swapped, not the value: `prefs` is private static final, reassignable on JDK 8 by
+     * clearing the final bit; from JDK 12 this asserts rather than falling back (a guard that silently stops guarding
+     * is worse).
      */
     @BeforeClass
     public void useOurOwnPreferences() throws Exception
     {
-        java.lang.reflect.Field field =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("prefs");
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(org.traincontrol.gui.TrainControlUI.class, "prefs");
 
-        java.lang.reflect.Field modifiers = java.lang.reflect.Field.class.getDeclaredField("modifiers");
-        modifiers.setAccessible(true);
+        java.lang.reflect.Field modifiers = Reflect.field(java.lang.reflect.Field.class, "modifiers");
         modifiers.setInt(field, field.getModifiers() & ~java.lang.reflect.Modifier.FINAL);
 
         realPrefs = (java.util.prefs.Preferences) field.get(null);
@@ -62,11 +58,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @AfterClass(alwaysRun = true)
     public void giveThePreferencesBack() throws Exception
     {
-        java.lang.reflect.Field field =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("prefs");
-        field.setAccessible(true);
-
-        if (realPrefs != null) field.set(null, realPrefs);
+        if (realPrefs != null) Reflect.set(org.traincontrol.gui.TrainControlUI.class, null, "prefs", realPrefs);
 
         if (ourPrefs != null) ourPrefs.removeNode();
     }
@@ -75,22 +67,16 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     private static final String LEGACY = "AutonomyPathPreference";
 
     /**
-     * A refused routing change puts the dropdown back, without asking twice.  Choosing a rule while trains are running
-     * is refused, and the dropdown used to keep showing the rule the user picked; its two siblings, timetableCapture
-     * and toggleSpecifiedRoutes, restore themselves after the same refusal.
-     *
-     * Asserted: the control ends up on the rule the layout is actually using, and putting it there does not re-enter
-     * the listener that asked for it.  The second is measured by a DEADLINE rather than a value: `setSelectedIndex` on
-     * a JComboBox fires an ActionEvent, so an unguarded restore finds the railway still busy and opens a modal dialog
-     * that never returns on the event thread.
+     * A refused routing change puts the dropdown back, without asking twice: choosing a rule while trains run is
+     * refused, and the dropdown kept the rule picked (its siblings timetableCapture and toggleSpecifiedRoutes restore
+     * themselves).  Asserted: the control ends up on the rule the layout uses, and does not re-enter the listener,
+     * measured by a DEADLINE (`setSelectedIndex` fires an ActionEvent, so an unguarded restore opens a modal dialog
+     * that never returns).
      */
     @Test
     public void testARefusedRoutingChangePutsTheDropdownBack() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the dropdown lives on a window");
-        }
+        Display.needed("the dropdown lives on a window");
 
         support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
@@ -122,14 +108,9 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
                 org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH);
 
             // Busy, without a train moving: isAutonomyBusy() answers true on this flag alone.
-            java.lang.reflect.Field staging =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("stagingFlowActive");
-            staging.setAccessible(true);
-            staging.set(ui[0], true);
+            Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui[0], "stagingFlowActive", true);
 
-            java.lang.reflect.Field combo =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("algorithmType");
-            combo.setAccessible(true);
+            java.lang.reflect.Field combo = Reflect.field(org.traincontrol.gui.TrainControlUI.class, "algorithmType");
 
             final javax.swing.JComboBox<String> dropdown =
                 (javax.swing.JComboBox<String>) combo.get(ui[0]);
@@ -137,14 +118,11 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             assertNotNull(dropdown, "the dropdown was never mounted, so this test proves nothing");
 
             java.lang.reflect.Method restore =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
-                    "restoreRoutingLogicSelection");
-            restore.setAccessible(true);
+                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "restoreRoutingLogicSelection");
 
             // What a user's refused choice leaves behind: a control showing something else, set with the guard held.
             java.lang.reflect.Field guard =
-                org.traincontrol.gui.TrainControlUI.class.getDeclaredField("restoringRoutingLogic");
-            guard.setAccessible(true);
+                Reflect.field(org.traincontrol.gui.TrainControlUI.class, "restoringRoutingLogic");
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
@@ -217,9 +195,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     /** The order the dropdown speaks, read from the window rather than copied. */
     private static org.traincontrol.automation.Layout.PathPreference[] routingOrder() throws Exception
     {
-        java.lang.reflect.Field order =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("ROUTING_ORDER");
-        order.setAccessible(true);
+        java.lang.reflect.Field order = Reflect.field(org.traincontrol.gui.TrainControlUI.class, "ROUTING_ORDER");
 
         return (org.traincontrol.automation.Layout.PathPreference[]) order.get(null);
     }
@@ -233,10 +209,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @Test
     public void testTheOldChoiceIsKeptUntilSomethingCanStoreIt() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the migration lives on a window");
-        }
+        Display.needed("the migration lives on a window");
 
         // The window's node, which is the throwaway this class installed.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
@@ -322,10 +295,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @Test
     public void testAConfigurationWithNoAnswerIsGivenTheOldOne() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the migration lives on a window");
-        }
+        Display.needed("the migration lives on a window");
 
         // The window's node, which is the throwaway this class installed.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
@@ -367,9 +337,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             org.traincontrol.base.LayoutDiagram page =
                 new org.traincontrol.base.LayoutDiagram("Routing Page", 8, 4, null, null);
 
-            page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK,
-                1, 1, 0, 0, 5, 11,
-                org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, 1, 1, 5, 11);
 
             page.setEdit(true);
             page.checkBounds();
@@ -417,10 +385,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @Test
     public void testARuleAlreadyInTheLayoutIsNotOverruled() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the migration lives on a window");
-        }
+        Display.needed("the migration lives on a window");
 
         // The window's node, which is the throwaway this class installed.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
@@ -499,10 +464,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @Test
     public void testTheOldChoiceGoesOnceTheConfigurationHasOne() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the migration lives on a window");
-        }
+        Display.needed("the migration lives on a window");
 
         // The window's node, which is the throwaway this class installed.
         java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
@@ -544,9 +506,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             org.traincontrol.base.LayoutDiagram page =
                 new org.traincontrol.base.LayoutDiagram("Routing Page", 8, 4, null, null);
 
-            page.addComponent(org.traincontrol.base.LayoutDiagramComponent.componentType.FEEDBACK,
-                1, 1, 0, 0, 5, 11,
-                org.traincontrol.base.Accessory.accessoryDecoderType.MM2, null);
+            Diagrams.feedback(page, 1, 1, 5, 11);
 
             page.setEdit(true);
             page.checkBounds();
@@ -594,10 +554,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     @Test
     public void testTheAutoTabStaysShutWithALegacyAutonomyJson() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("the tab is on a window");
-        }
+        Display.needed("the tab is on a window");
 
         support.LayoutSandbox sandbox = null;
 
@@ -643,20 +600,15 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
                 "precondition: the legacy file must parse, or the tab is off for a reason that has "
                 + "nothing to do with this finding.  " + org.traincontrol.automation.Layout.getLastError());
 
-            java.lang.reflect.Field active = org.traincontrol.gui.TrainControlUI.class
-                .getDeclaredField("activeDiagramConfiguration");
-
-            active.setAccessible(true);
+            java.lang.reflect.Field active =
+                Reflect.field(org.traincontrol.gui.TrainControlUI.class, "activeDiagramConfiguration");
 
             assertNull(active.get(ui[0]),
                 "precondition: this test is about a layout with NO diagram configuration active");
 
             javax.swing.SwingUtilities.invokeAndWait(() -> ui[0].refreshAutonomyTabState());
 
-            java.lang.reflect.Field tabs = org.traincontrol.gui.TrainControlUI.class
-                .getDeclaredField("KeyboardTab");
-
-            tabs.setAccessible(true);
+            java.lang.reflect.Field tabs = Reflect.field(org.traincontrol.gui.TrainControlUI.class, "KeyboardTab");
 
             javax.swing.JTabbedPane pane = (javax.swing.JTabbedPane) tabs.get(ui[0]);
 
@@ -706,20 +658,15 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     private static void giveTheWindowThisSession(org.traincontrol.gui.TrainControlUI ui, Object session)
         throws Exception
     {
-        java.lang.reflect.Field sessionField =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredField("autonomySession");
-        sessionField.setAccessible(true);
-        sessionField.set(ui, session);
+        Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui, "autonomySession", session);
     }
 
     /** Runs the window's start-up migration of the stored path preference onto `live`. */
     private static void migrateTheStoredChoice(org.traincontrol.gui.TrainControlUI ui,
         org.traincontrol.automation.Layout live) throws Exception
     {
-        java.lang.reflect.Method migrate =
-            org.traincontrol.gui.TrainControlUI.class.getDeclaredMethod(
-                "migrateStoredPathPreference", org.traincontrol.automation.Layout.class);
-        migrate.setAccessible(true);
+        java.lang.reflect.Method migrate = Reflect.method(org.traincontrol.gui.TrainControlUI.class,
+            "migrateStoredPathPreference", org.traincontrol.automation.Layout.class);
 
         migrate.invoke(ui, live);
     }

@@ -25,6 +25,7 @@ public class CS2Message extends CANMessage
     private Integer length;
     // Data payload
     private byte[] data;
+
     // CAN message length
     public static final int MESSAGE_LENGTH = 13;
 
@@ -144,13 +145,6 @@ public class CS2Message extends CANMessage
      *
      * Byte 1: P|P|P|P|_|_|_|C Byte 2: C|C|C|C|C|C|C|R Byte 3: H|H|H|H|H|H|H|H
      * Byte 4: H|H|H|H|H|H|H|H Byte 5: _|_|_|_|L|L|L|L Byte 6-13: payload
-     *
-     * @param priority
-     * @param command
-     * @param hash
-     * @param response
-     * @param length
-     * @param data
      */
     public CS2Message(int priority, int command, int hash,
             boolean response, int length, byte[] data)
@@ -161,8 +155,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Copy constructor
-     *
-     * @param c
      */
     public CS2Message(CS2Message c)
     {
@@ -173,8 +165,6 @@ public class CS2Message extends CANMessage
     /**
      * Simplified constructor
      *
-     * @param command
-     * @param data
      *
      * Assumes priority = 0, length = data.length, response = 0, hash = v2 prot.
      */
@@ -187,9 +177,6 @@ public class CS2Message extends CANMessage
     /**
      * Simplified constructor
      *
-     * @param command
-     * @param hash
-     * @param data
      *
      * Assumes priority = 0, length = data.length, response = 0
      */
@@ -201,10 +188,6 @@ public class CS2Message extends CANMessage
     /**
      * Simplified constructor
      *
-     * @param command
-     * @param hash
-     * @param response
-     * @param data
      *
      * Assumes priority = 0, length = data.length
      */
@@ -217,13 +200,6 @@ public class CS2Message extends CANMessage
     
     /**
      * Sets class fields based on data values
-     *
-     * @param priority
-     * @param command
-     * @param hash
-     * @param response
-     * @param length
-     * @param data
      */
     private void fromCS2Message(int priority, int command, int hash,
             boolean response, int length, byte[] data)
@@ -270,9 +246,6 @@ public class CS2Message extends CANMessage
     /* Public methods */
     /**
      * Equivalence checker
-     *
-     * @param c
-     * @return
      */
     public boolean equals(CS2Message c)
     {
@@ -306,8 +279,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Is the message a system command?
-     *
-     * @return
      */
     public boolean isSysCommand()
     {
@@ -316,7 +287,6 @@ public class CS2Message extends CANMessage
     
     /**
      * Is the message a ping command?
-     * @return 
      */
     public boolean isPingCommand()
     {
@@ -325,9 +295,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Merges bytes into a single integer (high-order first)
-     *
-     * @param bytes
-     * @return
      */
     public static int mergeBytes(byte[] bytes)
     {
@@ -345,8 +312,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Is the message a locomotive command?
-     *
-     * @return
      */
     public boolean isLocCommand()
     {
@@ -362,8 +327,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Is the message an accessory command?
-     *
-     * @return
      */
     public boolean isAccessoryCommand()
     {
@@ -372,8 +335,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Is the message a feedback command?
-     *
-     * @return
      */
     public boolean isFeedbackCommand()
     {
@@ -384,8 +345,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Is the message a different kind of command?
-     *
-     * @return
      */
     public boolean isOtherCommand()
     {
@@ -395,8 +354,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Extracts the UID from the message
-     *
-     * @return
      */
     public int extractUID()
     {
@@ -410,8 +367,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Extracts a 2-byte UID from the message
-     *
-     * @return
      */
     public int extractShortUID()
     {
@@ -424,7 +379,6 @@ public class CS2Message extends CANMessage
     
     /**
      * Gets the sub command
-     * @return 
      */
     public int getSubCommand()
     {
@@ -454,7 +408,6 @@ public class CS2Message extends CANMessage
     
     /**
      * Pretty printing
-     * @return 
      */
     @Override
     public String toString()
@@ -507,8 +460,6 @@ public class CS2Message extends CANMessage
     
     /**
      * Get the priority
-     *
-     * @return
      */
     public Integer getPriority()
     {
@@ -517,8 +468,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Get the command
-     *
-     * @return
      */
     public Integer getCommand()
     {
@@ -527,8 +476,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Get the hash
-     *
-     * @return
      */
     public Integer getHash()
     {
@@ -537,8 +484,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Get the response bit
-     *
-     * @return
      */
     public Boolean getResponse()
     {
@@ -547,8 +492,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Get the data length
-     *
-     * @return
      */
     public Integer getLength()
     {
@@ -557,8 +500,6 @@ public class CS2Message extends CANMessage
 
     /**
      * Get the data bytes
-     *
-     * @return
      */
     public byte[] getData()
     {

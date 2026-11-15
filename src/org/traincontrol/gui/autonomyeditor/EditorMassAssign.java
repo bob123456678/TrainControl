@@ -1,9 +1,16 @@
 package org.traincontrol.gui.autonomyeditor;
 
 import java.util.Map;
+import java.awt.BorderLayout;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -34,9 +41,9 @@ final class EditorMassAssign
         // A NEW ROUND OPENS AFRESH; within it, each prompt opens where the last was left (MT-454).
         editor.walkPromptAt = null;
 
-        java.util.List<AutonomySession.Stretch> pieces = editor.session.stretchesNeedingALengthOn(editor.page);
-        java.util.Set<TileKey> switches = editor.session.switchesNeedingALengthOn(editor.page);
-        java.util.Set<TileKey> crossings = editor.session.sharedSquaresNeedingALengthOn(editor.page);
+        List<AutonomySession.Stretch> pieces = editor.session.stretchesNeedingALengthOn(editor.page);
+        Set<TileKey> switches = editor.session.switchesNeedingALengthOn(editor.page);
+        Set<TileKey> crossings = editor.session.sharedSquaresNeedingALengthOn(editor.page);
 
         if (pieces.isEmpty() && switches.isEmpty() && crossings.isEmpty())
         {
@@ -121,7 +128,7 @@ final class EditorMassAssign
         // A NEW ROUND OPENS AFRESH, as the other two walks.
         editor.walkPromptAt = null;
 
-        java.util.List<TileKey> stations = editor.session.stationsWithoutAMaximumOn(editor.page);
+        List<TileKey> stations = editor.session.stationsWithoutAMaximumOn(editor.page);
 
         if (stations.isEmpty())
         {
@@ -139,7 +146,7 @@ final class EditorMassAssign
             // Asked again, as Mass Assign Lengths asks: a list made before the walk began is not trusted.
             if (!editor.session.stationsWithoutAMaximumOn(editor.page).contains(station)) continue;
 
-            editor.outlineAndReveal(java.util.Collections.singleton(station));
+            editor.outlineAndReveal(Collections.singleton(station));
 
             String question = I18n.f("autosetup.ui.promptMassAssignMaxTrainLength", i + 1, stations.size(),
                 nameForPrompt(station));
@@ -178,11 +185,11 @@ final class EditorMassAssign
 
         AutonomyEditorPanel.TrainLengthDoor door = editor.trainLengthDoor();
 
-        java.util.List<String> trains = door.trainsWithoutALength();
+        List<String> trains = door.trainsWithoutALength();
 
         // EVERY TRAIN WHEN NONE IS MISSING A LENGTH (MT-533): the item is never grayed, and this is what it offers then -
         // each train with the length it has, which Skip keeps.
-        java.util.Map<String, Integer> known = trains.isEmpty() ? door.trainLengths() : null;
+        Map<String, Integer> known = trains.isEmpty() ? door.trainLengths() : null;
 
         if (known != null) trains = new java.util.ArrayList<>(known.keySet());
 
@@ -205,7 +212,7 @@ final class EditorMassAssign
 
             if (standing != null && editor.page != null && editor.page.equals(standing.getPage()))
             {
-                editor.outlineAndReveal(java.util.Collections.singleton(standing));
+                editor.outlineAndReveal(Collections.singleton(standing));
             }
             else
             {
@@ -283,8 +290,7 @@ final class EditorMassAssign
             return I18n.f("autosetup.ui.switchAtSquare", tile.getX() + "," + tile.getY());
         }
 
-        // A CROSSING HAS NO NAME EITHER.  A piece now ends at one as well as at a switch, and naming it by
-        // its raw key put `main:18,10` in the middle of a sentence.
+        // A CROSSING HAS NO NAME EITHER: it is named by where it is, as a switch is.
         if (editor.session.sharedSquaresALengthRuleReads().contains(tile))
         {
             return I18n.f("autosetup.ui.crossingAtSquare", tile.getX() + "," + tile.getY());
@@ -303,8 +309,6 @@ final class EditorMassAssign
      * Asks for one number, with Skip beside OK - the Name Everything dialog, for a number.  Both number walks use it: a
      * stretch's whole length, and a station's maximum train length.
      *
-     * @param question what to say above the field
-     * @param titleKey the bundle key of the walk's name, which is the prompt's title
      * @return the number; -1 for Skip or a blank answer; null for Stop
      */
     private Integer askForWholeLength(String question, String titleKey)
@@ -316,14 +320,11 @@ final class EditorMassAssign
      * The same, the box holding a number to start from (MT-566): the length a train already has.  Selected when the box
      * takes the keyboard, so a number typed replaces it rather than being added to it.
      *
-     * @param question what to say above the field
-     * @param titleKey the bundle key of the walk's name, which is the prompt's title
-     * @param prefill what the box holds to start with, or empty
      * @return the number; -1 for Skip or a blank answer; null for Stop
      */
     private Integer askForWholeLength(String question, String titleKey, String prefill)
     {
-        final javax.swing.JTextField field = editor.digitsOnly(prefill == null ? "" : prefill);
+        final JTextField field = editor.digitsOnly(prefill == null ? "" : prefill);
 
         if (prefill != null && !prefill.isEmpty())
         {
@@ -359,17 +360,14 @@ final class EditorMassAssign
     /**
      * The walks' prompt, Name Everything's too (OB-371): the question wrapped over the field, OK, Skip One and Cancel.
      *
-     * @param field what the answer is typed into
-     * @param question what to say above the field
-     * @param titleKey the bundle key of the walk's name, which is the prompt's title
      * @return the field's text; "" for Skip; null for Stop (Cancel, Escape or closing)
      */
-    String askInWalkPrompt(final javax.swing.JTextField field, String question, String titleKey)
+    String askInWalkPrompt(final JTextField field, String question, String titleKey)
     {
-        JPanel panel = new JPanel(new java.awt.BorderLayout(0, 6));
+        JPanel panel = new JPanel(new BorderLayout(0, 6));
 
-        panel.add(new JLabel(AutonomyEditorPanel.wrapped(question)), java.awt.BorderLayout.NORTH);
-        panel.add(field, java.awt.BorderLayout.CENTER);
+        panel.add(new JLabel(AutonomyEditorPanel.wrapped(question)), BorderLayout.NORTH);
+        panel.add(field, BorderLayout.CENTER);
 
         final Object[] answers = { I18n.t("ui.ok"), I18n.t("autosetup.ui.btnSkipOne"), I18n.t("ui.cancel") };
 
@@ -392,19 +390,19 @@ final class EditorMassAssign
         // AND ASKED FOR BY NAME WHENEVER THE PROMPT HAS THE KEYBOARD (MT-474): the focus policy's choice of first
         // focusable component is not the prompt's, so it names the component when the window opens and when it regains
         // the keyboard.
-        dialog.addWindowListener(new java.awt.event.WindowAdapter()
+        dialog.addWindowListener(new WindowAdapter()
         {
             @Override
-            public void windowOpened(java.awt.event.WindowEvent e)
+            public void windowOpened(WindowEvent e)
             {
                 field.requestFocusInWindow();
             }
         });
 
-        dialog.addWindowFocusListener(new java.awt.event.WindowAdapter()
+        dialog.addWindowFocusListener(new WindowAdapter()
         {
             @Override
-            public void windowGainedFocus(java.awt.event.WindowEvent e)
+            public void windowGainedFocus(WindowEvent e)
             {
                 field.requestFocusInWindow();
             }

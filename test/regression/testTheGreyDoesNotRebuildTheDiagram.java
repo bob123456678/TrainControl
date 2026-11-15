@@ -10,13 +10,11 @@ import javax.swing.JPanel;
 import javax.swing.RepaintManager;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Edge;
 import org.traincontrol.automation.Layout;
-import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.GraphReducer;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -28,26 +26,26 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
 
 /**
  * MT-334's shape, asked of the gray wash that came back (OB-180): the diagram is not rebuilt, and only what changed
  * is redrawn.
  *
- * - **No rebuild.**  The page's tiles are collected as objects before and after the gesture and compared by identity
- *   (as `testTheDiagramIsNotRebuiltForAnArrow` does).
+ * - **No rebuild.**  The page's tiles are compared by identity before and after the gesture.
  *
- * - **Only what changed is redrawn.**  Identity alone would pass a refresh that repaints every tile on every train
- *   movement, so a counting `RepaintManager` records which components were made dirty, and each must be a tile of a
- *   square whose state actually changed.  The changed squares are worked out from the railway, not from the window
- *   (`blockedSquares()`), because asking the window what the right answer is agrees with it whatever it says.
+ * - **Only what changed is redrawn.**  A counting `RepaintManager` records which components were made dirty, and each
+ *   must be a tile of a square whose state changed.  The changed squares come from the railway
+ *   not the window, which would agree with itself.
  *
- * The gesture is a TRAIN LENGTH, through the door: `TrainControlUI.applyTrainLength` is everything `promptTrainLength`
- * does once its dialog has answered.  BOTH directions: unmeasuring the train takes the wash off.
+ * The gesture is a TRAIN LENGTH through `TrainControlUI.applyTrainLength`, in BOTH directions.
  *
  * MUTATION: make `repaintTheWashWhereItChanged` repaint every registered tile and
  * `testMeasuringTheTrainRedrawsOnlyTheSquaresThatChanged` fails.  Drop the blocked set from the comparison it makes and
- * `testUnmeasuringTheTrainTakesTheWashOffAgain` fails with nothing redrawn.  Take `blockedTrackChanged()` out of
- * `applyTrainLength` and both fail with nothing redrawn at all.
+ * `testUnmeasuringTheTrainTakesTheWashOffAgain` fails.  Take `blockedTrackChanged()` out of `applyTrainLength` and both
+ * fail with nothing redrawn.
  *
  * @author Adam
  */
@@ -98,15 +96,10 @@ public class testTheGreyDoesNotRebuildTheDiagram
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("building a page of tiles needs a display");
-        }
+        Display.needed("building a page of tiles needs a display");
 
-        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, `test/layouts/live-snapshot`):
-        // `cs2_sample_layout`'s placements and lengths move as Adam runs trains on it, and a class that skips
-        // everything reads as green.  `Scenario.folderFor` is the only naming of a fixture folder that cannot spell its
-        // way out to his own railway.
+        // THE FROZEN COPY, NOT THE RAILWAY HE IS OPERATING (OB-111, `test/layouts/live-snapshot`): `cs2_sample_layout`
+        // moves as Adam runs trains on it.  `Scenario.folderFor` cannot spell its way out to his own railway.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulatedWithWindowInDebug();
@@ -116,8 +109,8 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         assertNotNull(ui, "there is no window");
 
-        pump();
-        pump();
+        Components.drain(1);
+        Components.drain(1);
 
         session = ui.getAutonomySession();
 
@@ -127,13 +120,13 @@ public class testTheGreyDoesNotRebuildTheDiagram
             return;
         }
 
-        SwingUtilities.invokeAndWait(() -> measureEveryTileAs(1));
+        SwingUtilities.invokeAndWait(() -> support.TileLengths.measureEveryTileAs(session, 1));
 
         model.parseAuto(session.buildConfiguration());
 
         layout = model.getAutoLayout();
 
-        oneTrainThatCoversSomething();
+        train = support.CoveredMarks.leaveOneTrainThatCovers(layout, MEASURED);
 
         if (train == null)
         {
@@ -141,13 +134,17 @@ public class testTheGreyDoesNotRebuildTheDiagram
             return;
         }
 
+        trainLengthWas = train.getTrainLength();
+
+        train.setTrainLength(MEASURED);
+
         assertFalse(layout.isRunning(),
             "the frozen railway came up with autonomy running, and this class is about the gesture"
             + " rather than about a run");
 
         refreshCoveredTrack();
 
-        blocked = blockedSquares();
+        blocked = support.CoveredMarks.tilesOfTheCoveredEdges(session, layout);
         covered = coveredSquares();
 
         if (blocked.isEmpty())
@@ -350,9 +347,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         LayoutLabel tile = null;
 
-        java.lang.reflect.Field what = LayoutLabel.class.getDeclaredField("component");
-
-        what.setAccessible(true);
+        java.lang.reflect.Field what = Reflect.field(LayoutLabel.class, "component");
 
         // A TILE WITH A PICTURE - track, a switch, a sensor - in the diagram's own panel
         for (LayoutLabel t : tiles)
@@ -365,18 +360,14 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         assertNotNull(tile, "precondition: no tile of the page with a picture sits in a panel of its own");
 
-        java.lang.reflect.Field parentField = LayoutLabel.class.getDeclaredField("parent");
-
-        parentField.setAccessible(true);
+        java.lang.reflect.Field parentField = Reflect.field(LayoutLabel.class, "parent");
 
         assertSame(parentField.get(tile), tab, "precondition: the tile does not call the tab its parent, so this asks"
             + " nothing");
 
         final LayoutLabel changing = tile;
 
-        final java.lang.reflect.Method setImage = LayoutLabel.class.getDeclaredMethod("setImageOnEDT", boolean.class);
-
-        setImage.setAccessible(true);
+        final java.lang.reflect.Method setImage = Reflect.method(LayoutLabel.class, "setImageOnEDT", boolean.class);
 
         Counting counter = new Counting();
 
@@ -421,9 +412,9 @@ public class testTheGreyDoesNotRebuildTheDiagram
     }
 
     /**
-     * A refresh of the station captions that changes nothing lays nothing out again.  `updateStationLabels` revalidated
-     * and repainted each caption's PARENT, the whole page, on every publish of the running diagram (up to five times a
-     * second); a caption that changes revalidates and repaints itself.
+     * A refresh of the station captions that changes nothing lays nothing out again: `updateStationLabels` revalidated
+     * the whole page on every publish of the running diagram (up to five times a second); a caption that changes
+     * revalidates itself.
      *
      * MUTATION: revalidate the captions' parent again, and this fails.
      */
@@ -451,14 +442,18 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
             settle();
 
+            // The captions the pass wrote to, asked of the window: an unchanged one is not repainted at all.
             Set<JComponent> captions = new LinkedHashSet<>();
 
-            for (JComponent c : counter.seen())
+            for (TileKey square : everySquare())
             {
-                if (c instanceof org.traincontrol.gui.widgets.StationCaption) captions.add(c);
+                for (javax.swing.JLabel c : ui.getLayoutStations(square))
+                {
+                    if (c instanceof org.traincontrol.gui.widgets.StationCaption) captions.add(c);
+                }
             }
 
-            if (captions.isEmpty()) throw new AssertionError("no station caption on the window's page was refreshed");
+            if (captions.isEmpty()) throw new AssertionError("no station caption is drawn on the window's page");
 
             Set<java.awt.Container> pages = new LinkedHashSet<>();
 
@@ -485,12 +480,9 @@ public class testTheGreyDoesNotRebuildTheDiagram
     }
 
     /**
-     * Refreshing the static autonomy layer with nothing changed redraws no square: `showStaticAutonomyLayer` cleared
-     * every mark and set them all again, so the unchanged-mark check never saw one.  It now clears only the squares
-     * that dropped out.
-     *
-     * LAST IN THE CLASS: it shows the main window's static layer, and the tests about the gray count every square redrawn
-     * - with the layer showing, the main window's own squares are among them.
+     * Refreshing the static autonomy layer with nothing changed redraws no square: it clears only the squares that
+     * dropped out.  LAST IN THE CLASS: it shows the main window's static layer, whose squares would be counted by the
+     * tests about the gray.
      *
      * MUTATION: clear every mark first again, and this fails.
      */
@@ -512,13 +504,10 @@ public class testTheGreyDoesNotRebuildTheDiagram
             settle();
 
             // PRECONDITION: squares of the window's page wear a mark, so a clear would redraw them
-            java.lang.reflect.Field tilesField = org.traincontrol.gui.autonomy.DiagramTileRegistry.class.getDeclaredField("tiles");
+            java.lang.reflect.Field tilesField =
+                Reflect.field(org.traincontrol.gui.autonomy.DiagramTileRegistry.class, "tiles");
 
-            tilesField.setAccessible(true);
-
-            java.lang.reflect.Field markField = LayoutLabel.class.getDeclaredField("autonomyAnnotation");
-
-            markField.setAccessible(true);
+            java.lang.reflect.Field markField = Reflect.field(LayoutLabel.class, "autonomyAnnotation");
 
             int marked = 0;
 
@@ -685,7 +674,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
     /**
      * The squares the train is DRAWN on while it is measured, worked out from the railway: the same source as
-     * `blockedSquares`, endpoints kept because a train standing at a sensor is drawn there.
+     * `CoveredMarks.tilesOfTheCoveredEdges`, endpoints kept because a train standing at a sensor is drawn there.
      */
     private static Set<TileKey> coveredSquares()
     {
@@ -755,46 +744,6 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
     // ---------------------------------------------------------------- the railway's own answer
 
-    /**
-     * The squares the railway holds blocked, worked out from the covered EDGES as in
-     * `ui.testBlockedTrackIsGreyWhileAutonomyRuns`.
-     */
-    private static Set<TileKey> blockedSquares()
-    {
-        Set<TileKey> out = new LinkedHashSet<>();
-
-        for (Edge edge : layout.edgesCoveredByStandingTrains().keySet())
-        {
-            if (edge == null || edge.getStart() == null || edge.getEnd() == null) continue;
-
-            TileKey from = session.getStationIndex().squareOf(edge.getStart().getName());
-            TileKey to = session.getStationIndex().squareOf(edge.getEnd().getName());
-
-            if (from == null || to == null) continue;
-
-            for (GraphReducer.ReducedEdge reduced : session.getReducer().getEdges())
-            {
-                boolean sameWay = from.equals(reduced.getStart()) && to.equals(reduced.getEnd());
-                boolean otherWay = to.equals(reduced.getStart()) && from.equals(reduced.getEnd());
-
-                if (!sameWay && !otherWay) continue;
-
-                for (GraphReducer.TileStep step : reduced.getPath())
-                {
-                    if (step.getTile() == null) continue;
-
-                    if (step.getTile().equals(from) || step.getTile().equals(to)) continue;
-
-                    out.add(step.getTile());
-                }
-
-                break;
-            }
-        }
-
-        return out;
-    }
-
     // ---------------------------------------------------------------- the fixture
 
     /**
@@ -805,7 +754,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
     {
         support.CoveredMarks.settle(ui);
 
-        pump();
+        Components.drain(1);
     }
 
     private static void refreshCoveredTrack() throws Exception
@@ -814,7 +763,7 @@ public class testTheGreyDoesNotRebuildTheDiagram
         // `Layout` monitor a dispatch holds), so asking and reading are two moments, known to `support.CoveredMarks`.
         support.CoveredMarks.refresh(ui);
 
-        pump();
+        Components.drain(1);
     }
 
     private static void settle() throws Exception
@@ -826,61 +775,6 @@ public class testTheGreyDoesNotRebuildTheDiagram
 
         settled.await(60, java.util.concurrent.TimeUnit.SECONDS);
 
-        pump();
-    }
-
-    /**
-     * Leaves one train standing, and only one that actually covers track.
-     */
-    private static void oneTrainThatCoversSomething()
-    {
-        Point keep = null;
-
-        for (Point point : layout.getPoints())
-        {
-            if (point.getCurrentLocomotive() == null || point.getArrivedFrom() == null) continue;
-
-            Locomotive candidate = point.getCurrentLocomotive();
-
-            Integer was = candidate.getTrainLength();
-
-            candidate.setTrainLength(MEASURED);
-
-            boolean covers = layout.edgesCoveredByStandingTrains().containsValue(candidate);
-
-            candidate.setTrainLength(was);
-
-            if (covers)
-            {
-                keep = point;
-
-                break;
-            }
-        }
-
-        if (keep == null) return;
-
-        for (Point point : layout.getPoints())
-        {
-            if (point == keep || point.getCurrentLocomotive() == null) continue;
-
-            layout.moveLocomotive(null, point.getName(), true);
-        }
-
-        train = keep.getCurrentLocomotive();
-
-        trainLengthWas = train.getTrainLength();
-
-        train.setTrainLength(MEASURED);
-    }
-
-    private static void measureEveryTileAs(int units)
-    {
-        support.TileLengths.measureEveryTileAs(session, units);
-    }
-
-    private static void pump() throws Exception
-    {
-        SwingUtilities.invokeAndWait(() -> { });
+        Components.drain(1);
     }
 }

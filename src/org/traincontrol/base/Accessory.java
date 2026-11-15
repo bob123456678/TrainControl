@@ -45,6 +45,11 @@ abstract public class Accessory
     // autonomy path validation can wait for confirmed actuations.  Deliberately separate from Locomotive's
     // accessoryMonitor, which also fires on optimistic setSwitched() changes and drives unrelated waits.
     public static final Object actuationConfirmedMonitor = new Object();
+
+    // The CS echoes of any accessory so far and the last one echoed, so path validation can tell a busy station from a
+    // silent one.  Guarded by actuationConfirmedMonitor.
+    public static long echoes;
+    public static Accessory lastEchoed;
     
     // Maximum MM2 and DCC addresses.  These are the low level addresses, not the logical addresses of 320 and 2048
     public static final int MAX_MM2_ADDRESS = 319;
@@ -52,9 +57,8 @@ abstract public class Accessory
 
     /**
      * Whether a LOGICAL address, the number the operator types, is one this protocol has.  The maxima above are RAW:
-     * the diagram editor converts before asking (`isValidAddress(address - 1, ...)`) and the route editor did not, so
-     * logical MM2 320 and DCC 2048 were refused in one place and taken in the other.  Stated once, here, because an
-     * over-strict guard costs more than it buys: Adam would rather have no check than one that refuses something legal.
+     * the diagram editor converts before asking (`isValidAddress(address - 1, ...)`).  An over-strict guard costs more
+     * than it buys, so this is the one place that says what is legal.
      *
      * @param logical the address as the operator writes it, from 1
      * @param type MM2 or DCC
@@ -67,9 +71,6 @@ abstract public class Accessory
     
     /**
      * Simple constructors
-     * @param name
-     * @param type
-     * @param state 
      */
     public Accessory(String name, accessoryType type, boolean state)
     {
@@ -80,14 +81,11 @@ abstract public class Accessory
     
     /**
      * Sets the state; _setSwitched should be called from this method
-     * @param state 
-     * @return  
      */
     abstract public Accessory setSwitched(boolean state);
     
     /**
      * Sets internal state
-     * @param state 
      */
     protected final void _setSwitched(boolean state)
     {
@@ -116,7 +114,6 @@ abstract public class Accessory
 
     /**
      * Sets state based on the provided accessory setting
-     * @param state
      * @return was the state value valid?
      */
     public boolean setState(accessorySetting state)
@@ -137,7 +134,6 @@ abstract public class Accessory
     
     /**
      * Sets to green
-     * @return 
      */
     public Accessory green()
     {
@@ -146,7 +142,6 @@ abstract public class Accessory
     
     /**
      * Sets to red
-     * @return 
      */
     public Accessory red()
     {
@@ -155,7 +150,6 @@ abstract public class Accessory
     
     /**
      * Sets to turned
-     * @return 
      */
     public Accessory turn()
     {
@@ -164,7 +158,6 @@ abstract public class Accessory
     
     /**
      * Swaps the state
-     * @return 
      */
     public Accessory doSwitch()
     {
@@ -180,8 +173,6 @@ abstract public class Accessory
      
     /**
      * Delays execution for the specified number of milliseconds
-     * @param ms
-     * @return 
      */
     public Accessory delay(long ms)
     {
@@ -198,7 +189,6 @@ abstract public class Accessory
     
     /**
      * Switches to straight
-     * @return 
      */
     public Accessory straight()
     {
@@ -207,7 +197,6 @@ abstract public class Accessory
     
     /**
      * returns switch state
-     * @return 
      */
     public boolean isSwitched()
     {
@@ -231,7 +220,6 @@ abstract public class Accessory
 
     /**
      * Returns switch state
-     * @return 
      */
     public boolean isStraight()
     {
@@ -240,7 +228,6 @@ abstract public class Accessory
     
     /**
      * Returns switch state
-     * @return 
      */
     public boolean isTurned()
     {
@@ -249,7 +236,6 @@ abstract public class Accessory
     
     /**
      * Returns switch state
-     * @return 
      */
     public boolean isGreen()
     {
@@ -258,7 +244,6 @@ abstract public class Accessory
     
     /**
      * Returns switch state
-     * @return 
      */
     public boolean isRed()
     {
@@ -267,7 +252,6 @@ abstract public class Accessory
     
     /**
      * The name of this switch
-     * @return 
      */
     public String getName()
     {
@@ -276,7 +260,6 @@ abstract public class Accessory
     
     /**
      * Is this a switch?
-     * @return 
      */
     public boolean isSwitch()
     {
@@ -285,7 +268,6 @@ abstract public class Accessory
     
     /**
      * Is this a signal?
-     * @return 
      */
     public boolean isSignal()
     {
@@ -294,7 +276,6 @@ abstract public class Accessory
     
     /**
      * Returns the accessory type
-     * @return 
      */
     public accessoryType getType()
     {
@@ -303,7 +284,6 @@ abstract public class Accessory
     
     /**
      * Gets the number of times this accessory has been switched
-     * @return 
      */
     public int getNumActuations()
     {
@@ -314,8 +294,6 @@ abstract public class Accessory
     
     /**
      * Converts a string (if valid) to an accessorySetting
-     * @param setting
-     * @return 
      */
     public static Accessory.accessorySetting stringToAccessorySetting(String setting)
     {
@@ -335,8 +313,6 @@ abstract public class Accessory
     
     /**
      * Converts turn/red to true, straight/green to false
-     * @param setting
-     * @return 
      * @throws java.lang.Exception 
      */
     public static boolean stringAccessorySettingToSetting(String setting) throws Exception
@@ -363,8 +339,6 @@ abstract public class Accessory
     
     /**
      * Converts a string (such as "switch") to the corresponding accessoryType
-     * @param type
-     * @return 
      * @throws java.lang.Exception 
      */
     public static accessoryType stringToAccessoryType(String type) throws Exception
@@ -387,9 +361,6 @@ abstract public class Accessory
     
     /**
      * Converts a setting (true or false) plus an accessory type to the corresponding accessory setting (red, turn, etc.)
-     * @param setting
-     * @param type
-     * @return 
      */
     public static accessorySetting switchedToAccessorySetting(boolean setting, accessoryType type)
     {
@@ -407,8 +378,6 @@ abstract public class Accessory
     
     /**
      * Pretty printing for the accessory type (Signal, Switch)
-     * @param type
-     * @return 
      */
     public static String accessoryTypeToPrettyString(accessoryType type)
     {
@@ -418,22 +387,17 @@ abstract public class Accessory
         
     /**
      * Prints the accessory name and state in a standardized string, for this specific Accessory
-     * @return 
      */
     public abstract String toAccessorySettingString();
     
     /**
      * Prints the accessory name and state in a standardized string, for this specific Accessory but with a hypothetical setting
-     * @param state
-     * @param protocol
-     * @return 
      */
     public abstract String toAccessorySettingString(boolean state, String protocol);
     
         /**
      * Converts a string to accessoryDecoderType
      * @param type - null if invalid
-     * @return 
      */
     public static accessoryDecoderType stringToAccessoryDecoderType(String type)
     {
@@ -450,8 +414,6 @@ abstract public class Accessory
     
     /**
      * Converts string to accessoryDecoderType - guarantees non-null result defaulting to DEFAULT_IMPLICIT_PROTOCOL
-     * @param type
-     * @return 
      */
     public static accessoryDecoderType determineAccessoryDecoderType(String type)
     {
@@ -464,8 +426,6 @@ abstract public class Accessory
     
     /**
      * Gets the protocol string used for names - blank if default
-     * @param protocol
-     * @return 
      */
     public static String getProtocolStringForName(String protocol)
     {
@@ -479,11 +439,6 @@ abstract public class Accessory
     
     /**
      * Returns an accessory setting string for the given accessory type, address, and setting.
-     * @param type
-     * @param address
-     * @param protocol
-     * @param setting
-     * @return 
      */
     public static String toAccessorySettingString(accessoryType type, int address, String protocol, boolean setting)
     {                       

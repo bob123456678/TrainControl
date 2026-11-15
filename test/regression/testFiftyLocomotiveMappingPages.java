@@ -1,16 +1,16 @@
 package regression;
 
-import java.lang.reflect.Field;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import support.Display;
+import support.Reflect;
 
 /**
  * The locomotive mapping pages stop at fifty, in the method as well as in the menu (FR-033, MT-383):
@@ -35,10 +35,7 @@ public class testFiftyLocomotiveMappingPages
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the mapping pages live on a window");
-        }
+        Display.needed("the mapping pages live on a window");
 
         sandbox = support.LayoutSandbox.open();
 
@@ -108,9 +105,8 @@ public class testFiftyLocomotiveMappingPages
         final int ceiling = TrainControlUI.MAX_LOC_MAPPINGS;
 
         // AT THE CEILING BY REFLECTION, NOT BY FILLING: `addLocMappingPage` writes the page count into the user-wide
-        // Java Preferences on every successful add, and filling to fifty once left fifty in Adam's own settings.
-        // Setting the count directly touches no preference.  A deliberately broken run (the guard deleted) can still
-        // leave 51 behind.
+        // Java Preferences on every successful add.  Setting the count directly touches no preference.  A deliberately
+        // broken run (the guard deleted) can still leave 51 behind.
         setPages(ceiling);
 
         assertEquals(pages(), ceiling,
@@ -220,11 +216,7 @@ public class testFiftyLocomotiveMappingPages
     {
         try
         {
-            Field count = TrainControlUI.class.getDeclaredField("numLocMappings");
-
-            count.setAccessible(true);
-
-            count.set(ui, to);
+            Reflect.set(TrainControlUI.class, ui, "numLocMappings", to);
         }
         catch (ReflectiveOperationException e)
         {

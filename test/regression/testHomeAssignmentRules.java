@@ -19,7 +19,7 @@ public class testHomeAssignmentRules
 {
     /**
      * Rule 1: the list keeps a home naming a locomotive autonomy no longer runs.  A non-editable combo cannot preselect
-     * a value its model does not hold, so leaving the name out opened the dialog on "None" and OK cleared the home.
+     * a value its model does not hold, so the name must be in the list or OK clears the home.
      */
     @Test
     public void testTheHomeListKeepsAHomeAutonomyNoLongerRuns()
@@ -107,14 +107,13 @@ public class testHomeAssignmentRules
             "the home dialog no longer builds its list with homeChoices, so the rule about keeping a "
             + "retired home is written down and not asked (MT-112)");
 
-        assertTrue(source.contains("homeBrokenBy(homeOf(tile)"),
+        assertTrue(source.contains("homeBrokenBy(editor.homeOf(tile)"),
             "nothing asks homeBrokenBy about a station's actual home, so the exclusion warning is "
             + "unreachable - which is the exact fault DD-A6 found");
 
-        // whyNotAHome, not canBeHome: canBeHome answers false for two unrelated reasons, and rolling them together
-        // warned "no train can come to rest here" about a square that is two places.  The message key is named as well
-        // as the method, because the method alone is satisfied by a panel that consults it and then acts on the wrong
-        // half.
+        // whyNotAHome, not canBeHome: canBeHome answers false for two unrelated reasons, which must not be rolled
+        // together.  The message key is named as well as the method, because the method alone is satisfied by a panel
+        // that consults it and then acts on the wrong half.
         assertTrue(source.contains("HomeStaging.whyNotAHome"),
             "rule 2's warning - a home the locomotive cannot reach - is decided by "
             + "HomeStaging.whyNotAHome, and nothing in the panel consults it any more");
@@ -133,13 +132,17 @@ public class testHomeAssignmentRules
             + "cannot be produced however correct the helper is. The token check above passes on the "
             + "helper's own body, which is why it did not notice (TA-B4, DD-A6)");
 
-        // with the list's mode since FR-121: the home a list breaks depends on whether it keeps its locomotives out
-        assertTrue(source.contains("homeBrokenBy(tile, picked, allowOnly)"),
-            "nothing calls the homeBrokenBy overload that takes a tile, so the exclusion warning is "
+        // Both doors that change Station Settings' list (FR-111), each in the list's mode (FR-121)
+        assertTrue(source.contains("homeMayBeBroken(tile, picked, which)"),
+            "choosing the list no longer asks homeMayBeBroken, so the exclusion warning is "
             + "unreachable from the assignment path (TA-B4)");
 
-        assertTrue(source.contains("() -> editor.promptHome("),
-            "nothing opens the home dialog, so all three of these rules are unreachable at once and "
-            + "the checks above would still pass (TA-B4)");
+        assertTrue(source.contains("homeMayBeBroken(tile, session.getTrainList(tile), which)"),
+            "turning on a kept list no longer asks homeMayBeBroken, so the exclusion warning is "
+            + "unreachable from the assignment path (TA-B4)");
+
+        assertTrue(source.contains("editor.applyHome(tile, picked)"),
+            "Station Settings' Home field no longer sets the home through applyHome, so all three of these rules are"
+            + " unreachable at once and the checks above would still pass (TA-B4)");
     }
 }

@@ -35,9 +35,7 @@ public class testControlSNamesOnlyASensor
     public static void setUpClass() throws Exception
     {
         // A COPY of the real layout, opened before the model (OB-111): THE FROZEN COPY, NOT THE RAILWAY HE IS
-        // OPERATING.  The SHAPE is what this class is about; where his trains stand and how long they are is not, and
-        // reading those off the live folder is how `testTheLengthGuardsOnTheRealLayout` came to assert the 2-8-4 at
-        // BottomMainB when it is at BottomMainA now.
+        // OPERATING.  The SHAPE is what this class is about; where his trains stand and how long they are is not.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulated();

@@ -26,20 +26,17 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.ProgramConstants;
+import support.Reflect;
 
 /**
- * A simulated path to a station autonomy will never choose is drawn in a color of its own.
+ * A simulated path to a station autonomy will never choose is drawn in a color of its own (Adam: "just use a different
+ * color going to manual-only points. yellow is currently forward, and orange is backwards-path, not the chevron
+ * arrows.").  A leg whose DESTINATION is a parking berth, or a square that turns every train it takes, is the third
+ * color, since "the track is passable" and "autonomy will ever use it" are different answers.
  *
- * Adam: "just use a different color going to manual-only points. yellow is currently forward, and orange is backwards-
- * path, not the chevron arrows."  So this is about the editor's path tracing only, not the arrival chevrons or the
- * one-way restriction arrows.  A leg whose DESTINATION is a parking berth, or a square that turns every train it
- * takes, is drawn in a third color, because "the track is passable" and "autonomy will ever use it" are different
- * answers.
- *
- * Read off the painted pixels, not off the source: `paint` is called for real and the line's own color is read back
- * out of the image, since a test that inspected the flag would pass with all three drawn identically.  The exact
- * shades are asserted for the two that already existed, so redefining one of them into the new one cannot pass; the
- * new one is asserted only to differ from both, from the chevron on top of it, and from gray.
+ * Read off the painted pixels: `paint` is called for real and the line's color is read back from the image.  The exact
+ * shades are asserted for the two that existed, and the new one only to differ from both, from the chevron on top of
+ * it, and from gray.
  *
  * @author Adam
  */
@@ -171,12 +168,9 @@ public class testManualOnlyPathsAreADifferentColour
     // Where the flag comes from
 
     /**
-     * The editor's own path test marks the leg that ends at a manual-only station, and only that leg.
-     *
-     * The flag is set at the one place a leg's destination is known, `AutonomyEditorPanel.trace`, which the "test a
-     * path" and "why is this train stuck" tools both call.  Two clicks on two real squares, the second marked as
-     * parking.  Both directions are asserted: the run OUT ends at the parking berth and is manual-only, the run BACK
-     * ends at the ordinary station and is not, so a flag set from the wrong end fails one of them.
+     * The editor's own path test marks the leg that ends at a manual-only station, and only that leg.  The flag is set
+     * in `AutonomyEditorPanel.trace`.  Both directions are asserted: the run OUT ends at the parking berth and is
+     * manual-only, the run BACK is not, so a flag set from the wrong end fails one.
      */
     @Test
     public void testTheEditorMarksTheLegThatEndsAtAManualOnlyStation() throws Exception
@@ -267,10 +261,8 @@ public class testManualOnlyPathsAreADifferentColour
 
         ((javax.swing.AbstractButton) field(panel, "testButton")).doClick();
 
-        java.lang.reflect.Method applyTest = AutonomyEditorPanel.class.getDeclaredMethod("applyTest",
-            TileKey.class, org.traincontrol.base.LayoutDiagramComponent.class);
-
-        applyTest.setAccessible(true);
+        java.lang.reflect.Method applyTest = Reflect.method(AutonomyEditorPanel.class,
+            "applyTest", TileKey.class, org.traincontrol.base.LayoutDiagramComponent.class);
 
         applyTest.invoke(panel, pair[0], graph.getTiles().get(pair[0]));
         applyTest.invoke(panel, pair[1], graph.getTiles().get(pair[1]));
@@ -420,11 +412,7 @@ public class testManualOnlyPathsAreADifferentColour
 
     private static Object field(AutonomyEditorPanel panel, String name) throws Exception
     {
-        java.lang.reflect.Field f = AutonomyEditorPanel.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(panel);
+        return Reflect.get(AutonomyEditorPanel.class, panel, name);
     }
 
     /**
@@ -465,8 +453,7 @@ public class testManualOnlyPathsAreADifferentColour
     /** As the path test asks it: a train starts on the copies it stands on at `from`. */
     private static boolean pathExists(TileKey from, TileKey to)
     {
-        return reducer.findPath(from, to, session.mayTurnTiles(), session.mandatoryTurnTiles(),
-            session.barredArrivals(), session.shutTiles(), session.startingArrivals().get(from)) != null;
+        return session.testPath(from, to) != null;
     }
 
     /**
@@ -487,18 +474,14 @@ public class testManualOnlyPathsAreADifferentColour
             }
         });
 
-        java.lang.reflect.Method applyTest = AutonomyEditorPanel.class.getDeclaredMethod("applyTest",
-            TileKey.class, org.traincontrol.base.LayoutDiagramComponent.class);
-
-        applyTest.setAccessible(true);
+        java.lang.reflect.Method applyTest = Reflect.method(AutonomyEditorPanel.class,
+            "applyTest", TileKey.class, org.traincontrol.base.LayoutDiagramComponent.class);
 
         // The first click names the origin and draws nothing; the second runs the test.
         applyTest.invoke(panel, from, graph.getTiles().get(from));
         applyTest.invoke(panel, to, graph.getTiles().get(to));
 
-        java.lang.reflect.Field traces = AutonomyEditorPanel.class.getDeclaredField("traces");
-
-        traces.setAccessible(true);
+        java.lang.reflect.Field traces = Reflect.field(AutonomyEditorPanel.class, "traces");
 
         return new HashMap<>((Map<TileKey, List<TileAnnotation.Trace>>) traces.get(panel));
     }

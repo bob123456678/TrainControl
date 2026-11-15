@@ -32,6 +32,7 @@ import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 import support.Answering;
 import support.Components;
+import support.Teardown;
 
 /**
  * File > Backup TrainControl Data writes one archive of the whole railway as it is now, and says where it is (FR-015,
@@ -82,20 +83,20 @@ public class testABackupHoldsTheWholeRailway
         try
         {
             Util.fileManagerForTests(null);
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(closing::dispose);
-            }
-
-            if (model != null) model.stop();
         }
         finally
         {
-            if (sandbox != null) sandbox.close();
+            Teardown.close(sandbox, model, ui);
         }
+    }
+
+    /** The backup saves over the run's saved data; the classes after this one in the lane read it. */
+    private static final support.SavedData FOUND = support.SavedData.take();
+
+    @AfterClass(alwaysRun = true, dependsOnMethods = "tearDownClass")
+    public static void putTheDataBack() throws Exception
+    {
+        FOUND.putBack();
     }
 
     @AfterMethod(alwaysRun = true)

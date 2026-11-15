@@ -8,7 +8,6 @@ import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -21,6 +20,9 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
+import support.Teardown;
 
 /**
  * Revealing a square ends the flash on the square revealed before it (MT-454).  Asked of the real editor window on a
@@ -41,16 +43,13 @@ public class testAWalkMovesTheFlashOn
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the autonomy editor needs a display");
-        }
+        Display.needed("the autonomy editor needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-        model = support.TestStation.simulatedInDebug();
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -78,34 +77,13 @@ public class testAWalkMovesTheFlashOn
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (editor != null)
-            {
-                final LayoutEditor closing = editor;
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, editor, ui);
     }
 
     /**
      * Two reveals in a row: the first square is back to its own icon the moment the second is revealed.
      *
      * MUTATION: drop the `endFlash` call from `reveal` and the first square is still yellow.
-     *
-     * @throws Exception from the event thread
      */
     @Test
     public void testRevealingASquareEndsThePreviousFlash() throws Exception
@@ -212,10 +190,6 @@ public class testAWalkMovesTheFlashOn
 
     private static LayoutGrid gridOf(LayoutEditor editor) throws Exception
     {
-        java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("grid");
-
-        field.setAccessible(true);
-
-        return (LayoutGrid) field.get(editor);
+        return (LayoutGrid) Reflect.get(LayoutEditor.class, editor, "grid");
     }
 }

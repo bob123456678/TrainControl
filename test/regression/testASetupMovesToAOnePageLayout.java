@@ -1,6 +1,5 @@
 package regression;
 
-import java.awt.Container;
 import java.awt.Window;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +27,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
+import support.Reflect;
 
 /**
  * His setup, exported from the frozen copy of his railway, imported onto the one-page layout MT-380 ships - through the
@@ -293,11 +293,7 @@ public class testASetupMovesToAOnePageLayout
     /** Whatever stands in the menu bar's Autonomy slot. */
     private static JMenu theAutonomySlot(TrainControlUI ui) throws Exception
     {
-        java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("mainMenuBar");
-
-        field.setAccessible(true);
-
-        JMenuBar bar = (JMenuBar) field.get(ui);
+        JMenuBar bar = (JMenuBar) Reflect.get(TrainControlUI.class, ui, "mainMenuBar");
 
         String heading = I18n.t("autosetup.ui.menuAutonomy");
 
@@ -331,7 +327,7 @@ public class testASetupMovesToAOnePageLayout
         {
             support.DialogWatch.until(() -> running, 150, dialog ->
             {
-                final JFileChooser chooser = find(dialog.getContentPane(), JFileChooser.class);
+                final JFileChooser chooser = support.Components.inside(dialog.getContentPane(), JFileChooser.class);
 
                 if (chooser != null)
                 {
@@ -348,7 +344,7 @@ public class testASetupMovesToAOnePageLayout
                     return;
                 }
 
-                final JOptionPane pane = find(dialog.getContentPane(), JOptionPane.class);
+                final JOptionPane pane = support.Components.inside(dialog.getContentPane(), JOptionPane.class);
 
                 if (pane == null || !handled.add(pane)) return;
 
@@ -411,10 +407,5 @@ public class testASetupMovesToAOnePageLayout
 
             return false;
         }
-    }
-
-    private static <T> T find(Container container, Class<T> type)
-    {
-        return support.Components.inside(container, type);
     }
 }

@@ -48,6 +48,27 @@ public class testSourceOfFindsADeclarationAnywhere
     }
 
     /**
+     * A class name is matched with or without its package, so an import added or removed later does not turn the
+     * claims that read the source red.
+     *
+     * MUTATION: compare the signature to the text exactly, as it was; the second form below is found nowhere.
+     */
+    @Test
+    public void testAClassNameMatchesWithOrWithoutItsPackage()
+    {
+        String spelledOut = "class A { public javax.swing.JMenuItem radio(int x) { return null; } }";
+        String imported = "class A { public JMenuItem radio(int x) { return null; } }";
+
+        String wanted = "public JMenuItem radio(";
+
+        assertEquals(SourceOf.declarationIn(spelledOut, wanted), "public javax.swing.JMenuItem radio(int x)"
+            + " { return null; }", "the short name did not find the spelled-out declaration");
+        assertEquals(SourceOf.declarationIn(imported, "public javax.swing.JMenuItem radio("),
+            "public JMenuItem radio(int x) { return null; }", "the long name did not find the imported declaration");
+        assertEquals(SourceOf.plain(spelledOut), imported, "plain() left a package in the text");
+    }
+
+    /**
      * A signature that is nowhere fails, rather than handing back an empty text a negative claim would pass over.
      */
     @Test

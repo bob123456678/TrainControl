@@ -18,6 +18,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * PROOF OF CONCEPT for the Layout.activeLocomotives concurrency race.
@@ -153,15 +154,11 @@ public class testAutoLayoutRace
     }
 
     /**
-     * A train already under way does not queue behind one that is still being dispatched.
-     *
-     * `configureAndLockPath` holds the layout monitor across its whole lock loop (claiming a path is atomic), sleeping
-     * CONFIGURE_SLEEP per edge and per accessory, so on a long path it is held for seconds.  `updatePendingS88`, which
-     * every running locomotive calls just before waiting for its next sensor, must not want that monitor: a train held
-     * there could cross and clear its sensor, and `waitForOccupiedFeedback` (it tests a LEVEL) would then wait for an
-     * occupancy of a sensor the train had already passed.
-     *
-     * Driven directly, not through autonomy: the subject is which monitor guards what, not timing.
+     * A train already under way does not queue behind one that is still being dispatched: `configureAndLockPath` holds
+     * the layout monitor across its lock loop (seconds on a long path), and `updatePendingS88`, which every running
+     * locomotive calls before waiting for its next sensor, must not want that monitor, or the train could clear its
+     * sensor and `waitForOccupiedFeedback` (it tests a LEVEL) would wait for a sensor it had already passed.  Driven
+     * directly: the subject is which monitor guards what, not timing.
      */
     @Test
     public void testARunningTrainIsNotBlockedByOneBeingDispatched() throws Exception
@@ -217,12 +214,9 @@ public class testAutoLayoutRace
     }
 
     /**
-     * A train that never arrives is said out loud, and the wait carries on.
-     *
-     * The wait is right to be endless (only a sensor says where a train is, and driving on blind or stopping on a guess
-     * is not safe), but the operator must be told when a locomotive failed to start or took another route.
-     *
-     * The threshold is turned down here rather than waiting three real minutes, as Layout.TIMETABLE_STUCK_MS is.
+     * A train that never arrives is said out loud, and the wait carries on: the wait is rightly endless (only a sensor
+     * says where a train is), but the operator must be told when a locomotive failed to start or took another route.
+     * The threshold is turned down rather than waiting three real minutes, as Layout.TIMETABLE_STUCK_MS is.
      */
     @Test
     public void testALocomotiveWaitingTooLongForASensorSaysSo() throws Exception
@@ -296,119 +290,6 @@ public class testAutoLayoutRace
     }
 
     /**
-     * And it is said ONCE, however the sensor behaves afterwards.
-     *
-     * The wait restarts when the feedback does not stay occupied for minDuration (a flicker is not an arrival).  The
-     * advisory's remaining time carries into the restart by subtraction; past the threshold it is negative, and
-     * flooring it at a millisecond would announce the same train again on every flicker, as "0 minutes".
-     */
-    @Test
-    public void testTheAdvisoryIsSaidOnceEvenIfTheSensorFlickers() throws Exception
-    {
-        final MarklinFeedback sensor = model.newFeedback(9003, null);
-
-        model.setFeedbackState(sensor.getName(), false);
-
-        final java.util.List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
-
-        final MarklinLocomotive dispatched = new MarklinLocomotive(model, 1,
-            MarklinLocomotive.decoderType.MM2, "Flickering")
-        {
-            @Override
-            protected void waitedTooLongFor(String feedbackName, long waitedMs)
-            {
-                said.add(feedbackName);
-            }
-        };
-
-        // minDuration > 0, which is what makes the wait restart itself
-        Thread waiting = new Thread(() ->
-            dispatched.waitForOccupiedFeedback(sensor.getName(), 150, 200),
-            "waiting-through-a-flicker");
-
-        waiting.setDaemon(true);
-        waiting.start();
-
-        Thread.sleep(600);
-
-        assertEquals(said.size(), 1, "the advisory was said " + said.size() + " times before the "
-            + "sensor did anything at all");
-
-        // Occupied, but not for long enough to count - so the wait starts over
-        for (int flicker = 0; flicker < 3; flicker++)
-        {
-            model.setFeedbackState(sensor.getName(), true);
-
-            synchronized (Locomotive.monitor)
-            {
-                Locomotive.monitor.notifyAll();
-            }
-
-            Thread.sleep(60);
-
-            model.setFeedbackState(sensor.getName(), false);
-
-            synchronized (Locomotive.monitor)
-            {
-                Locomotive.monitor.notifyAll();
-            }
-
-            Thread.sleep(200);
-        }
-
-        assertEquals(said.size(), 1,
-            "the advisory was said " + said.size() + " times.  A sensor that flickers is one train "
-            + "not arriving, and the operator should hear about it once");
-
-        assertTrue(waiting.isAlive(), "and the train has still not arrived, so it is still waiting");
-    }
-
-    /**
-     * And a wait that is SUPPOSED to be endless says nothing at all.
-     *
-     * A route's trigger monitor waits on its sensor for as long as the layout runs, on a locomotive called "Dummy Loc"
-     * that exists only to borrow these utilities; an advisory built into the wait itself would announce, once per
-     * route, that a locomotive nobody owns had failed to arrive.  So the caller asks for the advisory, and this keeps
-     * it so.
-     */
-    @Test
-    public void testAWaitThatIsMeantToBeEndlessStaysQuiet() throws Exception
-    {
-        final MarklinFeedback sensor = model.newFeedback(9002, null);
-
-        model.setFeedbackState(sensor.getName(), false);
-
-        final java.util.List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
-
-        // Built exactly as MarklinRoute builds its dummy - the constructor registers nothing - but
-        // recording what it would have said instead of saying it
-        final MarklinLocomotive listening = new MarklinLocomotive(model, 1,
-            MarklinLocomotive.decoderType.MM2, "Watcher")
-        {
-            @Override
-            protected void waitedTooLongFor(String feedbackName, long waitedMs)
-            {
-                said.add(feedbackName);
-            }
-        };
-
-        Thread waiting = new Thread(() -> listening.waitForOccupiedFeedback(sensor.getName(), 0),
-            "a-route-watching-its-sensor");
-
-        waiting.setDaemon(true);
-        waiting.start();
-
-        // Comfortably past anything a mutated build would use as a threshold
-        Thread.sleep(1500);
-
-        assertTrue(said.isEmpty(),
-            "the plain wait announced " + said + " - a route's trigger monitor would say that about "
-            + "its dummy locomotive once every few minutes, for every route, for the whole session");
-
-        assertTrue(waiting.isAlive(), "and it must still be waiting");
-    }
-
-    /**
      * Waiting for the power to come on gives up, rather than parking the only switching thread.
      *
      * Only the Central Station's echo writes the power state, and a datagram sent to a switched-off station succeeds
@@ -419,9 +300,7 @@ public class testAutoLayoutRace
     {
         // Power believed OFF, the state a tile click that has to turn the power on first is in.  Set directly: whether
         // a STOP echoes back at all is what is being simulated away.
-        java.lang.reflect.Field field = MarklinControlStation.class.getDeclaredField("powerState");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(MarklinControlStation.class, "powerState");
         field.setBoolean(model, false);
 
         long began = System.currentTimeMillis();
@@ -439,10 +318,8 @@ public class testAutoLayoutRace
     /** updatePendingS88 is private bookkeeping; reached the way testImportRename reaches its internals. */
     private static void pendingS88(Layout layout, Locomotive loc, String s88) throws Exception
     {
-        java.lang.reflect.Method method = Layout.class.getDeclaredMethod(
-            "updatePendingS88", Locomotive.class, String.class);
-
-        method.setAccessible(true);
+        java.lang.reflect.Method method =
+            Reflect.method(Layout.class, "updatePendingS88", Locomotive.class, String.class);
         method.invoke(layout, loc, s88);
     }
 

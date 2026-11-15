@@ -22,12 +22,10 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
+import support.Reflect;
 
 /**
- * The setup check is worked out once per event, and the configuration build works out its names once (Adam: "Do 1 and
- * 2").  Measured on his railway before this: one click on a switch in the autonomy editor ran the setup check twenty
- * times over five events, and a track editor Save twenty-four times over seven, each asking again of a setup nobody had
- * touched; every check builds the whole configuration, and the build sorted every Point again for each copy it named.
+ * The setup check is worked out once per event, and the configuration build works out its names once.
  *
  * The findings are kept for the rest of the event that asked, and only while everything the check reads is as it was:
  * a new event always checks afresh, and a change inside the event (the setup, a train's length, a label on the
@@ -64,9 +62,7 @@ public class testTheFindingsAreWorkedOutOncePerEvent
 
     private static java.lang.reflect.Field source(String name) throws NoSuchFieldException
     {
-        java.lang.reflect.Field field = AutonomySession.class.getDeclaredField(name);
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomySession.class, name);
 
         return field;
     }
@@ -147,9 +143,7 @@ public class testTheFindingsAreWorkedOutOncePerEvent
 
         AutonomyBuilder builder = session.builder(new AutonomyBuilder.Globals());
 
-        java.lang.reflect.Field field = AutonomyBuilder.class.getDeclaredField("namesOutOfPlay");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyBuilder.class, "namesOutOfPlay");
 
         @SuppressWarnings("unchecked")
         Map<TileKey, String> outOfPlay = (Map<TileKey, String>) field.get(builder);

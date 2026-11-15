@@ -30,9 +30,7 @@ import org.traincontrol.marklin.file.CS2File;
  *
  * **What the narrowing would have done:** turning only where the next leg leaves by the side the train arrived on names
  * `BottomMainB (westbound, reverse)` (in by E, out by N, four such pairs), a turning copy that has always turned trains
- * and would have stopped, so the facings recorded in the setup would have disagreed with the railway.  The narrowing
- * was reverted unshipped.  The fixture that made the case for it called `setReversing(true)` on a square a straight
- * path runs through, which the builder cannot emit.
+ * and would have stopped, so the facings recorded in the setup would have disagreed with the railway.
  *
  * @author Adam
  */
@@ -48,9 +46,8 @@ public class testTheTurnRuleDoesNotChangeTheRealRailway
     public static void setUpClass() throws Exception
     {
         // THE FROZEN SNAPSHOT of the real layout, opened before the model, because init reads the layout preference
-        // (OB-111).  It once read a copy of the LIVE folder, and the battery went red when Adam turned a square from
-        // may-turn to must-turn: a claim about what the builder does to his railway cannot change color because he
-        // edited the railway.
+        // (OB-111): a claim about what the builder does to his railway cannot change color because he edited the
+        // railway.
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
         model = support.TestStation.simulated();

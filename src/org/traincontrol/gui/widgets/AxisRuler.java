@@ -7,6 +7,7 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.Rectangle;
+import java.util.List;
 import java.util.function.IntFunction;
 import javax.swing.border.Border;
 
@@ -81,7 +82,7 @@ public class AxisRuler implements Border
      * @param index the column or row being asked about
      * @return the first rectangle with a real size, or null when none of them has one
      */
-    public static Rectangle firstUsable(java.util.List<IntFunction<Rectangle>> at, int index)
+    public static Rectangle firstUsable(List<IntFunction<Rectangle>> at, int index)
     {
         if (at == null) return null;
 
@@ -112,37 +113,23 @@ public class AxisRuler implements Border
     }
 
     /**
-     * A ruler that looks in several rows for each column, and several columns for each row (OB-172).
-     *
-     * @param offsetX the x the left-most column actually is
-     * @param offsetY the y the top row actually is
-     * @param columns how many columns
-     * @param rows how many rows
-     * @param columnSources where to look for a column's position, in order of preference
-     * @param rowSources the same for a row
-     * @return a ruler no single missing square can silence
+     * A ruler that looks in several rows for each column, and several columns for each row (OB-172), so no single
+     * missing square can silence it.
      */
     public static AxisRuler overRows(int offsetX, int offsetY, int columns, int rows,
-        final java.util.List<IntFunction<Rectangle>> columnSources,
-        final java.util.List<IntFunction<Rectangle>> rowSources)
+        final List<IntFunction<Rectangle>> columnSources,
+        final List<IntFunction<Rectangle>> rowSources)
     {
         return new AxisRuler(offsetX, offsetY, columns, rows,
             column -> firstUsable(columnSources, column),
             row -> firstUsable(rowSources, row));
     }
     /**
-     * A ruler over cells that really are exactly one tile apart.
+     * A ruler over cells that really are exactly one tile apart (`size` pixels square).
      *
      * For tests, and for any caller that knows its grid has no borders on it.  The real diagram does not use this:
      * whether a square is a tile wide depends on whether the gray grid is switched on, the assumption that put the
      * numbers out of alignment.
-     *
-     * @param size the width and height of one square, in pixels
-     * @param offsetX the x the left-most column actually is
-     * @param offsetY the y the top row actually is
-     * @param columns how many columns
-     * @param rows how many rows
-     * @return a ruler that assumes a uniform pitch
      */
     public static AxisRuler uniform(final int size, int offsetX, int offsetY, int columns, int rows)
     {

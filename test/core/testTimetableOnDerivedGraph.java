@@ -23,6 +23,8 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.file.CS2File;
+import static support.Diagrams.wireAccessories;
+import static support.Diagrams.accessory;
 
 /**
  * Capture a timetable on a graph DERIVED FROM THE TRACK DIAGRAM, then replay it and check it ran.  A station on that
@@ -534,44 +536,4 @@ public class testTimetableOnDerivedGraph
 
         return out.toString().trim();
     }
-    /**
-     * Gives every switch and signal tile a real Accessory, the way the application does: a diagram parsed on its own
-     * carries addresses and no objects, and the reduction cannot join track through a point it has no accessory for.
-     */
-    private static void wireAccessories(List<LayoutDiagram> pages)
-    {
-        for (LayoutDiagram page : pages)
-        {
-            for (org.traincontrol.base.LayoutDiagramComponent component : page.getAll())
-            {
-                if (!component.isSwitch() && !component.isSignal()) continue;
-
-                // the application skips tiles drawn without a digital address, and so does this
-                if (component.getAddress() <= 0) continue;
-
-                org.traincontrol.base.Accessory.accessoryType type = component.isSignal()
-                    ? org.traincontrol.base.Accessory.accessoryType.SIGNAL
-                    : org.traincontrol.base.Accessory.accessoryType.SWITCH;
-
-                component.setAccessory(accessory(component.getAddress(), type,
-                    component.getProtocol()));
-
-                if (component.isThreeWay())
-                {
-                    component.setAccessory2(accessory(component.getAddress() + 1,
-                        org.traincontrol.base.Accessory.accessoryType.SWITCH, component.getProtocol()));
-                }
-            }
-        }
-    }
-
-    /** One accessory, addressed the way the station addresses them. */
-    private static MarklinAccessory accessory(int logicalAddress,
-        org.traincontrol.base.Accessory.accessoryType type,
-        org.traincontrol.base.Accessory.accessoryDecoderType protocol)
-    {
-        return new MarklinAccessory(null, logicalAddress - 1, type, protocol,
-            MarklinAccessory.getNameWithProtocol(logicalAddress, type, protocol), false, 0);
-    }
-
 }

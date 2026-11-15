@@ -8,7 +8,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -21,13 +20,16 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Display;
+import support.Reflect;
+import support.Teardown;
 
 /**
  * The autonomy editor's keyboard shortcuts are named where their actions are offered (OB-214).  Asked of the real
  * menu, through `buildTileMenu` - the method the right-click calls - and of the item that carries each action rather
  * than of the menu as a whole, so a hint put on the wrong item fails.
  *
- * MUTATION: delete `lengthItem.setToolTipText(SHORTCUT_LENGTH)` and the first claim fails.
+ * MUTATION: delete the `showShortcut` of `lengthItem` and the station menu's claim fails.
  *
  * @author Adam
  */
@@ -45,10 +47,7 @@ public class testTheEditorNamesItsShortcuts
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the autonomy editor and its menus need a display");
-        }
+        Display.needed("the autonomy editor and its menus need a display");
 
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 
@@ -75,28 +74,7 @@ public class testTheEditorNamesItsShortcuts
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        try
-        {
-            if (editor != null)
-            {
-                final LayoutEditor closing = editor;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (ui != null)
-            {
-                final TrainControlUI closing = ui;
-
-                SwingUtilities.invokeAndWait(() -> closing.dispose());
-            }
-
-            if (model != null) model.stop();
-        }
-        finally
-        {
-            if (sandbox != null) sandbox.close();
-        }
+        Teardown.close(sandbox, model, editor, ui);
     }
 
     /**
@@ -190,10 +168,8 @@ public class testTheEditorNamesItsShortcuts
 
             track.addPropertyChangeListener("title", e -> titles.add(String.valueOf(e.getNewValue())));
 
-            final java.lang.reflect.Method arrive = LayoutEditor.class.getDeclaredMethod("arriveAt", String.class,
-                boolean.class);
-
-            arrive.setAccessible(true);
+            final java.lang.reflect.Method arrive =
+                Reflect.method(LayoutEditor.class, "arriveAt", String.class, boolean.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -243,44 +219,33 @@ public class testTheEditorNamesItsShortcuts
 
         assertNotNull(first, "precondition: the start-up resume loaded no configuration, so there is none to name");
 
+        // The class's own editor closed too: Stop Using Autonomy refuses while any editor is open, and the unload
+        // rebuilds the session it was built on.  Run last, nothing after this uses it.
+        SwingUtilities.invokeAndWait(() -> editor.dispose());
+
         // [0] the track editor, [1] the autonomy editor
         final LayoutEditor[] open = new LayoutEditor[2];
 
-        SwingUtilities.invokeAndWait(() ->
-        {
-            open[0] = new LayoutEditor(page, 30, ui, 0);
-            open[0].render();
-            open[1] = new LayoutEditor(page, 30, ui, 0);
-            open[1].render();
-            open[1].setAutonomyMode(ui.getAutonomySession());
-        });
+        open[1] = anAutonomyEditor();
+        open[0] = aTrackEditor();
+
+        settleTheEditor();
 
         try
         {
-            settleTheEditor();
-
             assertTrue(open[1].isAutonomyMode(), "precondition: the second editor is not the autonomy editor");
 
             // OPENED WITH IT LOADED: named from the start
             assertTitles(open, first, first, "of editors opened with " + first + " loaded");
 
-            // UNLOADED: the track editor's title is today's, and the autonomy editor still names what it edits
-            unloadAutonomy();
-
-            assertEquals(ui.getAutonomySession().getStore().getActiveConfiguration(), first, "precondition: unloading"
-                + " left a different configuration chosen than " + first);
+            // UNLOADED, with the editors closed first as Stop Using Autonomy requires: the track editor's title is
+            // today's, and the autonomy editor names what it edits
+            unloadAutonomy(open, first);
 
             assertTitles(open, null, first, "after " + first + " was unloaded");
 
             // AN AUTONOMY EDITOR OPENED NOW, with it chosen and not loaded: it names what it edits from the start
-            final LayoutEditor[] late = new LayoutEditor[1];
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                late[0] = new LayoutEditor(page, 30, ui, 0);
-                late[0].render();
-                late[0].setAutonomyMode(ui.getAutonomySession());
-            });
+            final LayoutEditor[] late = {anAutonomyEditor()};
 
             try
             {
@@ -328,11 +293,9 @@ public class testTheEditorNamesItsShortcuts
 
             assertTitles(open, renamed, renamed, "after " + other + " was renamed");
 
-            // UNLOADED again: the track editor's title is today's, the autonomy editor's names what it edits
-            unloadAutonomy();
-
-            assertEquals(ui.getAutonomySession().getStore().getActiveConfiguration(), renamed, "precondition: unloading"
-                + " left a different configuration chosen than " + renamed);
+            // UNLOADED again, editors closed first: the track editor's title is today's, the autonomy editor's names
+            // what it edits
+            unloadAutonomy(open, renamed);
 
             assertTitles(open, null, renamed, "after autonomy was unloaded");
         }
@@ -355,7 +318,6 @@ public class testTheEditorNamesItsShortcuts
      * The configuration the start-up resume loaded, waited for: the resume is posted behind the window's set-up.
      *
      * @return its name, or null if nothing loaded in fifteen seconds
-     * @throws Exception from the event thread
      */
     private static String theResumedConfiguration() throws Exception
     {
@@ -371,12 +333,20 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Stops using autonomy, the way the Autonomy menu does, and lets the window settle.
+     * Stops using autonomy, the way the Autonomy menu does, with the editors closed first as it requires, then opens
+     * them again and lets the window settle.
      *
-     * @throws Exception from the event thread
+     * @param open the editors, replaced by the reopened ones
+     * @param chosen the configuration the setup must still have chosen afterward
      */
-    private static void unloadAutonomy() throws Exception
+    private static void unloadAutonomy(LayoutEditor[] open, String chosen) throws Exception
     {
+        SwingUtilities.invokeAndWait(() ->
+        {
+            open[0].dispose();
+            open[1].dispose();
+        });
+
         final boolean[] unloaded = new boolean[1];
 
         SwingUtilities.invokeAndWait(() -> unloaded[0] = ui.unloadAutonomy());
@@ -386,13 +356,20 @@ public class testTheEditorNamesItsShortcuts
         assertTrue(unloaded[0], "precondition: Stop Using Autonomy was declined");
 
         assertNull(ui.getActiveDiagramConfiguration(), "precondition: a configuration is still loaded");
+
+        assertEquals(ui.getAutonomySession().getStore().getActiveConfiguration(), chosen, "precondition: unloading"
+            + " left a different configuration chosen than " + chosen);
+
+        open[1] = anAutonomyEditor();
+        open[0] = aTrackEditor();
+
+        settleTheEditor();
     }
 
     /**
      * Loads a configuration the way the Autonomy menu does and lets the window settle.
      *
      * @param name the configuration
-     * @throws Exception from the event thread
      */
     private static void loadConfiguration(final String name) throws Exception
     {
@@ -473,9 +450,7 @@ public class testTheEditorNamesItsShortcuts
             for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
 
             // A SQUARE WITH TRACK ON IT, to open the menu on
-            java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
             final org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) gridField.get(track);
 
@@ -501,46 +476,23 @@ public class testTheEditorNamesItsShortcuts
 
             final org.traincontrol.base.LayoutDiagramComponent what = component;
 
-            final java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.layouteditor.LayoutEditorRightclickMenu")
-                .getConstructor(LayoutEditor.class, TrainControlUI.class, org.traincontrol.gui.LayoutLabel.class,
-                    org.traincontrol.base.LayoutDiagramComponent.class);
-
-            make.setAccessible(true);
-
-            final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    menu[0] = (javax.swing.JPopupMenu) make.newInstance(track, ui, on, what);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
-
             List<javax.swing.JMenuItem> items = new java.util.ArrayList<>();
 
-            collect(menu[0].getSubElements(), items);
+            collect(theTrackMenu(track, on, what).getSubElements(), items);
 
             javax.swing.JMenuItem oneBox = byText(items, I18n.t("layout.ui.menuSelectByDragging"));
 
             assertNotNull(oneBox, "precondition: the track editor's menu has no Select by Dragging a Box");
 
-            assertTrue(oneBox.getToolTipText() != null
-                && oneBox.getToolTipText().contains(LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING),
-                "Select by Dragging a Box does not name its key: " + oneBox.getToolTipText());
+            assertEquals(oneBox.getAccelerator(), LayoutEditor.SELECT_BY_DRAGGING_KEY,
+                "Select by Dragging a Box does not show its key");
 
             // WITH THE POINTER ON A SQUARE, as it is when the key is pressed: hovering gives a square its own pointer
             hoverOver(track, on);
 
             // AND THE KEY DOES IT
-            final java.lang.reflect.Method pressed = LayoutEditor.class.getDeclaredMethod("formKeyPressed",
-                java.awt.event.KeyEvent.class);
-
-            pressed.setAccessible(true);
+            final java.lang.reflect.Method pressed =
+                Reflect.method(LayoutEditor.class, "formKeyPressed", java.awt.event.KeyEvent.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -558,12 +510,9 @@ public class testTheEditorNamesItsShortcuts
 
             for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
 
-            java.lang.reflect.Field once = LayoutEditor.class.getDeclaredField("selectOnce");
+            java.lang.reflect.Field once = Reflect.field(LayoutEditor.class, "selectOnce");
 
-            once.setAccessible(true);
-
-            assertTrue(once.getBoolean(track), LayoutEditor.SHORTCUT_SELECT_BY_DRAGGING + " did not start Select by"
-                + " Dragging a Box");
+            assertTrue(once.getBoolean(track), "Control+M did not start Select by Dragging a Box");
 
             // And it shows, as the pointer (MT-661): a crosshair over the
             // diagram while picking - the square already under the pointer included
@@ -584,9 +533,7 @@ public class testTheEditorNamesItsShortcuts
             // build a new diagram panel, and picking goes on through them - so the new panel shows it too
             SwingUtilities.invokeAndWait(() -> track.setSelectMode(true));
 
-            final java.lang.reflect.Method redraw = LayoutEditor.class.getDeclaredMethod("drawGrid");
-
-            redraw.setAccessible(true);
+            final java.lang.reflect.Method redraw = Reflect.method(LayoutEditor.class, "drawGrid");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -659,15 +606,228 @@ public class testTheEditorNamesItsShortcuts
         }
     }
 
+    /** The track editor's right-click menu on a square, as the right-click builds it. */
+    private static javax.swing.JPopupMenu theTrackMenu(LayoutEditor track, org.traincontrol.gui.LayoutLabel on,
+        org.traincontrol.base.LayoutDiagramComponent what) throws Exception
+    {
+        final java.lang.reflect.Constructor<?> make = Class.forName("org.traincontrol.gui.layouteditor.LayoutEditorRightclickMenu")
+            .getConstructor(LayoutEditor.class, TrainControlUI.class, org.traincontrol.gui.LayoutLabel.class,
+                org.traincontrol.base.LayoutDiagramComponent.class);
+
+        make.setAccessible(true);
+
+        return support.Components.onTheEventThread(() -> (javax.swing.JPopupMenu) make.newInstance(track, ui, on, what));
+    }
+
+    /** A square holding a tile that turns and has an address, so its menu offers every item; its place in `at`. */
+    private static org.traincontrol.gui.LayoutLabel aSwitchSquare(LayoutEditor track, int[] at) throws Exception
+    {
+        // The grid is drawn after the window opens
+        assertTrue(support.Components.waitFor(() -> support.Components.onTheEventThread(() -> gridOf(track) != null),
+            10000), "precondition: the track editor drew no grid");
+
+        final org.traincontrol.gui.LayoutGrid grid = gridOf(track);
+
+        for (int x = page.getMinx(); x <= page.getMaxx(); x++)
+        {
+            for (int y = page.getMiny(); y <= page.getMaxy(); y++)
+            {
+                org.traincontrol.base.LayoutDiagramComponent tile = page.getComponent(x, y);
+
+                if (tile != null && grid.getValueAt(x, y) != null && !tile.isText() && tile.isClickable()
+                    && tile.getNumOrientations() > 1)
+                {
+                    at[0] = x;
+                    at[1] = y;
+
+                    return grid.getValueAt(x, y);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** The keys the track editor's menu items show, by the item's text; Rotate in the Selection submenu has none. */
+    private static final String[] TRACK_MENU_KEYS = ("ui.paste PASTE_KEY, ui.undo UNDO_KEY, ui.redo REDO_KEY, ui.cut CUT_KEY,"
+        + " ui.copy COPY_KEY, ui.rotate ROTATE_KEY, layout.ui.editTextLabel TEXT_KEY, ui.delete DELETE_KEY,"
+        + " layout.ui.menuSelectByDragging SELECT_BY_DRAGGING_KEY").split(", ");
+
     /**
-     * Escape that drops a tile picked up to move takes its red outline with it.
+     * Every item of the track editor's right-click menu that has a key in the editor shows it on its right, the very
+     * stroke the editor's key handler acts on, with no tooltip that only names it and no binding of its own;
+     * every such key is shown somewhere on the menu.
      *
-     * The red outline is the track editor's "this tile is picked up".  Escape must put back more than the palette's
-     * borders, or the outline - and the pointer's blue one - says a tile is picked up when it is not.
+     * MUTATION: a plain `setAccelerator` in `LayoutEditorRightclickMenu.keyed` (the items bind their keys), or
+     * `LayoutEditor.REDO_KEY` on Undo, or no `showShortcut` on the Selection submenu's Rotate.
+     */
+    @Test
+    public void testTheTrackMenuShowsTheKeysItsHandlerActsOn() throws Exception
+    {
+        final LayoutEditor track = aTrackEditor();
+
+        try
+        {
+            int[] at = new int[2];
+
+            org.traincontrol.gui.LayoutLabel on = aSwitchSquare(track, at);
+
+            assertNotNull(on, "precondition: no switch on " + PAGE);
+
+            javax.swing.JPopupMenu menu = theTrackMenu(track, on, page.getComponent(at[0], at[1]));
+
+            java.util.Set<javax.swing.KeyStroke> shown = new java.util.HashSet<>();
+
+            for (java.awt.Component each : menu.getComponents())
+            {
+                List<javax.swing.JMenuItem> items = new ArrayList<>();
+
+                if (each instanceof javax.swing.JMenu) collect(((javax.swing.JMenu) each).getSubElements(), items);
+                else if (each instanceof javax.swing.JMenuItem) items.add((javax.swing.JMenuItem) each);
+
+                for (javax.swing.JMenuItem item : items)
+                {
+                    for (String row : TRACK_MENU_KEYS)
+                    {
+                        String[] pair = row.split(" ");
+
+                        if (!item.getText().equals(I18n.t(pair[0]))) continue;
+
+                        assertEquals(item.getAccelerator(), LayoutEditor.class.getField(pair[1]).get(null),
+                            "\"" + item.getText() + "\" shows the wrong key");
+                    }
+
+                    javax.swing.KeyStroke key = item.getAccelerator();
+
+                    if (key == null) continue;
+
+                    shown.add(key);
+
+                    String tip = item.getToolTipText();
+
+                    assertFalse(tip != null && tip.matches("(Control\\+\\w+|Delete)"), "\"" + item.getText()
+                        + "\" still has a tooltip that only names its key: " + tip);
+
+                    Object bound = item.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).get(key);
+
+                    assertNull(bound == null ? null : item.getActionMap().get(bound), "\"" + item.getText() + "\" binds "
+                        + key);
+                }
+            }
+
+            assertEquals(shown, new java.util.HashSet<>(java.util.Arrays.asList(LayoutEditor.PASTE_KEY,
+                LayoutEditor.UNDO_KEY, LayoutEditor.REDO_KEY, LayoutEditor.CUT_KEY, LayoutEditor.COPY_KEY,
+                LayoutEditor.ROTATE_KEY, LayoutEditor.ADDRESS_KEY, LayoutEditor.TEXT_KEY, LayoutEditor.DELETE_KEY,
+                LayoutEditor.GROW_KEY, LayoutEditor.SELECT_BY_DRAGGING_KEY)), "the menu does not show every key it has");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track.dispose());
+        }
+    }
+
+    /**
+     * After the track editor's menu has been open and closed, the key its Rotate item shows turns the square under the
+     * pointer exactly as the item does: once.
      *
-     * A track tile clicked to pick it up, a hover so the outline is drawn, then Escape through the editor's own keys.
+     * MUTATION: in the editor's key handler, `rotate` twice for `ROTATE_KEY`; or test Control+E there.
+     */
+    @Test
+    public void testTheRotateKeyTheMenuShowsTurnsOnce() throws Exception
+    {
+        final LayoutEditor track = aTrackEditor();
+
+        try
+        {
+            int[] at = new int[2];
+
+            org.traincontrol.gui.LayoutLabel on = aSwitchSquare(track, at);
+
+            assertNotNull(on, "precondition: no switch on " + PAGE);
+
+            int before = track.getMarklinLayout().getComponent(at[0], at[1]).getOrientation();
+
+            List<javax.swing.JMenuItem> items = new ArrayList<>();
+
+            javax.swing.JPopupMenu menu = theTrackMenu(track, on, page.getComponent(at[0], at[1]));
+
+            for (java.awt.Component each : menu.getComponents())
+            {
+                if (each instanceof javax.swing.JMenuItem && !(each instanceof javax.swing.JMenu))
+                {
+                    items.add((javax.swing.JMenuItem) each);
+                }
+            }
+
+            javax.swing.JMenuItem rotate = byText(items, I18n.t("ui.rotate"));
+
+            assertNotNull(rotate, "precondition: the switch's menu has no Rotate");
+
+            // The item's own turn, then back
+            support.Components.onTheEventThread(() ->
+            {
+                rotate.doClick(0);
+
+                return null;
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            int byTheItem = track.getMarklinLayout().getComponent(at[0], at[1]).getOrientation();
+
+            assertTrue(byTheItem != before, "precondition: Rotate did not turn the switch");
+
+            turnBack(track, at, before);
+
+            assertEquals(track.getMarklinLayout().getComponent(at[0], at[1]).getOrientation(), before,
+                "precondition: the switch did not turn back");
+
+            // The menu shown and closed, as a right-click and a click elsewhere leave it
+            support.Components.onTheEventThread(() ->
+            {
+                menu.show(gridOf(track).getValueAt(at[0], at[1]), 1, 1);
+                menu.setVisible(false);
+
+                return null;
+            });
+
+            hoverOver(track, gridOf(track).getValueAt(at[0], at[1]));
+
+            javax.swing.KeyStroke key = rotate.getAccelerator();
+
+            final java.lang.reflect.Method pressed =
+                Reflect.method(LayoutEditor.class, "formKeyPressed", java.awt.event.KeyEvent.class);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    pressed.invoke(track, new java.awt.event.KeyEvent(track, java.awt.event.KeyEvent.KEY_PRESSED,
+                        System.currentTimeMillis(), key.getModifiers(), key.getKeyCode(),
+                        java.awt.event.KeyEvent.CHAR_UNDEFINED));
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
+
+            assertEquals(track.getMarklinLayout().getComponent(at[0], at[1]).getOrientation(), byTheItem,
+                key + " did not turn the switch once, as Rotate does");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> track.dispose());
+        }
+    }
+
+    /**
+     * Escape that drops a tile picked up to move takes its red outline with it, or it says a tile is picked up when it
+     * is not.  A track tile picked, a hover, then Escape through the editor's own keys.
      *
-     * MUTATION: let Escape put back only the palette again, and this fails.
+     * MUTATION: let Escape put back only the palette again.
      */
     @Test
     public void testEscapeTakesThePickedUpOutlineWithIt() throws Exception
@@ -684,9 +844,7 @@ public class testTheEditorNamesItsShortcuts
 
             final org.traincontrol.gui.LayoutGrid grid = gridOf(track);
 
-            java.lang.reflect.Field what = org.traincontrol.gui.LayoutLabel.class.getDeclaredField("component");
-
-            what.setAccessible(true);
+            java.lang.reflect.Field what = Reflect.field(org.traincontrol.gui.LayoutLabel.class, "component");
 
             // A TRACK TILE, and another square to hover over
             org.traincontrol.gui.LayoutLabel tile = null, other = null;
@@ -745,14 +903,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A square the pointer is over shows its hover outline while squares are picked.
+     * A square the pointer is over shows its hover outline while squares are picked: the redraw of the picked squares
+     * and the grip puts every square back first, so it must draw the hover back.
      *
-     * The redraw of the picked squares and the grip puts every square back first, the one under the pointer included,
-     * so it must draw the hover back.
-     *
-     * Three squares picked, then a hover over another.
-     *
-     * MUTATION: let the selection's redraw leave the hover out again, and this fails.
+     * MUTATION: let the selection's redraw leave the hover out again.
      */
     @Test
     public void testTheHoverShowsOverASelection() throws Exception
@@ -766,16 +920,10 @@ public class testTheEditorNamesItsShortcuts
             final org.traincontrol.gui.LayoutGrid grid = gridOf(track);
 
             // THREE SQUARES PICKED, as a box picks them
-            java.lang.reflect.Field selectionField = LayoutEditor.class.getDeclaredField("selection");
-
-            selectionField.setAccessible(true);
-
             final org.traincontrol.base.TileSelection selection =
-                (org.traincontrol.base.TileSelection) selectionField.get(track);
+                (org.traincontrol.base.TileSelection) Reflect.get(LayoutEditor.class, track, "selection");
 
-            final java.lang.reflect.Method redraw = LayoutEditor.class.getDeclaredMethod("refreshSelectionBorders");
-
-            redraw.setAccessible(true);
+            final java.lang.reflect.Method redraw = Reflect.method(LayoutEditor.class, "refreshSelectionBorders");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -856,9 +1004,7 @@ public class testTheEditorNamesItsShortcuts
                 // THE RELEASE
                 releaseOn(track, to);
 
-                java.lang.reflect.Field selectionField = LayoutEditor.class.getDeclaredField("selection");
-
-                selectionField.setAccessible(true);
+                java.lang.reflect.Field selectionField = Reflect.field(LayoutEditor.class, "selection");
 
                 assertTrue(((org.traincontrol.base.TileSelection) selectionField.get(track)).isEmpty(), "the box Escape"
                     + " should have dropped was picked on the release (" + (picking ? "picking" : "Shift") + ", RSA33-C2)");
@@ -871,14 +1017,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The hover outline is not drawn back on a square the pointer has left.
+     * The hover outline is not drawn back on a square the pointer has left: the keys' square is never forgotten, so
+     * only the square that wore it gets it back.  Three squares picked, a hover, the margin entered, then Escape.
      *
-     * The keys' square is never forgotten, so it is not where the hover goes back once the pointer has left the diagram
-     * for its margin: only the square that wore it.
-     *
-     * Three squares picked, a hover over another, the margin entered, then Escape.
-     *
-     * MUTATION: draw the hover back on the keys' square again, and this fails.
+     * MUTATION: draw the hover back on the keys' square again.
      */
     @Test
     public void testTheHoverIsNotDrawnBackWhereThePointerLeft() throws Exception
@@ -921,14 +1063,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Escape between a box's press and its release stops the click that follows too.
+     * Escape between a box's press and its release stops the click that follows too: with Shift it would pick the
+     * square, with Control+M's picking pick the tile up.
      *
-     * A press that never left its square ends in a click: with Shift it would pick the square, with Control+M's picking
-     * pick the tile up to move.
-     *
-     * A press, Escape, the release and the click, on one square - with Shift and nothing else held, then with Control+M.
-     *
-     * MUTATION: let the click after a dropped box through again, and this fails.
+     * MUTATION: let the click after a dropped box through again.
      */
     @Test
     public void testEscapeStopsTheClickOfADroppedBox() throws Exception
@@ -974,9 +1112,7 @@ public class testTheEditorNamesItsShortcuts
 
                 for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
 
-                java.lang.reflect.Field selectionField = LayoutEditor.class.getDeclaredField("selection");
-
-                selectionField.setAccessible(true);
+                java.lang.reflect.Field selectionField = Reflect.field(LayoutEditor.class, "selection");
 
                 assertTrue(((org.traincontrol.base.TileSelection) selectionField.get(track)).isEmpty()
                     && !track.hasToolFlag(), "the click after a box Escape dropped " + (picking ? "picked the tile up"
@@ -990,14 +1126,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A box being drawn keeps its outline when the pointer enters a square.
+     * A box being drawn keeps its outline when the pointer enters a square: the hover's pass puts every square back, so
+     * it must redraw the box too (nothing picked yet).
      *
-     * The hover's pass puts every square back, so it must redraw the box being drawn too (nothing picked yet), not only
-     * picked squares.
-     *
-     * A box pressed, a square entered and one drag event, then the posted work run.
-     *
-     * MUTATION: redraw only for picked squares again, and this fails.
+     * MUTATION: redraw only for picked squares again.
      */
     @Test
     public void testABoxKeepsItsOutlineAsThePointerEntersASquare() throws Exception
@@ -1031,9 +1163,7 @@ public class testTheEditorNamesItsShortcuts
 
             for (int i = 0; i < 10; i++) SwingUtilities.invokeAndWait(() -> { });
 
-            java.lang.reflect.Field picked = LayoutEditor.class.getDeclaredField("COMPONENT_BORDER_SELECTED_COLOR");
-
-            picked.setAccessible(true);
+            java.lang.reflect.Field picked = Reflect.field(LayoutEditor.class, "COMPONENT_BORDER_SELECTED_COLOR");
 
             String outlined = highlightKey(((java.awt.Color) picked.get(null)).getRGB());
 
@@ -1052,26 +1182,18 @@ public class testTheEditorNamesItsShortcuts
 
     private static org.traincontrol.gui.LayoutGrid gridOf(LayoutEditor editor) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-        gridField.setAccessible(true);
-
-        return (org.traincontrol.gui.LayoutGrid) gridField.get(editor);
+        return (org.traincontrol.gui.LayoutGrid) Reflect.get(LayoutEditor.class, editor, "grid");
     }
 
     /** Picks a rectangle of squares, as a box does, and draws them picked. */
     private static void pick(final LayoutEditor editor, final int fromX, final int fromY, final int toX, final int toY)
         throws Exception
     {
-        java.lang.reflect.Field selectionField = LayoutEditor.class.getDeclaredField("selection");
-
-        selectionField.setAccessible(true);
+        java.lang.reflect.Field selectionField = Reflect.field(LayoutEditor.class, "selection");
 
         final org.traincontrol.base.TileSelection selection = (org.traincontrol.base.TileSelection) selectionField.get(editor);
 
-        final java.lang.reflect.Method redraw = LayoutEditor.class.getDeclaredMethod("refreshSelectionBorders");
-
-        redraw.setAccessible(true);
+        final java.lang.reflect.Method redraw = Reflect.method(LayoutEditor.class, "refreshSelectionBorders");
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -1091,10 +1213,8 @@ public class testTheEditorNamesItsShortcuts
     /** Escape, through the editor's own keys. */
     private static void escape(final LayoutEditor editor) throws Exception
     {
-        final java.lang.reflect.Method pressed = LayoutEditor.class.getDeclaredMethod("formKeyPressed",
-            java.awt.event.KeyEvent.class);
-
-        pressed.setAccessible(true);
+        final java.lang.reflect.Method pressed =
+            Reflect.method(LayoutEditor.class, "formKeyPressed", java.awt.event.KeyEvent.class);
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -1115,9 +1235,7 @@ public class testTheEditorNamesItsShortcuts
     /** A square with track on it. */
     private static org.traincontrol.gui.LayoutLabel aTrackSquare(LayoutEditor editor) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field what = org.traincontrol.gui.LayoutLabel.class.getDeclaredField("component");
-
-        what.setAccessible(true);
+        java.lang.reflect.Field what = Reflect.field(org.traincontrol.gui.LayoutLabel.class, "component");
 
         for (java.awt.Component c : gridOf(editor).getContainer().getComponents())
         {
@@ -1138,25 +1256,16 @@ public class testTheEditorNamesItsShortcuts
     /** What the editor's own record says a square wears. */
     private static String keyOf(LayoutEditor editor, javax.swing.JLabel square) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field stateField = LayoutEditor.class.getDeclaredField("borderState");
-
-        stateField.setAccessible(true);
-
-        Object key = ((java.util.Map<?, ?>) stateField.get(editor)).get(square);
+        Object key = ((java.util.Map<?, ?>) Reflect.get(LayoutEditor.class, editor, "borderState")).get(square);
 
         return key == null ? "" : key.toString();
     }
 
     /**
-     * A page switch forgets the square under the pointer (Adam: *"on page switch - yes, clear the active square"*).
+     * A page switch forgets the square under the pointer (Adam: *"on page switch - yes, clear the active square"*): the
+     * track editor's `lastHoveredX/Y` and the autonomy editor's `autonomyHover` must not be read against the new page.
      *
-     * Delete and the other keys that act on the square under the pointer must not ask the old page's coordinates on the
-     * new page: the track editor's `lastHoveredX/Y`, and the autonomy editor's `autonomyHover`, whose square is read
-     * against the page now showing.
-     *
-     * A square hovered, the autonomy editor's square set as its hover sets it, then a switch to another page.
-     *
-     * MUTATION: let a switch keep either square, and this fails.
+     * MUTATION: let a switch keep either square.
      */
     @Test
     public void testAPageSwitchForgetsTheSquareUnderThePointer() throws Exception
@@ -1179,18 +1288,12 @@ public class testTheEditorNamesItsShortcuts
 
             assertNotNull(over, "precondition: no square at 2,4");
 
-            final java.lang.reflect.Field autonomyHover = LayoutEditor.class.getDeclaredField("autonomyHover");
+            final java.lang.reflect.Field autonomyHover = Reflect.field(LayoutEditor.class, "autonomyHover");
 
-            autonomyHover.setAccessible(true);
+            final java.lang.reflect.Field hoveredX = Reflect.field(LayoutEditor.class, "lastHoveredX");
 
-            final java.lang.reflect.Field hoveredX = LayoutEditor.class.getDeclaredField("lastHoveredX");
-
-            hoveredX.setAccessible(true);
-
-            final java.lang.reflect.Method arrive = LayoutEditor.class.getDeclaredMethod("arriveAt", String.class,
-                boolean.class);
-
-            arrive.setAccessible(true);
+            final java.lang.reflect.Method arrive =
+                Reflect.method(LayoutEditor.class, "arriveAt", String.class, boolean.class);
 
             // THE HOVER, THE SWITCH AND THE READING IN ONE EVENT: this class shows the editor, and a real pointer
             // resting over it moves the keys' square between events - over the palette, to -1 - so the claim could pass
@@ -1240,13 +1343,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Two requests to redraw the diagram, made before the first is drawn, draw it once.
+     * Two requests to redraw the diagram, made before the first is drawn, draw it once: the pending redraw reads the
+     * latest state.  Opening autonomy mode makes exactly this pair.
      *
-     * A request made while a redraw is pending must not queue another, since the pending one reads the latest state.
-     * Opening autonomy mode makes exactly this pair: the remembered caption mode's redraw, then the one meant to
-     * follow.
-     *
-     * MUTATION: queue a second redraw for a request made before the first has started, and this fails.
+     * MUTATION: queue a second redraw for a request made before the first has started.
      */
     @Test
     public void testTwoRedrawRequestsBeforeTheFirstIsDrawnDrawOnce() throws Exception
@@ -1257,9 +1357,7 @@ public class testTheEditorNamesItsShortcuts
         {
             settleTheEditor();
 
-            final java.lang.reflect.Method redraw = LayoutEditor.class.getDeclaredMethod("refreshGrid");
-
-            redraw.setAccessible(true);
+            final java.lang.reflect.Method redraw = Reflect.method(LayoutEditor.class, "refreshGrid");
 
             int before = org.traincontrol.gui.LayoutLabel.COUNT_CONSTRUCTED.get();
 
@@ -1300,14 +1398,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A click that changes a switch's directions refreshes the autonomy editor once.
+     * A click that changes a switch's directions refreshes the autonomy editor once: the switch's own step and the
+     * click's refresh must not both fire.  A counting listener, one click on a square with several routes.
      *
-     * The switch's own step refreshes (a whole setup check, the list, the strip), and the click refreshes again after
-     * it as it does for every click: only one may.
-     *
-     * A panel with a counting listener, and one click on a square with more than one route.
-     *
-     * MUTATION: let the switch's step refresh as well again, and this fails.
+     * MUTATION: let the switch's step refresh as well again.
      */
     @Test
     public void testAClickOnASwitchRefreshesOnce() throws Exception
@@ -1349,14 +1443,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The square under the pointer keeps its hover outline through Escape though it wore another outline, and a square
-     * the pointer left for the palette does not get it back.
+     * The square under the pointer keeps its hover outline through Escape though it wore another outline (tile picked
+     * up, picked, grip), and a square the pointer left for the palette does not get it back.
      *
-     * The blue is drawn on the square the pointer is over while it is over the grid: a square can wear another outline
-     * (a tile picked up, picked, the grip), and nothing takes the blue off a square left for the palette.  A click
-     * picks up the tile under the pointer, then Escape; and two squares picked, a hover, the palette, then Escape.
-     *
-     * MUTATION: draw the blue back from the record again, or wherever the pointer was last, and this fails.
+     * MUTATION: draw the blue back from the record again, or wherever the pointer was last.
      */
     @Test
     public void testTheHoverFollowsThePointerThroughEscape() throws Exception
@@ -1411,16 +1501,11 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A box Escape dropped after its drag left the square it started on leaves that square's next click alone.
+     * A box Escape dropped after its drag left its square leaves that square's next click alone: the click set aside to
+     * ignore must be forgotten at a release off the square (only a left click is ever ignored).  Control+M, a box
+     * dragged two squares on, Escape, release, then a middle click on the first square: the tile turns.
      *
-     * A press whose drag leaves its square ends in no click, so the click set aside to ignore must be forgotten at a
-     * release off the square, or it waits for that square's next click (a middle click that turns the tile, a
-     * right-click's menu).  Only a left click is ever ignored.
-     *
-     * Control+M, a box from a track square dragged two squares on, Escape, the release, then a middle click on the
-     * first square: the tile turns.
-     *
-     * MUTATION: keep the click to ignore past a release off its square again, and this fails.
+     * MUTATION: keep the click to ignore past a release off its square again.
      */
     @Test
     public void testADroppedBoxsDragLeavesTheNextClickAlone() throws Exception
@@ -1558,9 +1643,7 @@ public class testTheEditorNamesItsShortcuts
      */
     private static java.util.Map<String, Object> tiesOf(LayoutEditor editor) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("layout");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(LayoutEditor.class, "layout");
 
         java.util.Map<String, Object> out = new java.util.TreeMap<>();
 
@@ -1584,14 +1667,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * An undo in the track diagram editor puts the page's tiles back still tied to their switches, signals, sensors and
-     * route buttons.
+     * An undo in the track diagram editor puts the tiles back still tied to their switches, signals, sensors and route
+     * buttons: each undo copy must keep the ties, or after Control+Z every switch counts as unaddressed.
      *
-     * Every undo state is a copy of each tile, and the copy must keep what the address was tied to when the page was
-     * read, or after one Control+Z every switch and signal has no accessory and the setup counts each as unaddressed.
-     * A tile turned, then undone: every tie the page had before, it has after.
-     *
-     * MUTATION: let the copy leave out the accessory, or the sensor, and this fails.
+     * MUTATION: let the copy leave out the accessory, or the sensor.
      */
     @Test
     public void testAnUndoKeepsTheTilesTiedToTheirAccessories() throws Exception
@@ -1640,12 +1719,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Control+K keeps the picked squares, the selection's grip and the pointer's blue outline.
+     * Control+K keeps the picked squares, the grip and the pointer's blue outline: the grid's redraw (`setShowGrid`)
+     * must draw the outlines back as the undo's does.
      *
-     * The grid's own redraw (Control+K and the Grid box, through `setShowGrid`) must draw the outlines back as the
-     * undo's redraw does.  Turned off and on again, so the setting ends as it began.
-     *
-     * MUTATION: end `setShowGrid` without drawing the outlines back, and this fails.
+     * MUTATION: end `setShowGrid` without drawing the outlines back.
      */
     @Test
     public void testControlKKeepsTheGripAndThePointersOutline() throws Exception
@@ -1662,9 +1739,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertNotNull(aTrackSquareWithRoom(track, at), "precondition: no track square on " + PAGE);
 
-            java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
             final int x = at[0];
             final int y = at[1];
@@ -1701,14 +1776,11 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The pointer gone off the squares takes its blue outline with it, wherever it went, and a move onto the next
-     * square does not; and the margin keeps the selection's grip.
+     * The pointer gone off the squares takes its blue outline with it, wherever it went (it may go straight onto the
+     * tools column, crossing no margin), a move to the next square does not, and the margin keeps the grip.
      *
-     * A pointer can go straight from a square onto the tools column, crossing no margin: the blue must not stay on the
-     * last square for the Grid box's redraw to draw again, and the margin must not take the grip off with the blue.
-     *
-     * MUTATION: leave the blue where the pointer went off the squares, take it off on a move to the next square, or
-     * have the margin take the grip off, and this fails.
+     * MUTATION: leave the blue where the pointer went off, take it off on a move to the next square, or have the margin
+     * take the grip off.
      */
     @Test
     public void testThePointerOffTheSquaresTakesItsOutlineWithIt() throws Exception
@@ -1725,9 +1797,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertNotNull(aTrackSquareWithRoom(track, at), "precondition: no track square on " + PAGE);
 
-            final java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            final java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
             final int x = at[0];
             final int y = at[1];
@@ -1810,17 +1880,12 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The pointer gone off the squares from what covers one - an accessory's address label, or a menu that closed over
-     * the tools column - takes its blue outline with it too; so does a square entered and left in one go, and a square
-     * left for the grid's padding.
-     *
-     * An address label passes a square its entry but not its exit; a menu takes the square's exit while the pointer is
-     * still over it, and nothing asks again when it closes.  The pass that takes the outline off is posted, behind the
-     * one the last square's hover posted; and the padding beside the last column is no square.
+     * The pointer gone off the squares from what covers one (an address label, a menu closed over the tools column)
+     * takes its blue outline too, as does a square entered and left in one go, or left for the grid's padding.  The
+     * pass that takes the outline off is posted behind the last hover's; the padding is no square.
      *
      * MUTATION: let an address label keep the square's exit to itself, let the window not hear the pointer arrive off
-     * the squares, take the outline off at once rather than after the hover's pass, or count the padding as a square,
-     * and this fails.
+     * the squares, take the outline off at once, or count the padding as a square.
      */
     @Test
     public void testThePointerOffTheSquaresFromWhatCoversThemTakesItsOutline() throws Exception
@@ -1834,17 +1899,11 @@ public class testTheEditorNamesItsShortcuts
         {
             settleTheEditor();
 
-            final java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            final java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
             // ADDRESSES SHOWN, as the box shows them - turned on only when they are off: the run's preferences start as the
             // operator's, and his Show Addresses may already have them on, which a toggle would turn off
-            final java.lang.reflect.Field drawn = LayoutEditor.class.getDeclaredField("layout");
-
-            drawn.setAccessible(true);
-
-            final LayoutDiagram shown = (LayoutDiagram) drawn.get(track);
+            final LayoutDiagram shown = (LayoutDiagram) Reflect.get(LayoutEditor.class, track, "layout");
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -1926,9 +1985,7 @@ public class testTheEditorNamesItsShortcuts
             assertTrue(wearsTheHover(track, menued), "a menu opened over a square took the outline off the square it is"
                 + " about");
 
-            java.lang.reflect.Field box = LayoutEditor.class.getDeclaredField("showGridCheckbox");
-
-            box.setAccessible(true);
+            java.lang.reflect.Field box = Reflect.field(LayoutEditor.class, "showGridCheckbox");
 
             final java.awt.Component tools = (java.awt.Component) box.get(track);
 
@@ -2012,16 +2069,11 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * The pointer is found off the squares however it gets there, and only from this window: out from under the
-     * right-click menu once it closes, back into the window over a part nothing listens on, or past the edge of the
-     * view from a square cut by it - and not by an arrival in a dialog over the square.  The watch is on the toolkit
-     * while the window is, and gone with it.
-     *
-     * While a menu is open the watch leaves the outline alone, so it must ask again when the menu closes.  The window's
-     * own entry, which AWT hands on only where nothing listens, counts as inside the window; a square half scrolled out
-     * of sight counts only for the part in view.
+     * right-click menu once it closes, back into the window over a part nothing listens on, or past the edge of a
+     * square cut by the view, not by an arrival in a dialog.  The toolkit watch lives with the window.
      *
      * MUTATION: ask nothing when the menu closes, leave the window's own entry out, count the hidden half of a square,
-     * act on an arrival in another window, or leave the watch on the toolkit after dispose - and this fails.
+     * act on an arrival in another window, or leave the watch on the toolkit after dispose.
      */
     @Test
     public void testThePointerIsFoundOffTheSquaresWhereverItGoes() throws Exception
@@ -2043,9 +2095,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertNotNull(aTrackSquareWithRoom(track, at), "precondition: no track square on " + PAGE);
 
-            final java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            final java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
             final org.traincontrol.gui.LayoutLabel p = (org.traincontrol.gui.LayoutLabel) squareAt(gridField, track, at[0],
                 at[1]);
@@ -2057,10 +2107,8 @@ public class testTheEditorNamesItsShortcuts
 
             leaveFor(p, p.getWidth() / 2, p.getHeight() / 2);
 
-            java.lang.reflect.Method made = LayoutEditor.class.getDeclaredMethod("menuFor",
-                org.traincontrol.gui.LayoutLabel.class, org.traincontrol.base.LayoutDiagramComponent.class);
-
-            made.setAccessible(true);
+            java.lang.reflect.Method made = Reflect.method(LayoutEditor.class,
+                "menuFor", org.traincontrol.gui.LayoutLabel.class, org.traincontrol.base.LayoutDiagramComponent.class);
 
             final javax.swing.JPopupMenu[] menu = new javax.swing.JPopupMenu[1];
 
@@ -2082,9 +2130,7 @@ public class testTheEditorNamesItsShortcuts
 
             // WHERE THE POINTER IS, said through the editor's own reader rather than read off the screen: the
             // real pointer is wherever it was left, and this window is off the screen
-            final java.lang.reflect.Field pointerOver = LayoutEditor.class.getDeclaredField("pointerOver");
-
-            pointerOver.setAccessible(true);
+            final java.lang.reflect.Field pointerOver = Reflect.field(LayoutEditor.class, "pointerOver");
 
             final Object theScreens = pointerOver.get(track);
 
@@ -2250,11 +2296,7 @@ public class testTheEditorNamesItsShortcuts
     /** This editor window's pointer watch, as the toolkit holds it. */
     private static java.awt.event.AWTEventListener theWatchOf(LayoutEditor editor) throws Exception
     {
-        java.lang.reflect.Field field = LayoutEditor.class.getDeclaredField("pointerWatch");
-
-        field.setAccessible(true);
-
-        return (java.awt.event.AWTEventListener) field.get(editor);
+        return (java.awt.event.AWTEventListener) Reflect.get(LayoutEditor.class, editor, "pointerWatch");
     }
 
     /** The pointer's hover over a square, as its own listener gives it, and the event thread after it. */
@@ -2298,16 +2340,12 @@ public class testTheEditorNamesItsShortcuts
     /** The pointer entering the margin around the diagram, and the event thread after it. */
     private static void enterTheMargin(final LayoutEditor editor) throws Exception
     {
-        java.lang.reflect.Field marginField = LayoutEditor.class.getDeclaredField("ExtLayoutPanel");
-
-        marginField.setAccessible(true);
+        java.lang.reflect.Field marginField = Reflect.field(LayoutEditor.class, "ExtLayoutPanel");
 
         final java.awt.Component margin = (java.awt.Component) marginField.get(editor);
 
-        final java.lang.reflect.Method entered = LayoutEditor.class.getDeclaredMethod("ExtLayoutPanelMouseEntered",
-            java.awt.event.MouseEvent.class);
-
-        entered.setAccessible(true);
+        final java.lang.reflect.Method entered =
+            Reflect.method(LayoutEditor.class, "ExtLayoutPanelMouseEntered", java.awt.event.MouseEvent.class);
 
         SwingUtilities.invokeAndWait(() ->
         {
@@ -2378,13 +2416,12 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The click's tooltip line is for the visit: a page switch keeps it gone, so do the editor's own reopenings, and
-     * the next opening through the main window says it again (MT-697).
+     * The click's tooltip line is for the visit: a page switch keeps it gone, as do the editor's own reopenings, and
+     * the next opening through the main window says it again (MT-697).  The class's own editor is put away for the
+     * test.
      *
-     * The class's own editor is put away so the main window opens its own, and built again after.
-     *
-     * MUTATION: let a page switch, or any of the editor's three own reopenings, forget the click or hand on one nobody
-     * made; or keep it in the main window past the editor's closing - and this fails.
+     * MUTATION: let a page switch or any of the three reopenings forget the click or hand on one nobody made; or keep
+     * it in the main window past the editor's closing.
      */
     @Test(timeOut = 300000)
     public void testTheClickLineIsForTheVisit() throws Exception
@@ -2437,9 +2474,8 @@ public class testTheEditorNamesItsShortcuts
             // A PAGE SWITCH IN PLACE keeps it gone - with nothing unsaved, so it asks nothing
             assertFalse(unsaved(a), "precondition: the editor has unsaved work, so leaving the page would ask on the screen");
 
-            java.lang.reflect.Method leave = LayoutEditor.class.getDeclaredMethod("leaveFor", String.class, boolean.class);
-
-            leave.setAccessible(true);
+            java.lang.reflect.Method leave =
+                Reflect.method(LayoutEditor.class, "leaveFor", String.class, boolean.class);
 
             final LayoutEditor switching = a;
 
@@ -2554,12 +2590,9 @@ public class testTheEditorNamesItsShortcuts
     /**
      * While an editor window is open the main window is not kept on top of it, even when the editor switches page in
      * place, and closing the editor puts the operator's setting back (Adam: "when opening the autonomy editor,
-     * temporarily turn off 'always on top' in the main window, then restore it ... seems to have regressed").  A page
-     * or mode switch inside the editor runs the refresh a closing editor runs; it must not put the setting back with
-     * the editor still open.
+     * temporarily turn off 'always on top' in the main window, then restore it ... seems to have regressed").
      *
-     * MUTATION: let the refresh apply the setting whatever is open, or not apply it when the editor goes, and this
-     * fails.
+     * MUTATION: let the refresh apply the setting whatever is open, or not apply it when the editor goes.
      */
     @Test(timeOut = 300000)
     public void testTheMainWindowStaysBelowAnOpenEditor() throws Exception
@@ -2568,9 +2601,7 @@ public class testTheEditorNamesItsShortcuts
         final String was = TrainControlUI.getPrefs().get(key, null);
         final boolean onTopWas = ui.isAlwaysOnTop();
 
-        final java.lang.reflect.Field itemField = TrainControlUI.class.getDeclaredField("windowAlwaysOnTopMenuItem");
-
-        itemField.setAccessible(true);
+        final java.lang.reflect.Field itemField = Reflect.field(TrainControlUI.class, "windowAlwaysOnTopMenuItem");
 
         final javax.swing.JCheckBoxMenuItem item = (javax.swing.JCheckBoxMenuItem) itemField.get(ui);
         final boolean tickedWas = item.isSelected();
@@ -2585,7 +2616,7 @@ public class testTheEditorNamesItsShortcuts
         try
         {
             // THE OPERATOR WANTS IT ON TOP, said as he says it: the Window menu's tick, which the closing paths read back into
-            // the setting.  Set, never toggled: the run's copy of his settings for this folder may have it either way.
+            // the setting.  Set, never toggled.
             SwingUtilities.invokeAndWait(() -> { if (!item.isSelected()) item.doClick(); });
 
             assertTrue(TrainControlUI.getPrefs().getBoolean(key, false), "precondition: ticking the menu item did not set the setting");
@@ -2599,9 +2630,8 @@ public class testTheEditorNamesItsShortcuts
             // A PAGE SWITCH IN PLACE, nothing unsaved
             assertFalse(unsaved(a), "precondition: the editor has unsaved work, so leaving the page would ask on the screen");
 
-            java.lang.reflect.Method leave = LayoutEditor.class.getDeclaredMethod("leaveFor", String.class, boolean.class);
-
-            leave.setAccessible(true);
+            java.lang.reflect.Method leave =
+                Reflect.method(LayoutEditor.class, "leaveFor", String.class, boolean.class);
 
             final LayoutEditor switching = a;
 
@@ -2664,8 +2694,8 @@ public class testTheEditorNamesItsShortcuts
     private static final String OTHER_PAGE = "2 - Bottom";
 
     /**
-     * The editor one of the editor's own reopenings opens: a finding on another page, a guard notice on another page, or
-     * a link's other end - each closes the window it is in and has the main window open another.
+     * The editor one of the editor's own reopenings opens: a finding or guard notice on another page, or a link's other
+     * end, each closing its window and having the main window open another.
      *
      * @param from the window the door is in, with nothing unsaved
      * @param door "finding", "notice" or "link"
@@ -2682,9 +2712,7 @@ public class testTheEditorNamesItsShortcuts
 
         if ("finding".equals(door))
         {
-            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("onJumpToPage");
-
-            field.setAccessible(true);
+            java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "onJumpToPage");
 
             @SuppressWarnings("unchecked")
             final java.util.function.Consumer<TileKey> toPage =
@@ -2694,9 +2722,7 @@ public class testTheEditorNamesItsShortcuts
         }
         else if ("notice".equals(door))
         {
-            java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("onJumpToNotice");
-
-            field.setAccessible(true);
+            java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "onJumpToNotice");
 
             @SuppressWarnings("unchecked")
             final java.util.function.BiConsumer<TileKey, List<TileKey>> toNotice =
@@ -2719,8 +2745,7 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * The autonomy editor the main window shows after an opening - waited for until it is a new window, built and in
-     * autonomy mode.
+     * The autonomy editor the main window shows after an opening, waited for until it is a new window in autonomy mode.
      *
      * @param opening what opens it, run on the event thread
      * @param not the editor it must not be, or null
@@ -2729,9 +2754,7 @@ public class testTheEditorNamesItsShortcuts
     private static LayoutEditor openedBy(Runnable opening, LayoutEditor not) throws Exception
     {
         // NOT WITH EDIT GRAY: the main window answers that with a dialog that waits on the screen
-        java.lang.reflect.Field button = TrainControlUI.class.getDeclaredField("editLayoutButton");
-
-        button.setAccessible(true);
+        java.lang.reflect.Field button = Reflect.field(TrainControlUI.class, "editLayoutButton");
 
         final boolean[] live = new boolean[1];
 
@@ -2754,9 +2777,7 @@ public class testTheEditorNamesItsShortcuts
 
         SwingUtilities.invokeAndWait(opening);
 
-        java.lang.reflect.Field shown = TrainControlUI.class.getDeclaredField("openEditor");
-
-        shown.setAccessible(true);
+        java.lang.reflect.Field shown = Reflect.field(TrainControlUI.class, "openEditor");
 
         long until = System.currentTimeMillis() + 20000;
 
@@ -2775,9 +2796,7 @@ public class testTheEditorNamesItsShortcuts
 
         Object open = shown.get(ui);
 
-        java.lang.reflect.Field onItsWay = TrainControlUI.class.getDeclaredField("editorOnItsWay");
-
-        onItsWay.setAccessible(true);
+        java.lang.reflect.Field onItsWay = Reflect.field(TrainControlUI.class, "editorOnItsWay");
 
         StringBuilder windows = new StringBuilder();
 
@@ -2795,9 +2814,7 @@ public class testTheEditorNamesItsShortcuts
     /** Whether an editor holds autonomy work its Save has not written. */
     private static boolean unsaved(LayoutEditor on) throws Exception
     {
-        java.lang.reflect.Method asked = LayoutEditor.class.getDeclaredMethod("hasUnsavedAutonomyWork");
-
-        asked.setAccessible(true);
+        java.lang.reflect.Method asked = Reflect.method(LayoutEditor.class, "hasUnsavedAutonomyWork");
 
         final boolean[] out = new boolean[1];
 
@@ -2835,11 +2852,7 @@ public class testTheEditorNamesItsShortcuts
     /** The newest lines of the main window's log, for a failure to say what went wrong. */
     private static String logTop() throws Exception
     {
-        java.lang.reflect.Field area = TrainControlUI.class.getDeclaredField("debugArea");
-
-        area.setAccessible(true);
-
-        String text = ((javax.swing.JTextArea) area.get(ui)).getText();
+        String text = ((javax.swing.JTextArea) Reflect.get(TrainControlUI.class, ui, "debugArea")).getText();
 
         return text.substring(0, Math.min(1500, text.length()));
     }
@@ -2888,15 +2901,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * An undo's redraw keeps the selection's grip and the pointer's blue outline.
+     * An undo's redraw keeps the selection's grip and the pointer's blue outline: Control+Z is pressed with the mouse
+     * still, so the redraw must not end with a pass that leaves only the picked squares' yellow.
      *
-     * The redraw a Control+Z asks for must not end with a pass that takes every outline down and puts back only the
-     * picked squares' yellow: the grip and the pointer's square would go gray until the pointer next moved, and
-     * Control+Z is pressed with the mouse still.
-     *
-     * A tile turned so there is something to undo, two squares picked, the pointer over a third, Control+Z.
-     *
-     * MUTATION: end the redraw with the border pass alone again, and this fails.
+     * MUTATION: end the redraw with the border pass alone again.
      */
     @Test
     public void testAnUndoKeepsTheGripAndThePointersOutline() throws Exception
@@ -2913,9 +2921,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertNotNull(squares, "precondition: no track square on " + PAGE);
 
-            java.lang.reflect.Field gridField = LayoutEditor.class.getDeclaredField("grid");
-
-            gridField.setAccessible(true);
+            java.lang.reflect.Field gridField = Reflect.field(LayoutEditor.class, "grid");
 
             // SOMETHING TO UNDO
             SwingUtilities.invokeAndWait(() -> track.rotate(squares[0]));
@@ -3029,17 +3035,12 @@ public class testTheEditorNamesItsShortcuts
 
     /**
      * A box Escape dropped and released on its own square after the pointer moved with the button down leaves that
-     * square's next click alone.
+     * square's next click alone: AWT makes no click of a press and release with movement between, so the click set
+     * aside must be forgotten there.  Control+M, a press, the pointer moved (once within the square, once out two
+     * squares and back), Escape, release, then a LEFT click (only the next left click is set aside): the tile is picked
+     * up.  Each step in one event, so a real pointer cannot move the hover between steps.
      *
-     * AWT makes no click of a press and release with any movement between (out and back, or a pixel within the square),
-     * so the click set aside to ignore must be forgotten there, or it swallows that square's next click of any button.
-     *
-     * Control+M, a press on a track square, the pointer moved within it (the second time, out to a square two along and
-     * back), Escape, the release there, then a left click: the tile is picked up.  A LEFT click, because only the very
-     * next left click is ever set aside.  Each in one event, so a real pointer resting over the shown editor cannot
-     * move the hover between the steps.
-     *
-     * MUTATION: keep the click to ignore past a release after the pointer moved, and this fails.
+     * MUTATION: keep the click to ignore past a release after the pointer moved.
      */
     @Test
     public void testAPressThatMovedLeavesTheNextClickAlone() throws Exception
@@ -3057,13 +3058,9 @@ public class testTheEditorNamesItsShortcuts
             assertNotNull(squares, "precondition: no track square with a square two to its right on " + PAGE);
 
             // ESCAPE'S OWN ACTION: the key handler posts it, and this is all one event
-            final java.lang.reflect.Method key = LayoutEditor.class.getDeclaredMethod("escapePressed");
+            final java.lang.reflect.Method key = Reflect.method(LayoutEditor.class, "escapePressed");
 
-            key.setAccessible(true);
-
-            final java.lang.reflect.Field ignoring = LayoutEditor.class.getDeclaredField("clickToIgnore");
-
-            ignoring.setAccessible(true);
+            final java.lang.reflect.Field ignoring = Reflect.field(LayoutEditor.class, "clickToIgnore");
 
             for (final boolean outAndBack : new boolean[] {false, true})
             {
@@ -3142,17 +3139,11 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Only the release's own left click is ignored: any other click that comes first acts, and takes the record with
-     * it.
+     * Only the release's own left click is ignored: any other click that comes first acts and takes the record with it.
+     * Control+M, a still press, Escape, release, then a middle and a left click in one event: the tile turns, and is
+     * picked up.
      *
-     * A press and release on one square with the pointer held still make a left click, and that is the click set aside;
-     * a click of another button acts, and the record goes, so the left click after it acts too.
-     *
-     * Control+M, a press on a track square held still, Escape, the release there, then a middle click and a left click
-     * on that square in the same event: the tile turns, and is picked up.
-     *
-     * MUTATION: ignore a click of any button again, or keep the record past a click that was not the one set aside, and
-     * this fails.
+     * MUTATION: ignore a click of any button again, or keep the record past a click that was not the one set aside.
      */
     @Test
     public void testOnlyTheReleasesOwnClickIsIgnored() throws Exception
@@ -3174,13 +3165,9 @@ public class testTheEditorNamesItsShortcuts
             final int turnedWas = from.getComponent().getOrientation();
 
             // ESCAPE'S OWN ACTION: the key handler posts it, and this is all one event
-            final java.lang.reflect.Method key = LayoutEditor.class.getDeclaredMethod("escapePressed");
+            final java.lang.reflect.Method key = Reflect.method(LayoutEditor.class, "escapePressed");
 
-            key.setAccessible(true);
-
-            final java.lang.reflect.Field ignoring = LayoutEditor.class.getDeclaredField("clickToIgnore");
-
-            ignoring.setAccessible(true);
+            final java.lang.reflect.Field ignoring = Reflect.field(LayoutEditor.class, "clickToIgnore");
 
             final Object[] read = new Object[3];
 
@@ -3248,12 +3235,10 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A palette piece held across a page switch leaves the palette's red outline behind with it.
+     * A palette piece held across a page switch leaves the palette's red outline behind: the switch drops the tool, so
+     * the palette must not go on showing it armed.
      *
-     * The switch drops the tool, so the palette must not go on showing the piece armed: the next click on track would
-     * pick it up instead of placing anything.
-     *
-     * MUTATION: let a switch drop the tool without the palette's outline again, and this fails.
+     * MUTATION: let a switch drop the tool without the palette's outline again.
      */
     @Test
     public void testAPageSwitchTakesTheArmedPiecesOutline() throws Exception
@@ -3281,10 +3266,8 @@ public class testTheEditorNamesItsShortcuts
             assertTrue(track.hasToolFlag() && keyOf(track, piece).startsWith(red), "precondition: the palette piece"
                 + " was not picked up and outlined: " + keyOf(track, piece));
 
-            final java.lang.reflect.Method arrive = LayoutEditor.class.getDeclaredMethod("arriveAt", String.class,
-                boolean.class);
-
-            arrive.setAccessible(true);
+            final java.lang.reflect.Method arrive =
+                Reflect.method(LayoutEditor.class, "arriveAt", String.class, boolean.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -3302,9 +3285,7 @@ public class testTheEditorNamesItsShortcuts
 
             assertFalse(track.hasToolFlag(), "precondition: the switch did not drop the tool");
 
-            java.lang.reflect.Field paletteField = LayoutEditor.class.getDeclaredField("newComponents");
-
-            paletteField.setAccessible(true);
+            java.lang.reflect.Field paletteField = Reflect.field(LayoutEditor.class, "newComponents");
 
             for (java.awt.Component c : ((java.awt.Container) paletteField.get(track)).getComponents())
             {
@@ -3321,9 +3302,7 @@ public class testTheEditorNamesItsShortcuts
     /** The first piece of the editor's palette. */
     private static org.traincontrol.gui.LayoutLabel aPalettePiece(LayoutEditor editor) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field paletteField = LayoutEditor.class.getDeclaredField("newComponents");
-
-        paletteField.setAccessible(true);
+        java.lang.reflect.Field paletteField = Reflect.field(LayoutEditor.class, "newComponents");
 
         for (java.awt.Component c : ((java.awt.Container) paletteField.get(editor)).getComponents())
         {
@@ -3354,7 +3333,7 @@ public class testTheEditorNamesItsShortcuts
         {
             built[0] = new LayoutEditor(page, 30, ui, 0);
             built[0].render();
-            built[0].setAutonomyMode(session);
+            built[0].setAutonomyMode(ui.getAutonomySession());
         });
 
         return built[0];
@@ -3382,14 +3361,12 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * Whether the main window's always-on-top flag reaches the value asked for within a deadline, asked on the event
-     * thread.  Polled rather than slept for: the flag is set by posted work, and how long that waits depends on the
-     * machine.
+     * Whether the main window's always-on-top flag reaches the value asked for within a deadline, polled on the event
+     * thread (the flag is set by posted work of unknown delay).
      *
      * @param wanted the value the flag should have
      * @param millis the longest to wait for it
      * @return whether the flag had the value when last read
-     * @throws Exception from the event thread
      */
     private static boolean alwaysOnTopWithin(boolean wanted, long millis) throws Exception
     {
@@ -3439,11 +3416,7 @@ public class testTheEditorNamesItsShortcuts
     /** Whether a square wears the hover outline (`COMPONENT_BORDER_HOVERED_COLOR`), read from the editor's own record of what each square wears. */
     private static boolean wearsTheHover(LayoutEditor editor, javax.swing.JLabel square) throws ReflectiveOperationException
     {
-        java.lang.reflect.Field stateField = LayoutEditor.class.getDeclaredField("borderState");
-
-        stateField.setAccessible(true);
-
-        Object key = ((java.util.Map<?, ?>) stateField.get(editor)).get(square);
+        Object key = ((java.util.Map<?, ?>) Reflect.get(LayoutEditor.class, editor, "borderState")).get(square);
 
         return key != null && key.toString().startsWith(highlightKey(editorColour("COMPONENT_BORDER_HOVERED_COLOR").getRGB()));
     }
@@ -3458,7 +3431,64 @@ public class testTheEditorNamesItsShortcuts
     }
 
     /**
-     * A station's right-click menu names Control+E, Control+S and Control+H on the items they do.
+     * Control+O opens Station Settings on the square under the pointer (FR-111); with the pointer off the diagram and
+     * no finding chosen it does nothing.
+     *
+     * MUTATION: drop the `over != null` branch from the key's handler in `LayoutEditor`.
+     */
+    @Test
+    public void testControlOOpensTheSquareUnderThePointer() throws Exception
+    {
+        final TileKey station = aStationOnThePage();
+
+        final AutonomyEditorPanel panel = editor.getAutonomyPanel();
+
+        final java.lang.reflect.Method pressed =
+            Reflect.method(LayoutEditor.class, "formKeyPressed", java.awt.event.KeyEvent.class);
+
+        final Runnable controlO = () ->
+        {
+            try
+            {
+                pressed.invoke(editor, new java.awt.event.KeyEvent(editor, java.awt.event.KeyEvent.KEY_PRESSED,
+                    System.currentTimeMillis(), java.awt.event.InputEvent.CTRL_DOWN_MASK, java.awt.event.KeyEvent.VK_O, 'o'));
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        };
+
+        SwingUtilities.invokeAndWait(() -> { panel.closeStationWindows(); controlO.run(); });
+
+        SwingUtilities.invokeAndWait(() -> { });
+
+        assertNull(panel.stationSettingsWindow(), "with the pointer off the diagram and no finding, Control+O opened a window");
+
+        final org.traincontrol.gui.LayoutLabel square = gridOf(editor).getValueAt(station.getX(), station.getY());
+
+        // In one step: the real pointer moving moves the hover
+        SwingUtilities.invokeAndWait(() ->
+        {
+            editor.receiveMoveEvent(new java.awt.event.MouseEvent(square, java.awt.event.MouseEvent.MOUSE_MOVED,
+                System.currentTimeMillis(), 0, 1, 1, 0, false), square);
+
+            controlO.run();
+        });
+
+        // The handler runs in an invokeLater of its own
+        SwingUtilities.invokeAndWait(() -> { });
+
+        assertNotNull(panel.stationSettingsWindow(), "Control+O over a station opened no window");
+
+        assertEquals(panel.stationSettingsWindow().squareForTest(), station, "Control+O opened another square's window");
+
+        SwingUtilities.invokeAndWait(panel::closeStationWindows);
+    }
+
+    /**
+     * A station's right-click menu shows Control+E, Control+O and Control+N on the items they do, and its window
+     * names Control+S and Control+H on the controls they do.
      */
     @Test
     public void testTheStationMenuNamesItsKeys() throws Exception
@@ -3481,38 +3511,31 @@ public class testTheEditorNamesItsShortcuts
 
         assertNotNull(length, "precondition: " + station + " offers no Segment Length item");
 
-        assertEquals(length.getToolTipText(), AutonomyEditorPanel.SHORTCUT_LENGTH,
-            "Segment Length does not say Control+E. Adam, OB-214: \"Set Segment Length needs a tooltip"
+        assertEquals(length.getAccelerator(), AutonomyEditorPanel.LENGTH_KEY,
+            "Segment Length does not show Control+E. Adam, OB-214: \"Set Segment Length needs a tooltip"
             + " that says Control+E\"");
 
-        javax.swing.JMenuItem rename = byText(items, I18n.t("autosetup.ui.menuRename"));
+        javax.swing.JMenuItem settings = byText(items, I18n.t("autosetup.ui.menuStationSettings"));
 
-        assertNotNull(rename, "precondition: " + station + " offers no Rename item");
+        assertNotNull(settings, "precondition: " + station + " offers no Station Settings item");
 
-        assertEquals(rename.getToolTipText(), AutonomyEditorPanel.SHORTCUT_NAME,
-            "Rename does not say Control+S, the key that names the square under the pointer");
+        assertEquals(settings.getAccelerator(), AutonomyEditorPanel.SETTINGS_KEY,
+            "Station Settings does not show Control+O, the key that opens it");
 
-        boolean homeNamed = false;
+        org.traincontrol.gui.autonomyeditor.StationSettingsWindow window =
+            support.StationDoors.open(editor.getAutonomyPanel(), station);
 
-        String homeNone = I18n.t("autosetup.ui.menuHomeNone");
-        String homeFor = I18n.f("autosetup.ui.menuHomeFor", "\u0000").split("\u0000")[0];
+        assertEquals(support.StationDoors.part(window, "station.name", javax.swing.JTextField.class).getToolTipText(),
+            AutonomyEditorPanel.SHORTCUT_NAME, "the Name field does not say Control+S, the key that names the square under"
+            + " the pointer");
 
-        for (javax.swing.JMenuItem item : items)
-        {
-            String text = item.getText();
+        assertEquals(support.StationDoors.part(window, "station.home", javax.swing.JComboBox.class).getToolTipText(),
+            AutonomyEditorPanel.SHORTCUT_HOME, "the Home Locomotive list does not say Control+H");
 
-            if (text == null || !(text.equals(homeNone) || (!homeFor.isEmpty() && text.startsWith(homeFor))))
-            {
-                continue;
-            }
-
-            homeNamed |= AutonomyEditorPanel.SHORTCUT_HOME.equals(item.getToolTipText());
-        }
-
-        assertTrue(homeNamed, "the Home item on a station's menu does not say Control+H");
+        support.StationDoors.close(window);
 
         // AND CONTROL+N, on the item that shows a station's name on a square (FR-086, Adam on MT-397: "let's add a hotkey
-        // for 'show station name here' too").  Its tooltip already says what a caption is, so the key is added to it.
+        // for 'show station name here' too").  Its tooltip says what a caption is, and keeps saying it.
         javax.swing.JMenuItem showHere = null;
 
         for (javax.swing.JMenuItem item : items)
@@ -3529,9 +3552,10 @@ public class testTheEditorNamesItsShortcuts
 
         assertNotNull(showHere, "precondition: " + station + " offers no Show a Station Name Here item");
 
-        assertTrue(showHere.getToolTipText() != null
-            && showHere.getToolTipText().contains(AutonomyEditorPanel.SHORTCUT_STATION),
-            "Show a Station Name Here does not say Control+N: " + showHere.getToolTipText());
+        assertEquals(showHere.getAccelerator(), AutonomyEditorPanel.STATION_KEY,
+            "Show a Station Name Here does not show Control+N");
+
+        assertNotNull(showHere.getToolTipText(), "Show a Station Name Here lost the sentence that says what a caption is");
     }
 
     /**
@@ -3540,9 +3564,7 @@ public class testTheEditorNamesItsShortcuts
     @Test
     public void testTheTrackLengthsToggleNamesItsKey() throws Exception
     {
-        java.lang.reflect.Field field = AutonomyEditorPanel.class.getDeclaredField("showLengths");
-
-        field.setAccessible(true);
+        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "showLengths");
 
         final javax.swing.JCheckBox toggle = (javax.swing.JCheckBox) field.get(editor.getAutonomyPanel());
 

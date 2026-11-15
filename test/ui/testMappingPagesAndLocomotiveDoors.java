@@ -5,7 +5,6 @@ import java.awt.Window;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -16,10 +15,8 @@ import javax.swing.AbstractButton;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JTabbedPane;
-import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -33,6 +30,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.RightClickTips;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -40,6 +38,7 @@ import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
 import support.Keys;
+import support.Reflect;
 import support.WireRecorder;
 import support.WireRecorder.Sent;
 
@@ -85,6 +84,9 @@ public class testMappingPagesAndLocomotiveDoors
     private static int pageP;
     private static int pageQ;
 
+    /** Hide Hover Tooltips as the copied preferences had it, put back after. */
+    private static String tipsWere;
+
     @BeforeClass
     public static void setUpClass() throws Exception
     {
@@ -97,6 +99,11 @@ public class testMappingPagesAndLocomotiveDoors
         ui = (TrainControlUI) model.getGUI();
 
         assertNotNull(ui, "the model has no window");
+
+        // The key menu's keys are read while it is open, where a tick of Hide Hover Tooltips (FR-199) hides them.
+        tipsWere = TrainControlUI.getPrefs().get(RightClickTips.PREF, null);
+
+        TrainControlUI.getPrefs().putBoolean(RightClickTips.PREF, false);
 
         Components.settle();
 
@@ -159,6 +166,9 @@ public class testMappingPagesAndLocomotiveDoors
         }
         finally
         {
+            if (tipsWere == null) TrainControlUI.getPrefs().remove(RightClickTips.PREF);
+            else TrainControlUI.getPrefs().put(RightClickTips.PREF, tipsWere);
+
             if (sandbox != null) sandbox.close();
         }
     }
@@ -169,6 +179,7 @@ public class testMappingPagesAndLocomotiveDoors
     @BeforeMethod
     public void lay() throws Exception
     {
+        support.SettingsWindow.closeIfOpen();
         closeStrayDialogs();
 
         one.setStructuredNotes(1950, 1970, RAILWAY, "");
@@ -241,7 +252,7 @@ public class testMappingPagesAndLocomotiveDoors
     /**
      * Full stop and comma turn a page forward and back; with Alt, they go to the last page and the first.
      *
-     * MUTATION: `switchLocMapping(1)` in the Alt+PERIOD arm of `LocControlPanelKeyPressed`, and this fails.
+     * MUTATION: `switchLocMapping(1)` in the "last locomotive page" row of `TrainControlUI.KeyShortcuts`, and this fails.
      */
     @Test
     public void testThePageKeysTurnThePage() throws Exception
@@ -358,34 +369,30 @@ public class testMappingPagesAndLocomotiveDoors
     // The locomotive's doors
 
     /**
-     * Control+N edits the shown train's notes: the year typed is the year kept.  Cancel keeps the old one.
+     * Control+N opens the Locomotive Settings window on its Notes tab: the year typed is the year kept, and Cancel keeps
+     * it.
      *
-     * MUTATION: save the end year's text as the start year in `changeLocNotes`, and this fails.
+     * MUTATION: open the window on the Locomotive tab in the "locomotive notes" row of `TrainControlUI.KeyShortcuts`, or
+     * leave the start year out of the window's write, and this fails.
      */
     @Test
     public void testControlNEditsTheNotes() throws Exception
     {
-        try (Answering answering = Answering.start(asked -> Answering.type("1957")))
-        {
-            Keys.press(keyboard(), KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK);
+        openWithControl(KeyEvent.VK_N, 2);
 
-            assertTrue(answering.awaitAsked(1, WAIT), "Control+N opened no notes");
-            assertTrue(answering.asked().get(0).contains(I18n.t("loc.ui.labelStartYear")),
-                "Control+N opened something other than the notes: " + answering.asked());
-        }
+        support.SettingsWindow.type("notes.startYear", "1957");
+        support.SettingsWindow.press(support.SettingsWindow.save());
 
         assertTrue(waitFor(() -> one.getStructuredNotes().getStartYear() == 1957),
             "the notes kept " + one.getStructuredNotes().getStartYear() + ", not the year typed");
         assertEquals(one.getStructuredNotes().getRailway(), RAILWAY, "saving the notes lost the railway");
 
-        try (Answering answering = Answering.start(asked -> Answering.press(I18n.t("ui.cancel"))))
-        {
-            Keys.press(keyboard(), KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK);
+        support.SettingsWindow.closeIfOpen();
 
-            assertTrue(answering.awaitAsked(1, WAIT), "Control+N opened no notes the second time");
-        }
+        openWithControl(KeyEvent.VK_N, 2);
 
-        Components.settle();
+        support.SettingsWindow.type("notes.startYear", "1960");
+        support.SettingsWindow.press(support.SettingsWindow.cancel());
 
         assertEquals(one.getStructuredNotes().getStartYear(), 1957, "Cancel changed the notes");
     }
@@ -409,7 +416,7 @@ public class testMappingPagesAndLocomotiveDoors
         try (Answering answering = Answering.start(message ->
             message.contains(similar) ? Answering.press(mapTo) : Answering.pressAt(0)))
         {
-            AbstractButton item = rightClickMenuItem(KeyEvent.VK_A, I18n.t("loc.ui.menuFindSimilarLocomotives"));
+            AbstractButton item = findSimilarOnTheNotesTab(KeyEvent.VK_A);
 
             SwingUtilities.invokeLater(item::doClick);
 
@@ -429,6 +436,44 @@ public class testMappingPagesAndLocomotiveDoors
     }
 
     /**
+     * Find Similar searches with the years typed on the Notes tab, unsaved (OB-477), names the train by the name typed,
+     * and Cancel still keeps the old ones.
+     *
+     * MUTATION: pass `loc.getStructuredNotes()` instead of `panel.asTyped(loc)` in the Notes tab's Find Similar, or
+     * `loc.getName()` for the name, and this fails.
+     */
+    @Test
+    public void testFindSimilarSearchesWhatIsTyped() throws Exception
+    {
+        List<String> asked;
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            AbstractButton item = findSimilarOnTheNotesTab(KeyEvent.VK_A);
+
+            support.SettingsWindow.type("settings.name", ONE + " typed");
+            support.SettingsWindow.type("notes.startYear", "1990");
+            support.SettingsWindow.type("notes.endYear", "2000");
+
+            SwingUtilities.invokeLater(item::doClick);
+
+            assertTrue(answering.awaitAsked(2, WAIT), "Find Similar did not show its results: " + answering.asked());
+
+            asked = answering.asked();
+        }
+
+        assertTrue(asked.get(1).contains(ONE + " typed [1990-2000"),
+            "the results do not show the name and years typed: " + asked.get(1));
+        assertTrue(asked.get(1).contains(THREE), "the results do not name the train of the years typed: " + asked.get(1));
+        assertFalse(asked.get(1).contains(TWO), "the results name a train of the saved years: " + asked.get(1));
+
+        support.SettingsWindow.press(support.SettingsWindow.cancel());
+
+        assertEquals(one.getStructuredNotes().getStartYear(), 1950, "Find Similar saved the years typed");
+        assertEquals(one.getName(), ONE, "Find Similar saved the name typed");
+    }
+
+    /**
      * Find Similar on a train with no railway and no years says so, and goes no further.
      *
      * MUTATION: take the insufficient-data return out of `findSimilarLocs`, and this fails.
@@ -440,7 +485,7 @@ public class testMappingPagesAndLocomotiveDoors
 
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
-            AbstractButton item = rightClickMenuItem(KeyEvent.VK_D, I18n.t("loc.ui.menuFindSimilarLocomotives"));
+            AbstractButton item = findSimilarOnTheNotesTab(KeyEvent.VK_D);
 
             SwingUtilities.invokeLater(item::doClick);
 
@@ -454,10 +499,11 @@ public class testMappingPagesAndLocomotiveDoors
     }
 
     /**
-     * Control+R changes the shown train's name and address: the database answers to the new name, the train has the
-     * new address, and the key still holds it.
+     * Control+R opens the Locomotive Settings window on its first tab: the name and address typed there are what the
+     * database answers to, and the key still holds the train.
      *
-     * MUTATION: drop `this.ui.getModel().renameLoc(...)` from `LocomotiveActions.changeLocAddress`, and this fails.
+     * MUTATION: open the window on the Notes tab in the "change the address" row of `TrainControlUI.KeyShortcuts`, or
+     * drop `renameLoc` from `LocomotiveActions.writeNameAndAddress`, and this fails.
      */
     @Test
     public void testControlRChangesTheNameAndAddress() throws Exception
@@ -470,14 +516,11 @@ public class testMappingPagesAndLocomotiveDoors
 
             final int newAddress = 3206;
 
-            Thread answering = answerTheAddressDialog(renamed.getName(), RENAMED, String.valueOf(renamed.getAddress()),
-                String.valueOf(newAddress));
+            openWithControl(KeyEvent.VK_R, 0);
 
-            Keys.press(keyboard(), KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK);
-
-            answering.join(WAIT * 2);
-
-            assertFalse(answering.isAlive(), "Control+R opened no name and address dialog");
+            support.SettingsWindow.type("settings.name", RENAMED);
+            support.SettingsWindow.type("settings.address", String.valueOf(newAddress));
+            support.SettingsWindow.press(support.SettingsWindow.save());
 
             assertTrue(waitFor(() -> model.getLocByName(RENAMED) != null), "Control+R, answered with a new name, did not "
                 + "rename the train");
@@ -595,6 +638,139 @@ public class testMappingPagesAndLocomotiveDoors
             + saved + " Alt+U saved");
 
         assertTrue(waitFor(() -> lastSpeed(mark, one) == saved), "Alt+V did not tell the railway");
+    }
+
+    // The key's menu shows the keys
+
+    /** The rows of the window's shortcut table behind the key menu's items, in the menu's order, every item offered. */
+    private static final String[] KEY_MENU_ROWS = ("choose a locomotive, locomotive settings, copy the button, paste onto"
+        + " the button, move onto the button, swap with the button, apply preferred functions, apply preferred speed, save"
+        + " preferred functions, save preferred speed, functions off, linked locomotives, cut the button, clear the button")
+        .split(", ");
+
+    /**
+     * Every item of a key's right-click menu shows on its right the key the window's shortcut table binds for it, and no
+     * tooltip that only named the key; the key is shown, not bound, so only the window's own key handling acts on it.
+     * With no speed preset, the grayed Apply item keeps the tip that says why.
+     *
+     * MUTATION: in `RightClickMenuListener.keyed`, a plain `setAccelerator` (the item binds its key); or swap two rows'
+     * names there.
+     */
+    @Test
+    public void testTheKeyMenuShowsTheKeysTheTableBinds() throws Exception
+    {
+        one.setPreferredSpeed(30);
+
+        try
+        {
+            // Two copied from S, so Paste, Move and Swap are offered on A
+            Keys.press(keyboard(), KeyEvent.VK_S);
+            Keys.press(keyboard(), KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK);
+
+            List<javax.swing.JMenuItem> items = keyMenuItems(KeyEvent.VK_A);
+
+            assertEquals(items.size(), KEY_MENU_ROWS.length, "the key's menu offers other items: " + texts(items));
+
+            for (int at = 0; at < items.size(); at++)
+            {
+                javax.swing.JMenuItem item = items.get(at);
+                javax.swing.KeyStroke key = TrainControlUI.KeyShortcuts.named(KEY_MENU_ROWS[at]).stroke();
+
+                assertEquals(item.getAccelerator(), key, "\"" + item.getText() + "\" does not show " + KEY_MENU_ROWS[at]
+                    + "'s key");
+
+                assertNull(item.getToolTipText(), "\"" + item.getText() + "\" still has a tooltip");
+
+                Object bound = item.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).get(key);
+
+                assertNull(bound == null ? null : item.getActionMap().get(bound), "\"" + item.getText() + "\" binds "
+                    + key);
+            }
+
+            closeMenus();
+
+            one.setPreferredSpeed(0);
+
+            String apply = I18n.f("loc.ui.menuApplySavedSpeedPreset", 0);
+
+            javax.swing.JMenuItem none = keyMenuItems(KeyEvent.VK_A).stream().filter(i -> i.getText().equals(apply))
+                .findFirst().orElse(null);
+
+            assertNotNull(none, "with no speed preset, the menu has no \"" + apply + "\"");
+            assertFalse(none.isEnabled(), "Apply with no speed preset is not grayed");
+            assertEquals(none.getToolTipText(), I18n.t("loc.ui.tooltip.noSpeedPreset"), "the grayed Apply lost its reason");
+        }
+        finally
+        {
+            one.setPreferredSpeed(0);
+
+            ui.clearCopyTarget();
+        }
+    }
+
+    /**
+     * After the key's menu has been open, Control+X, its Cut item's key, cuts the shown train exactly once: a second cut
+     * of the now empty key would empty the clipboard.
+     *
+     * MUTATION: in the row "cut the button", `setCopyTarget` twice, and the copied train is gone.
+     */
+    @Test
+    public void testAKeyTheMenuShowsActsOnceWithTheMenuClosed() throws Exception
+    {
+        try
+        {
+            keyMenuItems(KeyEvent.VK_A);
+
+            closeMenus();
+
+            assertTrue(waitFor(() -> Components.popupShowing() == null), "precondition: the key's menu did not close");
+
+            Keys.press(keyboard(), KeyEvent.VK_X, InputEvent.CTRL_DOWN_MASK);
+
+            assertTrue(waitFor(() -> onKey(KeyEvent.VK_A) == null), "Control+X left the train on A");
+            assertSame(Components.onTheEventThread(ui::getCopyTarget), one, "Control+X did not hold the cut train once");
+        }
+        finally
+        {
+            ui.clearCopyTarget();
+        }
+    }
+
+    private static void closeMenus()
+    {
+        Components.onTheEventThread(() ->
+        {
+            javax.swing.MenuSelectionManager.defaultManager().clearSelectedPath();
+
+            return null;
+        });
+    }
+
+    /** A letter key's right-click menu, opened as a user does: its items, dividers left out. */
+    private static List<javax.swing.JMenuItem> keyMenuItems(int key) throws Exception
+    {
+        JPopupMenu menu = rightClick(letters().get(key), null);
+
+        return Components.onTheEventThread(() ->
+        {
+            List<javax.swing.JMenuItem> items = new java.util.ArrayList<>();
+
+            for (Component each : menu.getComponents())
+            {
+                if (each instanceof javax.swing.JMenuItem) items.add((javax.swing.JMenuItem) each);
+            }
+
+            return items;
+        });
+    }
+
+    private static List<String> texts(List<javax.swing.JMenuItem> items)
+    {
+        List<String> texts = new java.util.ArrayList<>();
+
+        for (javax.swing.JMenuItem item : items) texts.add(item.getText());
+
+        return texts;
     }
 
     /** Whether a function is on in the train's saved preset. */
@@ -751,6 +927,31 @@ public class testMappingPagesAndLocomotiveDoors
         }
     }
 
+    /**
+     * Find Similar Locomotives, where it lives now: the Notes tab of the Locomotive Settings window the key's menu opens.
+     */
+    private static AbstractButton findSimilarOnTheNotesTab(int key) throws Exception
+    {
+        AbstractButton settings = rightClickMenuItem(key, I18n.t("loc.ui.menuLocomotiveSettings"));
+
+        Components.onTheEventThread(() ->
+        {
+            settings.doClick(0);
+
+            return null;
+        });
+
+        assertNotNull(support.SettingsWindow.awaited(), "Locomotive Settings... opened no window");
+
+        support.SettingsWindow.selectTab(2);
+
+        AbstractButton find = support.SettingsWindow.part("settings.findSimilar", JButton.class);
+
+        assertNotNull(find, "the Notes tab has no Find Similar Locomotives");
+
+        return find;
+    }
+
     /** Opens a letter key's right-click menu and finds an item in it, in a submenu or not. */
     private static AbstractButton rightClickMenuItem(int key, String item) throws Exception
     {
@@ -778,63 +979,13 @@ public class testMappingPagesAndLocomotiveDoors
         });
     }
 
-    /**
-     * Answers the name and address dialog: the field showing the old name gets the new one, the field showing the old
-     * address the new one, and OK is pressed.
-     */
-    private static Thread answerTheAddressDialog(String oldName, String newName, String oldAddress, String newAddress)
+    /** Presses Control and a key on the keyboard, and checks that the Locomotive Settings window opened on this tab. */
+    private static void openWithControl(int key, int tab) throws Exception
     {
-        Thread t = new Thread(() ->
-        {
-            long until = System.currentTimeMillis() + WAIT * 2;
+        Keys.press(keyboard(), key, InputEvent.CTRL_DOWN_MASK);
 
-            while (System.currentTimeMillis() < until)
-            {
-                boolean done = Components.onTheEventThread(() ->
-                {
-                    for (Window w : Window.getWindows())
-                    {
-                        if (!(w instanceof JDialog) || !w.isShowing()) continue;
-
-                        JOptionPane pane = Components.find(w, JOptionPane.class, null);
-
-                        if (pane == null) continue;
-
-                        JTextField name = Components.find(pane, JTextField.class, f -> oldName.equals(f.getText()));
-                        JTextField address = Components.find(pane, JTextField.class, f -> oldAddress.equals(f.getText()));
-
-                        if (name == null || address == null) continue;
-
-                        name.setText(newName);
-                        address.setText(newAddress);
-
-                        JButton ok = Components.find(pane, JButton.class, b -> I18n.t("ui.ok").equals(b.getText()));
-
-                        SwingUtilities.invokeLater(ok::doClick);
-
-                        return true;
-                    }
-
-                    return false;
-                });
-
-                if (done) return;
-
-                try
-                {
-                    Thread.sleep(50);
-                }
-                catch (InterruptedException e)
-                {
-                    return;
-                }
-            }
-        }, "answering the address dialog");
-
-        t.setDaemon(true);
-        t.start();
-
-        return t;
+        assertNotNull(support.SettingsWindow.awaited(), "Control+" + KeyEvent.getKeyText(key) + " opened no window");
+        assertEquals(support.SettingsWindow.tabShowing(), tab, "Control+" + KeyEvent.getKeyText(key) + " opened another tab");
     }
 
     private static Component keyboard() throws Exception
@@ -849,11 +1000,7 @@ public class testMappingPagesAndLocomotiveDoors
 
     private static Object field(String name) throws Exception
     {
-        Field f = TrainControlUI.class.getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(ui);
+        return Reflect.get(TrainControlUI.class, ui, name);
     }
 
     private static Object field0(String name)

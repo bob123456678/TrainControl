@@ -33,7 +33,7 @@ public class DriveALocomotive
         if (loco == null) loco = station.newMM2Locomotive(NAME, 61);
 
         //
-        // Direction.  Set it before the speed: a locomotive stops when it turns round.
+        // Direction.  Set it before the speed: a locomotive stops when it turns around.
         //
         // A station answers every command a moment later, and the locomotive records the answer.  Reading a state
         // back at once can still see an earlier answer, so the example waits a moment (`delay`, in milliseconds)
@@ -50,7 +50,7 @@ public class DriveALocomotive
         // Turn it round, and back again.  Every command gives back the locomotive, so they can be chained.
         loco.switchDirection().delay(100).switchDirection().delay(100);
 
-        found.add("after turning round twice: going forward " + loco.goingForward());
+        found.add("after turning around twice: going forward " + loco.goingForward());
 
         //
         // Speed, from 0 to 100 percent

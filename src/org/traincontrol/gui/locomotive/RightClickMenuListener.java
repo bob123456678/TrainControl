@@ -3,7 +3,6 @@ package org.traincontrol.gui.locomotive;
 import java.awt.Color;
 import java.awt.event.MouseEvent;
 import javax.swing.JButton;
-import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import org.traincontrol.gui.TrainControlUI;
@@ -32,6 +31,12 @@ public class RightClickMenuListener extends PopupListener
         menu.show(e.getComponent(), e.getX(), e.getY());
     }
     
+    /** Shows on the item the key the window's shortcut table gives this row, display only. */
+    private static void keyed(JMenuItem item, String row)
+    {
+        TrainControlUI.showShortcut(item, TrainControlUI.KeyShortcuts.named(row).stroke());
+    }
+
     final class RightClickMenu extends JPopupMenu
     {
         JMenuItem menuItem;
@@ -43,8 +48,17 @@ public class RightClickMenuListener extends PopupListener
                 I18n.t("loc.ui.menuAssignLocomotive")
             );
             menuItem.addActionListener(event -> ui.selectLocomotiveActivated(source));
-            menuItem.setToolTipText("Control+A");
+            keyed(menuItem, "choose a locomotive");
             add(menuItem);
+
+            if (ui.buttonHasLocomotive(source))
+            {
+                menuItem = LocomotiveMenuItems.settings(ui, ui.getButtonLocomotive(source));
+
+                keyed(menuItem, "locomotive settings");
+
+                add(menuItem);
+            }
 
             addSeparator();
 
@@ -55,7 +69,7 @@ public class RightClickMenuListener extends PopupListener
                     I18n.f("loc.ui.menuCopyLocomotiveNamed", ui.getButtonLocomotive(source).getName())
                 );
                 menuItem.addActionListener(event -> ui.setCopyTarget(source, false));
-                menuItem.setToolTipText("Control+C");
+                keyed(menuItem, "copy the button");
             }
             else
             {
@@ -73,14 +87,14 @@ public class RightClickMenuListener extends PopupListener
                     I18n.f("loc.ui.menuPasteLocomotiveNamed", ui.getCopyTarget().getName())
                 );
                 menuItem.addActionListener(event -> ui.doPaste(source, false, false));
-                menuItem.setToolTipText("Control+V");
+                keyed(menuItem, "paste onto the button");
                 add(menuItem);
 
                 menuItem = new JMenuItem(
                     I18n.f("loc.ui.menuMoveLocomotive", ui.getCopyTarget().getName())
                 );
                 menuItem.addActionListener(event -> ui.doPaste(source, false, true));
-                menuItem.setToolTipText("Control+B");
+                keyed(menuItem, "move onto the button");
                 add(menuItem);
 
                 if (ui.getSwapTarget() != null
@@ -91,7 +105,7 @@ public class RightClickMenuListener extends PopupListener
                         I18n.f("loc.ui.menuSwapLocomotive", ui.getCopyTarget().getName())
                     );
                     menuItem.addActionListener(event -> ui.doPaste(source, true, false));
-                    menuItem.setToolTipText("Control+S");
+                    keyed(menuItem, "swap with the button");
                     add(menuItem);
                 }
             }
@@ -113,14 +127,21 @@ public class RightClickMenuListener extends PopupListener
                     I18n.t("loc.ui.menuApplySavedFunctionPreset")
                 );
                 menuItem.addActionListener(event -> ui.applyPreferredFunctions(ui.getButtonLocomotive(source)));
-                menuItem.setToolTipText("Alt-P");
+                keyed(menuItem, "apply preferred functions");
                 add(menuItem);
 
                 menuItem = new JMenuItem(
                     I18n.f("loc.ui.menuApplySavedSpeedPreset", ui.getButtonLocomotive(source).getPreferredSpeed())
                 );
                 menuItem.addActionListener(event -> ui.applyPreferredSpeed(ui.getButtonLocomotive(source)));
-                menuItem.setToolTipText("Alt-V");
+                keyed(menuItem, "apply preferred speed");
+
+                if (!TrainControlUI.hasSpeedPreset(ui.getButtonLocomotive(source)))
+                {
+                    menuItem.setEnabled(false);
+                    menuItem.setToolTipText(I18n.t("loc.ui.tooltip.noSpeedPreset"));
+                }
+
                 add(menuItem);
 
                 addSeparator();
@@ -129,89 +150,31 @@ public class RightClickMenuListener extends PopupListener
                     I18n.t("loc.ui.menuSaveFunctionsAsPreset")
                 );
                 menuItem.addActionListener(event -> ui.savePreferredFunctions(ui.getButtonLocomotive(source)));
-                menuItem.setToolTipText("Alt-S");
+                keyed(menuItem, "save preferred functions");
                 add(menuItem);
 
                 menuItem = new JMenuItem(
                     I18n.t("loc.ui.menuSaveSpeedAsPreset")
                 );
                 menuItem.addActionListener(event -> ui.savePreferredSpeed(ui.getButtonLocomotive(source)));
-                menuItem.setToolTipText("Alt-U");
+                keyed(menuItem, "save preferred speed");
                 add(menuItem);
 
                 menuItem = new JMenuItem(
                     I18n.t("loc.ui.menuTurnOffFunctions")
                 );
                 menuItem.addActionListener(event -> ui.locFunctionsOff(ui.getButtonLocomotive(source)));
-                menuItem.setToolTipText("Alt-O");
-                add(menuItem);
-
-                menuItem = new JMenuItem(
-                    I18n.t("loc.ui.menuSyncCentralStation")
-                );
-                menuItem.addActionListener(event -> ui.syncLocomotive(ui.getButtonLocomotive(source)));
+                keyed(menuItem, "functions off");
                 add(menuItem);
 
                 addSeparator();
 
-                // Shared with the locomotive database's menu, and on this menu's own level beside Manage Locomotive;
-                // the key belongs to this menu
+                // Shared with the locomotive database's menu; the key belongs to this menu
                 menuItem = LocomotiveMenuItems.multiUnit(ui, ui.getButtonLocomotive(source));
-                menuItem.setToolTipText("Control+L");
+
+                keyed(menuItem, "linked locomotives");
+
                 add(menuItem);
-
-                addSeparator();
-
-                JMenu submenu = new JMenu(
-                    I18n.t("loc.ui.submenuManageLocomotive")
-                );
-
-                menuItem = new JMenuItem(ui.getButtonLocomotive(source).getName());
-                menuItem.setEnabled(false);
-                submenu.add(menuItem);
-                submenu.addSeparator();
-
-                // Shared with the locomotive database menu (FR-047): these items live in LocomotiveMenuItems now; the
-                // ORDER and the keyboard tooltips stay here, as they belong to this menu.  The locomotive is resolved
-                // ONCE, as the menu is built, so the menu acts on what it was opened for.
-                final org.traincontrol.base.Locomotive subject = ui.getButtonLocomotive(source);
-
-                submenu.add(LocomotiveMenuItems.setLocalIcon(ui, subject, null));
-
-                // Through `subject`, like every other line here, so the locomotive is resolved once.
-                if (subject != null && subject.getLocalImageURL() != null)
-                {
-                    submenu.add(LocomotiveMenuItems.clearLocalIcon(ui, subject));
-                }
-
-                submenu.add(LocomotiveMenuItems.customiseFunctionIcons(ui, subject, source, null));
-                submenu.addSeparator();
-
-                menuItem = LocomotiveMenuItems.editNameAddressDecoder(ui, subject, null);
-                menuItem.setToolTipText("Control+R");
-                submenu.add(menuItem);
-
-                menuItem = LocomotiveMenuItems.editNotes(ui, subject, null);
-                menuItem.setToolTipText("Control+N");
-                submenu.add(menuItem);
-
-                // How long this train is, when there is autonomy to care (FR-047).  Null when there
-                // is not, so the item simply is not there rather than being grayed.
-                JMenuItem howLong = LocomotiveMenuItems.trainLength(ui, subject, null);
-
-                if (howLong != null) submenu.add(howLong);
-
-                submenu.addSeparator();
-
-                submenu.add(LocomotiveMenuItems.findSimilar(ui, subject, null));
-
-                submenu.addSeparator();
-
-                menuItem = LocomotiveMenuItems.deleteFromDatabase(ui, subject, null);
-                menuItem.setToolTipText("Control+Delete");
-                submenu.add(menuItem);
-
-                add(submenu);
 
                 addSeparator();
 
@@ -219,13 +182,13 @@ public class RightClickMenuListener extends PopupListener
                     I18n.t("loc.ui.menuClearButtonCut")
                 );
                 menuItem.addActionListener(event -> ui.setCopyTarget(source, true));
-                menuItem.setToolTipText("Control+X");
+                keyed(menuItem, "cut the button");
                 add(menuItem);
                 
                 menuItem = new JMenuItem(
                     I18n.t("loc.ui.menuClearButton")
                 );
-                menuItem.setToolTipText("Delete");
+                keyed(menuItem, "clear the button");
                 // Doing this twice effectively clears the clipboard
                 menuItem.addActionListener(event -> { 
                     ui.setCopyTarget(source, true); 

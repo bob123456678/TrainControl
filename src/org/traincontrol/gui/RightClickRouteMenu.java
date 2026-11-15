@@ -91,11 +91,8 @@ public class RightClickRouteMenu extends PopupListener
                 menuItem.addActionListener(event -> ui.duplicateRoute(routeName));
                 add(menuItem);
 
-                // `hasS88()` alone was the rule while the action was gated on it wholesale, but turning autofire OFF
-                // never needed a sensor, so the affordance has to move with the action or it is stricter than the thing
-                // it offers: a route whose s88 was removed while autofire was on could be disabled from Bulk Disable
-                // and not from its own menu.  This is the predicate `BulkEnableOrDisable` uses: offering DISABLE on an
-                // enabled route always works, ENABLE needs a sensor.
+                // The predicate `BulkEnableOrDisable` uses: offering DISABLE on an enabled route always works, ENABLE
+                // needs a sensor.
                 if (route.hasS88() || route.isEnabled())
                 {
                     addSeparator();

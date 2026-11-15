@@ -11,15 +11,15 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.widgets.LoadingSpinner;
+import support.Display;
+import support.Reflect;
 import support.SourceOf;
 
 /**
  * What the "still drawing" mark draws, and where the signal window goes (FR-024, OB-107).
  *
  * Checked by looking: the drawing is rendered to an image and measured, the placement is a function of two
- * rectangles.  Not a source-reading guard, because a bow-tie silhouette mentions nothing wrong in code.
- *
- * The load-bearing assertion is the sand count: what leaves the upper bulb must arrive in the lower one.
+ * rectangles.  The load-bearing assertion is the sand count: what leaves the upper bulb must arrive in the lower one.
  *
  * @author Adam
  */
@@ -46,9 +46,7 @@ public class testTheWaitMarkIsAnHourglass
     {
         try
         {
-            java.lang.reflect.Field field = LoadingSpinner.class.getDeclaredField(name);
-
-            field.setAccessible(true);
+            java.lang.reflect.Field field = Reflect.field(LoadingSpinner.class, name);
 
             return field.getInt(null);
         }
@@ -134,15 +132,15 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * Sand is conserved: what drains out of the top arrives in the bottom.  Every other check here would still pass if
-     * the two bulbs ran on unrelated formulae.  The band is a twelfth: over a real cycle the count spreads 4.4%
-     * (outline and stream count as ink); driving the lower bulb from its own level takes it to 20%.
+     * Sand is conserved: what drains out of the top arrives in the bottom (every other check would pass if the bulbs
+     * ran on unrelated formulae).  The band is a twelfth: a real cycle spreads the count 4.4%, a lower bulb driven from
+     * its own level 20%.
      *
      * MUTATION: replacing the lower bulb's rectangle with one on a level of its own (`bulbH * (1.0 - drained * 0.5)`
      * for `bulbH * remaining`) fails this test.
      *
-     * NOT COVERED: the square root in `remaining`.  Both bulbs read the same variable, so the plain fraction passes
-     * all seven tests; how the sand LOOKS as it falls is seen by nothing here.
+     * NOT COVERED: the square root in `remaining`; both bulbs read the same variable, so the plain fraction passes, and
+     * how the sand LOOKS as it falls is seen by nothing here.
      */
     @Test
     public void testTheSandIsConserved() throws Exception
@@ -225,17 +223,13 @@ public class testTheWaitMarkIsAnHourglass
 
     /**
      * The window a dialog is placed against is the window itself, not what contains it (MT-182):
-     * getWindowAncestor(owner()) walks UP and is null for a top-level frame, so the centering fallback would run.
-     * Driven with real components; no dialog is shown.
+     * getWindowAncestor(owner()) is null for a top-level frame, so the centering fallback would run.
      */
     @Test
     public void testAWindowIsNotAskedWhatContainsIt() throws Exception
     {
         // A frame is built but never shown, so this needs a graphics environment.
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new org.testng.SkipException("building a frame needs a display");
-        }
+        Display.needed("building a frame needs a display");
 
         final javax.swing.JFrame frame = new javax.swing.JFrame("MT-182");
         final javax.swing.JPanel inside = new javax.swing.JPanel();
@@ -259,7 +253,7 @@ public class testTheWaitMarkIsAnHourglass
             // What the panel's own helper must answer for each.  CODE ONLY: the fix's javadoc describes the mistake.
             String panelSource = SourceOf.allCode();
 
-            assertTrue(panelSource.contains("if (anchor instanceof java.awt.Window) return"),
+            assertTrue(SourceOf.occurrences("if (anchor instanceof java.awt.Window) return") > 0,
                 "the panel asks getWindowAncestor for something that may already BE the window, so "
                 + "it gets null and the signal dialog falls back to centring - which is MT-182");
 
@@ -518,13 +512,12 @@ public class testTheWaitMarkIsAnHourglass
     }
 
     /**
-     * The turn is seamless: the frame after it looks like the frame before it.
+     * The turn is seamless: the frame after it looks like the frame before it.  A statement about the two ENDPOINTS
+     * only (mid-fall the cone and the funnel are not each other rotated); it guards the TURN's own arithmetic reaching
+     * a full half-turn by its last frame.
      *
-     * A statement about the two ENDPOINTS only (mid-fall the cone and the funnel are not each other rotated); it
-     * guards the TURN's own arithmetic reaching a full half-turn by its last frame.
-     *
-     * MUTATION: dropping the `+ 1` from `(at - DRAIN_FRAMES + 1) / TURN_FRAMES` in the turn branch stops the
-     * rotation eleven twelfths of the way round, and the seam comparison fails by far more than antialiasing.
+     * MUTATION: dropping the `+ 1` from `(at - DRAIN_FRAMES + 1) / TURN_FRAMES` in the turn branch stops the rotation
+     * eleven twelfths of the way round, and the seam comparison fails.
      */
     @Test
     public void testTheTurnIsSeamless() throws Exception

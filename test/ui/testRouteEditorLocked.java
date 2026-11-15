@@ -5,18 +5,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinRoute;
+import support.Display;
+import support.Reflect;
 
 /**
  * A route belonging to the Central Station opens to be read, and cannot be changed: the station sends it again on the
- * next sync.  Graying the tables was not enough, since the marks in the rows (plus, trash, copy) are values the table
- * PAINTS and the click that works them belongs to the window.  Both halves of the rule are tested: the marks must not
- * be DRAWN, and the actions must REFUSE.
+ * next sync.  Both halves are tested: the marks in the rows (plus, trash, copy) must not be DRAWN, and the actions
+ * must REFUSE.
  */
 public class testRouteEditorLocked
 {
@@ -92,8 +92,7 @@ public class testRouteEditorLocked
 
     /**
      * The public way into the command list refuses too: capture is off in a locked window, but appendCommand is public.
-     * Both windows are handed the same line and the ordinary one has to take it, or a line the parser cannot read would
-     * make the locked half pass while proving nothing.
+     * Both windows are handed the same line, or a line the parser cannot read would make the locked half pass.
      */
     @Test
     public void testALockedRouteRefusesACapturedCommand() throws Exception
@@ -159,9 +158,8 @@ public class testRouteEditorLocked
     }
 
     /**
-     * No cell of a locked route's tables will accept a keystroke.  The tree walks above miss a cell editor, which is
-     * not in the tree until the cell is being edited; the gate is `isCellEditable` on the table model, asked here for
-     * every cell.
+     * No cell of a locked route's tables will accept a keystroke: the tree walks above miss a cell editor, so
+     * `isCellEditable` on the table model is asked for every cell.
      *
      * MUTATION: delete `if (locked) return false;` from the command table model's `isCellEditable` and this fails on
      * "row 0 column 3".
@@ -272,8 +270,8 @@ public class testRouteEditorLocked
     }
 
     /**
-     * moveRow's own guard refuses a move, not just the arrow that is never drawn: it is reached the way the table's
-     * mouse listener reaches it, through clickCommandMarkForTest.  The ordinary-route half runs first as the control.
+     * moveRow's own guard refuses a move, not just the arrow that is never drawn: reached through
+     * clickCommandMarkForTest, with the ordinary-route half first as the control.
      *
      * MUTATION: delete "if (locked) return;" from moveRow.
      */
@@ -372,9 +370,8 @@ public class testRouteEditorLocked
     }
 
     /**
-     * addTo's own guard refuses even though nothing can click its way there: a locked route's Add Command is hidden,
-     * and clickCommandMarkForTest has no case for it.  The private method is called directly, standing in for anything
-     * added later that forgets to ask.
+     * addTo's own guard refuses though nothing can click its way there (Add Command is hidden): the private method is
+     * called directly, standing in for anything added later that forgets to ask.
      *
      * MUTATION: delete "if (locked) return;" from addTo.
      */
@@ -412,13 +409,9 @@ public class testRouteEditorLocked
     /** RouteEditorFrame.addTo(commands), the private method a real click cannot reach on a locked table. */
     private static void invokeAddTo(org.traincontrol.gui.RouteEditorFrame frame) throws Exception
     {
-        java.lang.reflect.Field commandsField = frame.getClass().getDeclaredField("commands");
-        commandsField.setAccessible(true);
-        Object commandsTable = commandsField.get(frame);
+        Object commandsTable = Reflect.get(frame.getClass(), frame, "commands");
 
-        java.lang.reflect.Method addTo = frame.getClass().getDeclaredMethod("addTo",
-            javax.swing.JTable.class);
-        addTo.setAccessible(true);
+        java.lang.reflect.Method addTo = Reflect.method(frame.getClass(), "addTo", javax.swing.JTable.class);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
@@ -733,9 +726,6 @@ public class testRouteEditorLocked
 
     private static void needsADisplay()
     {
-        if (GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the route editor is a window - this needs a display");
-        }
+        Display.needed("the route editor is a window - this needs a display");
     }
 }

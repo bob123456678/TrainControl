@@ -1,5 +1,6 @@
 package org.traincontrol.automationui;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -14,6 +15,7 @@ import org.traincontrol.automationui.GraphReducer.ReducedEdge;
 import org.traincontrol.automationui.GraphReducer.TileStep;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TileOverlay.State;
+import org.traincontrol.base.Locomotive;
 
 /**
  * Turns what the running layout is doing into what each tile should show.
@@ -51,10 +53,10 @@ public class DiagramMonitor
     private volatile Map<String, ReducedEdge> edgesByName = new LinkedHashMap<>();
     private volatile Map<String, TileKey> pointTiles = new LinkedHashMap<>();
 
-    private volatile Map<String, org.traincontrol.automationui.TilePorts.Side> facings = new LinkedHashMap<>();
+    private volatile Map<String, TilePorts.Side> facings = new LinkedHashMap<>();
 
     // The trains the setup records where the railway stands them on no Point, and their facings.
-    private volatile Map<TileKey, org.traincontrol.automationui.TilePorts.Side> onNoPoint = new LinkedHashMap<>();
+    private volatile Map<TileKey, TilePorts.Side> onNoPoint = new LinkedHashMap<>();
 
     private final AtomicBoolean dirty = new AtomicBoolean(false);
 
@@ -95,10 +97,9 @@ public class DiagramMonitor
      * Which way a train standing on each Point faces, for the icon of a parked one: Point name to the side of its
      * square.
      */
-    public void setFacings(Map<String, org.traincontrol.automationui.TilePorts.Side> facings)
+    public void setFacings(Map<String, TilePorts.Side> facings)
     {
-        this.facings = facings == null ? new LinkedHashMap<String, org.traincontrol.automationui.TilePorts.Side>()
-            : new LinkedHashMap<>(facings);
+        this.facings = facings == null ? new LinkedHashMap<String, TilePorts.Side>() : new LinkedHashMap<>(facings);
     }
 
     /**
@@ -107,25 +108,24 @@ public class DiagramMonitor
      *
      * @param trains square to the way the train faces
      */
-    public void setTrainsOnNoPoint(Map<TileKey, org.traincontrol.automationui.TilePorts.Side> trains,
-        java.util.Set<TileKey> paused)
+    public void setTrainsOnNoPoint(Map<TileKey, TilePorts.Side> trains,
+        Set<TileKey> paused)
     {
         // The gray before the trains it is drawn on, and never an empty set between (OB-343): a frame on the monitor's
         // thread reads the trains, then asks of each whether it is paused.
         this.pausedOnNoPoint = paused == null ? Collections.<TileKey>emptySet() : new java.util.HashSet<>(paused);
 
-        this.onNoPoint = trains == null ? new LinkedHashMap<TileKey, org.traincontrol.automationui.TilePorts.Side>()
-            : new LinkedHashMap<>(trains);
+        this.onNoPoint = trains == null ? new LinkedHashMap<TileKey, TilePorts.Side>() : new LinkedHashMap<>(trains);
     }
 
     /** The same, none of them paused. */
-    public void setTrainsOnNoPoint(Map<TileKey, org.traincontrol.automationui.TilePorts.Side> trains)
+    public void setTrainsOnNoPoint(Map<TileKey, TilePorts.Side> trains)
     {
         setTrainsOnNoPoint(trains, null);
     }
 
     /** The squares among the trains on no Point whose train is paused, drawn gray. */
-    private volatile java.util.Set<TileKey> pausedOnNoPoint = Collections.emptySet();
+    private volatile Set<TileKey> pausedOnNoPoint = Collections.emptySet();
 
     /**
      * Forgets what was last published, so the next refresh publishes even an identical picture: for after the screen
@@ -145,10 +145,10 @@ public class DiagramMonitor
     {
         if (layout == null) return;
 
-        layout.setCallback(CALLBACK_NAME, new Layout.TriFunction<List<Edge>, org.traincontrol.base.Locomotive, Boolean, Void>()
+        layout.setCallback(CALLBACK_NAME, new Layout.TriFunction<List<Edge>, Locomotive, Boolean, Void>()
         {
             @Override
-            public Void apply(List<Edge> edges, org.traincontrol.base.Locomotive locomotive, Boolean locked)
+            public Void apply(List<Edge> edges, Locomotive locomotive, Boolean locked)
             {
                 markDirty();
                 return null;
@@ -209,7 +209,7 @@ public class DiagramMonitor
 
         if (layout == null) return overlays;
 
-        Map<org.traincontrol.base.Locomotive, List<Edge>> active;
+        Map<Locomotive, List<Edge>> active;
 
         try
         {
@@ -224,7 +224,7 @@ public class DiagramMonitor
         // Nothing running is no reason to show nothing: the trains parked on the railway are still marked.
         if (active == null) active = Collections.emptyMap();
 
-        for (Map.Entry<org.traincontrol.base.Locomotive, List<Edge>> entry : active.entrySet())
+        for (Map.Entry<Locomotive, List<Edge>> entry : active.entrySet())
         {
             List<Edge> path = entry.getValue();
 
@@ -244,8 +244,8 @@ public class DiagramMonitor
 
             // The whole run as one sequence of squares: a line has to know what is on either side of a square to be
             // drawn through it.
-            List<TileKey> run = new java.util.ArrayList<>();
-            List<State> states = new java.util.ArrayList<>();
+            List<TileKey> run = new ArrayList<>();
+            List<State> states = new ArrayList<>();
 
             // What the run has given back behind the train is drawn as nothing (FR-106): the driven line says the track
             // is still held; non-atomic routes hand it back as the tail clears, atomic ones when the run ends.
@@ -270,10 +270,7 @@ public class DiagramMonitor
                     edge.getStart() != null && reachedPoints.contains(edge.getStart().getName())
                         ? State.REACHED : State.ACTIVE);
 
-                for (TileStep step : reduced.getPath())
-                {
-                    append(run, states, step.getTile(), state);
-                }
+                for (TileStep step : reduced.getPath()) append(run, states, step.getTile(), state);
 
                 append(run, states, reduced.getEnd(),
                     reached ? State.REACHED : State.ACTIVE);
@@ -299,7 +296,7 @@ public class DiagramMonitor
 
         // Everything held clear so those paths can run, but not what an edge the run has given back held: the railway
         // released those claims with it.
-        for (Map.Entry<org.traincontrol.base.Locomotive, List<Edge>> run : active.entrySet())
+        for (Map.Entry<Locomotive, List<Edge>> run : active.entrySet())
         {
             List<Edge> path = run.getValue();
 
@@ -317,15 +314,12 @@ public class DiagramMonitor
 
                     if (reduced == null) continue;
 
-                    List<TileKey> held = new java.util.ArrayList<>();
-                    List<State> states = new java.util.ArrayList<>();
+                    List<TileKey> held = new ArrayList<>();
+                    List<State> states = new ArrayList<>();
 
                     append(held, states, reduced.getStart(), State.LOCKED);
 
-                    for (TileStep step : reduced.getPath())
-                    {
-                        append(held, states, step.getTile(), State.LOCKED);
-                    }
+                    for (TileStep step : reduced.getPath()) append(held, states, step.getTile(), State.LOCKED);
 
                     append(held, states, reduced.getEnd(), State.LOCKED);
 
@@ -369,8 +363,7 @@ public class DiagramMonitor
                 i == run.size() - 1 ? null : TileGraph.gridSideTowards(at, run.get(i + 1)),
                 states.get(i));
 
-            TileOverlay overlay = new TileOverlay(states.get(i), false,
-                java.util.Arrays.asList(segment));
+            TileOverlay overlay = new TileOverlay(states.get(i), false, java.util.Arrays.asList(segment));
 
             TileOverlay existing = into.get(at);
 
@@ -384,14 +377,14 @@ public class DiagramMonitor
      * occupant, and marking those would draw it more than once.
      */
     private void markTheParkedTrains(Map<TileKey, TileOverlay> into, Layout layout,
-        Set<org.traincontrol.base.Locomotive> pathed)
+        Set<Locomotive> pathed)
     {
         List<Point> points;
 
         try
         {
             // A copy: the layout's own collection is live, and this is the timer thread
-            points = new java.util.ArrayList<>(layout.getPoints());
+            points = new ArrayList<>(layout.getPoints());
         }
         catch (RuntimeException e)
         {
@@ -399,11 +392,11 @@ public class DiagramMonitor
             return;
         }
 
-        Set<org.traincontrol.base.Locomotive> claiming = new LinkedHashSet<>();
+        Set<Locomotive> claiming = new LinkedHashSet<>();
 
         for (Point point : points)
         {
-            org.traincontrol.base.Locomotive standing = point == null ? null : point.getCurrentLocomotive();
+            Locomotive standing = point == null ? null : point.getCurrentLocomotive();
 
             if (standing == null || pathed.contains(standing)) continue;
 
@@ -427,7 +420,7 @@ public class DiagramMonitor
             into.put(tile, existing == null ? mark : existing.merge(mark));
         }
 
-        for (org.traincontrol.base.Locomotive train : claiming)
+        for (Locomotive train : claiming)
         {
             Point at;
 
@@ -444,7 +437,7 @@ public class DiagramMonitor
         }
 
         // And those on no Point, where the setup says they stand
-        for (Map.Entry<TileKey, org.traincontrol.automationui.TilePorts.Side> train : onNoPoint.entrySet())
+        for (Map.Entry<TileKey, TilePorts.Side> train : onNoPoint.entrySet())
         {
             TileOverlay mark = TileOverlay.parked(train.getValue()).withPaused(pausedOnNoPoint.contains(train.getKey()));
 
@@ -458,7 +451,7 @@ public class DiagramMonitor
      * The copy a train holding a path will be stood on once its run is done (OB-314), or null: the running layout may
      * be being replaced under this timer thread.
      */
-    private static Point willStandOn(Layout layout, org.traincontrol.base.Locomotive loc)
+    private static Point willStandOn(Layout layout, Locomotive loc)
     {
         try
         {
@@ -478,7 +471,7 @@ public class DiagramMonitor
      * @param train its icon is gray while it is paused (FR-117), or null where not known
      */
     private void markTrain(Map<TileKey, TileOverlay> into, Point at, boolean moving, Point will,
-        org.traincontrol.base.Locomotive train)
+        Locomotive train)
     {
         if (at == null) return;
 
@@ -492,7 +485,7 @@ public class DiagramMonitor
         // caption's arrow asks (`AutonomySession.facingOnTheRailway`, OB-314).
         Point facingCopy = will != null && will != at && will.isSamePlaceAs(at) ? will : at;
 
-        org.traincontrol.automationui.TilePorts.Side facing = facings.get(facingCopy.getName());
+        TilePorts.Side facing = facings.get(facingCopy.getName());
 
         if (facing == null) facing = facings.get(at.getName());
 

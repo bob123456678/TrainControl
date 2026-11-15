@@ -23,7 +23,7 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
  * Return Home brings a train back facing the way it was homed, not merely onto the square (MT-165): a copy of the home
- * square is a facing, and the planner used to take any copy as home.
+ * square is a facing, so any copy of the square is not enough.
  *
  * The fixture: the frozen operator layout with BottomMainA's east bar lifted, as it stood at `2958fcf3`; the live
  * layout bars arrivals from the east there again, leaving the facing no choice.
@@ -172,7 +172,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     }
 
     /**
-     * A train standing turned round on its home square - on the turning copy of the arrival it was homed in - is not
+     * A train standing turned around on its home square - on the turning copy of the arrival it was homed in - is not
      * home. A turning copy points back at the side it came in by, so it faces the other way from its plain twin; Return
      * Home counted the twin as home because the two share an arrival (on his railway, BottomMainB, EN57-947's home).
      *
@@ -199,7 +199,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
         }
 
         assertNotNull(plain, "precondition: his railway has no square with a plain copy and a turning twin a train may stand"
-            + " on, so being turned round on one's home cannot happen here");
+            + " on, so being turned around on one's home cannot happen here");
 
         try
         {
@@ -214,7 +214,7 @@ public class testATrainComesHomeFacingTheWayItWasHomed
             HomeStaging.Plan plan = layout.planReturnToHome();
 
             assertTrue(plan.getOutcome() != HomeStaging.Outcome.ALREADY_HOME, "a train homed on " + plain.getName() + " and"
-                + " standing on " + twin.getName() + " - turned round, facing the other way - is reported already home."
+                + " standing on " + twin.getName() + " - turned around, facing the other way - is reported already home."
                 + "  Adam, 2026-09-23: \"it should accomplish the facing\"");
         }
         finally
@@ -226,10 +226,10 @@ public class testATrainComesHomeFacingTheWayItWasHomed
     }
 
     /**
-     * A home is set facing the way the train faces ON THE RAILWAY, not the way the setup last said (*"Direction it is
-     * facing when home is set."*). The setup's FACING names the heading a train set off with until a capture writes the
-     * arrival back, so after a run that turned the train at this square the home was saved facing the way it no longer
-     * faces. `facingOf` has the running-layout-first reading for this staleness; the home door is its sibling.
+     * A home is set facing the way the train faces ON THE RAILWAY, not the way the setup last said.  The setup's FACING
+     * names the heading a train set off with until a capture writes the arrival back, so after a run that turned the
+     * train at this square the home was saved facing the way it no longer faces.  `facingOf` has the running-layout-first
+     * reading for this staleness; the home door is its sibling.
      *
      * MUTATION: read the setup's facing alone again and this fails.
      */

@@ -3,6 +3,7 @@ package org.traincontrol.automationui;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagramComponent;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -385,35 +386,36 @@ public class GraphReducer
      *        destination hop is refused; the START is exempt, as in the build.
      */
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
-        Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred)
+        Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred)
     {
         return findPath(from, to, mayTurn, mustTurn, barred, Collections.<TileKey>emptySet());
     }
 
     /**
-     * The same, with squares that are CLOSED rather than merely barred.  This is the editor's *test a path* tool, which
-     * runs while a setup is drawn and may not build; `testAutonomyDiagramReducer` holds it to the findings' answer
-     * (`BuiltReach`).  A closed square is neither a way through nor a destination, in EVERY tier: `isPathClear` refuses
-     * it as an intermediate and as the final point.  Only a closed START is exempt.
+     * The same, with squares that are CLOSED rather than merely barred.  A closed square is neither a way through nor a
+     * destination, in EVERY tier: `isPathClear` refuses it as an intermediate and as the final point.  Only a closed
+     * START is exempt.  The editor's test-a-path tool is `AutonomySession.testPath`, held to this search by
+     * `testAutonomyDiagramReducer`.
      *
      * @param barred arrival sides closed off - passed through, not stopped at
      * @param closed squares nothing may pass through
      * @return the path, or null when there is none
      */
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
-        Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
+        Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
     {
-        return findPath(from, to, mayTurn, mustTurn, barred, closed, null);
+        return findPath(from, to, mayTurn, mustTurn, barred, closed, Collections.<TileKey>emptySet(), null);
     }
 
     /**
-     * The same, starting a train only as it can stand at `from`.
+     * The same, starting a train only as it can stand at `from`, and never through a stop-only station.
      *
+     * @param stopOnly squares a train may stop at but never run through (FR-111), as `Layout.isClearByStandingRules`
      * @param startArrivals the sides a train standing at `from` arrived by (`AutonomySession.startingArrivals`); null
      *        to start facing every way
      */
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
-        Set<TileKey> mustTurn, java.util.Map<TileKey, Set<Side>> barred, Set<TileKey> closed,
+        Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed, Set<TileKey> stopOnly,
         Set<Side> startArrivals)
     {
         if (!points.containsKey(from) || !points.containsKey(to)) return null;
@@ -428,7 +430,7 @@ public class GraphReducer
         Map<String, TileKey> tileOf = new LinkedHashMap<>();
         Map<String, Side> sideOf = new LinkedHashMap<>();
 
-        java.util.ArrayDeque<String> frontier = new java.util.ArrayDeque<>();
+        ArrayDeque<String> frontier = new ArrayDeque<>();
 
         for (Side arrival : startArrivals == null ? Collections.<Side>singleton(null) : startArrivals)
         {
@@ -504,7 +506,7 @@ public class GraphReducer
                     return path;
                 }
 
-                frontier.add(next);
+                if (!stopOnly.contains(edge.getEnd())) frontier.add(next);
             }
         }
 
@@ -514,10 +516,8 @@ public class GraphReducer
     /**
      * Whether a square refuses trains arriving by a given side (OB-120), as `AutonomyBuilder.arrivalAllowed` does.  A
      * null side is the starting square, never barred.
-     *
-     * @return true when the arrival is not allowed
      */
-    private boolean refusesArrival(java.util.Map<TileKey, Set<Side>> barred, TileKey tile, Side by)
+    private boolean refusesArrival(Map<TileKey, Set<Side>> barred, TileKey tile, Side by)
     {
         if (by == null || barred == null || barred.isEmpty()) return false;
 
@@ -532,7 +532,7 @@ public class GraphReducer
      */
     private Set<Side> onwardSides(TileKey tile, Side arrival)
     {
-        Set<Side> out = new java.util.LinkedHashSet<>();
+        Set<Side> out = new LinkedHashSet<>();
 
         for (TileGraph.Exit exit : graph.exits(tile, arrival))
         {
@@ -585,10 +585,7 @@ public class GraphReducer
 
             String name = authored.getPointName(tile);
 
-            if (name == null || name.trim().isEmpty())
-            {
-                name = generatedName(tile);
-            }
+            if (name == null || name.trim().isEmpty()) name = generatedName(tile);
 
             // Feedback is keyed on the RAW address, not the halved one: MarklinControlStation registers and looks up
             // feedback by getRawAddress(), while CS2File halves the value for accessories.
@@ -764,10 +761,8 @@ public class GraphReducer
     }
 
     /**
-     * Adds the settings a tile's position requires, refusing the path if they contradict what it already carries.
-     * Switch positions and signal greens are gathered identically.
-     *
-     * @return false if this position conflicts with the path so far
+     * Adds the settings a tile's position requires, refusing the path (false) if they contradict what it already
+     * carries.  Switch positions and signal greens are gathered identically.
      */
     private boolean collectCommands(TileKey tile, int state, Map<String, accessorySetting> into)
     {
@@ -811,8 +806,6 @@ public class GraphReducer
     /**
      * Whether the berth-room walk stops at this tile: a switch, or a turnout declared permanently set (OB-233).  A
      * two-square crossing does not end the room (OB-320).
-     *
-     * @return true when the room ends here
      */
     private boolean boundsTheRoom(TileKey tile, LayoutDiagramComponent component)
     {
@@ -858,10 +851,7 @@ public class GraphReducer
 
             LayoutDiagramComponent component = graph.getTiles().get(tile);
 
-            if (boundsTheRoom(tile, component))
-            {
-                return room > 0 ? room : known ? 0 : -1;
-            }
+            if (boundsTheRoom(tile, component)) return room > 0 ? room : known ? 0 : -1;
 
             int here = authored.getTileLength(tile);
 
@@ -877,8 +867,6 @@ public class GraphReducer
      * the editor asks for exactly what the guard needs.  The switch tile is not asked for, the far endpoint is.  An
      * edge that crosses no switch has its WHOLE length asked for and the walk stops at its start: asking for a whole
      * route is a nag, and the guard declines to judge what it cannot measure.
-     *
-     * @return the unmeasured tiles, empty when the stretch is fully measured
      */
     public List<TileKey> unmeasuredAfterTheLastSwitch(ReducedEdge edge)
     {
@@ -925,10 +913,7 @@ public class GraphReducer
     {
         int total = 0;
 
-        for (TileStep step : path)
-        {
-            total += Math.max(0, authored.getTileLength(step.getTile()));
-        }
+        for (TileStep step : path) total += Math.max(0, authored.getTileLength(step.getTile()));
 
         return total;
     }
@@ -1086,9 +1071,8 @@ public class GraphReducer
 
     /**
      * The places an edge runs over, in order from its start, each with what it measures (OB-207), so the runtime can
-     * answer at place grain.  The far endpoint is included and the near one is not, as in `lengthOf`.
-     *
-     * @return its places, in path order, empty for a null edge
+     * answer at place grain.  The far endpoint is included and the near one is not, as in `lengthOf`; empty for a null
+     * edge.
      */
     public List<Place> placesAlong(ReducedEdge edge)
     {

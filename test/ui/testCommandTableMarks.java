@@ -1,12 +1,12 @@
 package ui;
 
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.RouteEditorFrame;
 import org.traincontrol.util.I18n;
+import support.Display;
 
 /**
  * The marks at the end of a command row, and Move Up and Move Down (FR-162), do exactly what they say (MT-029).  The
@@ -174,9 +174,6 @@ public class testCommandTableMarks
 
     private static void needsADisplay()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the route editor is a window");
-        }
+        Display.needed("the route editor is a window");
     }
 }

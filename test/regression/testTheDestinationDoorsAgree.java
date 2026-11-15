@@ -5,6 +5,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
+import support.Reflect;
 import support.SourceOf;
 
 /**
@@ -64,9 +65,7 @@ public class testTheDestinationDoorsAgree
     {
         Class<?> menu = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
 
-        Method rule = menu.getDeclaredMethod("theListWasCutShort", int.class, int.class, int.class);
-
-        rule.setAccessible(true);
+        Method rule = Reflect.method(menu, "theListWasCutShort", int.class, int.class, int.class);
 
         // Everything this menu offers is on screen - six of six, none in the submenu.
         assertFalse((Boolean) rule.invoke(null, 6, 6, 0),
@@ -87,10 +86,9 @@ public class testTheDestinationDoorsAgree
         assertFalse((Boolean) rule.invoke(null, 0, 0, 0),
             "a menu with nothing to offer reported that its list had been cut short");
 
-        // AND THERE IS ONLY ONE PLACE THAT DRAWS IT.  Adam, after the first fix: "I still see ... for 74 407 DB at
-        // Tunnel, even though it has no valid paths": a second site sat outside the rule, for a train with nowhere to
-        // go.  Counted as text rather than with a regex, whose double escaping of punctuation and a quote is how a
-        // guard comes to search for something it does not mean; over the whole program's code, comments blanked.
+        // AND THERE IS ONLY ONE PLACE THAT DRAWS IT: a second site outside the rule would show it for a train with
+        // nowhere to go.  Counted as text rather than with a regex, whose double escaping of punctuation and a quote is
+        // how a guard comes to search for something it does not mean; over the whole program's code, comments blanked.
         int sites = SourceOf.occurrences("new JMenuItem(\"...\")");
 
         assertEquals(sites, 1,

@@ -13,15 +13,11 @@ import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinControlStation;
 
 /**
- * Capturing what the operator drives, into the timetable.  There was no test for this at all, which Adam noticed when
- * it broke: "capture locomotive commands is capturing neither manual locomotive commands nor full autonomy commands
- * into the timetable. Regression."
+ * Capturing what the operator drives into the timetable: manual locomotive commands and full autonomy commands.
  *
- * The engine was never at fault; what was broken is that the operator's CHOICE did not survive.  The capture flag lives
- * on the Layout object, `parseAuto` replaces that object wholesale, and a fresh Layout starts with capture off, so
- * every rebuild (a diagram edit applied, a locomotive placed, a configuration loaded) turned capture off underneath a
- * toggle button that stayed lit.  So the tests are in two halves: the first two are the behavior anybody would have
- * written; the third is about a piece of state surviving something that looks unrelated to it.
+ * The capture flag lives on the Layout object, which `parseAuto` replaces wholesale, so every rebuild turned capture
+ * off under a toggle that stayed lit.  The first two tests are the expected behavior; the third checks that the
+ * operator's choice survives a rebuild.
  *
  * @author Adam
  */

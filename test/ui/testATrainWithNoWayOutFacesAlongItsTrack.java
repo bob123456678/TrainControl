@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
-import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -25,13 +24,16 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Components;
+import support.Display;
+import support.Reflect;
+import static support.Components.itemNamed;
 
 /**
- * The locomotive on a square no track leads out of faces a way its track runs, not east (OB-348).
- *
- * Run at TunnelLeftPark on the frozen `live-snapshot`, with both arrows of 8,7 below it red, through the real window's
- * diagram monitor.  The icon may guess, but it must lie along the track; a recorded facing the track does not run is
- * shown by none of the icon, the caption and the Is Facing menu.  A train can also be put there (OB-350).
+ * The locomotive on a square no track leads out of faces a way its track runs, not east (OB-348).  Run at
+ * TunnelLeftPark on the frozen `live-snapshot`, both arrows of 8,7 below it red, through the real window's diagram
+ * monitor.  The icon may guess but must lie along the track; a recorded facing the track does not run is shown by
+ * none of the icon, the caption and Change Direction.  A train can also be put there (OB-350).
  *
  * MUTATION: take the setup's facing out of `DiagramMonitorDriver.recordedFacingsChanged` and the first claim fails;
  * return null from `AutonomySession.facingWhereNoCopySays` where nothing is recorded and the second does; ask the
@@ -59,17 +61,13 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("the diagram monitor belongs to a window, and a window needs a display");
-        }
+        Display.needed("the diagram monitor belongs to a window, and a window needs a display");
 
-        sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
-        model = support.TestStation.simulatedInDebug();
+        support.FrozenEditor frozen = support.FrozenEditor.window("live-snapshot");
 
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        sandbox = frozen.sandbox;
+        model = frozen.model;
+        ui = frozen.ui;
 
         session = ui.getAutonomySession();
 
@@ -84,7 +82,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(active, false));
 
-            settle();
+            Components.drain(8);
         }
 
         assertNotNull(ui.getActiveDiagramConfiguration(), "precondition: no configuration is loaded");
@@ -174,7 +172,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
     /**
      * A recorded facing the track does not run is shown by none of the three: the icon lies along the track, the
-     * caption has no east arrow, and the Is Facing menu is grayed.
+     * caption has no east arrow, and Change Direction is grayed.
      */
     @Test
     public void testAFacingTheTrackDoesNotRunIsShownNowhere() throws Exception
@@ -195,7 +193,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             SwingUtilities.invokeAndWait(() -> ui.updateVisiblePoints());
 
-            settle();
+            Components.drain(8);
 
             boolean captioned = false;
 
@@ -222,14 +220,15 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             openTheEditor(editor, page);
 
             final AutonomyEditorPanel panel = editor[0].getAutonomyPanel();
-            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-            SwingUtilities.invokeAndWait(() -> menu[0] = panel.buildFacingMenu(PLATFORM));
+            SwingUtilities.invokeAndWait(() -> panel.addFacingItems(menu, PLATFORM));
 
-            assertNotNull(menu[0], "precondition: no Is Facing menu for the train on TunnelLeftPark");
+            assertTrue(menu.getComponentCount() > 0, "precondition: no Change Direction for the train on TunnelLeftPark");
 
-            assertFalse(menu[0].isEnabled(), "the Is Facing menu on TunnelLeftPark, which no track leads out of, is open"
-                + " with east ticked, on track that runs north and south, while the icon lies along it (V348-C1)");
+            assertFalse(menu.getComponent(0).isEnabled(), "Change Direction on TunnelLeftPark, which no track leads out"
+                + " of, is offered with east recorded, on track that runs north and south, while the icon lies along it"
+                + " (V348-C1)");
         }
         finally
         {
@@ -274,29 +273,27 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             openTheEditor(editor, model.getLayout(PAGE));
 
             final String[] caption = new String[1];
-            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
             SwingUtilities.invokeAndWait(() ->
             {
                 caption[0] = ui.autonomyCaptionTextAt(tunnel);
-                menu[0] = editor[0].getAutonomyPanel().buildFacingMenu(tunnel);
+                editor[0].getAutonomyPanel().addFacingItems(menu, tunnel);
             });
 
-            assertNotNull(menu[0], "precondition: no Is Facing menu for the train placed at Tunnel");
+            assertTrue(menu.getComponentCount() > 0, "precondition: no Change Direction for the train placed at Tunnel");
 
             assertTrue(caption[0] == null || !caption[0].contains(StationCaption.ARROW_E), "precondition: the caption at"
                 + " Tunnel points east, on track that runs north and south: " + caption[0]);
 
             String east = I18n.t("autosetup.ui.facingE");
+            String nowEast = I18n.f("autosetup.ui.menuChangeDirection", org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.menuSide("E"));
 
-            for (java.awt.Component item : menu[0].getMenuComponents())
+            for (javax.swing.JMenuItem item : support.Components.all(menu, javax.swing.JMenuItem.class, null))
             {
-                if (!(item instanceof javax.swing.JRadioButtonMenuItem)) continue;
-
-                javax.swing.JRadioButtonMenuItem radio = (javax.swing.JRadioButtonMenuItem) item;
-
-                assertFalse(radio.isSelected() && east.equals(radio.getText()), "the Is Facing menu at Tunnel ticks east,"
-                    + " on track that runs north and south, where the caption shows no arrow (V348B-C3)");
+                assertFalse(nowEast.equals(item.getText()) || item.isSelected() && east.equals(item.getText()), "Change"
+                    + " Direction at Tunnel says east, on track that runs north and south, where the caption shows no"
+                    + " arrow (V348B-C3)");
             }
         }
         finally
@@ -355,7 +352,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
     /**
      * On a square with one way out, a train the railway cannot stand - its recorded facing off the track - faces that
-     * way out, which the Is Facing menu ticks.
+     * way out, which Change Direction names.
      *
      * MUTATION: guess the track's first way before the facing the square offers, and this fails at TunnelRightPark,
      * whose one way out is south on track that runs from the north.
@@ -381,25 +378,17 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             openTheEditor(editor, model.getLayout(PAGE));
 
-            final javax.swing.JMenu[] menu = new javax.swing.JMenu[1];
+            final javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
 
-            SwingUtilities.invokeAndWait(() -> menu[0] = editor[0].getAutonomyPanel().buildFacingMenu(square));
+            SwingUtilities.invokeAndWait(() -> editor[0].getAutonomyPanel().addFacingItems(menu, square));
 
-            String ticked = null;
+            String said = menu.getComponentCount() == 0 ? null : ((javax.swing.JMenuItem) menu.getComponent(0)).getText();
 
-            for (java.awt.Component item : menu[0] == null ? new java.awt.Component[0] : menu[0].getMenuComponents())
-            {
-                if (item instanceof javax.swing.JRadioButtonMenuItem && ((javax.swing.JRadioButtonMenuItem) item).isSelected())
-                {
-                    ticked = ((javax.swing.JRadioButtonMenuItem) item).getText();
-                }
-            }
-
-            assertEquals(ticked, I18n.t("autosetup.ui.facing" + offered.get(0).name()), "precondition: the Is Facing"
-                + " menu does not tick TunnelRightPark's one way out");
+            assertEquals(said, I18n.f("autosetup.ui.menuChangeDirection",
+                org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.menuSide(offered.get(0).name())), "precondition: Change Direction does not name TunnelRightPark's one way out");
 
             assertEquals(shown.getFacing(), offered.get(0), "the locomotive at TunnelRightPark, which the railway cannot"
-                + " stand with east recorded, faces away from the one way out the Is Facing menu ticks (V348D-C1)");
+                + " stand with east recorded, faces away from the one way out Change Direction names (V348D-C1)");
         }
         finally
         {
@@ -456,10 +445,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             makeItTheActiveTrain();
 
-            final java.lang.reflect.Method door = TrainControlUI.class.getDeclaredMethod("locomotiveGestureOnDiagram",
-                int.class, boolean.class);
-
-            door.setAccessible(true);
+            final java.lang.reflect.Method door =
+                Reflect.method(TrainControlUI.class, "locomotiveGestureOnDiagram", int.class, boolean.class);
 
             final Object[] handled = new Object[1];
 
@@ -477,7 +464,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
                 }
             });
 
-            settle();
+            Components.drain(8);
 
             assertEquals(handled[0], Boolean.TRUE, "Control+V over TunnelLeftPark was not taken");
 
@@ -568,7 +555,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             placeByTheDiagram();
 
-            settle();
+            Components.drain(8);
 
             String said;
 
@@ -628,10 +615,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         panel.setLayoutSource(() -> model.getAutoLayout());
         panel.setLocomotiveNames(() -> model.getLocList());
 
-        final java.lang.reflect.Method place = AutonomyEditorPanel.class.getDeclaredMethod("placeLocomotive",
-            TileKey.class);
-
-        place.setAccessible(true);
+        final java.lang.reflect.Method place =
+            Reflect.method(AutonomyEditorPanel.class, "placeLocomotive", TileKey.class);
 
         SwingUtilities.invokeLater(() ->
         {
@@ -647,8 +632,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         final javax.swing.JDialog asked = awaitDialogStarting(I18n.t("autosetup.ui.menuAddToAutonomy"));
 
-        final javax.swing.JList<?> list = find(asked.getContentPane(), javax.swing.JList.class);
-        final javax.swing.JOptionPane pane = find(asked.getContentPane(), javax.swing.JOptionPane.class);
+        final javax.swing.JList<?> list = Components.inside(asked.getContentPane(), javax.swing.JList.class);
+        final javax.swing.JOptionPane pane = Components.inside(asked.getContentPane(), javax.swing.JOptionPane.class);
 
         assertTrue(list != null && pane != null, "precondition: the editor's Place asks no list of locomotives");
 
@@ -669,7 +654,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        settle();
+        Components.drain(8);
 
         String on = standingOn();
 
@@ -727,39 +712,11 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     {
         makeItTheActiveTrain();
 
-        final Class<?> menuClass = Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu");
-
-        final java.lang.reflect.Method gather = menuClass.getDeclaredMethod("gatherPathOptions", TrainControlUI.class,
-            Point.class);
-
-        gather.setAccessible(true);
-
-        final java.lang.reflect.Constructor<?> make = menuClass.getDeclaredConstructor(TrainControlUI.class,
-            TileKey.class, TileKey.class, Class.forName("org.traincontrol.gui.LayoutRightclickAutonomyMenu$PathOptions"));
-
-        make.setAccessible(true);
-
-        final Point[] standing = new Point[1];
-
-        SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(PLATFORM));
-
-        final Object options = gather.invoke(null, ui, standing[0]);
-
-        final javax.swing.JMenuItem[] place = new javax.swing.JMenuItem[1];
+        final javax.swing.JPopupMenu menu = support.StationDoors.diagramMenu(ui, PLATFORM);
 
         final String label = I18n.f("layout.ui.menuPlaceLocomotive", OUR_TRAIN);
 
-        SwingUtilities.invokeAndWait(() ->
-        {
-            try
-            {
-                place[0] = itemNamed((javax.swing.JPopupMenu) make.newInstance(ui, PLATFORM, PLATFORM, options), label);
-            }
-            catch (ReflectiveOperationException failed)
-            {
-                throw new IllegalStateException(failed);
-            }
-        });
+        final javax.swing.JMenuItem[] place = {support.Components.onTheEventThread(() -> itemNamed(menu, label))};
 
         assertNotNull(place[0], "the right-click menu on TunnelLeftPark has no " + label + " item");
 
@@ -774,7 +731,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             Thread.sleep(50);
         }
 
-        settle();
+        Components.drain(8);
 
         assertNotNull(standingOn(), "the right-click Place did not put the train on TunnelLeftPark");
     }
@@ -786,7 +743,8 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         if (ui.getActiveLoc() == null || !OUR_TRAIN.equals(ui.getActiveLoc().getName())) ui.mapLocToCurrentButton(OUR_TRAIN);
 
         for (long end = System.currentTimeMillis() + 10000; (ui.getActiveLoc() == null
-            || !OUR_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; ) settle();
+            || !OUR_TRAIN.equals(ui.getActiveLoc().getName())) && System.currentTimeMillis() < end; )
+                Components.drain(8);
 
         assertTrue(ui.getActiveLoc() != null && OUR_TRAIN.equals(ui.getActiveLoc().getName()), "precondition: "
             + OUR_TRAIN + " could not be made the active locomotive");
@@ -834,34 +792,6 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         fail("no dialog titled \"" + title + "...\" appeared");
 
         return null;
-    }
-
-    private static javax.swing.JMenuItem itemNamed(java.awt.Container menu, String text)
-    {
-        java.awt.Component[] children = menu instanceof javax.swing.JMenu
-            ? ((javax.swing.JMenu) menu).getMenuComponents() : menu.getComponents();
-
-        for (java.awt.Component child : children)
-        {
-            if (child instanceof javax.swing.JMenuItem && text.equals(((javax.swing.JMenuItem) child).getText()))
-            {
-                return (javax.swing.JMenuItem) child;
-            }
-
-            if (child instanceof javax.swing.JMenu)
-            {
-                javax.swing.JMenuItem found = itemNamed((javax.swing.JMenu) child, text);
-
-                if (found != null) return found;
-            }
-        }
-
-        return null;
-    }
-
-    private static <T> T find(java.awt.Container container, Class<T> type)
-    {
-        return support.Components.inside(container, type);
     }
 
     /**
@@ -940,7 +870,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         for (int tries = 0; tries < 50; tries++)
         {
-            settle();
+            Components.drain(8);
 
             seen = ui.getDiagramTileRegistry().overlayAt(PLATFORM);
 
@@ -967,7 +897,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        settle();
+        Components.drain(8);
 
         assertTrue(session.facingChoices(PLATFORM).isEmpty(), "precondition: TunnelLeftPark still has a way out: "
             + session.facingChoices(PLATFORM));
@@ -995,7 +925,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        settle();
+        Components.drain(8);
 
         assertTrue(session.trainsOnNoPoint().containsKey(square), notOnAPoint);
 
@@ -1012,7 +942,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         for (int tries = 0; tries < 50 && (shown == null || !shown.hasTrain()); tries++)
         {
-            settle();
+            Components.drain(8);
 
             shown = ui.getDiagramTileRegistry().overlayAt(square);
 
@@ -1034,7 +964,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             editor[0].setAutonomyMode(session);
         });
 
-        settle();
+        Components.drain(8);
     }
 
     /** Disposes the editor `openTheEditor` made, if it got that far. */
@@ -1057,14 +987,6 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
 
-        settle();
-    }
-
-    private static void settle() throws Exception
-    {
-        for (int pass = 0; pass < 8; pass++)
-        {
-            SwingUtilities.invokeAndWait(() -> { });
-        }
+        Components.drain(8);
     }
 }

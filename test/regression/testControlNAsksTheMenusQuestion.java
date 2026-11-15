@@ -4,9 +4,9 @@ import java.util.Arrays;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -15,6 +15,10 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
+import support.Display;
+import support.Reflect;
+import support.Trees;
+import static support.Diagrams.aPageWithARunAndALabel;
 
 /**
  * Control+N offers a station name exactly where the right-click menu does (FR-086): the key asks what the menu asks,
@@ -39,7 +43,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -86,7 +90,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -107,7 +111,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -129,9 +133,7 @@ public class testControlNAsksTheMenusQuestion
 
             // Armed through the panel's own field, not its button: on an ignored page the refresh disables Test a Path,
             // so a second doClick would do nothing.
-            final java.lang.reflect.Field tool = AutonomyEditorPanel.class.getDeclaredField("tool");
-
-            tool.setAccessible(true);
+            final java.lang.reflect.Field tool = Reflect.field(AutonomyEditorPanel.class, "tool");
 
             @SuppressWarnings({ "unchecked", "rawtypes" })
             final Object testTool = Enum.valueOf((Class) tool.getType(), "TEST");
@@ -151,17 +153,14 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
     /**
      * A station square showing another station's only name asks before it shows its own, and No leaves that name where
-     * it is; Yes still shows its own.
-     *
-     * Otherwise the other station is named nowhere on the diagram, which the setup's checks call an error
-     * (`AutonomyChecks.checkStationLabels`).  Driven through Control+N and answered through
-     * `answerTakeAnotherNameForTests`, so no dialog is put on screen.
+     * it is; Yes still shows its own.  Otherwise the other station is named nowhere, which the setup's checks call an
+     * error (`AutonomyChecks.checkStationLabels`).  Answered through `answerTakeAnotherNameForTests`, so no dialog.
      *
      * MUTATION: drop the question from `promptStationLabel`'s station branch, and the No half fails.
      */
@@ -176,7 +175,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             TileKey here = new TileKey("main", 1, 1);
             TileKey other = new TileKey("main", 6, 1);
@@ -219,7 +218,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomyEditorPanel.answerTakeAnotherNameForTests(null);
 
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -240,7 +239,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main"), aPageWithARun("second")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main"), aPageWithARunAndALabel("second")));
 
             TileKey here = new TileKey("main", 1, 1);
             TileKey other = new TileKey("main", 6, 1);
@@ -283,7 +282,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomyEditorPanel.answerTakeAnotherNameForTests(null);
 
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -303,7 +302,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main"), aPageWithARun("second")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main"), aPageWithARunAndALabel("second")));
 
             TileKey station = new TileKey("main", 1, 1);
             TileKey here = new TileKey("main", 1, 2);
@@ -334,7 +333,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -357,9 +356,10 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             TileKey station = new TileKey("main", 1, 1);
+            // (4,2) is blank inside the drawn area, (9,2) outside it.
             TileKey inside = new TileKey("main", 4, 2);
             TileKey outside = new TileKey("main", 9, 2);
 
@@ -404,7 +404,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -422,16 +422,12 @@ public class testControlNAsksTheMenusQuestion
 
     private static Object field(Object on, String name) throws Exception
     {
-        java.lang.reflect.Field f = on.getClass().getDeclaredField(name);
-
-        f.setAccessible(true);
-
-        return f.get(on);
+        return Reflect.get(on.getClass(), on, name);
     }
 
     /**
-     * Control+H offers a home exactly where the right-click menu does: only on a station, so the key cannot write a
-     * home onto a square that is not one.
+     * Control+H offers a home exactly where Station Settings does: only on a station, so the key cannot write a home onto
+     * a square that is not one.
      */
     @Test
     public void testControlHOffersAHomeOnlyWhereTheMenuDoes() throws Exception
@@ -444,7 +440,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             TileKey station = new TileKey("main", 1, 1);
             TileKey track = new TileKey("main", 3, 1);
@@ -453,38 +449,33 @@ public class testControlNAsksTheMenusQuestion
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
-            // The control: a station, where the menu offers a home and so must the key.
-            javax.swing.JPopupMenu atTheStation = panel.buildTileMenu(station, null);
-
-            assertTrue(offersAHome(atTheStation), "precondition: the menu offers no home on the station at " + station
-                + ": " + itemNames(atTheStation));
+            // The control: a station, where the window offers a home and so must the key.
+            assertTrue(support.StationDoors.offeredInTheWindow(panel, station, "station.home"),
+                "precondition: the window offers no home on the station at " + station);
 
             assertTrue(keyOffers(panel, "offersAHome", station),
-                "Control+H offers no home on the station at " + station + ", where the menu does");
+                "Control+H offers no home on the station at " + station + ", where the window does");
 
-            // Plain track: no home on the menu, none from the key.
-            javax.swing.JPopupMenu onTrack = panel.buildTileMenu(track, null);
-
-            assertFalse(offersAHome(onTrack), "precondition: the menu offers a home on plain track: " + itemNames(onTrack));
+            // Plain track: no window, none from the key.
+            assertFalse(support.StationDoors.offeredInTheWindow(panel, track, "station.home"),
+                "precondition: the window offers a home on plain track");
 
             assertFalse(keyOffers(panel, "offersAHome", track),
-                "Control+H offers a home on the plain track at " + track + ", where the menu offers " + itemNames(onTrack)
+                "Control+H offers a home on the plain track at " + track
                 + " - a home written onto a square that is not a station (MFW-B1)");
 
-            // And the station on a page left out of autonomy: only the bulk tools on the menu.
+            // And the station on a page left out of autonomy: no window there.
             session.setPageExcluded("main", true);
 
-            javax.swing.JPopupMenu ignored = panel.buildTileMenu(station, null);
-
-            assertFalse(offersAHome(ignored), "precondition: the menu offers a home on an ignored square: " + itemNames(ignored));
+            assertFalse(support.StationDoors.offeredInTheWindow(panel, station, "station.home"),
+                "precondition: the window offers a home on an ignored square");
 
             assertFalse(keyOffers(panel, "offersAHome", station),
-                "Control+H offers a home on " + station + ", on a page left out of autonomy, where the menu offers "
-                + itemNames(ignored) + " (MFW-B1)");
+                "Control+H offers a home on " + station + ", on a page left out of autonomy (MFW-B1)");
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -503,7 +494,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -531,12 +522,12 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
     /**
-     * The main window's menu does not name Control+N, which is the notes key there (the same menu is built for its
+     * The main window's menu does not show Control+N, which is the notes key there (the same menu is built for its
      * track diagram with `setMenuOnly`).
      */
     @Test
@@ -550,35 +541,33 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            session.open(Arrays.asList(aPageWithARun("main")));
+            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
 
             TileKey empty = new TileKey("main", 4, 2);
 
-            // The control: the editor's menu names the key.
+            // The control: the editor's menu shows the key.
             AutonomyEditorPanel editor = new AutonomyEditorPanel(session, "main", () -> { });
 
-            String inTheEditor = nameTooltip(editor.buildTileMenu(empty, null));
+            javax.swing.JMenuItem inTheEditor = nameItem(editor.buildTileMenu(empty, null));
 
-            assertTrue(inTheEditor != null && inTheEditor.contains(AutonomyEditorPanel.SHORTCUT_STATION),
-                "precondition: the editor's menu does not name " + AutonomyEditorPanel.SHORTCUT_STATION + " on " + empty
-                + ": " + inTheEditor);
+            assertTrue(inTheEditor != null && AutonomyEditorPanel.STATION_KEY.equals(inTheEditor.getAccelerator()),
+                "precondition: the editor's menu does not show Control+N on " + empty);
 
             // The main window's: the same menu, menu-only.
             AutonomyEditorPanel mainWindow = new AutonomyEditorPanel(session, "main", () -> { });
 
             mainWindow.setMenuOnly(true);
 
-            String inTheMainWindow = nameTooltip(mainWindow.buildTileMenu(empty, null));
+            javax.swing.JMenuItem inTheMainWindow = nameItem(mainWindow.buildTileMenu(empty, null));
 
             assertNotNull(inTheMainWindow, "precondition: the main window's menu offers no station name on " + empty);
 
-            assertFalse(inTheMainWindow.contains(AutonomyEditorPanel.SHORTCUT_STATION),
-                "the main window's menu names " + AutonomyEditorPanel.SHORTCUT_STATION + ", which is the notes key in that"
-                + " window: " + inTheMainWindow + " (MFX-C3)");
+            assertNull(inTheMainWindow.getAccelerator(), "the main window's menu shows "
+                + inTheMainWindow.getAccelerator() + ", and Control+N is the notes key in that window (MFX-C3)");
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -599,7 +588,7 @@ public class testControlNAsksTheMenusQuestion
         {
             AutonomySession session = new AutonomySession(folder);
 
-            LayoutDiagram page = aPageWithARun("main");
+            LayoutDiagram page = aPageWithARunAndALabel("main");
 
             // A signal, which a caption may not be put on
             page.addComponent(componentType.SIGNAL, 8, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
@@ -656,7 +645,7 @@ public class testControlNAsksTheMenusQuestion
         }
         finally
         {
-            deleteRecursively(folder);
+            Trees.delete(folder);
         }
     }
 
@@ -677,7 +666,7 @@ public class testControlNAsksTheMenusQuestion
     }
 
     /** The tooltip of the Show a Station Name Here item, in any of its three wordings, or null. */
-    private static String nameTooltip(javax.swing.JPopupMenu menu)
+    private static javax.swing.JMenuItem nameItem(javax.swing.JPopupMenu menu)
     {
         if (menu == null) return null;
 
@@ -688,7 +677,7 @@ public class testControlNAsksTheMenusQuestion
         {
             if (each instanceof javax.swing.JMenuItem && names.contains(((javax.swing.JMenuItem) each).getText()))
             {
-                return ((javax.swing.JMenuItem) each).getToolTipText();
+                return (javax.swing.JMenuItem) each;
             }
         }
 
@@ -712,22 +701,6 @@ public class testControlNAsksTheMenusQuestion
         }
 
         return (Boolean) asked.invoke(panel, tile);
-    }
-
-    private static boolean offersAHome(javax.swing.JPopupMenu menu)
-    {
-        String none = I18n.t("autosetup.ui.menuHomeNone");
-        String named = I18n.t("autosetup.ui.menuHomeFor");
-        String namedStart = named.contains("{0}") ? named.substring(0, named.indexOf("{0}")) : named;
-
-        for (String name : itemNames(menu))
-        {
-            if (name == null) continue;
-
-            if (name.equals(none) || (!namedStart.isEmpty() && name.startsWith(namedStart))) return true;
-        }
-
-        return false;
     }
 
     /** What the key acts on - public, so the two doors can be put side by side. */
@@ -758,28 +731,6 @@ public class testControlNAsksTheMenusQuestion
             || names.contains(I18n.t("autosetup.ui.menuShowStationHereNamed"));
     }
 
-    private static LayoutDiagram aPageWithARun(String name) throws java.io.IOException
-    {
-        LayoutDiagram page = new LayoutDiagram(name, 12, 4, null, null);
-
-        page.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 5, 11, accessoryDecoderType.MM2, null);
-
-        for (int x = 2; x <= 5; x++)
-        {
-            page.addComponent(componentType.STRAIGHT, x, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-        }
-
-        page.addComponent(componentType.FEEDBACK, 6, 1, 0, 0, 6, 12, accessoryDecoderType.MM2, null);
-
-        // A label, the other square the menu sends to its text menu; (4,2) is blank inside the drawn area, (9,2)
-        // outside.
-        page.addComponent(componentType.TEXT, 3, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, "Yard");
-
-        page.setPageId(name);
-
-        return page;
-    }
-
     private static java.util.List<String> itemNames(javax.swing.JPopupMenu menu)
     {
         java.util.List<String> out = new java.util.ArrayList<>();
@@ -796,21 +747,6 @@ public class testControlNAsksTheMenusQuestion
 
     private static void needsADisplay()
     {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs a display");
-        }
-    }
-
-    private static void deleteRecursively(java.io.File file)
-    {
-        java.io.File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (java.io.File child : children) deleteRecursively(child);
-        }
-
-        file.delete();
+        Display.needed("AutonomyEditorPanel builds real Swing components - this needs a display");
     }
 }

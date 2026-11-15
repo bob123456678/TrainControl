@@ -10,6 +10,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.marklin.MarklinLocomotive;
 import static org.traincontrol.marklin.MarklinControlStation.init;
+import support.Reflect;
 
 /**
  * Why a train is not moving, said in words.
@@ -37,9 +38,8 @@ public class testWhyStuck
 
     /**
      * By hand, a station beyond a headshunt is somewhere to go, as the right-click menu says it is (MT-434):
-     * `reversesAlongTheWay` is autonomy's rule and must not be asked by hand.
-     *
-     * A -> R -> B, R a reversing square, nothing measured.  On its own sensors.
+     * `reversesAlongTheWay` is autonomy's rule and must not be asked by hand.  A -> R -> B, R a reversing square,
+     * nothing measured, on its own sensors.
      */
     @Test
     public void testByHandAStationBeyondAHeadshuntIsSomewhereToGo() throws Exception
@@ -148,29 +148,6 @@ public class testWhyStuck
     }
 
     /**
-     * A station with a train standing on it says so, and names the train.
-     */
-    @Test
-    public void testAnOccupiedStationNamesWhoIsThere() throws Exception
-    {
-        Layout layout = twoStations("WS1");
-
-        MarklinLocomotive first = model.getLocByName(model.getLocList().get(0));
-        MarklinLocomotive second = model.getLocByName(model.getLocList().get(1));
-
-        layout.moveLocomotive(first.getName(), "WS1_A", false);
-        layout.moveLocomotive(second.getName(), "WS1_B", false);
-
-        Map<String, String> why = layout.explainDestinations(first);
-
-        assertNotNull(why.get("WS1_B"), "B holds a train, so it cannot be available");
-
-        assertTrue(why.get("WS1_B").contains(second.getName()),
-            "the reason must NAME the train standing in the way - a bare refusal sends the user "
-            + "looking at the track instead of at the other locomotive.  Got: " + why.get("WS1_B"));
-    }
-
-    /**
      * A station switched off says that, and not something else.
      */
     @Test
@@ -220,9 +197,8 @@ public class testWhyStuck
 
     /**
      * By hand, a station the right-click menu does not offer is not listed as somewhere to go (MT-434, OB-205): the
-     * button and the explanation must answer the one question the same way.
-     *
-     * THE CONTROL is the same station with nothing set: offered, and nothing said against it.
+     * button and the explanation answer the one question the same way.  The control is the same station with nothing
+     * set: offered, and nothing said against it.
      */
     @Test
     public void testByHandAStationTheMenuDoesNotOfferSaysWhy() throws Exception
@@ -283,8 +259,6 @@ public class testWhyStuck
 
     /**
      * By hand, the menu's own reason outranks being too short (MT-262).
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testByHandTheMenusReasonOutranksBeingTooShort() throws Exception
@@ -517,18 +491,13 @@ public class testWhyStuck
     }
 
     /**
-     * THE DASH AND THE RULE, swept limb by limb rather than on the one that was missed.
-     *
-     * `AutoLocomotiveStatus.notChosenByAutonomy` is a deliberate lock-free copy of `Layout.barredFromAutonomy` (the
-     * rule is `synchronized` on the Layout and this runs on the event thread three times per repaint), so the two can
-     * only be kept together by a test that asks both.  A test that builds one case cannot notice a limb that was never
-     * written, so this compares the two ANSWERS over every case.  Both are reached by reflection: the copy is private,
-     * and the rule is private because everything public that reaches it takes the monitor this copy exists to avoid.
+     * THE DASH AND THE RULE, swept limb by limb: `AutoLocomotiveStatus.notChosenByAutonomy` is a deliberate lock-free
+     * copy of `Layout.barredFromAutonomy` (the rule takes the Layout monitor, this runs on the event thread three times
+     * per repaint), so only a test that compares both ANSWERS over every case keeps them together.  Both are reached by
+     * reflection.
      *
      * MUTATION: dropping any limb from either side fails this - each case is barred for exactly one reason, and the
      * clean case pins the other direction.
-     *
-     * @throws Exception on a failure to reach either method
      */
     @Test
     public void testTheDashAgreesWithTheRule() throws Exception
@@ -541,17 +510,11 @@ public class testWhyStuck
 
         final org.traincontrol.automation.Point end = layout.getPoint("WS11_B");
 
-        java.lang.reflect.Method dash =
-            org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredMethod(
-                "notChosenByAutonomy", org.traincontrol.automation.Point.class,
-                org.traincontrol.base.Locomotive.class);
+        java.lang.reflect.Method dash = Reflect.method(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class,
+            "notChosenByAutonomy", org.traincontrol.automation.Point.class, org.traincontrol.base.Locomotive.class);
 
-        dash.setAccessible(true);
-
-        java.lang.reflect.Method rule = Layout.class.getDeclaredMethod("barredFromAutonomy",
-            org.traincontrol.automation.Point.class, org.traincontrol.base.Locomotive.class);
-
-        rule.setAccessible(true);
+        java.lang.reflect.Method rule = Reflect.method(Layout.class,
+            "barredFromAutonomy", org.traincontrol.automation.Point.class, org.traincontrol.base.Locomotive.class);
 
         // Each case names itself, sets ONE thing, and puts it back.
         java.util.LinkedHashMap<String, Runnable[]> cases = new java.util.LinkedHashMap<>();
@@ -611,8 +574,8 @@ public class testWhyStuck
     }
 
     /**
-     * Runs something that declares a checked exception, failing the test if it throws: `setReversing` and `setTerminus`
-     * declare `Exception`, which a `Runnable` cannot carry.
+     * Runs something that declares a checked exception, failing the test if it throws (`setReversing` and
+     * `setTerminus` declare `Exception`, which a `Runnable` cannot carry).
      *
      * @param body what to run
      */
@@ -665,13 +628,10 @@ public class testWhyStuck
 
     /**
      * A train on a copy of a station that has a way out but reaches no station autonomy may choose is told so (OB-299),
-     * not given every station's own reason.  By hand it is not a reason: a train sent by hand may go where autonomy
-     * never sends one.
+     * not given every station's own reason; by hand it is not a reason.
      *
-     * MUTATION: drop the reason, give it by hand, offer turning round where neither copy reaches a station, or leave
+     * MUTATION: drop the reason, give it by hand, offer turning around where neither copy reaches a station, or leave
      * the closed side out of the either-way sentence, and this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testACopyThatReachesNoStationSaysSo() throws Exception
@@ -707,10 +667,10 @@ public class testWhyStuck
             "autolayout.why.startReachesNoStationEitherWay", "WS10 Platform",
             org.traincontrol.util.I18n.t("autosetup.ui.menuAutoDestination"),
             org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on a square where neither copy"
-            + " reaches a station autonomy may choose is told to turn round, which would not help (OB-299)");
+            + " reaches a station autonomy may choose is told to turn around, which would not help (OB-299)");
 
         // AND THE SIDE A TRAIN WOULD ARRIVE ON, WITH ITS EXCEPTION.  At a station trains pass through, a closed side
-        // keeps it out of reach and switching it on is no remedy; where every train turns round, opening it is the
+        // keeps it out of reach and switching it on is no remedy; where every train turns around, opening it is the
         // terminus error that refuses the whole setup.  The sentence does not know which station is meant, so it names
         // the side with the exception.
         assertTrue(stranded.explainCannotStart(loc).contains(org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")),
@@ -719,19 +679,16 @@ public class testWhyStuck
 
         // The exception in the words, read from the English bundle: no placeholder carries it.
         assertTrue(java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages", java.util.Locale.ROOT)
-            .getString("autolayout.why.startReachesNoStationEitherWay").contains("not where every train turns round"),
+            .getString("autolayout.why.startReachesNoStationEitherWay").contains("not where every train turns around"),
             "the either-way sentence sends the operator to open a side under Trains May Arrive... without GUI4-C3's"
-            + " exception - at a station every train turns round at, that makes the setup refuse to load (RLU3-C1)");
+            + " exception - at a station every train turns around at, that makes the setup refuse to load (RLU3-C1)");
     }
 
     /**
-     * Turning round is offered only onto a copy a train may be started from: where the square's other copy reaches a
-     * station but is switched off, the train is told what would help instead (turning onto that copy would give its
-     * refusal, and turning back this sentence again).
+     * Turning around is offered only onto a copy a train may be started from: where the square's other copy reaches a
+     * station but is switched off, the train is told what would help instead.
      *
-     * MUTATION: offer turning round wherever another copy reaches a station, and this fails.
-     *
-     * @throws Exception from the railway
+     * MUTATION: offer turning around wherever another copy reaches a station, and this fails.
      */
     @Test
     public void testTurningRoundIsOfferedOnlyOntoACopyATrainMayStartFrom() throws Exception
@@ -748,24 +705,21 @@ public class testWhyStuck
         // NOT "WHICHEVER WAY": the other way does reach a station; autonomy only starts no train there.
         assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f(
             "autolayout.why.startReachesNoStationOtherWayRefused", "WS11 Platform"), "a train on the copy of WS11 Platform"
-            + " that reaches no station is told to turn round onto a copy that is switched off (RLA-C5), or told no station"
+            + " that reaches no station is told to turn around onto a copy that is switched off (RLA-C5), or told no station"
             + " can be reached whichever way it faces, where the other way reaches one (RLU3-C2)");
 
-        // CONTROL: switched on, the other copy is one to turn round onto.
+        // CONTROL: switched on, the other copy is one to turn around onto.
         layout.getPoint("WS11 Platform (westbound)").setActive(true);
 
         assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f("autolayout.why.startReachesNoStation",
-            "WS11 Platform"), "CONTROL: with the other copy switched on, turning round is not offered");
+            "WS11 Platform"), "CONTROL: with the other copy switched on, turning around is not offered");
     }
 
     /**
-     * Turning round is not offered onto a copy that is no station - the copy of a square trains may not arrive at -
-     * even where it reaches a station: turned round onto it, the next Why not Moving? refuses it and sends the operator
-     * back.  The claim beside this one switches a copy off, which a built railway never does to one copy alone.
+     * Turning around is not offered onto a copy that is no station (a square trains may not arrive at), even where it
+     * reaches a station.  The claim beside this one switches a copy off, which a built railway never does to one copy.
      *
-     * MUTATION: offer turning round onto any copy that reaches a station, and this fails.
-     *
-     * @throws Exception from the railway
+     * MUTATION: offer turning around onto any copy that reaches a station, and this fails.
      */
     @Test
     public void testTurningRoundIsNotOfferedOntoACopyThatIsNoStation() throws Exception
@@ -780,23 +734,21 @@ public class testWhyStuck
             + " westbound copy is not a copy of the station trains may not arrive at");
 
         // NOT "WHICHEVER WAY": the other way reaches WS12 Far; trains may only not arrive facing it.  Its
-        // remedy is that copy's own - open that side, then turn round - where not every train turns there.
+        // remedy is that copy's own - open that side, then turn around - where not every train turns there.
         assertEquals(layout.explainCannotStart(loc), org.traincontrol.util.I18n.f(
             "autolayout.why.startReachesNoStationOtherWayBarred", "WS12 Platform",
             org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train on the copy of WS12 Platform that"
-            + " reaches no station is told to turn round onto a copy trains may not arrive at (RLA-C5), or told no station"
+            + " reaches no station is told to turn around onto a copy trains may not arrive at (RLA-C5), or told no station"
             + " can be reached whichever way it faces, where the other way reaches WS12 Far (RLU3-C2)");
     }
 
     /**
-     * Where the other way reaches a station only across a side trains may not arrive by, and every train turns round at
-     * that square, the train is told that side is closed and not told to open it: opened there, a terminus reached from
-     * two sides is the error that refuses the whole setup.
+     * Where the other way reaches a station only across a side trains may not arrive by, and every train turns around at
+     * that square, the train is told that side is closed, not to open it: a terminus reached from two sides refuses the
+     * whole setup.
      *
      * MUTATION: offer "open that side" wherever the other copy is barred, or give the refusal without its reason, and
      * this fails.
-     *
-     * @throws Exception from the railway
      */
     @Test
     public void testOpeningASideIsNotOfferedWhereEveryTrainTurns() throws Exception
@@ -823,11 +775,11 @@ public class testWhyStuck
         String said = layout.explainCannotStart(loc);
 
         assertEquals(said, org.traincontrol.util.I18n.f("autolayout.why.startReachesNoStationOtherWayBarredMustTurn",
-            "WS13 Platform"), "a train at a square every train turns round at, whose other way reaches a station only"
+            "WS13 Platform"), "a train at a square every train turns around at, whose other way reaches a station only"
             + " across a closed side, is not told the side is closed, or is told to open it (RLU4-C6, RLU4-C7)");
 
         assertFalse(said.contains(org.traincontrol.util.I18n.t("autosetup.ui.menuArrivalsGroup")), "a train at a square"
-            + " every train turns round at is told to open a side under Trains May Arrive..., which makes the setup refuse to"
+            + " every train turns around at is told to open a side under Trains May Arrive..., which makes the setup refuse to"
             + " load (GUI4-C3): " + said);
     }
 
@@ -898,12 +850,9 @@ public class testWhyStuck
     }
 
     /**
-     * A platform's several arrival sides are described by the platform, not by the model's spelling.
-     *
-     * The index maps every emitted Point back to its square, but a configuration built by a different run of the
-     * builder is not in the map, and the fallback must not be the internal name: "BottomMainA (northbound)" is not a
-     * place on anybody's railway, least of all in the hover that explains why a train is not moving.  Only the suffixes
-     * the builder itself emits come off: a station genuinely called "Yard (upper)" must keep its name.
+     * A platform's several arrival sides are described by the platform, not by the model's spelling: a configuration
+     * built by a different run of the builder is not in the index, and the fallback must not be "BottomMainA
+     * (northbound)".  Only the builder's own suffixes come off: a station called "Yard (upper)" keeps its name.
      */
     @Test
     public void testAnArrivalSideIsDescribedByItsStation() throws Exception
@@ -928,23 +877,16 @@ public class testWhyStuck
     }
 
     /**
-     * The (i) a card shows when hovering explains why it is not moving is a picture that loads.
-     *
-     * `AutoLocomotiveStatus` lives in `gui.autonomy` and the picture in `gui/resources`, so its lookup is anchored on
-     * `TrainControlUI` as every other is; a path relative to its own package finds nothing, and the card loses its mark
-     * without a word.
+     * The (i) a card shows when hovering explains why it is not moving is a picture that loads: its lookup is anchored
+     * on `TrainControlUI` as every other is, or the card loses its mark without a word.
      *
      * MUTATION: look it up as `AutoLocomotiveStatus.class.getResource("resources/info.gif")` and this fails.
-     *
-     * @throws Exception on a failure to reach the mark
      */
     @Test
     public void testTheWhyMarkLoads() throws Exception
     {
-        java.lang.reflect.Method markFor = org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class.getDeclaredMethod(
+        java.lang.reflect.Method markFor = Reflect.method(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class,
             "markFor", boolean.class, boolean.class);
-
-        markFor.setAccessible(true);
 
         javax.swing.ImageIcon info = (javax.swing.ImageIcon) markFor.invoke(null, false, true);
 

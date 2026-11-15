@@ -30,7 +30,8 @@ public interface ViewListener
     public List<String> getRouteList();
     public Locomotive getLocByName(String name);
     public Accessory getAccessoryByName(String name);
-    public void saveState(boolean backup);
+    /** @return why the database could not be written, or null when it was */
+    public String saveState(boolean backup);
     public Locomotive newMM2Locomotive(String name, int address);
     public Locomotive newMFXLocomotive(String name, int address);
     public Locomotive newDCCLocomotive(String name, int address);
@@ -67,8 +68,6 @@ public interface ViewListener
      * miss, which is deliberate on a command path and wrong where one is only looking (a route condition, a keyboard
      * key).  The answer is identical (an absent accessory reads as not switched); only the side effect differs.
      *
-     * @param address
-     * @param decoderType
      * @return whether the accessory is switched; false when there is no such accessory
      */
     public boolean getAccessoryStateIfPresent(int address, Accessory.accessoryDecoderType decoderType);
@@ -77,9 +76,6 @@ public interface ViewListener
     /**
      * Returns the accessory at the given address, or null if none exists.  Unlike
      * getAccessoryByAddress, this never creates one - use it on display and read-only paths
-     * @param address
-     * @param decoderType
-     * @return
      */
     public Accessory getAccessoryByAddressIfPresent(int address, Accessory.accessoryDecoderType decoderType);
     public boolean getPowerState();
@@ -102,7 +98,13 @@ public interface ViewListener
     public void log(Exception e);
     public void stopAllLocs();
     public int syncWithCS2();
+    public boolean wasLastSyncPartial();
+    public String getLastSyncError();
     public List<String> getLayoutList();
+    public List<String> getLayoutListByName();
+    public String getPageNameForId(int id);
+    public int getPageIdOf(String name);
+    public void aimLink(org.traincontrol.base.LayoutDiagramComponent tile, String page);
     public LayoutDiagram getLayout(String name);
     public void syncLocomotive(String name);
     public boolean isFeedbackSet(String name);
@@ -119,7 +121,6 @@ public interface ViewListener
 
     /**
      * Every locomotive address in use, mapped to the locomotives using it.
-     * @return
      */
     public Map<Integer, Set<Locomotive>> getLocAddresses();
     public void parseAuto(String s);
@@ -162,9 +163,20 @@ public interface ViewListener
     Accessory newSwitch(int address, Accessory.accessoryDecoderType decoderType, boolean state);
     public boolean getNetworkCommState();
 
+    /** Whether the lost TCP connection to the station is being replaced: autonomy starts no new route (FR-186). */
+    public boolean isReplacingConnection();
+
+    /** How many replacements of that connection have begun: two reads tell whether one began and ended in between. */
+    public int getReplacementEpoch();
+
+    /** The protocol frames go by, "TCP" or "UDP", or null with no station. */
+    public String getProtocol();
+
+    /** Whether the station is not answering on TCP: a frame unanswered over a second, or the connection replaced. */
+    public boolean isConnectionNotAnswering();
+
     /**
      * Whether this session is simulating rather than driving a real Central Station.
-     * @return
      */
     public boolean isSimulation();
     public int getNumMessagesProcessed();
@@ -254,7 +266,6 @@ public interface ViewListener
      * @param state the state to wait for
      * @param timeoutMs how long to allow the Central Station to answer
      * @return whether the state was reached
-     * @throws InterruptedException
      */
     public boolean waitForPowerState(boolean state, long timeoutMs) throws InterruptedException;
     public void downloadLayout(File path) throws Exception;
@@ -263,11 +274,16 @@ public interface ViewListener
     /**
      * The rename check with its refusal count, so an empty proposal list can be told apart from
      * everything having been declined
-     * @return
      * @throws java.lang.Exception
      */
     public RenameProposals getRenameProposals() throws Exception;
     public String exportLocsToCSV();
+
+    /**
+     * Every accessory's actuation count as CSV (FR-178): a header, then one row an accessory, by protocol and address.
+     * @return the file's text
+     */
+    public String exportAccessoryActuationsToCSV();
     public void logf(String key, Object... args);
     public Feedback newFeedback(int id, CANMessage message);
 }

@@ -18,12 +18,11 @@ import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * Return Home finds a plan on a crowded railway where one exists - the shortest where the time allows, and some plan
+ * Return Home finds a plan on a crowded railway where one exists - the shortest where the budget allows, and some plan
  * where it does not (OB-230).
  *
  * The budget is shared: the shortest plan is looked for first, and the last share looks for any plan from the railway
- * as it stands.  The search's clock is stepped a fixed amount a read, so its budget is a count of arrangements rather
- * than of seconds on whatever machine runs this.
+ * as it stands.  It counts route work, not time (OB-413), so the answers are the same on whatever machine runs this.
  *
  * No lengths, as in `core.testTrainsComeHomeFromAPinnedArrangement`: this is about the search, not the room rules.
  *
@@ -36,9 +35,6 @@ public class testReturnHomeFindsAPlanOnAFullRailway
     private static Layout layout;
 
     private static final int FIRST_ADDRESS = 2461;
-
-    /** Milliseconds the search's clock moves each time it is read: fifteen seconds is 7,500 reads. */
-    private static final long STEP = 2;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -175,16 +171,7 @@ public class testReturnHomeFindsAPlanOnAFullRailway
                 + standing[i]);
         }
 
-        HomeStaging staging = HomeStaging.snapshot(layout);
-
-        final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong();
-
-        java.lang.reflect.Field clock = HomeStaging.class.getDeclaredField("clock");
-
-        clock.setAccessible(true);
-        clock.set(staging, (java.util.function.LongSupplier) () -> now.addAndGet(STEP));
-
-        return staging.plan();
+        return HomeStaging.snapshot(layout).plan();
     }
 
     /** Where the plan's moves leave each train, and that it is home. */

@@ -17,15 +17,14 @@ import org.testng.annotations.Test;
  * `synchronized` methods take the one monitor a driving thread holds for a whole dispatch, so a call from the event
  * thread freezes the window.
  *
- * An INVENTORY, not a proof: source cannot tell which thread a line runs on, so every call from a user-interface
- * class to one of these methods must appear in the list below, saying `OFF THE EVENT THREAD` with the thread named, or
- * `ON THE EVENT THREAD` with the reason (`testEveryAllowanceSaysWhichThreadItIsOn` holds that shape).  This is the
- * only guard with the list; `testTheDiagramRefreshDoesNotWaitOnTheRailway` MEASURES the two doors that matter most.
+ * An INVENTORY, not a proof: every call from a user-interface class to one of these methods must appear in the list
+ * below, saying `OFF THE EVENT THREAD` with the thread named, or `ON THE EVENT THREAD` with the reason
+ * (`testEveryAllowanceSaysWhichThreadItIsOn` holds that shape).  `testTheDiagramRefreshDoesNotWaitOnTheRailway`
+ * MEASURES the two doors that matter most.
  *
  * MUTATION: put `layout.getPossiblePaths(locomotive, true)` back in
  * `LayoutRightclickAutonomyMenu`'s constructor, or `isChoosableByAutonomy` back in
- * `TrainControlUI.captionIsActive`, and `testEveryDoorOntoTheRailwaysMonitorIsWrittenDown` fails,
- * quoting the line and naming the member it is in.
+ * `TrainControlUI.captionIsActive`, and `testEveryDoorOntoTheRailwaysMonitorIsWrittenDown` fails.
  *
  * @author Adam
  */
@@ -60,14 +59,15 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         "executePathByHand",
 
         // `synchronized (this)` blocks, which the declaration scanner above cannot see.
-        "configureAndLockPath", "getPathValidationFailureCount", "hasShownPathValidationAlert"
+        "configureAndLockPath", "getPathValidationFailureCount", "hasShownPathValidationAlert",
+
+        // Reached through putTheTrainsBack and moveLocomotive, on the railway that is running
+        "standTheTrainsBack"
     };
 
     /**
-     * Every door, and what makes it acceptable.
-     *
-     * Keyed `File.java#member`, so all the calls one member makes share one line.  The value must begin
-     * `OFF THE EVENT THREAD: ` or `ON THE EVENT THREAD: `.
+     * Every door, and what makes it acceptable.  Keyed `File.java#member`; the value must begin `OFF THE EVENT THREAD:
+     * ` or `ON THE EVENT THREAD: `.
      */
     private static final Map<String, String> ALLOWED = new LinkedHashMap<>();
 
@@ -186,12 +186,9 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "ON THE EVENT THREAD: an old file imported into the configuration in use captures the running layout into"
             + " it first, only while isAutonomyBusy() is false, so nothing is holding the monitor (RLU2-C2, RLD3-C1)");
 
-        ALLOWED.put("GraphLocAssign.java#commitChanges",
-            "ON THE EVENT THREAD (D3-C4): placing a train is a change of state the operator has just"
-            + " confirmed in a modal dialog, and the repaint that follows must not run before it");
-
         ALLOWED.put("LayoutRightclickAutonomyMenu.java#placeFacing",
-            "ON THE EVENT THREAD (D3-C4): the same placement, from the diagram's menu");
+            "ON THE EVENT THREAD (D3-C4): placing a train from the diagram's menu is a change of state the operator has"
+            + " just confirmed, and the repaint that follows must not run before it");
 
         ALLOWED.put("LayoutRightclickAutonomyMenu.java#removeLocomotiveHere",
             "ON THE EVENT THREAD (D3-C4): taking a train off a square, offered only when"
@@ -202,7 +199,14 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
 
         ALLOWED.put("RunningLayoutSync.java#putTheTrainsBack",
             "ON THE EVENT THREAD: a setup rebuild puts every placement back into the layout it has just"
-            + " built, and that layout is not the one anything else holds yet");
+            + " built, and that layout is not the one anything else holds yet; the track editor's discard puts"
+            + " them back on the running railway, listed at LayoutEditor.java#undoAutonomyEdits");
+
+        ALLOWED.put("LayoutEditor.java#undoAutonomyEdits",
+            "ON THE EVENT THREAD: Cancel or a discard in the open track editor stands the trains back on the running"
+            + " railway.  No run, hand send or staging flow can hold the monitor while an editor is open; a search"
+            + " worker may, so the window can wait for one search, and none of those workers waits on the event"
+            + " thread while it holds the monitor");
 
         ALLOWED.put("RunningLayoutSync.java#noteTheRailwaysSettingsAsBuilt",
             "ON THE EVENT THREAD: reading the railway just built, at the end of its load, before anything runs on it"
@@ -281,11 +285,8 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     }
 
     /**
-     * The guard knows what it is guarding.
-     *
-     * A source scanner that silently matches nothing reports clean about everything, so the parsed list is checked
-     * against a handful of names read out of `Layout.java` by eye: if a change to how those declarations are written
-     * stops the pattern matching them, this says so instead of the census going quietly empty.
+     * The guard knows what it is guarding: the parsed list is checked against names read out of `Layout.java` by eye,
+     * since a scanner that silently matches nothing reports clean about everything.
      */
     @Test
     public void testTheGuardCanStillFindTheSynchronizedMethods() throws Exception
@@ -316,10 +317,8 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     }
 
     /**
-     * Nothing is allowed without saying which thread it is on.
-     *
-     * A line that says only "fine" is the silent exemption this class is written against.  Two prefixes, so that
-     * reading the list answers the only question that matters about a door: is it on the thread that draws the window.
+     * Nothing is allowed without saying which thread it is on: a line that says only "fine" is the silent exemption
+     * this class is written against.
      */
     @Test
     public void testEveryAllowanceSaysWhichThreadItIsOn()
@@ -335,10 +334,8 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     }
 
     /**
-     * Every allowance is still a door.
-     *
-     * An allowlist rots in the direction that matters: a member that stops calling the railway leaves its line behind,
-     * and the line then licenses whatever is written into that member next.
+     * Every allowance is still a door: a member that stops calling the railway leaves its line behind, which then
+     * licenses whatever is written into that member next.
      */
     @Test
     public void testEveryAllowanceIsStillADoor() throws Exception
@@ -362,10 +359,7 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     }
 
     /**
-     * The narrow tripwire this generalizes is gone.
-     *
-     * Two guards for one rule come to disagree.  Stated as a property so that restoring the narrow one, rather than
-     * adding to this, is caught.
+     * The narrow tripwire this generalizes is gone: two guards for one rule come to disagree.
      */
     @Test
     public void testTheOneMethodTripwireHasNotComeBack() throws Exception
@@ -440,13 +434,9 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
     }
 
     /**
-     * The class member a position in the source is inside.
-     *
-     * Members are declared at exactly four spaces of indent and their bodies are deeper, so the nearest such line above
-     * a call is the member it is in; an anonymous class or a lambda inside a member is stepped over, so a listener
-     * built in a constructor belongs to that constructor.  A field initializer has an `=` before its parenthesis, so a
-     * call inside one is attributed to the member above it: wrong, and harmless, since the failure message quotes the
-     * file and line.
+     * The class member a position in the source is inside: members are declared at exactly four spaces of indent, so
+     * the nearest such line above a call is its member; anonymous classes and lambdas are stepped over.  A call in a
+     * field initializer is attributed to the member above it: wrong, and harmless, since the message quotes the line.
      */
     private static String memberAround(String code, int at)
     {

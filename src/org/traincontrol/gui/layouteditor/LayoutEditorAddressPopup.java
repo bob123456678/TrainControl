@@ -21,8 +21,6 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
 
     /**
      * Creates new form LayourEditorAddressPopup
-     * @param lc
-     * @param tcui
      */
     public LayoutEditorAddressPopup(LayoutDiagramComponent lc, TrainControlUI tcui)
     {
@@ -146,15 +144,11 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             }
             else if (lc.isLink())
             {
-                // `addr` is the page's place in the FULL list, one-based, which is what getLogicalAddress hands out;
-                // the combo no longer holds the full list.
-                List<String> all = tcui.getModel().getLayoutList();
+                // The page the link goes to, by name: two pages may share an ID.  A link to nothing shows as such,
+                // rather than leaving the combo on whatever happened to be first.
+                String page = lc.getLinkPageName();
 
-                int at = Integer.parseInt(addr) - 1;
-
-                // A link to nothing shows as such, rather than leaving the combo on whatever happened to
-                // be first.
-                if (at >= 0 && at < all.size()) this.addressSelector.setSelectedItem(all.get(at));
+                if (page != null && !page.equals(onPage)) this.addressSelector.setSelectedItem(page);
                 else this.addressSelector.setSelectedItem(NO_PAGE);
             }
             else
@@ -169,8 +163,6 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
     
     /**
      * Used to add/extract the route ID from a string containing the route name
-     * @param r
-     * @return 
      */
     private String addRouteId(Route r)
     {
@@ -203,8 +195,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
             }
             else if (lc.isLink())
             {
-                // Back to the page's place in the FULL list, since that is what a link stores - see the
-                // combo model above.  Nothing selected leaves the square as it was.
+                // Back to the page's ID plus one, since that is what a link goes by - see the combo model above.  Nothing selected leaves the square as it was.
                 Object chosen = this.addressSelector.getSelectedItem();
 
                 if (chosen == null) return Integer.toString(lc.getLogicalAddress());
@@ -215,9 +206,7 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
                 // to -1, and the combo holds this very object (`pagesThatCanBeLinkedTo` puts it in).
                 if (chosen == NO_PAGE) return "0";
 
-                int at = tcui.getModel().getLayoutList().indexOf(chosen.toString());
-
-                return Integer.toString(at + 1);
+                return Integer.toString(tcui.getModel().getPageIdOf(chosen.toString()) + 1);
             }
             else
             {
@@ -226,19 +215,28 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         }
     }
     
+    /** @return the page a link is aimed at here, by name, or null for no page; nothing selected keeps its page */
+    public String getLinkedPage()
+    {
+        Object chosen = this.addressSelector.getSelectedItem();
+
+        if (chosen == null) return lc.getLinkPageName();
+
+        // By reference, as in getAddress
+        return chosen == NO_PAGE ? null : chosen.toString();
+    }
+
     /**
      * Every page a link on this square may point at - which is every page except the one it is on.
      *
-     * @return the page names, in the window's own order
+     * @return the page names, in the order the window shows them
      */
     private List<String> pagesThatCanBeLinkedTo()
     {
         List<String> out = new java.util.ArrayList<>();
 
         // "No page" first, and it is a real choice: an arrow whose page was deleted carries -1, so that it resolves to
-        // nothing and the operator re-aims it.  Without an entry for that, opening this popup on such an arrow selected
-        // the first item anyway and OK silently aimed the arrow at the first page in the alphabet.  It also gives a way
-        // to BREAK a link on purpose.
+        // nothing and the operator re-aims it.  It also gives a way to BREAK a link on purpose.
         out.add(NO_PAGE);
 
         for (String page : tcui.getModel().getLayoutList())

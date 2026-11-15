@@ -14,6 +14,7 @@ import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Diagrams;
 
 /**
  * A station whose name is drawn in two places is one finding, and an import or a move never captions it twice (OB-341).
@@ -346,7 +347,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
         LayoutDiagram page = runOfTrack();
 
         // A sensor on its own, with no track to it: marked a station, it is not a Point
-        page.addComponent(componentType.FEEDBACK, 6, 3, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(page, 6, 3, 7, 13);
 
         session.open(Arrays.asList(page, secondPage()));
 
@@ -909,7 +910,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
         LayoutDiagram second = new LayoutDiagram("second", 8, 4,
             "file:///" + secondFile.getAbsolutePath().replace('\\', '/'), null);
 
-        second.addComponent(componentType.FEEDBACK, 1, 1, 0, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.feedback(second, 1, 1, 7, 13);
         second.setPageId("2");
 
         session.open(Arrays.asList(main, second));

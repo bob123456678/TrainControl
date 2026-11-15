@@ -17,8 +17,6 @@ public class testALegacyImportLeavesLoadAutonomyAlone
 {
     /**
      * Every call of `importLegacy` in the window's code leaves Load Autonomy alone for the rest of its method.
-     *
-     * @throws Exception if the sources cannot be read
      */
     @Test
     public void testNoImportDoorTouchesLoadAutonomy() throws Exception
@@ -55,8 +53,6 @@ public class testALegacyImportLeavesLoadAutonomyAlone
 
     /**
      * And the untick itself is gone, so nothing can call it again.
-     *
-     * @throws Exception if the source cannot be read
      */
     @Test
     public void testTheUntickIsGone() throws Exception

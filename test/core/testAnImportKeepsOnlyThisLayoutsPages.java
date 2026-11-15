@@ -18,6 +18,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import support.Trees;
 
 /**
  * Importing an export brings in only the pages this layout has, and says which it left out (MT-380).
@@ -44,8 +45,8 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     @AfterMethod
     public void tearDown()
     {
-        delete(theirs);
-        delete(mine);
+        Trees.delete(theirs);
+        Trees.delete(mine);
     }
 
     /** A page the exporter had and this layout does not is left out: not recorded, not held, reported. */
@@ -62,7 +63,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
         store.importBundle("Theirs", bundle);
 
-        // THE QUESTION EVERY SAVE ASKS, and the one that produced the warning on every save.
+        // THE QUESTION EVERY SAVE ASKS.
         List<String> missing = store.pagesNotLoaded(Collections.singletonList("Page 1"));
 
         assertFalse(missing.contains("2 - Bottom"),
@@ -135,7 +136,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
     /**
      * A foreign page that happens to carry the same id as one of this layout's pages is left out, and none of its
      * settings land on the local page.  Page ids are numbered from the same start on every railway and the page record
-     * merges by id, so the exporter's "Yard", id 1, was read straight onto this layout's "Main", id 1.
+     * merges by id.
      */
     @Test
     public void testAForeignPageWithAnIdInCommonIsLeftOutAndNotMergedOntoThisOne() throws IOException
@@ -195,8 +196,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
     /**
      * Their page carrying the id of one of this layout's UNLOADED pages lands on its own name, and the unloaded page
-     * keeps its settings and its protection: the page record merged "theirs wins per id", so their "Main" with id 7
-     * overwrote "7 is Away" (a OneDrive page still downloading), and Away's held settings were read onto Main.
+     * keeps its settings and its protection.
      */
     @Test
     public void testTheirIdForAnotherPageDoesNotTakeOverAnUnloadedOne() throws IOException
@@ -298,8 +298,7 @@ public class testAnImportKeepsOnlyThisLayoutsPages
 
     /**
      * With NO page loaded - every page still downloading - an import still translates by the record this setup was
-     * written with, and a page's settings stay on that page: the translation ran only when the store had an index, and
-     * a OneDrive start with every page a placeholder has none, so "7 is Main" was written over "7 is Away".
+     * written with, and a page's settings stay on that page.
      */
     @Test
     public void testAnImportWithNoPageLoadedStillKeepsEachPagesSettings() throws IOException
@@ -455,19 +454,5 @@ public class testAnImportKeepsOnlyThisLayoutsPages
         assertTrue(all.length() > 0, "precondition: the save wrote no setup file under " + folder);
 
         return all.toString();
-    }
-
-    private static void delete(File file)
-    {
-        if (file == null || !file.exists()) return;
-
-        File[] children = file.listFiles();
-
-        if (children != null)
-        {
-            for (File child : children) delete(child);
-        }
-
-        file.delete();
     }
 }
