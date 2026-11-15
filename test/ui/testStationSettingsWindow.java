@@ -1977,6 +1977,43 @@ public class testStationSettingsWindow
             "the strip does not say to click the square");
     }
 
+    /**
+     * While a run holds the setup, a click on a station running both ways still opens its Station Settings, read-only,
+     * as its other doors do (S8V1-C3).
+     *
+     * MUTATION: have `tileClicked` ask `heldByARun` before every click again, and no window opens.
+     */
+    @Test(timeOut = 120000)
+    public void testAClickDuringARunOpensStationSettingsReadOnly() throws Exception
+    {
+        TileKey square = aStation();
+
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
+
+        try
+        {
+            Components.onTheEventThread(() -> { staging.set(ui, true); return null; });
+
+            String before = setup();
+
+            support.Mouse.click(squareOn(square));
+            Components.drain(8);
+
+            StationSettingsWindow window = StationDoors.showing(StationSettingsWindow.class);
+
+            assertNotNull(window, "a click during a run opened no Station Settings");
+            assertTrue(Components.onTheEventThread(window::isReadOnly),
+                "Station Settings opened editable during a run");
+            assertEquals(setup(), before, "a click during a run changed the setup");
+
+            StationDoors.close(window);
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { staging.set(ui, false); return null; });
+        }
+    }
+
     /** The editor's drawn square for a tile of its page. */
     private org.traincontrol.gui.LayoutLabel squareOn(TileKey square) throws Exception
     {

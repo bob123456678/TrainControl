@@ -161,7 +161,7 @@ With no tool armed, a left-click on track changes which way trains may run on it
 
 - **Plain track**: each click changes the whole run of plain track between two switches or sensors: both ways, one way, the other way, closed, and back to both ways.
 - **A switch, crossing or double curve**: each click steps to the next combination of open arms, the common ones first: all open, each route on its own, closed, then the rest. The arms can also be ticked one by one from the right-click menu.
-- **An s88 square** (a sensor, whether a station or not) always runs both ways.  A click on one that has an arrow set any other way puts it back to both ways; a click on one that already runs both ways opens its `Station Settings`, so a double-click on a station opens them too.  To make trains run one way past a sensor, set the track beside it.
+- **An s88 square** (a sensor, whether a station or not) always runs both ways.  A click on one that has an arrow set any other way puts it back to both ways; a click on one that already runs both ways opens its `Station Settings`, so a double-click on a station opens them too, even while autonomy runs (read-only then).  To make trains run one way past a sensor, set the track beside it.
 - **A page link or tunnel** has no direction of its own: set the track leading up to it.
 - **A route button drawn on the track** is set on its own: a click changes that square only.  One with no track running through it is grayed and takes no clicks.
 - **A square out of service** (both `Trains can stop here` and `Trains can pass through` unticked) is a sensor too, and no arrows are drawn on it: a click opens its `Station Settings`.

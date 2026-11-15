@@ -5140,7 +5140,7 @@ public class AutonomyEditorPanel extends JPanel
             {
                 case TEST: applyTest(tile, component); break;
                 case WHY: applyWhy(tile, component); break;
-                default: if (!heldByARun()) cycle(tile); break;
+                default: if (clickOnlyOpens(tile) || !heldByARun()) cycle(tile); break;
             }
         }
         catch (RuntimeException e)
@@ -5194,6 +5194,14 @@ public class AutonomyEditorPanel extends JPanel
         return next == Direction.BOTH || next == Direction.NONE || session.canRunOneWay(target);
     }
 
+    /** Whether a click here only opens Station Settings, a read, which a run does not stop (OB-472). */
+    private boolean clickOnlyOpens(TileKey tile)
+    {
+        TileKey target = leaderOf(tile);
+
+        return session.isSensorSquare(target) && session.runsBothWays(target);
+    }
+
     /** Whether a square is a link, which has no direction of its own. */
     private boolean isALink(TileKey target)
     {
@@ -5211,14 +5219,14 @@ public class AutonomyEditorPanel extends JPanel
     {
         TileKey target = leaderOf(tile);
 
+        if (clickOnlyOpens(target))
+        {
+            openStationSettings(target);
+            return;
+        }
+
         if (session.isSensorSquare(target))
         {
-            if (session.runsBothWays(target))
-            {
-                openStationSettings(target);
-                return;
-            }
-
             session.setDirection(Collections.singleton(target), Direction.BOTH);
 
             say(hint, I18n.f("autosetup.ui.sensorClearedToBothWays", describeTile(target)));
