@@ -258,8 +258,19 @@ final class LocomotiveNotesPanel extends JPanel
         return digits.isEmpty() ? 0 : (int) Long.parseLong(digits);
     }
 
-    /** Writes the fields the operator changed; the others keep the locomotive's current values (an import may have filled them). */
+    /** Writes {@link #asTyped}. */
     void apply(Locomotive l)
+    {
+        LocomotiveNotes n = asTyped(l);
+
+        l.setStructuredNotes(n.getStartYear(), n.getEndYear(), n.getRailway(), n.getNotes());
+    }
+
+    /**
+     * The notes as a save would write them now: the fields the operator changed, and the locomotive's current values for
+     * the others (an import may have filled them).  Find Similar searches with these, unsaved (OB-477).
+     */
+    LocomotiveNotes asTyped(Locomotive l)
     {
         LocomotiveNotes now = l.getStructuredNotes();
 
@@ -267,7 +278,7 @@ final class LocomotiveNotesPanel extends JPanel
         String rail = trimmed.substring(0, Math.min(trimmed.length(), TrainControlUI.MAX_LOC_RAILWAY_NAME));
         String text = notes.getText().substring(0, Math.min(notes.getText().length(), TrainControlUI.MAX_LOC_NOTES_LENGTH));
 
-        l.setStructuredNotes(startYear.getText().equals(loadedStart) ? now.getStartYear() : year(startYear),
+        return new LocomotiveNotes(startYear.getText().equals(loadedStart) ? now.getStartYear() : year(startYear),
             endYear.getText().equals(loadedEnd) ? now.getEndYear() : year(endYear),
             railwayText.getText().equals(loadedRailway) ? now.getRailway() : rail,
             notes.getText().equals(loadedNotes) ? now.getNotes() : text);

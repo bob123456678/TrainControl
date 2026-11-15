@@ -363,13 +363,12 @@ final class LocomotiveActions
     /** Shows the user locomotives similar to searchLoc, and maps them to a page if requested. */
     void findSimilarLocs(Locomotive searchLoc, MouseEvent evt)
     {
-        findSimilarLocs(searchLoc, evt != null ? (Component) evt.getSource() : this.ui);
+        findSimilarLocs(searchLoc, searchLoc.getStructuredNotes(), evt != null ? (Component) evt.getSource() : this.ui);
     }
 
-    /** As above, with the dialogs hanging off {@code source}. */
-    void findSimilarLocs(Locomotive searchLoc, Component source)
+    /** As above, searching with {@code notes} (what the Notes tab holds, saved or not), the dialogs off {@code source}. */
+    void findSimilarLocs(Locomotive searchLoc, LocomotiveNotes notes, Component source)
     {
-        LocomotiveNotes notes = searchLoc.getStructuredNotes();
         String railway = notes.getRailway();
         int startYear = notes.getStartYear();
 
@@ -468,7 +467,7 @@ final class LocomotiveActions
             boolean randomize = randomOrder.isSelected();
 
             List<Locomotive> matches = Locomotive.findSimilarLocomotives(
-                searchLoc, count, railroads, sourceLocs, randomize
+                searchLoc, notes, count, railroads, sourceLocs, randomize
             );
 
             if (matches.isEmpty())
@@ -483,7 +482,7 @@ final class LocomotiveActions
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append(I18n.t("search.ui.labelTargetLocomotive")).append("\n- ").append(searchLoc.getNotesSummaryLine());
+            sb.append(I18n.t("search.ui.labelTargetLocomotive")).append("\n- ").append(searchLoc.getNotesSummaryLine(notes));
             sb.append("\n\n").append(I18n.t("search.ui.labelSimilarLocomotives")).append("\n");
             for (Locomotive match : matches)
             {
