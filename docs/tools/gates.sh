@@ -117,7 +117,9 @@ do
             say fit $status "$(grep -m1 '^Total tests run' "$log")"
             ;;
         updater)
-            # HEAD's tree less the live railway, built as a release is; ANT names Apache Ant's folder
+            # HEAD's tree less the live railway, built as a release is; ANT names Apache Ant's folder.  Without
+            # nbproject/private, as a release's detached worktree is: it holds NetBeans' own settings (the IDE's
+            # user.properties.file, javac.debug, which build-impl.xml defaults to true), and the build needs none of it
             store="$LOGS/store-build"
             rm -rf "$store"
             mkdir -p "$store"
