@@ -26,8 +26,8 @@ before anything reads it, so the checked-in fixture is never written to either.
   `5 - Test`.
 - **Everything in the files** — station names, s88 addresses, portals, priorities, homes, lock edges,
   the whole authored setup as it stood at that commit. It is a snapshot; that is the point.
-- **What it builds to**: 123 reduced edges, 87 Points, 126 edges since OB-472 cleared two s88 squares to both
-  ways (122, 87 and 125 from the refreeze of 2026-09-23; 128, 96 and 149 before it). Pinned exactly in
+- **What it builds to**: 122 reduced edges, 87 Points, 125 edges since the refreeze of 2026-09-23 (128, 96 and
+  149 before it). Pinned exactly in
   `testTheFrozenRailwayIsStillTheRailway`, because far below that is the five-edge skeleton
   `support.LayoutSandbox.wiredPages` describes — a railway whose switches have no accessories — and a
   test standing on it passes by asserting about null.
