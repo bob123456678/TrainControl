@@ -6519,6 +6519,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             proceed = (dialogResult == JOptionPane.YES_OPTION);
         }
 
+        if (proceed && refuseWhileASyncRuns()) proceed = false;
+
         if (proceed)
         {
             SwingUtilities.invokeLater(() ->
@@ -7700,6 +7702,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (syncOwed.get() && !anEditorIsOpenOrOnItsWay()) doSync(null);
             if (this.pagesToFollow) followThePagesIfChanged();
         });
+    }
+
+    /**
+     * Refuses on screen a door that switches the layout while a sync runs: its own sync would be turned away, reading
+     * nothing, and the old pages would stand under the new folder's name.
+     */
+    private boolean refuseWhileASyncRuns()
+    {
+        if (!syncInFlight.get()) return false;
+
+        JOptionPane.showMessageDialog(this, I18n.t("ui.infoSyncAlreadyRunning"));
+
+        return true;
     }
 
     /**
@@ -16127,6 +16142,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             return false;
         }
+
+        if (refuseWhileASyncRuns()) return false;
 
         layoutFolderIs(folder.getPath());
 

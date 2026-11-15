@@ -877,19 +877,23 @@ final class LayoutMenus
     /** Open Layout's rules, without its chooser; a folder that has gone is said once and taken off the list. */
     private void openRecentLayout(String path)
     {
+        // Each gate says why it refused; past them, the log shows that the choice arrived (MT-996)
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
         if (ui.refuseWhileEditorOpen()) return;
+
+        if (ui.getModel() != null) ui.getModel().logf("ui.main.toolbar.infoOpeningRecentLayout", path);
 
         File folder = new File(path);
 
         if (!folder.isDirectory())
         {
+            // The submenu is rebuilt when the Layouts menu next opens, not from inside its own item's action, and the
+            // message waits until the menu has closed (MT-996: after this message Adam's other items did nothing)
             forgetRecentLayout(path);
 
-            refreshRecentLayouts();
-
-            JOptionPane.showMessageDialog(ui, I18n.f("ui.main.toolbar.errorRecentLayoutGone", path));
+            javax.swing.SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(ui, I18n.f("ui.main.toolbar.errorRecentLayoutGone", path)));
 
             return;
         }
