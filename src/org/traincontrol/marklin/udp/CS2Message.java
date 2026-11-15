@@ -26,7 +26,6 @@ public class CS2Message extends CANMessage
     // Data payload
     private byte[] data;
 
-    // Set by NetworkProxy on a frame that answers its own sensor query after a lost connection
     // CAN message length
     public static final int MESSAGE_LENGTH = 13;
 
