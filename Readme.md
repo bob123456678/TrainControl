@@ -21,7 +21,7 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 <img src="assets/station_menu.png?raw=true" alt="Right-clicking the station Ashby on the track diagram, with Station Settings... right under its name in the menu" width="300"> <img src="assets/station_settings_ashby.png?raw=true" alt="The Station Settings window for Ashby, with what trains may do there on the left and a picture of the station on the right" width="500">
 
 * Tick whether trains can stop there and whether they can run through, or press a button under `Presets` to set it up in one click.
-* Choose which ways trains may leave, or just click the arrows on the picture of the station.
+* Choose which ways trains may leave under `May depart`, or click the arrows on the track beside the station in its picture.
 * Under `Advanced`, `Allowed trains` keeps some trains away or lets only the ones you pick stop there.
 * A table beside the picture tells you what trains may do at the station, whether autonomy sends them or you do.
 
