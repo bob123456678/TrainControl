@@ -55,6 +55,9 @@ public class testASyncOwedWaitsForTheEditor
     /** Long enough for a sync the door started to reach the station, which on loopback takes milliseconds. */
     private static final long QUIET_MS = 2500;
 
+    /** While set, the stand-in holds every answer until it opens: a sync then stays in flight. */
+    private static volatile java.util.concurrent.CountDownLatch holding;
+
     private LayoutEditor editor;
 
     private final List<String> made = new ArrayList<>();
@@ -69,8 +72,22 @@ public class testASyncOwedWaitsForTheEditor
         ui = opened.ui;
 
         // A Central Station 2 with no routes file: every sync asks for the device file, then fails before importing
-        station = new StandInStation((path, n) -> DEVICE.equals(path)
-            ? "[geraet]\ngeraet\n .produkt=Central Station 2\n".getBytes(StandardCharsets.UTF_8) : null);
+        station = new StandInStation((path, n) ->
+        {
+            final java.util.concurrent.CountDownLatch held = holding;
+
+            try
+            {
+                if (held != null) held.await(30, java.util.concurrent.TimeUnit.SECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            return DEVICE.equals(path)
+                ? "[geraet]\ngeraet\n .produkt=Central Station 2\n".getBytes(StandardCharsets.UTF_8) : null;
+        });
 
         addressWas = TestStationAddress.get();
 
@@ -291,8 +308,8 @@ public class testASyncOwedWaitsForTheEditor
      * Two disarms with the editor open owe one sync: one runs after Cancel, not two, and the next editor closing runs
      * none.
      *
-     * MUTATION: in `TrainControlUI.runTheOwedSync`, replace `!syncOwed.compareAndSet(true, false)` with
-     * `!syncOwed.get()`, so the debt is never cleared, and the next Cancel syncs again.
+     * MUTATION: in `TrainControlUI.syncNow`, leave out `syncOwed.set(false)`, so the debt is never cleared, and the next
+     * Cancel syncs again.
      */
     @Test(timeOut = 120000)
     public void testTwoEditsOweOneSync() throws Exception
@@ -352,6 +369,49 @@ public class testASyncOwedWaitsForTheEditor
 
             assertFalse(Components.waitFor(() -> syncs() > 0, QUIET_MS * 2), "the refused Sync ran after Cancel: "
                 + station.log());
+        }
+    }
+
+    /**
+     * An edit's sync asked for while another sync is running, which may have read the station before the edit, is kept
+     * and runs once that sync ends, quietly: a sync that started after the edit is what pays for it.
+     *
+     * MUTATION: in `TrainControlUI.syncNow`'s `finally`, leave out `if (syncOwed.get()) editorGone();`, and no second
+     * sync runs.
+     */
+    @Test(timeOut = 120000)
+    public void testAnEditsSyncIsKeptPastASyncAlreadyRunning() throws Exception
+    {
+        holding = new java.util.concurrent.CountDownLatch(1);
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            // A sync from File > Sync's door, held at the station's first file
+            new Thread(() -> ui.syncWithCS2(), "the sync already running").start();
+
+            assertTrue(Components.waitFor(() -> syncs() == 1, 20000), "precondition: the first sync never reached the"
+                + " station: " + station.log());
+
+            // The edit's door, off the event thread as Locomotive Settings' reset is
+            Thread door = new Thread(ui::syncAfterAnEdit, "the edit's door");
+
+            door.start();
+            door.join(20000);
+
+            holding.countDown();
+
+            assertTrue(Components.waitFor(() -> syncs() > 1, 30000), "the edit's sync was spent on the sync already"
+                + " running, which started before the edit; syncs: " + station.log() + ", said " + answering.asked());
+
+            Components.waitFor(() -> false, QUIET_MS);
+
+            assertEquals(syncs(), 2, "the syncs: " + station.log());
+            assertEquals(answering.asked(), new ArrayList<String>(), "the owed sync said something");
+        }
+        finally
+        {
+            holding.countDown();
+            holding = null;
         }
     }
 

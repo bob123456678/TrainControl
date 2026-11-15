@@ -7674,15 +7674,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return runTheOwedSync();
     }
 
-    /** The owed sync, run now unless an editor is open or on its way; SYNC_OWED when it stays owed or another took it. */
+    /**
+     * The owed sync, run now unless an editor is open or on its way; SYNC_OWED when it stays owed, another took it, or
+     * one already running will run it again when it ends.
+     */
     private int runTheOwedSync()
     {
-        if (anEditorIsOpenOrOnItsWay() || !syncOwed.compareAndSet(true, false)) return SYNC_OWED;
+        if (anEditorIsOpenOrOnItsWay() || !syncOwed.get()) return SYNC_OWED;
 
-        return syncNow();
+        int synced = syncNow();
+
+        return synced == SYNC_ALREADY_RUNNING ? SYNC_OWED : synced;
     }
 
-    /** An editor has closed or will not come: the sync owed meanwhile runs, refreshing after it as Sync does. */
+    /**
+     * An editor has closed or will not come, or a sync has ended: the sync owed meanwhile runs, refreshing after it as
+     * Sync does.
+     */
     void editorGone()
     {
         // Posted, so the closing editor's own posted work runs first
@@ -7704,6 +7712,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             return SYNC_ALREADY_RUNNING;
         }
+
+        // A sync starting now reads every edit made so far; one owed while it runs is kept for the next
+        syncOwed.set(false);
 
         try
         {
@@ -7739,6 +7750,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         finally
         {
             syncInFlight.set(false);
+
+            if (syncOwed.get()) editorGone();
         }
     }
 
