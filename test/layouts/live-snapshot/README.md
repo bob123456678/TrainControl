@@ -181,3 +181,4 @@ not fix it. Name the square.
 - `ui.testEveryLanguageFitsTheSettingsWindows`
 - `ui.testEveryLanguageFitsTheEditors`
 - `ui.testEveryLanguageFitsThePopups`
+- `ui.testReturnHomeGivesTheSamePlanEveryTime`
