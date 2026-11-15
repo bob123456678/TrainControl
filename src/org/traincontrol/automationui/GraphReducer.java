@@ -392,10 +392,10 @@ public class GraphReducer
     }
 
     /**
-     * The same, with squares that are CLOSED rather than merely barred.  The editor's *test a path* tool is
-     * `AutonomySession.testPath`, which runs while a setup is drawn and may not build; `testAutonomyDiagramReducer`
-     * holds this search to the findings' answer (`BuiltReach`).  A closed square is neither a way through nor a destination, in EVERY tier: `isPathClear` refuses
-     * it as an intermediate and as the final point.  Only a closed START is exempt.
+     * The same, with squares that are CLOSED rather than merely barred.  A closed square is neither a way through nor a
+     * destination, in EVERY tier: `isPathClear` refuses it as an intermediate and as the final point.  Only a closed
+     * START is exempt.  The editor's test-a-path tool is `AutonomySession.testPath`, held to this search by
+     * `testAutonomyDiagramReducer`.
      *
      * @param barred arrival sides closed off - passed through, not stopped at
      * @param closed squares nothing may pass through

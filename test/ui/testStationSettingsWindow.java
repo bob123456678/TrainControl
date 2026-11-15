@@ -1964,7 +1964,7 @@ public class testStationSettingsWindow
 
     /**
      * A double-click on a restricted s88 square's error opens no Station Settings, where nothing clears it, and says to
-     * click the square (S8V1-C2).
+     * click the square.
      *
      * MUTATION: leave out `openStationSettingsForTheFinding`'s s88 check, and the window opens.
      */
@@ -1998,7 +1998,7 @@ public class testStationSettingsWindow
 
     /**
      * While a run holds the setup, a click on a station running both ways still opens its Station Settings, read-only,
-     * as its other doors do (S8V1-C3).
+     * as its other doors do.
      *
      * MUTATION: have `tileClicked` ask `heldByARun` before every click again, and no window opens.
      */

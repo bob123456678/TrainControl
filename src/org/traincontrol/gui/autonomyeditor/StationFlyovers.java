@@ -88,9 +88,8 @@ final class StationFlyovers
     }
 
     /**
-     * @param direction what the dropdown says
-     * @param why why the dropdown is grayed (D141), or null where it sets the track beside
-     * @param shared which other stations set the same track, or null
+     * The (i) line of May depart: what the dropdown says, why it is grayed (or null), and which stations share its
+     * track.
      */
     static String depart(String direction, String why, String shared)
     {

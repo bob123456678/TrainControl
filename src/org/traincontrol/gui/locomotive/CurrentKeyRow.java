@@ -676,10 +676,6 @@ public class CurrentKeyRow extends JComponent
         private final Color ink;
         private String words = "";
 
-        /**
-         * @param fill the pill's color
-         * @param ink its words' color
-         */
         public Pill(Color fill, Color ink)
         {
             this.fill = fill;
@@ -687,11 +683,7 @@ public class CurrentKeyRow extends JComponent
             setVisible(false);
         }
 
-        /**
-         * Shows these words, or hides the pill.
-         *
-         * @param text the words, or null to hide it
-         */
+        /** Shows these words, or hides the pill when text is null. */
         public void setText(String text)
         {
             String now = text == null ? "" : text;
@@ -704,7 +696,7 @@ public class CurrentKeyRow extends JComponent
             repaint();
         }
 
-        /** @return the words shown, or "" while hidden */
+        /** The words shown, or "" while hidden. */
         public String getText()
         {
             return words;
