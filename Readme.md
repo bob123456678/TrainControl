@@ -488,6 +488,8 @@ Tab icons provided by Freepik.
             - In the autonomy editor, you can drag a train from one station to another to move it there.
             - The autonomy editor draws signals and lamps in gray to keep the picture simple, and shows the signals you can pick in color while you choose a guard signal.
             - The `Bulk Tools` menu is grouped with dividers, and `Hide Hover Tooltips` hides its tooltips too.
+            - In the autonomy editor, a click on an s88 square that runs both ways opens its `Station Settings`, so double-clicking a station works.  An s88 square always runs both ways now: a click on one set to run one way or closed puts it back, and to make trains run one way past a sensor you set the track beside it.  The picture in `Station Settings` no longer draws arrows on the station's own track, and `May depart` is grayed.
+            - The setup check notes two s88 squares with no track between them, since the join between them can't be given a direction.
             - With `Toggle specified routes` ticked, starting autonomy, a timetable or `Return Home` switches the routes back to the ones ticked in the list, including any you switched on or off by hand since.
         - Track Diagram
             - The track diagram editor has a strip of icons under `Page` to add, duplicate, rename and delete a page and to move it up or down, and its `Manage Pages` menu is now `Tools`.
@@ -554,6 +556,7 @@ Tab icons provided by Freepik.
     - Notes
         - The first time you open a layout saved by an earlier version, TrainControl updates its page links once so they keep working when pages are renamed or moved, logs it, and keeps a `.bak` copy of each page it changed.
         - A layout converted by 3.1.0 and a setup saved by 3.1.0 still open in 3.0.8.
+        - An autonomy setup with arrows set on an s88 square shows an error under `Things to look at` until each such square is clicked back to both ways.
         - For developers: `MarklinControlStation.saveState(boolean)` and `ViewListener.saveState` now return the reason a save failed, or null.  Java code compiled against an older jar must be recompiled.
 * v3.0.8 [11/04/2026]
     - New Features

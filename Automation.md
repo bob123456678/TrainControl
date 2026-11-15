@@ -161,9 +161,10 @@ With no tool armed, a left-click on track changes which way trains may run on it
 
 - **Plain track**: each click changes the whole run of plain track between two switches or sensors: both ways, one way, the other way, closed, and back to both ways.
 - **A switch, crossing or double curve**: each click steps to the next combination of open arms, the common ones first: all open, each route on its own, closed, then the rest. The arms can also be ticked one by one from the right-click menu.
+- **An s88 square** (a sensor, whether a station or not) always runs both ways.  A click on one that has an arrow set any other way puts it back to both ways; a click on one that already runs both ways opens its `Station Settings`, so a double-click on a station opens them too.  To make trains run one way past a sensor, set the track beside it.
 - **A page link or tunnel** has no direction of its own: set the track leading up to it.
 - **A route button drawn on the track** is set on its own: a click changes that square only.  One with no track running through it is grayed and takes no clicks.
-- **A square out of service** (both `Trains can stop here` and `Trains can pass through` unticked) has no directions to set: clicking it only says so, and no arrows are drawn on it.
+- **A square out of service** (both `Trains can stop here` and `Trains can pass through` unticked) is a sensor too, and no arrows are drawn on it: a click opens its `Station Settings`.
 
 **Shift+click** picks several squares (outlined in orange) so that one `Segment Length...` can give them all the same length. **Drag a station's caption** to move it to another free square of the same page.
 
@@ -190,7 +191,7 @@ Right-click any square for everything else. The menu opens with the square's nam
 | `Show a Station Name Here...` | Puts a station's caption on this square (Control+N). A page shows a station once: if the station already has a caption on this page it moves here, and its captions on other pages stay. `Stop Showing` *station* takes off the one on this square only |
 | `Bulk Tools` | See [Bulk Tools](#bulk-tools). On the track diagram it is under `Autonomy Setup` |
 
-Everything else a station has is in its `Station Settings`: its name, whether trains stop or run through, which sides they arrive from and leave by, its guard signals, home locomotive, priority and the trains kept out. Control+S still names the square under the pointer and Control+H sets its home locomotive.
+Everything else a station has is in its `Station Settings`: its name, whether trains stop or run through, which sides they arrive from, its guard signals, home locomotive, priority and the trains kept out. Control+S still names the square under the pointer and Control+H sets its home locomotive.
 
 ### The Station Settings window
 
@@ -202,7 +203,7 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
 
 - `Name`: the station's name. It is left out when you set several stations at once.
 - `Changing direction`, above both boxes because it applies to both: `Never`, `May` (a train may stop, reverse and carry on, to reach a siding behind it) or `Must` (every train turns around: a terminus, or a berth trains back into). It grays out when both boxes are unticked.
-- `May depart`, under it and above both boxes too, as it belongs to neither: the sides trains may leave by. It grays out only when both boxes are unticked, because it also says how a stopped train leaves.
+- `May depart`, under it and above both boxes too: the sides trains may leave by. A station is an s88 square, which always runs both ways, so it is grayed out; to make trains leave one way only, set the track beside the station.
 - `Trains can stop here`: whether the square is a station. Unticked, nothing stops here and what is under it grays out. It holds:
     - `May choose this station`: untick it and autonomy never chooses the station, though Return Home and the trips you send by hand still use it. This is for a parking berth.
     - `Maximum train length`: the longest train that may be sent here. Blank means any length.
@@ -234,7 +235,7 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
 
 A station with only `Trains can stop here` ticked is not a terminus: a train may set off again the way it was going, as `May depart` allows. Autonomy and the trips you send by hand won't plan a route through it. Return Home is the exception, and may run through it.
 
-**The picture, `On the track diagram`.** The station and the track beside it, drawn as the diagram draws them. An arrow out of the square is green where trains may leave that way and has a red outline where they may not, and an arrow into it marks a side trains may arrive from and stop. Click an arrow to change it, whether it is the station's own or a neighbor's; signals are shown in gray.
+**The picture, `On the track diagram`.** The station and the track beside it, drawn as the diagram draws them. The station's own track wears no arrows, as a sensor always runs both ways. An arrow into it marks a side trains may arrive from and stop, and the track beside it wears the diagram's arrows: green where trains may run that way, a red outline where they may not. Click an arrow to change it, whether it is a way into the station or a neighbor's; signals are shown in gray.
 
 **The table, `What's allowed here`.** For `Sent here`, `Sent through here`, `Sent from here` and `Turned around here`, it says `Yes`, `Some trains` or `No`, for trains chosen `Automatically` by autonomy and trains sent `Manually` from the right-click menu. Rest the pointer on a cell for the reason. Where a station has a `Maximum train length` or an `Allowed trains` list, a cell for a trip that ends there says `Some trains` rather than `Yes`, and its reason names the limit. On a square that is not a station, `Sent through here`, `Sent from here` and `Turned around here` follow its `Allowed trains` list too, and say `No` for an empty whitelist. A setting that would leave a train here unable to leave again, which the setup check reports, is said in red under the picture. It reads the standing rules only, not who is on the track now, and driving a train with the throttle is not limited by any of it. Return Home follows the same rules, except that it won't start from a closed or non-station square, may run through a station set to stop only, and may bring a train that can't reverse to its own home at a station where every train must.
 
@@ -314,7 +315,7 @@ A tool stays armed until you press its button again, press Escape, or right-clic
 
 ![Why not Moving? on BR 218 at Bramley: it can go to Ashby and Carlton, both marked green with the routes to them drawn in yellow, while Thornbury, where ICE 3 is standing, is marked gray](assets/automation/08-why-not-moving.png)
 
-**`One-Way Run`** (from `Bulk Tools`) closes a stretch of track to one direction in two clicks: click one end of the run, then the far end, and choose `From A to B` or `From B to A`. It stays armed for the next pair.
+**`One-Way Run`** (from `Bulk Tools`) closes a stretch of track to one direction in two clicks: click one end of the run, then the far end, and choose `From A to B` or `From B to A`. A sensor on the way keeps running both ways, and the track either side of it is set. It stays armed for the next pair.
 
 ---
 
@@ -348,9 +349,9 @@ Copy, paste, rotate, delete and undo belong to the track editor, and do nothing 
 
 The setup is checked as you go, and everything it finds is listed under **Things to look at** at the bottom of the editor: this page first, then the others, each marked with its page. Click a finding to go to the square it is about.
 
-- **`Must be fixed`** (red): errors. While the setup has any, autonomy will not start, and no train can be sent by Start, Execute Timetable, Return Home, or by hand. Among them: a station still with its automatic name, or shown nowhere on the diagram; a station whose name is shown twice on the same page of the diagram (right-click all but one of them and choose `Stop Showing` *station*); the same locomotive on two squares; two pages sharing one sensor; a page link that track runs into but that is not paired; a switch with no address; a train facing a way its square no longer allows (turn it with `Change Direction`, move it, or put the track back); and a station at the end of a line where trains may not change direction (click `Terminus` in its `Station Settings`, set `Changing direction` to `Must`, or make it no station).
+- **`Must be fixed`** (red): errors. While the setup has any, autonomy will not start, and no train can be sent by Start, Execute Timetable, Return Home, or by hand. Among them: a station still with its automatic name, or shown nowhere on the diagram; a station whose name is shown twice on the same page of the diagram (right-click all but one of them and choose `Stop Showing` *station*); the same locomotive on two squares; two pages sharing one sensor; a page link that track runs into but that is not paired; a switch with no address; a train facing a way its square no longer allows (turn it with `Change Direction`, move it, or put the track back); a station at the end of a line where trains may not change direction (click `Terminus` in its `Station Settings`, set `Changing direction` to `Must`, or make it no station); and an s88 square with an arrow that does not run both ways (click it to put it back; to keep trains running one way there, set the track beside it).
 - **`Warnings`** (amber): worth knowing, but they stop nothing: a train facing track that runs only towards it is simply not sent that way; a station no other station can reach; a train or station with no length while others have one.
-- **`Worth tidying`** (gray): small things, such as an unnamed sensor that is not a station, or a station with no guard signal.
+- **`Worth tidying`** (gray): small things, such as an unnamed sensor that is not a station, a station with no guard signal, or two sensors with no track between them (a page link or tunnel counts as none), whose join can't be given a direction: the track on either side of the pair sets it.
 
 The line under the list says where you stand: "This setup is ready to run", "This setup will run, with warnings", or how many things must be fixed first. It also says how many of your stations autonomy can choose.
 

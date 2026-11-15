@@ -5165,8 +5165,11 @@ public class AutonomyEditorPanel extends JPanel
 
         TileKey target = leaderOf(tile);
 
-        // Nor out of service, nor stationless track (OB-353): neither draws arrows
-        if (isALink(target) || isOutOfService(target) || session.reachesNoStation(target)) return false;
+        // An s88 square's click changes it only where it does not yet run both ways (OB-472), out of service or not
+        if (session.isSensorSquare(target)) return !session.runsBothWays(target);
+
+        // Nor stationless track (OB-353), which draws no arrows
+        if (isALink(target) || session.reachesNoStation(target)) return false;
 
         Map<RouteId, TilePorts.Route> routes = session.getRoutes(target);
 
@@ -5181,12 +5184,6 @@ public class AutonomyEditorPanel extends JPanel
         return next == Direction.BOTH || next == Direction.NONE || session.canRunOneWay(target);
     }
 
-    /** Whether a square is out of service, so has no directions to set. */
-    private boolean isOutOfService(TileKey target)
-    {
-        return Boolean.FALSE.equals(session.getPointProperty(target, "active"));
-    }
-
     /** Whether a square is a link, which has no direction of its own. */
     private boolean isALink(TileKey target)
     {
@@ -5197,23 +5194,34 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Left-click: cycles both ways, one way, the other, closed, and says what it became; a switch, crossing or double
-     * curve steps through its arms (`cycleBranching`, `cycleCrossing`).  It lands on the whole run.
+     * curve steps through its arms (`cycleBranching`, `cycleCrossing`).  It lands on the whole run.  An s88 square
+     * goes straight to both ways, and once there opens Station Settings (OB-472).
      */
     private void cycle(TileKey tile)
     {
         TileKey target = leaderOf(tile);
 
+        if (session.isSensorSquare(target))
+        {
+            if (session.runsBothWays(target))
+            {
+                openStationSettings(target);
+                return;
+            }
+
+            session.setDirection(Collections.singleton(target), Direction.BOTH);
+
+            say(hint, I18n.f("autosetup.ui.sensorClearedToBothWays", describeTile(target)));
+
+            showRestrictionsIfHidden();
+            annotationsChanged();
+            return;
+        }
+
         // A link has no direction (its route is a stub); the menu declines it too.
         if (isALink(target))
         {
             say(hint, I18n.t("autosetup.ui.infoLinkHasNoDirection"));
-            return;
-        }
-
-        // Nor out of service: its directions are kept, undrawn
-        if (isOutOfService(target))
-        {
-            say(hint, I18n.t("autosetup.ui.infoOutOfServiceHasNoDirection"));
             return;
         }
 

@@ -103,6 +103,10 @@ refuses it too. A train turns around at a reversing square or a terminus on its 
 
 ---
 
+**AN s88 SQUARE RUNS BOTH WAYS** (OB-472; Adam: *"just change the UI behavior and make it be an error if a s88 tile has any other setting other than green arrows in each direction.  then, clicking changes the arrows until they are both green, at which point the station editor opens."*). The model and the graph builder are unchanged: a setup file can still carry a direction on an s88 square, and the setup check makes that an ERROR naming the square, so autonomy does not start until it is clicked clear. A click on a restricted s88 square goes straight to both ways (`AutonomyEditorPanel.cycle`); on one already both ways it opens Station Settings, so a double-click does too. Armed tools take the click first, and a dragged train's release makes no click. No door writes a direction onto one: `AutonomySession.canCarryDirection` is false for it (the right-click menu, Station Settings' `May depart`, a neighbor's arrow in the station picture), and the station picture draws no track arrows on the station (Adam: *"make sure that station popup also doesn't show the red/green arrows on the station track"*; its `May arrive from` arrows stay: *"the arrival arrows can stay.  They already look different."*), One-Way Run passes over it (`recordAlong`), and the old autonomy.json import carries none onto it. **Two s88 squares with no track between them** (a link's or tunnel's jump counts as none) are INFO, one finding per pair: the join has no square to carry a direction, so the track either side sets it. `core.testTheEditorWarnsOfARailwayThatCannotWork.testAnS88SquareNotRunBothWaysIsAnErrorTheClickClears`, `testTwoS88SquaresWithNoTrackBetweenAreSaidOnce`, `testNoDoorGivesAnS88SquareADirection`.
+
+---
+
 **The diagram's right-click menu offers a standing train its destinations while another train is out**, as the
 train's Auto tab card does (FR-187; this ends the known limit OB-164 recorded). The menu and the hand send ask one
 question, `RunGates.mayBeSentByHandNow`: no destinations while autonomy, a timetable or Return Home runs or plans, nor

@@ -150,6 +150,121 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             + " with itself");
     }
 
+    /**
+     * An s88 square that does not run both ways is an ERROR naming it, and a click on it in the editor clears it to
+     * both ways, the error with it (OB-472).
+     *
+     * MUTATION: leave the check out of the setup check, or let the click cycle an s88 square as plain track, and this
+     * fails.
+     */
+    @Test
+    public void testAnS88SquareNotRunBothWaysIsAnErrorTheClickClears() throws Exception
+    {
+        session.open(Arrays.asList(runOfTrack()));
+        session.initialize("OB472 restricted");
+
+        TileKey sensor = new TileKey("main", 1, 1);
+
+        // As a setup file carries it: no door of the editor writes it any more
+        session.getStore().setTileDirection(sensor, session.getRoutes(sensor).keySet().iterator().next(),
+            Direction.TOWARD_A);
+        session.rebuild();
+
+        List<String> said = errorsSaid();
+
+        assertEquals(said.size(), 1, "not one error, about the s88 square running one way: " + said);
+        assertTrue(said.get(0).startsWith(session.describeTile(sensor) + " "), "the error does not name it: " + said);
+
+        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
+            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> panel.tileClicked(sensor, null, false));
+
+        assertTrue(session.runsBothWays(sensor), "one click on a one-way s88 square does not make it run both ways");
+        assertEquals(errorsSaid(), new ArrayList<>(), "the error stays after the square was clicked clear");
+    }
+
+    /**
+     * Two s88 squares joined with no track between them, by their sides or through a pair of links, are said once
+     * each as INFO naming both; a straight between two s88 squares is track, and nothing is said (OB-472).
+     *
+     * MUTATION: leave the check out of the setup check, or stop the walk at a link, and this fails.
+     */
+    @Test
+    public void testTwoS88SquaresWithNoTrackBetweenAreSaidOnce() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 8, 4, null, null);
+
+        Diagrams.row(page, 1, 1, "FFSF", 5, 6, 7);
+        Diagrams.row(page, 1, 2, "F", 8);
+        Diagrams.row(page, 5, 2, "F", 9);
+
+        // A link's stub faces west unturned, east turned twice
+        for (int x : new int[] {2, 4})
+        {
+            page.addComponent(componentType.LINK, x, 2, x - 2, 0, 0, 0, accessoryDecoderType.MM2, null);
+        }
+
+        session.open(Arrays.asList(page));
+        session.initialize("OB472 touching");
+        session.pairPortals(new TileKey("main", 2, 2), new TileKey("main", 4, 2));
+
+        List<List<TileKey>> said = session.check().stream()
+            .filter(each -> org.traincontrol.automationui.AutonomyChecks.SENSORS_TOUCHING.equals(each.getMessageKey()))
+            .peek(finding -> assertEquals(finding.getSeverity() + " " + finding.getSubject(), "INFO "
+                + session.describeTile(finding.getRelated().get(1)), "not INFO naming the second square: " + finding))
+            .map(org.traincontrol.automationui.AutonomyChecks.Finding::getRelated)
+            .collect(java.util.stream.Collectors.toList());
+
+        assertEquals(said, Arrays.asList(
+            Arrays.asList(new TileKey("main", 1, 1), new TileKey("main", 2, 1)),
+            Arrays.asList(new TileKey("main", 1, 2), new TileKey("main", 5, 2))),
+            "not the two pairs with no track between them, once each");
+    }
+
+    /**
+     * One-Way Run passes over an s88 square on its way, setting the track either side of it, and the editor's menus
+     * and Station Settings are not offered a direction for one (OB-472).
+     *
+     * MUTATION: drop the s88 question from `recordAlong` or from `canCarryDirection`, and this fails.
+     */
+    @Test
+    public void testNoDoorGivesAnS88SquareADirection() throws Exception
+    {
+        session.open(Arrays.asList(deadEndRun()));
+        session.initialize("OB472 one way");
+
+        TileKey middle = new TileKey("main", 4, 1);
+
+        assertTrue(session.setOneWayRun(new TileKey("main", 1, 1), new TileKey("main", 7, 1)) > 0,
+            "precondition: no one-way run was set");
+
+        assertTrue(session.runsBothWays(middle), "One-Way Run gave the s88 square on its way a direction");
+
+        for (TileKey track : new TileKey[] {new TileKey("main", 2, 1), new TileKey("main", 6, 1)})
+        {
+            assertFalse(session.runsBothWays(track), "One-Way Run left the track at " + track + " running both ways");
+        }
+
+        assertFalse(session.canCarryDirection(middle), "the menus and Station Settings still offer an s88 square"
+            + " a direction");
+        assertTrue(session.canCarryDirection(new TileKey("main", 2, 1)), "precondition: plain track takes none either");
+    }
+
+    /** What the setup check says about s88 squares not running both ways, as the editor words it (OB-472). */
+    private List<String> errorsSaid()
+    {
+        List<String> said = new ArrayList<>();
+
+        for (Object[] row : org.traincontrol.gui.AutonomyViewerPanel.findingRows(session.check(), session::describeTile)
+            .get(org.traincontrol.automationui.AutonomyChecks.Severity.ERROR))
+        {
+            if (String.valueOf(row[1]).contains(" s88 ")) said.add(String.valueOf(row[1]));
+        }
+
+        return said;
+    }
+
     /** The setup check's shared-sensor-address finding, or null (FR-139). */
     private org.traincontrol.automationui.AutonomyChecks.Finding sharedAddressFinding()
     {

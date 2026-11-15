@@ -1620,8 +1620,7 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         String held = whyHeld();
 
-        String[] said = mark.kind == StationPicture.Mark.Kind.OUT ? wayOut(mark, press && held == null)
-            : mark.kind == StationPicture.Mark.Kind.IN ? wayIn(mark, press && held == null)
+        String[] said = mark.kind == StationPicture.Mark.Kind.IN ? wayIn(mark, press && held == null)
             : nextSquare(mark, press && held == null);
 
         String then = held != null ? held : said[1];
@@ -1633,47 +1632,6 @@ public final class StationSettingsWindow extends StationWindowBase
     private static String[] said(String means, String click)
     {
         return new String[] {means, click};
-    }
-
-    /** A way out toggles that side among the open arms, as May Depart's choice for its track. */
-    private String[] wayOut(StationPicture.Mark mark, boolean press)
-    {
-        Map<RouteId, TilePorts.Route> routes = editor.session.getRoutes(tile);
-        List<TilePorts.Side> arms = AutonomyEditorPanel.armsOf(routes);
-
-        int at = arms.indexOf(mark.side);
-
-        if (at < 0) return said(null, I18n.t("autosetup.ui.stationPicCannot"));
-
-        int mask = editor.armMask(tile, routes, arms);
-        boolean set = (mask & 1 << at) != 0;
-
-        // Open here, but the railway takes no train out this way: the track around is what to change
-        if (set && !mark.open)
-        {
-            return said(I18n.t("autosetup.ui.stationPicMeansOutShut"), I18n.t("autosetup.ui.stationPicOutBeyond"));
-        }
-
-        for (Map.Entry<RouteId, TilePorts.Route> each : routes.entrySet())
-        {
-            TilePorts.Route road = each.getValue();
-
-            if (road.getA() != mark.side && road.getB() != mark.side) continue;
-
-            JComboBox<String> choice = departChoices.get(each.getKey());
-
-            int answer = choice == null ? -1
-                : departAnswers.get(each.getKey()).indexOf(TileGraph.answerFor(road, arms, mask ^ 1 << at));
-
-            if (answer < 0 || !choice.isEnabled()) return said(null, I18n.t("autosetup.ui.stationPicCannot"));
-
-            if (press) choice.setSelectedIndex(answer);
-
-            return said(I18n.t(set ? "autosetup.ui.stationPicMeansOutOpen" : "autosetup.ui.stationPicMeansOutShut"),
-                I18n.t(set ? "autosetup.ui.stationPicOutOpen" : "autosetup.ui.stationPicOutShut"));
-        }
-
-        return said(null, I18n.t("autosetup.ui.stationPicCannot"));
     }
 
     /** A way in ticks or unticks that side's May Arrive From box. */
@@ -1836,14 +1794,14 @@ public final class StationSettingsWindow extends StationWindowBase
         return picture.drawnForTest();
     }
 
-    /** @return the sides the picture draws a way out of the station at, or a way in */
-    public Set<String> pictureWaysForTest(boolean out)
+    /** @return the sides the picture draws a way into the station at */
+    public Set<String> pictureWaysInForTest()
     {
-        return picture.waysForTest(out);
+        return picture.waysInForTest();
     }
 
     /**
-     * @return in the picture's block's pixels: "OUT.N", "IN.N" (a station's marks), "AXIS.N" (that side's axis),
+     * @return in the picture's block's pixels: "IN.N" (a station's way in), "AXIS.N" (that side's axis),
      *     "NEXT.N.W" (the next square to the north's arrow at its west side), "SQUARE" and "SQUARE.N" (the squares)
      */
     public Map<String, Shape> pictureMarksForTest()

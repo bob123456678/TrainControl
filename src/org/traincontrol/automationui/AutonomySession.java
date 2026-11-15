@@ -5257,7 +5257,7 @@ public class AutonomySession
 
     /**
      * Whether a square can meaningfully be given a direction.  False for a link: its route is a stub, so "toward A" and
-     * "toward B" are the same place; a one-way link would need the jump to carry it.
+     * "toward B" are the same place; a one-way link would need the jump to carry it.  False for an s88 square too.
      */
     public boolean canCarryDirection(TileKey tile)
     {
@@ -5267,9 +5267,96 @@ public class AutonomySession
 
         if (component == null) return false;
 
-        if (TilePorts.hasPortal(component.getType())) return false;
+        if (TilePorts.hasPortal(component.getType()) || component.isFeedback()) return false;
 
         return !getRoutes(tile).isEmpty();
+    }
+
+    /** Whether a square is an s88 sensor's, which runs both ways (OB-472): no door gives it a direction. */
+    public boolean isSensorSquare(TileKey tile)
+    {
+        LayoutDiagramComponent component = graph == null || tile == null ? null : graph.getTiles().get(tile);
+
+        return component != null && component.isFeedback();
+    }
+
+    /** Whether every road over a square runs both ways, as an s88 square must (OB-472). */
+    public boolean runsBothWays(TileKey tile)
+    {
+        for (RouteId road : getRoutes(tile).keySet())
+        {
+            if (graph.getDirection(tile, road) != Direction.BOTH) return false;
+        }
+
+        return true;
+    }
+
+    /** The s88 squares with a road that does not run both ways (OB-472), in reading order. */
+    private List<TileKey> sensorSquaresNotBothWays()
+    {
+        List<TileKey> out = new ArrayList<>();
+
+        for (TileKey tile : sensorSquaresInReadingOrder()) if (!runsBothWays(tile)) out.add(tile);
+
+        return out;
+    }
+
+    /**
+     * Pairs of s88 squares joined with no track square between them, a link's or tunnel's jump counting as none
+     * (OB-472): the join between them has no square to carry a direction.
+     */
+    private List<List<TileKey>> sensorSquaresTouching()
+    {
+        List<List<TileKey>> out = new ArrayList<>();
+
+        Set<TileKey> done = new HashSet<>();
+
+        for (TileKey sensor : sensorSquaresInReadingOrder())
+        {
+            done.add(sensor);
+
+            Set<TileKey> beside = new LinkedHashSet<>();
+
+            for (Route road : getRoutes(sensor).values())
+            {
+                for (Side side : new Side[] {road.getA(), road.getB()}) beside.add(squareBeyond(sensor, side));
+            }
+
+            for (TileKey other : beside)
+            {
+                if (isSensorSquare(other) && !done.contains(other)) out.add(Arrays.asList(sensor, other));
+            }
+        }
+
+        return out;
+    }
+
+    /** The square leaving by a side lands on, through a link's or tunnel's jump where it lands on one; or null. */
+    private TileKey squareBeyond(TileKey tile, Side side)
+    {
+        Landing next = graph.landing(tile, side);
+
+        if (next == null) return null;
+
+        if (!TilePorts.hasPortal(graph.getTiles().get(next.getTile()).getType())) return next.getTile();
+
+        Landing jump = isDisabledLink(next.getTile()) ? null : graph.landing(next.getTile(), null);
+
+        if (jump == null || isDisabledLink(jump.getTile()) || getRoutes(jump.getTile()).isEmpty()) return null;
+
+        Landing out = graph.landing(jump.getTile(), getRoutes(jump.getTile()).values().iterator().next().getA());
+
+        return out == null ? null : out.getTile();
+    }
+
+    private List<TileKey> sensorSquaresInReadingOrder()
+    {
+        List<TileKey> sensors = graph == null ? new ArrayList<>() : graph.getFeedbackTiles();
+
+        sensors.sort(Comparator.comparing(TileKey::getPage).thenComparingInt(TileKey::getY)
+            .thenComparingInt(TileKey::getX));
+
+        return sensors;
     }
 
     /** Stations with no protecting signal at all: ordinary, listed rather than warned about. */
@@ -5657,6 +5744,9 @@ public class AutonomySession
         found.addAll(AutonomyChecks.checkRunsPointingOppositeWays(runsPointingOppositeWays()));
 
         found.addAll(AutonomyChecks.checkSensorAddressesShared(sensorAddressesSharedByPlaces()));
+
+        found.addAll(AutonomyChecks.checkSensorSquares(sensorSquaresNotBothWays(), sensorSquaresTouching(),
+            this::describeTile));
 
         // One finding for a station at the end of a line: "may" would draw a notice saying "must", and its error
         // already says no train sent there can leave
@@ -8254,7 +8344,7 @@ public class AutonomySession
     /**
      * Records one direction along a known path from `first` to `last` without re-deriving: a shortest-path search could
      * pick the other chain of a passing loop.  The rest are neighbors, for the path's way; an end square takes its way
-     * from its one neighbor (OB-361).  Returns the squares recorded.
+     * from its one neighbor (OB-361); an s88 square is passed over (OB-472).  Returns the squares recorded.
      */
     Set<TileKey> recordAlong(List<TileKey> path, int first, int last)
     {
@@ -8263,6 +8353,8 @@ public class AutonomySession
         for (int i = Math.max(first, 0); i <= last && i < path.size(); i++)
         {
             TileKey tile = path.get(i);
+
+            if (isSensorSquare(tile)) continue;
 
             Side cameFrom = i > 0 ? graph.sideTowardNeighbour(tile, path.get(i - 1)) : null;
             Side goingTo = i + 1 < path.size() ? graph.sideTowardNeighbour(tile, path.get(i + 1)) : null;
