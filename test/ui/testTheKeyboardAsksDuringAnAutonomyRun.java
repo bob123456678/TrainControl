@@ -336,6 +336,37 @@ public class testTheKeyboardAsksDuringAnAutonomyRun
         assertTrue(Components.waitFor(() -> lit(address, red), WAIT), "precondition: the key does not show " + red);
     }
 
+    /**
+     * The number of a key on a path a train holds asks the same question as its halves, and Cancel sends nothing and
+     * leaves the key as it was (OB-476).
+     *
+     * MUTATION: take the mouse listener off the number in `AccessoryKeyboard.buildKey`, and nothing is asked.
+     */
+    @Test
+    public void testTheNumberOfAKeyOnAPathAsksToo() throws Exception
+    {
+        holdAPath();
+        settleAt(ON_A_PATH, false);
+
+        int mark = sent.size();
+
+        try (Answering answering = Answering.start(asked -> Answering.press(I18n.t("ui.cancel"))))
+        {
+            AccessoryKeyboard keys = window("keyboardKeys");
+            int key = Components.onTheEventThread(() -> keys.keyOf(ON_A_PATH));
+
+            support.Mouse.click(keys.number(key));
+
+            assertTrue(answering.awaitAsked(1, WAIT), "the number of " + ON_A_PATH + " asked nothing");
+            assertEquals(answering.asked().get(0), ASKS_PATH, "the number asked something else");
+        }
+
+        Components.settle();
+
+        assertTrue(commandsTo(ON_A_PATH, mark).isEmpty(), "Cancel sent a command");
+        assertTrue(lit(ON_A_PATH, false) && !lit(ON_A_PATH, true), "Cancel changed the key");
+    }
+
     /** A click on a half, the question it asks answered with a button, and a check it was the one expected. */
     private static void asks(int address, boolean red, String button, String question) throws Exception
     {
