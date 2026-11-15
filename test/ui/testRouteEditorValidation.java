@@ -321,6 +321,18 @@ public class testRouteEditorValidation
         return Reflect.get(owner.getClass(), owner, name);
     }
 
+    private static javax.swing.JTable commandsOf(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        try
+        {
+            return (javax.swing.JTable) support.Reflect.get(org.traincontrol.gui.RouteEditorFrame.class, frame, "commands");
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
     private static org.traincontrol.gui.RouteEditorFrame open() throws Exception
     {
         return open(null);
@@ -2137,7 +2149,7 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-487: a new command starts with the address 0, so its address cell plainly holds a value, and Save refuses 0 as
+     * OB-487: a new command starts with the address 0, so its address cell visibly has a value, and Save refuses 0 as
      * an address (the refusal itself is testBuildingARouteByHand's).
      *
      * MUTATION: in `CommandTable.addRow`, start the row with "" instead of "0", and the new row's address is empty.
@@ -2156,6 +2168,85 @@ public class testRouteEditorValidation
             int added = frame.commandRowCountForTest() - 1;
 
             assertEquals(frame.commandRowForTest(added).getTarget(), "0", "a new command's address");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-487: on a highlighted switch row, the Number cell (which a switch does not use) is painted differently from
+     * the Address cell, so active and inactive cells can be told apart.
+     *
+     * MUTATION: in `greyWhatCannotBeEdited`, drop the `mutedSelection` background, and both cells share the fill.
+     */
+    @Test
+    public void testAHighlightedRowStillShowsWhichCellsAreInactive() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.addCommandRowForTest();
+                javax.swing.JTable table = commandsOf(frame);
+
+                table.setRowSelectionInterval(table.getRowCount() - 1, table.getRowCount() - 1);
+            });
+
+            final java.awt.Color[] fills = new java.awt.Color[2];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                int row = frame.commandRowCountForTest() - 1;
+
+                fills[0] = frame.commandCellForTest(row, 3).getBackground();
+                fills[1] = frame.commandCellForTest(row, 4).getBackground();
+            });
+
+            assertNotEquals(fills[1], fills[0], "on a selected switch row the unused Number cell has the Address fill");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-487: typing into a new row's address replaces the starting 0, so 12 gives 12 and not 012.
+     *
+     * MUTATION: move `editCellAt` back to `ConditionTable`, and the cell holds 012.
+     */
+    @Test
+    public void testTypingAnAddressReplacesTheStartingZero() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final String[] result = new String[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.addCommandRowForTest();
+                javax.swing.JTable table = commandsOf(frame);
+                int row = table.getRowCount() - 1;
+
+                table.editCellAt(row, 3, new java.awt.event.KeyEvent(table, java.awt.event.KeyEvent.KEY_PRESSED, 0, 0,
+                    java.awt.event.KeyEvent.VK_1, '1'));
+                ((javax.swing.text.JTextComponent) table.getEditorComponent()).replaceSelection("12");
+                table.getCellEditor().stopCellEditing();
+
+                result[0] = frame.commandRowForTest(row).getTarget();
+            });
+
+            assertEquals(result[0], "12", "the address after typing 12 over the starting 0");
         }
         finally
         {
@@ -2768,7 +2859,8 @@ public class testRouteEditorValidation
                 return out.toString().trim();
             });
 
-            assertEquals(painted, "-- S- S- S- S- -- --", "each column of the selected condition and of the caption"
+            assertEquals(painted, "-- S- S- S- -- -- --", "each column of the selected condition (its unused Protocol"
+                + " cell muted, OB-487) and of the caption"
                 + " above it: S where painted as selected, from the handle to the copy mark");
         }
         finally

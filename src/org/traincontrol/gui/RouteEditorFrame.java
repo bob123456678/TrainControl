@@ -1286,7 +1286,7 @@ public class RouteEditorFrame extends JFrame
         }
         catch (NumberFormatException e)
         {
-            // A row with nothing in its address column yet, which is every row the moment it is added
+            // A row with nothing in its address column yet
             return unchanged;
         }
     }
@@ -2036,6 +2036,14 @@ public class RouteEditorFrame extends JFrame
         return false;
     }
 
+    /** The selection fill of a cell that cannot be edited: mostly the unusable gray, so it differs from its neighbors. */
+    static Color mutedSelection(Color selection)
+    {
+        return new Color((selection.getRed() * 2 + UNUSABLE.getRed() * 3) / 5,
+            (selection.getGreen() * 2 + UNUSABLE.getGreen() * 3) / 5,
+            (selection.getBlue() * 2 + UNUSABLE.getBlue() * 3) / 5);
+    }
+
     /**
      * A cell with no wash on it (OB-121).  A renderer hands back one recycled component, which may already have been
      * painted gray for the cell before; a selected row is left as super made it.
@@ -2110,7 +2118,20 @@ public class RouteEditorFrame extends JFrame
                     ((JComponent) out).setToolTipText(refused != null ? refused : explained);
                 }
 
-                if (!selected)
+                // A highlighted row still tells a cell that cannot be edited from one that can (OB-487)
+                boolean greyed = !editable && !(which instanceof CommandTable && column == POSITION)
+                    && out instanceof JComponent;
+
+                if (selected)
+                {
+                    if (greyed)
+                    {
+                        ((JComponent) out).setOpaque(true);
+                        out.setBackground(mutedSelection(which.getSelectionBackground()));
+                        out.setForeground(Color.GRAY);
+                    }
+                }
+                else
                 {
                     out.setForeground(refused != null && editable ? WRONG
                         : editable ? which.getForeground() : Color.GRAY);
@@ -2569,7 +2590,7 @@ public class RouteEditorFrame extends JFrame
 
     /**
      * What is wrong with one row, if anything: a row that cannot be built (the row refuses itself), or one that builds
-     * and names something that does not exist (a locomotive nobody owns, an address no decoder can carry).
+     * and names something that does not exist (a locomotive nobody owns, an address that cannot be assigned to a decoder).
      */
     private List<String> problemsWith(CommandRow row)
     {
@@ -2683,7 +2704,7 @@ public class RouteEditorFrame extends JFrame
         return wrong;
     }
 
-    /** Adds a complaint when an address is not one the decoder can carry (MM2 and DCC have different ranges). */
+    /** Adds a complaint when an address cannot be assigned to a decoder (MM2 and DCC have different ranges). */
     private void addressProblem(List<String> wrong, String target,
         Accessory.accessoryDecoderType protocol)
     {
@@ -3275,6 +3296,27 @@ public class RouteEditorFrame extends JFrame
         /** The line of a press that kept a selection of several for a drag; -1 once the pointer moves off. */
         private int held = -1;
 
+        /**
+         * An address edit begun by a key replaces the cell's text, as a spreadsheet does, so 7 gives 7 (FR-151), and so
+         * does one on the starting 0 (OB-487); a double-click on other text keeps it, to change part of it.
+         */
+        @Override
+        public boolean editCellAt(int line, int column, java.util.EventObject e)
+        {
+            boolean editing = super.editCellAt(line, column, e);
+
+            int address = this instanceof CommandTable ? CommandTable.TARGET : ConditionTable.TARGET;
+
+            if (editing && column == address && getEditorComponent() instanceof JTextComponent)
+            {
+                JTextComponent field = (JTextComponent) getEditorComponent();
+
+                if (e instanceof KeyEvent || "0".equals(field.getText())) field.selectAll();
+            }
+
+            return editing;
+        }
+
         /** @return whether the rows may be changed */
         abstract boolean handlesWork();
 
@@ -3835,7 +3877,7 @@ public class RouteEditorFrame extends JFrame
 
                 if (became)
                 {
-                    target = "";
+                    target = CommandRow.hasProtocol(kind) ? "0" : "";
                     protocol = null;
                     delay = CommandRow.defaultDelayFor(kind);
                 }
@@ -3945,7 +3987,7 @@ public class RouteEditorFrame extends JFrame
 
                     // The refusal mark is not set here (OB-246): greyWhatCannotBeEdited wraps this renderer and would
                     // overwrite the ink, so the mark lives there.
-                    if (!selected)
+                    if (!selected || !editable)
                     {
                         c.setForeground(editable ? table.getForeground() : Color.GRAY);
                     }
@@ -5570,24 +5612,6 @@ public class RouteEditorFrame extends JFrame
         {
             changeSelection(line, TARGET, false, false);
             requestFocusInWindow();
-        }
-
-        /**
-         * An address edit begun by a key replaces the cell's text, as a spreadsheet does, so 7 gives 7 (FR-151); one
-         * begun by a double-click keeps the text, to change part of it.
-         */
-        @Override
-        public boolean editCellAt(int line, int column, java.util.EventObject e)
-        {
-            boolean editing = super.editCellAt(line, column, e);
-
-            if (editing && column == TARGET && e instanceof KeyEvent
-                && getEditorComponent() instanceof JTextComponent)
-            {
-                ((JTextComponent) getEditorComponent()).selectAll();
-            }
-
-            return editing;
         }
 
         /**

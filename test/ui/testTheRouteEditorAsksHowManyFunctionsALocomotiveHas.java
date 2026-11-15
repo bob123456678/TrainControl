@@ -248,7 +248,7 @@ public class testTheRouteEditorAsksHowManyFunctionsALocomotiveHas
                     ? ((javax.swing.JComponent) cell).getToolTipText() : null;
             });
 
-            assertNull(onAdded[0], "the row under it, added empty, carries the refusal of the row drawn"
+            assertNull(onAdded[0], "the row under it, just added, wears the refusal of the row drawn"
                 + " before it: " + onAdded[0] + " (GUI-C2)");
 
             assertNotEquals(inkOf(frame, added), RouteEditorFrame.refusedInkForTest(),
