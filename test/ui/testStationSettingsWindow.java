@@ -2162,6 +2162,34 @@ public class testStationSettingsWindow
     }
 
     /**
+     * The Allowed trains (i) says what the list does to a train kept out, for the square it is on (OB-483, Adam: "for
+     * non-stations, blocked locomotives can never pass.  but for stations, they just can't stop there, but can still
+     * pass through"), as the railway's path check has it.
+     *
+     * MUTATION: have `StationFlyovers.whichTrains` say the station's line on every square, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAllowedTrainsInfoSaysWhetherAKeptOutTrainCanPass() throws Exception
+    {
+        String station = I18n.t("autosetup.ui.flyWhichStation"), track = I18n.t("autosetup.ui.flyWhichTrack");
+
+        for (TileKey square : new TileKey[] {aStation(), aNamelessSensor()})
+        {
+            boolean stops = Components.onTheEventThread(() -> session.getStore().isStation(square));
+
+            StationSettingsWindow window = StationDoors.open(panel, square);
+
+            String said = Components.onTheEventThread(() -> window.flyoverForTest("which"));
+
+            assertTrue(said.contains(stops ? station : track), square + "'s (i) does not say what a train kept out may do: "
+                + said);
+            assertFalse(said.contains(stops ? track : station), square + "'s (i) says the other kind of square's: " + said);
+
+            StationDoors.close(window);
+        }
+    }
+
+    /**
      * The window's (i) for May depart names the s88 square it shares plain track with, as a pick here sets it there too.
      * The line itself is `departureSharedWith`'s, held to the bundle by the core claim.
      *

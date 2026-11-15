@@ -117,18 +117,25 @@ final class StationFlyovers
         return nowThenChange(I18n.f("autosetup.ui.flySpeedNow", percent), I18n.t("autosetup.ui.flySpeedChange"));
     }
 
-    static String whichTrains(AutonomySession.WhichTrains which, int listed)
+    /** `station` null where only some squares are: a train kept out may run through a station, never another (OB-483). */
+    static String whichTrains(AutonomySession.WhichTrains which, int listed, Boolean station)
     {
+        String passing = station == null
+            ? I18n.t("autosetup.ui.flyWhichStation") + "  " + I18n.t("autosetup.ui.flyWhichTrack")
+            : I18n.t(station ? "autosetup.ui.flyWhichStation" : "autosetup.ui.flyWhichTrack");
+
         switch (which)
         {
             case BLACKLIST:
-                return nowThenChange(I18n.f("autosetup.ui.flyBlackNow", listed), I18n.t("autosetup.ui.flyBlackChange"));
+                return nowThenChange(I18n.f("autosetup.ui.flyBlackNow", listed) + "  " + passing,
+                    I18n.t("autosetup.ui.flyBlackChange"));
 
             case WHITELIST:
-                return nowThenChange(I18n.f("autosetup.ui.flyWhiteNow", listed), I18n.t("autosetup.ui.flyWhiteChange"));
+                return nowThenChange(I18n.f("autosetup.ui.flyWhiteNow", listed) + "  " + passing,
+                    I18n.t("autosetup.ui.flyWhiteChange"));
 
             default:
-                return nowThenChange(I18n.t("autosetup.ui.flyAllNow"), I18n.t("autosetup.ui.flyAllChange"));
+                return nowThenChange(I18n.t("autosetup.ui.flyAllNow"), I18n.t("autosetup.ui.flyAllChange") + "  " + passing);
         }
     }
 
