@@ -164,7 +164,7 @@ Monitor the usage of different locomotives.
     * Configure up to 50 different key mappings for up to 1,300 locomotives
     * Convenient hotkeys for power off, emergency stop, and smooth deceleration
     * Simultaneous operation across multiple PCs
-    * An accessory keyboard of 2,048 addresses on 16 tabs, with a red and a green half on every key, and an export of the actuation counts
+    * An accessory keyboard of 2,048 addresses on 16 tabs, with a red and a green half on every key, a key number you can click to switch it, and an export of the actuation counts
 * Track diagrams
     * View unlimited layout diagrams, with support for multiple windows
     * Toggle signals, switches, lights, uncouplers, and routes
