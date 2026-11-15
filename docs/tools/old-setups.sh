@@ -2,15 +2,15 @@
 #
 # Proves old setups mean what they meant (FR-111): the same files, read by an older build and by this working tree.
 #
-#     TC_SCRATCH=<scratch> sh docs/tools/old-setups.sh <base-commit>          # side by side, and the comparison
+#     TC_SCRATCH=<scratch> sh docs/tools/old-setups.sh [--no-live] <base-commit>   # side by side, and the comparison
 #     TC_SCRATCH=<scratch> sh docs/tools/old-setups.sh --opens-in <commit>    # the new features, opened by an older build
 #
 # Run from the project root, as one background command; each one.sh waits for its own test slot.
 #
 # Side by side: a detached worktree of <base-commit> under $TC_SCRATCH gets a copy of support.SetupDump and
 # core.testSetupDumpComparesBuilds; both builds dump every test layout, every autonomy format fixture and one read-only
-# copy of cs2_sample_layout; docs/tools/old-setups.py compares them file by file, says how many answers it compared and
-# prints the first differences.  Exit 0 only when every file is the same, what each build writes on a load and save with
+# copy of cs2_sample_layout (not with --no-live, as agents and the gate in gates.sh run it); docs/tools/old-setups.py
+# compares them file by file, says how many answers it compared and prints the first differences.  Exit 0 only when every file is the same, what each build writes on a load and save with
 # no change among them, and at least one Return Home plan was compared.  A Return Home plan's moves are compared too when
 # both builds plan by route work (OB-413); against an older build, 3.0.8 included, whose wall clock picks among plans run
 # to run, they are printed and do not fail (see old-setups.py).
@@ -27,12 +27,20 @@
 set -u
 
 S="${TC_SCRATCH:-}"
+LIVE=1
+
+if [ "${1:-}" = "--no-live" ]
+then
+    LIVE=""
+    unset TC_OLD_SETUPS_LIVE
+    shift
+fi
 W="$(pwd)"
 TOOLS="$(cd "$(dirname "$0")" && pwd)"
 
 if [ -z "$S" ] || [ ! -d "$S" ] || [ ! -f build.xml ] || [ $# -lt 1 ]
 then
-    echo "usage: TC_SCRATCH=<dir> sh docs/tools/old-setups.sh (<base-commit> | --opens-in <commit>)" >&2
+    echo "usage: TC_SCRATCH=<dir> sh docs/tools/old-setups.sh ([--no-live] <base-commit> | --opens-in <commit>)" >&2
     exit 2
 fi
 
@@ -99,13 +107,18 @@ else
 
     # One copy, so both read the same railway whatever the live one does meanwhile; LayoutSandbox copies it again.
     rm -rf "$OUT/base" "$OUT/new" "$OUT/live-copy"
-    cp -r cs2_sample_layout "$OUT/live-copy" || exit 2
 
-    (cd "$OTHER" && TC_OLD_SETUPS_OUT="$OUT/base" TC_OLD_SETUPS_LIVE="$OUT/live-copy" TC_SCRATCH="$OTHER_SCRATCH" \
+    if [ -n "$LIVE" ]
+    then
+        cp -r cs2_sample_layout "$OUT/live-copy" || exit 2
+        TC_OLD_SETUPS_LIVE="$OUT/live-copy"
+        export TC_OLD_SETUPS_LIVE
+    fi
+
+    (cd "$OTHER" && TC_OLD_SETUPS_OUT="$OUT/base" TC_SCRATCH="$OTHER_SCRATCH" \
         sh docs/tools/one.sh core.testSetupDumpComparesBuilds) || status=1
 
-    TC_OLD_SETUPS_OUT="$OUT/new" TC_OLD_SETUPS_LIVE="$OUT/live-copy" TC_SCRATCH="$S" \
-        sh docs/tools/one.sh core.testSetupDumpComparesBuilds || status=1
+    TC_OLD_SETUPS_OUT="$OUT/new" TC_SCRATCH="$S" sh docs/tools/one.sh core.testSetupDumpComparesBuilds || status=1
 
     py -3 "$TOOLS/old-setups.py" "$OUT/base" "$OUT/new" || status=1
 fi
