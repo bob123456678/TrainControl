@@ -16646,12 +16646,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void smallButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smallButtonActionPerformed
 
-        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get(I18n.t("layout.ui.small")));
+        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), SMALL_TILE_SIZE);
     }//GEN-LAST:event_smallButtonActionPerformed
 
     private void layoutNewWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_layoutNewWindowActionPerformed
 
-        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get(I18n.t("layout.ui.large")));
+        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), LARGE_TILE_SIZE);
     }//GEN-LAST:event_layoutNewWindowActionPerformed
 
     private void SizeListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SizeListActionPerformed
@@ -19223,7 +19223,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void mediumButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mediumButtonActionPerformed
 
-        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get(I18n.t("layout.ui.medium")));
+        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), MEDIUM_TILE_SIZE);
     }//GEN-LAST:event_mediumButtonActionPerformed
 
     private void combineMenuPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_combineMenuPressed
@@ -21356,13 +21356,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public static final int MEDIUM_TILE_SIZE = 46;
 
+    /** The Small and Large tile sizes, which the S and L buttons open by value whatever the language. */
+    static final int SMALL_TILE_SIZE = 30, LARGE_TILE_SIZE = 60;
+
     // Lap strings in the size dropdown to icon sizes
     Map<String, Integer> layoutSizes = Stream.of(new String[][] 
         {
-            { I18n.t("layout.ui.small"), "30" },
+            { I18n.t("layout.ui.small"), String.valueOf(SMALL_TILE_SIZE) },
             // FR-122: drawn from the Large art scaled down until it has its own (LayoutDiagramComponent.artSize)
             { I18n.t("layout.ui.medium"), String.valueOf(MEDIUM_TILE_SIZE) },
-            { I18n.t("layout.ui.large"), "60" }
+            { I18n.t("layout.ui.large"), String.valueOf(LARGE_TILE_SIZE) }
         })
         .collect(Collectors.toMap(
             data -> data[0],
