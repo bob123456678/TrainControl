@@ -1066,7 +1066,7 @@ public class testRestoreFromBackup
 
         List<String> said;
 
-        try (java.nio.channels.FileChannel locked = lockTheDatabase();
+        try (java.io.RandomAccessFile locked = lockTheDatabase();
             Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
             Components.press(Components.withText(ui, I18n.t("ui.main.toolbar.backupData")));
@@ -1099,7 +1099,9 @@ public class testRestoreFromBackup
         List<Answering.Question> asked = exitWithTheDatabaseLocked(I18n.t("ui.exitSaveRetry"));
 
         assertEquals(asked.size(), 2, "Retry while still locked did not ask again: " + asked.size() + " questions");
-        assertTrue(asked.get(0).message.startsWith(I18n.f("ui.errorExitSaveFailed", "").trim())
+        String lead = I18n.f("ui.errorExitSaveFailed", "\u0001");
+
+        assertTrue(asked.get(0).message.startsWith(lead.substring(0, lead.indexOf('\u0001')).trim())
             && asked.get(0).message.contains(MarklinControlStation.DATA_FILE_NAME), "the question does not say"
             + " TrainControl could not save " + MarklinControlStation.DATA_FILE_NAME + ": " + asked.get(0).message);
         assertEquals(asked.get(0).buttons, Arrays.asList(I18n.t("ui.exitSaveRetry"), I18n.t("ui.exitWithoutSaving")),
@@ -1161,18 +1163,20 @@ public class testRestoreFromBackup
         return note;
     }
 
-    /** The run's locomotive database opened and locked whole, as a program opening it unshared does. */
-    private static java.nio.channels.FileChannel lockTheDatabase() throws Exception
+    /**
+     * The run's locomotive database opened and locked whole, as a program opening it unshared does: nothing can replace
+     * it (`java.io` opens without delete sharing, which NIO would give) and nothing can read it (the lock).
+     */
+    private static java.io.RandomAccessFile lockTheDatabase() throws Exception
     {
         databaseBytes();
 
-        java.nio.channels.FileChannel channel = java.nio.channels.FileChannel.open(
-            new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME)).toPath(),
-            java.nio.file.StandardOpenOption.READ, java.nio.file.StandardOpenOption.WRITE);
+        java.io.RandomAccessFile file = new java.io.RandomAccessFile(Util.dataPath(MarklinControlStation.DATA_FILE_NAME),
+            "rw");
 
-        channel.lock();
+        file.getChannel().lock();
 
-        return channel;
+        return file;
     }
 
     /**
@@ -1181,7 +1185,7 @@ public class testRestoreFromBackup
      */
     private List<Answering.Question> exitWithTheDatabaseLocked(String first) throws Exception
     {
-        final java.nio.channels.FileChannel locked = lockTheDatabase();
+        final java.io.RandomAccessFile locked = lockTheDatabase();
         final javax.swing.JMenuItem exit = (javax.swing.JMenuItem) Reflect.get(TrainControlUI.class, ui, "exitMenuItem");
 
         assertEquals(exit.getText(), I18n.t("ui.main.toolbar.exit"), "precondition: the File menu's Exit does not say so");
