@@ -267,6 +267,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         session.open(Arrays.asList(deadEndRun()));
         session.initialize("D141 beside");
+        everySensorAStation();
 
         TileKey middle = new TileKey("main", 4, 1);
         RouteId road = session.getRoutes(middle).keySet().iterator().next();
@@ -310,6 +311,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.open(Arrays.asList(page));
         session.initialize("D141 gray");
+        everySensorAStation();
 
         TileKey end = new TileKey("main", 1, 1);
         RouteId road = session.getRoutes(end).keySet().iterator().next();
@@ -338,6 +340,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         session.open(Arrays.asList(stationBesideASwitch()));
         session.initialize("D141 switch");
+        everySensorAStation();
 
         TileKey station = new TileKey("main", 4, 1);
         TileKey turnout = new TileKey("main", 3, 1);
@@ -368,6 +371,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         session.open(Arrays.asList(platformWithTwoApproaches()));
         session.initialize("D141 farther");
+        everySensorAStation();
 
         TileKey station = new TileKey("main", 5, 1);
         TileKey turnout = new TileKey("main", 3, 1);
@@ -390,6 +394,41 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
+     * A way out leads to another station, so May depart looks past an s88 square that is no station: track one way back
+     * beyond it keeps trains from leaving that way, as "What's allowed here" says, though a train could reach the square.
+     *
+     * MUTATION: have `sendsOutBy` count any edge leaving by the side, as far as the next s88 square, and this fails.
+     */
+    @Test
+    public void testMayDepartLooksPastTheNextS88Square() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 10, 4, null, null);
+
+        Diagrams.row(page, 1, 1, "FSFSFSF", 5, 6, 7, 8);
+        page.setPageId("1");
+
+        session.open(Arrays.asList(page));
+        session.initialize("D141 past");
+
+        TileKey station = new TileKey("main", 3, 1), passing = new TileKey("main", 5, 1);
+        RouteId road = session.getRoutes(station).keySet().iterator().next();
+
+        for (int x : new int[] {1, 3, 7}) session.setStation(new TileKey("main", x, 1), true);
+
+        assertEquals(session.departureWay(station, road), Direction.BOTH, "precondition: trains do not leave both ways");
+
+        // One way back toward the s88 square that is no station, beyond the track May depart sets
+        session.setDirection(new TileKey("main", 6, 1), session.getRoutes(new TileKey("main", 6, 1)).keySet().iterator()
+            .next(), session.getRoutes(new TileKey("main", 6, 1)).values().iterator().next().getA() == Side.W
+            ? Direction.TOWARD_A : Direction.TOWARD_B);
+
+        assertEquals(session.departureWay(station, road), toward(station, road, Side.W),
+            "May depart does not show the one way out");
+        assertEquals(session.whyDepartureWayIsFixed(station, road), I18n.f("autosetup.ui.flyDepartFarther",
+            String.valueOf(Side.E), session.describeTile(passing)), "the (i) line does not say where the limit is");
+    }
+
+    /**
      * Plain track with a station at each end is set from either one, and each one's (i) line names the other: one
      * station closing its side lets the other leave into the track, and the other closing its own opens it again.
      *
@@ -405,6 +444,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.open(Arrays.asList(page));
         session.initialize("D141 shared");
+        everySensorAStation();
 
         TileKey west = new TileKey("main", 3, 1), east = new TileKey("main", 6, 1);
         RouteId westRoad = session.getRoutes(west).keySet().iterator().next();
@@ -440,6 +480,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         session.open(Arrays.asList(deadEndRun()));
         session.initialize("D141 old");
+        everySensorAStation();
 
         TileKey middle = new TileKey("main", 4, 1);
         RouteId road = session.getRoutes(middle).keySet().iterator().next();
@@ -469,6 +510,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.open(Arrays.asList(page));
         session.initialize("D144 closed");
+        everySensorAStation();
 
         TileKey middle = new TileKey("main", 4, 1);
         RouteId road = session.getRoutes(middle).keySet().iterator().next();
@@ -511,6 +553,12 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         for (RouteId each : session.getRoutes(tile).keySet()) out.put(each, session.getGraph().getDirection(tile, each));
 
         return out;
+    }
+
+    /** Makes every s88 square a station, so May depart has somewhere to send a train. */
+    private void everySensorAStation()
+    {
+        for (TileKey each : new ArrayList<>(session.getReducer().getPoints().keySet())) session.setStation(each, true);
     }
 
     /** The One Way pick toward a side of a station's road. */

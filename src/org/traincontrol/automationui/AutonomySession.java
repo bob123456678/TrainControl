@@ -5257,7 +5257,7 @@ public class AutonomySession
 
     /**
      * Which way trains may leave a station along one of its roads, as the built railway has it (D141): by a side a
-     * reduced edge leaves it by, which is what "What's allowed here" reads, so the two agree.
+     * train can be sent out of to another station, as "What's allowed here" reads it, so the two agree.
      */
     public Direction departureWay(TileKey station, RouteId road)
     {
@@ -5265,8 +5265,8 @@ public class AutonomySession
 
         if (route == null) return Direction.BOTH;
 
-        boolean byA = leavesBy(station, route.getA());
-        boolean byB = leavesBy(station, route.getB());
+        boolean byA = sendsOutBy(station, route, route.getA());
+        boolean byB = sendsOutBy(station, route, route.getB());
 
         return byA && byB ? Direction.BOTH : byA ? Direction.TOWARD_A : byB ? Direction.TOWARD_B : Direction.NONE;
     }
@@ -5296,7 +5296,7 @@ public class AutonomySession
             Landing next = graph.landing(station, side);
 
             // Open beside, yet no way out: the limit is past the track this sets
-            if (goesOn(next) && !leavesBy(station, side))
+            if (goesOn(next) && !sendsOutBy(station, route, side))
             {
                 return I18n.f("autosetup.ui.flyDepartFarther", String.valueOf(side), describeTile(farEnd(run, station, next)));
             }
@@ -5372,13 +5372,28 @@ public class AutonomySession
         }
     }
 
-    /** Whether the built railway sends a train out of a square by a side: a reduced edge leaves it there. */
-    private boolean leavesBy(TileKey station, Side side)
+    /**
+     * Whether a train standing on a station's road can be sent out by one side to another station: Test a Path's
+     * search over the built railway, with its turning, arrival and shut rules, starting that way only.
+     */
+    private boolean sendsOutBy(TileKey station, Route road, Side side)
     {
-        for (GraphReducer.ReducedEdge edge : reducer == null ? Collections.<GraphReducer.ReducedEdge>emptyList()
-            : reducer.getEdges())
+        if (reducer == null) return false;
+
+        Set<TileKey> mayTurn = mayTurnTiles(), mustTurn = mandatoryTurnTiles(), shut = shutTiles();
+        Map<TileKey, Set<Side>> barred = barredArrivals();
+
+        mayTurn.remove(station);
+        mustTurn.remove(station);
+
+        for (TileKey other : reducer.getPoints().keySet())
         {
-            if (edge.getStart().equals(station) && edge.getExitSide() == side) return true;
+            if (other.equals(station) || !store.isStation(other)) continue;
+
+            List<GraphReducer.ReducedEdge> path = reducer.findPath(station, other, mayTurn, mustTurn, barred, shut,
+                Collections.singleton(road.other(side)));
+
+            if (path != null && !path.isEmpty() && path.get(0).getExitSide() == side) return true;
         }
 
         return false;
