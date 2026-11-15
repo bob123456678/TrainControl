@@ -630,6 +630,93 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
         }
     }
 
+    /**
+     * Check for Renamed Locomotives reads the station behind the busy sign, off the event thread: while a slow station
+     * holds back its locomotive list the window still answers, and the result is shown once the list arrives (OB-475).
+     * The list is empty, so nothing is proposed and no sync follows.
+     *
+     * MUTATION: in `checkForRenameMenuItemActionPerformed`, call `model.getRenameProposals()` directly instead of
+     * through `BusyDialog.run`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheRenameCheckLeavesTheWindowFreeWhileTheStationIsSlow() throws Exception
+    {
+        final java.util.concurrent.CountDownLatch asked = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        final java.util.function.BiFunction<String, Integer, byte[]> cs3 =
+            support.StandInStation.cs3("260", "{\"softwareVersion\":\"2.6.1 (Build 3)\"}");
+
+        final Object parserWas = Reflect.get(MarklinControlStation.class, model, "fileParser");
+        final Object cs3Was = Reflect.get(MarklinControlStation.class, model, "isCS3");
+        final boolean connectedWas = model.getNetworkCommState();
+
+        try (support.StandInStation station = new support.StandInStation((path, n) ->
+        {
+            if (!"/app/api/locos".equals(path)) return cs3.apply(path, n);
+
+            asked.countDown();
+
+            try
+            {
+                release.await(PATIENCE_MS, java.util.concurrent.TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException stop)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            return "[]".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        });
+            Answering answering = Answering.start(message -> null))
+        {
+            Reflect.set(MarklinControlStation.class, model, "fileParser",
+                new org.traincontrol.marklin.file.CS2File(station.address(), model));
+            Reflect.set(MarklinControlStation.class, model, "isCS3", true);
+            model.setNetworkCommState(true);
+
+            JMenuItem check = (JMenuItem) Components.withText(ui, I18n.t("ui.main.toolbar.checkForRenamedLocs"));
+
+            javax.swing.SwingUtilities.invokeAndWait(check::doClick);
+
+            assertTrue(asked.await(PATIENCE_MS, java.util.concurrent.TimeUnit.MILLISECONDS),
+                "the check did not ask the station for its locomotives");
+
+            final java.util.concurrent.CountDownLatch ran = new java.util.concurrent.CountDownLatch(1);
+            final boolean[] busy = new boolean[1];
+
+            javax.swing.SwingUtilities.invokeLater(() ->
+            {
+                for (Window w : Window.getWindows())
+                {
+                    busy[0] |= w instanceof org.traincontrol.gui.widgets.BusyDialog && w.isShowing();
+                }
+
+                ran.countDown();
+            });
+
+            boolean free = ran.await(3, java.util.concurrent.TimeUnit.SECONDS);
+
+            release.countDown();
+
+            assertTrue(free, "the window froze while the check waited on the station");
+            assertTrue(busy[0], "no busy sign showed while the check waited on the station");
+
+            assertTrue(answering.awaitAsked(1, PATIENCE_MS), "the check showed no result once the list arrived");
+            assertEquals(answering.asked().get(0), I18n.t("loc.ui.infoNoLocomotivesToRename"),
+                "the check's result is not that nothing needs renaming");
+
+            AskingWindows.awaitAnswered();
+        }
+        finally
+        {
+            release.countDown();
+
+            Reflect.set(MarklinControlStation.class, model, "fileParser", parserWas);
+            Reflect.set(MarklinControlStation.class, model, "isCS3", cs3Was);
+            model.setNetworkCommState(connectedWas);
+        }
+    }
+
     /** The questions asked so far that name this locomotive. */
     private static List<Answering.Question> about(Answering answering, String name)
     {

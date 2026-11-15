@@ -6258,31 +6258,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             // And only now the keyboard (OB-170): the restore above resets the focus owner.
-            SwingUtilities.invokeLater(() ->
-            {
-                focusTheKeyboard();
-
-                sayIfTheKeyboardIsLost();
-            });
+            SwingUtilities.invokeLater(this::focusTheKeyboard);
         });
 
         settle.setRepeats(false);
         settle.start();
-    }
-
-    /** Logs when nothing in this window holds the keyboard (OB-170), and names what has it. */
-    private void sayIfTheKeyboardIsLost()
-    {
-        if (this.model == null) return;
-
-        Component owner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-
-        if (owner != null && SwingUtilities.isDescendingFrom(owner, this)) return;
-
-        this.model.logf("ui.warnCouldNotTakeTheForeground",
-            (isActive() ? "active" : "not active") + ", "
-            + (owner == null ? "nothing has the keyboard"
-                             : "the keyboard is on " + owner.getClass().getSimpleName()));
     }
 
     /**
@@ -18609,11 +18589,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
             // The gate its gray asks
             if (refuseWhileAutonomyRunning(this)) return;
-            
+
+            // The station is read off the event thread behind the busy sign (OB-475); run returns once it is done
+            final Object[] answer = new Object[1];
+
+            BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"), () ->
+            {
+                try
+                {
+                    answer[0] = model.getRenameProposals();
+                }
+                catch (Throwable ex)
+                {
+                    // An Error too, so the message below names it rather than failing on an empty answer
+                    answer[0] = ex instanceof Exception ? ex : new Exception(ex);
+                }
+            }, null);
+
             List<String[]> renameList;
             try
             {
-                RenameProposals proposals = model.getRenameProposals();
+                if (answer[0] instanceof Exception) throw (Exception) answer[0];
+
+                RenameProposals proposals = (RenameProposals) answer[0];
                 renameList = proposals.getProposals();
 
                 if (renameList.isEmpty())

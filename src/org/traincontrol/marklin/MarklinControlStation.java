@@ -2132,7 +2132,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         return this.isCS3;
     }
-    
+
+    private volatile String firmwareLogged;
+
+    /** Logs the CS3's firmware as it reports it, once a session, and again only if it changes (MT-895). */
+    public void logTheFirmware(String said)
+    {
+        if (said.equals(this.firmwareLogged)) return;
+
+        this.firmwareLogged = said;
+        this.logf("log.cs3Firmware", said);
+    }
+
     /**
      * A sensor's s88 device to save: the one a CS3's real event showed, else the one saved before; never one only the
      * station's device list gave, as the list is read again at each sync (OB-418).

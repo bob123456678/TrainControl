@@ -906,6 +906,77 @@ public class testDrivingFromTheKeyboard
     }
 
     /**
+     * A click on a key's number throws it the other way, whichever half is lit: red when green, green when red, each
+     * one command of that color.  The number of a gray key does nothing (OB-476).
+     *
+     * MUTATION: take the mouse listener off the number in `AccessoryKeyboard.buildKey` (nothing is sent), or drop its
+     * `red.isEnabled()` (the gray key sends), and this fails.
+     */
+    @Test
+    public void testAClickOnTheNumberThrowsTheKeyTheOtherWay() throws Exception
+    {
+        goToPage(1);
+
+        int address = 11;
+
+        click(address, false);
+        keySendingHasFinished();
+
+        for (boolean red : new boolean[] {true, false})
+        {
+            assertEquals(sentWhile(address, () -> clickNumber(address)), java.util.Collections.singletonList(red ? 0 : 1),
+                "a click on the number of a " + (red ? "green" : "red") + " key did not send exactly " + (red ? "red" : "green"));
+            assertTrue(waitFor(() -> lit(address, red) && !lit(address, !red)), "the key did not turn " + (red ? "red" : "green"));
+        }
+
+        AccessoryKeyboard keys = keys();
+        int key = Components.onTheEventThread(() -> keys.keyOf(address));
+        int mark = wire.mark();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> keys.setKey(key, false, false));
+
+            clickNumber(address);
+            keySendingHasFinished();
+
+            assertTrue(wire.accessoryCommandsSince(mark, uidOf(address)).isEmpty(), "a gray key's number sent a command");
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> keys.setKey(key, false, true));
+        }
+    }
+
+    /**
+     * With the power off, a click on a key's number asks the halves' question first, and Cancel sends nothing (OB-476).
+     *
+     * MUTATION: take the mouse listener off the number in `AccessoryKeyboard.buildKey`, and nothing is asked.
+     */
+    @Test
+    public void testWithThePowerOffTheNumberAsksFirst() throws Exception
+    {
+        int address = powerOffOnTheFirstTab();
+
+        boolean was = lit(address, true);
+        int mark = wire.mark();
+
+        try (Answering answering = Answering.start(asked -> Answering.press(I18n.t("ui.cancel"))))
+        {
+            clickNumber(address);
+
+            assertTrue(answering.awaitAsked(1, WAIT), "with the power off, the key's number asked nothing");
+            assertEquals(answering.asked().get(0), I18n.t("layout.ui.confirmAccessorySwitchPowerOff"),
+                "the key's number asked something else");
+        }
+
+        keySendingHasFinished();
+
+        assertEquals(lit(address, true), was, "Cancel changed the key");
+        assertTrue(wire.accessoryCommandsSince(mark, uidOf(address)).isEmpty(), "Cancel sent the accessory's command");
+    }
+
+    /**
      * An echo from the station repaints its key, and one for an address on another tab shows when that tab is come
      * back to.
      *
@@ -1607,6 +1678,18 @@ public class testDrivingFromTheKeyboard
         assertTrue(key > 0, "address " + address + " is not on the tab showing");
 
         Components.press(keys.half(key, red));
+        Components.settle();
+    }
+
+    /** A real click on the number of the key for an address on the tab showing. */
+    private static void clickNumber(int address) throws Exception
+    {
+        AccessoryKeyboard keys = keys();
+        int key = Components.onTheEventThread(() -> keys.keyOf(address));
+
+        assertTrue(key > 0, "address " + address + " is not on the tab showing");
+
+        support.Mouse.click(keys.number(key));
         Components.settle();
     }
 

@@ -110,6 +110,27 @@ public class testACS3FirmwareIsReadOnce
         assertEquals(afterEach("250", INFO_261), "1/2/2;1/2/3;1/2/4");
     }
 
+    /**
+     * A CS3 sync logs the firmware in the station's own words, once: a second sync reads it again but does not repeat
+     * it (MT-895).
+     *
+     * MUTATION: take the `logTheFirmware` call out of cs3Firmware in CS2File, and this fails.
+     */
+    @Test
+    public void testTheFirmwareIsLoggedOnceInTheStationsOwnWords() throws Exception
+    {
+        try (StationRig rig = new StationRig(folder(), StandInStation.cs3("260", INFO_261)))
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0, "the first sync fails: " + rig.model.getLastSyncError());
+            assertTrue(rig.model.syncWithCS2() >= 0, "the second sync fails: " + rig.model.getLastSyncError());
+
+            java.util.List<String> log = rig.takeLog();
+            String line = org.traincontrol.util.I18n.f("log.cs3Firmware", "2.6.1 (Build 3)");
+
+            assertEquals(log.stream().filter(line::equals).count(), 1L, "the firmware is not logged once: " + log);
+        }
+    }
+
     /** With no sync before, the action finds the kind itself with one request, and asks no more after. */
     @Test
     public void testAnActionBeforeAnySyncFindsTheKindWithOneRequest() throws Exception

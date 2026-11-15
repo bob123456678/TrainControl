@@ -190,6 +190,19 @@ public class AccessoryKeyboard extends JPanel
         this.reds[index] = red;
         this.greens[index] = green;
 
+        // A click on the number throws the key the other way, through the halves' own door and its questions (OB-476)
+        number.addMouseListener(new java.awt.event.MouseAdapter()
+        {
+            @Override
+            public void mouseClicked(MouseEvent e)
+            {
+                if (javax.swing.SwingUtilities.isLeftMouseButton(e) && red.isEnabled())
+                {
+                    AccessoryKeyboard.this.listener.clicked(AccessoryKeyboard.this.addressOf(at), !red.lit);
+                }
+            }
+        });
+
         halves.add(red);
         halves.add(green);
 
@@ -263,6 +276,12 @@ public class AccessoryKeyboard extends JPanel
     public String numberOf(int index)
     {
         return this.numbers[index - 1].getText();
+    }
+
+    /** The number on a key, which a click throws the other way. */
+    public JLabel number(int index)
+    {
+        return this.numbers[index - 1];
     }
 
     public AbstractButton tab(int tabPage)
