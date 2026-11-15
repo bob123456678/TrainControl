@@ -674,7 +674,8 @@ public class testTheMenuBarIsWired
 
     /**
      * Show Keyboard Control Hints shows the keyboard's key hints ticked and hides them unticked; Show Menu Bar does the
-     * same for the menu bar.  Each is set both ways, never toggled, and put back.
+     * same for the menu bar, except that menus in the title bar, where it is hidden, always show (OB-484).  Each is set
+     * both ways, never toggled, and put back.
      *
      * MUTATION: have `displayKeyboardHints` ignore its argument and show the hints, and this fails.
      */
@@ -691,6 +692,7 @@ public class testTheMenuBarIsWired
 
         final boolean hintsShown = Components.onTheEventThread(hints::isSelected);
         final boolean barShown = Components.onTheEventThread(bar::isSelected);
+        final boolean hideable = Components.onTheEventThread(bar::isVisible);
 
         try
         {
@@ -701,8 +703,8 @@ public class testTheMenuBarIsWired
 
                 assertEquals(Components.onTheEventThread(keys::isVisible), (Boolean) on, "Show Keyboard Control Hints, "
                     + (on ? "ticked, hides" : "unticked, shows") + " the keyboard's key hints");
-                assertEquals(Components.onTheEventThread(menus::isVisible), (Boolean) on, "Show Menu Bar, "
-                    + (on ? "ticked, hides" : "unticked, shows") + " the menu bar");
+                assertEquals(Components.onTheEventThread(menus::isVisible), (Boolean) (on || !hideable), "Show Menu Bar, "
+                    + (on ? "ticked, hides" : "unticked, shows") + " the menu bar" + (hideable ? "" : " in the title bar"));
             }
         }
         finally

@@ -245,7 +245,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
         * Control+L (open Locomotive Settings on the multi-unit)
         * Control+Delete (permanently delete locomotive from database)
 * UI shortcuts
-    * Control+M (show menu bar)
+    * Control+M (show or hide the menu bar, where it is not part of the window's title bar, such as on a Mac)
     * Backspace/Alt+backspace, CapsLock/Alt+CapsLock (cycle through tabs)
     * Minus/plus, \[/\], '/( (previous/next accessory keyboard, or previous/next layout page on the Track Diagram tab; Control with these jumps 4 accessory keyboards)
     * Slash/question mark, < (cycle through function tabs on the locomotive panel)

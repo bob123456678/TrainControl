@@ -1093,7 +1093,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.slidersChangeActiveLocMenuItem.setSelected(prefs.getBoolean(SLIDER_SETTING_PREF, false));
         this.showKeyboardHintsMenuItem.setSelected(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
         this.windowAlwaysOnTopMenuItem.setSelected(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT));
-        this.toggleMenuBar.setSelected(prefs.getBoolean(MENUBAR_SETTING_PREF, true));
+        installAlwaysOnTopCheckbox();
         this.activeLocInTitle.setSelected(prefs.getBoolean(ACTIVE_LOC_IN_TITLE, true));
         this.checkForUpdates.setSelected(prefs.getBoolean(CHECK_FOR_UPDATES, true));
         // Defaulted ON: a layout with a setup otherwise opens with the setup not loaded (names as plain text, no sensor
@@ -6283,11 +6283,42 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     
+    /** FlatLaf's own answer, protected there: are a window's menus drawn in its title bar (never on a Mac)? */
+    private static final class TitlePane extends com.formdev.flatlaf.ui.FlatRootPaneUI
+    {
+        static boolean holdsTheMenus(javax.swing.JRootPane pane)
+        {
+            return isMenuBarEmbedded(pane);
+        }
+    }
+
+    /** The Keyboard tab's Window Always on Top, in Toggle Menu Bar's place where the menus are in the title bar. */
+    private final javax.swing.JCheckBox alwaysOnTopCheckbox = new javax.swing.JCheckBox();
+
     /**
-     * Shows or hides the menu bar depending on the user's preference
+     * Menus in the title bar take no content height, so they always show and Toggle Menu Bar gives its place to Window
+     * Always on Top (OB-484), which shares the View menu item's model: one switch, kept in step both ways.
      */
+    private void installAlwaysOnTopCheckbox()
+    {
+        if (!TitlePane.holdsTheMenus(getRootPane())) return;
+
+        alwaysOnTopCheckbox.setText(I18n.t("ui.main.toolbar.winOnTop"));
+        alwaysOnTopCheckbox.setFont(toggleMenuBar.getFont());
+        alwaysOnTopCheckbox.setFocusable(false);
+        alwaysOnTopCheckbox.setModel(windowAlwaysOnTopMenuItem.getModel());
+
+        ((javax.swing.GroupLayout) LocControlPanel.getLayout()).replace(toggleMenuBar, alwaysOnTopCheckbox);
+        toggleMenuBar.setVisible(false);
+    }
+
+    /** Shows or hides the menu bar depending on the user's preference; never while Toggle Menu Bar is hidden. */
     private void displayMenuBar()
     {
+        if (!toggleMenuBar.isVisible()) return;
+
+        toggleMenuBar.setSelected(prefs.getBoolean(MENUBAR_SETTING_PREF, true));
+
         int barHeight = this.mainMenuBar.getHeight(); // 23
         
         int minHeight = this.getMinimumSize().height;
@@ -14509,10 +14540,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsFrame.Tab.NOTES, null));
             row("linked locomotives", Held.CONTROL.on(KeyEvent.VK_L), key -> key.ui.openLocomotiveSettings(
                 key.ui.getButtonLocomotive(key.ui.currentButton), LocomotiveSettingsFrame.Tab.MULTI_UNIT, null));
+            // Only while its checkbox shows (OB-484).
             row("show or hide the menu bar", Held.CONTROL.on(KeyEvent.VK_M), key ->
             {
-                key.ui.toggleMenuBar.setSelected(!key.ui.toggleMenuBar.isSelected());
-                key.ui.toggleMenuBarActionPerformed(null);
+                if (key.ui.toggleMenuBar.isVisible()) key.ui.toggleMenuBar.doClick(0);
             });
             row("delete the locomotive", Held.CONTROL.on(KeyEvent.VK_DELETE), key ->
             {
