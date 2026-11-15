@@ -949,6 +949,72 @@ public class testDrivingFromTheKeyboard
     }
 
     /**
+     * A switch the station reports while it starts, before the window is given the railway, throws nothing on the event
+     * thread (OB-474): the window paints every key once it has the railway.
+     *
+     * MUTATION: drop the `model == null` return from `TrainControlUI.repaintSwitch`, and this fails.
+     */
+    @Test
+    public void testASwitchReportedBeforeTheWindowHasTheRailwayThrowsNothing() throws Exception
+    {
+        java.util.concurrent.atomic.AtomicReference<Throwable> thrown = new java.util.concurrent.atomic.AtomicReference<>();
+        Thread.UncaughtExceptionHandler was = Thread.getDefaultUncaughtExceptionHandler();
+        TrainControlUI[] bare = new TrainControlUI[1];
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> bare[0] = new TrainControlUI());
+
+            Thread.setDefaultUncaughtExceptionHandler((thread, error) -> thrown.compareAndSet(null, error));
+
+            bare[0].repaintSwitch(1, Accessory.accessoryDecoderType.MM2);
+
+            // After the repaint it posted
+            SwingUtilities.invokeAndWait(() -> { });
+
+            assertEquals(thrown.get(), null, "a switch reported before the window had the railway threw on the event thread");
+        }
+        finally
+        {
+            Thread.setDefaultUncaughtExceptionHandler(was);
+
+            if (bare[0] != null) SwingUtilities.invokeAndWait(bare[0]::dispose);
+        }
+    }
+
+    /**
+     * A usable key's number shows the hand pointer, as a click on it throws the key; a gray key's number, which a click
+     * leaves alone, shows the plain one (MT-1009).
+     *
+     * MUTATION: drop the `setCursor` from `AccessoryKeyboard.setKey`, and the gray key keeps the hand.
+     */
+    @Test
+    public void testTheNumberShowsTheHandWhereAClickActs() throws Exception
+    {
+        goToPage(1);
+
+        AccessoryKeyboard keys = keys();
+        int key = Components.onTheEventThread(() -> keys.keyOf(11));
+
+        try
+        {
+            for (boolean usable : new boolean[] {true, false, true})
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> keys.setKey(key, false, usable));
+
+                int shows = Components.onTheEventThread(() -> keys.number(key).getCursor().getType());
+
+                assertEquals(shows == java.awt.Cursor.HAND_CURSOR, usable, "the number of a " + (usable ? "usable" : "gray")
+                    + " key shows the " + (usable ? "plain pointer" : "hand"));
+            }
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> keys.setKey(key, false, true));
+        }
+    }
+
+    /**
      * With the power off, a click on a key's number asks the halves' question first, and Cancel sends nothing (OB-476).
      *
      * MUTATION: take the mouse listener off the number in `AccessoryKeyboard.buildKey`, and nothing is asked.

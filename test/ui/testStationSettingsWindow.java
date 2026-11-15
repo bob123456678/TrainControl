@@ -630,6 +630,48 @@ public class testStationSettingsWindow
     // ---------------------------------------------------------------------------------------------------------- fields
 
     /**
+     * Station Settings needs neither of Locomotive Settings' fixes of MT-940: it is a modeless dialog of the editor's
+     * window, with no taskbar button to be minimized to, and typing applies without Save, so closing with the window's
+     * own X asks nothing and keeps what was typed.
+     *
+     * MUTATION: build `StationWindowBase` with no owner, or have `closeWindow` ask before it closes, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testItNeitherHidesInTheTaskbarNorAsksOnClosing() throws Exception
+    {
+        TileKey square = aStation();
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        java.awt.Window editorWindow = Components.onTheEventThread(() -> javax.swing.SwingUtilities.getWindowAncestor(panel));
+
+        assertSame(Components.onTheEventThread(window::getOwner), editorWindow,
+            "Station Settings is not owned by the editor's window, so it has a taskbar button of its own");
+        assertEquals(Components.onTheEventThread(window::getModalityType), java.awt.Dialog.ModalityType.MODELESS,
+            "Station Settings blocks another window");
+
+        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            Components.onTheEventThread(() ->
+            {
+                field.setText("37");
+                window.dispatchEvent(new java.awt.event.WindowEvent(window, java.awt.event.WindowEvent.WINDOW_CLOSING));
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertEquals(answering.asked(), java.util.Collections.emptyList(), "closing Station Settings asked");
+        }
+
+        assertFalse(Components.onTheEventThread(window::isDisplayable), "the X did not close Station Settings");
+        assertEquals(numberOf(session.getPointProperty(square, "maxTrainLength")), 37.0, "closing lost what was typed");
+    }
+
+    /**
      * Enter applies a field, Escape puts back what it held, and what Enter applied is what Save writes.
      *
      * MUTATION: have the field's Escape action skip `setText(stored)`, or drop the root pane's, and this fails.
