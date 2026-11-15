@@ -542,8 +542,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
             if (where == null) continue;
 
-            if (session.getReducer().findPath(occupied, where, session.mayTurnTiles(),
-                session.mandatoryTurnTiles(), session.barredArrivals(), session.shutTiles()) != null)
+            if (session.testPath(occupied, where) != null)
             {
                 aRunExists = true;
                 break;

@@ -1205,7 +1205,17 @@ public class AutonomyEditorPanel extends JPanel
 
         TileKey shows = session.getCaptionTarget(chosenFinding);
 
-        return openStationSettings(shows != null ? shows : chosenFinding);
+        TileKey square = shows != null ? shows : chosenFinding;
+
+        // A restricted s88 square is cleared by a click on it, which no window offers (OB-472)
+        if (session.isSensorSquare(square) && !session.runsBothWays(square))
+        {
+            say(hint, I18n.f("autosetup.ui.sensorClickToClear", describeTile(square)));
+
+            return null;
+        }
+
+        return openStationSettings(square);
     }
 
     /** The square of the finding last clicked, or null. */
@@ -2715,9 +2725,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     boolean applyPreset(TileKey tile, StationPreset preset)
     {
-        if (!setUsage(tile, true, true)) return false;
+        if (!setUsage(tile, preset.stops, true)) return false;
 
-        session.setAutoDestination(tile, preset.fullAutonomy);
+        if (preset.fullAutonomy != null) session.setAutoDestination(tile, preset.fullAutonomy);
 
         setTurning(tile, preset.may, preset.must);
 
@@ -5130,7 +5140,7 @@ public class AutonomyEditorPanel extends JPanel
             {
                 case TEST: applyTest(tile, component); break;
                 case WHY: applyWhy(tile, component); break;
-                default: if (!heldByARun()) cycle(tile); break;
+                default: if (clickOnlyOpens(tile) || !heldByARun()) cycle(tile); break;
             }
         }
         catch (RuntimeException e)
@@ -5165,8 +5175,11 @@ public class AutonomyEditorPanel extends JPanel
 
         TileKey target = leaderOf(tile);
 
-        // Nor out of service, nor stationless track (OB-353): neither draws arrows
-        if (isALink(target) || isOutOfService(target) || session.reachesNoStation(target)) return false;
+        // An s88 square's click changes it only where it does not yet run both ways (OB-472), out of service or not
+        if (session.isSensorSquare(target)) return !session.runsBothWays(target);
+
+        // Nor stationless track (OB-353), which draws no arrows
+        if (isALink(target) || session.reachesNoStation(target)) return false;
 
         Map<RouteId, TilePorts.Route> routes = session.getRoutes(target);
 
@@ -5181,10 +5194,12 @@ public class AutonomyEditorPanel extends JPanel
         return next == Direction.BOTH || next == Direction.NONE || session.canRunOneWay(target);
     }
 
-    /** Whether a square is out of service, so has no directions to set. */
-    private boolean isOutOfService(TileKey target)
+    /** Whether a click here only opens Station Settings, a read, which a run does not stop (OB-472). */
+    private boolean clickOnlyOpens(TileKey tile)
     {
-        return Boolean.FALSE.equals(session.getPointProperty(target, "active"));
+        TileKey target = leaderOf(tile);
+
+        return session.isSensorSquare(target) && session.runsBothWays(target);
     }
 
     /** Whether a square is a link, which has no direction of its own. */
@@ -5197,23 +5212,34 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * Left-click: cycles both ways, one way, the other, closed, and says what it became; a switch, crossing or double
-     * curve steps through its arms (`cycleBranching`, `cycleCrossing`).  It lands on the whole run.
+     * curve steps through its arms (`cycleBranching`, `cycleCrossing`).  It lands on the whole run.  An s88 square
+     * goes straight to both ways, and once there opens Station Settings (OB-472).
      */
     private void cycle(TileKey tile)
     {
         TileKey target = leaderOf(tile);
 
+        if (clickOnlyOpens(target))
+        {
+            openStationSettings(target);
+            return;
+        }
+
+        if (session.isSensorSquare(target))
+        {
+            session.setDirection(Collections.singleton(target), Direction.BOTH);
+
+            say(hint, I18n.f("autosetup.ui.sensorClearedToBothWays", describeTile(target)));
+
+            showRestrictionsIfHidden();
+            annotationsChanged();
+            return;
+        }
+
         // A link has no direction (its route is a stub); the menu declines it too.
         if (isALink(target))
         {
             say(hint, I18n.t("autosetup.ui.infoLinkHasNoDirection"));
-            return;
-        }
-
-        // Nor out of service: its directions are kept, undrawn
-        if (isOutOfService(target))
-        {
-            say(hint, I18n.t("autosetup.ui.infoOutOfServiceHasNoDirection"));
             return;
         }
 
@@ -5778,26 +5804,8 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // Both ways, with the sets the build reads, so the path drawn agrees with the findings, which read the build.
-        Set<TileKey> mustTurn = session.mandatoryTurnTiles();
-
-        Set<TileKey> mayTurn = session.mayTurnTiles();
-
-        // The red arrows, as the build reads them (OB-120).
-        Map<TileKey, Set<TilePorts.Side>> barred = session.barredArrivals();
-
-        // Each leg starts on the copies a train stands on there, as the findings start it.
-        Map<TileKey, Set<TilePorts.Side>> starts = session.getReducer() == null ? null : session.startingArrivals();
-
-        List<GraphReducer.ReducedEdge> there =
-            session.getReducer() == null ? null
-                : session.getReducer().findPath(testFrom, tile, mayTurn, mustTurn, barred,
-                    session.shutTiles(), starts.get(testFrom));
-
-        List<GraphReducer.ReducedEdge> back =
-            session.getReducer() == null ? null
-                : session.getReducer().findPath(tile, testFrom, mayTurn, mustTurn, barred,
-                    session.shutTiles(), starts.get(tile));
+        List<GraphReducer.ReducedEdge> there = session.testPath(testFrom, tile);
+        List<GraphReducer.ReducedEdge> back = session.testPath(tile, testFrom);
 
         traces.clear();
 
@@ -6275,6 +6283,15 @@ public class AutonomyEditorPanel extends JPanel
         });
 
         return item;
+    }
+
+    /** Sets which way trains may leave a station along a road, on the track beside it (D141). */
+    void setDepartureWay(TileKey station, RouteId road, Direction way)
+    {
+        session.setDepartureWay(station, road, way);
+
+        refresh();
+        annotationsChanged();
     }
 
     /** Sets which way trains may run over a square, on the run it belongs to. */

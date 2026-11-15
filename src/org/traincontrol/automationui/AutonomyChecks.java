@@ -10,6 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import org.traincontrol.automationui.GraphReducer.ReducedEdge;
 import org.traincontrol.automationui.GraphReducer.ReducedPoint;
 import org.traincontrol.automationui.TileGraph.TileKey;
@@ -360,6 +361,12 @@ public class AutonomyChecks
      */
     public static final String HALF_MEASURED_APPROACH = "autosetup.ui.checkHalfMeasuredApproach";
 
+    /** An s88 square that does not run both ways (OB-472): an ERROR, cleared by clicking the square. */
+    public static final String SENSOR_NOT_BOTH_WAYS = "autosetup.ui.checkSensorNotBothWays";
+
+    /** Two s88 squares joined with no track between them (OB-472): INFO, as nothing is wrong with it. */
+    public static final String SENSORS_TOUCHING = "autosetup.ui.checkSensorsTouching";
+
     private AutonomyChecks()
     {
     }
@@ -505,6 +512,28 @@ public class AutonomyChecks
         List<Finding> findings = new ArrayList<>();
 
         for (TileKey tile : squares) findings.add(new Finding(severity, key, nameOf(reducer, tile), tile));
+
+        return findings;
+    }
+
+    /**
+     * An ERROR per s88 square that does not run both ways, and INFO per pair of s88 squares that touch (OB-472), the
+     * pair's second square named `{1}` and both related.
+     */
+    static List<Finding> checkSensorSquares(List<TileKey> notBothWays, List<List<TileKey>> touching,
+        Function<TileKey, String> name)
+    {
+        List<Finding> findings = new ArrayList<>();
+
+        for (TileKey tile : notBothWays)
+        {
+            findings.add(new Finding(Severity.ERROR, SENSOR_NOT_BOTH_WAYS, name.apply(tile), tile));
+        }
+
+        for (List<TileKey> pair : touching)
+        {
+            findings.add(new Finding(Severity.INFO, SENSORS_TOUCHING, name.apply(pair.get(1)), pair.get(0), pair));
+        }
 
         return findings;
     }

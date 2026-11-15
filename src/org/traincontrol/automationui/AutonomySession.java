@@ -5256,8 +5256,209 @@ public class AutonomySession
     }
 
     /**
+     * Which way trains may leave a station along one of its roads (D141): by the sides `sidesSentOutBy` names, the way
+     * the track lets a train out, as the Manually column of "What's allowed here" has it.
+     */
+    public Direction departureWay(TileKey station, RouteId road)
+    {
+        return departureWay(station, road, sidesSentOutBy(station));
+    }
+
+    /** The same, with `sidesSentOutBy` asked once for every road of a window. */
+    public Direction departureWay(TileKey station, RouteId road, Set<Side> out)
+    {
+        Route route = graph == null ? null : getRoutes(station).get(road);
+
+        if (route == null) return Direction.BOTH;
+
+        boolean byA = out.contains(route.getA()), byB = out.contains(route.getB());
+
+        return byA && byB ? Direction.BOTH : byA ? Direction.TOWARD_A : byB ? Direction.TOWARD_B : Direction.NONE;
+    }
+
+    /**
+     * The sides a train standing on a station, facing that way, can be sent out of to another station: the way the
+     * track lets it out, as the Manually column of "What's allowed here" has it.  Test a Path's search over the reduced
+     * edges, with its turning, arrival, shut and stop-only rules: the build has no copy facing a side nothing arrives
+     * from, so it can't answer for one (OB-472).
+     */
+    public Set<Side> sidesSentOutBy(TileKey station)
+    {
+        Set<Side> out = java.util.EnumSet.noneOf(Side.class);
+
+        if (reducer == null || graph == null) return out;
+
+        Set<TileKey> mayTurn = mayTurnTiles(), mustTurn = mandatoryTurnTiles();
+        Set<TileKey> shut = shutTiles(), stopOnly = stopOnlyTiles();
+        Map<TileKey, Set<Side>> barred = barredArrivals();
+
+        mayTurn.remove(station);
+        mustTurn.remove(station);
+
+        for (Route road : getRoutes(station).values())
+        {
+            for (Side side : new Side[] {road.getA(), road.getB()})
+            {
+                List<GraphReducer.ReducedEdge> path = reducer.findPathTo(station,
+                    other -> !other.equals(station) && store.isStation(other), mayTurn, mustTurn, barred, shut, stopOnly,
+                    Collections.singleton(road.other(side)));
+
+                if (path != null && path.get(0).getExitSide() == side) out.add(side);
+            }
+        }
+
+        return out;
+    }
+
+    /** @return every stop-only station (`isStopOnly`): somewhere to stop, never a way through */
+    public Set<TileKey> stopOnlyTiles()
+    {
+        Set<TileKey> out = new HashSet<>();
+
+        for (TileKey tile : reducer == null ? Collections.<TileKey>emptySet() : reducer.getPoints().keySet())
+        {
+            if (isStopOnly(tile)) out.add(tile);
+        }
+
+        return out;
+    }
+
+    /**
+     * The editor's Test a Path from one square to another, or null where there is none: the search with the sets the
+     * build reads, starting on the copies a train stands on, so the path drawn agrees with the findings.
+     */
+    public List<GraphReducer.ReducedEdge> testPath(TileKey from, TileKey to)
+    {
+        return reducer == null ? null : reducer.findPath(from, to, mayTurnTiles(), mandatoryTurnTiles(), barredArrivals(),
+            shutTiles(), stopOnlyTiles(), startingArrivals().get(from));
+    }
+
+    /** Whether May depart sets a road: plain track to set on both its sides (D141). */
+    public boolean departureWayCanBeSet(TileKey station, RouteId road)
+    {
+        return whyDepartureWayIsFixed(station, road, sidesSentOutBy(station)) == null;
+    }
+
+    /**
+     * Why May depart is grayed on a station's road, for its (i) line; null where it sets the track beside (D141).
+     * `out` is `sidesSentOutBy`, asked once for every road of a window.
+     */
+    public String whyDepartureWayIsFixed(TileKey station, RouteId road, Set<Side> out)
+    {
+        Route route = graph == null ? null : getRoutes(station).get(road);
+
+        if (route == null) return "";
+
+        // An arrow from an old setup: the railway honors it until it is clicked clear (OB-472)
+        if (!runsBothWays(station)) return I18n.f("autosetup.ui.sensorClickToClear", describeTile(station));
+
+        for (Side side : new Side[] {route.getA(), route.getB()})
+        {
+            Run run = runBeside(station, side);
+
+            if (run == null) return I18n.f("autosetup.ui.flyDepartOnly", sideWord(side));
+
+            Landing next = graph.landing(station, side);
+
+            // Open beside, yet no way out: the limit is past the track this sets
+            if (goesOn(next) && !out.contains(side))
+            {
+                return I18n.f("autosetup.ui.flyDepartFarther", sideWord(side), describeTile(farEnd(run, station, next)));
+            }
+        }
+
+        return null;
+    }
+
+    /** The other s88 squares whose May depart sets the same track as a station's road, for its (i) line; or null. */
+    public String departureSharedWith(TileKey station, RouteId road)
+    {
+        Route route = graph == null ? null : getRoutes(station).get(road);
+
+        List<String> out = new ArrayList<>();
+
+        for (Side side : route == null ? new Side[0] : new Side[] {route.getA(), route.getB()})
+        {
+            Run run = runBeside(station, side);
+
+            TileKey far = run == null ? null : farEnd(run, station, graph.landing(station, side));
+
+            if (isSensorSquare(far) && !far.equals(station))
+            {
+                out.add(I18n.f("autosetup.ui.flyDepartShared", sideWord(side), describeTile(far)));
+            }
+        }
+
+        return out.isEmpty() ? null : String.join("  ", out);
+    }
+
+    /** A side as "What's allowed here" names it: north, east, south or west. */
+    private static String sideWord(Side side)
+    {
+        return I18n.t("autosetup.ui.side" + side.name());
+    }
+
+    /** Where the run beside a station ends away from it; null where the track stops. */
+    private static TileKey farEnd(Run run, TileKey station, Landing next)
+    {
+        boolean fromStart = station.equals(run.getStart()) && run.getTiles().get(0).equals(next.getTile());
+
+        return fromStart ? run.getEnd() : run.getStart();
+    }
+
+    /**
+     * The plain track May depart sets on a station's side, up to the next switch, s88 square, link or tunnel; null
+     * where one of those is right beside the station, or the track ends before it reaches any s88 square.
+     */
+    private Run runBeside(TileKey station, Side side)
+    {
+        Landing next = graph.landing(station, side);
+
+        return next == null || reducer == null || graph.runsOutLeaving(station, side, reducer.getPoints().keySet())
+            ? null : graph.runOf(next.getTile());
+    }
+
+    /**
+     * Sets which way trains may leave a station along a road, on the plain track beside it (D141): a side they may not
+     * leave by runs one way toward the station, and one they may leave by again runs both ways.  Never on the station
+     * or a switch.
+     */
+    public void setDepartureWay(TileKey station, RouteId road, Direction way)
+    {
+        if (!departureWayCanBeSet(station, road)) return;
+
+        Route route = getRoutes(station).get(road);
+
+        for (Side side : new Side[] {route.getA(), route.getB()})
+        {
+            boolean leave = way == Direction.BOTH || way == (side == route.getA() ? Direction.TOWARD_A
+                : Direction.TOWARD_B);
+
+            Landing next = graph.landing(station, side);
+
+            if (goesOn(next) == leave) continue;
+
+            if (leave) setDirection(new LinkedHashSet<>(runBeside(station, side).getTiles()), Direction.BOTH);
+            else if (!recordTheRunOf(next.getTile(), next.getEntrySide()).isEmpty()) directionsTouched();
+        }
+    }
+
+    /** Whether a train landing on a square of plain track may go on along it. */
+    private boolean goesOn(Landing next)
+    {
+        Map.Entry<RouteId, Route> road = getRoutes(next.getTile()).entrySet().iterator().next();
+        Route route = road.getValue();
+
+        Direction way = TileGraph.inForce(graph.getDirection(next.getTile(), road.getKey()), route);
+
+        Direction away = route.getA() == next.getEntrySide() ? Direction.TOWARD_B : Direction.TOWARD_A;
+
+        return way == Direction.BOTH || way == away;
+    }
+
+    /**
      * Whether a square can meaningfully be given a direction.  False for a link: its route is a stub, so "toward A" and
-     * "toward B" are the same place; a one-way link would need the jump to carry it.
+     * "toward B" are the same place; a one-way link would need the jump to carry it.  False for an s88 square too.
      */
     public boolean canCarryDirection(TileKey tile)
     {
@@ -5267,9 +5468,96 @@ public class AutonomySession
 
         if (component == null) return false;
 
-        if (TilePorts.hasPortal(component.getType())) return false;
+        if (TilePorts.hasPortal(component.getType()) || component.isFeedback()) return false;
 
         return !getRoutes(tile).isEmpty();
+    }
+
+    /** Whether a square is an s88 sensor's, which runs both ways (OB-472): no door gives it a direction. */
+    public boolean isSensorSquare(TileKey tile)
+    {
+        LayoutDiagramComponent component = graph == null || tile == null ? null : graph.getTiles().get(tile);
+
+        return component != null && component.isFeedback();
+    }
+
+    /** Whether every road over a square runs both ways, as an s88 square must (OB-472). */
+    public boolean runsBothWays(TileKey tile)
+    {
+        for (RouteId road : getRoutes(tile).keySet())
+        {
+            if (graph.getDirection(tile, road) != Direction.BOTH) return false;
+        }
+
+        return true;
+    }
+
+    /** The s88 squares with a road that does not run both ways (OB-472), in reading order. */
+    private List<TileKey> sensorSquaresNotBothWays()
+    {
+        List<TileKey> out = new ArrayList<>();
+
+        for (TileKey tile : sensorSquaresInReadingOrder()) if (!runsBothWays(tile)) out.add(tile);
+
+        return out;
+    }
+
+    /**
+     * Pairs of s88 squares joined with no track square between them, a link's or tunnel's jump counting as none
+     * (OB-472): the join between them has no square to carry a direction.
+     */
+    private List<List<TileKey>> sensorSquaresTouching()
+    {
+        List<List<TileKey>> out = new ArrayList<>();
+
+        Set<TileKey> done = new HashSet<>();
+
+        for (TileKey sensor : sensorSquaresInReadingOrder())
+        {
+            done.add(sensor);
+
+            Set<TileKey> beside = new LinkedHashSet<>();
+
+            for (Route road : getRoutes(sensor).values())
+            {
+                for (Side side : new Side[] {road.getA(), road.getB()}) beside.add(squareBeyond(sensor, side));
+            }
+
+            for (TileKey other : beside)
+            {
+                if (isSensorSquare(other) && !done.contains(other)) out.add(Arrays.asList(sensor, other));
+            }
+        }
+
+        return out;
+    }
+
+    /** The square leaving by a side lands on, through a link's or tunnel's jump where it lands on one; or null. */
+    private TileKey squareBeyond(TileKey tile, Side side)
+    {
+        Landing next = graph.landing(tile, side);
+
+        if (next == null) return null;
+
+        if (!TilePorts.hasPortal(graph.getTiles().get(next.getTile()).getType())) return next.getTile();
+
+        Landing jump = isDisabledLink(next.getTile()) ? null : graph.landing(next.getTile(), null);
+
+        if (jump == null || isDisabledLink(jump.getTile()) || getRoutes(jump.getTile()).isEmpty()) return null;
+
+        Landing out = graph.landing(jump.getTile(), getRoutes(jump.getTile()).values().iterator().next().getA());
+
+        return out == null ? null : out.getTile();
+    }
+
+    private List<TileKey> sensorSquaresInReadingOrder()
+    {
+        List<TileKey> sensors = graph == null ? new ArrayList<>() : graph.getFeedbackTiles();
+
+        sensors.sort(Comparator.comparing(TileKey::getPage).thenComparingInt(TileKey::getY)
+            .thenComparingInt(TileKey::getX));
+
+        return sensors;
     }
 
     /** Stations with no protecting signal at all: ordinary, listed rather than warned about. */
@@ -5657,6 +5945,9 @@ public class AutonomySession
         found.addAll(AutonomyChecks.checkRunsPointingOppositeWays(runsPointingOppositeWays()));
 
         found.addAll(AutonomyChecks.checkSensorAddressesShared(sensorAddressesSharedByPlaces()));
+
+        found.addAll(AutonomyChecks.checkSensorSquares(sensorSquaresNotBothWays(), sensorSquaresTouching(),
+            this::describeTile));
 
         // One finding for a station at the end of a line: "may" would draw a notice saying "must", and its error
         // already says no train sent there can leave
@@ -8254,7 +8545,7 @@ public class AutonomySession
     /**
      * Records one direction along a known path from `first` to `last` without re-deriving: a shortest-path search could
      * pick the other chain of a passing loop.  The rest are neighbors, for the path's way; an end square takes its way
-     * from its one neighbor (OB-361).  Returns the squares recorded.
+     * from its one neighbor (OB-361); an s88 square is passed over (OB-472).  Returns the squares recorded.
      */
     Set<TileKey> recordAlong(List<TileKey> path, int first, int last)
     {
@@ -8263,6 +8554,8 @@ public class AutonomySession
         for (int i = Math.max(first, 0); i <= last && i < path.size(); i++)
         {
             TileKey tile = path.get(i);
+
+            if (isSensorSquare(tile)) continue;
 
             Side cameFrom = i > 0 ? graph.sideTowardNeighbour(tile, path.get(i - 1)) : null;
             Side goingTo = i + 1 < path.size() ? graph.sideTowardNeighbour(tile, path.get(i + 1)) : null;

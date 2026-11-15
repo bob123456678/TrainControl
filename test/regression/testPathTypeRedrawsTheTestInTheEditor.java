@@ -1231,8 +1231,7 @@ public class testPathTypeRedrawsTheTestInTheEditor
             {
                 if (a.equals(b)) continue;
 
-                if (session.getReducer().findPath(a, b, session.mayTurnTiles(), session.mandatoryTurnTiles(),
-                    session.barredArrivals(), session.shutTiles()) != null)
+                if (session.testPath(a, b) != null)
                 {
                     return new TileKey[] { a, b };
                 }

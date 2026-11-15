@@ -46,7 +46,8 @@ public class testTheImportDoorReadsAnOldFile
 
     /**
      * An old autonomy.json imported into a new configuration: the message says it placed his four trains (MT-491), the
-     * log says the 176 pieces of one-way track were left as the diagram has them (MT-501), ParkingTrack7 arrives as a
+     * log says the 171 pieces of one-way track were left as the diagram has them (MT-501; the other 5 lie on s88
+     * squares, which run both ways, OB-472), ParkingTrack7 arrives as a
      * station trains can stop at but autonomy does not choose (MT-502), Load Autonomy is as it was (MT-582), and the
      * configuration in use is untouched.
      *
@@ -122,7 +123,7 @@ public class testTheImportDoorReadsAnOldFile
             assertFalse(log.contains(before(I18n.t("autosetup.ui.facingsNotHeld"), "{0}")), "the log says the old file"
                 + " ran trains a way the diagram does not let them arrive (MT-491): " + log);
 
-            assertTrue(log.contains(I18n.f("autosetup.ui.directionsNotCarried", 176)), "the log does not say the 176"
+            assertTrue(log.contains(I18n.f("autosetup.ui.directionsNotCarried", 171)), "the log does not say the 171"
                 + " pieces of track the old file ran one way were left as the diagram has them (MT-501): " + log);
 
             assertEquals(directionsHeld(session), directionsBefore, "the import changed the diagram's directions (MT-501)");

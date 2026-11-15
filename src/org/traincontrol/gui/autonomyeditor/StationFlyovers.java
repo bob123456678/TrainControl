@@ -1,7 +1,10 @@
 package org.traincontrol.gui.autonomyeditor;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.util.I18n;
 
 /**
@@ -84,10 +87,15 @@ final class StationFlyovers
             : nowThenChange(I18n.f("autosetup.ui.flyEntryNow", signals), I18n.t("autosetup.ui.flyEntryChange"));
     }
 
-    /** @param direction what the dropdown says */
-    static String depart(String direction)
+    /**
+     * @param direction what the dropdown says
+     * @param why why the dropdown is grayed (D141), or null where it sets the track beside
+     * @param shared which other stations set the same track, or null
+     */
+    static String depart(String direction, String why, String shared)
     {
-        return nowThenChange(I18n.f("autosetup.ui.flyDepartNow", direction), I18n.t("autosetup.ui.flyDepartChange"));
+        return nowThenChange(I18n.f("autosetup.ui.flyDepartNow", direction), why != null ? why
+            : I18n.t("autosetup.ui.flyDepartChange") + (shared == null ? "" : "  " + shared));
     }
 
     static String turning(boolean may, boolean must)
@@ -112,19 +120,43 @@ final class StationFlyovers
         return nowThenChange(I18n.f("autosetup.ui.flySpeedNow", percent), I18n.t("autosetup.ui.flySpeedChange"));
     }
 
-    static String whichTrains(AutonomySession.WhichTrains which, int listed)
+    /** `passing` is `keptOut`'s. */
+    static String whichTrains(AutonomySession.WhichTrains which, int listed, String passing)
     {
+
         switch (which)
         {
             case BLACKLIST:
-                return nowThenChange(I18n.f("autosetup.ui.flyBlackNow", listed), I18n.t("autosetup.ui.flyBlackChange"));
+                return nowThenChange(I18n.f("autosetup.ui.flyBlackNow", listed) + "  " + passing,
+                    I18n.t("autosetup.ui.flyBlackChange"));
 
             case WHITELIST:
-                return nowThenChange(I18n.f("autosetup.ui.flyWhiteNow", listed), I18n.t("autosetup.ui.flyWhiteChange"));
+                return nowThenChange(I18n.f("autosetup.ui.flyWhiteNow", listed) + "  " + passing,
+                    I18n.t("autosetup.ui.flyWhiteChange"));
 
             default:
-                return nowThenChange(I18n.t("autosetup.ui.flyAllNow"), I18n.t("autosetup.ui.flyAllChange"));
+                return nowThenChange(I18n.t("autosetup.ui.flyAllNow"), I18n.t("autosetup.ui.flyAllChange") + "  " + passing);
         }
+    }
+
+    /**
+     * What a list does to a train kept out of these squares, a line for each kind among them (OB-483): it may run
+     * through a station that trains run through, and never through any other square.
+     */
+    static String keptOut(AutonomySession session, List<TileKey> squares)
+    {
+        Set<String> lines = new LinkedHashSet<>();
+
+        for (TileKey each : squares)
+        {
+            StationBoxes boxes = StationBoxes.of(session, each);
+
+            lines.add(I18n.t(!session.getStore().isStation(each) ? "autosetup.ui.flyWhichTrack"
+                : boxes.stops && boxes.runsThrough && !session.isMustTurnAround(each) ? "autosetup.ui.flyWhichStation"
+                : "autosetup.ui.flyWhichStop"));
+        }
+
+        return String.join("  ", lines);
     }
 
     static String unavailable(String names)

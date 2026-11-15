@@ -218,6 +218,16 @@ public final class StationSettingsWindow extends StationWindowBase
 
         sideColumn.add(right, BorderLayout.NORTH);
 
+        // The room a taller picture would take, under everything, so the window keeps its height on a re-aim (MT-961)
+        sideColumn.add(new JPanel()
+        {
+            @Override
+            public Dimension getPreferredSize()
+            {
+                return new Dimension(0, picture.spareHeight());
+            }
+        }, BorderLayout.CENTER);
+
         rightColumn.add(presetsPanel, BorderLayout.NORTH);
         rightColumn.add(sideColumn, BorderLayout.CENTER);
 
@@ -234,8 +244,12 @@ public final class StationSettingsWindow extends StationWindowBase
 
         trainTab.settings.setVisible(false);
 
-        // Locomotive Settings... sits on Done Editing's row, at the bottom left
-        assemble(middle).add(trainTab.settings, BorderLayout.WEST);
+        // Locomotive Settings... sits on Done Editing's row, at the bottom left; its height is kept on the Settings tab
+        // too, so Done Editing does not move between the tabs (OB-479)
+        JPanel footer = assemble(middle);
+
+        footer.add(trainTab.settings, BorderLayout.WEST);
+        footer.add(Box.createVerticalStrut(trainTab.settings.getPreferredSize().height), BorderLayout.CENTER);
 
         int formOnly = form.getPreferredSize().width + 2 * PAD - 24;
         int presetsWidth = presetsPanel.getPreferredSize().width;
@@ -1183,7 +1197,8 @@ public final class StationSettingsWindow extends StationWindowBase
         whichBlack.setSelected(which == WhichTrains.BLACKLIST);
         whichWhite.setSelected(which == WhichTrains.WHITELIST);
         whichMixed.setVisible(which == null);
-        fly("which", which == null || listed == null ? mixedTip() : StationFlyovers.whichTrains(which, listed));
+        fly("which", which == null || listed == null ? mixedTip()
+            : StationFlyovers.whichTrains(which, listed, StationFlyovers.keptOut(session, targets())));
 
         if (!many)
         {
@@ -1411,11 +1426,13 @@ public final class StationSettingsWindow extends StationWindowBase
             departAnswers.clear();
         }
 
-        boolean carries = session.canCarryDirection(tile);
-
         int y = 0;
 
         String said = null;
+
+        String why = null, shared = null;
+
+        Set<TilePorts.Side> out = session.sidesSentOutBy(tile);
 
         for (final Map.Entry<RouteId, TilePorts.Route> entry : routes.entrySet())
         {
@@ -1442,21 +1459,28 @@ public final class StationSettingsWindow extends StationWindowBase
                 labels.add(I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getB())));
             }
 
-            answers.add(Direction.NONE);
-            labels.add(I18n.t("autosetup.ui.menuRouteNone"));
+            // Read and set on the track beside, as the station runs both ways (D141)
+            Direction current = session.departureWay(tile, entry.getKey(), out);
 
-            Direction current = TileGraph.inForce(session.directionAsDrawn(tile, entry.getKey()), route);
+            String fixed = session.whyDepartureWayIsFixed(tile, entry.getKey(), out);
+
+            boolean sets = fixed == null;
+
+            if (why == null) why = fixed;
+
+            if (shared == null && sets) shared = session.departureSharedWith(tile, entry.getKey());
 
             final JComboBox<String> choice = same ? departChoices.get(entry.getKey())
-                : new Choice(at -> actAlone(() -> editor.setRunDirection(tile, entry.getKey(), answers.get(at))),
+                : new Choice(at -> actAlone(() -> editor.setDepartureWay(tile, entry.getKey(), answers.get(at))),
                     labels.toArray(new String[0]));
 
             choice.setName("station.depart." + y);
-            choice.setEnabled(live && carries);
+            choice.setEnabled(live && sets);
 
-            if (answers.contains(current)) choice.setSelectedIndex(answers.indexOf(current));
+            // No way out shows as no pick: the list only says which way trains leave (D144)
+            choice.setSelectedIndex(answers.indexOf(current));
 
-            if (said == null) said = String.valueOf(choice.getSelectedItem());
+            if (said == null && current != Direction.NONE) said = String.valueOf(choice.getSelectedItem());
 
             if (same) { y++; continue; }
 
@@ -1472,7 +1496,7 @@ public final class StationSettingsWindow extends StationWindowBase
             departAnswers.put(entry.getKey(), answers);
         }
 
-        fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said));
+        fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said, why, shared));
 
         depart.revalidate();
     }
@@ -1620,8 +1644,7 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         String held = whyHeld();
 
-        String[] said = mark.kind == StationPicture.Mark.Kind.OUT ? wayOut(mark, press && held == null)
-            : mark.kind == StationPicture.Mark.Kind.IN ? wayIn(mark, press && held == null)
+        String[] said = mark.kind == StationPicture.Mark.Kind.IN ? wayIn(mark, press && held == null)
             : nextSquare(mark, press && held == null);
 
         String then = held != null ? held : said[1];
@@ -1633,47 +1656,6 @@ public final class StationSettingsWindow extends StationWindowBase
     private static String[] said(String means, String click)
     {
         return new String[] {means, click};
-    }
-
-    /** A way out toggles that side among the open arms, as May Depart's choice for its track. */
-    private String[] wayOut(StationPicture.Mark mark, boolean press)
-    {
-        Map<RouteId, TilePorts.Route> routes = editor.session.getRoutes(tile);
-        List<TilePorts.Side> arms = AutonomyEditorPanel.armsOf(routes);
-
-        int at = arms.indexOf(mark.side);
-
-        if (at < 0) return said(null, I18n.t("autosetup.ui.stationPicCannot"));
-
-        int mask = editor.armMask(tile, routes, arms);
-        boolean set = (mask & 1 << at) != 0;
-
-        // Open here, but the railway takes no train out this way: the track around is what to change
-        if (set && !mark.open)
-        {
-            return said(I18n.t("autosetup.ui.stationPicMeansOutShut"), I18n.t("autosetup.ui.stationPicOutBeyond"));
-        }
-
-        for (Map.Entry<RouteId, TilePorts.Route> each : routes.entrySet())
-        {
-            TilePorts.Route road = each.getValue();
-
-            if (road.getA() != mark.side && road.getB() != mark.side) continue;
-
-            JComboBox<String> choice = departChoices.get(each.getKey());
-
-            int answer = choice == null ? -1
-                : departAnswers.get(each.getKey()).indexOf(TileGraph.answerFor(road, arms, mask ^ 1 << at));
-
-            if (answer < 0 || !choice.isEnabled()) return said(null, I18n.t("autosetup.ui.stationPicCannot"));
-
-            if (press) choice.setSelectedIndex(answer);
-
-            return said(I18n.t(set ? "autosetup.ui.stationPicMeansOutOpen" : "autosetup.ui.stationPicMeansOutShut"),
-                I18n.t(set ? "autosetup.ui.stationPicOutOpen" : "autosetup.ui.stationPicOutShut"));
-        }
-
-        return said(null, I18n.t("autosetup.ui.stationPicCannot"));
     }
 
     /** A way in ticks or unticks that side's May Arrive From box. */
@@ -1836,14 +1818,14 @@ public final class StationSettingsWindow extends StationWindowBase
         return picture.drawnForTest();
     }
 
-    /** @return the sides the picture draws a way out of the station at, or a way in */
-    public Set<String> pictureWaysForTest(boolean out)
+    /** @return the sides the picture draws a way into the station at */
+    public Set<String> pictureWaysInForTest()
     {
-        return picture.waysForTest(out);
+        return picture.waysInForTest();
     }
 
     /**
-     * @return in the picture's block's pixels: "OUT.N", "IN.N" (a station's marks), "AXIS.N" (that side's axis),
+     * @return in the picture's block's pixels: "IN.N" (a station's way in), "AXIS.N" (that side's axis),
      *     "NEXT.N.W" (the next square to the north's arrow at its west side), "SQUARE" and "SQUARE.N" (the squares)
      */
     public Map<String, Shape> pictureMarksForTest()

@@ -54,14 +54,11 @@ final class StationPicture extends JPanel
     static final int SQUARE = 60;
 
     /**
-     * On a straight side every arrow, the station's and the next squares', is the diagram's size (`SQUARE`), so green
-     * and red read alike, and the station's icon is drawn smaller so the arrows are what the picture is read for.  On a
-     * curve, where the ways out and the icon stand together, the ways out are smaller (`CURVE_ARROW`) and the icon
-     * whole, so the station's type still shows.
+     * The station's icon is drawn smaller on a straight station, so the marks beside it are what the picture is read
+     * for, and whole on a curve, so the station's type still shows.  The station wears no track arrows: an s88 square
+     * runs both ways (OB-472).
      */
     private static final float ICON = 0.85f;
-
-    private static final int CURVE_ARROW = 48;
 
     /** The ways in are drawn smaller than the diagram's, so that a way in and a way out fit on one side. */
     private static final int CHEVRON = 52;
@@ -83,12 +80,12 @@ final class StationPicture extends JPanel
         void press(Mark mark);
     }
 
-    /** One clickable mark: a station's way out or in at a side, or a next square's arrow at one of its sides. */
+    /** One clickable mark: a station's way in at a side, or a next square's arrow at one of its sides. */
     static final class Mark
     {
         enum Kind
         {
-            OUT, IN, NEIGHBOR
+            IN, NEIGHBOR
         }
 
         final Kind kind;
@@ -97,19 +94,13 @@ final class StationPicture extends JPanel
         final boolean open;
         final Shape shape;
 
-        /** For a station's mark: where its arrowhead points from, and which way. */
-        final int[] target;
-        final double[] heading;
-
-        Mark(Kind kind, TileKey square, Side side, boolean open, Shape shape, int[] target, double[] heading)
+        Mark(Kind kind, TileKey square, Side side, boolean open, Shape shape)
         {
             this.kind = kind;
             this.square = square;
             this.side = side;
             this.open = open;
             this.shape = shape;
-            this.target = target;
-            this.heading = heading;
         }
 
         /** On the shape itself, or `near` it: within a few pixels of its outline. */
@@ -164,6 +155,9 @@ final class StationPicture extends JPanel
 
     private transient AutonomySession session;
     private transient TileKey showing;
+
+    /** The most rows any s88 square of the setup draws, so the window can keep room for that box (`spareHeight`). */
+    private int tallest = 1;
     private transient LayoutLabel square;
     private transient TileAnnotation drawn;
     private transient StandingRules rules;
@@ -196,7 +190,7 @@ final class StationPicture extends JPanel
         block.setName("station.picture.ways");
         block.setBackground(Color.WHITE);
         block.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(204, 204, 204)),
-            BorderFactory.createEmptyBorder(3, 8, 3, 8)));
+            BorderFactory.createEmptyBorder(10, 8, 10, 8)));
 
         art.setOpaque(false);
         block.add(art);
@@ -233,6 +227,18 @@ final class StationPicture extends JPanel
 
             block.revalidate();
         }
+
+        int most = 1;
+
+        for (TileKey each : session.getReducer() == null ? Collections.<TileKey>emptySet()
+            : session.getReducer().getPoints().keySet())
+        {
+            most = Math.max(most, 1 + (connects(each, Side.N) ? 1 : 0) + (connects(each, Side.S) ? 1 : 0));
+        }
+
+        if (most != tallest) block.revalidate();
+
+        tallest = most;
 
         setVisible(square != null);
 
@@ -318,18 +324,33 @@ final class StationPicture extends JPanel
         return out;
     }
 
-    /** Where a square sits: the station in the middle of a 3 by 3 block centered in the frame, a next square beside it. */
+    /**
+     * Where a square sits: the station in the middle of a 3 by 3 block, a next square beside it; the row above or below
+     * is left out where no square is drawn there, and the rows drawn are centered in the frame (MT-961).
+     */
     private Rectangle cell(Side side)
     {
         Insets inside = block.getInsets();
 
         int left = inside.left + Math.max(0, (block.getWidth() - inside.left - inside.right - 3 * SQUARE) / 2);
-        int top = inside.top + Math.max(0, (block.getHeight() - inside.top - inside.bottom - 3 * SQUARE) / 2);
+        int top = inside.top + Math.max(0, (block.getHeight() - inside.top - inside.bottom - rows() * SQUARE) / 2);
 
         int x = side == Side.W ? 0 : side == Side.E ? 2 : 1;
-        int y = side == Side.N ? 0 : side == Side.S ? 2 : 1;
+        int y = (side == Side.N ? 0 : side == Side.S ? 2 : 1) - (next.containsKey(Side.N) ? 0 : 1);
 
         return new Rectangle(left + x * SQUARE, top + y * SQUARE, SQUARE, SQUARE);
+    }
+
+    /** How much shorter this box is than the tallest the setup can need: room the window keeps, so no re-aim moves it. */
+    int spareHeight()
+    {
+        return Math.max(0, tallest - rows()) * SQUARE;
+    }
+
+    /** The rows drawn: the station's, and those of a next square above or below it. */
+    private int rows()
+    {
+        return 1 + (next.containsKey(Side.N) ? 1 : 0) + (next.containsKey(Side.S) ? 1 : 0);
     }
 
     /** Every mark, where it is drawn and clicked; one list for painting, clicks, tooltips and tests. */
@@ -343,7 +364,7 @@ final class StationPicture extends JPanel
 
         for (Side side : next.keySet())
         {
-            if (rules != null) stationMarks(out, middle, side);
+            if (rules != null) wayIn(out, middle, side);
 
             TileAnnotation their = nextMarks.get(side);
 
@@ -353,11 +374,26 @@ final class StationPicture extends JPanel
         return out;
     }
 
-    /**
-     * A station side's way out, its tip at the edge where the diagram draws it, and its way in: just behind the way out
-     * on one axis on a straight side, beside it by the edge on a curved one.
-     */
-    private void stationMarks(List<Mark> out, Rectangle at, Side side)
+    /** A station side's way in, beside the side's axis by its edge, where the editor's arrivals view draws one. */
+    private void wayIn(List<Mark> out, Rectangle at, Side side)
+    {
+        Side other = otherEnd(side);
+
+        boolean bent = other != null && other.opposite() != side && other != side;
+
+        // None on a square that is no station (OB-441)
+        boolean wayIn = false;
+
+        for (TileAnnotation.Arrival arrival : session.arrivalMarks(showing, true)) wayIn |= arrival.getSide() == side;
+
+        if (!wayIn) return;
+
+        out.add(new Mark(Mark.Kind.IN, showing, side, rules.waysIn().contains(side.name()),
+            apartChevron(at, side, other, bent)));
+    }
+
+    /** The other end of the station's road that meets this side, or null. */
+    private Side otherEnd(Side side)
     {
         Side other = null;
 
@@ -367,42 +403,11 @@ final class StationPicture extends JPanel
             else if (road.getB() == side) other = road.getA();
         }
 
-        double[] edge = middleOf(at, side);
-        double[] from = other == null || other == side ? new double[] {at.getCenterX(), at.getCenterY()} : middleOf(at, other);
-
-        double dx = edge[0] - from[0];
-        double dy = edge[1] - from[1];
-        double length = Math.sqrt(dx * dx + dy * dy);
-
-        double[] away = {dx / length, dy / length};
-
-        int[] tip = {(int) Math.round(edge[0]), (int) Math.round(edge[1])};
-
-        boolean bent = other != null && other.opposite() != side && other != side;
-
-        // As long as the arrow's span, which painting reads back from it
-        int span = bent ? CURVE_ARROW : SQUARE;
-        double[] heading = {away[0] * span, away[1] * span};
-
-        boolean leaves = rules.waysOut().contains(side.name());
-
-        java.awt.Polygon arrow = TileAnnotation.arrowShape(tip, heading, leaves, span);
-
-        out.add(new Mark(Mark.Kind.OUT, showing, side, leaves, arrow, tip, heading));
-
-        // The ways in the editor's arrivals view draws, none on a square that is no station (OB-441)
-        boolean wayIn = false;
-
-        for (TileAnnotation.Arrival arrival : session.arrivalMarks(showing, true)) wayIn |= arrival.getSide() == side;
-
-        if (!wayIn) return;
-
-        out.add(new Mark(Mark.Kind.IN, showing, side, rules.waysIn().contains(side.name()), apartChevron(at, side, other, bent),
-            null, null));
+        return other;
     }
 
     /**
-     * A way in: it stands by its own edge, pointing straight in, beside its way out and off the station's art.  On a
+     * A way in: it stands by its own edge, pointing straight in, off the side's axis and the station's art.  On a
      * curved side it is shifted along the edge away from the curve, so the two ends of a curve never share a spot of
      * the chord (FR-111); on a straight side it is shifted off the axis, down or to the east.
      */
@@ -454,7 +459,7 @@ final class StationPicture extends JPanel
             Shape area = new Ellipse2D.Double(edge[0] + inX * reach / 2 - reach / 2, edge[1] + inY * reach / 2 - reach / 2, reach,
                 reach);
 
-            out.add(new Mark(Mark.Kind.NEIGHBOR, square, each.getKey(), each.getValue(), area, null, null));
+            out.add(new Mark(Mark.Kind.NEIGHBOR, square, each.getKey(), each.getValue(), area));
         }
     }
 
@@ -481,14 +486,14 @@ final class StationPicture extends JPanel
         return drawn;
     }
 
-    /** @return the sides a way out, or a way in, is drawn open at */
-    Set<String> waysForTest(boolean out)
+    /** @return the sides a way in is drawn open at */
+    Set<String> waysInForTest()
     {
         Set<String> sides = new TreeSet<>();
 
         for (Mark mark : marks())
         {
-            if (mark.open && mark.kind == (out ? Mark.Kind.OUT : Mark.Kind.IN)) sides.add(mark.side.name());
+            if (mark.open && mark.kind == Mark.Kind.IN) sides.add(mark.side.name());
         }
 
         return sides;
@@ -516,21 +521,22 @@ final class StationPicture extends JPanel
         return out;
     }
 
-    /** @return a side's axis: from the middle of the station's edge, one square long, into the station */
+    /** @return a side's axis where the station's track meets it: from the middle of its edge, one square long, inward */
     Line2D axisForTest(Side side)
     {
-        for (Mark mark : marks())
-        {
-            if (mark.kind == Mark.Kind.OUT && mark.side == side)
-            {
-                double length = Math.hypot(mark.heading[0], mark.heading[1]);
+        Side other = square == null || !next.containsKey(side) ? null : otherEnd(side);
 
-                return new Line2D.Double(mark.target[0], mark.target[1], mark.target[0] - mark.heading[0] / length * SQUARE,
-                    mark.target[1] - mark.heading[1] / length * SQUARE);
-            }
-        }
+        if (other == null) return null;
 
-        return null;
+        Rectangle at = cell(null);
+
+        double[] edge = middleOf(at, side);
+        double[] from = other == side ? new double[] {at.getCenterX(), at.getCenterY()} : middleOf(at, other);
+
+        double length = Math.hypot(edge[0] - from[0], edge[1] - from[1]);
+
+        return new Line2D.Double(edge[0], edge[1], edge[0] - (edge[0] - from[0]) / length * SQUARE,
+            edge[1] - (edge[1] - from[1]) / length * SQUARE);
     }
 
     /** The squares, the next ones in gray, and the marks over them. */
@@ -596,7 +602,7 @@ final class StationPicture extends JPanel
         {
             Insets inside = getInsets();
 
-            return new Dimension(3 * SQUARE + inside.left + inside.right, 3 * SQUARE + inside.top + inside.bottom);
+            return new Dimension(3 * SQUARE + inside.left + inside.right, rows() * SQUARE + inside.top + inside.bottom);
         }
 
         @Override
@@ -649,12 +655,6 @@ final class StationPicture extends JPanel
 
                 for (Mark mark : marks())
                 {
-                    if (mark.kind == Mark.Kind.OUT)
-                    {
-                        TileAnnotation.paintArrow(g2, mark.target, mark.heading, mark.open,
-                            (int) Math.round(Math.hypot(mark.heading[0], mark.heading[1])));
-                    }
-
                     if (mark.kind == Mark.Kind.IN) TileAnnotation.paintArrival(g2, (Path2D) mark.shape, mark.open, CHEVRON);
                 }
             }

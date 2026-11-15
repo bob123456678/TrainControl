@@ -271,9 +271,9 @@ public class testAnImportedFacingGuessCanStart
      * The old file's one-way running is carried onto the diagram, so on a fresh upgrade every train can stand the way
      * the file ran it.  Adam: "Carry the old file's directions onto the diagram - yes, to the extent possible."
      * Without it the diagram's defaults decide (TopMainR1Inter, reached from the north in the old graph, could be
-     * arrived at from the east only).
+     * arrived at from the east only).  No s88 square is given a direction, as each runs both ways (OB-472).
      *
-     * MUTATION: carry nothing, and this fails.
+     * MUTATION: carry nothing, or carry onto an s88 square, and this fails.
      */
     @Test
     public void testTheOldDirectionsAreCarried() throws Exception
@@ -306,6 +306,11 @@ public class testAnImportedFacingGuessCanStart
 
             assertTrue(imported.facingsNotHeld.isEmpty(), "with the old file's directions carried, a facing it gives"
                 + " still cannot be held: " + imported.facingsNotHeld);
+
+            for (TileKey sensor : session.getGraph().getFeedbackTiles())
+            {
+                assertTrue(session.runsBothWays(sensor), "the import gave the s88 square " + sensor + " a direction");
+            }
 
             // AND EVERY SQUARE RUNS AS ITS ARROWS SHOW (OB-351): a switch the file ran one way along one road and the
             // other along another is set by its arms, so no road is shut a way its arrow draws open
