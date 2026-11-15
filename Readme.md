@@ -21,7 +21,7 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 <img src="assets/station_menu.png?raw=true" alt="Right-clicking the station Ashby on the track diagram, with Station Settings... right under its name in the menu" width="300"> <img src="assets/station_settings_ashby.png?raw=true" alt="The Station Settings window for Ashby, with what trains may do there on the left and a picture of the station on the right" width="500">
 
 * Tick whether trains can stop there and whether they can run through, or press a button under `Presets` to set it up in one click.
-* Choose which ways trains may leave under `May depart`, or click the arrows on the track beside the station in its picture.
+* Choose which ways trains may leave the station under `May depart`, or click a station in the autonomy editor to open its window.
 * Under `Advanced`, `Allowed trains` keeps some trains away or lets only the ones you pick stop there.
 * A table beside the picture tells you what trains may do at the station, whether autonomy sends them or you do.
 
@@ -514,8 +514,11 @@ Tab icons provided by Freepik.
             - In the autonomy editor, you can drag a train from one station to another to move it there.
             - The autonomy editor draws signals and lamps in gray to keep the picture simple, and shows the signals you can pick in color while you choose a guard signal.
             - The `Bulk Tools` menu is grouped with dividers, and `Hide Hover Tooltips` hides its tooltips too.
-            - In the autonomy editor, a click on an s88 square that runs both ways opens its `Station Settings`, so double-clicking a station works.  An s88 square always runs both ways now: a click on one set to run one way or closed puts it back, and to make trains run one way past a sensor you set the track beside it.  The picture in `Station Settings` no longer draws arrows on the station's own track, and `May depart` shows the way out the railway really has.  It sets the plain track from the station to the next switch or s88 square, never a switch, and is grayed, showing that way, where there is no such track beside the station, where trains are kept from leaving farther out, or while the station still has an arrow.  It no longer offers `Closed - No Trains`: untick `Trains can stop here` or press `Off` instead, or untick both boxes to take the square out of service.  A setup saved with it shows the s88 square's error until the station is clicked clear.
-            - The setup check notes two s88 squares with no track between them, since the join between them can't be given a direction.
+            - In the autonomy editor, clicking or double-clicking an s88 square opens its `Station Settings` instead of changing its arrows.
+            - `May depart` is grayed and shows the only way out at a station where the track ends on one side, such as a terminus at the end of a line.
+            - `May depart` no longer offers `Closed - No Trains`, so untick `Trains can stop here` or press `Off` instead, or untick both boxes to take the square out of service.
+            - The picture in `Station Settings` no longer draws green arrows on the station, only a red one at a side trains may not leave by.
+            - The setup check notes two s88 squares with no track between them.
             - With `Toggle specified routes` ticked, starting autonomy, a timetable or `Return Home` switches the routes back to the ones ticked in the list, including any you switched on or off by hand since.
         - Track Diagram
             - The track diagram editor has a strip of icons under `Page` to add, duplicate, rename and delete a page and to move it up or down, and its `Manage Pages` menu is now `Tools`.
@@ -588,7 +591,7 @@ Tab icons provided by Freepik.
     - Notes
         - The first time you open a layout saved by an earlier version, TrainControl updates its page links once so they keep working when pages are renamed or moved, logs it, and keeps a `.bak` copy of each page it changed.
         - A layout converted by 3.1.0 and a setup saved by 3.1.0 still open in 3.0.8.
-        - An autonomy setup with arrows set on an s88 square shows an error under `Things to look at` until each such square is clicked back to both ways.
+        - A station set to `Closed - No Trains` in an earlier version stays closed, and `May depart` shows no choice for it until you pick one.
         - For developers: `MarklinControlStation.saveState(boolean)` and `ViewListener.saveState` now return the reason a save failed, or null.  Java code compiled against an older jar must be recompiled.
 * v3.0.8 [11/04/2026]
     - New Features
