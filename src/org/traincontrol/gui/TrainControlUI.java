@@ -21745,17 +21745,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Waits, off the event thread and a few seconds at most, for the pictures of the page about to be built, so it is
-     * whole on its first paint.
+     * whole on its first paint; `shown` is the page and size, read on the event thread.
      */
-    private void awaitTheShownPagesPictures()
+    private void awaitTheShownPagesPictures(java.util.concurrent.Future<Map.Entry<LayoutDiagram, Integer>> shown)
     {
         try
         {
-            Object page = this.LayoutList.getSelectedItem();
-            Integer tiles = this.layoutSizes.get(String.valueOf(this.SizeList.getSelectedItem()));
-            LayoutDiagram shown = page == null || tiles == null ? null : this.model.getLayout(page.toString());
+            Map.Entry<LayoutDiagram, Integer> page = shown.get(3, java.util.concurrent.TimeUnit.SECONDS);
 
-            if (shown != null) LayoutLabel.decodePage(shown, tiles, this).get(3, java.util.concurrent.TimeUnit.SECONDS);
+            if (page != null)
+                LayoutLabel.decodePage(page.getKey(), page.getValue(), this).get(3, java.util.concurrent.TimeUnit.SECONDS);
         }
         catch (InterruptedException ex)
         {
@@ -21791,13 +21790,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // thread), whose rebuild is the slow part of a CS sync, leaving the menu item enabled that long (OB-094).
         repaintPathLabel();
 
-        // Posted before the build, which waits for the pictures first
-        if (SwingUtilities.isEventDispatchThread()) showTheDiagramIsLoadingIfBlank();
-        else SwingUtilities.invokeLater(this::showTheDiagramIsLoadingIfBlank);
+        // Posted before the build, which waits for the pictures first, of the page and size the combo boxes show
+        final java.util.concurrent.CompletableFuture<Map.Entry<LayoutDiagram, Integer>> shown =
+            new java.util.concurrent.CompletableFuture<>();
+        final Runnable onTheEventThread = () ->
+        {
+            showTheDiagramIsLoadingIfBlank();
+
+            Object page = this.LayoutList.getSelectedItem();
+            Integer tiles = this.layoutSizes.get(String.valueOf(this.SizeList.getSelectedItem()));
+            LayoutDiagram diagram = page == null || tiles == null ? null : this.model.getLayout(page.toString());
+
+            shown.complete(diagram == null ? null : new java.util.AbstractMap.SimpleImmutableEntry<>(diagram, tiles));
+        };
+
+        if (SwingUtilities.isEventDispatchThread()) onTheEventThread.run();
+        else SwingUtilities.invokeLater(onTheEventThread);
 
         this.LayoutGridRenderer.submit(() ->
         {
-            awaitTheShownPagesPictures();
+            awaitTheShownPagesPictures(shown);
 
             SwingUtilities.invokeLater(() ->
             {

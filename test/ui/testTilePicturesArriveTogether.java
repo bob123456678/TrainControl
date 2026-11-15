@@ -162,6 +162,101 @@ public class testTilePicturesArriveTogether
         }
     }
 
+    /** A combo box's model as it was, noting each read of its selection made on another thread than the two allowed. */
+    private static final class Watched extends javax.swing.AbstractListModel<Object>
+        implements javax.swing.ComboBoxModel<Object>
+    {
+        private final javax.swing.ComboBoxModel<Object> under;
+        private final String which;
+        private final Thread caller;
+        private final List<String> offTheEventThread;
+
+        Watched(javax.swing.ComboBoxModel<Object> under, String which, Thread caller, List<String> offTheEventThread)
+        {
+            this.under = under;
+            this.which = which;
+            this.caller = caller;
+            this.offTheEventThread = offTheEventThread;
+        }
+
+        @Override
+        public Object getSelectedItem()
+        {
+            // The claim's own thread asks repaintLayout, as a sync's worker does; the rebuild it starts is what is watched
+            if (!SwingUtilities.isEventDispatchThread() && Thread.currentThread() != caller)
+            {
+                offTheEventThread.add(which + " on " + Thread.currentThread().getName());
+            }
+
+            return under.getSelectedItem();
+        }
+
+        @Override
+        public void setSelectedItem(Object item)
+        {
+            under.setSelectedItem(item);
+            fireContentsChanged(this, -1, -1);
+        }
+
+        @Override
+        public int getSize()
+        {
+            return under.getSize();
+        }
+
+        @Override
+        public Object getElementAt(int index)
+        {
+            return under.getElementAt(index);
+        }
+    }
+
+    /**
+     * A rebuild of the main window's diagram asked from a worker reads the page and size boxes on the event thread,
+     * where Swing's models may be read, and not on the renderer's thread.
+     *
+     * MUTATION: in `TrainControlUI.awaitTheShownPagesPictures`, read `SizeList.getSelectedItem()` there again, and this
+     * fails.
+     */
+    @Test(timeOut = 120000)
+    @SuppressWarnings("unchecked")
+    public void testARebuildReadsThePageAndSizeOnTheEventThread() throws Exception
+    {
+        final TrainControlUI ui = frozen.ui;
+        final JComboBox<Object> pages = (JComboBox<Object>) Reflect.get(TrainControlUI.class, ui, "LayoutList");
+        final JComboBox<Object> sizes = (JComboBox<Object>) Reflect.get(TrainControlUI.class, ui, "SizeList");
+        final javax.swing.ComboBoxModel<Object> pagesWere = pages.getModel();
+        final javax.swing.ComboBoxModel<Object> sizesWere = sizes.getModel();
+        final List<String> off = Collections.synchronizedList(new java.util.ArrayList<>());
+        final Thread caller = Thread.currentThread();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            pages.setModel(new Watched(pagesWere, "the page", caller, off));
+            sizes.setModel(new Watched(sizesWere, "the size", caller, off));
+        });
+
+        try
+        {
+            Settle.theDiagram(ui);
+
+            ui.repaintLayout();
+
+            Settle.theDiagram(ui);
+
+            assertEquals(off, Collections.emptyList(), "a rebuild read the combo boxes off the event thread, where a"
+                + " change of page or size meanwhile can be read half made");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                if (pages.getModel() instanceof Watched) pages.setModel(pagesWere);
+                if (sizes.getModel() instanceof Watched) sizes.setModel(sizesWere);
+            });
+        }
+    }
+
     /** Builds `page` at `size` on a panel of its own and waits for its pictures; the grid built. */
     private static LayoutGrid buildAndSettle(LayoutDiagram page, int size) throws Exception
     {
