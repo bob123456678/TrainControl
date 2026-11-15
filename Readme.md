@@ -449,7 +449,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v3.1.0
+* v3.1.0 [11/15/2026]
     - Central Station Protocol
         - New Features
             - TrainControl now connects to a CS3 over TCP, and if that doesn't work, it falls back to UDP and says so in the log. A CS2 still uses UDP.
