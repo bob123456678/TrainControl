@@ -5508,12 +5508,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         at.insets = new Insets(6, 0, 6, 0);
         this.KeyboardPanel.add(this.KeyboardLabel, at);
 
+        // The keys start at the heading's left edge (MT-954); the 6 on the right keeps the centered column's width, so
+        // the heading stays where the Routes heading is (OB-435)
         at.gridy = 1;
-        at.insets = new Insets(0, 6, 0, 0);
+        at.insets = new Insets(0, 0, 0, 6);
         this.KeyboardPanel.add(this.keyboardKeys, at);
 
         at.gridy = 2;
-        at.insets = new Insets(6, 6, 0, 0);
+        at.insets = new Insets(6, 0, 0, 6);
 
         JPanel protocol = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         protocol.setOpaque(false);
