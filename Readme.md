@@ -831,6 +831,9 @@ Tab icons provided by Freepik.
         - The "paste entire row" and "paste entire column" options were removed.
         - The JSON and FlatLaf libraries were updated, and the GraphStream libraries are no longer needed.
 
+<details>
+<summary>Show older versions</summary>
+
 * v2.8.x [8/2026 - 9/2026]
     - Added French, Italian, Spanish, Dutch and Polish translations, Path Integrity Validation, which runs a train only once the Central Station confirms its switches and signals, and a "return home" feature that brings each locomotive back to the station you chose for it.  Later 2.8 versions fixed many autonomy, route and Central Station problems, and 2.8.2 no longer loses page names when you go back to it after using 3.0.
 
@@ -881,3 +884,5 @@ Tab icons provided by Freepik.
 
 * v1.3.2
     - First public release.
+
+</details>
