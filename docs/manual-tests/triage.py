@@ -192,7 +192,7 @@ def write_text(path, text, crlf):
 
     if os.path.exists(path):
         # %f (microseconds) too - to-the-second was not fine enough: three writes inside one
-        # second, which submit()'s observations-then-comment sequence can produce on its own,
+        # second, which a submit's comment write and the autosave can produce on their own,
         # overwrote each other's backup under the same name.
         stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         name = "%s.%s.bak" % (os.path.basename(path), stamp)
@@ -1872,7 +1872,6 @@ class Triage(tk.Tk):
 
         self.feedback = tk.Text(answer, height=3, wrap=tk.WORD, font=("Segoe UI", 10))
         self.feedback.pack(fill=tk.X)
-
 
         buttons = ttk.Frame(lower, padding=(0, PAD, 0, 0))
         buttons.pack(fill=tk.X)
