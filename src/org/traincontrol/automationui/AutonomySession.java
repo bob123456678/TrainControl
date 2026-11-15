@@ -5255,7 +5255,10 @@ public class AutonomySession
         return globals;
     }
 
-    /** Which way trains may leave a station along one of its roads (D141): by the sides `sidesSentOutBy` names. */
+    /**
+     * Which way trains may leave a station along one of its roads (D141): by the sides `sidesSentOutBy` names, the way
+     * the track lets a train out, as the Manually column of "What's allowed here" has it.
+     */
     public Direction departureWay(TileKey station, RouteId road)
     {
         return departureWay(station, road, sidesSentOutBy(station));
@@ -5353,14 +5356,14 @@ public class AutonomySession
         {
             Run run = runBeside(station, side);
 
-            if (run == null) return I18n.f("autosetup.ui.flyDepartOnly", String.valueOf(side));
+            if (run == null) return I18n.f("autosetup.ui.flyDepartOnly", sideWord(side));
 
             Landing next = graph.landing(station, side);
 
             // Open beside, yet no way out: the limit is past the track this sets
             if (goesOn(next) && !out.contains(side))
             {
-                return I18n.f("autosetup.ui.flyDepartFarther", String.valueOf(side), describeTile(farEnd(run, station, next)));
+                return I18n.f("autosetup.ui.flyDepartFarther", sideWord(side), describeTile(farEnd(run, station, next)));
             }
         }
 
@@ -5382,11 +5385,17 @@ public class AutonomySession
 
             if (isSensorSquare(far) && !far.equals(station))
             {
-                out.add(I18n.f("autosetup.ui.flyDepartShared", String.valueOf(side), describeTile(far)));
+                out.add(I18n.f("autosetup.ui.flyDepartShared", sideWord(side), describeTile(far)));
             }
         }
 
         return out.isEmpty() ? null : String.join("  ", out);
+    }
+
+    /** A side as "What's allowed here" names it: north, east, south or west. */
+    private static String sideWord(Side side)
+    {
+        return I18n.t("autosetup.ui.side" + side.name());
     }
 
     /** Where the run beside a station ends away from it; null where the track stops. */

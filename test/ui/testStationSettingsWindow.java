@@ -2086,7 +2086,7 @@ public class testStationSettingsWindow
             javax.swing.JComboBox.class).getSelectedItem()), I18n.f("autosetup.ui.menuRouteToward", sides[0]),
             "May depart does not show the only way out");
         assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("depart")).contains(
-            I18n.f("autosetup.ui.flyDepartOnly", sides[1])), "the (i) does not say the line ends there");
+            I18n.f("autosetup.ui.flyDepartOnly", I18n.t("autosetup.ui.side" + sides[1]))), "the (i) does not say the line ends there");
 
         StationDoors.close(window);
     }

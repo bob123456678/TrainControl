@@ -316,7 +316,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         assertFalse(session.departureWayCanBeSet(end, road), "May depart can be set at the end of a line");
         assertEquals(session.departureWay(end, road), east, "May depart does not show the one way out");
         assertEquals(session.whyDepartureWayIsFixed(end, road, session.sidesSentOutBy(end)),
-            I18n.f("autosetup.ui.flyDepartOnly", String.valueOf(Side.W)), "the (i) line does not say which side has nothing to set");
+            I18n.f("autosetup.ui.flyDepartOnly", I18n.t("autosetup.ui.sideW")), "the (i) line does not say which side has nothing to set");
 
         TileKey far = new TileKey("main", 7, 1);
 
@@ -455,9 +455,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         assertTrue(session.departureWayCanBeSet(west, westRoad) && session.departureWayCanBeSet(east, eastRoad),
             "precondition: May depart is gray on plain track between stations");
         assertTrue(session.departureSharedWith(west, westRoad).contains(I18n.f("autosetup.ui.flyDepartShared",
-            String.valueOf(Side.E), session.describeTile(east))), "the (i) line does not name the station to the east");
+            I18n.t("autosetup.ui.sideE"), session.describeTile(east))), "the (i) line does not name the station to the east");
         assertTrue(session.departureSharedWith(east, eastRoad).contains(I18n.f("autosetup.ui.flyDepartShared",
-            String.valueOf(Side.W), session.describeTile(west))), "the (i) line does not name the station to the west");
+            I18n.t("autosetup.ui.sideW"), session.describeTile(west))), "the (i) line does not name the station to the west");
 
         session.setDepartureWay(west, westRoad, toward(west, westRoad, Side.W));
 
@@ -584,7 +584,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             "May depart does not show the one way out");
         assertFalse(session.departureWayCanBeSet(station, road), "May depart is live with a limit farther out");
         assertEquals(session.whyDepartureWayIsFixed(station, road, session.sidesSentOutBy(station)),
-            I18n.f("autosetup.ui.flyDepartFarther", String.valueOf(closed), session.describeTile(where)),
+            I18n.f("autosetup.ui.flyDepartFarther", I18n.t("autosetup.ui.side" + closed), session.describeTile(where)),
             "the (i) line does not say where the limit is");
     }
 
