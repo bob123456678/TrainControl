@@ -43,6 +43,7 @@ public class testEveryLanguageFitsThePopups
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        org.traincontrol.gui.TrainControlUI.installLookAndFeel();
         railway = LanguageFit.Railway.open("live-snapshot");
         files = java.nio.file.Files.createTempDirectory("fit-popups").toFile();
     }

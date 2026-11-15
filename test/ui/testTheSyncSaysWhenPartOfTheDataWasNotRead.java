@@ -235,6 +235,7 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
             assertTrue(rig.model.syncWithCS2() >= 0, "the sync that imports the fixtures failed");
 
             org.traincontrol.marklin.MarklinLocomotive loc = rig.model.newDCCLocomotive("PS train", 1931);
+            org.traincontrol.gui.TrainControlUI.installLookAndFeel();
             javax.swing.JFrame window = new javax.swing.JFrame();
 
             try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
