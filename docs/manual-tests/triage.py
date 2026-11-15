@@ -4,7 +4,7 @@
 TrainControl manual-test triage - a companion window for the manual tests and the Inbox.
 
 Run it beside TrainControl, work down the ledger, and answer one test at a time: what happened,
-anything else you noticed, submit or skip.  Everything you type is written to triage.db, the store
+submit or skip.  Anything else you notice is a New issue.  Everything you type is written to triage.db, the store
 that holds the record (README.md), added and never overwritten.
 
     py -3 docs\\manual-tests\\triage.py
@@ -192,7 +192,7 @@ def write_text(path, text, crlf):
 
     if os.path.exists(path):
         # %f (microseconds) too - to-the-second was not fine enough: three writes inside one
-        # second, which submit()'s observations-then-comment sequence can produce on its own,
+        # second, which a submit's comment write and the autosave can produce on their own,
         # overwrote each other's backup under the same name.
         stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         name = "%s.%s.bak" % (os.path.basename(path), stamp)
@@ -1014,6 +1014,44 @@ def git_build():
 
 PAD = 8
 
+# One 96-dpi pixel, in this screen's pixels (1.0 at 100 percent).  Set once the first window is up, by set_scale().
+SCALE = 1.0
+
+TITLE = "TrainControl - manual test triage"
+
+
+def px(n):
+    """A size drawn for a 96-dpi screen, in this screen's pixels."""
+
+    return int(round(n * SCALE))
+
+
+def make_sharp():
+    """Tells Windows this process draws at the screen's own resolution.  Without it the window is drawn at 96 dpi and
+    stretched up, which is why its text was soft beside the Java app's (Adam, 2026-11-14).  Must run before the first
+    window.
+    """
+
+    try:
+        import ctypes
+
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)       # Windows 8.1 and later
+        except Exception:
+            ctypes.windll.user32.SetProcessDPIAware()            # Vista and later
+    except Exception:
+        pass
+
+
+def set_scale(factor):
+    """Sizes given in pixels (Tk takes them as they are) follow the screen's scaling from here on."""
+
+    global SCALE, PAD
+
+    SCALE = factor
+    PAD = px(8)
+
+
 # The languages TrainControl has message bundles for, each named in itself: (language, country, name).  TrainControl
 # takes its language from Java's default locale, which these set on the command line - and so do Swing's own OK and
 # Cancel, which follow the same locale.
@@ -1050,9 +1088,9 @@ _INLINE = re.compile(
 _TAG_IN_TEXT = re.compile(r"\bMT-(\d+)\b")
 _TAG_IN_HREF = re.compile(r"#mt-(\d+)\b", re.I)
 
-# Which layout a saved window size belongs to.  2 is the stacked one (2026-09-24); a size saved by the side-by-side
-# layout is 1024 pixels wide and is not restored into this one.
-LAYOUT = 2
+# Which layout a saved window size belongs to.  2 was the stacked one (2026-09-24), 3 is the same about 5 percent
+# narrower (2026-11-14); a size saved by an earlier layout is not restored into this one.
+LAYOUT = 3
 
 
 # A line that starts a new block in markdown rather than continuing the one above it: a list item, numbered or not, a
@@ -1162,7 +1200,9 @@ class Triage(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
 
-        self.title("TrainControl - manual test triage")
+        set_scale(self.winfo_fpixels("1i") / 96.0)
+
+        self.title(TITLE)
 
         import triagedb
 
@@ -1174,18 +1214,13 @@ class Triage(tk.Tk):
         self.process = None
         self.log_path = None
         self.launched_from = None
+        self.run_info = ""           # the title's "compiled ..., language" while a run is on
 
         self.compile_process = None
         self.compile_log_path = None
 
         self.current = None
-        self.observations = []       # pending, for the entry on screen
-
-        # Set when a comment fails to write after its observations were already filed - (tag,
-        # composed comment text) - so a retry reuses the exact text that names those observations'
-        # refs instead of recomposing one that would show none filed, since self.observations is
-        # cleared the moment they are safely in the Inbox.  See submit().
-        self.pending_comment = None
+        self.notice_job = None
 
         self.issues_doc = None
         self.issue_widgets = {}      # kind -> {tree, detail, request_cancel_button, open_button, open_tag}
@@ -1204,7 +1239,7 @@ class Triage(tk.Tk):
             self.geometry(geometry)
             self.after(200, self._restore_dividers)
         else:
-            self.geometry("500x860")
+            self.geometry("%dx%d" % (px(475), px(860)))
             self.after(200, lambda: self.dock("right"))
 
         self.state_.data["layout"] = LAYOUT
@@ -1258,6 +1293,11 @@ class Triage(tk.Tk):
         # more height than the window has, so it was given nothing - and it is where the Show filter is named.
         self.status = ttk.Label(self, anchor=tk.W, relief=tk.SUNKEN, padding=(6, 3))
         self.status.pack(fill=tk.X, side=tk.BOTTOM)
+
+        # A NOTICE, above the status line while it is up: a dialog for "filed" opened behind TrainControl and had to be
+        # found before the next issue could be filed (Adam, 2026-11-14).  _notify() shows and clears it.
+        self.notice = tk.Label(self, anchor=tk.W, justify=tk.LEFT, background="#dff0d8", foreground="#1e4d1e",
+                               font=("Segoe UI", 10, "bold"), padx=6, pady=4)
 
         # THE LIST ABOVE THE TEST, NOT BESIDE IT (2026-09-24).  This runs beside TrainControl in about a third of the
         # screen's width and all of its height.  Side by side, the list and the steps each had half of a third, and the
@@ -1313,6 +1353,7 @@ class Triage(tk.Tk):
 
         t.add_cascade(label="Launch TrainControl in", menu=languages)
         t.add_command(label="Show TrainControl output", command=self.show_output)
+        t.add_command(label="Show compile output", command=self.show_compile_output)
         t.add_separator()
         t.add_command(label="New issue…\tCtrl+N", command=self.free_observation)
         t.add_separator()
@@ -1333,12 +1374,9 @@ class Triage(tk.Tk):
         self.config(menu=bar)
 
     def _build_toolbar(self):
-        # TWO ROWS, because one did not fit a third of the screen: its right-hand end - New issue, and the Show filter -
-        # was cut off.  The filter is the Show menu now.
-        bar = ttk.Frame(self, padding=(PAD, PAD, PAD, 4))
-        bar.pack(fill=tk.X)
-
-        top = ttk.Frame(bar)
+        # ONE ROW.  The two output windows are in the Tools menu and what is running is in the window title (Adam,
+        # 2026-11-14: "I never used output or compile output").  The filter is the Show menu.
+        top = ttk.Frame(self, padding=(PAD, PAD, PAD, 4))
         top.pack(fill=tk.X)
 
         self.compile_button = ttk.Button(top, text="Compile", command=self.compile)
@@ -1356,16 +1394,6 @@ class Triage(tk.Tk):
 
         ttk.Button(top, text="New issue\u2026", style="Big.TButton",
                    command=self.free_observation).pack(side=tk.RIGHT)
-
-        under = ttk.Frame(bar)
-        under.pack(fill=tk.X, pady=(4, 0))
-
-        ttk.Button(under, text="Compile output\u2026",
-                   command=self.show_compile_output).pack(side=tk.RIGHT, padx=(4, 0))
-        ttk.Button(under, text="Output\u2026", command=self.show_output).pack(side=tk.RIGHT)
-
-        self.run_label = ttk.Label(under, text="not started", style="Sub.TLabel")
-        self.run_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
     def _build_left(self, parent):
         """A tab per kind of thing this app tracks, so a feature request never has to borrow the
@@ -1416,11 +1444,11 @@ class Triage(tk.Tk):
         self.tree = ttk.Treeview(frame, columns=columns, show="headings", selectmode="browse", height=8)
 
         for name, title, width, anchor in (
-            ("mark", "", 26, tk.CENTER),
-            ("again", "", 22, tk.CENTER),
-            ("tag", "ID", 68, tk.W),
-            ("date", "Date", 82, tk.W),
-            ("what", "What", 200, tk.W),
+            ("mark", "", px(26), tk.CENTER),
+            ("again", "", px(22), tk.CENTER),
+            ("tag", "ID", px(68), tk.W),
+            ("date", "Date", px(82), tk.W),
+            ("what", "What", px(200), tk.W),
         ):
             self.tree.heading(name, text=title)
             self.tree.column(name, width=width, anchor=anchor,
@@ -1740,7 +1768,7 @@ class Triage(tk.Tk):
 
         self._refresh_issue_tabs()
 
-        self._say("Cancellation requested for %s - filed as %s." % (ref, new_ref))
+        self._notify("Cancellation requested for %s - filed as %s." % (ref, new_ref))
 
     def _jump_to_test(self, tag):
         if not tag:
@@ -1779,8 +1807,10 @@ class Triage(tk.Tk):
         self.head_label = ttk.Label(head, text="", style="Tag.TLabel", anchor=tk.W, justify=tk.LEFT)
         self.head_label.pack(fill=tk.X)
 
+        # WRITTEN, DISPOSITION AND FROM ON ONE LINE (Adam, 2026-11-14); "from" can name several entries, so it takes what
+        # is left and wraps inside it.
         meta = ttk.Frame(head)
-        meta.pack(fill=tk.X)
+        meta.pack(fill=tk.X, pady=(0, 6))
 
         self.meta_written = ttk.Label(meta, text="", style="Sub.TLabel")
         self.meta_written.pack(side=tk.LEFT)
@@ -1789,22 +1819,25 @@ class Triage(tk.Tk):
         # disagree about what a disposition looks like - one legend, read two ways.
         bg = ttk.Style(self).lookup("TFrame", "background") or "SystemButtonFace"
 
-        self.disp_dot = tk.Canvas(meta, width=12, height=12, highlightthickness=0, bd=0,
+        self.disp_dot = tk.Canvas(meta, width=px(12), height=px(12), highlightthickness=0, bd=0,
                                   background=bg)
-        self.disp_dot.pack(side=tk.LEFT, padx=(10, 4))
-        self.disp_dot_oval = self.disp_dot.create_oval(1, 1, 11, 11, fill="", outline="")
+        self.disp_dot.pack(side=tk.LEFT, padx=(px(10), px(4)))
+        self.disp_dot_oval = self.disp_dot.create_oval(px(1), px(1), px(11), px(11), fill="", outline="")
 
         self.meta_disposition = ttk.Label(meta, text="", style="Sub.TLabel")
         self.meta_disposition.pack(side=tk.LEFT)
 
-        self.meta_from = ttk.Label(head, text="", style="Sub.TLabel", anchor=tk.W, justify=tk.LEFT)
-        self.meta_from.pack(fill=tk.X, pady=(0, 6))
+        self.meta_from = ttk.Label(meta, text="", style="Sub.TLabel", anchor=tk.W, justify=tk.LEFT)
+        self.meta_from.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(px(10), 0))
 
         # WRAPPED TO THE WIDTH THERE IS.  A title is often longer than a third of the screen, and cut off it lost the
-        # half that says what the test is about; "from" can name several entries.
+        # half that says what the test is about.
         def wrap(event):
-            self.head_label.config(wraplength=max(120, event.width - 4))
-            self.meta_from.config(wraplength=max(120, event.width - 4))
+            self.head_label.config(wraplength=max(px(120), event.width - px(4)))
+
+            used = self.meta_written.winfo_reqwidth() + self.meta_disposition.winfo_reqwidth() + px(40)
+
+            self.meta_from.config(wraplength=max(px(80), event.width - used))
 
         head.bind("<Configure>", wrap)
 
@@ -1839,22 +1872,6 @@ class Triage(tk.Tk):
 
         self.feedback = tk.Text(answer, height=3, wrap=tk.WORD, font=("Segoe UI", 10))
         self.feedback.pack(fill=tk.X)
-
-        obs = ttk.Frame(answer)
-        obs.pack(fill=tk.X, pady=(8, 0))
-
-        ttk.Label(obs, text="Other things you noticed:", style="Sub.TLabel").pack(side=tk.LEFT)
-
-        ttk.Button(obs, text="+ Feature request",
-                   command=lambda: self.add_observation("feature request")).pack(side=tk.RIGHT, padx=4)
-        ttk.Button(obs, text="+ Bug",
-                   command=lambda: self.add_observation("bug")).pack(side=tk.RIGHT)
-
-        # Rows are built fresh in _refresh_observations() - one line per queued observation, each
-        # with its own x to remove just that one, rather than a Listbox plus a Remove button that
-        # only acts on whichever row happened to be selected.
-        self.obs_rows_frame = ttk.Frame(answer)
-        self.obs_rows_frame.pack(fill=tk.X, pady=(4, 0))
 
         buttons = ttk.Frame(lower, padding=(0, PAD, 0, 0))
         buttons.pack(fill=tk.X)
@@ -1891,11 +1908,12 @@ class Triage(tk.Tk):
         border = max(0, self.winfo_rootx() - self.winfo_x())
         title = max(0, self.winfo_rooty() - self.winfo_y())
 
-        third = (right - left) // 3
+        # A THIRD LESS 5 PERCENT (Adam, 2026-11-14: "about 5% narrower"), against the screen's edge it sits on.
+        width = int(((right - left) // 3) * 0.95)
 
-        x = left if side == "left" else right - third
+        x = left if side == "left" else right - width
 
-        self.geometry("%dx%d+%d+%d" % (third - 2 * border, (bottom - top) - title - border, x, top))
+        self.geometry("%dx%d+%d+%d" % (width - 2 * border, (bottom - top) - title - border, x, top))
 
         self.after(150, self._default_dividers)
 
@@ -2141,12 +2159,6 @@ class Triage(tk.Tk):
     def _show(self, entry):
         self.current = entry
 
-        if not (self.pending_comment and entry and self.pending_comment[0] == entry.tag):
-            # A pending retry only applies to the entry it was composed against - leaving here
-            # abandons it rather than risking it firing later against whatever this box now
-            # holds.
-            self.pending_comment = None
-
         if entry is None:
             self.head_label.config(text="Nothing to show")
             self.meta_written.config(text="Change the filter, or clear the search box.")
@@ -2177,8 +2189,11 @@ class Triage(tk.Tk):
         self.feedback.delete("1.0", tk.END)
         self.feedback.insert("1.0", draft.get("feedback", ""))
 
-        self.observations = list(draft.get("observations", []))
-        self._refresh_observations()
+        # A draft saved before "Other things you noticed" went (2026-11-14) still holds its unfiled issues: they are put
+        # in the answer's text, where they are seen and can be filed as New issues or dropped.
+        for ob in draft.get("observations", []):
+            self.feedback.insert(tk.END, "\n[%s] %s\n%s" % (
+                ob.get("kind", "issue"), ob.get("summary", ""), ob.get("detail", "")))
 
         self._sync_skip_button()
 
@@ -2334,25 +2349,6 @@ class Triage(tk.Tk):
 
         return (name,)
 
-    def _refresh_observations(self):
-        for child in self.obs_rows_frame.winfo_children():
-            child.destroy()
-
-        # Nothing at all when there is nothing: a "(none yet)" line was a line of height the steps could use.
-        if not self.observations:
-            return
-
-        for index, ob in enumerate(self.observations):
-            row = ttk.Frame(self.obs_rows_frame)
-            row.pack(fill=tk.X)
-
-            ttk.Label(row, text="[%s]  %s" % (ob["kind"], ob["summary"]), anchor=tk.W,
-                     font=("Segoe UI", 9)).pack(side=tk.LEFT, fill=tk.X, expand=True)
-
-            remove = tk.Label(row, text="✕", fg="#a33333", font=("Segoe UI", 9), cursor="hand2")
-            remove.pack(side=tk.RIGHT, padx=(6, 0))
-            remove.bind("<Button-1>", lambda _e, i=index: self._remove_observation_at(i))
-
     # -- drafts ------------------------------------------------------------------------------
 
     def _stash_draft(self):
@@ -2362,12 +2358,8 @@ class Triage(tk.Tk):
         feedback = self.feedback.get("1.0", tk.END).strip()
         result = self.result_var.get()
 
-        if feedback or result or self.observations:
-            self.state_.draft(self.current.tag, {
-                "result": result,
-                "feedback": feedback,
-                "observations": self.observations,
-            })
+        if feedback or result:
+            self.state_.draft(self.current.tag, {"result": result, "feedback": feedback})
         else:
             self.state_.data["drafts"].pop(self.current.tag, None)
 
@@ -2379,63 +2371,40 @@ class Triage(tk.Tk):
 
     # -- observations ------------------------------------------------------------------------
 
-    def add_observation(self, kind):
-        got = ObservationDialog(self, kind).result
-
-        if got:
-            self.observations.append(got)
-            self._refresh_observations()
-            self._stash_draft()
-            self._refresh_list()
-
-    def _remove_observation_at(self, index):
-        if 0 <= index < len(self.observations):
-            del self.observations[index]
-            self._refresh_observations()
-            self._stash_draft()
-
     def free_observation(self):
-        """A new issue - bug or feature request - that has nothing to do with the entry on screen."""
+        """A new issue - bug or feature request - optionally related to the test on screen."""
 
-        got = ObservationDialog(self, "bug", standalone=True).result
+        got = ObservationDialog(self, self.current, self._file_observation).result
 
         if not got:
             return
 
-        try:
-            ref, warning = self._file_observation(got, None)
-
-        except Exception as bad:
-            # The store refused, or could not be written - busy past its wait, say.  Unhandled, it
-            # unwinds out of this Tk callback - no confirmation dialog, and under pythonw nothing
-            # printed either, so from Adam's side the button just did nothing.  That is what led to an
-            # item being filed twice: he clicked again because it looked like the first click had not
-            # worked.
-            messagebox.showerror("Could not file the issue", str(bad), parent=self)
-            return
+        ref, warning = got
 
         if warning:
             messagebox.showwarning("Filed, with a warning", warning, parent=self)
 
-        messagebox.showinfo("Filed", "Filed as %s, in the Inbox." % ref, parent=self)
+        self._notify("Filed as %s, in the Inbox." % ref)
 
-        self._say("%s filed." % ref)
-
-    def _file_observation(self, ob, from_entry):
+    def _file_observation(self, ob):
         """Files one bug or feature request into the Inbox.
 
-        :param ob: the dialog's answer - kind, summary, detail
-        :param from_entry: the test it was noticed on, or None
+        :param ob: the dialog's answer - kind, summary, detail, and the test it is related to or None
         :return: (the ref it was filed as, None or a warning)
         """
 
-        raised = ("%s (%s)" % (from_entry.tag, from_entry.title)) if from_entry else \
+        related = ob["related"]
+        raised = ("%s (%s)" % (related.tag, related.title)) if related else \
                  "noticed while testing - not from a particular test"
 
         filed = self._issues().file(ob["kind"], ob["summary"], ob["detail"].strip() or "(no further detail)",
                                     raised, self._build_note())
 
-        self._refresh_issue_tabs()
+        # Filed by now: a refresh that fails must not read as a failed filing, which a retry would file twice
+        try:
+            self._refresh_issue_tabs()
+        except Exception as e:
+            self._notify("Filed as %s; the issue list did not refresh (%s)." % (filed[0], e))
 
         return filed
 
@@ -2472,11 +2441,10 @@ class Triage(tk.Tk):
         result = self.result_var.get()
         feedback = self.feedback.get("1.0", tk.END).strip()
 
-        if not result and not feedback and not self.observations:
+        if not result and not feedback:
             messagebox.showinfo(
                 "Nothing to submit",
-                "Pick a result, write something, or add an observation.  Skip moves on without "
-                "writing anything.", parent=self)
+                "Pick a result or write something.  Skip moves on without writing anything.", parent=self)
             return
 
         if not result:
@@ -2486,68 +2454,15 @@ class Triage(tk.Tk):
                     parent=self):
                 return
 
-        # Observations first: if the comment then cannot be written, the items are already filed and
-        # the comment can be re-submitted, which is the harmless order of the two.
-        receipts = []
-        warnings = []
-
         try:
-            # Each takes its number inside the store's write, so two in one submit cannot collide.
-            for ob in list(self.observations):
-                ref, warning = self._file_observation(ob, entry)
-
-                receipts.append((ref, ob))
-
-                # Filed: it leaves this submit at once, so a failure further down cannot file it twice.
-                self.observations.remove(ob)
-
-                if warning:
-                    warnings.append(warning)
+            warning = self.doc.append_comment(entry.tag, self._compose(result, feedback))
 
         except Exception as bad:
-            self._refresh_observations()
-            self._stash_draft()
-
-            messagebox.showerror("Could not file an observation", "%s%s" % (bad, (
-                "\n\n%d filed before it: %s.  They are no longer in this submit." % (
-                    len(receipts), ", ".join(ref for ref, _ in receipts))) if receipts else ""), parent=self)
-            return
-
-        # A retry of a previously-failed submit reuses the exact comment text composed last
-        # time, receipts and all, rather than recomposing one - self.observations was cleared
-        # the moment those observations were safely filed, so a fresh _compose() here would
-        # produce a comment that names none of them, even though they are sitting in the Inbox.
-        if self.pending_comment and self.pending_comment[0] == entry.tag:
-            comment = self.pending_comment[1]
-        else:
-            comment = self._compose(result, feedback, receipts)
-
-        try:
-            warning = self.doc.append_comment(entry.tag, comment)
-
-            if warning:
-                warnings.append(warning)
-
-        except Exception as bad:
-            # The observations, if any, are already safely in the Inbox - clearing them here
-            # stops a retry from filing them a second time under new refs, which is the failure
-            # this file itself records happening once already ("filed twice because the app
-            # appeared not to have filed it the first time").  The comment stays in the boxes,
-            # and self.pending_comment keeps its exact text so Submit tries the same thing again
-            # rather than composing a new comment that would undercount what was filed.
-            self.observations = []
-            self._refresh_observations()
-            self.pending_comment = (entry.tag, comment)
-            self._stash_draft()
-
             messagebox.showerror(
                 "Could not write the comment",
-                "%s\n\nYour observations were filed and removed from this submit - retrying "
-                "will not file them again.  The comment itself was not written; it is still in "
-                "the boxes, and Submit will try the exact same text again." % bad, parent=self)
+                "%s\n\nNothing was written.  Your answer is still in the boxes; Submit will try again." % bad,
+                parent=self)
             return
-
-        self.pending_comment = None
 
         self.state_.clear_draft(entry.tag)
         self.state_.mark(entry.tag, "done")
@@ -2559,18 +2474,15 @@ class Triage(tk.Tk):
         # 20-second autosave needed this: it stashes on a timer, not only on navigation.
         self.result_var.set("")
         self.feedback.delete("1.0", tk.END)
-        self.observations = []
-        self._refresh_observations()
 
-        self._say("%s answered%s." % (
-            entry.tag, " and %d observation(s) filed" % len(receipts) if receipts else ""))
+        self._notify("%s answered." % entry.tag)
 
-        if warnings:
-            messagebox.showwarning("Written, with a warning", "\n\n".join(warnings), parent=self)
+        if warning:
+            messagebox.showwarning("Written, with a warning", warning, parent=self)
 
         self._advance()
 
-    def _compose(self, result, feedback, receipts):
+    def _compose(self, result, feedback):
         said = {
             "works": "Works.",
             "works with notes": "Works, with notes.",
@@ -2583,15 +2495,6 @@ class Triage(tk.Tk):
         if feedback:
             lines.append("")
             lines.append(feedback)
-
-        if receipts:
-            lines.append("")
-
-            listed = ", ".join(
-                "%s (%s - %s)" % (ref, ob["kind"], ob["summary"]) for ref, ob in receipts)
-
-            lines.append("Filed from this test: %s.  They are in the Inbox until they are picked up."
-                         % listed)
 
         lines.append("")
         lines.append("*Run against %s.*" % self._build_note())
@@ -2748,7 +2651,11 @@ class Triage(tk.Tk):
         # after it, and a verdict said "Run against commit 4aa7b98d" for a build compiled from a later one (2026-10-03).
         self.build = git_build()
 
-        self.run_label.config(text="running - %s" % note)
+        stamp = re.search(r"(?:compiled|built) \d\d \w{3} \d\d:\d\d", note)
+
+        self.run_info = "%s%s, %s" % ("regular mode, " if self.regular_var.get() else "",
+                                      stamp.group(0) if stamp else "build unknown", self._language()[2])
+        self._retitle("running")
 
         self._say("TrainControl started, %s.  Output: %s"
                   % ("regular mode" if self.regular_var.get() else "simulate + debug", os.path.basename(self.log_path)))
@@ -2767,8 +2674,12 @@ class Triage(tk.Tk):
 
         code = process.returncode
 
-        self.after(0, lambda: self.run_label.config(
-            text="stopped (exit %s)" % code if code else "stopped"))
+        self.after(0, lambda: self._retitle("stopped (exit %s)" % code if code else "stopped"))
+
+    def _retitle(self, state):
+        """The window title says whether TrainControl is running and when its build was compiled and in what language."""
+
+        self.title("%s - %s, %s" % (TITLE, state, self.run_info))
 
     def show_output(self):
         if not self.log_path or not os.path.exists(self.log_path):
@@ -2931,13 +2842,13 @@ class Triage(tk.Tk):
     def about(self):
         messagebox.showinfo(
             "How this works",
-            "Work down the list.  For each test: say whether it works, write what happened, add "
-            "anything else you noticed, then Submit.\n\n"
+            "Work down the list.  For each test: say whether it works, write what happened, then "
+            "Submit.\n\n"
             "Submit adds your words to that test's comments in the store, dated and stamped with the "
-            "build.  Bugs go to the Inbox as OB-### items, feature requests as FR-###, "
-            "cross-referenced from the test.\n\n"
-            "New issue files something that has nothing to do with the entry on screen - it goes to "
-            "the Inbox the same way, without a test to reference.\n\n"
+            "build.\n\n"
+            "New issue files a bug (an OB-### item) or a feature request (FR-###) in the Inbox.  Its "
+            "Related test box can name the test on screen; left on its first choice, no test is "
+            "referenced.  A notice above the status line says what was filed.\n\n"
             "Skip writes nothing at all - it just marks the row so you can find it again, and stays "
             "in the list rather than disappearing.  The same button becomes Unskip when you're back "
             "on a skipped row.\n\n"
@@ -2946,9 +2857,10 @@ class Triage(tk.Tk):
             "click it to go there.\n\n"
             "View > Fill the right third of the screen puts this window beside TrainControl, top to bottom.  The "
             "dividers between the list, the steps and your answer can be dragged, and are remembered.\n\n"
-            "Layout: the toolbar in two rows, then the list, the entry's steps and the answer, with "
+            "Layout: the toolbar in one row, then the list, the entry's steps and the answer, with "
             "draggable dividers.  Show is a menu in the menu bar and the status line starts with what it "
-            "is showing.  The list leaves out the date (it is in the entry's heading); steps and comments "
+            "is showing.  While TrainControl runs, the window title says when it was compiled and in what "
+            "language; its output and the compile output are in the Tools menu.  The list leaves out the date (it is in the entry's heading); steps and comments "
             "are reflowed to the window and their Markdown drawn.  Size and dividers are remembered, and "
             "when another process writes to the store the window shows it within two seconds, keeping "
             "what you have typed.\n\n"
@@ -2964,8 +2876,7 @@ class Triage(tk.Tk):
             "beside it (Tools > Launch TrainControl in starts it straight away).  The language is "
             "remembered and opens the build stamp on every result submitted from that run.\n\n"
             "A result is a comment on that entry, dated, signed and stamped with the commit it was run "
-            "against, the same shape as triagedb.py comment.  Everything else becomes an OB-### or "
-            "FR-### item.\n\n"
+            "against, the same shape as triagedb.py comment.\n\n"
             "Everything is kept in triage.db, a binary that changes with any triage action "
             "(triagedb.py changes reads the change).  From a terminal, run this script with "
             "an argument (stats, tests, issues, verify-ledger, --help) for the same data as JSON, no "
@@ -2973,6 +2884,20 @@ class Triage(tk.Tk):
 
     def _say(self, text):
         self.status.config(text=text)
+
+    def _notify(self, text):
+        """Says what was just filed or written, in a band above the status line for a few seconds."""
+
+        if self.notice_job:
+            self.after_cancel(self.notice_job)
+
+        self.notice.config(text=text, wraplength=max(px(120), self.winfo_width() - px(20)))
+        self.notice.pack(fill=tk.X, side=tk.BOTTOM, after=self.status)
+        self.notice_job = self.after(8000, self._clear_notice)
+
+    def _clear_notice(self):
+        self.notice_job = None
+        self.notice.pack_forget()
 
     def _on_close(self):
         self._stash_draft()
@@ -3004,21 +2929,30 @@ class Triage(tk.Tk):
 
 
 class ObservationDialog(tk.Toplevel):
-    """One bug or one feature request, in as few boxes as it can be said in."""
+    """One bug or one feature request, in as few boxes as it can be said in, optionally tied to the test on screen."""
 
-    def __init__(self, parent, kind, standalone=False):
+    NO_TEST = "No related test"
+
+    def __init__(self, parent, current, file):
+        """
+        :param current: the test on screen, which can be named as the related one, or None
+        :param file: files the issue, given its answer, and returns (ref, warning); the dialog stays open when it raises
+        """
+
         tk.Toplevel.__init__(self, parent)
 
         self.result = None
+        self.current = current
+        self.file = file
 
-        self.title("New issue" if standalone else "Something you noticed")
+        self.title("New issue")
         self.transient(parent)
         self.resizable(True, False)
 
         frame = ttk.Frame(self, padding=PAD)
         frame.pack(fill=tk.BOTH, expand=True)
 
-        self.kind = tk.StringVar(value=kind)
+        self.kind = tk.StringVar(value="bug")
 
         row = ttk.Frame(frame)
         row.pack(fill=tk.X)
@@ -3028,14 +2962,24 @@ class ObservationDialog(tk.Toplevel):
         ttk.Radiobutton(row, text="feature request", value="feature request",
                         variable=self.kind).pack(side=tk.LEFT)
 
-        if standalone:
-            ttk.Label(frame, style="Sub.TLabel",
-                      text="Filed on its own, not against the test on screen.").pack(
-                          anchor=tk.W, pady=(6, 0))
+        # OPTIONAL: it was the "Other things you noticed" box of a test's answer (Adam, 2026-11-14), which this replaces.
+        related = ttk.Frame(frame)
+        related.pack(fill=tk.X, pady=(6, 0))
+
+        ttk.Label(related, text="Related test:").pack(side=tk.LEFT)
+
+        self.related_choices = [self.NO_TEST]
+
+        if current:
+            self.related_choices.append("%s - %s" % (current.tag, current.title))
+
+        self.related = ttk.Combobox(related, state="readonly", values=self.related_choices)
+        self.related.current(0)
+        self.related.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 0))
 
         ttk.Label(frame, text="One line, so it reads well in a list:").pack(anchor=tk.W, pady=(10, 2))
 
-        self.summary = ttk.Entry(frame, width=72)
+        self.summary = ttk.Entry(frame, width=60)
         self.summary.pack(fill=tk.X)
 
         ttk.Label(frame, text="Detail - what you saw, what you expected, how to get there:").pack(
@@ -3047,7 +2991,7 @@ class ObservationDialog(tk.Toplevel):
         buttons = ttk.Frame(frame, padding=(0, PAD, 0, 0))
         buttons.pack(fill=tk.X)
 
-        ttk.Button(buttons, text="Add", style="Big.TButton", command=self._ok).pack(side=tk.RIGHT)
+        ttk.Button(buttons, text="File it", style="Big.TButton", command=self._ok).pack(side=tk.RIGHT)
         ttk.Button(buttons, text="Cancel", command=self.destroy).pack(side=tk.RIGHT, padx=6)
 
         self.bind("<Escape>", lambda e: self.destroy())
@@ -3074,11 +3018,20 @@ class ObservationDialog(tk.Toplevel):
 
         detail = self.detail.get("1.0", tk.END).strip()
 
-        self.result = {
-            "kind": self.kind.get(),
-            "summary": summary,
-            "detail": detail,
-        }
+        try:
+            self.result = self.file({
+                "kind": self.kind.get(),
+                "summary": summary,
+                "detail": detail,
+                "related": self.current if self.related.current() == 1 else None,
+            })
+
+        except Exception as bad:
+            # The store refused, or could not be written - busy past its wait, say.  The dialog stays open with what was
+            # typed, so a retry is one click, and the error is over it where it is seen.  (Unhandled, the button just did
+            # nothing, which got an item filed twice.)
+            messagebox.showerror("Could not file the issue", str(bad), parent=self)
+            return
 
         self.destroy()
 
@@ -3092,7 +3045,7 @@ class LogWindow(tk.Toplevel):
         self.path = path
 
         self.title(os.path.basename(path))
-        self.geometry("980x600")
+        self.geometry("%dx%d" % (px(980), px(600)))
 
         frame = ttk.Frame(self, padding=6)
         frame.pack(fill=tk.BOTH, expand=True)
@@ -3474,6 +3427,8 @@ def main():
     except triagedb.NotMigrated as bad:
         print(str(bad))
         return 1
+
+    make_sharp()
 
     Triage().mainloop()
 
