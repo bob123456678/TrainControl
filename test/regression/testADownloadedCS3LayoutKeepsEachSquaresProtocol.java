@@ -37,6 +37,9 @@ public class testADownloadedCS3LayoutKeepsEachSquaresProtocol
     /** While set, the station's plan has W 14 and W 15 swapped, as when the user exchanges them at the CS3. */
     private static volatile boolean swapped;
 
+    /** While set, the station's plan does not arrive: the connection is dropped, as a failed read, not a missing file. */
+    private static volatile boolean planFails;
+
     private static String addressWas;
 
     @BeforeClass
@@ -55,6 +58,8 @@ public class testADownloadedCS3LayoutKeepsEachSquaresProtocol
             byte[] own = StandInStation.file(snapshot + (path.startsWith("/app/api/") ? path + ".json" : path));
 
             if (swapped && "/app/api/gbs".equals(path)) own = withW14AndW15Swapped(own);
+
+            if (planFails && "/app/api/gbs".equals(path)) throw new IllegalStateException("the plan does not arrive");
 
             return own != null ? own : rest.apply(path, n);
         });
@@ -102,6 +107,7 @@ public class testADownloadedCS3LayoutKeepsEachSquaresProtocol
     public void backOnTheStation()
     {
         swapped = false;
+        planFails = false;
         TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
     }
 
@@ -179,5 +185,51 @@ public class testADownloadedCS3LayoutKeepsEachSquaresProtocol
 
         assertEquals(openTheCopy(copy), today, "every addressed square of a copy downloaded after the station changed,"
             + " against the station read afresh");
+    }
+
+    /**
+     * A download whose CS3 plan fails to read writes nothing into the folder: the user agreed to replace the layout
+     * there, but not with pages whose two-protocol squares carry the accessory list's guess, which a later Open Layout
+     * would read as written.
+     *
+     * MUTATION: in `CS2File.downloadCS2Layout`, write each page as it is parsed again, before the plan's failure is
+     * asked, and the folder holds the guessed pages.
+     */
+    @Test(timeOut = 120000)
+    public void testADownloadWhosePlanFailsWritesNothing() throws Exception
+    {
+        assertTheTwoProtocolSquares(readTheStation(), "read from the station");
+
+        File copy = new File(sandbox.getFolder(), "downloaded-without-a-plan");
+        File index = new File(copy, "config/gleisbild.cs2");
+
+        assertTrue(index.getParentFile().mkdirs(), "could not build the fixture");
+        byte[] before = "the layout there before".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        java.nio.file.Files.write(index.toPath(), before);
+
+        planFails = true;
+
+        try
+        {
+            model.downloadLayout(copy);
+
+            fail("a download whose plan did not arrive was reported as done");
+        }
+        catch (java.io.IOException expected)
+        {
+        }
+
+        java.util.List<String> files = new java.util.ArrayList<>();
+
+        try (java.util.stream.Stream<java.nio.file.Path> walk = java.nio.file.Files.walk(copy.toPath()))
+        {
+            walk.filter(java.nio.file.Files::isRegularFile)
+                .forEach(f -> files.add(copy.toPath().relativize(f).toString()));
+        }
+
+        assertEquals(files, java.util.Collections.singletonList(new File("config/gleisbild.cs2").getPath()),
+            "a download whose plan did not arrive wrote into the folder");
+        assertEquals(java.nio.file.Files.readAllBytes(index.toPath()), before,
+            "a download whose plan did not arrive replaced the layout's index");
     }
 }
