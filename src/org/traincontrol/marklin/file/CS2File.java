@@ -2164,7 +2164,9 @@ public final class CS2File
         }
         
         File masterLayoutFile = new File(configDir, "gleisbild.cs2");
-        copyAtomically(gleisbild, masterLayoutFile);
+
+        // Read now, written with the pages once every page has its protocols: a plan that fails writes nothing
+        String indexText = readAll(gleisbild);
         
         // Process layout list and write files to localPath/config/gleisbilder/<layoutName>.cs2
         File layoutsDir = new File(configDir, "gleisbilder");
@@ -2197,8 +2199,6 @@ public final class CS2File
         File magsFile = new File(configDir, "magnetartikel.cs2");
         String mags = readAll(this.getMagURL(false));
 
-        copyAtomically(new BufferedReader(new StringReader(mags)), magsFile);
-
         // Each page parsed again from what was just served, with the accessory list and the CS3's plan as they are now,
         // by a parser of its own: a page changed at the station since it was read gets each square's protocol as it
         // is today (OB-465)
@@ -2207,6 +2207,7 @@ public final class CS2File
             : null;
         Map<Integer, String> twoProtocols = fromStation && this.control != null && this.control.isCS3()
             ? addressesWithTwoProtocols(accDB) : new HashMap<>();
+        Map<File, String> pages = new java.util.LinkedHashMap<>();
 
         for (Map<String, String> page : index)
         {
@@ -2231,12 +2232,19 @@ public final class CS2File
                 logMessage(I18n.f("layout.warningPageCouldNotBeRead", layoutName, String.valueOf(unreadable)), null, false);
             }
 
-            copyAtomically(new BufferedReader(new StringReader(withIds)),
-                new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2"));
+            pages.put(new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2"), withIds);
         }
 
         // As a sync fails on a plan that would not read: the squares it was needed for would carry a guess
         if (today.trackPlanFailure != null) throw today.trackPlanFailure;
+
+        copyAtomically(new BufferedReader(new StringReader(indexText)), masterLayoutFile);
+        copyAtomically(new BufferedReader(new StringReader(mags)), magsFile);
+
+        for (Map.Entry<File, String> page : pages.entrySet())
+        {
+            copyAtomically(new BufferedReader(new StringReader(page.getValue())), page.getKey());
+        }
 
         if (fromStation)
         {

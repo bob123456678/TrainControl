@@ -494,6 +494,33 @@ public class testAtomicWrite
         assertEquals(contents(), "outer", "the write under way lost its staging file to the second write's sweep");
     }
 
+    /**
+     * A backup cut off by a kill leaves its archive's staging file, which no later write meets (each archive has a name
+     * of its own): the next backup sweeps the backup folder of every staging file a minute old, the data files' too,
+     * and keeps a fresh one.
+     *
+     * MUTATION: drop the `sweepStaleStaging` call from `Util.zipInto`, and the killed backup's file stays.
+     */
+    @Test
+    public void testTheNextBackupSweepsAKilledBackupsStagingFile() throws Exception
+    {
+        assertTrue(new File(dir.toFile(), Util.BACKUP_FOLDER).mkdir(), "could not build the fixture");
+
+        File killed = staged(Util.BACKUP_FOLDER + "/backup2026-11-14_10-00-00-TrainControl.zip.tmp123.part", true);
+        File data = staged(Util.BACKUP_FOLDER + "/backup2026-11-14_10-00-00LocDB.data.tmp45.part", true);
+        File fresh = staged(Util.BACKUP_FOLDER + "/backup2026-11-14_10-01-00-TrainControl.zip.tmp678.part", false);
+
+        File archive = new File(dir.toFile(), Util.BACKUP_FOLDER + "/backup2026-11-14_10-02-00-TrainControl.zip");
+
+        assertEquals(Util.zipInto(archive, java.util.Collections.singletonMap("state.dat", target)), new java.util.ArrayList<String>(),
+            "the backup could not add its file");
+
+        assertFalse(killed.exists(), "the staging file a killed backup left is still there");
+        assertFalse(data.exists(), "the staging file a killed backup of a data file left is still there");
+        assertTrue(fresh.exists(), "a staging file under a minute old, which may be a backup under way, was deleted");
+        assertTrue(archive.isFile(), "the backup itself was not written");
+    }
+
     /** A file in the test's folder, an hour old when `old`. */
     private File staged(String name, boolean old) throws IOException
     {
@@ -608,6 +635,66 @@ public class testAtomicWrite
 
         assertTrue(question.contains(org.traincontrol.util.I18n.f("ui.restoreKeptAsNow", "autonomy/setup.json")),
             "the question does not say the empty file is kept as it is now: " + question);
+    }
+
+    /**
+     * The same for `autonomy.json`, the legacy file a setup is imported from (OB-254): an empty entry keeps the file
+     * there now and the question says so.  Only the autonomy part is written; the window state the archive needs to
+     * read is taken out first, so the run's own is not touched.
+     *
+     * MUTATION: in `RestoreAction.Archive.writeData`, write `autonomyFile` without asking `keepsWhatIsThere`.
+     */
+    @Test
+    public void testARestoreNeverEmptiesTheAutonomyFileWithAnEmptyEntry() throws Exception
+    {
+        java.io.ByteArrayOutputStream windowState = new java.io.ByteArrayOutputStream();
+
+        try (ObjectOutputStream out = new ObjectOutputStream(windowState))
+        {
+            out.writeObject(new java.util.ArrayList<Object>());
+        }
+
+        File zip = new File(dir.toFile(), "old-backup.zip");
+
+        try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(zip)))
+        {
+            out.putNextEntry(new java.util.zip.ZipEntry("UIState.data"));
+            out.write(windowState.toByteArray());
+            out.closeEntry();
+            out.putNextEntry(new java.util.zip.ZipEntry("autonomy.json"));
+            out.closeEntry();
+        }
+
+        File legacy = new File(org.traincontrol.gui.TrainControlUI.AUTONOMY_FILE_NAME).getAbsoluteFile();
+        byte[] was = legacy.exists() ? Files.readAllBytes(legacy.toPath()) : null;
+
+        try
+        {
+            Files.write(legacy.toPath(), "{\"the legacy setup\": \"now\"}".getBytes(StandardCharsets.UTF_8));
+
+            Class<?> archiveClass = Class.forName("org.traincontrol.gui.widgets.RestoreAction$Archive");
+
+            Object archive = support.Reflect.method(archiveClass, "read", File.class,
+                org.traincontrol.model.ViewListener.class).invoke(null, zip, null);
+
+            support.Reflect.set(archiveClass, archive, "windowState", null);
+
+            String question = (String) support.Reflect.method(archiveClass, "parts", File.class)
+                .invoke(archive, (Object) null);
+
+            support.Reflect.method(archiveClass, "writeData").invoke(archive);
+
+            assertEquals(new String(Files.readAllBytes(legacy.toPath()), StandardCharsets.UTF_8),
+                "{\"the legacy setup\": \"now\"}", "the restore wrote the backup's empty autonomy.json over the file");
+
+            assertTrue(question.contains(org.traincontrol.util.I18n.f("ui.restoreKeptAsNow", "autonomy.json")),
+                "the question does not say autonomy.json is kept as it is now: " + question);
+        }
+        finally
+        {
+            if (was == null) Files.deleteIfExists(legacy.toPath());
+            else Files.write(legacy.toPath(), was);
+        }
     }
 
     /** The entry names of a zip, in order. */

@@ -425,6 +425,11 @@ public final class RestoreAction
                 }
             }
 
+            if (autonomyFile != null && keepsWhatIsThere(new File(TrainControlUI.AUTONOMY_FILE_NAME), autonomyFile))
+            {
+                kept.add(TrainControlUI.AUTONOMY_FILE_NAME);
+            }
+
             if (!kept.isEmpty()) said.append('\n').append(I18n.f("ui.restoreKeptAsNow", String.join(", ", kept)));
 
             return said.toString().trim();
@@ -479,7 +484,10 @@ public final class RestoreAction
         {
             if (locomotives != null) atomically(Util.dataPath(MarklinControlStation.DATA_FILE_NAME), locomotives);
             if (windowState != null) atomically(Util.dataPath(TrainControlUI.DATA_FILE_NAME), windowState);
-            if (autonomyFile != null) atomically(TrainControlUI.AUTONOMY_FILE_NAME, autonomyFile);
+            if (autonomyFile != null && !keepsWhatIsThere(new File(TrainControlUI.AUTONOMY_FILE_NAME), autonomyFile))
+            {
+                atomically(TrainControlUI.AUTONOMY_FILE_NAME, autonomyFile);
+            }
 
             File iconFolder = Util.locIconFolder().getAbsoluteFile();
 

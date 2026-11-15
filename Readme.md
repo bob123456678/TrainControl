@@ -470,6 +470,7 @@ Tab icons provided by Freepik.
             - In the autonomy editor, you can drag a train from one station to another to move it there.
             - The autonomy editor draws signals and lamps in gray to keep the picture simple, and shows the signals you can pick in color while you choose a guard signal.
             - The `Bulk Tools` menu is grouped with dividers, and `Hide Hover Tooltips` hides its tooltips too.
+            - With `Toggle specified routes` ticked, starting autonomy, a timetable or `Return Home` switches the routes back to the ones ticked in the list, including any you switched on or off by hand since.
         - Track Diagram
             - The track diagram editor has a strip of icons under `Page` to add, duplicate, rename and delete a page and to move it up or down, and its `Manage Pages` menu is now `Tools`.
             - Pages are shown in the order of the layout's files rather than by name, and `Sort Pages by Name` puts them back in name order.
