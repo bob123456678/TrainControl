@@ -610,12 +610,12 @@ final class LocomotiveFunctionsTab extends JPanel
         later.start();
     }
 
-    /** Runs the spinner only while some function is firing. */
+    /** Runs the spinner only while some function is firing, never on a closed tab (a press checks again later). */
     private void keepTurning()
     {
         boolean any = false;
 
-        for (Row r : rows) any |= firing(r);
+        if (isDisplayable()) for (Row r : rows) any |= firing(r);
 
         if (any && !spinner.isRunning()) spinner.start();
         else if (!any && spinner.isRunning()) spinner.stop();
