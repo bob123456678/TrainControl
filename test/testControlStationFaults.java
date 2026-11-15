@@ -183,7 +183,7 @@ public class testControlStationFaults
     @Test
     public void testAnUnreadableDatabaseIsKeptBeforeItIsSavedOver() throws Exception
     {
-        File live = new File(MarklinControlStation.DATA_FILE_NAME);
+        File live = new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
 
         if (live.exists())
         {
@@ -193,7 +193,7 @@ public class testControlStationFaults
 
         byte[] unreadable = truncatedObjectStream();
 
-        File backups = new File(Util.BACKUP_FOLDER);
+        File backups = new File(Util.dataPath(Util.BACKUP_FOLDER));
         boolean hadBackups = backups.isDirectory();
         Set<String> before = names(backups);
 
@@ -202,7 +202,7 @@ public class testControlStationFaults
             Files.write(live.toPath(), unreadable);
 
             // As at startup: the file is there, and will not read
-            model.restoreState(MarklinControlStation.DATA_FILE_NAME);
+            model.restoreState(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
 
             // As on exit
             model.saveState(false);
@@ -213,7 +213,7 @@ public class testControlStationFaults
                 + "icons, notes and statistics would be gone");
 
             // And a database that reads is a normal save: nothing more is copied aside
-            model.restoreState(MarklinControlStation.DATA_FILE_NAME);
+            model.restoreState(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
             model.saveState(false);
 
             assertEquals(names(backups).size(), before.size() + 1,
@@ -248,7 +248,7 @@ public class testControlStationFaults
     @Test
     public void testAnUnreadableDatabaseIsNotSavedOverWhileItsCopyCannotBeKept() throws Exception
     {
-        File live = new File(MarklinControlStation.DATA_FILE_NAME);
+        File live = new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
 
         if (live.exists())
         {
@@ -258,7 +258,7 @@ public class testControlStationFaults
 
         byte[] unreadable = truncatedObjectStream();
 
-        File backups = new File(Util.BACKUP_FOLDER);
+        File backups = new File(Util.dataPath(Util.BACKUP_FOLDER));
         boolean hadBackups = backups.isDirectory();
         Set<String> before = names(backups);
         List<File> blockers = new ArrayList<>();
@@ -268,7 +268,7 @@ public class testControlStationFaults
             Files.write(live.toPath(), unreadable);
 
             // As at startup: the file is there, and will not read
-            model.restoreState(MarklinControlStation.DATA_FILE_NAME);
+            model.restoreState(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
 
             blockTheCopy(MarklinControlStation.DATA_FILE_NAME, blockers);
 
@@ -320,7 +320,7 @@ public class testControlStationFaults
     @Test
     public void testAnEmptyDatabaseIsSavedOverOnceItsCopyIsKept() throws Exception
     {
-        File live = new File(MarklinControlStation.DATA_FILE_NAME);
+        File live = new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
 
         if (live.exists())
         {
@@ -328,7 +328,7 @@ public class testControlStationFaults
                 + live.getAbsolutePath() + "), and this test has to put an empty one in its place");
         }
 
-        File backups = new File(Util.BACKUP_FOLDER);
+        File backups = new File(Util.dataPath(Util.BACKUP_FOLDER));
         boolean hadBackups = backups.isDirectory();
         Set<String> before = names(backups);
 
@@ -337,7 +337,7 @@ public class testControlStationFaults
             Files.write(live.toPath(), new byte[0]);
 
             // As at startup: the file is there, and empty
-            model.restoreState(MarklinControlStation.DATA_FILE_NAME);
+            model.restoreState(Util.dataPath(MarklinControlStation.DATA_FILE_NAME));
 
             java.lang.reflect.Field failed = MarklinControlStation.class.getDeclaredField("databaseLoadFailed");
 
@@ -370,7 +370,7 @@ public class testControlStationFaults
             if (!hadBackups) Files.deleteIfExists(backups.toPath());
 
             // The mark is state on the model every test here shares
-            model.restoreState(new File(MarklinControlStation.DATA_FILE_NAME + ".absent").getPath());
+            model.restoreState(new File(Util.dataPath(MarklinControlStation.DATA_FILE_NAME + ".absent")).getPath());
         }
     }
 

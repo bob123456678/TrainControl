@@ -363,6 +363,8 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v2.8.3
+
 * v2.8.2 [9/25/2026]
     - Autonomy Bug Fixes
         - Fixed bug where renaming a locomotive, or one of the locomotives in a multi-unit, took the train off the station it was standing at, so autonomy could send another train there

@@ -1,0 +1,2 @@
+# Shell scripts must check out with LF: core.autocrlf=true would otherwise give them CRLF, which sh cannot run.
+*.sh text eol=lf

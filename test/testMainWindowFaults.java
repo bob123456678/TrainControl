@@ -437,7 +437,7 @@ public class testMainWindowFaults
     @Test
     public void testAnUnreadableUiStateIsKeptBeforeItIsSavedOver() throws Exception
     {
-        File live = new File("UIState.data");
+        File live = new File(Util.dataPath("UIState.data"));
 
         if (live.exists())
         {
@@ -466,7 +466,7 @@ public class testMainWindowFaults
 
         byte[] unreadable = testControlStationFaults.truncatedObjectStream();
 
-        File backups = new File(Util.BACKUP_FOLDER);
+        File backups = new File(Util.dataPath(Util.BACKUP_FOLDER));
         boolean hadBackups = backups.isDirectory();
         Set<String> before = testControlStationFaults.names(backups);
 
@@ -519,7 +519,7 @@ public class testMainWindowFaults
     @Test
     public void testAnUnreadableUiStateIsNotSavedOverWhileItsCopyCannotBeKept() throws Exception
     {
-        File live = new File("UIState.data");
+        File live = new File(Util.dataPath("UIState.data"));
 
         if (live.exists())
         {
@@ -548,7 +548,7 @@ public class testMainWindowFaults
 
         byte[] unreadable = testControlStationFaults.truncatedObjectStream();
 
-        File backups = new File(Util.BACKUP_FOLDER);
+        File backups = new File(Util.dataPath(Util.BACKUP_FOLDER));
         boolean hadBackups = backups.isDirectory();
         Set<String> before = testControlStationFaults.names(backups);
         List<File> blockers = new ArrayList<>();
@@ -615,7 +615,7 @@ public class testMainWindowFaults
     @Test
     public void testPageNamesSurviveAFileWithFewerPages() throws Exception
     {
-        File live = new File("UIState.data");
+        File live = new File(Util.dataPath("UIState.data"));
 
         if (live.exists())
         {
