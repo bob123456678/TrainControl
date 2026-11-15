@@ -699,7 +699,7 @@ Tab icons provided by Freepik.
 * v3.0.2 [10/18/2026]
     - New Features
         - Autonomy
-            - Right-click Return Home for `Run Trains to Their Homes`, or for `Place All Trains at Their Homes`, which puts each train on its home in the setup without moving it.
+            - You can right-click Return Home to choose `Run Trains to Their Homes`, or `Place All Trains at Their Homes`, which puts each train on its home in the setup without moving it.
             - The autonomy editor has a `Text Labels` box, and its `Station Labels` list offers Station Names, Standing Locs, Home Locs and Hide.
             - The setup check warns when two sensors on one page share an address, and clicking a notice copies its text.
             - `Create New Layout` starts from a small sample with two stations, ready to try.
