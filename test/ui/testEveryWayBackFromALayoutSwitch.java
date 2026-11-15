@@ -122,11 +122,12 @@ public class testEveryWayBackFromALayoutSwitch
     /**
      * Opening a layout while a sync runs is refused on screen, at Recent Layouts and at Create New Layout, and the
      * layout open stays the one open: the sync it needs would be turned away, reading nothing, while the window took
-     * the new folder for the layout and logged it loaded (MT-996).
+     * the new folder for the layout and logged it loaded (MT-996).  The log says which folder Recent Layouts was asked
+     * for, before any gate, so a choice that seems to do nothing shows whether it arrived.
      *
      * MUTATION: leave out the `refuseWhileASyncRuns()` of `TrainControlUI.openLayoutFolder`, and Recent Layouts says
      * nothing and records B as the layout open over A's pages; leave it out of `createAndApplyEmptyLayout`, and Create
-     * New Layout does the same.
+     * New Layout does the same; leave out the log line of `LayoutMenus.openRecentLayout`, and the log does not name B.
      */
     @Test(timeOut = 120000)
     public void testOpeningALayoutWhileASyncRunsSaysSoAndChangesNothing() throws Exception
@@ -137,6 +138,7 @@ public class testEveryWayBackFromALayoutSwitch
         String running = I18n.t("ui.infoSyncAlreadyRunning");
 
         syncing.set(true);
+        rig.takeLog();
 
         try
         {
@@ -157,6 +159,15 @@ public class testEveryWayBackFromALayoutSwitch
 
                 assertEquals(String.valueOf(ui.localLayoutPath()), a.getPath(),
                     door + " while a sync runs took another folder for the layout open");
+
+                if (door == Door.RECENT)
+                {
+                    String asked = I18n.f("ui.main.toolbar.infoOpeningRecentLayout", b.getPath());
+                    List<String> log = rig.takeLog();
+
+                    assertTrue(log.stream().anyMatch(line -> line.endsWith(asked)), "the log does not say " + asked
+                        + ": " + log);
+                }
             }
         }
         finally
