@@ -440,13 +440,14 @@ Tab icons provided by Freepik.
             - When the Central Station turns the track power off after a short circuit, TrainControl now shows the power as off and a warning names the output that tripped.
             - A CS3 sync skips what it can't read, such as something a new firmware changed, and keeps the rest, so it no longer loses a page or fails because of it.
             - A failed `Sync` now says in one plain sentence what went wrong, with `Retry`, and keeps the details in the log.
+            - When TrainControl connects to a CS3, the log shows the CS3's firmware version once.
         - Bug Fixes
             - A file that arrives from the Central Station cut off is asked for again, and the sync fails, changing nothing, only if it stays cut off, instead of leaving a partly loaded layout.
             - Names with umlauts or accents now come through correctly from a Central Station that sends them in an older format.
             - A Central Station that always sends the same short file is now read, and the log says so.
             - The track diagram now waits until TrainControl knows the Central Station's type, so a CS3's squares get the right protocol.
             - A sync no longer changes the address of a locomotive that is moving; it waits for the next sync after the locomotive has stopped.
-            - `Check for Renamed Locomotives` now handles a locomotive renamed at the Central Station, even when another locomotive already has the new name, and asks first.
+            - `Check for Renamed Locomotives` now handles a locomotive renamed at the Central Station, even when another locomotive already has the new name, and asks first.  It reads the Central Station behind the busy sign instead of freezing the window.
     - New Features
         - Locomotive Control
             - `Locomotive Settings` is one window, in tabs for `Basic Settings`, `Functions`, `Notes`, `Multi-Unit` and `Autonomy`, that replaces the separate dialogs for a locomotive's name, address, decoder, picture, functions, notes and multi-unit.
@@ -459,13 +460,16 @@ Tab icons provided by Freepik.
             - On a locomotive that is part of a multi-unit, the multi-unit's name in the note on the `Multi-Unit` tab is a link: click it, or press Enter on it, to close this window (asking first about changes you haven't saved) and open the multi-unit's settings.
             - With the track power off, hovering the locomotive's picture in the main window shows a wrench that opens that locomotive's `Locomotive Settings` on `Basic Settings`.  The crop and revert icons are now only over the picture in `Locomotive Settings`, which still has the wrench for choosing a picture.
             - The number in the `Address` box on `Basic Settings` no longer sits against the box's left edge.
+            - In `Add Locomotive...`, the fields and their labels line up on the left.
+            - A gray label beside the `Locomotive Icon` heading on `Basic Settings` says whether the picture is `From Central Station` or a `Local File`.
             - The `Railway Name` box on the `Notes` tab lists the names your other locomotives already use, and you can still type a new one.
+            - `Find Similar Locomotives...` on the `Notes` tab searches with the name and notes you have typed, saved or not.
             - `Import from CSV...` on the `Locomotives` menu reads a file saved by `Export to CSV`, adding new locomotives and merging the ones you have, after showing you what will change.
             - `Export to CSV` now writes a `LastRun` column, and an imported running time is used only when its last run is later than yours.
             - `Apply Saved Speed Preset` is grayed out, with the reason, on a locomotive with no saved speed, and a `Preset Speed` of 0 means none.
             - `Save Current Speed as Preset` (Alt+U) also sets the speed autonomy runs the locomotive at, even during a run.
             - The `Address` box on `Basic Settings` has up and down arrows, an empty address is refused with a message before the window closes, and the `Functions` tab shows the number of functions the chosen decoder type has as soon as you pick it.
-            - `Save Current Functions as Preset` is now `Save Active Functions as Preset`, and the icon dropdown on the `Functions` tab shows six columns of icons again.
+            - `Save Current Functions as Preset` is now `Save Active Functions as Preset`, and the icon dropdown on the `Functions` tab shows six columns of icons again, F0's included, and stays on the screen.
             - The icon dropdown on the `Functions` tab lists, after the standard icons, every custom image you have chosen for any locomotive's function, so you can use it again.
         - Autonomy
             - `Station Settings` puts all of a station's settings in one window, opened from a station's right-click menu or with Ctrl+O, beside a picture of the station and a table of what trains may do there.
@@ -501,6 +505,7 @@ Tab icons provided by Freepik.
             - `Layouts` > `Manage Pages...` is now `Edit/Add Pages...`, and the separate `Edit Layout Page` menu is gone.
             - `Hide Hover Tooltips` on the `Preferences` menu hides the tooltips and shortcut keys in menus, though a grayed item still says why.  The keys still work, and unticking it shows both again.
             - The accessory keyboard has 16 tabs of 128 addresses, each key has a red half and a green half, and clicking either sends that color again even if it is already lit.
+            - Clicking a key's number on the Keyboard tab switches it to the other color, and the pointer turns into a hand over the number while the key can be used.  The keys now line up with the tab's heading.
             - `Export Counts` on the accessory keyboard saves every accessory's number of actuations to a CSV file.
             - Click an (i) to read its explanation at once, without waiting for the tooltip.
             - The usage chart, the crop window, the autonomy editor's buttons and the signal window now use the same fonts and spacing as the new windows.
@@ -543,12 +548,15 @@ Tab icons provided by Freepik.
             - A page window that is open now redraws after a sync that read its page again.
             - Page windows now close when you switch to another layout, follow a page that is renamed, and close when their page is gone.
             - An S88 route's sensor that no page of the diagram draws is no longer forgotten when the layout is read.
+            - In the track diagram editor, a text label you drag now shows under the pointer in the labels' font with their white outline, and Escape puts a single square you are dragging back where it was.
         - Interface
             - Questions and messages now open over the window you were working in, such as a track diagram page in its own window, instead of over the main window.
             - `Restore from Backup` no longer asks about the Central Station's layout when it saves your current data first.
             - `Open Layout...` and `Recent Layouts` now refuse a folder that isn't a layout, and change nothing.
+            - `Open Layout...`, `Recent Layouts` and `Create New Layout...` now say so while a sync is running and change nothing, instead of showing the old pages under the new layout's name.  After `Recent Layouts` says a folder is gone and takes it off the list, the others on the list still open.
+            - The Log tab keeps its sideways scroll position when a new message arrives.
             - If the locomotive database or the window settings can't be saved when you close TrainControl, it says which file and why, and asks you to `Retry` or `Exit Without Saving`, instead of closing and losing your changes.
-            - A backup now names any file it couldn't read, and is written whole or not at all, so closing TrainControl during a backup no longer leaves a cut-off archive.
+            - A backup now names any file it couldn't read, and says in plain words when a file could be neither saved nor copied and so isn't in the backup at all.  It is written whole or not at all, so closing TrainControl during a backup no longer leaves a cut-off archive.
             - `Restore from Backup` keeps your current file when an older backup holds an empty one, rather than writing an empty file over it, and says so.
             - TrainControl no longer sometimes stops at start-up with an error while its main window is being built.
     - Notes
