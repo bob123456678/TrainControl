@@ -436,10 +436,11 @@ public class testMappingPagesAndLocomotiveDoors
     }
 
     /**
-     * Find Similar searches with the years typed on the Notes tab, unsaved (OB-477), and Cancel still keeps the old ones.
+     * Find Similar searches with the years typed on the Notes tab, unsaved (OB-477), names the train by the name typed,
+     * and Cancel still keeps the old ones.
      *
-     * MUTATION: pass `loc.getStructuredNotes()` instead of `panel.asTyped(loc)` in the Notes tab's Find Similar, and
-     * this fails.
+     * MUTATION: pass `loc.getStructuredNotes()` instead of `panel.asTyped(loc)` in the Notes tab's Find Similar, or
+     * `loc.getName()` for the name, and this fails.
      */
     @Test
     public void testFindSimilarSearchesWhatIsTyped() throws Exception
@@ -450,6 +451,7 @@ public class testMappingPagesAndLocomotiveDoors
         {
             AbstractButton item = findSimilarOnTheNotesTab(KeyEvent.VK_A);
 
+            support.SettingsWindow.type("settings.name", ONE + " typed");
             support.SettingsWindow.type("notes.startYear", "1990");
             support.SettingsWindow.type("notes.endYear", "2000");
 
@@ -460,13 +462,15 @@ public class testMappingPagesAndLocomotiveDoors
             asked = answering.asked();
         }
 
-        assertTrue(asked.get(1).contains("1990-2000"), "the results do not show the years typed: " + asked.get(1));
+        assertTrue(asked.get(1).contains(ONE + " typed [1990-2000"),
+            "the results do not show the name and years typed: " + asked.get(1));
         assertTrue(asked.get(1).contains(THREE), "the results do not name the train of the years typed: " + asked.get(1));
         assertFalse(asked.get(1).contains(TWO), "the results name a train of the saved years: " + asked.get(1));
 
         support.SettingsWindow.press(support.SettingsWindow.cancel());
 
         assertEquals(one.getStructuredNotes().getStartYear(), 1950, "Find Similar saved the years typed");
+        assertEquals(one.getName(), ONE, "Find Similar saved the name typed");
     }
 
     /**

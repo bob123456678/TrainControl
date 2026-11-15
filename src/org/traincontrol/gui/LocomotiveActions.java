@@ -363,11 +363,12 @@ final class LocomotiveActions
     /** Shows the user locomotives similar to searchLoc, and maps them to a page if requested. */
     void findSimilarLocs(Locomotive searchLoc, MouseEvent evt)
     {
-        findSimilarLocs(searchLoc, searchLoc.getStructuredNotes(), evt != null ? (Component) evt.getSource() : this.ui);
+        findSimilarLocs(searchLoc, searchLoc.getName(), searchLoc.getStructuredNotes(),
+            evt != null ? (Component) evt.getSource() : this.ui);
     }
 
-    /** As above, searching with {@code notes} (what the Notes tab holds, saved or not), the dialogs off {@code source}. */
-    void findSimilarLocs(Locomotive searchLoc, LocomotiveNotes notes, Component source)
+    /** As above, with the name and notes the window holds, saved or not, and the dialogs off {@code source}. */
+    void findSimilarLocs(Locomotive searchLoc, String searchName, LocomotiveNotes notes, Component source)
     {
         String railway = notes.getRailway();
         int startYear = notes.getStartYear();
@@ -433,7 +434,7 @@ final class LocomotiveActions
         int result = JOptionPane.showOptionDialog(
             source,
             inputPanel,
-            I18n.f("search.ui.dialogFindSimilarLocomotives", searchLoc.getName()),
+            I18n.f("search.ui.dialogFindSimilarLocomotives", searchName),
             JOptionPane.OK_CANCEL_OPTION,
             JOptionPane.PLAIN_MESSAGE,
             null,
@@ -482,14 +483,15 @@ final class LocomotiveActions
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append(I18n.t("search.ui.labelTargetLocomotive")).append("\n- ").append(searchLoc.getNotesSummaryLine(notes));
+            sb.append(I18n.t("search.ui.labelTargetLocomotive")).append("\n- ")
+                .append(Locomotive.notesSummaryLine(searchName, notes));
             sb.append("\n\n").append(I18n.t("search.ui.labelSimilarLocomotives")).append("\n");
             for (Locomotive match : matches)
             {
                 sb.append("- ").append(match.getNotesSummaryLine()).append("\n");
                 this.ui.getModel().logf(
                     "loc.ui.infoSimilarLocomotive",
-                    searchLoc.getName(),
+                    searchName,
                     match.getNotesSummaryLine()
                 );
             }

@@ -1424,7 +1424,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             find.setFont(BUTTON_FONT);
             find.setFocusable(false);
             find.setToolTipText(I18n.t("loc.ui.tooltip.findSimilarHint"));
-            find.addActionListener(e -> main.locomotiveActions.findSimilarLocs(loc, panel.asTyped(loc), LocomotiveSettingsFrame.this));
+            find.addActionListener(e -> main.locomotiveActions.findSimilarLocs(loc,
+                locomotiveTab.nameChanged() ? locomotiveTab.name.getText().trim() : loc.getName(), panel.asTyped(loc),
+                LocomotiveSettingsFrame.this));
 
             panel.styleCaptions();
 

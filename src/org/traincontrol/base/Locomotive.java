@@ -1635,11 +1635,11 @@ public abstract class Locomotive
      */
     public String getNotesSummaryLine()
     {
-        return getNotesSummaryLine(this.getStructuredNotes());
+        return notesSummaryLine(this.getName(), this.getStructuredNotes());
     }
 
-    /** As above, of {@code n} in place of the saved notes. */
-    public String getNotesSummaryLine(LocomotiveNotes n)
+    /** As above, of a name and notes in place of the saved ones. */
+    public static String notesSummaryLine(String name, LocomotiveNotes n)
     {
         String railway = n.getRailway();
         int startYear = n.getStartYear();
@@ -1649,7 +1649,7 @@ public abstract class Locomotive
                        (endYear == 0) ? String.valueOf(startYear) + "-" :
                        startYear + "-" + endYear;
 
-        StringBuilder sb = new StringBuilder(this.getName());
+        StringBuilder sb = new StringBuilder(name);
 
         if (!range.isEmpty() || !railway.isEmpty())
         {
