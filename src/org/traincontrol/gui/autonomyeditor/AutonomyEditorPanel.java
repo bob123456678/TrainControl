@@ -2715,9 +2715,9 @@ public class AutonomyEditorPanel extends JPanel
      */
     boolean applyPreset(TileKey tile, StationPreset preset)
     {
-        if (!setUsage(tile, true, true)) return false;
+        if (!setUsage(tile, preset.stops, true)) return false;
 
-        session.setAutoDestination(tile, preset.fullAutonomy);
+        if (preset.fullAutonomy != null) session.setAutoDestination(tile, preset.fullAutonomy);
 
         setTurning(tile, preset.may, preset.must);
 

@@ -1296,7 +1296,7 @@ public class testStationSettingsWindow
     // ----------------------------------------------------------------------------------------------------------- presets
 
     /**
-     * Each preset leaves the setup a user setting the four by hand leaves, from a station and from a closed square.
+     * Each preset leaves the setup a user setting its settings by hand leaves, from a station and from a closed square.
      *
      * MUTATION: have Parking leave Full Autonomy as it was, or have `applyPreset` skip `setUsage`, and this fails.
      */
@@ -1362,7 +1362,15 @@ public class testStationSettingsWindow
         {
             StationDoors.press(window, "station.preset." + preset.name());
 
-            assertEquals(otherSettings(square), others, preset + " changed another setting");
+            Map<String, String> now = otherSettings(square);
+
+            // A square no station has no ways in to bar and no guards: they are kept, unread, for a station again
+            for (String stationOnly : preset == StationPreset.OFF ? new String[] {"barred", "exit", "entry"} : new String[0])
+            {
+                now.put(stationOnly, others.get(stationOnly));
+            }
+
+            assertEquals(now, others, preset + " changed another setting");
         }
     }
 
@@ -1434,9 +1442,39 @@ public class testStationSettingsWindow
 
         StationDoors.press(window, "station.preset.STATION");
         StationDoors.press(window, "station.stops");
+        StationDoors.press(window, "station.runsThrough");
         StationDoors.current(window);
 
-        assertNull(window.litPresetForTest(), "a button lit with Stop off");
+        assertNull(window.litPresetForTest(), "a button lit with both boxes off, out of service");
+    }
+
+    /**
+     * Off makes the square an s88 that is no station: trains run over it and none stops (Adam, MT-917: "we need an
+     * "off" preset that is the equivalent to an s88 that is not a station"); it lights for a station unticked by hand.
+     *
+     * MUTATION: have `applyPreset` leave Trains can stop here ticked for Off, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testOffMakesTheSquareNoStation() throws Exception
+    {
+        TileKey square = aStation();
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.press(window, "station.preset.OFF");
+        StationDoors.current(window);
+
+        assertFalse(Components.onTheEventThread(() -> session.getStore().isStation(square)),
+            "Off left the square a station");
+        assertFalse(Components.onTheEventThread(() -> session.isStopOnly(square) || !session.runsBothWays(square)),
+            "Off stopped trains running over the square");
+        assertEquals(window.litPresetForTest(), StationPreset.OFF, "Off does not light once pressed");
+
+        StationDoors.press(window, "station.preset.STATION");
+        StationDoors.press(window, "station.stops");
+        StationDoors.current(window);
+
+        assertEquals(window.litPresetForTest(), StationPreset.OFF, "a station unticked by hand does not light Off");
     }
 
     // ------------------------------------------------------------------------------------------------------------ matrix
@@ -2182,7 +2220,7 @@ public class testStationSettingsWindow
             assertTrue(cornerIn(content, first).y + first.getHeight() < cornerIn(content, allowed).y,
                 "the presets are not above What's allowed here");
 
-            javax.swing.JToggleButton last = StationDoors.part(window, "station.preset.REVERSING_POINT",
+            javax.swing.JToggleButton last = StationDoors.part(window, "station.preset.OFF",
                 javax.swing.JToggleButton.class);
 
             assertTrue(javax.swing.SwingUtilities.convertRectangle(last.getParent(), last.getBounds(), content).getMaxX()
@@ -3603,7 +3641,7 @@ public class testStationSettingsWindow
             assertEquals(window.litPresetForTest(), preset, preset + " did not light when pressed");
         }
 
-        PillButton lit = StationDoors.part(window, "station.preset.REVERSING_POINT", PillButton.class);
+        PillButton lit = StationDoors.part(window, "station.preset.OFF", PillButton.class);
         PillButton unlit = StationDoors.part(window, "station.preset.STATION", PillButton.class);
 
         assertEquals(toolkitCursor(lit).getType(), java.awt.Cursor.HAND_CURSOR, "no hand cursor on an enabled pill");
@@ -3817,16 +3855,23 @@ public class testStationSettingsWindow
         Components.settle();
     }
 
-    /** Sets the four settings of a preset with the window's own boxes and radios. */
+    /** Sets the settings of a preset with the window's own boxes and radios; Off leaves the grayed May choose alone. */
     private static void setByHand(StationSettingsWindow window, StationPreset preset) throws Exception
     {
-        if (!StationDoors.on(window, "station.stops")) StationDoors.press(window, "station.stops");
+        boolean stops = preset != StationPreset.OFF;
+
+        if (stops && !StationDoors.on(window, "station.stops")) StationDoors.press(window, "station.stops");
 
         if (!StationDoors.on(window, "station.runsThrough")) StationDoors.press(window, "station.runsThrough");
 
+        if (!stops && StationDoors.on(window, "station.stops")) StationDoors.press(window, "station.stops");
+
         boolean wantsAuto = preset == StationPreset.STATION || preset == StationPreset.TERMINUS;
 
-        if (StationDoors.on(window, "station.fullAutonomy") != wantsAuto) StationDoors.press(window, "station.fullAutonomy");
+        if (stops && StationDoors.on(window, "station.fullAutonomy") != wantsAuto)
+        {
+            StationDoors.press(window, "station.fullAutonomy");
+        }
 
         String turn = preset == StationPreset.TERMINUS ? "station.turnMust"
             : preset == StationPreset.REVERSING_POINT ? "station.turnMay" : "station.turnNever";

@@ -469,7 +469,7 @@ Tab icons provided by Freepik.
             - The icon dropdown on the `Functions` tab lists, after the standard icons, every custom image you have chosen for any locomotive's function, so you can use it again.
         - Autonomy
             - `Station Settings` puts all of a station's settings in one window, opened from a station's right-click menu or with Ctrl+O, beside a picture of the station and a table of what trains may do there.
-            - Two boxes, `Trains can stop here` and `Trains can pass through`, replace the `Station (...)` choices, and the `Station`, `Terminus`, `Parking` and `Reversing Point` buttons set the usual combinations and light up when your settings match one.
+            - Two boxes, `Trains can stop here` and `Trains can pass through`, replace the `Station (...)` choices, and the `Station`, `Terminus`, `Parking`, `Reversing` and `Off` buttons set the usual combinations and light up when your settings match one.
             - A station with only `Trains can stop here` ticked can't be run through by autonomy or by a trip you send, though it doesn't make the train turn around, and `Return Home` may still run through it.
             - `Mass Edit...`, under `Station Tools` in the autonomy editor, lets you click several stations and change them all in one `Station Settings` window.
             - `Change Train at` *station* `...` opens the `Train Placement` tab of `Station Settings` for the train standing there, with its locomotive, `Active`, `Facing`, `Arrived` and `Tail lies`, and `Locomotive Settings...` opens the `Autonomy` tab.
