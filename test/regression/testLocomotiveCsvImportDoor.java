@@ -411,20 +411,55 @@ public class testLocomotiveCsvImportDoor
         });
     }
 
-    /** Presses Locomotives > Export to CSV, saves into `file` in its chooser, and waits for the file to be written. */
+    /**
+     * Presses Locomotives > Export to CSV, saves into `file` in its chooser, closes the panel showing the export, and
+     * waits for the file to be written.
+     */
     private static File exportThroughTheMenu(TrainControlUI ui, File file) throws Exception
     {
-        try (support.Answering answering = support.Answering.start(message -> null).choosing(file))
+        final List<String> seen = Collections.synchronizedList(new ArrayList<>());
+        final boolean[] going = {true};
+        final java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+        Thread answering = new Thread(() -> support.DialogWatch.until(() -> going[0], 100, dialog ->
+        {
+            JFileChooser chooser = support.Components.inside(dialog.getContentPane(), JFileChooser.class);
+            JOptionPane pane = support.Components.inside(dialog.getContentPane(), JOptionPane.class);
+
+            if (chooser != null && handled.add(chooser))
+            {
+                seen.add("chooser");
+                SwingUtilities.invokeLater(() ->
+                {
+                    chooser.setSelectedFile(file);
+                    chooser.approveSelection();
+                    seen.add("approved " + chooser.getSelectedFile());
+                });
+            }
+            else if (pane != null && handled.add(pane))
+            {
+                seen.add("pane " + dialog.getTitle());
+                SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION)));
+            }
+        }), "locomotive export answerer");
+
+        answering.setDaemon(true);
+        answering.start();
+
+        try
         {
             final JMenuItem door = (JMenuItem) Reflect.get(TrainControlUI.class, ui, "exportLocsToCSVMenuItem");
 
             SwingUtilities.invokeLater(door::doClick);
 
-            // Written off the event thread, and the panel showing the export answered
-            assertTrue(support.Components.waitFor(() -> file.length() > 0 && !answering.asked().isEmpty(), 60000),
-                "Export to CSV wrote nothing to the chosen file");
+            assertTrue(support.Components.waitFor(() -> file.length() > 0, 60000), "Export to CSV wrote nothing to "
+                + file + "; the answerer saw " + seen);
 
             support.Components.settle();
+        }
+        finally
+        {
+            going[0] = false;
         }
 
         return file;
