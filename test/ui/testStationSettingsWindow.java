@@ -229,8 +229,6 @@ public class testStationSettingsWindow
     {
         StationSettingsWindow window = StationDoors.open(panel, aStationWhereMayDepart());
 
-        StationDoors.current(window);
-
         javax.swing.JComboBox<?> stepped = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
 
         Object was = StationDoors.step(stepped);
@@ -2048,8 +2046,6 @@ public class testStationSettingsWindow
 
             StationSettingsWindow window = StationDoors.open(panel, square);
 
-            StationDoors.current(window);
-
             for (int y = 0; y < roads.size(); y++)
             {
                 if (!StationDoors.live(window, "station.depart." + y)) continue;
@@ -2081,18 +2077,17 @@ public class testStationSettingsWindow
     }
 
     /**
-     * May depart is live exactly where the railway, the station running both ways, sends trains out by both sides, on
-     * every station of the frozen railway; elsewhere it shows the one way out, and its (i) says why (Adam: "can be set
-     * except when a one direction run is forced, such as a terminus").  An old arrow leaves it live, to be changed.
+     * May depart is grayed at a drawn track end only, on every station of the frozen railway (Adam: "can be set except
+     * when a one direction run is forced, such as a terminus"): live too where the railway leads trains out one way
+     * alone, and where an old arrow shuts the one way out, so it can be changed.
      *
-     * MUTATION: drop the railway's ways out from `StationSettingsWindow.fillDepart`, keeping `deadEndSide`, and this
-     * fails.
+     * MUTATION: gray May depart wherever the railway sends trains out by one side only, and this fails.
      */
     @Test(timeOut = 300000)
-    public void testMayDepartIsLiveExactlyWhereBothSidesLeadSomewhere() throws Exception
+    public void testMayDepartIsLiveEverywhereButATrackEnd() throws Exception
     {
         List<String> wrong = new java.util.ArrayList<>();
-        int forced = 0;
+        int forced = 0, oneWayOut = 0;
 
         for (String page : new String[] {PAGE, "2 - Bottom"})
         {
@@ -2108,38 +2103,62 @@ public class testStationSettingsWindow
             {
                 if (Components.onTheEventThread(() -> session.getRoutes(square).size()) != 1) continue;
 
+                // At a track end, the One Way out: grayed there unless an old arrow shuts it
+                Direction only = Components.onTheEventThread(() ->
+                {
+                    org.traincontrol.automationui.TilePorts.Side end = session.deadEndSide(square);
+
+                    return end == null ? null : end == session.getRoutes(square).values().iterator().next().getA()
+                        ? Direction.TOWARD_B : Direction.TOWARD_A;
+                });
+                Direction now = wayOf(square, onlyRoad(square));
+                boolean gray = only != null && (now == Direction.BOTH || now == only);
+
                 StationSettingsWindow window = StationDoors.open(panel, square);
 
-                StationDoors.current(window);
+                if (StationDoors.live(window, "station.depart.0") == gray) wrong.add(square + " live " + gray + ", " + now);
 
-                boolean both = Components.onTheEventThread(() -> leavesBothWays(square));
-                Set<String> out = Components.onTheEventThread(() -> railwayWaysOut(square));
-                boolean live = StationDoors.live(window, "station.depart.0");
-                String said = Components.onTheEventThread(() -> window.flyoverForTest("depart"));
-
-                if (live != (!both || out.size() == 2)) wrong.add(square + " live " + live + ", both ways " + both + ", out " + out);
-
-                if (!live)
-                {
-                    forced++;
-
-                    boolean ends = Components.onTheEventThread(() -> session.deadEndSide(square) != null);
-                    String why = I18n.t(ends ? "autosetup.ui.flyDepartForced" : "autosetup.ui.flyDepartLeadsNowhere");
-
-                    if (!said.contains(why.substring(0, why.indexOf("{0}")))) wrong.add(square + " (i) " + said);
-                    if (out.size() != 1 || !departShows(window).equals(I18n.f("autosetup.ui.menuRouteToward",
-                        out.iterator().next())))
-                    {
-                        wrong.add(square + " shows " + departShows(window) + ", out " + out);
-                    }
-                }
+                if (gray) forced++;
+                else if (Components.onTheEventThread(() -> railwayWaysOut(square).size()) == 1) oneWayOut++;
 
                 StationDoors.close(window);
             }
         }
 
-        assertEquals(wrong, new java.util.ArrayList<>(), "May depart is live where one way out is forced, or gray where it is not");
-        assertTrue(forced > 10, "precondition: only " + forced + " stations have one way out");
+        assertEquals(wrong, new java.util.ArrayList<>(), "May depart is gray away from a track end, or live at one");
+        assertTrue(forced > 3, "precondition: only " + forced + " stations are at a track end");
+        assertTrue(oneWayOut > 0, "precondition: no live station has one way out");
+    }
+
+    /**
+     * May depart's One Way toward TopMainR2Inter's north side leaves a train there no way to another station: the setup
+     * check says so, and the notice under the picture says no train can leave.
+     *
+     * MUTATION: drop `STATION_REACHES_NOTHING` from `AutonomyChecks.checkStations`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAMayDepartPickThatStrandsTrainsIsSaid() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopMainR2Inter"));
+
+        assertFalse(Components.onTheEventThread(() -> strands(square)), "precondition: TopMainR2Inter already strands trains");
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        chooseDepartTowardA(window, square, onlyRoad(square));
+
+        assertTrue(Components.onTheEventThread(() -> strands(square)), "the setup check does not say the pick strands trains");
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> StationDoors.part(window, "station.matrixProblem",
+            javax.swing.JLabel.class).isShowing()), 10000), "no notice says no train can leave");
+
+        StationDoors.close(window);
+    }
+
+    /** Whether the setup check says no train can leave a station for another; on the event thread. */
+    private static boolean strands(TileKey square)
+    {
+        return session.check().stream().anyMatch(f -> "autosetup.ui.checkStationReachesNothing".equals(f.getMessageKey())
+            && square.equals(f.getTile()));
     }
 
     /**

@@ -406,9 +406,6 @@ public class testTheAutonomyEditorsTriageNotes
             {
                 window = StationDoors.open(panel, each);
 
-                // May depart grays once the railway answers where it leaves one way out
-                StationDoors.current(window);
-
                 javax.swing.JCheckBox box = Components.find(window, javax.swing.JCheckBox.class,
                     b -> b.getName() != null && b.getName().startsWith("station.arrive.") && b.isEnabled());
 

@@ -1404,8 +1404,6 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         AutonomySession session = editor.session;
 
-        departLive = live;
-
         Map<RouteId, TilePorts.Route> routes = session.getRoutes(tile);
 
         // The lists stay while the roads do, as the arrival boxes (OB-436); a run starting or ending builds them again,
@@ -1431,13 +1429,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
         boolean carries = session.canCarryDirection(tile);
 
-        // Trains leave by one side only where the track ends, or where the railway, the station running both ways,
-        // sends them out by one side alone (OB-472)
+        // Where the track on one side runs out, trains can only leave the other way (OB-472)
         TilePorts.Side end = session.deadEndSide(tile);
-
-        Set<String> out = waysOut();
-
-        departOut = out;
 
         int y = 0;
 
@@ -1470,10 +1463,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
             Direction current = TileGraph.inForce(session.directionAsDrawn(tile, entry.getKey()), route);
 
-            TilePorts.Side shut = end != null ? end : current != Direction.BOTH || out.size() != 1 ? null
-                : out.contains(route.getA().name()) ? route.getB() : out.contains(route.getB().name()) ? route.getA() : null;
-
-            Direction only = shut == route.getA() ? Direction.TOWARD_B : shut == route.getB() ? Direction.TOWARD_A : null;
+            Direction only = end == route.getA() ? Direction.TOWARD_B : end == route.getB() ? Direction.TOWARD_A : null;
 
             // Grayed only where that one way is open: an old arrow shutting it stays to be changed
             boolean forced = only != null && (current == Direction.BOTH || current == only);
@@ -1481,8 +1471,7 @@ public final class StationSettingsWindow extends StationWindowBase
             if (forced)
             {
                 current = only;
-                why = I18n.f(end != null ? "autosetup.ui.flyDepartForced" : "autosetup.ui.flyDepartLeadsNowhere",
-                    I18n.t("autosetup.ui.side" + shut.name()));
+                why = I18n.f("autosetup.ui.flyDepartForced", I18n.t("autosetup.ui.side" + end.name()));
             }
 
             final JComboBox<String> choice = same ? departChoices.get(entry.getKey())
@@ -1635,17 +1624,6 @@ public final class StationSettingsWindow extends StationWindowBase
 
     private transient StandingRules shownRules;
 
-    /** The square `shownRules` answer for; how May depart was last filled: live, and the railway's ways out. */
-    private transient TileKey rulesAt;
-    private boolean departLive;
-    private transient Set<String> departOut;
-
-    /** The sides the railway sends a train out of this station by, as last answered; none before an answer. */
-    private Set<String> waysOut()
-    {
-        return tile.equals(rulesAt) && shownRules != null ? shownRules.waysOut() : Collections.<String>emptySet();
-    }
-
     /** A station's mark presses the form's control for it; a next square's arrow, its right-click menu's door. */
     private final StationPicture.Doors pictureDoors = new StationPicture.Doors()
     {
@@ -1791,26 +1769,8 @@ public final class StationSettingsWindow extends StationWindowBase
                     matrix.show(rules, shown, stuck, line);
 
                     shownRules = error == null ? rules : null;
-                    rulesAt = tile;
 
                     picture.showWays(shownRules);
-
-                    // May depart grays where the railway leaves one way out; read, as a reload reads, and never under
-                    // the keyboard, so a choice being stepped to stays
-                    if (departShape != null && !isSeveral() && !waysOut().equals(departOut)
-                        && departChoices.values().stream().noneMatch(Component::isFocusOwner))
-                    {
-                        reading = true;
-
-                        try
-                        {
-                            fillDepart(departLive);
-                        }
-                        finally
-                        {
-                            reading = false;
-                        }
-                    }
 
                     matrixPainted = asked;
 

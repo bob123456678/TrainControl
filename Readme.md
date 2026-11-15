@@ -515,7 +515,7 @@ Tab icons provided by Freepik.
             - The autonomy editor draws signals and lamps in gray to keep the picture simple, and shows the signals you can pick in color while you choose a guard signal.
             - The `Bulk Tools` menu is grouped with dividers, and `Hide Hover Tooltips` hides its tooltips too.
             - In the autonomy editor, clicking or double-clicking an s88 square opens its `Station Settings` instead of changing its arrows.
-            - `May depart` is grayed and shows the only way out at a station trains can leave one way only, such as a terminus.
+            - `May depart` is grayed and shows the only way out at a station where the track ends on one side, such as a terminus, and the setup check warns you when a direction you pick leaves trains no way out.
             - `May depart` no longer offers `Closed - No Trains`, so untick `Trains can stop here` or press `Off` instead, or untick both boxes to take the square out of service.
             - The picture in `Station Settings` no longer draws green arrows on the station, only a red one at a side trains may not leave by.
             - The setup check notes two s88 squares with no track between them.
