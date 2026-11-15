@@ -168,7 +168,7 @@ Monitor the usage of different locomotives.
 * Track diagrams
     * View unlimited layout diagrams, with support for multiple windows
     * Toggle signals, switches, lights, uncouplers, and routes
-    * View S88 feedback
+    * View S88 feedback, read from a CS3 when TrainControl connects, including sensors on a Link S88, so the diagram shows each sensor as it really is
     * Full UI for editing track diagrams
     * Add, duplicate, rename, delete and rearrange pages from a strip of icons
 * Basic automation
@@ -429,6 +429,24 @@ Tab icons provided by Freepik.
 ## Changelog
 
 * v3.1.0
+    - Central Station Protocol
+        - New Features
+            - TrainControl now connects to a CS3 over TCP, and falls back to UDP, saying so in the log, if that doesn't work. A CS2 still uses UDP.
+            - If the connection to a CS3 drops, or the CS3 answers nothing for 3 seconds after a command, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.
+            - The network latency in the main window names the protocol in use, `(TCP)` or `(UDP)`, and a warning triangle shows to the left of `Power OFF` while the Central Station isn't answering.
+            - When TrainControl starts up or syncs with a CS3, it now asks the sensors for their state, including those on a Link S88, so the track diagram shows them as they really are.  After TrainControl connects or reconnects, no S88 route is set off until the CS3 has told it the state of every sensor; after that, every sensor change counts, including during a later `Sync`.
+            - `Download Central Station Layout Files...` asks before replacing a layout that is already in the folder, runs behind the busy sign instead of freezing the window, opens the copy the way `Open Layout...` does, and says so if the copy can't be opened.
+            - A layout downloaded from a CS3 keeps each accessory's protocol, including an MM2 and a DCC accessory at the same address.
+            - When the Central Station turns the track power off after a short circuit, TrainControl now shows the power as off and a warning names the output that tripped.
+            - A CS3 sync skips what it can't read, such as something a new firmware changed, and keeps the rest, so it no longer loses a page or fails because of it.
+            - A failed `Sync` now says in one plain sentence what went wrong, with `Retry`, and keeps the details in the log.
+        - Bug Fixes
+            - A file that arrives from the Central Station cut off is asked for again, and the sync fails, changing nothing, only if it stays cut off, instead of leaving a partly loaded layout.
+            - Names with umlauts or accents now come through correctly from a Central Station that sends them in an older format.
+            - A Central Station that always sends the same short file is now read, and the log says so.
+            - The track diagram now waits until TrainControl knows the Central Station's type, so a CS3's squares get the right protocol.
+            - A sync no longer changes the address of a locomotive that is moving; it waits for the next sync after the locomotive has stopped.
+            - `Check for Renamed Locomotives` now handles a locomotive renamed at the Central Station, even when another locomotive already has the new name, and asks first.
     - New Features
         - Locomotive Control
             - `Locomotive Settings` is one window, in tabs for `Basic Settings`, `Functions`, `Notes`, `Multi-Unit` and `Autonomy`, that replaces the separate dialogs for a locomotive's name, address, decoder, picture, functions, notes and multi-unit.
@@ -500,16 +518,6 @@ Tab icons provided by Freepik.
             - An unexpected error in the background now shows in the log.
             - `Routes` > `New Route...` adds a route, and `Import Routes...` asks before replacing your routes.
             - `Autonomy` > `Documentation` is now `Autonomy Guide`.
-        - Central Station
-            - TrainControl now connects to a CS3 over TCP, and falls back to UDP, saying so in the log, if that doesn't work. A CS2 still uses UDP.
-            - If the connection to a CS3 drops, or the CS3 answers nothing for 3 seconds after a command, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.
-            - The network latency in the main window names the protocol in use, `(TCP)` or `(UDP)`, and a warning triangle shows to the left of `Power OFF` while the Central Station isn't answering.
-            - When TrainControl starts up or syncs with a CS3, it now asks the sensors for their state, including those on a Link S88, so the track diagram shows them as they really are.  After TrainControl connects or reconnects, no S88 route is set off until the CS3 has told it the state of every sensor; after that, every sensor change counts, including during a later `Sync`.
-            - `Download Central Station Layout Files...` asks before replacing a layout that is already in the folder, runs behind the busy sign instead of freezing the window, opens the copy the way `Open Layout...` does, and says so if the copy can't be opened.
-            - A layout downloaded from a CS3 keeps each accessory's protocol, including an MM2 and a DCC accessory at the same address.
-            - When the Central Station turns the track power off after a short circuit, TrainControl now shows the power as off and a warning names the output that tripped.
-            - A CS3 sync skips what it can't read, such as something a new firmware changed, and keeps the rest, so it no longer loses a page or fails because of it.
-            - A failed `Sync` now says in one plain sentence what went wrong, with `Retry`, and keeps the details in the log.
         - Documentation
             - The Readme and the autonomy guide now describe `Locomotive Settings`, `Station Settings` and the other new windows and shortcuts.
     - Bug Fixes
@@ -535,13 +543,6 @@ Tab icons provided by Freepik.
             - A page window that is open now redraws after a sync that read its page again.
             - Page windows now close when you switch to another layout, follow a page that is renamed, and close when their page is gone.
             - An S88 route's sensor that no page of the diagram draws is no longer forgotten when the layout is read.
-        - Central Station
-            - A file that arrives from the Central Station cut off is asked for again, and the sync fails, changing nothing, only if it stays cut off, instead of leaving a partly loaded layout.
-            - Names with umlauts or accents now come through correctly from a Central Station that sends them in an older format.
-            - A Central Station that always sends the same short file is now read, and the log says so.
-            - The track diagram now waits until TrainControl knows the Central Station's type, so a CS3's squares get the right protocol.
-            - A sync no longer changes the address of a locomotive that is moving; it waits for the next sync after the locomotive has stopped.
-            - `Check for Renamed Locomotives` now handles a locomotive renamed at the Central Station, even when another locomotive already has the new name, and asks first.
         - Interface
             - Questions and messages now open over the window you were working in, such as a track diagram page in its own window, instead of over the main window.
             - `Restore from Backup` no longer asks about the Central Station's layout when it saves your current data first.
