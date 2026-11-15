@@ -4528,12 +4528,11 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         if (isAutonomyMode()) return this.trainDrag.cancel() || autonomyPanel.putToolsDown();
 
-        // A text tile being dragged (OB-478) stays where it was, and the release that follows drops nothing
-        if (this.captionGhost != null)
+        // A tile being dragged on its own stays where it was, and the release that follows drops nothing (OB-478)
+        if (this.dragWindow != null && !this.groupDragging)
         {
             hideCaptionGhost();
-
-            if (this.dragWindow != null) this.dragWindow.dispose();
+            this.dragWindow.dispose();
 
             this.dragWindow = null;
             this.clickToIgnore = this.dragSource;

@@ -1461,10 +1461,10 @@ public class testTheTrackEditorByHand
     }
 
     /**
-     * Escape while a text label is being dragged puts it down where it was: the copy and the "copied" outline go, and
-     * the release that follows moves nothing (OB-478).
+     * Escape while a text label, or a piece of track, is being dragged puts it down where it was: the copy and the
+     * "copied" outline go, and the release that follows moves nothing and leaves nothing to undo (OB-478).
      *
-     * MUTATION: drop the text-drag branch from `LayoutEditor.letGoOfWhateverIsHeld`, or its `refreshSelectionBorders`,
+     * MUTATION: drop the single-tile branch from `LayoutEditor.letGoOfWhateverIsHeld`, or its `refreshSelectionBorders`,
      * and this fails.
      */
     @Test
@@ -1475,6 +1475,7 @@ public class testTheTrackEditorByHand
         try
         {
             escapeADragFrom(editor, 3, 2);
+            escapeADragFrom(editor, 1, 4);
         }
         finally
         {
@@ -1527,18 +1528,20 @@ public class testTheTrackEditorByHand
 
         assertTrue(still != null && still.getType() == type, "the " + type + " left its square after Escape");
         assertNull(editor.getMarklinLayout().getComponent(7, 4), "the release after Escape dropped the " + type);
+        assertFalse(editor.canUndo(), "the release after Escape left a step to undo");
     }
 
     /** The words on the text tile the claims below drag. */
     private static final String TEXT = "Yard sidings";
 
-    /** A track editor, on a page of its own in memory, with a text tile at 3,2 and nothing else. */
+    /** A track editor, on a page of its own in memory, with a text tile at 3,2, a straight at 1,4 and nothing else. */
     private static LayoutEditor aTextTileEditor() throws Exception
     {
         LayoutDiagram page = new LayoutDiagram("OB-478", 12, 6, null, null);
 
         page.addComponent(LayoutDiagramComponent.componentType.TEXT, 3, 2, 0, 0, 0, 0,
             org.traincontrol.base.Accessory.accessoryDecoderType.MM2, TEXT);
+        support.Diagrams.straight(page, 1, 4);
 
         final LayoutEditor editor = Components.onTheEventThread(() ->
         {
