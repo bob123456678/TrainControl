@@ -16,7 +16,7 @@
 #
 # The last release tag is the highest v<n>_<n>... (no beta, none of the 1.x tags without an underscore).  Nothing here
 # reads cs2_sample_layout, Adam's live railway.  TC_GATES="spotbugs fit" runs only the gates it names.
-# Exit 0 only when every gate run passed; the logs are under $TC_SCRATCH/gates.
+# A gate not run prints SKIPPED.  Exit 0 only when every gate run passed; the logs are under $TC_SCRATCH/gates.
 
 set -u
 
@@ -116,6 +116,17 @@ $(grep -m1 '^files compared' "$log")"
             say "$gate" 1 "no such gate"
             ;;
     esac
+done
+
+# A gate not run says so, so four PASS lines never read as the whole set
+for gate in guards spotbugs fit updater layouts
+do
+    case " $GATES " in *" $gate "*) continue;; esac
+
+    why="not in TC_GATES"
+    [ -z "${TC_GATES:-}" ] && why="only with --layouts or --full"
+    RESULTS="${RESULTS}SKIPPED $gate  $why
+"
 done
 
 echo ""
