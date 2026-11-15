@@ -10,6 +10,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.ArrayList;
@@ -50,8 +51,8 @@ public class CSDetect
         return checkWebServer(host, CS2File.getLayoutMasterURL(""));
     }
 
-    /** Test hooks (OB-480): the subnets searched in place of the adapters' own, and how many hosts of each. */
-    static List<String> subnetsForATest;
+    /** Test hooks (OB-480): when not empty, the subnets searched in place of the adapters' own, and how many hosts of each. */
+    static List<String> subnetsForATest = Collections.emptyList();
     static int hostsPerSubnet = 254;
 
     /** Searches these subnets in turn; `searching` is told each one ("192.168.1.x") as the search reaches it. */
@@ -119,7 +120,7 @@ public class CSDetect
     /** The site-local subnets whose gateway answers a ping, each as "192.168.1.". */
     public static List<String> getLocalSubnet()
     {
-        if (subnetsForATest != null) return subnetsForATest;
+        if (!subnetsForATest.isEmpty()) return new ArrayList<>(subnetsForATest);
 
         List<String> out = new ArrayList<>();
 
