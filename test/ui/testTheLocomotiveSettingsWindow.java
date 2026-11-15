@@ -2176,6 +2176,33 @@ public class testTheLocomotiveSettingsWindow
         });
     }
 
+    /**
+     * The pill lays the tab out again only when its words change, not every time it is told them (MT-924).
+     *
+     * MUTATION: drop the early return from `CurrentKeyRow.Pill.setText`, and this fails.
+     */
+    @Test
+    public void testThePillLaysOutOnlyForNewWords() throws Exception
+    {
+        String station = I18n.t("loc.ui.settingsPictureFromStation");
+
+        loc.setImageURL(pngFile().toURI().toString());
+        loc.setLocalImageURL(null);
+        open(0);
+        assertEquals(pillShows(station), station, "the station's picture is not named");
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        CurrentKeyRow.Pill pill = SettingsWindow.part("settings.pictureSource", CurrentKeyRow.Pill.class);
+
+        assertTrue(Components.onTheEventThread(() ->
+        {
+            window.validate();
+            pill.setText(station);
+
+            return pill.isValid();
+        }), "the same words laid the pill out again");
+    }
+
     /** The file chooser on screen, once one is, with the window it hangs off in `owner[0]`. */
     private static javax.swing.JFileChooser chooserShowing(java.awt.Window[] owner) throws Exception
     {

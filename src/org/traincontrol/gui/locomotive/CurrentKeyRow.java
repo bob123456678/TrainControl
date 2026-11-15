@@ -694,7 +694,11 @@ public class CurrentKeyRow extends JComponent
          */
         public void setText(String text)
         {
-            words = text == null ? "" : text;
+            String now = text == null ? "" : text;
+
+            if (now.equals(words) && isVisible() == (text != null)) return;
+
+            words = now;
             setVisible(text != null);
             revalidate();
             repaint();
