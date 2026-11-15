@@ -1054,34 +1054,80 @@ public class testRestoreFromBackup
 
     /**
      * MT-1002 step 3: File &gt; Back Up TrainControl Data with the locomotive database locked, as another program locks
-     * it, does not say the backup is complete: it names `LocDB.data` and says the backup has it as last saved.
+     * it, so it can be neither saved nor copied: the backup is not called complete, and says in plain words that
+     * `LocDB.data` is not in it, without a path or an exception's name.  The archive indeed lacks it.
      *
-     * MUTATION: in `BackupAction.backupDataMenuItemActionPerformed`, show `ui.infoBackupCompleteSavedTo` whatever
-     * `unsaved` holds, and this fails.
+     * MUTATION: in `BackupAction.writeTheBackup`, leave the not-copied files under `ui.backupHasItAsLastSaved`, and
+     * this fails.
      */
     @Test(timeOut = 180000)
-    public void testABackupWithTheDatabaseLockedSaysItHasItAsLastSaved() throws Exception
+    public void testABackupWithTheDatabaseLockedSaysItIsNotInTheBackup() throws Exception
+    {
+        String said = backUpHolding(() -> lockTheDatabase());
+
+        assertFalse(said.startsWith(I18n.f("ui.infoBackupCompleteSavedTo", "").trim()), "the backup called itself"
+            + " complete: " + said);
+        assertTrue(said.contains(I18n.f("ui.backupNotSavedOrCopied", MarklinControlStation.DATA_FILE_NAME,
+            I18n.t("ui.reasonInUse"))), "the backup does not say plainly that " + MarklinControlStation.DATA_FILE_NAME
+            + " is not in it: " + said);
+        assertFalse(said.contains(lastSavedLead()) || said.contains("Exception") || said.contains(":" + File.separator),
+            "the backup says the file is in it as last saved, or names a path or an exception: " + said);
+        assertFalse(entriesOf(theNewArchive()).containsKey(MarklinControlStation.DATA_FILE_NAME), "precondition: the"
+            + " archive has the locked file after all");
+    }
+
+    /**
+     * A database another program holds open but lets others read cannot be saved, yet is copied: the backup still says
+     * it has it as last saved, and the archive has it.
+     *
+     * MUTATION: in `BackupAction.writeTheBackup`, say `ui.backupNotSavedOrCopied` for every file that did not save, and
+     * this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testABackupWithTheDatabaseHeldSaysItHasItAsLastSaved() throws Exception
+    {
+        String said = backUpHolding(() -> new java.io.FileInputStream(Util.dataPath(MarklinControlStation.DATA_FILE_NAME)));
+
+        assertTrue(said.contains(lastSavedLead()) && !said.contains(I18n.f("ui.backupNotSavedOrCopied",
+            MarklinControlStation.DATA_FILE_NAME, I18n.t("ui.reasonInUse"))), "the backup does not say it has "
+            + MarklinControlStation.DATA_FILE_NAME + " as last saved: " + said);
+        assertTrue(entriesOf(theNewArchive()).containsKey(MarklinControlStation.DATA_FILE_NAME), "the archive lacks the"
+            + " held file it could read");
+    }
+
+    /** A note typed and saved, then File &gt; Back Up with the database held by `hold`; gives back what it said. */
+    private String backUpHolding(java.util.concurrent.Callable<java.io.Closeable> hold) throws Exception
     {
         noteTypedInTheSettingsWindow();
 
-        List<String> said;
-
-        try (java.io.RandomAccessFile locked = lockTheDatabase();
-            Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        try (java.io.Closeable held = hold.call(); Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
             Components.press(Components.withText(ui, I18n.t("ui.main.toolbar.backupData")));
 
             assertTrue(answering.awaitAsked(1, 120000), "the backup never finished");
 
-            said = answering.asked();
+            return answering.asked().get(0);
         }
+    }
 
+    /** How `ui.backupHasItAsLastSaved` begins for the locomotive database, before its reason. */
+    private static String lastSavedLead()
+    {
         String lead = I18n.f("ui.backupHasItAsLastSaved", MarklinControlStation.DATA_FILE_NAME, "\n");
 
-        assertFalse(said.get(0).startsWith(I18n.f("ui.infoBackupCompleteSavedTo", "").trim()), "the backup called itself"
-            + " complete: " + said.get(0));
-        assertTrue(said.get(0).contains(lead.substring(0, lead.indexOf('\n'))), "the backup does not say it has "
-            + MarklinControlStation.DATA_FILE_NAME + " as last saved: " + said.get(0));
+        return lead.substring(0, lead.indexOf('\n'));
+    }
+
+    /** The one archive this claim's backup wrote. */
+    private File theNewArchive()
+    {
+        List<String> zips = new ArrayList<>();
+
+        for (String name : newBackups()) if (name.endsWith(".zip")) zips.add(name);
+
+        assertEquals(zips.size(), 1, "precondition: not one new archive: " + zips);
+
+        return new File(backupFolder(), zips.get(0));
     }
 
     /**
