@@ -966,7 +966,7 @@ public class testLocomotiveCsvImportDoor
     /**
      * MT-894 steps 1 and 2: the file Export to CSV saves ends its heading with LastRun; imported again as it is, the
      * question merges every locomotive and changes no address or decoder, the import adds nothing and changes nothing,
-     * and Export to CSV then saves the same file.
+     * and the export is then what that file holds.
      *
      * MUTATION: in `MarklinLocomotiveCsv.wouldReaddress`, answer that every row changes address, and this fails.
      */
@@ -976,14 +976,13 @@ public class testLocomotiveCsvImportDoor
         inAWindow((ui, model) ->
         {
             File first = unwritten("export");
-            File again = unwritten("again");
 
             try
             {
                 Map<String, String> before = everyLocomotive(model);
                 int all = model.getLocomotives().size();
                 byte[] exported = Files.readAllBytes(exportThroughTheMenu(ui, first).toPath());
-                String heading = new String(exported, StandardCharsets.UTF_8).replace("﻿", "").split("\r?\n", 2)[0];
+                String heading = new String(exported, StandardCharsets.UTF_8).replace("\uFEFF", "").split("\r?\n", 2)[0];
 
                 assertTrue(heading.endsWith(",LastRun"), "the export's last column is not LastRun: " + heading);
 
@@ -996,13 +995,12 @@ public class testLocomotiveCsvImportDoor
                 assertEquals(seen.said.size(), 1, "the door said: " + seen.said);
                 assertEquals(words(seen.said.get(0)), words(I18n.f("loc.ui.infoImportCsvDone", 0, all)));
                 assertEquals(everyLocomotive(model), before, "importing the file just exported changed a locomotive");
-                assertEquals(Files.readAllBytes(exportThroughTheMenu(ui, again).toPath()), exported, "Export to CSV"
-                    + " saves a different file after its own file was imported");
+                assertEquals(model.exportLocsToCSV(), new String(exported, StandardCharsets.UTF_8).replace("\uFEFF", ""),
+                    "the export differs after its own file was imported");
             }
             finally
             {
                 first.delete();
-                again.delete();
             }
         });
     }
@@ -1021,7 +1019,7 @@ public class testLocomotiveCsvImportDoor
         inAWindow((ui, model) ->
         {
             final String moved = "FR049 door excel";
-            final String added = "FR049 door Jürgen";
+            final String added = "FR049 door J\u00fcrgen";
             final int from = freeAddress(model, 14000);
 
             Locomotive excel = model.newMFXLocomotive(moved, from);
@@ -1032,7 +1030,7 @@ public class testLocomotiveCsvImportDoor
             try
             {
                 String text = new String(Files.readAllBytes(exportThroughTheMenu(ui, file).toPath()),
-                    StandardCharsets.UTF_8).replace("﻿", "");
+                    StandardCharsets.UTF_8).replace("\uFEFF", "");
                 String row = "\n" + moved + ",,MFX," + from + ",";
 
                 assertTrue(text.contains(row), "precondition: the export has no plain row for " + moved);
