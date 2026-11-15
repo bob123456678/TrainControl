@@ -202,6 +202,88 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
             "start-up installed the look and feel off the event thread (OB-445)");
     }
 
+    /**
+     * Auto-Detect's scan, about ten seconds a network adapter before the window is shown, runs behind the busy sign
+     * saying what it does, and the sign is gone before start-up says what it found.  The door is read, not run: a real
+     * scan could find the operator's own station.  The sign is run, with a stand-in for the scan that waits for it.
+     *
+     * MUTATION: in `MarklinControlStation.init`, call `CSDetect.detectCentralStation()` directly, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testAutoDetectScansBehindTheBusySign() throws Exception
+    {
+        String init = support.SourceOf.withoutComments(support.SourceOf.body("public static MarklinControlStation init("
+            + "String initIP, boolean simulate, boolean showUI, boolean autoPowerOn, boolean debug)"));
+
+        assertTrue(init.replaceAll("\\s+", "").contains("whileTheSignSays(I18n.t(\"ui.detectCentralStationAttempt\"),"
+            + "CSDetect::detectCentralStation)"), "Auto-Detect's scan does not run behind the busy sign");
+
+        final java.util.concurrent.CountDownLatch shown = new java.util.concurrent.CountDownLatch(1);
+        final List<String> said = Collections.synchronizedList(new ArrayList<>());
+
+        AWTEventListener opened = event ->
+        {
+            if (event.getID() == java.awt.event.WindowEvent.WINDOW_OPENED
+                && event.getSource() instanceof org.traincontrol.gui.widgets.BusyDialog)
+            {
+                for (javax.swing.JLabel label : support.Components.all((java.awt.Component) event.getSource(),
+                    javax.swing.JLabel.class, null)) said.add(label.getText());
+
+                shown.countDown();
+            }
+        };
+
+        Toolkit.getDefaultToolkit().addAWTEventListener(opened, AWTEvent.WINDOW_EVENT_MASK);
+
+        try
+        {
+            java.util.function.Supplier<String> scan = () ->
+            {
+                try
+                {
+                    return shown.await(10, java.util.concurrent.TimeUnit.SECONDS) ? "found" : null;
+                }
+                catch (InterruptedException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            };
+
+            Object found = support.Reflect.method(MarklinControlStation.class, "whileTheSignSays", String.class,
+                java.util.function.Supplier.class).invoke(null, I18n.t("ui.detectCentralStationAttempt"), scan);
+
+            assertEquals(found, "found", "the busy sign was not on screen while the scan ran");
+
+            assertTrue(said.toString().contains(I18n.t("ui.detectCentralStationAttempt")),
+                "the busy sign did not say that it is looking for the Central Station: " + said);
+
+            // What start-up says next is queued behind the sign's closing
+            SwingUtilities.invokeAndWait(() -> { });
+
+            assertEquals(showingBusySigns(), 0, "the busy sign is still up after the scan");
+        }
+        finally
+        {
+            Toolkit.getDefaultToolkit().removeAWTEventListener(opened);
+        }
+    }
+
+    /** How many busy signs are on screen; asked on the event thread. */
+    private static int showingBusySigns() throws Exception
+    {
+        final int[] count = new int[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (w instanceof org.traincontrol.gui.widgets.BusyDialog && w.isShowing()) count[0]++;
+            }
+        });
+
+        return count[0];
+    }
+
     /** Runs `init` as `main` does, on a thread of its own, and returns how it ended. */
     private static Throwable startUp() throws InterruptedException
     {

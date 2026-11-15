@@ -4919,6 +4919,25 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
+     * Runs a slow start-up step behind the busy sign, as nothing else is on screen yet; call it off the event thread.
+     * Its closing is queued ahead of whatever start-up says next, so that is not hidden behind it.
+     */
+    private static <T> T whileTheSignSays(String message, java.util.function.Supplier<T> slow)
+    {
+        org.traincontrol.gui.widgets.BusyDialog.Closer sign =
+            org.traincontrol.gui.widgets.BusyDialog.showUntilClosed(null, message);
+
+        try
+        {
+            return slow.get();
+        }
+        finally
+        {
+            sign.close();
+        }
+    }
+
+    /**
      * Asks for the Central Station's address; call it on the event thread (OB-445).  Returns the button pressed (0 OK,
      * 1 Cancel, 2 Auto-Detect, -1 closed) with the text typed.
      */
@@ -5067,7 +5086,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                         continue;
                                     }
 
-                                    initIP = CSDetect.detectCentralStation();
+                                    initIP = whileTheSignSays(I18n.t("ui.detectCentralStationAttempt"),
+                                        CSDetect::detectCentralStation);
 
                                     if (initIP == null)
                                     {
