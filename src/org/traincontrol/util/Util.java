@@ -365,6 +365,10 @@ public class Util
 
         if (parent != null) parent.mkdirs();
 
+        // Each archive has a name of its own, so writeAtomically's sweep never meets a killed backup's staging file:
+        // the backup folder, ours alone, is swept of every one, the data files' backups included
+        if (parent != null && BACKUP_FOLDER.equals(parent.getName())) sweepStaleStaging(parent, ".*");
+
         // Staged, so a backup cut off part way (the program closed under it) leaves nothing under the archive's name
         try
         {
@@ -559,7 +563,7 @@ public class Util
     {
         File folder = target.getAbsoluteFile().getParentFile();
 
-        sweepStaleStaging(folder, target.getName() + ".tmp");
+        sweepStaleStaging(folder, java.util.regex.Pattern.quote(target.getName()));
 
         // A name of its own, so two writes of one file at once (the exit and a backup's first save) cannot share it
         File staging = File.createTempFile(target.getName() + ".tmp", PARTIAL_DOWNLOAD_SUFFIX, folder);
@@ -635,11 +639,13 @@ public class Util
     /** How old a staging file no write owns must be before the next write of its target takes it as a killed write's. */
     private static final long STALE_STAGING_MS = 60_000;
 
-    /** Deletes the staging files a killed write of this target left: a minute old, and owned by no write under way. */
-    private static void sweepStaleStaging(File folder, String prefix)
+    /**
+     * Deletes the staging files a killed write left, of the targets whose names match the pattern `target`: a minute
+     * old, and owned by no write under way.
+     */
+    private static void sweepStaleStaging(File folder, String target)
     {
-        File[] left = folder.listFiles((at, name) -> name.startsWith(prefix) && name.endsWith(PARTIAL_DOWNLOAD_SUFFIX)
-            && name.substring(prefix.length(), name.length() - PARTIAL_DOWNLOAD_SUFFIX.length()).matches("\\d+"));
+        File[] left = folder.listFiles((at, name) -> name.matches(target + "\\.tmp\\d+\\.part"));
 
         if (left == null) return;
 

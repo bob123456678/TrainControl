@@ -494,6 +494,33 @@ public class testAtomicWrite
         assertEquals(contents(), "outer", "the write under way lost its staging file to the second write's sweep");
     }
 
+    /**
+     * A backup cut off by a kill leaves its archive's staging file, which no later write meets (each archive has a name
+     * of its own): the next backup sweeps the backup folder of every staging file a minute old, the data files' too,
+     * and keeps a fresh one.
+     *
+     * MUTATION: drop the `sweepStaleStaging` call from `Util.zipInto`, and the killed backup's file stays.
+     */
+    @Test
+    public void testTheNextBackupSweepsAKilledBackupsStagingFile() throws Exception
+    {
+        assertTrue(new File(dir.toFile(), Util.BACKUP_FOLDER).mkdir(), "could not build the fixture");
+
+        File killed = staged(Util.BACKUP_FOLDER + "/backup2026-11-14_10-00-00-TrainControl.zip.tmp123.part", true);
+        File data = staged(Util.BACKUP_FOLDER + "/backup2026-11-14_10-00-00LocDB.data.tmp45.part", true);
+        File fresh = staged(Util.BACKUP_FOLDER + "/backup2026-11-14_10-01-00-TrainControl.zip.tmp678.part", false);
+
+        File archive = new File(dir.toFile(), Util.BACKUP_FOLDER + "/backup2026-11-14_10-02-00-TrainControl.zip");
+
+        assertEquals(Util.zipInto(archive, java.util.Collections.singletonMap("state.dat", target)), new java.util.ArrayList<String>(),
+            "the backup could not add its file");
+
+        assertFalse(killed.exists(), "the staging file a killed backup left is still there");
+        assertFalse(data.exists(), "the staging file a killed backup of a data file left is still there");
+        assertTrue(fresh.exists(), "a staging file under a minute old, which may be a backup under way, was deleted");
+        assertTrue(archive.isFile(), "the backup itself was not written");
+    }
+
     /** A file in the test's folder, an hour old when `old`. */
     private File staged(String name, boolean old) throws IOException
     {
