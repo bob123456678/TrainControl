@@ -20,7 +20,9 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.udp.CSDetect;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Display;
@@ -207,7 +209,7 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
      * saying what it does, and the sign is gone before start-up says what it found.  The door is read, not run: a real
      * scan could find the operator's own station.  The sign is run, with a stand-in for the scan that waits for it.
      *
-     * MUTATION: in `MarklinControlStation.init`, call `CSDetect.detectCentralStation()` directly, and this fails.
+     * MUTATION: in `MarklinControlStation.init`, call `CSDetect.detectCentralStation(...)` directly, and this fails.
      */
     @Test(timeOut = 60000)
     public void testAutoDetectScansBehindTheBusySign() throws Exception
@@ -216,7 +218,7 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
             + "String initIP, boolean simulate, boolean showUI, boolean autoPowerOn, boolean debug)"));
 
         assertTrue(init.replaceAll("\\s+", "").contains("whileTheSignSays(I18n.t(\"ui.detectCentralStationAttempt\"),"
-            + "CSDetect::detectCentralStation)"), "Auto-Detect's scan does not run behind the busy sign");
+            + "sign->CSDetect.detectCentralStation("), "Auto-Detect's scan does not run behind the busy sign");
 
         final java.util.concurrent.CountDownLatch shown = new java.util.concurrent.CountDownLatch(1);
         final List<String> said = Collections.synchronizedList(new ArrayList<>());
@@ -237,7 +239,7 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
 
         try
         {
-            java.util.function.Supplier<String> scan = () ->
+            java.util.function.Function<BusyDialog.Closer, String> scan = sign ->
             {
                 try
                 {
@@ -250,7 +252,7 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
             };
 
             Object found = support.Reflect.method(MarklinControlStation.class, "whileTheSignSays", String.class,
-                java.util.function.Supplier.class).invoke(null, I18n.t("ui.detectCentralStationAttempt"), scan);
+                java.util.function.Function.class).invoke(null, I18n.t("ui.detectCentralStationAttempt"), scan);
 
             assertEquals(found, "found", "the busy sign was not on screen while the scan ran");
 
@@ -266,6 +268,114 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
         {
             Toolkit.getDefaultToolkit().removeAWTEventListener(opened);
         }
+    }
+
+    /**
+     * OB-480: as the search moves on to the next subnet, the sign says so.  Two subnets where nobody answers, run
+     * through the real Auto-Detect button; the label changes on the event thread, so the window kept answering.
+     *
+     * MUTATION: in `CSDetect.detectCentralStation`, drop `searching.accept(subnet + "x")` and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testTheSignNamesEachSubnetAsTheSearchReachesIt() throws Exception
+    {
+        Search search = searchWithNobodyThere();
+
+        assertTrue(search.signSaid.contains(I18n.f("ui.detectCentralStationOnSubnet", SECOND + "x")),
+            "the busy sign never said that the search moved on to the second subnet, so it looked as though nothing "
+            + "was happening: " + search.signSaid);
+    }
+
+    /**
+     * OB-480: the start-up sign stays in front of other programs, as there is no window of ours to bring it back.
+     *
+     * MUTATION: in the `BusyDialog` constructor, drop `if (parent == null) setAlwaysOnTop(true)` and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testTheSignStaysInFrontWhileTheSearchRuns() throws Exception
+    {
+        Search search = searchWithNobodyThere();
+
+        assertEquals(search.signOnTop, Collections.singletonList(true),
+            "the busy sign was not kept in front, so clicking any other program hid it for the rest of the search");
+    }
+
+    /**
+     * OB-480: a search that finds nothing says so, in front of other programs, and asks for the address again.
+     *
+     * MUTATION: in `MarklinControlStation.tellAtStartUp`, drop `box.setAlwaysOnTop(true)` and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testASearchThatFindsNothingSaysSoInFront() throws Exception
+    {
+        Search search = searchWithNobodyThere();
+        List<Answering.Question> asked = search.asked;
+
+        // The address, the empty search, the address again, and the stop Cancel leads to
+        assertEquals(asked.size(), 4, "start-up did not ask what it should have: " + asked.size());
+        assertEquals(asked.get(1).message, I18n.t("ui.noCentralStationDetected"), "the empty search was not told");
+        assertTrue(asked.get(1).alwaysOnTop, "the end of the search was told behind other programs' windows, where "
+            + "nothing of ours could bring it back, so the program seemed to hang");
+        assertEquals(asked.get(2).title, I18n.t("ui.ipAddressInputTitle"), "the address was not asked for again");
+    }
+
+    /** The two subnets searched: documentation ranges (RFC 5737), where nobody ever answers. */
+    private static final String FIRST = "192.0.2.", SECOND = "198.51.100.";
+
+    /** What the user saw of one search. */
+    private static final class Search
+    {
+        final List<String> signSaid = Collections.synchronizedList(new ArrayList<>());
+        final List<Boolean> signOnTop = Collections.synchronizedList(new ArrayList<>());
+        List<Answering.Question> asked;
+    }
+
+    /** Presses Auto-Detect at start-up over two empty subnets, two hosts each, then Cancel on the address asked next. */
+    private static Search searchWithNobodyThere() throws Exception
+    {
+        final Search search = new Search();
+        final String noStation = I18n.t("ui.noCentralStationDetected");
+        final String noAddress = I18n.t("ui.noIpEnteredShutdown");
+        final AtomicInteger prompts = new AtomicInteger();
+
+        // The label is read as the sign opens and on every change after: the second subnet's can come either side
+        AWTEventListener opened = event ->
+        {
+            if (event.getID() != java.awt.event.WindowEvent.WINDOW_OPENED || !(event.getSource() instanceof BusyDialog))
+                return;
+
+            search.signOnTop.add(((BusyDialog) event.getSource()).isAlwaysOnTop());
+
+            for (javax.swing.JLabel label : support.Components.all((BusyDialog) event.getSource(),
+                javax.swing.JLabel.class, null))
+            {
+                search.signSaid.add(label.getText());
+                label.addPropertyChangeListener("text", change -> search.signSaid.add((String) change.getNewValue()));
+            }
+        };
+
+        Toolkit.getDefaultToolkit().addAWTEventListener(opened, AWTEvent.WINDOW_EVENT_MASK);
+        support.Reflect.set(CSDetect.class, null, "subnetsForATest", java.util.Arrays.asList(FIRST, SECOND));
+        support.Reflect.set(CSDetect.class, null, "hostsPerSubnet", 2);
+
+        try (Answering answering = Answering.start(message ->
+        {
+            if (noStation.equals(message) || noAddress.equals(message)) return null;
+
+            return Answering.press(I18n.t(prompts.incrementAndGet() == 1 ? "ui.autoDetect" : "ui.cancel"));
+        }))
+        {
+            startUp();
+            search.asked = answering.questions();
+        }
+        finally
+        {
+            Toolkit.getDefaultToolkit().removeAWTEventListener(opened);
+            support.Reflect.set(CSDetect.class, null, "subnetsForATest", null);
+            support.Reflect.set(CSDetect.class, null, "hostsPerSubnet", 254);
+        }
+
+        return search;
     }
 
     /** How many busy signs are on screen; asked on the event thread. */

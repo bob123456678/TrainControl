@@ -31,6 +31,8 @@ public final class BusyDialog extends JDialog
         if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
     }
 
+    private final JLabel says;
+
     private BusyDialog(Window parent, String message)
     {
         super(parent, Dialog.ModalityType.APPLICATION_MODAL);
@@ -42,6 +44,9 @@ public final class BusyDialog extends JDialog
         setUndecorated(true);
         setResizable(false);
 
+        // With no window of ours behind it (start-up), another program's window would hide it for good (OB-480).
+        if (parent == null) setAlwaysOnTop(true);
+
         JPanel content = new JPanel(new BorderLayout(0, 8));
         content.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(java.awt.Color.GRAY),
@@ -50,7 +55,7 @@ public final class BusyDialog extends JDialog
         LoadingSpinner spinner = new LoadingSpinner();
         spinner.setPreferredSize(new java.awt.Dimension(64, 64));
 
-        JLabel says = new JLabel(message, SwingConstants.CENTER);
+        says = new JLabel(message, SwingConstants.CENTER);
         says.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         content.add(spinner, BorderLayout.CENTER);
@@ -83,7 +88,7 @@ public final class BusyDialog extends JDialog
     public static final class Closer
     {
         private final Window parent;
-        private final String message;
+        private String message;
 
         private BusyDialog dialog;
         private boolean closed;
@@ -111,6 +116,24 @@ public final class BusyDialog extends JDialog
             // Blocks here, in a nested event loop, until close() disposes it - the same arrangement
             // `run` uses, and the reason the spinner keeps animating.
             dialog.setVisible(true);
+        }
+
+        /** Changes what it says, as the work moves on (OB-480).  Callable from any thread, before it has appeared too. */
+        public void say(String now)
+        {
+            SwingUtilities.invokeLater(() ->
+            {
+                synchronized (this)
+                {
+                    message = now;
+
+                    if (dialog == null || closed) return;
+                }
+
+                dialog.says.setText(now);
+                dialog.pack();
+                dialog.setLocationRelativeTo(parent);
+            });
         }
 
         /**

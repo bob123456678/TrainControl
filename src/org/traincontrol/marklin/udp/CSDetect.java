@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.I18n;
 
@@ -49,17 +50,23 @@ public class CSDetect
         return checkWebServer(host, CS2File.getLayoutMasterURL(""));
     }
 
-    public static String detectCentralStation()
+    /** Test hooks (OB-480): the subnets searched in place of the adapters' own, and how many hosts of each. */
+    static List<String> subnetsForATest;
+    static int hostsPerSubnet = 254;
+
+    /** Searches each local subnet in turn; `searching` is told each one ("192.168.1.x") as the search reaches it. */
+    public static String detectCentralStation(Consumer<String> searching)
     {
         for (String subnet : getLocalSubnet())
         {
             System.out.println(I18n.f("network.detectedLocalSubnet", subnet));
+            searching.accept(subnet + "x");
 
             String urlPath = CS2File.getLayoutMasterURL("");
             ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
             List<Future<String>> futures = new ArrayList<>();
 
-            for (int i = 1; i < 255; i++)
+            for (int i = 1; i <= hostsPerSubnet; i++)
             {
                 final String host = subnet + i;
                 
@@ -116,8 +123,10 @@ public class CSDetect
 
     private static List<String> getLocalSubnet()
     {
+        if (subnetsForATest != null) return subnetsForATest;
+
         List<String> out = new ArrayList<>();
-        
+
         try
         {
             Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
