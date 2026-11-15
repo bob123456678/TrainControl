@@ -218,6 +218,49 @@ public class testStationSettingsWindow
         assertEquals(setup(), before, "another window clicked applied the choice shown in Home");
     }
 
+    /**
+     * A run starting while May depart shows a stepped choice builds the lists again; the old list's choice is dropped,
+     * not applied, so no "no edits while running" message comes up over the run.
+     *
+     * MUTATION: let `StationWindowBase.Choice.settle` act for a list no longer on screen, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testARunStartingWhileAChoiceIsSteppedAsksNothing() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStationWhereMayDepart());
+
+        StationDoors.current(window);
+
+        javax.swing.JComboBox<?> stepped = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+
+        Object was = StationDoors.step(stepped);
+
+        assertNotEquals(Components.onTheEventThread(stepped::getSelectedItem), was, "precondition: the arrow did not step May depart");
+
+        String before = setup();
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, true);
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> !stepped.isDisplayable()), 5000),
+                "precondition: the run did not build May depart again");
+
+            // The list taken away had the keyboard, and loses it for good
+            StationDoors.loseKeyboard(stepped, false, null);
+
+            assertEquals(answering.asked(), java.util.Collections.emptyList(), "a run starting with May depart stepped asked");
+        }
+        finally
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, false);
+        }
+
+        assertEquals(setup(), before, "a run starting with May depart stepped wrote the choice");
+
+        StationDoors.close(window);
+    }
+
     /** Steps the Home list; what it showed before. */
     private static Object stepHome(StationSettingsWindow window)
     {
@@ -2005,6 +2048,8 @@ public class testStationSettingsWindow
 
             StationSettingsWindow window = StationDoors.open(panel, square);
 
+            StationDoors.current(window);
+
             for (int y = 0; y < roads.size(); y++)
             {
                 if (!StationDoors.live(window, "station.depart." + y)) continue;
@@ -2033,6 +2078,129 @@ public class testStationSettingsWindow
         }
 
         assertTrue(picks > 6, "precondition: May depart was live on few stations of " + PAGE + ": " + picks + " picks");
+    }
+
+    /**
+     * May depart is live exactly where the railway, the station running both ways, sends trains out by both sides, on
+     * every station of the frozen railway; elsewhere it shows the one way out, and its (i) says why (Adam: "can be set
+     * except when a one direction run is forced, such as a terminus").  An old arrow leaves it live, to be changed.
+     *
+     * MUTATION: drop the railway's ways out from `StationSettingsWindow.fillDepart`, keeping `deadEndSide`, and this
+     * fails.
+     */
+    @Test(timeOut = 300000)
+    public void testMayDepartIsLiveExactlyWhereBothSidesLeadSomewhere() throws Exception
+    {
+        List<String> wrong = new java.util.ArrayList<>();
+        int forced = 0;
+
+        for (String page : new String[] {PAGE, "2 - Bottom"})
+        {
+            if (!PAGE.equals(page))
+            {
+                support.FrozenEditor.dispose(editor);
+
+                editor = frozen.editorOn(page);
+                panel = Components.onTheEventThread(() -> editor.getAutonomyPanel());
+            }
+
+            for (TileKey square : stationsOn(page))
+            {
+                if (Components.onTheEventThread(() -> session.getRoutes(square).size()) != 1) continue;
+
+                StationSettingsWindow window = StationDoors.open(panel, square);
+
+                StationDoors.current(window);
+
+                boolean both = Components.onTheEventThread(() -> leavesBothWays(square));
+                Set<String> out = Components.onTheEventThread(() -> railwayWaysOut(square));
+                boolean live = StationDoors.live(window, "station.depart.0");
+                String said = Components.onTheEventThread(() -> window.flyoverForTest("depart"));
+
+                if (live != (!both || out.size() == 2)) wrong.add(square + " live " + live + ", both ways " + both + ", out " + out);
+
+                if (!live)
+                {
+                    forced++;
+
+                    boolean ends = Components.onTheEventThread(() -> session.deadEndSide(square) != null);
+                    String why = I18n.t(ends ? "autosetup.ui.flyDepartForced" : "autosetup.ui.flyDepartLeadsNowhere");
+
+                    if (!said.contains(why.substring(0, why.indexOf("{0}")))) wrong.add(square + " (i) " + said);
+                    if (out.size() != 1 || !departShows(window).equals(I18n.f("autosetup.ui.menuRouteToward",
+                        out.iterator().next())))
+                    {
+                        wrong.add(square + " shows " + departShows(window) + ", out " + out);
+                    }
+                }
+
+                StationDoors.close(window);
+            }
+        }
+
+        assertEquals(wrong, new java.util.ArrayList<>(), "May depart is live where one way out is forced, or gray where it is not");
+        assertTrue(forced > 10, "precondition: only " + forced + " stations have one way out");
+    }
+
+    /**
+     * The table follows a May depart pick: it answers from the railway built again, so a side the pick shuts is no
+     * longer one trains are sent from.
+     *
+     * MUTATION: drop the `stationWindows.changed()` after the rebuild in `rebuildRunningLayoutSoon`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheTableFollowsAMayDepartPick() throws Exception
+    {
+        TileKey square = aStationWhereMayDepart();
+        RouteId road = onlyRoad(square);
+        String shut = Components.onTheEventThread(() -> String.valueOf(session.getRoutes(square).get(road).getB()));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.current(window);
+
+        assertEquals(window.drawnForTest(StandingRules.Row.SENT_FROM, "hand").get(shut), StandingRules.Answer.YES,
+            "precondition: trains are not sent from here to the " + shut);
+
+        chooseDepartTowardA(window, square, road);
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> window.drawnForTest(StandingRules.Row.SENT_FROM,
+            "hand").get(shut) != StandingRules.Answer.YES), 10000), "the table still sends trains out by the side May depart shut");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * A can't-leave notice under the picture takes the window's spare room, so the window opens as tall with it as
+     * without (Adam, MT-961: "that way, the height of the window doesn't change"): TopMainR2Inter one way toward its
+     * north side leaves no train a way out.
+     *
+     * MUTATION: have the spare room under the picture ignore `noticesOverflow`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testACantLeaveNoticeKeepsTheWindowsHeight() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopMainR2Inter"));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.current(window);
+
+        int height = Components.onTheEventThread(window::getHeight);
+
+        StationDoors.close(window);
+
+        restrictAsAFileWould(square, Direction.TOWARD_A);
+
+        StationSettingsWindow shut = StationDoors.open(panel, square);
+
+        StationDoors.current(shut);
+
+        assertTrue(Components.onTheEventThread(() -> StationDoors.part(shut, "station.matrixProblem", javax.swing.JLabel.class)
+            .isShowing()), "precondition: no notice says no train can leave");
+        assertEquals(Components.onTheEventThread(shut::getHeight), Integer.valueOf(height), "the notice changed the window's height");
+
+        StationDoors.close(shut);
     }
 
     /**
@@ -2297,12 +2465,18 @@ public class testStationSettingsWindow
         StationDoors.close(window);
     }
 
-    /** A plain station of the page with one road, track on both sides and trains leaving both ways. */
+    /** A plain station of the page with one road, running both ways, that the railway sends trains out of both ways. */
     private static TileKey aStationWhereMayDepart()
     {
-        return aPlainStationWhere(each -> session.deadEndSide(each) == null
-            && leavesBothWays(each),
-            "with track on both sides");
+        return aPlainStationWhere(each -> leavesBothWays(each) && railwayWaysOut(each).size() == 2,
+            "with two ways out");
+    }
+
+    /** The sides the railway as built sends a train out of a station by (the window's table); on the event thread. */
+    private static Set<String> railwayWaysOut(TileKey square)
+    {
+        return model.getAutoLayoutIfLoaded().standingRulesAt(new java.util.ArrayList<>(session.getStationIndex()
+            .pointNamesAt(square))).waysOut();
     }
 
     /** A station road's direction, read on the event thread. */
