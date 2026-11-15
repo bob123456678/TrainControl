@@ -1446,9 +1446,6 @@ public final class StationSettingsWindow extends StationWindowBase
                 labels.add(I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getB())));
             }
 
-            answers.add(Direction.NONE);
-            labels.add(I18n.t("autosetup.ui.menuRouteNone"));
-
             // Read and set on the track beside, as the station runs both ways (D141)
             Direction current = session.departureWay(tile, entry.getKey());
 
@@ -1467,9 +1464,10 @@ public final class StationSettingsWindow extends StationWindowBase
             choice.setName("station.depart." + y);
             choice.setEnabled(live && sets);
 
-            if (answers.contains(current)) choice.setSelectedIndex(answers.indexOf(current));
+            // No way out shows as no pick: the list only says which way trains leave (D144)
+            choice.setSelectedIndex(answers.indexOf(current));
 
-            if (said == null) said = String.valueOf(choice.getSelectedItem());
+            if (said == null && current != Direction.NONE) said = String.valueOf(choice.getSelectedItem());
 
             if (same) { y++; continue; }
 

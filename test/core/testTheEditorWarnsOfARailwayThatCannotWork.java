@@ -453,6 +453,38 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             I18n.f("autosetup.ui.sensorClickToClear", session.describeTile(middle)), "the (i) line does not say to click it");
     }
 
+    /**
+     * A setup saved while May depart still offered "Closed - No Trains" carries the station's road closed (D144: "A:
+     * Drop Closed"): it loads with the OB-472 error, and May depart grayed, showing no way out and pointing at the
+     * click that clears it, never silently.
+     *
+     * MUTATION: drop the station's own arrow from `whyDepartureWayIsFixed`, and this fails.
+     */
+    @Test
+    public void testASetupSavedWithClosedLoadsWithTheError() throws Exception
+    {
+        LayoutDiagram page = deadEndRun();
+
+        session.open(Arrays.asList(page));
+        session.initialize("D144 closed");
+
+        TileKey middle = new TileKey("main", 4, 1);
+        RouteId road = session.getRoutes(middle).keySet().iterator().next();
+
+        // What the old Closed wrote: the station's own road closed
+        session.getStore().setTileDirection(middle, road, Direction.NONE);
+        session.save();
+
+        AutonomySession reopened = new AutonomySession(layout);
+        reopened.open(Arrays.asList(page));
+
+        assertTrue(reopened.check().stream().anyMatch(f -> org.traincontrol.automationui.AutonomyChecks.SENSOR_NOT_BOTH_WAYS.equals(f.getMessageKey())
+            && middle.equals(f.getAbout())), "the closed station loads without the error");
+        assertEquals(reopened.departureWay(middle, road), Direction.NONE, "May depart does not show no way out");
+        assertEquals(reopened.whyDepartureWayIsFixed(middle, road),
+            I18n.f("autosetup.ui.sensorClickToClear", reopened.describeTile(middle)), "the (i) line does not say to click it");
+    }
+
     /** `platformWithTwoApproaches` with its platform moved up against the switch: s88 squares at (1,1), (4,1), (6,1). */
     private static LayoutDiagram stationBesideASwitch() throws IOException
     {

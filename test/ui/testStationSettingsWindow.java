@@ -2108,6 +2108,40 @@ public class testStationSettingsWindow
         StationDoors.close(window);
     }
 
+    /**
+     * May depart only says which way trains leave: Both Ways and One Way toward each side, and no "Closed - No Trains"
+     * (D144: "A: Drop Closed"), as stopping or closing a station is the boxes' and the Off preset's.
+     *
+     * MUTATION: put Closed back on the May depart lists, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testMayDepartOffersNoClosed() throws Exception
+    {
+        TileKey square = aStationWhereMayDepart(true);
+        RouteId road = onlyRoad(square);
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        java.util.List<String> offered = Components.onTheEventThread(() ->
+        {
+            javax.swing.JComboBox<?> list = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+            java.util.List<String> out = new java.util.ArrayList<>();
+
+            for (int i = 0; i < list.getItemCount(); i++) out.add(String.valueOf(list.getItemAt(i)));
+
+            return out;
+        });
+
+        org.traincontrol.automationui.TilePorts.Route route = Components.onTheEventThread(() ->
+            session.getRoutes(square).get(road));
+
+        assertEquals(offered, java.util.Arrays.asList(I18n.t("autosetup.ui.menuRouteBoth"),
+            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getA())),
+            I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getB()))), "May depart offers more than its ways");
+
+        StationDoors.close(window);
+    }
+
     /** A plain station of the page with one road where May depart can be set, or (`settable` false) one way out. */
     private static TileKey aStationWhereMayDepart(boolean settable)
     {
