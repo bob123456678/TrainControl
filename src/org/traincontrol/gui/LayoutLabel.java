@@ -95,7 +95,7 @@ public final class LayoutLabel extends JLabel
     
     private Icon lastIcon;
     private boolean edit;
-    private final boolean sensorsFree;
+    private boolean sensorsFree;
 
     /** Whether the picture ignores the device's state: always in the editor, and a sensor's in `sensorsAsFree`. */
     private boolean ignoresState()
@@ -167,28 +167,26 @@ public final class LayoutLabel extends JLabel
         this(c, parent, size, tcUI, edit, null);
     }
 
-    /** A square, given the editor's grid setting by the grid that makes it (null: ask it), asked once a build. */
-    public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit,
-        Boolean gridLines)
-    {
-        this(c, parent, size, tcUI, edit, gridLines, false);
-    }
-
     /** A square as the track diagram draws it, but a sensor always as free: a picture of the setup (OB-485). */
     public static LayoutLabel sensorsAsFree(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI)
     {
-        return new LayoutLabel(c, parent, size, tcUI, false, null, true);
+        LayoutLabel out = new LayoutLabel(c, parent, size, tcUI, false);
+
+        out.sensorsFree = true;
+        out.setImage(false);
+
+        return out;
     }
 
-    private LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit,
-        Boolean gridLines, boolean sensorsFree)
+    /** A square, given the editor's grid setting by the grid that makes it (null: ask it), asked once a build. */
+    public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit,
+        Boolean gridLines)
     {
         this.component = c;
         this.size = size;
         this.parent = parent;
         this.tcUI = tcUI;
         this.edit = edit;
-        this.sensorsFree = sensorsFree;
 
         this.setSize(size, size);
         this.setForeground(Color.white);
