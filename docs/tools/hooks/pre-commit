@@ -1,0 +1,13 @@
+#!/bin/sh
+# git runs this before each commit once `git config core.hooksPath docs/tools/hooks` is set (README.md beside it).
+# Without a Python it says so and lets the commit through, rather than stopping every commit on a missing tool.
+for py in python python3 py
+do
+    if command -v "$py" >/dev/null 2>&1
+    then
+        exec "$py" "$(git rev-parse --show-toplevel)/docs/tools/hooks/precommit.py"
+    fi
+done
+
+echo "pre-commit: no python found, so the checks in docs/tools/hooks/precommit.py did not run"
+exit 0
