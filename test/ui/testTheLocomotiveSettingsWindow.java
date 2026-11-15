@@ -16,6 +16,7 @@ import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -28,6 +29,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.locomotive.CurrentKeyRow;
 import org.traincontrol.gui.locomotive.RightClickSelectorMenu;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -1917,6 +1919,308 @@ public class testTheLocomotiveSettingsWindow
         Mouse.click(SettingsWindow.part("settings.wrench", Component.class));
 
         final java.awt.Window[] owner = new java.awt.Window[1];
+        final javax.swing.JFileChooser chooser = chooserShowing(owner);
+
+        Components.onTheEventThread(() ->
+        {
+            chooser.cancelSelection();
+
+            return null;
+        });
+
+        assertSame(owner[0], window, "the chooser hangs off " + owner[0] + ", not the settings window");
+    }
+
+    /**
+     * The pill after the picture's heading names where the picture shown comes from, and changes at once when the
+     * wrench sets a picture or the revert clears it, without Save; with no picture at all it is hidden (MT-924).  The
+     * window's once-a-second watch is stopped, so only the action itself can change the pill.
+     *
+     * MUTATION: drop the `source.setText` calls from `LocomotiveTab.refreshPicture`, or stop `tellLocomotiveSettings`
+     * telling the window, and this fails.
+     */
+    @Test
+    public void testThePicturesPillNamesItsSourceAtOnce() throws Exception
+    {
+        java.io.File own = pngFile();
+
+        String station = I18n.t("loc.ui.settingsPictureFromStation");
+        String local = I18n.t("loc.ui.settingsPictureLocal");
+
+        loc.setImageURL(null);
+        loc.setLocalImageURL(null);
+        openWithoutTheWatch();
+        assertEquals(pillShows(null), null, "a pill shows over no picture at all");
+
+        pickPicture(own);
+        assertEquals(pillShows(local), local, "setting a picture did not name it a local file at once");
+
+        Mouse.click(SettingsWindow.part("settings.revert", Component.class));
+        assertEquals(pillShows(null), null, "clearing the only picture left the pill up");
+
+        // The Central Station's picture, then one of this computer's over it and cleared again
+        assertTrue(closeBy(true), "Escape did not close the window");
+        loc.setImageURL(pngFile().toURI().toString());
+        openWithoutTheWatch();
+        assertEquals(pillShows(station), station, "the Central Station's picture is not named");
+        pictureLayout("en");
+
+        pickPicture(own);
+        assertEquals(pillShows(local), local, "a local picture over the station's is not named at once");
+
+        // Nothing waits for Save: closed without it, the window opens on the picture as it now is
+        assertTrue(closeBy(true), "Escape did not close the window");
+        openWithoutTheWatch();
+        assertEquals(pillShows(local), local, "the window opened again on a pill that is not the picture's");
+
+        Mouse.click(SettingsWindow.part("settings.revert", Component.class));
+        assertEquals(pillShows(station), station, "clearing the local picture did not name the station's at once");
+    }
+
+    /**
+     * The pill names the picture on screen: while the station's picture is still on its way, the revert leaves the
+     * local picture and its pill up together, and both change when the station's picture arrives (MT-924).
+     *
+     * MUTATION: set the pill in `refreshPicture` when the fetch starts rather than when its picture lands, and this
+     * fails.
+     */
+    @Test
+    public void testThePillWaitsForThePictureItNames() throws Exception
+    {
+        String station = I18n.t("loc.ui.settingsPictureFromStation");
+        String local = I18n.t("loc.ui.settingsPictureLocal");
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        java.io.ByteArrayOutputStream png = new java.io.ByteArrayOutputStream();
+
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(40, 20, java.awt.image.BufferedImage.TYPE_INT_RGB),
+            "png", png);
+
+        // A station that holds its picture back until told
+        try (support.StandInStation slow = new support.StandInStation((path, n) ->
+        {
+            try
+            {
+                release.await(2 * WAIT, java.util.concurrent.TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            return png.toByteArray();
+        }))
+        {
+            loc.setImageURL("http://" + slow.address() + "/MT-924-slow.png");
+            loc.setLocalImageURL(pngFile().toURI().toString());
+            open(0);
+            assertEquals(pillShows(local), local, "the local picture is not named");
+
+            JLabel picture = SettingsWindow.part("settings.picture", JLabel.class);
+            CurrentKeyRow.Pill pill = SettingsWindow.part("settings.pictureSource", CurrentKeyRow.Pill.class);
+            javax.swing.Icon own = Components.onTheEventThread(picture::getIcon);
+
+            Mouse.click(SettingsWindow.part("settings.revert", Component.class));
+            assertTrue(Components.waitFor(() -> loc.getLocalImageURL() == null, WAIT), "the revert did not clear the icon");
+
+            // The window's own look at the locomotive, and what is on screen straight after it
+            LocomotiveSettingsFrame window = SettingsWindow.showing();
+            Object[] shown = Components.onTheEventThread(() ->
+            {
+                watch(window).getActionListeners()[0].actionPerformed(null);
+
+                return new Object[] {picture.getIcon(), pill.isShowing() ? pill.getText() : null};
+            });
+
+            assertSame(shown[0], own, "the local picture left before the station's arrived");
+            assertEquals(shown[1], local, "the pill named the station's picture over the local one");
+
+            release.countDown();
+            assertEquals(pillShows(station), station, "the station's picture arrived without its pill");
+            assertNotSame(Components.onTheEventThread(picture::getIcon), own, "the station's picture never replaced it");
+        }
+        finally
+        {
+            release.countDown();
+        }
+    }
+
+    /** Opens the window on Basic Settings, its watch stopped: what changes then, the action itself changed. */
+    private static void openWithoutTheWatch() throws Exception
+    {
+        open(0);
+
+        javax.swing.Timer watch = watch(SettingsWindow.showing());
+
+        Components.onTheEventThread(() ->
+        {
+            watch.stop();
+
+            return null;
+        });
+    }
+
+    /** A small picture in a file of its own, gone when the run ends. */
+    private static java.io.File pngFile() throws Exception
+    {
+        java.io.File file = java.io.File.createTempFile("MT-924-", ".png");
+
+        file.deleteOnExit();
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(40, 20, java.awt.image.BufferedImage.TYPE_INT_RGB),
+            "png", file);
+
+        return file;
+    }
+
+    /** The window's once-a-second look at the locomotive. */
+    private static javax.swing.Timer watch(LocomotiveSettingsFrame window) throws Exception
+    {
+        return (javax.swing.Timer) Reflect.get(LocomotiveSettingsFrame.class, window, "watch");
+    }
+
+    /** The pill's words once they are these (null: once it is hidden), or what it shows when they never come. */
+    private static String pillShows(String expected) throws Exception
+    {
+        CurrentKeyRow.Pill pill = SettingsWindow.part("settings.pictureSource", CurrentKeyRow.Pill.class);
+        java.util.function.Supplier<String> shown = () -> Components.onTheEventThread(() ->
+            pill.isShowing() ? pill.getText() : null);
+
+        Components.waitFor(() -> java.util.Objects.equals(shown.get(), expected), WAIT);
+
+        return shown.get();
+    }
+
+    /**
+     * In every language the picture's column, its heading and the fields keep their places whether the pill names the
+     * station, a local file or nothing; the pill ends where the picture does and never touches the heading (MT-924).
+     *
+     * MUTATION: drop `gbc.fill = GridBagConstraints.HORIZONTAL` before the heading row, and this fails.
+     */
+    @Test
+    public void testThePillMovesNothingInAnyLanguage() throws Exception
+    {
+        String station = pngFile().toURI().toString();
+        String own = pngFile().toURI().toString();
+
+        try
+        {
+            for (String lang : new String[] {"en", "de", "da", "es", "fr", "it", "nl", "pl"})
+            {
+                I18n.setLocale(new java.util.Locale(lang));
+
+                String[] words = {I18n.t("loc.ui.settingsPictureFromStation"), I18n.t("loc.ui.settingsPictureLocal"), null};
+                String first = null;
+
+                for (int state = 0; state < words.length; state++)
+                {
+                    loc.setImageURL(state == 2 ? null : station);
+                    loc.setLocalImageURL(state == 1 ? own : null);
+                    SettingsWindow.closeIfOpen();
+                    open(0);
+                    assertEquals(pillShows(words[state]), words[state], lang + ": the pill does not name the picture");
+
+                    String layout = pictureLayout(lang);
+
+                    if (first == null) first = layout;
+
+                    assertEquals(layout, first, lang + ": the picture's column or the rows moved with the pill");
+                }
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /**
+     * Where the picture's column, its heading and the name field sit in the tab; on the way, the pill must end where
+     * the picture does, clear of the heading, and the heading must be level with Name and Address.
+     */
+    private static String pictureLayout(String lang) throws Exception
+    {
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        java.awt.Rectangle[] at = Components.onTheEventThread(() ->
+        {
+            java.awt.Container pane = window.getContentPane();
+            Component column = Components.named(pane, "settings.pictureColumn", Component.class);
+            java.awt.Container tab = column.getParent();
+            Component[] parts = {column, Components.named(pane, "settings.picture", Component.class),
+                Components.inside(tab, JLabel.class, l -> I18n.t("loc.ui.settingsLocomotiveIcon").equals(l.getText())),
+                Components.inside(tab, JLabel.class, l -> I18n.t("loc.ui.settingsNameAndAddress").equals(l.getText())),
+                Components.named(pane, "settings.name", Component.class),
+                Components.named(pane, "settings.pictureSource", Component.class)};
+            java.awt.Rectangle[] r = new java.awt.Rectangle[parts.length];
+
+            for (int i = 0; i < parts.length; i++)
+            {
+                if (parts[i].isShowing()) r[i] = SwingUtilities.convertRectangle(parts[i].getParent(), parts[i].getBounds(), tab);
+            }
+
+            return r;
+        });
+
+        java.awt.Rectangle column = at[0], picture = at[1], heading = at[2], level = at[3], name = at[4], pill = at[5];
+
+        assertEquals(heading.y, level.y, lang + ": the picture's heading is not level with Name and Address");
+
+        if (pill != null)
+        {
+            assertTrue(Math.abs(pill.x + pill.width - picture.x - picture.width) <= 1,
+                lang + ": the pill ends at " + (pill.x + pill.width) + ", the picture at " + (picture.x + picture.width));
+            assertTrue(heading.x + heading.width < pill.x, lang + ": the heading " + heading + " runs into the pill " + pill);
+        }
+
+        return "column " + column.x + "+" + column.width + ", picture " + picture.x + "+" + picture.width
+            + ", heading y " + heading.y + ", name y " + name.y;
+    }
+
+    /** Picks this picture with the wrench's chooser, uncropped. */
+    private static void pickPicture(java.io.File file) throws Exception
+    {
+        Mouse.click(SettingsWindow.part("settings.wrench", Component.class));
+
+        javax.swing.JFileChooser chooser = chooserShowing(new java.awt.Window[1]);
+
+        Components.onTheEventThread(() ->
+        {
+            Components.inside(chooser, javax.swing.JCheckBox.class).setSelected(false);
+            chooser.setSelectedFile(file);
+            chooser.approveSelection();
+
+            return null;
+        });
+    }
+
+    /**
+     * The pill lays the tab out again only when its words change, not every time it is told them (MT-924).
+     *
+     * MUTATION: drop the early return from `CurrentKeyRow.Pill.setText`, and this fails.
+     */
+    @Test
+    public void testThePillLaysOutOnlyForNewWords() throws Exception
+    {
+        String station = I18n.t("loc.ui.settingsPictureFromStation");
+
+        loc.setImageURL(pngFile().toURI().toString());
+        loc.setLocalImageURL(null);
+        open(0);
+        assertEquals(pillShows(station), station, "the station's picture is not named");
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        CurrentKeyRow.Pill pill = SettingsWindow.part("settings.pictureSource", CurrentKeyRow.Pill.class);
+
+        assertTrue(Components.onTheEventThread(() ->
+        {
+            window.validate();
+            pill.setText(station);
+
+            return pill.isValid();
+        }), "the same words laid the pill out again");
+    }
+
+    /** The file chooser on screen, once one is, with the window it hangs off in `owner[0]`. */
+    private static javax.swing.JFileChooser chooserShowing(java.awt.Window[] owner) throws Exception
+    {
         final javax.swing.JFileChooser[] chooser = new javax.swing.JFileChooser[1];
 
         assertTrue(Components.waitFor(() -> Components.onTheEventThread(() ->
@@ -1940,14 +2244,7 @@ public class testTheLocomotiveSettingsWindow
             return false;
         }), WAIT), "the wrench opened no chooser");
 
-        Components.onTheEventThread(() ->
-        {
-            chooser[0].cancelSelection();
-
-            return null;
-        });
-
-        assertSame(owner[0], window, "the chooser hangs off " + owner[0] + ", not the settings window");
+        return chooser[0];
     }
 
     // Helpers

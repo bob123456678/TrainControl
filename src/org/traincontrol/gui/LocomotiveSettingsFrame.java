@@ -49,6 +49,7 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.View;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
+import org.traincontrol.gui.locomotive.CurrentKeyRow;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.TabIcons;
 import org.traincontrol.gui.widgets.UiStyle;
@@ -878,6 +879,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         final JLabel wrench = new JLabel(new LocIconActions.WrenchMark());
         final JLabel crop = new JLabel(new LocIconActions.CropMark());
         final JLabel revert = new JLabel(new LocIconActions.RevertMark());
+        final CurrentKeyRow.Pill source = new CurrentKeyRow.Pill(new Color(208, 208, 208), new Color(64, 64, 64));
 
         private final String loadedName = adding ? "" : loc.getName();
         private final String loadedAddress = adding ? "" : Integer.toString(loc.getAddress());
@@ -918,6 +920,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             crop.setName("settings.crop");
             revert.setName("settings.revert");
             picture.setName("settings.picture");
+            source.setName("settings.pictureSource");
 
             // Always the icon's size, so the row does not change width when the triangle appears
             sameAddress.setPreferredSize(new Dimension(RowIcons.warning(16).getIconWidth() + 4,
@@ -1020,11 +1023,23 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             if (!adding)
             {
-                // The picture's heading starts where the picture does
+                // The picture's heading starts where the picture does, the source's pill ends where it does.  The row
+                // is always the pill's height, and the cell's insets give back what the pill adds, so nothing below
+                // moves.
+                JLabel heading = UiStyle.heading(I18n.t("loc.ui.settingsLocomotiveIcon"));
+                JPanel headingRow = new JPanel(new BorderLayout(8, 0));
+                int spare = Math.max(0, CurrentKeyRow.PILL_HEIGHT - heading.getPreferredSize().height);
+
+                headingRow.setOpaque(false);
+                headingRow.add(heading, BorderLayout.WEST);
+                headingRow.add(Box.createVerticalStrut(CurrentKeyRow.PILL_HEIGHT), BorderLayout.CENTER);
+                headingRow.add(source, BorderLayout.EAST);
+
                 gbc.gridx = 3;
-                gbc.insets = new Insets(4, 6, 4, 4);
+                gbc.insets = new Insets(4 - spare / 2, 6, 4 - (spare - spare / 2), 4);
                 gbc.anchor = GridBagConstraints.NORTHWEST;
-                add(UiStyle.heading(I18n.t("loc.ui.settingsLocomotiveIcon")), gbc);
+                gbc.fill = GridBagConstraints.HORIZONTAL;
+                add(headingRow, gbc);
 
                 // Sync is a locomotive's own (Add has none yet): under the picture, at its left edge; the picture
                 // takes the column's width
@@ -1044,6 +1059,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 gbc.gridheight = 9;
                 add(pictureColumn, gbc);
 
+                gbc.fill = GridBagConstraints.NONE;
                 gbc.gridheight = 1;
                 gbc.anchor = GridBagConstraints.WEST;
             }
@@ -1372,12 +1388,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                     // The application's stand-in, as the locomotive buttons and the database show it (FR-054)
                     picture.setIcon(new ImageIcon(
                         org.traincontrol.gui.locomotive.LocomotivePlaceholder.image(PICTURE_WIDTH - 2)));
+                    source.setText(null);
                 }
                 else
                 {
                     // A fetch may be over the network: loaded off the event thread, and a result for a locomotive the
-                    // window has since left is ignored
+                    // window has since left is ignored.  The pill names the picture on screen, so it changes with it.
                     final Locomotive target = loc;
+                    final String from = I18n.t(loc.getLocalImageURL() != null ? "loc.ui.settingsPictureLocal"
+                        : "loc.ui.settingsPictureFromStation");
 
                     main.getImageLoader().execute(() ->
                     {
@@ -1397,7 +1416,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
                         SwingUtilities.invokeLater(() ->
                         {
-                            if (loc == target && url.equals(shownPicture)) picture.setIcon(shown);
+                            if (loc == target && url.equals(shownPicture))
+                            {
+                                picture.setIcon(shown);
+                                source.setText(from);
+                            }
                         });
                     });
                 }
