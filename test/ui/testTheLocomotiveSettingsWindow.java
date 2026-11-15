@@ -2074,6 +2074,91 @@ public class testTheLocomotiveSettingsWindow
         return shown.get();
     }
 
+    /**
+     * In every language the picture's column, its heading and the fields keep their places whether the pill names the
+     * station, a local file or nothing; the pill ends where the picture does and never touches the heading (MT-924).
+     *
+     * MUTATION: drop `gbc.fill = GridBagConstraints.HORIZONTAL` before the heading row, and this fails.
+     */
+    @Test
+    public void testThePillMovesNothingInAnyLanguage() throws Exception
+    {
+        String station = pngFile().toURI().toString();
+        String own = pngFile().toURI().toString();
+
+        try
+        {
+            for (String lang : new String[] {"en", "de", "da", "es", "fr", "it", "nl", "pl"})
+            {
+                I18n.setLocale(new java.util.Locale(lang));
+
+                String[] words = {I18n.t("loc.ui.settingsPictureFromStation"), I18n.t("loc.ui.settingsPictureLocal"), null};
+                String first = null;
+
+                for (int state = 0; state < words.length; state++)
+                {
+                    loc.setImageURL(state == 2 ? null : station);
+                    loc.setLocalImageURL(state == 1 ? own : null);
+                    SettingsWindow.closeIfOpen();
+                    open(0);
+                    assertEquals(pillShows(words[state]), words[state], lang + ": the pill does not name the picture");
+
+                    String layout = pictureLayout(lang);
+
+                    if (first == null) first = layout;
+
+                    assertEquals(layout, first, lang + ": the picture's column or the rows moved with the pill");
+                }
+            }
+        }
+        finally
+        {
+            I18n.setLocale(java.util.Locale.ENGLISH);
+        }
+    }
+
+    /**
+     * Where the picture's column, its heading and the name field sit in the tab; on the way, the pill must end where
+     * the picture does, clear of the heading, and the heading must be level with Name and Address.
+     */
+    private static String pictureLayout(String lang) throws Exception
+    {
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        java.awt.Rectangle[] at = Components.onTheEventThread(() ->
+        {
+            java.awt.Container pane = window.getContentPane();
+            Component column = Components.named(pane, "settings.pictureColumn", Component.class);
+            java.awt.Container tab = column.getParent();
+            Component[] parts = {column, Components.named(pane, "settings.picture", Component.class),
+                Components.inside(tab, JLabel.class, l -> I18n.t("loc.ui.settingsLocomotiveIcon").equals(l.getText())),
+                Components.inside(tab, JLabel.class, l -> I18n.t("loc.ui.settingsNameAndAddress").equals(l.getText())),
+                Components.named(pane, "settings.name", Component.class),
+                Components.named(pane, "settings.pictureSource", Component.class)};
+            java.awt.Rectangle[] r = new java.awt.Rectangle[parts.length];
+
+            for (int i = 0; i < parts.length; i++)
+            {
+                if (parts[i].isShowing()) r[i] = SwingUtilities.convertRectangle(parts[i].getParent(), parts[i].getBounds(), tab);
+            }
+
+            return r;
+        });
+
+        java.awt.Rectangle column = at[0], picture = at[1], heading = at[2], level = at[3], name = at[4], pill = at[5];
+
+        assertEquals(heading.y, level.y, lang + ": the picture's heading is not level with Name and Address");
+
+        if (pill != null)
+        {
+            assertTrue(Math.abs(pill.x + pill.width - picture.x - picture.width) <= 1,
+                lang + ": the pill ends at " + (pill.x + pill.width) + ", the picture at " + (picture.x + picture.width));
+            assertTrue(heading.x + heading.width < pill.x, lang + ": the heading " + heading + " runs into the pill " + pill);
+        }
+
+        return "column " + column.x + "+" + column.width + ", picture " + picture.x + "+" + picture.width
+            + ", heading y " + heading.y + ", name y " + name.y;
+    }
+
     /** Picks this picture with the wrench's chooser, uncropped. */
     private static void pickPicture(java.io.File file) throws Exception
     {
