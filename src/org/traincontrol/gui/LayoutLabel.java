@@ -95,7 +95,8 @@ public final class LayoutLabel extends JLabel
     
     private Icon lastIcon;
     private boolean edit;
-    private boolean sensorsFree;
+    /** Volatile: set after the constructor has started a decode, which reads it on another thread. */
+    private volatile boolean sensorsFree;
 
     /** Whether the picture ignores the device's state: always in the editor, and a sensor's in `sensorsAsFree`. */
     private boolean ignoresState()
