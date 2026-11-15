@@ -2044,6 +2044,38 @@ public class testTheLocomotiveSettingsWindow
         }
     }
 
+    /**
+     * A picture that fails to load leaves no pill: there is no picture on screen for it to name.
+     *
+     * MUTATION: have `refreshPicture` set the pill whether or not the picture loaded, and this fails.
+     */
+    @Test
+    public void testAPictureThatFailsToLoadHasNoPill() throws Exception
+    {
+        String station = I18n.t("loc.ui.settingsPictureFromStation");
+        java.io.File broken = java.io.File.createTempFile("broken-", ".png");
+
+        broken.deleteOnExit();
+        java.nio.file.Files.write(broken.toPath(), "not a picture".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+
+        loc.setLocalImageURL(null);
+        loc.setImageURL(pngFile().toURI().toString());
+        openWithoutTheWatch();
+        assertEquals(pillShows(station), station, "precondition: the picture is not named");
+
+        JLabel picture = SettingsWindow.part("settings.picture", JLabel.class);
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+        loc.setImageURL(broken.toURI().toString());
+        Components.onTheEventThread(() -> { watch(window).getActionListeners()[0].actionPerformed(null); return null; });
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(picture::getIcon) == null, WAIT),
+            "the picture that fails to load never took the old one's place");
+        Components.settle();
+
+        assertNull(pillShows(null), "a picture that failed to load is named");
+    }
+
     /** Opens the window on Basic Settings, its watch stopped: what changes then, the action itself changed. */
     private static void openWithoutTheWatch() throws Exception
     {
