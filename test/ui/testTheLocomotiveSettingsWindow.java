@@ -1933,24 +1933,23 @@ public class testTheLocomotiveSettingsWindow
 
     /**
      * The pill after the picture's heading names where the picture shown comes from, and changes at once when the
-     * wrench sets a picture or the revert clears it, without Save; with no picture at all it is hidden (MT-924).
+     * wrench sets a picture or the revert clears it, without Save; with no picture at all it is hidden (MT-924).  The
+     * window's once-a-second watch is stopped, so only the action itself can change the pill.
      *
-     * MUTATION: drop the `source.setText` call from `LocomotiveTab.refreshPicture`, and this fails.
+     * MUTATION: drop the `source.setText` calls from `LocomotiveTab.refreshPicture`, or stop `tellLocomotiveSettings`
+     * telling the window, and this fails.
      */
     @Test
     public void testThePicturesPillNamesItsSourceAtOnce() throws Exception
     {
-        java.io.File own = java.io.File.createTempFile("MT-924-", ".png");
-        own.deleteOnExit();
-        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(40, 20, java.awt.image.BufferedImage.TYPE_INT_RGB),
-            "png", own);
+        java.io.File own = pngFile();
 
         String station = I18n.t("loc.ui.settingsPictureFromStation");
         String local = I18n.t("loc.ui.settingsPictureLocal");
 
         loc.setImageURL(null);
         loc.setLocalImageURL(null);
-        open(0);
+        openWithoutTheWatch();
         assertEquals(pillShows(null), null, "a pill shows over no picture at all");
 
         pickPicture(own);
@@ -1961,16 +1960,17 @@ public class testTheLocomotiveSettingsWindow
 
         // The Central Station's picture, then one of this computer's over it and cleared again
         assertTrue(closeBy(true), "Escape did not close the window");
-        loc.setImageURL("http://cs/MT-924.png");
-        open(0);
+        loc.setImageURL(pngFile().toURI().toString());
+        openWithoutTheWatch();
         assertEquals(pillShows(station), station, "the Central Station's picture is not named");
+        pictureLayout("en");
 
         pickPicture(own);
         assertEquals(pillShows(local), local, "a local picture over the station's is not named at once");
 
         // Nothing waits for Save: closed without it, the window opens on the picture as it now is
         assertTrue(closeBy(true), "Escape did not close the window");
-        open(0);
+        openWithoutTheWatch();
         assertEquals(pillShows(local), local, "the window opened again on a pill that is not the picture's");
 
         Mouse.click(SettingsWindow.part("settings.revert", Component.class));
@@ -2042,6 +2042,21 @@ public class testTheLocomotiveSettingsWindow
         {
             release.countDown();
         }
+    }
+
+    /** Opens the window on Basic Settings, its watch stopped: what changes then, the action itself changed. */
+    private static void openWithoutTheWatch() throws Exception
+    {
+        open(0);
+
+        javax.swing.Timer watch = watch(SettingsWindow.showing());
+
+        Components.onTheEventThread(() ->
+        {
+            watch.stop();
+
+            return null;
+        });
     }
 
     /** A small picture in a file of its own, gone when the run ends. */
