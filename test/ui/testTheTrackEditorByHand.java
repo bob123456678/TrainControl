@@ -1462,10 +1462,11 @@ public class testTheTrackEditorByHand
 
     /**
      * Escape while a text label, or a piece of track, is being dragged puts it down where it was: the copy and the
-     * "copied" outline go, and the release that follows moves nothing and leaves nothing to undo (OB-478).
+     * "copied" outline go, the release that follows moves nothing and leaves nothing to undo, and the next click places
+     * nothing (OB-478).
      *
-     * MUTATION: drop the single-tile branch from `LayoutEditor.letGoOfWhateverIsHeld`, or its `refreshSelectionBorders`,
-     * and this fails.
+     * MUTATION: drop the single-tile branch from `LayoutEditor.letGoOfWhateverIsHeld`, or its `refreshSelectionBorders`
+     * or `resetClipboard`, and this fails.
      */
     @Test
     public void testEscapePutsADraggedTextLabelBack() throws Exception
@@ -1529,6 +1530,20 @@ public class testTheTrackEditorByHand
         assertTrue(still != null && still.getType() == type, "the " + type + " left its square after Escape");
         assertNull(editor.getMarklinLayout().getComponent(7, 4), "the release after Escape dropped the " + type);
         assertFalse(editor.canUndo(), "the release after Escape left a step to undo");
+
+        // And disarmed: the next click elsewhere places nothing
+        Components.onTheEventThread(() ->
+        {
+            editor.receiveClickEvent(mouse(over, MouseEvent.MOUSE_CLICKED, press), over);
+
+            return null;
+        });
+
+        Components.drain(5);
+
+        assertNull(editor.getMarklinLayout().getComponent(7, 4), "a click after Escape put the " + type + " down");
+        assertEquals(editor.getMarklinLayout().getComponent(x, y).getType(), type,
+            "a click after Escape moved the " + type);
     }
 
     /** The words on the text tile the claims below drag. */
