@@ -18567,11 +18567,28 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             
             // The gate its gray asks
             if (refuseWhileAutonomyRunning(this)) return;
-            
+
+            // The station is read off the event thread behind the busy sign (OB-475); run returns once it is done
+            final Object[] answer = new Object[1];
+
+            BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"), () ->
+            {
+                try
+                {
+                    answer[0] = model.getRenameProposals();
+                }
+                catch (Exception ex)
+                {
+                    answer[0] = ex;
+                }
+            }, null);
+
             List<String[]> renameList;
             try
             {
-                RenameProposals proposals = model.getRenameProposals();
+                if (answer[0] instanceof Exception) throw (Exception) answer[0];
+
+                RenameProposals proposals = (RenameProposals) answer[0];
                 renameList = proposals.getProposals();
 
                 if (renameList.isEmpty())
