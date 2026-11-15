@@ -1926,6 +1926,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Set only where this step deletes the same route to re-read it; a route arriving for
         // the first time was never in the selection and must not be put into it.
         boolean wasActivated = false;
+        boolean wasArmed = false;
 
         // Other existing route with same name but different ID
         if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
@@ -1969,6 +1970,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // changed - so the operator's autonomy selection survives it.
                 wasActivated = this.isRouteActivatedByAutonomy(r.getId());
 
+                // And its arming, kept even while it has no sensor to watch, so a sync that brings one back arms it
+                // again (OB-433)
+                wasArmed = this.routeDB.getById(r.getId()).isEnabled();
+
                 this.deleteRoute(this.routeDB.getById(r.getId()).getName());
             }
         }
@@ -1983,6 +1988,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 this.restoreRouteActivation(r.getId(), wasActivated);
 
                 this.logf("route.added", r.getName());
+
+                // Armed as Enable Auto Execution arms it, the old route's watch retired by the delete: an ordinary armed
+                // route, which no state a confirmation puts right fires (D133)
+                if (wasArmed)
+                {
+                    r.enable();
+                    r.executeAutoRoute();
+                    this.logf(r.hasS88() ? "route.syncKeptArmed" : "route.syncKeptArmedNoSensor", r.getName());
+                }
 
                 added = true;
             }
