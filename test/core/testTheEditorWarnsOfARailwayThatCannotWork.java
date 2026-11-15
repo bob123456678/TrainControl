@@ -317,6 +317,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         assertFalse(session.departureWayCanBeSet(end, road), "May depart can be set at the end of a line");
         assertEquals(session.departureWay(end, road), east, "May depart does not show the one way out");
+        assertEquals(session.whyDepartureWayIsFixed(end, road), I18n.f("autosetup.ui.flyDepartOnly", String.valueOf(Side.W)),
+            "the (i) line does not say which side has nothing to set");
 
         TileKey far = new TileKey("main", 7, 1);
 

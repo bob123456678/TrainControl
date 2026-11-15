@@ -5291,7 +5291,7 @@ public class AutonomySession
         {
             Run run = runBeside(station, side);
 
-            if (run == null) return I18n.t("autosetup.ui.flyDepartOnly");
+            if (run == null) return I18n.f("autosetup.ui.flyDepartOnly", String.valueOf(side));
 
             Landing next = graph.landing(station, side);
 
