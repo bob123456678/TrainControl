@@ -480,6 +480,23 @@ public class testLocomotiveCsvImportDoor
     @Test
     public void testAMovingTrainIsNotReaddressed() throws Exception
     {
+        refusedForATrainWithASpeed(false);
+    }
+
+    /**
+     * MT-894 step 6: the same train, its speed still showing after the power is switched off, is still refused by name.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.movingToReaddress`, name a train only while the power is on, and this fails.
+     */
+    @Test
+    public void testATrainWithASpeedIsRefusedWithThePowerOff() throws Exception
+    {
+        refusedForATrainWithASpeed(true);
+    }
+
+    /** Sets a train going, with the power then switched off or not, and imports a file that re-addresses it. */
+    private static void refusedForATrainWithASpeed(boolean powerOff) throws Exception
+    {
         inAWindow((ui, model) ->
         {
             final String name = "FR049 door rolling";
@@ -493,6 +510,11 @@ public class testLocomotiveCsvImportDoor
                 model.waitForPowerState(true);
                 rolling.setSpeed(30);
                 rolling.waitForSpeedAtOrAbove(1);
+
+                // The simulated station does not echo a stop, so the power is set where the model keeps it
+                if (powerOff) Reflect.field(MarklinControlStation.class, "powerState").setBoolean(model, false);
+
+                assertTrue(!powerOff || rolling.getSpeed() > 0, "precondition: the train's speed did not stay showing");
 
                 Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
 
@@ -888,6 +910,228 @@ public class testLocomotiveCsvImportDoor
             {
                 file.delete();
             }
+        });
+    }
+
+    /** A file in the temporary folder that does not exist yet, for Export to CSV to write. */
+    private static File unwritten(String name)
+    {
+        return new File(System.getProperty("java.io.tmpdir"), "tc-" + name + "-" + System.nanoTime() + ".csv");
+    }
+
+    /** An address no locomotive holds, counting down from `from`. */
+    private static int freeAddress(MarklinControlStation model, int from)
+    {
+        java.util.Set<Integer> held = new java.util.HashSet<>();
+
+        for (Locomotive l : model.getLocomotives()) held.add(l.getAddress());
+
+        int address = from;
+
+        while (held.contains(address)) address--;
+
+        return address;
+    }
+
+    /**
+     * Comma-separated text as Excel on a European Windows saves it: semicolons, a field holding one in quotes, Windows
+     * line ends, and the Windows code page.
+     */
+    private static byte[] asExcelSavesIt(String text)
+    {
+        StringBuilder out = new StringBuilder();
+        StringBuilder field = new StringBuilder();
+        boolean quoted = false;
+
+        for (int i = 0; i < text.length(); i++)
+        {
+            char c = text.charAt(i);
+
+            if (quoted && c == '"' && i + 1 < text.length() && text.charAt(i + 1) == '"') field.append(text.charAt(++i));
+            else if (c == '"') quoted = !quoted;
+            else if (quoted || (c != ',' && c != '\n' && c != '\r')) field.append(c);
+            else if (c != '\r')
+            {
+                String cell = field.toString();
+
+                out.append(cell.matches("(?s).*[;\"\n].*") ? "\"" + cell.replace("\"", "\"\"") + "\"" : cell);
+                out.append(c == ',' ? ";" : "\r\n");
+                field.setLength(0);
+            }
+        }
+
+        return out.append(field).toString().getBytes(java.nio.charset.Charset.forName("windows-1252"));
+    }
+
+    /**
+     * MT-894 steps 1 and 2: the file Export to CSV saves ends its heading with LastRun; imported again as it is, the
+     * question merges every locomotive and changes no address or decoder, the import adds nothing and changes nothing,
+     * and Export to CSV then saves the same file.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.wouldReaddress`, answer that every row changes address, and this fails.
+     */
+    @Test
+    public void testAnExportImportsBackAsItWas() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            File first = unwritten("export");
+            File again = unwritten("again");
+
+            try
+            {
+                Map<String, String> before = everyLocomotive(model);
+                int all = model.getLocomotives().size();
+                byte[] exported = Files.readAllBytes(exportThroughTheMenu(ui, first).toPath());
+                String heading = new String(exported, StandardCharsets.UTF_8).replace("﻿", "").split("\r?\n", 2)[0];
+
+                assertTrue(heading.endsWith(",LastRun"), "the export's last column is not LastRun: " + heading);
+
+                Seen seen = press(ui, first, IMPORT, s -> !s.said.isEmpty());
+
+                assertEquals(words(seen.question), words(I18n.f("loc.ui.confirmImportCsv", 0, all)), "the question about"
+                    + " a file just exported does not say every locomotive is merged and nothing else");
+                assertTrue(seen.questionDetails.isEmpty(), "the question lists changes in a file just exported: "
+                    + seen.questionDetails);
+                assertEquals(seen.said.size(), 1, "the door said: " + seen.said);
+                assertEquals(words(seen.said.get(0)), words(I18n.f("loc.ui.infoImportCsvDone", 0, all)));
+                assertEquals(everyLocomotive(model), before, "importing the file just exported changed a locomotive");
+                assertEquals(Files.readAllBytes(exportThroughTheMenu(ui, again).toPath()), exported, "Export to CSV"
+                    + " saves a different file after its own file was imported");
+            }
+            finally
+            {
+                first.delete();
+                again.delete();
+            }
+        });
+    }
+
+    /**
+     * MT-894 step 3: the export saved again as Excel on a European Windows saves it, with one locomotive's address
+     * changed and a row added for a new one whose name has an umlaut.  The question lists the change by name, old to
+     * new, and counts one new; after Import the address has changed, the new locomotive is there with its umlaut, and
+     * nothing else came in.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.separator`, always answer a comma, and this fails.
+     */
+    @Test
+    public void testAnExportSavedByExcelBringsItsChangeAndItsNewName() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final String moved = "FR049 door excel";
+            final String added = "FR049 door Jürgen";
+            final int from = freeAddress(model, 14000);
+
+            Locomotive excel = model.newMFXLocomotive(moved, from);
+
+            final int to = freeAddress(model, from - 1);
+            File file = unwritten("excel");
+
+            try
+            {
+                String text = new String(Files.readAllBytes(exportThroughTheMenu(ui, file).toPath()),
+                    StandardCharsets.UTF_8).replace("﻿", "");
+                String row = "\n" + moved + ",,MFX," + from + ",";
+
+                assertTrue(text.contains(row), "precondition: the export has no plain row for " + moved);
+
+                text = text.replace(row, "\n" + moved + ",,MFX," + to + ",") + (text.endsWith("\n") ? "" : "\n") + added
+                    + ",,MFX," + freeAddress(model, 12000) + ",0,0:00:00,0,0,,,\n";
+
+                assertTrue(java.nio.charset.Charset.forName("windows-1252").newEncoder().canEncode(text),
+                    "precondition: the export holds a name the Windows code page cannot save");
+
+                Files.write(file.toPath(), asExcelSavesIt(text));
+
+                int before = model.getLocomotives().size();
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
+
+                assertTrue(words(seen.question).startsWith(words(I18n.f("loc.ui.confirmImportCsv", 1, before))),
+                    "the question does not count one new locomotive: " + seen.question);
+                assertTrue(seen.questionDetails.contains(I18n.f("loc.ui.importCsvChangeLine", moved, "MFX " + from,
+                    "MFX " + to)), "the question does not list the address change by name, old to new: "
+                    + seen.questionDetails);
+                assertEquals(excel.getAddress(), to, "the address change in Excel's file was not made");
+                assertNotNull(model.getLocByName(added), "the new locomotive did not come in with its umlaut");
+                assertEquals(model.getLocomotives().size(), before + 1, "more than the one new locomotive came in");
+            }
+            finally
+            {
+                file.delete();
+                model.deleteLoc(moved);
+                model.deleteLoc(added);
+            }
+        });
+    }
+
+    /**
+     * Imports, `times` times through the door and answered Import, a file of one row for a locomotive made at MM2 20 with
+     * an hour already run on an earlier day; after each, `check` is given the locomotive and the one message said.
+     */
+    private static void importOneRow(String row, int times, java.util.function.BiConsumer<Locomotive, String> check)
+        throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            Locomotive l = model.newMM2Locomotive("FR049 door row", 20);
+            File file = write(HEADER11 + "FR049 door row" + row + "\n");
+
+            l.getHistoricalOperatingTime().put("2024-01-01", 3600000L);
+
+            try
+            {
+                for (int time = 0; time < times; time++)
+                {
+                    List<String> said = press(ui, file, IMPORT, s -> !s.said.isEmpty()).said;
+
+                    assertEquals(said.size(), 1, "import " + (time + 1) + " said: " + said);
+                    check.accept(l, words(said.get(0)));
+                }
+            }
+            finally
+            {
+                file.delete();
+                model.deleteLoc(l.getName());
+            }
+        });
+    }
+
+    /**
+     * MT-894 step 5: a later LastRun with a larger runtime raises the runtime by the difference, filed on that day, where
+     * the statistics read it; the same file imported again adds nothing.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.merge`, file the raise on today instead of the file's last run day, and this
+     * fails.
+     */
+    @Test
+    public void testALaterLastRunRaisesTheRuntimeOnItsDayOnce() throws Exception
+    {
+        importOneRow(",,MM2,20,0,3:00:00,0,0,,,2024-06-06", 2, (runner, said) ->
+        {
+            assertEquals(runner.getTotalRuntime(), 10800000L, "the file's larger runtime is not the total, once");
+            assertEquals(runner.getRuntimeOnDay("2024-06-06"), 7200000L, "the difference is not on the file's last run day");
+            assertEquals(runner.getRuntimeOnDay("2024-01-01"), 3600000L, "the import changed another day");
+        });
+    }
+
+    /**
+     * MT-894 step 8: a row whose runtime is 12:99:00 still brings its other changes, and the message says one runtime
+     * could not be read; the runtime stays as it was.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.runtimeMs`, stop checking that the minutes are under 60, and this fails.
+     */
+    @Test
+    public void testABadRuntimeIsSaidAndTheRestOfTheRowApplies() throws Exception
+    {
+        importOneRow(",,DCC,21,0,12:99:00,0,0,,,2024-06-06", 1, (timed, said) ->
+        {
+            assertTrue(said.contains(words(I18n.f("loc.ui.infoImportCsvBadRuntime", 1))), "the message does not say the"
+                + " runtime could not be read: " + said);
+            assertEquals(timed.getAddress(), 21, "the row's address was not taken because of its runtime");
+            assertEquals(timed.getDecoderType(), Locomotive.decoderType.DCC);
+            assertEquals(timed.getTotalRuntime(), 3600000L, "a runtime of 12:99:00 was filed");
         });
     }
 }
