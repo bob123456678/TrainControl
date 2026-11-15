@@ -1188,7 +1188,7 @@ public final class StationSettingsWindow extends StationWindowBase
         whichWhite.setSelected(which == WhichTrains.WHITELIST);
         whichMixed.setVisible(which == null);
         fly("which", which == null || listed == null ? mixedTip()
-            : StationFlyovers.whichTrains(which, listed, agreed(session.getStore()::isStation)));
+            : StationFlyovers.whichTrains(which, listed, StationFlyovers.keptOut(session, targets())));
 
         if (!many)
         {

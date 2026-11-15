@@ -1,7 +1,10 @@
 package org.traincontrol.gui.autonomyeditor;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.util.I18n;
 
 /**
@@ -117,12 +120,9 @@ final class StationFlyovers
         return nowThenChange(I18n.f("autosetup.ui.flySpeedNow", percent), I18n.t("autosetup.ui.flySpeedChange"));
     }
 
-    /** `station` null where only some squares are: a train kept out may run through a station, never another (OB-483). */
-    static String whichTrains(AutonomySession.WhichTrains which, int listed, Boolean station)
+    /** `passing` is `keptOut`'s. */
+    static String whichTrains(AutonomySession.WhichTrains which, int listed, String passing)
     {
-        String passing = station == null
-            ? I18n.t("autosetup.ui.flyWhichStation") + "  " + I18n.t("autosetup.ui.flyWhichTrack")
-            : I18n.t(station ? "autosetup.ui.flyWhichStation" : "autosetup.ui.flyWhichTrack");
 
         switch (which)
         {
@@ -137,6 +137,26 @@ final class StationFlyovers
             default:
                 return nowThenChange(I18n.t("autosetup.ui.flyAllNow"), I18n.t("autosetup.ui.flyAllChange") + "  " + passing);
         }
+    }
+
+    /**
+     * What a list does to a train kept out of these squares, a line for each kind among them (OB-483): it may run
+     * through a station that trains run through, and never through any other square.
+     */
+    static String keptOut(AutonomySession session, List<TileKey> squares)
+    {
+        Set<String> lines = new LinkedHashSet<>();
+
+        for (TileKey each : squares)
+        {
+            StationBoxes boxes = StationBoxes.of(session, each);
+
+            lines.add(I18n.t(!session.getStore().isStation(each) ? "autosetup.ui.flyWhichTrack"
+                : boxes.stops && boxes.runsThrough && !session.isMustTurnAround(each) ? "autosetup.ui.flyWhichStation"
+                : "autosetup.ui.flyWhichStop"));
+        }
+
+        return String.join("  ", lines);
     }
 
     static String unavailable(String names)

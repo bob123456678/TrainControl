@@ -2190,6 +2190,30 @@ public class testStationSettingsWindow
     }
 
     /**
+     * A Terminus lets no train run through, so its Allowed trains (i) says the list only decides who stops, and never
+     * that a train kept out can still run through (OB-483).
+     *
+     * MUTATION: have `StationFlyovers.keptOut` give every station the run-through line, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testATerminusSaysNoTrainKeptOutRunsThrough() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+
+        StationDoors.press(window, "station.preset.TERMINUS", message -> support.Answering.pressAt(0));
+        StationDoors.current(window);
+
+        String said = Components.onTheEventThread(() -> window.flyoverForTest("which"));
+
+        assertTrue(said.contains(I18n.t("autosetup.ui.flyWhichStop")), "a Terminus's (i) does not say the list only "
+            + "decides who stops: " + said);
+        assertFalse(said.contains(I18n.t("autosetup.ui.flyWhichStation")), "a Terminus's (i) says a train kept out can "
+            + "run through: " + said);
+
+        StationDoors.close(window);
+    }
+
+    /**
      * The window's (i) for May depart names the s88 square it shares plain track with, as a pick here sets it there too.
      * The line itself is `departureSharedWith`'s, held to the bundle by the core claim.
      *
