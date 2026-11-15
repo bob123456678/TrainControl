@@ -14,6 +14,27 @@ Available in 🇬🇧 English · 🇩🇪 Deutsch · 🇩🇰 Dansk · 🇵🇱 
 
 TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  It is designed for model railways with many locomotives, where the standard Marklin UI makes common tasks (such as quickly switching between locomotives or triggering functions) overly tedious.  It is a complete replacement for the CS2/CS3 when operating your layout, with the Central Station serving solely as the track interface and MFX locomotive database.  If your existing controller is taking the fun out of running your trains, consider trying TrainControl!
 
+**What's new in 3.1.0**
+
+*Station Settings.*  Everything about a station is now in one window: right-click a station on the track diagram and choose `Station Settings...`.
+
+<img src="assets/station_menu.png?raw=true" alt="Right-clicking the station Ashby on the track diagram, with Station Settings... right under its name in the menu" width="300"> <img src="assets/station_settings.png?raw=true" alt="The Station Settings window for Ashby, with what trains may do there on the left and a picture of the station on the right" width="500">
+
+* Tick whether trains can stop there and whether they can run through, or press a button under `Presets` to set it up in one click.
+* Choose which ways trains may leave, or just click the arrows on the picture of the station.
+* Under `Advanced`, `Allowed trains` keeps some trains away or lets only the ones you pick stop there.
+* A table beside the picture tells you what trains may do at the station, whether autonomy sends them or you do.
+
+*Locomotive Settings.*  All of a locomotive's settings are now in one window, with tabs for `Basic Settings`, `Functions`, `Notes`, `Multi-Unit` and `Autonomy`: right-click its button and choose `Locomotive Settings...`, or press Ctrl+E.
+
+<img src="assets/ui_right_click.png?raw=true" alt="Right-clicking a locomotive's button, with Locomotive Settings... second in the menu" width="340"> <img src="assets/locomotive_settings.png?raw=true" alt="The Locomotive Settings window on its Basic Settings tab, with the name, decoder type, address and picture of a locomotive, and a gray label saying the picture is a Local File" width="460">
+
+* `Basic Settings` has the name, address and picture, and a small gray label tells you whether the picture came from your Central Station or from a file on your computer.
+* `Notes` keeps the years it ran in real life, its railway and your own notes, and `Find Similar Locomotives...` finds others like it in your collection.
+* `Autonomy` holds what autonomy needs to know about it, such as how long the train is and whether it can change direction.
+
+*Autonomy on your track diagram.*  Since 3.0.0 you set up automation right on the track diagram, with no files to write: name your stations, click the track to show which way trains may run, and drag each train to the station where it stands.  See [Full Autonomy](#full-autonomy) and [the autonomy guide](Automation.md) to get started, and the [Changelog](#changelog) for everything else in 3.1.0.
+
 **Why TrainControl?**
 
 * Conveniently control any locomotive instantly from your keyboard
@@ -54,7 +75,7 @@ Right-click a locomotive button for its quick actions, such as function and spee
 
 The Locomotive Settings window, on its `Basic Settings` tab, with the locomotive's name, address, decoder and picture.
 
-![The Locomotive Settings window on its Basic Settings tab, with the name, decoder type, address, preset speed and picture of a locomotive](assets/locomotive_settings.png?raw=true)
+<img src="assets/locomotive_settings.png?raw=true" alt="The Locomotive Settings window on its Basic Settings tab, with the name, decoder type, address, preset speed and picture of a locomotive" width="720">
 
 ![TrainControl locomotive selector, used to assign a locomotive from the database to a keyboard button](assets/ui_sel_loc.png?raw=true)
 
@@ -103,7 +124,7 @@ Some sample files are included in the `cs2_sample_layout` folder.
 
 </details>
 
-**Full Autonomy**
+<a id="full-autonomy"></a>**Full Autonomy**
 
 TrainControl can run your trains on its own.  From version 3.0, you set this up on the track diagram itself, in the autonomy editor: TrainControl works out how your track connects, and you set up stations, directions and settings by clicking and right-clicking squares.  A station's settings are all in one `Station Settings` window.  The setup is checked before it runs, and each problem it finds takes you to the square it is about.
 
