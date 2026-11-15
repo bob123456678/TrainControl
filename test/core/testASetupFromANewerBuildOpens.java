@@ -14,6 +14,7 @@ import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
 import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.AutonomySession;
+import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
 
@@ -160,6 +161,39 @@ public class testASetupFromANewerBuildOpens
                 Files.copy(written.toPath(), new File(saveTo, "config/autonomy/" + written.getName()).toPath(),
                     StandardCopyOption.REPLACE_EXISTING);
             }
+        }
+    }
+
+    /**
+     * May depart's One Way, as this build writes it, the station's own square's direction (OB-472), is read back after
+     * a save and a reopen, here and in 3.0.8, and the railway still builds.
+     *
+     * MUTATION: have `AutonomyCompanionStore.readDirectionMap` drop a one-way direction, and this fails.
+     */
+    @Test
+    public void testAOneWayStationReadsBack() throws Exception
+    {
+        org.json.JSONObject held = session.snapshotSetup();
+        TileGraph.RouteId road = session.getRoutes(main).keySet().iterator().next();
+
+        try
+        {
+            session.getStore().setTileDirection(main, road, TileGraph.Direction.TOWARD_A);
+            session.save();
+
+            AutonomySession reopened = new AutonomySession(scenario.getFolder());
+
+            reopened.open(scenario.getPages());
+
+            assertEquals(reopened.getGraph().getDirection(main, road), TileGraph.Direction.TOWARD_A,
+                "a station's One Way was not read back");
+
+            build();
+        }
+        finally
+        {
+            session.getStore().restoreSetup(held);
+            session.save();
         }
     }
 

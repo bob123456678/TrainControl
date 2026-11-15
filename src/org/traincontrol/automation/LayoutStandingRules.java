@@ -67,11 +67,16 @@ final class LayoutStandingRules
 
         for (Point copy : copies)
         {
-            exits.add(copy.getCopyFacing() == null ? StandingRules.NO_SIDE : copy.getCopyFacing());
+            if (copy.getCopyFacing() != null) exits.add(copy.getCopyFacing());
+
+            // A square's only copy has no facing: it leaves by the sides its edges leave by
+            else for (Edge out : owner.getNeighbors(copy)) exits.add(sideLeftBy(copy, out));
         }
 
         // Track on a side no copy faces is a way out that was closed
         exits.addAll(arrivals);
+
+        if (exits.isEmpty()) exits.add(StandingRules.NO_SIDE);
 
         if (exits.size() > 1) exits.remove(StandingRules.NO_SIDE);
 
@@ -392,12 +397,15 @@ final class LayoutStandingRules
 
         for (Point copy : copies)
         {
-            // A square's only copy has no facing of its own: it leaves by whatever way it has
             if (copy.getCopyFacing() != null && !copy.getCopyFacing().equals(side)) continue;
 
-            if (!hasAWayOut(copy)) continue;
+            boolean wayOut = false;
 
-            if (!owner.anyStandingRoute(copy, end -> true, path -> true))
+            for (Edge out : owner.getNeighbors(copy)) wayOut |= leavesBy(copy, out, side);
+
+            if (!wayOut) continue;
+
+            if (!owner.anyStandingRoute(copy, end -> true, path -> leavesBy(copy, path.get(0), side)))
             {
                 leadsNowhere = true;
 
@@ -424,6 +432,17 @@ final class LayoutStandingRules
         }
 
         rules.put(Row.SENT_FROM, side, auto, hand);
+    }
+
+    /**
+     * Whether an edge leaves a copy by this side: any edge of a copy facing it; for a square's only copy, which has no
+     * facing, an edge toward that side, or one whose side the build does not say.
+     */
+    private static boolean leavesBy(Point copy, Edge out, String side)
+    {
+        String by = copy.getCopyFacing() != null ? side : sideLeftBy(copy, out);
+
+        return by.equals(side) || by.equals(StandingRules.NO_SIDE);
     }
 
     private boolean isClosed(List<Point> copies)

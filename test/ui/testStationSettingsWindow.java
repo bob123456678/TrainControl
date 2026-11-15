@@ -218,6 +218,47 @@ public class testStationSettingsWindow
         assertEquals(setup(), before, "another window clicked applied the choice shown in Home");
     }
 
+    /**
+     * A run starting while May depart shows a stepped choice builds the lists again; the old list's choice is dropped,
+     * not applied, so no "no edits while running" message comes up over the run.
+     *
+     * MUTATION: let `StationWindowBase.Choice.settle` act for a list no longer on screen, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testARunStartingWhileAChoiceIsSteppedAsksNothing() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStationWhereMayDepart());
+
+        javax.swing.JComboBox<?> stepped = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+
+        Object was = StationDoors.step(stepped);
+
+        assertNotEquals(Components.onTheEventThread(stepped::getSelectedItem), was, "precondition: the arrow did not step May depart");
+
+        String before = setup();
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, true);
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> !stepped.isDisplayable()), 5000),
+                "precondition: the run did not build May depart again");
+
+            // The list taken away had the keyboard, and loses it for good
+            StationDoors.loseKeyboard(stepped, false, null);
+
+            assertEquals(answering.asked(), java.util.Collections.emptyList(), "a run starting with May depart stepped asked");
+        }
+        finally
+        {
+            regression.testNoSetupEditWhileARouteRuns.aRouteRuns(ui, false);
+        }
+
+        assertEquals(setup(), before, "a run starting with May depart stepped wrote the choice");
+
+        StationDoors.close(window);
+    }
+
     /** Steps the Home list; what it showed before. */
     private static Object stepHome(StationSettingsWindow window)
     {
@@ -1509,7 +1550,7 @@ public class testStationSettingsWindow
 
         assertFalse(Components.onTheEventThread(() -> session.getStore().isStation(square)),
             "Off left the square a station");
-        assertFalse(Components.onTheEventThread(() -> session.isStopOnly(square) || !session.runsBothWays(square)),
+        assertFalse(Components.onTheEventThread(() -> session.isStopOnly(square)),
             "Off stopped trains running over the square");
         assertEquals(window.litPresetForTest(), StationPreset.OFF, "Off does not light once pressed");
 
@@ -1841,57 +1882,45 @@ public class testStationSettingsWindow
     }
 
     /**
-     * A click on a station restricted by a setup file puts it back to both ways and says so, opening nothing; the next
-     * click opens its Station Settings (Adam: "clicking changes the arrows until they are both green, at which point the
-     * station editor opens", OB-472).
+     * A click on a station opens its Station Settings and changes no arrow, even one an older version's setup left on it
+     * (Adam: "have may depart just control the arrows on the station", OB-472); May depart shows that arrow, live.
      *
-     * MUTATION: drop the s88 question from `AutonomyEditorPanel.cycle`, and this fails.
+     * MUTATION: have `AutonomyEditorPanel.cycle` step an s88 square's arrows as plain track, and this fails.
      */
     @Test(timeOut = 120000)
-    public void testAClickClearsAnS88SquareThenOpensStationSettings() throws Exception
+    public void testAClickOnAStationOpensItsSettingsAndChangesNoArrow() throws Exception
     {
-        TileKey square = aStation();
+        TileKey square = aStationWhereMayDepart();
 
-        restrictAsAFileWould(square);
+        restrictAsAFileWould(square, Direction.TOWARD_A);
 
-        org.traincontrol.gui.LayoutLabel label = squareOn(square);
+        String before = setup();
 
-        support.Mouse.click(label);
-        Components.drain(8);
-
-        assertTrue(Components.onTheEventThread(() -> session.runsBothWays(square)), "a click left the station restricted");
-        assertNull(StationDoors.showing(StationSettingsWindow.class), "the click that cleared the station opened a window");
-
-        Object strip = Reflect.get(AutonomyEditorPanel.class, panel, "messageBanner");
-        String said = String.valueOf(Reflect.get(strip.getClass(), strip, "saying"));
-
-        assertTrue(said.contains(I18n.f("autosetup.ui.sensorClearedToBothWays", session.describeTile(square))),
-            "the message strip does not say what the station became: " + said);
-
-        support.Mouse.click(label);
+        support.Mouse.click(squareOn(square));
         Components.drain(8);
 
         StationSettingsWindow window = StationDoors.showing(StationSettingsWindow.class);
 
-        assertNotNull(window, "a click on a station running both ways opened no Station Settings");
+        assertNotNull(window, "a click on a station with an arrow opened no Station Settings");
         assertEquals(Components.onTheEventThread(window::squareForTest), square, "Station Settings opened on another square");
+        assertEquals(setup(), before, "a click on a station changed its arrows");
+        assertTrue(StationDoors.live(window, "station.depart.0"), "May depart is gray on a station with an old arrow");
+        assertEquals(departShows(window), towardA(square), "May depart does not show the station's old arrow");
 
         StationDoors.close(window);
     }
 
     /**
-     * A double-click on a station running both ways opens its Station Settings, once, and changes nothing (OB-472: "double
-     * clicks on autonomy stations (in the autonomy editor) don't work").
+     * A double-click on a station opens its Station Settings, once, and changes nothing (OB-472: "double clicks on
+     * autonomy stations (in the autonomy editor) don't work").
      *
-     * MUTATION: have `AutonomyEditorPanel.cycle` set a both-ways s88 square both ways again in place of opening the
-     * window, and this fails.
+     * MUTATION: have `AutonomyEditorPanel.cycle` step an s88 square's arrows in place of opening the window, and this
+     * fails.
      */
     @Test(timeOut = 120000)
     public void testADoubleClickOnAStationOpensItsSettingsOnce() throws Exception
     {
         TileKey square = aStation();
-
-        assertTrue(Components.onTheEventThread(() -> session.runsBothWays(square)), "precondition: the station does not run both ways");
 
         String before = setup();
 
@@ -1949,13 +1978,12 @@ public class testStationSettingsWindow
         }
     }
 
-    /** Restricts a station one way, as a setup file can and no door of the editor does any more (OB-472). */
-    private static void restrictAsAFileWould(TileKey square)
+    /** Gives a station's road a direction, as a setup file from an older version can. */
+    private static void restrictAsAFileWould(TileKey square, Direction way)
     {
         Components.onTheEventThread(() ->
         {
-            session.getStore().setTileDirection(square, session.getRoutes(square).keySet().iterator().next(),
-                org.traincontrol.automationui.TileGraph.Direction.TOWARD_A);
+            session.getStore().setTileDirection(square, session.getRoutes(square).keySet().iterator().next(), way);
             session.rebuild();
 
             return null;
@@ -1963,42 +1991,8 @@ public class testStationSettingsWindow
     }
 
     /**
-     * A double-click on a restricted s88 square's error opens no Station Settings, where nothing clears it, and says to
-     * click the square.
-     *
-     * MUTATION: leave out `openStationSettingsForTheFinding`'s s88 check, and the window opens.
-     */
-    @Test(timeOut = 120000)
-    public void testTheErrorOfARestrictedStationSaysToClickIt() throws Exception
-    {
-        TileKey square = aStation();
-
-        restrictAsAFileWould(square);
-
-        Components.onTheEventThread(() -> { panel.refresh(); return null; });
-        Components.settle();
-
-        int row = rowOf(square);
-
-        assertTrue(row >= 0, "precondition: no finding about the restricted station");
-
-        clickTheFinding(row, 2);
-
-        assertNull(Components.onTheEventThread(() -> panel.stationSettingsWindow()),
-            "a double-click on the error opened Station Settings, which cannot clear it");
-        assertFalse(Components.onTheEventThread(() -> session.runsBothWays(square)),
-            "a double-click on the error edited the square");
-
-        Object strip = Reflect.get(AutonomyEditorPanel.class, panel, "messageBanner");
-
-        assertTrue(String.valueOf(Reflect.get(strip.getClass(), strip, "saying")).contains(
-            I18n.f("autosetup.ui.sensorClickToClear", session.describeTile(square))),
-            "the strip does not say to click the square");
-    }
-
-    /**
-     * While a run holds the setup, a click on a station running both ways still opens its Station Settings, read-only,
-     * as its other doors do.
+     * While a run holds the setup, a click on a station still opens its Station Settings, read-only, as its other doors
+     * do.
      *
      * MUTATION: have `tileClicked` ask `heldByARun` before every click again, and no window opens.
      */
@@ -2034,13 +2028,207 @@ public class testStationSettingsWindow
     }
 
     /**
-     * May depart sets the track beside a station, never the station, and the editor's Save keeps it (D141, Adam: "Keep
-     * it active if its relevant, in which case it controls the other track").
+     * May depart sets the station's own square and nothing else, on every station of the page where it is live, for
+     * each way it offers (Adam: "have may depart just control the arrows on the station").
      *
-     * MUTATION: have the May depart lists call `setRunDirection` on the station again, and this fails.
+     * MUTATION: have the May depart lists set the station's whole run with `setRunDirection` on the track beside, and
+     * this fails.
      */
     @Test(timeOut = 120000)
-    public void testMayDepartSetsTheTrackBesideAndSaveKeepsIt() throws Exception
+    public void testMayDepartSetsOnlyTheStationsSquare() throws Exception
+    {
+        int picks = 0;
+
+        for (TileKey square : stationsOn(PAGE))
+        {
+            List<RouteId> roads = Components.onTheEventThread(() -> new java.util.ArrayList<>(session.getRoutes(square)
+                .keySet()));
+
+            StationSettingsWindow window = StationDoors.open(panel, square);
+
+            for (int y = 0; y < roads.size(); y++)
+            {
+                if (!StationDoors.live(window, "station.depart." + y)) continue;
+
+                javax.swing.JComboBox<?> list = StationDoors.part(window, "station.depart." + y, javax.swing.JComboBox.class);
+                RouteId road = roads.get(y);
+
+                for (int at = 0; at < Components.onTheEventThread(list::getItemCount); at++)
+                {
+                    Map<String, Direction> before = directionsBesides(square);
+                    final int pick = at;
+
+                    Object said = Components.onTheEventThread(() -> { list.setSelectedIndex(pick); return list.getSelectedItem(); });
+                    StationDoors.current(window);
+
+                    assertEquals(directionsBesides(square), before, "May depart's " + said + " on " + square
+                        + " changed another square");
+                    assertEquals(directionsOf(square).get(square + "/" + road), meant(square, road, said),
+                        "May depart's " + said + " on " + square + " did not set the station");
+
+                    picks++;
+                }
+            }
+
+            StationDoors.close(window);
+        }
+
+        assertTrue(picks > 6, "precondition: May depart was live on few stations of " + PAGE + ": " + picks + " picks");
+    }
+
+    /**
+     * May depart is grayed at a drawn track end only, on every station of the frozen railway (Adam: "can be set except
+     * when a one direction run is forced, such as a terminus"): live too where the railway leads trains out one way
+     * alone, and where an old arrow shuts the one way out, so it can be changed.
+     *
+     * MUTATION: gray May depart wherever the railway sends trains out by one side only, and this fails.
+     */
+    @Test(timeOut = 300000)
+    public void testMayDepartIsLiveEverywhereButATrackEnd() throws Exception
+    {
+        List<String> wrong = new java.util.ArrayList<>();
+        int forced = 0, oneWayOut = 0;
+
+        for (String page : new String[] {PAGE, "2 - Bottom"})
+        {
+            if (!PAGE.equals(page))
+            {
+                support.FrozenEditor.dispose(editor);
+
+                editor = frozen.editorOn(page);
+                panel = Components.onTheEventThread(() -> editor.getAutonomyPanel());
+            }
+
+            for (TileKey square : stationsOn(page))
+            {
+                if (Components.onTheEventThread(() -> session.getRoutes(square).size()) != 1) continue;
+
+                // At a track end, the One Way out: grayed there unless an old arrow shuts it
+                Direction only = Components.onTheEventThread(() ->
+                {
+                    org.traincontrol.automationui.TilePorts.Side end = session.deadEndSide(square);
+
+                    return end == null ? null : end == session.getRoutes(square).values().iterator().next().getA()
+                        ? Direction.TOWARD_B : Direction.TOWARD_A;
+                });
+                Direction now = wayOf(square, onlyRoad(square));
+                boolean gray = only != null && (now == Direction.BOTH || now == only);
+
+                StationSettingsWindow window = StationDoors.open(panel, square);
+
+                if (StationDoors.live(window, "station.depart.0") == gray) wrong.add(square + " live " + gray + ", " + now);
+
+                if (gray) forced++;
+                else if (Components.onTheEventThread(() -> railwayWaysOut(square).size()) == 1) oneWayOut++;
+
+                StationDoors.close(window);
+            }
+        }
+
+        assertEquals(wrong, new java.util.ArrayList<>(), "May depart is gray away from a track end, or live at one");
+        assertTrue(forced > 3, "precondition: only " + forced + " stations are at a track end");
+        assertTrue(oneWayOut > 0, "precondition: no live station has one way out");
+    }
+
+    /**
+     * May depart's One Way toward TopMainR2Inter's north side leaves a train there no way to another station: the setup
+     * check says so, and the notice under the picture says no train can leave.
+     *
+     * MUTATION: drop `STATION_REACHES_NOTHING` from `AutonomyChecks.checkStations`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAMayDepartPickThatStrandsTrainsIsSaid() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopMainR2Inter"));
+
+        assertFalse(Components.onTheEventThread(() -> strands(square)), "precondition: TopMainR2Inter already strands trains");
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        chooseDepartTowardA(window, square, onlyRoad(square));
+
+        assertTrue(Components.onTheEventThread(() -> strands(square)), "the setup check does not say the pick strands trains");
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> StationDoors.part(window, "station.matrixProblem",
+            javax.swing.JLabel.class).isShowing()), 10000), "no notice says no train can leave");
+
+        StationDoors.close(window);
+    }
+
+    /** Whether the setup check says no train can leave a station for another; on the event thread. */
+    private static boolean strands(TileKey square)
+    {
+        return session.check().stream().anyMatch(f -> "autosetup.ui.checkStationReachesNothing".equals(f.getMessageKey())
+            && square.equals(f.getTile()));
+    }
+
+    /**
+     * The table follows a May depart pick: it answers from the railway built again, so a side the pick shuts is no
+     * longer one trains are sent from.
+     *
+     * MUTATION: drop the `stationWindows.changed()` after the rebuild in `rebuildRunningLayoutSoon`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheTableFollowsAMayDepartPick() throws Exception
+    {
+        TileKey square = aStationWhereMayDepart();
+        RouteId road = onlyRoad(square);
+        String shut = Components.onTheEventThread(() -> String.valueOf(session.getRoutes(square).get(road).getB()));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.current(window);
+
+        assertEquals(window.drawnForTest(StandingRules.Row.SENT_FROM, "hand").get(shut), StandingRules.Answer.YES,
+            "precondition: trains are not sent from here to the " + shut);
+
+        chooseDepartTowardA(window, square, road);
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(() -> window.drawnForTest(StandingRules.Row.SENT_FROM,
+            "hand").get(shut) != StandingRules.Answer.YES), 10000), "the table still sends trains out by the side May depart shut");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * A can't-leave notice under the picture takes the window's spare room, so the window opens as tall with it as
+     * without (Adam, MT-961: "that way, the height of the window doesn't change"): TopMainR2Inter one way toward its
+     * north side leaves no train a way out.
+     *
+     * MUTATION: have the spare room under the picture ignore `noticesOverflow`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testACantLeaveNoticeKeepsTheWindowsHeight() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopMainR2Inter"));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.current(window);
+
+        int height = Components.onTheEventThread(window::getHeight);
+
+        StationDoors.close(window);
+
+        restrictAsAFileWould(square, Direction.TOWARD_A);
+
+        StationSettingsWindow shut = StationDoors.open(panel, square);
+
+        StationDoors.current(shut);
+
+        assertTrue(Components.onTheEventThread(() -> StationDoors.part(shut, "station.matrixProblem", javax.swing.JLabel.class)
+            .isShowing()), "precondition: no notice says no train can leave");
+        assertEquals(Components.onTheEventThread(shut::getHeight), Integer.valueOf(height), "the notice changed the window's height");
+
+        StationDoors.close(shut);
+    }
+
+    /**
+     * May depart's pick is the station's own direction: Save writes it, and the window opened again shows it.
+     *
+     * MUTATION: have the May depart lists set the track beside the station rather than the station, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testMayDepartSetsTheStationAndSaveKeepsIt() throws Exception
     {
         TileKey square = aStationWhereMayDepart();
         RouteId road = onlyRoad(square);
@@ -2049,21 +2237,19 @@ public class testStationSettingsWindow
         {
             StationSettingsWindow window = StationDoors.open(panel, square);
 
-            String towardA = chooseDepartTowardA(window, square, road);
-
-            assertEquals(Components.onTheEventThread(() -> session.departureWay(square, road)), Direction.TOWARD_A,
-                "May depart did not set the track beside the station");
-            assertTrue(Components.onTheEventThread(() -> session.runsBothWays(square)),
-                "May depart gave the station a direction");
-            assertEquals(Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0",
-                javax.swing.JComboBox.class).getSelectedItem()), towardA, "May depart does not show what it set");
+            chooseDepartTowardA(window, square, road);
 
             StationDoors.close(window);
 
             AutonomySession saved = frozen.saveAndReadBack(editor);
 
-            assertEquals(saved.departureWay(square, road), Direction.TOWARD_A, "Save did not keep May depart");
-            assertTrue(saved.runsBothWays(square), "Save wrote a direction on the station");
+            assertEquals(saved.getGraph().getDirection(square, road), Direction.TOWARD_A, "Save did not keep May depart");
+
+            StationSettingsWindow again = StationDoors.open(panel, square);
+
+            assertEquals(departShows(again), towardA(square), "May depart opened again does not show what it set");
+
+            StationDoors.close(again);
         }
         finally
         {
@@ -2074,8 +2260,8 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The editor's Cancel undoes what May depart set on the track beside, as it undoes every other edit (D141): the
-     * pick goes only into the setup Cancel puts back.
+     * The editor's Cancel undoes what May depart set, as it undoes every other edit: the pick goes only into the setup
+     * Cancel puts back.
      *
      * MUTATION: have `LayoutEditor.discardAutonomyWork` skip `restoreSetup`, and this fails.
      */
@@ -2094,64 +2280,107 @@ public class testStationSettingsWindow
 
         Components.settle();
 
-        assertTrue(session.snapshotSetup().similar(asOpened), "Cancel did not put the track beside back");
+        assertTrue(session.snapshotSetup().similar(asOpened), "Cancel did not put May depart back");
     }
 
     /**
-     * At the end of a line May depart could set nothing, so it is grayed, shows the one way out, and its (i) says
-     * which side has nothing to set (D141: "Otherwise Grey it and show the only way out").  Both texts are the
-     * bundle's, filled from the drawn track, not from May depart's own reading.
+     * The editor's undo puts May depart back as it was at the undo point, as it does the page's other settings.
      *
-     * MUTATION: leave May depart live wherever the boxes let it be, and this fails.
+     * MUTATION: have the May depart lists set the track beside the station rather than the station, and this fails.
      */
     @Test(timeOut = 120000)
-    public void testMayDepartIsGrayAndShowsTheOnlyWayOut() throws Exception
+    public void testUndoPutsMayDepartBack() throws Exception
     {
-        TileKey square = aStationAtTheEndOfALine();
+        TileKey square = aStationWhereMayDepart();
         RouteId road = onlyRoad(square);
 
-        // {the side with track, the side where the line ends}
-        String[] sides = Components.onTheEventThread(() ->
-        {
-            org.traincontrol.automationui.TilePorts.Route route = session.getRoutes(square).get(road);
+        // The undo point every edit of the track diagram takes first
+        java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
 
-            boolean endsByA = endsBy(square, route.getA());
-
-            return new String[] {String.valueOf(endsByA ? route.getB() : route.getA()),
-                String.valueOf(endsByA ? route.getA() : route.getB())};
-        });
+        Components.onTheEventThread(() -> snapshot.invoke(editor));
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
-        assertFalse(StationDoors.live(window, "station.depart.0"), "May depart is live where it could set nothing");
-        assertEquals(Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0",
-            javax.swing.JComboBox.class).getSelectedItem()), I18n.f("autosetup.ui.menuRouteToward", sides[0]),
-            "May depart does not show the only way out");
-        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("depart")).contains(
-            I18n.f("autosetup.ui.flyDepartOnly", I18n.t("autosetup.ui.side" + sides[1]))), "the (i) does not say the line ends there");
+        chooseDepartTowardA(window, square, road);
+
+        Components.onTheEventThread(() -> { editor.undo(); return null; });
+        Components.settle();
+
+        assertEquals(wayOf(square, road), Direction.BOTH,
+            "the undo did not put May depart back");
 
         StationDoors.close(window);
     }
 
-    /** Whether the track as drawn runs out leaving a square by a side, before it reaches any s88 square. */
-    private static boolean endsBy(TileKey square, org.traincontrol.automationui.TilePorts.Side side)
+    /**
+     * Where the track on one side of a station runs out, trains can only leave the other way, so May depart is grayed,
+     * shows that way and says why (Adam: "can be set except when a one direction run is forced, such as a terminus").
+     * An old arrow shutting that one way leaves it live, so the arrow can be changed.
+     *
+     * MUTATION: drop `deadEndSide` from `StationSettingsWindow.fillDepart`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testMayDepartIsGrayAtATrackEndAndShowsTheOnlyWayOut() throws Exception
     {
-        return session.getGraph().landing(square, side) == null
-            || session.getGraph().runsOutLeaving(square, side, session.getReducer().getPoints().keySet());
+        TileKey square = aPlainStationWhere(each -> session.deadEndSide(each) != null
+            && leavesBothWays(each),
+            "at the end of a line");
+
+        // {the side trains leave by, the side where the track runs out}
+        org.traincontrol.automationui.TilePorts.Side[] sides = Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automationui.TilePorts.Route route = session.getRoutes(square).values().iterator().next();
+            org.traincontrol.automationui.TilePorts.Side end = session.deadEndSide(square);
+
+            return new org.traincontrol.automationui.TilePorts.Side[] {route.getA() == end ? route.getB() : route.getA(),
+                end};
+        });
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        assertFalse(StationDoors.live(window, "station.depart.0"), "May depart is live where only one way out leads anywhere");
+        assertEquals(departShows(window), I18n.f("autosetup.ui.menuRouteToward", String.valueOf(sides[0])),
+            "May depart does not show the only way out");
+        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("depart")).contains(
+            I18n.f("autosetup.ui.flyDepartForced", I18n.t("autosetup.ui.side" + sides[1]))),
+            "the (i) does not say the track runs out on that side");
+
+        StationDoors.close(window);
+
+        restrictAsAFileWould(square, Components.onTheEventThread(() ->
+            session.getRoutes(square).values().iterator().next().getA() == sides[1] ? Direction.TOWARD_A : Direction.TOWARD_B));
+
+        StationSettingsWindow shut = StationDoors.open(panel, square);
+
+        assertTrue(StationDoors.live(shut, "station.depart.0"), "May depart is gray with an old arrow shutting the only way out");
+
+        StationDoors.close(shut);
     }
 
-    /** A plain station of the page with one road whose track ends on one side and runs on as plain track on the other. */
-    private static TileKey aStationAtTheEndOfALine()
+    /**
+     * A station saved as Closed by an older version keeps its closed road, which May depart no longer offers (D144): it
+     * shows no pick, says no train leaves, and stays live, so a pick opens it.
+     *
+     * MUTATION: have `fillDepart` gray a road it has no answer for, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAStationClosedByAnOlderVersionShowsNoPick() throws Exception
     {
-        return aPlainStationWhere(each ->
-        {
-            org.traincontrol.automationui.TilePorts.Route route = session.getRoutes(each).values().iterator().next();
-            boolean endsByA = endsBy(each, route.getA());
-            org.traincontrol.automationui.TileGraph.Landing on =
-                session.getGraph().landing(each, endsByA ? route.getB() : route.getA());
+        TileKey square = aStationWhereMayDepart();
+        RouteId road = onlyRoad(square);
 
-            return endsByA != endsBy(each, route.getB()) && on != null && session.getGraph().runOf(on.getTile()) != null;
-        }, "at the end of a line");
+        restrictAsAFileWould(square, Direction.NONE);
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        assertEquals(Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0",
+            javax.swing.JComboBox.class).getSelectedIndex()), Integer.valueOf(-1), "May depart shows a pick for Closed");
+        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("depart")).contains(
+            I18n.f("autosetup.ui.flyDepartNow", I18n.t("autosetup.ui.labelNone"))), "the (i) does not say no train leaves");
+
+        chooseDepartTowardA(window, square, road);
+
+        StationDoors.close(window);
     }
 
     /** The first station of the page with one road that `wanted` accepts, read on the event thread. */
@@ -2255,36 +2484,89 @@ public class testStationSettingsWindow
         StationDoors.close(window);
     }
 
-    /**
-     * The window's (i) for May depart names the s88 square it shares plain track with, as a pick here sets it there too.
-     * The line itself is `departureSharedWith`'s, held to the bundle by the core claim.
-     *
-     * MUTATION: drop `shared` from `StationFlyovers.depart`, and this fails.
-     */
-    @Test(timeOut = 120000)
-    public void testMayDepartsInfoNamesTheSquareItSharesTrackWith() throws Exception
-    {
-        TileKey square = aPlainStationWhere(each -> session.departureWayCanBeSet(each, session.getRoutes(each).keySet()
-            .iterator().next()) && session.departureSharedWith(each, session.getRoutes(each).keySet().iterator().next())
-            != null, "sharing plain track with another s88 square");
-        RouteId road = onlyRoad(square);
-
-        String shared = Components.onTheEventThread(() -> session.departureSharedWith(square, road));
-
-        StationSettingsWindow window = StationDoors.open(panel, square);
-
-        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("depart")).contains(shared),
-            "the (i) does not name the square May depart shares its track with");
-
-        StationDoors.close(window);
-    }
-
-    /** A plain station of the page with one road where May depart can be set, and trains leave both ways. */
+    /** A plain station of the page with one road, running both ways, that the railway sends trains out of both ways. */
     private static TileKey aStationWhereMayDepart()
     {
-        return aPlainStationWhere(each -> session.departureWayCanBeSet(each, session.getRoutes(each).keySet().iterator()
-            .next()) && session.departureWay(each, session.getRoutes(each).keySet().iterator().next()) == Direction.BOTH,
-            "with track beside");
+        return aPlainStationWhere(each -> leavesBothWays(each) && railwayWaysOut(each).size() == 2,
+            "with two ways out");
+    }
+
+    /** The sides the railway as built sends a train out of a station by (the window's table); on the event thread. */
+    private static Set<String> railwayWaysOut(TileKey square)
+    {
+        return model.getAutoLayoutIfLoaded().standingRulesAt(new java.util.ArrayList<>(session.getStationIndex()
+            .pointNamesAt(square))).waysOut();
+    }
+
+    /** A station road's direction, read on the event thread. */
+    private static Direction wayOf(TileKey square, RouteId road)
+    {
+        return Components.onTheEventThread(() -> session.getGraph().getDirection(square, road));
+    }
+
+    /** Whether a station's one road runs both ways. */
+    private static boolean leavesBothWays(TileKey each)
+    {
+        return session.getGraph().getDirection(each, session.getRoutes(each).keySet().iterator().next()) == Direction.BOTH;
+    }
+
+    /** What May depart's first list shows. */
+    private static Object departShows(StationSettingsWindow window)
+    {
+        return Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class)
+            .getSelectedItem());
+    }
+
+    /** May depart's One Way toward the side A of a station's one road, as its list words it. */
+    private static String towardA(TileKey square)
+    {
+        return Components.onTheEventThread(() -> I18n.f("autosetup.ui.menuRouteToward",
+            String.valueOf(session.getRoutes(square).values().iterator().next().getA())));
+    }
+
+    /** Every road's direction on the frozen railway but this square's, by square and road. */
+    private static Map<String, Direction> directionsBesides(TileKey square)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            Map<String, Direction> out = new java.util.TreeMap<>();
+
+            for (TileKey each : session.getGraph().getTiles().keySet())
+            {
+                if (!each.equals(square)) out.putAll(directionsOf(each));
+            }
+
+            return out;
+        });
+    }
+
+    /** The direction a May depart label names on a station's road. */
+    private static Direction meant(TileKey square, RouteId road, Object said)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automationui.TilePorts.Route route = session.getRoutes(square).get(road);
+
+            return I18n.t("autosetup.ui.menuRouteBoth").equals(said) ? Direction.BOTH
+                : I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getA())).equals(said) ? Direction.TOWARD_A
+                : Direction.TOWARD_B;
+        });
+    }
+
+    /** One square's roads' directions, by square and road. */
+    private static Map<String, Direction> directionsOf(TileKey square)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            Map<String, Direction> out = new java.util.TreeMap<>();
+
+            for (RouteId road : session.getRoutes(square).keySet())
+            {
+                out.put(square + "/" + road, session.getGraph().getDirection(square, road));
+            }
+
+            return out;
+        });
     }
 
     private static RouteId onlyRoad(TileKey square)
@@ -2292,26 +2574,18 @@ public class testStationSettingsWindow
         return Components.onTheEventThread(() -> session.getRoutes(square).keySet().iterator().next());
     }
 
-    /** May depart set to One Way, toward the road's side A, as a pick from its list; what that says. */
-    private static String chooseDepartTowardA(StationSettingsWindow window, TileKey square, RouteId road)
+    /** May depart set to One Way, toward the road's side A, as a pick from its list: the station runs so. */
+    private static void chooseDepartTowardA(StationSettingsWindow window, TileKey square, RouteId road)
     {
         javax.swing.JComboBox<?> depart = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+        String said = towardA(square);
 
-        assertTrue(StationDoors.live(window, "station.depart.0"), "precondition: May depart is gray beside track");
+        assertTrue(StationDoors.live(window, "station.depart.0"), "precondition: May depart is gray");
 
-        String towardA = Components.onTheEventThread(() ->
-        {
-            String said = I18n.f("autosetup.ui.menuRouteToward",
-                String.valueOf(session.getRoutes(square).get(road).getA()));
-
-            depart.setSelectedItem(said);
-
-            return said;
-        });
-
+        Components.onTheEventThread(() -> { depart.setSelectedItem(said); return null; });
         StationDoors.current(window);
 
-        return towardA;
+        assertEquals(wayOf(square, road), Direction.TOWARD_A, "May depart did not set the station");
     }
 
     /** The editor's drawn square for a tile of its page. */
@@ -2323,8 +2597,8 @@ public class testStationSettingsWindow
     }
 
     /**
-     * May depart sits under Changing direction, above both sections, as it belongs to neither box (Adam, FR-182); beside
-     * track it stays live while either box is ticked (D141), and grays with both off.
+     * May depart sits under Changing direction, above both sections, as it belongs to neither box (Adam, FR-182); it
+     * stays live while either box is ticked, and grays with both off.
      *
      * MUTATION: put the May depart row back under "Trains can pass through", and this fails.
      */
@@ -3003,12 +3277,11 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The picture draws no track arrows on the station's square, green or red, whether its track runs both ways or a
-     * setup file restricts it (Adam: "make sure that station popup also doesn't show the red/green arrows on the station
-     * track", OB-472): TopMainR1 stands on track that only runs northward, and keeps its way in from the south.
+     * The picture draws no green arrow on the station's square (Adam: "make sure that station popup also doesn't show
+     * the red/green arrows on the station track", OB-472), and a red one only at a side May depart shuts:
+     * TopMainR1 keeps its way in from the south, and one way toward its side A draws red at its side B alone.
      *
-     * MUTATION: have `StationPicture.Block.paintChildren` draw the arrow of each side the station's track meets, and this
-     * fails.
+     * MUTATION: have `StationPicture.show` give the station no marks, and this fails.
      */
     @Test(timeOut = 120000)
     public void testAOneWayStationShowsOnlyTheWayTrainsGo() throws Exception
@@ -3018,16 +3291,19 @@ public class testStationSettingsWindow
         StationSettingsWindow window = StationDoors.open(panel, square);
 
         assertWays(window, set("S"));
+        assertEquals(sidesDrawnIn(window, CLOSED_RED), set(), "a station leaving both ways wears a red arrow");
 
         StationDoors.close(window);
 
-        restrictAsAFileWould(square);
+        restrictAsAFileWould(square, Direction.TOWARD_A);
+
+        String shut = Components.onTheEventThread(() ->
+            String.valueOf(session.getRoutes(square).values().iterator().next().getB()));
 
         window = StationDoors.open(panel, square);
 
-        assertFalse(Components.onTheEventThread(() -> session.runsBothWays(square)), "precondition: not restricted");
-        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set(), "a restricted station wears a green arrow");
-        assertEquals(sidesDrawnIn(window, CLOSED_RED), set(), "a restricted station wears a red arrow");
+        assertEquals(sidesDrawnIn(window, ONE_WAY_GREEN), set(), "a one-way station wears a green arrow");
+        assertEquals(sidesDrawnIn(window, CLOSED_RED), set(shut), "a one-way station's red arrow is not at the side it shuts");
 
         StationDoors.close(window);
     }

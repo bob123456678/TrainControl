@@ -316,7 +316,7 @@ public class testTheAutonomyEditorsTriageNotes
     @Test(timeOut = 180000)
     public void testARefusedLengthLosesNoPressAwayFromIt() throws Exception
     {
-        ArrivalBox pick = new ArrivalBox();
+        ArrivalBox pick = new ArrivalBox(false);
         final TileKey at = pick.square;
         final String side = pick.side;
         StationSettingsWindow window = pick.window;
@@ -340,15 +340,16 @@ public class testTheAutonomyEditorsTriageNotes
 
     /**
      * A length that is taken applies on the press away from it, and the press still does what it presses: an
-     * arrive-from box toggles.  The window updates its boxes in place, so none is rebuilt under the pointer.  (May depart
-     * takes no press: an s88 square runs both ways, OB-472.)
+     * arrive-from box toggles, and a May depart list opens without an error.  The window updates its boxes and lists in
+     * place, so none is rebuilt under the pointer.
      *
-     * MUTATION: have `StationSettingsWindow.fillArrivals` rebuild its boxes on every reload, and the box does not toggle.
+     * MUTATION: have `StationSettingsWindow.fillArrivals` rebuild its boxes on every reload, and the box does not toggle;
+     * have `fillDepart` rebuild its lists on every reload, and the list does not open.
      */
     @Test(timeOut = 180000)
     public void testATakenLengthLosesNoPressAwayFromIt() throws Exception
     {
-        ArrivalBox pick = new ArrivalBox();
+        ArrivalBox pick = new ArrivalBox(true);
         final TileKey at = pick.square;
         final String side = pick.side;
         final StationSettingsWindow open = pick.window, window = open;
@@ -364,16 +365,42 @@ public class testTheAutonomyEditorsTriageNotes
 
         assertEquals(((Number) session.getPointProperty(at, "maxTrainLength")).intValue(), 300, "the press away did not apply the length");
         assertEquals(barred(at, side), !barred, "the press on the arrive-from box was lost");
+
+        // A press on May depart opens its list
+        Components.onTheEventThread(() -> { field.setText("301"); return null; });
+
+        java.util.List<Throwable> thrown = new java.util.concurrent.CopyOnWriteArrayList<>();
+        Thread.UncaughtExceptionHandler before = Thread.getDefaultUncaughtExceptionHandler();
+
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> thrown.add(e));
+
+        try
+        {
+            support.Mouse.press(StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class), java.awt.event.MouseEvent.BUTTON1);
+            Components.settle();
+
+            assertTrue(thrown.isEmpty(), "the press on May depart threw " + thrown);
+            assertTrue(Components.onTheEventThread(() -> StationDoors.part(open, "station.depart.0", javax.swing.JComboBox.class).isPopupVisible()),
+                "the press on May depart did not open its list");
+        }
+        finally
+        {
+            Thread.setDefaultUncaughtExceptionHandler(before);
+            support.Mouse.release(StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class), java.awt.event.MouseEvent.BUTTON1);
+            Components.onTheEventThread(() -> { StationDoors.part(open, "station.depart.0", javax.swing.JComboBox.class).hidePopup(); return null; });
+        }
+
+        assertEquals(((Number) session.getPointProperty(at, "maxTrainLength")).intValue(), 301, "the press on May depart did not apply the length");
     }
 
-    /** Station Settings open on the first station with an arrival side to shut. */
+    /** Station Settings open on the first station with an arrival side to shut, and a live May depart list if asked. */
     private final class ArrivalBox
     {
         TileKey square;
         StationSettingsWindow window;
         String side;
 
-        ArrivalBox()
+        ArrivalBox(boolean depart)
         {
             for (TileKey each : stations())
             {
@@ -382,7 +409,7 @@ public class testTheAutonomyEditorsTriageNotes
                 javax.swing.JCheckBox box = Components.find(window, javax.swing.JCheckBox.class,
                     b -> b.getName() != null && b.getName().startsWith("station.arrive.") && b.isEnabled());
 
-                if (box == null) continue;
+                if (box == null || depart && !StationDoors.live(window, "station.depart.0")) continue;
 
                 square = each;
                 side = box.getName().substring("station.arrive.".length());
@@ -390,7 +417,8 @@ public class testTheAutonomyEditorsTriageNotes
                 return;
             }
 
-            throw new AssertionError("precondition: no station has an arrival side to shut");
+            throw new AssertionError("precondition: no station has an arrival side to shut"
+                + (depart ? " and a May depart list" : ""));
         }
     }
 

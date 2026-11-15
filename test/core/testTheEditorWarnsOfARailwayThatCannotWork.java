@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
@@ -18,7 +17,6 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
-import org.traincontrol.util.I18n;
 import support.Diagrams;
 import support.Reflect;
 import support.SourceOf;
@@ -153,37 +151,24 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * An s88 square that does not run both ways is an ERROR naming it, and a click on it in the editor clears it to
-     * both ways, the error with it (OB-472).
+     * An arrow on an s88 square, as May depart or an older version's setup leaves it, raises no error (Adam: "have may
+     * depart just control the arrows on the station", OB-472).
      *
-     * MUTATION: leave the check out of the setup check, or let the click cycle an s88 square as plain track, and this
-     * fails.
+     * MUTATION: have the setup check raise an ERROR for an s88 square that does not run both ways, and this fails.
      */
     @Test
-    public void testAnS88SquareNotRunBothWaysIsAnErrorTheClickClears() throws Exception
+    public void testAnArrowOnAnS88SquareIsNoError() throws Exception
     {
         session.open(Arrays.asList(runOfTrack()));
-        session.initialize("OB472 restricted");
+        session.initialize("OB472 arrow");
 
         TileKey sensor = new TileKey("main", 1, 1);
 
-        // As a setup file carries it: no door of the editor writes it any more
         session.getStore().setTileDirection(sensor, session.getRoutes(sensor).keySet().iterator().next(),
             Direction.TOWARD_A);
         session.rebuild();
 
-        List<String> said = errorsSaid();
-
-        assertEquals(said.size(), 1, "not one error, about the s88 square running one way: " + said);
-        assertTrue(said.get(0).startsWith(session.describeTile(sensor) + " "), "the error does not name it: " + said);
-
-        final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel =
-            new org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel(session, "main", () -> { });
-
-        javax.swing.SwingUtilities.invokeAndWait(() -> panel.tileClicked(sensor, null, false));
-
-        assertTrue(session.runsBothWays(sensor), "one click on a one-way s88 square does not make it run both ways");
-        assertEquals(errorsSaid(), new ArrayList<>(), "the error stays after the square was clicked clear");
+        assertEquals(errorsSaid(), new ArrayList<>(), "an arrow on an s88 square is an error");
     }
 
     /**
@@ -225,209 +210,6 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     }
 
     /**
-     * One-Way Run passes over an s88 square on its way, setting the track either side of it, and the editor's menus
-     * and Station Settings are not offered a direction for one (OB-472).
-     *
-     * MUTATION: drop the s88 question from `recordAlong` or from `canCarryDirection`, and this fails.
-     */
-    @Test
-    public void testNoDoorGivesAnS88SquareADirection() throws Exception
-    {
-        session.open(Arrays.asList(deadEndRun()));
-        session.initialize("OB472 one way");
-
-        TileKey middle = new TileKey("main", 4, 1);
-
-        assertTrue(session.setOneWayRun(new TileKey("main", 1, 1), new TileKey("main", 7, 1)) > 0,
-            "precondition: no one-way run was set");
-
-        assertTrue(session.runsBothWays(middle), "One-Way Run gave the s88 square on its way a direction");
-
-        for (TileKey track : new TileKey[] {new TileKey("main", 2, 1), new TileKey("main", 6, 1)})
-        {
-            assertFalse(session.runsBothWays(track), "One-Way Run left the track at " + track + " running both ways");
-        }
-
-        assertFalse(session.canCarryDirection(middle), "the menus and Station Settings still offer an s88 square"
-            + " a direction");
-        assertTrue(session.canCarryDirection(new TileKey("main", 2, 1)),
-            "precondition: plain track can take no direction");
-    }
-
-    /**
-     * May depart is set on the track beside a station, which runs both ways (D141, Adam: "Keep it active if its
-     * relevant, in which case it controls the other track"): one way toward a side makes the track on the other side
-     * run toward the station, and Both Ways opens it again.  The station itself is never given a direction.
-     *
-     * MUTATION: have `setDepartureWay` keep trains from leaving by the side asked for in place of the other, and this
-     * fails.
-     */
-    @Test
-    public void testMayDepartSetsTheTrackBesideTheStation() throws Exception
-    {
-        openWithStations(deadEndRun());
-
-        TileKey middle = new TileKey("main", 4, 1);
-        RouteId road = roadOf(middle);
-        Side toward = session.getRoutes(middle).get(road).getA();
-
-        assertTrue(session.departureWayCanBeSet(middle, road), "precondition: the track beside takes no direction");
-        assertEquals(session.departureWay(middle, road), Direction.BOTH, "precondition: trains do not leave both ways");
-
-        session.setDepartureWay(middle, road, Direction.TOWARD_A);
-
-        assertEquals(session.departureWay(middle, road), Direction.TOWARD_A,
-            "trains do not leave toward " + toward + " only");
-        assertTrue(session.runsBothWays(middle), "May depart gave the station a direction");
-
-        TileKey west = new TileKey("main", 3, 1);
-        TileKey east = new TileKey("main", 5, 1);
-
-        assertTrue(session.runsBothWays(toward == Side.W ? west : east),
-            "the track trains leave over was made one way");
-        assertFalse(session.runsBothWays(toward == Side.W ? east : west), "the track on the other side runs both ways");
-
-        session.setDepartureWay(middle, road, Direction.BOTH);
-
-        assertEquals(session.departureWay(middle, road), Direction.BOTH, "Both Ways did not open the track again");
-        assertTrue(session.runsBothWays(west) && session.runsBothWays(east), "Both Ways left the track beside one way");
-    }
-
-    /**
-     * May depart can't be set where it would set nothing, and says the way out there is (D141: "Otherwise Grey it and
-     * show the only way out"): at the end of a line, and beside another s88 square.
-     *
-     * MUTATION: have `departureWayCanBeSet` ask for track on either side rather than on both, and this fails.
-     */
-    @Test
-    public void testMayDepartWithOneWayOutCannotBeSet() throws Exception
-    {
-        LayoutDiagram page = deadEndRun();
-
-        // An s88 square touching the far end
-        Diagrams.feedback(page, 8, 1, 8, 14);
-
-        openWithStations(page);
-
-        TileKey end = new TileKey("main", 1, 1);
-        RouteId road = roadOf(end);
-        Direction east = session.getRoutes(end).get(road).getA() == Side.E ? Direction.TOWARD_A : Direction.TOWARD_B;
-
-        assertFalse(session.departureWayCanBeSet(end, road), "May depart can be set at the end of a line");
-        assertEquals(session.departureWay(end, road), east, "May depart does not show the one way out");
-        assertEquals(session.whyDepartureWayIsFixed(end, road, session.sidesSentOutBy(end)),
-            I18n.f("autosetup.ui.flyDepartOnly", I18n.t("autosetup.ui.sideW")), "the (i) line does not say which side has nothing to set");
-
-        TileKey far = new TileKey("main", 7, 1);
-
-        assertFalse(session.departureWayCanBeSet(far, roadOf(far)),
-            "May depart can be set beside another s88 square");
-    }
-
-    /**
-     * May depart sets only the plain track from a station to the next switch, so a station right beside a switch's
-     * branch has nothing to set on that side: whatever is picked, no road of the switch changes (a switch shares its
-     * toe between its roads, so writing one would close or open the other branch's traffic), and the row is grayed.
-     *
-     * MUTATION: let `departureWayCanBeSet` take a switch beside as track to set, writing its road, and this fails.
-     */
-    @Test
-    public void testMayDepartBesideASwitchWritesNoSwitch() throws Exception
-    {
-        openWithStations(stationBesideASwitch());
-
-        TileKey station = new TileKey("main", 4, 1);
-        TileKey turnout = new TileKey("main", 3, 1);
-        RouteId road = roadOf(station);
-
-        everyRoad(turnout, Direction.BOTH);
-
-        Map<RouteId, Direction> before = waysOf(turnout);
-
-        for (Direction way : Direction.values())
-        {
-            session.setDepartureWay(station, road, way);
-
-            assertEquals(waysOf(turnout), before, "May depart " + way + " changed the switch beside the station");
-        }
-
-        assertFalse(session.departureWayCanBeSet(station, road), "May depart is live beside a switch");
-    }
-
-    /**
-     * May depart shows the way out the built railway has, so a limit set farther out than the track beside shows as
-     * that one way, grayed, and the (i) line says where it is (Adam: "it needs to look farther out, not just adjacent").
-     * While it is live, a pick on the run that ends at the switch leaves the switch alone.
-     *
-     * MUTATION: have `departureWay` read the square beside the station again, and this fails.
-     */
-    @Test
-    public void testMayDepartShowsALimitFartherOut() throws Exception
-    {
-        openWithStations(platformWithTwoApproaches());
-
-        TileKey turnout = new TileKey("main", 3, 1);
-
-        everyRoad(turnout, Direction.BOTH);
-
-        // A live pick on the run that ends at the switch leaves the switch alone
-        Map<RouteId, Direction> before = waysOf(turnout);
-        TileKey station = new TileKey("main", 5, 1);
-
-        session.setDepartureWay(station, roadOf(station), toward(station, roadOf(station), Side.E));
-        assertEquals(session.departureWay(station, roadOf(station)), toward(station, roadOf(station), Side.E),
-            "precondition: the pick did not take");
-        assertEquals(waysOf(turnout), before, "a pick on the run ending at a switch changed the switch");
-        session.setDepartureWay(station, roadOf(station), Direction.BOTH);
-
-        // Closed farther out: the switch past the track beside, as a setup file may carry it
-        limitedFartherOut(station, () -> everyRoad(turnout, Direction.NONE), Side.E, Side.W, turnout);
-
-        assertTrue(session.runsBothWays(new TileKey("main", 4, 1)), "precondition: the track beside is one way");
-    }
-
-    /**
-     * A way out leads to another station, so May depart looks past an s88 square that is no station: track one way back
-     * beyond it keeps trains from leaving that way, as "What's allowed here" says, though a train could reach the square.
-     *
-     * MUTATION: have `sidesSentOutBy` count any edge leaving by the side, as far as the next s88 square, and this fails.
-     */
-    @Test
-    public void testMayDepartLooksPastTheNextS88Square() throws Exception
-    {
-        openWithStations(rowOfSquares("FSFSFSF"));
-
-        TileKey passing = new TileKey("main", 5, 1), beyond = new TileKey("main", 6, 1);
-
-        session.setStation(passing, false);
-
-        // One way back toward the s88 square that is no station, beyond the track May depart sets
-        limitedFartherOut(new TileKey("main", 3, 1),
-            () -> session.setDirection(beyond, roadOf(beyond), toward(beyond, roadOf(beyond), Side.W)), Side.W, Side.E,
-            passing);
-    }
-
-    /**
-     * A stop-only station that trains from this one may not arrive at is no way out either, though stations lie past
-     * it: May depart never runs through it, as "What's allowed here" doesn't, so the two agree.
-     *
-     * MUTATION: have `GraphReducer`'s path search run through a stop-only station, and this fails.
-     */
-    @Test
-    public void testMayDepartStopsAtAStopOnlyStation() throws Exception
-    {
-        openWithStations(rowOfSquares("FSFSFSF"));
-
-        TileKey stopOnly = new TileKey("main", 5, 1);
-
-        limitedFartherOut(new TileKey("main", 3, 1), () ->
-        {
-            session.setStopsAndRunsThrough(stopOnly, true, false);
-            session.setBarredArrivals(stopOnly, java.util.EnumSet.of(Side.W));
-        }, Side.W, Side.E, stopOnly);
-    }
-
-    /**
      * Test a Path ends a run at a stop-only station and never runs through one (FR-111), as the railway refuses it.
      *
      * MUTATION: drop `stopOnlyTiles()` from `AutonomySession.testPath`, and this fails.
@@ -448,121 +230,11 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         assertNotNull(session.testPath(stopOnly, past), "Test a Path does not start a run at a stop-only station");
     }
 
-    /**
-     * Plain track with a station at each end is set from either one, and each one's (i) line names the other: one
-     * station closing its side lets the other leave into the track, and the other closing its own opens it again.
-     *
-     * MUTATION: have `departureSharedWith` say nothing, and this fails.
-     */
-    @Test
-    public void testMayDepartOnSharedTrackNamesTheOtherStation() throws Exception
-    {
-        openWithStations(rowOfSquares("FSFSSFSF"));
-
-        TileKey west = new TileKey("main", 3, 1), east = new TileKey("main", 6, 1);
-        RouteId westRoad = roadOf(west);
-        RouteId eastRoad = roadOf(east);
-
-        assertTrue(session.departureWayCanBeSet(west, westRoad) && session.departureWayCanBeSet(east, eastRoad),
-            "precondition: May depart is gray on plain track between stations");
-        assertTrue(session.departureSharedWith(west, westRoad).contains(I18n.f("autosetup.ui.flyDepartShared",
-            I18n.t("autosetup.ui.sideE"), session.describeTile(east))), "the (i) line does not name the station to the east");
-        assertTrue(session.departureSharedWith(east, eastRoad).contains(I18n.f("autosetup.ui.flyDepartShared",
-            I18n.t("autosetup.ui.sideW"), session.describeTile(west))), "the (i) line does not name the station to the west");
-
-        session.setDepartureWay(west, westRoad, toward(west, westRoad, Side.W));
-
-        assertEquals(session.departureWay(west, westRoad), toward(west, westRoad, Side.W), "precondition: not set");
-        assertEquals(session.departureWay(east, eastRoad), Direction.BOTH, "closing a side kept the other station in");
-
-        session.setDepartureWay(east, eastRoad, toward(east, eastRoad, Side.E));
-
-        assertEquals(session.departureWay(west, westRoad), Direction.BOTH,
-            "the other station's May depart did not set the shared track");
-        assertEquals(session.departureWay(east, eastRoad), toward(east, eastRoad, Side.E), "the second pick was lost");
-    }
-
-    /**
-     * A station that still carries a direction from an old setup keeps May depart grayed, its (i) line pointing at the
-     * click that clears it: the built railway honors the stale arrow, so a pick would not show.
-     *
-     * MUTATION: drop the station's own arrow from `whyDepartureWayIsFixed`, and this fails.
-     */
-    @Test
-    public void testMayDepartIsGrayWhileTheStationKeepsAnArrow() throws Exception
-    {
-        openWithStations(deadEndRun());
-
-        TileKey middle = new TileKey("main", 4, 1);
-        RouteId road = roadOf(middle);
-
-        assertTrue(session.departureWayCanBeSet(middle, road), "precondition: May depart is gray");
-
-        // As a setup file carries it: no door of the editor writes it any more
-        session.getStore().setTileDirection(middle, road, Direction.TOWARD_A);
-        session.rebuild();
-
-        assertFalse(session.departureWayCanBeSet(middle, road), "May depart is live on a station with an arrow");
-        assertEquals(session.whyDepartureWayIsFixed(middle, road, session.sidesSentOutBy(middle)),
-            I18n.f("autosetup.ui.sensorClickToClear", session.describeTile(middle)), "the (i) line does not say to click it");
-    }
-
-    /**
-     * A setup saved while May depart still offered "Closed - No Trains" carries the station's road closed (D144: "A:
-     * Drop Closed"): it loads with the OB-472 error, and May depart grayed, showing no way out and pointing at the
-     * click that clears it, never silently.
-     *
-     * MUTATION: drop the station's own arrow from `whyDepartureWayIsFixed`, and this fails.
-     */
-    @Test
-    public void testASetupSavedWithClosedLoadsWithTheError() throws Exception
-    {
-        LayoutDiagram page = deadEndRun();
-
-        openWithStations(page);
-
-        TileKey middle = new TileKey("main", 4, 1);
-        RouteId road = roadOf(middle);
-
-        // What the old Closed wrote: the station's own road closed
-        session.getStore().setTileDirection(middle, road, Direction.NONE);
-        session.save();
-
-        AutonomySession reopened = new AutonomySession(layout);
-        reopened.open(Arrays.asList(page));
-
-        assertTrue(reopened.check().stream().anyMatch(f -> org.traincontrol.automationui.AutonomyChecks.SENSOR_NOT_BOTH_WAYS.equals(f.getMessageKey())
-            && middle.equals(f.getAbout())), "the closed station loads without the error");
-        assertEquals(reopened.departureWay(middle, road), Direction.NONE, "May depart does not show no way out");
-        assertEquals(reopened.whyDepartureWayIsFixed(middle, road, reopened.sidesSentOutBy(middle)),
-            I18n.f("autosetup.ui.sensorClickToClear", reopened.describeTile(middle)), "the (i) line does not say to click it");
-    }
-
-    /** `platformWithTwoApproaches` with its platform moved up against the switch's branch, to (4,1). */
-    private LayoutDiagram stationBesideASwitch() throws IOException
-    {
-        LayoutDiagram page = platformWithTwoApproaches();
-
-        Diagrams.feedback(page, 4, 1, 9, 15);
-        Diagrams.straight(page, 5, 1);
-
-        return page;
-    }
-
-    private Map<RouteId, Direction> waysOf(TileKey tile)
-    {
-        Map<RouteId, Direction> out = new java.util.LinkedHashMap<>();
-
-        for (RouteId each : session.getRoutes(tile).keySet()) out.put(each, session.getGraph().getDirection(tile, each));
-
-        return out;
-    }
-
-    /** Opens one page as a new setup with every s88 square a station, so May depart has somewhere to send a train. */
+    /** Opens one page as a new setup with every s88 square a station. */
     private void openWithStations(LayoutDiagram page) throws IOException
     {
         session.open(Arrays.asList(page));
-        session.initialize("D141");
+        session.initialize("stations");
 
         for (TileKey each : new ArrayList<>(session.getReducer().getPoints().keySet())) session.setStation(each, true);
     }
@@ -578,44 +250,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         return page;
     }
 
-    /**
-     * May depart on a station is live with trains leaving both ways until `limit` runs; then it shows only the way out
-     * by `out`, grayed, and its (i) says the way by `closed` is limited farther out, at `where`.
-     */
-    private void limitedFartherOut(TileKey station, Runnable limit, Side out, Side closed, TileKey where)
-    {
-        RouteId road = roadOf(station);
-
-        assertEquals(session.departureWay(station, road), Direction.BOTH, "precondition: trains do not leave both ways");
-        assertTrue(session.departureWayCanBeSet(station, road), "precondition: May depart is gray");
-
-        limit.run();
-
-        assertEquals(session.departureWay(station, road), toward(station, road, out),
-            "May depart does not show the one way out");
-        assertFalse(session.departureWayCanBeSet(station, road), "May depart is live with a limit farther out");
-        assertEquals(session.whyDepartureWayIsFixed(station, road, session.sidesSentOutBy(station)),
-            I18n.f("autosetup.ui.flyDepartFarther", I18n.t("autosetup.ui.side" + closed), session.describeTile(where)),
-            "the (i) line does not say where the limit is");
-    }
-
-    private void everyRoad(TileKey tile, Direction way)
-    {
-        for (RouteId each : session.getRoutes(tile).keySet()) session.setDirection(tile, each, way);
-    }
-
-    private RouteId roadOf(TileKey square)
-    {
-        return session.getRoutes(square).keySet().iterator().next();
-    }
-
-    /** The One Way pick toward a side of a station's road. */
-    private Direction toward(TileKey station, RouteId road, Side side)
-    {
-        return session.getRoutes(station).get(road).getA() == side ? Direction.TOWARD_A : Direction.TOWARD_B;
-    }
-
-    /** What the setup check says about s88 squares not running both ways, as the editor words it (OB-472). */
+    /** The setup check's errors that name an s88 square, as the editor words them. */
     private List<String> errorsSaid()
     {
         List<String> said = new ArrayList<>();

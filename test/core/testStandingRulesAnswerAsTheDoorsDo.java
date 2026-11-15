@@ -483,7 +483,9 @@ public class testStandingRulesAnswerAsTheDoorsDo
                                 {
                                     Point copy = railway.getPoint(name);
 
-                                    if (copy != null && (copy.getCopyFacing() == null || copy.getCopyFacing().equals(each.getKey())))
+                                    // A square's only copy has no facing: it is sent out by the sides its edges leave by
+                                    if (copy != null && (copy.getCopyFacing() == null ? rules.waysOut().contains(each.getKey())
+                                        : copy.getCopyFacing().equals(each.getKey())))
                                     {
                                         did.addAll(seen.getOrDefault("from " + name, java.util.Collections.emptySet()));
                                     }
@@ -518,6 +520,54 @@ public class testStandingRulesAnswerAsTheDoorsDo
             assertTrue(cells > 300, "precondition: only " + cells + " cells were compared");
 
             assertTrue(differ.isEmpty(), differ.size() + " cells differ from the doors: " + differ);
+        }
+        finally
+        {
+            live.close();
+        }
+    }
+
+    /**
+     * On every station of the live snapshot, Sent from here says trains may be sent out by hand at exactly the sides the
+     * path search sends them out by (`waysOut`): a square's only copy, which has no facing, is named by the side its
+     * edges leave by, not the side trains arrive from.
+     *
+     * MUTATION: have `LayoutStandingRules.leavesBy` count every edge of a copy with no facing, and this fails.
+     */
+    @Test(timeOut = 300000)
+    public void testSentFromHereNamesTheSidesTrainsLeaveBy() throws Exception
+    {
+        support.Scenario live = support.Scenario.open("live-snapshot");
+
+        try
+        {
+            AutonomySession setup = live.getSession();
+            Layout railway = live.build();
+            List<String> wrong = new ArrayList<>();
+            int stations = 0;
+
+            for (TileKey square : setup.getStationIndex().squares())
+            {
+                if (!setup.getStore().isStation(square)) continue;
+
+                StandingRules rules = railway.standingRulesAt(new ArrayList<>(setup.getStationIndex().pointNamesAt(square)));
+                java.util.Set<String> sent = new java.util.TreeSet<>();
+
+                for (Map.Entry<String, StandingRules.Cell> cell : rules.cells(Row.SENT_FROM, true).entrySet())
+                {
+                    if (cell.getValue().getAnswer() != Answer.NO) sent.add(cell.getKey());
+                }
+
+                stations++;
+
+                if (!sent.equals(new java.util.TreeSet<>(rules.waysOut())))
+                {
+                    wrong.add(setup.describeTile(square) + " says " + sent + ", trains leave by " + rules.waysOut());
+                }
+            }
+
+            assertTrue(stations > 30, "precondition: only " + stations + " stations");
+            assertEquals(wrong, new ArrayList<>(), "Sent from here names a side trains do not leave by");
         }
         finally
         {

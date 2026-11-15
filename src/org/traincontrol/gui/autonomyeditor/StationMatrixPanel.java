@@ -102,10 +102,16 @@ final class StationMatrixPanel extends JPanel
         return notices;
     }
 
+    /** How far the notices run past the room kept for them, which the window's spare room gives up (MT-961). */
+    int noticesOverflow()
+    {
+        return Math.max(0, notices.getLayout().preferredLayoutSize(notices).height - kept);
+    }
+
+    private final int kept = roomFor(4);
+
     private final JPanel notices = new JPanel()
     {
-        private final int kept = roomFor(4);
-
         @Override
         public Dimension getPreferredSize()
         {

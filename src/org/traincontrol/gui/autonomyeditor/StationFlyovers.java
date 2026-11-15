@@ -87,14 +87,11 @@ final class StationFlyovers
             : nowThenChange(I18n.f("autosetup.ui.flyEntryNow", signals), I18n.t("autosetup.ui.flyEntryChange"));
     }
 
-    /**
-     * The (i) line of May depart: what the dropdown says, why it is grayed (or null), and which stations share its
-     * track.
-     */
-    static String depart(String direction, String why, String shared)
+    /** The (i) line of May depart: what the dropdown says, and why it is grayed (or null). */
+    static String depart(String direction, String why)
     {
-        return nowThenChange(I18n.f("autosetup.ui.flyDepartNow", direction), why != null ? why
-            : I18n.t("autosetup.ui.flyDepartChange") + (shared == null ? "" : "  " + shared));
+        return nowThenChange(I18n.f("autosetup.ui.flyDepartNow", direction),
+            why != null ? why : I18n.t("autosetup.ui.flyDepartChange"));
     }
 
     static String turning(boolean may, boolean must)

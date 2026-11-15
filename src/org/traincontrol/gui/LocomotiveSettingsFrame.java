@@ -1419,7 +1419,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                             if (loc == target && url.equals(shownPicture))
                             {
                                 picture.setIcon(shown);
-                                source.setText(from);
+                                source.setText(shown == null ? null : from);
                             }
                         });
                     });

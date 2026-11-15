@@ -418,19 +418,9 @@ public class GraphReducer
         Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed, Set<TileKey> stopOnly,
         Set<Side> startArrivals)
     {
-        if (!points.containsKey(to)) return null;
+        if (!points.containsKey(from) || !points.containsKey(to)) return null;
 
-        if (from.equals(to)) return points.containsKey(from) ? new ArrayList<ReducedEdge>() : null;
-
-        return findPathTo(from, to::equals, mayTurn, mustTurn, barred, closed, stopOnly, startArrivals);
-    }
-
-    /** The same, to the nearest square `to` accepts: one search where any of several will do. */
-    public List<ReducedEdge> findPathTo(TileKey from, java.util.function.Predicate<TileKey> to, Set<TileKey> mayTurn,
-        Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed, Set<TileKey> stopOnly,
-        Set<Side> startArrivals)
-    {
-        if (!points.containsKey(from)) return null;
+        if (from.equals(to)) return new ArrayList<ReducedEdge>();
 
         // The search state is a Point AND the side the train reached it by: what a train may do next depends on which
         // way it is pointing.  With no starting sides the start has no arrival side: the question is whether the TRACK
@@ -503,7 +493,7 @@ public class GraphReducer
                 // the square and returns before the closure is consulted.
                 if (closed != null && closed.contains(edge.getEnd())) continue;
 
-                if (to.test(edge.getEnd())
+                if (edge.getEnd().equals(to)
                     && !refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
                 {
                     List<ReducedEdge> path = new ArrayList<>();

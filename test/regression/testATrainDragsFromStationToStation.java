@@ -960,13 +960,10 @@ public class testATrainDragsFromStationToStation
         }
     }
 
-    /** Closes Station Settings, on a station a click opens them for: one running both ways (OB-472). */
+    /** Closes Station Settings, which a click on a station opens (OB-472). */
     private static void aClickOpensTheSettingsOf(TileKey station) throws Exception
     {
         closeStationSettings();
-
-        assertTrue(Components.onTheEventThread(() -> session.runsBothWays(station)),
-            "precondition: a click on the station would clear its arrows rather than open its settings");
     }
 
     /** Closes a Station Settings window a click opened. */

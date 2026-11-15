@@ -1205,17 +1205,7 @@ public class AutonomyEditorPanel extends JPanel
 
         TileKey shows = session.getCaptionTarget(chosenFinding);
 
-        TileKey square = shows != null ? shows : chosenFinding;
-
-        // A restricted s88 square is cleared by a click on it, which no window offers (OB-472)
-        if (session.isSensorSquare(square) && !session.runsBothWays(square))
-        {
-            say(hint, I18n.f("autosetup.ui.sensorClickToClear", describeTile(square)));
-
-            return null;
-        }
-
-        return openStationSettings(square);
+        return openStationSettings(shows != null ? shows : chosenFinding);
     }
 
     /** The square of the finding last clicked, or null. */
@@ -5175,11 +5165,8 @@ public class AutonomyEditorPanel extends JPanel
 
         TileKey target = leaderOf(tile);
 
-        // An s88 square's click changes it only where it does not yet run both ways (OB-472), out of service or not
-        if (session.isSensorSquare(target)) return !session.runsBothWays(target);
-
-        // Nor stationless track (OB-353), which draws no arrows
-        if (isALink(target) || session.reachesNoStation(target)) return false;
+        // An s88 square's click opens Station Settings (OB-472); nor a link, nor stationless track (OB-353)
+        if (session.isSensorSquare(target) || isALink(target) || session.reachesNoStation(target)) return false;
 
         Map<RouteId, TilePorts.Route> routes = session.getRoutes(target);
 
@@ -5197,9 +5184,7 @@ public class AutonomyEditorPanel extends JPanel
     /** Whether a click here only opens Station Settings, a read, which a run does not stop (OB-472). */
     private boolean clickOnlyOpens(TileKey tile)
     {
-        TileKey target = leaderOf(tile);
-
-        return session.isSensorSquare(target) && session.runsBothWays(target);
+        return session.isSensorSquare(leaderOf(tile));
     }
 
     /** Whether a square is a link, which has no direction of its own. */
@@ -5213,7 +5198,7 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Left-click: cycles both ways, one way, the other, closed, and says what it became; a switch, crossing or double
      * curve steps through its arms (`cycleBranching`, `cycleCrossing`).  It lands on the whole run.  An s88 square
-     * goes straight to both ways, and once there opens Station Settings (OB-472).
+     * opens Station Settings instead (OB-472).
      */
     private void cycle(TileKey tile)
     {
@@ -5222,17 +5207,6 @@ public class AutonomyEditorPanel extends JPanel
         if (clickOnlyOpens(target))
         {
             openStationSettings(target);
-            return;
-        }
-
-        if (session.isSensorSquare(target))
-        {
-            session.setDirection(Collections.singleton(target), Direction.BOTH);
-
-            say(hint, I18n.f("autosetup.ui.sensorClearedToBothWays", describeTile(target)));
-
-            showRestrictionsIfHidden();
-            annotationsChanged();
             return;
         }
 
@@ -6283,15 +6257,6 @@ public class AutonomyEditorPanel extends JPanel
         });
 
         return item;
-    }
-
-    /** Sets which way trains may leave a station along a road, on the track beside it (D141). */
-    void setDepartureWay(TileKey station, RouteId road, Direction way)
-    {
-        session.setDepartureWay(station, road, way);
-
-        refresh();
-        annotationsChanged();
     }
 
     /** Sets which way trains may run over a square, on the run it belongs to. */
