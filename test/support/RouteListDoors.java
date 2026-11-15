@@ -244,6 +244,232 @@ public final class RouteListDoors
         return out;
     }
 
+    /** What the route's right-click menu offers: Enable or Disable Auto Execution, as it reads, or null for neither. */
+    public static String autoExecutionOffered(TrainControlUI ui, String route)
+    {
+        JPopupMenu menu = rightClick(ui, route);
+
+        try
+        {
+            for (String key : new String[] {"route.ui.menuEnableAutoExecution", "route.ui.menuDisableAutoExecution"})
+            {
+                if (Components.withText(menu, I18n.t(key)) != null) return I18n.t(key);
+            }
+
+            return null;
+        }
+        finally
+        {
+            Mouse.closeMenus();
+        }
+    }
+
+    /** Chooses Enable or Disable Auto Execution from the route's right-click menu, and waits for the route to follow. */
+    public static void switchAutoExecution(TrainControlUI ui, String route, boolean on)
+    {
+        String item = I18n.t(on ? "route.ui.menuEnableAutoExecution" : "route.ui.menuDisableAutoExecution");
+        AbstractButton found = Components.withText(rightClick(ui, route), item);
+
+        if (found == null) throw new AssertionError("the right-click menu of " + route + " has no " + item);
+
+        Mouse.choose((javax.swing.JMenuItem) found);
+
+        if (!Components.waitFor(() -> armed(ui, route) == on, 10000))
+        {
+            throw new AssertionError(item + " did not reach " + route);
+        }
+    }
+
+    private static boolean armed(TrainControlUI ui, String route)
+    {
+        org.traincontrol.base.Route r = ui.getModel().getRoute(route);
+
+        return r != null && r.isEnabled();
+    }
+
+    /**
+     * MT-1001's set-up and step 1, through the doors: two routes on sensors made, the Autonomy Settings tab's Toggle
+     * specified routes ticked and only the first picked in its list, the box then left as `toggled` says, and by hand
+     * the first disabled and the second enabled from their menus.  Closing deletes both and puts the routes' and the
+     * list's settings back.
+     */
+    public static final class HandSwitched implements AutoCloseable
+    {
+        /** The route the list holds, and the one it leaves out. */
+        private final String listed, unlisted;
+
+        private final TrainControlUI ui;
+        private final java.util.Map<String, Boolean> armedWere = new java.util.HashMap<>();
+        private final boolean toggleWas;
+        private final java.util.List<Integer> listWas;
+
+        /**
+         * Switches MT-1001's routes by hand, presses a run's `door` through `run`, and checks what R1's and R2's menus
+         * offer once it has started: as the list holds them with the box `toggled`, as switched by hand without.
+         */
+        public static void runAndRead(TrainControlUI ui, boolean toggled, String door,
+            java.util.concurrent.Callable<?> run) throws Exception
+        {
+            try (HandSwitched routes = new HandSwitched(ui, "MT-1001", toggled))
+            {
+                run.call();
+
+                String enable = I18n.t("route.ui.menuEnableAutoExecution");
+                String disable = I18n.t("route.ui.menuDisableAutoExecution");
+                java.util.List<String> read = routes.offered();
+                java.util.List<String> held = toggled ? java.util.Arrays.asList(disable, enable)
+                    : java.util.Arrays.asList(enable, disable);
+
+                if (!read.equals(held))
+                {
+                    throw new AssertionError("after " + door + (toggled ? ", R1 (listed) and R2 (not) do not read as the"
+                        + " list holds them: " : " with Toggle specified routes unticked, R1 and R2 do not read as"
+                        + " switched by hand: ") + read);
+                }
+            }
+        }
+
+        private HandSwitched(TrainControlUI ui, String prefix, boolean toggled) throws Exception
+        {
+            this.ui = ui;
+            this.listed = prefix + " R1";
+            this.unlisted = prefix + " R2";
+
+            org.traincontrol.model.ViewListener model = ui.getModel();
+
+            this.toggleWas = model.getAutoLayout().isActivateRoutes();
+            this.listWas = new java.util.ArrayList<>(model.getAutoLayout().getActivateRouteIDs());
+
+            for (String name : model.getRouteList()) this.armedWere.put(name, model.getRoute(name).isEnabled());
+
+            int sensor = 4795;
+
+            for (String name : new String[] {this.listed, this.unlisted})
+            {
+                if (!model.newRoute(name, new java.util.ArrayList<>(), sensor++,
+                    org.traincontrol.base.Route.s88Triggers.CLEAR_THEN_OCCUPIED, false, null))
+                {
+                    throw new AssertionError("precondition: the route " + name + " was not made");
+                }
+            }
+
+            Components.onTheEventThread(() ->
+            {
+                ui.refreshRouteList();
+
+                return null;
+            });
+
+            Components.settle();
+
+            // A failure here still leaves no route behind, as `close` would not run
+            try
+            {
+                listOnly(this.listed, toggled);
+
+                switchAutoExecution(ui, this.listed, false);
+                switchAutoExecution(ui, this.unlisted, true);
+            }
+            catch (Exception | Error e)
+            {
+                close();
+
+                throw e;
+            }
+        }
+
+        /** Ticks the box, clicks the route's row in the list, and leaves the box as `toggled` says. */
+        private void listOnly(String route, boolean toggled) throws Exception
+        {
+            final javax.swing.JCheckBox box = (javax.swing.JCheckBox) Reflect.get(TrainControlUI.class, this.ui,
+                "toggleSpecifiedRoutes");
+            final javax.swing.JList<?> list = (javax.swing.JList<?>) Reflect.get(TrainControlUI.class, this.ui,
+                "autoRouteList");
+            final int id = this.ui.getModel().getRouteId(route);
+
+            Components.select(box);
+
+            tick(box, true);
+
+            final Rectangle row = Components.onTheEventThread(() ->
+            {
+                for (int at = 0; at < list.getModel().getSize(); at++)
+                {
+                    Object r = list.getModel().getElementAt(at);
+
+                    if (r instanceof org.traincontrol.base.Route && ((org.traincontrol.base.Route) r).getName().equals(route))
+                    {
+                        list.ensureIndexIsVisible(at);
+
+                        return list.getCellBounds(at, at);
+                    }
+                }
+
+                return null;
+            });
+
+            if (row == null) throw new AssertionError("precondition: the Autonomy Settings list has no " + route);
+
+            Mouse.clickAt(list, new java.awt.Point((int) row.getCenterX(), (int) row.getCenterY()));
+
+            if (!Components.waitFor(() -> java.util.Collections.singletonList(id).equals(
+                this.ui.getModel().getAutoLayout().getActivateRouteIDs()), 10000))
+            {
+                throw new AssertionError("a click on " + route + " in the Autonomy Settings list did not list it alone: "
+                    + this.ui.getModel().getAutoLayout().getActivateRouteIDs());
+            }
+
+            tick(box, toggled);
+        }
+
+        private void tick(javax.swing.JCheckBox box, boolean on)
+        {
+            if (this.ui.getModel().getAutoLayout().isActivateRoutes() == on) return;
+
+            Mouse.click(box);
+
+            if (!Components.waitFor(() -> this.ui.getModel().getAutoLayout().isActivateRoutes() == on, 10000))
+            {
+                throw new AssertionError("a click on Toggle specified routes did not " + (on ? "tick" : "untick") + " it");
+            }
+        }
+
+        /** What the listed and the unlisted route's menus offer, in that order. */
+        private java.util.List<String> offered()
+        {
+            return java.util.Arrays.asList(autoExecutionOffered(this.ui, this.listed),
+                autoExecutionOffered(this.ui, this.unlisted));
+        }
+
+        @Override
+        public void close()
+        {
+            org.traincontrol.model.ViewListener model = this.ui.getModel();
+
+            model.deleteRoute(this.listed);
+            model.deleteRoute(this.unlisted);
+
+            model.getAutoLayout().setActivateRouteIDs(this.listWas);
+            model.getAutoLayout().setActivateRoutes(this.toggleWas);
+
+            for (java.util.Map.Entry<String, Boolean> was : this.armedWere.entrySet())
+            {
+                org.traincontrol.marklin.MarklinRoute r = (org.traincontrol.marklin.MarklinRoute) model.getRoute(was.getKey());
+
+                if (r == null || r.isEnabled() == was.getValue()) continue;
+
+                if (was.getValue()) r.enable(); else r.disable();
+            }
+
+            Components.onTheEventThread(() ->
+            {
+                this.ui.refreshRouteList();
+
+                return null;
+            });
+        }
+    }
+
     /** Whether Duplicate Route's worker, which syncs with the station after the copy is made, is still going. */
     public static boolean duplicating()
     {

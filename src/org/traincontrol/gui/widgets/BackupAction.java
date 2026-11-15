@@ -126,13 +126,15 @@ public final class BackupAction
             // editor's Cancel could not undo it (discardEdits re-reads the file just written).  Callers fold the run
             // first.  A file that will not save goes in as last saved, and the backup says so: the update and the
             // restore stop on an incomplete backup.
-            String why = this.ui.saveState(false, false);
+            java.util.Map<String, String> notSaved = new java.util.LinkedHashMap<>();
 
-            if (why != null) unsaved.add(I18n.f("ui.backupHasItAsLastSaved", TrainControlUI.DATA_FILE_NAME, why));
+            notSaved.put(TrainControlUI.DATA_FILE_NAME, this.ui.saveState(false, false));
+            notSaved.put(MarklinControlStation.DATA_FILE_NAME, this.ui.getModel().saveState(false));
+            notSaved.values().removeIf(why -> why == null);
 
-            if ((why = this.ui.getModel().saveState(false)) != null)
+            for (java.util.Map.Entry<String, String> e : notSaved.entrySet())
             {
-                unsaved.add(I18n.f("ui.backupHasItAsLastSaved", MarklinControlStation.DATA_FILE_NAME, why));
+                unsaved.add(I18n.f("ui.backupHasItAsLastSaved", e.getKey(), e.getValue()));
             }
 
             // One archive, holding all of it (FR-015): the autonomy setup is keyed by PAGE ID and those ids are defined
@@ -229,7 +231,23 @@ public final class BackupAction
 
             backupArchive = freeArchiveName(prefixForBackup());
 
-            unsaved.addAll(Util.zipInto(backupArchive, state));
+            List<String> notCopied = Util.zipInto(backupArchive, state);
+
+            // Not saved and not copied either: not in the archive at all, which "as last saved" would deny
+            for (String name : notSaved.keySet())
+            {
+                String failure = notCopied.stream().filter(f -> f.startsWith(name + ": ")).findFirst().orElse(null);
+
+                if (failure == null) continue;
+
+                notCopied.remove(failure);
+
+                unsaved.set(unsaved.indexOf(I18n.f("ui.backupHasItAsLastSaved", name, notSaved.get(name))),
+                    I18n.f("ui.backupNotSavedOrCopied", name, I18n.t(failure.contains("AccessDeniedException")
+                        ? "ui.reasonNoPermission" : "ui.reasonInUse")));
+            }
+
+            unsaved.addAll(notCopied);
 
             made[0] = backupArchive;
         }
