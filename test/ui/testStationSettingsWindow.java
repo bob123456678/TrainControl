@@ -1996,21 +1996,9 @@ public class testStationSettingsWindow
     @Test(timeOut = 120000)
     public void testMayDepartSetsOnlyTheStationsSquare() throws Exception
     {
-        List<TileKey> stations = Components.onTheEventThread(() ->
-        {
-            List<TileKey> out = new java.util.ArrayList<>();
-
-            for (TileKey each : session.getReducer().getPoints().keySet())
-            {
-                if (PAGE.equals(each.getPage()) && session.getStore().isStation(each)) out.add(each);
-            }
-
-            return out;
-        });
-
         int picks = 0;
 
-        for (TileKey square : stations)
+        for (TileKey square : stationsOn(PAGE))
         {
             List<RouteId> roads = Components.onTheEventThread(() -> new java.util.ArrayList<>(session.getRoutes(square)
                 .keySet()));
@@ -2063,8 +2051,6 @@ public class testStationSettingsWindow
             StationSettingsWindow window = StationDoors.open(panel, square);
 
             chooseDepartTowardA(window, square, road);
-
-            assertEquals(wayOf(square, road), Direction.TOWARD_A, "May depart did not set the station");
 
             StationDoors.close(window);
 
@@ -2130,8 +2116,6 @@ public class testStationSettingsWindow
 
         chooseDepartTowardA(window, square, road);
 
-        assertEquals(wayOf(square, road), Direction.TOWARD_A, "precondition: May depart did not set the station");
-
         Components.onTheEventThread(() -> { editor.undo(); return null; });
         Components.settle();
 
@@ -2152,7 +2136,7 @@ public class testStationSettingsWindow
     public void testMayDepartIsGrayAtATrackEndAndShowsTheOnlyWayOut() throws Exception
     {
         TileKey square = aPlainStationWhere(each -> session.deadEndSide(each) != null
-            && session.getGraph().getDirection(each, session.getRoutes(each).keySet().iterator().next()) == Direction.BOTH,
+            && leavesBothWays(each),
             "at the end of a line");
 
         // {the side trains leave by, the side where the track runs out}
@@ -2208,8 +2192,6 @@ public class testStationSettingsWindow
             I18n.f("autosetup.ui.flyDepartNow", I18n.t("autosetup.ui.labelNone"))), "the (i) does not say no train leaves");
 
         chooseDepartTowardA(window, square, road);
-
-        assertEquals(wayOf(square, road), Direction.TOWARD_A, "a pick did not open the closed station");
 
         StationDoors.close(window);
     }
@@ -2319,7 +2301,7 @@ public class testStationSettingsWindow
     private static TileKey aStationWhereMayDepart()
     {
         return aPlainStationWhere(each -> session.deadEndSide(each) == null
-            && session.getGraph().getDirection(each, session.getRoutes(each).keySet().iterator().next()) == Direction.BOTH,
+            && leavesBothWays(each),
             "with track on both sides");
     }
 
@@ -2327,6 +2309,12 @@ public class testStationSettingsWindow
     private static Direction wayOf(TileKey square, RouteId road)
     {
         return Components.onTheEventThread(() -> session.getGraph().getDirection(square, road));
+    }
+
+    /** Whether a station's one road runs both ways. */
+    private static boolean leavesBothWays(TileKey each)
+    {
+        return session.getGraph().getDirection(each, session.getRoutes(each).keySet().iterator().next()) == Direction.BOTH;
     }
 
     /** What May depart's first list shows. */
@@ -2393,26 +2381,18 @@ public class testStationSettingsWindow
         return Components.onTheEventThread(() -> session.getRoutes(square).keySet().iterator().next());
     }
 
-    /** May depart set to One Way, toward the road's side A, as a pick from its list; what that says. */
-    private static String chooseDepartTowardA(StationSettingsWindow window, TileKey square, RouteId road)
+    /** May depart set to One Way, toward the road's side A, as a pick from its list: the station runs so. */
+    private static void chooseDepartTowardA(StationSettingsWindow window, TileKey square, RouteId road)
     {
         javax.swing.JComboBox<?> depart = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+        String said = towardA(square);
 
         assertTrue(StationDoors.live(window, "station.depart.0"), "precondition: May depart is gray");
 
-        String towardA = Components.onTheEventThread(() ->
-        {
-            String said = I18n.f("autosetup.ui.menuRouteToward",
-                String.valueOf(session.getRoutes(square).get(road).getA()));
-
-            depart.setSelectedItem(said);
-
-            return said;
-        });
-
+        Components.onTheEventThread(() -> { depart.setSelectedItem(said); return null; });
         StationDoors.current(window);
 
-        return towardA;
+        assertEquals(wayOf(square, road), Direction.TOWARD_A, "May depart did not set the station");
     }
 
     /** The editor's drawn square for a tile of its page. */
