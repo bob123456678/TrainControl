@@ -4540,6 +4540,8 @@ public class LayoutEditor extends PositionAwareJFrame
             this.dragSource = null;
             this.resetClipboard();
 
+            if (this.grid != null) this.refreshSelectionBorders();
+
             return true;
         }
 

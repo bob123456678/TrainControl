@@ -1461,10 +1461,11 @@ public class testTheTrackEditorByHand
     }
 
     /**
-     * Escape while a text label is being dragged puts it down where it was: the copy goes, and the release that follows
-     * moves nothing (OB-478).
+     * Escape while a text label is being dragged puts it down where it was: the copy and the "copied" outline go, and
+     * the release that follows moves nothing (OB-478).
      *
-     * MUTATION: drop the text-drag branch from `LayoutEditor.letGoOfWhateverIsHeld`, and this fails.
+     * MUTATION: drop the text-drag branch from `LayoutEditor.letGoOfWhateverIsHeld`, or its `refreshSelectionBorders`,
+     * and this fails.
      */
     @Test
     public void testEscapePutsADraggedTextLabelBack() throws Exception
@@ -1473,46 +1474,59 @@ public class testTheTrackEditorByHand
 
         try
         {
-            final LayoutLabel label = square(editor, 3, 2);
-            final LayoutLabel over = square(editor, 7, 4);
-            final java.awt.Point press = new java.awt.Point(6, label.getHeight() / 2);
-
-            Components.onTheEventThread(() ->
-            {
-                editor.beginDrag(mouse(label, MouseEvent.MOUSE_PRESSED, press), label);
-                editor.updateDrag(mouse(label, MouseEvent.MOUSE_DRAGGED, new java.awt.Point(press.x + 160, press.y + 80)),
-                    label);
-                editor.receiveMoveEvent(mouse(over, MouseEvent.MOUSE_MOVED, press), over);
-
-                editor.dispatchEvent(new KeyEvent(editor, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0,
-                    KeyEvent.VK_ESCAPE, KeyEvent.CHAR_UNDEFINED));
-
-                return null;
-            });
-
-            Components.drain(5);
-
-            assertTrue(editor.isDisplayable(), "Escape closed the editor instead of putting the label down");
-            assertNull(carried(editor), "Escape left the dragged label on the window");
-
-            Components.onTheEventThread(() ->
-            {
-                editor.endDrag(mouse(label, MouseEvent.MOUSE_RELEASED, press), label);
-
-                return null;
-            });
-
-            Components.drain(5);
-
-            LayoutDiagramComponent still = editor.getMarklinLayout().getComponent(3, 2);
-
-            assertTrue(still != null && still.isText(), "the label left its square after Escape");
-            assertNull(editor.getMarklinLayout().getComponent(7, 4), "the release after Escape dropped the label");
+            escapeADragFrom(editor, 3, 2);
         }
         finally
         {
             dispose(editor);
         }
+    }
+
+    /** Picks up the tile at x,y, drags it over 7,4, presses Escape, releases, and checks that nothing moved. */
+    private static void escapeADragFrom(final LayoutEditor editor, int x, int y) throws Exception
+    {
+        final LayoutLabel label = square(editor, x, y);
+        final LayoutLabel over = square(editor, 7, 4);
+        final java.awt.Point press = new java.awt.Point(6, label.getHeight() / 2);
+        final LayoutDiagramComponent.componentType type = editor.getMarklinLayout().getComponent(x, y).getType();
+
+        Components.onTheEventThread(() ->
+        {
+            editor.beginDrag(mouse(label, MouseEvent.MOUSE_PRESSED, press), label);
+            editor.updateDrag(mouse(label, MouseEvent.MOUSE_DRAGGED, new java.awt.Point(press.x + 160, press.y + 80)),
+                label);
+            editor.receiveMoveEvent(mouse(over, MouseEvent.MOUSE_MOVED, press), over);
+
+            editor.dispatchEvent(new KeyEvent(editor, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0,
+                KeyEvent.VK_ESCAPE, KeyEvent.CHAR_UNDEFINED));
+
+            return null;
+        });
+
+        Components.drain(5);
+
+        assertTrue(editor.isDisplayable(), "Escape closed the editor instead of putting the " + type + " down");
+        assertNull(carried(editor), "Escape left the dragged " + type + " on the window");
+
+        javax.swing.border.Border outline = Components.onTheEventThread(() -> square(editor, x, y).getBorder());
+
+        assertFalse(outline instanceof javax.swing.border.LineBorder
+            && java.awt.Color.RED.equals(((javax.swing.border.LineBorder) outline).getLineColor()),
+            "the " + type + " kept its \"copied\" outline after Escape");
+
+        Components.onTheEventThread(() ->
+        {
+            editor.endDrag(mouse(label, MouseEvent.MOUSE_RELEASED, press), label);
+
+            return null;
+        });
+
+        Components.drain(5);
+
+        LayoutDiagramComponent still = editor.getMarklinLayout().getComponent(x, y);
+
+        assertTrue(still != null && still.getType() == type, "the " + type + " left its square after Escape");
+        assertNull(editor.getMarklinLayout().getComponent(7, 4), "the release after Escape dropped the " + type);
     }
 
     /** The words on the text tile the claims below drag. */
