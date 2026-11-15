@@ -283,7 +283,7 @@ public class testStartingAutonomyFromTheWindow
     @Test
     public void testStartHoldsToTheRouteListOverTheHandSwitches() throws Exception
     {
-        support.RouteListDoors.HandSwitched.runAndRead(ui, true, "Start", () -> startAnsweredYes());
+        onScreen(true);
     }
 
     /**
@@ -295,7 +295,35 @@ public class testStartingAutonomyFromTheWindow
     @Test
     public void testStartLeavesTheHandSwitchesWithToggleUnticked() throws Exception
     {
-        support.RouteListDoors.HandSwitched.runAndRead(ui, false, "Start", () -> startAnsweredYes());
+        onScreen(false);
+    }
+
+    /**
+     * MT-1001's check with Start as the run's door, the window shown for it: the route list's right-click menu only
+     * opens on a window on screen, and this class's window is otherwise never shown.
+     */
+    private static void onScreen(boolean toggled) throws Exception
+    {
+        Components.onTheEventThread(() ->
+        {
+            ui.setVisible(true);
+
+            return null;
+        });
+
+        try
+        {
+            support.RouteListDoors.HandSwitched.runAndRead(ui, toggled, "Start", () -> startAnsweredYes());
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                ui.setVisible(false);
+
+                return null;
+            });
+        }
     }
 
     /** Presses Start, answers its question Yes, and waits for the run; `stopAndTidy` stops it. */

@@ -147,7 +147,7 @@ public class testReturnHomeSetsTheSwitchesOnTheWayHome
 
     /**
      * Puts the train on its home platform and then away, sets the turnouts on its way home the other way, presses Return
-     * Home and waits for the train to be home; gives back the way it took.
+     * Home and waits for the train to be home and the run to rest; gives back the way it took.
      */
     private static List<Edge> runHome() throws Exception
     {
@@ -199,6 +199,9 @@ public class testReturnHomeSetsTheSwitchesOnTheWayHome
         assertEquals(Components.onTheEventThread(returnHome::getText), I18n.t("ui.main.returnHome"),
             "the window's Return Home does not say so");
 
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(returnHome::isEnabled), RUN_MS), "precondition:"
+            + " Return Home is not offered: " + Components.onTheEventThread(returnHome::getToolTipText));
+
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
             Components.select(returnHome);
@@ -210,6 +213,8 @@ public class testReturnHomeSetsTheSwitchesOnTheWayHome
                 + home.getName() + "; it is at " + railway.getLocomotiveLocation(train) + ", and the window said "
                 + answering.asked());
         }
+
+        assertTrue(support.Settle.gracefully(railway, support.Settle.PATIENCE_MS), "the run home did not come to rest");
 
         return way;
     }
