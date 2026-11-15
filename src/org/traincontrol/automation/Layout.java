@@ -1743,6 +1743,9 @@ public class Layout
      */
     public void runLocomotives()
     {
+        // Every run holds to the configuration's route list, unless its Activate Routes box is off
+        if (this.control != null) this.control.applyAutonomyRouteActivations();
+
         synchronized (this.activeLocomotives)
         {
             this.running = true;
@@ -5076,6 +5079,9 @@ public class Layout
      */
     public boolean executeTimetable(int stopsAtChoice)
     {
+        // As runLocomotives: the route list holds for the run
+        if (this.control != null) this.control.applyAutonomyRouteActivations();
+
         // The flag is set here rather than inside, so that nothing thrown from the run can leave it
         // set - which would silently disable timetable capture for the rest of the session.
         this.timetableExecuting = true;
