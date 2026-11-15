@@ -415,7 +415,6 @@ IS2_INCONSISTENT_SYNC	org.traincontrol.automation.Layout		defaultLocSpeed	1
 IS2_INCONSISTENT_SYNC	org.traincontrol.base.Accessory		numActuations	1
 IS2_INCONSISTENT_SYNC	org.traincontrol.base.Locomotive		lastStartTime	1
 IS2_INCONSISTENT_SYNC	org.traincontrol.base.Locomotive		powerState	1
-IS2_INCONSISTENT_SYNC	org.traincontrol.gui.widgets.BusyDialog$Closer		dialog	1
 IS2_INCONSISTENT_SYNC	org.traincontrol.marklin.MarklinControlStation		numMessagesProcessed	1
 IS2_INCONSISTENT_SYNC	org.traincontrol.marklin.MarklinLocomotive		UID	1
 JLM_JSR166_UTILCONCURRENT_MONITORENTER	org.traincontrol.automation.Layout	executePath	activeLocomotives	2
@@ -740,7 +739,6 @@ SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomyeditor.AutonomyEdit
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel$N	unnamedPoints		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomyeditor.EditorMassAssign$N	askForWholeLength		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomyeditor.EditorMassAssign$N	askInWalkPrompt		2
-SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomyeditor.StationMatrixPanel$N	<init>	notices	1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomyeditor.StationPicture$N	<init>	art	1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.layouteditor.LayoutEditor$N	buildPageControl	pageList	1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.layouteditor.LayoutEditor$N	editAddress		1
