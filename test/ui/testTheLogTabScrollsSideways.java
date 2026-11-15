@@ -20,8 +20,9 @@ import support.Teardown;
  * A wheel turned with Shift held on the Log tab moves its horizontal scroll bar and not its vertical one; a plain turn
  * still scrolls up and down, and a new log message keeps the sideways position (OB-471).
  *
- * MUTATION: drop the restore of the horizontal value in `TrainControlUI.log`, and the message claim fails.  The
- * Shift claims pin what Java 8's own scroll pane already does; they are green without a change.
+ * MUTATION: drop the restore of the horizontal value in `TrainControlUI.log`, and the message claims, the burst claim
+ * included, fail.  The Shift
+ * claims pin what Java 8's own scroll pane already does; they are green without a change.
  */
 public class testTheLogTabScrollsSideways
 {
@@ -116,6 +117,30 @@ public class testTheLogTabScrollsSideways
         Components.settle();
 
         assertEquals(across.getValue(), before, "a new log message snapped the Log tab back to the left");
+    }
+
+    /** A burst of messages, logged before the event thread gets to any, leaves the sideways position too. */
+    @Test
+    public void testABurstOfMessagesKeepsTheSidewaysPosition() throws Exception
+    {
+        JScrollBar across = pane.getHorizontalScrollBar();
+
+        Components.onTheEventThread(() ->
+        {
+            across.setValue(across.getMaximum() / 3);
+
+            return null;
+        });
+
+        int before = across.getValue();
+
+        assertTrue(before > 0, "precondition: the Log tab could not be scrolled sideways");
+
+        for (int i = 0; i < 20; i++) ui.log("burst " + i);
+
+        Components.settle();
+
+        assertEquals(across.getValue(), before, "a burst of log messages snapped the Log tab back to the left");
     }
 
     /** The wheel alone still scrolls up and down, and leaves the sideways position. */
