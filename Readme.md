@@ -449,6 +449,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.1.1
 * v3.1.0 [11/15/2026]
     - Central Station Protocol
         - New Features
