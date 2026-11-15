@@ -322,7 +322,7 @@ final class EditorTileMenus
         // moment you pick it shows the user nothing.  It is a button beside Test and Why.
 
         // Only when there is something under the heading: everything here sits inside canCarryDirection(target), false for
-        // a portal, so a link or tunnel would get a grayed heading alone (OB-032).  A sensor's is May depart, on the track beside.
+        // a portal, so a link or tunnel would get a grayed heading alone (OB-032).  A sensor's is in its window.
         if (!isPoint && editor.hasItemsBesidesTitle(connections)) menu.add(connections);
 
         // A link's own settings, on the menu ITSELF rather than inside the departures submenu.  A link is a jump to

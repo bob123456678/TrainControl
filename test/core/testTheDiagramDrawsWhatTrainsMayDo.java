@@ -1863,49 +1863,34 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A click on a square out of service never steps its hidden directions: such a square is an s88 square, whose click
-     * only clears a direction a setup file gave it, to both ways (OB-472), the error that direction raises with it.
+     * A click on an s88 square never steps its directions, in service or out, with an arrow or without: it opens Station
+     * Settings, whose May depart sets them (OB-472).
      *
-     * MUTATION: let the click cycle an s88 square as plain track, and this fails.
+     * MUTATION: let the click cycle an s88 square that does not run both ways, and this fails.
      */
     @Test
-    public void testAClickChangesNoDirectionOnASquareOutOfService() throws Exception
+    public void testAClickChangesNoDirectionOnAnS88Square() throws Exception
     {
         final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
 
         final TileKey square = new TileKey("main", 3, 1);
+        final RouteId road = session.getRoutes(square).keySet().iterator().next();
 
         assertTrue(session.isSensorSquare(square), "precondition: the square at main 3,1 is not an s88 square");
 
-        session.setPointProperty(square, "active", Boolean.FALSE);
-
-        final RouteId road = session.getRoutes(square).keySet().iterator().next();
-
-        assertFalse(panel.clickChangesDirections(square), "the editor offers a direction click on a square out of service"
-            + " that runs both ways");
-
-        // As a setup file carries it
-        session.getStore().setTileDirection(square, road, Direction.TOWARD_A);
-        session.rebuild();
-
-        assertTrue(panel.clickChangesDirections(square), "the editor offers no click to clear a square out of service");
-
-        final java.lang.reflect.Method cycle =
-            Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "cycle", TileKey.class);
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
+        for (Boolean active : new Boolean[] {null, Boolean.FALSE})
         {
-            try
-            {
-                cycle.invoke(panel, square);
-            }
-            catch (ReflectiveOperationException failed)
-            {
-                throw new RuntimeException(failed);
-            }
-        });
+            session.setPointProperty(square, "active", active);
 
-        assertEquals(session.getGraph().getDirection(square, road), Direction.BOTH, "a click stepped the hidden"
-            + " directions of a square out of service rather than clearing them");
+            for (Direction way : new Direction[] {Direction.BOTH, Direction.TOWARD_A})
+            {
+                // As May depart or a setup file leaves it
+                session.getStore().setTileDirection(square, road, way);
+                session.rebuild();
+
+                assertFalse(panel.clickChangesDirections(square), "the editor offers a direction click on an s88 square"
+                    + " running " + way + (active == null ? "" : ", out of service"));
+            }
+        }
     }
 }

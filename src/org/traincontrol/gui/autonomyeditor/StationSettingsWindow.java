@@ -1426,13 +1426,14 @@ public final class StationSettingsWindow extends StationWindowBase
             departAnswers.clear();
         }
 
+        boolean carries = session.canCarryDirection(tile);
+
+        // Where the track on one side runs out, trains can only leave the other way (OB-472)
+        TilePorts.Side end = session.deadEndSide(tile);
+
         int y = 0;
 
-        String said = null;
-
-        String why = null, shared = null;
-
-        Set<TilePorts.Side> out = session.sidesSentOutBy(tile);
+        String said = null, why = null;
 
         for (final Map.Entry<RouteId, TilePorts.Route> entry : routes.entrySet())
         {
@@ -1459,25 +1460,27 @@ public final class StationSettingsWindow extends StationWindowBase
                 labels.add(I18n.f("autosetup.ui.menuRouteToward", String.valueOf(route.getB())));
             }
 
-            // Read and set on the track beside, as the station runs both ways (D141)
-            Direction current = session.departureWay(tile, entry.getKey(), out);
+            Direction current = TileGraph.inForce(session.directionAsDrawn(tile, entry.getKey()), route);
 
-            String fixed = session.whyDepartureWayIsFixed(tile, entry.getKey(), out);
+            Direction only = end == route.getA() ? Direction.TOWARD_B : end == route.getB() ? Direction.TOWARD_A : null;
 
-            boolean sets = fixed == null;
+            // Grayed only where that one way is open: an old arrow shutting it stays to be changed
+            boolean forced = only != null && (current == Direction.BOTH || current == only);
 
-            if (why == null) why = fixed;
-
-            if (shared == null && sets) shared = session.departureSharedWith(tile, entry.getKey());
+            if (forced)
+            {
+                current = only;
+                why = I18n.f("autosetup.ui.flyDepartForced", I18n.t("autosetup.ui.side" + end.name()));
+            }
 
             final JComboBox<String> choice = same ? departChoices.get(entry.getKey())
-                : new Choice(at -> actAlone(() -> editor.setDepartureWay(tile, entry.getKey(), answers.get(at))),
+                : new Choice(at -> actAlone(() -> editor.setRunDirection(tile, entry.getKey(), answers.get(at))),
                     labels.toArray(new String[0]));
 
             choice.setName("station.depart." + y);
-            choice.setEnabled(live && sets);
+            choice.setEnabled(live && carries && !forced);
 
-            // No way out shows as no pick: the list only says which way trains leave (D144)
+            // Closed, from an older version, shows as no pick: the list only offers ways to leave (D144)
             choice.setSelectedIndex(answers.indexOf(current));
 
             if (said == null && current != Direction.NONE) said = String.valueOf(choice.getSelectedItem());
@@ -1496,7 +1499,7 @@ public final class StationSettingsWindow extends StationWindowBase
             departAnswers.put(entry.getKey(), answers);
         }
 
-        fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said, why, shared));
+        fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said, why));
 
         depart.revalidate();
     }

@@ -45,8 +45,8 @@ import org.traincontrol.util.I18n;
 
 /**
  * The station and the track squares its track meets, as the track diagram draws them at 60 pixels (FR-111): the station
- * with its ways out and its ways in to stop, from `Layout.standingRulesAt`; the next squares with only their own
- * arrows, over gray art.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
+ * with a red arrow only at a side May depart shuts, and its ways in to stop, from `Layout.standingRulesAt`; the next
+ * squares with only their own arrows, over gray art.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
  */
 final class StationPicture extends JPanel
 {
@@ -55,8 +55,8 @@ final class StationPicture extends JPanel
 
     /**
      * The station's icon is drawn smaller on a straight station, so the marks beside it are what the picture is read
-     * for, and whole on a curve, so the station's type still shows.  The station wears no track arrows: an s88 square
-     * runs both ways (OB-472).
+     * for, and whole on a curve, so the station's type still shows.  The station wears no green arrows, so a way it may
+     * be left by reads as plain track (OB-472).
      */
     private static final float ICON = 0.85f;
 
@@ -246,8 +246,10 @@ final class StationPicture extends JPanel
 
         TileAnnotation diagram = session.staticAnnotations(Collections.singleton(tile), true, true).get(tile);
 
-        drawn = new TileAnnotation(null, -1, false, diagram == null ? null : diagram.getBadge(), false)
-            .withSmallerIcon(diagram != null && diagram.isCurved() ? 1f : ICON);
+        boolean curved = diagram != null && diagram.isCurved();
+
+        drawn = new TileAnnotation(session.directionMarks(tile), -1, false, diagram == null ? null : diagram.getBadge(), false,
+            curved, false, null, true).withSmallerIcon(curved ? 1f : ICON);
 
         square.setAutonomyAnnotation(drawn);
 
