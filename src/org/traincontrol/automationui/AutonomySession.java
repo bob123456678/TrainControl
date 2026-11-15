@@ -5256,8 +5256,8 @@ public class AutonomySession
     }
 
     /**
-     * Which way trains may leave a station along one of its roads, read off the track beside it, as the station runs
-     * both ways (D141): by a side whose next square lets a train go on away from it.
+     * Which way trains may leave a station along one of its roads, as the built railway has it (D141): by a side a
+     * reduced edge leaves it by, which is what "What's allowed here" reads, so the two agree.
      */
     public Direction departureWay(TileKey station, RouteId road)
     {
@@ -5286,10 +5286,32 @@ public class AutonomySession
 
         for (Side side : new Side[] {route.getA(), route.getB()})
         {
-            if (runBeside(station, side) == null) return I18n.t("autosetup.ui.flyDepartOnly");
+            Run run = runBeside(station, side);
+
+            if (run == null) return I18n.t("autosetup.ui.flyDepartOnly");
+
+            Landing next = graph.landing(station, side);
+
+            // Open beside, yet no way out: the limit is past the track this sets
+            if (goesOn(next) && !leavesBy(station, side))
+            {
+                return I18n.f("autosetup.ui.flyDepartFarther", String.valueOf(side), describeTile(farEnd(run, station, next)));
+            }
         }
 
         return null;
+    }
+
+    /** Where the run beside a station ends away from it: its far boundary, or its last square where the track stops. */
+    private static TileKey farEnd(Run run, TileKey station, Landing next)
+    {
+        List<TileKey> tiles = run.getTiles();
+
+        boolean fromStart = station.equals(run.getStart()) && tiles.get(0).equals(next.getTile());
+
+        TileKey far = fromStart ? run.getEnd() : run.getStart();
+
+        return far != null ? far : tiles.get(fromStart ? tiles.size() - 1 : 0);
     }
 
     /**
@@ -5329,38 +5351,13 @@ public class AutonomySession
         }
     }
 
-    /** The next square's roads from a station's side, where that square takes a direction; empty otherwise. */
-    private Map<RouteId, Route> roadsBeside(TileKey station, Side side)
-    {
-        Map<RouteId, Route> out = new LinkedHashMap<>();
-
-        Landing next = graph.landing(station, side);
-
-        if (next == null || !canCarryDirection(next.getTile())) return out;
-
-        for (Map.Entry<RouteId, Route> each : getRoutes(next.getTile()).entrySet())
-        {
-            if (each.getValue().getA() == next.getEntrySide() || each.getValue().getB() == next.getEntrySide())
-            {
-                out.put(each.getKey(), each.getValue());
-            }
-        }
-
-        return out;
-    }
-
-    /** Whether a train leaving a station by a side goes on; a link, tunnel or s88 square beside it runs both ways. */
+    /** Whether the built railway sends a train out of a square by a side: a reduced edge leaves it there. */
     private boolean leavesBy(TileKey station, Side side)
     {
-        Landing next = graph.landing(station, side);
-
-        if (next == null) return false;
-
-        if (!canCarryDirection(next.getTile())) return !getRoutes(next.getTile()).isEmpty();
-
-        for (Map.Entry<RouteId, Route> beside : roadsBeside(station, side).entrySet())
+        for (GraphReducer.ReducedEdge edge : reducer == null ? Collections.<GraphReducer.ReducedEdge>emptyList()
+            : reducer.getEdges())
         {
-            if (goesOn(next, beside.getKey(), beside.getValue())) return true;
+            if (edge.getStart().equals(station) && edge.getExitSide() == side) return true;
         }
 
         return false;
@@ -5370,14 +5367,9 @@ public class AutonomySession
     private boolean goesOn(Landing next)
     {
         Map.Entry<RouteId, Route> road = getRoutes(next.getTile()).entrySet().iterator().next();
+        Route route = road.getValue();
 
-        return goesOn(next, road.getKey(), road.getValue());
-    }
-
-    /** Whether a train entering a square where it lands may go on along this road. */
-    private boolean goesOn(Landing next, RouteId road, Route route)
-    {
-        Direction way = TileGraph.inForce(graph.getDirection(next.getTile(), road), route);
+        Direction way = TileGraph.inForce(graph.getDirection(next.getTile(), road.getKey()), route);
 
         Direction away = route.getA() == next.getEntrySide() ? Direction.TOWARD_B : Direction.TOWARD_A;
 

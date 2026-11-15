@@ -1419,7 +1419,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         String said = null;
 
-        boolean settable = false;
+        String why = null;
 
         for (final Map.Entry<RouteId, TilePorts.Route> entry : routes.entrySet())
         {
@@ -1452,9 +1452,11 @@ public final class StationSettingsWindow extends StationWindowBase
             // Read and set on the track beside, as the station runs both ways (D141)
             Direction current = session.departureWay(tile, entry.getKey());
 
-            boolean sets = session.departureWayCanBeSet(tile, entry.getKey());
+            String fixed = session.whyDepartureWayIsFixed(tile, entry.getKey());
 
-            settable |= sets;
+            boolean sets = fixed == null;
+
+            if (why == null) why = fixed;
 
             final JComboBox<String> choice = same ? departChoices.get(entry.getKey())
                 : new Choice(at -> actAlone(() -> editor.setDepartureWay(tile, entry.getKey(), answers.get(at))),
@@ -1481,7 +1483,7 @@ public final class StationSettingsWindow extends StationWindowBase
             departAnswers.put(entry.getKey(), answers);
         }
 
-        fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said, settable));
+        fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said, why));
 
         depart.revalidate();
     }

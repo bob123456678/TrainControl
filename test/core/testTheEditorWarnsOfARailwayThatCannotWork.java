@@ -355,6 +355,38 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         assertFalse(session.departureWayCanBeSet(station, road), "May depart is live beside a switch");
     }
 
+    /**
+     * May depart shows the way out the built railway has, so a limit set farther out than the track beside shows as
+     * that one way, grayed, and the (i) line says where it is (Adam: "it needs to look farther out, not just adjacent").
+     *
+     * MUTATION: have `departureWay` read the square beside the station again, and this fails.
+     */
+    @Test
+    public void testMayDepartShowsALimitFartherOut() throws Exception
+    {
+        session.open(Arrays.asList(platformWithTwoApproaches()));
+        session.initialize("D141 farther");
+
+        TileKey station = new TileKey("main", 5, 1);
+        TileKey turnout = new TileKey("main", 3, 1);
+        RouteId road = session.getRoutes(station).keySet().iterator().next();
+
+        for (RouteId each : session.getRoutes(turnout).keySet()) session.setDirection(turnout, each, Direction.BOTH);
+
+        assertEquals(session.departureWay(station, road), Direction.BOTH, "precondition: trains do not leave both ways");
+        assertTrue(session.departureWayCanBeSet(station, road), "precondition: May depart is gray");
+
+        // Closed farther out: the switch past the track beside, as a setup file may carry it
+        for (RouteId each : session.getRoutes(turnout).keySet()) session.setDirection(turnout, each, Direction.NONE);
+
+        assertTrue(session.runsBothWays(new TileKey("main", 4, 1)), "precondition: the track beside is one way");
+        assertEquals(session.departureWay(station, road), toward(station, road, Side.E),
+            "May depart does not show the one way out");
+        assertFalse(session.departureWayCanBeSet(station, road), "May depart is live with a limit farther out");
+        assertEquals(session.whyDepartureWayIsFixed(station, road), I18n.f("autosetup.ui.flyDepartFarther",
+            String.valueOf(Side.W), session.describeTile(turnout)), "the (i) line does not say where the limit is");
+    }
+
     /** `platformWithTwoApproaches` with its platform moved up against the switch: s88 squares at (1,1), (4,1), (6,1). */
     private static LayoutDiagram stationBesideASwitch() throws IOException
     {
@@ -379,6 +411,12 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         for (RouteId each : session.getRoutes(tile).keySet()) out.put(each, session.getGraph().getDirection(tile, each));
 
         return out;
+    }
+
+    /** The One Way pick toward a side of a station's road. */
+    private Direction toward(TileKey station, RouteId road, Side side)
+    {
+        return session.getRoutes(station).get(road).getA() == side ? Direction.TOWARD_A : Direction.TOWARD_B;
     }
 
     /** What the setup check says about s88 squares not running both ways, as the editor words it (OB-472). */
