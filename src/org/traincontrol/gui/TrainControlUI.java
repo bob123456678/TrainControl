@@ -18577,9 +18577,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     answer[0] = model.getRenameProposals();
                 }
-                catch (Exception ex)
+                catch (Throwable ex)
                 {
-                    answer[0] = ex;
+                    // An Error too, so the message below names it rather than failing on an empty answer
+                    answer[0] = ex instanceof Exception ? ex : new Exception(ex);
                 }
             }, null);
 
