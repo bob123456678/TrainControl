@@ -5804,26 +5804,8 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        // Both ways, with the sets the build reads, so the path drawn agrees with the findings, which read the build.
-        Set<TileKey> mustTurn = session.mandatoryTurnTiles();
-
-        Set<TileKey> mayTurn = session.mayTurnTiles();
-
-        // The red arrows, as the build reads them (OB-120).
-        Map<TileKey, Set<TilePorts.Side>> barred = session.barredArrivals();
-
-        // Each leg starts on the copies a train stands on there, as the findings start it.
-        Map<TileKey, Set<TilePorts.Side>> starts = session.getReducer() == null ? null : session.startingArrivals();
-
-        List<GraphReducer.ReducedEdge> there =
-            session.getReducer() == null ? null
-                : session.getReducer().findPath(testFrom, tile, mayTurn, mustTurn, barred,
-                    session.shutTiles(), starts.get(testFrom));
-
-        List<GraphReducer.ReducedEdge> back =
-            session.getReducer() == null ? null
-                : session.getReducer().findPath(tile, testFrom, mayTurn, mustTurn, barred,
-                    session.shutTiles(), starts.get(tile));
+        List<GraphReducer.ReducedEdge> there = session.testPath(testFrom, tile);
+        List<GraphReducer.ReducedEdge> back = session.testPath(tile, testFrom);
 
         traces.clear();
 

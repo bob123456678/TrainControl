@@ -379,7 +379,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
      * A way out leads to another station, so May depart looks past an s88 square that is no station: track one way back
      * beyond it keeps trains from leaving that way, as "What's allowed here" says, though a train could reach the square.
      *
-     * MUTATION: have `sendsOutBy` count any edge leaving by the side, as far as the next s88 square, and this fails.
+     * MUTATION: have `sidesSentOutBy` count any edge leaving by the side, as far as the next s88 square, and this fails.
      */
     @Test
     public void testMayDepartLooksPastTheNextS88Square() throws Exception
@@ -394,6 +394,47 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         limitedFartherOut(new TileKey("main", 3, 1),
             () -> session.setDirection(beyond, roadOf(beyond), toward(beyond, roadOf(beyond), Side.W)), Side.W, Side.E,
             passing);
+    }
+
+    /**
+     * A stop-only station that trains from this one may not arrive at is no way out either, though stations lie past
+     * it: May depart never runs through it, as "What's allowed here" doesn't, so the two agree.
+     *
+     * MUTATION: have `GraphReducer`'s path search run through a stop-only station, and this fails.
+     */
+    @Test
+    public void testMayDepartStopsAtAStopOnlyStation() throws Exception
+    {
+        openWithStations(rowOfSquares("FSFSFSF"));
+
+        TileKey stopOnly = new TileKey("main", 5, 1);
+
+        limitedFartherOut(new TileKey("main", 3, 1), () ->
+        {
+            session.setStopsAndRunsThrough(stopOnly, true, false);
+            session.setBarredArrivals(stopOnly, java.util.EnumSet.of(Side.W));
+        }, Side.W, Side.E, stopOnly);
+    }
+
+    /**
+     * Test a Path ends a run at a stop-only station and never runs through one (FR-111), as the railway refuses it.
+     *
+     * MUTATION: drop `stopOnlyTiles()` from `AutonomySession.testPath`, and this fails.
+     */
+    @Test
+    public void testTestAPathStopsAtAStopOnlyStation() throws Exception
+    {
+        openWithStations(rowOfSquares("FSFSFSF"));
+
+        TileKey from = new TileKey("main", 3, 1), stopOnly = new TileKey("main", 5, 1), past = new TileKey("main", 7, 1);
+
+        assertNotNull(session.testPath(from, past), "precondition: no path to the station past the next");
+
+        session.setStopsAndRunsThrough(stopOnly, true, false);
+
+        assertNull(session.testPath(from, past), "Test a Path runs through a stop-only station");
+        assertNotNull(session.testPath(from, stopOnly), "Test a Path does not end a run at a stop-only station");
+        assertNotNull(session.testPath(stopOnly, past), "Test a Path does not start a run at a stop-only station");
     }
 
     /**

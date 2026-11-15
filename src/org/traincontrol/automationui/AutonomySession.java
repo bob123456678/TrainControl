@@ -5271,6 +5271,29 @@ public class AutonomySession
         return byA && byB ? Direction.BOTH : byA ? Direction.TOWARD_A : byB ? Direction.TOWARD_B : Direction.NONE;
     }
 
+    /** @return every stop-only station (`isStopOnly`): somewhere to stop, never a way through */
+    public Set<TileKey> stopOnlyTiles()
+    {
+        Set<TileKey> out = new HashSet<>();
+
+        for (TileKey tile : reducer == null ? Collections.<TileKey>emptySet() : reducer.getPoints().keySet())
+        {
+            if (isStopOnly(tile)) out.add(tile);
+        }
+
+        return out;
+    }
+
+    /**
+     * The editor's Test a Path from one square to another, or null where there is none: the search with the sets the
+     * build reads, starting on the copies a train stands on, so the path drawn agrees with the findings.
+     */
+    public List<GraphReducer.ReducedEdge> testPath(TileKey from, TileKey to)
+    {
+        return reducer == null ? null : reducer.findPath(from, to, mayTurnTiles(), mandatoryTurnTiles(), barredArrivals(),
+            shutTiles(), stopOnlyTiles(), startingArrivals().get(from));
+    }
+
     /** Whether May depart sets a road: plain track to set on both its sides (D141). */
     public boolean departureWayCanBeSet(TileKey station, RouteId road)
     {
@@ -5374,13 +5397,14 @@ public class AutonomySession
 
     /**
      * Whether a train standing on a station's road can be sent out by one side to another station: Test a Path's
-     * search over the built railway, with its turning, arrival and shut rules, starting that way only.
+     * search over the reduced edges, with its turning, arrival, shut and stop-only rules, starting that way only.
      */
     private boolean sendsOutBy(TileKey station, Route road, Side side)
     {
         if (reducer == null) return false;
 
-        Set<TileKey> mayTurn = mayTurnTiles(), mustTurn = mandatoryTurnTiles(), shut = shutTiles();
+        Set<TileKey> mayTurn = mayTurnTiles(), mustTurn = mandatoryTurnTiles();
+        Set<TileKey> shut = shutTiles(), stopOnly = stopOnlyTiles();
         Map<TileKey, Set<Side>> barred = barredArrivals();
 
         mayTurn.remove(station);
@@ -5391,7 +5415,7 @@ public class AutonomySession
             if (other.equals(station) || !store.isStation(other)) continue;
 
             List<GraphReducer.ReducedEdge> path = reducer.findPath(station, other, mayTurn, mustTurn, barred, shut,
-                Collections.singleton(road.other(side)));
+                stopOnly, Collections.singleton(road.other(side)));
 
             if (path != null && !path.isEmpty() && path.get(0).getExitSide() == side) return true;
         }

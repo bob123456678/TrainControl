@@ -404,17 +404,18 @@ public class GraphReducer
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
         Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
     {
-        return findPath(from, to, mayTurn, mustTurn, barred, closed, null);
+        return findPath(from, to, mayTurn, mustTurn, barred, closed, Collections.<TileKey>emptySet(), null);
     }
 
     /**
-     * The same, starting a train only as it can stand at `from`.
+     * The same, starting a train only as it can stand at `from`, and never through a stop-only station.
      *
+     * @param stopOnly squares a train may stop at but never run through (FR-111), as `Layout.isClearByStandingRules`
      * @param startArrivals the sides a train standing at `from` arrived by (`AutonomySession.startingArrivals`); null
      *        to start facing every way
      */
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
-        Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed,
+        Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed, Set<TileKey> stopOnly,
         Set<Side> startArrivals)
     {
         if (!points.containsKey(from) || !points.containsKey(to)) return null;
@@ -505,7 +506,7 @@ public class GraphReducer
                     return path;
                 }
 
-                frontier.add(next);
+                if (!stopOnly.contains(edge.getEnd())) frontier.add(next);
             }
         }
 
