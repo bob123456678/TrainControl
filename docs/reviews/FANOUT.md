@@ -59,6 +59,9 @@ when a round finds nothing new above C.
    another way is a control: set the other inputs to disagree with it.
 4. **Run the classes the change touches**, gated: no `java.exe`/`javaw.exe` running, checked immediately before every
    run.  No edits to `src/`, `test/` or `docs/` while a battery runs.
+   Before each merge to dev, `TC_SCRATCH=<dir> sh docs/tools/gates.sh dev` runs the merge gates (the guard set,
+   SpotBugs, the fit test, the last release's updater) and exits 0 only when all pass; `--layouts` adds the layout read
+   comparison, once a batch.
 5. **Records.**  Keep the round's documents in a working folder in the scratch area, never in the repository.  Write
    the dispositions (commit hashes, claim hashes, "red first"); catalogue with
    `python docs/tools/catalog-findings.py --add <the working folder>`; set each new row's status in the store

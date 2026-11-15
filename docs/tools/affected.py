@@ -17,7 +17,7 @@ root.  A test class is listed when it
   - is paired by CLAUDE.md's standing rules (PAIRINGS below).
 --guards prints only the bookkeeping and pairing classes, plus the classes that read the source of a method a changed
 file declares, and testEveryTestIsInTheBattery when serial-lane.txt or a test using its words changed: the guard set,
-which runs at every merge, small fix or not.
+which runs at every merge, small fix or not; docs/tools/gates.sh runs it with the other merge gates.
 -v says on stderr why each class is there.  It over-includes for a change to a class most tests name (Layout, Util): the
 list is then long, and that is the honest answer.  The full battery stays the orchestrator's.
 """

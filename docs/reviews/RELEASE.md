@@ -15,13 +15,15 @@ The validators review each change on its way to dev (`FANOUT.md`). Builders foll
 
 ## 2. Automatic gates: every merge to dev
 
-The merge guards, plus:
-- SpotBugs against its baseline (`docs/tools/spotbugs.sh`);
-- the language fit test over every window;
-- the layout read comparison against the last release tag;
-- the last release's updater taking the new jar.
-
-A gate not yet built is listed on the plan page until it is.
+`TC_SCRATCH=<dir> sh docs/tools/gates.sh <base>` runs them all and prints one PASS or FAIL line each:
+- the merge guards (the standing guard classes and `affected.py --guards <base>`);
+- SpotBugs against its baseline (`docs/tools/spotbugs.sh`), no new finding;
+- the language fit test over every window (`ui.testEveryLanguageFits`; it takes a window slot);
+- the last release's updater taking the new jar (`core.testTheLastReleaseUpdatesToThisBuild`);
+- the layout read comparison against the last release tag (`old-setups.sh --no-live`, without the live layout). At 2
+  trips a setup it takes about 12 minutes a build, two builds in turn (estimated 2026-11-14 from a run stopped at 10
+  minutes with the older build not yet done), so it runs once a batch (`gates.sh <base> --layouts`) and before a release
+  at the routine 6 trips (`--full`), not on every merge.
 
 ## 3. Release reviews: once, at feature freeze
 
