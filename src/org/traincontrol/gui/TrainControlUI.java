@@ -7689,7 +7689,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * An editor has closed or will not come, or a sync has ended: the sync owed meanwhile runs, refreshing after it as
-     * Sync does.
+     * Sync does, and so does a page follow held back.
      */
     void editorGone()
     {
@@ -7697,6 +7697,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         SwingUtilities.invokeLater(() ->
         {
             if (syncOwed.get() && !anEditorIsOpenOrOnItsWay()) doSync(null);
+            if (this.pagesToFollow) followThePagesIfChanged();
         });
     }
 
@@ -21643,19 +21644,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             SwingUtilities.invokeLater(this::followThePagesIfChanged);
     }
 
-    /** Pages read again that changed while a run held the setup, followed once it no longer does. */
+    /** Pages read again that changed while a run or an editor held the setup, followed once neither does. */
     private volatile boolean pagesToFollow = false;
 
     /**
-     * The page list and the setup follow pages read again that differ from the ones they hold, but never under a run:
-     * there the follow is owed until the run ends (`updateVisiblePoints`), as a page edit waits.  Unchanged pages are
-     * left alone, as following resets the session and reloads the configuration.
+     * The page list and the setup follow pages read again that differ from the ones they hold, but never under a run
+     * or an editor: there the follow is owed until the run ends (`updateVisiblePoints`) or the editor goes
+     * (`editorGone`), as a page edit waits.  Unchanged pages are left alone, as following resets the session and
+     * reloads the configuration.
      */
     void followThePagesIfChanged()
     {
         if (!this.pagesToFollow && !thePagesChanged()) return;
 
-        this.pagesToFollow = aRunHoldsTheSetup();
+        this.pagesToFollow = aRunHoldsTheSetup() || anEditorIsOpenOrOnItsWay();
 
         if (!this.pagesToFollow) followThePagesReadAgain();
     }
