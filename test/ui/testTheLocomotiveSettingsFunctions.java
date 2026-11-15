@@ -210,6 +210,79 @@ public class testTheLocomotiveSettingsFunctions
     }
 
     /**
+     * A click on a function's icon cell, as a person makes it, opens the same six-column list on F0 as on F1, the
+     * first time and every time after, in a window tall enough to hold the list (OB-446).
+     *
+     * MUTATION: take the `own.setSize(...)` out of `LocomotiveFunctionsTab.widen`, and the first opening, on F0, is one
+     * column wide.
+     */
+    @Test
+    public void testTheIconCellClickedOnEveryRowOpensSixColumns() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("needs a display");
+
+        java.awt.Window window = SettingsWindow.showing();
+
+        Components.onTheEventThread(() ->
+        {
+            window.setSize(window.getWidth(), Math.min(1000, window.getGraphicsConfiguration().getBounds().height - 80));
+            window.setLocation(window.getX(), 0);
+
+            return null;
+        });
+
+        Components.settle();
+
+        int[] first = null;
+
+        for (int row : new int[]{0, 1, 0, 2, 0})
+        {
+            int[] shape = clickOpenTheList(row);
+
+            assertEquals(shape[0], 6, "the list opened by a click on function " + row + " does not show six columns");
+
+            if (first == null) first = shape;
+
+            assertEquals(shape[1], first[1], "function " + row + " lists other icons than F0");
+        }
+    }
+
+    /** Clicks a row's icon cell; gives the open list's columns and size, as {@link #columnsAcross} does. */
+    private static int[] clickOpenTheList(int row) throws Exception
+    {
+        JTable table = table();
+
+        Components.onTheEventThread(() ->
+        {
+            java.awt.Rectangle cell = table.getCellRect(row, 1, false);
+            java.awt.Point at = new java.awt.Point(cell.x + 20, cell.y + cell.height / 2);
+            java.awt.Point onScreen = new java.awt.Point(at);
+
+            SwingUtilities.convertPointToScreen(onScreen, table);
+
+            for (int id : new int[]{java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
+                java.awt.event.MouseEvent.MOUSE_CLICKED})
+            {
+                table.dispatchEvent(new java.awt.event.MouseEvent(table, id, System.currentTimeMillis(),
+                    id == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0,
+                    at.x, at.y, onScreen.x, onScreen.y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+            }
+
+            return null;
+        });
+
+        Components.settle();
+        Components.settle();
+
+        JComboBox<?> combo = Components.onTheEventThread(() -> Components.named(
+            (java.awt.Container) table.getEditorComponent(), "functions.iconCombo", JComboBox.class));
+
+        assertTrue(Components.onTheEventThread(combo::isPopupVisible), "the click on function " + row + " opened no list");
+
+        return columnsAcross(combo);
+    }
+
+    /**
      * The images of the user's own on the locomotive's other functions are offered in a row's icon dropdown after the
      * standard icons, and picking one gives the row that image (OB-446).
      *
