@@ -12,6 +12,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Point;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -460,5 +461,55 @@ public class testControlStationFaults
         }
 
         made.clear();
+    }
+
+    /**
+     * A system frame too short to say anything is not an order to cut the power.
+     *
+     * The parsing constructor always allocates eight data bytes, so a guard on the array's length can
+     * never fire, and a frame carrying four payload bytes returned the untouched fifth byte, zero,
+     * which is the stop sub command.  The field that counts the filled bytes is the right one.
+     */
+    @Test
+    public void testAShortSystemFrameIsNotAStop()
+    {
+        assertEquals(new CS2Message(systemFrame(4)).getSubCommand(), -1,
+            "a system frame with four payload bytes has no sub command, and must not read as a stop");
+    }
+
+    /**
+     * And a real stop is still a stop, and a go still a go, so the guard did not switch the feature off.
+     */
+    @Test
+    public void testARealStopIsStillReadAsAStop()
+    {
+        byte[] stop = systemFrame(5);
+        stop[9] = (byte) CS2Message.CMD_SYSSUB_STOP;
+
+        assertEquals(new CS2Message(stop).getSubCommand(), CS2Message.CMD_SYSSUB_STOP,
+            "a five byte system frame carrying the stop sub command must still read as a stop");
+
+        byte[] go = systemFrame(5);
+        go[9] = (byte) CS2Message.CMD_SYSSUB_GO;
+
+        assertEquals(new CS2Message(go).getSubCommand(), CS2Message.CMD_SYSSUB_GO,
+            "and a go must still read as a go");
+    }
+
+    /**
+     * A raw thirteen byte CAN frame carrying a system command with the given payload length, built by
+     * hand because the point is a declared length that disagrees with the eight byte buffer.
+     */
+    private static byte[] systemFrame(int payloadLength)
+    {
+        byte[] raw = new byte[CS2Message.MESSAGE_LENGTH];
+
+        // Priority 0, command CMD_SYSTEM, response bit clear; a made-up hash; the declared length;
+        // then four bytes of UID, all a short system frame carries
+        raw[2] = 0x47;
+        raw[3] = 0x11;
+        raw[4] = (byte) payloadLength;
+
+        return raw;
     }
 }
