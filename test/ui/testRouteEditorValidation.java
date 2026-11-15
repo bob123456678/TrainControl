@@ -2137,6 +2137,33 @@ public class testRouteEditorValidation
     }
 
     /**
+     * OB-487: a new command starts with the address 0, so its address cell plainly holds a value, and Save refuses 0 as
+     * an address (the refusal itself is testBuildingARouteByHand's).
+     *
+     * MUTATION: in `CommandTable.addRow`, start the row with "" instead of "0", and the new row's address is empty.
+     */
+    @Test
+    public void testANewCommandStartsAtAddressZero() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(frame::addCommandRowForTest);
+
+            int added = frame.commandRowCountForTest() - 1;
+
+            assertEquals(frame.commandRowForTest(added).getTarget(), "0", "a new command's address");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
      * OB-367: a command's setting dropdown offers the words in the user's language and still holds the stored words.
      *
      * MUTATION: in `chooseSetting`, drop the `setRenderer` call, and the dropdown offers "straight" and "turn".
@@ -3662,7 +3689,7 @@ public class testRouteEditorValidation
 
             support.Mouse.choose(item(menu, "route.ui.menuAddCommand"));
 
-            assertEquals(targets(frame), " 11 12 13 _", "Add Command adds one at the end");
+            assertEquals(targets(frame), " 11 12 13 0", "Add Command adds one at the end");
 
             String first = offered(rightClickCell(table, 0, NOTHING_TO_EDIT));
 
@@ -3679,13 +3706,13 @@ public class testRouteEditorValidation
             support.Mouse.choose(item(menu, "ui.delete"));
             rightClickAndChoose(table, 1, "route.ui.menuInsertCommandAbove");
 
-            assertEquals(state(frame, table), " 11 _ 12 13 [1]", "Delete takes the command right-clicked; Insert"
+            assertEquals(state(frame, table), " 11 0 12 13 [1]", "Delete takes the command right-clicked; Insert"
                 + " Command Above puts a new command above 12, selected");
 
             rightClickAndChoose(table, 2, "route.ui.menuInsertCommandBelow");
             clickCondition(table, 1, NOTHING_TO_EDIT, java.awt.event.InputEvent.CTRL_DOWN_MASK);
 
-            assertEquals(state(frame, table), " 11 _ 12 _ 13 [1, 3]", "Insert Command Below puts a new command under"
+            assertEquals(state(frame, table), " 11 0 12 0 13 [1, 3]", "Insert Command Below puts a new command under"
                 + " 12, selected");
 
             rightClickAndChoose(table, 3, "ui.delete");
@@ -4089,7 +4116,7 @@ public class testRouteEditorValidation
 
             for (int more = 0; more < 3; more++) pressOnTheCommands(frame, "route.ui.menuAddCommand");
 
-            assertEquals(targets(frame), " 11 12 _ _ _", "Add Command adds a command at the end");
+            assertEquals(targets(frame), " 11 12 0 0 0", "Add Command adds a command at the end");
             assertEquals(support.Components.onTheEventThread(footOf(frame, table, add))[0], two[0],
                 "Add Command moved when three commands were added");
             assertTrue(frame.offersToAddCommands(), "the commands no longer offer Add Command");

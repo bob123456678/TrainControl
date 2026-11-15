@@ -4174,7 +4174,7 @@ public class RouteEditorFrame extends JFrame
 
             int at = by < 0 ? row : row + 1;
 
-            rows.add(at, Entry.of(new CommandRow(CommandRow.Kind.ACCESSORY, "", "straight")));
+            rows.add(at, Entry.of(new CommandRow(CommandRow.Kind.ACCESSORY, "0", "straight")));
             fireTableDataChanged();
 
             setRowSelectionInterval(at, at);
@@ -4226,7 +4226,7 @@ public class RouteEditorFrame extends JFrame
 
         void addRow()
         {
-            rows.add(Entry.of(new CommandRow(CommandRow.Kind.ACCESSORY, "", "straight")));
+            rows.add(Entry.of(new CommandRow(CommandRow.Kind.ACCESSORY, "0", "straight")));
             fireTableDataChanged();
         }
 
@@ -4271,8 +4271,10 @@ public class RouteEditorFrame extends JFrame
 
                 CommandRow row = entry.getRow();
 
+                // An address of 0 is how a new row starts (OB-487), so it counts as not filled in
                 boolean named = !CommandRow.hasTarget(row.getKind())
-                    || (row.getTarget() != null && !row.getTarget().trim().isEmpty());
+                    || (row.getTarget() != null && !row.getTarget().trim().isEmpty()
+                    && !(CommandRow.hasProtocol(row.getKind()) && "0".equals(row.getTarget().trim())));
 
                 if (!named) continue;
 
