@@ -100,7 +100,7 @@ public class testEveryWayBackFromALayoutSwitch
      * Create New Layout, Switch to Central Station Layout), and every one lands on the layout chosen.
      *
      * MUTATION: leave out the `initializeTrackDiagram(true)` of `TrainControlUI.openLayoutFolder`'s event-thread half,
-     * and the page box still lists the layout left after Open Layout and Recent Layouts.
+     * and the window keeps the station's page box after Open Layout, so the doors that follow fail.
      */
     @Test(timeOut = 360000)
     public void testEverySwitchWithPageWindowsOpenLeavesEveryWayBack() throws Exception
@@ -176,6 +176,37 @@ public class testEveryWayBackFromALayoutSwitch
         }
 
         landed(Door.RECENT.go(this, b), "Recent Layouts once the sync had ended");
+    }
+
+    /**
+     * After Recent Layouts says a folder is gone, each other folder it lists still opens from it (MT-996): Adam chose a
+     * folder that had been removed, was told so, and from then on nothing happened when he chose another.
+     *
+     * MUTATION: take the `!` off the `equals` in `LayoutMenus.forgetRecentLayout`, so it keeps the gone folder alone,
+     * and Recent Layouts no longer shows B.
+     */
+    @Test(timeOut = 120000)
+    public void testAfterAGoneFolderTheOthersStillOpen() throws Exception
+    {
+        landed(Door.RECENT.go(this, a), "setting up on A");
+
+        File gone = new File(root, "gone");
+
+        TrainControlUI.getPrefs().put(TrainControlUI.RECENT_LAYOUTS_PREF,
+            a.getPath() + "\n" + gone.getPath() + "\n" + b.getPath());
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            chooseFromRecentLayouts(gone);
+
+            assertTrue(answering.awaitAsked(1, 15000), "choosing a folder that is gone said nothing");
+            assertEquals(answering.asked().get(0), I18n.f("ui.main.toolbar.errorRecentLayoutGone", gone.getPath()));
+
+            Components.settle();
+        }
+
+        landed(Door.RECENT.go(this, b), "Recent Layouts after a gone folder was said");
+        landed(Door.RECENT.go(this, a), "Recent Layouts a second time after a gone folder was said");
     }
 
     private void everySwitchThenEveryWayBack(boolean withWindows) throws Exception
