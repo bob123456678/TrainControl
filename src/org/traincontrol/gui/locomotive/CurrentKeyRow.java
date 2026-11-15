@@ -633,7 +633,7 @@ public class CurrentKeyRow extends JComponent
     {
         Rectangle d = at.decoder;
 
-        paintPill(g2, d, DECODER_FILL);
+        paintPill(g2, d, DECODER_FILL, DECODER_TEXT);
 
         if (at.divider != null) g2.fillRect(at.divider.x, at.divider.y, at.divider.width, at.divider.height);
 
@@ -644,12 +644,12 @@ public class CurrentKeyRow extends JComponent
         if (!at.decoderAddress.isEmpty()) g2.drawString(at.decoderAddress, (float) at.addressX, (float) base);
     }
 
-    /** The decoder pill's shape in this box and fill, leaving the white and its font set for the words. */
-    private static void paintPill(Graphics2D g2, Rectangle d, Color fill)
+    /** The decoder pill's shape in this box and fill, leaving the words' color and font set. */
+    private static void paintPill(Graphics2D g2, Rectangle d, Color fill, Color ink)
     {
         g2.setColor(fill);
         g2.fill(new RoundRectangle2D.Double(d.x, d.y, d.width, d.height, d.height, d.height));
-        g2.setColor(DECODER_TEXT);
+        g2.setColor(ink);
         g2.setFont(TEXT_FONT);
     }
 
@@ -667,18 +667,23 @@ public class CurrentKeyRow extends JComponent
     }
 
     /**
-     * One part of words in the decoder pill's look, white words on a fill of its own, as tall as the row's pills:
+     * One part of words in the decoder pill's shape and font, in colors of its own, as tall as the row's pills:
      * Locomotive Settings' picture source (MT-924).  Hidden while it has no words.
      */
     public static final class Pill extends JComponent
     {
         private final Color fill;
+        private final Color ink;
         private String words = "";
 
-        /** @param fill the pill's color behind its white words */
-        public Pill(Color fill)
+        /**
+         * @param fill the pill's color
+         * @param ink its words' color
+         */
+        public Pill(Color fill, Color ink)
         {
             this.fill = fill;
+            this.ink = ink;
             setVisible(false);
         }
 
@@ -716,7 +721,7 @@ public class CurrentKeyRow extends JComponent
 
             try
             {
-                paintPill(g2, new Rectangle(0, 0, getWidth(), getHeight()), fill);
+                paintPill(g2, new Rectangle(0, 0, getWidth(), getHeight()), fill, ink);
                 g2.drawString(words, (float) ((getWidth() - advance(TEXT_FONT, words)) / 2),
                     (float) baseline(0, getHeight(), TEXT_FONT));
             }

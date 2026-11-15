@@ -879,7 +879,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         final JLabel wrench = new JLabel(new LocIconActions.WrenchMark());
         final JLabel crop = new JLabel(new LocIconActions.CropMark());
         final JLabel revert = new JLabel(new LocIconActions.RevertMark());
-        final CurrentKeyRow.Pill source = new CurrentKeyRow.Pill(new Color(112, 112, 112));
+        final CurrentKeyRow.Pill source = new CurrentKeyRow.Pill(new Color(208, 208, 208), new Color(64, 64, 64));
 
         private final String loadedName = adding ? "" : loc.getName();
         private final String loadedAddress = adding ? "" : Integer.toString(loc.getAddress());
