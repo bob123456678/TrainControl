@@ -536,6 +536,7 @@ Tab icons provided by Freepik.
             - Cancel in the autonomy editor now puts every train back where it stood when the editor opened, and its question names the trains that will move.  Cancel never turns a train around: each keeps the way it faces now, however it got there, and a train whose only change is its facing is not named.
             - While an editor is open, linking a multi-unit, changing an address or decoder, pressing `Sync`, and a locomotive CSV import that changes addresses are refused with a message, and switching, creating or downloading a layout and the `Autonomy` menu's configuration items are grayed, since Cancel could not undo them.  A sync that a route edit or a function reset runs afterward waits and runs once when the editor closes.
             - The tabs in `Station Settings` now run to the window's edges.
+            - `Done Editing` in `Station Settings` no longer shifts up or down when you switch between the `Settings` and `Train Placement` tabs.
         - Locomotive Control
             - Ctrl+B now moves the copied locomotive to the active button, as the key menu's `Move` item says.
             - Saving a typed address in `Locomotive Settings` changes the decoder type only if you changed it, and the address is checked against the decoder type that will be saved, there and when adding a locomotive.

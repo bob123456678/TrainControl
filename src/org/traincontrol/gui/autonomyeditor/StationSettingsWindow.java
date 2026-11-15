@@ -234,8 +234,12 @@ public final class StationSettingsWindow extends StationWindowBase
 
         trainTab.settings.setVisible(false);
 
-        // Locomotive Settings... sits on Done Editing's row, at the bottom left
-        assemble(middle).add(trainTab.settings, BorderLayout.WEST);
+        // Locomotive Settings... sits on Done Editing's row, at the bottom left; its height is kept on the Settings tab
+        // too, so Done Editing does not move between the tabs (OB-479)
+        JPanel footer = assemble(middle);
+
+        footer.add(trainTab.settings, BorderLayout.WEST);
+        footer.add(Box.createVerticalStrut(trainTab.settings.getPreferredSize().height), BorderLayout.CENTER);
 
         int formOnly = form.getPreferredSize().width + 2 * PAD - 24;
         int presetsWidth = presetsPanel.getPreferredSize().width;
