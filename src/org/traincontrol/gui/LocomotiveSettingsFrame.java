@@ -230,7 +230,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         tabs.putClientProperty("JTabbedPane.tabWidthMode", "preferred");
 
         save.addActionListener(e -> save());
-        cancel.addActionListener(e -> close());
+        cancel.addActionListener(e -> closeAsking());
 
         // Save, then Cancel, at the bottom right, spaced as the route editor's are
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
@@ -570,7 +570,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         save.setEnabled(adding || isDirty() && !blocked);
     }
 
-    /** The X and Escape: closes, asking first what to do with typing that is not saved. */
+    /** The X, Escape and Cancel: closes, asking first what to do with typing that is not saved (MT-939). */
     void closeAsking()
     {
         if (isDirty() && !settleUnsaved()) return;

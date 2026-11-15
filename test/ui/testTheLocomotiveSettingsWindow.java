@@ -301,7 +301,7 @@ public class testTheLocomotiveSettingsWindow
         SettingsWindow.type("notes.startYear", "1980");
         SettingsWindow.type("notes.railway", "LS New Railway");
 
-        SettingsWindow.press(SettingsWindow.cancel());
+        SettingsWindow.cancelDiscarding();
 
         assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "Cancel did not close the window");
         assertEquals(loc.getName(), NAME, "Cancel renamed the locomotive");
@@ -1581,6 +1581,141 @@ public class testTheLocomotiveSettingsWindow
 
         assertTrue(closeBy(true), "Save on the question did not close the window");
         assertNotNull(model.getLocByName("LS renamed"), "Save on the question did not write the typing");
+    }
+
+    /**
+     * Cancel asks what to do with typing that is not saved, as the X does: Cancel on the question keeps the window and
+     * the typing, Discard closes and writes nothing, Save writes and closes; with nothing typed it just closes (MT-939).
+     *
+     * MUTATION: wire the Cancel button to `close()` rather than `closeAsking()`, and this fails.
+     */
+    @Test
+    public void testCancelAsksAboutTypingNotSaved() throws Exception
+    {
+        open(0);
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+        SettingsWindow.press(SettingsWindow.cancel());
+
+        assertNull(SettingsWindow.showing(), "a window with nothing typed did not just close");
+
+        open(2);
+        typeArea("notes.text", "typed notes");
+
+        SettingsWindow.press(SettingsWindow.cancel());
+
+        assertNotNull(SettingsWindow.showing(), "Cancel closed the window without asking about the notes typed");
+        assertEquals(Components.onTheEventThread(() -> SettingsWindow.part("notes.text", JTextArea.class).getText()),
+            "typed notes", "Cancel on the question lost the typing");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+        SettingsWindow.press(SettingsWindow.cancel());
+
+        assertNull(SettingsWindow.showing(), "Discard did not close the window");
+        assertEquals(loc.getStructuredNotes().getNotes(), "first notes", "Discard wrote the notes");
+
+        open(2);
+        typeArea("notes.text", "typed notes");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 0;
+        SettingsWindow.press(SettingsWindow.cancel());
+
+        assertNull(SettingsWindow.showing(), "Save on the question did not close the window");
+        assertEquals(loc.getStructuredNotes().getNotes(), "typed notes", "Save on the question did not write the notes");
+    }
+
+    /**
+     * A window locked while its train moves, or while autonomy runs, closes at the X, Escape and Cancel without asking
+     * when nothing is typed: what the run does to the train is not typing (MT-939).
+     *
+     * MUTATION: have `closeAsking` ask whether or not the window is dirty, and this fails.
+     */
+    @Test
+    public void testALockedWindowWithNothingTypedClosesWithoutAsking() throws Exception
+    {
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+
+        try
+        {
+            for (int door = 0; door < 3; door++)
+            {
+                open(0);
+
+                SettingsWindow.power(ui, model, true);
+                loc.setSpeed(40);
+
+                assertTrue(Components.waitFor(() -> Components.onTheEventThread(
+                    SettingsWindow.part("settings.strip", JLabel.class)::isVisible), WAIT), "precondition: the window did not lock");
+
+                if (door < 2)
+                {
+                    assertTrue(closeBy(door == 0), "a locked window with nothing typed did not close at door " + door);
+                }
+                else
+                {
+                    SettingsWindow.press(SettingsWindow.cancel());
+
+                    assertNull(SettingsWindow.showing(), "a locked window with nothing typed did not close at Cancel");
+                }
+
+                loc.setSpeed(0);
+                SettingsWindow.power(ui, model, false);
+            }
+
+            open(0);
+
+            model.getAutoLayout().setStagingInProgress(true);
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(
+                SettingsWindow.part("settings.strip", JLabel.class)::isVisible), WAIT), "precondition: autonomy did not lock the window");
+
+            SettingsWindow.press(SettingsWindow.cancel());
+
+            assertNull(SettingsWindow.showing(), "a window locked by autonomy with nothing typed did not close at Cancel");
+        }
+        finally
+        {
+            model.getAutoLayout().setStagingInProgress(false);
+            loc.setSpeed(0);
+            SettingsWindow.power(ui, model, false);
+        }
+    }
+
+    /**
+     * Add Locomotive into a window holding typing asks first, and so does opening a locomotive over Add's typing; Cancel
+     * keeps the typing where it was, Discard goes on and writes nothing (MT-939).
+     *
+     * MUTATION: skip `settleUnsaved` in `aimAtANewLocomotive`, and this fails.
+     */
+    @Test
+    public void testAddLocomotiveAndTheWindowItLeavesAskAboutTypingNotSaved() throws Exception
+    {
+        open(0);
+        SettingsWindow.type("settings.name", "LS renamed");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+
+        assertFalse(Components.onTheEventThread(ui::openAddLocomotive), "Cancel went on to Add Locomotive");
+        assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "Cancel lost the typing");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+
+        assertTrue(Components.onTheEventThread(ui::openAddLocomotive), "Discard did not go on to Add Locomotive");
+        assertEquals(SettingsWindow.text("settings.name"), "", "Add Locomotive did not open blank");
+        assertEquals(loc.getName(), NAME, "Discard wrote the typing");
+
+        SettingsWindow.type("settings.name", "LS elsewhere");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+
+        assertFalse(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "Cancel went on to the other locomotive");
+        assertEquals(SettingsWindow.text("settings.name"), "LS elsewhere", "Cancel lost Add's typing");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+
+        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "Discard did not go on");
+        assertEquals(SettingsWindow.text("settings.name"), OTHER);
+        assertNull(model.getLocByName("LS elsewhere"), "Discard made the locomotive typed in Add");
     }
 
     /**

@@ -392,7 +392,7 @@ public class testMappingPagesAndLocomotiveDoors
         openWithControl(KeyEvent.VK_N, 2);
 
         support.SettingsWindow.type("notes.startYear", "1960");
-        support.SettingsWindow.press(support.SettingsWindow.cancel());
+        support.SettingsWindow.cancelDiscarding();
 
         assertEquals(one.getStructuredNotes().getStartYear(), 1957, "Cancel changed the notes");
     }
@@ -467,7 +467,7 @@ public class testMappingPagesAndLocomotiveDoors
         assertTrue(asked.get(1).contains(THREE), "the results do not name the train of the years typed: " + asked.get(1));
         assertFalse(asked.get(1).contains(TWO), "the results name a train of the saved years: " + asked.get(1));
 
-        support.SettingsWindow.press(support.SettingsWindow.cancel());
+        support.SettingsWindow.cancelDiscarding();
 
         assertEquals(one.getStructuredNotes().getStartYear(), 1950, "Find Similar saved the years typed");
         assertEquals(one.getName(), ONE, "Find Similar saved the name typed");
