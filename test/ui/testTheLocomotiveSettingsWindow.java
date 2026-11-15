@@ -16,6 +16,7 @@ import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -1974,6 +1975,91 @@ public class testTheLocomotiveSettingsWindow
 
         Mouse.click(SettingsWindow.part("settings.revert", Component.class));
         assertEquals(pillShows(station), station, "clearing the local picture did not name the station's at once");
+    }
+
+    /**
+     * The pill names the picture on screen: while the station's picture is still on its way, the revert leaves the
+     * local picture and its pill up together, and both change when the station's picture arrives (MT-924).
+     *
+     * MUTATION: set the pill in `refreshPicture` when the fetch starts rather than when its picture lands, and this
+     * fails.
+     */
+    @Test
+    public void testThePillWaitsForThePictureItNames() throws Exception
+    {
+        String station = I18n.t("loc.ui.settingsPictureFromStation");
+        String local = I18n.t("loc.ui.settingsPictureLocal");
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        java.io.ByteArrayOutputStream png = new java.io.ByteArrayOutputStream();
+
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(40, 20, java.awt.image.BufferedImage.TYPE_INT_RGB),
+            "png", png);
+
+        // A station that holds its picture back until told
+        try (support.StandInStation slow = new support.StandInStation((path, n) ->
+        {
+            try
+            {
+                release.await(2 * WAIT, java.util.concurrent.TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            return png.toByteArray();
+        }))
+        {
+            loc.setImageURL("http://" + slow.address() + "/MT-924-slow.png");
+            loc.setLocalImageURL(pngFile().toURI().toString());
+            open(0);
+            assertEquals(pillShows(local), local, "the local picture is not named");
+
+            JLabel picture = SettingsWindow.part("settings.picture", JLabel.class);
+            CurrentKeyRow.Pill pill = SettingsWindow.part("settings.pictureSource", CurrentKeyRow.Pill.class);
+            javax.swing.Icon own = Components.onTheEventThread(picture::getIcon);
+
+            Mouse.click(SettingsWindow.part("settings.revert", Component.class));
+            assertTrue(Components.waitFor(() -> loc.getLocalImageURL() == null, WAIT), "the revert did not clear the icon");
+
+            // The window's own look at the locomotive, and what is on screen straight after it
+            LocomotiveSettingsFrame window = SettingsWindow.showing();
+            Object[] shown = Components.onTheEventThread(() ->
+            {
+                watch(window).getActionListeners()[0].actionPerformed(null);
+
+                return new Object[] {picture.getIcon(), pill.isShowing() ? pill.getText() : null};
+            });
+
+            assertSame(shown[0], own, "the local picture left before the station's arrived");
+            assertEquals(shown[1], local, "the pill named the station's picture over the local one");
+
+            release.countDown();
+            assertEquals(pillShows(station), station, "the station's picture arrived without its pill");
+            assertNotSame(Components.onTheEventThread(picture::getIcon), own, "the station's picture never replaced it");
+        }
+        finally
+        {
+            release.countDown();
+        }
+    }
+
+    /** A small picture in a file of its own, gone when the run ends. */
+    private static java.io.File pngFile() throws Exception
+    {
+        java.io.File file = java.io.File.createTempFile("MT-924-", ".png");
+
+        file.deleteOnExit();
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(40, 20, java.awt.image.BufferedImage.TYPE_INT_RGB),
+            "png", file);
+
+        return file;
+    }
+
+    /** The window's once-a-second look at the locomotive. */
+    private static javax.swing.Timer watch(LocomotiveSettingsFrame window) throws Exception
+    {
+        return (javax.swing.Timer) Reflect.get(LocomotiveSettingsFrame.class, window, "watch");
     }
 
     /** The pill's words once they are these (null: once it is hidden), or what it shows when they never come. */

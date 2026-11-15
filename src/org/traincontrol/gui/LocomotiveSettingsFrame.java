@@ -1388,12 +1388,15 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                     // The application's stand-in, as the locomotive buttons and the database show it (FR-054)
                     picture.setIcon(new ImageIcon(
                         org.traincontrol.gui.locomotive.LocomotivePlaceholder.image(PICTURE_WIDTH - 2)));
+                    source.setText(null);
                 }
                 else
                 {
                     // A fetch may be over the network: loaded off the event thread, and a result for a locomotive the
-                    // window has since left is ignored
+                    // window has since left is ignored.  The pill names the picture on screen, so it changes with it.
                     final Locomotive target = loc;
+                    final String from = I18n.t(loc.getLocalImageURL() != null ? "loc.ui.settingsPictureLocal"
+                        : "loc.ui.settingsPictureFromStation");
 
                     main.getImageLoader().execute(() ->
                     {
@@ -1413,7 +1416,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
                         SwingUtilities.invokeLater(() ->
                         {
-                            if (loc == target && url.equals(shownPicture)) picture.setIcon(shown);
+                            if (loc == target && url.equals(shownPicture))
+                            {
+                                picture.setIcon(shown);
+                                source.setText(from);
+                            }
                         });
                     });
                 }
@@ -1421,10 +1428,6 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             crop.setVisible(TrainControlUI.offersACrop(loc));
             revert.setVisible(loc.getLocalImageURL() != null);
-
-            // Where the picture shown comes from
-            source.setText(loc.getLocalImageURL() != null ? I18n.t("loc.ui.settingsPictureLocal")
-                : url == null || url.isEmpty() ? null : I18n.t("loc.ui.settingsPictureFromStation"));
         }
     }
 
