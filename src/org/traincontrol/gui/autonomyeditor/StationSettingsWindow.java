@@ -1795,8 +1795,10 @@ public final class StationSettingsWindow extends StationWindowBase
 
                     picture.showWays(shownRules);
 
-                    // May depart grays where the railway leaves one way out; read, as a reload reads
-                    if (departShape != null && !isSeveral() && !waysOut().equals(departOut))
+                    // May depart grays where the railway leaves one way out; read, as a reload reads, and never under
+                    // the keyboard, so a choice being stepped to stays
+                    if (departShape != null && !isSeveral() && !waysOut().equals(departOut)
+                        && departChoices.values().stream().noneMatch(Component::isFocusOwner))
                     {
                         reading = true;
 
