@@ -119,6 +119,38 @@ public class testReturnHomeSetsTheSwitchesOnTheWayHome
     @Test
     public void testReturnHomeRunsTheTrainHomeThroughTheTurnout() throws Exception
     {
+        final List<Edge> way = runHome();
+
+        final Map<String, Accessory.accessorySetting> settings = new LinkedHashMap<>();
+
+        for (Edge e : way) settings.putAll(e.getConfigCommands());
+
+        for (Map.Entry<String, Accessory.accessorySetting> c : settings.entrySet())
+        {
+            assertEquals(model.getAccessoryByName(c.getKey()).isSwitched(), Accessory.isThrow(c.getValue()), c.getKey()
+                + " was not set " + c.getValue() + " by the run home along " + model.getAutoLayout().pathToString(way));
+        }
+    }
+
+    /**
+     * MT-1001 step 4: with Toggle specified routes ticked and only R1 listed, R1 switched off and R2 on by hand, Return
+     * Home switches R1 on again and R2 off, as their right-click menus read once the train is home.
+     *
+     * MUTATION: leave the `applyAutonomyRouteActivations()` call out of `Layout.executeTimetable(int)` and this fails.
+     */
+    @Test
+    public void testReturnHomeHoldsToTheRouteListOverTheHandSwitches() throws Exception
+    {
+        support.RouteListDoors.HandSwitched.runAndRead((TrainControlUI) model.getGUI(), true, "Return Home",
+            () -> runHome());
+    }
+
+    /**
+     * Puts the train on its home platform and then away, sets the turnouts on its way home the other way, presses Return
+     * Home and waits for the train to be home and the run to rest; gives back the way it took.
+     */
+    private static List<Edge> runHome() throws Exception
+    {
         final Layout railway = model.getAutoLayout();
 
         railway.setSimulate(true);
@@ -167,6 +199,9 @@ public class testReturnHomeSetsTheSwitchesOnTheWayHome
         assertEquals(Components.onTheEventThread(returnHome::getText), I18n.t("ui.main.returnHome"),
             "the window's Return Home does not say so");
 
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(returnHome::isEnabled), RUN_MS), "precondition:"
+            + " Return Home is not offered: " + Components.onTheEventThread(returnHome::getToolTipText));
+
         try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
         {
             Components.select(returnHome);
@@ -179,11 +214,9 @@ public class testReturnHomeSetsTheSwitchesOnTheWayHome
                 + answering.asked());
         }
 
-        for (Map.Entry<String, Accessory.accessorySetting> c : settings.entrySet())
-        {
-            assertEquals(model.getAccessoryByName(c.getKey()).isSwitched(), Accessory.isThrow(c.getValue()), c.getKey()
-                + " was not set " + c.getValue() + " by the run home along " + railway.pathToString(way));
-        }
+        assertTrue(support.Settle.gracefully(railway, support.Settle.PATIENCE_MS), "the run home did not come to rest");
+
+        return way;
     }
 
     /**

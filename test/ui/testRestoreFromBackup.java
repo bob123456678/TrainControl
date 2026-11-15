@@ -62,6 +62,7 @@ public class testRestoreFromBackup
     private static final String PROBE = "FR-124 probe route";
     private static final String RUN_TRAIN = "FR-124 run train";
     private static final String OTHER_LAYOUT = "FR-124 another layout";
+    private static final String NOTED = "MT-1002 noted locomotive";
 
     private static support.LayoutSandbox sandbox;
 
@@ -1049,6 +1050,239 @@ public class testRestoreFromBackup
         assertEquals(databaseBytes(), before, "the held database changed");
 
         assertEquals(guard.exits(), Collections.singletonList(0), "Exit Without Saving did not close TrainControl");
+    }
+
+    /**
+     * MT-1002 step 3: File &gt; Back Up TrainControl Data with the locomotive database locked, as another program locks
+     * it, so it can be neither saved nor copied: the backup is not called complete, and says in plain words that
+     * `LocDB.data` is not in it, without a path or an exception's name.  The archive indeed lacks it.
+     *
+     * MUTATION: in `BackupAction.writeTheBackup`, leave the not-copied files under `ui.backupHasItAsLastSaved`, and
+     * this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testABackupWithTheDatabaseLockedSaysItIsNotInTheBackup() throws Exception
+    {
+        String said = backUpHolding(() -> lockTheDatabase());
+
+        assertFalse(said.startsWith(I18n.f("ui.infoBackupCompleteSavedTo", "").trim()), "the backup called itself"
+            + " complete: " + said);
+        assertTrue(said.contains(I18n.f("ui.backupNotSavedOrCopied", MarklinControlStation.DATA_FILE_NAME,
+            I18n.t("ui.reasonInUse"))), "the backup does not say plainly that " + MarklinControlStation.DATA_FILE_NAME
+            + " is not in it: " + said);
+        assertFalse(said.contains(lastSavedLead()) || said.contains("Exception") || said.contains(":" + File.separator),
+            "the backup says the file is in it as last saved, or names a path or an exception: " + said);
+        assertFalse(entriesOf(theNewArchive()).containsKey(MarklinControlStation.DATA_FILE_NAME), "precondition: the"
+            + " archive has the locked file after all");
+    }
+
+    /**
+     * A database another program holds open but lets others read cannot be saved, yet is copied: the backup still says
+     * it has it as last saved, and the archive has it.
+     *
+     * MUTATION: in `BackupAction.writeTheBackup`, say `ui.backupNotSavedOrCopied` for every file that did not save, and
+     * this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testABackupWithTheDatabaseHeldSaysItHasItAsLastSaved() throws Exception
+    {
+        String said = backUpHolding(() -> new java.io.FileInputStream(Util.dataPath(MarklinControlStation.DATA_FILE_NAME)));
+
+        assertTrue(said.contains(lastSavedLead()) && !said.contains(I18n.f("ui.backupNotSavedOrCopied",
+            MarklinControlStation.DATA_FILE_NAME, I18n.t("ui.reasonInUse"))), "the backup does not say it has "
+            + MarklinControlStation.DATA_FILE_NAME + " as last saved: " + said);
+        assertTrue(entriesOf(theNewArchive()).containsKey(MarklinControlStation.DATA_FILE_NAME), "the archive lacks the"
+            + " held file it could read");
+    }
+
+    /** A note typed and saved, then File &gt; Back Up with the database held by `hold`; gives back what it said. */
+    private String backUpHolding(java.util.concurrent.Callable<java.io.Closeable> hold) throws Exception
+    {
+        noteTypedInTheSettingsWindow();
+
+        try (java.io.Closeable held = hold.call(); Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            Components.press(Components.withText(ui, I18n.t("ui.main.toolbar.backupData")));
+
+            assertTrue(answering.awaitAsked(1, 120000), "the backup never finished");
+
+            return answering.asked().get(0);
+        }
+    }
+
+    /** How `ui.backupHasItAsLastSaved` begins for the locomotive database, before its reason. */
+    private static String lastSavedLead()
+    {
+        String lead = I18n.f("ui.backupHasItAsLastSaved", MarklinControlStation.DATA_FILE_NAME, "\n");
+
+        return lead.substring(0, lead.indexOf('\n'));
+    }
+
+    /** The one archive this claim's backup wrote. */
+    private File theNewArchive()
+    {
+        List<String> zips = new ArrayList<>();
+
+        for (String name : newBackups()) if (name.endsWith(".zip")) zips.add(name);
+
+        assertEquals(zips.size(), 1, "precondition: not one new archive: " + zips);
+
+        return new File(backupFolder(), zips.get(0));
+    }
+
+    /**
+     * MT-1002 steps 1, 2 and 4 to 6: a note saved in Locomotive Settings, the database locked, File &gt; Exit.  The
+     * question names `LocDB.data` and offers Retry and Exit Without Saving; Retry while still locked asks again; Retry
+     * once unlocked closes TrainControl, and the next start reads the note.
+     *
+     * MUTATION: in `WindowClosed`, end the save loop on Retry (`== 1` to `== 0`), and the note is lost.
+     */
+    @Test(timeOut = 180000)
+    public void testRetryOnceUnlockedKeepsTheChangeForTheNextStart() throws Exception
+    {
+        String note = noteTypedInTheSettingsWindow();
+
+        List<Answering.Question> asked = exitWithTheDatabaseLocked(I18n.t("ui.exitSaveRetry"));
+
+        assertEquals(asked.size(), 2, "Retry while still locked did not ask again: " + asked.size() + " questions");
+        String lead = I18n.f("ui.errorExitSaveFailed", "\u0001");
+
+        assertTrue(asked.get(0).message.startsWith(lead.substring(0, lead.indexOf('\u0001')).trim())
+            && asked.get(0).message.contains(MarklinControlStation.DATA_FILE_NAME), "the question does not say"
+            + " TrainControl could not save " + MarklinControlStation.DATA_FILE_NAME + ": " + asked.get(0).message);
+        assertEquals(asked.get(0).buttons, Arrays.asList(I18n.t("ui.exitSaveRetry"), I18n.t("ui.exitWithoutSaving")),
+            "the question does not offer Retry and Exit Without Saving");
+        assertEquals(guard.exits(), Collections.singletonList(0), "TrainControl did not close once the save worked");
+
+        assertEquals(notesAtTheNextStart(), note, "the note saved before the lock is not there at the next start");
+    }
+
+    /**
+     * MT-1002 step 7: the same exit answered Exit Without Saving closes at once, the file as it was, and the next start
+     * does not have the note.
+     *
+     * MUTATION: in `WindowClosed`, read every answer as Retry, and the note is saved once the lock goes.
+     */
+    @Test(timeOut = 180000)
+    public void testExitWithoutSavingLosesTheChangeAtTheNextStart() throws Exception
+    {
+        String note = noteTypedInTheSettingsWindow();
+
+        byte[] before = databaseBytes();
+
+        assertEquals(exitWithTheDatabaseLocked(I18n.t("ui.exitWithoutSaving")).size(), 1, "Exit Without Saving was"
+            + " asked again");
+        assertEquals(guard.exits(), Collections.singletonList(0), "Exit Without Saving did not close TrainControl");
+        assertEquals(databaseBytes(), before, "the locked database changed");
+
+        assertFalse(note.equals(notesAtTheNextStart()), "the note is there at the next start after Exit Without Saving");
+    }
+
+    /**
+     * A locomotive's notes typed on the Notes tab of Locomotive Settings and saved, after the database is saved as it
+     * stood, as the MT's copied file is; gives back the text.
+     */
+    private String noteTypedInTheSettingsWindow() throws Exception
+    {
+        if (model.getLocByName(NOTED) == null) model.newMM2Locomotive(NOTED, 77);
+
+        assertEquals(model.saveState(false), null, "precondition: the database did not save as it stood");
+
+        org.traincontrol.base.Locomotive loc = model.getLocByName(NOTED);
+        String note = "MT-1002 note " + System.nanoTime();
+
+        assertTrue(support.SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.NOTES, null)
+            && support.SettingsWindow.awaited() != null, "precondition: Locomotive Settings did not open");
+
+        Components.onTheEventThread(() ->
+        {
+            support.SettingsWindow.part("notes.text", javax.swing.JTextArea.class).setText(note);
+
+            return null;
+        });
+
+        support.SettingsWindow.press(support.SettingsWindow.save());
+
+        assertTrue(Components.waitFor(() -> note.equals(loc.getStructuredNotes().getNotes()), 10000), "precondition:"
+            + " Save did not keep the note");
+
+        return note;
+    }
+
+    /**
+     * The run's locomotive database opened and locked whole, as a program opening it unshared does: nothing can replace
+     * it (`java.io` opens without delete sharing, which NIO would give) and nothing can read it (the lock).
+     */
+    private static java.io.RandomAccessFile lockTheDatabase() throws Exception
+    {
+        databaseBytes();
+
+        java.io.RandomAccessFile file = new java.io.RandomAccessFile(Util.dataPath(MarklinControlStation.DATA_FILE_NAME),
+            "rw");
+
+        file.getChannel().lock();
+
+        return file;
+    }
+
+    /**
+     * Chooses File &gt; Exit with the database locked, the first question answered with `first` and any later one by
+     * unlocking and pressing Retry, so an exit that ignores its answer ends rather than hangs.
+     */
+    private List<Answering.Question> exitWithTheDatabaseLocked(String first) throws Exception
+    {
+        final java.io.RandomAccessFile locked = lockTheDatabase();
+        final javax.swing.JMenuItem exit = (javax.swing.JMenuItem) Reflect.get(TrainControlUI.class, ui, "exitMenuItem");
+
+        assertEquals(exit.getText(), I18n.t("ui.main.toolbar.exit"), "precondition: the File menu's Exit does not say so");
+
+        int[] answered = {0};
+
+        try (Answering answering = Answering.start(message ->
+        {
+            if (answered[0]++ == 0) return Answering.press(first);
+
+            closeQuietly(locked);
+
+            return Answering.press(I18n.t("ui.exitSaveRetry"));
+        }))
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    exit.doClick(0);
+                }
+                catch (SecurityException refused)
+                {
+                    // The exit `guard` refused
+                }
+            });
+
+            return answering.questions();
+        }
+        finally
+        {
+            closeQuietly(locked);
+        }
+    }
+
+    /** Closes this window and model and starts again on the run's data files, as the next start does. */
+    private String notesAtTheNextStart() throws Exception
+    {
+        final TrainControlUI closing = ui;
+
+        SwingUtilities.invokeAndWait(closing::dispose);
+        model.stop();
+
+        model = support.TestStation.simulatedWithWindow();
+        ui = (TrainControlUI) model.getGUI();
+
+        Components.settle();
+
+        assertNotNull(model.getLocByName(NOTED), "precondition: the next start has no " + NOTED);
+
+        return model.getLocByName(NOTED).getStructuredNotes().getNotes();
     }
 
     /** The run's locomotive database, made first where there is none, so there is a file to hold. */
