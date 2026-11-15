@@ -73,7 +73,8 @@ if HERE not in sys.path:
 import triage  # noqa: E402  - the path has to be set first
 
 
-DB_FILE = os.path.join(HERE, "triage.db")
+# TRIAGE_DB names another store (a copy to test against); unset, it is the one beside this file.
+DB_FILE = os.environ.get("TRIAGE_DB") or os.path.join(HERE, "triage.db")
 
 
 
