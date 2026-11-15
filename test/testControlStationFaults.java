@@ -512,4 +512,65 @@ public class testControlStationFaults
 
         return raw;
     }
+
+    /**
+     * The Central Station sends many responses twice, back to back, and the second is ignored.  An
+     * identical packet long after the first is a second real command, and must be processed.
+     */
+    @Test
+    public void testAnIdenticalPacketLongAfterTheFirstIsNotADuplicate() throws Exception
+    {
+        CS2Message m = new CS2Message(CS2Message.CMD_ACC_SWITCH, 0x4711, true,
+            new byte[]{ 0, 0, 0x30, 0x2A, 1, 1 });
+
+        int before = model.getNumMessagesProcessed();
+
+        model.receiveMessage(m);
+        assertEquals(model.getNumMessagesProcessed(), before + 1, "the first packet is processed");
+
+        model.receiveMessage(new CS2Message(m));
+        assertEquals(model.getNumMessagesProcessed(), before + 1,
+            "an identical packet straight after the first is the station's duplicate and is ignored");
+
+        Thread.sleep(400);
+
+        model.receiveMessage(new CS2Message(m));
+        assertEquals(model.getNumMessagesProcessed(), before + 2,
+            "an identical packet 400 ms later is a second real command, and was ignored");
+    }
+
+    /**
+     * Pressing Stop while the application is not connected says that it was not sent.
+     */
+    @Test
+    public void testStopWhileNotConnectedSaysSo() throws Exception
+    {
+        java.util.logging.Logger logger =
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+        List<String> said = new ArrayList<>();
+        java.util.logging.Handler h = new java.util.logging.Handler()
+        {
+            @Override public void publish(java.util.logging.LogRecord r) { said.add(r.getMessage()); }
+            @Override public void flush() {}
+            @Override public void close() {}
+        };
+
+        boolean wasLog = MarklinControlStation.DEBUG_LOG_NETWORK;
+        MarklinControlStation.DEBUG_LOG_NETWORK = false;
+        logger.addHandler(h);
+
+        try
+        {
+            model.setNetworkCommState(false);
+            model.stop();
+        }
+        finally
+        {
+            logger.removeHandler(h);
+            MarklinControlStation.DEBUG_LOG_NETWORK = wasLog;
+        }
+
+        assertFalse(said.isEmpty(),
+            "Stop was discarded because comms are off, and nothing was logged about it");
+    }
 }

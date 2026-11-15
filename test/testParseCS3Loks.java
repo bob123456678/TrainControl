@@ -316,4 +316,27 @@ public class testParseCS3Loks
         assertTrue(traktion.contains("lokname=Ordinary Name"),
             "control: the ordinary member must still be present: " + traktion);
     }
+
+    /**
+     * An MFX locomotive record with no address field is addressed from its UID, less the MFX base.
+     *
+     * The importer falls back to the UID, which is the address plus the decoder type's base.  The DCC
+     * branch subtracts the base; the MFX branch did not, so the locomotive was created pointing at a
+     * decoder past the highest MFX address there is.
+     */
+    @Test
+    public void testAnMfxRecordWithNoAddressIsAddressedFromItsUid() throws Exception
+    {
+        String file = "[lokomotive]\nversion\n .minor=3\nlokomotive\n .name=No Address MFX\n"
+            + " .richtung=1\n .uid=0x4005\n .typ=mfx\n .icon=x\n .av=20\n .tachomax=120\n";
+
+        List<MarklinLocomotive> locs = new CS2File(null, null).parseLocomotives(
+            parseFile(new BufferedReader(new StringReader(file))));
+
+        MarklinLocomotive l = getLocByName(locs, "No Address MFX");
+
+        assertNotNull(l, "the record should have been imported");
+        assertEquals(l.getAddress(), 5,
+            "a UID of 0x4005 is address 5 on an MFX decoder; the base was left on");
+    }
 }

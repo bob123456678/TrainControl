@@ -24,6 +24,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.Util;
 
 /**
  * Marklin Central Station 2/3 config file parser
@@ -1749,6 +1750,20 @@ public final class CS2File
                         if ("mfx".equals(m.get("typ")))
                         {
                             type = MarklinLocomotive.decoderType.MFX;
+
+                            // The same correction the DCC branch below has carried all along, and for
+                            // the same reason: with no address field in the file the UID was used
+                            // instead, and a UID is the address plus the type's base.  Left
+                            // uncorrected it is past the highest MFX address there is, so the
+                            // locomotive was created pointing at a decoder that cannot exist - every
+                            // command sent into nothing, every state update from the real one
+                            // unmatched, and the bad address written into the database.  The
+                            // constructor does not validate; only setAddress does, so this bit
+                            // existing locomotives not at all and new ones every time.
+                            if (address > MarklinLocomotive.MFX_MAX_ADDR)
+                            {
+                                address -= MarklinLocomotive.MFX_BASE;
+                            }
                         }
                         else if ("dcc".equals(m.get("typ")))
                         {
@@ -1831,25 +1846,22 @@ public final class CS2File
             configDir.mkdirs();
         }
         
+        // Staged and moved into place, all three of these.
+        //
+        // Opening the destination truncates it at once, so a transfer that stopped part way - the
+        // fifteen second read timeout, a station rebooted mid-sync, a cable - closed and COMMITTED a
+        // half-written file.  When the destination is the local layout folder, which is what this
+        // download is for, the next sync reads that truncation as the authoritative diagram: a page
+        // missing most of its track, and nothing to say so.  The hazard is named in this file's own
+        // comments; only the filename half of it was fixed.
         File masterLayoutFile = new File(configDir, "gleisbild.cs2");
-        try (BufferedReader reader = fetchURL(gleisbild);
-        
-        // Files.newBufferedWriter, not FileWriter: FileWriter encodes in the platform default charset
-        // (Cp1252 on the Windows/Java 8 configuration this targets), while the only reader of these
-        // files - CS2File.fetchURL - decodes UTF-8 unconditionally.  A layout page whose name contains
-        // a non-ASCII character was written in one encoding and read back in another, so the name came
+        // UTF-8 explicitly, not the platform default: FileWriter would encode in Cp1252 on the
+        // Windows/Java 8 configuration this targets, while the only reader of these files -
+        // CS2File.fetchURL - decodes UTF-8 unconditionally.  A layout page whose name contains a
+        // non-ASCII character was written in one encoding and read back in another, so the name came
         // back mangled, the file it pointed at could not be found, and syncWithCS2 responded by
-        // silently clearing the local-layout override.  LayoutDiagram.saveChanges already wrote page
-        // content this way; these three writers did not.
-        BufferedWriter writer = Files.newBufferedWriter(masterLayoutFile.toPath()))
-        {
-            String line;
-            while ((line = reader.readLine()) != null)
-            {
-                writer.write(line);
-                writer.newLine();
-            }
-        }
+        // silently clearing the local-layout override.
+        copyAtomically(gleisbild, masterLayoutFile);
         
         // Process layout list and write files to localPath/config/gleisbilder/<layoutName>.cs2
         File layoutsDir = new File(configDir, "gleisbilder");
@@ -1863,34 +1875,55 @@ public final class CS2File
             // Sanitised, and matching what getLayoutURL will look for when this folder is read back.
             // The remote fetch above is unaffected: it goes through sanitizeURL on the http branch.
             File layoutFile = new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2");
-            try (BufferedReader reader = fetchURL(getLayoutURL(layoutName));
-            BufferedWriter writer = Files.newBufferedWriter(layoutFile.toPath()))
-            {
-                String line;
-                while ((line = reader.readLine()) != null)
-                {
-                    writer.write(line);
-                    writer.newLine();
-                }
-            }
+
+            copyAtomically(getLayoutURL(layoutName), layoutFile);
         }
         
         // Download the accessory file      
         File magsFile = new File(configDir, "magnetartikel.cs2");
 
-        try (BufferedReader reader = fetchURL(this.getMagURL(false));
-        
-        BufferedWriter writer = Files.newBufferedWriter(magsFile.toPath()))
-        {
-            String line;
-            while ((line = reader.readLine()) != null)
-            {
-                writer.write(line);
-                writer.newLine();
-            }
-        }
+        copyAtomically(this.getMagURL(false), magsFile);
     }
     
+    /**
+     * Fetches a URL and writes it to a file, all of it or none of it.
+     *
+     * Staged through a sibling file and moved into place, so a transfer that stops part way leaves
+     * whatever was there before rather than a truncated file that the next sync will read as the
+     * whole truth.
+     *
+     * @param url what to fetch
+     * @param target where it goes
+     * @throws Exception if the fetch or the write fails, with the previous file untouched
+     */
+    private void copyAtomically(String url, File target) throws Exception
+    {
+        try (BufferedReader reader = fetchURL(url))
+        {
+            Util.writeAtomically(target, out ->
+            {
+                try (BufferedWriter writer = new BufferedWriter(
+                    new java.io.OutputStreamWriter(out, java.nio.charset.StandardCharsets.UTF_8)))
+                {
+                    String line;
+
+                    while ((line = reader.readLine()) != null)
+                    {
+                        writer.write(line);
+                        writer.newLine();
+                    }
+                }
+                catch (Exception e)
+                {
+                    // As an IOException, because that is what the staging write contracts to throw -
+                    // and throwing at all is the point: the staged file is discarded and the previous
+                    // one stays where it is.
+                    throw new java.io.IOException(e);
+                }
+            });
+        }
+    }
+
     /**
      * Reads the list of layouts
      * @return
