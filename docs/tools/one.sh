@@ -8,9 +8,10 @@
 #
 #     TC_SCRATCH=C:/some/scratch/dir sh docs/tools/one.sh testSomething [testOther...]
 #
-# TC_LOCDB=test/LocDB2_8_0.data copies that fixture in as the run's LocDB.data; by default a class
-# starts with no locomotive database, as on a first launch.  Each class's log stays in TC_SCRATCH
-# as one-<class>.log.  Never run tests through ant, NetBeans or a bare java command.
+# A class starts with no locomotive database, as on a first launch, except the classes in NEEDS_LOCDB,
+# which build on the locomotives a real one holds: they get the fixture test/LocDB2_8_0.data, or the
+# file TC_LOCDB names.  Each class's log stays in TC_SCRATCH as one-<class>.log.
+# Never run tests through ant, NetBeans or a bare java command.
 
 set -u
 
@@ -28,6 +29,11 @@ RUN_ID="one-$$"
 BUILD="$S/build-$RUN_ID"
 STATE="$S/state-$$"
 NODE_KEY="HKCU\\Software\\JavaSoft\\Prefs\\traincontrol-test-runs\\$RUN_ID"
+NEEDS_LOCDB="testRoutes"
+
+# Classes that build the window, which asks in a modal dialog to create a track diagram when it has no
+# layout: they get a copy of test/layout, named in the run's node under the key TrainControlUI uses
+NEEDS_LAYOUT="testAutonomyPathValidation testLayoutTiles"
 
 forget()
 {
@@ -57,13 +63,24 @@ then
     exit 2
 fi
 
+cat > "$BUILD/seed.js" <<'EOF'
+var node = Java.type("org.traincontrol.util.Util").preferencesFor(Java.type("org.traincontrol.gui.PositionAwareJFrame").class);
+node.put("LayoutOverridePath" + Java.type("org.traincontrol.util.Conversion").getFolderHash(10), arguments[0]);
+node.flush();
+EOF
+
 layout_before=$(git status --porcelain -- cs2_sample_layout)
 
 for T in "$@"
 do
     forget
     mkdir -p "$STATE"
-    if [ -n "${TC_LOCDB:-}" ]; then cp "$TC_LOCDB" "$STATE/LocDB.data"; fi
+    case " $NEEDS_LOCDB " in *" $T "*) cp "${TC_LOCDB:-test/LocDB2_8_0.data}" "$STATE/LocDB.data";; esac
+    case " $NEEDS_LAYOUT " in *" $T "*)
+        cp -r test/layout "$STATE/layout"
+        "$JDK/bin/jjs" -J-Dtraincontrol.preferences="traincontrol-test-runs/$RUN_ID" -J-Djava.class.path="$BUILD/classes;$CP" \
+            "$BUILD/seed.js" -- "$STATE/layout";;
+    esac
 
     LOG="$S/one-$T.log"
     "$JDK/bin/java" -ea -Dtraincontrol.dataDir="$STATE" -Dtraincontrol.preferences="traincontrol-test-runs/$RUN_ID" \
