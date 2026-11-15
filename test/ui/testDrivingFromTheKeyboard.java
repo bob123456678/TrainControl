@@ -949,6 +949,40 @@ public class testDrivingFromTheKeyboard
     }
 
     /**
+     * A switch the station reports while it starts, before the window is given the railway, throws nothing on the event
+     * thread (OB-474): the window paints every key once it has the railway.
+     *
+     * MUTATION: drop the `model == null` return from `TrainControlUI.repaintSwitch`, and this fails.
+     */
+    @Test
+    public void testASwitchReportedBeforeTheWindowHasTheRailwayThrowsNothing() throws Exception
+    {
+        java.util.concurrent.atomic.AtomicReference<Throwable> thrown = new java.util.concurrent.atomic.AtomicReference<>();
+        Thread.UncaughtExceptionHandler was = Thread.getDefaultUncaughtExceptionHandler();
+        TrainControlUI[] bare = new TrainControlUI[1];
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> bare[0] = new TrainControlUI());
+
+            Thread.setDefaultUncaughtExceptionHandler((thread, error) -> thrown.compareAndSet(null, error));
+
+            bare[0].repaintSwitch(1, Accessory.accessoryDecoderType.MM2);
+
+            // After the repaint it posted
+            SwingUtilities.invokeAndWait(() -> { });
+
+            assertEquals(thrown.get(), null, "a switch reported before the window had the railway threw on the event thread");
+        }
+        finally
+        {
+            Thread.setDefaultUncaughtExceptionHandler(was);
+
+            if (bare[0] != null) SwingUtilities.invokeAndWait(bare[0]::dispose);
+        }
+    }
+
+    /**
      * A usable key's number shows the hand pointer, as a click on it throws the key; a gray key's number, which a click
      * leaves alone, shows the plain one (MT-1009).
      *

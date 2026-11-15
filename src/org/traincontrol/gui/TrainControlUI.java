@@ -7098,6 +7098,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         SwingUtilities.invokeLater(() -> 
         {
+            // Reported while the station starts, before `setViewListener` paints every key (OB-474)
+            if (this.model == null) return;
+
             int key = this.keyboardKeys.keyOf(address);
 
             if (key > 0)
