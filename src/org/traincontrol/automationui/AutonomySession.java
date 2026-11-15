@@ -5333,16 +5333,13 @@ public class AutonomySession
     /** Whether May depart sets a road: plain track to set on both its sides (D141). */
     public boolean departureWayCanBeSet(TileKey station, RouteId road)
     {
-        return whyDepartureWayIsFixed(station, road) == null;
+        return whyDepartureWayIsFixed(station, road, sidesSentOutBy(station)) == null;
     }
 
-    /** Why May depart is grayed on a station's road, for its (i) line; null where it sets the track beside (D141). */
-    public String whyDepartureWayIsFixed(TileKey station, RouteId road)
-    {
-        return whyDepartureWayIsFixed(station, road, sidesSentOutBy(station));
-    }
-
-    /** The same, with `sidesSentOutBy` asked once for every road of a window. */
+    /**
+     * Why May depart is grayed on a station's road, for its (i) line; null where it sets the track beside (D141).
+     * `out` is `sidesSentOutBy`, asked once for every road of a window.
+     */
     public String whyDepartureWayIsFixed(TileKey station, RouteId road, Set<Side> out)
     {
         Route route = graph == null ? null : getRoutes(station).get(road);

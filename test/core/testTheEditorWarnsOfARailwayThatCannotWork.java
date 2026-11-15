@@ -315,8 +315,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         assertFalse(session.departureWayCanBeSet(end, road), "May depart can be set at the end of a line");
         assertEquals(session.departureWay(end, road), east, "May depart does not show the one way out");
-        assertEquals(session.whyDepartureWayIsFixed(end, road), I18n.f("autosetup.ui.flyDepartOnly", String.valueOf(Side.W)),
-            "the (i) line does not say which side has nothing to set");
+        assertEquals(session.whyDepartureWayIsFixed(end, road, session.sidesSentOutBy(end)),
+            I18n.f("autosetup.ui.flyDepartOnly", String.valueOf(Side.W)), "the (i) line does not say which side has nothing to set");
 
         TileKey far = new TileKey("main", 7, 1);
 
@@ -492,7 +492,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         session.rebuild();
 
         assertFalse(session.departureWayCanBeSet(middle, road), "May depart is live on a station with an arrow");
-        assertEquals(session.whyDepartureWayIsFixed(middle, road),
+        assertEquals(session.whyDepartureWayIsFixed(middle, road, session.sidesSentOutBy(middle)),
             I18n.f("autosetup.ui.sensorClickToClear", session.describeTile(middle)), "the (i) line does not say to click it");
     }
 
@@ -523,7 +523,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         assertTrue(reopened.check().stream().anyMatch(f -> org.traincontrol.automationui.AutonomyChecks.SENSOR_NOT_BOTH_WAYS.equals(f.getMessageKey())
             && middle.equals(f.getAbout())), "the closed station loads without the error");
         assertEquals(reopened.departureWay(middle, road), Direction.NONE, "May depart does not show no way out");
-        assertEquals(reopened.whyDepartureWayIsFixed(middle, road),
+        assertEquals(reopened.whyDepartureWayIsFixed(middle, road, reopened.sidesSentOutBy(middle)),
             I18n.f("autosetup.ui.sensorClickToClear", reopened.describeTile(middle)), "the (i) line does not say to click it");
     }
 
@@ -583,8 +583,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         assertEquals(session.departureWay(station, road), toward(station, road, out),
             "May depart does not show the one way out");
         assertFalse(session.departureWayCanBeSet(station, road), "May depart is live with a limit farther out");
-        assertEquals(session.whyDepartureWayIsFixed(station, road), I18n.f("autosetup.ui.flyDepartFarther",
-            String.valueOf(closed), session.describeTile(where)), "the (i) line does not say where the limit is");
+        assertEquals(session.whyDepartureWayIsFixed(station, road, session.sidesSentOutBy(station)),
+            I18n.f("autosetup.ui.flyDepartFarther", String.valueOf(closed), session.describeTile(where)),
+            "the (i) line does not say where the limit is");
     }
 
     private void everyRoad(TileKey tile, Direction way)

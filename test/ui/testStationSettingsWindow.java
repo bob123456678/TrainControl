@@ -3766,7 +3766,7 @@ public class testStationSettingsWindow
     // ------------------------------------------------------------------------------------------------------------ doors
 
     /** Selects a row of the editor's findings and clicks it `times` times, as each press selects it again. */
-    private void clickTheFinding(int row, int times)
+    private void clickTheFinding(int row, int times) throws Exception
     {
         @SuppressWarnings("unchecked")
         JList<String> list = (JList<String>) Reflect.get(AutonomyEditorPanel.class, panel, "findings");
