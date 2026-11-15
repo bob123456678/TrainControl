@@ -5271,18 +5271,43 @@ public class AutonomySession
         return byA && byB ? Direction.BOTH : byA ? Direction.TOWARD_A : byB ? Direction.TOWARD_B : Direction.NONE;
     }
 
-    /** Whether May depart sets a road: track that takes a direction on both its sides (D141). */
+    /** Whether May depart sets a road: plain track to set on both its sides (D141). */
     public boolean departureWayCanBeSet(TileKey station, RouteId road)
+    {
+        return whyDepartureWayIsFixed(station, road) == null;
+    }
+
+    /** Why May depart is grayed on a station's road, for its (i) line; null where it sets the track beside (D141). */
+    public String whyDepartureWayIsFixed(TileKey station, RouteId road)
     {
         Route route = graph == null ? null : getRoutes(station).get(road);
 
-        return route != null && !roadsBeside(station, route.getA()).isEmpty()
-            && !roadsBeside(station, route.getB()).isEmpty();
+        if (route == null) return "";
+
+        for (Side side : new Side[] {route.getA(), route.getB()})
+        {
+            if (runBeside(station, side) == null) return I18n.t("autosetup.ui.flyDepartOnly");
+        }
+
+        return null;
     }
 
     /**
-     * Sets which way trains may leave a station along a road, on the track beside it (D141): a side they may not leave
-     * by runs one way toward the station, and one they may leave by again runs both ways.  Never on the station.
+     * The plain track May depart sets on a station's side, up to the next switch, s88 square, link or tunnel; null
+     * where one of those is right beside the station, or the track ends before it reaches any s88 square.
+     */
+    private Run runBeside(TileKey station, Side side)
+    {
+        Landing next = graph.landing(station, side);
+
+        return next == null || reducer == null || graph.runsOutLeaving(station, side, reducer.getPoints().keySet())
+            ? null : graph.runOf(next.getTile());
+    }
+
+    /**
+     * Sets which way trains may leave a station along a road, on the plain track beside it (D141): a side they may not
+     * leave by runs one way toward the station, and one they may leave by again runs both ways.  Never on the station
+     * or a switch.
      */
     public void setDepartureWay(TileKey station, RouteId road, Direction way)
     {
@@ -5292,19 +5317,15 @@ public class AutonomySession
 
         for (Side side : new Side[] {route.getA(), route.getB()})
         {
-            boolean leave = way == Direction.BOTH || side == (way == Direction.TOWARD_A ? route.getA()
-                : way == Direction.TOWARD_B ? route.getB() : null);
+            boolean leave = way == Direction.BOTH || way == (side == route.getA() ? Direction.TOWARD_A
+                : Direction.TOWARD_B);
 
             Landing next = graph.landing(station, side);
 
-            for (Map.Entry<RouteId, Route> beside : roadsBeside(station, side).entrySet())
-            {
-                if (goesOn(next, beside.getKey(), beside.getValue()) == leave) continue;
+            if (goesOn(next) == leave) continue;
 
-                if (leave) sessionRuns.setRunDirection(leadersNow.getOrDefault(next.getTile(), next.getTile()),
-                    beside.getKey(), Direction.BOTH);
-                else sessionRuns.setRunToward(next.getTile(), beside.getKey(), next.getEntrySide());
-            }
+            if (leave) setDirection(new LinkedHashSet<>(runBeside(station, side).getTiles()), Direction.BOTH);
+            else if (!recordTheRunOf(next.getTile(), next.getEntrySide()).isEmpty()) directionsTouched();
         }
     }
 
@@ -5343,6 +5364,14 @@ public class AutonomySession
         }
 
         return false;
+    }
+
+    /** Whether a train landing on a square of plain track may go on along it. */
+    private boolean goesOn(Landing next)
+    {
+        Map.Entry<RouteId, Route> road = getRoutes(next.getTile()).entrySet().iterator().next();
+
+        return goesOn(next, road.getKey(), road.getValue());
     }
 
     /** Whether a train entering a square where it lands may go on along this road. */

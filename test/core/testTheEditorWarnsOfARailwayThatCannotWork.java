@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
@@ -17,6 +18,7 @@ import org.traincontrol.automationui.TileGraph.Direction;
 import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
+import org.traincontrol.util.I18n;
 import support.Diagrams;
 import support.Reflect;
 import support.SourceOf;
@@ -320,6 +322,63 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         assertFalse(session.departureWayCanBeSet(far, session.getRoutes(far).keySet().iterator().next()),
             "May depart can be set beside another s88 square");
+    }
+
+    /**
+     * May depart sets only the plain track from a station to the next switch, so a station right beside a switch's
+     * branch has nothing to set on that side: whatever is picked, no road of the switch changes (a switch shares its
+     * toe between its roads, so writing one would close or open the other branch's traffic), and the row is grayed.
+     *
+     * MUTATION: let `departureWayCanBeSet` take a switch beside as track to set, writing its road, and this fails.
+     */
+    @Test
+    public void testMayDepartBesideASwitchWritesNoSwitch() throws Exception
+    {
+        session.open(Arrays.asList(stationBesideASwitch()));
+        session.initialize("D141 switch");
+
+        TileKey station = new TileKey("main", 4, 1);
+        TileKey turnout = new TileKey("main", 3, 1);
+        RouteId road = session.getRoutes(station).keySet().iterator().next();
+
+        for (RouteId each : session.getRoutes(turnout).keySet()) session.setDirection(turnout, each, Direction.BOTH);
+
+        Map<RouteId, Direction> before = waysOf(turnout);
+
+        for (Direction way : Direction.values())
+        {
+            session.setDepartureWay(station, road, way);
+
+            assertEquals(waysOf(turnout), before, "May depart " + way + " changed the switch beside the station");
+        }
+
+        assertFalse(session.departureWayCanBeSet(station, road), "May depart is live beside a switch");
+    }
+
+    /** `platformWithTwoApproaches` with its platform moved up against the switch: s88 squares at (1,1), (4,1), (6,1). */
+    private static LayoutDiagram stationBesideASwitch() throws IOException
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
+
+        Diagrams.row(page, 1, 1, "FS", 5);
+        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        Diagrams.row(page, 4, 1, "FSF", 6, 8);
+        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 9, 13, accessoryDecoderType.MM2, null);
+
+        page.getComponent(3, 1).setAccessory(new org.traincontrol.marklin.MarklinAccessory(null, 7,
+            org.traincontrol.base.Accessory.accessoryType.SWITCH, accessoryDecoderType.MM2, "Switch 7", false, 0));
+        page.setPageId("1");
+
+        return page;
+    }
+
+    private Map<RouteId, Direction> waysOf(TileKey tile)
+    {
+        Map<RouteId, Direction> out = new java.util.LinkedHashMap<>();
+
+        for (RouteId each : session.getRoutes(tile).keySet()) out.put(each, session.getGraph().getDirection(tile, each));
+
+        return out;
     }
 
     /** What the setup check says about s88 squares not running both ways, as the editor words it (OB-472). */
