@@ -5068,19 +5068,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                 case 2: // Auto-Detect
                                     System.out.println(I18n.t("ui.detectCentralStationAttempt")); 
                                     
-                                    if (!CSDetect.hasLocalSubnets())
-                                    {
-                                        tellAtStartUp(I18n.t("ui.autoDetectNotPossibleNoInterfaces"));
-                                        continue;
-                                    }
+                                    // Finding the subnets pings each adapter's gateway, so it too runs behind the sign
+                                    final List<String> subnets = new ArrayList<>();
 
-                                    initIP = whileTheSignSays(I18n.t("ui.detectCentralStationAttempt"),
-                                        sign -> CSDetect.detectCentralStation(subnet ->
-                                            sign.say(I18n.f("ui.detectCentralStationOnSubnet", subnet))));
+                                    initIP = whileTheSignSays(I18n.t("ui.detectCentralStationAttempt"), sign ->
+                                    {
+                                        subnets.addAll(CSDetect.getLocalSubnet());
+
+                                        return CSDetect.detectCentralStation(subnets, subnet ->
+                                            sign.say(I18n.f("ui.detectCentralStationOnSubnet", subnet)));
+                                    });
 
                                     if (initIP == null)
                                     {
-                                        tellAtStartUp(I18n.t("ui.noCentralStationDetected"));
+                                        tellAtStartUp(subnets.isEmpty() ? I18n.t("ui.autoDetectNotPossibleNoInterfaces")
+                                            : I18n.t("ui.noCentralStationDetected"));
                                         continue;
                                     }
                                     

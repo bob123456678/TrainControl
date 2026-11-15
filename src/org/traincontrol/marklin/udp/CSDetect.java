@@ -54,10 +54,10 @@ public class CSDetect
     static List<String> subnetsForATest;
     static int hostsPerSubnet = 254;
 
-    /** Searches each local subnet in turn; `searching` is told each one ("192.168.1.x") as the search reaches it. */
-    public static String detectCentralStation(Consumer<String> searching)
+    /** Searches these subnets in turn; `searching` is told each one ("192.168.1.x") as the search reaches it. */
+    public static String detectCentralStation(List<String> subnets, Consumer<String> searching)
     {
-        for (String subnet : getLocalSubnet())
+        for (String subnet : subnets)
         {
             System.out.println(I18n.f("network.detectedLocalSubnet", subnet));
             searching.accept(subnet + "x");
@@ -116,12 +116,8 @@ public class CSDetect
         return null;
     }
     
-    public static boolean hasLocalSubnets()
-    {
-        return !getLocalSubnet().isEmpty();
-    }
-
-    private static List<String> getLocalSubnet()
+    /** The site-local subnets whose gateway answers a ping, each as "192.168.1.". */
+    public static List<String> getLocalSubnet()
     {
         if (subnetsForATest != null) return subnetsForATest;
 

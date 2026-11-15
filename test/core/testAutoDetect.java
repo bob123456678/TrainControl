@@ -53,7 +53,7 @@ public class testAutoDetect
         for (int i = 0; i < numAttempts; i++)
         {
             long start = System.currentTimeMillis();
-            if (targetIP.equals(CSDetect.detectCentralStation(subnet -> { }))) success++;
+            if (targetIP.equals(CSDetect.detectCentralStation(CSDetect.getLocalSubnet(), subnet -> { }))) success++;
             times.add(System.currentTimeMillis() - start);
         }
         
@@ -84,7 +84,7 @@ public class testAutoDetect
     @Test
     public void test404() throws Exception
     {   
-        CS2File parser = new CS2File(CSDetect.detectCentralStation(subnet -> { }), null);
+        CS2File parser = new CS2File(CSDetect.detectCentralStation(CSDetect.getLocalSubnet(), subnet -> { }), null);
                    
         boolean is260_plus = parser.isNotFoundError(parser.getCS3LocDBUrl(260));
         boolean isOld = parser.isNotFoundError(parser.getCS3LocDBUrl(250));

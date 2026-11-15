@@ -218,7 +218,8 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
             + "String initIP, boolean simulate, boolean showUI, boolean autoPowerOn, boolean debug)"));
 
         assertTrue(init.replaceAll("\\s+", "").contains("whileTheSignSays(I18n.t(\"ui.detectCentralStationAttempt\"),"
-            + "sign->CSDetect.detectCentralStation("), "Auto-Detect's scan does not run behind the busy sign");
+            + "sign->{subnets.addAll(CSDetect.getLocalSubnet());returnCSDetect.detectCentralStation("),
+            "Auto-Detect's scan, and the gateway pings that find its subnets, do not run behind the busy sign");
 
         final java.util.concurrent.CountDownLatch shown = new java.util.concurrent.CountDownLatch(1);
         final List<String> said = Collections.synchronizedList(new ArrayList<>());
@@ -284,6 +285,8 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
         assertTrue(search.signSaid.contains(I18n.f("ui.detectCentralStationOnSubnet", SECOND + "x")),
             "the busy sign never said that the search moved on to the second subnet, so it looked as though nothing "
             + "was happening: " + search.signSaid);
+        assertTrue(search.saidOffTheEventThread.isEmpty(), "the sign's words were changed from the search's own "
+            + "thread, not the event thread: " + search.saidOffTheEventThread);
     }
 
     /**
@@ -327,13 +330,22 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
     {
         final List<String> signSaid = Collections.synchronizedList(new ArrayList<>());
         final List<Boolean> signOnTop = Collections.synchronizedList(new ArrayList<>());
+        final List<String> saidOffTheEventThread = Collections.synchronizedList(new ArrayList<>());
         List<Answering.Question> asked;
     }
 
-    /** Presses Auto-Detect at start-up over two empty subnets, two hosts each, then Cancel on the address asked next. */
+    /** How long a search over the two empty subnets may take, well inside the claims' timeOut. */
+    private static final long SEARCH_WAIT_MS = 30000;
+
+    /**
+     * Presses Auto-Detect at start-up over two empty subnets, two hosts each, then Cancel on the address asked next.  The
+     * hooks go back only once start-up has ended: a start-up still running without them would scan the real network.
+     */
     private static Search searchWithNobodyThere() throws Exception
     {
         final Search search = new Search();
+        final Object subnetsBefore = support.Reflect.get(CSDetect.class, null, "subnetsForATest");
+        final Object hostsBefore = support.Reflect.get(CSDetect.class, null, "hostsPerSubnet");
         final String noStation = I18n.t("ui.noCentralStationDetected");
         final String noAddress = I18n.t("ui.noIpEnteredShutdown");
         final AtomicInteger prompts = new AtomicInteger();
@@ -350,9 +362,27 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
                 javax.swing.JLabel.class, null))
             {
                 search.signSaid.add(label.getText());
-                label.addPropertyChangeListener("text", change -> search.signSaid.add((String) change.getNewValue()));
+                label.addPropertyChangeListener("text", change ->
+                {
+                    search.signSaid.add((String) change.getNewValue());
+
+                    if (!SwingUtilities.isEventDispatchThread()) search.saidOffTheEventThread.add(Thread.currentThread()
+                        .getName());
+                });
             }
         };
+
+        Thread startUp = new Thread(() ->
+        {
+            try
+            {
+                MarklinControlStation.init(null, false, false, false, false);
+            }
+            catch (Throwable ended)
+            {
+                // The refused exit, which is how this start-up ends
+            }
+        }, "start-up");
 
         Toolkit.getDefaultToolkit().addAWTEventListener(opened, AWTEvent.WINDOW_EVENT_MASK);
         support.Reflect.set(CSDetect.class, null, "subnetsForATest", java.util.Arrays.asList(FIRST, SECOND));
@@ -365,14 +395,22 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
             return Answering.press(I18n.t(prompts.incrementAndGet() == 1 ? "ui.autoDetect" : "ui.cancel"));
         }))
         {
-            startUp();
+            startUp.start();
+            startUp.join(SEARCH_WAIT_MS);
             search.asked = answering.questions();
         }
         finally
         {
             Toolkit.getDefaultToolkit().removeAWTEventListener(opened);
-            support.Reflect.set(CSDetect.class, null, "subnetsForATest", null);
-            support.Reflect.set(CSDetect.class, null, "hostsPerSubnet", 254);
+
+            startUp.interrupt();
+            startUp.join(5000);
+
+            // Left on the empty subnets, deliberately: this class's JVM ends after it
+            if (startUp.isAlive()) throw new IllegalStateException("start-up did not end after the search");
+
+            support.Reflect.set(CSDetect.class, null, "subnetsForATest", subnetsBefore);
+            support.Reflect.set(CSDetect.class, null, "hostsPerSubnet", hostsBefore);
         }
 
         return search;
