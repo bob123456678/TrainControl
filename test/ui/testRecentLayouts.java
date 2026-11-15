@@ -604,6 +604,51 @@ public class testRecentLayouts
         }
     }
 
+    /**
+     * Create New Layout into a folder the sample will not unpack into whole (a file stands where its `config` folder
+     * goes) says so, and nothing changes: the layout in use and its pages stay.  Taken as success, the half-unpacked
+     * folder became the layout, and its failed read sent the sync to the Central Station's layout.
+     *
+     * MUTATION: in `LayoutFileActions.unzipFile`, catch and log the IOException again, and the layout in use changes.
+     */
+    @Test(timeOut = 120000)
+    public void testANewLayoutThatWillNotUnpackIsSaidAndNothingChanges() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        File blocked = Files.createTempDirectory("tc-new-layout-blocked").toFile();
+
+        try
+        {
+            Files.write(new File(blocked, "config").toPath(),
+                "in the way".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            List<String> pagesWere = new ArrayList<>(model.getLayoutList());
+            List<String> said;
+
+            JMenuItem create = (JMenuItem) Components.withText(ui, I18n.t("ui.main.toolbar.createLayout"));
+
+            try (Answering answering = Answering.start(message -> Answering.pressAt(0)).choosing(blocked))
+            {
+                SwingUtilities.invokeAndWait(create::doClick);
+
+                answering.awaitAsked(2, 30000);
+
+                Components.settle();
+
+                said = answering.asked();
+            }
+
+            assertTrue(said.contains(I18n.t("layout.ui.errorInitializeDemoLayout")),
+                "a layout that did not unpack whole was not said to have failed: " + said);
+
+            nothingChanged(a, pagesWere, "a layout that did not unpack whole");
+        }
+        finally
+        {
+            Util.deleteTree(blocked, 0);
+        }
+    }
+
     /** A copy of the test layout in a temporary folder of its own. */
     private static Path copyOfTheTestLayout(String prefix) throws java.io.IOException
     {

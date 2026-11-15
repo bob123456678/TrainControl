@@ -6541,7 +6541,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         this.repaintLoc();
                     }
 
-                    if (!this.model.getLayoutList().isEmpty())
+                    // A folder that did not unpack whole is not switched to, and said so
+                    if (path != null && !this.model.getLayoutList().isEmpty())
                     {
                         this.initializeTrackDiagram(false);
                     }
