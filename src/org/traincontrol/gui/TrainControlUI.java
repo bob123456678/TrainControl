@@ -371,7 +371,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public HashMap<String, JPanel> layoutCache = new HashMap<>();
     
     // Preferences
-    private static final Preferences prefs = Preferences.userNodeForPackage(TrainControlUI.class);
+    private static final Preferences prefs = Util.preferencesFor(TrainControlUI.class);
     private boolean conditionalRouteWarningShown = false;
     
     // Locomotive clipboard 
@@ -1277,7 +1277,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             try
             {
-                File existing = new File(TrainControlUI.DATA_FILE_NAME);
+                File existing = new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME));
 
                 if (existing.exists())
                 {
@@ -1306,7 +1306,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
         String statePath = backup
             ? Util.getBackupPath(prefix + TrainControlUI.DATA_FILE_NAME)
-            : (prefix + TrainControlUI.DATA_FILE_NAME);
+            : Util.dataPath(prefix + TrainControlUI.DATA_FILE_NAME);
 
         // Staged and moved into place for the same reason as the locomotive database: this is the only
         // automatic save of the UI state, so a write interrupted part way used to leave nothing behind.
@@ -1385,7 +1385,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Backups go into a dedicated folder (falling back to the current directory if it can't be created)
             String autonomyPath = backup
                 ? Util.getBackupPath(prefix + TrainControlUI.AUTONOMY_FILE_NAME)
-                : (prefix + TrainControlUI.AUTONOMY_FILE_NAME);
+                : Util.dataPath(prefix + TrainControlUI.AUTONOMY_FILE_NAME);
 
             try
             {
@@ -1564,7 +1564,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // THE FILE IN ITS OWN RESOURCE, because the stream wrapping it reads the header in its constructor and
         // throws there on an empty or garbled file - before the resource is assigned, so the file stayed open, and
         // Windows then refused the save that replaces it (BPV-C8).
-        try (FileInputStream file_in = new FileInputStream(TrainControlUI.DATA_FILE_NAME);
+        try (FileInputStream file_in = new FileInputStream(Util.dataPath(TrainControlUI.DATA_FILE_NAME));
             ObjectInputStream obj_in = new ObjectInputStream(file_in))
         {
             // Read an object
@@ -1587,7 +1587,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // and the save on the way out then wrote the empty state over the real one - every
             // locomotive-to-key mapping on every page, every page name, and the active page, gone,
             // with no copy kept.
-            this.uiStateLoadFailed = new File(TrainControlUI.DATA_FILE_NAME).exists();
+            this.uiStateLoadFailed = new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)).exists();
 
             this.model.logf(
                 this.uiStateLoadFailed ? "ui.errorBadUiDataFile" : "ui.infoUiInitializingDefaultData"
@@ -1597,7 +1597,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             // The same: a file written by another version reads as garbage, and saying so is no use
             // if the next exit destroys it anyway
-            this.uiStateLoadFailed = new File(TrainControlUI.DATA_FILE_NAME).exists();
+            this.uiStateLoadFailed = new File(Util.dataPath(TrainControlUI.DATA_FILE_NAME)).exists();
 
             this.model.logf(
                 "ui.errorBadUiDataFile"
@@ -2014,7 +2014,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // an ObjectOutputStream-serialized String, so detect and fall back to that for files written by them.
         try
         {
-            byte[] bytes = Files.readAllBytes(Paths.get(TrainControlUI.AUTONOMY_FILE_NAME));
+            byte[] bytes = Files.readAllBytes(Paths.get(Util.dataPath(TrainControlUI.AUTONOMY_FILE_NAME)));
             this.autonomyJSON.setText(decodeAutonomyJson(bytes));
         }
         catch (IOException | ClassNotFoundException e)
@@ -11671,7 +11671,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         try
         {
             String from = RESOURCE_PATH + DEMO_LAYOUT_ZIP;
-            File to = new File(DEMO_LAYOUT_ZIP);
+            File to = new File(Util.dataPath(DEMO_LAYOUT_ZIP));
 
             copyResource(from, to);
 
@@ -11680,7 +11680,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 to.getAbsolutePath()
             );
 
-            File outputFolder = new File(folderName);
+            File outputFolder = new File(Util.dataPath(folderName));
             this.unzipFile(Paths.get(to.getPath()), outputFolder.getAbsolutePath());
             to.delete();
 

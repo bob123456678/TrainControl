@@ -241,8 +241,8 @@ public class testAPathThatFailsPartWay
     @Test(timeOut = 120000)
     public void testTheExitSaveAndABackupKeepWhereTheRunLeftTheTrains() throws Exception
     {
-        File uiState = new File("UIState.data");
-        File autonomy = new File(TrainControlUI.AUTONOMY_FILE_NAME);
+        File uiState = new File(Util.dataPath("UIState.data"));
+        File autonomy = new File(Util.dataPath(TrainControlUI.AUTONOMY_FILE_NAME));
 
         if (uiState.exists() || autonomy.exists())
         {
@@ -273,7 +273,7 @@ public class testAPathThatFailsPartWay
         pages.add(new HashMap<>());
         testMainWindowFaults.set(ui, "locMapping", pages);
 
-        File backups = new File(Util.BACKUP_FOLDER);
+        File backups = new File(Util.dataPath(Util.BACKUP_FOLDER));
         boolean hadBackups = backups.isDirectory();
         Set<String> before = testControlStationFaults.names(backups);
 

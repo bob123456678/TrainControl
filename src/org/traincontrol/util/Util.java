@@ -64,6 +64,55 @@ public class Util
      */
     public static final String BACKUP_FOLDER = "tc_backup";
 
+    /** The system property a test run names its own data folder with; see `dataPath`. */
+    public static final String DATA_DIR_PROPERTY = "traincontrol.dataDir";
+
+    /** The system property a test run names its own preference node with; see `preferencesFor`. */
+    public static final String PREFERENCES_PROPERTY = "traincontrol.preferences";
+
+    /** Where a test run's own preference nodes live, one per run, under the user root. */
+    public static final String ISOLATED_PREFERENCES_ROOT = "traincontrol-test-runs";
+
+    /**
+     * Where one of the application's data files is: the working directory, unless a test run named a
+     * folder of its own in `traincontrol.dataDir`, which keeps a running application's files out of the
+     * tests.  With the property unset this is the bare name, exactly what every caller used before.
+     *
+     * @param name the file's name - `LocDB.data`, `UIState.data`, `autonomy.json`, the backup folder
+     * @return its path
+     */
+    public static String dataPath(String name)
+    {
+        String folder = System.getProperty(DATA_DIR_PROPERTY);
+
+        if (folder == null || folder.trim().isEmpty()) return name;
+
+        return new File(folder.trim(), name).getPath();
+    }
+
+    /**
+     * The preference node for a class's package: the user node, unless a test run named a node of its
+     * own in `traincontrol.preferences`.  That node always sits under `traincontrol-test-runs` (a name
+     * given with or without that prefix lands in the same place), starts empty, every setting at its
+     * default, and the real node is neither read nor written.
+     *
+     * @param owner a class in the package
+     * @return the node
+     */
+    public static java.util.prefs.Preferences preferencesFor(Class<?> owner)
+    {
+        String run = System.getProperty(PREFERENCES_PROPERTY);
+
+        if (run == null || run.trim().isEmpty()) return java.util.prefs.Preferences.userNodeForPackage(owner);
+
+        String name = run.trim();
+
+        if (!name.startsWith(ISOLATED_PREFERENCES_ROOT + "/")) name = ISOLATED_PREFERENCES_ROOT + "/" + name;
+
+        return java.util.prefs.Preferences.userRoot().node(name + "/"
+            + owner.getPackage().getName().replace('.', '/'));
+    }
+
     /**
      * Returns the path a backup file should be written to.  Backups go into a dedicated subfolder
      * ({@link #BACKUP_FOLDER}), which is created if it does not exist.  If the folder cannot be
@@ -73,7 +122,7 @@ public class Util
      */
     public static String getBackupPath(String fileName)
     {
-        File dir = new File(BACKUP_FOLDER);
+        File dir = new File(dataPath(BACKUP_FOLDER));
 
         if (dir.isDirectory() || dir.mkdirs())
         {
@@ -81,7 +130,7 @@ public class Util
         }
 
         // Folder unavailable - fall back to the current directory (the original behaviour)
-        return fileName;
+        return dataPath(fileName);
     }
 
     // Timeouts for downloads.  The read timeout applies to each individual read, so a stalled transfer
