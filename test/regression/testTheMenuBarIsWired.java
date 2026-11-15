@@ -947,6 +947,55 @@ public class testTheMenuBarIsWired
     }
 
     /**
+     * The Layout tab's S, M and L buttons open their own sizes after the language changes while the window is up: the
+     * size is not looked up by the button's name in the language on show.
+     *
+     * MUTATION: look Small up as `layoutSizes.get(I18n.t("layout.ui.small"))` again in `smallButtonActionPerformed`.
+     */
+    @Test(timeOut = 120000)
+    public void testTheSizeButtonsOpenTheirSizeInAnotherLanguage() throws Exception
+    {
+        List<Integer> opened = new ArrayList<>();
+        java.util.Locale was = I18n.getLocale();
+
+        try
+        {
+            I18n.setLocale(java.util.Locale.GERMAN);
+
+            for (String name : new String[] {"smallButton", "mediumButton", "layoutNewWindow"})
+            {
+                List<LayoutPopupUI> before = popups();
+                JButton button = (JButton) Reflect.get(TrainControlUI.class, ui, name);
+
+                try
+                {
+                    SwingUtilities.invokeAndWait(button::doClick);
+                }
+                catch (java.lang.reflect.InvocationTargetException failed)
+                {
+                    fail(name + " threw in German: " + failed.getCause());
+                }
+
+                assertTrue(Components.waitFor(() -> popups().size() > before.size(), PATIENCE_MS),
+                    name + " opened no window in German");
+
+                List<LayoutPopupUI> now = popups();
+
+                now.removeAll(before);
+                opened.add(now.get(0).getLayoutSize());
+            }
+
+            assertEquals(opened, Arrays.asList(30, TrainControlUI.MEDIUM_TILE_SIZE, 60), "S, M and L opened these sizes in German");
+        }
+        finally
+        {
+            I18n.setLocale(was);
+
+            for (LayoutPopupUI each : popups()) SwingUtilities.invokeAndWait(each::dispose);
+        }
+    }
+
+    /**
      * The All button is as wide as its word and the button's own margins, in every language, so it differs by language;
      * no floor widens it.
      *

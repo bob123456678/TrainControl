@@ -1032,7 +1032,19 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     @Test(timeOut = 240000)
     public void testALocomotiveSyncDuringARunLeavesTheRunAlone() throws Exception
     {
-        duringARun(train -> syncTheLocomotive(train));
+        duringARun(train -> syncTheLocomotive(train), false);
+    }
+
+    /**
+     * The same, with an editor on its way as the run ends: the follow stays owed while the editor is coming, so the
+     * setup is not reset under it, and is made once the editor has gone.
+     *
+     * MUTATION: in `TrainControlUI.followThePagesIfChanged`, leave out `|| anEditorIsOpenOrOnItsWay()`, and this fails.
+     */
+    @Test(timeOut = 240000)
+    public void testAFollowARunHeldBackWaitsForAnEditor() throws Exception
+    {
+        duringARun(train -> syncTheLocomotive(train), true);
     }
 
     /**
@@ -1067,7 +1079,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
                     "precondition: the sync after disarming did not read the page edited elsewhere");
 
                 Settle.theDiagram(ui);
-            });
+            }, false);
         }
         finally
         {
@@ -1078,8 +1090,9 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     /**
      * A page changed elsewhere, then `door` while the railway reads as running: nothing is asked, the configuration
      * and the setup stay; once the run is over the setup follows the pages, with the configuration still loaded.
+     * `anEditor`: an editor is on its way as the run ends, and the follow waits for it to go.
      */
-    private static void duringARun(Check door) throws Exception
+    private static void duringARun(Check door, boolean anEditor) throws Exception
     {
         final String active = Components.onTheEventThread(() -> ui.getActiveDiagramConfiguration());
         final Object before = Components.onTheEventThread(() -> ui.getAutonomySession());
@@ -1111,8 +1124,22 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
                 running.setBoolean(railway, false);
 
+                if (anEditor) Reflect.set(TrainControlUI.class, ui, "editorOnItsWay", true);
+
                 // What the end of a run calls
                 ui.updateVisiblePoints();
+
+                if (anEditor)
+                {
+                    Components.settle();
+
+                    assertSame(Components.onTheEventThread(() -> ui.getAutonomySession()), before,
+                        "the follow the run held back reset the autonomy setup under an editor on its way");
+
+                    // The editor does not come after all
+                    Reflect.set(TrainControlUI.class, ui, "editorOnItsWay", false);
+                    Reflect.method(TrainControlUI.class, "editorGone").invoke(ui);
+                }
 
                 assertTrue(Components.waitFor(testTheDiagramIsKeptForWhatItDoesNotShow::theSetupHoldsThePagesNow,
                     20000), "once the run was over the"
@@ -1125,6 +1152,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         finally
         {
             running.setBoolean(railway, false);
+            Reflect.set(TrainControlUI.class, ui, "editorOnItsWay", false);
         }
     }
 

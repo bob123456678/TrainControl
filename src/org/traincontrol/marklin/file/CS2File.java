@@ -215,6 +215,58 @@ public final class CS2File
     {
         return new File(folder, "config/gleisbild.cs2").isFile();
     }
+
+    /**
+     * Whether a folder opens as a layout, read as the sync reads it: its index, and a page that reads.  A door asks
+     * before it switches, as a folder whose every page fails sends the sync back to the station's layout; one unreadable
+     * page costs that page only (OB-408).
+     */
+    public static boolean opensAsALayout(File folder)
+    {
+        if (!holdsALayout(folder)) return false;
+
+        CS2File reader = new CS2File(null, null);
+
+        reader.setLayoutDataLoc("file:///" + folder.getPath() + "/");
+
+        try
+        {
+            return !reader.readNoPage(reader.parseLayout(reader.layoutAccessories()));
+        }
+        catch (Exception unreadable)
+        {
+            return false;
+        }
+    }
+
+    /**
+     * Whether the last parseLayout read no page although the index named some.  Neither an exception nor an empty list
+     * says so, as a page that will not read comes back as a blank stand-in, and an index this parser does not
+     * understand yields no pages and no failures.  An index that names no page is the empty layout it is.
+     */
+    public boolean readNoPage(List<LayoutDiagram> parsed)
+    {
+        return parsed.stream().allMatch(LayoutDiagram::isUnreadable)
+            && (this.pagesThatCouldNotBeRead > 0 || this.pagesTheIndexNamed > 0);
+    }
+
+    /**
+     * The accessory list a layout's squares are read with: none when the file is missing, while any other failure
+     * throws, as every square would otherwise be built as MM2.
+     */
+    public List<MarklinAccessory> layoutAccessories() throws Exception
+    {
+        try
+        {
+            return getMagList(true);
+        }
+        catch (FileNotFoundException none)
+        {
+            logMessage(I18n.t("layout.noDCC"), null, true);
+
+            return new ArrayList<>();
+        }
+    }
     
     public String getLayoutURL(String layoutName)
     {

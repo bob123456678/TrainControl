@@ -7,8 +7,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -96,8 +94,15 @@ final class LayoutFileActions
             );
 
             File outputFolder = new File(folderName);
-            this.unzipFile(Paths.get(to.getPath()), outputFolder.getAbsolutePath());
-            to.delete();
+
+            try
+            {
+                this.unzipFile(Paths.get(to.getPath()), outputFolder.getAbsolutePath());
+            }
+            finally
+            {
+                to.delete();
+            }
 
             return outputFolder.getAbsolutePath();
         }
@@ -129,17 +134,16 @@ final class LayoutFileActions
         os.close();
     }
 
-    /** Unzips a file (after https://howtodoinjava.com/java/io/unzip-file-with-subdirectories/). */
-    private void unzipFile(Path filePathToUnzip, String folderName)
+    /**
+     * Unzips a file (after https://howtodoinjava.com/java/io/unzip-file-with-subdirectories/), throwing at the first file
+     * it cannot write, so a half-unpacked folder is never taken for a layout.  A file already there is kept.
+     */
+    private void unzipFile(Path filePathToUnzip, String folderName) throws IOException
     {
-        Path parentDir = filePathToUnzip.getParent();
-        String fileName = filePathToUnzip.toFile().getName();
         Path targetDir = Paths.get(folderName);
 
-        //Open the file
         try (ZipFile zip = new ZipFile(filePathToUnzip.toFile()))
         {
-            FileSystem fileSystem = FileSystems.getDefault();
             Enumeration<? extends ZipEntry> entries = zip.entries();
 
             //We will unzip files in this folder
@@ -179,20 +183,14 @@ final class LayoutFileActions
                         );
                     }
 
-                    try(InputStream in = zip.getInputStream(entry))
+                    if (f.exists()) continue;
+
+                    try (InputStream in = zip.getInputStream(entry))
                     {
                         Files.copy(in, f.toPath());
                     }
-                    catch (Exception e)
-                    {
-                        this.ui.getModel().log(e);
-                    }
                 }
             }
-        } 
-        catch (IOException e)
-        {
-            this.ui.getModel().log(e);
         }
     }
 
@@ -226,12 +224,7 @@ final class LayoutFileActions
                 File f = fc.getSelectedFile();
                 String filepath = f.getPath();
 
-                TrainControlUI.layoutFolderIs(filepath);
-
-                // The editing controls answer differently now (OB-126): this is what decides whether
-                // there is a layout of his own to edit.
-                this.ui.applyLayoutEditingAvailability();
-                
+                // The folder becomes the layout once it has unpacked whole: createAndApplyEmptyLayout switches to it
                 this.ui.initializeLocalLayoutMenuItem().setEnabled(false);
 
                 this.ui.createAndApplyEmptyLayout(filepath, false);

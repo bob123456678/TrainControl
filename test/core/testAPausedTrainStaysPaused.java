@@ -122,6 +122,61 @@ public class testAPausedTrainStaysPaused
     }
 
     /**
+     * The pause is read and set without the locomotive's monitor, which a command holds for as long as its network
+     * write is stuck: the Train tab reads it every second on the event thread, and must not freeze behind that write.
+     *
+     * MUTATION: put `synchronized (this)` back around the read in `Locomotive.isAutonomyPaused`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testThePauseIsReadWithoutTheLocomotivesMonitor() throws Exception
+    {
+        final MarklinLocomotive train = model.getLocByName(ALPHA);
+        final java.util.concurrent.CountDownLatch held = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.ExecutorService asking = java.util.concurrent.Executors.newSingleThreadExecutor();
+
+        // A command stuck in its write, holding the locomotive's monitor
+        Thread stuck = new Thread(() ->
+        {
+            synchronized (train)
+            {
+                held.countDown();
+
+                try
+                {
+                    release.await();
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+
+        stuck.start();
+
+        try
+        {
+            assertTrue(held.await(10, java.util.concurrent.TimeUnit.SECONDS), "precondition: the monitor was not held");
+
+            asking.submit(() -> train.setAutonomyPaused(true)).get(2, java.util.concurrent.TimeUnit.SECONDS);
+
+            assertTrue(asking.submit(train::isAutonomyPaused).get(2, java.util.concurrent.TimeUnit.SECONDS),
+                "the pause just set did not read back");
+        }
+        catch (java.util.concurrent.TimeoutException e)
+        {
+            throw new AssertionError("the pause waited for the locomotive's monitor, which a stuck command holds", e);
+        }
+        finally
+        {
+            release.countDown();
+            asking.shutdownNow();
+            stuck.join(10000);
+        }
+    }
+
+    /**
      * The railway's file lists the paused trains, and a file read back pauses those and sets every other train going.
      *
      * MUTATION: leave the list out of the file, or leave a train the file does not list as it was, and this fails.

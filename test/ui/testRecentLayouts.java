@@ -57,20 +57,7 @@ public class testRecentLayouts
 
         sandbox = support.LayoutSandbox.open();
 
-        second = Files.createTempDirectory("tc-recent-layout");
-
-        Path from = new File("test/test_layout").toPath();
-
-        try (java.util.stream.Stream<Path> walk = Files.walk(from))
-        {
-            for (Path p : (Iterable<Path>) walk::iterator)
-            {
-                Path to = second.resolve(from.relativize(p).toString());
-
-                if (Files.isDirectory(p)) Files.createDirectories(to);
-                else Files.copy(p, to);
-            }
-        }
+        second = copyOfTheTestLayout("tc-recent-layout");
 
         model = support.TestStation.simulatedWithWindow();
 
@@ -510,33 +497,176 @@ public class testRecentLayouts
     @Test(timeOut = 120000)
     public void testAFolderWithNoLayoutIsRefusedAndNothingChanges() throws Exception
     {
-        String a = sandbox.getFolder().getAbsolutePath();
         File empty = Files.createTempDirectory("tc-not-a-layout").toFile();
 
         try
         {
-            String none = empty.getAbsolutePath();
-
-            record(none, a);
-
-            assertEquals(shown(), Collections.singletonList(none),
-                "precondition: Recent Layouts does not list the folder");
-
-            List<String> pagesWere = new ArrayList<>(model.getLayoutList());
-
-            assertEquals(click(none), Collections.singletonList(I18n.t("layout.ui.errorInvalidPathOrCorruptData")),
-                "a folder with no layout was not refused with the message");
-
-            assertEquals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath(), a,
-                "opening a folder with no layout changed the layout in use");
-
-            assertEquals(new ArrayList<>(model.getLayoutList()), pagesWere,
-                "opening a folder with no layout changed the pages");
+            refusedAndNothingChanges(empty, "a folder with no layout");
         }
         finally
         {
             Util.deleteTree(empty, 0);
         }
+    }
+
+    /**
+     * A folder with a page index whose every page fails to read is refused the same way, before anything changes:
+     * going ahead, the sync's failed read would send it to the Central Station's layout.
+     *
+     * MUTATION: in `TrainControlUI.openLayoutFolder`, ask `CS2File.holdsALayout` again instead of `opensAsALayout`.
+     */
+    @Test(timeOut = 120000)
+    public void testAFolderWhosePagesWillNotReadIsRefusedAndNothingChanges() throws Exception
+    {
+        File broken = Files.createTempDirectory("tc-pages-unread").toFile();
+
+        try
+        {
+            File config = new File(broken, "config");
+
+            assertTrue(config.mkdirs(), "cannot make " + config);
+
+            Files.copy(new File("test/test_layout/config/gleisbild.cs2").toPath(),
+                new File(config, "gleisbild.cs2").toPath());
+
+            refusedAndNothingChanges(broken, "a folder whose pages will not read");
+        }
+        finally
+        {
+            Util.deleteTree(broken, 0);
+        }
+    }
+
+    /** Opens the folder from Recent Layouts, with A open: refused with the message, and the layout and pages stay. */
+    private static void refusedAndNothingChanges(File folder, String what) throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        String path = folder.getAbsolutePath();
+
+        record(path, a);
+
+        assertEquals(shown(), Collections.singletonList(path), "precondition: Recent Layouts does not list the folder");
+
+        List<String> pagesWere = new ArrayList<>(model.getLayoutList());
+
+        assertEquals(click(path), Collections.singletonList(I18n.t("layout.ui.errorInvalidPathOrCorruptData")),
+            what + " was not refused with the message");
+
+        nothingChanged(a, pagesWere, "opening " + what);
+    }
+
+    /** The layout in use is still A, with the pages it had. */
+    private static void nothingChanged(String a, List<String> pagesWere, String doing)
+    {
+        assertEquals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath(), a,
+            doing + " changed the layout in use");
+
+        assertEquals(new ArrayList<>(model.getLayoutList()), pagesWere, doing + " changed the pages");
+    }
+
+    /**
+     * A folder with one page that will not read still opens, with a placeholder in that page's place: an unreadable
+     * page costs that page only (OB-408), so the refusal above is for a folder where no page reads.
+     *
+     * MUTATION: in `CS2File.readNoPage`, ask `anyMatch` instead of `allMatch`, and the folder is refused.
+     */
+    @Test(timeOut = 180000)
+    public void testAFolderWithOneUnreadablePageStillOpens() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        Path partial = copyOfTheTestLayout("tc-one-page-unread");
+
+        try
+        {
+            Files.delete(partial.resolve("config/gleisbilder/5 - Test.cs2"));
+
+            String path = partial.toFile().getAbsolutePath();
+
+            record(path, a);
+
+            open(path);
+
+            assertEquals(model.getLayoutList().size(), 5, "the pages that read, and the placeholder, are not all there: "
+                + model.getLayoutList());
+
+            assertTrue(model.getLayout("5 - Test").isUnreadable(), "the page that will not read has no placeholder");
+        }
+        finally
+        {
+            try
+            {
+                if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath())) open(a);
+            }
+            finally
+            {
+                Util.deleteTree(partial.toFile(), 0);
+            }
+        }
+    }
+
+    /**
+     * Create New Layout into a folder the sample will not unpack into whole (a file stands where its `config` folder
+     * goes) says so, and nothing changes: the layout in use and its pages stay.  Taken as success, the half-unpacked
+     * folder became the layout, and its failed read sent the sync to the Central Station's layout.
+     *
+     * MUTATION: in `LayoutFileActions.unzipFile`, catch and log the IOException again, and the layout in use changes.
+     */
+    @Test(timeOut = 120000)
+    public void testANewLayoutThatWillNotUnpackIsSaidAndNothingChanges() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+        File blocked = Files.createTempDirectory("tc-new-layout-blocked").toFile();
+
+        try
+        {
+            Files.write(new File(blocked, "config").toPath(),
+                "in the way".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            List<String> pagesWere = new ArrayList<>(model.getLayoutList());
+            List<String> said;
+
+            JMenuItem create = (JMenuItem) Components.withText(ui, I18n.t("ui.main.toolbar.createLayout"));
+
+            try (Answering answering = Answering.start(message -> Answering.pressAt(0)).choosing(blocked))
+            {
+                SwingUtilities.invokeAndWait(create::doClick);
+
+                answering.awaitAsked(2, 30000);
+
+                Components.settle();
+
+                said = answering.asked();
+            }
+
+            assertTrue(said.contains(I18n.t("layout.ui.errorInitializeDemoLayout")),
+                "a layout that did not unpack whole was not said to have failed: " + said);
+
+            nothingChanged(a, pagesWere, "a layout that did not unpack whole");
+        }
+        finally
+        {
+            Util.deleteTree(blocked, 0);
+        }
+    }
+
+    /** A copy of the test layout in a temporary folder of its own. */
+    private static Path copyOfTheTestLayout(String prefix) throws java.io.IOException
+    {
+        Path copy = Files.createTempDirectory(prefix);
+        Path from = new File("test/test_layout").toPath();
+
+        try (java.util.stream.Stream<Path> walk = Files.walk(from))
+        {
+            for (Path p : (Iterable<Path>) walk::iterator)
+            {
+                Path to = copy.resolve(from.relativize(p).toString());
+
+                if (Files.isDirectory(p)) Files.createDirectories(to);
+                else Files.copy(p, to);
+            }
+        }
+
+        return copy;
     }
 
     private static void record(String... folders)

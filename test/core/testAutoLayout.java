@@ -227,6 +227,86 @@ public class testAutoLayout
     }
 
     /**
+     * Routes armed and disarmed by hand against the configuration's list follow the list again when a run starts, as
+     * long as Activate Routes is ticked; with it clear they stay as set.  The run starts with nothing to run.
+     */
+    private static void aRunStartHoldsToTheRouteList(java.util.function.Consumer<Layout> start) throws Exception
+    {
+        final Layout layout = model.getAutoLayout();
+        final MarklinRoute listed = model.getRoute("Testcase Route 1");
+        final boolean wasOn = layout.isActivateRoutes();
+        final List<Integer> wasListed = new ArrayList<>(layout.getActivateRouteIDs());
+        final boolean listedWas = listed.isEnabled();
+
+        @SuppressWarnings("unchecked")
+        final java.util.Set<Locomotive> toRun = (java.util.Set<Locomotive>) Reflect.get(Layout.class, layout,
+            "locomotivesToRun");
+        final List<Locomotive> wasToRun = new ArrayList<>(toRun);
+        final List<org.traincontrol.automation.TimetablePath> wasTimetable = new ArrayList<>(layout.getTimetable());
+
+        model.newRoute("AR armed by hand", 9824, Collections.singletonList(RouteCommand.RouteCommandStop()), 8874,
+            MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        try
+        {
+            final MarklinRoute byHand = model.getRoute("AR armed by hand");
+
+            toRun.clear();
+            layout.getTimetable().clear();
+            layout.setActivateRouteIDs(Collections.singletonList(listed.getId()));
+
+            for (boolean on : new boolean[] { true, false })
+            {
+                layout.setActivateRoutes(on);
+
+                // Against the list, by hand
+                byHand.enable();
+                listed.disable();
+
+                start.accept(layout);
+                Reflect.set(Layout.class, layout, "running", false);
+
+                assertEquals(byHand.isEnabled(), !on, "a route armed by hand against the list, with Activate Routes "
+                    + (on ? "on" : "off") + ", after the run started");
+                assertEquals(listed.isEnabled(), on, "a listed route disarmed by hand, with Activate Routes "
+                    + (on ? "on" : "off") + ", after the run started");
+            }
+        }
+        finally
+        {
+            Reflect.set(Layout.class, layout, "running", false);
+            toRun.addAll(wasToRun);
+            layout.getTimetable().addAll(wasTimetable);
+            layout.setActivateRouteIDs(wasListed);
+            layout.setActivateRoutes(wasOn);
+            if (listedWas) listed.enable(); else listed.disable();
+            model.deleteRoute("AR armed by hand");
+        }
+    }
+
+    /**
+     * Start Autonomy holds to the configuration's route list.
+     *
+     * MUTATION: leave the `applyAutonomyRouteActivations()` call out of `Layout.runLocomotives` and this fails.
+     */
+    @Test
+    public void testStartingAutonomyArmsTheRoutesTheConfigurationLists() throws Exception
+    {
+        aRunStartHoldsToTheRouteList(Layout::runLocomotives);
+    }
+
+    /**
+     * A timetable run, Return Home's included, holds to it too.
+     *
+     * MUTATION: leave the `applyAutonomyRouteActivations()` call out of `Layout.executeTimetable(int)` and this fails.
+     */
+    @Test
+    public void testATimetableRunArmsTheRoutesTheConfigurationLists() throws Exception
+    {
+        aRunStartHoldsToTheRouteList(Layout::executeTimetable);
+    }
+
+    /**
      * A route with no sensor cannot be activated, and is not reported as activated: `applyAutonomyRouteActivations`
      * guards the enable on `hasS88()` and logs `autolayoutErrorS88RequiredForAutoFire`, since a route with nothing to
      * watch would claim to be automatic and never fire.

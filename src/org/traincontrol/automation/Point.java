@@ -52,7 +52,7 @@ public class Point
     private boolean autoDestination = true;
 
     /** Whether a trip must end here rather than run through (FR-111); see `isStopOnly`. */
-    private boolean stopOnly = false;
+    private volatile boolean stopOnly = false;
 
     /** The key a stop-only station is written under, as false, and only then: absent means a trip may run through. */
     public static final String RUN_THROUGH = "runThrough";

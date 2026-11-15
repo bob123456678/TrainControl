@@ -446,6 +446,67 @@ public class testAtomicWrite
     }
 
     /**
+     * A write cut off by a kill leaves its staging file, which no later write reuses: the next write of the same target
+     * deletes one older than a minute.  A fresh one, which may be a write under way, and another file's are kept.
+     *
+     * MUTATION: drop the `sweepStaleStaging` call from `Util.writeAtomically`, and the killed write's file stays.
+     */
+    @Test
+    public void testTheNextWriteSweepsAKilledWritesStagingFile() throws Exception
+    {
+        File killed = staged("state.dat.tmp123.part", true);
+        File fresh = staged("state.dat.tmp456.part", false);
+        File another = staged("other.dat.tmp789.part", true);
+        File named = staged("state.dat.tmpX1.part", true);
+
+        Util.writeAtomically(target, out -> out.write("new".getBytes(StandardCharsets.UTF_8)));
+
+        assertFalse(killed.exists(), "the staging file a killed write left is still there");
+        assertTrue(fresh.exists(), "a staging file under a minute old, which may be a write under way, was deleted");
+        assertTrue(another.exists(), "another file's staging file was deleted");
+        assertTrue(named.exists(), "a file not named as a staging file was deleted");
+        assertEquals(contents(), "new", "the write itself did not reach the file");
+    }
+
+    /**
+     * A write under way keeps its staging file however old it is: a second write of the same target, started inside
+     * the first after the first's file has aged, leaves it alone, and both finish.  The body closes its stream, so the
+     * file is not held open (an open file cannot be deleted on Windows).
+     *
+     * MUTATION: in `Util.sweepStaleStaging`, drop the `stagingInProgress` check, and the outer write fails.
+     */
+    @Test
+    public void testAWriteUnderWayKeepsItsStagingFileHoweverOld() throws Exception
+    {
+        Util.writeAtomically(target, out ->
+        {
+            out.write("outer".getBytes(StandardCharsets.UTF_8));
+            out.close();
+
+            for (File mine : dir.toFile().listFiles((at, name) -> name.endsWith(Util.PARTIAL_DOWNLOAD_SUFFIX)))
+            {
+                mine.setLastModified(System.currentTimeMillis() - 3_600_000);
+            }
+
+            Util.writeAtomically(target, inner -> inner.write("inner".getBytes(StandardCharsets.UTF_8)));
+        });
+
+        assertEquals(contents(), "outer", "the write under way lost its staging file to the second write's sweep");
+    }
+
+    /** A file in the test's folder, an hour old when `old`. */
+    private File staged(String name, boolean old) throws IOException
+    {
+        File f = new File(dir.toFile(), name);
+
+        Files.write(f.toPath(), "left".getBytes(StandardCharsets.UTF_8));
+
+        if (old) assertTrue(f.setLastModified(System.currentTimeMillis() - 3_600_000), "cannot age " + f);
+
+        return f;
+    }
+
+    /**
      * A drive that refuses to force the staged file to disk still gets the file, and says so in the log once, not at
      * every save: refused, every save would fail, and the exit would ask Retry for ever.  The refusal is staged by
      * making the staging file read-only from inside the write, so the forcing handle cannot be opened.

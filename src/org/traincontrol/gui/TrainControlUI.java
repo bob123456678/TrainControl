@@ -6541,7 +6541,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         this.repaintLoc();
                     }
 
-                    if (!this.model.getLayoutList().isEmpty())
+                    // A folder that did not unpack whole is not switched to, and said so
+                    if (path != null && !this.model.getLayoutList().isEmpty())
                     {
                         this.initializeTrackDiagram(false);
                     }
@@ -7674,21 +7675,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return runTheOwedSync();
     }
 
-    /** The owed sync, run now unless an editor is open or on its way; SYNC_OWED when it stays owed or another took it. */
+    /**
+     * The owed sync, run now unless an editor is open or on its way; SYNC_OWED when it stays owed, another took it, or
+     * one already running will run it again when it ends.
+     */
     private int runTheOwedSync()
     {
-        if (anEditorIsOpenOrOnItsWay() || !syncOwed.compareAndSet(true, false)) return SYNC_OWED;
+        if (anEditorIsOpenOrOnItsWay() || !syncOwed.get()) return SYNC_OWED;
 
-        return syncNow();
+        int synced = syncNow();
+
+        return synced == SYNC_ALREADY_RUNNING ? SYNC_OWED : synced;
     }
 
-    /** An editor has closed or will not come: the sync owed meanwhile runs, refreshing after it as Sync does. */
+    /**
+     * An editor has closed or will not come, or a sync has ended: the sync owed meanwhile runs, refreshing after it as
+     * Sync does, and so does a page follow held back.
+     */
     void editorGone()
     {
         // Posted, so the closing editor's own posted work runs first
         SwingUtilities.invokeLater(() ->
         {
             if (syncOwed.get() && !anEditorIsOpenOrOnItsWay()) doSync(null);
+            if (this.pagesToFollow) followThePagesIfChanged();
         });
     }
 
@@ -7704,6 +7714,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             return SYNC_ALREADY_RUNNING;
         }
+
+        // A sync starting now reads every edit made so far; one owed while it runs is kept for the next
+        syncOwed.set(false);
 
         try
         {
@@ -7739,6 +7752,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         finally
         {
             syncInFlight.set(false);
+
+            if (syncOwed.get()) editorGone();
         }
     }
 
@@ -16106,7 +16121,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     boolean openLayoutFolder(File folder)
     {
         // Refused before anything changes: a folder that will not read sends the sync back to the station's layout
-        if (!org.traincontrol.marklin.file.CS2File.holdsALayout(folder))
+        if (!org.traincontrol.marklin.file.CS2File.opensAsALayout(folder))
         {
             JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
 
@@ -16646,12 +16661,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     
     private void smallButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smallButtonActionPerformed
 
-        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get(I18n.t("layout.ui.small")));
+        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), SMALL_TILE_SIZE);
     }//GEN-LAST:event_smallButtonActionPerformed
 
     private void layoutNewWindowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_layoutNewWindowActionPerformed
 
-        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get(I18n.t("layout.ui.large")));
+        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), LARGE_TILE_SIZE);
     }//GEN-LAST:event_layoutNewWindowActionPerformed
 
     private void SizeListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SizeListActionPerformed
@@ -19223,7 +19238,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void mediumButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_mediumButtonActionPerformed
 
-        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), this.layoutSizes.get(I18n.t("layout.ui.medium")));
+        showLayoutPopup(this.LayoutList.getSelectedItem().toString(), MEDIUM_TILE_SIZE);
     }//GEN-LAST:event_mediumButtonActionPerformed
 
     private void combineMenuPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_combineMenuPressed
@@ -21356,13 +21371,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public static final int MEDIUM_TILE_SIZE = 46;
 
+    /** The Small and Large tile sizes, which the S and L buttons open by value whatever the language. */
+    static final int SMALL_TILE_SIZE = 30, LARGE_TILE_SIZE = 60;
+
     // Lap strings in the size dropdown to icon sizes
     Map<String, Integer> layoutSizes = Stream.of(new String[][] 
         {
-            { I18n.t("layout.ui.small"), "30" },
+            { I18n.t("layout.ui.small"), String.valueOf(SMALL_TILE_SIZE) },
             // FR-122: drawn from the Large art scaled down until it has its own (LayoutDiagramComponent.artSize)
             { I18n.t("layout.ui.medium"), String.valueOf(MEDIUM_TILE_SIZE) },
-            { I18n.t("layout.ui.large"), "60" }
+            { I18n.t("layout.ui.large"), String.valueOf(LARGE_TILE_SIZE) }
         })
         .collect(Collectors.toMap(
             data -> data[0],
@@ -21630,19 +21648,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             SwingUtilities.invokeLater(this::followThePagesIfChanged);
     }
 
-    /** Pages read again that changed while a run held the setup, followed once it no longer does. */
+    /** Pages read again that changed while a run or an editor held the setup, followed once neither does. */
     private volatile boolean pagesToFollow = false;
 
     /**
-     * The page list and the setup follow pages read again that differ from the ones they hold, but never under a run:
-     * there the follow is owed until the run ends (`updateVisiblePoints`), as a page edit waits.  Unchanged pages are
-     * left alone, as following resets the session and reloads the configuration.
+     * The page list and the setup follow pages read again that differ from the ones they hold, but never under a run
+     * or an editor: there the follow is owed until the run ends (`updateVisiblePoints`) or the editor goes
+     * (`editorGone`), as a page edit waits.  Unchanged pages are left alone, as following resets the session and
+     * reloads the configuration.
      */
     void followThePagesIfChanged()
     {
         if (!this.pagesToFollow && !thePagesChanged()) return;
 
-        this.pagesToFollow = aRunHoldsTheSetup();
+        this.pagesToFollow = aRunHoldsTheSetup() || anEditorIsOpenOrOnItsWay();
 
         if (!this.pagesToFollow) followThePagesReadAgain();
     }
@@ -21732,17 +21751,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Waits, off the event thread and a few seconds at most, for the pictures of the page about to be built, so it is
-     * whole on its first paint.
+     * whole on its first paint; `shown` is the page and size, read on the event thread.
      */
-    private void awaitTheShownPagesPictures()
+    private void awaitTheShownPagesPictures(java.util.concurrent.Future<Map.Entry<LayoutDiagram, Integer>> shown)
     {
         try
         {
-            Object page = this.LayoutList.getSelectedItem();
-            Integer tiles = this.layoutSizes.get(String.valueOf(this.SizeList.getSelectedItem()));
-            LayoutDiagram shown = page == null || tiles == null ? null : this.model.getLayout(page.toString());
+            Map.Entry<LayoutDiagram, Integer> page = shown.get(3, java.util.concurrent.TimeUnit.SECONDS);
 
-            if (shown != null) LayoutLabel.decodePage(shown, tiles, this).get(3, java.util.concurrent.TimeUnit.SECONDS);
+            if (page != null)
+                LayoutLabel.decodePage(page.getKey(), page.getValue(), this).get(3, java.util.concurrent.TimeUnit.SECONDS);
         }
         catch (InterruptedException ex)
         {
@@ -21778,13 +21796,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // thread), whose rebuild is the slow part of a CS sync, leaving the menu item enabled that long (OB-094).
         repaintPathLabel();
 
-        // Posted before the build, which waits for the pictures first
-        if (SwingUtilities.isEventDispatchThread()) showTheDiagramIsLoadingIfBlank();
-        else SwingUtilities.invokeLater(this::showTheDiagramIsLoadingIfBlank);
+        // Posted before the build, which waits for the pictures first, of the page and size the combo boxes show
+        final java.util.concurrent.CompletableFuture<Map.Entry<LayoutDiagram, Integer>> shown =
+            new java.util.concurrent.CompletableFuture<>();
+        final Runnable onTheEventThread = () ->
+        {
+            showTheDiagramIsLoadingIfBlank();
+
+            Object page = this.LayoutList.getSelectedItem();
+            Integer tiles = this.layoutSizes.get(String.valueOf(this.SizeList.getSelectedItem()));
+            LayoutDiagram diagram = page == null || tiles == null ? null : this.model.getLayout(page.toString());
+
+            shown.complete(diagram == null ? null : new java.util.AbstractMap.SimpleImmutableEntry<>(diagram, tiles));
+        };
+
+        if (SwingUtilities.isEventDispatchThread()) onTheEventThread.run();
+        else SwingUtilities.invokeLater(onTheEventThread);
 
         this.LayoutGridRenderer.submit(() ->
         {
-            awaitTheShownPagesPictures();
+            awaitTheShownPagesPictures(shown);
 
             SwingUtilities.invokeLater(() ->
             {
