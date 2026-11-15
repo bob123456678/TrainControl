@@ -43,9 +43,10 @@ import support.ReportsStarted;
  * The jar is TC_UPDATE_JAR, the one `ant clean package-for-store` built (`docs/tools/gates.sh` builds and passes it);
  * without it a stand-in is built from the classes under test, and the claim says so on its output.  Its version is read
  * from the jar itself, and the version it starts sees only the jar's classes, so a jar missing the update's classes
- * fails.  What cannot be run is TrainControl's own start-up: the started version is `support.ReportsStarted`, which says
- * it started through the jar's `SelfUpdate.reportStarted`; `regression.testTheUpdateIsWiredEndToEnd` pins where
- * TrainControl calls it.  TC_LAST_RELEASE overrides the tag.
+ * fails.  What cannot be run is TrainControl's own start-up, a window and a connection: the version the old updater
+ * starts is `support.ReportsStarted`, which says it started through the jar's `SelfUpdate.reportStarted`
+ * (`regression.testTheUpdateIsWiredEndToEnd` pins where TrainControl calls it), and the jar is then run by `java -jar`
+ * headless, which reaches its Main-Class and stops there.  TC_LAST_RELEASE overrides the tag.
  *
  * The tag's code is called by 3.0.8's signatures (`Request`, `update`, `startDetached`): a release that changes them
  * fails here by name, never passes, and this is updated with that release.
@@ -74,7 +75,8 @@ public class testTheLastReleaseUpdatesToThisBuild
      *
      * MUTATION: `RAW_VERSION` set to "3_1_0" (the old parser reads "3"), or to the tag's own version, or
      * `JarUpdater.STARTED_ENVIRONMENT` renamed, or `package-for-store` leaving `SelfUpdate` out of the jar (the old
-     * updater never hears the start and puts the old jar back), or `store.jar.name` changed, and this fails.
+     * updater never hears the start and puts the old jar back), or `store.jar.name` changed, or the manifest's
+     * Main-Class naming another class, and this fails.
      */
     @Test(timeOut = 300000)
     public void testTheOldUpdaterFindsDownloadsAndStartsThisBuild() throws Exception
@@ -148,7 +150,32 @@ public class testTheLastReleaseUpdatesToThisBuild
                 tag + "'s updater did not keep this build; its log:\n" + read(new File(folder, "update.log")));
 
             assertTrue(Arrays.equals(Files.readAllBytes(jar.toPath()), shippedBytes), "the jar is not this build's");
+
+            // The swapped-in jar as the old updater starts it, `java -jar`, its Main-Class reached: headless, it stops
+            // in main, before any window or connection
+            String said = runJar(jar);
+
+            assertTrue(said.contains("Error occurred:") && said.contains("headless"), "the swapped-in jar's Main-Class"
+                + " does not run as TrainControl's main: " + said);
         }
+    }
+
+    /** `java -Djava.awt.headless=true -jar <jar>`, what it printed. */
+    private String runJar(File jar) throws Exception
+    {
+        String java = new File(new File(System.getProperty("java.home"), "bin"),
+            File.separatorChar == '\\' ? "java.exe" : "java").getPath();
+
+        Process process = new ProcessBuilder(java, "-Djava.awt.headless=true", "-jar", jar.getAbsolutePath())
+            .directory(folder).redirectErrorStream(true).start();
+
+        process.getOutputStream().close();
+
+        String out = new String(readAll(process.getInputStream()), StandardCharsets.UTF_8);
+
+        assertTrue(process.waitFor(60, TimeUnit.SECONDS), "java -jar did not end: " + out);
+
+        return out;
     }
 
     /** The old `JarUpdater.update`, its real start starting `ReportsStarted` on the swapped-in jar's classes. */
