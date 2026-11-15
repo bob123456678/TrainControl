@@ -204,7 +204,8 @@ public class FacingPrompt
         }
         catch (Exception cannotAsk)
         {
-            // Nothing, and null stands.
+            // Nothing, and null stands; an interrupt is kept for the caller's thread to see
+            if (cannotAsk instanceof InterruptedException) Thread.currentThread().interrupt();
         }
 
         return answer.get();

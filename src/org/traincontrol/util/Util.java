@@ -557,9 +557,14 @@ public class Util
      */
     public static void writeAtomically(File target, StreamWriter body) throws IOException
     {
+        File folder = target.getAbsoluteFile().getParentFile();
+
+        sweepStaleStaging(folder, target.getName() + ".tmp");
+
         // A name of its own, so two writes of one file at once (the exit and a backup's first save) cannot share it
-        File staging = File.createTempFile(target.getName() + ".tmp", PARTIAL_DOWNLOAD_SUFFIX,
-            target.getAbsoluteFile().getParentFile());
+        File staging = File.createTempFile(target.getName() + ".tmp", PARTIAL_DOWNLOAD_SUFFIX, folder);
+
+        stagingInProgress.add(staging);
 
         try
         {
@@ -593,6 +598,8 @@ public class Util
             // target.  The target itself has not been touched, which is the point of all this.
             staging.delete();
 
+            stagingInProgress.remove(staging);
+
             throw e;
         }
 
@@ -615,6 +622,34 @@ public class Util
             }
 
             throw moveFailed;
+        }
+        finally
+        {
+            stagingInProgress.remove(staging);
+        }
+    }
+
+    /** The staging files of the writes under way, which a sweep leaves alone however old. */
+    private static final Set<File> stagingInProgress = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** How old a staging file no write owns must be before the next write of its target takes it as a killed write's. */
+    private static final long STALE_STAGING_MS = 60_000;
+
+    /** Deletes the staging files a killed write of this target left: a minute old, and owned by no write under way. */
+    private static void sweepStaleStaging(File folder, String prefix)
+    {
+        File[] left = folder.listFiles((at, name) -> name.startsWith(prefix) && name.endsWith(PARTIAL_DOWNLOAD_SUFFIX)
+            && name.substring(prefix.length(), name.length() - PARTIAL_DOWNLOAD_SUFFIX.length()).matches("\\d+"));
+
+        if (left == null) return;
+
+        for (File one : left)
+        {
+            // Litter, not data: one that will not delete is tried again at the next write
+            if (!stagingInProgress.contains(one) && System.currentTimeMillis() - one.lastModified() > STALE_STAGING_MS)
+            {
+                one.delete();
+            }
         }
     }
 
