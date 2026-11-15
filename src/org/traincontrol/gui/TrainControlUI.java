@@ -7729,7 +7729,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * Refuses on screen a door that switches the layout while a sync runs: its own sync would be turned away, reading
      * nothing, and the old pages would stand under the new folder's name.
      */
-    private boolean refuseWhileASyncRuns()
+    public boolean refuseWhileASyncRuns()
     {
         if (!syncInFlight.get()) return false;
 
@@ -16066,7 +16066,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // capture, losing every placement since the last save (MT-141: not while the layout is running).
         if (refuseWhileARunHoldsTheSetup(this)) return;
 
-        if (refuseWhileEditorOpen()) return;
+        if (refuseWhileEditorOpen() || refuseWhileASyncRuns()) return;
 
         // Hide the tab in case loading fails but the model still has the local diagram
         this.switchCSLayoutMenuItem.setEnabled(false);
