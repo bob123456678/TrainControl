@@ -2358,32 +2358,60 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The picture's white area keeps 3 px above its squares and 3 px below, for room for the Presets in the right
-     * column (Adam, FR-182); here, where the right column sets the height, it is drawn at the height it asks for, and
-     * every mark and square still lies inside it.
+     * The picture's white area keeps 10 px above the squares it draws and 10 px below, and no empty row (MT-961, Adam:
+     * "reduce the top and bottom padding inside the 'on the track diagram' area, so that it takes up less vertical
+     * space (aim for 20px total)"); it is drawn at the height it asks for, and every mark and square still lies inside
+     * it.  The line under it stands as far below it as the picture stands below the table ("reduce the gap ... to
+     * match other components").
      *
-     * MUTATION: put the block's 8 px padding back, and this fails.
+     * MUTATION: draw the picture's three rows whatever it shows, or put the 6 px back above the line under it, and this
+     * fails.
      */
     @Test(timeOut = 120000)
     public void testThePictureIsPaddedTightlyAndNothingIsCut() throws Exception
     {
-        StationSettingsWindow window = StationDoors.open(panel, aStation());
+        TileKey square = aStation();
+
+        Components.onTheEventThread(() -> { session.setPointProperty(square, "maxTrainLength", 30); return null; });
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
 
         StationDoors.current(window);
 
         JComponent block = StationDoors.part(window, "station.picture.ways", JComponent.class);
 
+        assertTrue(visible(window, "station.matrixAlso"), "precondition: no line under the picture");
+
         Components.onTheEventThread(() ->
         {
             Map<String, java.awt.Shape> marks = window.pictureMarksForTest();
 
-            java.awt.Rectangle middle = (java.awt.Rectangle) marks.get("SQUARE");
+            int top = Integer.MAX_VALUE, bottom = 0;
+
+            for (Map.Entry<String, java.awt.Shape> each : marks.entrySet())
+            {
+                if (!each.getKey().startsWith("SQUARE")) continue;
+
+                top = Math.min(top, each.getValue().getBounds().y);
+                bottom = Math.max(bottom, each.getValue().getBounds().y + each.getValue().getBounds().height);
+            }
 
             assertEquals(block.getHeight(), block.getPreferredSize().height, "the picture is not drawn at its own height");
 
             // Less the 1 px gray line on each side
-            assertEquals(middle.y - middle.height - 1, 3, "the white above the squares");
-            assertEquals(block.getHeight() - 1 - (middle.y + 2 * middle.height), 3, "the white below the squares");
+            assertEquals(top - 1, 10, "the white above the squares");
+            assertEquals(block.getHeight() - 1 - bottom, 10, "the white below the squares");
+
+            java.awt.Component table = Components.named(window, "station.matrix", JComponent.class);
+            java.awt.Component picture = Components.named(window, "station.picture", JComponent.class);
+            JComponent also = Components.named(window, "station.matrixAlso", JComponent.class);
+
+            int underTable = picture.getLocationOnScreen().y - table.getLocationOnScreen().y - table.getHeight();
+            int underPicture = also.getLocationOnScreen().y + also.getInsets().top - block.getLocationOnScreen().y
+                - block.getHeight();
+
+            assertEquals(underPicture, underTable, "the line under the picture is not as far below it as the picture is "
+                + "below the table");
 
             java.awt.Rectangle inside = new java.awt.Rectangle(1, 1, block.getWidth() - 2, block.getHeight() - 2);
 

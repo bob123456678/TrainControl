@@ -187,7 +187,7 @@ final class StationPicture extends JPanel
         block.setName("station.picture.ways");
         block.setBackground(Color.WHITE);
         block.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(204, 204, 204)),
-            BorderFactory.createEmptyBorder(3, 8, 3, 8)));
+            BorderFactory.createEmptyBorder(10, 8, 10, 8)));
 
         art.setOpaque(false);
         block.add(art);
@@ -309,18 +309,27 @@ final class StationPicture extends JPanel
         return out;
     }
 
-    /** Where a square sits: the station in the middle of a 3 by 3 block centered in the frame, a next square beside it. */
+    /**
+     * Where a square sits: the station in the middle of a 3 by 3 block centered in the frame, a next square beside it;
+     * the row above or below is left out where no square is drawn there (MT-961).
+     */
     private Rectangle cell(Side side)
     {
         Insets inside = block.getInsets();
 
         int left = inside.left + Math.max(0, (block.getWidth() - inside.left - inside.right - 3 * SQUARE) / 2);
-        int top = inside.top + Math.max(0, (block.getHeight() - inside.top - inside.bottom - 3 * SQUARE) / 2);
+        int top = inside.top + Math.max(0, (block.getHeight() - inside.top - inside.bottom - rows() * SQUARE) / 2);
 
         int x = side == Side.W ? 0 : side == Side.E ? 2 : 1;
-        int y = side == Side.N ? 0 : side == Side.S ? 2 : 1;
+        int y = (side == Side.N ? 0 : side == Side.S ? 2 : 1) - (next.containsKey(Side.N) ? 0 : 1);
 
         return new Rectangle(left + x * SQUARE, top + y * SQUARE, SQUARE, SQUARE);
+    }
+
+    /** The rows drawn: the station's, and those of a next square above or below it. */
+    private int rows()
+    {
+        return 1 + (next.containsKey(Side.N) ? 1 : 0) + (next.containsKey(Side.S) ? 1 : 0);
     }
 
     /** Every mark, where it is drawn and clicked; one list for painting, clicks, tooltips and tests. */
@@ -572,7 +581,7 @@ final class StationPicture extends JPanel
         {
             Insets inside = getInsets();
 
-            return new Dimension(3 * SQUARE + inside.left + inside.right, 3 * SQUARE + inside.top + inside.bottom);
+            return new Dimension(3 * SQUARE + inside.left + inside.right, rows() * SQUARE + inside.top + inside.bottom);
         }
 
         @Override
