@@ -990,6 +990,11 @@ final class LocomotiveFunctionsTab extends JPanel
         scroll.setPreferredSize(wide);
         popup.setPopupSize(wide.width + in.left + in.right, wide.height + in.top + in.bottom);
 
+        // A popup that is a window of its own, opened the first time, keeps the size it opened with
+        java.awt.Window own = SwingUtilities.getWindowAncestor(popup);
+
+        if (own != null && own != SwingUtilities.getWindowAncestor(popup.getInvoker())) own.setSize(popup.getPreferredSize());
+
         // Reopened, the popup is already that wide and does not lay out again by itself
         popup.invalidate();
         popup.validate();
