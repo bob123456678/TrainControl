@@ -64,7 +64,7 @@ Multi-units can be configured in TrainControl, which can be simpler than using t
 
 **Layout View & Layout Editing**
 
-Track diagrams for your layout are downloaded automatically from the CS2 / CS3 (Track Boards only), or customizable through locally managed layout files.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
+Track diagrams for your layout are downloaded automatically from the CS2 / CS3 (Track Boards only), or you can customize them in layout files kept on your computer.  All components (switches, signals, S88, routes) are clickable and reflect the layout state.  Multiple pages can be opened across unlimited popup windows.
 
 ![Interactive track diagram in TrainControl, with clickable switches, signals, and S88 feedback indicators](assets/layout23.png?raw=true)
 
@@ -105,7 +105,7 @@ Some sample files are included in the `cs2_sample_layout` folder.
 
 **Full Autonomy**
 
-TrainControl can run your trains on its own.  From version 3.0, you set this up on the track diagram itself, in the autonomy editor: TrainControl works out how your track connects, and you set up stations, directions and settings by clicking and right-clicking squares, and a station's settings are all in one `Station Settings` window.  The setup is checked before it runs, and each problem it finds takes you to the square it is about.
+TrainControl can run your trains on its own.  From version 3.0, you set this up on the track diagram itself, in the autonomy editor: TrainControl works out how your track connects, and you set up stations, directions and settings by clicking and right-clicking squares.  A station's settings are all in one `Station Settings` window.  The setup is checked before it runs, and each problem it finds takes you to the square it is about.
 
 You need S88 sensors (at least one per station) and digital switches; signals are optional ([what you need](Automation.md#what-you-need)).  Once you have placed your trains, TrainControl keeps track of where every train is, and saves where they stand when you exit.  You can let your trains pick destinations at random, or send a particular train to a station.  If you set up autonomy in an older version, its [JSON configuration file](AutomationAPI.md) can be imported from the Autonomy menu.
 
@@ -143,7 +143,7 @@ In addition to all Central Station functionality, complex logical expressions ar
 
 **Keyboard**
 
-Useful for testing, individual accessories can be directly controlled via their digital address.  Each key has a red half and a green half, and clicking either sends that color, even if it is already lit.  The 2,048 addresses are on 16 tabs of 128.  The cumulative number of actuations of each accessory is shown as a tooltip, and `Export Counts` saves them all to a CSV file.
+Useful for testing, the keyboard lets you control individual accessories directly by their digital address.  Each key has a red half and a green half, and clicking either sends that color, even if it is already lit.  The 2,048 addresses are on 16 tabs of 128.  The cumulative number of actuations of each accessory is shown as a tooltip, and `Export Counts` saves them all to a CSV file.
 
 ![Accessory keyboard in TrainControl, used to control switches and signals directly by digital address](assets/ui_keyboard.png?raw=true)
 
@@ -431,20 +431,20 @@ Tab icons provided by Freepik.
 * v3.1.0
     - Central Station Protocol
         - New Features
-            - TrainControl now connects to a CS3 over TCP, and falls back to UDP, saying so in the log, if that doesn't work. A CS2 still uses UDP.
-            - If the connection to a CS3 drops, or the CS3 answers nothing for 3 seconds after a command, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.
+            - TrainControl now connects to a CS3 over TCP, and if that doesn't work, it falls back to UDP and says so in the log. A CS2 still uses UDP.
+            - If the connection to a CS3 drops, or the CS3 doesn't answer a command within 3 seconds, TrainControl switches to UDP right away without sending anything twice, and the log counts the commands that may not have arrived.
             - The network latency in the main window names the protocol in use, `(TCP)` or `(UDP)`, and a warning triangle shows to the left of `Power OFF` while the Central Station isn't answering.
             - When TrainControl starts up or syncs with a CS3, it now asks the sensors for their state, including those on a Link S88, so the track diagram shows them as they really are.  After TrainControl connects or reconnects, no S88 route is set off until the CS3 has told it the state of every sensor; after that, every sensor change counts, including during a later `Sync`.
             - `Download Central Station Layout Files...` asks before replacing a layout that is already in the folder, runs behind the busy sign instead of freezing the window, opens the copy the way `Open Layout...` does, and says so if the copy can't be opened.
             - A layout downloaded from a CS3 keeps each accessory's protocol, including an MM2 and a DCC accessory at the same address.
             - When the Central Station turns the track power off after a short circuit, TrainControl now shows the power as off and a warning names the output that tripped.
-            - A CS3 sync skips what it can't read, such as something a new firmware changed, and keeps the rest, so it no longer loses a page or fails because of it.
+            - A CS3 sync skips what it can't read, such as something changed by newer firmware, and keeps the rest, so it no longer loses a page or fails because of it.
             - A failed `Sync` now says in one plain sentence what went wrong, with `Retry`, and keeps the details in the log.
             - When TrainControl connects to a CS3, the log shows the CS3's firmware version once.
         - Bug Fixes
-            - A file that arrives from the Central Station cut off is asked for again, and the sync fails, changing nothing, only if it stays cut off, instead of leaving a partly loaded layout.
+            - If a file from the Central Station arrives cut off, TrainControl asks for it again, and only if it is still cut off does the sync fail, changing nothing, instead of leaving a partly loaded layout.
             - Names with umlauts or accents now come through correctly from a Central Station that sends them in an older format.
-            - A Central Station that always sends the same short file is now read, and the log says so.
+            - If the Central Station sends the same short file every time it is asked, TrainControl now reads it and says so in the log.
             - The track diagram now waits until TrainControl knows the Central Station's type, so a CS3's squares get the right protocol.
             - A sync no longer changes the address of a locomotive that is moving; it waits for the next sync after the locomotive has stopped.
             - `Check for Renamed Locomotives` now handles a locomotive renamed at the Central Station, even when another locomotive already has the new name, and asks first.  It reads the Central Station behind the busy sign instead of freezing the window.
@@ -477,7 +477,7 @@ Tab icons provided by Freepik.
             - A station with only `Trains can stop here` ticked can't be run through by autonomy or by a trip you send, though it doesn't make the train turn around, and `Return Home` may still run through it.
             - `Mass Edit...`, under `Station Tools` in the autonomy editor, lets you click several stations and change them all in one `Station Settings` window.
             - `Change Train at` *station* `...` opens the `Train Placement` tab of `Station Settings` for the train standing there, with its locomotive, `Active`, `Facing`, `Arrived` and `Tail lies`, and `Locomotive Settings...` opens the `Autonomy` tab.
-            - On the track diagram, a station's right-click menu now always has `Edit` *locomotive* `...` when a train is standing there, `Place` *locomotive* `Here` when another one is selected, and `Place a Locomotive Here...`, which reads `Place Another Locomotive Here...` beside it, together under their own divider.
+            - On the track diagram, a station's right-click menu now always shows its train items together under their own divider: `Edit` *locomotive* `...` when a train is standing there, `Place` *locomotive* `Here` when another one is selected, and `Place a Locomotive Here...`, which reads `Place Another Locomotive Here...` when `Place` *locomotive* `Here` is shown.
             - On the track diagram, every square's right-click menu now opens with its name in bold and `Station Settings...` under it, and ends with `Start Autonomous Operation` and `Return Locomotives Home`.  `Segment Length...`, `Bulk Tools` and `Open the Full Editor...` are under `Autonomy Setup`, as they already were on plain track.
             - `Change Direction` and `Change Arrived From` are left off the track diagram's right-click menu where the track allows only one way, rather than grayed out.
             - While an editor is open, the track diagram's right-click menu offers `Go to the Opened Editor`.
@@ -497,7 +497,7 @@ Tab icons provided by Freepik.
             - The track diagram editor has a strip of icons under `Page` to add, duplicate, rename and delete a page and to move it up or down, and its `Manage Pages` menu is now `Tools`.
             - Pages are shown in the order of the layout's files rather than by name, and `Sort Pages by Name` puts them back in name order.
             - A page link keeps going to the same page when pages are renamed or moved.
-            - In the track diagram editor, Ctrl+R turns the picked squares when there are any, and `Rotate` on the `Selection` menu shows Ctrl+R.
+            - In the track diagram editor, Ctrl+R rotates the squares you have picked, if any, and `Rotate` on the `Selection` menu shows Ctrl+R.
             - Track diagrams draw faster and flash less: station names appear with their page, squares keep their size while their pictures load, and the autonomy editor opens and switches pages with one drawing.
             - Setting a length for many squares at once is faster, and following a page link or editing routes no longer redraws the whole diagram.
             - An hourglass shows where the track diagram will be while it loads.
@@ -537,7 +537,7 @@ Tab icons provided by Freepik.
             - A train's destinations on the track diagram's right-click menu are in the order you read them, so ParkingTrack4 comes before ParkingTrack10.
             - Right-clicking plain track on the track diagram shows what it is, such as `Straight Track`, rather than its grid square.
             - Cancel in the autonomy editor now puts every train back where it stood when the editor opened, and its question names the trains that will move.  Cancel never turns a train around: each keeps the way it faces now, however it got there, and a train whose only change is its facing is not named.
-            - While an editor is open, linking a multi-unit, changing an address or decoder, pressing `Sync`, and a locomotive CSV import that changes addresses are refused with a message, and switching, creating or downloading a layout and the `Autonomy` menu's configuration items are grayed, since Cancel could not undo them.  A sync that a route edit or a function reset runs afterward waits and runs once when the editor closes.
+            - While an editor is open, linking a multi-unit, changing an address or decoder, pressing `Sync`, and a locomotive CSV import that changes addresses are refused with a message, and switching, creating or downloading a layout and the `Autonomy` menu's configuration items are grayed, since Cancel could not undo them.  A sync started by a route edit or a function reset waits and runs once when the editor closes.
             - The tabs in `Station Settings` now run to the window's edges.
         - Locomotive Control
             - Ctrl+B now moves the copied locomotive to the active button, as the key menu's `Move` item says.
@@ -553,7 +553,7 @@ Tab icons provided by Freepik.
             - Questions and messages now open over the window you were working in, such as a track diagram page in its own window, instead of over the main window.
             - `Restore from Backup` no longer asks about the Central Station's layout when it saves your current data first.
             - `Open Layout...` and `Recent Layouts` now refuse a folder that isn't a layout, and change nothing.
-            - `Open Layout...`, `Recent Layouts` and `Create New Layout...` now say so while a sync is running and change nothing, instead of showing the old pages under the new layout's name.  After `Recent Layouts` says a folder is gone and takes it off the list, the others on the list still open.
+            - While TrainControl is syncing with the Central Station, `Open Layout...`, `Recent Layouts` and `Create New Layout...` now say a sync is running and open nothing, instead of showing the old layout's pages under the new layout's name.  After `Recent Layouts` removes a layout whose folder is gone, the other recent layouts still open.
             - The Log tab keeps its sideways scroll position when a new message arrives.
             - If the locomotive database or the window settings can't be saved when you close TrainControl, it says which file and why, and asks you to `Retry` or `Exit Without Saving`, instead of closing and losing your changes.
             - A backup now names any file it couldn't read, and says in plain words when a file could be neither saved nor copied and so isn't in the backup at all.  It is written whole or not at all, so closing TrainControl during a backup no longer leaves a cut-off archive.
@@ -566,7 +566,7 @@ Tab icons provided by Freepik.
 * v3.0.8 [11/04/2026]
     - New Features
         - Central Station
-            - When you sync with a CS3, TrainControl now takes the position of each switch and signal with two positions from the Central Station, so one thrown while TrainControl was closed shows correctly.
+            - When you sync with a CS3, TrainControl now reads the position of every two-position switch and signal from the Central Station, so one thrown while TrainControl was closed shows correctly.
     - Bug Fixes
         - Autonomy
             - The autonomy editor window can no longer be made so short that `Save Changes` and `Cancel` are cut off, and it opens no taller than the screen; `Things to look at` shows five lines instead of seven when the window is short.
@@ -591,12 +591,12 @@ Tab icons provided by Freepik.
             - Under the conditions are `Add Condition`, `Group Selected` (Ctrl+G), `Ungroup` (Ctrl+Shift+G), `Split Here` (Ctrl+Shift+S), `Undo` (Ctrl+Z) and `Redo` (Ctrl+Y), and `Split Here` turns `A and B and C` into `(A and B) or C` in one click.
             - Under the commands are `Add Command`, `Undo` and `Redo`, and Ctrl+Z and Ctrl+Y undo and redo in whichever list you are working in.
             - `Duplicate` puts a copy of the selected commands or conditions directly below them, from the right-click menu or the copy icon beside each row's trash.
-            - The plain words reading of the conditions is above their table, and the warning that conditions are ignored without `Automatically Fire` sits on their heading.
+            - The plain-words reading of the conditions now sits above their table, and the warning that conditions are ignored without `Automatically Fire` sits on their heading.
             - `Save` now comes before `Cancel`, the window can no longer be made narrower than its top line, `Automatically Fire` is no longer in the Tab order, and `Help` is about half as long.
             - On the Routes tab, with the track power off, each route shows a wrench instead of its play button, and clicking it opens the route for editing; the right-click menu now starts with the route's name and ID, and `Execute Route` still runs it.
         - Autonomy
             - In the autonomy editor, while `Test a path` or `Why not Moving?` waits for a click, what you can click is outlined in orange at the square's edge, and the square you click turns blue.
-            - The answers of `Test a path` and `Why not Moving?` stay until the next message, until you close them, or until you click the button again or press Escape, in a strip up to four lines tall.
+            - The answers from `Test a path` and `Why not Moving?` stay in a strip up to four lines tall until the next message, until you close them, or until you click the button again or press Escape.
             - `Why not Moving?` names every station the train can go to, not just the first four, page by page and in alphabetical order within a page (ParkingTrack4 before ParkingTrack10), with what its colors mean at the end.
         - Interface
             - Menus show fewer tooltips: submenus such as `Recent Layouts`, `Edit Layout Page` and `Bulk Tools` no longer cover the menu with one, and items whose name says what they do have none.
@@ -620,7 +620,7 @@ Tab icons provided by Freepik.
             - In the autonomy editor, a message across the bottom of the diagram no longer hides the diagram's last row: scroll down to see the row above the message.
             - On the track diagram, the banner's `Load this configuration` and `Fix it` buttons are now bold, like the `Start` button.
         - Interface
-            - `Layouts` > `Recent Layouts` no longer shows long folder paths that make the menu very wide: two folders with the same name show only the folders that tell them apart, a long name is shortened in the middle, and the full path is in the tooltip.
+            - `Layouts` > `Recent Layouts` no longer shows long folder paths that make the menu very wide: two folders with the same name show just enough of their paths to tell them apart, a long name is shortened in the middle, and the full path is in the tooltip.
             - Right-clicking the locomotive's picture in the main window opens the icon file chooser only while the power is off, like the icons over the picture, and its tooltip says which.
 * v3.0.5 [10/29/2026]
     - New Features
@@ -638,7 +638,7 @@ Tab icons provided by Freepik.
         - Interface
             - Typing a bracket or another symbol in the Stats tab's filter no longer causes an error; the filter finds exactly what is typed.
             - The usage graph no longer counts a multi-unit's running time twice, once for the lead and once for its members.
-            - `Quick Find Locomotive` no longer skips a locomotive's key, or visits an old one, after the keys were remapped between two searches for the same name, and it no longer stays on the key showing when the locomotive is on another key too.
+            - If you remap keys between two searches for the same name, `Quick Find Locomotive` no longer skips a locomotive's key or goes to an old one, and when the locomotive is on more than one key, it moves on instead of staying on the key already showing.
         - Routes
             - `Delete` in the route editor's right-click menu removes every selected condition, not only one.
         - Track Diagram
@@ -691,7 +691,7 @@ Tab icons provided by Freepik.
         - Autonomy
             - Opening another layout no longer keeps the previous layout's trains in memory.
             - Pasting a train onto a square that is not a station says trains can only be placed at stations.
-            - A train placed with `Place` on a station no train can leave is saved.
+            - A train placed with `Place` on a station that no train can leave is now saved.
             - Long phrases in some languages no longer widen the autonomy editor, and Danish `Why not Moving?` fits its button.
             - `Name Everything...` wraps a long question over several lines.
         - Automation API
@@ -699,11 +699,11 @@ Tab icons provided by Freepik.
 * v3.0.2 [10/18/2026]
     - New Features
         - Autonomy
-            - Right-click Return Home to `Run Trains to Their Homes`, or `Place All Trains at Their Homes` to set each train on its home in the setup without moving it.
+            - Right-click Return Home for `Run Trains to Their Homes`, or for `Place All Trains at Their Homes`, which puts each train on its home in the setup without moving it.
             - The autonomy editor has a `Text Labels` box, and its `Station Labels` list offers Station Names, Standing Locs, Home Locs and Hide.
             - The setup check warns when two sensors on one page share an address, and clicking a notice copies its text.
             - `Create New Layout` starts from a small sample with two stations, ready to try.
-            - Track no station can be reached along is grayed out in the editor.
+            - In the editor, track is grayed out if it can't reach any station.
             - The setup check warns about track whose squares point opposite ways, and the One-Way tool sets the whole stretch.
         - Routes
             - A turning mark shows which routes are running, and a message that has to wait names the route.
@@ -716,7 +716,7 @@ Tab icons provided by Freepik.
     - Bug Fixes
         - Autonomy
             - Locomotives missing from your database are taken out of the setup when it loads, and a popup names them.
-            - A train can be placed from the Track Diagram on a station no train can leave.
+            - You can now place a train from the Track Diagram on a station that no train can leave.
             - Direction arrows on switches and slips fully decide which way trains run; older setups are corrected when they load.
             - Setup edits, Start, Execute Timetable, Return Home and sending a train wait while a route runs, not only while autonomy does.
             - Every finding you click in the setup check is outlined in the editor.
