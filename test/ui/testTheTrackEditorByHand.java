@@ -1413,12 +1413,7 @@ public class testTheTrackEditorByHand
         }
         finally
         {
-            Components.onTheEventThread(() ->
-            {
-                editor.dispose();
-
-                return null;
-            });
+            dispose(editor);
         }
     }
 
@@ -1461,12 +1456,7 @@ public class testTheTrackEditorByHand
         }
         finally
         {
-            Components.onTheEventThread(() ->
-            {
-                editor.dispose();
-
-                return null;
-            });
+            dispose(editor);
         }
     }
 
@@ -1521,12 +1511,7 @@ public class testTheTrackEditorByHand
         }
         finally
         {
-            Components.onTheEventThread(() ->
-            {
-                editor.dispose();
-
-                return null;
-            });
+            dispose(editor);
         }
     }
 
@@ -1555,6 +1540,16 @@ public class testTheTrackEditorByHand
         Components.settle();
 
         return editor;
+    }
+
+    private static void dispose(final LayoutEditor editor)
+    {
+        Components.onTheEventThread(() ->
+        {
+            editor.dispose();
+
+            return null;
+        });
     }
 
     /** What the editor carries on its drag layer, or null. */
