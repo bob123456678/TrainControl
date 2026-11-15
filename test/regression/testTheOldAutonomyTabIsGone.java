@@ -173,16 +173,16 @@ public class testTheOldAutonomyTabIsGone
         JMenu menu = theAutonomySlot();
 
         assertTrue(menu.isEnabled(), "on a Central Station layout the Autonomy menu is greyed, so its offer to"
-            + " download the layout (OB-093) and its Documentation cannot be pressed - Adam, 2026-09-24: \"open the"
-            + " autonomy menu with everything but those 2 greyed\"");
+            + " download the layout (OB-093) cannot be pressed");
     }
 
     /**
-     * Opened there, Documentation can be chosen, and nothing can but it and the offer of a layout.  The offer is a
+     * Opened there, nothing can be chosen but the offer of a layout, and the guide (in Help only, OB-468) is not
+     * there.  The offer is a
      * submenu since MT-548's note; its own claim is `testWithNothingToDownloadANewLayoutIsOffered`.
      */
     @Test
-    public void testOnlyTheDownloadAndTheGuideCanBeChosenThere() throws Exception
+    public void testOnlyTheOfferOfALayoutCanBeChosenThere() throws Exception
     {
         final JMenu menu = theAutonomySlot();
 
@@ -194,7 +194,6 @@ public class testTheOldAutonomyTabIsGone
         String guide = I18n.t("ui.menu.autonomyGuide");
         String download = I18n.t("autosetup.ui.menuNoSetupPossible");
 
-        JMenuItem documentation = null;
         List<String> items = new ArrayList<>();
         List<String> live = new ArrayList<>();
 
@@ -206,20 +205,16 @@ public class testTheOldAutonomyTabIsGone
 
             items.add(item.getText());
 
-            if (guide.equals(item.getText())) documentation = item;
-            else if (item.isEnabled() && !download.equals(item.getText())) live.add(item.getText());
+            if (item.isEnabled() && !download.equals(item.getText())) live.add(item.getText());
         }
 
-        assertNotNull(documentation, "the Autonomy menu on a Central Station layout has no Documentation.  Items: "
+        assertFalse(items.isEmpty(), "precondition: the menu holds nothing");
+
+        assertFalse(items.contains(guide), "the Autonomy menu offers the guide, which is in Help only (OB-468).  Items: "
             + items);
 
-        assertTrue(documentation.isEnabled(), "the Autonomy menu's Documentation is greyed on a Central Station layout");
-
-        assertTrue(items.size() > 1, "precondition: the menu holds nothing but Documentation, so there is nothing"
-            + " for the greying to be asked of.  Items: " + items);
-
-        assertTrue(live.isEmpty(), "on a Central Station layout the Autonomy menu offers more than the download and"
-            + " the guide - Adam, 2026-09-24: \"everything but those 2 greyed\".  Live: " + live);
+        assertTrue(live.isEmpty(), "on a Central Station layout the Autonomy menu offers more than the download"
+            + " (Adam, 2026-09-24: \"everything but those 2 greyed\").  Live: " + live);
     }
 
     /**

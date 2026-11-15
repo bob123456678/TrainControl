@@ -517,7 +517,7 @@ Tab icons provided by Freepik.
             - Menu items that open a window or ask you something end in "...".
             - An unexpected error in the background now shows in the log.
             - `Routes` > `New Route...` adds a route, and `Import Routes...` asks before replacing your routes.
-            - `Autonomy` > `Documentation` is now `Autonomy Guide`.
+            - `Autonomy` > `Documentation` is gone: `Autonomy Guide` is in the `Help` menu.
         - Documentation
             - The Readme and the autonomy guide now describe `Locomotive Settings`, `Station Settings` and the other new windows and shortcuts.
     - Bug Fixes
