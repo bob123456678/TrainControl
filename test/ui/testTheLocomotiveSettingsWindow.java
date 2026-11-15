@@ -2211,6 +2211,188 @@ public class testTheLocomotiveSettingsWindow
         assertNull(pillShows(null), "a picture that failed to load is named");
     }
 
+    /**
+     * The revert and crop marks belong to the picture on screen, as the pill does, at every door that swaps it: a
+     * window opening on a slow picture shows no marks over the empty frame, a new local picture brings its revert when
+     * it lands, and after a revert the local picture keeps its marks until the station's picture arrives (OB-482).
+     *
+     * MUTATION: set the marks' visibility in `refreshPicture` when the fetch starts rather than in `arrived`, and this
+     * fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheMarksWaitForThePictureTheySitOn() throws Exception
+    {
+        String station = I18n.t("loc.ui.settingsPictureFromStation");
+        String local = I18n.t("loc.ui.settingsPictureLocal");
+        java.util.Map<String, java.util.concurrent.CountDownLatch> held = heldPictures("a", "b", "c");
+
+        try (support.StandInStation slow = slowStation(held))
+        {
+            loc.setLocalImageURL(null);
+            loc.setImageURL(slowPicture(slow, "a"));
+            open(0);
+
+            JLabel picture = SettingsWindow.part("settings.picture", JLabel.class);
+            Component crop = SettingsWindow.part("settings.crop", Component.class);
+            Component revert = SettingsWindow.part("settings.revert", Component.class);
+            LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+            Components.settle();
+            assertEquals(marks(crop, revert), "", "marks showed over a picture still on its way");
+
+            held.get("a").countDown();
+            assertEquals(pillShows(station), station, "the station's picture arrived without its pill");
+            assertEquals(marks(crop, revert), "crop", "the crop did not come with the station's picture");
+
+            // A local picture slow to load, as the wrench sets one
+            javax.swing.Icon stations = Components.onTheEventThread(picture::getIcon);
+
+            loc.setLocalImageURL(slowPicture(slow, "b"));
+            look(window);
+
+            assertSame(Components.onTheEventThread(picture::getIcon), stations, "precondition: the station's picture left at once");
+            assertEquals(marks(crop, revert), "crop", "the revert came before the local picture it clears");
+
+            held.get("b").countDown();
+            assertEquals(pillShows(local), local, "the local picture arrived without its pill");
+            assertEquals(marks(crop, revert), "crop revert", "the revert did not come with the local picture");
+
+            // The revert, with the station's picture now slow: the local one keeps its marks until it is replaced
+            javax.swing.Icon own = Components.onTheEventThread(picture::getIcon);
+
+            loc.setImageURL(slowPicture(slow, "c"));
+            Mouse.click(revert);
+            assertTrue(Components.waitFor(() -> loc.getLocalImageURL() == null, WAIT), "the revert did not clear the icon");
+            look(window);
+
+            assertSame(Components.onTheEventThread(picture::getIcon), own, "precondition: the local picture left at once");
+            assertEquals(marks(crop, revert), "crop revert", "the marks changed before the station's picture arrived");
+
+            held.get("c").countDown();
+            assertEquals(pillShows(station), station, "the station's picture arrived without its pill");
+            assertEquals(marks(crop, revert), "crop", "the revert stayed over the station's picture");
+        }
+        finally
+        {
+            held.values().forEach(java.util.concurrent.CountDownLatch::countDown);
+        }
+    }
+
+    /**
+     * The crop acts on the picture on screen: clicked after a revert while the station's picture is still on its way,
+     * it opens nothing, rather than a crop of a picture the window does not show yet (OB-482).
+     *
+     * MUTATION: drop the `waiting` check from `LocomotiveTab.mark`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheCropDoesNothingWhileItsPictureIsOnItsWay() throws Exception
+    {
+        String station = I18n.t("loc.ui.settingsPictureFromStation");
+        String local = I18n.t("loc.ui.settingsPictureLocal");
+        String cropTitle = I18n.t("loc.ui.cropTitle");
+        java.util.Map<String, java.util.concurrent.CountDownLatch> held = heldPictures("d");
+
+        try (support.StandInStation slow = slowStation(held))
+        {
+            loc.setImageURL(slowPicture(slow, "d"));
+            loc.setLocalImageURL(pngFile().toURI().toString());
+            open(0);
+            assertEquals(pillShows(local), local, "the local picture is not named");
+
+            Component crop = SettingsWindow.part("settings.crop", Component.class);
+
+            Mouse.click(SettingsWindow.part("settings.revert", Component.class));
+            assertTrue(Components.waitFor(() -> loc.getLocalImageURL() == null, WAIT), "the revert did not clear the icon");
+            look(SettingsWindow.showing());
+            assertTrue(Components.onTheEventThread(crop::isVisible), "precondition: no crop over the local picture");
+
+            Mouse.click(crop);
+
+            held.get("d").countDown();
+            assertEquals(pillShows(station), station, "the station's picture arrived without its pill");
+            assertFalse(Components.waitFor(() -> Components.onTheEventThread(() -> java.util.Arrays.stream(
+                java.awt.Window.getWindows()).anyMatch(w -> w instanceof java.awt.Dialog && w.isShowing()
+                && cropTitle.equals(((java.awt.Dialog) w).getTitle()))), 3000),
+                "the crop clicked before the station's picture arrived opened a crop of it");
+        }
+        finally
+        {
+            held.values().forEach(java.util.concurrent.CountDownLatch::countDown);
+
+            Components.onTheEventThread(() ->
+            {
+                for (java.awt.Window w : java.awt.Window.getWindows())
+                {
+                    if (w instanceof java.awt.Dialog && cropTitle.equals(((java.awt.Dialog) w).getTitle())) w.dispose();
+                }
+
+                return null;
+            });
+        }
+    }
+
+    /** One latch for each picture name, which holds that picture back until it is counted down. */
+    private static java.util.Map<String, java.util.concurrent.CountDownLatch> heldPictures(String... names)
+    {
+        java.util.Map<String, java.util.concurrent.CountDownLatch> held = new java.util.concurrent.ConcurrentHashMap<>();
+
+        for (String name : names) held.put(name, new java.util.concurrent.CountDownLatch(1));
+
+        return held;
+    }
+
+    /** A station whose pictures each wait for their latch in `held`, by the name `slowPicture` gave them. */
+    private static support.StandInStation slowStation(java.util.Map<String, java.util.concurrent.CountDownLatch> held)
+        throws Exception
+    {
+        java.io.ByteArrayOutputStream png = new java.io.ByteArrayOutputStream();
+
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(40, 20, java.awt.image.BufferedImage.TYPE_INT_RGB),
+            "png", png);
+
+        return new support.StandInStation((path, n) ->
+        {
+            String name = path.substring(path.lastIndexOf('-') + 1).replace(".png", "");
+            java.util.concurrent.CountDownLatch release = held.get(name);
+
+            try
+            {
+                if (release != null) release.await(2 * WAIT, java.util.concurrent.TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            return png.toByteArray();
+        });
+    }
+
+    /** A picture on the slow station, new to this run so no cache holds it. */
+    private static String slowPicture(support.StandInStation slow, String name)
+    {
+        return "http://" + slow.address() + "/OB-482-" + Long.toString(System.nanoTime(), 36) + "-" + name + ".png";
+    }
+
+    /** The window's own look at the locomotive, as its once-a-second watch takes it. */
+    private static void look(LocomotiveSettingsFrame window) throws Exception
+    {
+        javax.swing.Timer watch = watch(window);
+
+        Components.onTheEventThread(() ->
+        {
+            watch.getActionListeners()[0].actionPerformed(null);
+
+            return null;
+        });
+    }
+
+    /** Which of the picture's marks show: "crop", "revert", both or neither. */
+    private static String marks(Component crop, Component revert)
+    {
+        return Components.onTheEventThread(() -> ((crop.isVisible() ? "crop " : "") + (revert.isVisible() ? "revert" : "")).trim());
+    }
+
     /** Opens the window on Basic Settings, its watch stopped: what changes then, the action itself changed. */
     private static void openWithoutTheWatch() throws Exception
     {
