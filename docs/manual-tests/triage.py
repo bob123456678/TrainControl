@@ -2400,7 +2400,11 @@ class Triage(tk.Tk):
         filed = self._issues().file(ob["kind"], ob["summary"], ob["detail"].strip() or "(no further detail)",
                                     raised, self._build_note())
 
-        self._refresh_issue_tabs()
+        # Filed by now: a refresh that fails must not read as a failed filing, which a retry would file twice
+        try:
+            self._refresh_issue_tabs()
+        except Exception as e:
+            self._notify("Filed as %s; the issue list did not refresh (%s)." % (filed[0], e))
 
         return filed
 
