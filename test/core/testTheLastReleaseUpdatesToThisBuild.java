@@ -46,6 +46,9 @@ import support.ReportsStarted;
  * fails.  What cannot be run is TrainControl's own start-up: the started version is `support.ReportsStarted`, which says
  * it started through the jar's `SelfUpdate.reportStarted`; `regression.testTheUpdateIsWiredEndToEnd` pins where
  * TrainControl calls it.  TC_LAST_RELEASE overrides the tag.
+ *
+ * The tag's code is called by 3.0.8's signatures (`Request`, `update`, `startDetached`): a release that changes them
+ * fails here by name, never passes, and this is updated with that release.
  */
 public class testTheLastReleaseUpdatesToThisBuild
 {
