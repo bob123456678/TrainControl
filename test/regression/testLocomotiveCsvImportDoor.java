@@ -345,22 +345,101 @@ public class testLocomotiveCsvImportDoor
     }
 
     /**
-     * A file whose only row cannot be used still gets the skipped line and its wrong cell in the "nothing to import" message.
+     * A file whose only row cannot be used says there is nothing to import and how many rows could not be read, with the
+     * skipped line and its wrong cell listed under it (MT-991 step 4).
      *
-     * MUTATION: leave the list out of the nothing-to-import message, or leave the cell out of it, and this fails.
+     * MUTATION: leave the list out of the nothing-to-import message, leave the cell out of it, or count 0 skipped rows,
+     * and this fails.
      */
     @Test
     public void testNothingToImportNamesTheSkippedCell() throws Exception
     {
-        assertEquals(detailsOfImporting("FR049 door only,,MFX,50,0,0:00:00,c. 1950,0,,,\n"), Collections.singletonList(
+        support.PopupShape said = shapeOfImporting("FR049 door only,,MFX,50,0,0:00:00,c. 1950,0,,,\n");
+
+        assertEquals(words(said.sentence), words(I18n.f("loc.ui.infoImportCsvNothing", 1)), "the nothing-to-import"
+            + " message does not say so, or miscounts the skipped row");
+        assertEquals(said.details, Collections.singletonList(
             I18n.f("loc.ui.importCsvSkippedLine", 2) + ": " + I18n.f("loc.ui.importCsvReasonCells",
                 I18n.f("loc.ui.importCsvBadCell", "Start Year", "c. 1950"))), "the nothing-to-import message does not name the cell");
+    }
+
+    /**
+     * MT-991 steps 1 to 3 as written: the file Export to CSV saves, its first row's Start Year made "c. 1950", imported
+     * again.  The summary counts one skipped row and names line 2 with its cell, and every locomotive is as it was.
+     *
+     * MUTATION: in `LocomotiveCsvDoor.tell`, leave out the `infoImportCsvSkipped` sentence, and this fails.
+     */
+    @Test
+    public void testAnExportWithOneBadYearImportsTheRestAndNamesItsLine() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            File file = new File(System.getProperty("java.io.tmpdir"), "tc-export-" + System.nanoTime() + ".csv");
+
+            try
+            {
+                Map<String, String> before = everyLocomotive(model);
+
+                List<String> lines = new ArrayList<>(Files.readAllLines(exportThroughTheMenu(ui, file).toPath(),
+                    StandardCharsets.UTF_8));
+
+                assertTrue(lines.size() >= 3 && !lines.get(1).contains("\""), "precondition: the export has no plain"
+                    + " first row and a second to merge: " + lines.size() + " lines");
+
+                int year = java.util.Arrays.asList(lines.get(0).split(",")).indexOf("Start Year");
+                String[] first = lines.get(1).split(",", -1);
+
+                first[year] = "c. 1950";
+                lines.set(1, String.join(",", first));
+                Files.write(file.toPath(), lines, StandardCharsets.UTF_8);
+
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty());
+
+                assertEquals(seen.said.size(), 1, "the door said: " + seen.said);
+                assertTrue(words(seen.said.get(0)).contains(words(I18n.f("loc.ui.infoImportCsvSkipped", 1))),
+                    "the summary does not say one row was skipped: " + seen.said.get(0));
+                assertTrue(seen.saidShapes.get(0).details.contains(I18n.f("loc.ui.importCsvSkippedLine", 2) + ": "
+                    + I18n.f("loc.ui.importCsvReasonCells", I18n.f("loc.ui.importCsvBadCell", "Start Year", "c. 1950"))),
+                    "the summary does not name line 2 and its Start Year: " + seen.saidShapes.get(0).details);
+                assertEquals(everyLocomotive(model), before, "importing the export changed a locomotive, "
+                    + first[0] + "'s skipped row included");
+            }
+            finally
+            {
+                file.delete();
+            }
+        });
+    }
+
+    /** Presses Locomotives > Export to CSV, saves into `file` in its chooser, and waits for the file to be written. */
+    private static File exportThroughTheMenu(TrainControlUI ui, File file) throws Exception
+    {
+        try (support.Answering answering = support.Answering.start(message -> null).choosing(file))
+        {
+            final JMenuItem door = (JMenuItem) Reflect.get(TrainControlUI.class, ui, "exportLocsToCSVMenuItem");
+
+            SwingUtilities.invokeLater(door::doClick);
+
+            // Written off the event thread, and the panel showing the export answered
+            assertTrue(support.Components.waitFor(() -> file.length() > 0 && !answering.asked().isEmpty(), 60000),
+                "Export to CSV wrote nothing to the chosen file");
+
+            support.Components.settle();
+        }
+
+        return file;
     }
 
     /** The list under the message the door says after importing a file of these rows; the locomotives made are deleted. */
     private static List<String> detailsOfImporting(String rows) throws Exception
     {
-        List<String> details = new ArrayList<>();
+        return shapeOfImporting(rows).details;
+    }
+
+    /** The message the door says after importing a file of these rows; the locomotives made are deleted. */
+    private static support.PopupShape shapeOfImporting(String rows) throws Exception
+    {
+        List<support.PopupShape> shape = new ArrayList<>();
 
         inAWindow((ui, model) ->
         {
@@ -370,7 +449,7 @@ public class testLocomotiveCsvImportDoor
 
             try
             {
-                details.addAll(press(ui, file, IMPORT, s -> !s.said.isEmpty()).saidShapes.get(0).details);
+                shape.add(press(ui, file, IMPORT, s -> !s.said.isEmpty()).saidShapes.get(0));
 
                 for (String name : new String[] {"FR049 door year", "FR049 door two", "FR049 door only"})
                 {
@@ -389,7 +468,7 @@ public class testLocomotiveCsvImportDoor
             }
         });
 
-        return details;
+        return shape.get(0);
     }
 
     /**
