@@ -499,7 +499,7 @@ Tab icons provided by Freepik.
             - Menu items that open a window or ask you something end in "...".
             - An unexpected error in the background now shows in the log.
             - `Routes` > `New Route...` adds a route, and `Import Routes...` asks before replacing your routes.
-            - `Autonomy` > `Documentation` is now `Autonomy Guide`.
+            - `Autonomy` > `Documentation` is gone: `Autonomy Guide` is in the `Help` menu.
         - Central Station
             - TrainControl now connects to a CS3 over TCP, and falls back to UDP, saying so in the log, if that doesn't work. A CS2 still uses UDP.
             - If the connection to a CS3 drops, or the CS3 answers nothing for 3 seconds after a command, commands go over UDP at once and nothing is sent again, and the log counts the commands that may not have arrived.

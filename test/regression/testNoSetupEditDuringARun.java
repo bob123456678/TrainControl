@@ -2681,8 +2681,8 @@ public class testNoSetupEditDuringARun
 
     /**
      * The Autonomy menu grays what changes the setup while autonomy runs, saying why on one line, and gives it back at
-     * rest (Adam, MT-613: "why not grey out the whole menu while running?").  Autonomy Settings and Documentation stay
-     * live - they change nothing; Export Raw Graph as JSON is grayed with the rest (MT-633).
+     * rest (Adam, MT-613: "why not grey out the whole menu while running?").  Autonomy Settings stays live - it changes
+     * nothing; Export Raw Graph as JSON is grayed with the rest (MT-633).
      *
      * MUTATION: leave the menu live while autonomy runs, or the debug export, and this fails.
      */
@@ -2696,7 +2696,7 @@ public class testNoSetupEditDuringARun
         onItsOwnWindow("live-snapshot", ui ->
         {
             java.util.Set<String> live = new java.util.HashSet<>(java.util.Arrays.asList(
-                I18n.t("autosetup.ui.menuGlobalSettings"), I18n.t("ui.menu.autonomyGuide")));
+                I18n.t("autosetup.ui.menuGlobalSettings")));
 
             // DURING A RUN
             staging.set(ui, true);

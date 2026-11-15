@@ -18,14 +18,13 @@ import org.traincontrol.util.I18n;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import support.Display;
 import support.Reflect;
-import support.SourceOf;
 import support.Teardown;
 
 /**
- * The Autonomy menu has a Documentation item, opening the guide the old tab's link opened (OB-254).
+ * The Autonomy menu has no guide item: Help has it (OB-468), and an open editor grays everything else on the menu.
  *
- * MUTATION: leave the item out, or point it elsewhere, and the first claim fails; let the editor guard gray it with
- * the rest, and the second does.
+ * MUTATION: put the Autonomy Guide item back in `AutonomyMenu.rebuild`, and the first claim fails; leave an item live
+ * under an open editor, and the second does.
  *
  * @author Adam
  */
@@ -56,35 +55,21 @@ public class testTheAutonomyMenuLinksItsDocumentation
         Teardown.close(sandbox, model, ui);
     }
 
-    /** Opened, the Autonomy menu offers Documentation, and it can be chosen. */
+    /** Opened, the Autonomy menu offers items but not the guide, which Help holds (OB-468). */
     @Test
-    public void testTheAutonomyMenuOffersDocumentation() throws Exception
+    public void testTheAutonomyMenuHasNoGuideItem() throws Exception
     {
-        List<String> items = new ArrayList<>();
+        List<String> items = texts(opened());
 
-        JMenuItem documentation = documentation(opened(), items);
+        assertFalse(items.isEmpty(), "precondition: the Autonomy menu is empty");
 
-        assertNotNull(documentation, "the Autonomy menu has no Documentation item (Adam, 2026-09-24).  Items: " + items);
-
-        assertTrue(documentation.isEnabled(), "the Autonomy menu's Documentation item is greyed");
-
-        // THE SAME PLACE THE OLD TAB'S LINK OPENED - asked of the source, since pressing it opens a browser.
-        String code = SourceOf.allCode();
-
-        assertTrue(code.contains("Util.openUrl(TrainControlUI.README_URL)"), "the Documentation item does not open"
-            + " TrainControlUI.README_URL, the guide the old tab's link opened");
-
-        // On a thread of its own: opening a browser is a call into Windows.
-        assertTrue(code.contains("new Thread(() -> Util.openUrl(TrainControlUI.README_URL)"), "the Documentation item"
-            + " opens the guide on the event thread - Adam, 2026-09-24: \"can it get its own thread?\"");
+        assertFalse(items.contains(I18n.t("ui.menu.autonomyGuide")), "the Autonomy menu offers the guide, which is in"
+            + " Help only.  Items: " + items);
     }
 
-    /**
-     * With an editor open, everything else on the menu is grayed and Documentation is not: each of the others saves the
-     * setup or rebuilds the window under an editor that has not saved (MT-111).
-     */
+    /** With an editor open, nothing on the menu is live: each item saves the setup or rebuilds the window (MT-111). */
     @Test
-    public void testDocumentationStaysUsableWhileAnEditorIsOpen() throws Exception
+    public void testEveryItemIsGrayedWhileAnEditorIsOpen() throws Exception
     {
         Field open = Reflect.field(TrainControlUI.class, "openEditor");
 
@@ -106,26 +91,20 @@ public class testTheAutonomyMenuLinksItsDocumentation
 
             JMenu menu = opened();
 
-            List<String> items = new ArrayList<>();
-            List<String> greyed = new ArrayList<>();
-
-            JMenuItem documentation = documentation(menu, items);
+            List<String> live = new ArrayList<>();
 
             for (int i = 0; i < menu.getItemCount(); i++)
             {
                 JMenuItem item = menu.getItem(i);
 
-                if (item != null && !item.isEnabled()) greyed.add(item.getText());
+                // Go to the Opened Editor is the one thing that can be done
+                if (item != null && item.isEnabled() && !I18n.t("autosetup.ui.menuGoToOpenEditor").equals(item.getText()))
+                {
+                    live.add(item.getText());
+                }
             }
 
-            assertFalse(greyed.isEmpty(), "precondition: nothing on the menu was greyed, so the open editor's guard"
-                + " did not run.  Items: " + items);
-
-            assertNotNull(documentation, "with an editor open the Autonomy menu has no Documentation item.  Items: "
-                + items);
-
-            assertTrue(documentation.isEnabled(), "an open editor greys the Autonomy menu's Documentation item with the"
-                + " rest - but reading the guide saves nothing and rebuilds nothing.  Greyed: " + greyed);
+            assertTrue(live.isEmpty(), "an open editor leaves these Autonomy menu items live: " + live);
         }
         finally
         {
@@ -158,22 +137,16 @@ public class testTheAutonomyMenuLinksItsDocumentation
         return menu;
     }
 
-    /** The menu's Documentation item, or null; every item's text is added to `items` for the failure messages. */
-    private static JMenuItem documentation(JMenu menu, List<String> items)
+    /** The text of every item on the menu. */
+    private static List<String> texts(JMenu menu)
     {
-        JMenuItem found = null;
+        List<String> items = new ArrayList<>();
 
         for (int i = 0; i < menu.getItemCount(); i++)
         {
-            JMenuItem item = menu.getItem(i);
-
-            if (item == null) continue;
-
-            items.add(item.getText());
-
-            if (I18n.t("ui.menu.autonomyGuide").equals(item.getText())) found = item;
+            if (menu.getItem(i) != null) items.add(menu.getItem(i).getText());
         }
 
-        return found;
+        return items;
     }
 }

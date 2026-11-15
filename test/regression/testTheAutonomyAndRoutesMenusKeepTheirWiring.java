@@ -22,6 +22,7 @@ import javax.swing.event.MenuListener;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
@@ -244,8 +245,8 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
     }
 
     /**
-     * Census: the Autonomy menu offers what it offered before, changed only as the answers say: Documentation is called
-     * Autonomy Guide, and Import... and Export... are in Manage Configurations, once each.  Besides those,
+     * Census: the Autonomy menu offers what it offered before, changed only as the answers say: the guide is in Help only,
+     * and Import... and Export... are in Manage Configurations, once each.  Besides those,
      * the configurations, the pages to edit and the pages to tick, each once.
      *
      * MUTATION: offer Import... in both submenus, or drop Stop Using Autonomy, and this fails.
@@ -260,10 +261,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
                 "autosetup.ui.btnExportConfiguration", "autosetup.ui.menuNewConfiguration",
                 "autosetup.ui.menuRenameConfiguration", "autosetup.ui.menuDeleteConfiguration",
                 "autosetup.ui.menuUnloadAutonomy", "autosetup.ui.menuDeleteSetup", "autosetup.ui.menuGlobalSettings",
-                "autosetup.ui.menuExportRawGraph", "ui.main.documentation"));
-
-            // renamed
-            before.set(before.indexOf("ui.main.documentation"), "ui.menu.autonomyGuide");
+                "autosetup.ui.menuExportRawGraph"));
 
             List<String> expected = new ArrayList<>();
 
@@ -379,7 +377,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
 
     /**
      * With an editor open, Layouts and Autonomy both start with Go to the Opened Editor and a divider; it brings the
-     * editor back; every item the editor grays says "Close the editor to use this."; Autonomy Guide stays live; New
+     * editor back; every item the editor grays says "Close the editor to use this."; New
      * Route... refuses as Add Route does.  Closed, Layouts hides the two and gives each item its own tooltip back.
      *
      * MUTATION: drop the divider, leave a grayed item without the reason, keep the reason after the editor closes, or
@@ -431,8 +429,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
                 {
                     if (!(part instanceof JMenuItem)) continue;
 
-                    // The Autonomy menu grays everything but its guide
-                    if (autonomy && !t("ui.menu.autonomyGuide").equals(((JMenuItem) part).getText()))
+                    if (autonomy)
                     {
                         assertFalse(part.isEnabled(), name + "'s " + ((JMenuItem) part).getText() + " is live with an"
                             + " editor open");
@@ -457,9 +454,8 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
                     + " bring the editor back");
             }
 
-            JMenuItem guide = itemCalled(theAutonomyMenu(ui), t("ui.menu.autonomyGuide"));
-
-            assertTrue(guide != null && guide.isEnabled(), "with an editor open, the Autonomy Guide is grayed");
+            assertNull(itemCalled(theAutonomyMenu(ui), t("ui.menu.autonomyGuide")), "the Autonomy menu offers the guide,"
+                + " which is in Help only (OB-468)");
 
             // NEW ROUTE... REFUSES AS ADD ROUTE DOES
             try (Doors doors = new Doors())

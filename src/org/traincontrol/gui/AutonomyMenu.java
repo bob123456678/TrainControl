@@ -17,7 +17,6 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.gui.autonomy.AutonomyReport;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
-import org.traincontrol.util.Util;
 
 /**
  * Setting autonomy up, from the menu bar beside Layouts: what a user does once (choose a configuration, rename one,
@@ -72,7 +71,7 @@ public class AutonomyMenu extends JMenu
         // The question lives on the window (OB-202): `autonomyTopMenu` holds this slot until start-up builds this menu,
         // so it has to be grayed for the same reasons (`TrainControlUI.autonomyMenuIsUsable`: a layout, and not while
         // the connecting notice holds the bar, OB-187).  Not a local layout: on a Central Station layout the menu opens
-        // onto the download and the guide.
+        // onto the download.
         setEnabled(ui.autonomyMenuIsUsable());
 
         setToolTipText(AutonomyEditorPanel.wrapped(ui.whyAutonomyIsUnavailable()));
@@ -84,7 +83,7 @@ public class AutonomyMenu extends JMenu
      */
     private JMenu lastPagesMenu;
 
-    /** Autonomy Settings as last built, or null: the one item a run leaves live with the guide. */
+    /** Autonomy Settings as last built, or null: the one item a run leaves live. */
     private JMenuItem settingsItem;
 
     private AutonomyViewerPanel actions()
@@ -93,10 +92,10 @@ public class AutonomyMenu extends JMenu
     }
 
     /**
-     * Grays every item but the guide while an editor has the diagram, saying so, and offers the way back to it, in the
-     * same words as LayoutMenus.guardLayoutMenu: the two menus are guarded for the same reason.
+     * Grays every item while an editor has the diagram, saying so, and offers the way back to it, in the same words
+     * as LayoutMenus.guardLayoutMenu: the two menus are guarded for the same reason.
      */
-    private void guardWhileEditing(JMenuItem guide)
+    private void guardWhileEditing()
     {
         if (!ui.anEditorIsOpenOrOnItsWay()) return;
 
@@ -105,8 +104,6 @@ public class AutonomyMenu extends JMenu
         for (int i = 0; i < getMenuComponentCount(); i++)
         {
             Component part = getMenuComponent(i);
-
-            if (part == guide) continue;
 
             part.setEnabled(false);
 
@@ -130,36 +127,22 @@ public class AutonomyMenu extends JMenu
         return item;
     }
 
-    /**
-     * Builds the menu, and ends it with the Autonomy Guide whatever else it holds.  Left enabled while an editor grays
-     * the rest: reading the guide changes nothing.
-     */
+    /** Builds the menu.  The guide is in the Help menu only. */
     private void rebuild()
     {
         buildItems();
 
-        if (getMenuComponentCount() > 0) addSeparator();
+        guardWhileRunning();
 
-        JMenuItem documentation = new JMenuItem(I18n.t("ui.menu.autonomyGuide"));
-
-        // On a thread of its own (MT-546): opening a browser is a call into Windows.
-        documentation.addActionListener(e -> new Thread(() -> Util.openUrl(TrainControlUI.README_URL),
-            "open the automation guide").start());
-
-        add(documentation);
-
-        guardWhileRunning(documentation);
-
-        guardWhileEditing(documentation);
+        guardWhileEditing();
     }
 
     /**
      * Grays what changes the setup while autonomy runs, with the reason on each (MT-613).  Each door still refuses on
      * its own; this says so before the click.  The debug export is grayed only (MT-633).
      *
-     * @param documentation the guide's item
      */
-    private void guardWhileRunning(JMenuItem documentation)
+    private void guardWhileRunning()
     {
         // A route too (`TrainControlUI.aRunHoldsTheSetup`); the sentence every item's door refuses with
         if (!ui.aRunHoldsTheSetup()) return;
@@ -170,7 +153,7 @@ public class AutonomyMenu extends JMenu
         {
             Component part = getMenuComponent(i);
 
-            if (!(part instanceof JMenuItem) || part == documentation || part == settingsItem) continue;
+            if (!(part instanceof JMenuItem) || part == settingsItem) continue;
 
             part.setEnabled(false);
 
