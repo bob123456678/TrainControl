@@ -4852,8 +4852,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         SwingUtilities.invokeLater(() ->
         {
+            // The newest line shows at the top, but a sideways position the reader chose stays (OB-471)
+            int across = this.jScrollPane3.getHorizontalScrollBar().getValue();
+
             this.debugArea.insert(stamp + message + "\n", 0);
             this.debugArea.setCaretPosition(0);
+            // After the caret's own scroll, which is queued by the insert
+            SwingUtilities.invokeLater(() -> this.jScrollPane3.getHorizontalScrollBar().setValue(across));
 
             // Capped, because every insert at position 0 shifts the whole document, and the cost rose with session age.
             int length = this.debugArea.getDocument().getLength();
