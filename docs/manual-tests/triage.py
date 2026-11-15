@@ -1089,8 +1089,8 @@ _TAG_IN_TEXT = re.compile(r"\bMT-(\d+)\b")
 _TAG_IN_HREF = re.compile(r"#mt-(\d+)\b", re.I)
 
 # Which layout a saved window size belongs to.  2 was the stacked one (2026-09-24), 3 is the same about 5 percent
-# narrower (2026-11-14); a size saved by an earlier layout is not restored into this one.
-LAYOUT = 3
+# narrower (2026-11-14), 4 has the answer above the steps (MT-1004); a size saved by an earlier layout is not restored.
+LAYOUT = 4
 
 
 # A line that starts a new block in markdown rather than continuing the one above it: a list item, numbered or not, a
@@ -1302,15 +1302,16 @@ class Triage(tk.Tk):
         # THE LIST ABOVE THE TEST, NOT BESIDE IT (2026-09-24).  This runs beside TrainControl in about a third of the
         # screen's width and all of its height.  Side by side, the list and the steps each had half of a third, and the
         # toolbar ran off the edge; stacked, each has the whole width, and the height - of which there is plenty - is
-        # shared by three panes whose dividers can be dragged: the list, the steps, and the answer.
+        # shared by three panes whose dividers can be dragged: the list, the answer, and the steps.  The answer is next to
+        # the list (MT-1004).
         self.panes = ttk.Panedwindow(self, orient=tk.VERTICAL)
         self.panes.pack(fill=tk.BOTH, expand=True, padx=PAD, pady=(0, PAD))
 
         detail, self.answer_pane = self._build_detail(self.panes)
 
         self.panes.add(self._build_left(self.panes), weight=0)
-        self.panes.add(detail, weight=1)
         self.panes.add(self.answer_pane, weight=0)
+        self.panes.add(detail, weight=1)
 
         self._say("Ready.  %d entries, %d open." % (
             len(self.doc.entries), sum(1 for e in self.doc.entries if e.is_open)))
@@ -1918,7 +1919,7 @@ class Triage(tk.Tk):
         self.after(150, self._default_dividers)
 
     def _default_dividers(self):
-        """About a quarter of the height to the list, what it asks for to the answer, and the rest to the steps."""
+        """About a quarter of the height to the list, what it asks for to the answer below it, the rest to the steps."""
 
         self.update_idletasks()
 
@@ -1928,7 +1929,7 @@ class Triage(tk.Tk):
             return
 
         first = int(total * 0.27)
-        second = max(first + 120, total - self.answer_pane.winfo_reqheight() - 6)
+        second = first + self.answer_pane.winfo_reqheight() + 6
 
         self.panes.sashpos(0, first)
         self.panes.sashpos(1, second)

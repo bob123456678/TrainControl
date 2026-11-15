@@ -86,6 +86,7 @@ import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.RowIcons;
+import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.util.I18n;
 import org.json.JSONObject;
 import org.traincontrol.automationui.AutonomyCompanionStore;
@@ -1287,7 +1288,12 @@ public class LayoutEditor extends PositionAwareJFrame
             {
                 this.initCopy(label, null, true);
             }
-          
+
+            dragWindow = new JWindow();
+
+            // A text tile is carried as the diagram draws it, under the pointer (OB-478)
+            if (label.getComponent().isText() && pickUpText(label, e.getPoint())) return;
+
             // Create a floating window with a copy of the label
             ghostLabel = new JLabel(label.getIcon());
             ghostLabel.setText(label.getComponent().getLabel());
@@ -1299,12 +1305,40 @@ public class LayoutEditor extends PositionAwareJFrame
                 ghostLabel.setBorder(new LineBorder(Color.BLACK, 1));
             }
             
-            dragWindow = new JWindow();
             dragWindow.setBackground(new Color(0,0,0,0)); // transparent
             dragWindow.getContentPane().add(ghostLabel);
             dragWindow.pack();
             dragWindow.setVisible(false);
         }
+    }
+
+    /**
+     * Carries a text tile's words as the diagram draws them (its font at this zoom, its white halo), held where pressed.
+     * @return false where the diagram draws none (Text Labels off)
+     */
+    private boolean pickUpText(LayoutLabel label, java.awt.Point pressed)
+    {
+        for (Component c : label.getParent().getComponents())
+        {
+            if (!(c instanceof StationCaption) || ((StationCaption) c).getText().isEmpty() || c.getX() != label.getX()
+                || c.getY() >= label.getY() + label.getHeight() || c.getY() + c.getHeight() <= label.getY()) continue;
+
+            BufferedImage shot = new BufferedImage(Math.max(1, c.getWidth()), Math.max(1, c.getHeight()),
+                BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = shot.createGraphics();
+
+            c.paint(g);
+            g.dispose();
+
+            java.awt.Point grab = SwingUtilities.convertPoint(label, pressed, c);
+
+            showCaptionGhost(shot, grab.x, grab.y);
+            moveCaptionGhost(SwingUtilities.convertPoint(label, pressed, getLayeredPane()));
+
+            return true;
+        }
+
+        return false;
     }
 
     /** Picks the whole selection up, from a square inside it or from its grip. */
@@ -1443,7 +1477,11 @@ public class LayoutEditor extends PositionAwareJFrame
             return;
         }
 
-        if (dragWindow != null)
+        if (this.captionGhost != null)
+        {
+            moveCaptionGhost(SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), getLayeredPane()));
+        }
+        else if (dragWindow != null)
         {
             java.awt.Point screenPoint = e.getLocationOnScreen();
             dragWindow.setLocation(screenPoint.x + 10, screenPoint.y + 10);
@@ -1459,6 +1497,8 @@ public class LayoutEditor extends PositionAwareJFrame
             this.trainDrag.abandon();
 
             if (dragWindow != null) dragWindow.dispose();
+
+            hideCaptionGhost();
 
             this.dragWindow = null;
             this.dragSource = null;
@@ -1517,6 +1557,8 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             dragWindow.dispose();
             dragWindow = null;
+
+            hideCaptionGhost();
             
             LayoutLabel target = getLastHoveredLabel();
 
@@ -4485,6 +4527,22 @@ public class LayoutEditor extends PositionAwareJFrame
     private boolean letGoOfWhateverIsHeld()
     {
         if (isAutonomyMode()) return this.trainDrag.cancel() || autonomyPanel.putToolsDown();
+
+        // A tile being dragged on its own stays where it was, and the release that follows drops nothing (OB-478)
+        if (this.dragWindow != null && !this.groupDragging)
+        {
+            hideCaptionGhost();
+            this.dragWindow.dispose();
+
+            this.dragWindow = null;
+            this.clickToIgnore = this.dragSource;
+            this.dragSource = null;
+            this.resetClipboard();
+
+            if (this.grid != null) this.refreshSelectionBorders();
+
+            return true;
+        }
 
         // A box being drawn is held too, or Escape would close the editor with the button down.
         boolean boxOpen = this.boxAnchorX >= 0 && this.boxAnchorY >= 0;

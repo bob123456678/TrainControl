@@ -1577,6 +1577,13 @@ public abstract class Locomotive
         boolean randomize
     )
     {
+        return findSimilarLocomotives(target, target.getStructuredNotes(), maxResults, railroads, locList, randomize);
+    }
+
+    /** As above, comparing with {@code targetNotes} in place of the target's saved notes. */
+    public static List<Locomotive> findSimilarLocomotives(Locomotive target, LocomotiveNotes targetNotes, int maxResults,
+        List<String> railroads, List<Locomotive> locList, boolean randomize)
+    {
         List<Locomotive> candidates = new ArrayList<>(locList);
 
         if (randomize)
@@ -1590,7 +1597,6 @@ public abstract class Locomotive
 
         List<Locomotive> matches = new ArrayList<>();
 
-        LocomotiveNotes targetNotes = target.getStructuredNotes();
         int targetStart = targetNotes.getStartYear();
         int targetEnd = targetNotes.getEndYear();
 
@@ -1629,7 +1635,12 @@ public abstract class Locomotive
      */
     public String getNotesSummaryLine()
     {
-        LocomotiveNotes n = this.getStructuredNotes();
+        return notesSummaryLine(this.getName(), this.getStructuredNotes());
+    }
+
+    /** As above, of a name and notes in place of the saved ones. */
+    public static String notesSummaryLine(String name, LocomotiveNotes n)
+    {
         String railway = n.getRailway();
         int startYear = n.getStartYear();
         int endYear = n.getEndYear();
@@ -1638,7 +1649,7 @@ public abstract class Locomotive
                        (endYear == 0) ? String.valueOf(startYear) + "-" :
                        startYear + "-" + endYear;
 
-        StringBuilder sb = new StringBuilder(this.getName());
+        StringBuilder sb = new StringBuilder(name);
 
         if (!range.isEmpty() || !railway.isEmpty())
         {
