@@ -24,6 +24,7 @@ import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.I18n;
@@ -1326,6 +1327,124 @@ public class testTheTrackEditorByHand
 
         assertEquals(box.isSelected(), !editor.getMarklinLayout().getEditHideText(),
             "the Text Labels box is ticked while the page's text is hidden");
+    }
+
+    /**
+     * A text label being dragged is carried where it was taken hold of, under the pointer, as the diagram draws it: the
+     * labels' own font at this zoom, with their white halo (OB-478).  On a page of its own, in memory.
+     *
+     * MUTATION: hold the picture at 0,0 instead of `grab` in `LayoutEditor.pickUpText`, and this fails.
+     */
+    @Test
+    public void testADraggedTextLabelStaysUnderThePointer() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("OB-478", 12, 6, null, null);
+
+        page.addComponent(LayoutDiagramComponent.componentType.TEXT, 3, 2, 0, 0, 0, 0,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, "Yard sidings");
+
+        final LayoutEditor editor = Components.onTheEventThread(() ->
+        {
+            LayoutEditor made = new LayoutEditor(page, 40, ui, 0);
+
+            made.render();
+
+            return made;
+        });
+
+        try
+        {
+            assertTrue(Components.waitFor(() -> square(editor, 3, 2) != null, 30000), "the editor drew no squares");
+
+            Components.settle();
+
+            String failure = Components.onTheEventThread(() ->
+            {
+                LayoutLabel label = square(editor, 3, 2);
+
+                StationCaption drawn = Components.find(label.getParent(), StationCaption.class,
+                    c -> "Yard sidings".equals(c.getText()));
+
+                if (drawn == null) return "precondition: the diagram draws no words for the text tile";
+
+                java.awt.Point press = new java.awt.Point(6, label.getHeight() / 2);
+                java.awt.Point to = new java.awt.Point(press.x + 47, press.y + 31);
+
+                editor.beginDrag(mouse(label, MouseEvent.MOUSE_PRESSED, press), label);
+                editor.updateDrag(mouse(label, MouseEvent.MOUSE_DRAGGED, to), label);
+
+                javax.swing.JLabel ghost = Components.find(editor.getLayeredPane(), javax.swing.JLabel.class,
+                    g -> editor.getLayeredPane().getLayer(g) == javax.swing.JLayeredPane.DRAG_LAYER);
+
+                editor.endDrag(mouse(label, MouseEvent.MOUSE_RELEASED, to), label);
+
+                if (ghost == null) return "nothing is carried on the editor's drag layer while the label is dragged";
+
+                java.awt.Point was = SwingUtilities.convertPoint(drawn, 0, 0, editor.getLayeredPane());
+                java.awt.Point at = ghost.getLocation();
+
+                if (Math.abs(at.x - (was.x + 47)) > 2 || Math.abs(at.y - (was.y + 31)) > 2)
+                {
+                    return "the dragged label is at " + at + ", not where the pointer carried it from " + was
+                        + " (47 across, 31 down)";
+                }
+
+                // The same picture as the diagram's own: its font, size, color and halo
+                java.awt.image.BufferedImage own = new java.awt.image.BufferedImage(drawn.getWidth(),
+                    drawn.getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+                java.awt.Graphics2D g = own.createGraphics();
+
+                drawn.paint(g);
+                g.dispose();
+
+                java.awt.Image carried = ((javax.swing.ImageIcon) ghost.getIcon()).getImage();
+
+                java.awt.image.BufferedImage copy = new java.awt.image.BufferedImage(own.getWidth(), own.getHeight(),
+                    java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+                g = copy.createGraphics();
+                g.drawImage(carried, 0, 0, null);
+                g.dispose();
+
+                if (carried.getWidth(null) != own.getWidth()) return "the dragged label is not the size the diagram draws";
+
+                for (int x = 0; x < own.getWidth(); x++)
+                {
+                    for (int y = 0; y < own.getHeight(); y++)
+                    {
+                        if (own.getRGB(x, y) != copy.getRGB(x, y))
+                        {
+                            return "the dragged label is not drawn as the diagram draws it (font, color or halo), at "
+                                + x + "," + y;
+                        }
+                    }
+                }
+
+                return null;
+            });
+
+            assertNull(failure, String.valueOf(failure));
+
+            assertNull(Components.onTheEventThread(() -> Components.find(editor.getLayeredPane(), javax.swing.JLabel.class,
+                g -> editor.getLayeredPane().getLayer(g) == javax.swing.JLayeredPane.DRAG_LAYER)),
+                "the dragged label stayed on the window after the release");
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                editor.dispose();
+
+                return null;
+            });
+        }
+    }
+
+    /** A left-button mouse event at a point on a square, which is all the editor's drag handlers read off it. */
+    private static MouseEvent mouse(LayoutLabel on, int id, java.awt.Point at)
+    {
+        return new MouseEvent(on, id, 0L, InputEvent.BUTTON1_DOWN_MASK, at.x, at.y, 1, false, MouseEvent.BUTTON1);
     }
 
     // ---------------------------------------------------------------- the editor
