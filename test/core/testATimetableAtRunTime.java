@@ -172,7 +172,44 @@ public class testATimetableAtRunTime
 
             railway.setTimetableSequential(sequential);
 
-            play(railway);
+            // Whether the train is still on its way, read as the second entry's start is logged, so no poll can see it late
+            List<Boolean> whereItStood = Collections.synchronizedList(new ArrayList<Boolean>());
+
+            java.util.Map<?, ?> active = (java.util.Map<?, ?>) support.Reflect.get(Layout.class, railway,
+                "activeLocomotives");
+
+            java.util.logging.Handler watch = new java.util.logging.Handler()
+            {
+                @Override
+                public void publish(java.util.logging.LogRecord record)
+                {
+                    if (starting(railway.getTimetable().get(1)).equals(record.getMessage()))
+                    {
+                        whereItStood.add(active.containsKey(train));
+                    }
+                }
+
+                @Override
+                public void flush()
+                {
+                }
+
+                @Override
+                public void close()
+                {
+                }
+            };
+
+            STATION_LOG.addHandler(watch);
+
+            try
+            {
+                play(railway);
+            }
+            finally
+            {
+                STATION_LOG.removeHandler(watch);
+            }
 
             List<TimetablePath> table = railway.getTimetable();
 
@@ -190,9 +227,7 @@ public class testATimetableAtRunTime
 
             if (sequential)
             {
-                int arrived = LOGGED.indexOf(I18n.f("autolayout.infoTimetablePathFinished"));
-
-                assertTrue(arrived >= 0 && arrived < second,
+                assertEquals(whereItStood.get(0), Boolean.FALSE,
                     "the second entry started before the first train had arrived: " + LOGGED);
             }
         }
@@ -236,7 +271,7 @@ public class testATimetableAtRunTime
 
     /**
      * A saved timetable with an entry for a train that is gone loads the rest and says so once.  An unknown station
-     * is not that: the entry is kept as written, to be refused when it is run.
+     * is not that: the entry is kept as written, with no warning (it is refused when run; not asserted here).
      *
      * MUTATION: let the `catch` in `Layout.parseAuto`'s timetable loop rethrow and this fails.
      */
