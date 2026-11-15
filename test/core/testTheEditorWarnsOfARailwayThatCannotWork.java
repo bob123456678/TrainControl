@@ -252,6 +252,76 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
             "precondition: plain track can take no direction");
     }
 
+    /**
+     * May depart is set on the track beside a station, which runs both ways (D141, Adam: "Keep it active if its
+     * relevant, in which case it controls the other track"): one way toward a side makes the track on the other side
+     * run toward the station, and Both Ways opens it again.  The station itself is never given a direction.
+     *
+     * MUTATION: have `setDepartureWay` keep trains from leaving by the side asked for in place of the other, and this
+     * fails.
+     */
+    @Test
+    public void testMayDepartSetsTheTrackBesideTheStation() throws Exception
+    {
+        session.open(Arrays.asList(deadEndRun()));
+        session.initialize("D141 beside");
+
+        TileKey middle = new TileKey("main", 4, 1);
+        RouteId road = session.getRoutes(middle).keySet().iterator().next();
+        Side toward = session.getRoutes(middle).get(road).getA();
+
+        assertTrue(session.departureWayCanBeSet(middle, road), "precondition: the track beside takes no direction");
+        assertEquals(session.departureWay(middle, road), Direction.BOTH, "precondition: trains do not leave both ways");
+
+        session.setDepartureWay(middle, road, Direction.TOWARD_A);
+
+        assertEquals(session.departureWay(middle, road), Direction.TOWARD_A,
+            "trains do not leave toward " + toward + " only");
+        assertTrue(session.runsBothWays(middle), "May depart gave the station a direction");
+
+        TileKey west = new TileKey("main", 3, 1);
+        TileKey east = new TileKey("main", 5, 1);
+
+        assertTrue(session.runsBothWays(toward == Side.W ? west : east),
+            "the track trains leave over was made one way");
+        assertFalse(session.runsBothWays(toward == Side.W ? east : west), "the track on the other side runs both ways");
+
+        session.setDepartureWay(middle, road, Direction.BOTH);
+
+        assertEquals(session.departureWay(middle, road), Direction.BOTH, "Both Ways did not open the track again");
+        assertTrue(session.runsBothWays(west) && session.runsBothWays(east), "Both Ways left the track beside one way");
+    }
+
+    /**
+     * May depart can't be set where it would set nothing, and says the way out there is (D141: "Otherwise Grey it and
+     * show the only way out"): at the end of a line, and beside another s88 square.
+     *
+     * MUTATION: have `departureWayCanBeSet` ask for track on either side rather than on both, and this fails.
+     */
+    @Test
+    public void testMayDepartWithOneWayOutCannotBeSet() throws Exception
+    {
+        LayoutDiagram page = deadEndRun();
+
+        // An s88 square touching the far end
+        Diagrams.feedback(page, 8, 1, 8, 14);
+
+        session.open(Arrays.asList(page));
+        session.initialize("D141 gray");
+
+        TileKey end = new TileKey("main", 1, 1);
+        RouteId road = session.getRoutes(end).keySet().iterator().next();
+        Direction east = session.getRoutes(end).get(road).getA() == Side.E ? Direction.TOWARD_A : Direction.TOWARD_B;
+
+        assertFalse(session.departureWayCanBeSet(end, road), "May depart can be set at the end of a line");
+        assertEquals(session.departureWay(end, road), east, "May depart does not show the one way out");
+
+        TileKey far = new TileKey("main", 7, 1);
+
+        assertFalse(session.departureWayCanBeSet(far, session.getRoutes(far).keySet().iterator().next()),
+            "May depart can be set beside another s88 square");
+    }
+
     /** What the setup check says about s88 squares not running both ways, as the editor words it (OB-472). */
     private List<String> errorsSaid()
     {

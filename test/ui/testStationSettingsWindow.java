@@ -30,6 +30,8 @@ import org.testng.annotations.Test;
 import org.traincontrol.automation.StandingRules;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.AutonomySession.WhichTrains;
+import org.traincontrol.automationui.TileGraph.Direction;
+import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
@@ -137,18 +139,17 @@ public class testStationSettingsWindow
     }
 
     /**
-     * A key step in Home only shows a choice: an arrow asks nothing and changes no setup, and Escape puts the list back
-     * with the window still open.  Enter applies what Home shows.  (May depart takes no step: an s88 square runs both
-     * ways, OB-472.)
+     * A key step in Home or May depart only shows a choice: an arrow asks nothing and changes no setup, and Escape puts
+     * the list back with the window still open.  Enter applies what Home shows.
      *
      * MUTATION: have `StationWindowBase.Choice.fireActionEvent` ignore `quiet`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testAKeyStepInHomeOrMayDepartChangesNothing() throws Exception
     {
-        StationSettingsWindow window = StationDoors.open(panel, aStation());
+        StationSettingsWindow window = StationDoors.open(panel, aStationWhereMayDepart(true));
 
-        for (String name : new String[] {"station.home"})
+        for (String name : new String[] {"station.home", "station.depart.0"})
         {
             javax.swing.JComboBox<?> list = StationDoors.part(window, name, javax.swing.JComboBox.class);
 
@@ -2014,6 +2015,151 @@ public class testStationSettingsWindow
         }
     }
 
+    /**
+     * May depart sets the track beside a station, never the station, and the editor's Save keeps it (D141, Adam: "Keep
+     * it active if its relevant, in which case it controls the other track").
+     *
+     * MUTATION: have the May depart lists call `setRunDirection` on the station again, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testMayDepartSetsTheTrackBesideAndSaveKeepsIt() throws Exception
+    {
+        TileKey square = aStationWhereMayDepart(true);
+        RouteId road = onlyRoad(square);
+
+        try
+        {
+            StationSettingsWindow window = StationDoors.open(panel, square);
+
+            String towardA = chooseDepartTowardA(window, square, road);
+
+            assertEquals(Components.onTheEventThread(() -> session.departureWay(square, road)), Direction.TOWARD_A,
+                "May depart did not set the track beside the station");
+            assertTrue(Components.onTheEventThread(() -> session.runsBothWays(square)),
+                "May depart gave the station a direction");
+            assertEquals(Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0",
+                javax.swing.JComboBox.class).getSelectedItem()), towardA, "May depart does not show what it set");
+
+            StationDoors.close(window);
+
+            AutonomySession saved = frozen.saveAndReadBack(editor);
+
+            assertEquals(saved.departureWay(square, road), Direction.TOWARD_A, "Save did not keep May depart");
+            assertTrue(saved.runsBothWays(square), "Save wrote a direction on the station");
+        }
+        finally
+        {
+            frozen.putBack();
+
+            Components.onTheEventThread(() -> session.saveQuietly());
+        }
+    }
+
+    /**
+     * The editor's Cancel undoes what May depart set on the track beside, as it undoes every other edit (D141).
+     *
+     * MUTATION: gray May depart on every station again, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testCancelUndoesMayDepart() throws Exception
+    {
+        TileKey square = aStationWhereMayDepart(true);
+
+        chooseDepartTowardA(StationDoors.open(panel, square), square, onlyRoad(square));
+
+        assertFalse(session.snapshotSetup().similar(asOpened), "precondition: May depart changed nothing");
+
+        StationDoors.pressAndAnswer(Components.withText(editor, I18n.t("ui.cancel")), message -> Answering.pressAt(0));
+
+        editor = null;
+
+        Components.settle();
+
+        assertTrue(session.snapshotSetup().similar(asOpened), "Cancel did not put the track beside back");
+    }
+
+    /**
+     * Where May depart could set nothing, as the station has one way out, it is grayed and shows that way (D141:
+     * "Otherwise Grey it and show the only way out").
+     *
+     * MUTATION: leave May depart live wherever the boxes let it be, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testMayDepartIsGrayAndShowsTheOnlyWayOut() throws Exception
+    {
+        TileKey square = aStationWhereMayDepart(false);
+        RouteId road = onlyRoad(square);
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        assertFalse(StationDoors.live(window, "station.depart.0"), "May depart is live where it could set nothing");
+
+        String only = Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automationui.TilePorts.Route route = session.getRoutes(square).get(road);
+
+            return I18n.f("autosetup.ui.menuRouteToward", String.valueOf(
+                session.departureWay(square, road) == Direction.TOWARD_A ? route.getA() : route.getB()));
+        });
+
+        assertEquals(Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0",
+            javax.swing.JComboBox.class).getSelectedItem()), only, "May depart does not show the only way out");
+
+        StationDoors.close(window);
+    }
+
+    /** A plain station of the page with one road where May depart can be set, or (`settable` false) one way out. */
+    private static TileKey aStationWhereMayDepart(boolean settable)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            for (TileKey each : session.getReducer().getPoints().keySet())
+            {
+                if (!PAGE.equals(each.getPage()) || !session.getStore().isStation(each)
+                    || session.getRoutes(each).size() != 1) continue;
+
+                RouteId road = session.getRoutes(each).keySet().iterator().next();
+                Direction way = session.departureWay(each, road);
+
+                if (settable ? session.departureWayCanBeSet(each, road) && way == Direction.BOTH
+                    : !session.departureWayCanBeSet(each, road) && way != Direction.BOTH && way != Direction.NONE)
+                {
+                    return each;
+                }
+            }
+
+            throw new AssertionError("precondition: no station on " + PAGE
+                + (settable ? " with track beside" : " with one way out"));
+        });
+    }
+
+    private static RouteId onlyRoad(TileKey square)
+    {
+        return Components.onTheEventThread(() -> session.getRoutes(square).keySet().iterator().next());
+    }
+
+    /** May depart set to One Way, toward the road's side A, as a pick from its list; what that says. */
+    private static String chooseDepartTowardA(StationSettingsWindow window, TileKey square, RouteId road)
+    {
+        javax.swing.JComboBox<?> depart = StationDoors.part(window, "station.depart.0", javax.swing.JComboBox.class);
+
+        assertTrue(StationDoors.live(window, "station.depart.0"), "precondition: May depart is gray beside track");
+
+        String towardA = Components.onTheEventThread(() ->
+        {
+            String said = I18n.f("autosetup.ui.menuRouteToward",
+                String.valueOf(session.getRoutes(square).get(road).getA()));
+
+            depart.setSelectedItem(said);
+
+            return said;
+        });
+
+        StationDoors.current(window);
+
+        return towardA;
+    }
+
     /** The editor's drawn square for a tile of its page. */
     private org.traincontrol.gui.LayoutLabel squareOn(TileKey square) throws Exception
     {
@@ -2023,15 +2169,15 @@ public class testStationSettingsWindow
     }
 
     /**
-     * May depart sits under Changing direction, above both sections, as it belongs to neither box (Adam, FR-182); it is
-     * grayed whatever the boxes say, as a station is an s88 square, which runs both ways (OB-472).
+     * May depart sits under Changing direction, above both sections, as it belongs to neither box (Adam, FR-182); beside
+     * track it stays live while either box is ticked (D141), and grays with both off.
      *
      * MUTATION: put the May depart row back under "Trains can pass through", and this fails.
      */
     @Test(timeOut = 120000)
     public void testMayDepartHeadsBothSectionsUnderChangingDirection() throws Exception
     {
-        StationSettingsWindow window = StationDoors.open(panel, aStation());
+        StationSettingsWindow window = StationDoors.open(panel, aStationWhereMayDepart(true));
 
         StationDoors.current(window);
 
@@ -2047,7 +2193,7 @@ public class testStationSettingsWindow
         StationDoors.press(window, "station.stops");
         StationDoors.current(window);
 
-        assertFalse(StationDoors.live(window, "station.depart.0"), "May depart is live on an s88 square");
+        assertTrue(StationDoors.live(window, "station.depart.0"), "May depart grays with Trains can stop here alone off");
 
         StationDoors.press(window, "station.runsThrough");
         StationDoors.current(window);

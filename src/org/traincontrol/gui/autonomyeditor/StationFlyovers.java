@@ -84,10 +84,14 @@ final class StationFlyovers
             : nowThenChange(I18n.f("autosetup.ui.flyEntryNow", signals), I18n.t("autosetup.ui.flyEntryChange"));
     }
 
-    /** @param direction what the dropdown says */
-    static String depart(String direction)
+    /**
+     * @param direction what the dropdown says
+     * @param settable whether the track beside takes it (D141), or the dropdown is grayed
+     */
+    static String depart(String direction, boolean settable)
     {
-        return nowThenChange(I18n.f("autosetup.ui.flyDepartNow", direction), I18n.t("autosetup.ui.flyDepartChange"));
+        return nowThenChange(I18n.f("autosetup.ui.flyDepartNow", direction),
+            I18n.t(settable ? "autosetup.ui.flyDepartChange" : "autosetup.ui.flyDepartOnly"));
     }
 
     static String turning(boolean may, boolean must)

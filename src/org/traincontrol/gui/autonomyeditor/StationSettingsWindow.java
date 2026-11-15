@@ -1415,11 +1415,11 @@ public final class StationSettingsWindow extends StationWindowBase
             departAnswers.clear();
         }
 
-        boolean carries = session.canCarryDirection(tile);
-
         int y = 0;
 
         String said = null;
+
+        boolean settable = false;
 
         for (final Map.Entry<RouteId, TilePorts.Route> entry : routes.entrySet())
         {
@@ -1449,14 +1449,19 @@ public final class StationSettingsWindow extends StationWindowBase
             answers.add(Direction.NONE);
             labels.add(I18n.t("autosetup.ui.menuRouteNone"));
 
-            Direction current = TileGraph.inForce(session.directionAsDrawn(tile, entry.getKey()), route);
+            // Read and set on the track beside, as the station runs both ways (D141)
+            Direction current = session.departureWay(tile, entry.getKey());
+
+            boolean sets = session.departureWayCanBeSet(tile, entry.getKey());
+
+            settable |= sets;
 
             final JComboBox<String> choice = same ? departChoices.get(entry.getKey())
-                : new Choice(at -> actAlone(() -> editor.setRunDirection(tile, entry.getKey(), answers.get(at))),
+                : new Choice(at -> actAlone(() -> editor.setDepartureWay(tile, entry.getKey(), answers.get(at))),
                     labels.toArray(new String[0]));
 
             choice.setName("station.depart." + y);
-            choice.setEnabled(live && carries);
+            choice.setEnabled(live && sets);
 
             if (answers.contains(current)) choice.setSelectedIndex(answers.indexOf(current));
 
@@ -1476,7 +1481,7 @@ public final class StationSettingsWindow extends StationWindowBase
             departAnswers.put(entry.getKey(), answers);
         }
 
-        fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said));
+        fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said, settable));
 
         depart.revalidate();
     }

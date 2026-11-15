@@ -161,7 +161,7 @@ With no tool armed, a left-click on track changes which way trains may run on it
 
 - **Plain track**: each click changes the whole run of plain track between two switches or sensors: both ways, one way, the other way, closed, and back to both ways.
 - **A switch, crossing or double curve**: each click steps to the next combination of open arms, the common ones first: all open, each route on its own, closed, then the rest. The arms can also be ticked one by one from the right-click menu.
-- **An s88 square** (a sensor, whether a station or not) always runs both ways.  A click on one that has an arrow set any other way puts it back to both ways; a click on one that already runs both ways opens its `Station Settings`, so a double-click on a station opens them too, even while autonomy runs (read-only then).  To make trains run one way past a sensor, set the track beside it.
+- **An s88 square** (a sensor, whether a station or not) always runs both ways.  A click on one that has an arrow set any other way puts it back to both ways; a click on one that already runs both ways opens its `Station Settings`, so a double-click on a station opens them too, even while autonomy runs (read-only then).  To make trains run one way past a sensor, set the track beside it, or use `May depart` in its `Station Settings`.
 - **A page link or tunnel** has no direction of its own: set the track leading up to it.
 - **A route button drawn on the track** is set on its own: a click changes that square only.  One with no track running through it is grayed and takes no clicks.
 - **A square out of service** (both `Trains can stop here` and `Trains can pass through` unticked) is a sensor too, and no arrows are drawn on it: a click opens its `Station Settings`.
@@ -203,7 +203,7 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
 
 - `Name`: the station's name. It is left out when you set several stations at once.
 - `Changing direction`, above both boxes because it applies to both: `Never`, `May` (a train may stop, reverse and carry on, to reach a siding behind it) or `Must` (every train turns around: a terminus, or a berth trains back into). It grays out when both boxes are unticked.
-- `May depart`, under it and above both boxes too: the sides trains may leave by. A station is an s88 square, which always runs both ways, so it is grayed out; to make trains leave one way only, set the track beside the station.
+- `May depart`, under it and above both boxes too: the sides trains may leave by. A station is an s88 square, which always runs both ways, so this is set on the track beside it: `One Way, Toward` a side makes the track on the other side run one way toward the station, and `Both Ways` opens it again. It is grayed where the station has only one way out, or where the track beside it can't take a direction (another s88 square, a link or a tunnel), and then shows the way out there is.
 - `Trains can stop here`: whether the square is a station. Unticked, nothing stops here and what is under it grays out. It holds:
     - `May choose this station`: untick it and autonomy never chooses the station, though Return Home and the trips you send by hand still use it. This is for a parking berth.
     - `Maximum train length`: the longest train that may be sent here. Blank means any length.

@@ -6303,6 +6303,15 @@ public class AutonomyEditorPanel extends JPanel
         return item;
     }
 
+    /** Sets which way trains may leave a station along a road, on the track beside it (D141). */
+    void setDepartureWay(TileKey station, RouteId road, Direction way)
+    {
+        session.setDepartureWay(station, road, way);
+
+        refresh();
+        annotationsChanged();
+    }
+
     /** Sets which way trains may run over a square, on the run it belongs to. */
     void setRunDirection(TileKey tile, RouteId routeId, Direction direction)
     {

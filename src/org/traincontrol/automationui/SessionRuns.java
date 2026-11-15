@@ -90,6 +90,28 @@ final class SessionRuns
         return out;
     }
 
+    /** Sets the run through a square, or the square's road alone, one way: out of it by `side` (D141). */
+    int setRunToward(TileKey tile, RouteId routeId, Side side)
+    {
+        Run run = runs().get(runLeaders().getOrDefault(tile, tile));
+
+        if (run == null)
+        {
+            Route route = owner.graph.getRoutes(tile).get(routeId);
+
+            owner.setDirection(tile, routeId, side == route.getA() ? Direction.TOWARD_A : Direction.TOWARD_B);
+            return 1;
+        }
+
+        Landing landing = owner.graph.landing(tile, side);
+
+        boolean towardEnd = landing == null || landing.getTile().equals(nextAfter(run, tile));
+
+        int changed = owner.recordAlongTheRun(run, towardEnd).size();
+
+        return owner.directionsTouched() ? changed : 0;
+    }
+
     /** The body of `AutonomySession.setRunDirection`. */
     int setRunDirection(TileKey leader, RouteId routeId, Direction direction)
     {

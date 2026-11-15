@@ -5256,6 +5256,106 @@ public class AutonomySession
     }
 
     /**
+     * Which way trains may leave a station along one of its roads, read off the track beside it, as the station runs
+     * both ways (D141): by a side whose next square lets a train go on away from it.
+     */
+    public Direction departureWay(TileKey station, RouteId road)
+    {
+        Route route = graph == null ? null : getRoutes(station).get(road);
+
+        if (route == null) return Direction.BOTH;
+
+        boolean byA = leavesBy(station, route.getA());
+        boolean byB = leavesBy(station, route.getB());
+
+        return byA && byB ? Direction.BOTH : byA ? Direction.TOWARD_A : byB ? Direction.TOWARD_B : Direction.NONE;
+    }
+
+    /** Whether May depart sets a road: track that takes a direction on both its sides (D141). */
+    public boolean departureWayCanBeSet(TileKey station, RouteId road)
+    {
+        Route route = graph == null ? null : getRoutes(station).get(road);
+
+        return route != null && !roadsBeside(station, route.getA()).isEmpty()
+            && !roadsBeside(station, route.getB()).isEmpty();
+    }
+
+    /**
+     * Sets which way trains may leave a station along a road, on the track beside it (D141): a side they may not leave
+     * by runs one way toward the station, and one they may leave by again runs both ways.  Never on the station.
+     */
+    public void setDepartureWay(TileKey station, RouteId road, Direction way)
+    {
+        if (!departureWayCanBeSet(station, road)) return;
+
+        Route route = getRoutes(station).get(road);
+
+        for (Side side : new Side[] {route.getA(), route.getB()})
+        {
+            boolean leave = way == Direction.BOTH || side == (way == Direction.TOWARD_A ? route.getA()
+                : way == Direction.TOWARD_B ? route.getB() : null);
+
+            Landing next = graph.landing(station, side);
+
+            for (Map.Entry<RouteId, Route> beside : roadsBeside(station, side).entrySet())
+            {
+                if (goesOn(next, beside.getKey(), beside.getValue()) == leave) continue;
+
+                if (leave) sessionRuns.setRunDirection(leadersNow.getOrDefault(next.getTile(), next.getTile()),
+                    beside.getKey(), Direction.BOTH);
+                else sessionRuns.setRunToward(next.getTile(), beside.getKey(), next.getEntrySide());
+            }
+        }
+    }
+
+    /** The next square's roads from a station's side, where that square takes a direction; empty otherwise. */
+    private Map<RouteId, Route> roadsBeside(TileKey station, Side side)
+    {
+        Map<RouteId, Route> out = new LinkedHashMap<>();
+
+        Landing next = graph.landing(station, side);
+
+        if (next == null || !canCarryDirection(next.getTile())) return out;
+
+        for (Map.Entry<RouteId, Route> each : getRoutes(next.getTile()).entrySet())
+        {
+            if (each.getValue().getA() == next.getEntrySide() || each.getValue().getB() == next.getEntrySide())
+            {
+                out.put(each.getKey(), each.getValue());
+            }
+        }
+
+        return out;
+    }
+
+    /** Whether a train leaving a station by a side goes on; a link, tunnel or s88 square beside it runs both ways. */
+    private boolean leavesBy(TileKey station, Side side)
+    {
+        Landing next = graph.landing(station, side);
+
+        if (next == null) return false;
+
+        if (!canCarryDirection(next.getTile())) return !getRoutes(next.getTile()).isEmpty();
+
+        for (Map.Entry<RouteId, Route> beside : roadsBeside(station, side).entrySet())
+        {
+            if (goesOn(next, beside.getKey(), beside.getValue())) return true;
+        }
+
+        return false;
+    }
+
+    /** Whether a train entering a square where it lands may go on along this road. */
+    private boolean goesOn(Landing next, RouteId road, Route route)
+    {
+        Direction way = TileGraph.inForce(graph.getDirection(next.getTile(), road), route);
+
+        Direction away = route.getA() == next.getEntrySide() ? Direction.TOWARD_B : Direction.TOWARD_A;
+
+        return way == Direction.BOTH || way == away;
+    }
+
+    /**
      * Whether a square can meaningfully be given a direction.  False for a link: its route is a stub, so "toward A" and
      * "toward B" are the same place; a one-way link would need the jump to carry it.  False for an s88 square too.
      */
