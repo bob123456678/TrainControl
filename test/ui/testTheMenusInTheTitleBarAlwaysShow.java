@@ -144,6 +144,8 @@ public class testTheMenusInTheTitleBarAlwaysShow
     @Test(timeOut = 180000)
     public void testBothAlwaysOnTopCheckboxesAreOneSwitch() throws Exception
     {
+        String onTopBefore = prefs().get(TrainControlUI.ONTOP_SETTING_PREF, null);
+
         prefs().putBoolean(TrainControlUI.ONTOP_SETTING_PREF, true);
 
         MarklinControlStation model = null;
@@ -187,7 +189,19 @@ public class testTheMenusInTheTitleBarAlwaysShow
         }
         finally
         {
-            support.Teardown.close(null, model, ui);
+            // Off the top and the setting back before the next claim's window: it would sit above the operator's work.
+            putBack(TrainControlUI.ONTOP_SETTING_PREF, onTopBefore);
+
+            try
+            {
+                final TrainControlUI window = ui;
+
+                if (window != null) Components.onTheEventThread(() -> { window.setAlwaysOnTop(false); return null; });
+            }
+            finally
+            {
+                support.Teardown.close(null, model, ui);
+            }
         }
     }
 
