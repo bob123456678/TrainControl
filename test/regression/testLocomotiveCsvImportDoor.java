@@ -486,7 +486,7 @@ public class testLocomotiveCsvImportDoor
     /**
      * MT-894 step 6: the same train, its speed still showing after the power is switched off, is still refused by name.
      *
-     * MUTATION: in `MarklinLocomotiveCsv.movingToReaddress`, name a train only while the power is on, and this fails.
+     * MUTATION: in `LocomotiveSettings.hasSpeed(ViewListener, Locomotive)`, add `&& model.getPowerState()`, and this fails.
      */
     @Test
     public void testATrainWithASpeedIsRefusedWithThePowerOff() throws Exception
