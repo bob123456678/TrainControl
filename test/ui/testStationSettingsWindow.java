@@ -3494,6 +3494,98 @@ public class testStationSettingsWindow
     }
 
     /**
+     * The picture shows the setup, not the railway (OB-485): a station whose sensor is occupied is drawn exactly as it
+     * is while free, while the main window's and the autonomy editor's tiles for that square still show it occupied.
+     *
+     * MUTATION: have `StationPicture.label` make its squares with `new LayoutLabel(art, block, SQUARE, main, false)`,
+     * and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAnOccupiedSensorIsDrawnFreeInThePicture() throws Exception
+    {
+        TileKey square = aStation();
+
+        org.traincontrol.base.LayoutDiagramComponent art = Components.onTheEventThread(() -> session.getGraph().getTiles().get(square));
+
+        org.traincontrol.base.Feedback sensor = art.getFeedback();
+
+        assertNotNull(sensor, "precondition: the station's square has no sensor");
+
+        // The main window's own tile, registered for the sensor's changes as its grid registers it
+        org.traincontrol.gui.LayoutLabel onTheDiagram = Components.onTheEventThread(() ->
+        {
+            javax.swing.JPanel shown = new javax.swing.JPanel();
+
+            shown.setVisible(true);
+
+            org.traincontrol.gui.LayoutLabel label = new org.traincontrol.gui.LayoutLabel(art, shown, 30, ui, false);
+
+            sensor.addTile(label);
+
+            return label;
+        });
+
+        org.traincontrol.gui.LayoutLabel inTheEditor = Components.onTheEventThread(() -> Components.find(editor,
+            org.traincontrol.gui.LayoutLabel.class, each -> each.getComponent() == art));
+
+        assertNotNull(inTheEditor, "precondition: the editor draws no tile for the station");
+
+        boolean was = sensor.isSet();
+
+        try
+        {
+            sensor.setState(false);
+            Components.drain(3);
+
+            java.awt.image.BufferedImage free = pictureOf(square);
+            Object diagramFree = drawnIcon(onTheDiagram);
+            Object editorFree = drawnIcon(inTheEditor);
+
+            sensor.setState(true);
+            Components.drain(3);
+
+            java.awt.image.BufferedImage occupied = pictureOf(square);
+
+            assertFalse(drawnIcon(onTheDiagram) == diagramFree, "the main diagram's tile no longer shows the sensor occupied");
+
+            assertFalse(drawnIcon(inTheEditor) == editorFree, "the autonomy editor's tile no longer shows the sensor occupied");
+
+            assertEquals(occupied.getWidth() + "x" + occupied.getHeight(), free.getWidth() + "x" + free.getHeight(),
+                "the picture's size");
+
+            assertEquals(difference(free, occupied, 0), 0, "pixels of the picture that differ with the station's sensor"
+                + " occupied");
+        }
+        finally
+        {
+            sensor.setState(was);
+            Components.drain(3);
+        }
+    }
+
+    /** The picture's block as Station Settings draws it, opened on this square and closed again. */
+    private java.awt.image.BufferedImage pictureOf(TileKey square) throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.current(window);
+
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        java.awt.image.BufferedImage out = Components.onTheEventThread(() -> drawnOn(block));
+
+        StationDoors.close(window);
+
+        return out;
+    }
+
+    private static Object drawnIcon(org.traincontrol.gui.LayoutLabel label)
+    {
+        return Components.onTheEventThread(() -> label.getIcon() instanceof javax.swing.ImageIcon
+            ? ((javax.swing.ImageIcon) label.getIcon()).getImage() : label.getIcon());
+    }
+
+    /**
      * A click on a mark changes what the form's control for it changes, and the table follows, at BottomMainA: the barred
      * way in from the east opens as May Arrive From East does; the arrow on the square west of it closes that way as that
      * square's right-click Trains May Depart does.

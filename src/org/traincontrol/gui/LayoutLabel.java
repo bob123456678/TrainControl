@@ -95,6 +95,14 @@ public final class LayoutLabel extends JLabel
     
     private Icon lastIcon;
     private boolean edit;
+    /** Volatile: set after the constructor has started a decode, which reads it on another thread. */
+    private volatile boolean sensorsFree;
+
+    /** Whether the picture ignores the device's state: always in the editor, and a sensor's in `sensorsAsFree`. */
+    private boolean ignoresState()
+    {
+        return edit || sensorsFree && component.isFeedback();
+    }
 
     /**
      * What autonomy says is happening on this square, or null; painted over the icon (the icon cache is shared by every
@@ -160,6 +168,17 @@ public final class LayoutLabel extends JLabel
         this(c, parent, size, tcUI, edit, null);
     }
 
+    /** A square as the track diagram draws it, but a sensor always as free: a picture of the setup (OB-485). */
+    public static LayoutLabel sensorsAsFree(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI)
+    {
+        LayoutLabel out = new LayoutLabel(c, parent, size, tcUI, false);
+
+        out.sensorsFree = true;
+        out.setImage(false);
+
+        return out;
+    }
+
     /** A square, given the editor's grid setting by the grid that makes it (null: ask it), asked once a build. */
     public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit,
         Boolean gridLines)
@@ -169,7 +188,7 @@ public final class LayoutLabel extends JLabel
         this.parent = parent;
         this.tcUI = tcUI;
         this.edit = edit;
-        
+
         this.setSize(size, size);
         this.setForeground(Color.white);
         
@@ -681,7 +700,7 @@ public final class LayoutLabel extends JLabel
         if (this.component != null && !this.component.isText())
         {
             final Map<String, Image> imageCache = TrainControlUI.getImageCache();
-            final String key = this.component.getImageKey(size, edit);
+            final String key = this.component.getImageKey(size, ignoresState());
 
             if (imageCache.get(key) == null)
             {
@@ -692,7 +711,7 @@ public final class LayoutLabel extends JLabel
 
                 // Then the (now cache-hit) Swing work on the EDT, failed decode or not: an uncounted tile would keep
                 // the diagram waiting forever.
-                decodeOnce(this.component, size, edit, this.tcUI).whenComplete((img, failed) ->
+                decodeOnce(this.component, size, ignoresState(), this.tcUI).whenComplete((img, failed) ->
                 {
                     try
                     {
@@ -821,7 +840,7 @@ public final class LayoutLabel extends JLabel
                 else
                 {
                     // One reading of the state names the key, the picture and what `updateImage` compares with
-                    final String shown = this.component.getImageName(size, edit);
+                    final String shown = this.component.getImageName(size, ignoresState());
 
                     try
                     {
@@ -1939,7 +1958,7 @@ public final class LayoutLabel extends JLabel
         // not blocked.  Avoids spawning a raw thread per tile on every state change.
         if (this.component != null)
         {
-            if (!this.component.getImageName(size, edit).equals(this.imageName) || highlight)
+            if (!this.component.getImageName(size, ignoresState()).equals(this.imageName) || highlight)
             {
                 this.setImage(true);
             }

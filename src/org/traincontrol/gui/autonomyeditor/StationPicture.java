@@ -312,14 +312,14 @@ final class StationPicture extends JPanel
         return false;
     }
 
-    /** A square of the diagram, as a picture: the pointer over it is the picture's. */
+    /** A square of the diagram, as a picture, a sensor as free (OB-485): the pointer over it is the picture's. */
     private LayoutLabel label(TileKey at, TrainControlUI main)
     {
         LayoutDiagramComponent art = session.getGraph() == null ? null : session.getGraph().getTiles().get(at);
 
         if (art == null || main == null) return null;
 
-        LayoutLabel out = new LayoutLabel(art, block, SQUARE, main, false);
+        LayoutLabel out = LayoutLabel.sensorsAsFree(art, block, SQUARE, main);
 
         this.art.add(out);
 
