@@ -223,6 +223,21 @@ public class testEveryLanguageFits
                 + "clean about English - or text has moved out of the bundles and into the form");
         }
 
+        // A component the window's edge or a neighbor covers is laid out wide enough, so the clipping rule below cannot
+        // see it: OB-488, the Spanish power ON button 10 pixels under the window's edge.
+        List<String> pushed = new ArrayList<>();
+
+        for (LanguageFit.Ledger.Flag f : LEDGER.flags())
+        {
+            if (f.pushed)
+            {
+                pushed.add(f.language + " \"" + LanguageFit.oneLine(f.here.text) + "\" wants " + f.here.wants
+                    + " and shows " + f.here.visible + " [" + f.path + "]");
+            }
+        }
+
+        assertTrue(pushed.isEmpty(), "components are pushed partly out of sight at the window's minimum size: " + pushed);
+
         assertEquals(total, 0,
             "text is clipped - the full list is in " + new File(OUT, "clipped.txt")
             + System.lineSeparator() + report);
