@@ -30,6 +30,13 @@ then
     exit 2
 fi
 
+# affected.py reads an unknown base as no change at all
+if ! git rev-parse --quiet --verify "$BASE^{commit}" > /dev/null
+then
+    echo "gates: $BASE is not a commit" >&2
+    exit 2
+fi
+
 GATES="guards spotbugs fit updater"
 TRIPS=2
 
@@ -75,8 +82,14 @@ do
 
     case "$gate" in
         guards)
+            # Without affected.py's classes the gate would pass on the standing ones alone, so its failure fails it
+            if ! py -3 "$TOOLS/affected.py" "$BASE" --guards > "$LOGS/affected.txt" 2> "$LOGS/affected.err"
+            then
+                say guards 1 "affected.py failed: $(grep -v '^ *$' "$LOGS/affected.err" | tail -1)"
+                continue
+            fi
+
             # The fit test is its own gate below, so it is not run twice
-            py -3 "$TOOLS/affected.py" "$BASE" --guards 2>/dev/null > "$LOGS/affected.txt"
             classes="$(printf '%s\n' $STANDING $(cat "$LOGS/affected.txt") | tr -d '\r' | grep -v '^ui.testEveryLanguageFits$' \
                 | sort -u)"
             status=0
