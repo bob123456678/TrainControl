@@ -233,19 +233,20 @@ public final class BackupAction
 
             List<String> notCopied = Util.zipInto(backupArchive, state);
 
-            // Not saved and not copied either: not in the archive at all, which "as last saved" would deny
+            // Not saved and not copied either (or not there to copy: zipInto skips a missing file without a word):
+            // not in the archive at all, which "as last saved" would deny
             for (java.util.Map.Entry<String, String> entry : notSaved.entrySet())
             {
                 String name = entry.getKey();
                 String failure = notCopied.stream().filter(f -> f.startsWith(name + ": ")).findFirst().orElse(null);
 
-                if (failure == null) continue;
+                if (failure == null && state.get(name).exists()) continue;
 
                 notCopied.remove(failure);
 
                 unsaved.set(unsaved.indexOf(I18n.f("ui.backupHasItAsLastSaved", name, entry.getValue())),
-                    I18n.f("ui.backupNotSavedOrCopied", name, I18n.t(failure.contains("AccessDeniedException")
-                        ? "ui.reasonNoPermission" : "ui.reasonInUse")));
+                    I18n.f("ui.backupNotSavedOrCopied", name, I18n.t(failure == null ? "ui.reasonNotWritten"
+                        : failure.contains("AccessDeniedException") ? "ui.reasonNoPermission" : "ui.reasonInUse")));
             }
 
             unsaved.addAll(notCopied);

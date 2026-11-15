@@ -1077,6 +1077,80 @@ public class testRestoreFromBackup
     }
 
     /**
+     * A data file that could not be saved and is not on disk either is in no archive, and the backup says so (the
+     * data folder is gone, so both saves fail and both files are missing), never "as last saved".
+     *
+     * MUTATION: in `BackupAction.writeTheBackup`, `continue` when no copy failed whatever is on disk, and the backup
+     * says it has the files as last saved.
+     */
+    @Test(timeOut = 180000)
+    public void testAFileNeitherSavedNorOnDiskIsSaidToBeNotInTheBackup() throws Exception
+    {
+        String dir = System.getProperty(Util.DATA_DIR_PROPERTY);
+
+        if (dir == null) throw new org.testng.SkipException("needs the run's data folder property");
+
+        noteTypedInTheSettingsWindow();
+
+        File gone = new File(dir, "gone-" + System.nanoTime());
+
+        System.setProperty(Util.DATA_DIR_PROPERTY, gone.getPath());
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            Components.press(Components.withText(ui, I18n.t("ui.main.toolbar.backupData")));
+
+            assertTrue(answering.awaitAsked(1, 120000), "the backup never finished");
+
+            String said = answering.asked().get(0);
+
+            assertTrue(said.contains(I18n.f("ui.backupNotSavedOrCopied", MarklinControlStation.DATA_FILE_NAME,
+                I18n.t("ui.reasonNotWritten"))), "the backup does not say " + MarklinControlStation.DATA_FILE_NAME
+                + " is not in it: " + said);
+            assertFalse(said.contains(lastSavedLead()), "the backup says the missing file is in it as last saved: " + said);
+        }
+        finally
+        {
+            System.setProperty(Util.DATA_DIR_PROPERTY, dir);
+
+            Util.deleteTree(gone, 0);
+        }
+    }
+
+    /**
+     * Restore from Backup while a sync runs says so and asks nothing else: it sets the layout folder, which the sync
+     * about to be turned away would not follow (MT-996).  No backup is taken.
+     *
+     * MUTATION: leave out the `refuseWhileASyncRuns()` of `RestoreAction.restoreFromBackup`, and the restore goes on
+     * to its question.
+     */
+    @Test(timeOut = 180000)
+    public void testRestoreWhileASyncRunsSaysSoAndAsksNothingElse() throws Exception
+    {
+        File taken = backUp();
+
+        made.add(taken);
+        backupsBefore.add(taken.getName());
+
+        java.util.concurrent.atomic.AtomicBoolean syncing = (java.util.concurrent.atomic.AtomicBoolean)
+            Reflect.get(TrainControlUI.class, ui, "syncInFlight");
+
+        syncing.set(true);
+
+        try
+        {
+            List<String> asked = restore(taken, I18n.t("ui.restoreButton"), 1, 3000);
+
+            assertEquals(asked, Collections.singletonList(I18n.t("ui.infoSyncAlreadyRunning")),
+                "Restore while a sync runs did not say so alone");
+        }
+        finally
+        {
+            syncing.set(false);
+        }
+    }
+
+    /**
      * A database another program holds open but lets others read cannot be saved, yet is copied: the backup still says
      * it has it as last saved, and the archive has it.
      *

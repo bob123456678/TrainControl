@@ -120,14 +120,15 @@ public class testEveryWayBackFromALayoutSwitch
     }
 
     /**
-     * Opening a layout while a sync runs is refused on screen, at Recent Layouts and at Create New Layout, and the
+     * Opening a layout while a sync runs is refused on screen, at Recent Layouts, at Create New Layout and at Switch to Central Station Layout, and the
      * layout open stays the one open: the sync it needs would be turned away, reading nothing, while the window took
      * the new folder for the layout and logged it loaded (MT-996).  The log says which folder Recent Layouts was asked
      * for, before any gate, so a choice that seems to do nothing shows whether it arrived.
      *
      * MUTATION: leave out the `refuseWhileASyncRuns()` of `TrainControlUI.openLayoutFolder`, and Recent Layouts says
      * nothing and records B as the layout open over A's pages; leave it out of `createAndApplyEmptyLayout`, and Create
-     * New Layout does the same; leave out the log line of `LayoutMenus.openRecentLayout`, and the log does not name B.
+     * New Layout does the same; leave out the log line of `LayoutMenus.openRecentLayout`, and the log does not name B; leave it out
+     * of `switchCSLayoutMenuItemActionPerformed`, and Switch to Central Station Layout clears the pages and says nothing.
      */
     @Test(timeOut = 120000)
     public void testOpeningALayoutWhileASyncRunsSaysSoAndChangesNothing() throws Exception
@@ -142,7 +143,7 @@ public class testEveryWayBackFromALayoutSwitch
 
         try
         {
-            for (Door door : new Door[] {Door.RECENT, Door.CREATE})
+            for (Door door : new Door[] {Door.RECENT, Door.CREATE, Door.STATION})
             {
                 File target = door.target(this, b);
 

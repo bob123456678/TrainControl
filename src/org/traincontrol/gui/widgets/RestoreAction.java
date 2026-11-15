@@ -52,6 +52,9 @@ public final class RestoreAction
     /** Asks for an archive, shows what it holds, and restores it on Restore.  The event thread; run gates asked first. */
     public void restoreFromBackup()
     {
+        // Its restore sets the layout folder: not while a sync runs, as the other layout doors (MT-996)
+        if (this.ui.refuseWhileASyncRuns()) return;
+
         final String title = I18n.t("ui.main.titleRestoreData");
 
         JFileChooser fc = new QuickFileChooser(new File(Util.getBackupPath("x")).getAbsoluteFile().getParent());
