@@ -463,6 +463,7 @@ Tab icons provided by Freepik.
             - A failed `Sync` now says in one plain sentence what went wrong, with `Retry`, and keeps the details in the log.
             - When TrainControl connects to a CS3, the log shows the CS3's firmware version once.
         - Bug Fixes
+            - When `Auto-Detect` searches for the Central Station at start-up, its sign names each network it searches and stays in front of other programs, and so does the message that it found nothing, so TrainControl no longer looks stuck.
             - If a file from the Central Station arrives cut off, TrainControl asks for it again, and only if it is still cut off does the sync fail, changing nothing, instead of leaving a partly loaded layout.
             - Names with umlauts or accents now come through correctly from a Central Station that sends them in an older format.
             - If the Central Station sends the same short file every time it is asked, TrainControl now reads it and says so in the log.
@@ -583,6 +584,7 @@ Tab icons provided by Freepik.
             - A backup now names any file it couldn't read, and says in plain words when a file could be neither saved nor copied and so isn't in the backup at all.  It is written whole or not at all, so closing TrainControl during a backup no longer leaves a cut-off archive.
             - `Restore from Backup` keeps your current file when an older backup holds an empty one, rather than writing an empty file over it, and says so.
             - TrainControl no longer sometimes stops at start-up with an error while its main window is being built.
+            - Where the menus are in the window's title bar, the main window no longer opens cut off at the bottom, and `Window Always on Top` takes the place of `Toggle Menu Bar` on the Keyboard tab.
     - Notes
         - The first time you open a layout saved by an earlier version, TrainControl updates its page links once so they keep working when pages are renamed or moved, logs it, and keeps a `.bak` copy of each page it changed.
         - A layout converted by 3.1.0 and a setup saved by 3.1.0 still open in 3.0.8.
