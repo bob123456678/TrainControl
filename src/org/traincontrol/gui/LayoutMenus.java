@@ -877,12 +877,12 @@ final class LayoutMenus
     /** Open Layout's rules, without its chooser; a folder that has gone is said once and taken off the list. */
     private void openRecentLayout(String path)
     {
-        // Before any gate, so the log shows that the choice arrived (MT-996)
-        if (ui.getModel() != null) ui.getModel().logf("ui.main.toolbar.infoOpeningRecentLayout", path);
-
+        // Each gate says why it refused; past them, the log shows that the choice arrived (MT-996)
         if (ui.refuseWhileARunHoldsTheSetup(ui)) return;
 
         if (ui.refuseWhileEditorOpen()) return;
+
+        if (ui.getModel() != null) ui.getModel().logf("ui.main.toolbar.infoOpeningRecentLayout", path);
 
         File folder = new File(path);
 
