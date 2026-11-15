@@ -2193,7 +2193,8 @@ class Triage(tk.Tk):
         # A draft saved before "Other things you noticed" went (2026-11-14) still holds its unfiled issues: they are put
         # in the answer's text, where they are seen and can be filed as New issues or dropped.
         for ob in draft.get("observations", []):
-            self.feedback.insert(tk.END, "\n[%s] %s" % (ob.get("kind", "issue"), ob.get("summary", "")))
+            self.feedback.insert(tk.END, "\n[%s] %s\n%s" % (
+                ob.get("kind", "issue"), ob.get("summary", ""), ob.get("detail", "")))
 
         self._sync_skip_button()
 
