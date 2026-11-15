@@ -7,6 +7,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Insets;
+import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.net.URI;
@@ -993,7 +994,23 @@ final class LocomotiveFunctionsTab extends JPanel
         // A popup that is a window of its own, opened the first time, keeps the size it opened with
         java.awt.Window own = SwingUtilities.getWindowAncestor(popup);
 
-        if (own != null && own != SwingUtilities.getWindowAncestor(popup.getInvoker())) own.setSize(popup.getPreferredSize());
+        if (own != null && own != SwingUtilities.getWindowAncestor(popup.getInvoker()))
+        {
+            java.awt.GraphicsConfiguration screen = own.getGraphicsConfiguration();
+            java.awt.Rectangle room = screen.getBounds();
+            Insets edge = Toolkit.getDefaultToolkit().getScreenInsets(screen);
+
+            room.x += edge.left;
+            room.y += edge.top;
+            room.width -= edge.left + edge.right;
+            room.height -= edge.top + edge.bottom;
+
+            Dimension size = popup.getPreferredSize();
+
+            own.setSize(Math.min(size.width, room.width), Math.min(size.height, room.height));
+            own.setLocation(Math.max(room.x, Math.min(own.getX(), room.x + room.width - own.getWidth())),
+                Math.max(room.y, Math.min(own.getY(), room.y + room.height - own.getHeight())));
+        }
 
         // Reopened, the popup is already that wide and does not lay out again by itself
         popup.invalidate();
