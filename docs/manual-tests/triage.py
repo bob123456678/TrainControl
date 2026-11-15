@@ -2375,22 +2375,12 @@ class Triage(tk.Tk):
     def free_observation(self):
         """A new issue - bug or feature request - optionally related to the test on screen."""
 
-        got = ObservationDialog(self, self.current).result
+        got = ObservationDialog(self, self.current, self._file_observation).result
 
         if not got:
             return
 
-        try:
-            ref, warning = self._file_observation(got)
-
-        except Exception as bad:
-            # The store refused, or could not be written - busy past its wait, say.  Unhandled, it
-            # unwinds out of this Tk callback - no confirmation dialog, and under pythonw nothing
-            # printed either, so from Adam's side the button just did nothing.  That is what led to an
-            # item being filed twice: he clicked again because it looked like the first click had not
-            # worked.
-            messagebox.showerror("Could not file the issue", str(bad), parent=self)
-            return
+        ref, warning = got
 
         if warning:
             messagebox.showwarning("Filed, with a warning", warning, parent=self)
@@ -2940,15 +2930,17 @@ class ObservationDialog(tk.Toplevel):
 
     NO_TEST = "No related test"
 
-    def __init__(self, parent, current):
+    def __init__(self, parent, current, file):
         """
         :param current: the test on screen, which can be named as the related one, or None
+        :param file: files the issue, given its answer, and returns (ref, warning); the dialog stays open when it raises
         """
 
         tk.Toplevel.__init__(self, parent)
 
         self.result = None
         self.current = current
+        self.file = file
 
         self.title("New issue")
         self.transient(parent)
@@ -3023,12 +3015,20 @@ class ObservationDialog(tk.Toplevel):
 
         detail = self.detail.get("1.0", tk.END).strip()
 
-        self.result = {
-            "kind": self.kind.get(),
-            "summary": summary,
-            "detail": detail,
-            "related": self.current if self.related.current() == 1 else None,
-        }
+        try:
+            self.result = self.file({
+                "kind": self.kind.get(),
+                "summary": summary,
+                "detail": detail,
+                "related": self.current if self.related.current() == 1 else None,
+            })
+
+        except Exception as bad:
+            # The store refused, or could not be written - busy past its wait, say.  The dialog stays open with what was
+            # typed, so a retry is one click, and the error is over it where it is seen.  (Unhandled, the button just did
+            # nothing, which got an item filed twice.)
+            messagebox.showerror("Could not file the issue", str(bad), parent=self)
+            return
 
         self.destroy()
 
