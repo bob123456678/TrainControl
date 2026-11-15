@@ -248,7 +248,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         assertFalse(session.canCarryDirection(middle), "the menus and Station Settings still offer an s88 square"
             + " a direction");
-        assertTrue(session.canCarryDirection(new TileKey("main", 2, 1)), "precondition: plain track takes none either");
+        assertTrue(session.canCarryDirection(new TileKey("main", 2, 1)),
+            "precondition: plain track can take no direction");
     }
 
     /** What the setup check says about s88 squares not running both ways, as the editor words it (OB-472). */

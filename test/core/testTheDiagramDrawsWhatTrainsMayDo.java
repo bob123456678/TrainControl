@@ -1875,7 +1875,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         final TileKey square = new TileKey("main", 3, 1);
 
-        assertTrue(session.isSensorSquare(square), "precondition: the square is no s88 square");
+        assertTrue(session.isSensorSquare(square), "precondition: the square at main 3,1 is not an s88 square");
 
         session.setPointProperty(square, "active", Boolean.FALSE);
 
