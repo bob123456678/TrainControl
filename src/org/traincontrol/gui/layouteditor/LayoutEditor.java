@@ -1333,6 +1333,7 @@ public class LayoutEditor extends PositionAwareJFrame
             java.awt.Point grab = SwingUtilities.convertPoint(label, pressed, c);
 
             showCaptionGhost(shot, grab.x, grab.y);
+            moveCaptionGhost(SwingUtilities.convertPoint(label, pressed, getLayeredPane()));
 
             return true;
         }

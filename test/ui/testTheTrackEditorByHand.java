@@ -1338,32 +1338,16 @@ public class testTheTrackEditorByHand
     @Test
     public void testADraggedTextLabelStaysUnderThePointer() throws Exception
     {
-        LayoutDiagram page = new LayoutDiagram("OB-478", 12, 6, null, null);
-
-        page.addComponent(LayoutDiagramComponent.componentType.TEXT, 3, 2, 0, 0, 0, 0,
-            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, "Yard sidings");
-
-        final LayoutEditor editor = Components.onTheEventThread(() ->
-        {
-            LayoutEditor made = new LayoutEditor(page, 40, ui, 0);
-
-            made.render();
-
-            return made;
-        });
+        final LayoutEditor editor = aTextTileEditor();
 
         try
         {
-            assertTrue(Components.waitFor(() -> square(editor, 3, 2) != null, 30000), "the editor drew no squares");
-
-            Components.settle();
-
             String failure = Components.onTheEventThread(() ->
             {
                 LayoutLabel label = square(editor, 3, 2);
 
                 StationCaption drawn = Components.find(label.getParent(), StationCaption.class,
-                    c -> "Yard sidings".equals(c.getText()));
+                    c -> TEXT.equals(c.getText()));
 
                 if (drawn == null) return "precondition: the diagram draws no words for the text tile";
 
@@ -1373,8 +1357,7 @@ public class testTheTrackEditorByHand
                 editor.beginDrag(mouse(label, MouseEvent.MOUSE_PRESSED, press), label);
                 editor.updateDrag(mouse(label, MouseEvent.MOUSE_DRAGGED, to), label);
 
-                javax.swing.JLabel ghost = Components.find(editor.getLayeredPane(), javax.swing.JLabel.class,
-                    g -> editor.getLayeredPane().getLayer(g) == javax.swing.JLayeredPane.DRAG_LAYER);
+                javax.swing.JLabel ghost = carried(editor);
 
                 editor.endDrag(mouse(label, MouseEvent.MOUSE_RELEASED, to), label);
 
@@ -1426,9 +1409,7 @@ public class testTheTrackEditorByHand
 
             assertNull(failure, String.valueOf(failure));
 
-            assertNull(Components.onTheEventThread(() -> Components.find(editor.getLayeredPane(), javax.swing.JLabel.class,
-                g -> editor.getLayeredPane().getLayer(g) == javax.swing.JLayeredPane.DRAG_LAYER)),
-                "the dragged label stayed on the window after the release");
+            assertNull(carried(editor), "the dragged label stayed on the window after the release");
         }
         finally
         {
@@ -1439,6 +1420,88 @@ public class testTheTrackEditorByHand
                 return null;
             });
         }
+    }
+
+    /**
+     * A text label pressed and not yet moved is held where it lies, not at the window's corner, and a plain click leaves
+     * nothing behind (OB-478).
+     *
+     * MUTATION: drop the `moveCaptionGhost` call from `LayoutEditor.pickUpText`, and this fails.
+     */
+    @Test
+    public void testAPressedTextLabelIsHeldWhereItLies() throws Exception
+    {
+        final LayoutEditor editor = aTextTileEditor();
+
+        try
+        {
+            String failure = Components.onTheEventThread(() ->
+            {
+                LayoutLabel label = square(editor, 3, 2);
+                java.awt.Point press = new java.awt.Point(6, label.getHeight() / 2);
+
+                editor.beginDrag(mouse(label, MouseEvent.MOUSE_PRESSED, press), label);
+
+                javax.swing.JLabel ghost = carried(editor);
+                java.awt.Point at = ghost == null ? null : ghost.getLocation();
+
+                editor.endDrag(mouse(label, MouseEvent.MOUSE_RELEASED, press), label);
+
+                java.awt.Point lies = SwingUtilities.convertPoint(Components.find(label.getParent(), StationCaption.class,
+                    c -> TEXT.equals(c.getText())), 0, 0, editor.getLayeredPane());
+
+                if (at == null) return "nothing is held on the press";
+
+                return Math.abs(at.x - lies.x) > 2 || Math.abs(at.y - lies.y) > 2
+                    ? "the pressed label is held at " + at + ", not where it lies, " + lies : null;
+            });
+
+            assertNull(failure, String.valueOf(failure));
+            assertNull(carried(editor), "a click on the label left a copy of it on the window");
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                editor.dispose();
+
+                return null;
+            });
+        }
+    }
+
+    /** The words on the text tile the claims below drag. */
+    private static final String TEXT = "Yard sidings";
+
+    /** A track editor, on a page of its own in memory, with a text tile at 3,2 and nothing else. */
+    private static LayoutEditor aTextTileEditor() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("OB-478", 12, 6, null, null);
+
+        page.addComponent(LayoutDiagramComponent.componentType.TEXT, 3, 2, 0, 0, 0, 0,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, TEXT);
+
+        final LayoutEditor editor = Components.onTheEventThread(() ->
+        {
+            LayoutEditor made = new LayoutEditor(page, 40, ui, 0);
+
+            made.render();
+
+            return made;
+        });
+
+        assertTrue(Components.waitFor(() -> square(editor, 3, 2) != null, 30000), "the editor drew no squares");
+
+        Components.settle();
+
+        return editor;
+    }
+
+    /** What the editor carries on its drag layer, or null. */
+    private static javax.swing.JLabel carried(final LayoutEditor editor)
+    {
+        return Components.find(editor.getLayeredPane(), javax.swing.JLabel.class,
+            g -> editor.getLayeredPane().getLayer(g) == javax.swing.JLayeredPane.DRAG_LAYER);
     }
 
     /** A left-button mouse event at a point on a square, which is all the editor's drag handlers read off it. */
