@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
@@ -55,6 +56,9 @@ public class AccessoryKeyboard extends JPanel
     private static final Color OUTLINE = new Color(0xBBBBBB);
     private static final Color KEY_BACKGROUND = new Color(0xFAFAFA);
     private static final Color DIVIDER = new Color(0xDDDDDD);
+
+    /** Over a usable key's number, which a click throws the other way (MT-1009). */
+    private static final Cursor HAND = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
 
     /** What the window does with the keyboard's clicks. */
     public interface Listener
@@ -178,6 +182,7 @@ public class AccessoryKeyboard extends JPanel
         number.setForeground(Color.BLACK);
         number.setPreferredSize(new Dimension(10, NUMBER_HEIGHT));
         number.setToolTipText(" ");
+        number.setCursor(HAND);
         this.numbers[index] = number;
 
         JPanel halves = new JPanel(new GridLayout(1, 2, 0, 0));
@@ -248,6 +253,7 @@ public class AccessoryKeyboard extends JPanel
         r.setEnabled(usable);
         g.setEnabled(usable);
         this.numbers[index - 1].setForeground(usable ? Color.BLACK : Color.GRAY);
+        this.numbers[index - 1].setCursor(usable ? HAND : null);
         r.repaint();
         g.repaint();
     }

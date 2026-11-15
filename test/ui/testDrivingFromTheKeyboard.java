@@ -949,6 +949,38 @@ public class testDrivingFromTheKeyboard
     }
 
     /**
+     * A usable key's number shows the hand pointer, as a click on it throws the key; a gray key's number, which a click
+     * leaves alone, shows the plain one (MT-1009).
+     *
+     * MUTATION: drop the `setCursor` from `AccessoryKeyboard.setKey`, and the gray key keeps the hand.
+     */
+    @Test
+    public void testTheNumberShowsTheHandWhereAClickActs() throws Exception
+    {
+        goToPage(1);
+
+        AccessoryKeyboard keys = keys();
+        int key = Components.onTheEventThread(() -> keys.keyOf(11));
+
+        try
+        {
+            for (boolean usable : new boolean[] {true, false, true})
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> keys.setKey(key, false, usable));
+
+                int shows = Components.onTheEventThread(() -> keys.number(key).getCursor().getType());
+
+                assertEquals(shows == java.awt.Cursor.HAND_CURSOR, usable, "the number of a " + (usable ? "usable" : "gray")
+                    + " key shows the " + (usable ? "plain pointer" : "hand"));
+            }
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> keys.setKey(key, false, true));
+        }
+    }
+
+    /**
      * With the power off, a click on a key's number asks the halves' question first, and Cancel sends nothing (OB-476).
      *
      * MUTATION: take the mouse listener off the number in `AccessoryKeyboard.buildKey`, and nothing is asked.
