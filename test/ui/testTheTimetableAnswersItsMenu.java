@@ -408,6 +408,18 @@ public class testTheTimetableAnswersItsMenu
     }
 
     /**
+     * MT-1001 step 3: with Toggle specified routes ticked and only R1 listed, R1 switched off and R2 on by hand, Execute
+     * Timetable switches R1 on again and R2 off, as their right-click menus read once the run is over.
+     *
+     * MUTATION: leave the `applyAutonomyRouteActivations()` call out of `Layout.executeTimetable(int)` and this fails.
+     */
+    @Test
+    public void testExecuteTimetableHoldsToTheRouteListOverTheHandSwitches() throws Exception
+    {
+        support.RouteListDoors.HandSwitched.runAndRead(ui, true, "Execute Timetable", () -> runFromThePlatform());
+    }
+
+    /**
      * Puts the train on the platform, makes its timetable one journey to the far station, sets every accessory on the
      * way the other way round, and presses Execute Timetable.
      */

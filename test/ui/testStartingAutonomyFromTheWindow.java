@@ -274,6 +274,45 @@ public class testStartingAutonomyFromTheWindow
 
     // ---------------------------------------------------------------- doors
 
+    /**
+     * MT-1001 steps 1 and 2: with Toggle specified routes ticked and only R1 listed, R1 switched off and R2 on by hand,
+     * Start Autonomous Operation switches R1 on again and R2 off, as their right-click menus read.
+     *
+     * MUTATION: leave the `applyAutonomyRouteActivations()` call out of `Layout.runLocomotives` and this fails.
+     */
+    @Test
+    public void testStartHoldsToTheRouteListOverTheHandSwitches() throws Exception
+    {
+        support.RouteListDoors.HandSwitched.runAndRead(ui, true, "Start", () -> startAnsweredYes());
+    }
+
+    /**
+     * MT-1001 step 5: with Toggle specified routes unticked, Start leaves the hand switches as they were.
+     *
+     * MUTATION: in `MarklinControlStation.applyAutonomyRouteActivations`, drop the `isActivateRoutes()` check and this
+     * fails.
+     */
+    @Test
+    public void testStartLeavesTheHandSwitchesWithToggleUnticked() throws Exception
+    {
+        support.RouteListDoors.HandSwitched.runAndRead(ui, false, "Start", () -> startAnsweredYes());
+    }
+
+    /** Presses Start, answers its question Yes, and waits for the run; `stopAndTidy` stops it. */
+    private static Object startAnsweredYes()
+    {
+        try (Answering answering = Answering.start(message ->
+            Answering.press(String.valueOf(TrainControlUI.YES_NO_OPTS[0]))))
+        {
+            Components.press(start());
+
+            assertTrue(Settle.until(() -> model.getAutoLayout().isAutoRunning(), 30000), "autonomy did not start: "
+                + answering.asked());
+        }
+
+        return null;
+    }
+
     private interface Pressing
     {
         List<String> press() throws Exception;
