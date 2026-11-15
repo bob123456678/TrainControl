@@ -5255,20 +5255,56 @@ public class AutonomySession
         return globals;
     }
 
-    /**
-     * Which way trains may leave a station along one of its roads, as the built railway has it (D141): by a side a
-     * train can be sent out of to another station, as "What's allowed here" reads it, so the two agree.
-     */
+    /** Which way trains may leave a station along one of its roads (D141): by the sides `sidesSentOutBy` names. */
     public Direction departureWay(TileKey station, RouteId road)
+    {
+        return departureWay(station, road, sidesSentOutBy(station));
+    }
+
+    /** The same, with `sidesSentOutBy` asked once for every road of a window. */
+    public Direction departureWay(TileKey station, RouteId road, Set<Side> out)
     {
         Route route = graph == null ? null : getRoutes(station).get(road);
 
         if (route == null) return Direction.BOTH;
 
-        boolean byA = sendsOutBy(station, route, route.getA());
-        boolean byB = sendsOutBy(station, route, route.getB());
+        boolean byA = out.contains(route.getA()), byB = out.contains(route.getB());
 
         return byA && byB ? Direction.BOTH : byA ? Direction.TOWARD_A : byB ? Direction.TOWARD_B : Direction.NONE;
+    }
+
+    /**
+     * The sides a train standing on a station, facing that way, can be sent out of to another station: the way the
+     * track lets it out, as the Manually column of "What's allowed here" has it.  Test a Path's search over the reduced
+     * edges, with its turning, arrival, shut and stop-only rules: the build has no copy facing a side nothing arrives
+     * from, so it can't answer for one (OB-472).
+     */
+    public Set<Side> sidesSentOutBy(TileKey station)
+    {
+        Set<Side> out = java.util.EnumSet.noneOf(Side.class);
+
+        if (reducer == null || graph == null) return out;
+
+        Set<TileKey> mayTurn = mayTurnTiles(), mustTurn = mandatoryTurnTiles();
+        Set<TileKey> shut = shutTiles(), stopOnly = stopOnlyTiles();
+        Map<TileKey, Set<Side>> barred = barredArrivals();
+
+        mayTurn.remove(station);
+        mustTurn.remove(station);
+
+        for (Route road : getRoutes(station).values())
+        {
+            for (Side side : new Side[] {road.getA(), road.getB()})
+            {
+                List<GraphReducer.ReducedEdge> path = reducer.findPathTo(station,
+                    other -> !other.equals(station) && store.isStation(other), mayTurn, mustTurn, barred, shut, stopOnly,
+                    Collections.singleton(road.other(side)));
+
+                if (path != null && path.get(0).getExitSide() == side) out.add(side);
+            }
+        }
+
+        return out;
     }
 
     /** @return every stop-only station (`isStopOnly`): somewhere to stop, never a way through */
@@ -5303,6 +5339,12 @@ public class AutonomySession
     /** Why May depart is grayed on a station's road, for its (i) line; null where it sets the track beside (D141). */
     public String whyDepartureWayIsFixed(TileKey station, RouteId road)
     {
+        return whyDepartureWayIsFixed(station, road, sidesSentOutBy(station));
+    }
+
+    /** The same, with `sidesSentOutBy` asked once for every road of a window. */
+    public String whyDepartureWayIsFixed(TileKey station, RouteId road, Set<Side> out)
+    {
         Route route = graph == null ? null : getRoutes(station).get(road);
 
         if (route == null) return "";
@@ -5319,7 +5361,7 @@ public class AutonomySession
             Landing next = graph.landing(station, side);
 
             // Open beside, yet no way out: the limit is past the track this sets
-            if (goesOn(next) && !sendsOutBy(station, route, side))
+            if (goesOn(next) && !out.contains(side))
             {
                 return I18n.f("autosetup.ui.flyDepartFarther", String.valueOf(side), describeTile(farEnd(run, station, next)));
             }
@@ -5393,34 +5435,6 @@ public class AutonomySession
             if (leave) setDirection(new LinkedHashSet<>(runBeside(station, side).getTiles()), Direction.BOTH);
             else if (!recordTheRunOf(next.getTile(), next.getEntrySide()).isEmpty()) directionsTouched();
         }
-    }
-
-    /**
-     * Whether a train standing on a station's road can be sent out by one side to another station: Test a Path's
-     * search over the reduced edges, with its turning, arrival, shut and stop-only rules, starting that way only.
-     */
-    private boolean sendsOutBy(TileKey station, Route road, Side side)
-    {
-        if (reducer == null) return false;
-
-        Set<TileKey> mayTurn = mayTurnTiles(), mustTurn = mandatoryTurnTiles();
-        Set<TileKey> shut = shutTiles(), stopOnly = stopOnlyTiles();
-        Map<TileKey, Set<Side>> barred = barredArrivals();
-
-        mayTurn.remove(station);
-        mustTurn.remove(station);
-
-        for (TileKey other : reducer.getPoints().keySet())
-        {
-            if (other.equals(station) || !store.isStation(other)) continue;
-
-            List<GraphReducer.ReducedEdge> path = reducer.findPath(station, other, mayTurn, mustTurn, barred, shut,
-                stopOnly, Collections.singleton(road.other(side)));
-
-            if (path != null && !path.isEmpty() && path.get(0).getExitSide() == side) return true;
-        }
-
-        return false;
     }
 
     /** Whether a train landing on a square of plain track may go on along it. */

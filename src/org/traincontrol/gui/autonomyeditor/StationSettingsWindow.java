@@ -1421,6 +1421,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
         String why = null, shared = null;
 
+        Set<TilePorts.Side> out = session.sidesSentOutBy(tile);
+
         for (final Map.Entry<RouteId, TilePorts.Route> entry : routes.entrySet())
         {
             final TilePorts.Route route = entry.getValue();
@@ -1447,9 +1449,9 @@ public final class StationSettingsWindow extends StationWindowBase
             }
 
             // Read and set on the track beside, as the station runs both ways (D141)
-            Direction current = session.departureWay(tile, entry.getKey());
+            Direction current = session.departureWay(tile, entry.getKey(), out);
 
-            String fixed = session.whyDepartureWayIsFixed(tile, entry.getKey());
+            String fixed = session.whyDepartureWayIsFixed(tile, entry.getKey(), out);
 
             boolean sets = fixed == null;
 
