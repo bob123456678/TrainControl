@@ -2198,6 +2198,34 @@ public class testRouteEditorValidation
                 table.setRowSelectionInterval(table.getRowCount() - 1, table.getRowCount() - 1);
             });
 
+            // Selected, with the table focused and not (FlatLaf's unfocused selection is a light gray): the unused cell
+            // stays at least 30 levels from the active cell's fill and from an unselected unused cell's
+            for (java.awt.Color selection : new java.awt.Color[]{null, new java.awt.Color(0xD3D3D3)})
+            {
+                final java.awt.Color[] seen = new java.awt.Color[3];
+                final java.awt.Color chosen = selection;
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    javax.swing.JTable table = commandsOf(frame);
+                    int row = table.getRowCount() - 1;
+
+                    if (chosen != null) table.setSelectionBackground(chosen);
+
+                    seen[0] = frame.commandCellForTest(row, 3).getBackground();
+                    seen[1] = frame.commandCellForTest(row, 4).getBackground();
+
+                    table.clearSelection();
+                    seen[2] = frame.commandCellForTest(row, 4).getBackground();
+                    table.setRowSelectionInterval(row, row);
+                });
+
+                assertTrue(apart(seen[1], seen[0]) >= 30, "the selected unused cell is too like the active one: "
+                    + seen[1] + " against " + seen[0]);
+                assertTrue(apart(seen[1], seen[2]) >= 30, "the selected unused cell is too like an unselected one: "
+                    + seen[1] + " against " + seen[2]);
+            }
+
             final java.awt.Color[] fills = new java.awt.Color[2];
 
             javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -2216,13 +2244,28 @@ public class testRouteEditorValidation
         }
     }
 
+    private static int apart(java.awt.Color a, java.awt.Color b)
+    {
+        return Math.max(Math.abs(a.getRed() - b.getRed()), Math.max(Math.abs(a.getGreen() - b.getGreen()),
+            Math.abs(a.getBlue() - b.getBlue())));
+    }
+
     /**
-     * OB-487: typing into a new row's address replaces the starting 0, so 12 gives 12 and not 012.
+     * OB-487: a double-click on a cell holding the starting 0 selects it, so typing 12 gives 12 and not 012.
      *
-     * MUTATION: move `editCellAt` back to `ConditionTable`, and the cell holds 012.
+     * MUTATION: in `HandledTable.editCellAt`, drop the `"0".equals(field.getText())` test, and the cell holds 012.
      */
     @Test
-    public void testTypingAnAddressReplacesTheStartingZero() throws Exception
+    public void testADoubleClickOnTheStartingZeroSelectsIt() throws Exception
+    {
+        assertEquals(typedOverTheStartingZero(
+            table -> new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_CLICKED, 0, 0, 5, 5, 2, false)),
+            "12", "the address after typing 12 into a double-clicked 0");
+    }
+
+    /** A new command's address after an edit begun by `start` and typed over with 12. */
+    private static String typedOverTheStartingZero(
+        java.util.function.Function<javax.swing.JTable, java.awt.event.InputEvent> start) throws Exception
     {
         needsADisplay();
 
@@ -2235,23 +2278,36 @@ public class testRouteEditorValidation
             javax.swing.SwingUtilities.invokeAndWait(() ->
             {
                 frame.addCommandRowForTest();
+
                 javax.swing.JTable table = commandsOf(frame);
                 int row = table.getRowCount() - 1;
 
-                table.editCellAt(row, 3, new java.awt.event.KeyEvent(table, java.awt.event.KeyEvent.KEY_PRESSED, 0, 0,
-                    java.awt.event.KeyEvent.VK_1, '1'));
+                table.editCellAt(row, 3, start.apply(table));
                 ((javax.swing.text.JTextComponent) table.getEditorComponent()).replaceSelection("12");
                 table.getCellEditor().stopCellEditing();
 
                 result[0] = frame.commandRowForTest(row).getTarget();
             });
 
-            assertEquals(result[0], "12", "the address after typing 12 over the starting 0");
+            return result[0];
         }
         finally
         {
             close(frame);
         }
+    }
+
+    /**
+     * OB-487: typing into a new row's address replaces the starting 0, so 12 gives 12 and not 012.
+     *
+     * MUTATION: move `editCellAt` back to `ConditionTable`, and the cell holds 012.
+     */
+    @Test
+    public void testTypingAnAddressReplacesTheStartingZero() throws Exception
+    {
+        assertEquals(typedOverTheStartingZero(
+            table -> new java.awt.event.KeyEvent(table, java.awt.event.KeyEvent.KEY_PRESSED, 0, 0,
+                java.awt.event.KeyEvent.VK_1, '1')), "12", "the address after typing 12 over the starting 0");
     }
 
     /**
@@ -2833,7 +2889,14 @@ public class testRouteEditorValidation
 
         try
         {
-            showRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 1:23"));
+            java.util.List<org.traincontrol.base.ConditionOutline.Row> outline = fromLevels(" 0:21 0AND 1:22 1OR 1:23");
+
+            // The condition under test is a switch, which has a Protocol; the last one is a sensor, which has none
+            outline.set(2, org.traincontrol.base.ConditionOutline.Row.condition(1,
+                org.traincontrol.base.RouteCommand.RouteCommandAccessory(22,
+                    org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true)));
+
+            showRows(frame, outline);
 
             final javax.swing.JTable table = conditionTable(frame);
             final int line = screen(table, 2);
@@ -2859,9 +2922,21 @@ public class testRouteEditorValidation
                 return out.toString().trim();
             });
 
-            assertEquals(painted, "-- S- S- S- -- -- --", "each column of the selected condition (its unused Protocol"
-                + " cell muted, OB-487) and of the caption"
+            assertEquals(painted, "-- S- S- S- S- -- --", "each column of the selected condition and of the caption"
                 + " above it: S where painted as selected, from the handle to the copy mark");
+
+            // A sensor has no Protocol: that cell stays muted even in the selection (OB-487)
+            final int sensor = screen(table, 4);
+
+            final String sensorRow = support.Components.onTheEventThread(() ->
+            {
+                table.setRowSelectionInterval(sensor, sensor);
+
+                return table.prepareRenderer(table.getCellRenderer(sensor, 4), sensor, 4).getBackground()
+                    .equals(table.getSelectionBackground()) ? "S" : "-";
+            });
+
+            assertEquals(sensorRow, "-", "a sensor condition's unused Protocol cell is painted as selected");
         }
         finally
         {

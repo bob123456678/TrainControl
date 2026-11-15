@@ -2036,12 +2036,11 @@ public class RouteEditorFrame extends JFrame
         return false;
     }
 
-    /** The selection fill of a cell that cannot be edited: mostly the unusable gray, so it differs from its neighbors. */
+    /** The selection fill of a cell that cannot be edited: the selection pulled toward gray, darker than the unusable wash. */
     static Color mutedSelection(Color selection)
     {
-        return new Color((selection.getRed() * 2 + UNUSABLE.getRed() * 3) / 5,
-            (selection.getGreen() * 2 + UNUSABLE.getGreen() * 3) / 5,
-            (selection.getBlue() * 2 + UNUSABLE.getBlue() * 3) / 5);
+        return new Color((selection.getRed() + 128) / 2, (selection.getGreen() + 128) / 2,
+            (selection.getBlue() + 128) / 2);
     }
 
     /**
@@ -2128,7 +2127,7 @@ public class RouteEditorFrame extends JFrame
                     {
                         ((JComponent) out).setOpaque(true);
                         out.setBackground(mutedSelection(which.getSelectionBackground()));
-                        out.setForeground(Color.GRAY);
+                        out.setForeground(Color.DARK_GRAY);
                     }
                 }
                 else
@@ -3987,7 +3986,7 @@ public class RouteEditorFrame extends JFrame
 
                     // The refusal mark is not set here (OB-246): greyWhatCannotBeEdited wraps this renderer and would
                     // overwrite the ink, so the mark lives there.
-                    if (!selected || !editable)
+                    if (!selected)
                     {
                         c.setForeground(editable ? table.getForeground() : Color.GRAY);
                     }
