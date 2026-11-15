@@ -593,15 +593,10 @@ public class CurrentKeyRow extends JComponent
 
         if (at == null) return;
 
-        Graphics2D g2 = (Graphics2D) g.create();
+        Graphics2D g2 = smooth(g);
 
         try
         {
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-
             // Whatever happens to the numbers, nothing is drawn past the slot
             g2.clipRect(0, 0, getWidth(), getHeight());
 
@@ -638,20 +633,98 @@ public class CurrentKeyRow extends JComponent
     {
         Rectangle d = at.decoder;
 
-        g2.setColor(DECODER_FILL);
-        g2.fill(new RoundRectangle2D.Double(d.x, d.y, d.width, d.height, d.height, d.height));
-
-        g2.setColor(DECODER_TEXT);
+        paintPill(g2, d, DECODER_FILL);
 
         if (at.divider != null) g2.fillRect(at.divider.x, at.divider.y, at.divider.width, at.divider.height);
-
-        g2.setFont(TEXT_FONT);
 
         double base = baseline(d.y, d.height, TEXT_FONT);
 
         if (!at.decoderType.isEmpty()) g2.drawString(at.decoderType, (float) at.typeX, (float) base);
 
         if (!at.decoderAddress.isEmpty()) g2.drawString(at.decoderAddress, (float) at.addressX, (float) base);
+    }
+
+    /** The decoder pill's shape in this box and fill, leaving the white and its font set for the words. */
+    private static void paintPill(Graphics2D g2, Rectangle d, Color fill)
+    {
+        g2.setColor(fill);
+        g2.fill(new RoundRectangle2D.Double(d.x, d.y, d.width, d.height, d.height, d.height));
+        g2.setColor(DECODER_TEXT);
+        g2.setFont(TEXT_FONT);
+    }
+
+    /** A graphics drawn smooth, as the pills are; the caller disposes of it. */
+    private static Graphics2D smooth(Graphics g)
+    {
+        Graphics2D g2 = (Graphics2D) g.create();
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+
+        return g2;
+    }
+
+    /**
+     * One part of words in the decoder pill's look, white words on a fill of its own, as tall as the row's pills:
+     * Locomotive Settings' picture source (MT-924).  Hidden while it has no words.
+     */
+    public static final class Pill extends JComponent
+    {
+        private final Color fill;
+        private String words = "";
+
+        /** @param fill the pill's color behind its white words */
+        public Pill(Color fill)
+        {
+            this.fill = fill;
+            setVisible(false);
+        }
+
+        /**
+         * Shows these words, or hides the pill.
+         *
+         * @param text the words, or null to hide it
+         */
+        public void setText(String text)
+        {
+            words = text == null ? "" : text;
+            setVisible(text != null);
+            revalidate();
+            repaint();
+        }
+
+        /** @return the words shown, or "" while hidden */
+        public String getText()
+        {
+            return words;
+        }
+
+        @Override
+        public Dimension getPreferredSize()
+        {
+            if (isPreferredSizeSet()) return super.getPreferredSize();
+
+            return new Dimension(Math.max(PILL_HEIGHT, (int) Math.ceil(advance(TEXT_FONT, words)) + 2 * PAD), PILL_HEIGHT);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g)
+        {
+            Graphics2D g2 = smooth(g);
+
+            try
+            {
+                paintPill(g2, new Rectangle(0, 0, getWidth(), getHeight()), fill);
+                g2.drawString(words, (float) ((getWidth() - advance(TEXT_FONT, words)) / 2),
+                    (float) baseline(0, getHeight(), TEXT_FONT));
+            }
+            finally
+            {
+                g2.dispose();
+            }
+        }
     }
 
     /**

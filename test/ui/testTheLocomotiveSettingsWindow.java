@@ -28,6 +28,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.locomotive.CurrentKeyRow;
 import org.traincontrol.gui.locomotive.RightClickSelectorMenu;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -1917,6 +1918,96 @@ public class testTheLocomotiveSettingsWindow
         Mouse.click(SettingsWindow.part("settings.wrench", Component.class));
 
         final java.awt.Window[] owner = new java.awt.Window[1];
+        final javax.swing.JFileChooser chooser = chooserShowing(owner);
+
+        Components.onTheEventThread(() ->
+        {
+            chooser.cancelSelection();
+
+            return null;
+        });
+
+        assertSame(owner[0], window, "the chooser hangs off " + owner[0] + ", not the settings window");
+    }
+
+    /**
+     * The pill after the picture's heading names where the picture shown comes from, and changes at once when the
+     * wrench sets a picture or the revert clears it, without Save; with no picture at all it is hidden (MT-924).
+     *
+     * MUTATION: drop the `source.setText` call from `LocomotiveTab.refreshPicture`, and this fails.
+     */
+    @Test
+    public void testThePicturesPillNamesItsSourceAtOnce() throws Exception
+    {
+        java.io.File own = java.io.File.createTempFile("MT-924-", ".png");
+        own.deleteOnExit();
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(40, 20, java.awt.image.BufferedImage.TYPE_INT_RGB),
+            "png", own);
+
+        String station = I18n.t("loc.ui.settingsPictureFromStation");
+        String local = I18n.t("loc.ui.settingsPictureLocal");
+
+        loc.setImageURL(null);
+        loc.setLocalImageURL(null);
+        open(0);
+        assertEquals(pillShows(null), null, "a pill shows over no picture at all");
+
+        pickPicture(own);
+        assertEquals(pillShows(local), local, "setting a picture did not name it a local file at once");
+
+        Mouse.click(SettingsWindow.part("settings.revert", Component.class));
+        assertEquals(pillShows(null), null, "clearing the only picture left the pill up");
+
+        // The Central Station's picture, then one of this computer's over it and cleared again
+        assertTrue(closeBy(true), "Escape did not close the window");
+        loc.setImageURL("http://cs/MT-924.png");
+        open(0);
+        assertEquals(pillShows(station), station, "the Central Station's picture is not named");
+
+        pickPicture(own);
+        assertEquals(pillShows(local), local, "a local picture over the station's is not named at once");
+
+        // Nothing waits for Save: closed without it, the window opens on the picture as it now is
+        assertTrue(closeBy(true), "Escape did not close the window");
+        open(0);
+        assertEquals(pillShows(local), local, "the window opened again on a pill that is not the picture's");
+
+        Mouse.click(SettingsWindow.part("settings.revert", Component.class));
+        assertEquals(pillShows(station), station, "clearing the local picture did not name the station's at once");
+    }
+
+    /** The pill's words once they are these (null: once it is hidden), or what it shows when they never come. */
+    private static String pillShows(String expected) throws Exception
+    {
+        CurrentKeyRow.Pill pill = SettingsWindow.part("settings.pictureSource", CurrentKeyRow.Pill.class);
+        java.util.function.Supplier<String> shown = () -> Components.onTheEventThread(() ->
+            pill.isShowing() ? pill.getText() : null);
+
+        Components.waitFor(() -> java.util.Objects.equals(shown.get(), expected), WAIT);
+
+        return shown.get();
+    }
+
+    /** Picks this picture with the wrench's chooser, uncropped. */
+    private static void pickPicture(java.io.File file) throws Exception
+    {
+        Mouse.click(SettingsWindow.part("settings.wrench", Component.class));
+
+        javax.swing.JFileChooser chooser = chooserShowing(new java.awt.Window[1]);
+
+        Components.onTheEventThread(() ->
+        {
+            Components.inside(chooser, javax.swing.JCheckBox.class).setSelected(false);
+            chooser.setSelectedFile(file);
+            chooser.approveSelection();
+
+            return null;
+        });
+    }
+
+    /** The file chooser on screen, once one is, with the window it hangs off in `owner[0]`. */
+    private static javax.swing.JFileChooser chooserShowing(java.awt.Window[] owner) throws Exception
+    {
         final javax.swing.JFileChooser[] chooser = new javax.swing.JFileChooser[1];
 
         assertTrue(Components.waitFor(() -> Components.onTheEventThread(() ->
@@ -1940,14 +2031,7 @@ public class testTheLocomotiveSettingsWindow
             return false;
         }), WAIT), "the wrench opened no chooser");
 
-        Components.onTheEventThread(() ->
-        {
-            chooser[0].cancelSelection();
-
-            return null;
-        });
-
-        assertSame(owner[0], window, "the chooser hangs off " + owner[0] + ", not the settings window");
+        return chooser[0];
     }
 
     // Helpers
