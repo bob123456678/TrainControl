@@ -88,17 +88,19 @@ public class testTheFrozenRailwayIsStillTheRailway
             + built.getPoints().size() + " Points and " + built.getEdges().size() + " edges here and in the README's"
             + " \"What it builds to\"";
 
-        assertEquals(reduced, 122,
+        // 123 AND 126, ONE MORE THAN THE REFREEZE (OB-472): s88 2 (2 - Bottom 14,10) ran toward A only; both ways it
+        // gains its westbound edge to LowerDownPre.  LowerBack's cleared TOWARD_B changes no edge, measured both ways.
+        assertEquals(reduced, 123,
             "the frozen railway reduced to " + reduced
-            + " edges rather than the 122 it was frozen with. Below about fifty this is the five-edge"
+            + " edges rather than the 123 it was frozen with. Below about fifty this is the five-edge"
             + " skeleton LayoutSandbox.wiredPages describes - a railway whose switches have no"
             + " accessories, which TileGraph refuses to trace through." + refresh);
 
         assertEquals(built.getPoints().size(), 87,
             "the frozen railway built to " + built.getPoints().size() + " Points rather than 87." + refresh);
 
-        assertEquals(built.getEdges().size(), 125,
-            "the frozen railway built to " + built.getEdges().size() + " edges rather than 125." + refresh);
+        assertEquals(built.getEdges().size(), 126,
+            "the frozen railway built to " + built.getEdges().size() + " edges rather than 126." + refresh);
     }
 
     /**
