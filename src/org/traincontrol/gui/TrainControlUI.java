@@ -6253,31 +6253,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
 
             // And only now the keyboard (OB-170): the restore above resets the focus owner.
-            SwingUtilities.invokeLater(() ->
-            {
-                focusTheKeyboard();
-
-                sayIfTheKeyboardIsLost();
-            });
+            SwingUtilities.invokeLater(this::focusTheKeyboard);
         });
 
         settle.setRepeats(false);
         settle.start();
-    }
-
-    /** Logs when nothing in this window holds the keyboard (OB-170), and names what has it. */
-    private void sayIfTheKeyboardIsLost()
-    {
-        if (this.model == null) return;
-
-        Component owner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-
-        if (owner != null && SwingUtilities.isDescendingFrom(owner, this)) return;
-
-        this.model.logf("ui.warnCouldNotTakeTheForeground",
-            (isActive() ? "active" : "not active") + ", "
-            + (owner == null ? "nothing has the keyboard"
-                             : "the keyboard is on " + owner.getClass().getSimpleName()));
     }
 
     /**

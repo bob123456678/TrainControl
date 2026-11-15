@@ -966,14 +966,19 @@ public final class CS2File
 
         if (found == null)
         {
+            String said = null;
+
             try (BufferedReader in = fetchURL(getCS3InfoUrl()))
             {
-                found = FirmwareVersion.parse(parseJSONObject(in).optString("softwareVersion", null));
+                said = parseJSONObject(in).optString("softwareVersion", null);
+                found = FirmwareVersion.parse(said);
             }
             catch (Exception unreadable)
             {
                 found = null;
             }
+
+            if (found != null && this.control != null) this.control.logTheFirmware(said.trim());
 
             if (found == null) found = new FirmwareVersion(2, isNotFoundError(getCS3LocDBUrl(260)) ? 5 : 6, 0);
 
