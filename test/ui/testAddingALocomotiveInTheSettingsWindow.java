@@ -102,6 +102,45 @@ public class testAddingALocomotiveInTheSettingsWindow extends support.SettingsCl
     }
 
     /**
+     * Add's labels and fields start at the window's left edge, as the other tabs' do, at the size it opens and when it is
+     * widened: the spare width goes to the right of the fields, never around them (OB-470).
+     *
+     * MUTATION: drop the spacer column in `LocomotiveSettingsFrame.LocomotiveTab` for `adding`, and the content centers
+     * in a wide window and this fails.
+     */
+    @Test
+    public void testAddStartsAtTheLeftEdge() throws Exception
+    {
+        openAdd();
+
+        LocomotiveSettingsFrame window = SettingsWindow.showing();
+        javax.swing.JTextField name = SettingsWindow.part("settings.name", javax.swing.JTextField.class);
+
+        int[] starts = new int[2];
+
+        for (int i = 0; i < 2; i++)
+        {
+            final int extra = i * 300;
+
+            Components.onTheEventThread(() ->
+            {
+                window.setSize(window.getWidth() + extra, window.getHeight());
+                window.validate();
+
+                return null;
+            });
+
+            Components.settle();
+
+            starts[i] = Components.onTheEventThread(() ->
+                javax.swing.SwingUtilities.convertPoint(name, 0, 0, window.getContentPane()).x);
+        }
+
+        assertEquals(starts[1], starts[0], "widening Add by 300 pixels moved its name field from " + starts[0] + " to "
+            + starts[1] + ", so its labels float in the middle");
+    }
+
+    /**
      * Add asks what the old window asked, in its order: the name (missing, too long, taken, not usable in a route) before
      * the address (not a number, out of the decoder's range).  Each refusal makes nothing and leaves Add open.
      *

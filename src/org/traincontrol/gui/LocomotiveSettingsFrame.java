@@ -1107,6 +1107,13 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 gbc.weighty = 1;
                 add(new JLabel(), gbc);
 
+                // The window's spare width goes right of the fields, as on the other tab (OB-470)
+                gbc.gridx = 2;
+                gbc.gridy = 1;
+                gbc.weightx = 1;
+                gbc.weighty = 0;
+                add(new JLabel(), gbc);
+
                 warnAboutTheSameAddress();
 
                 return;
