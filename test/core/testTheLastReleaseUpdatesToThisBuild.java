@@ -54,10 +54,15 @@ public class testTheLastReleaseUpdatesToThisBuild
     @AfterMethod(alwaysRun = true)
     public void tearDown() throws Exception
     {
-        if (folder != null && folder.exists())
+        if (folder == null || !folder.exists()) return;
+
+        // Anything Windows still holds goes when this JVM ends
+        try (java.util.stream.Stream<Path> paths = Files.walk(folder.toPath()))
         {
-            Files.walk(folder.toPath()).sorted(java.util.Comparator.reverseOrder()).map(Path::toFile)
-                .forEach(File::delete);
+            paths.sorted(java.util.Comparator.reverseOrder()).map(Path::toFile).forEach(f ->
+            {
+                if (!f.delete()) f.deleteOnExit();
+            });
         }
     }
 
@@ -143,7 +148,7 @@ public class testTheLastReleaseUpdatesToThisBuild
         }
     }
 
-    /** The old `JarUpdater.update`, with its real launcher, starting `ReportsStarted` on the swapped-in jar's classes. */
+    /** The old `JarUpdater.update`, its real start starting `ReportsStarted` on the swapped-in jar's classes. */
     private String theOldOutcome(Class<?> updater, File jar, File download, String oldVersion, String newVersion,
         byte[] shippedBytes) throws Exception
     {
@@ -163,12 +168,14 @@ public class testTheLastReleaseUpdatesToThisBuild
             new File(folder, (String) updater.getField("RUNNING_NAME").get(null)), oldVersion, newVersion, folder, java,
             "Updating", Collections.emptyList(), Collections.emptyList());
 
-        Method startProcess = updater.getMethod("startProcess", List.class, File.class, File.class);
+        // What the real launcher `startProcess` wraps, for the Process to wait for: it holds the jar until it ends
+        Method startDetached = updater.getMethod("startDetached", List.class, File.class, File.class);
         Method rename = updater.getDeclaredMethod("rename", Path.class, Path.class);
 
         rename.setAccessible(true);
 
         List<String> starts = new ArrayList<>();
+        List<Process> running = new ArrayList<>();
 
         Object launching = Proxy.newProxyInstance(then, new Class<?>[] {launcher}, (proxy, method, args) ->
         {
@@ -189,8 +196,12 @@ public class testTheLastReleaseUpdatesToThisBuild
             // The jar and ReportsStarted alone: nothing of this build's classes fills a gap in the jar
             String classes = jar.getAbsolutePath() + File.pathSeparator + reportsStartedAlone().getAbsolutePath();
 
-            return startProcess.invoke(null, Arrays.asList(java, "-cp", classes, ReportsStarted.class.getName(),
-                "marker"), args[1], args[2]);
+            Process child = (Process) startDetached.invoke(null, Arrays.asList(java, "-cp", classes,
+                ReportsStarted.class.getName(), "marker"), args[1], args[2]);
+
+            running.add(child);
+
+            return Proxy.newProxyInstance(then, new Class<?>[] {started}, (p, m, a) -> child.isAlive());
         });
 
         Object moving = Proxy.newProxyInstance(then, new Class<?>[] {mover}, (proxy, method, args) ->
@@ -199,6 +210,8 @@ public class testTheLastReleaseUpdatesToThisBuild
         Object outcome = updater.getMethod("update", request, long.class, long.class, int.class, long.class, long.class,
             launcher, mover, log, Runnable.class).invoke(null, asked, 5000L, 20L, 20, 100L, 60000L, launching, moving,
             log.getConstructor(File.class).newInstance(new File(folder, "update.log")), null);
+
+        for (Process child : running) child.waitFor(30, TimeUnit.SECONDS);
 
         return ((Enum<?>) outcome).name() + (starts.size() == 1 ? "" : ", having started " + starts);
     }
