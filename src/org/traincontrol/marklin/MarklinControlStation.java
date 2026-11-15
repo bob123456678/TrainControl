@@ -749,51 +749,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Prune stale feedbacks
         List<Integer> feedbackAddresses = new LinkedList<>();
         
-        // Get accessory definition info for the layout
-        List<MarklinAccessory> accs = new LinkedList<>();
-        
-        try
-        {
-            // true to prefer the local file
-            accs = parser.getMagList(true);
-        }
-        catch (java.io.FileNotFoundException none)
-        {
-            // Only a missing list means none; any other failure fails here, before anything is cleared, as the tiles
-            // would otherwise all be built as MM2
-            if (isDebug())
-            {
-                this.logf("layout.noDCC");
-            }
-        }
-
         // Fetch and parse FIRST, then swap, so layoutDB is empty only for a loop over parsed objects, not for the HTTP
-        // requests of every page.
-        List<LayoutDiagram> parsed = parser.parseLayout(accs);
+        // requests of every page.  Each failure here comes before anything is cleared.
+        List<LayoutDiagram> parsed = parser.parseLayout(parser.layoutAccessories());
 
         // The page counts are asked once, here, of the same parser, and carried.
         final int couldNotBeRead = parser.getPagesThatCouldNotBeRead();
 
-        final int namedByTheIndex = parser.getPagesTheIndexNamed();
-
-        // Nothing read is still a failure: syncLayoutsFromConfiguredSource reverts to the Central Station in a catch,
-        // and a page that will not read comes back as a blank stand-in, so neither an exception nor an empty list says
-        // that every page failed.  Count the pages that actually read, and throw BEFORE clearLayouts so the diagram on
-        // screen survives.  An empty folder fails no pages and comes through as the empty layout it is.
-        int actuallyRead = 0;
-
-        for (LayoutDiagram l : parsed)
-        {
-            if (!l.isUnreadable()) actuallyRead++;
-        }
-
-        // Asked against what the index said there was: a parser that does not recognize the index's block name (a
-        // capitalized `Seite`) returns zero pages and zero failures, yet the index names pages.
-
-        if (actuallyRead == 0 && (couldNotBeRead > 0 || namedByTheIndex > 0))
+        // Nothing read is still a failure, thrown BEFORE clearLayouts so the diagram on screen survives:
+        // syncLayoutsFromConfiguredSource reverts to the Central Station in a catch.
+        if (parser.readNoPage(parsed))
         {
             throw new PlainFailure(I18n.f("layout.errorNoPageCouldBeRead",
-                Math.max(couldNotBeRead, namedByTheIndex)));
+                Math.max(couldNotBeRead, parser.getPagesTheIndexNamed())));
         }
 
         this.clearLayouts();

@@ -16106,7 +16106,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     boolean openLayoutFolder(File folder)
     {
         // Refused before anything changes: a folder that will not read sends the sync back to the station's layout
-        if (!org.traincontrol.marklin.file.CS2File.holdsALayout(folder))
+        if (!org.traincontrol.marklin.file.CS2File.opensAsALayout(folder))
         {
             JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
 
