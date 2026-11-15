@@ -155,6 +155,9 @@ final class StationPicture extends JPanel
 
     private transient AutonomySession session;
     private transient TileKey showing;
+
+    /** The most rows any s88 square of the setup draws, so the window can keep room for that box (`spareHeight`). */
+    private int tallest = 1;
     private transient LayoutLabel square;
     private transient TileAnnotation drawn;
     private transient StandingRules rules;
@@ -224,6 +227,18 @@ final class StationPicture extends JPanel
 
             block.revalidate();
         }
+
+        int most = 1;
+
+        for (TileKey each : session.getReducer() == null ? Collections.<TileKey>emptySet()
+            : session.getReducer().getPoints().keySet())
+        {
+            most = Math.max(most, 1 + (connects(each, Side.N) ? 1 : 0) + (connects(each, Side.S) ? 1 : 0));
+        }
+
+        if (most != tallest) block.revalidate();
+
+        tallest = most;
 
         setVisible(square != null);
 
@@ -310,8 +325,8 @@ final class StationPicture extends JPanel
     }
 
     /**
-     * Where a square sits: the station in the middle of a 3 by 3 block centered in the frame, a next square beside it;
-     * the row above or below is left out where no square is drawn there (MT-961).
+     * Where a square sits: the station in the middle of a 3 by 3 block, a next square beside it; the row above or below
+     * is left out where no square is drawn there, and the rows drawn are centered in the frame (MT-961).
      */
     private Rectangle cell(Side side)
     {
@@ -324,6 +339,12 @@ final class StationPicture extends JPanel
         int y = (side == Side.N ? 0 : side == Side.S ? 2 : 1) - (next.containsKey(Side.N) ? 0 : 1);
 
         return new Rectangle(left + x * SQUARE, top + y * SQUARE, SQUARE, SQUARE);
+    }
+
+    /** How much shorter this box is than the tallest the setup can need: room the window keeps, so no re-aim moves it. */
+    int spareHeight()
+    {
+        return Math.max(0, tallest - rows()) * SQUARE;
     }
 
     /** The rows drawn: the station's, and those of a next square above or below it. */

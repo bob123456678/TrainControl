@@ -218,6 +218,16 @@ public final class StationSettingsWindow extends StationWindowBase
 
         sideColumn.add(right, BorderLayout.NORTH);
 
+        // The room a taller picture would take, under everything, so the window keeps its height on a re-aim (MT-961)
+        sideColumn.add(new JPanel()
+        {
+            @Override
+            public Dimension getPreferredSize()
+            {
+                return new Dimension(0, picture.spareHeight());
+            }
+        }, BorderLayout.CENTER);
+
         rightColumn.add(presetsPanel, BorderLayout.NORTH);
         rightColumn.add(sideColumn, BorderLayout.CENTER);
 

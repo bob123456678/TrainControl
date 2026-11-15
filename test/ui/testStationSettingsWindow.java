@@ -2410,31 +2410,85 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The picture's white area keeps 10 px above the squares it draws and 10 px below, and no empty row (MT-961, Adam:
-     * "reduce the top and bottom padding inside the 'on the track diagram' area, so that it takes up less vertical
-     * space (aim for 20px total)"); it is drawn at the height it asks for, and every mark and square still lies inside
-     * it.  The line under it stands as far below it as the picture stands below the table ("reduce the gap ... to
-     * match other components").
+     * The picture's box hugs the rows it draws, with 10 px of white above and 10 px below, on a one-row station and on
+     * a three-row one (MT-961, Adam: "reduce the top and bottom padding inside the 'on the track diagram' area, so that
+     * it takes up less vertical space (aim for 20px total)").  Every mark and square lies inside it, and the line under
+     * it stands as far below it as the picture stands below the table ("reduce the gap ... to match other
+     * components").
      *
-     * MUTATION: draw the picture's three rows whatever it shows, or put the 6 px back above the line under it, and this
+     * MUTATION: draw the box three rows tall whatever it shows, or put the 6 px back above the line under it, and this
      * fails.
      */
     @Test(timeOut = 120000)
     public void testThePictureIsPaddedTightlyAndNothingIsCut() throws Exception
     {
-        TileKey square = aStation();
+        TileKey oneRow = aOneRowStation();
 
-        Components.onTheEventThread(() -> { session.setPointProperty(square, "maxTrainLength", 30); return null; });
+        Components.onTheEventThread(() -> { session.setPointProperty(oneRow, "maxTrainLength", 30); return null; });
 
-        StationSettingsWindow window = StationDoors.open(panel, square);
-
-        StationDoors.current(window);
+        StationSettingsWindow window = StationDoors.open(panel, oneRow);
 
         JComponent block = StationDoors.part(window, "station.picture.ways", JComponent.class);
 
         assertTrue(visible(window, "station.matrixAlso"), "precondition: no line under the picture");
 
+        int[] one = whiteAround(window, block);
+
+        assertEquals(one[0], 10, "the white above a one-row picture");
+        assertEquals(one[1], 10, "the white below a one-row picture");
+
         Components.onTheEventThread(() ->
+        {
+            java.awt.Component table = Components.named(window, "station.matrix", JComponent.class);
+            java.awt.Component picture = Components.named(window, "station.picture", JComponent.class);
+            JComponent also = Components.named(window, "station.matrixAlso", JComponent.class);
+
+            int underTable = picture.getLocationOnScreen().y - table.getLocationOnScreen().y - table.getHeight();
+            int underPicture = also.getLocationOnScreen().y + also.getInsets().top - block.getLocationOnScreen().y
+                - block.getHeight();
+
+            assertEquals(underPicture, underTable, "the line under the picture is not as far below it as the picture is "
+                + "below the table");
+
+            return null;
+        });
+
+        assertSame(StationDoors.open(panel, aThreeRowStation()), window, "precondition: another window opened");
+
+        int[] three = whiteAround(window, block);
+
+        assertEquals(three[0], 10, "the white above a three-row picture");
+        assertEquals(three[1], 10, "the white below a three-row picture");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * Station Settings keeps its height when it is aimed from a station whose picture is one row to one whose picture is
+     * three (MT-961, Adam: "that way, the height of the window doesn't change"), so Done Editing stays put: the room a
+     * taller picture would take stays under the right column.
+     *
+     * MUTATION: have `StationPicture.spareHeight` keep no room, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheWindowKeepsItsHeightWhenAimedAtATallerPicture() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aOneRowStation());
+
+        int height = Components.onTheEventThread(window::getHeight);
+
+        assertSame(StationDoors.open(panel, aThreeRowStation()), window, "precondition: another window opened");
+
+        assertEquals((int) Components.onTheEventThread(window::getHeight), height,
+            "the window changed height when aimed at a station with track above and below");
+
+        StationDoors.close(window);
+    }
+
+    /** The white above and below the squares the picture draws, less its 1 px gray line; every mark lies inside it. */
+    private static int[] whiteAround(StationSettingsWindow window, JComponent block)
+    {
+        return Components.onTheEventThread(() ->
         {
             Map<String, java.awt.Shape> marks = window.pictureMarksForTest();
 
@@ -2450,31 +2504,45 @@ public class testStationSettingsWindow
 
             assertEquals(block.getHeight(), block.getPreferredSize().height, "the picture is not drawn at its own height");
 
-            // Less the 1 px gray line on each side
-            assertEquals(top - 1, 10, "the white above the squares");
-            assertEquals(block.getHeight() - 1 - bottom, 10, "the white below the squares");
-
-            java.awt.Component table = Components.named(window, "station.matrix", JComponent.class);
-            java.awt.Component picture = Components.named(window, "station.picture", JComponent.class);
-            JComponent also = Components.named(window, "station.matrixAlso", JComponent.class);
-
-            int underTable = picture.getLocationOnScreen().y - table.getLocationOnScreen().y - table.getHeight();
-            int underPicture = also.getLocationOnScreen().y + also.getInsets().top - block.getLocationOnScreen().y
-                - block.getHeight();
-
-            assertEquals(underPicture, underTable, "the line under the picture is not as far below it as the picture is "
-                + "below the table");
-
             java.awt.Rectangle inside = new java.awt.Rectangle(1, 1, block.getWidth() - 2, block.getHeight() - 2);
 
             for (Map.Entry<String, java.awt.Shape> each : marks.entrySet())
             {
-                assertTrue(inside.contains(each.getValue().getBounds2D()), each.getKey() + " at " + each.getValue().getBounds2D()
+                // By its corners, as a straight axis is a box of no height, which `contains` never holds
+                java.awt.geom.Rectangle2D at = each.getValue().getBounds2D();
+
+                assertTrue(at.getMinX() >= inside.getMinX() && at.getMinY() >= inside.getMinY()
+                    && at.getMaxX() <= inside.getMaxX() && at.getMaxY() <= inside.getMaxY(), each.getKey() + " at " + at
                     + " is cut by the picture's edge " + inside);
             }
 
-            return null;
+            return new int[] {top - 1, block.getHeight() - 1 - bottom};
         });
+    }
+
+    /** A plain station of the page whose road runs east and west, so its picture is one row. */
+    private static TileKey aOneRowStation()
+    {
+        return aPlainStationWhere(each ->
+        {
+            org.traincontrol.automationui.TilePorts.Route road = session.getRoutes(each).values().iterator().next();
+
+            return java.util.EnumSet.of(road.getA(), road.getB()).equals(java.util.EnumSet.of(
+                org.traincontrol.automationui.TilePorts.Side.E, org.traincontrol.automationui.TilePorts.Side.W));
+        }, "running east and west");
+    }
+
+    /** A plain station of the page whose road runs north and south with track on both sides, so its picture is three rows. */
+    private static TileKey aThreeRowStation()
+    {
+        return aPlainStationWhere(each ->
+        {
+            org.traincontrol.automationui.TilePorts.Route road = session.getRoutes(each).values().iterator().next();
+
+            return java.util.EnumSet.of(road.getA(), road.getB()).equals(java.util.EnumSet.of(
+                org.traincontrol.automationui.TilePorts.Side.N, org.traincontrol.automationui.TilePorts.Side.S))
+                && session.getGraph().landing(each, road.getA()) != null && session.getGraph().landing(each, road.getB()) != null;
+        }, "running north and south with track on both sides");
     }
 
     /**
