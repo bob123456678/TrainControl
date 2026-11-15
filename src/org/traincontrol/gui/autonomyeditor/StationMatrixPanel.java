@@ -71,9 +71,10 @@ final class StationMatrixPanel extends JPanel
 
         problem.setName("station.matrixProblem");
         problem.setForeground(new Color(170, 0, 0));
+        // The gap between the two lines, so the first stands as far under the picture as the picture under the table
+        problem.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
 
         also.setName("station.matrixAlso");
-        also.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
 
         notices.setName("station.notices");
         notices.setLayout(new BoxLayout(notices, BoxLayout.Y_AXIS));

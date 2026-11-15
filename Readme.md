@@ -266,7 +266,7 @@ TrainControl's key mappings are designed to allow you to send any command nearly
         * Control+L (open Locomotive Settings on the multi-unit)
         * Control+Delete (permanently delete locomotive from database)
 * UI shortcuts
-    * Control+M (show menu bar)
+    * Control+M (show or hide the menu bar, where it is not part of the window's title bar, such as on a Mac)
     * Backspace/Alt+backspace, CapsLock/Alt+CapsLock (cycle through tabs)
     * Minus/plus, \[/\], '/( (previous/next accessory keyboard, or previous/next layout page on the Track Diagram tab; Control with these jumps 4 accessory keyboards)
     * Slash/question mark, < (cycle through function tabs on the locomotive panel)
@@ -494,7 +494,7 @@ Tab icons provided by Freepik.
             - The icon dropdown on the `Functions` tab lists, after the standard icons, every custom image you have chosen for any locomotive's function, so you can use it again.
         - Autonomy
             - `Station Settings` puts all of a station's settings in one window, opened from a station's right-click menu or with Ctrl+O, beside a picture of the station and a table of what trains may do there.
-            - Two boxes, `Trains can stop here` and `Trains can pass through`, replace the `Station (...)` choices, and the `Station`, `Terminus`, `Parking` and `Reversing Point` buttons set the usual combinations and light up when your settings match one.
+            - Two boxes, `Trains can stop here` and `Trains can pass through`, replace the `Station (...)` choices, and the `Station`, `Terminus`, `Parking`, `Reversing` and `Off` buttons set the usual combinations and light up when your settings match one.
             - A station with only `Trains can stop here` ticked can't be run through by autonomy or by a trip you send, though it doesn't make the train turn around, and `Return Home` may still run through it.
             - `Mass Edit...`, under `Station Tools` in the autonomy editor, lets you click several stations and change them all in one `Station Settings` window.
             - `Change Train at` *station* `...` opens the `Train Placement` tab of `Station Settings` for the train standing there, with its locomotive, `Active`, `Facing`, `Arrived` and `Tail lies`, and `Locomotive Settings...` opens the `Autonomy` tab.
@@ -513,6 +513,8 @@ Tab icons provided by Freepik.
             - In the autonomy editor, you can drag a train from one station to another to move it there.
             - The autonomy editor draws signals and lamps in gray to keep the picture simple, and shows the signals you can pick in color while you choose a guard signal.
             - The `Bulk Tools` menu is grouped with dividers, and `Hide Hover Tooltips` hides its tooltips too.
+            - In the autonomy editor, a click on an s88 square that runs both ways opens its `Station Settings`, so double-clicking a station works.  An s88 square always runs both ways now: a click on one set to run one way or closed puts it back, and to make trains run one way past a sensor you set the track beside it.  The picture in `Station Settings` no longer draws arrows on the station's own track, and `May depart` shows the way out the railway really has.  It sets the plain track from the station to the next switch or s88 square, never a switch, and is grayed, showing that way, where there is no such track beside the station, where trains are kept from leaving farther out, or while the station still has an arrow.  It no longer offers `Closed - No Trains`: untick `Trains can stop here` or press `Off` instead, or untick both boxes to take the square out of service.  A setup saved with it shows the s88 square's error until the station is clicked clear.
+            - The setup check notes two s88 squares with no track between them, since the join between them can't be given a direction.
             - With `Toggle specified routes` ticked, starting autonomy, a timetable or `Return Home` switches the routes back to the ones ticked in the list, including any you switched on or off by hand since.
         - Track Diagram
             - The track diagram editor has a strip of icons under `Page` to add, duplicate, rename and delete a page and to move it up or down, and its `Manage Pages` menu is now `Tools`.
@@ -560,6 +562,7 @@ Tab icons provided by Freepik.
             - Cancel in the autonomy editor now puts every train back where it stood when the editor opened, and its question names the trains that will move.  Cancel never turns a train around: each keeps the way it faces now, however it got there, and a train whose only change is its facing is not named.
             - While an editor is open, linking a multi-unit, changing an address or decoder, pressing `Sync`, and a locomotive CSV import that changes addresses are refused with a message, and switching, creating or downloading a layout and the `Autonomy` menu's configuration items are grayed, since Cancel could not undo them.  A sync started by a route edit or a function reset waits and runs once when the editor closes.
             - The tabs in `Station Settings` now run to the window's edges.
+            - `Done Editing` in `Station Settings` no longer shifts up or down when you switch between the `Settings` and `Train Placement` tabs.
         - Locomotive Control
             - Ctrl+B now moves the copied locomotive to the active button, as the key menu's `Move` item says.
             - Saving a typed address in `Locomotive Settings` changes the decoder type only if you changed it, and the address is checked against the decoder type that will be saved, there and when adding a locomotive.
@@ -583,6 +586,7 @@ Tab icons provided by Freepik.
     - Notes
         - The first time you open a layout saved by an earlier version, TrainControl updates its page links once so they keep working when pages are renamed or moved, logs it, and keeps a `.bak` copy of each page it changed.
         - A layout converted by 3.1.0 and a setup saved by 3.1.0 still open in 3.0.8.
+        - An autonomy setup with arrows set on an s88 square shows an error under `Things to look at` until each such square is clicked back to both ways.
         - For developers: `MarklinControlStation.saveState(boolean)` and `ViewListener.saveState` now return the reason a save failed, or null.  Java code compiled against an older jar must be recompiled.
 * v3.0.8 [11/04/2026]
     - New Features

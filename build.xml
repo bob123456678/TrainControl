@@ -728,6 +728,7 @@
         <test-one-class class="testEveryWayBackFromALayoutSwitch"/>
         <test-one-class class="testTheLogTabScrollsSideways"/>
         <test-one-class class="testReturnHomeGivesTheSamePlanEveryTime"/>
+        <test-one-class class="testTheMenusInTheTitleBarAlwaysShow"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

@@ -453,8 +453,7 @@ public class testManualOnlyPathsAreADifferentColour
     /** As the path test asks it: a train starts on the copies it stands on at `from`. */
     private static boolean pathExists(TileKey from, TileKey to)
     {
-        return reducer.findPath(from, to, session.mayTurnTiles(), session.mandatoryTurnTiles(),
-            session.barredArrivals(), session.shutTiles(), session.startingArrivals().get(from)) != null;
+        return session.testPath(from, to) != null;
     }
 
     /**

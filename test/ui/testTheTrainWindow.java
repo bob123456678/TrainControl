@@ -218,6 +218,31 @@ public class testTheTrainWindow
     }
 
     /**
+     * Done Editing stays where it was when the tabs change (OB-479: "the button shifts up/down by a few pixels when
+     * changing between the Settings and Train Placement tabs").
+     *
+     * MUTATION: leave out the footer's strut in `StationSettingsWindow`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testDoneEditingStaysPutAcrossTheTabs() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.openTrain(theEditorsPanel(), aSquareWithATrain());
+
+        javax.swing.JTabbedPane tabs = StationDoors.part(window, "station.tabs", javax.swing.JTabbedPane.class);
+        javax.swing.JButton done = StationDoors.part(window, "station.close", javax.swing.JButton.class);
+
+        int onTrain = Components.onTheEventThread(() -> done.getLocationOnScreen().y);
+
+        Components.onTheEventThread(() -> { tabs.setSelectedIndex(0); return null; });
+        Components.settle();
+
+        assertEquals((int) Components.onTheEventThread(() -> done.getLocationOnScreen().y), onTrain,
+            "Done Editing moved between the Train and Settings tabs");
+
+        StationDoors.close(window);
+    }
+
+    /**
      * The train popup and Station Settings both end with Done Editing, not Close (Adam): what is changed there is saved
      * as it is made, so the button only says the editing is over.
      *

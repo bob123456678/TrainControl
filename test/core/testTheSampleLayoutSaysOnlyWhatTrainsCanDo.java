@@ -288,6 +288,9 @@ public class testTheSampleLayoutSaysOnlyWhatTrainsCanDo
         {
             if (fresh.directionMarks(arrow).isEmpty() || fresh.followsItsRun(arrow)) continue;
 
+            // An s88 square running both ways changes no arrow: its click opens Station Settings (OB-472)
+            if (fresh.isSensorSquare(arrow) && fresh.runsBothWays(arrow)) continue;
+
             TileKey leader = fresh.runLeaders().get(arrow);
 
             java.util.Set<TileKey> itself = leader == null ? Collections.singleton(arrow)

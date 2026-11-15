@@ -4886,12 +4886,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return onTheEventThread(TrainControlUI::new);
     }
 
-    /** A start-up message box, waited for: what start-up does next (ask again, or exit) must follow it (OB-445). */
+    /**
+     * A start-up message box, waited for: what start-up does next (ask again, or exit) must follow it (OB-445).  On top,
+     * as no window of ours is up to bring it back from behind another program's (OB-480).
+     */
     private static void tellAtStartUp(String said) throws InterruptedException
     {
         onTheEventThread(() ->
         {
-            JOptionPane.showMessageDialog(null, said);
+            JDialog box = new JOptionPane(said, JOptionPane.INFORMATION_MESSAGE)
+                .createDialog(null, javax.swing.UIManager.getString("OptionPane.messageDialogTitle"));
+
+            box.setAlwaysOnTop(true);
+            box.setVisible(true);
+            box.dispose();
 
             return null;
         });
@@ -4899,16 +4907,17 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Runs a slow start-up step behind the busy sign, as nothing else is on screen yet; call it off the event thread.
-     * Its closing is queued ahead of whatever start-up says next, so that is not hidden behind it.
+     * `slow` may change what the sign says.  Its closing is queued ahead of whatever start-up says next.
      */
-    private static <T> T whileTheSignSays(String message, java.util.function.Supplier<T> slow)
+    private static <T> T whileTheSignSays(String message,
+        java.util.function.Function<org.traincontrol.gui.widgets.BusyDialog.Closer, T> slow)
     {
         org.traincontrol.gui.widgets.BusyDialog.Closer sign =
             org.traincontrol.gui.widgets.BusyDialog.showUntilClosed(null, message);
 
         try
         {
-            return slow.get();
+            return slow.apply(sign);
         }
         finally
         {
@@ -5059,18 +5068,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
                                 case 2: // Auto-Detect
                                     System.out.println(I18n.t("ui.detectCentralStationAttempt")); 
                                     
-                                    if (!CSDetect.hasLocalSubnets())
-                                    {
-                                        tellAtStartUp(I18n.t("ui.autoDetectNotPossibleNoInterfaces"));
-                                        continue;
-                                    }
+                                    // Finding the subnets pings each adapter's gateway, so it too runs behind the sign
+                                    final List<String> subnets = new ArrayList<>();
 
-                                    initIP = whileTheSignSays(I18n.t("ui.detectCentralStationAttempt"),
-                                        CSDetect::detectCentralStation);
+                                    initIP = whileTheSignSays(I18n.t("ui.detectCentralStationAttempt"), sign ->
+                                    {
+                                        subnets.addAll(CSDetect.getLocalSubnet());
+
+                                        return CSDetect.detectCentralStation(subnets, subnet ->
+                                            sign.say(I18n.f("ui.detectCentralStationOnSubnet", subnet)));
+                                    });
 
                                     if (initIP == null)
                                     {
-                                        tellAtStartUp(I18n.t("ui.noCentralStationDetected"));
+                                        tellAtStartUp(subnets.isEmpty() ? I18n.t("ui.autoDetectNotPossibleNoInterfaces")
+                                            : I18n.t("ui.noCentralStationDetected"));
                                         continue;
                                     }
                                     

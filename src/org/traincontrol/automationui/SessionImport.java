@@ -210,8 +210,8 @@ final class SessionImport
             TileKey tile = each.getKey().square();
             RouteId id = each.getKey().getRouteId();
 
-            // Only a route the store holds no direction for is a gap.
-            if (owner.store.getTileDirection(tile, id) != null) continue;
+            // Only a route the store holds no direction for is a gap; an s88 square runs both ways (OB-472).
+            if (owner.store.getTileDirection(tile, id) != null || owner.isSensorSquare(tile)) continue;
 
             if (each.getValue() == owner.graph.getDirection(tile, id)) continue;
 

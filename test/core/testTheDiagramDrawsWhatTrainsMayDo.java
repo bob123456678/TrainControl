@@ -1863,10 +1863,10 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     }
 
     /**
-     * A square out of service offers no direction click in the editor: it draws no arrows, so a click must not cycle
-     * the hidden setting under the hand pointer.
+     * A click on a square out of service never steps its hidden directions: such a square is an s88 square, whose click
+     * only clears a direction a setup file gave it, to both ways (OB-472), the error that direction raises with it.
      *
-     * MUTATION: let the click change a square out of service again, and this fails.
+     * MUTATION: let the click cycle an s88 square as plain track, and this fails.
      */
     @Test
     public void testAClickChangesNoDirectionOnASquareOutOfService() throws Exception
@@ -1875,17 +1875,20 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         final TileKey square = new TileKey("main", 3, 1);
 
-        assertTrue(panel.clickChangesDirections(square), "precondition: a click does not change the square's directions"
-            + " while it is in service");
+        assertTrue(session.isSensorSquare(square), "precondition: the square at main 3,1 is not an s88 square");
 
         session.setPointProperty(square, "active", Boolean.FALSE);
 
         final RouteId road = session.getRoutes(square).keySet().iterator().next();
 
-        final Direction before = session.getGraph().getDirection(square, road);
+        assertFalse(panel.clickChangesDirections(square), "the editor offers a direction click on a square out of service"
+            + " that runs both ways");
 
-        assertFalse(panel.clickChangesDirections(square), "the editor offers a direction click on a square out of service,"
-            + " whose arrows it does not draw (RSA63-C5)");
+        // As a setup file carries it
+        session.getStore().setTileDirection(square, road, Direction.TOWARD_A);
+        session.rebuild();
+
+        assertTrue(panel.clickChangesDirections(square), "the editor offers no click to clear a square out of service");
 
         final java.lang.reflect.Method cycle =
             Reflect.method(org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class, "cycle", TileKey.class);
@@ -1902,7 +1905,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
             }
         });
 
-        assertEquals(session.getGraph().getDirection(square, road), before, "a click changed the hidden directions of a"
-            + " square out of service (RSA63-C5)");
+        assertEquals(session.getGraph().getDirection(square, road), Direction.BOTH, "a click stepped the hidden"
+            + " directions of a square out of service rather than clearing them");
     }
 }

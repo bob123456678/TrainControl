@@ -781,7 +781,8 @@ public class testATrainDragsFromStationToStation
 
     /**
      * After a refused drag, the next click on the train that reaches it through its station's caption (a press there
-     * passes no `beginDrag`) is taken: it cycles the station's arrows, as any click on the square does.
+     * passes no `beginDrag`) is taken: it opens the station's Station Settings, as any click on a station running both
+     * ways does (OB-472).
      *
      * MUTATION: drop the `ignoreTheClickOf(null)` from `LayoutEditorTrainDrag.press`, and the click is swallowed.
      */
@@ -793,17 +794,22 @@ public class testATrainDragsFromStationToStation
 
         try
         {
+            aClickOpensTheSettingsOf(f.from);
+
             // Plain track takes no train
             Mouse.drag(f.fromLabel, f.trackLabel);
             Components.drain(8);
 
             clickThroughTheCaption(f.fromLabel);
 
-            assertFalse(session.snapshotSetup().similar(before), "the first click on " + f.from + "'s train after a"
-                + " refused drag, through its caption, was swallowed: the station's arrows did not cycle");
+            assertNotNull(support.StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class),
+                "the first click on " + f.from + "'s train after a refused drag, through its caption, was swallowed:"
+                + " Station Settings did not open");
         }
         finally
         {
+            closeStationSettings();
+
             putBack(before);
         }
     }
@@ -885,8 +891,11 @@ public class testATrainDragsFromStationToStation
             Mouse.click(f.fromLabel);
             Components.drain(8);
 
-            // A click on a station does what it always did to the square (cycles its arrow); only the train must stay.
+            // A click on a station does what it does to the square (OB-472: opens Station Settings, or clears its
+            // arrows); only the train must stay.
             asFound = session.snapshotSetup();
+
+            closeStationSettings();
 
             assertEquals(placements(), expectedPlacements, "a click on the train moved a train");
 
@@ -913,6 +922,59 @@ public class testATrainDragsFromStationToStation
         {
             putBack(asFound);
         }
+    }
+
+    /**
+     * A train dragged onto plain track, where it cannot be put down, opens no Station Settings, though AWT may still send
+     * the click that ends the press to the square it began on, where a click opens them (OB-472).
+     *
+     * MUTATION: drop `editor.ignoreTheClickOf(pressed)` from `LayoutEditorTrainDrag.finish`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testADraggedTrainOpensNoStationSettings() throws Exception
+    {
+        Fixture f = fixture(false);
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
+        {
+            aClickOpensTheSettingsOf(f.from);
+
+            String train = session.getLocomotiveNameAt(f.from);
+
+            Mouse.drag(f.fromLabel, f.trackLabel);
+
+            post(f.fromLabel, MouseEvent.MOUSE_CLICKED, center(f.fromLabel), 0, 1, MouseEvent.BUTTON1);
+            Components.drain(8);
+
+            assertEquals(session.getLocomotiveNameAt(f.from), train, "precondition: the train left its station");
+            assertNull(support.StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class),
+                "the drag opened Station Settings");
+        }
+        finally
+        {
+            closeStationSettings();
+
+            putBack(asFound);
+        }
+    }
+
+    /** Closes Station Settings, on a station a click opens them for: one running both ways (OB-472). */
+    private static void aClickOpensTheSettingsOf(TileKey station) throws Exception
+    {
+        closeStationSettings();
+
+        assertTrue(Components.onTheEventThread(() -> session.runsBothWays(station)),
+            "precondition: a click on the station would clear its arrows rather than open its settings");
+    }
+
+    /** Closes a Station Settings window a click opened. */
+    private static void closeStationSettings() throws Exception
+    {
+        java.awt.Window open = support.StationDoors.showing(org.traincontrol.gui.autonomyeditor.StationSettingsWindow.class);
+
+        if (open != null) support.StationDoors.close(open);
     }
 
     /**

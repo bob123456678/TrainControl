@@ -392,9 +392,9 @@ public class GraphReducer
     }
 
     /**
-     * The same, with squares that are CLOSED rather than merely barred.  This is the editor's *test a path* tool, which
-     * runs while a setup is drawn and may not build; `testAutonomyDiagramReducer` holds it to the findings' answer
-     * (`BuiltReach`).  A closed square is neither a way through nor a destination, in EVERY tier: `isPathClear` refuses
+     * The same, with squares that are CLOSED rather than merely barred.  The editor's *test a path* tool is
+     * `AutonomySession.testPath`, which runs while a setup is drawn and may not build; `testAutonomyDiagramReducer`
+     * holds this search to the findings' answer (`BuiltReach`).  A closed square is neither a way through nor a destination, in EVERY tier: `isPathClear` refuses
      * it as an intermediate and as the final point.  Only a closed START is exempt.
      *
      * @param barred arrival sides closed off - passed through, not stopped at
@@ -404,22 +404,33 @@ public class GraphReducer
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
         Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed)
     {
-        return findPath(from, to, mayTurn, mustTurn, barred, closed, null);
+        return findPath(from, to, mayTurn, mustTurn, barred, closed, Collections.<TileKey>emptySet(), null);
     }
 
     /**
-     * The same, starting a train only as it can stand at `from`.
+     * The same, starting a train only as it can stand at `from`, and never through a stop-only station.
      *
+     * @param stopOnly squares a train may stop at but never run through (FR-111), as `Layout.isClearByStandingRules`
      * @param startArrivals the sides a train standing at `from` arrived by (`AutonomySession.startingArrivals`); null
      *        to start facing every way
      */
     public List<ReducedEdge> findPath(TileKey from, TileKey to, Set<TileKey> mayTurn,
-        Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed,
+        Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed, Set<TileKey> stopOnly,
         Set<Side> startArrivals)
     {
-        if (!points.containsKey(from) || !points.containsKey(to)) return null;
+        if (!points.containsKey(to)) return null;
 
-        if (from.equals(to)) return new ArrayList<ReducedEdge>();
+        if (from.equals(to)) return points.containsKey(from) ? new ArrayList<ReducedEdge>() : null;
+
+        return findPathTo(from, to::equals, mayTurn, mustTurn, barred, closed, stopOnly, startArrivals);
+    }
+
+    /** The same, to the nearest square `to` accepts: one search where any of several will do. */
+    public List<ReducedEdge> findPathTo(TileKey from, java.util.function.Predicate<TileKey> to, Set<TileKey> mayTurn,
+        Set<TileKey> mustTurn, Map<TileKey, Set<Side>> barred, Set<TileKey> closed, Set<TileKey> stopOnly,
+        Set<Side> startArrivals)
+    {
+        if (!points.containsKey(from)) return null;
 
         // The search state is a Point AND the side the train reached it by: what a train may do next depends on which
         // way it is pointing.  With no starting sides the start has no arrival side: the question is whether the TRACK
@@ -492,7 +503,7 @@ public class GraphReducer
                 // the square and returns before the closure is consulted.
                 if (closed != null && closed.contains(edge.getEnd())) continue;
 
-                if (edge.getEnd().equals(to)
+                if (to.test(edge.getEnd())
                     && !refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
                 {
                     List<ReducedEdge> path = new ArrayList<>();
@@ -505,7 +516,7 @@ public class GraphReducer
                     return path;
                 }
 
-                frontier.add(next);
+                if (!stopOnly.contains(edge.getEnd())) frontier.add(next);
             }
         }
 
