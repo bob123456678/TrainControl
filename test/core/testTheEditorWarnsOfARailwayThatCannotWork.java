@@ -427,6 +427,32 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         assertEquals(session.departureWay(east, eastRoad), toward(east, eastRoad, Side.E), "the second pick was lost");
     }
 
+    /**
+     * A station that still carries a direction from an old setup keeps May depart grayed, its (i) line pointing at the
+     * click that clears it: the built railway honors the stale arrow, so a pick would not show.
+     *
+     * MUTATION: drop the station's own arrow from `whyDepartureWayIsFixed`, and this fails.
+     */
+    @Test
+    public void testMayDepartIsGrayWhileTheStationKeepsAnArrow() throws Exception
+    {
+        session.open(Arrays.asList(deadEndRun()));
+        session.initialize("D141 old");
+
+        TileKey middle = new TileKey("main", 4, 1);
+        RouteId road = session.getRoutes(middle).keySet().iterator().next();
+
+        assertTrue(session.departureWayCanBeSet(middle, road), "precondition: May depart is gray");
+
+        // As a setup file carries it: no door of the editor writes it any more
+        session.getStore().setTileDirection(middle, road, Direction.TOWARD_A);
+        session.rebuild();
+
+        assertFalse(session.departureWayCanBeSet(middle, road), "May depart is live on a station with an arrow");
+        assertEquals(session.whyDepartureWayIsFixed(middle, road),
+            I18n.f("autosetup.ui.sensorClickToClear", session.describeTile(middle)), "the (i) line does not say to click it");
+    }
+
     /** `platformWithTwoApproaches` with its platform moved up against the switch: s88 squares at (1,1), (4,1), (6,1). */
     private static LayoutDiagram stationBesideASwitch() throws IOException
     {

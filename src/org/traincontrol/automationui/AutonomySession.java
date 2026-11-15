@@ -5284,6 +5284,9 @@ public class AutonomySession
 
         if (route == null) return "";
 
+        // An arrow from an old setup: the railway honors it until it is clicked clear (OB-472)
+        if (!runsBothWays(station)) return I18n.f("autosetup.ui.sensorClickToClear", describeTile(station));
+
         for (Side side : new Side[] {route.getA(), route.getB()})
         {
             Run run = runBeside(station, side);
