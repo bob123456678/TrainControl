@@ -553,12 +553,12 @@ Tab icons provided by Freepik.
             - Questions and messages now open over the window you were working in, such as a track diagram page in its own window, instead of over the main window.
             - `Restore from Backup` no longer asks about the Central Station's layout when it saves your current data first.
             - `Open Layout...` and `Recent Layouts` now refuse a folder that isn't a layout, and change nothing.
-            - `Open Layout...`, `Recent Layouts` and `Create New Layout...` now say so while a sync is running and change nothing, instead of showing the old pages under the new layout's name.  After `Recent Layouts` says a folder is gone and takes it off the list, the other layouts in it still open.
+            - `Open Layout...`, `Recent Layouts` and `Create New Layout...` now say so while a sync is running and change nothing, instead of showing the old pages under the new layout's name.  After `Recent Layouts` says a folder is gone and takes it off the list, the others on the list still open.
             - The Log tab keeps its sideways scroll position when a new message arrives.
             - If the locomotive database or the window settings can't be saved when you close TrainControl, it says which file and why, and asks you to `Retry` or `Exit Without Saving`, instead of closing and losing your changes.
             - A backup now names any file it couldn't read, and says in plain words when a file could be neither saved nor copied and so isn't in the backup at all.  It is written whole or not at all, so closing TrainControl during a backup no longer leaves a cut-off archive.
             - `Restore from Backup` keeps your current file when an older backup holds an empty one, rather than writing an empty file over it, and says so.
-            - TrainControl no longer sometimes stops at start-up with an error while its main window is being built, or logs errors when the Central Station reports switches before the window is ready.
+            - TrainControl no longer sometimes stops at start-up with an error while its main window is being built.
     - Notes
         - The first time you open a layout saved by an earlier version, TrainControl updates its page links once so they keep working when pages are renamed or moved, logs it, and keeps a `.bak` copy of each page it changed.
         - A layout converted by 3.1.0 and a setup saved by 3.1.0 still open in 3.0.8.
