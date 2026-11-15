@@ -1698,31 +1698,11 @@ public class testStationSettingsWindow
 
         int row = aFindingAbout(square);
 
-        @SuppressWarnings("unchecked")
-        JList<String> list = (JList<String>) Reflect.get(AutonomyEditorPanel.class, panel, "findings");
-
-        Components.onTheEventThread(() ->
-        {
-            list.setSelectedIndex(row);
-
-            clicked(list, 1);
-
-            return null;
-        });
-
-        Components.settle();
+        clickTheFinding(row, 1);
 
         assertNull(Components.onTheEventThread(() -> panel.stationSettingsWindow()), "a single click opened the window");
 
-        Components.onTheEventThread(() ->
-        {
-            // The second press selects the row again, before the click
-            list.setSelectedIndex(row);
-
-            clicked(list, 2);
-
-            return null;
-        });
+        clickTheFinding(row, 2);
 
         StationSettingsWindow window = Components.onTheEventThread(() -> panel.stationSettingsWindow());
 
@@ -1960,11 +1940,7 @@ public class testStationSettingsWindow
 
         assertTrue(row >= 0, "precondition: no finding about the restricted station");
 
-        @SuppressWarnings("unchecked")
-        JList<String> list = (JList<String>) Reflect.get(AutonomyEditorPanel.class, panel, "findings");
-
-        Components.onTheEventThread(() -> { list.setSelectedIndex(row); clicked(list, 2); return null; });
-        Components.settle();
+        clickTheFinding(row, 2);
 
         assertNull(Components.onTheEventThread(() -> panel.stationSettingsWindow()),
             "a double-click on the error opened Station Settings, which cannot clear it");
@@ -3789,12 +3765,26 @@ public class testStationSettingsWindow
 
     // ------------------------------------------------------------------------------------------------------------ doors
 
-    private static void clicked(JList<String> list, int times)
+    /** Selects a row of the editor's findings and clicks it `times` times, as each press selects it again. */
+    private void clickTheFinding(int row, int times)
     {
-        java.awt.event.MouseEvent click = new java.awt.event.MouseEvent(list, java.awt.event.MouseEvent.MOUSE_CLICKED,
-            System.currentTimeMillis(), 0, 5, 5, times, false, java.awt.event.MouseEvent.BUTTON1);
+        @SuppressWarnings("unchecked")
+        JList<String> list = (JList<String>) Reflect.get(AutonomyEditorPanel.class, panel, "findings");
 
-        for (java.awt.event.MouseListener each : list.getMouseListeners()) each.mouseClicked(click);
+        Components.onTheEventThread(() ->
+        {
+            list.setSelectedIndex(row);
+
+            java.awt.event.MouseEvent click = new java.awt.event.MouseEvent(list,
+                java.awt.event.MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), 0, 5, 5, times, false,
+                java.awt.event.MouseEvent.BUTTON1);
+
+            for (java.awt.event.MouseListener each : list.getMouseListeners()) each.mouseClicked(click);
+
+            return null;
+        });
+
+        Components.settle();
     }
 
     private static void assertEveryCellSaysNo(StationSettingsWindow window)
