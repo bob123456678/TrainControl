@@ -18,7 +18,7 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 
 *Station Settings.*  Everything about a station is now in one window: right-click a station on the track diagram and choose `Station Settings...`.
 
-<img src="assets/station_menu.png?raw=true" alt="Right-clicking the station Ashby on the track diagram, with Station Settings... right under its name in the menu" width="300"> <img src="assets/station_settings.png?raw=true" alt="The Station Settings window for Ashby, with what trains may do there on the left and a picture of the station on the right" width="500">
+<img src="assets/station_menu.png?raw=true" alt="Right-clicking the station Ashby on the track diagram, with Station Settings... right under its name in the menu" width="300"> <img src="assets/station_settings_ashby.png?raw=true" alt="The Station Settings window for Ashby, with what trains may do there on the left and a picture of the station on the right" width="500">
 
 * Tick whether trains can stop there and whether they can run through, or press a button under `Presets` to set it up in one click.
 * Choose which ways trains may leave, or just click the arrows on the picture of the station.
