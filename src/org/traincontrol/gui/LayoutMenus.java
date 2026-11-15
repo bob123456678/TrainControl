@@ -888,11 +888,12 @@ final class LayoutMenus
 
         if (!folder.isDirectory())
         {
+            // The submenu is rebuilt when the Layouts menu next opens, not from inside its own item's action, and the
+            // message waits until the menu has closed (MT-996: after this message Adam's other items did nothing)
             forgetRecentLayout(path);
 
-            refreshRecentLayouts();
-
-            JOptionPane.showMessageDialog(ui, I18n.f("ui.main.toolbar.errorRecentLayoutGone", path));
+            javax.swing.SwingUtilities.invokeLater(() ->
+                JOptionPane.showMessageDialog(ui, I18n.f("ui.main.toolbar.errorRecentLayoutGone", path)));
 
             return;
         }
