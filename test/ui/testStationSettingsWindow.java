@@ -2064,8 +2064,7 @@ public class testStationSettingsWindow
 
             chooseDepartTowardA(window, square, road);
 
-            assertEquals(Components.onTheEventThread(() -> session.getGraph().getDirection(square, road)),
-                Direction.TOWARD_A, "May depart did not set the station");
+            assertEquals(wayOf(square, road), Direction.TOWARD_A, "May depart did not set the station");
 
             StationDoors.close(window);
 
@@ -2131,13 +2130,12 @@ public class testStationSettingsWindow
 
         chooseDepartTowardA(window, square, road);
 
-        assertEquals(Components.onTheEventThread(() -> session.getGraph().getDirection(square, road)),
-            Direction.TOWARD_A, "precondition: May depart did not set the station");
+        assertEquals(wayOf(square, road), Direction.TOWARD_A, "precondition: May depart did not set the station");
 
         Components.onTheEventThread(() -> { editor.undo(); return null; });
         Components.settle();
 
-        assertEquals(Components.onTheEventThread(() -> session.getGraph().getDirection(square, road)), Direction.BOTH,
+        assertEquals(wayOf(square, road), Direction.BOTH,
             "the undo did not put May depart back");
 
         StationDoors.close(window);
@@ -2211,8 +2209,7 @@ public class testStationSettingsWindow
 
         chooseDepartTowardA(window, square, road);
 
-        assertEquals(Components.onTheEventThread(() -> session.getGraph().getDirection(square, road)),
-            Direction.TOWARD_A, "a pick did not open the closed station");
+        assertEquals(wayOf(square, road), Direction.TOWARD_A, "a pick did not open the closed station");
 
         StationDoors.close(window);
     }
@@ -2324,6 +2321,12 @@ public class testStationSettingsWindow
         return aPlainStationWhere(each -> session.deadEndSide(each) == null
             && session.getGraph().getDirection(each, session.getRoutes(each).keySet().iterator().next()) == Direction.BOTH,
             "with track on both sides");
+    }
+
+    /** A station road's direction, read on the event thread. */
+    private static Direction wayOf(TileKey square, RouteId road)
+    {
+        return Components.onTheEventThread(() -> session.getGraph().getDirection(square, road));
     }
 
     /** What May depart's first list shows. */

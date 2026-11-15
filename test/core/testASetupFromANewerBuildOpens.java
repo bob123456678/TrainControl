@@ -168,7 +168,7 @@ public class testASetupFromANewerBuildOpens
      * May depart's One Way, as this build writes it, the station's own square's direction (OB-472), is read back after
      * a save and a reopen, here and in 3.0.8, and the railway still builds.
      *
-     * MUTATION: have the setup store skip a direction on an s88 square as it loads, and this fails.
+     * MUTATION: have `AutonomyCompanionStore.readDirectionMap` drop a one-way direction, and this fails.
      */
     @Test
     public void testAOneWayStationReadsBack() throws Exception
