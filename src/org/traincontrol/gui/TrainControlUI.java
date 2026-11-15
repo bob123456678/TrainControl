@@ -167,6 +167,7 @@ import org.traincontrol.gui.widgets.BackupAction;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.gui.widgets.HandScrollListener;
+import org.traincontrol.gui.widgets.LoadingSpinner;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.QuickFileChooser;
@@ -1847,11 +1848,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Saves initialized component database to a file
+     *
+     * @return why UIState.data could not be written, or null when it was
      */
-    public void saveState(boolean backup)
+    public String saveState(boolean backup)
     {
         // A live save captures the session, a backup does not.
-        saveState(backup, !backup);
+        return saveState(backup, !backup);
     }
 
     /**
@@ -1860,9 +1863,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      *
      * @param backup true to write timestamped copies into the backup folder rather than over the live files
      * @param captureSession whether to lift the running layout into the active configuration first; false for a COPY
+     * @return why UIState.data could not be written, or null when it was
      */
-    public void saveState(boolean backup, boolean captureSession)
+    public String saveState(boolean backup, boolean captureSession)
     {
+        String failed = null;
+
         String prefix = backup ? ("backup" + Conversion.convertSecondsToDatetime(System.currentTimeMillis()).replace(':', '-').replace(' ', '_')) : "";
         
         List<Map<Integer,String>> l = new ArrayList<>();
@@ -1909,6 +1915,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.log(keepFailed);
 
                 this.model.logf("ui.errorSavingUiState", keepFailed.toString());
+
+                failed = keepFailed.toString();
             }
         }
 
@@ -1943,6 +1951,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     "ui.errorSavingUiState",
                     iOException.getMessage()
                 );
+
+                failed = String.valueOf(iOException.getMessage());
             }
         }
 
@@ -1989,6 +1999,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // autonomy.json is not written on any layout (OB-254).
 
         saveLayoutTitles();
+
+        return failed;
     }
     
     /**
@@ -2247,20 +2259,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (this.model != null) this.model.clearAutoLayout();
 
             this.forgetTheRailway();
+
+            closeThePageWindows();
         }
 
         this.railwaySource = source;
-    }
-
-    /**
-     * The Download door never reaches `initializeTrackDiagram`, where source switches meet the rule, so it calls this
-     * to keep choosing the downloaded folder from reading as another railway.
-     */
-    void useTheDownloadedLayout(File path)
-    {
-        layoutFolderIs(path.getAbsolutePath());
-
-        sourceIsNow(path.getAbsolutePath());
     }
 
     /**
@@ -2493,10 +2496,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Redraws the page windows whose page was read again (OB-462), each keeping its size and place. */
     private void refreshPopupsWhosePagesWereReadAgain()
     {
+        // Not while the pages are being read again, when one not read yet looks gone
+        if (refreshesUnderWay.get() == 0 && !syncInFlight.get()) closePopupsWhosePagesAreGone();
+
         for (LayoutPopupUI popup : new ArrayList<>(this.popups))
         {
             if (popup.isVisible() && popup.showsAPageReadAgain()) popup.refreshCaptions();
         }
+    }
+
+    /** Closes the page windows whose page the layout no longer has (OB-466). */
+    private void closePopupsWhosePagesAreGone()
+    {
+        for (LayoutPopupUI popup : new ArrayList<>(this.popups))
+        {
+            if (popup.isVisible() && popup.showsAPageThatIsGone()) closePopup(popup);
+        }
+    }
+
+    /** Closes every page window and forgets those remembered for the next start: they show the layout left (OB-466). */
+    private void closeThePageWindows()
+    {
+        for (LayoutPopupUI popup : new ArrayList<>(this.popups)) closePopup(popup);
+
+        for (Integer size : layoutSizes.values()) prefs.remove(LAYOUT_TITLES_PREF + "_" + size);
+    }
+
+    private void closePopup(LayoutPopupUI popup)
+    {
+        popup.close();
+
+        this.popups.remove(popup);
     }
 
     /**
@@ -5668,7 +5698,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Integer tiles = this.layoutSizes.get(String.valueOf(this.SizeList.getSelectedItem()));
 
         if (tiles != null) LayoutLabel.warmUp(this, tiles);
-        
+
         // Render layout now that the UI is visible
         repaintLayout();
         
@@ -5931,6 +5961,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         takeTheKeyboard();
 
         letTheWholeWindowDriveTrains();
+    }
+
+    /**
+     * The hourglass in an empty diagram's place, sized to the page shown, while the build waits for its pictures; the
+     * drawing replaces it (OB-467).  Event thread only.
+     */
+    private void showTheDiagramIsLoadingIfBlank()
+    {
+        if (InnerLayoutPanel.getComponentCount() > 0 || this.model == null || this.model.getLayoutList().isEmpty())
+        {
+            return;
+        }
+
+        LoadingSpinner spinner = new LoadingSpinner();
+        LayoutDiagram page = shownDiagram();
+        Integer tiles = this.layoutSizes.get(String.valueOf(this.SizeList.getSelectedItem()));
+
+        if (page != null && tiles != null)
+        {
+            spinner.setPreferredSize(new Dimension(Math.max(200, page.getSx() * tiles),
+                Math.max(200, page.getSy() * tiles)));
+        }
+
+        InnerLayoutPanel.removeAll();
+        InnerLayoutPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        InnerLayoutPanel.add(spinner);
     }
 
     private KeyEvent theKeyTheMapAlreadySaw;
@@ -14741,9 +14797,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
         
-        model.saveState(false);
-        this.saveState(false);
-        //model.stop();
+        // The only save of the session's locomotive and key page changes: one that fails is asked about until it works
+        // or the user lets it go.
+        Object[] retryOrExit = {I18n.t("ui.exitSaveRetry"), I18n.t("ui.exitWithoutSaving")};
+
+        while (true)
+        {
+            List<String> failed = new ArrayList<>();
+            String why = model.saveState(false);
+
+            if (why != null) failed.add(MarklinControlStation.DATA_FILE_NAME + ": " + why);
+            if ((why = this.saveState(false)) != null) failed.add(DATA_FILE_NAME + ": " + why);
+
+            if (failed.isEmpty() || JOptionPane.showOptionDialog(this, I18n.f("ui.errorExitSaveFailed",
+                String.join("\n", failed)), I18n.t("autolayout.ui.dialogConfirmExit"), JOptionPane.DEFAULT_OPTION,
+                JOptionPane.ERROR_MESSAGE, null, retryOrExit, retryOrExit[0]) == 1) break;
+        }
 
         // The update starts here, or not at all (FR-125), after everything above that can still refuse the exit, or an
         // updater would wait for an exit that never came.  If it cannot start or does not say it is running
@@ -14773,18 +14842,29 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // editor is an unowned frame that disposing this window leaves open, so the next start would believe the
         // process died mid-edit and revert the setup.  After maySettleBeforeExit (its Cancel aborts the exit), before
         // System.exit, which never returns.
-        if (openEditor != null && openEditor.isDisplayable())
+        try
         {
-            // Both halves of a Discard, only now: the setup half cannot go earlier (everything above can still refuse
-            // to exit) nor later (dispose deletes the pre-edit note that is the only other way the discard gets
-            // finished).
-            openEditor.completeExitDiscard();
+            if (openEditor != null && openEditor.isDisplayable())
+            {
+                // Both halves of a Discard, only now: the setup half cannot go earlier (everything above can still
+                // refuse to exit) nor later (dispose deletes the pre-edit note that is the only other way the discard
+                // gets finished).
+                openEditor.completeExitDiscard();
 
-            openEditor.dispose();
+                openEditor.dispose();
+            }
         }
-
-        this.dispose();
-        System.exit(0);
+        catch (RuntimeException e)
+        {
+            this.model.log(e);
+        }
+        finally
+        {
+            // Exits whatever the editor threw: an updater started above holds the update lock until this process ends.
+            // A pre-edit note left behind is put back at the next start, finishing the discard.
+            this.dispose();
+            System.exit(0);
+        }
     }//GEN-LAST:event_WindowClosed
 
     /** Brings the track diagram to the front; does nothing when there is no layout tab or it is disabled (OB-128). */
@@ -15068,6 +15148,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             setLocomotiveWorkInFlight(true);
+
+            final LayoutDiagram before = shownDiagram();
             
             new Thread(() ->
             {
@@ -15097,6 +15179,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     setLocomotiveWorkInFlight(false);
                 });
+
+                followIfReadAgain(before);
 
                 // Left OUT of the pass: both go through their own renderer first.  See singlePass.
                 this.repaintLoc(true, null);
@@ -16015,9 +16099,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         openLayoutFolder(fc.getSelectedFile());
     }//GEN-LAST:event_chooseLocalDataFolderMenuItemActionPerformed
 
-    /** Open Layout after its chooser, which Recent Layouts runs too (FR-145): the folder becomes the layout and loads. */
-    void openLayoutFolder(File folder)
+    /**
+     * Open Layout after its chooser, which Recent Layouts and Download run too (FR-145): the folder becomes the layout
+     * and loads.  False, said to the user, when it does not.
+     */
+    boolean openLayoutFolder(File folder)
     {
+        // Refused before anything changes: a folder that will not read sends the sync back to the station's layout
+        if (!org.traincontrol.marklin.file.CS2File.holdsALayout(folder))
+        {
+            JOptionPane.showMessageDialog(this, I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
+
+            return false;
+        }
+
         layoutFolderIs(folder.getPath());
 
         applyLayoutEditingAvailability();
@@ -16051,6 +16146,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
                 }
             });
+
+        // BusyDialog.run returns once its event-thread half has run, so this is the answer it took
+        return !this.model.getLayoutList().isEmpty() && this.isLocalLayout();
     }
 
     private void showCurrentLayoutFolderMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showCurrentLayoutFolderMenuItemActionPerformed
@@ -16430,6 +16528,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     private void layoutRefreshCompleteInternal()
     {
+        followThePagesReadAgain();
+
+        this.repaintLayout();
+
+        // Before the redraw, which would put a gone page's window on whichever page took its place
+        closePopupsWhosePagesAreGone();
+
+        this.updatePopups(true);
+
+        setEditLayoutEnabled(true);
+
+        // Revert preference
+        windowAlwaysOnTopMenuItemActionPerformed(null);
+
+        // Revert preference for graph UI
+    }
+
+    /** The page list and the autonomy setup follow pages read again as new objects, as after a page edit. */
+    private void followThePagesReadAgain()
+    {
         int oldIndex = this.LayoutList.getSelectedIndex();
 
         // Update list of pages
@@ -16457,17 +16575,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Quietly: a modal here would be about a configuration the user never asked to reload.
             getAutonomyViewerPanel().load(wasRunning, false);
         }
-
-        this.repaintLayout();
-
-        this.updatePopups(true);
-        
-        setEditLayoutEnabled(true);
-        
-        // Revert preference
-        windowAlwaysOnTopMenuItemActionPerformed(null);
-        
-        // Revert preference for graph UI
     }
 
     /**
@@ -16528,12 +16635,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            LayoutPopupUI popup = new LayoutPopupUI(
-                this.model.getLayout(layoutName),
-                size,
-                this,
-                this.LayoutList.getSelectedIndex()
-            );
+            LayoutPopupUI popup = new LayoutPopupUI(this.model.getLayout(layoutName), size, this);
 
             popup.render();
             popups.add(popup);
@@ -18496,7 +18598,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         String currentName = pair[0];
                         String newName = pair[1];
 
-                        int response = JOptionPane.showOptionDialog(
+                        // A name another locomotive holds is asked about once, below, in the delete door's question,
+                        // which counts the routes that lose commands and starts on No
+                        int response = model.getLocByName(newName) != null ? JOptionPane.YES_OPTION
+                            : JOptionPane.showOptionDialog(
                             this,
                             I18n.f(
                                 "loc.ui.confirmRenameLocomotive",
@@ -18535,7 +18640,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                             // Check if the target loc already exists
                             Locomotive l2 = model.getLocByName(newName);
                             
-                            if (l2 != null) deleteLoc(newName);
+                            if (l2 != null) this.locomotiveActions.deleteLocBecause(
+                                I18n.f("loc.ui.confirmRenameOntoLocomotive", currentName, newName), newName, this);
                             
                             l2 = model.getLocByName(newName);
                             
@@ -19768,6 +19874,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     synchronized public void updateVisiblePoints()
     {
+        // A follow a run held back, asked again on the event thread now that the railway may be idle
+        if (this.pagesToFollow) SwingUtilities.invokeLater(this::followThePagesIfChanged);
+
         // With nothing loaded the covered track is emptied, and the wash with it.
         if (!this.model.hasAutoLayout())
         {
@@ -21514,6 +21623,71 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return page == null ? null : this.model.getLayout(page.toString());
     }
 
+    /** After a sync: where the model holds `before`'s page as a new object, the pages are compared, posted. */
+    private void followIfReadAgain(LayoutDiagram before)
+    {
+        if (before != null && before != this.model.getLayout(before.getName()))
+            SwingUtilities.invokeLater(this::followThePagesIfChanged);
+    }
+
+    /** Pages read again that changed while a run held the setup, followed once it no longer does. */
+    private volatile boolean pagesToFollow = false;
+
+    /**
+     * The page list and the setup follow pages read again that differ from the ones they hold, but never under a run:
+     * there the follow is owed until the run ends (`updateVisiblePoints`), as a page edit waits.  Unchanged pages are
+     * left alone, as following resets the session and reloads the configuration.
+     */
+    void followThePagesIfChanged()
+    {
+        if (!this.pagesToFollow && !thePagesChanged()) return;
+
+        this.pagesToFollow = aRunHoldsTheSetup();
+
+        if (!this.pagesToFollow) followThePagesReadAgain();
+    }
+
+    /** Whether the model's pages differ from the page list's names or, by their text, from the setup's pages. */
+    private boolean thePagesChanged()
+    {
+        List<String> names = this.model.getLayoutList();
+
+        javax.swing.ListModel<?> listed = this.LayoutList.getModel();
+
+        if (listed.getSize() != names.size()) return true;
+
+        for (int i = 0; i < names.size(); i++)
+        {
+            if (!names.get(i).equals(String.valueOf(listed.getElementAt(i)))) return true;
+        }
+
+        if (this.autonomySession == null) return false;
+
+        if (this.autonomySession.getPages().size() != names.size()) return true;
+
+        for (LayoutDiagram page : this.autonomySession.getPages())
+        {
+            LayoutDiagram now = this.model.getLayout(page.getName());
+
+            if (now == null || (now != page && !sameText(page, now))) return true;
+        }
+
+        return false;
+    }
+
+    /** Whether two pages save to the same text; false where either will not export. */
+    private static boolean sameText(LayoutDiagram a, LayoutDiagram b)
+    {
+        try
+        {
+            return a.exportToCS2TextFormat().equals(b.exportToCS2TextFormat());
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+    }
+
     /**
      * After a route write or a sync: rebuilt where the pages were read again (a local folder's edits), else only the
      * route squares bound again.
@@ -21522,6 +21696,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (before == null || before != shownDiagram())
         {
+            followIfReadAgain(before);
+
             repaintLayout();
 
             return;
@@ -21601,6 +21777,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // repaintPathLabel must not run from inside the submission below: it would queue behind LayoutGridRenderer (one
         // thread), whose rebuild is the slow part of a CS sync, leaving the menu item enabled that long (OB-094).
         repaintPathLabel();
+
+        // Posted before the build, which waits for the pictures first
+        if (SwingUtilities.isEventDispatchThread()) showTheDiagramIsLoadingIfBlank();
+        else SwingUtilities.invokeLater(this::showTheDiagramIsLoadingIfBlank);
 
         this.LayoutGridRenderer.submit(() ->
         {

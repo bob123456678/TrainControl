@@ -236,6 +236,45 @@ public class testCancelRestoresPlacements
     }
 
     /**
+     * The note is rewritten by a whole new file moved into place, not over itself: written in place, a write cut off
+     * part way leaves a note that does not read, and the next start then keeps the editor's unsaved edits.  A reader
+     * that opened the note before the rename still reads the old note through its handle only when a new file replaced
+     * it.
+     *
+     * MUTATION: in `AutonomyCompanionStore.rewriteTheUnfinishedEditNote`, drop the `Util.writeAtomically` attempt, and
+     * the note is written in place.
+     */
+    @Test
+    public void testARenameReplacesTheNoteRatherThanWritingOverIt() throws IOException
+    {
+        furnished();
+
+        assertTrue(session.beginEditSession(), "the note was not written, so nothing below tests it");
+
+        File note;
+
+        try (java.util.stream.Stream<java.nio.file.Path> found = Files.walk(layout.toPath()))
+        {
+            note = found.filter(path -> path.getFileName().toString().equals("setup-before-edit.json")).findFirst()
+                .orElseThrow(() -> new AssertionError("no pre-edit note under " + layout)).toFile();
+        }
+
+        // NIO opens with delete sharing, so the handle does not stop a move over the file
+        try (java.io.InputStream before = Files.newInputStream(note.toPath()))
+        {
+            session.getStore().locomotiveRenamed("BR 218", "BR 218 II");
+
+            assertTrue(new String(Files.readAllBytes(note.toPath()), java.nio.charset.StandardCharsets.UTF_8)
+                .contains("BR 218 II"), "precondition: the rename did not reach the note");
+
+            String throughTheOldHandle = new java.util.Scanner(before, "UTF-8").useDelimiter("\\A").next();
+
+            assertFalse(throughTheOldHandle.contains("BR 218 II"), "the note was written over itself, so a write cut"
+                + " off part way leaves a note that does not read, and the next start keeps the unsaved edits");
+        }
+    }
+
+    /**
      * An editing session that DID end leaves nothing behind to revert (OB-108).  The control for the test above: if a
      * clean Save left the note behind, the next start would throw away the edit the user just saved.  Both endings
      * are checked, because the editor wires them separately.

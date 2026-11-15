@@ -579,6 +579,24 @@ final class LocomotiveActions
         deleteLoc(value, evt != null ? (Component) evt.getSource() : this.ui.dialogParent());
     }
 
+    /** As {@link #deleteLoc(String, Component)}, its one question led by `why`, the step the deletion is for. */
+    boolean deleteLocBecause(String why, String value, Component source)
+    {
+        this.because = why;
+
+        try
+        {
+            return deleteLoc(value, source);
+        }
+        finally
+        {
+            this.because = null;
+        }
+    }
+
+    /** Set, on the event thread, only for the length of `deleteLocBecause`. */
+    private String because = null;
+
     /** Deletes a locomotive from the database after the question, from any door; true when it was deleted. */
     boolean deleteLoc(String value, Component source)
     {
@@ -614,7 +632,7 @@ final class LocomotiveActions
 
         if (JOptionPane.YES_OPTION == JOptionPane.showOptionDialog(
                 source,
-                question,
+                this.because == null ? question : this.because + "\n\n" + question,
                 I18n.t("layout.ui.dialogPleaseConfirm"),
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.PLAIN_MESSAGE,

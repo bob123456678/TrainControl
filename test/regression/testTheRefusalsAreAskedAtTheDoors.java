@@ -142,6 +142,8 @@ public class testTheRefusalsAreAskedAtTheDoors
             "Create New Layout switches the layout folder, syncs with the Central Station and resets autonomy (RSA13-B2); under an open editor it switched first and was refused at the sync"},
         {"    void downloadCSLayoutMenuItemActionPerformed(", EDITOR,
             "Download Central Station Layout switches the layout to the downloaded folder, under an open editor as well"},
+        {"    private void downloadAndOpen(", EDITOR,
+            "the downloaded copy is opened after the fetch, which runs behind a spinner; asked again then"},
 
         // The Autonomy tab's Manage list and the configuration list's right-click menu, which the menu bar grays and
         // these doors must refuse by themselves.

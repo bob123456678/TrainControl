@@ -117,18 +117,23 @@ public class testAFeedbackChangeIsAnnounced
             + "was invisible to a route being recorded (W21-B1). What was announced: " + announced);
     }
 
-    /**
-     * A sensor frame from the station: `was` and `is` the old and new state, equal in an answer to a query, marked
-     * when `resync` as the proxy marks the answer to its own query.
-     */
-    private static void parse(MarklinFeedback feedback, int address, int was, int is, boolean resync)
+    /** A sensor frame from the station: `was` and `is` the old and new state, equal in an answer to a query. */
+    private static void parse(MarklinFeedback feedback, int address, int was, int is)
     {
-        CS2Message frame = new CS2Message(CS2Message.CMD_ACC_SENSOR, 0x7b34, true,
-            new byte[] {0, 2, (byte) (address >> 8), (byte) address, (byte) was, (byte) is, 0, 0});
+        feedback.parseMessage(new CS2Message(CS2Message.CMD_ACC_SENSOR, 0x7b34, true,
+            new byte[] {0, 2, (byte) (address >> 8), (byte) address, (byte) was, (byte) is, 0, 0}));
+    }
 
-        if (resync) frame.markAnswersAResync();
+    /**
+     * Sets the proxy as in a state confirmation's pass (`asks` above 0) of a station that is asked for sensor states
+     * (`learnsDevices`, a CS3), without a station to ask: the pass itself is the sync claims'.
+     */
+    private static void passUnderWay(boolean cs3, boolean on) throws Exception
+    {
+        Object proxy = Reflect.get(MarklinControlStation.class, model, "NetworkInterface");
 
-        feedback.parseMessage(frame);
+        Reflect.set(proxy.getClass(), proxy, "learnsDevices", cs3 && on);
+        Reflect.set(proxy.getClass(), proxy, "asks", on ? 1 : 0);
     }
 
     /** Sets a sensor occupied by a live event, which is announced and logged, and clears both records. */
@@ -138,7 +143,7 @@ public class testAFeedbackChangeIsAnnounced
         announced.clear();
         logged.clear();
 
-        parse(feedback, address, 0, 1, false);
+        parse(feedback, address, 0, 1);
         assertEquals(announced, Arrays.asList(address + "=true"), "a live event was not announced");
         assertTrue(!logged.isEmpty(), "a live event was not logged");
 
@@ -150,24 +155,34 @@ public class testAFeedbackChangeIsAnnounced
     }
 
     /**
-     * The answer to a resync's query that confirms the state, as a resync after a lost connection gets for every
-     * sensor, is no change: not announced, so the route editor's capture does not take it, and not logged.
+     * During a CS3's state confirmation, an answer that confirms the state, as every sensor's does, is no change: not
+     * announced, so the route editor's capture does not take it, and not logged.
      *
-     * MUTATION: in `MarklinFeedback.parseMessage`, take out `if (m.answersAResync() && was == (state == 1)) return;`.
+     * MUTATION: in `MarklinFeedback.parseMessage`, take out `if (asking && was == (state == 1)) return;`.
      */
     @Test
     public void testAnAnswerThatConfirmsTheStateIsNotAnnounced() throws Exception
     {
         MarklinFeedback feedback = occupiedByAnEvent(8893);
 
-        parse(feedback, 8893, 1, 1, true);
+        passUnderWay(true, true);
+
+        try
+        {
+            parse(feedback, 8893, 1, 1);
+        }
+        finally
+        {
+            passUnderWay(true, false);
+        }
 
         assertTrue(announced.isEmpty(), "an answer that changed nothing was announced: " + announced);
         assertTrue(logged.isEmpty(), "an answer that changed nothing was logged: " + logged);
     }
 
     /**
-     * An answer that corrects a wrong state is a real change, and is announced and logged as an event is.
+     * An answer that corrects a wrong state is a real change also during the confirmation, and is announced and
+     * logged as an event is.
      *
      * MUTATION: in `MarklinFeedback.parseMessage`, take out ` && was == (state == 1)`.
      */
@@ -176,26 +191,55 @@ public class testAFeedbackChangeIsAnnounced
     {
         MarklinFeedback feedback = occupiedByAnEvent(8894);
 
-        parse(feedback, 8894, 0, 0, true);
+        passUnderWay(true, true);
+
+        try
+        {
+            parse(feedback, 8894, 0, 0);
+        }
+        finally
+        {
+            passUnderWay(true, false);
+        }
 
         assertEquals(announced, Arrays.asList("8894=false"), "an answer that cleared the sensor was not announced");
         assertTrue(!logged.isEmpty(), "an answer that cleared the sensor was not logged");
     }
 
     /**
-     * Over UDP only, as with a CS2, nothing is marked: a frame of no change is announced and logged as before FR-186.
+     * Outside a confirmation, a frame of no change is a real event: announced and logged as before FR-186.  So is it on
+     * a CS2, which is never asked, even with a pass counted (a CS2's resync asks no one), and no state it changes is a
+     * correction, which `isFeedbackCorrected` says no route may take.
      *
-     * MUTATION: in `MarklinFeedback.parseMessage`, `m.answersAResync() && ` to `m.getData()[4] == m.getData()[5] && `.
+     * MUTATION: in `MarklinFeedback.parseMessage`, `asking && was` to `answer && was`.  And: in `NetworkProxy.isAsking`,
+     * take out `this.learnsDevices && `.
      */
     @Test
     public void testOverUdpOnlyAFrameOfNoChangeIsAnnouncedAsBefore() throws Exception
     {
         MarklinFeedback feedback = occupiedByAnEvent(8895);
 
-        parse(feedback, 8895, 1, 1, false);
+        parse(feedback, 8895, 1, 1);
 
         assertEquals(announced, Arrays.asList("8895=true"), "a frame of no change was not announced as before");
         assertTrue(!logged.isEmpty(), "a frame of no change was not logged as before");
+
+        // A CS2 with a pass counted
+        passUnderWay(false, true);
+        announced.clear();
+
+        try
+        {
+            parse(feedback, 8895, 1, 1);
+            parse(feedback, 8895, 1, 0);
+            assertTrue(!model.isFeedbackCorrected("8895"), "a CS2's change was taken for a correction");
+        }
+        finally
+        {
+            passUnderWay(false, false);
+        }
+
+        assertEquals(announced, Arrays.asList("8895=true", "8895=false"), "a CS2's frames were not all announced");
     }
 
     /**

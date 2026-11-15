@@ -58,6 +58,7 @@ import org.traincontrol.base.RemoteDeviceCollection;
 import org.traincontrol.base.RenameProposals;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.RouteCommand;
+import org.traincontrol.gui.LocomotiveSettings;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.marklin.file.UnreadableAnswerException;
@@ -843,9 +844,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else if (!feedbackAddresses.isEmpty())
         {
+            // A sensor a route waits on or asks about is kept, drawn or not: a route's monitor waits on the record
+            Set<Integer> routesUse = sensorsTheRoutesUse();
+
             for (Integer feedbackId : this.feedbackDB.getItemIds())
             {
-                if (!feedbackAddresses.contains(feedbackId))
+                if (!feedbackAddresses.contains(feedbackId) && !routesUse.contains(feedbackId))
                 {
                     MarklinFeedback fb = this.feedbackDB.getById(feedbackId);
                     this.logf("layout.pruningFeedbackMissingLayout", fb.getName());
@@ -855,6 +859,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
     }
     
+    /** The sensors the routes trigger on or name in a condition. */
+    private Set<Integer> sensorsTheRoutesUse()
+    {
+        Set<Integer> used = new HashSet<>();
+
+        for (MarklinRoute r : this.routeDB.getItems())
+        {
+            if (r.hasS88()) used.add(r.getS88());
+
+            if (!r.hasConditions()) continue;
+
+            for (RouteCommand rc : NodeExpression.toList(r.getConditions()))
+            {
+                if (rc.isFeedback()) used.add(rc.getAddress());
+            }
+        }
+
+        return used;
+    }
+
     /**
      * Delays until the power state matches the specified state
      * @throws InterruptedException 
@@ -1332,6 +1356,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         for (MarklinLocomotive l : parsedLocs) parsedCountByAddress.merge(l.getIntUID(), 1, Integer::sum);
 
+        Set<String> stationNames = new HashSet<>();
+
+        for (MarklinLocomotive l : parsedLocs) stationNames.add(l.getName());
+
         for (MarklinLocomotive l : parsedLocs)
         {
             List<MarklinLocomotive> matches = byAddress.get(l.getIntUID());
@@ -1352,6 +1380,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // the locomotive the first had just renamed.
             if (matches.size() > 1)
             {
+                // Except a pair whose other name the station no longer has: renamed at the station, or renamed here
+                // and given back its station name by the sync.  The station's name wins; the other is renamed onto it.
+                MarklinLocomotive dropped = renamedAwayFrom(l.getName(), matches, stationNames);
+
+                if (dropped != null)
+                {
+                    renameCandidates.add(new String[] {dropped.getName(), l.getName()});
+                    continue;
+                }
+
                 this.logf("loc.renameAmbiguousDuplicateAddress", l.getName(), matches.size());
                 refused++;
                 continue;
@@ -1372,6 +1410,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
         refused += renameCandidates.size() - ordered.size();
 
         return new RenameProposals(ordered, refused);
+    }
+
+    /** Of two locomotives at one address, one named `stationName`: the other, when the station has no such name. */
+    private static MarklinLocomotive renamedAwayFrom(String stationName, List<MarklinLocomotive> pair,
+        Set<String> stationNames)
+    {
+        if (pair.size() != 2) return null;
+
+        for (int i = 0; i < 2; i++)
+        {
+            if (pair.get(i).getName().equals(stationName) && !stationNames.contains(pair.get(1 - i).getName()))
+            {
+                return pair.get(1 - i);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -1993,8 +2048,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Deferred while anything is running (OB-287): setAddress changes which decoder this locomotive commands,
             // so applying it mid-run sends every later command to a different engine while the graph tracks this one;
             // a sync is triggered from a dozen places, so the check belongs here.  AND WHILE A ROUTE DRIVES IT: a route
-            // sends commands by name with delays between, so an adopted address would send the rest elsewhere.
-            if (this.isAutonomyRunning() || this.runningRouteDriving(l.getName()) != null)
+            // sends commands by name with delays between, so an adopted address would send the rest elsewhere.  And
+            // while it has a speed, as at Locomotive Settings: Stop would command the new address, the train the old.
+            if (this.isAutonomyRunning() || this.runningRouteDriving(l.getName()) != null
+                || LocomotiveSettings.hasSpeed(this, this.locDB.getByName(l.getName())))
             {
                 this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
             }
@@ -2122,9 +2179,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Saves initialized component database to a file
+     *
+     * @return why it could not be written, or null when it was
      */
     @Override
-    public void saveState(boolean backup)
+    public String saveState(boolean backup)
     {
         String prefix = backup ? ("backup" + Conversion.convertSecondsToDatetime(System.currentTimeMillis()).replace(':', '-').replace(' ', '_')) : "";
         
@@ -2170,7 +2229,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
                 this.logf("log.databaseSaveFailed", keepFailed.toString());
 
-                return;
+                return keepFailed.toString();
             }
         }
 
@@ -2195,10 +2254,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             });
 
             this.logf("log.savingDatabaseState", new File(path).getAbsolutePath());
+
+            return null;
         }
         catch (IOException iOException)
         {
             this.logf("log.databaseSaveFailed", iOException.getMessage());
+
+            return String.valueOf(iOException.getMessage());
         }
     }
     
@@ -2736,7 +2799,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return false;
     }
     
-    /** Whether a sensor's state was last changed by a query's answer, not an edge: no route fires on it (OB-418). */
+    /** Whether a CS3's sensor state confirmation after a connect or reconnect is under way (D133): no route fires. */
+    public final boolean isConfirming()
+    {
+        return this.NetworkInterface != null && this.NetworkInterface.isConfirming();
+    }
+
+    /** Whether any pass of sensor queries to a CS3, a sync's included, is under way. */
+    final boolean isAskingSensors()
+    {
+        return this.NetworkInterface != null && this.NetworkInterface.isAsking();
+    }
+
+    /** Whether a sensor's state was last changed during a state confirmation, not an edge: no route fires on it. */
     public final boolean isFeedbackCorrected(String name)
     {
         MarklinFeedback fb = this.feedbackDB.getByName(name);
@@ -4254,13 +4329,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
-        if (!byId && folder != null && new File(folder, "config/gleisbild.cs2").isFile()) convertLinksToPageIds(folder);
+        if (!byId && folder != null && CS2File.holdsALayout(new File(folder))) convertLinksToPageIds(folder);
     }
 
     /**
      * Writes each arrow's page ID, as just resolved, into its page's file and marks the layout, so that from now on the
-     * ID decides; every arrow goes where it went.  Not marked if a page could not be written, so the next open tries
-     * again with the old reading.
+     * ID decides; every arrow goes where it went.  Not marked if a page could not be read or written, so the next open
+     * tries again with the old reading.
      */
     private void convertLinksToPageIds(String folder)
     {

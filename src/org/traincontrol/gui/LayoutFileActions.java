@@ -18,6 +18,7 @@ import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.swing.JFileChooser;
@@ -28,7 +29,9 @@ import org.traincontrol.automationui.LayoutPageEdit;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.QuickFileChooser;
+import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 
@@ -661,13 +664,20 @@ final class LayoutFileActions
                 // Asked again, as Create New Layout does
                 if (this.ui.refuseWhileEditorOpen()) return;
 
-                JOptionPane.showMessageDialog(
-                    this.ui,
-                    I18n.t("layout.ui.infoChooseFolderForCentralStationDownload")
-                );
+                // One at a time: a press queued before the spinner went up runs inside its modal loop
+                if (!this.downloading.compareAndSet(false, true))
+                {
+                    JOptionPane.showMessageDialog(this.ui, I18n.t("layout.ui.infoDownloadAlreadyRunning"));
+                    return;
+                }
 
                 try
                 {
+                    JOptionPane.showMessageDialog(
+                        this.ui,
+                        I18n.t("layout.ui.infoChooseFolderForCentralStationDownload")
+                    );
+
                     // Prompt the user to choose a folder
                     JFileChooser fc = new QuickFileChooser(
                         TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, new File(".").getAbsolutePath())
@@ -675,39 +685,15 @@ final class LayoutFileActions
 
                     fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 
-                    int i = fc.showOpenDialog(this.ui);
-
-                    if (i == JFileChooser.APPROVE_OPTION)
+                    if (fc.showOpenDialog(this.ui) == JFileChooser.APPROVE_OPTION && replaceIfAsked(fc.getSelectedFile()))
                     {
-                        File path = fc.getSelectedFile();
-
-                        this.ui.getModel().downloadLayout(path);
-
-                        // Load the layout - the source a later switch of source compares with, too
-                        this.ui.useTheDownloadedLayout(path);
-
-                        // The editing controls answer differently now (OB-126): this is what decides whether
-                        // there is a layout of his own to edit.
-                        this.ui.applyLayoutEditingAvailability();
-                        this.ui.syncWithCS2();
-                        this.ui.repaintLayout();
-                        this.ui.showLayoutTab();
-
-                        JOptionPane.showMessageDialog(
-                            this.ui,
-                            I18n.f("layout.ui.infoDownloadCompleteLayoutSavedIn", path.getAbsolutePath())
-                        );
+                        downloadAndOpen(fc.getSelectedFile());
                     }
                 }
-                catch (Exception e)
+                finally
                 {
-                    this.ui.getModel().logf("layout.errorDownloadingCentralStationLayout");
-                    this.ui.getModel().log(e);
-
-                    JOptionPane.showMessageDialog(
-                        this.ui,
-                        I18n.f("layout.ui.errorDownloadFailedWithMessage", e.getMessage())
-                    );
+                    // After the whole download: BusyDialog.run returns once its event-thread half has run
+                    this.downloading.set(false);
                 }
             });
         } 
@@ -718,6 +704,68 @@ final class LayoutFileActions
                 I18n.t("layout.ui.errorNoCentralStationLayoutAvailable")
             );
         }
+    }
+
+    /** Whether a download from the station is under way, from its folder chooser to the copy opened. */
+    private final AtomicBoolean downloading = new AtomicBoolean();
+
+    /** False when `folder` holds a layout and the user would not replace it; asked before anything is fetched. */
+    private boolean replaceIfAsked(File folder)
+    {
+        if (!CS2File.holdsALayout(folder)) return true;
+
+        Object[] options = {I18n.t("layout.ui.replace"), I18n.t("ui.cancel")};
+
+        return JOptionPane.showOptionDialog(this.ui,
+            I18n.f("layout.ui.confirmReplaceLayoutInFolder", folder.getAbsolutePath()),
+            I18n.t("layout.ui.titleReplaceLayout"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            options, options[1]) == 0;
+    }
+
+    /** Fetches the station's layout into `path` off the event thread, behind a spinner, then opens the copy. */
+    private void downloadAndOpen(File path)
+    {
+        // Held rather than thrown: the work half must not raise a dialog
+        final Exception[] failed = new Exception[1];
+
+        BusyDialog.run(this.ui, I18n.t("layout.ui.busyDownloadingLayout"), () ->
+        {
+            try
+            {
+                this.ui.getModel().downloadLayout(path);
+            }
+            catch (Exception e)
+            {
+                failed[0] = e;
+            }
+        }, () ->
+        {
+            if (failed[0] != null)
+            {
+                this.ui.getModel().logf("layout.errorDownloadingCentralStationLayout");
+                this.ui.getModel().log(failed[0]);
+
+                JOptionPane.showMessageDialog(
+                    this.ui,
+                    I18n.f("layout.ui.errorDownloadFailedWithMessage", failed[0].getMessage())
+                );
+            }
+            // An editor on its way meanwhile must not see the switch; the copy stays on disk for Open Layout
+            else if (!this.ui.refuseWhileEditorOpen())
+            {
+                // Opened as Open Layout opens a folder, which checks it first, says why when it will not open, and
+                // otherwise rebuilds the page list, the autonomy session and the Autonomy menu and records the source
+                if (this.ui.openLayoutFolder(path.getAbsoluteFile()))
+                {
+                    this.ui.showLayoutTab();
+
+                    JOptionPane.showMessageDialog(
+                        this.ui,
+                        I18n.f("layout.ui.infoDownloadCompleteLayoutSavedIn", path.getAbsolutePath())
+                    );
+                }
+            }
+        });
     }
 
     /** Every page of the local layout, as objects, in the order the window lists them. */

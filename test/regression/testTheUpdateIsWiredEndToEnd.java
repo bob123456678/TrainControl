@@ -239,6 +239,35 @@ public class testTheUpdateIsWiredEndToEnd
     }
 
     /**
+     * Once the updater is started the exit ends whatever the open editor's discard throws: the updater holds the update
+     * lock until this process ends, and an exit that returned instead would leave it held, every later Download &amp;
+     * Update refused as already under way.  Pinned by reading: the exit cannot be run to its end in a test.
+     *
+     * MUTATION: take `System.exit(0)` out of the `finally` around the editor's discard, and this fails.
+     */
+    @Test
+    public void testTheExitEndsEvenWhenTheEditorThrows() throws Exception
+    {
+        String exit = bodyOf("private void WindowClosed(java.awt.event.WindowEvent evt)");
+
+        inOrder(exit, "the exit", "SelfUpdate.startUpdater(", "completeExitDiscard()", "finally", "System.exit(0)");
+
+        String last = exit.substring(exit.indexOf("finally", exit.indexOf("completeExitDiscard()")));
+
+        int depth = 0;
+        int end = -1;
+
+        for (int i = last.indexOf('{'); i >= 0 && i < last.length() && end < 0; i++)
+        {
+            if (last.charAt(i) == '{') depth++;
+            if (last.charAt(i) == '}' && --depth == 0) end = i;
+        }
+
+        assertTrue(end > 0 && last.substring(0, end).contains("System.exit(0)"), "the exit after the editor's discard"
+            + " is not in a finally, so a discard that throws leaves the update lock held");
+    }
+
+    /**
      * The update's last step waits out an open dialog, asks what the Auto tab asks, and leaves through the exit with
      * the update armed only for as long as that exit runs; the update is one at a time from its question on.  Pinned
      * by reading.

@@ -1072,8 +1072,7 @@ public class AutonomyCompanionStore
 
         if (note == null || !change.test(note)) return;
 
-        // In place, not through rememberBeforeEdit (its atomic move needs DELETE access, which a OneDrive lock
-        // withholds); serialized BEFORE opening the stream, which truncates.
+        // Serialized BEFORE any stream is opened, as the in-place write below truncates.
         byte[] bytes;
 
         try
@@ -1087,11 +1086,20 @@ public class AutonomyCompanionStore
             return;
         }
 
+        try
+        {
+            Util.writeAtomically(beforeEditFile(), out -> out.write(bytes));
+
+            return;
+        }
+        catch (IOException staged)
+        {
+            // In place only when the staged move is refused (a OneDrive lock withholds the DELETE access it needs)
+        }
+
         try (FileOutputStream out = new FileOutputStream(beforeEditFile()))
         {
             out.write(bytes);
-
-            out.flush();
         }
         catch (IOException | RuntimeException couldNotWrite)
         {

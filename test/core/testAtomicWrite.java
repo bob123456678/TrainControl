@@ -122,7 +122,7 @@ public class testAtomicWrite
                 + "lost with one log line while the corrupt file stays put for the next run (AC3-B1)");
 
             // AND NO STAGING FILE LEFT BESIDE IT, which the same probe found.
-            assertFalse(new java.io.File(folder, "LocDB.data.part").exists(),
+            assertEquals(folder.list((at, name) -> name.endsWith(Util.PARTIAL_DOWNLOAD_SUFFIX)).length, 0,
                 "the staging file was left behind beside the target");
         }
         finally
@@ -224,9 +224,8 @@ public class testAtomicWrite
         {
         }
 
-        File staging = new File(target.getAbsolutePath() + Util.PARTIAL_DOWNLOAD_SUFFIX);
-
-        assertFalse(staging.exists(), "the staging file must be cleaned up: " + staging);
+        assertEquals(dir.toFile().list((at, name) -> name.endsWith(Util.PARTIAL_DOWNLOAD_SUFFIX)), new String[0],
+            "the staging file must be cleaned up");
     }
 
     /**
@@ -321,5 +320,241 @@ public class testAtomicWrite
 
         assertFalse(entries.contains("NotThere.data"),
             "a source that does not exist was added as an empty entry rather than skipped");
+    }
+
+    /**
+     * A file the backup cannot read (a sync client holding a lock on it) is named and left out, not stored as an empty
+     * entry that a restore would write over the real file.
+     *
+     * MUTATION: in `Util.addToZip`, begin the entry before reading the file, and an empty entry is left.
+     */
+    @Test
+    public void testAFileThatWillNotReadLeavesNoEmptyEntry() throws Exception
+    {
+        File locked = new File(dir.toFile(), "setup.json");
+
+        Files.write(locked.toPath(), "{}".getBytes(StandardCharsets.UTF_8));
+
+        java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
+
+        state.put("state.dat", target);
+        state.put("setup.json", locked);
+
+        File zip = new File(dir.toFile(), "backup.zip");
+
+        List<String> failed;
+
+        try (java.io.RandomAccessFile file = new java.io.RandomAccessFile(locked, "rw");
+            java.nio.channels.FileLock lock = file.getChannel().lock())
+        {
+            failed = Util.zipInto(zip, state);
+        }
+
+        assertEquals(failed.size(), 1, "the locked file was not named as left out: " + failed);
+        assertTrue(failed.get(0).startsWith("setup.json"), "the wrong file was named: " + failed);
+
+        assertEquals(entriesOf(zip), Arrays.asList("state.dat"), "the file that could not be read is in the archive"
+            + " as an empty entry, which a restore writes over the real file");
+    }
+
+    /**
+     * An archive is written under another name and moved to its own once whole, so a backup cut off part way (the
+     * program closed under it) leaves no file that looks like a backup.  Watched from inside the write: the source's
+     * `exists()` asks whether anything is under the archive's name yet.
+     *
+     * MUTATION: in `Util.zipInto`, write the zip straight to its name, and the name exists while it is written.
+     */
+    @Test
+    public void testAnArchiveHasItsNameOnlyOnceWhole() throws Exception
+    {
+        File zip = new File(dir.toFile(), "backup.zip");
+
+        boolean[] namedWhileWriting = {false};
+
+        File watched = new File(target.getPath())
+        {
+            @Override
+            public boolean isFile()
+            {
+                namedWhileWriting[0] |= zip.exists();
+
+                return super.isFile();
+            }
+
+            @Override
+            public boolean isDirectory()
+            {
+                namedWhileWriting[0] |= zip.exists();
+
+                return super.isDirectory();
+            }
+        };
+
+        java.util.Map<String, File> state = new java.util.LinkedHashMap<>();
+
+        state.put("state.dat", watched);
+
+        assertEquals(Util.zipInto(zip, state), new java.util.ArrayList<String>(), "the archive reported failures");
+
+        assertFalse(namedWhileWriting[0], "the archive was under its own name while it was still being written, so a"
+            + " backup cut off part way looks like a whole one");
+
+        assertEquals(entriesOf(zip), Arrays.asList("state.dat"), "the archive is not whole once written");
+    }
+
+    /**
+     * The staged write forces its bytes to disk before it moves them over the target: renamed first, a power cut can
+     * leave the target empty with the old file already gone.  Read, not run: a power cut cannot be staged.
+     *
+     * MUTATION: drop the `force(true)` from `Util.writeAtomically`, and this fails.
+     */
+    @Test
+    public void testTheStagedWriteReachesTheDiskBeforeTheMove() throws Exception
+    {
+        String body = support.SourceOf.withoutComments(support.SourceOf.body(
+            "public static void writeAtomically(File target, StreamWriter body)"));
+
+        int forced = Math.max(body.indexOf("getFD().sync()"), body.indexOf(".force(true)"));
+
+        assertTrue(forced >= 0 && forced < body.indexOf("Files.move("), "the staged file is moved over the target"
+            + " without first being forced to disk");
+    }
+
+    /**
+     * Two writes of one file at once (the exit's save and a backup's first save) each get a staging file of their own:
+     * sharing one, the second's move fails on the first's open handle, or moves the first's half-written file into
+     * place.  Staged by a second write from inside the first; both succeed, the last to finish wins, whole.
+     *
+     * MUTATION: in `Util.writeAtomically`, stage at `target + ".part"` again, and the inner write fails.
+     */
+    @Test
+    public void testTwoWritesOfOneFileAtOnceDoNotShareAStagingFile() throws Exception
+    {
+        Util.writeAtomically(target, out ->
+        {
+            out.write("outer, ".getBytes(StandardCharsets.UTF_8));
+
+            Util.writeAtomically(target, inner -> inner.write("inner".getBytes(StandardCharsets.UTF_8)));
+
+            assertEquals(new String(Files.readAllBytes(target.toPath()), StandardCharsets.UTF_8), "inner",
+                "the overlapping write did not reach the file");
+
+            out.write("whole".getBytes(StandardCharsets.UTF_8));
+        });
+
+        assertEquals(contents(), "outer, whole", "the write that finished last is not the file, whole");
+    }
+
+    /**
+     * A drive that refuses to force the staged file to disk still gets the file, and says so in the log once, not at
+     * every save: refused, every save would fail, and the exit would ask Retry for ever.  The refusal is staged by
+     * making the staging file read-only from inside the write, so the forcing handle cannot be opened.
+     *
+     * MUTATION: in `Util.writeAtomically`, drop the catch around the force, and the save fails.
+     */
+    @Test
+    public void testADriveThatRefusesTheForceStillGetsTheFile() throws Exception
+    {
+        List<String> logged = java.util.Collections.synchronizedList(new java.util.ArrayList<String>());
+
+        java.util.logging.Handler tap = support.LogTap.everyMessageInto(logged);
+        java.util.logging.Logger log = java.util.logging.Logger.getLogger(Util.class.getName());
+
+        log.addHandler(tap);
+
+        try
+        {
+            for (String content : new String[] {"first", "second"})
+            {
+                Util.writeAtomically(target, out ->
+                {
+                    out.write(content.getBytes(StandardCharsets.UTF_8));
+
+                    for (File staging : dir.toFile().listFiles((folder, name) -> name.endsWith(".part")))
+                    {
+                        assertTrue(staging.setReadOnly(), "could not stage the refusal");
+                    }
+                });
+
+                assertEquals(contents(), content, "the save did not reach the file where the force was refused");
+
+                assertTrue(target.setWritable(true), "could not undo the fixture");
+            }
+        }
+        finally
+        {
+            log.removeHandler(tap);
+
+            target.setWritable(true);
+        }
+
+        // Once in this JVM, which no other claim refuses in
+        assertEquals(logged.size(), 1, "the refusal was not logged once: " + logged);
+    }
+
+    /**
+     * Restoring an archive whose entry is empty (an older backup stored a file it could not read that way) keeps the
+     * file there now when it has content, says so in the question, and restores the rest.
+     *
+     * MUTATION: make `RestoreAction.Archive.keepsWhatIsThere` answer false, and the setup is emptied.
+     */
+    @Test
+    public void testARestoreNeverEmptiesAFileWithAnEmptyEntry() throws Exception
+    {
+        java.io.ByteArrayOutputStream windowState = new java.io.ByteArrayOutputStream();
+
+        try (ObjectOutputStream out = new ObjectOutputStream(windowState))
+        {
+            out.writeObject(new java.util.ArrayList<Object>());
+        }
+
+        File zip = new File(dir.toFile(), "old-backup.zip");
+
+        try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(zip)))
+        {
+            String[][] entries = {{"UIState.data", null}, {"Yard/config/gleisbild.cs2", "index from the backup"},
+                {"Yard/config/autonomy/setup.json", ""}};
+
+            for (String[] entry : entries)
+            {
+                out.putNextEntry(new java.util.zip.ZipEntry(entry[0]));
+                out.write(entry[1] == null ? windowState.toByteArray() : entry[1].getBytes(StandardCharsets.UTF_8));
+                out.closeEntry();
+            }
+        }
+
+        File yard = new File(dir.toFile(), "Yard");
+        File setup = new File(yard, "config/autonomy/setup.json");
+
+        assertTrue(setup.getParentFile().mkdirs(), "could not build the fixture");
+        Files.write(setup.toPath(), "{\"the setup\": \"now\"}".getBytes(StandardCharsets.UTF_8));
+        Files.write(new File(yard, "config/gleisbild.cs2").toPath(), "index now".getBytes(StandardCharsets.UTF_8));
+
+        Class<?> archiveClass = Class.forName("org.traincontrol.gui.widgets.RestoreAction$Archive");
+
+        Object archive = support.Reflect.method(archiveClass, "read", File.class,
+            org.traincontrol.model.ViewListener.class).invoke(null, zip, null);
+
+        String question = (String) support.Reflect.method(archiveClass, "parts", File.class).invoke(archive, yard);
+
+        support.Reflect.method(archiveClass, "writeLayout", File.class).invoke(archive, yard);
+
+        assertEquals(new String(Files.readAllBytes(setup.toPath()), StandardCharsets.UTF_8), "{\"the setup\": \"now\"}",
+            "the restore wrote the backup's empty setup.json over the setup there now");
+
+        assertEquals(new String(Files.readAllBytes(new File(yard, "config/gleisbild.cs2").toPath()),
+            StandardCharsets.UTF_8), "index from the backup", "the rest of the layout was not restored");
+
+        assertTrue(question.contains(org.traincontrol.util.I18n.f("ui.restoreKeptAsNow", "autonomy/setup.json")),
+            "the question does not say the empty file is kept as it is now: " + question);
+    }
+
+    /** The entry names of a zip, in order. */
+    private static List<String> entriesOf(File zip) throws Exception
+    {
+        try (java.util.zip.ZipFile read = new java.util.zip.ZipFile(zip))
+        {
+            return read.stream().map(java.util.zip.ZipEntry::getName).collect(java.util.stream.Collectors.toList());
+        }
     }
 }

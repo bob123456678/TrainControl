@@ -30,6 +30,16 @@ placeholders. Firmware, hardware and model are as served.
 Read from the station, TrainControl tells each pair apart through `gbs` (OB-402). A copy made with Download Central
 Station Layout Files must keep the same protocol on every square (OB-465).
 
+## Not invariants: set these in code
+
+- **Switch states other than the two at 25.** They are whatever the station showed that day; a test that needs a state sets it.
+- **Locomotives, lengths and the autonomy setup.** The snapshot has none of these; a test creates its own.
+- **The station's serial number, host name and IDs** in `app/api/info.json` are redacted placeholders, not real values.
+
 ## How tests use it
 
 Serve it from a stand-in CS3, or copy it to a sandbox first. Never write to this folder.
+
+## Used by
+
+- `regression.testADownloadedCS3LayoutKeepsEachSquaresProtocol`

@@ -2224,11 +2224,11 @@ public class testTheImportDoorReadsAnOldFile
     }
 
     /**
-     * The folder the Central Station's layout is downloaded into is the source a later switch compares with.  The
-     * Download door never reaches `initializeTrackDiagram`, so it must record the source itself, or choosing that
-     * folder again reads as a switch and every moved train stands back where it set off.
+     * The folder the Central Station's layout is downloaded into is the source a later switch compares with: the
+     * Download door opens the copy through `openLayoutFolder`, which records it, or choosing that folder again reads as
+     * a switch and every moved train stands back where it set off.
      *
-     * MUTATION: leave the door's source unrecorded, and this fails.
+     * MUTATION: drop the `sourceIsNow` call from `TrainControlUI.initializeTrackDiagram`, and this fails.
      */
     @Test
     public void testTheFolderDownloadedIntoIsTheSourceASwitchComparesWith() throws Exception
@@ -2258,7 +2258,7 @@ public class testTheImportDoorReadsAnOldFile
             remembered.set(ui[0], "");
 
             final java.lang.reflect.Method downloaded =
-                Reflect.method(TrainControlUI.class, "useTheDownloadedLayout", File.class);
+                Reflect.method(TrainControlUI.class, "openLayoutFolder", File.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
@@ -2271,6 +2271,8 @@ public class testTheImportDoorReadsAnOldFile
                     throw new IllegalStateException(e);
                 }
             });
+
+            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
             assertEquals(remembered.get(ui[0]), TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF,
                 ""), "after a download the source a later switch compares with is not the folder downloaded into"
