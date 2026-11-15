@@ -2125,25 +2125,29 @@ public class testStationSettingsWindow
     /** A plain station of the page with one road whose track ends on one side and runs on as plain track on the other. */
     private static TileKey aStationAtTheEndOfALine()
     {
+        return aPlainStationWhere(each ->
+        {
+            org.traincontrol.automationui.TilePorts.Route route = session.getRoutes(each).values().iterator().next();
+            boolean endsByA = endsBy(each, route.getA());
+            org.traincontrol.automationui.TileGraph.Landing on =
+                session.getGraph().landing(each, endsByA ? route.getB() : route.getA());
+
+            return endsByA != endsBy(each, route.getB()) && on != null && session.getGraph().runOf(on.getTile()) != null;
+        }, "at the end of a line");
+    }
+
+    /** The first station of the page with one road that `wanted` accepts, read on the event thread. */
+    private static TileKey aPlainStationWhere(java.util.function.Predicate<TileKey> wanted, String what)
+    {
         return Components.onTheEventThread(() ->
         {
             for (TileKey each : session.getReducer().getPoints().keySet())
             {
-                if (!PAGE.equals(each.getPage()) || !session.getStore().isStation(each)
-                    || session.getRoutes(each).size() != 1) continue;
-
-                org.traincontrol.automationui.TilePorts.Route route = session.getRoutes(each).values().iterator().next();
-                boolean endsByA = endsBy(each, route.getA());
-                org.traincontrol.automationui.TileGraph.Landing on =
-                    session.getGraph().landing(each, endsByA ? route.getB() : route.getA());
-
-                if (endsByA != endsBy(each, route.getB()) && on != null && session.getGraph().runOf(on.getTile()) != null)
-                {
-                    return each;
-                }
+                if (PAGE.equals(each.getPage()) && session.getStore().isStation(each)
+                    && session.getRoutes(each).size() == 1 && wanted.test(each)) return each;
             }
 
-            throw new AssertionError("precondition: no station on " + PAGE + " at the end of a line");
+            throw new AssertionError("precondition: no station on " + PAGE + " " + what);
         });
     }
 
@@ -2184,23 +2188,9 @@ public class testStationSettingsWindow
     /** A plain station of the page with one road where May depart can be set, and trains leave both ways. */
     private static TileKey aStationWhereMayDepart()
     {
-        return Components.onTheEventThread(() ->
-        {
-            for (TileKey each : session.getReducer().getPoints().keySet())
-            {
-                if (!PAGE.equals(each.getPage()) || !session.getStore().isStation(each)
-                    || session.getRoutes(each).size() != 1) continue;
-
-                RouteId road = session.getRoutes(each).keySet().iterator().next();
-
-                if (session.departureWayCanBeSet(each, road) && session.departureWay(each, road) == Direction.BOTH)
-                {
-                    return each;
-                }
-            }
-
-            throw new AssertionError("precondition: no station on " + PAGE + " with track beside");
-        });
+        return aPlainStationWhere(each -> session.departureWayCanBeSet(each, session.getRoutes(each).keySet().iterator()
+            .next()) && session.departureWay(each, session.getRoutes(each).keySet().iterator().next()) == Direction.BOTH,
+            "with track beside");
     }
 
     private static RouteId onlyRoad(TileKey square)
