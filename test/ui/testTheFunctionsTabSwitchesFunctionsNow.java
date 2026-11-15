@@ -189,6 +189,52 @@ public class testTheFunctionsTabSwitchesFunctionsNow extends support.SettingsCla
     }
 
     /**
+     * Closing the window just after a press on a timed function's play icon stops the spinner for good: the press's
+     * late look at the railway does not start it again on the closed tab.
+     *
+     * MUTATION: in `LocomotiveFunctionsTab.keepTurning`, drop the `isDisplayable()` condition, and this fails.
+     */
+    @Test
+    public void testClosingTheWindowStopsTheSpinnerForGood() throws Exception
+    {
+        loc.setFunctionType(F, 9, 2);
+
+        final JTable table = table();
+        final java.awt.Container tab = javax.swing.SwingUtilities.getAncestorOfClass(
+            Class.forName("org.traincontrol.gui.LocomotiveFunctionsTab"), table);
+        final javax.swing.Timer spinner = (javax.swing.Timer) support.Reflect.get(tab.getClass(), tab, "spinner");
+
+        try
+        {
+            // The press and the close in one event, well inside the press's 300 ms
+            Components.onTheEventThread(() ->
+            {
+                Rectangle r = table.getCellRect(F, TEST, false);
+                long t = System.currentTimeMillis();
+
+                for (int id : new int[] { MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_RELEASED, MouseEvent.MOUSE_CLICKED })
+                {
+                    table.dispatchEvent(new MouseEvent(table, id, t, 0, r.x + r.width / 2, r.y + r.height / 2, 1, false,
+                        MouseEvent.BUTTON1));
+                }
+
+                SettingsWindow.showing().dispose();
+
+                return null;
+            });
+
+            assertTrue(Components.waitFor(() -> loc.getF(F), WAIT), "precondition: the press did not switch F" + F);
+
+            assertFalse(Components.waitFor(spinner::isRunning, 1500), "the spinner started again on the closed window,"
+                + " and repaints it every 100 ms until the function ends");
+        }
+        finally
+        {
+            Components.waitFor(() -> !loc.getF(F), WAIT);
+        }
+    }
+
+    /**
      * A function switched from elsewhere shows in the box while the window is open.
      *
      * MUTATION: return false from `getValueAt` for column 3 and this fails.

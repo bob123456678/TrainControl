@@ -117,8 +117,9 @@ public abstract class Locomotive
     // User-defined notes about this locomotive
     private String notes = "";
     
-    // Used to pause autonomous operation - not persisted
-    private boolean autonomyPaused = false;
+    // Used to pause autonomous operation - not persisted.  Volatile, not under the monitor: a command can hold that
+    // for a stalled network write, and windows read this every second.
+    private volatile boolean autonomyPaused = false;
 
     /**
      * Constructor with name and all functions off
@@ -1665,10 +1666,7 @@ public abstract class Locomotive
      */
     public void setAutonomyPaused(boolean state)
     {
-        synchronized (this)
-        {
-            this.autonomyPaused = state;
-        }
+        this.autonomyPaused = state;
     }
     
     /**
@@ -1676,10 +1674,7 @@ public abstract class Locomotive
      */
     public boolean isAutonomyPaused()
     {
-        synchronized (this)
-        {
-            return this.autonomyPaused;
-        }
+        return this.autonomyPaused;
     }
     
     /**

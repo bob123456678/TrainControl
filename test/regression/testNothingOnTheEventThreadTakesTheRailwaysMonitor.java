@@ -59,7 +59,10 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         "executePathByHand",
 
         // `synchronized (this)` blocks, which the declaration scanner above cannot see.
-        "configureAndLockPath", "getPathValidationFailureCount", "hasShownPathValidationAlert"
+        "configureAndLockPath", "getPathValidationFailureCount", "hasShownPathValidationAlert",
+
+        // Reached through putTheTrainsBack and moveLocomotive, on the railway that is running
+        "standTheTrainsBack"
     };
 
     /**
@@ -196,7 +199,14 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
 
         ALLOWED.put("RunningLayoutSync.java#putTheTrainsBack",
             "ON THE EVENT THREAD: a setup rebuild puts every placement back into the layout it has just"
-            + " built, and that layout is not the one anything else holds yet");
+            + " built, and that layout is not the one anything else holds yet; the track editor's discard puts"
+            + " them back on the running railway, listed at LayoutEditor.java#undoAutonomyEdits");
+
+        ALLOWED.put("LayoutEditor.java#undoAutonomyEdits",
+            "ON THE EVENT THREAD: Cancel or a discard in the open track editor stands the trains back on the running"
+            + " railway.  No run, hand send or staging flow can hold the monitor while an editor is open; a search"
+            + " worker may, so the window can wait for one search, and none of those workers waits on the event"
+            + " thread while it holds the monitor");
 
         ALLOWED.put("RunningLayoutSync.java#noteTheRailwaysSettingsAsBuilt",
             "ON THE EVENT THREAD: reading the railway just built, at the end of its load, before anything runs on it"
