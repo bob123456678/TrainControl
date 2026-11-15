@@ -39,12 +39,13 @@ import support.ReportsStarted;
  * The last release's updater takes this build (RELEASE.md section 2): the update code as it is at the newest release tag,
  * compiled from the tag into a class loader of its own, offered a release of this build the way GitHub serves one.
  *
- * Nothing goes to the network: the release is a JSON object and its asset a local file.  What cannot be run is
- * TrainControl's own start-up, so the started version is `support.ReportsStarted` on the new jar's classes, which says it
- * started through this build's `SelfUpdate.reportStarted`, read by the old updater's real launcher;
- * `regression.testTheUpdateIsWiredEndToEnd` pins where TrainControl calls it.  TC_UPDATE_JAR names the jar to offer
- * (the one `ant package-for-store` built); without it, one is built from the classes under test with the manifest that
- * target writes.  TC_LAST_RELEASE overrides the tag.
+ * Nothing goes to the network: the release is a JSON object listed as GitHub lists v3.0.8's, and its assets local files.
+ * The jar is TC_UPDATE_JAR, the one `ant clean package-for-store` built (`docs/tools/gates.sh` builds and passes it);
+ * without it a stand-in is built from the classes under test, and the claim says so on its output.  Its version is read
+ * from the jar itself, and the version it starts sees only the jar's classes, so a jar missing the update's classes
+ * fails.  What cannot be run is TrainControl's own start-up: the started version is `support.ReportsStarted`, which says
+ * it started through the jar's `SelfUpdate.reportStarted`; `regression.testTheUpdateIsWiredEndToEnd` pins where
+ * TrainControl calls it.  TC_LAST_RELEASE overrides the tag.
  */
 public class testTheLastReleaseUpdatesToThisBuild
 {
@@ -64,8 +65,8 @@ public class testTheLastReleaseUpdatesToThisBuild
      * Found, compared as newer, downloaded, checked whole, swapped in and heard from, each step by the old code.
      *
      * MUTATION: `RAW_VERSION` set to "3_1_0" (the old parser reads "3"), or to the tag's own version, or
-     * `JarUpdater.STARTED_ENVIRONMENT` renamed (the old updater never hears the start and puts the old jar back), and
-     * this fails.
+     * `JarUpdater.STARTED_ENVIRONMENT` renamed, or `package-for-store` leaving `SelfUpdate` out of the jar (the old
+     * updater never hears the start and puts the old jar back), or `store.jar.name` changed, and this fails.
      */
     @Test(timeOut = 300000)
     public void testTheOldUpdaterFindsDownloadsAndStartsThisBuild() throws Exception
@@ -90,19 +91,27 @@ public class testTheLastReleaseUpdatesToThisBuild
             File shipped = theJarThisBuildShips();
             byte[] shippedBytes = Files.readAllBytes(shipped.toPath());
 
-            // The release as GitHub's API serves it: the name carries v{RELEASE}, the jar is asset 0 (RELEASE.md)
-            JSONObject release = new JSONObject().put("name", "TrainControl v" + MarklinControlStation.RAW_VERSION)
-                .put("assets", new JSONArray().put(new JSONObject()
-                    .put("browser_download_url", shipped.toURI().toString())
-                    .put("size", shipped.length())
-                    .put("digest", "sha256:" + sha256(shippedBytes))));
+            // Every release so far, v2.6.5 to v3.0.8, carried its jar as TrainControl.jar
+            assertEquals(shipped.getName(), "TrainControl.jar", "the release's jar would be named otherwise");
+
+            String version = versionIn(shipped);
+
+            // As GitHub's API lists v3.0.8: the name carries v{RELEASE}, the jar is asset 0 (RELEASE.md); a second
+            // asset after it, so taking any but the first fails the whole-jar check
+            File other = new File(folder, "Checksums.txt");
+
+            Files.write(other.toPath(), ("sha256 " + sha256(shippedBytes)).getBytes(StandardCharsets.UTF_8));
+
+            JSONObject release = new JSONObject().put("name", "Marklin Train Control v" + version)
+                .put("tag_name", "v" + version.replace('.', '_')).put("prerelease", false)
+                .put("assets", new JSONArray().put(asset(shipped, shippedBytes)).put(asset(other,
+                    Files.readAllBytes(other.toPath()))));
 
             Object info = json.getConstructor(String.class).newInstance(release.toString());
 
             String found = (String) util.getMethod("parseReleaseVersion", json).invoke(null, info);
 
-            assertEquals(found, MarklinControlStation.RAW_VERSION, tag + "'s updater reads this release's name as another"
-                + " version");
+            assertEquals(found, version, tag + "'s updater reads this release's name as another version");
 
             int newer = (Integer) then.loadClass("org.traincontrol.util.Conversion")
                 .getMethod("compareVersions", String.class, String.class).invoke(null, found, oldVersion);
@@ -177,9 +186,8 @@ public class testTheLastReleaseUpdatesToThisBuild
                 return Proxy.newProxyInstance(then, new Class<?>[] {started}, (p, m, a) -> false);
             }
 
-            // This build's classes first, so SelfUpdate and JarUpdater are the new jar's; ReportsStarted is not in it
-            String classes = jar.getAbsolutePath() + File.pathSeparator
-                + new File(ReportsStarted.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            // The jar and ReportsStarted alone: nothing of this build's classes fills a gap in the jar
+            String classes = jar.getAbsolutePath() + File.pathSeparator + reportsStartedAlone().getAbsolutePath();
 
             return startProcess.invoke(null, Arrays.asList(java, "-cp", classes, ReportsStarted.class.getName(),
                 "marker"), args[1], args[2]);
@@ -320,6 +328,18 @@ public class testTheLastReleaseUpdatesToThisBuild
 
         if (given != null && !given.trim().isEmpty()) return new File(given.trim());
 
+        String standIn = "*** STAND-IN JAR: no TC_UPDATE_JAR, so this offers a jar built from the classes under test,"
+            + " not the one ant package-for-store builds; docs/tools/gates.sh passes the real one ***";
+
+        System.out.println(standIn);
+        System.err.println(standIn);
+        org.testng.Reporter.log(standIn);
+
+        Matcher named = Pattern.compile("name=\"store.jar.name\"\\s+value=\"([^\"]+)\"")
+            .matcher(read(new File("build.xml")));
+
+        assertTrue(named.find(), "no store.jar.name in build.xml");
+
         Properties project = new Properties();
 
         try (InputStream in = Files.newInputStream(new File("nbproject/project.properties").toPath()))
@@ -337,12 +357,36 @@ public class testTheLastReleaseUpdatesToThisBuild
         manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, main);
 
         File classes = new File(MarklinControlStation.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-        File jar = new File(folder, "TrainControl-store.jar");
+        File jar = new File(new File(folder, "store"), named.group(1) + ".jar");
+
+        jar.getParentFile().mkdirs();
 
         try (JarOutputStream out = new JarOutputStream(new FileOutputStream(jar), manifest))
         {
             add(out, classes, classes, ".class");
             add(out, new File("src"), new File("src"), null);
+
+            // The libraries the target merges in, by the names it lists
+            Matcher libraries = Pattern.compile("zipgroupfileset dir=\"resources\" includes=\"([^\"]+)\"")
+                .matcher(read(new File("build.xml")));
+
+            assertTrue(libraries.find(), "no libraries listed for package-for-store in build.xml");
+
+            for (String library : libraries.group(1).split(","))
+            {
+                try (ZipInputStream in = new ZipInputStream(Files.newInputStream(new File("resources",
+                    library.trim()).toPath())))
+                {
+                    for (ZipEntry entry = in.getNextEntry(); entry != null; entry = in.getNextEntry())
+                    {
+                        if (entry.isDirectory() || entry.getName().startsWith("META-INF/")) continue;
+
+                        out.putNextEntry(new JarEntry(entry.getName()));
+                        out.write(readAll(in));
+                        out.closeEntry();
+                    }
+                }
+            }
         }
 
         return jar;
@@ -370,6 +414,45 @@ public class testTheLastReleaseUpdatesToThisBuild
                 out.closeEntry();
             }
         }
+    }
+
+    /** The version the jar says it is, read by a class loader that sees the jar alone. */
+    private static String versionIn(File jar) throws Exception
+    {
+        try (URLClassLoader shipped = new URLClassLoader(new URL[] {jar.toURI().toURL()},
+            ClassLoader.getSystemClassLoader().getParent()))
+        {
+            return (String) shipped.loadClass("org.traincontrol.marklin.MarklinControlStation").getField("RAW_VERSION")
+                .get(null);
+        }
+    }
+
+    /** An asset as GitHub's API lists one. */
+    private static JSONObject asset(File file, byte[] bytes) throws Exception
+    {
+        return new JSONObject().put("name", file.getName()).put("content_type", "application/octet-stream")
+            .put("browser_download_url", file.toURI().toString()).put("size", bytes.length)
+            .put("digest", "sha256:" + sha256(bytes));
+    }
+
+    /** A folder holding `ReportsStarted`'s class and nothing else. */
+    private File reportsStartedAlone() throws Exception
+    {
+        String path = ReportsStarted.class.getName().replace('.', '/') + ".class";
+        File alone = new File(folder, "reports-started");
+        File copy = new File(alone, path);
+
+        if (!copy.exists())
+        {
+            copy.getParentFile().mkdirs();
+
+            try (InputStream in = ReportsStarted.class.getClassLoader().getResourceAsStream(path))
+            {
+                Files.write(copy.toPath(), readAll(in));
+            }
+        }
+
+        return alone;
     }
 
     private static String sha256(byte[] bytes) throws Exception

@@ -10,7 +10,8 @@
 #   guards    the standing guard classes plus `affected.py --guards <base>`, through one.sh, at most 15 a run
 #   spotbugs  no SpotBugs finding beyond docs/tools/spotbugs-baseline.txt (spotbugs.sh, about a minute)
 #   fit       ui.testEveryLanguageFits: every window in every language; it opens windows, so it takes a window slot
-#   updater   core.testTheLastReleaseUpdatesToThisBuild: the last release's updater finds, takes and starts this build
+#   updater   core.testTheLastReleaseUpdatesToThisBuild: the last release's updater finds, takes and starts the jar
+#             `ant clean package-for-store` builds from HEAD in a scratch copy, as a release is built (commit first)
 #   layouts   old-setups.sh --no-live against the last release tag: what both builds read from the test setups; only
 #             with --layouts (2 trips a setup, over 20 minutes: once a batch) or --full (the routine 6, before a release)
 #
@@ -23,6 +24,8 @@ set -u
 S="${TC_SCRATCH:-}"
 BASE="${1:-}"
 TOOLS="$(cd "$(dirname "$0")" && pwd)"
+ANT="${TC_ANT:-C:/Program Files/NetBeans-18/netbeans/extide/ant}"
+JAVA8="${TC_JAVA:-/c/Program Files/Java/jdk1.8.0_361/bin/java}"
 
 if [ -z "$S" ] || [ ! -d "$S" ] || [ -z "$BASE" ] || [ ! -f build.xml ]
 then
@@ -114,9 +117,26 @@ do
             say fit $status "$(grep -m1 '^Total tests run' "$log")"
             ;;
         updater)
-            run_classes core.testTheLastReleaseUpdatesToThisBuild > "$log" 2>&1
+            # HEAD's tree less the live railway, built as a release is; ANT names Apache Ant's folder
+            store="$LOGS/store-build"
+            rm -rf "$store"
+            mkdir -p "$store"
+
+            if ! git archive HEAD -- . ':(exclude)cs2_sample_layout' | tar -x -C "$store" \
+                || ! (cd "$store" && JAVA_HOME="${TC_JAVA_HOME:-C:/Program Files/Java/jdk1.8.0_361}" "$JAVA8" \
+                    -Dant.home="$ANT" -cp "$ANT/lib/ant-launcher.jar" org.apache.tools.ant.launch.Launcher -noinput \
+                    clean package-for-store) > "$log" 2>&1
+            then
+                say updater 1 "ant clean package-for-store failed; see $log"
+                continue
+            fi
+
+            TC_UPDATE_JAR="$store/store/TrainControl.jar" run_classes core.testTheLastReleaseUpdatesToThisBuild \
+                >> "$log" 2>&1
             status=$?
-            say updater $status "$TC_LAST_RELEASE; $(grep -m1 '^Total tests run' "$log")"
+            dirty=""
+            [ -n "$(git status --porcelain -- src build.xml nbproject)" ] && dirty="; HEAD's jar, src has uncommitted changes"
+            say updater $status "$TC_LAST_RELEASE; $(grep -m1 '^Total tests run' "$log")$dirty"
             ;;
         layouts)
             started=$(date +%s)

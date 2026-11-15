@@ -19,7 +19,8 @@ The validators review each change on its way to dev (`FANOUT.md`). Builders foll
 - the merge guards (the standing guard classes and `affected.py --guards <base>`);
 - SpotBugs against its baseline (`docs/tools/spotbugs.sh`), no new finding;
 - the language fit test over every window (`ui.testEveryLanguageFits`; it takes a window slot);
-- the last release's updater taking the new jar (`core.testTheLastReleaseUpdatesToThisBuild`);
+- the last release's updater taking the new jar (`core.testTheLastReleaseUpdatesToThisBuild`, offered the jar
+  `ant clean package-for-store` builds from HEAD);
 - the layout read comparison against the last release tag (`old-setups.sh --no-live`, without the live layout). At 2
   trips a setup it takes about 12 minutes a build, two builds in turn (estimated 2026-11-14 from a run stopped at 10
   minutes with the older build not yet done), so it runs once a batch (`gates.sh <base> --layouts`) and before a release
