@@ -357,6 +357,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     /**
      * May depart shows the way out the built railway has, so a limit set farther out than the track beside shows as
      * that one way, grayed, and the (i) line says where it is (Adam: "it needs to look farther out, not just adjacent").
+     * While it is live, a pick on the run that ends at the switch leaves the switch alone.
      *
      * MUTATION: have `departureWay` read the square beside the station again, and this fails.
      */
@@ -369,8 +370,18 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         everyRoad(turnout, Direction.BOTH);
 
+        // A live pick on the run that ends at the switch leaves the switch alone
+        Map<RouteId, Direction> before = waysOf(turnout);
+        TileKey station = new TileKey("main", 5, 1);
+
+        session.setDepartureWay(station, roadOf(station), toward(station, roadOf(station), Side.E));
+        assertEquals(session.departureWay(station, roadOf(station)), toward(station, roadOf(station), Side.E),
+            "precondition: the pick did not take");
+        assertEquals(waysOf(turnout), before, "a pick on the run ending at a switch changed the switch");
+        session.setDepartureWay(station, roadOf(station), Direction.BOTH);
+
         // Closed farther out: the switch past the track beside, as a setup file may carry it
-        limitedFartherOut(new TileKey("main", 5, 1), () -> everyRoad(turnout, Direction.NONE), Side.E, Side.W, turnout);
+        limitedFartherOut(station, () -> everyRoad(turnout, Direction.NONE), Side.E, Side.W, turnout);
 
         assertTrue(session.runsBothWays(new TileKey("main", 4, 1)), "precondition: the track beside is one way");
     }

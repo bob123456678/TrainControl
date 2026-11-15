@@ -2161,6 +2161,30 @@ public class testStationSettingsWindow
         StationDoors.close(window);
     }
 
+    /**
+     * The window's (i) for May depart names the s88 square it shares plain track with, as a pick here sets it there too.
+     * The line itself is `departureSharedWith`'s, held to the bundle by the core claim.
+     *
+     * MUTATION: drop `shared` from `StationFlyovers.depart`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testMayDepartsInfoNamesTheSquareItSharesTrackWith() throws Exception
+    {
+        TileKey square = aPlainStationWhere(each -> session.departureWayCanBeSet(each, session.getRoutes(each).keySet()
+            .iterator().next()) && session.departureSharedWith(each, session.getRoutes(each).keySet().iterator().next())
+            != null, "sharing plain track with another s88 square");
+        RouteId road = onlyRoad(square);
+
+        String shared = Components.onTheEventThread(() -> session.departureSharedWith(square, road));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("depart")).contains(shared),
+            "the (i) does not name the square May depart shares its track with");
+
+        StationDoors.close(window);
+    }
+
     /** A plain station of the page with one road where May depart can be set, and trains leave both ways. */
     private static TileKey aStationWhereMayDepart()
     {
