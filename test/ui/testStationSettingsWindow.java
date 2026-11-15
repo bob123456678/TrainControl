@@ -147,7 +147,7 @@ public class testStationSettingsWindow
     @Test(timeOut = 120000)
     public void testAKeyStepInHomeOrMayDepartChangesNothing() throws Exception
     {
-        StationSettingsWindow window = StationDoors.open(panel, aStationWhereMayDepart(true));
+        StationSettingsWindow window = StationDoors.open(panel, aStationWhereMayDepart());
 
         for (String name : new String[] {"station.home", "station.depart.0"})
         {
@@ -2024,7 +2024,7 @@ public class testStationSettingsWindow
     @Test(timeOut = 120000)
     public void testMayDepartSetsTheTrackBesideAndSaveKeepsIt() throws Exception
     {
-        TileKey square = aStationWhereMayDepart(true);
+        TileKey square = aStationWhereMayDepart();
         RouteId road = onlyRoad(square);
 
         try
@@ -2056,14 +2056,15 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The editor's Cancel undoes what May depart set on the track beside, as it undoes every other edit (D141).
+     * The editor's Cancel undoes what May depart set on the track beside, as it undoes every other edit (D141): the
+     * pick goes only into the setup Cancel puts back.
      *
-     * MUTATION: gray May depart on every station again, and this fails.
+     * MUTATION: have `LayoutEditor.discardAutonomyWork` skip `restoreSetup`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testCancelUndoesMayDepart() throws Exception
     {
-        TileKey square = aStationWhereMayDepart(true);
+        TileKey square = aStationWhereMayDepart();
 
         chooseDepartTowardA(StationDoors.open(panel, square), square, onlyRoad(square));
 
@@ -2079,33 +2080,71 @@ public class testStationSettingsWindow
     }
 
     /**
-     * Where May depart could set nothing, as the station has one way out, it is grayed and shows that way (D141:
-     * "Otherwise Grey it and show the only way out").
+     * At the end of a line May depart could set nothing, so it is grayed, shows the one way out, and its (i) says
+     * which side has nothing to set (D141: "Otherwise Grey it and show the only way out").  Both texts are the
+     * bundle's, filled from the drawn track, not from May depart's own reading.
      *
      * MUTATION: leave May depart live wherever the boxes let it be, and this fails.
      */
     @Test(timeOut = 120000)
     public void testMayDepartIsGrayAndShowsTheOnlyWayOut() throws Exception
     {
-        TileKey square = aStationWhereMayDepart(false);
+        TileKey square = aStationAtTheEndOfALine();
         RouteId road = onlyRoad(square);
+
+        // {the side with track, the side where the line ends}
+        String[] sides = Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automationui.TilePorts.Route route = session.getRoutes(square).get(road);
+
+            boolean endsByA = endsBy(square, route.getA());
+
+            return new String[] {String.valueOf(endsByA ? route.getB() : route.getA()),
+                String.valueOf(endsByA ? route.getA() : route.getB())};
+        });
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
         assertFalse(StationDoors.live(window, "station.depart.0"), "May depart is live where it could set nothing");
-
-        String only = Components.onTheEventThread(() ->
-        {
-            org.traincontrol.automationui.TilePorts.Route route = session.getRoutes(square).get(road);
-
-            return I18n.f("autosetup.ui.menuRouteToward", String.valueOf(
-                session.departureWay(square, road) == Direction.TOWARD_A ? route.getA() : route.getB()));
-        });
-
         assertEquals(Components.onTheEventThread(() -> StationDoors.part(window, "station.depart.0",
-            javax.swing.JComboBox.class).getSelectedItem()), only, "May depart does not show the only way out");
+            javax.swing.JComboBox.class).getSelectedItem()), I18n.f("autosetup.ui.menuRouteToward", sides[0]),
+            "May depart does not show the only way out");
+        assertTrue(Components.onTheEventThread(() -> window.flyoverForTest("depart")).contains(
+            I18n.f("autosetup.ui.flyDepartOnly", sides[1])), "the (i) does not say the line ends there");
 
         StationDoors.close(window);
+    }
+
+    /** Whether the track as drawn runs out leaving a square by a side, before it reaches any s88 square. */
+    private static boolean endsBy(TileKey square, org.traincontrol.automationui.TilePorts.Side side)
+    {
+        return session.getGraph().landing(square, side) == null
+            || session.getGraph().runsOutLeaving(square, side, session.getReducer().getPoints().keySet());
+    }
+
+    /** A plain station of the page with one road whose track ends on one side and runs on as plain track on the other. */
+    private static TileKey aStationAtTheEndOfALine()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            for (TileKey each : session.getReducer().getPoints().keySet())
+            {
+                if (!PAGE.equals(each.getPage()) || !session.getStore().isStation(each)
+                    || session.getRoutes(each).size() != 1) continue;
+
+                org.traincontrol.automationui.TilePorts.Route route = session.getRoutes(each).values().iterator().next();
+                boolean endsByA = endsBy(each, route.getA());
+                org.traincontrol.automationui.TileGraph.Landing on =
+                    session.getGraph().landing(each, endsByA ? route.getB() : route.getA());
+
+                if (endsByA != endsBy(each, route.getB()) && on != null && session.getGraph().runOf(on.getTile()) != null)
+                {
+                    return each;
+                }
+            }
+
+            throw new AssertionError("precondition: no station on " + PAGE + " at the end of a line");
+        });
     }
 
     /**
@@ -2117,7 +2156,7 @@ public class testStationSettingsWindow
     @Test(timeOut = 120000)
     public void testMayDepartOffersNoClosed() throws Exception
     {
-        TileKey square = aStationWhereMayDepart(true);
+        TileKey square = aStationWhereMayDepart();
         RouteId road = onlyRoad(square);
 
         StationSettingsWindow window = StationDoors.open(panel, square);
@@ -2142,8 +2181,8 @@ public class testStationSettingsWindow
         StationDoors.close(window);
     }
 
-    /** A plain station of the page with one road where May depart can be set, or (`settable` false) one way out. */
-    private static TileKey aStationWhereMayDepart(boolean settable)
+    /** A plain station of the page with one road where May depart can be set, and trains leave both ways. */
+    private static TileKey aStationWhereMayDepart()
     {
         return Components.onTheEventThread(() ->
         {
@@ -2153,17 +2192,14 @@ public class testStationSettingsWindow
                     || session.getRoutes(each).size() != 1) continue;
 
                 RouteId road = session.getRoutes(each).keySet().iterator().next();
-                Direction way = session.departureWay(each, road);
 
-                if (settable ? session.departureWayCanBeSet(each, road) && way == Direction.BOTH
-                    : !session.departureWayCanBeSet(each, road) && way != Direction.BOTH && way != Direction.NONE)
+                if (session.departureWayCanBeSet(each, road) && session.departureWay(each, road) == Direction.BOTH)
                 {
                     return each;
                 }
             }
 
-            throw new AssertionError("precondition: no station on " + PAGE
-                + (settable ? " with track beside" : " with one way out"));
+            throw new AssertionError("precondition: no station on " + PAGE + " with track beside");
         });
     }
 
@@ -2211,7 +2247,7 @@ public class testStationSettingsWindow
     @Test(timeOut = 120000)
     public void testMayDepartHeadsBothSectionsUnderChangingDirection() throws Exception
     {
-        StationSettingsWindow window = StationDoors.open(panel, aStationWhereMayDepart(true));
+        StationSettingsWindow window = StationDoors.open(panel, aStationWhereMayDepart());
 
         StationDoors.current(window);
 
