@@ -71,6 +71,13 @@ public class testLocomotiveCsvImportDoor
     private static Seen press(TrainControlUI ui, File file, String answer, java.util.function.Predicate<Seen> until,
         Runnable whenAsked) throws Exception
     {
+        return press(ui, "importLocsFromCSVMenuItem", file, answer, until, whenAsked);
+    }
+
+    /** The same, for the Locomotives menu item held in the field `doorField`. */
+    private static Seen press(TrainControlUI ui, String doorField, File file, String answer,
+        java.util.function.Predicate<Seen> until, Runnable whenAsked) throws Exception
+    {
         final Seen seen = new Seen();
         final boolean[] going = {true};
         final java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
@@ -136,9 +143,9 @@ public class testLocomotiveCsvImportDoor
 
         try
         {
-            final JMenuItem door = (JMenuItem) Reflect.get(TrainControlUI.class, ui, "importLocsFromCSVMenuItem");
+            final JMenuItem door = (JMenuItem) Reflect.get(TrainControlUI.class, ui, doorField);
 
-            assertNotNull(door, "the Locomotives menu has no Import from CSV item");
+            assertNotNull(door, "the Locomotives menu has no " + doorField + " item");
 
             SwingUtilities.invokeLater(door::doClick);
 
@@ -417,50 +424,9 @@ public class testLocomotiveCsvImportDoor
      */
     private static File exportThroughTheMenu(TrainControlUI ui, File file) throws Exception
     {
-        final List<String> seen = Collections.synchronizedList(new ArrayList<>());
-        final boolean[] going = {true};
-        final java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        Seen seen = press(ui, "exportLocsToCSVMenuItem", file, null, s -> file.length() > 0, null);
 
-        Thread answering = new Thread(() -> support.DialogWatch.until(() -> going[0], 100, dialog ->
-        {
-            JFileChooser chooser = support.Components.inside(dialog.getContentPane(), JFileChooser.class);
-            JOptionPane pane = support.Components.inside(dialog.getContentPane(), JOptionPane.class);
-
-            if (chooser != null && handled.add(chooser))
-            {
-                seen.add("chooser");
-                SwingUtilities.invokeLater(() ->
-                {
-                    chooser.setSelectedFile(file);
-                    chooser.approveSelection();
-                    seen.add("approved " + chooser.getSelectedFile());
-                });
-            }
-            else if (pane != null && handled.add(pane))
-            {
-                seen.add("pane " + dialog.getTitle());
-                SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION)));
-            }
-        }), "locomotive export answerer");
-
-        answering.setDaemon(true);
-        answering.start();
-
-        try
-        {
-            final JMenuItem door = (JMenuItem) Reflect.get(TrainControlUI.class, ui, "exportLocsToCSVMenuItem");
-
-            SwingUtilities.invokeLater(door::doClick);
-
-            assertTrue(support.Components.waitFor(() -> file.length() > 0, 60000), "Export to CSV wrote nothing to "
-                + file + "; the answerer saw " + seen);
-
-            support.Components.settle();
-        }
-        finally
-        {
-            going[0] = false;
-        }
+        assertTrue(file.length() > 0, "Export to CSV wrote nothing to " + file + "; the answerer saw " + seen.said);
 
         return file;
     }

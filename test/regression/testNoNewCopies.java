@@ -37,7 +37,7 @@ public class testNoNewCopies
      * The tokens standing in a second or later copy in `test/`, summed over its groups: an upper bound, so a commit that
      * removes copies need not touch it.  Never raise it; `docs/tools/codesize.py` prints the figure now, to lower it to.
      */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 204629;
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 204606;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
