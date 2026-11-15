@@ -1205,7 +1205,17 @@ public class AutonomyEditorPanel extends JPanel
 
         TileKey shows = session.getCaptionTarget(chosenFinding);
 
-        return openStationSettings(shows != null ? shows : chosenFinding);
+        TileKey square = shows != null ? shows : chosenFinding;
+
+        // A restricted s88 square is cleared by a click on it, which no window offers (OB-472)
+        if (session.isSensorSquare(square) && !session.runsBothWays(square))
+        {
+            say(hint, I18n.f("autosetup.ui.sensorClickToClear", describeTile(square)));
+
+            return null;
+        }
+
+        return openStationSettings(square);
     }
 
     /** The square of the finding last clicked, or null. */

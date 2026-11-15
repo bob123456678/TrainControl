@@ -1939,6 +1939,44 @@ public class testStationSettingsWindow
         });
     }
 
+    /**
+     * A double-click on a restricted s88 square's error opens no Station Settings, where nothing clears it, and says to
+     * click the square (S8V1-C2).
+     *
+     * MUTATION: leave out `openStationSettingsForTheFinding`'s s88 check, and the window opens.
+     */
+    @Test(timeOut = 120000)
+    public void testTheErrorOfARestrictedStationSaysToClickIt() throws Exception
+    {
+        TileKey square = aStation();
+
+        restrictAsAFileWould(square);
+
+        Components.onTheEventThread(() -> { panel.refresh(); return null; });
+        Components.settle();
+
+        int row = rowOf(square);
+
+        assertTrue(row >= 0, "precondition: no finding about the restricted station");
+
+        @SuppressWarnings("unchecked")
+        JList<String> list = (JList<String>) Reflect.get(AutonomyEditorPanel.class, panel, "findings");
+
+        Components.onTheEventThread(() -> { list.setSelectedIndex(row); clicked(list, 2); return null; });
+        Components.settle();
+
+        assertNull(Components.onTheEventThread(() -> panel.stationSettingsWindow()),
+            "a double-click on the error opened Station Settings, which cannot clear it");
+        assertFalse(Components.onTheEventThread(() -> session.runsBothWays(square)),
+            "a double-click on the error edited the square");
+
+        Object strip = Reflect.get(AutonomyEditorPanel.class, panel, "messageBanner");
+
+        assertTrue(String.valueOf(Reflect.get(strip.getClass(), strip, "saying")).contains(
+            I18n.f("autosetup.ui.sensorClickToClear", session.describeTile(square))),
+            "the strip does not say to click the square");
+    }
+
     /** The editor's drawn square for a tile of its page. */
     private org.traincontrol.gui.LayoutLabel squareOn(TileKey square) throws Exception
     {
