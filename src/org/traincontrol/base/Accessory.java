@@ -45,6 +45,11 @@ abstract public class Accessory
     // autonomy path validation can wait for confirmed actuations.  Deliberately separate from Locomotive's
     // accessoryMonitor, which also fires on optimistic setSwitched() changes and drives unrelated waits.
     public static final Object actuationConfirmedMonitor = new Object();
+
+    // The CS echoes of any accessory so far and the last one echoed, so path validation can tell a busy station from a
+    // silent one.  Guarded by actuationConfirmedMonitor.
+    public static long echoes;
+    public static Accessory lastEchoed;
     
     // Maximum MM2 and DCC addresses.  These are the low level addresses, not the logical addresses of 320 and 2048
     public static final int MAX_MM2_ADDRESS = 319;

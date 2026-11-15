@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import static org.testng.Assert.*;
@@ -13,6 +14,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.marklin.udp.CS2Message;
 
 /**
  * Verifies the configureAndLockPath guard in Layout: autonomy trains must not be released until the
@@ -227,6 +229,203 @@ public class testAutonomyPathValidation
         // The locomotive is stopped and the failed path's locks are released
         assertTrue(loc.getSpeed() == 0, "The locomotive must be stopped");
         assertFalse(tp.path.get(0).isOccupied(dummyLoc()), "The failed path's edge must be released");
+    }
+
+    /**
+     * A full 13-byte accessory echo, as the Central Station sends it.  receiveMessage only routes a message
+     * whose response bit (the low bit of the second byte) is set, and it drops a packet identical to the one
+     * before it, so callers alternate settings or accessories.
+     *
+     * @param switched true for turned, false for straight
+     */
+    private static CS2Message accessoryEcho(MarklinAccessory acc, boolean switched)
+    {
+        int uid = acc.getUID();
+        byte[] raw = new byte[CS2Message.MESSAGE_LENGTH];
+
+        raw[1] = (byte) ((CS2Message.CMD_ACC_SWITCH << 1) | 1);
+        raw[2] = 0x47;
+        raw[3] = 0x11;
+        raw[4] = 6;
+        raw[5] = (byte) (uid >> 24);
+        raw[6] = (byte) (uid >> 16);
+        raw[7] = (byte) (uid >> 8);
+        raw[8] = (byte) uid;
+        raw[9] = (byte) (switched ? 0 : 1);
+        raw[10] = 1;
+
+        return new CS2Message(raw);
+    }
+
+    /**
+     * A stand-in station that sends the given echoes, one every 50 ms, until it runs out or is stopped.
+     */
+    private static class Station extends Thread
+    {
+        private final List<CS2Message> echoes;
+        private volatile boolean stopped = false;
+
+        Station(List<CS2Message> echoes)
+        {
+            this.echoes = echoes;
+            this.setDaemon(true);
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                for (CS2Message m : echoes)
+                {
+                    if (stopped) return;
+
+                    model.receiveMessage(m);
+                    Thread.sleep(50);
+                }
+            }
+            catch (InterruptedException ex)
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        void finish() throws InterruptedException
+        {
+            stopped = true;
+            this.join();
+        }
+    }
+
+    /**
+     * Configures the path with the simulated echo off, so its switches are answered only by the stand-in
+     * station.  Returns how long configureAndLockPath took, in ms, and puts its result in result[0].
+     */
+    private long timePathWithStation(TestPath tp, List<CS2Message> echoes, boolean[] result) throws Exception
+    {
+        MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
+        Station station = new Station(echoes);
+
+        try
+        {
+            station.start();
+            long start = System.currentTimeMillis();
+            result[0] = tp.layout.configureAndLockPath(tp.path, dummyLoc());
+            return System.currentTimeMillis() - start;
+        }
+        finally
+        {
+            station.finish();
+            MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
+        }
+    }
+
+    /**
+     * A station still answering other accessories is waited for: a CS3 switches one at a time, about a second
+     * each, so a path's switches can be answered long after PATH_VALIDATION_MS * (switches + 1).  Here the
+     * path's two switches are answered after 1.5 s of echoes for another switch, five times the plain deadline.
+     */
+    @Test(timeOut = 30000)
+    public void testABusyStationIsWaitedFor() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildPath(140, "_busy");
+        MarklinAccessory other = model.newSwitch(143, MM2, false);
+
+        List<CS2Message> echoes = new ArrayList<>();
+
+        for (int i = 0; i < 30; i++)
+        {
+            echoes.add(accessoryEcho(other, i % 2 == 0));
+        }
+
+        echoes.add(accessoryEcho(tp.acc1, true));
+        echoes.add(accessoryEcho(tp.acc2, true));
+
+        boolean[] result = new boolean[1];
+        timePathWithStation(tp, echoes, result);
+
+        assertTrue(result[0], "A path whose switches are answered after a busy station's backlog must pass");
+    }
+
+    /**
+     * A station that keeps answering other accessories but never ours is waited for only up to
+     * PATH_VALIDATION_BUSY_MAX periods, so a lost echo cannot hold the train forever.
+     */
+    @Test(timeOut = 30000)
+    public void testABusyStationIsWaitedForOnlyUpToTheCap() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildPath(150, "_cap");
+        MarklinAccessory other = model.newSwitch(153, MM2, false);
+
+        // Far longer than the cap: the station is stopped once the path gives up
+        List<CS2Message> echoes = new ArrayList<>();
+
+        for (int i = 0; i < 400; i++)
+        {
+            echoes.add(accessoryEcho(other, i % 2 == 0));
+        }
+
+        boolean[] result = new boolean[1];
+        long elapsed = timePathWithStation(tp, echoes, result);
+        long cap = (long) Layout.PATH_VALIDATION_MS * Layout.PATH_VALIDATION_BUSY_MAX;
+
+        assertFalse(result[0], "A path whose switches are never answered must fail");
+        assertTrue(elapsed >= cap, "The busy station must be waited for up to the cap, but the path failed after "
+            + elapsed + " ms (cap " + cap + " ms)");
+        assertTrue(elapsed < cap + 2500, "The cap must end the wait, but the path took " + elapsed + " ms (cap "
+            + cap + " ms)");
+    }
+
+    /**
+     * A silent station still fails at the plain deadline, PATH_VALIDATION_MS * (switches + 1).
+     */
+    @Test(timeOut = 30000)
+    public void testASilentStationStillTimesOutOnTime() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildPath(160, "_silent");
+
+        boolean[] result = new boolean[1];
+        long elapsed = timePathWithStation(tp, new ArrayList<>(), result);
+
+        assertFalse(result[0], "A path whose switches are never answered must fail");
+        assertTrue(elapsed < 1500, "A silent station must not be waited for, but the path took " + elapsed + " ms");
+    }
+
+    /**
+     * Echoes of the path's own switches do not count as a busy station: a path that the station keeps
+     * reporting in the wrong position still fails at the plain deadline.
+     */
+    @Test(timeOut = 30000)
+    public void testEchoesOfThePathsOwnSwitchesDoNotExtendTheWait() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildPath(170, "_own");
+
+        // Both switches answered straight, the opposite of the path's TURN, for far longer than the cap
+        List<CS2Message> echoes = new ArrayList<>();
+
+        for (int i = 0; i < 400; i++)
+        {
+            echoes.add(accessoryEcho(i % 2 == 0 ? tp.acc1 : tp.acc2, false));
+        }
+
+        boolean[] result = new boolean[1];
+        long elapsed = timePathWithStation(tp, echoes, result);
+
+        assertFalse(result[0], "A path its own switches contradict must fail");
+        assertTrue(elapsed < 1500, "Echoes of the path's own switches must not extend the wait, but the path took "
+            + elapsed + " ms");
     }
 
     /**

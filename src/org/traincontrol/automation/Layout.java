@@ -53,6 +53,10 @@ public class Layout
     // duration when an accessory never confirms.
     public static int PATH_VALIDATION_MS = 1000;
 
+    // The longest path validation waits on a station still busy switching other accessories, in PATH_VALIDATION_MS
+    // periods
+    public static final int PATH_VALIDATION_BUSY_MAX = 30;
+
     // When true, configureAndLockPath verifies (via the CS echo) that every accessory on the path actually
     // reached its commanded state before releasing the locomotive; on a persistent mismatch it stops that
     // locomotive and releases its locks rather than letting it depart onto an unset path.  Tied to the
@@ -1958,8 +1962,10 @@ public class Layout
      * more time) for every accessory on the path to reach its CS-confirmed commanded state.  Waits on
      * Accessory.actuationConfirmedMonitor (which MarklinAccessory notifies on each confirmed actuation)
      * rather than busy-polling, and returns as soon as all are confirmed - the full timeout only elapses
-     * when an accessory never confirms.  Must be called WITHOUT holding the Layout monitor so concurrent
-     * path checks are not blocked.
+     * when an accessory never confirms.  While the station is still answering other accessories it waits on,
+     * up to PATH_VALIDATION_BUSY_MAX periods: a CS3 switches one accessory at a time, about a second each, so
+     * ours may be queued behind another train's.  Must be called WITHOUT holding the Layout monitor so
+     * concurrent path checks are not blocked.
      * @param path
      * @return true if all accessories on the path are confirmed at their commanded state
      */
@@ -1991,7 +1997,8 @@ public class Layout
         // Wait on the dedicated actuation monitor until all are confirmed or the timeout elapses.
         // MarklinAccessory notifies it each time a CS echo advances stateAtLastActuation, so we wake and
         // re-check only when a confirmed state actually changed - and exit immediately once all are confirmed.
-        long deadline = System.currentTimeMillis() + PATH_VALIDATION_MS + PATH_VALIDATION_MS * accessories.size();
+        long start = System.currentTimeMillis();
+        long deadline = start + PATH_VALIDATION_MS + PATH_VALIDATION_MS * accessories.size();
 
         synchronized (Accessory.actuationConfirmedMonitor)
         {
@@ -2004,6 +2011,8 @@ public class Layout
                     break;
                 }
 
+                long echoesBefore = Accessory.echoes;
+
                 try
                 {
                     Accessory.actuationConfirmedMonitor.wait(remaining);
@@ -2014,6 +2023,14 @@ public class Layout
                     // (the loco is not going anywhere).  Preserve the interrupt for downstream code.
                     Thread.currentThread().interrupt();
                     return true;
+                }
+
+                // Another accessory answered, so the station is still working: give it two more periods.  An echo of
+                // one of ours does not count, so a path someone else keeps switching back still fails on time.
+                if (Accessory.echoes != echoesBefore && !accessories.contains(Accessory.lastEchoed))
+                {
+                    deadline = Math.max(deadline, Math.min(start + (long) PATH_VALIDATION_MS * PATH_VALIDATION_BUSY_MAX,
+                        System.currentTimeMillis() + 2L * PATH_VALIDATION_MS));
                 }
             }
         }
