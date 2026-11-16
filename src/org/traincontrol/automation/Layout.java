@@ -53,6 +53,13 @@ public class Layout
     // duration when an accessory never confirms.
     public static int PATH_VALIDATION_MS = 1000;
 
+    // The longest path validation waits on a station still busy switching other accessories, in PATH_VALIDATION_MS
+    // periods
+    public static final int PATH_VALIDATION_BUSY_MAX = 30;
+
+    // How often path validation looks for a power cut or a stopped autonomy run while it waits, in ms
+    private static final long STOP_CHECK_MS = 250;
+
     // When true, configureAndLockPath verifies (via the CS echo) that every accessory on the path actually
     // reached its commanded state before releasing the locomotive; on a persistent mismatch it stops that
     // locomotive and releases its locks rather than letting it depart onto an unset path.  Tied to the
@@ -168,6 +175,10 @@ public class Layout
 
     // How often executeTimetable checks whether the run it dispatched has actually finished
     private static final int COMPLETION_POLL = 250;
+
+    // Whether a run has said it is waiting for the track power in this cut; see waitWhileThePowerIsOff
+    private final AtomicBoolean waitingForThePower = new AtomicBoolean();
+
     private int maxLatency = 0;
     private int maxActiveTrains = 0;
     
@@ -1895,6 +1906,12 @@ public class Layout
         boolean configureFailed = false;
         int edgesLocked = 0;
 
+        // Whether this train was sent by a running autonomy, so stopping autonomy during the wait below keeps it back
+        boolean sentByAutonomy = this.running;
+
+        // The power's epoch before the first switch, so a Stop and Go while the path is set is seen
+        final int power = this.control.getPowerEpoch();
+
         synchronized (this)
         {
             // Return if this path isn't clear
@@ -1944,7 +1961,18 @@ public class Layout
         // Layout monitor).  If not, stop the locomotive and release its locks (returning false so
         // executePath does not run it); power is left on and autonomy re-attempts the path organically on
         // its next cycle, so no explicit retry is needed here.
-        if (!this.validatePathActuation(path))
+        boolean confirmed = this.validatePathActuation(path, sentByAutonomy, power);
+
+        // A power cut or a stopped autonomy run ends the wait: the train stays where it is, and nothing is counted
+        // against the accessories.
+        if (this.stoppedSince(sentByAutonomy, power))
+        {
+            this.giveBackUnrun(path, loc, sentByAutonomy && !this.running ? "autolayout.log.notSentAfterTheStop"
+                : "autolayout.log.notSentPowerOff");
+            return false;
+        }
+
+        if (!confirmed)
         {
             this.handleMisconfiguredPath(path, loc);
             return false;
@@ -1954,16 +1982,55 @@ public class Layout
     }
 
     /**
+     * Whether the track power is off or has been off since its epoch read power, or the autonomy run that sent a train
+     * (sentByAutonomy) has been stopped since.
+     */
+    private boolean stoppedSince(boolean sentByAutonomy, int power)
+    {
+        return !this.control.getPowerState() || this.control.getPowerEpoch() != power
+            || (sentByAutonomy && !this.running);
+    }
+
+    /**
+     * Releases the locks configureAndLockPath took for a train that is not going to depart, leaving it at its start
+     * point, without counting it as a misconfigured path.
+     *
+     * @param why the log message's key, given the locomotive's name
+     */
+    private void giveBackUnrun(List<Edge> path, Locomotive loc, String why)
+    {
+        synchronized (this)
+        {
+            for (Edge e : path)
+            {
+                e.setUnoccupied();
+
+                if (loc.equals(e.getEnd().getCurrentLocomotive()))
+                {
+                    e.getEnd().setLocomotive(null);
+                }
+            }
+        }
+
+        this.control.logf(why, loc.getName());
+    }
+
+    /**
      * Waits (up to PATH_VALIDATION_MS * (accessories on the path + 1), so longer paths get proportionally
      * more time) for every accessory on the path to reach its CS-confirmed commanded state.  Waits on
      * Accessory.actuationConfirmedMonitor (which MarklinAccessory notifies on each confirmed actuation)
      * rather than busy-polling, and returns as soon as all are confirmed - the full timeout only elapses
-     * when an accessory never confirms.  Must be called WITHOUT holding the Layout monitor so concurrent
-     * path checks are not blocked.
+     * when an accessory never confirms.  While the station is still answering other accessories it waits on,
+     * up to PATH_VALIDATION_BUSY_MAX periods: a CS3 switches one accessory at a time, about a second each, so
+     * ours may be queued behind another train's.  A power cut, or stopping the autonomy run that sent the
+     * train, ends the wait.  Must be called WITHOUT holding the Layout monitor so concurrent path checks are
+     * not blocked.
      * @param path
+     * @param sentByAutonomy whether autonomy was running when the path was configured
+     * @param power the power's epoch before the path was configured
      * @return true if all accessories on the path are confirmed at their commanded state
      */
-    private boolean validatePathActuation(List<Edge> path)
+    private boolean validatePathActuation(List<Edge> path, boolean sentByAutonomy, int power)
     {
         List<Accessory> accessories = new ArrayList<>();
         List<Boolean> desired = new ArrayList<>();
@@ -1988,10 +2055,10 @@ public class Layout
             return true;
         }
 
-        // Wait on the dedicated actuation monitor until all are confirmed or the timeout elapses.
-        // MarklinAccessory notifies it each time a CS echo advances stateAtLastActuation, so we wake and
-        // re-check only when a confirmed state actually changed - and exit immediately once all are confirmed.
-        long deadline = System.currentTimeMillis() + PATH_VALIDATION_MS + PATH_VALIDATION_MS * accessories.size();
+        // Woken by every CS echo (MarklinAccessory notifies the monitor), and at least every STOP_CHECK_MS so a
+        // power cut or a stopped autonomy run ends the wait at once instead of after the station's backlog.
+        long start = System.currentTimeMillis();
+        long deadline = start + PATH_VALIDATION_MS + PATH_VALIDATION_MS * accessories.size();
 
         synchronized (Accessory.actuationConfirmedMonitor)
         {
@@ -1999,21 +2066,34 @@ public class Layout
             {
                 long remaining = deadline - System.currentTimeMillis();
 
-                if (remaining <= 0)
+                if (remaining <= 0 || this.stoppedSince(sentByAutonomy, power))
                 {
                     break;
                 }
 
+                long echoesBefore = Accessory.echoes;
+
                 try
                 {
-                    Accessory.actuationConfirmedMonitor.wait(remaining);
+                    Accessory.actuationConfirmedMonitor.wait(Math.min(remaining, STOP_CHECK_MS));
                 }
                 catch (InterruptedException ex)
                 {
-                    // Autonomy is being stopped - abort validation without flagging a misconfiguration
-                    // (the loco is not going anywhere).  Preserve the interrupt for downstream code.
+                    // Interrupted: ask rather than assume everything actuated; allConfirmed reads state that has
+                    // already arrived.  The interrupt is preserved.
                     Thread.currentThread().interrupt();
-                    return true;
+                    return allConfirmed(accessories, desired);
+                }
+
+                // The station answered, so it is still working: give it two more periods.  One of ours answering in
+                // the wrong state does not count, so a path someone else keeps switching back still fails on time.
+                Accessory echoed = Accessory.lastEchoed;
+                int ours = accessories.indexOf(echoed);
+
+                if (Accessory.echoes != echoesBefore && (ours < 0 || echoed.isConfirmedAt(desired.get(ours))))
+                {
+                    deadline = Math.max(deadline, Math.min(start + (long) PATH_VALIDATION_MS * PATH_VALIDATION_BUSY_MAX,
+                        System.currentTimeMillis() + 2L * PATH_VALIDATION_MS));
                 }
             }
         }
@@ -2598,6 +2678,9 @@ public class Layout
         {    
             while(running)
             {                
+                // Nothing chosen while the track power is off
+                if (this.waitWhileThePowerIsOff()) continue;
+
                 List<Edge> path = this.pickPath(loc);
 
                 if (path != null)
@@ -2986,6 +3069,47 @@ public class Layout
     }
 
     /**
+     * Waits while the track power is off, before a run chooses or sends a train (dev's 20c25047).  Autonomy, a
+     * timetable and Return Home, which runs as a timetable, wait here rather than set routes on a railway with no
+     * power and count each refusal: they go on once the power is back.  Said once per cut, by whichever train finds
+     * the power off first.  A stop or a replaced layout ends the wait.  Never called holding a monitor: it sleeps.
+     *
+     * @return whether it waited, so the caller asks again whether its run still goes
+     */
+    private boolean waitWhileThePowerIsOff()
+    {
+        boolean waited = false;
+        boolean interrupted = false;
+
+        while (this.running && this.isCurrentLayout() && !this.control.getPowerState())
+        {
+            if (this.waitingForThePower.compareAndSet(false, true))
+            {
+                this.control.logf("autolayout.infoWaitingForTrackPower");
+            }
+
+            waited = true;
+
+            try
+            {
+                Thread.sleep(COMPLETION_POLL);
+            }
+            catch (InterruptedException e)
+            {
+                // Put back on the way out: re-armed here, the next sleep would throw at once and this would spin
+                interrupted = true;
+            }
+        }
+
+        // Cleared however the wait ends: kept after a stop during a cut, it silenced the next cut's line
+        this.waitingForThePower.set(false);
+
+        if (interrupted) Thread.currentThread().interrupt();
+
+        return waited;
+    }
+
+    /**
      * Executes the paths in the timetable.
      *
      * Blocks until every train has arrived, not merely until the last one has set off.
@@ -3069,6 +3193,9 @@ public class Layout
             // same question asked at the point that actually spins.
             while (this.running && this.isCurrentLayout())
             {
+                // No entry started while the track power is off
+                if (this.waitWhileThePowerIsOff()) continue;
+
                 if (i > startIndex && (System.currentTimeMillis() - startTime) < ttp.getSecondsToNext())
                 {
                     this.control.logf(
@@ -3104,6 +3231,9 @@ public class Layout
                         {
                             int attempts = 0;
 
+                            // The power's epoch as this attempt began
+                            int powerAtAttempt = this.control.getPowerEpoch();
+
                             while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(), ttp.getLoc().getPreferredSpeed(), ttp))
                             {
                                 // A SPEED IS NOT A BUSY TRACK.
@@ -3135,9 +3265,13 @@ public class Layout
                                     break;
                                 }
 
-                                attempts++;
+                                // An attempt the power cut is no refusal: Return Home does not give up on it
+                                boolean cut = !this.control.getPowerState()
+                                    || this.control.getPowerEpoch() != powerAtAttempt;
 
-                                if (this.timetableSequential && attempts >= STAGING_MAX_ATTEMPTS)
+                                if (!cut) attempts++;
+
+                                if (!cut && this.timetableSequential && attempts >= STAGING_MAX_ATTEMPTS)
                                 {
                                     // Retrying cannot help here - with one train moving at a time,
                                     // nothing will free the path.  Stop and say so rather than spin.
@@ -3181,6 +3315,10 @@ public class Layout
                                 {
                                     this.pacedWait(ttp.getLoc());
                                 }
+
+                                // Nor tried again with the power off
+                                this.waitWhileThePowerIsOff();
+                                powerAtAttempt = this.control.getPowerEpoch();
                             }
 
                             this.control.logf("autolayout.infoTimetablePathFinished");
@@ -3514,12 +3652,22 @@ public class Layout
         
         boolean result;
         
+        // The power's epoch before the first switch: a Stop and Go while the switches are commanded (about 150 ms
+        // each) may leave some unmoved, and a station that echoes while stopped confirms them anyway
+        final int power = this.control.getPowerEpoch();
+
         result = configureAndLockPath(path, loc);
 
         if (!result)
         {
             // configureAndLockPath has already logged the reason (path occupied, or a validation failure
             // that stopped the loco and released its locks) - do not run the locomotive.
+            return false;
+        }
+        else if (!this.control.getPowerState() || this.control.getPowerEpoch() != power)
+        {
+            // A train given a speed while the power is off would set off as soon as the power came back
+            this.giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");
             return false;
         }
         else
