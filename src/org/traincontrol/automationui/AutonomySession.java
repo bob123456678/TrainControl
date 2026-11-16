@@ -5290,6 +5290,26 @@ public class AutonomySession
     }
 
     /**
+     * The same as autonomy would run it (FR-221): turning only where it stands, as a train that turned on arriving
+     * there, never on the way, nor to a station it leaves alone; null where only a hand send gets there.
+     */
+    public List<GraphReducer.ReducedEdge> testPathForAutonomy(TileKey from, TileKey to)
+    {
+        if (reducer == null || manualOnlyStations().contains(to)) return null;
+
+        Set<TileKey> noTurn = new HashSet<>(mandatoryTurnTiles());
+
+        noTurn.remove(to);
+        noTurn.addAll(shutTiles());
+
+        Set<TileKey> turnAtTheStart = mayTurnTiles().contains(from) ? Collections.singleton(from)
+            : Collections.<TileKey>emptySet();
+
+        return reducer.findPath(from, to, turnAtTheStart, mandatoryTurnTiles(), barredArrivals(), noTurn,
+            stopOnlyTiles(), startingArrivals().get(from));
+    }
+
+    /**
      * Whether a square can meaningfully be given a direction.  False for a link: its route is a stub, so "toward A" and
      * "toward B" are the same place; a one-way link would need the jump to carry it.
      */

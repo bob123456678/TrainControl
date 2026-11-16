@@ -35,20 +35,7 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
     @Test
     public void testNoPathIsDrawnFromAStationWhoseStoppingCopyCannotLeave() throws Exception
     {
-        LayoutDiagram page = pageWithATwoEndedStation();
-
-        session.open(Arrays.asList(page));
-        session.initialize("Barred");
-
-        TileKey west = new TileKey("main", 1, 1);
-        TileKey middle = new TileKey("main", 3, 1);
-
-        session.setStation(west, true);
-        session.setPointName(west, "WestEnd");
-        session.setPointFlag(west, AutonomyBuilder.CAN_REVERSE, true);
-        session.setStation(middle, true);
-        session.setPointName(middle, "Middle");
-        session.setBarredArrivals(middle, new LinkedHashSet<>(Arrays.asList(Side.E)));
+        westEndAndMiddleBarred("Barred", Side.E);
         session.rebuild();
 
         assertTrue(subjectsOf(AutonomyChecks.STATION_REACHES_NOTHING).contains("Middle"),
@@ -105,6 +92,55 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
 
         assertNotEquals(legs[1], I18n.t("autosetup.ui.testLegBlocked"),
             "EastEnd can turn around and reach Middle, and Test a Path drew no route back");
+    }
+
+    /**
+     * Middle takes trains from the east only, so from WestEnd the one way there runs past it to EastTurn, a square that
+     * is no station, turns there and comes back.  Autonomy never turns a train on the way, so that leg is drawn purple
+     * and the strip says why, while the leg back needs no turn and is autonomy's, in amber (FR-221).
+     *
+     * MUTATION: let `AutonomySession.testPathForAutonomy` turn wherever `mayTurnTiles` allows, and this fails.
+     */
+    @Test
+    public void testALegThatTurnsOnTheWayIsDrawnAsOnlyAHandSendTakesIt() throws Exception
+    {
+        westEndAndMiddleBarred("Turning", Side.W);
+
+        TileKey east = new TileKey("main", 5, 1);
+
+        session.setPointName(east, "EastTurn");
+        session.setPointFlag(east, AutonomyBuilder.CAN_REVERSE, true);
+        session.rebuild();
+
+        assertNotNull(session.testPath(west, middle), "precondition: a hand send cannot turn at EastTurn to reach Middle");
+
+        AutonomyEditorPanel panel = armed();
+
+        String[] legs = legs(panel, west, middle);
+
+        assertNotEquals(legs[1], I18n.t("autosetup.ui.testLegBlocked"), "precondition: no route back from Middle");
+
+        String said = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
+
+        String turns = I18n.f("autosetup.ui.testTurnsOnTheWay", "WestEnd", "Middle");
+
+        assertTrue(said.contains(turns), "the strip does not say the way to Middle turns on the way, which autonomy never"
+            + " does: " + said);
+
+        assertTrue(said.contains("(" + I18n.t("autosetup.ui.testColorPurple") + ")")
+            && said.contains("(" + I18n.t("autosetup.ui.testColorAmber") + ")"), "the leg there is not called purple"
+            + " and the leg back amber: " + said);
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> drawn =
+            (java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>>)
+            Reflect.get(AutonomyEditorPanel.class, panel, "traces");
+
+        boolean purple = false;
+
+        for (org.traincontrol.automationui.TileAnnotation.Trace line : drawn.get(east)) purple |= line.isManualOnly();
+
+        assertTrue(purple, "the turn at EastTurn is not drawn purple: " + drawn.get(east));
     }
 
     /**
@@ -195,6 +231,23 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
         }
     }
 
+    private final TileKey west = new TileKey("main", 1, 1);
+    private final TileKey middle = new TileKey("main", 3, 1);
+
+    /** The two-ended page: WestEnd, where trains may turn, and Middle, which refuses arrivals by `barred`. */
+    private void westEndAndMiddleBarred(String configuration, Side barred) throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+        session.initialize(configuration);
+
+        session.setStation(west, true);
+        session.setPointName(west, "WestEnd");
+        session.setPointFlag(west, AutonomyBuilder.CAN_REVERSE, true);
+        session.setStation(middle, true);
+        session.setPointName(middle, "Middle");
+        session.setBarredArrivals(middle, new LinkedHashSet<>(Arrays.asList(barred)));
+    }
+
     /** Test a Path pressed and the two squares clicked: what the strip says of the leg there and of the leg back. */
     private String[] testAPath(TileKey from, TileKey to) throws Exception
     {
@@ -211,10 +264,12 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
         return panel;
     }
 
-    /** The word for a leg's color: purple to a station only a person may send a train to, else the leg's own. */
-    private String colorOf(TileKey end, String ordinary)
+    /** The word for a leg's color: purple where only a hand send gets there (FR-221), else the leg's own. */
+    private String colorOf(TileKey from, TileKey end, String ordinary)
     {
-        return I18n.t(session.manualOnlyStations().contains(end) ? "autosetup.ui.testColorPurple" : ordinary);
+        boolean byHand = session.testPathForAutonomy(from, end) == null && session.testPath(from, end) != null;
+
+        return I18n.t(byHand ? "autosetup.ui.testColorPurple" : ordinary);
     }
 
     /** The two squares clicked: what the strip says of the leg there and of the leg back. */
@@ -227,8 +282,8 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
 
         // The legs read out between the message's fixed words, so the claim holds in any language
         String shape = I18n.f("autosetup.ui.testBothWays", session.describeTile(from), session.describeTile(to),
-            "\u0001", "\u0002", "\u0003", colorOf(to, "autosetup.ui.testColorYellow"),
-            colorOf(from, "autosetup.ui.testColorAmber"));
+            "\u0001", "\u0002", "\u0003", colorOf(from, to, "autosetup.ui.testColorYellow"),
+            colorOf(to, from, "autosetup.ui.testColorAmber"));
 
         String before = shape.substring(0, shape.indexOf('\u0001'));
         String afterThere = shape.substring(shape.indexOf('\u0001') + 1, shape.indexOf('\u0002'));

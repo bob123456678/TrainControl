@@ -2323,21 +2323,21 @@ public class testEditorSurfaceRules
     }
 
     /**
-     * Why not Moving? asks the start question of the tier it is showing: the editor's one call to
-     * `Layout.explainCannotStart(loc, byHand)` is what makes it reach the operator (OB-225).  Reverted to the
-     * one-argument form, a train on Manual is told autonomy's reasons.
+     * Why not Moving? asks the start question of both tiers, a hand send's and autonomy's, each by name (OB-225,
+     * FR-221): the one-argument form is autonomy's alone, and asked for both it would tell a train a person may send
+     * that it cannot be sent anywhere.
      *
-     * MUTATION: call the one-argument form from `composeWhy` and this fails.
+     * MUTATION: ask the one-argument form for a hand send in `DestinationTable` and this fails.
      */
     @Test
-    public void testWhyNotMovingAsksTheTierItShows() throws Exception
+    public void testWhyNotMovingAsksTheStartQuestionOfBothTiers() throws Exception
     {
-        String panel = SourceOf.allCode();
+        String code = SourceOf.allCode();
 
-        assertTrue(panel.contains("explainCannotStart(standing, byHand)"), "Why not Moving? no longer asks the start"
-            + " question of the tier it shows, so on Manual it gives autonomy's reasons (OB-225, GUI3-C1)");
-        assertFalse(panel.contains("explainCannotStart(standing)"), "Why not Moving? asks autonomy's start question"
-            + " whatever the tier (OB-225, GUI3-C1)");
+        assertTrue(code.contains("explainCannotStart(loc, true)") && code.contains("explainCannotStart(loc, false)"),
+            "Why not Moving? no longer asks the start question of both tiers by name (OB-225, GUI3-C1, FR-221)");
+        assertFalse(code.contains("layout.explainCannotStart(loc)") || code.contains("explainCannotStart(standing)"),
+            "Why not Moving? asks autonomy's start question as a hand send's (OB-225, GUI3-C1)");
     }
 
     /**

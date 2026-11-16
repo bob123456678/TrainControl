@@ -102,12 +102,12 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             "OFF THE EVENT THREAD: AutonomyRenderer, submitted by repaintAutoLocList; its own javadoc"
             + " says why the search and the legend reads both happen there");
 
-        ALLOWED.put("AutoLocomotiveStatus.java#whyNotReport",
-            "OFF THE EVENT THREAD: the `new Thread` showWhyNot starts before it opens the window");
-
-        ALLOWED.put("AutoLocomotiveStatus.java#whyNotToolTip",
-            "OFF THE EVENT THREAD: the `new Thread` explainOnHover starts (OB-079 - hovering this"
-            + " label during a dispatch used to freeze the whole window)");
+        ALLOWED.put("DestinationTable.java#DestinationTable",
+            "OFF THE EVENT THREAD: built by the locomotive list's whyNotReport, on the `new Thread` showWhyNot starts"
+            + " before it opens the window, and whyNotToolTip, on the one explainOnHover starts (OB-079 - hovering"
+            + " that label during a dispatch used to freeze the whole window); and by EditorWhy.composeWhy, on"
+            + " WhyRenderer, whose answer is painted in an invokeLater (D3-C1, Adam 2026-09-09: \"I would rather"
+            + " take it off EDT\")");
 
         ALLOWED.put("LayoutRightclickAutonomyMenu.java#gatherPathOptions",
             "OFF THE EVENT THREAD: the worker showFor starts before it builds the menu, which is the"
@@ -127,12 +127,6 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         ALLOWED.put("TimetableTab.java#repaintTimetable",
             "OFF THE EVENT THREAD: this method bounces itself onto a thread when it finds itself on the"
             + " event thread, and takes the monitor only after that");
-
-        ALLOWED.put("EditorWhy.java#composeWhy",
-            "OFF THE EVENT THREAD: WhyRenderer, submitted by applyWhy - which captures the Layout and"
-            + " the station index on the event thread first, because both of those BUILD, and paints"
-            + " the answer in an invokeLater.  This was the last ON THE EVENT THREAD allowance for a"
-            + " graph walk (D3-C1, Adam 2026-09-09: \"I would rather take it off EDT\")");
 
         ALLOWED.put("AutonomySession.java#routesCoveredByStandingTrains",
             "OFF THE EVENT THREAD: reached only from CoveredTrackView.workOutCoveredTrack, on"
