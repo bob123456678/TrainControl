@@ -273,6 +273,103 @@ public class testStagingSkipsALegWithNoSpeed
     }
 
     /**
+     * Return Home does not give up on a leg the power keeps cutting: three Stop and Go cuts, each while the leg's route
+     * is being set, refuse three attempts in a row, and none of them counts towards declaring the leg stuck.  The
+     * power is back on before each attempt ends, so the wait for the power never holds the next one back.
+     *
+     * ON A DEADLINE, as above.
+     */
+    @Test(timeOut = 90000)
+    public void testReturnHomeDoesNotGiveUpOnALegThePowerKeepsCutting() throws Exception
+    {
+        Layout layout = load(ring(LOC_MOVING, null, null));
+
+        // Setting the route takes about 0.9 s
+        for (int i = 0; i < 5; i++)
+        {
+            layout.getEdge("SG A", "SG B").addConfigCommand(model.newSwitch(90 + i,
+                Accessory.accessoryDecoderType.MM2, false).getName(), Accessory.accessorySetting.TURN);
+        }
+
+        try
+        {
+            layout.setSimulate(true);
+        }
+        catch (Exception e)
+        {
+            throw new SkipException("simulation could not be enabled: " + e.getMessage());
+        }
+
+        layout.setHomeLocomotive("SG B", LOC_MOVING);
+        loc(LOC_MOVING).setPreferredSpeed(35);
+
+        HomeStaging.Plan plan = layout.loadReturnToHomeTimetable();
+
+        assertTrue(plan.isPossible(), "precondition: Return Home must have a plan: " + plan.getOutcome());
+        assertTrue(layout.isTimetableSequential(), "precondition: a Return Home run goes one train at a time");
+        assertEquals(layout.getTimetable().size(), 1, "precondition: one leg: " + layout.getTimetable());
+
+        final boolean[] ranToTheEnd = new boolean[1];
+        final Throwable[] thrown = new Throwable[1];
+
+        Thread run = new Thread(() ->
+        {
+            try
+            {
+                ranToTheEnd[0] = layout.executeTimetable();
+            }
+            catch (Throwable bad)
+            {
+                thrown[0] = bad;
+            }
+        });
+
+        run.start();
+
+        for (int cut = 1; cut <= 3; cut++)
+        {
+            // An attempt takes the leg's destination as it starts setting the route, and gives it back when refused
+            long deadline = System.currentTimeMillis() + 10000;
+
+            while (layout.getPoint("SG B").getCurrentLocomotive() == null && run.isAlive()
+                && System.currentTimeMillis() < deadline)
+            {
+                Thread.sleep(5);
+            }
+
+            assertTrue(run.isAlive(), "the Return Home run ended before cut " + cut + ": it gave up on the leg");
+            assertNotNull(layout.getPoint("SG B").getCurrentLocomotive(), "precondition: attempt " + cut
+                + " never started setting the route");
+
+            power(false);
+            Thread.sleep(100);
+            power(true);
+
+            deadline = System.currentTimeMillis() + 10000;
+
+            while (layout.getPoint("SG B").getCurrentLocomotive() != null && System.currentTimeMillis() < deadline)
+            {
+                Thread.sleep(5);
+            }
+
+            assertNull(layout.getPoint("SG B").getCurrentLocomotive(), "precondition: attempt " + cut
+                + " was not refused: the cut did not land while its route was being set");
+        }
+
+        run.join(60000);
+
+        assertFalse(run.isAlive(), "the Return Home run did not finish within a minute of the last cut");
+
+        if (thrown[0] != null) throw new RuntimeException(thrown[0]);
+
+        assertTrue(ranToTheEnd[0], "the run reported itself abandoned, the leg stuck and every train stopped, "
+            + "because three attempts were cut by the power");
+
+        assertEquals(layout.getLocomotiveLocation(loc(LOC_MOVING)).getName(), "SG B",
+            "the train never got home after the cuts");
+    }
+
+    /**
      * Sends one train home, one station away, through 9 s of power cut: from the start, or once the leg's route,
      * five switches, is being set.
      */
