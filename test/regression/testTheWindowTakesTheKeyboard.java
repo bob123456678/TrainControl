@@ -416,8 +416,8 @@ public class testTheWindowTakesTheKeyboard
 
         try
         {
-            java.lang.reflect.Method raise =
-                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "comeToTheForeground");
+            final Object notice = Reflect.get(org.traincontrol.gui.TrainControlUI.class, up.ui, "connectingNotice");
+            java.lang.reflect.Method raise = Reflect.method(notice.getClass(), "comeToTheForeground");
 
             for (final boolean onTop : new boolean[] { false, true })
             {
@@ -438,7 +438,7 @@ public class testTheWindowTakesTheKeyboard
                 {
                     try
                     {
-                        raise.invoke(up.ui);
+                        raise.invoke(notice);
                     }
                     catch (ReflectiveOperationException e)
                     {
@@ -493,8 +493,8 @@ public class testTheWindowTakesTheKeyboard
 
         try
         {
-            java.lang.reflect.Method raise =
-                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "comeToTheForeground");
+            final Object notice = Reflect.get(org.traincontrol.gui.TrainControlUI.class, up.ui, "connectingNotice");
+            java.lang.reflect.Method raise = Reflect.method(notice.getClass(), "comeToTheForeground");
 
             javax.swing.SwingUtilities.invokeAndWait(() -> up.ui.setExtendedState(
                 java.awt.Frame.ICONIFIED | java.awt.Frame.MAXIMIZED_BOTH));
@@ -513,7 +513,7 @@ public class testTheWindowTakesTheKeyboard
             {
                 try
                 {
-                    raise.invoke(up.ui);
+                    raise.invoke(notice);
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -588,8 +588,8 @@ public class testTheWindowTakesTheKeyboard
                     }
                 });
 
-            java.lang.reflect.Method focus =
-                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "focusTheKeyboard");
+            final Object notice = Reflect.get(org.traincontrol.gui.TrainControlUI.class, up.ui, "connectingNotice");
+            java.lang.reflect.Method focus = Reflect.method(notice.getClass(), "focusTheKeyboard");
 
             final java.lang.reflect.Method call = focus;
 
@@ -597,7 +597,7 @@ public class testTheWindowTakesTheKeyboard
             {
                 try
                 {
-                    call.invoke(up.ui);
+                    call.invoke(notice);
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -738,13 +738,14 @@ public class testTheWindowTakesTheKeyboard
      */
     private static void call(org.traincontrol.gui.TrainControlUI on, String name) throws Exception
     {
-        final java.lang.reflect.Method m = Reflect.method(org.traincontrol.gui.TrainControlUI.class, name);
+        final Object notice = Reflect.get(org.traincontrol.gui.TrainControlUI.class, on, "connectingNotice");
+        final java.lang.reflect.Method m = Reflect.method(notice.getClass(), name);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
             try
             {
-                m.invoke(on);
+                m.invoke(notice);
             }
             catch (Exception e)
             {

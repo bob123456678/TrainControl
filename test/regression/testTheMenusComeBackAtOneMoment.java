@@ -289,13 +289,14 @@ public class testTheMenusComeBackAtOneMoment
     /** A private no-argument method of the window, by name, on the event thread. */
     private static void call(org.traincontrol.gui.TrainControlUI on, String name) throws Exception
     {
-        final java.lang.reflect.Method m = Reflect.method(org.traincontrol.gui.TrainControlUI.class, name);
+        final Object notice = Reflect.get(org.traincontrol.gui.TrainControlUI.class, on, "connectingNotice");
+        final java.lang.reflect.Method m = Reflect.method(notice.getClass(), name);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
             try
             {
-                m.invoke(on);
+                m.invoke(notice);
             }
             catch (Exception e)
             {

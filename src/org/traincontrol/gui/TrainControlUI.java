@@ -2346,7 +2346,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public boolean autonomyMenuIsUsable()
     {
-        return getModel() != null && isLayoutLoaded() && !menusAreHeldByTheNotice();
+        return getModel() != null && isLayoutLoaded() && !this.connectingNotice.menusAreHeldByTheNotice();
     }
 
     /**
@@ -2406,6 +2406,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     JMenu routesMenu()
     {
         return this.routesMenu;
+    }
+
+    JTabbedPane keyboardTab()
+    {
+        return this.KeyboardTab;
     }
 
     JTabbedPane locCommandPanels()
@@ -5528,7 +5533,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void display()
     {     
         // The connecting notice comes off first (OB-170).
-        connectingFinished();
+        this.connectingNotice.connectingFinished();
 
         // Remember window location.  Because isResizable is already false, this will not restore the size
         this.loadWindowBounds();
@@ -5580,7 +5585,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 
         restoreLayoutTitles();
 
-        takeTheKeyboard();
+        this.connectingNotice.takeTheKeyboard();
 
         letTheWholeWindowDriveTrains();
     }
@@ -5675,7 +5680,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** What the window held before the connecting notice went over it; null when none is showing. */
-    private Container contentBehindTheNotice;
+    Container contentBehindTheNotice;
 
     /**
      * Puts this window on screen with a "connecting" notice before there is anything to show (OB-170): a content-pane
@@ -5690,7 +5695,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         setContentPane(StartupSplash.panel(message));
 
-        greyTheMenus();
+        this.connectingNotice.greyTheMenus();
 
         // Where it is going to live, so it does not appear in one place and jump to another.
         loadWindowBounds();
@@ -5698,204 +5703,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         setVisible(true);
     }
 
-    /** Gives the window its own content back; safe when no notice was shown. */
-    public void connectingFinished()
-    {
-        if (contentBehindTheNotice == null) return;
+    final List<Runnable> afterTheNotice = new ArrayList<>();
 
-        setContentPane(contentBehindTheNotice);
+    final List<JMenu> menusGreyedByTheNotice = new ArrayList<>();
 
-        final List<Runnable> waiting;
+    boolean theNoticeHoldsTheMenus;
 
-        synchronized (afterTheNotice)
-        {
-            contentBehindTheNotice = null;
-
-            waiting = new ArrayList<>(afterTheNotice);
-
-            afterTheNotice.clear();
-        }
-
-        ungreyTheMenus();
-
-        revalidate();
-        repaint();
-
-        // Posted, so the window has painted its own content before the first of them speaks
-        for (Runnable one : waiting) SwingUtilities.invokeLater(one);
-    }
-
-    private final List<Runnable> afterTheNotice = new ArrayList<>();
-
-    /** Runs this on the event thread once the connecting notice is gone (OB-349); at once where there is none. */
-    void whenTheConnectingNoticeIsGone(Runnable action)
-    {
-        synchronized (afterTheNotice)
-        {
-            if (contentBehindTheNotice != null)
-            {
-                afterTheNotice.add(action);
-
-                return;
-            }
-        }
-
-        SwingUtilities.invokeLater(action);
-    }
-
-    private final List<JMenu> menusGreyedByTheNotice = new ArrayList<>();
-
-    /** Whether the connecting notice still holds the menu bar; menus decided while connecting ask this (OB-187). */
-    boolean menusAreHeldByTheNotice()
-    {
-        return theNoticeHoldsTheMenus;
-    }
-
-    private boolean theNoticeHoldsTheMenus;
-
-    /**
-     * Grays out each menu, not the bar (setEnabled(false) leaves menus opening); only what this turned off comes back.
-     */
-    private void greyTheMenus()
-    {
-        // Set before walking the bar: a menu mounted during the connect asks it afterwards.
-        theNoticeHoldsTheMenus = true;
-
-        JMenuBar bar = getJMenuBar();
-
-        if (bar == null) return;
-
-        for (int i = 0; i < bar.getMenuCount(); i++)
-        {
-            JMenu menu = bar.getMenu(i);
-
-            // getMenu returns null for anything in the bar that is not a JMenu - a glue or a strut.
-            if (menu == null || !menu.isEnabled()) continue;
-
-            menu.setEnabled(false);
-
-            menusGreyedByTheNotice.add(menu);
-        }
-    }
-
-    /** Gives back exactly the menus `greyTheMenus` took. */
-    private void ungreyTheMenus()
-    {
-        // First, because the menus asked below read it.
-        theNoticeHoldsTheMenus = false;
-
-        for (JMenu menu : menusGreyedByTheNotice) menu.setEnabled(true);
-
-        menusGreyedByTheNotice.clear();
-
-        // The menus not on the bar when it was grayed.  Through `refreshAutonomyAnchor`, not the menu: enabling the
-        // PLACEHOLDER would switch on a menu that opens onto nothing (OB-202).
-        refreshAutonomyAnchor();
-    }
-
-    /** Takes the window off the screen when start-up failed, so no notice hides the failure. */
     public void connectingFailed()
     {
-        // On the event thread whoever calls: the callers are failure paths, and hiding a frame off it races on paint.
-        if (!SwingUtilities.isEventDispatchThread())
-        {
-            SwingUtilities.invokeLater(() -> connectingFailed());
-
-            return;
-        }
-
-        connectingFinished();
-
-        setVisible(false);
+        this.connectingNotice.connectingFailed();
     }
 
-    /**
-     * Puts the keyboard on the tabbed pane and locomotive panel, which read the letter keys (the frame is
-     * non-focusable), once the window is up (OB-168); posted, as focus asked for during the showing event is dropped on
-     * Windows.
-     */
-    private void takeTheKeyboard()
-    {
-        // The window first, then what is in it (OB-170): restoring the topmost flag later resets the focus owner.
-        SwingUtilities.invokeLater(() -> comeToTheForeground());
-
-        // And again when the window gains focus with nothing focused: requestFocusInWindow does nothing until then.
-        addWindowFocusListener(new WindowAdapter()
-        {
-            @Override
-            public void windowGainedFocus(WindowEvent e)
-            {
-                // Posted, measured: AWT restores the last focus owner while handling this event.
-                SwingUtilities.invokeLater(() -> focusTheKeyboard());
-            }
-        });
-    }
-
-    /**
-     * Makes this the active window, which on Windows `toFront()` does not (OB-170): only the always-on-top toggle gets
-     * past the foreground rule.  Called once from start-up; every activation would pull the application in front of
-     * whatever the operator switched to.
-     */
-    private void comeToTheForeground()
-    {
-        // Unminimized first, clearing only the ICONIFIED bit so a maximized window stays maximized.
-        if ((getExtendedState() & Frame.ICONIFIED) != 0)
-        {
-            setExtendedState(getExtendedState() & ~Frame.ICONIFIED);
-        }
-
-        // The operator's setting, not `isAlwaysOnTop()`: the window arrives topmost on purpose.
-        raiseOnce(prefs.getBoolean(ONTOP_SETTING_PREF, ONTOP_SETTING_DEFAULT), 1);
-    }
-
-    /** How long the window manager gets to act on a raise before the topmost flag is handed back. */
-    private static final int FOREGROUND_SETTLE_MS = 400;
-
-    /**
-     * One attempt at the front; tried twice, not looped, as an application that keeps pulling itself forward is worse.
-     */
-    private void raiseOnce(final boolean wasOnTop, final int attempt)
-    {
-        setAlwaysOnTop(true);
-
-        toFront();
-
-        requestFocus();
-
-        javax.swing.Timer settle = new javax.swing.Timer(FOREGROUND_SETTLE_MS, event ->
-        {
-            // The operator's setting back, always: stuck above everything would disagree with the menu item.
-            setAlwaysOnTop(wasOnTop);
-
-            if (!isActive() && attempt < 2)
-            {
-                raiseOnce(wasOnTop, attempt + 1);
-
-                return;
-            }
-
-            // And only now the keyboard (OB-170): the restore above resets the focus owner.
-            SwingUtilities.invokeLater(this::focusTheKeyboard);
-        });
-
-        settle.setRepeats(false);
-        settle.start();
-    }
-
-    /**
-     * Puts the keyboard on the tabbed pane unless somebody is typing here, so it is safe on every activation.  Typing,
-     * not focus (OB-170): focus on a label or button consumes no letters.
-     */
-    private void focusTheKeyboard()
-    {
-        if (KeyboardTab == null) return;
-
-        Component owner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-
-        if (owner instanceof JTextComponent && SwingUtilities.isDescendingFrom(owner, this)) return;
-
-        KeyboardTab.requestFocusInWindow();
-    }
+    final ConnectingNotice connectingNotice = new ConnectingNotice(this);
 
     
     /** FlatLaf's own answer, protected there: are a window's menus drawn in its title bar (never on a Mac)? */

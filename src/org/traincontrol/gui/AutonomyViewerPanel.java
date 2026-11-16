@@ -1180,7 +1180,7 @@ public class AutonomyViewerPanel extends JPanel
 
         final List<String> lines = linesFor(leftOut);
 
-        ui.whenTheConnectingNoticeIsGone(() -> showLocomotivesLeftOutLines(configuration, lines));
+        ui.connectingNotice.whenTheConnectingNoticeIsGone(() -> showLocomotivesLeftOutLines(configuration, lines));
     }
 
     /** One line for each locomotive, in name order: its name, and what it lost where. */
