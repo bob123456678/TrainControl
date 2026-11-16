@@ -154,7 +154,7 @@ public class NetworkProxy
 
     /**
      * One transport is live at a time; UDP stays bound under TCP so a second copy finds the port taken.  Guards
-     * udpLive.
+     * udpLive and udpSetAside.
      */
     private final Object udpLock = new Object();
 
@@ -179,7 +179,8 @@ public class NetworkProxy
     private volatile Map<Integer, Integer> listedDevice = new java.util.HashMap<>();
     private volatile Map<Integer, Integer> savedDevice = new java.util.HashMap<>();
 
-    // Each contact asked, and its first real event since the query (0 for none); guards asks and askEnded
+    // Each contact asked, and its first real event since the query (0 for none); forgotten RESYNC_WAIT_NS after the
+    // last ask; guards asks and askEnded
     private final Map<Integer, Long> overtaken = new ConcurrentHashMap<>();
 
     private int asks;

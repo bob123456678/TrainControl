@@ -470,8 +470,8 @@ public class Point
 
         assign(l);
 
-        // The signal follows the platform through this one door: red while claimed (OB-315), green when not, never red
-        // while an active path holds it green (OB-340).
+        // The signal follows the platform through this one door: red while claimed (OB-315, `Layout.onlyPassing`), green
+        // when not, never red while an active path holds it green (OB-340).
         if (this.layout != null) this.layout.refreshProtectingSignal(this);
 
         // AND THE TAIL BELONGS TO THE TRAIN THAT LEFT.

@@ -361,7 +361,10 @@ final class ReturnHomeController extends SettledQuestion
         return menu;
     }
 
-    /** Shared by the triage and the full plan, so one situation is described one way.  `blocked` may be null. */
+    /**
+     * Shared by the triage and the full plan, so one situation is described one way.  `blocked` may be null; only
+     * IMPOSSIBLE and POSITION_AMBIGUOUS carry any.
+     */
     String describeStagingOutcome(HomeStaging.Outcome outcome, List<Locomotive> blocked)
     {
         switch (outcome)

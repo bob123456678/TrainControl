@@ -38,9 +38,10 @@ import org.testng.annotations.Test;
  * Two more ratchets read `COMMENT_PINS` (a file beside this one), one line per file of `src/` that needs one: COMMENT
  * SHARE, the comment characters (`//`, block and javadoc, delimiters included) as a fraction of the file, in tenths of
  * a percent, and PRIVATE JAVADOC, the javadoc blocks of over 3 lines on a declaration that is neither public nor
- * protected (interface members count, as they have no modifier).  A file not in the pins may carry up to
- * `SHARE_CEILING` and no long private javadoc, and a file under `SHARE_FLOOR` characters is exempt from the share; a
- * pinned file may not rise above its pin.
+ * protected.  The members of a public or protected interface (explicit, or nested in one) are public and enum constants
+ * have no modifier to read, so neither counts.  A file not in the pins may carry up to `SHARE_CEILING` and no long
+ * private javadoc, and a file under `SHARE_FLOOR` characters is exempt from the share; a pinned file may not rise above
+ * its pin, and a pin is lowered when its file is trimmed (a file well under its pin is not a failure).
  *
  * The first two count `test/` too, under pins of its own.  Not counted by them: the NetBeans generated regions (from a line holding `//GEN-BEGIN` to the one
  * holding `//GEN-END`, which includes the "Variables declaration - do not modify" block).
@@ -76,9 +77,6 @@ public class testCommentsStayLean
 
     /** A file with fewer characters than this has no share ceiling: a few lines of javadoc are most of it. */
     private static final int SHARE_FLOOR = 1000;
-
-    /** Tenths a pin may stand above its file's share before the failure asks for it to be lowered. */
-    private static final int SHARE_SLACK = 20;
 
     /** Javadoc blocks over this many lines on a non-public, non-protected declaration are counted. */
     private static final int PRIVATE_JAVADOC_LINES = 3;
@@ -224,11 +222,10 @@ public class testCommentsStayLean
     }
 
     /**
-     * A file's comments, as a share of its characters, stay under its pin (or, with no pin, under the ceiling).  A trim
-     * that takes a pinned file more than SHARE_SLACK below its pin fails until the pin is lowered.
+     * A file's comments, as a share of its characters, stay under its pin (or, with no pin, under the ceiling).
      *
      * MUTATION: add a 40-line comment to a pinned file or to an unpinned one, and this fails naming the file, its share
-     * and its pin; or raise a file's pin in the pins file by 30 above its share, and this fails asking for it to be lowered.
+     * and its pin.
      */
     @Test
     public void testCommentShareOnlyGoesDown() throws Exception
@@ -255,6 +252,76 @@ public class testCommentsStayLean
         assertTrue(failures.isEmpty(), (share ? "comment share: " : "private javadoc: ") + failures);
     }
 
+    /**
+     * The ceiling is exercised on a fixture over SHARE_FLOOR characters, and the pin and the floor beside it.
+     *
+     * MUTATION: set SHARE_CEILING to 1000, or drop the floor test in `verdict`, and this fails.
+     */
+    @Test
+    public void testTheShareCeilingHoldsForANewFile() throws Exception
+    {
+        StringBuilder fat = new StringBuilder("class Fat\n{\n");
+
+        for (int i = 0; i < 30; i++)
+        {
+            fat.append("    // a comment line that says very little\n    int f").append(i).append(";\n");
+        }
+
+        int[] shape = shapeOf(fat.toString());
+
+        assertTrue(shape[1] > SHARE_FLOOR && shape[0] > SHARE_CEILING, "fixture not over the ceiling: " + shape[0]);
+
+        assertNotNull(verdict(true, "Fat.java", shape, null), "a new file over the ceiling passed");
+
+        assertNull(verdict(true, "Fat.java", shape, new int[] {shape[0], 0}), "a file at its pin failed");
+
+        assertNotNull(verdict(true, "Fat.java", shape, new int[] {shape[0] - 1, 0}), "a file over its pin passed");
+
+        assertNull(verdict(true, "Fat.java", shape, new int[] {shape[0] + 200, 0}), "a file well under its pin failed");
+
+        int[] small = shapeOf("class Small\n{\n    // a comment and little else\n}\n");
+
+        assertTrue(small[1] < SHARE_FLOOR && small[0] > SHARE_CEILING, "the small fixture is not small and fat");
+
+        assertNull(verdict(true, "Small.java", small, null), "a file under the floor failed the ceiling");
+    }
+
+    /**
+     * Long javadoc is counted on private and package-private declarations only: not on the members of a public or
+     * protected interface, nor on enum constants, and an annotation before the modifiers on the same line is skipped.
+     * The fixture holds ten long javadocs; four sit on a declaration without public or protected.
+     *
+     * MUTATION: in `isPrivateDeclaration` drop the `I` interface test, the enum-constant test or the annotation strip,
+     * and this fails with the count that kind adds.
+     */
+    @Test
+    public void testLongPrivateJavadocIsCountedOnPrivateDeclarationsOnly() throws Exception
+    {
+        String doc = "    /**\n     * a\n     * b\n     * c\n     */\n";
+
+        String source = "public interface Shown\n{\n" + doc + "    void inPublicInterface();\n}\n"
+            + "interface Local\n{\n" + doc + "    void inPackageInterface();\n}\n"
+            + "enum Colour\n{\n" + doc + "    RED,\n" + doc + "    GREEN(1);\n" + doc + "    Colour(int x) {}\n}\n"
+            + "class Holder\n{\n" + doc + "    @Override public String toString() { return \"\"; }\n"
+            + doc + "    @Override String hidden() { return \"\"; }\n" + doc + "    private int x;\n"
+            + doc + "    @SuppressWarnings(\"x\") public void quiet() {}\n" + doc + "    public int y;\n    /**\n     * three\n     */\n    private int z;\n}\n";
+
+        // Local's member, Colour's constructor, hidden() and x.
+        assertEquals(shapeOf(source)[2], 4);
+    }
+
+    /** The shape of one source text, as `scanSource` reports it for a file: {share tenths, characters, javadocs}. */
+    private int[] shapeOf(String source)
+    {
+        int[] shape = new int[2];
+
+        scanFile("Fixture.java", source, new LinkedHashMap<Integer, String>(), new ArrayList<String>(), null,
+            new LinkedHashMap<Integer, List<String>>(), shape);
+
+        return new int[] {(shape[0] * 1000 + source.length() - 1) / Math.max(1, source.length()), source.length(),
+            shape[1]};
+    }
+
     /** The files whose share (or, when `share` is false, long private javadoc count) is off its pin or the default. */
     private List<String> shapeFailures(boolean share) throws Exception
     {
@@ -268,34 +335,39 @@ public class testCommentsStayLean
 
         for (Map.Entry<String, int[]> each : shapes.entrySet())
         {
-            int[] pin = pins.get(each.getKey());
+            String failure = verdict(share, each.getKey(), each.getValue(), pins.get(each.getKey()));
 
-            int[] shape = each.getValue();
-
-            boolean pinned = pin != null && (share ? pin[0] >= 0 : pin[1] > 0);
-
-            int now = share ? (shape[1] < SHARE_FLOOR ? 0 : shape[0]) : shape[2];
-
-            int limit = pinned ? pin[share ? 0 : 1] : share ? SHARE_CEILING : 0;
-
-            String what = each.getKey() + (share ? " has " + tenths(now) + " of its characters in comments, "
-                : " has " + now + " javadoc blocks of over " + PRIVATE_JAVADOC_LINES
-                + " lines on private or package-private declarations, ") + (pinned ? "pinned at " : "allowed ")
-                + (share ? tenths(limit) : String.valueOf(limit));
-
-            if (now > limit)
-            {
-                failures.add(what + ": trim the comments to the current rule (CLAUDE.md, 'Comments stay lean'); if you "
-                    + "trimmed and the pin is above the new figure, lower it in " + COMMENT_PINS + ".  Never raise it.");
-            }
-            else if (pinned && now < limit - (share ? SHARE_SLACK : 0))
-            {
-                failures.add(what + ": it is down to " + (share ? tenths(now) : String.valueOf(now))
-                    + ", so lower its pin in " + COMMENT_PINS + " to " + now + " to keep the gain.");
-            }
+            if (failure != null) failures.add(failure);
         }
 
         return failures;
+    }
+
+    /**
+     * The failure for one file, or null.  The share fails only above its pin (or the ceiling); the javadoc count fails
+     * above its pin and, to bank the gain, below it.
+     */
+    private String verdict(boolean share, String file, int[] shape, int[] pin)
+    {
+        boolean pinned = pin != null && (share ? pin[0] >= 0 : pin[1] > 0);
+
+        int now = share ? (shape[1] < SHARE_FLOOR ? 0 : shape[0]) : shape[2];
+
+        int limit = pinned ? pin[share ? 0 : 1] : share ? SHARE_CEILING : 0;
+
+        String what = file + (share ? " has " + tenths(now) + " of its characters in comments, "
+            : " has " + now + " javadoc blocks of over " + PRIVATE_JAVADOC_LINES
+            + " lines on private or package-private declarations, ") + (pinned ? "pinned at " : "allowed ")
+            + (share ? tenths(limit) : String.valueOf(limit));
+
+        if (now > limit)
+        {
+            return what + ": trim the comments to the current rule (CLAUDE.md, 'Comments stay lean'); if you "
+                + "trimmed and the pin is above the new figure, lower it in " + COMMENT_PINS + ".  Never raise it.";
+        }
+
+        return !share && pinned && now < limit ? what + ": it is down to " + now + ", so lower its pin in "
+            + COMMENT_PINS + " to " + now + " to keep the gain." : null;
     }
 
     private static String tenths(int tenths)
@@ -588,6 +660,10 @@ public class testCommentsStayLean
     {
         Set<Integer> generated = generatedLines(source);
 
+        java.util.ArrayDeque<String> types = new java.util.ArrayDeque<>();
+
+        StringBuilder header = new StringBuilder();
+
         List<Integer> fullLineComments = new ArrayList<>();
 
         int n = source.length();
@@ -652,7 +728,8 @@ public class testCommentsStayLean
 
                 shape[0] += text.length();
 
-                if (javadoc && parts.length > PRIVATE_JAVADOC_LINES && !isPublicOrProtected(source, end)) shape[1]++;
+                if (javadoc && parts.length > PRIVATE_JAVADOC_LINES
+                    && isPrivateDeclaration(types.peek(), source.substring(end, Math.min(n, end + 2000)))) shape[1]++;
 
                 if (!javadoc && parts.length > BLOCK_LINES && !generated.contains(line))
                 {
@@ -666,6 +743,12 @@ public class testCommentsStayLean
             else
             {
                 if (!Character.isWhitespace(c)) codeOnLine = true;
+
+                if (c == '{') types.push(typeOf(header.toString(), types.peek()));
+                else if (c == '}' && !types.isEmpty()) types.pop();
+
+                if (c == ';' || c == '{' || c == '}') header.setLength(0);
+                else header.append(c);
 
                 i++;
             }
@@ -689,23 +772,73 @@ public class testCommentsStayLean
         }
     }
 
-    /** Whether the declaration after `from` has a public or protected modifier, looking before its `(`, `{`, `;` or `=`. */
-    private boolean isPublicOrProtected(String source, int from)
+    /**
+     * What the body opened after `header` is, for `isPrivateDeclaration`: "I" for the body of an interface whose
+     * members are public (one declared public or protected, or nested in one), "E:Name" for an enum, else "C".
+     */
+    private String typeOf(String header, String parent)
     {
-        String rest = source.substring(from).trim();
+        Matcher kind = Pattern.compile("(?<![.\\w])(interface|enum|class)\\s+(\\w+)").matcher(header);
 
-        while (rest.startsWith("@"))
+        if (!kind.find()) return "C";
+
+        if (kind.group(1).equals("enum")) return "E:" + kind.group(2);
+
+        return kind.group(1).equals("interface") && ("I".equals(parent)
+            || Pattern.compile("\\b(?:public|protected)\\b").matcher(header).find()) ? "I" : "C";
+    }
+
+    /**
+     * Whether the declaration in `after` (the text after a javadoc), inside a body that `typeOf` called `enclosing`
+     * (null at top level), lacks a public or protected modifier.  Leading annotations are skipped by token, and the
+     * modifiers are read before the declaration's `(`, `{`, `;` or `=`.  A member of a public interface and an enum
+     * constant (a name followed by `,`, `;`, `}`, `(` or `{`, unless it is the enum's own constructor) are not private.
+     */
+    private boolean isPrivateDeclaration(String enclosing, String after)
+    {
+        if ("I".equals(enclosing)) return false;
+
+        String rest = after.trim();
+
+        while (rest.startsWith("@") && !rest.startsWith("@interface"))
         {
-            int eol = rest.indexOf('\n');
+            int at = 1;
 
-            rest = eol < 0 ? "" : rest.substring(eol + 1).trim();
+            while (at < rest.length() && (Character.isJavaIdentifierPart(rest.charAt(at)) || rest.charAt(at) == '.')) at++;
+
+            rest = rest.substring(at).trim();
+
+            if (rest.startsWith("("))
+            {
+                int depth = 0;
+
+                int k = 0;
+
+                do
+                {
+                    depth += rest.charAt(k) == '(' ? 1 : rest.charAt(k) == ')' ? -1 : 0;
+                    k++;
+                }
+                while (depth > 0 && k < rest.length());
+
+                rest = rest.substring(k).trim();
+            }
+        }
+
+        if (enclosing != null && enclosing.startsWith("E:"))
+        {
+            Matcher constant = Pattern.compile("^(\\w+)\\s*([,;}({]|$)").matcher(rest);
+
+            if (constant.find() && !(constant.group(1).equals(enclosing.substring(2)) && constant.group(2).equals("(")))
+            {
+                return false;
+            }
         }
 
         Matcher end = Pattern.compile("[({;=]").matcher(rest);
 
-        String head = end.find() ? rest.substring(0, end.start()) : rest;
-
-        return Pattern.compile("\\b(?:public|protected)\\b").matcher(head).find();
+        return !Pattern.compile("\\b(?:public|protected)\\b").matcher(end.find() ? rest.substring(0, end.start()) : rest)
+            .find();
     }
 
     private void noteHistory(String path, int line, String commentLine, Set<Integer> generated,

@@ -59,7 +59,10 @@ public class LocIconCropDialog extends JDialog
      */
     private static final double MIN_ZOOM = 0.5;
 
-    /** Margin, in pixels, between the crop window and the panel edge: the only place the surrounding picture shows. */
+    /**
+     * Margin in pixels around the crop window: the only place the surrounding picture shows, so it tells which way to
+     * drag.
+     */
     private static final int WINDOW_MARGIN = 44;
 
     /** The result, or null.  Read once, after the modal dialog returns. */
@@ -638,7 +641,7 @@ public class LocIconCropDialog extends JDialog
 
         /**
          * The scale at which the whole picture fits inside the panel; reshaping the frame never rescales the
-         * photograph.
+         * photograph (Adam: "It should stay put unless zoomed.").
          */
         private double fitScale()
         {
