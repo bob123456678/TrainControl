@@ -42,7 +42,28 @@ forget()
     rm -rf "$STATE"
 }
 
-trap 'forget; rm -rf "$BUILD"' EXIT
+# 2.8.x's control station binds the fixed UDP port 15730, so two classes from different runs on this
+# machine cannot run at once: each class takes a machine-wide lock first (a lock older than 15 minutes
+# is a dead run's and is taken over)
+LOCK="${TEMP:-/tmp}/traincontrol-283-udp.lock"
+OWN_LOCK=""
+
+lock()
+{
+    while ! mkdir "$LOCK" 2>/dev/null
+    do
+        if [ -n "$(find "$LOCK" -maxdepth 0 -mmin +15 2>/dev/null)" ]; then rm -rf "$LOCK"; continue; fi
+        sleep 2
+    done
+    OWN_LOCK=1
+}
+
+unlock()
+{
+    if [ -n "$OWN_LOCK" ]; then rm -rf "$LOCK"; OWN_LOCK=""; fi
+}
+
+trap 'unlock; forget; rm -rf "$BUILD"' EXIT
 trap 'exit 130' INT TERM
 
 # The test jars are not in 2.8.x's tree; these are dev's resources_test blobs, read from the repository
@@ -83,8 +104,10 @@ do
     esac
 
     LOG="$S/one-$T.log"
+    lock
     "$JDK/bin/java" -ea -Dtraincontrol.dataDir="$STATE" -Dtraincontrol.preferences="traincontrol-test-runs/$RUN_ID" \
         -cp "$BUILD/classes;$CP" org.testng.TestNG -verbose 2 -testclass "$T" -d "$BUILD/out" > "$LOG" 2>&1
+    unlock
 
     echo "--- $T"
     grep -E "^(FAILED|SKIPPED)( CONFIGURATION)?:" "$LOG" | cut -c1-160
