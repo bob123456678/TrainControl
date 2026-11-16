@@ -45,6 +45,12 @@ public class testEveryLanguageFits
      */
     private static final int LOCALISED_FLOOR = 30;
 
+    /** What each language's window packs to. */
+    private static final Map<String, Integer> packedWidth = new LinkedHashMap<>();
+
+    /** 3.1.0's main window in English, as packed here: no language may make it wider (D162). */
+    private static final int WIDEST = 1129;
+
     /**
      * The rule can fail: the eight-language walk cannot carry its own control, so the RULE is controlled on a component
      * this method owns: a short string in 80 pixels fits, the same label with a long one does not.
@@ -142,14 +148,7 @@ public class testEveryLanguageFits
 
         int total = LanguageFit.total(clipped);
 
-        report.append(System.lineSeparator()).append("components with text inspected:")
-            .append(System.lineSeparator());
-
-        for (Map.Entry<String, Integer> e : inspected.entrySet())
-        {
-            report.append("   ").append(e.getKey()).append("  ").append(e.getValue())
-                .append(System.lineSeparator());
-        }
+        counts(report, "components with text inspected:", inspected);
 
         // How many components the locale actually moves, the reach of this test: most of this form's text is baked into
         // the generated layout rather than passed through `I18n`, so a German run leaves it in English and it says
@@ -176,14 +175,7 @@ public class testEveryLanguageFits
                 moved.put(e.getKey(), differs);
             }
 
-            report.append(System.lineSeparator()).append("of those, how many the locale changes:")
-                .append(System.lineSeparator());
-
-            for (Map.Entry<String, Integer> e : moved.entrySet())
-            {
-                report.append("   ").append(e.getKey()).append("  ").append(e.getValue())
-                    .append(System.lineSeparator());
-            }
+            counts(report, "of those, how many the locale changes:", moved);
         }
 
         java.nio.file.Files.write(new File(OUT, "clipped.txt").toPath(),
@@ -223,9 +215,134 @@ public class testEveryLanguageFits
                 + "clean about English - or text has moved out of the bundles and into the form");
         }
 
+        // A component the window's edge or a neighbor covers is laid out wide enough, so the clipping rule below cannot
+        // see it: OB-488, the Spanish power ON button 10 pixels under the window's edge.
+        List<String> pushed = new ArrayList<>();
+
+        for (LanguageFit.Ledger.Flag f : LEDGER.flags())
+        {
+            if (f.pushed)
+            {
+                pushed.add(f.language + " \"" + LanguageFit.oneLine(f.here.text) + "\" wants " + f.here.wants
+                    + " and shows " + f.here.visible + " [" + f.path + "]");
+            }
+        }
+
+        assertTrue(pushed.isEmpty(), "components are pushed partly out of sight at the window's minimum size: " + pushed);
+
+        // The window is never wider than 3.1.0's English default (1129 px here), in any language (D162).
+        for (String language : LANGUAGES)
+        {
+            assertTrue(packedWidth.get(language) <= WIDEST, language + " packs to " + packedWidth.get(language)
+                + " px, wider than 3.1.0's English default of " + WIDEST);
+        }
+
+        // The layout above copies `display()`'s minimum; this keeps the two from drifting apart.
+        String display = new String(java.nio.file.Files.readAllBytes(
+            new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), "UTF-8");
+        display = display.replace("\r\n", "\n");
+        int packed = display.indexOf("        pack();\n        displayMenuBar();");
+        assertTrue(packed >= 0 && display.indexOf(
+            "setMinimumSize(new Dimension(this.getSize().width, this.getSize().height));", packed) > packed,
+            "display() no longer packs and then takes the packed size as the minimum; update this test's layout to match");
+
         assertEquals(total, 0,
             "text is clipped - the full list is in " + new File(OUT, "clipped.txt")
             + System.lineSeparator() + report);
+    }
+
+    /**
+     * What the locomotive panel (power buttons, speed, function buttons) cuts or pushes at the window's minimum width,
+     * in ANY language, English included: the ledger's `pushed` flag compares with English, which hid a panel cut 20 px
+     * in every language (OB-488).  A component is cut where its visible part is narrower than it is; pushed where it
+     * overlaps another button or label of the panel.
+     *
+     * MUTATION: laying the window out at the form's declared 1110 (the test's `setMinimumSize(getSize())` removed) cuts the ON button, the ">>>>>>>" button and the F3/F7/F11 column, and this fails.
+     */
+    private static List<String> locomotivePanelCut(TrainControlUI ui, String language)
+    {
+        List<String> out = new ArrayList<>();
+
+        try
+        {
+            java.lang.reflect.Field field = TrainControlUI.class.getDeclaredField("LocFunctionsPanel");
+
+            field.setAccessible(true);
+
+            java.awt.Container panel = (java.awt.Container) field.get(ui);
+            List<java.awt.Component> leaves = new ArrayList<>();
+
+            cutIn(panel, panel, language, leaves, out);
+
+            for (int a = 0; a < leaves.size(); a++)
+            {
+                for (int b = a + 1; b < leaves.size(); b++)
+                {
+                    java.awt.Rectangle one = javax.swing.SwingUtilities.convertRectangle(leaves.get(a).getParent(),
+                        leaves.get(a).getBounds(), panel);
+                    java.awt.Rectangle two = javax.swing.SwingUtilities.convertRectangle(leaves.get(b).getParent(),
+                        leaves.get(b).getBounds(), panel);
+                    java.awt.Rectangle both = one.intersection(two);
+
+                    if (both.width > LanguageFit.SLACK && both.height > LanguageFit.SLACK)
+                    {
+                        out.add(language + " locomotive panel: " + named(leaves.get(a)) + " is pushed under "
+                            + named(leaves.get(b)));
+                    }
+                }
+            }
+
+            assertTrue(leaves.size() >= 20, "the locomotive panel held only " + leaves.size() + " buttons and "
+                + "labels, so it was not laid out and nothing was measured");
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new AssertionError("the locomotive panel field is gone: " + e);
+        }
+
+        return out;
+    }
+
+    private static void cutIn(java.awt.Container panel, java.awt.Container in, String language,
+        List<java.awt.Component> leaves, List<String> out)
+    {
+        for (java.awt.Component c : in.getComponents())
+        {
+            if (!c.isVisible() || !(c instanceof javax.swing.JComponent)) continue;
+
+            javax.swing.JComponent each = (javax.swing.JComponent) c;
+
+            if (each.getVisibleRect().width < each.getWidth() - LanguageFit.SLACK)
+            {
+                out.add(language + " locomotive panel: " + named(each) + " is cut, " + each.getVisibleRect().width
+                    + " of " + each.getWidth() + " px show");
+            }
+
+            boolean leaf = each instanceof javax.swing.AbstractButton
+                || each instanceof JLabel && !((JLabel) each).getText().trim().isEmpty();
+
+            if (leaf) leaves.add(each);
+
+            cutIn(panel, each, language, leaves, out);
+        }
+    }
+
+    private static void counts(StringBuilder report, String title, Map<String, Integer> counts)
+    {
+        report.append(System.lineSeparator()).append(title).append(System.lineSeparator());
+
+        for (Map.Entry<String, Integer> e : counts.entrySet())
+        {
+            report.append("   ").append(e.getKey()).append("  ").append(e.getValue()).append(System.lineSeparator());
+        }
+    }
+
+    private static String named(java.awt.Component c)
+    {
+        String text = c instanceof javax.swing.AbstractButton ? ((javax.swing.AbstractButton) c).getText()
+            : c instanceof JLabel ? ((JLabel) c).getText() : "";
+
+        return c.getClass().getSimpleName() + " \"" + text + "\"";
     }
 
     /**
@@ -249,9 +366,12 @@ public class testEveryLanguageFits
                 // pictures come out.
                 ui[0].pack();
 
-                // Then the size the form declares, the window an operator gets on first run (its minimum size); pack()
-                // would give whatever the longest string in THIS language needs, which is the question rather than the
-                // answer.
+                packedWidth.put(language, ui[0].getWidth());
+
+                // Then the window as the app leaves it: `display()` sets the minimum to the packed size, which is the
+                // narrowest an operator can make it.  The form's declared 1110 is narrower than the locomotive panel needs
+                // and is never what a user gets.
+                ui[0].setMinimumSize(ui[0].getSize());
                 ui[0].setSize(ui[0].getMinimumSize());
                 ui[0].validate();
             });
@@ -263,6 +383,8 @@ public class testEveryLanguageFits
                 // No container-level checks: the per-component rule catches a component whose width is FIXED, since a
                 // free layout grants the wider preferred size and the overflow lands elsewhere.
                 found.addAll(LanguageFit.measure(LEDGER, "window", language, ui[0], inspected));
+
+                found.addAll(locomotivePanelCut(ui[0], language));
 
                 localised.put(language, LanguageFit.textByPath(ui[0]));
             });
