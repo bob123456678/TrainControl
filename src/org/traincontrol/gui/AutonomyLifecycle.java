@@ -607,7 +607,7 @@ final class AutonomyLifecycle
     void refreshAutonomyPrompt()
     {
         // Which stations autonomy can choose has just changed, and the captions follow it (FR-023).
-        ui.refreshCaptionVisibility();
+        ui.captionVisibility.refreshCaptionVisibility();
 
         AutonomySession session = getAutonomySession();
 

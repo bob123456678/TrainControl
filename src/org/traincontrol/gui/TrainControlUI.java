@@ -3433,11 +3433,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         loadAutoLayoutSettings();
     }
 
-    private boolean refuseWhileAutonomyRunning(Component source)
-    {
-        return RunGates.refuseWhileAutonomyRunning(this, source);
-    }
-
     public boolean refuseWhileARunHoldsTheSetup(Component source)
     {
         return RunGates.refuseWhileARunHoldsTheSetup(this, source, null);
@@ -6854,12 +6849,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Whether a worker is already on the job, so a burst of asks makes one pass rather than many. */
     final AtomicBoolean captionVisibilityInFlight = new AtomicBoolean(false);
 
-    void refreshCaptionVisibility()
-    {
-        this.captionVisibility.refreshCaptionVisibility();
-    }
-
-    private final CaptionVisibility captionVisibility = new CaptionVisibility(this);
+    final CaptionVisibility captionVisibility = new CaptionVisibility(this);
 
     /** Puts the worker's answer on every caption the diagram holds, on the event thread. */
     void paintCaptionsFromTheAnswer()
@@ -14649,7 +14639,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return;
         }
 
-        if (c != null && (refuseWhileAutonomyRunning(c) || RunGates.refuseALinkOrSyncWhileEditorOpen(this, c))) return;
+        if (c != null && (RunGates.refuseWhileAutonomyRunning(this, c) || RunGates.refuseALinkOrSyncWhileEditorOpen(this, c))) return;
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
@@ -14775,7 +14765,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         // A run may have begun since Sync was pressed
-        boolean refused = !proposals.getProposals().isEmpty() && refuseWhileAutonomyRunning(c);
+        boolean refused = !proposals.getProposals().isEmpty() && RunGates.refuseWhileAutonomyRunning(this, c);
 
         for (String[] pair : proposals.getProposals())
         {
@@ -15543,7 +15533,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
     private void syncFullLocStateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncFullLocStateMenuItemActionPerformed
         // The read rewrites what is held of every locomotive a run is driving (MT-141)
-        if (refuseWhileAutonomyRunning(evt == null ? this : (Component) evt.getSource())) return;
+        if (RunGates.refuseWhileAutonomyRunning(this, evt == null ? this : (Component) evt.getSource())) return;
 
         javax.swing.SwingUtilities.invokeLater(() -> 
         {
@@ -15681,7 +15671,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void addLocomotiveMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addLocomotiveMenuItemActionPerformed
         // Editing, deleting and renaming a locomotive refuse while trains run; adding one is the same database, which
         // autonomy iterates.
-        if (refuseWhileAutonomyRunning(evt == null ? this : (Component) evt.getSource())) return;
+        if (RunGates.refuseWhileAutonomyRunning(this, evt == null ? this : (Component) evt.getSource())) return;
 
         openAddLocomotive();
     }//GEN-LAST:event_addLocomotiveMenuItemActionPerformed
@@ -19198,7 +19188,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // Not while trains run (MT-141): a run hands the track behind a train back by this number, so a length cleared
         // mid-run gave back track the train was lying across. Refused at the click, and again at OK.
-        if (refuseWhileAutonomyRunning(evt == null ? null : evt.getComponent())) return;
+        if (RunGates.refuseWhileAutonomyRunning(this, evt == null ? null : evt.getComponent())) return;
 
         Integer current = l.getTrainLength();
 
@@ -19234,7 +19224,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (l == null) return;
 
         // Again at OK, for a dialog opened before a run began.
-        if (refuseWhileAutonomyRunning(null)) return;
+        if (RunGates.refuseWhileAutonomyRunning(this, null)) return;
 
         l.setTrainLength(units);
 

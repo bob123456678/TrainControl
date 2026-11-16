@@ -457,7 +457,7 @@ final class LayoutMenus
             prefs.putBoolean(TrainControlUI.SHOW_INACTIVE_LABELS_PREF, show.isSelected());
 
             // Applied to what is already drawn; the grid rebuilds only for other reasons.
-            ui.refreshCaptionVisibility();
+            ui.captionVisibility.refreshCaptionVisibility();
         });
 
         autonomyToolbarMenu.add(show);
