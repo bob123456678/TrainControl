@@ -168,7 +168,7 @@ public class testCommentsStayLean
     {
         Map<String, List<String>> found = new TreeMap<>();
 
-        scanSource(new String[]{"src"}, found, null, null, null);
+        scanSource(new String[]{"src"}, found, null, null);
 
         ratchet("lines of history in comments", found, HISTORY_ALLOWED, HISTORY_BY_FILE, "HISTORY_ALLOWED",
             "HISTORY_BY_FILE", "a comment line with a date, 'used to', 'Round N' or 'found by <reviewer>' in it",
@@ -180,7 +180,7 @@ public class testCommentsStayLean
     {
         Map<String, List<String>> found = new TreeMap<>();
 
-        scanSource(new String[]{"src"}, null, found, null, null);
+        scanSource(new String[]{"src"}, null, found, null);
 
         ratchet("comment blocks over " + BLOCK_LINES + " lines", found, LONG_BLOCKS_ALLOWED, LONG_BLOCKS_BY_FILE,
             "LONG_BLOCKS_ALLOWED", "LONG_BLOCKS_BY_FILE", "a run of more than " + BLOCK_LINES
@@ -192,7 +192,7 @@ public class testCommentsStayLean
     {
         Map<String, List<String>> found = new TreeMap<>();
 
-        scanSource(new String[]{"test"}, found, null, null, null);
+        scanSource(new String[]{"test"}, found, null, null);
 
         ratchet("lines of history in test comments", found, TEST_HISTORY_ALLOWED, TEST_HISTORY_BY_FILE,
             "TEST_HISTORY_ALLOWED", "TEST_HISTORY_BY_FILE", "a comment line with a date, 'used to', 'Round N' or "
@@ -204,7 +204,7 @@ public class testCommentsStayLean
     {
         Map<String, List<String>> found = new TreeMap<>();
 
-        scanSource(new String[]{"test"}, null, found, null, null);
+        scanSource(new String[]{"test"}, null, found, null);
 
         ratchet("test comment blocks over " + BLOCK_LINES + " lines", found, TEST_LONG_BLOCKS_ALLOWED,
             TEST_LONG_BLOCKS_BY_FILE, "TEST_LONG_BLOCKS_ALLOWED", "TEST_LONG_BLOCKS_BY_FILE", "a run of more than "
@@ -217,7 +217,7 @@ public class testCommentsStayLean
     {
         Map<String, List<String>> found = new TreeMap<>();
 
-        scanSource(new String[]{"src", "test"}, null, null, found, null);
+        scanSource(new String[]{"src", "test"}, null, null, found);
 
         ratchet("review ids in comments", found, IDS_ALLOWED, IDS_BY_FILE, "IDS_ALLOWED", "IDS_BY_FILE",
             "a review-finding id in a comment", "Review ids stay out of comments: see CLAUDE.md.");
@@ -233,44 +233,7 @@ public class testCommentsStayLean
     @Test
     public void testCommentShareOnlyGoesDown() throws Exception
     {
-        Map<String, int[]> shapes = new TreeMap<>();
-
-        scanSource(new String[]{"src"}, null, null, null, shapes);
-
-        Map<String, int[]> pins = readPins();
-
-        List<String> failures = new ArrayList<>();
-
-        for (Map.Entry<String, int[]> each : shapes.entrySet())
-        {
-            String file = each.getKey();
-
-            int[] shape = each.getValue();
-
-            int share = shape[1] < SHARE_FLOOR ? 0 : shape[0];
-
-            int[] pin = pins.get(file);
-
-            boolean pinned = pin != null && pin[0] >= 0;
-
-            int limit = pinned ? pin[0] : SHARE_CEILING;
-
-            String what = file + " has " + tenths(share) + " of its characters in comments, " + (pinned
-                ? "pinned at " + tenths(limit) : "above the " + tenths(SHARE_CEILING) + " ceiling for a file without a pin");
-
-            if (share > limit)
-            {
-                failures.add(what + ": trim its comments to the current rule (CLAUDE.md, 'Comments stay lean'); if you "
-                    + "trimmed and the pin is above the new share, lower the pin in " + COMMENT_PINS + ".  Never raise it.");
-            }
-            else if (pinned && share < limit - SHARE_SLACK)
-            {
-                failures.add(what + ": it is down to " + tenths(share) + ", so lower its pin in " + COMMENT_PINS
-                    + " to " + share + " to keep the gain.");
-            }
-        }
-
-        assertTrue(failures.isEmpty(), "comment share: " + String.join("\n", failures));
+        assertNoShapeFailures(true);
     }
 
     /**
@@ -281,6 +244,19 @@ public class testCommentsStayLean
      */
     @Test
     public void testLongPrivateJavadocOnlyGoesDown() throws Exception
+    {
+        assertNoShapeFailures(false);
+    }
+
+    private void assertNoShapeFailures(boolean share) throws Exception
+    {
+        List<String> failures = shapeFailures(share);
+
+        assertTrue(failures.isEmpty(), (share ? "comment share: " : "private javadoc: ") + failures);
+    }
+
+    /** The files whose share (or, when `share` is false, long private javadoc count) is off its pin or the default. */
+    private List<String> shapeFailures(boolean share) throws Exception
     {
         Map<String, int[]> shapes = new TreeMap<>();
 
@@ -294,24 +270,32 @@ public class testCommentsStayLean
         {
             int[] pin = pins.get(each.getKey());
 
-            int allowed = pin == null ? 0 : pin[1];
+            int[] shape = each.getValue();
 
-            int count = each.getValue()[2];
+            boolean pinned = pin != null && (share ? pin[0] >= 0 : pin[1] > 0);
 
-            if (count > allowed)
+            int now = share ? (shape[1] < SHARE_FLOOR ? 0 : shape[0]) : shape[2];
+
+            int limit = pinned ? pin[share ? 0 : 1] : share ? SHARE_CEILING : 0;
+
+            String what = each.getKey() + (share ? " has " + tenths(now) + " of its characters in comments, "
+                : " has " + now + " javadoc blocks of over " + PRIVATE_JAVADOC_LINES
+                + " lines on private or package-private declarations, ") + (pinned ? "pinned at " : "allowed ")
+                + (share ? tenths(limit) : String.valueOf(limit));
+
+            if (now > limit)
             {
-                failures.add(each.getKey() + " has " + count + " javadoc blocks of over " + PRIVATE_JAVADOC_LINES
-                    + " lines on private or package-private declarations, pinned at " + allowed
-                    + ": cut them to " + PRIVATE_JAVADOC_LINES + " lines or fewer (CLAUDE.md).  Never raise the pin.");
+                failures.add(what + ": trim the comments to the current rule (CLAUDE.md, 'Comments stay lean'); if you "
+                    + "trimmed and the pin is above the new figure, lower it in " + COMMENT_PINS + ".  Never raise it.");
             }
-            else if (count < allowed)
+            else if (pinned && now < limit - (share ? SHARE_SLACK : 0))
             {
-                failures.add(each.getKey() + " is down to " + count + " (pinned at " + allowed + "): lower its pin in "
-                    + COMMENT_PINS + " to keep the gain.");
+                failures.add(what + ": it is down to " + (share ? tenths(now) : String.valueOf(now))
+                    + ", so lower its pin in " + COMMENT_PINS + " to " + now + " to keep the gain.");
             }
         }
 
-        assertTrue(failures.isEmpty(), "private javadoc: " + String.join("\n", failures));
+        return failures;
     }
 
     private static String tenths(int tenths)
@@ -469,6 +453,12 @@ public class testCommentsStayLean
         assertTrue(total == allowed && fell.isEmpty(),
             what + ": " + total + " remain, fewer than the " + allowed + " recorded.  Lower " + totalName + " to " + total
             + " so the improvement is kept, and in " + listName + ": " + fell);
+    }
+
+    private void scanSource(String[] roots, Map<String, List<String>> history, Map<String, List<String>> longBlocks,
+        Map<String, List<String>> ids) throws IOException
+    {
+        scanSource(roots, history, longBlocks, ids, null);
     }
 
     /**
