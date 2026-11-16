@@ -704,8 +704,8 @@ Tab icons provided by Freepik.
         - A station out of service can no longer be sent to or driven through, even by hand.  To keep a parking track reachable by hand, untick its `Full autonomy` choice in `Station Settings` instead.
         - A route with an emergency stop can no longer contain other commands; older ones are split in two automatically.
         - The "paste entire row" and "paste entire column" options were removed.
-* v2.8.x [8/2026 - 9/2026]
-    - Added French, Italian, Spanish, Dutch and Polish translations, Path Integrity Validation (a train runs only once the Central Station confirms its switches and signals), and a "return home" feature.  Later 2.8 versions fixed many autonomy, route and Central Station problems, and 2.8.2 no longer loses page names when you go back to it after using 3.0.
+* v2.8.x [8/2026 - 11/2026]
+    - Added French, Italian, Spanish, Dutch and Polish translations, Path Integrity Validation (a train runs only once the Central Station confirms its switches and signals), and a "return home" feature.  Later 2.8 versions fixed many autonomy, route and Central Station problems, and 2.8.2 no longer loses page names when you go back to it after using 3.0.  2.8.3 brings 3.1’s Central Station fixes to 2.8: a CS3’s sensor states are read before any S88 route fires, an MM2 and a DCC accessory on the same CS3 address each switch the right turnout, a short circuit shows the track power as off, and Download Update works again.
 
 <details>
 <summary>Show older versions</summary>
