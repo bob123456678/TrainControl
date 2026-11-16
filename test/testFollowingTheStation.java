@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -260,29 +261,7 @@ public class testFollowingTheStation
         files.put("/config/lokomotive.cs2", "[lokomotive]\nversion\n .minor=3\nlokomotive\n .name=Follow moving\n"
             + " .uid=0x14\n .adresse=0x14\n .typ=mm2_dil8\n");
 
-        HttpServer server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
-        server.createContext("/", exchange ->
-        {
-            String body = files.get(exchange.getRequestURI().getPath());
-
-            if (body == null)
-            {
-                exchange.sendResponseHeaders(404, -1);
-            }
-            else
-            {
-                byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-                exchange.sendResponseHeaders(200, bytes.length);
-
-                try (OutputStream out = exchange.getResponseBody())
-                {
-                    out.write(bytes);
-                }
-            }
-
-            exchange.close();
-        });
-        server.start();
+        HttpServer server = serve(files, null);
 
         try
         {
@@ -300,6 +279,136 @@ public class testFollowingTheStation
             assertTrue(model.syncWithCS2() >= 0, "the second sync against the stand-in station failed; see the log");
             assertEquals(model.getLocByName("Follow moving").getAddress(), 20,
                 "once the locomotive has stopped, the next sync takes the station's address");
+        }
+        finally
+        {
+            network.ip = null;
+            server.stop(0);
+        }
+    }
+
+    /**
+     * A stand-in station on this machine serving the given files.  A request for cutPath gets the file's whole length in
+     * its headers but less of its body each time, as a connection that keeps dropping does.
+     */
+    private static HttpServer serve(Map<String, String> files, String cutPath) throws IOException
+    {
+        AtomicInteger cuts = new AtomicInteger();
+        HttpServer server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+        server.createContext("/", exchange ->
+        {
+            String path = exchange.getRequestURI().getPath();
+            String body = files.get(path);
+
+            if (body == null)
+            {
+                exchange.sendResponseHeaders(404, -1);
+            }
+            else
+            {
+                byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(200, bytes.length);
+
+                OutputStream out = exchange.getResponseBody();
+                out.write(bytes, 0, path.equals(cutPath) ? bytes.length / 2 - 5 * cuts.getAndIncrement() : bytes.length);
+                out.flush();
+            }
+
+            exchange.close();
+        });
+        server.start();
+
+        return server;
+    }
+
+    /**
+     * An accessory file that ends short every time fails the sync before the diagram is read, so no tile is built from
+     * part of the list (A8, 8d48bf40).
+     *
+     * 2.8.2 read the part that arrived as the whole list, so a DCC accessory past the cut was built as MM2 and the
+     * diagram's tile commanded a decoder that is not there.  A length check alone would have made it worse: the failed
+     * list read as none, and every tile built as MM2.
+     */
+    @Test
+    public void testAnAccessoryFileThatEndsShortFailsTheSyncAndChangesNothing() throws Exception
+    {
+        Map<String, String> files = new HashMap<>();
+        files.put("/config/fahrstrassen.cs2", "[fahrstrassen]\nversion\n .minor=4\n");
+        files.put("/config/lokomotive.cs2", "[lokomotive]\nversion\n .minor=3\n");
+        files.put("/config/gleisbild.cs2", "[gleisbild]\nversion\n .major=1\nseite\n .id=1\n .name=Station\n");
+        files.put("/config/gleisbilder/Station.cs2", "[gleisbildseite]\nversion\n .major=1\n"
+            + "element\n .id=0x10001\n .typ=linksweiche\n .artikel=120\n");
+
+        StringBuilder mags = new StringBuilder("[magnetartikel]\nversion\n .minor=1\n");
+
+        for (int id = 1; id <= 6; id++)
+        {
+            mags.append("artikel\n .id=").append(id).append("\n .name=").append(id).append("\n .typ=linksweiche\n .dectyp=mm2\n");
+        }
+
+        files.put("/config/magnetartikel.cs2", mags.append("artikel\n .id=60\n .name=60\n .typ=linksweiche\n .dectyp=dcc\n").toString());
+
+        String override = TrainControlUI.getPrefs().get(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, "");
+        TrainControlUI.getPrefs().remove(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF);
+        HttpServer whole = serve(files, null);
+
+        try
+        {
+            network.ip = "127.0.0.1:" + whole.getAddress().getPort();
+            model.clearLayouts();
+
+            assertTrue(model.syncWithCS2() >= 0, "the sync of the whole files failed; see the log");
+            Accessory dcc = model.getAccessoryByAddressIfPresent(60, Accessory.accessoryDecoderType.DCC);
+            assertNotNull(dcc, "precondition: the whole accessory file makes the tile at 60 DCC");
+            whole.stop(0);
+
+            HttpServer cut = serve(files, "/config/magnetartikel.cs2");
+            network.ip = "127.0.0.1:" + cut.getAddress().getPort();
+            model.clearLayouts();
+
+            try
+            {
+                assertEquals(model.syncWithCS2(), -1, "a sync whose accessory file ended short every time did not fail");
+            }
+            finally
+            {
+                cut.stop(0);
+            }
+
+            assertNull(model.getAccessoryByAddressIfPresent(60, Accessory.accessoryDecoderType.MM2),
+                "the DCC tile at 60 was built as MM2 from part of the accessory file");
+            assertSame(model.getAccessoryByAddressIfPresent(60, Accessory.accessoryDecoderType.DCC), dcc,
+                "the DCC accessory at 60 changed");
+            assertNull(model.getLayout("Station"), "the diagram was read from part of the accessory file");
+        }
+        finally
+        {
+            whole.stop(0);
+            network.ip = null;
+            TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, override);
+            model.refreshLayouts();
+        }
+    }
+
+    /** A locomotive file that ends short every time fails the sync, and no locomotive is taken from the part (A8). */
+    @Test
+    public void testALocomotiveFileThatEndsShortFailsTheSyncAndChangesNothing() throws Exception
+    {
+        Map<String, String> files = new HashMap<>();
+        files.put("/config/fahrstrassen.cs2", "[fahrstrassen]\nversion\n .minor=4\n");
+        files.put("/config/magnetartikel.cs2", "[magnetartikel]\nversion\n .minor=1\n");
+        files.put("/config/lokomotive.cs2", "[lokomotive]\nversion\n .minor=3\nlokomotive\n .name=Cut A\n"
+            + " .uid=0x15\n .adresse=0x15\n .typ=mm2_dil8\nlokomotive\n .name=Cut B with a long name to cut\n"
+            + " .uid=0x16\n .adresse=0x16\n .typ=mm2_dil8\n .symbol=1\n .icon=a long icon name for the cut\n");
+
+        HttpServer server = serve(files, "/config/lokomotive.cs2");
+
+        try
+        {
+            network.ip = "127.0.0.1:" + server.getAddress().getPort();
+
+            assertEquals(model.syncWithCS2(), -1, "a sync whose locomotive file ended short every time did not fail");
+            assertNull(model.getLocByName("Cut A"), "a locomotive was taken from part of the locomotive file");
         }
         finally
         {

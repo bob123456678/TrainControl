@@ -37,6 +37,9 @@ public final class CS2File
     public static final int CONNECT_TIMEOUT_MS = 2000;
     public static final int READ_TIMEOUT_MS = 15000;
 
+    /** The pause before a body that ended short is asked for again. */
+    private static final int RETRY_PAUSE_MS = 300;
+
     // IP address for our HTTP requests
     private final String IP;
     
@@ -417,25 +420,110 @@ public final class CS2File
     }
     
     /**
-     * Opens a URL and returns a string stream
-     * @param url
-     * @return
-     * @throws Exception 
+     * Opens a URL and returns its whole body as a string stream.  A body that ends short of its Content-Length is an
+     * error, not a smaller file: every file the sync reads comes through here, and a half file would be taken as the
+     * station's whole list.  It is asked for again, twice at most, after a pause: a body that then comes whole is used,
+     * and the same short bytes every time are the station's wrong length, read as sent and logged.  Bytes that differ,
+     * or none at all every time, are a failure.
      */
     public static BufferedReader fetchURL(String url) throws Exception
     {
-        URL website = new URL(url);
-        URLConnection connection = website.openConnection();
+        final Body first = readBody(url);
+        Body last = first;
+
+        for (int retry = 0; retry < 2 && last.isShort(); retry++)
+        {
+            // Not at once: a station briefly unable to send the file would answer all three the same
+            Thread.sleep(RETRY_PAUSE_MS);
+            last = readBody(url);
+
+            if (last.isShort() && !last.sameAs(first)) throw last.endedShort(url);
+        }
+
+        if (last.isShort())
+        {
+            if (last.bytes.length == 0) throw last.endedShort(url);
+
+            java.util.logging.Logger.getLogger(CS2File.class.getName()).info(url + " sent " + last.bytes.length
+                + " of the " + last.promised + " bytes its length promised, the same each time; read as sent");
+        }
+
+        return new BufferedReader(new java.io.StringReader(decode(last.bytes, url)));
+    }
+
+    /** One fetch's body and the length its headers promised (-1 when none). */
+    private static final class Body
+    {
+        final byte[] bytes;
+        final long promised;
+
+        Body(byte[] bytes, long promised)
+        {
+            this.bytes = bytes;
+            this.promised = promised;
+        }
+
+        boolean isShort()
+        {
+            return this.promised >= 0 && this.bytes.length < this.promised;
+        }
+
+        boolean sameAs(Body other)
+        {
+            return this.promised == other.promised && Arrays.equals(this.bytes, other.bytes);
+        }
+
+        IOException endedShort(String url)
+        {
+            return new IOException(I18n.f("network.errorStationFileEndedShort", url, String.valueOf(this.bytes.length),
+                String.valueOf(this.promised)));
+        }
+    }
+
+    private static Body readBody(String url) throws Exception
+    {
+        URLConnection connection = openWithTimeouts(url);
+        final long promised = connection.getContentLengthLong();
+        java.io.ByteArrayOutputStream whole = new java.io.ByteArrayOutputStream();
+
+        try (InputStream in = connection.getInputStream())
+        {
+            byte[] chunk = new byte[8192];
+            int n;
+
+            while ((n = in.read(chunk)) >= 0) whole.write(chunk, 0, n);
+        }
+
+        return new Body(whole.toByteArray(), promised);
+    }
+
+    private static URLConnection openWithTimeouts(String url) throws IOException
+    {
+        URLConnection connection = new URL(url).openConnection();
 
         // Without these, an unreachable Central Station blocks the caller until the OS abandons the connection.
         // Ignored for local files, which are read through this method when a layout override path is set.
         connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
         connection.setReadTimeout(READ_TIMEOUT_MS);
 
-        return new BufferedReader(
-            new InputStreamReader(
-                connection.getInputStream(), StandardCharsets.UTF_8)
-        );
+        return connection;
+    }
+
+    /** UTF-8 when the bytes are valid UTF-8, otherwise ISO-8859-1: names come out right whichever a station sends. */
+    private static String decode(byte[] bytes, String url)
+    {
+        try
+        {
+            return StandardCharsets.UTF_8.newDecoder().onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+                .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
+                .decode(java.nio.ByteBuffer.wrap(bytes)).toString();
+        }
+        catch (java.nio.charset.CharacterCodingException notUtf8)
+        {
+            java.util.logging.Logger.getLogger(CS2File.class.getName()).info(url + " is not UTF-8; read as ISO-8859-1");
+
+            return new String(bytes, StandardCharsets.ISO_8859_1);
+        }
     }
 
     /**
@@ -1866,7 +1954,7 @@ public final class CS2File
         File masterLayoutFile = new File(configDir, "gleisbild.cs2");
         // UTF-8 explicitly, not the platform default: FileWriter would encode in Cp1252 on the
         // Windows/Java 8 configuration this targets, while the only reader of these files -
-        // CS2File.fetchURL - decodes UTF-8 unconditionally.  A layout page whose name contains a
+        // CS2File.fetchURL - decodes UTF-8 whenever the bytes are valid UTF-8.  A layout page whose name contains a
         // non-ASCII character was written in one encoding and read back in another, so the name came
         // back mangled, the file it pointed at could not be found, and syncWithCS2 responded by
         // silently clearing the local-layout override.
@@ -2330,15 +2418,24 @@ public final class CS2File
     */
     public static boolean ping(String host)
     {
-       // try-with-resources: this is called in a retry loop at startup, and each attempt used to leave
-       // its connection open
-       try (BufferedReader reachable = CS2File.fetchURL(CS2File.getPingIP(host)))
-       {
-           return reachable != null;
-       }
-       catch (Exception e)
-       {
-           return false;
-       }
+        // Answered once the headers arrive: the body is not read, and the connection is closed on every attempt, since
+        // this is called in a retry loop at start-up
+        URLConnection connection = null;
+
+        try
+        {
+            connection = openWithTimeouts(CS2File.getPingIP(host));
+            connection.getInputStream().close();
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+        finally
+        {
+            if (connection instanceof HttpURLConnection) ((HttpURLConnection) connection).disconnect();
+        }
     }
 }
