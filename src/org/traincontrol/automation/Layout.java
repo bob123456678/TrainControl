@@ -6044,9 +6044,13 @@ public class Layout
                 // executeTimetable's retry loop.  Membership, read before the removal, means the lock phase succeeded.
                 final boolean hadItsPath;
 
+                // Where the train really stands (whereTheTrainIs's rule), read before its milestones go.
+                final Point reached;
+
                 synchronized (this.activeLocomotives)
                 {
                     hadItsPath = this.activeLocomotives.containsKey(loc);
+                    reached = this.lastMilestone(loc);
 
                     this.activeLocomotives.remove(loc);
                     this.locomotiveMilestones.remove(loc);
@@ -6079,7 +6083,21 @@ public class Layout
                 synchronized (this.activeLocomotives)
                 {
                     // Only a path this locomotive actually got: configureAndLockPath recovers a lock-phase failure.
-                    if (hadItsPath) this.unlockPath(path, loc);
+                    if (hadItsPath)
+                    {
+                        // Read before the unlock, which takes the start's tail with the train.
+                        String tail = reached == null ? null : reached.getArrivedFrom();
+                        List<Edge> along = reached == null ? null : reached.getArrivedAlong();
+
+                        this.unlockPath(path, loc);
+
+                        // Recorded where it last reached, not at the destination its path reserved (OB-493).
+                        if (reached != null && reached.getCurrentLocomotive() == null)
+                        {
+                            reached.setLocomotive(loc).setArrivedAlong(along);
+                            reached.setArrivedFrom(tail);
+                        }
+                    }
 
                     this.clearedEdges.remove(loc);
                     this.releasedEarly.remove(loc);
