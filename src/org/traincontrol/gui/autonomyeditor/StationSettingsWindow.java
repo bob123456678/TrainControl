@@ -1745,6 +1745,8 @@ public final class StationSettingsWindow extends StationWindowBase
 
         final String stuck = editor.whyTrainsCannotLeave(tile);
 
+        final String line = alsoLine();
+
         editor.offTheEventThread(() ->
         {
             StandingRules answer = null;
@@ -1764,7 +1766,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
                     String shown = error != null || rules != null ? error : I18n.t("autosetup.ui.stationMatrixNotBuilt");
 
-                    matrix.show(rules, shown, stuck);
+                    matrix.show(rules, shown, stuck, line);
 
                     shownRules = error == null ? rules : null;
 
@@ -1776,6 +1778,34 @@ public final class StationSettingsWindow extends StationWindowBase
                 });
             }
         });
+    }
+
+    /** One line for what a cell cannot say: the maximum length, the list and Unavailable While. */
+    private String alsoLine()
+    {
+        AutonomySession session = editor.session;
+
+        if (!StationBoxes.of(session, tile).stops) return null;
+
+        List<String> parts = new ArrayList<>();
+
+        int length = editor.number(tile, "maxTrainLength", 0);
+
+        if (length > 0) parts.add(I18n.f("autosetup.ui.stationAlsoLength", length));
+
+        int listed = session.getTrainList(tile).size();
+
+        WhichTrains which = session.getWhichTrains(tile);
+
+        if (which == WhichTrains.BLACKLIST) parts.add(I18n.f("autosetup.ui.stationAlsoBlack", listed));
+
+        if (which == WhichTrains.WHITELIST) parts.add(I18n.f("autosetup.ui.stationAlsoWhite", listed));
+
+        String blockers = namesOf(session.getStore().getBlockingPoints(tile));
+
+        if (blockers != null) parts.add(I18n.f("autosetup.ui.stationAlsoBlocked", blockers));
+
+        return parts.isEmpty() ? null : String.join("  ", parts);
     }
 
     // ------------------------------------------------------------------------------------------------- for tests
