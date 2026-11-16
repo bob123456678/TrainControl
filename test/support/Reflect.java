@@ -47,4 +47,12 @@ public final class Reflect
 
         return method;
     }
+
+    /** An instance of `type` allocated without running a constructor: a window that is never built or shown. */
+    public static <T> T unconstructed(Class<T> type) throws ReflectiveOperationException
+    {
+        Object unsafe = field(Class.forName("sun.misc.Unsafe"), "theUnsafe").get(null);
+
+        return type.cast(unsafe.getClass().getMethod("allocateInstance", Class.class).invoke(unsafe, type));
+    }
 }

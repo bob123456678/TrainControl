@@ -6,13 +6,14 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 /**
  * Station Settings' shortcuts (FR-176): each names one combination of the two boxes, May choose this station and
  * Changing direction, and nothing else.  Off is an s88 square that is no station (MT-917), whose May choose is grayed,
- * so neither set nor read.  Terminus and Parking are stations trains must stop at (MT-1017).
+ * so neither set nor read.  Terminus and Parking are stations trains must stop at (MT-1017); Parking is a Terminus full
+ * autonomy never chooses (FR-235).
  */
 public enum StationPreset
 {
     STATION("autosetup.ui.presetStation", "autosetup.ui.presetStationTip", true, true, true, false, false),
     TERMINUS("autosetup.ui.presetTerminus", "autosetup.ui.presetTerminusTip", true, false, true, false, true),
-    PARKING("autosetup.ui.presetParking", "autosetup.ui.presetParkingTip", true, false, false, false, false),
+    PARKING("autosetup.ui.presetParking", "autosetup.ui.presetParkingTip", true, false, false, false, true),
     REVERSING_POINT("autosetup.ui.presetReversingPoint", "autosetup.ui.presetReversingPointTip", true, true, false, true,
         false),
     OFF("autosetup.ui.presetOff", "autosetup.ui.presetOffTip", false, true, null, false, false);

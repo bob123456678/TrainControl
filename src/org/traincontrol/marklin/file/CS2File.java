@@ -619,6 +619,18 @@ public final class CS2File
         return connection;
     }
 
+    /**
+     * The picture at `url`, a station's or a local file, or null when no reader knows its format.  A station that
+     * stops answering throws once the timeouts run out, as an unreadable picture does (OB-492).
+     */
+    public static java.awt.image.BufferedImage readPicture(String url) throws IOException
+    {
+        try (InputStream in = openWithTimeouts(url).getInputStream())
+        {
+            return javax.imageio.ImageIO.read(in);
+        }
+    }
+
     /** UTF-8 when the bytes are valid UTF-8, otherwise ISO-8859-1: names come out right whichever a station sends. */
     private static String decode(byte[] bytes, String url)
     {
