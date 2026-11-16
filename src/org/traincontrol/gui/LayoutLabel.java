@@ -1536,7 +1536,6 @@ public final class LayoutLabel extends JLabel
 
         g.setStroke(new java.awt.BasicStroke(width, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
 
-        // Whichever color the diagram is set to draw - see `tailColour`
         g.setColor(overTheRun ? tailColour().overTheRun() : tailColour().colour());
 
         // One shape for all of the square's roads, drawn once: a see-through color drawn road by road lays itself twice
@@ -1545,11 +1544,8 @@ public final class LayoutLabel extends JLabel
 
         for (org.traincontrol.automationui.TilePorts.Route road : roads)
         {
-            int[] a = org.traincontrol.automationui.TileAnnotation.midpoint(
-                road.getA(), getWidth(), getHeight());
-
-            int[] b = org.traincontrol.automationui.TileAnnotation.midpoint(
-                road.getB(), getWidth(), getHeight());
+            int[] a = sideMidpoint(road.getA());
+            int[] b = sideMidpoint(road.getB());
 
             if (a == null || b == null) continue;
 
@@ -1678,11 +1674,8 @@ public final class LayoutLabel extends JLabel
 
         for (org.traincontrol.automationui.TilePorts.Route road : covered)
         {
-            int[] a = org.traincontrol.automationui.TileAnnotation.midpoint(
-                road.getA(), getWidth(), getHeight());
-
-            int[] b = org.traincontrol.automationui.TileAnnotation.midpoint(
-                road.getB(), getWidth(), getHeight());
+            int[] a = sideMidpoint(road.getA());
+            int[] b = sideMidpoint(road.getB());
 
             if (a == null || b == null) return null;
 
@@ -1692,6 +1685,12 @@ public final class LayoutLabel extends JLabel
         }
 
         return shape.isEmpty() ? null : shape;
+    }
+
+    /** Where a side meets this square's edge, by `TileAnnotation.midpoint`. */
+    private int[] sideMidpoint(org.traincontrol.automationui.TilePorts.Side side)
+    {
+        return org.traincontrol.automationui.TileAnnotation.midpoint(side, getWidth(), getHeight());
     }
 
     /** The roads of this square a standing train is lying across, as the sides they join. */

@@ -1257,8 +1257,8 @@ public class TileAnnotation
 
         for (Trace trace : traces)
         {
-            int[] a = trace.from == null ? centre : midpoint(trace.from, width, height);
-            int[] b = trace.to == null ? centre : midpoint(trace.to, width, height);
+            int[] a = endOf(trace.from, centre, width, height);
+            int[] b = endOf(trace.to, centre, width, height);
 
             if (a == null || b == null) continue;
 
@@ -1296,14 +1296,20 @@ public class TileAnnotation
 
         for (Trace trace : traces)
         {
-            int[] a = trace.from == null ? centre : midpoint(trace.from, width, height);
-            int[] b = trace.to == null ? centre : midpoint(trace.to, width, height);
+            int[] a = endOf(trace.from, centre, width, height);
+            int[] b = endOf(trace.to, centre, width, height);
 
             if (a == null || b == null) continue;
 
             // Into the half the train heads for, along the segment's own chord.
             chevron(g, a, b, span);
         }
+    }
+
+    /** Where a trace ends on a side: its midpoint, or `centre` for a trace with no side to leave by. */
+    private static int[] endOf(Side side, int[] centre, int width, int height)
+    {
+        return side == null ? centre : midpoint(side, width, height);
     }
 
     /** A single arrowhead on the line, pointing from one point towards another.  Shared with the running overlay. */
@@ -1804,15 +1810,19 @@ public class TileAnnotation
     /** Whether the track turns a corner: its two sides are not opposite (N, E, S and W are declared in order). */
     private boolean trackBends()
     {
-        Side sideA = badge != null && badge.getA() != null ? badge.getA()
-            : marks.isEmpty() ? null : marks.get(0).getA();
+        Side[] sides = trackSides();
 
-        Side sideB = badge != null && badge.getB() != null ? badge.getB()
-            : marks.isEmpty() ? null : marks.get(0).getB();
+        if (sides[0] == null || sides[1] == null || sides[0] == sides[1]) return false;
 
-        if (sideA == null || sideB == null || sideA == sideB) return false;
+        return Math.abs(sides[0].ordinal() - sides[1].ordinal()) != 2;
+    }
 
-        return Math.abs(sideA.ordinal() - sideB.ordinal()) != 2;
+    /** This tile's own two track sides: the badge's own route where it has one, otherwise the first route drawn. */
+    private Side[] trackSides()
+    {
+        return new Side[] {
+            badge != null && badge.getA() != null ? badge.getA() : marks.isEmpty() ? null : marks.get(0).getA(),
+            badge != null && badge.getB() != null ? badge.getB() : marks.isEmpty() ? null : marks.get(0).getB()};
     }
 
     /** Where paintBadge last drew, or null; only the train mark reads it, to sit ON the badge. */
@@ -1821,17 +1831,12 @@ public class TileAnnotation
     /** The midpoint of this tile's own two track sides.  Public: the run line, badges and train must agree (OB-026). */
     public int[] trackCentre(int width, int height)
     {
-        // the badge's own route where it has one, otherwise the first route drawn, otherwise center
-        Side sideA = badge != null && badge.getA() != null ? badge.getA()
-            : marks.isEmpty() ? null : marks.get(0).getA();
+        Side[] sides = trackSides();
 
-        Side sideB = badge != null && badge.getB() != null ? badge.getB()
-            : marks.isEmpty() ? null : marks.get(0).getB();
+        if (sides[0] == null || sides[1] == null) return new int[] {width / 2, height / 2};
 
-        if (sideA == null || sideB == null) return new int[] {width / 2, height / 2};
-
-        int[] a = midpoint(sideA, width, height);
-        int[] b = midpoint(sideB, width, height);
+        int[] a = midpoint(sides[0], width, height);
+        int[] b = midpoint(sides[1], width, height);
 
         if (a == null || b == null) return new int[] {width / 2, height / 2};
 

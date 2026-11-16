@@ -2,6 +2,7 @@ package org.traincontrol.gui.layouteditor;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import org.traincontrol.base.LayoutDiagramComponent;
@@ -135,12 +136,7 @@ final class LayoutEditorUndo
         return history;
     }
 
-    /**
-     * Saves a previous version of the layout
-     *
-     * Runs under the editor's monitor: reached only through `LayoutEditor.snapshotLayout`, which is `synchronized`;
-     * any other caller must take it first.
-     */
+    /** Saves the page before an edit; any caller but `LayoutEditor.snapshotLayout` takes the editor's monitor first. */
     void snapshotLayout()
     {
         // A pending cut is not stood down here.  clipboardWasCut says the squares the clipboard came from are EMPTY, a
@@ -165,12 +161,7 @@ final class LayoutEditorUndo
         this.editor.previousCaptionsRedo.clear();
     }
 
-    /**
-     * Restores previous layout state
-     *
-     * Runs under the editor's monitor: reached only through `LayoutEditor.undo`, which is `synchronized`; any other
-     * caller must take it first.
-     */
+    /** Steps back one entry; a caller other than `LayoutEditor.undo` takes the editor's monitor first. */
     void undo()
     {
         // A cut that has been undone is no longer a move, and cutMoves settles that per square: stepping through history
@@ -188,28 +179,7 @@ final class LayoutEditorUndo
                 // The names on the squares travel with the squares.  A caption belongs to the SETUP rather than the tile
                 // (so a rename does not rewrite every page) and does not ride the component snapshot, but this editor moves
                 // and deletes captions as it moves and deletes tiles, so Ctrl+Z must restore them too.
-                Map<String, Object> captionsBefore = captionSnapshot();
-
-                Map<String, Object> captionsToRestore =
-                    this.editor.previousCaptions.isEmpty() ? null : this.editor.previousCaptions.pop();
-
-                this.editor.previousCaptionsRedo.push(captionsBefore);
-                
-                // Delete all existing components
-                for (LayoutDiagramComponent lc : this.editor.layout.getAll())
-                {
-                    this.editor.layout.addComponent(null, lc.getX(), lc.getY());
-                }
-
-                // Placed previous components
-                for (LayoutDiagramComponent lc : history) this.editor.layout.addComponent(lc, lc.getX(), lc.getY());
-
-                // The setup is put back AFTER the diagram: restoreCaptions rebuilds the graph from the pages, so doing it
-                // first derives a graph from the pre-undo diagram against the post-undo setup, and nothing rebuilds it
-                // afterwards.  moveSelection and the shift operations have the same ordering.
-                restoreCaptions(captionsToRestore);
-
-                this.editor.refreshGrid();
+                show(history, swapCaptions(this.editor.previousCaptions, this.editor.previousCaptionsRedo));
             }
         }
         catch (IOException ex)
@@ -218,12 +188,7 @@ final class LayoutEditorUndo
         }
     }
 
-    /**
-     * Restores previous layout state
-     *
-     * Runs under the editor's monitor: reached only through `LayoutEditor.redo`, which is `synchronized`; any other
-     * caller must take it first.
-     */
+    /** Steps forward one entry; a caller other than `LayoutEditor.redo` takes the editor's monitor first. */
     void redo()
     {
         // As in undo(): the cut flag is not stood down here, since cutMoves asks each square.
@@ -235,15 +200,10 @@ final class LayoutEditorUndo
                 List<LayoutDiagramComponent> history = this.editor.previousLayoutComponentsRedo.pop();
                 this.editor.previousLayoutComponents.push(deepCopyLayout());
 
-                // The captions go forward with it, exactly as they came back
-                Map<String, Object> captionsBefore = captionSnapshot();
+                // The captions go forward with it
+                Map<String, Object> captions =
+                    swapCaptions(this.editor.previousCaptionsRedo, this.editor.previousCaptions);
 
-Map<String, Object> captionsToRestore = this.editor.previousCaptionsRedo.isEmpty()
-                    ? null : this.editor.previousCaptionsRedo.pop();
-
-                this.editor.previousCaptions.push(captionsBefore);
-                
-                // Enforce undo limit
                 if (this.editor.previousLayoutComponents.size() >= LayoutEditor.MAX_UNDO_HISTORY)
                 {
                     this.editor.previousLayoutComponents.removeLast();
@@ -253,25 +213,40 @@ Map<String, Object> captionsToRestore = this.editor.previousCaptionsRedo.isEmpty
                 {
                     this.editor.previousCaptions.removeLast();
                 }
-                
-                // Delete all existing components
-                for (LayoutDiagramComponent lc : this.editor.layout.getAll())
-                {
-                    this.editor.layout.addComponent(null, lc.getX(), lc.getY());
-                }
 
-                // Placed previous components
-                for (LayoutDiagramComponent lc : history) this.editor.layout.addComponent(lc, lc.getX(), lc.getY());
-
-                // The setup after the diagram - see undo() above for why
-                restoreCaptions(captionsToRestore);
-
-                this.editor.refreshGrid();
+                show(history, captions);
             }
         }
         catch (IOException ex)
         {
             this.editor.parent.getModel().log(ex);
         }
+    }
+
+    /** The captions now go onto `to`, and `from`'s last comes off to be restored (null when the stacks disagree). */
+    private Map<String, Object> swapCaptions(Deque<Map<String, Object>> from, Deque<Map<String, Object>> to)
+    {
+        Map<String, Object> captionsBefore = captionSnapshot();
+
+        Map<String, Object> captionsToRestore = from.isEmpty() ? null : from.pop();
+
+        to.push(captionsBefore);
+
+        return captionsToRestore;
+    }
+
+    /** Puts a page from history on screen, then its captions, as restoreCaptions rebuilds the graph from the pages. */
+    private void show(List<LayoutDiagramComponent> history, Map<String, Object> captions) throws IOException
+    {
+        for (LayoutDiagramComponent lc : this.editor.layout.getAll())
+        {
+            this.editor.layout.addComponent(null, lc.getX(), lc.getY());
+        }
+
+        for (LayoutDiagramComponent lc : history) this.editor.layout.addComponent(lc, lc.getX(), lc.getY());
+
+        restoreCaptions(captions);
+
+        this.editor.refreshGrid();
     }
 }

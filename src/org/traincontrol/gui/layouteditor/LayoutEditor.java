@@ -1798,8 +1798,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // width is measured from it.
             this.jLabel1.setText(I18n.t("autosetup.ui.titleCap"));
 
-            // The lengths toggle under Addresses: GroupLayout can replace a component, so Addresses is swapped for a
-            // column holding both.
+            // The lengths toggle under Addresses, swapped for a column holding both.
             if (formPane.getLayout() instanceof GroupLayout)
             {
                 JPanel visibility = new JPanel();
@@ -1842,26 +1841,15 @@ public class LayoutEditor extends PositionAwareJFrame
                 autonomyPanel.getShowIgnored().setAlignmentX(Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowIgnored());
 
-                // What the captions say, as one choice (FR-061), in jLabel1's heading style.
-                JLabel captionsLabel = new JLabel(I18n.t("autosetup.ui.captionsHeading"));
-                captionsLabel.setFont(this.jLabel1.getFont());
-                captionsLabel.setForeground(this.jLabel1.getForeground());
-                captionsLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-                captionsLabel.setBorder(BorderFactory.createEmptyBorder(HEADING_GAP + 6, 0, HEADING_GAP, 0));
-
-                visibility.add(captionsLabel);
+                // What the captions say, as one choice (FR-061)
+                visibility.add(sideHeading("autosetup.ui.captionsHeading"));
 
                 JComboBox<String> captionChoice = autonomyPanel.getCaptionChoice();
                 captionChoice.setAlignmentX(Component.LEFT_ALIGNMENT);
 
                 visibility.add(captionChoice);
-                JLabel directionsLabel = new JLabel(I18n.t("autosetup.ui.labelDirections"));
-                directionsLabel.setFont(this.jLabel1.getFont());
-                directionsLabel.setForeground(this.jLabel1.getForeground());
-                directionsLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-                // The form's air under a heading (HEADING_GAP)
-                directionsLabel.setBorder(BorderFactory.createEmptyBorder(HEADING_GAP + 6, 0, HEADING_GAP, 0));
 
+                JLabel directionsLabel = sideHeading("autosetup.ui.labelDirections");
                 visibility.add(directionsLabel);
 
                 JComboBox<String> choice = autonomyPanel.getShowDirections();
@@ -1996,6 +1984,18 @@ public class LayoutEditor extends PositionAwareJFrame
         this.showWhetherADragPicks();
 
         refreshFindPointItem();
+    }
+
+    /** A side-column heading, in jLabel1's style with the form's air under it. */
+    private JLabel sideHeading(String key)
+    {
+        JLabel heading = new JLabel(I18n.t(key));
+        heading.setFont(this.jLabel1.getFont());
+        heading.setForeground(this.jLabel1.getForeground());
+        heading.setAlignmentX(Component.LEFT_ALIGNMENT);
+        heading.setBorder(BorderFactory.createEmptyBorder(HEADING_GAP + 6, 0, HEADING_GAP, 0));
+
+        return heading;
     }
 
     /**

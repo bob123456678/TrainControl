@@ -3005,18 +3005,10 @@ public class RouteEditorFrame extends JFrame
                         return;
                     }
 
-                    // And it keeps the name the other party gave it, unless the operator typed in the name field (a
-                    // rename they asked for).
+                    // And it keeps the name the other party gave it, unless the operator typed a new one.
                     String saveAs = nameToSaveAs(name, nowCalled);
 
-                    if (JOptionPane.showOptionDialog(this,
-                        I18n.f("route.ui.confirmRouteRenamed", originalName, nowCalled),
-                        I18n.t("route.ui.titleRouteMoved"),
-                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                        TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0)
-                    {
-                        return;
-                    }
+                    if (!confirmedMove(I18n.f("route.ui.confirmRouteRenamed", originalName, nowCalled), 1)) return;
 
                     if (!parent.getModel().editRoute(nowCalled, saveAs, built, s88, trigger,
                         enabledBox.isSelected(), expression))
@@ -3028,14 +3020,7 @@ public class RouteEditorFrame extends JFrame
                 else if ("gone".equals(moved))
                 {
                     // Added back rather than lost: originalName is final, so editRoute would return false.
-                    if (JOptionPane.showOptionDialog(this,
-                        I18n.f("route.ui.confirmRouteGoneSaveAsNew", originalName),
-                        I18n.t("route.ui.titleRouteMoved"),
-                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                        TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[0]) != 0)
-                    {
-                        return;
-                    }
+                    if (!confirmedMove(I18n.f("route.ui.confirmRouteGoneSaveAsNew", originalName), 0)) return;
 
                     if (!parent.getModel().newRoute(name, built, s88, trigger, enabledBox.isSelected(), expression))
                     {
@@ -3045,14 +3030,8 @@ public class RouteEditorFrame extends JFrame
                 }
                 else
                 {
-                    if ("changed".equals(moved) && JOptionPane.showOptionDialog(this,
-                        I18n.f("route.ui.confirmRouteChangedUnderneath", originalName),
-                        I18n.t("route.ui.titleRouteMoved"),
-                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                        TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0)
-                    {
-                        return;
-                    }
+                    if ("changed".equals(moved)
+                        && !confirmedMove(I18n.f("route.ui.confirmRouteChangedUnderneath", originalName), 1)) return;
 
                     if (!parent.getModel().editRoute(originalName, name, built, s88, trigger,
                         enabledBox.isSelected(), expression))
@@ -3063,15 +3042,14 @@ public class RouteEditorFrame extends JFrame
                 }
             }
 
-            // A finished edit puts every play button back (FR-043): a spinner still turning is a claim about a route
-            // that has changed.
+            // A finished edit puts every play button back (FR-043).
             parent.resetRouteSpinners();
 
             parent.refreshRouteList();
             parent.repaintLayout();
 
             // No diagram edit to complete: a tile follows its route by number (rebindRouteTiles), and
-            // layoutEditingComplete would reset autonomy and re-read every page.  A route is no page of the diagram.
+            // layoutEditingComplete would reset autonomy and re-read every page.
 
             // A sync only when the route is NEW and its id could collide with one the station issued (OB-155); read
             // back from the database, because newRoute picks the id.
@@ -3088,6 +3066,14 @@ public class RouteEditorFrame extends JFrame
         {
             JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
         }
+    }
+
+    /** A route-moved question, true on Yes; `preselected` is the button Enter takes. */
+    private boolean confirmedMove(String question, int preselected)
+    {
+        return JOptionPane.showOptionDialog(this, question, I18n.t("route.ui.titleRouteMoved"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[preselected]) == 0;
     }
 
     /**

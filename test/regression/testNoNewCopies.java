@@ -31,29 +31,23 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 83;
+    private static final int GROUPS_ALLOWED = 66;
 
     /**
      * The tokens standing in a second or later copy in `test/`, summed over its groups: an upper bound, so a commit that
      * removes copies need not touch it.  Never raise it; `docs/tools/codesize.py` prints the figure now, to lower it to.
      */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 177229;
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 176593;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
         "AutonomyBuilder:1,AutonomyChecks:1 (75)",
-        "AutonomyBuilder:2 (62)",
         "AutonomyChecks:2 (63)",
-        "AutonomyCompanionStore:2 (67)",
         "AutonomyCompanionStore:2 (65)",
-        "AutonomyCompanionStore:2 (63)",
-        "AutonomyCompanionStore:3 (118)",
-        "AutonomyCompanionStore:5 (173)",
+        "AutonomyCompanionStore:2 (64)",
         "AutonomyEditorPanel:1,EditorPrompts:1 (80)",
         "AutonomyEditorPanel:2 (66)",
-        "AutonomyEditorPanel:3 (108)",
-        "AutonomyEditorPanel:4 (136)",
-        "AutonomyEditorPanel:4 (98)",
+        "AutonomyEditorPanel:3 (98)",
         "AutonomySession:2 (76)",
         "AutonomySession:2 (73)",
         "AutonomySession:2 (70)",
@@ -72,7 +66,6 @@ public class testNoNewCopies
         "CS2Message:2 (242)",
         "Conversion:2 (79)",
         "CurrentKeyRow:1,TileAnnotation:1 (89)",
-        "EditorMassAssign:2 (74)",
         "FeedbackEvents:1,FullAutonomyExample:1 (60)",
         "HomeStaging:2 (60)",
         "ImageUtil:2 (113)",
@@ -82,10 +75,6 @@ public class testNoNewCopies
         "LayoutDiagram:2 (78)",
         "LayoutDiagramComponent:2 (189)",
         "LayoutDiagramComponent:2 (171)",
-        "LayoutEditor:2 (73)",
-        "LayoutEditorUndo:2 (82)",
-        "LayoutEditorUndo:2 (67)",
-        "LayoutLabel:2 (63)",
         "LocIconCropDialog:1,TileAnnotation:1 (95)",
         "LocIconCropDialog:2 (66)",
         "LocomotiveKeyboardMapping:1,MarklinAccessory:1,TimetablePath:1 (105)",
@@ -101,12 +90,9 @@ public class testNoNewCopies
         "RouteCommand:1,TrainControlUI:1 (138)",
         "RouteCommand:2 (109)",
         "RouteCommand:2 (64)",
-        "RouteEditorFrame:2 (73)",
         "RouteEditorFrame:2 (65)",
         "RowIcons:2 (64)",
         "TileAnnotation:1,TileOverlay:1 (101)",
-        "TileAnnotation:2 (84)",
-        "TileAnnotation:2 (68)",
         "TileAnnotation:3,TileOverlay:1 (86)",
         "TileGraph:1,TilePorts:1 (80)",
         "TileGraph:1,TileSelection:1 (72)",
@@ -115,11 +101,8 @@ public class testNoNewCopies
         "TrainControlUI:4 (192)", // the form-accessor runs the gui collaborators read through, lately AutonomyLifecycle
         "TrainControlUI:2 (93)",
         "TrainControlUI:2 (81)",
-        "TrainControlUI:2 (69)",
-        "TrainControlUI:2 (67)",
         "TrainControlUI:2 (62)",
         "TrainControlUI:2 (61)",
-        "TrainControlUI:2 (60)",
         "TrainControlUI:2 (60)",
         "TrainControlUI:3 (123)",
         "TrainControlUI:3 (101)",

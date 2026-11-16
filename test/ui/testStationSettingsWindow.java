@@ -2992,9 +2992,13 @@ public class testStationSettingsWindow
     public void testUndoPutsMayDepartBack() throws Exception
     {
         TileKey square = aStationWhereMayDepart();
-        RouteId road = onlyRoad(square);
 
-        // The undo point every edit of the track diagram takes first
+        StationDoors.close(departChosenThenUndone(square, onlyRoad(square)));
+    }
+
+    /** May depart set toward A after the undo point every track diagram edit takes first, then undone; still open. */
+    private StationSettingsWindow departChosenThenUndone(TileKey square, RouteId road) throws Exception
+    {
         java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
 
         Components.onTheEventThread(() -> snapshot.invoke(editor));
@@ -3006,8 +3010,28 @@ public class testStationSettingsWindow
         Components.onTheEventThread(() -> { editor.undo(); return null; });
         Components.settle();
 
-        assertEquals(wayOf(square, road), Direction.BOTH,
-            "the undo did not put May depart back");
+        assertEquals(wayOf(square, road), Direction.BOTH, "the undo did not put May depart back");
+
+        return window;
+    }
+
+    /**
+     * And the editor's redo brings the edit back: the page's setup as it was before the undo, not as the undo left it.
+     *
+     * MUTATION: swap the arguments of redo's `swapCaptions` in LayoutEditorUndo, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testRedoBringsMayDepartBack() throws Exception
+    {
+        TileKey square = aStationWhereMayDepart();
+        RouteId road = onlyRoad(square);
+
+        StationSettingsWindow window = departChosenThenUndone(square, road);
+
+        Components.onTheEventThread(() -> { editor.redo(); return null; });
+        Components.settle();
+
+        assertEquals(wayOf(square, road), Direction.TOWARD_A, "the redo did not bring the May depart choice back");
 
         StationDoors.close(window);
     }
