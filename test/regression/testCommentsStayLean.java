@@ -44,7 +44,8 @@ import org.testng.annotations.Test;
  * its pin, and a pin is lowered when its file is trimmed (a file well under its pin is not a failure).
  *
  * The first two count `test/` too, under pins of its own.  Not counted by them: the NetBeans generated regions (from a line holding `//GEN-BEGIN` to the one
- * holding `//GEN-END`, which includes the "Variables declaration - do not modify" block).
+ * holding `//GEN-END`, which includes the "Variables declaration - do not modify" block), nor in the private javadoc
+ * count, a javadoc with a `//GEN-BEGIN` before or on its declaration's line.
  *
  * The history markers, each measured against the whole of `src/` and kept only where most of its matches were history:
  * <ul>
@@ -308,6 +309,26 @@ public class testCommentsStayLean
 
         // Local's member, Colour's constructor, hidden() and x.
         assertEquals(shapeOf(source)[2], 4);
+    }
+
+    /**
+     * A NetBeans form's javadoc on `initComponents` is the GUI builder's, not ours: a `//GEN-BEGIN` before or on its
+     * declaration's line leaves it uncounted, so a new form never fails the ratchet.  The hand-written one still counts.
+     *
+     * MUTATION: drop the `onGeneratedCode` test in `scanFile`, and this counts three.
+     */
+    @Test
+    public void testAFormsGeneratedJavadocIsNotCounted()
+    {
+        String doc = "    /**\n     * a\n     * b\n     * c\n     */\n";
+
+        String source = "public class Form\n{\n" + doc + "    @SuppressWarnings(\"unchecked\")\n"
+            + "    // <editor-fold defaultstate=\"collapsed\" desc=\"Generated Code\">//GEN-BEGIN:initComponents\n"
+            + "    private void initComponents() {\n    }// </editor-fold>//GEN-END:initComponents\n"
+            + doc + "    private void other() {//GEN-BEGIN:other\n    }//GEN-END:other\n"
+            + doc + "    private void ours()\n    {\n    }\n}\n";
+
+        assertEquals(shapeOf(source)[2], 1, "only the javadoc on ours() is a long private javadoc");
     }
 
     /** The shape of one source text, as `scanSource` reports it for a file: {share tenths, characters, javadocs}. */
@@ -728,8 +749,10 @@ public class testCommentsStayLean
 
                 shape[0] += text.length();
 
-                if (javadoc && parts.length > PRIVATE_JAVADOC_LINES
-                    && isPrivateDeclaration(types.peek(), source.substring(end, Math.min(n, end + 2000)))) shape[1]++;
+                String after = source.substring(end, Math.min(n, end + 2000));
+
+                if (javadoc && parts.length > PRIVATE_JAVADOC_LINES && !onGeneratedCode(after)
+                    && isPrivateDeclaration(types.peek(), after)) shape[1]++;
 
                 if (!javadoc && parts.length > BLOCK_LINES && !generated.contains(line))
                 {
@@ -857,6 +880,15 @@ public class testCommentsStayLean
                 return;
             }
         }
+    }
+
+    /** Whether a javadoc is NetBeans's own: a `//GEN-BEGIN` before or on the line where its declaration opens. */
+    private static boolean onGeneratedCode(String after)
+    {
+        Matcher end = Pattern.compile("[{;]").matcher(after);
+        int line = end.find() ? after.indexOf('\n', end.start()) : -1;
+
+        return (line < 0 ? after : after.substring(0, line)).contains("//GEN-BEGIN");
     }
 
     /** From the line holding `//GEN-BEGIN` to the one holding `//GEN-END`, both included. */

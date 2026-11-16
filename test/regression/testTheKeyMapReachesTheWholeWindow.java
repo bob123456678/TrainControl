@@ -23,9 +23,9 @@ import support.Reflect;
  *
  * The map is a `KeyListener`, which hears only the component holding the keyboard, and refocusing the tabbed pane
  * (OB-170) cannot work when the operator is USING what has it.  `letTheWholeWindowDriveTrains` registers a key event
- * POST processor for keys that came back unconsumed.  Three claims: it reaches a component that is not the keyboard, it
- * does NOT fire twice when the focused component is one the map listens to, and it leaves a text component's letters
- * alone.  ON THE FROZEN RAILWAY, never `cs2_sample_layout`.
+ * POST processor for keys that came back unconsumed.  Four claims: it reaches a component that is not the keyboard, it
+ * does NOT fire twice when the focused component is one the map listens to, it leaves a text component's letters
+ * alone, and a dialog the window owns keeps its keys.  ON THE FROZEN RAILWAY, never `cs2_sample_layout`.
  *
  * MUTATION: remove the `letTheWholeWindowDriveTrains()` call from `display()` (first test, and the third's control);
  * drop the `JTextComponent` guard (third).  The second test is not mutation-backed and says so.
@@ -236,6 +236,85 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
+     * A key a modal question leaves unconsumed stays the question's: Control+G behind it starts nothing (FR-200) and a
+     * letter picks no locomotive.  The question is owned by this window, as `dialogParent()` gives it.
+     *
+     * MUTATION: put back `!SwingUtilities.isDescendingFrom(owner, this)` as the window test in
+     * `letTheWholeWindowDriveTrains`: a Window's parent is its owner, so the question's button counts as inside.
+     */
+    @Test
+    public void testAModalQuestionKeepsItsKeys() throws Exception
+    {
+        final javax.swing.JDialog[] question = new javax.swing.JDialog[1];
+
+        // Shown from a later event, as a modal dialog does not return until it closes.
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            question[0] = new javax.swing.JOptionPane("?", javax.swing.JOptionPane.QUESTION_MESSAGE,
+                javax.swing.JOptionPane.YES_NO_OPTION).createDialog(ui, "?");
+            question[0].setVisible(true);
+        });
+
+        try
+        {
+            if (!Components.waitFor(() -> question[0] != null && question[0].isShowing(), 10000))
+            {
+                fail("the modal question never showed, so nothing could be pressed in it");
+            }
+
+            // The keyboard follows the window a moment after it shows.
+            Components.waitFor(() -> question[0].isFocused(), 5000);
+            Components.drain(5);
+
+            java.awt.Component holding = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+
+            if (holding == null || javax.swing.SwingUtilities.getWindowAncestor(holding) != question[0])
+            {
+                throw new SkipException("this desktop would not give the modal question the keyboard (it is on "
+                    + (holding == null ? "nothing" : holding.getClass().getSimpleName()) + ")");
+            }
+
+            javax.swing.JButton before = currentButton();
+            java.util.List<String> said = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+            java.util.logging.Handler tap = support.LogTap.messagesInto(said);
+            java.util.logging.Logger at = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+
+            // Logged as well as watched: Control+G that cannot start says why in the log, which is acting all the same.
+            at.addHandler(tap);
+
+            try
+            {
+                post(holding, aLetterOtherThan(before), 0);
+                post(holding, java.awt.event.KeyEvent.VK_G, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+                Components.settle();
+            }
+            finally
+            {
+                at.removeHandler(tap);
+            }
+
+            // One assertion, so a red run shows both keys.
+            boolean picked = currentButton() != before;
+
+            org.testng.Assert.assertTrue(!picked && said.isEmpty() && !autonomyRuns(), "keys pressed in a modal "
+                + "question reached the main window's key table: a letter picked a locomotive " + picked
+                + "; Control+G logged " + said + ", autonomy running " + autonomyRuns());
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> { if (question[0] != null) question[0].dispose(); });
+            Components.drain(5);
+
+            if (autonomyRuns()) support.Settle.gracefully(model.getAutoLayout(), support.Settle.PATIENCE_MS);
+        }
+    }
+
+    private static boolean autonomyRuns()
+    {
+        return model.hasAutoLayout() && model.getAutoLayout().isRunning();
+    }
+
+    /**
      * A text box that can really hold the keyboard, looked for on every tab in turn: the log and the JSON pane are not
      * on the tab showing at start-up and cannot take the focus there, and a skipped claim is not a kept one.  Null when
      * no tab has one.
@@ -293,8 +372,14 @@ public class testTheKeyMapReachesTheWholeWindow
                 + " and the double this asks about could not happen either way");
         }
 
+        post(on, keyCode, 0);
+    }
+
+    /** Posted through the queue, as the operating system delivers a key, to the component holding the keyboard. */
+    private static void post(java.awt.Component on, int keyCode, int modifiers) throws Exception
+    {
         final java.awt.event.KeyEvent pressed = new java.awt.event.KeyEvent(on,
-            java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, keyCode,
+            java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(), modifiers, keyCode,
             (char) keyCode);
 
         java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(pressed);

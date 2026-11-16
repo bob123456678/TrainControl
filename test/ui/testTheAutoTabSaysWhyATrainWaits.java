@@ -474,7 +474,8 @@ public class testTheAutoTabSaysWhyATrainWaits
      * A card that was not redrawn when autonomy started says autonomy's refusal over its table: a paused train is
      * "paused", and no station is one it can go to now.
      *
-     * MUTATION: in `DestinationTable.html`, leave out autonomy's refusal to start, and this fails.
+     * MUTATION: in `DestinationTable.html`, leave out autonomy's refusal to start, or return right after it with no
+     * rows, and this fails.
      */
     @Test
     public void testACardNotRedrawnSinceStartSaysThePauseInTheTooltip() throws Exception
@@ -491,6 +492,9 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             assertTrue(tip.contains(I18n.f("autolayout.ui.whyAutonomyWillNotStart", I18n.t("autolayout.why.paused"))),
                 "the tooltip does not say autonomy will not start the train, as it is paused: " + tip);
+
+            // Rows first: with no table at all, "no station can go now" would hold for nothing.
+            assertFalse(support.DestinationRows.of(tip).isEmpty(), "the tooltip has no destination rows: " + tip);
 
             assertTrue(support.DestinationRows.answering(tip, "autolayout.ui.whyCanGoNow").isEmpty(), "the tooltip"
                 + " says a paused train can go somewhere now: " + tip);

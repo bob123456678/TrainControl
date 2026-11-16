@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -205,6 +207,47 @@ public class testEveryWindowWearsTheIcon
         assertTrue(own.isEmpty(), "these files set Java's own hand pointer, which is jagged on Java 8, instead of "
             + "HandPointer.cursor(): " + own);
     }
+
+    /**
+     * A hand the GUI builder sets, `name.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR))`, is set again
+     * outside the generated code of the same file as `name.setCursor(HandPointer.cursor())` (FR-224).
+     *
+     * MUTATION: take `linkLabel.setCursor(HandPointer.cursor())` out of `About`'s constructor, and this fails naming it.
+     */
+    @Test
+    public void testEveryHandTheFormSetsIsReplaced() throws Exception
+    {
+        Pattern formsHand = Pattern.compile(NOT_A_NAME + "((?:\\w+\\.)?)"
+            + Pattern.quote("setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR))"));
+        List<String> left = new ArrayList<>();
+        int hands = 0;
+
+        for (File source : javaUnder(new File("src")))
+        {
+            String body = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
+            Matcher set = formsHand.matcher(generatedCode(body));
+
+            while (set.find())
+            {
+                hands++;
+                String ours = set.group(1) + "setCursor(HandPointer.cursor())";
+
+                if (!Pattern.compile(NOT_A_NAME + Pattern.quote(ours)).matcher(withoutGeneratedCode(body)).find())
+                {
+                    left.add(source.getName() + " needs " + ours);
+                }
+            }
+        }
+
+        // A floor, not a pin: About's two links are form hands today.
+        assertTrue(hands >= 1, "no form sets a hand pointer: the pattern has gone stale or this ran from the wrong "
+            + "directory");
+        assertTrue(left.isEmpty(), "these hands set by a form are never replaced by TrainControl's, so they show Java's "
+            + "own, jagged on Java 8: " + left);
+    }
+
+    /** So `name.setCursor` is not matched inside `othername.setCursor` or `x.name.setCursor`. */
+    private static final String NOT_A_NAME = "(?<![\\w.])";
 
     /** How far after a dialog is constructed its icon call may sit. */
     private static final int REACH = 900;
