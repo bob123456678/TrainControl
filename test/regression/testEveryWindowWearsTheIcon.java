@@ -235,15 +235,16 @@ public class testEveryWindowWearsTheIcon
 
         while (true)
         {
-            int at = body.indexOf("GEN-BEGIN", from);
+            // The NetBeans markers, not the words: a javadoc that names GEN-BEGIN must not hide the rest of its file.
+            int at = body.indexOf("//GEN-BEGIN:", from);
 
             if (at < 0) break;
 
+            int end = body.indexOf("//GEN-END:", at);
+
+            if (end < 0) break;
+
             out.append(body, from, at);
-
-            int end = body.indexOf("GEN-END", at);
-
-            if (end < 0) return out.toString();
 
             from = end;
         }
