@@ -3052,21 +3052,23 @@ public final class CS2File
     }
 
     /**
-     * Gives each tile at an address with two protocols the protocol of the article this page's CS3 plan puts there; a
-     * tile it cannot tell keeps the first article's, warned once per page.  A local copy is never checked (OB-402).
+     * The article the station's CS3 plan of this page puts on each tile it can tell, of tiles at addresses with two
+     * protocols.
      */
-    private void resolveTwoProtocolTiles(LayoutDiagram page, List<LayoutDiagramComponent> tiles,
-        Map<Integer, String> twoProtocols, List<MarklinAccessory> accDB)
+    private Map<LayoutDiagramComponent, MarklinAccessory> plannedArticles(LayoutDiagram page,
+        List<LayoutDiagramComponent> tiles, Map<Integer, String> twoProtocols, List<MarklinAccessory> accDB)
     {
-        boolean fromStation = getDefaultLayoutDataLoc().equals(this.layoutDataLoc);
-        CS3TrackPlan.Page plan = fromStation ? trackPlan().page(page.getName()) : null;
+        CS3TrackPlan.Page plan = trackPlan().page(page.getName());
+        Map<LayoutDiagramComponent, MarklinAccessory> out = new HashMap<>();
+
+        if (plan == null) return out;
 
         // The grid's place on the page, voted by the articles of the addresses with one protocol
         Map<String, List<Point>> voters = new HashMap<>();
 
         for (MarklinAccessory a : accDB)
         {
-            if (plan != null && plan.isGrid() && !twoProtocols.containsKey(a.getAddress()))
+            if (plan.isGrid() && !twoProtocols.containsKey(a.getAddress()))
             {
                 voters.merge(a.getName(), page.getAll().stream()
                     .filter(t -> t.isAccessory() && t.getAddress() == a.getAddress())
@@ -3075,16 +3077,12 @@ public final class CS2File
             }
         }
 
-        Point offset = plan == null ? null : plan.gridOffset(voters);
-
-        // The squares of each address that could not be told, and the protocol its untold tiles keep
-        Map<Integer, List<String>> untold = new java.util.TreeMap<>();
-        Map<Integer, Accessory.accessoryDecoderType> kept = new HashMap<>();
+        Point offset = plan.gridOffset(voters);
 
         for (LayoutDiagramComponent c : tiles)
         {
             List<MarklinAccessory> onPage = accDB.stream()
-                .filter(a -> a.getAddress() == c.getAddress() && plan != null && plan.holds(a.getName()))
+                .filter(a -> a.getAddress() == c.getAddress() && plan.holds(a.getName()))
                 .collect(Collectors.toList());
 
             if (onPage.stream().map(MarklinAccessory::getDecoderType).distinct().count() > 1 && offset != null)
@@ -3094,7 +3092,33 @@ public final class CS2File
 
             if (!onPage.isEmpty() && onPage.stream().map(MarklinAccessory::getDecoderType).distinct().count() == 1)
             {
-                c.setProtocol(onPage.get(0).getDecoderType());
+                out.put(c, onPage.get(0));
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * Gives each tile at an address with two protocols the protocol of the article this page's CS3 plan puts there; a
+     * tile it cannot tell keeps the first article's, warned once per page.  A local copy is never checked (OB-402).
+     */
+    private void resolveTwoProtocolTiles(LayoutDiagram page, List<LayoutDiagramComponent> tiles,
+        Map<Integer, String> twoProtocols, List<MarklinAccessory> accDB)
+    {
+        boolean fromStation = getDefaultLayoutDataLoc().equals(this.layoutDataLoc);
+        Map<LayoutDiagramComponent, MarklinAccessory> told = fromStation ? plannedArticles(page, tiles, twoProtocols, accDB)
+            : new HashMap<>();
+
+        // The squares of each address that could not be told, and the protocol its untold tiles keep
+        Map<Integer, List<String>> untold = new java.util.TreeMap<>();
+        Map<Integer, Accessory.accessoryDecoderType> kept = new HashMap<>();
+
+        for (LayoutDiagramComponent c : tiles)
+        {
+            if (told.containsKey(c))
+            {
+                c.setProtocol(told.get(c).getDecoderType());
             }
             else
             {
@@ -3110,6 +3134,50 @@ public final class CS2File
             logMessage(I18n.f(fromStation ? "layout.cs3TwoProtocolsUnresolved" : "layout.cs3TwoProtocolsNotChecked",
                 twoProtocols.get(e.getKey()), e.getKey(), page.getName(), String.join(" ", e.getValue()),
                 kept.get(e.getKey())));
+        }
+    }
+
+    /**
+     * Logs each accessory square of these pages whose protocol the station's accessory list does not have at its
+     * address, though it has that address.  On a CS3, a square at an address with two protocols that the station's plan
+     * of its page gives the other one is logged as a hint.  Never changes a square (FR-219).
+     */
+    public void logSquaresTheStationDisagreesWith(List<LayoutDiagram> pages) throws Exception
+    {
+        List<MarklinAccessory> station = getMagList(false);
+        Map<Integer, String> twoProtocols = control.isCS3() ? addressesWithTwoProtocols(station) : new HashMap<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            List<LayoutDiagramComponent> paired = new ArrayList<>();
+
+            for (LayoutDiagramComponent c : page.getAll())
+            {
+                if (!c.isAccessory() || c.getAddress() <= 0) continue;
+
+                List<String> has = station.stream().filter(a -> a.getAddress() == c.getAddress())
+                    .map(a -> a.getDecoderType().toString()).distinct().sorted().collect(Collectors.toList());
+
+                if (!has.isEmpty() && !has.contains(c.getProtocol().toString()))
+                {
+                    logMessage(I18n.f("layout.squareProtocolNotOnStation", page.getName(), c.getX() + "," + c.getY(),
+                        c.getAddress(), c.getProtocol(), String.join(", ", has)));
+                }
+                else if (twoProtocols.containsKey(c.getAddress())) paired.add(c);
+            }
+
+            if (paired.isEmpty()) continue;
+
+            Map<LayoutDiagramComponent, MarklinAccessory> told = plannedArticles(page, paired, twoProtocols, station);
+
+            for (LayoutDiagramComponent c : paired)
+            {
+                if (told.containsKey(c) && told.get(c).getDecoderType() != c.getProtocol())
+                {
+                    logMessage(I18n.f("layout.squareProtocolNotOnStationsPlan", page.getName(), c.getX() + "," + c.getY(),
+                        c.getAddress(), c.getProtocol(), told.get(c).getName(), told.get(c).getDecoderType()));
+                }
+            }
         }
     }
 

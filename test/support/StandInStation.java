@@ -208,6 +208,25 @@ public final class StandInStation implements AutoCloseable
     }
 
     /**
+     * A CS3 serving a snapshot folder laid out as `test/layouts/cs3-main-layout` (each /app/api/ answer a file with a
+     * .json suffix), the 2.6.1 fixtures for what it lacks.  `change` gets each path and its answer and returns the answer
+     * to send (null for a 404), or throws to drop the connection.
+     */
+    public static StandInStation ofSnapshot(File snapshot, BiFunction<String, byte[], byte[]> change) throws IOException
+    {
+        String root = snapshot.getAbsolutePath();
+        BiFunction<String, Integer, byte[]> rest = cs3("260",
+            new String(file(root + "/app/api/info.json"), StandardCharsets.UTF_8));
+
+        return new StandInStation((path, n) ->
+        {
+            byte[] own = file(root + (path.startsWith("/app/api/") ? path + ".json" : path));
+
+            return change.apply(path, own != null ? own : rest.apply(path, n));
+        });
+    }
+
+    /**
      * The fixture's routes with two more, test/CS3_automatics_lok.json, that start locomotives (speed and direction items
      * naming them): the fixtures hold no such route.  The list itself from 2.6, under "automatics" before.
      */

@@ -1923,6 +1923,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
             if (this.on) this.NetworkInterface.syncSensors();
         }
 
+        // A local copy's squares checked against the station, logged only (FR-219).  A failed check is silent and the
+        // sync still succeeds, though a stalled plan read on a CS3 can add its timeout (up to 15 s) to it.
+        if (!this.fileParser.isFromStation())
+        {
+            try
+            {
+                this.fileParser.logSquaresTheStationDisagreesWith(this.getLayoutList().stream().map(this::getLayout)
+                    .filter(Objects::nonNull).collect(Collectors.toList()));
+            }
+            catch (Exception e)
+            {
+                if (this.debug) this.log(e);
+            }
+        }
+
         this.logf("loc.syncCompleted");
         
         return num;

@@ -733,6 +733,7 @@
         <test-one-class class="testASyncKeepsARoutesArming"/>
         <test-one-class class="testACS3SyncAsksForEachFileOnce"/>
         <test-one-class class="testAStalledCutOrHandDrivenTrain"/>
+        <test-one-class class="testALocalCopyLogsTheSquaresTheStationDisagreesWith"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

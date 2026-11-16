@@ -394,7 +394,7 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
      * one W 2 in the accessory list is one vote, too few to place the grid; listed twice, it is two, and the pair at 25
      * is told.
      *
-     * MUTATION: keep only the last article of a name in the vote (CS2File.resolveTwoProtocolTiles), and the pair is
+     * MUTATION: keep only the last article of a name in the vote (CS2File.plannedArticles), and the pair is
      * not told.
      */
     @Test
@@ -565,7 +565,7 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
         assertEquals(station.requests("/app/api/gbs"), 0, "all requests: " + station.asked());
         assertEquals(protocol(pages, "Main Layout", 5, 9), accessoryDecoderType.DCC);
         assertEquals(warnings().size(), 3, "each address with two protocols is named once per page: " + warnings());
-        assertTrue(warnings().stream().allMatch(w -> w.contains("not checked against the Central Station")),
+        assertTrue(warnings().stream().allMatch(w -> w.contains("Until the Central Station is reached")),
             "the local copy's wording: " + warnings());
     }
 
