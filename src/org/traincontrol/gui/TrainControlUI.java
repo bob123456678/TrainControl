@@ -4900,10 +4900,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         arrangeFileMenu();
     }
 
-    /** Puts the File menu in its four groups: Sync and Change Address; Backup and Restore; Export Log; Exit. */
+    /** Puts the File menu in its four groups: Change Address; Backup and Restore; Export Log; Exit. */
     void arrangeFileMenu()
     {
-        arrange(this.fileMenu, 2, new Component[] {this.syncMenuItem, this.changeIPMenuItem},
+        arrange(this.fileMenu, 2, new Component[] {this.changeIPMenuItem},
             new Component[] {this.backupDataMenuItem, this.restoreDataMenuItem}, new Component[] {this.exportLogMenuItem},
             new Component[] {this.exitMenuItem});
     }
@@ -4948,14 +4948,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private void arrangeMainMenus()
     {
-        // Locomotives: no Utilities drawer; its items are grayed one by one while they work.
+        // Locomotives: no Utilities drawer; its items are grayed one by one while they work.  Sync joins the function
+        // read; Check for Renamed Locomotives stays out, as Sync asks itself (FR-220).
         this.locomotiveMenu.remove(this.functionsMenu);
 
-        arrange(this.locomotiveMenu, 2,
+        arrange(this.locomotiveMenu, 3,
             new Component[] {this.quickFindMenuItem, this.viewDatabaseMenuItem, this.addLocomotiveMenuItem},
-            new Component[] {this.turnOffFunctionsMenuItem, this.turnOnLightsMenuItem, this.syncFullLocStateMenuItem,
-                this.checkForRenameMenuItem},
+            new Component[] {this.syncMenuItem, this.syncFullLocStateMenuItem},
+            new Component[] {this.turnOffFunctionsMenuItem, this.turnOnLightsMenuItem},
             new Component[] {this.exportLocsToCSVMenuItem, this.importLocsFromCSVMenuItem});
+
+        arrangeFileMenu();
 
         showShortcut(this.quickFindMenuItem, "find a locomotive");
         showShortcut(this.viewDatabaseMenuItem, "choose a locomotive");
@@ -5038,7 +5041,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         waitFor(this.addLocomotiveMenuItem, locomotives, null, false);
         waitFor(this.importLocsFromCSVMenuItem, locomotives, null, false);
         waitFor(this.syncFullLocStateMenuItem, locomotives, null, busy);
-        waitFor(this.checkForRenameMenuItem, locomotives, "ui.main.toolbar.tooltip.checkForRenamedLocs", busy);
         waitFor(this.turnOffFunctionsMenuItem, null, null, busy);
         waitFor(this.turnOnLightsMenuItem, null, "ui.main.toolbar.tooltip.turnOnLights", busy);
         waitFor(this.restoreDataMenuItem, RunGates.whyARunHoldingTheSetupRefuses(this), "ui.main.toolbar.tooltip.restoreData",
@@ -15211,6 +15213,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 try
                 {
+                    // A pressed sync first asks about locomotives renamed at the station, so the sync reads them under
+                    // their new names and needs no second pass (FR-220)
+                    if (c != null) askAboutRenames(c);
+
                     syncResult = c == null ? this.runTheOwedSync() : this.syncWithCS2();
                 }
                 catch (RuntimeException e)
@@ -15246,6 +15252,97 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
             }).start();
         });
+    }
+
+    /**
+     * Reads, behind the spinner, the station's names for locomotives held here under another name at the same address,
+     * then asks about them over c on the event thread and returns once they are answered.  Off the event thread.
+     */
+    private void askAboutRenames(Component c)
+    {
+        if (!this.model.getNetworkCommState()) return;
+
+        BusyDialog.Closer busy = BusyDialog.showUntilClosed(this, I18n.t("ui.busySyncingWithCS"));
+
+        try
+        {
+            RenameProposals proposals = this.model.getRenameProposals();
+
+            busy.close();
+
+            SwingUtilities.invokeAndWait(() -> askAboutRenames(c, proposals));
+        }
+        catch (Exception e)
+        {
+            this.model.log(e);
+        }
+        finally
+        {
+            busy.close();
+        }
+    }
+
+    /**
+     * Asks over c about each rename the station suggests and renames those answered Yes.  A refused one is said in the
+     * log alone, which names its remedy: a pressed sync would otherwise say it every time.
+     */
+    private void askAboutRenames(Component c, RenameProposals proposals)
+    {
+        // A run may have begun since Sync was pressed
+        if (proposals.getProposals().isEmpty() || refuseWhileAutonomyRunning(c)) return;
+
+        for (String[] pair : proposals.getProposals())
+        {
+            String currentName = pair[0];
+            String newName = pair[1];
+
+            // A name another locomotive holds is asked about once, below, in the delete door's question, which counts
+            // the routes that lose commands and starts on No
+            if (model.getLocByName(newName) == null && JOptionPane.showOptionDialog(c,
+                I18n.f("loc.ui.confirmRenameLocomotive", currentName, newName), I18n.t("loc.ui.dialogConfirmRename"),
+                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, YES_NO_OPTS, YES_NO_OPTS[0])
+                != JOptionPane.YES_OPTION) continue;
+
+            // Nobody typed a station's name who could be told why it breaks a route condition (OB-074)
+            if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
+            {
+                JOptionPane.showMessageDialog(c, I18n.t("loc.ui.errorLocomotiveNameUnusable"));
+
+                continue;
+            }
+
+            // Like the other doors into `renameLoc`, this rewrites every route command naming the locomotive
+            if (refuseWhileARouteDrivesIt(c, currentName)) continue;
+
+            if (refuseWhileARouteDrivesIt(c, newName)) continue;
+
+            Locomotive l = model.getLocByName(currentName);
+
+            if (model.getLocByName(newName) != null) this.locomotiveActions.deleteLocBecause(
+                I18n.f("loc.ui.confirmRenameOntoLocomotive", currentName, newName), newName, c);
+
+            if (model.getLocByName(newName) != null) continue;
+
+            model.renameLoc(currentName, newName);
+
+            clearCopyTarget();
+            repaintLoc(true, null);
+            repaintMappings(null, false);
+            this.refreshRouteList();
+            selector.refreshLocSelectorList();
+
+            if (this.model.hasAutoLayout())
+            {
+                this.model.getAutoLayout().sanitizeMultiUnits(l);
+                this.model.getAutoLayout().refreshUI();
+
+                // And the station labels, as the rename dialog does (OB-081)
+                this.updateVisiblePoints();
+                this.repaintAutoLocList(false);
+
+                this.repaintTimetable();
+            }
+        }
     }
     
     /**
@@ -15908,8 +16005,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
         
     private void syncFullLocStateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncFullLocStateMenuItemActionPerformed
-        // allFunctionsOff() runs on the whole database before anything is re-read, so during autonomy it would strip
-        // lights and sounds off moving trains and fight the automation for them (MT-141).
+        // The read rewrites what is held of every locomotive a run is driving (MT-141)
         if (refuseWhileAutonomyRunning(evt == null ? this : (Component) evt.getSource())) return;
 
         javax.swing.SwingUtilities.invokeLater(() -> 
@@ -15922,26 +16018,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 YES_NO_OPTS,
-                // Default to No: Enter must not take the path that queries the Central Station and turns every function
-                // off.
-                YES_NO_OPTS[1] // default selection = "No"
+                // Default to No: Enter must not start a read that takes minutes
+                YES_NO_OPTS[1]
             );
-            if(dialogResult == JOptionPane.YES_OPTION)
-            {
-                this.model.allFunctionsOff();
 
-                // Behind the spinner (OB-140): the other doors sync through syncWithCS2 and get one from there, but
-                // this one walks the locomotive list calling syncLocomotive.  BusyDialog is modal, so every door is
-                // shut, and has its own finally; a greyout would not stop clicks, and menus re-enabled from a raw
-                // thread or left dead by a throwing locomotive are worse.
-                BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"), () ->
+            if (dialogResult != JOptionPane.YES_OPTION) return;
+
+            // Only reads, switching nothing off, and says how far it has got (FR-220).  Behind the modal spinner, which
+            // shuts every door while it works (OB-140).
+            new Thread(() ->
+            {
+                List<String> names = this.model.getLocList();
+                BusyDialog.Closer busy = BusyDialog.showUntilClosed(this, I18n.t("ui.busySyncingWithCS"));
+
+                try
                 {
-                    for (String s : this.model.getLocList())
+                    for (int i = 0; i < names.size(); i++)
                     {
-                        this.model.syncLocomotive(s);
+                        busy.say(I18n.f("ui.busyReadingFunctions", i + 1, names.size()));
+                        this.model.syncLocomotive(names.get(i));
                     }
-                }, null);
-            }
+                }
+                finally
+                {
+                    busy.close();
+                }
+            }, "Function read").start();
         });
     }//GEN-LAST:event_syncFullLocStateMenuItemActionPerformed
 
@@ -18614,145 +18716,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }//GEN-LAST:event_showPageTabsPreferenceActionPerformed
 
     private void checkForRenameMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkForRenameMenuItemActionPerformed
-        
-        javax.swing.SwingUtilities.invokeLater(() -> 
-        {
-            if (!this.model.getNetworkCommState())
-            {
-                JOptionPane.showMessageDialog(this, I18n.t("ui.labelNotConnectedToCentralStation"));
-                return;
-            }
-            
-            // The gate its gray asks
-            if (refuseWhileAutonomyRunning(this)) return;
-
-            // The station is read off the event thread behind the busy sign (OB-475); run returns once it is done
-            final Object[] answer = new Object[1];
-
-            BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"), () ->
-            {
-                try
-                {
-                    answer[0] = model.getRenameProposals();
-                }
-                catch (Throwable ex)
-                {
-                    // An Error too, so the message below names it rather than failing on an empty answer
-                    answer[0] = ex instanceof Exception ? ex : new Exception(ex);
-                }
-            }, null);
-
-            List<String[]> renameList;
-            try
-            {
-                if (answer[0] instanceof Exception) throw (Exception) answer[0];
-
-                RenameProposals proposals = (RenameProposals) answer[0];
-                renameList = proposals.getProposals();
-
-                if (renameList.isEmpty())
-                {
-                    // An empty list means one of two things.  Saying "nothing to rename" when the
-                    // renames were in fact refused is false, and it hides the remedy - the cycle
-                    // refusal ends by telling the user to give one of the pair a temporary name.
-                    JOptionPane.showMessageDialog(
-                        this,
-                        proposals.hasRefusals()
-                            ? I18n.t("loc.ui.infoRenamesRefusedSeeLog")
-                            : I18n.t("loc.ui.infoNoLocomotivesToRename")
-                    );
-                }
-                else
-                {
-                    for (String[] pair : renameList)
-                    {
-                        String currentName = pair[0];
-                        String newName = pair[1];
-
-                        // A name another locomotive holds is asked about once, below, in the delete door's question,
-                        // which counts the routes that lose commands and starts on No
-                        int response = model.getLocByName(newName) != null ? JOptionPane.YES_OPTION
-                            : JOptionPane.showOptionDialog(
-                            this,
-                            I18n.f(
-                                "loc.ui.confirmRenameLocomotive",
-                                currentName,
-                                newName
-                            ),
-                            I18n.t("loc.ui.dialogConfirmRename"),
-                            JOptionPane.YES_NO_OPTION,
-                            JOptionPane.PLAIN_MESSAGE,
-                            null,
-                            YES_NO_OPTS,
-                            YES_NO_OPTS[0] 
-                        );
-
-                        if (response == JOptionPane.YES_OPTION)
-                        {
-                            // The fourth door into `renameLoc`, and the one with no check (OB-074): a name the Central
-                            // Station proposes, such as "SBB 460 (2)", is rewritten by the condition parser into a
-                            // broken expression, and nobody typed it who could be told why.
-                            if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
-                            {
-                                JOptionPane.showMessageDialog(this,
-                                    I18n.t("loc.ui.errorLocomotiveNameUnusable"));
-
-                                continue;
-                            }
-
-                            // Like the other doors into `renameLoc`, this rewrites every route command naming the
-                            // locomotive.
-                            if (refuseWhileARouteDrivesIt(this, currentName)) continue;
-
-                            if (refuseWhileARouteDrivesIt(this, newName)) continue;
-
-                            Locomotive l = model.getLocByName(currentName);
-                            
-                            // Check if the target loc already exists
-                            Locomotive l2 = model.getLocByName(newName);
-                            
-                            if (l2 != null) this.locomotiveActions.deleteLocBecause(
-                                I18n.f("loc.ui.confirmRenameOntoLocomotive", currentName, newName), newName, this);
-                            
-                            l2 = model.getLocByName(newName);
-                            
-                            if (l2 == null)
-                            {                            
-                                model.renameLoc(currentName, newName);
-
-                                clearCopyTarget();
-                                repaintLoc(true, null);
-                                repaintMappings(null, false);
-                                this.refreshRouteList();
-                                selector.refreshLocSelectorList();
-
-                                // Update locomotive on graph
-                                if (this.model.hasAutoLayout())
-                                {
-                                    this.model.getAutoLayout().sanitizeMultiUnits(l);
-                                    this.model.getAutoLayout().refreshUI();
-
-                                    // And the station labels, as the rename dialog does (OB-081).
-                                    this.updateVisiblePoints();
-                                    this.repaintAutoLocList(false);
-
-                                    this.repaintTimetable();
-                                }
-                            }
-                        }
-                    }
-                    
-                    syncOwed.set(true);
-
-                    doSync(null);
-                }
-            }
-            catch (Exception ex)
-            {
-                this.model.log(ex);
-                JOptionPane.showMessageDialog(this, I18n.f("error.generic", ex.getMessage()));
-            }
-        });
+        // In no menu: Sync asks about renamed locomotives itself (FR-220)
     }//GEN-LAST:event_checkForRenameMenuItemActionPerformed
 
     private void exportLocsToCSVMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportLocsToCSVMenuItemActionPerformed
