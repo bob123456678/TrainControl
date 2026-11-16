@@ -529,6 +529,10 @@ public class testTheSyncAsksTheSensorsTheirState
         station.sensor(contact, !first);
         assertTrue(Components.waitFor(() -> fired(rig, log, name) == 1, WAIT_MS), "real events did not fire the route: "
             + log);
+
+        // The log tap is global: a route still running past the claim would log into the next claim's rig
+        assertTrue(Components.waitFor(() -> fired(rig, log, name) == 1 && log.contains(I18n.f("route.executed", name)),
+            WAIT_MS), "the route did not finish: " + log);
     }
 
     /** How many times the route has fired by the log, `log` keeping what was taken before. */
