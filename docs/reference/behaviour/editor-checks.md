@@ -97,12 +97,12 @@ already uses."*, rather than as missing track, chosen from the route the track q
 `core.testARouteIsFoundPastATerminus.testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare`,
 `testNoRoutePassesAnotherCopyOfItsDestination` and `testWhyNotMovingSaysTheOnlyWayThereIsALap`.
 
-**And the drawn route says it too, in its color.** A tested path is drawn yellow on the way out and orange on the way
+**And the drawn route says it too, in its color.** A tested path is drawn yellow on the way out and amber on the way
 back; a leg only a hand send takes, to a station autonomy will never choose **and a person still may** (a parking
-berth) or by a way that turns round on the way, is drawn in magenta, whichever direction it runs.
+berth) or by a way that turns round on the way, is drawn in purple, whichever direction it runs.
 
-**Two squares are deliberately not magenta.** A **compulsory turn** is chosen like any other station (OB-195) when *Can
-Be Chosen in Full Autonomy* is on. A square **switched out of service** is not a manual-only point: nothing may be sent
+**Two squares are deliberately not purple.** A **compulsory turn** is chosen like any other station (OB-195) when *May
+choose this station* is on. A square **switched out of service** is not a manual-only point: nothing may be sent
 there by any tier, and the routing check says so in its own sentence. The color asks
 `AutonomySession.manualOnlyStations`, the runtime rule less the shut squares. Adam: *"just use a different color going to manual-only points.
 yellow is currently forward, and orange is backwards — path, not the chevron arrows."* Every square of that leg carries
