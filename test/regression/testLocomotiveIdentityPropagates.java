@@ -670,7 +670,7 @@ public class testLocomotiveIdentityPropagates
 
         doors.add(withoutComments(SourceOf.declaration("    boolean writeNameAndAddress(Component source, Locomotive l,")));
         doors.add(withoutComments(SourceOf.declaration(
-            "private void askAboutRenames(Component c, RenameProposals proposals)")));
+            "private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)")));
 
         int counted = 0;
 

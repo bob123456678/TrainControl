@@ -195,7 +195,7 @@ public class testTheRefusalsAreAskedAtTheDoors
             "the same, at OK, for a dialog that was open when a run began (RSA-A1)"},
         {"private void syncFullLocStateMenuItemActionPerformed(", AUTONOMY,
             "a full sync rewrites the locomotive database under a running railway"},
-        {"private void askAboutRenames(Component c, RenameProposals proposals)", AUTONOMY,
+        {"private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)", AUTONOMY,
             "the renames a sync asks about rename locomotives in the database a run is driving"},
         {"private void deleteLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "deleting a page the running railway or an open editor is using"},

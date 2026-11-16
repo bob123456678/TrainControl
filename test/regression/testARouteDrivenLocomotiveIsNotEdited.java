@@ -317,7 +317,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
     @Test
     public void testTheNameProposalAsksItFirst() throws Exception
     {
-        String source = SourceOf.declaration("private void askAboutRenames(Component c, RenameProposals proposals)");
+        String source = SourceOf.declaration("private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)");
 
         int current = source.indexOf("if (refuseWhileARouteDrivesIt(c, currentName)) continue;");
         int proposed = source.indexOf("if (refuseWhileARouteDrivesIt(c, newName)) continue;");
