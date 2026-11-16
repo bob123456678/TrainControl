@@ -19,14 +19,14 @@ import org.testng.annotations.Test;
 public class testBlankLinesStayLean
 {
     /** Blank lines in `src/`, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int BLANK_ALLOWED = 30939;
+    private static final int BLANK_ALLOWED = 30844;
 
     /** Padding as it stands: lines that follow another blank line, follow a `{` line, or precede a lone `}`. */
-    private static final int RUNS_ALLOWED = 70;
+    private static final int RUNS_ALLOWED = 0;
 
-    private static final int AFTER_OPEN_ALLOWED = 12;
+    private static final int AFTER_OPEN_ALLOWED = 0;
 
-    private static final int BEFORE_CLOSE_ALLOWED = 14;
+    private static final int BEFORE_CLOSE_ALLOWED = 0;
 
     private static final String HOW = ". Take the padding out (one blank line between paragraphs of code stays); never raise the number.";
 
@@ -97,16 +97,14 @@ public class testBlankLinesStayLean
     {
         String[] fixture = {"class A", "{", "", "    int x;", "", "", "    int y;", "", "}"};
 
-        assertEquals(scan(fixture, Kind.RUN).size(), 1);
-        assertEquals(scan(fixture, Kind.AFTER_OPEN).size(), 1);
-        assertEquals(scan(fixture, Kind.BEFORE_CLOSE).size(), 1);
-
         String[] generated = {"    // <editor-fold> //GEN-BEGIN:initComponents", "    void f() {", "", "", "", "",
             "    }//GEN-END:initComponents", ""};
 
-        assertEquals(scan(generated, Kind.RUN).size(), 0);
-        assertEquals(scan(generated, Kind.AFTER_OPEN).size(), 0);
-        assertEquals(scan(generated, Kind.BEFORE_CLOSE).size(), 0);
+        for (Kind kind : Kind.values())
+        {
+            assertEquals(scan(fixture, kind).size(), 1, kind + " in the fixture");
+            assertEquals(scan(generated, kind).size(), 0, kind + " in a generated region");
+        }
     }
 
     private enum Kind { RUN, AFTER_OPEN, BEFORE_CLOSE }
