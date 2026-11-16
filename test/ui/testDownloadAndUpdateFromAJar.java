@@ -9,7 +9,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -99,7 +98,7 @@ public class testDownloadAndUpdateFromAJar
     private byte[] runningBytes;
 
     private Set<String> archivesBefore;
-    private NoUpdaterNoExit guard;
+    private support.NoExit guard;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -241,7 +240,7 @@ public class testDownloadAndUpdateFromAJar
 
         SelfUpdate.runningJarForTests(running);
 
-        guard = new NoUpdaterNoExit();
+        guard = new support.NoExit(true);
 
         System.setSecurityManager(guard);
     }
@@ -949,49 +948,6 @@ public class testDownloadAndUpdateFromAJar
         catch (java.io.IOException e)
         {
             throw new IllegalStateException(e);
-        }
-    }
-
-    /**
-     * Refuses, and records, any process started and any exit while a claim runs: the updater is started from the
-     * exit, and the exit ends the JVM.  Everything else is allowed.
-     */
-    private static final class NoUpdaterNoExit extends SecurityManager
-    {
-        private final List<String> refused = Collections.synchronizedList(new ArrayList<>());
-
-        List<String> refused()
-        {
-            synchronized (refused)
-            {
-                return new ArrayList<>(refused);
-            }
-        }
-
-        @Override
-        public void checkExec(String cmd)
-        {
-            refused.add("started " + cmd);
-
-            throw new SecurityException("no process is started in a test: " + cmd);
-        }
-
-        @Override
-        public void checkExit(int status)
-        {
-            refused.add("exit " + status);
-
-            throw new SecurityException("no exit in a test");
-        }
-
-        @Override
-        public void checkPermission(Permission permission)
-        {
-        }
-
-        @Override
-        public void checkPermission(Permission permission, Object context)
-        {
         }
     }
 }
