@@ -2256,7 +2256,7 @@ public class AutonomySession
     /** A train's pause or going pressed alone (its card) over one already noted: Cancel keeps the last press (OB-346). */
     public void notePressAlone(Locomotive train)
     {
-        if (pausesTakenFromTheRailway == null) return;
+        if (pausesTakenFromTheRailway == null || train == null || train.getName() == null) return;
 
         for (Map<String, Boolean> pauses : pausesTakenFromTheRailway.values())
         {

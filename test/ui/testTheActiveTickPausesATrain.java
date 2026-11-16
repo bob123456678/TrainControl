@@ -1725,11 +1725,12 @@ public class testTheActiveTickPausesATrain
     }
 
     /**
-     * A card's pause and Activate All Trains, then Save on the program's way out, whose exit another window then refuses
-     * so the editor stays; then Cancel: the train goes, as saved, and the file keeps it so.
+     * A card's pause, Activate All Trains and his train's tick, then Save on the program's way out, whose exit another
+     * window then refuses so the editor stays: the crash note now holds what was saved.  Then Cancel: the card's train
+     * goes and his stays paused, as saved, and the file keeps it so.
      *
-     * MUTATION: have `saveBeforeLeaving` retake the snapshot and the railway's picture only, not `takeTheUndoPoint`, and
-     * this fails.
+     * MUTATION: have `saveBeforeLeaving` retake the snapshot and the railway's picture and clear the pause record only,
+     * not `takeTheUndoPoint`, and this fails.
      */
     @Test(timeOut = 180000)
     public void testTheEditorsCancelAfterASaveOnARefusedExitGoesBackToWhatWasSaved() throws Exception
@@ -1739,6 +1740,11 @@ public class testTheActiveTickPausesATrain
             pressTheCardsButton(model.getLocByName(CARD_TRAIN), true);
 
             clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuActivateAllTrains", 1));
+
+            // An edit the Save keeps, so the crash note as the editor opened differs from the one after the Save
+            clickTheEditorsTickAndSettle(editor, I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
+
+            assertTrue(train.isAutonomyPaused(), "precondition: the tick did not pause " + HIS_TRAIN);
 
             // The exit's first question, answered Save (`EditorWindows`); a later window's Cancel refuses the exit.
             final boolean[] mayExit = {false};
@@ -1758,9 +1764,16 @@ public class testTheActiveTickPausesATrain
 
             assertFalse(pausedInTheSavedSetup().contains(CARD_TRAIN), "precondition: Save did not keep the tool: "
                 + pausedInTheSavedSetup());
+
+            org.json.JSONObject note = session.getStore().unfinishedEdit();
+
+            assertTrue(note != null && note.similar(session.snapshotSetup()), "the crash note after the Save is not what"
+                + " was saved, so a restart after a crash would undo the Save");
         }, testTheActiveTickPausesATrain::closeTheEditor, card ->
         {
             assertPausedEverywhere(card, false, "after a Save on a refused exit and the editor's Cancel (OB-346)");
+
+            assertTrue(train.isAutonomyPaused(), "Cancel undid his train's tick, which the Save kept");
 
             assertFalse(pausedInTheSavedSetup().contains(CARD_TRAIN), "Cancel wrote the card's older pause over what was"
                 + " saved: " + pausedInTheSavedSetup());
