@@ -39,6 +39,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
@@ -569,8 +570,13 @@ public final class StationSettingsWindow extends StationWindowBase
             });
         });
 
-        numberRow("autosetup.ui.stationMaxLength", "maxLength", maxLength, stopSection, this::maxLengthInStore,
-            "maxTrainLength", LENGTH_BLANK);
+        JSpinner lengthArrows = lengthArrows();
+
+        typedRow("autosetup.ui.stationMaxLength", "maxLength", maxLength, leftAligned(lengthArrows), stopSection,
+            each -> EditorPrompts.lengthShown(editor.number(each, "maxTrainLength", 0)),
+            (each, typed) -> editor.applyNumber(each, "maxTrainLength", typed, 0));
+        stopSection.add(lengthArrows);
+        mixedMarks.get(maxLength).setToolTipText(mixedTip(LENGTH_BLANK));
 
         rowOf("autosetup.ui.menuArrivalsGroup", "arrivals", arrivals, null, stopSection);
         perStation.addAll(rowsFrom(row - 1));
@@ -831,6 +837,64 @@ public final class StationSettingsWindow extends StationWindowBase
         return out;
     }
 
+    /**
+     * The length box with arrows, which step what it shows and apply as typing does; never under 0, shown as Any, and a
+     * blank, as several stations that differ show, steps to Any either way.  Its number starts as far in as the other
+     * fields' do, and it is as tall (OB-442).
+     */
+    private JSpinner lengthArrows()
+    {
+        JSpinner out = new JSpinner(new javax.swing.AbstractSpinnerModel()
+        {
+            @Override public Object getValue() { return lengthNow(); }
+            @Override public Object getNextValue() { return lengthStep(1); }
+            @Override public Object getPreviousValue() { return lengthStep(-1); }
+
+            @Override
+            public void setValue(Object value)
+            {
+                maxLength.setText(EditorPrompts.lengthShown(((Number) value).intValue()));
+                fireStateChanged();
+            }
+        });
+
+        out.setName("station.maxLengthArrows");
+        out.setEditor(maxLength);
+
+        // FlatLaf rings a spinner's focus only for its own kind of editor
+        out.putClientProperty("JComponent.focusOwner", (Predicate<JComponent>) spinner ->
+            com.formdev.flatlaf.ui.FlatUIUtils.isPermanentFocusOwner(maxLength));
+        maxLength.addFocusListener(repaints(out));
+
+        java.awt.FontMetrics metrics = maxLength.getFontMetrics(REGULAR);
+
+        // Room for Any in every language
+        maxLength.setColumns(Math.max(5, metrics.stringWidth(I18n.t(EditorPrompts.ANY)) / metrics.charWidth('m') + 1));
+        maxLength.setBorder(BorderFactory.createEmptyBorder(0, name.getInsets().left - out.getInsets().left, 0, 0));
+        out.setPreferredSize(new Dimension(out.getPreferredSize().width, name.getPreferredSize().height));
+
+        return out;
+    }
+
+    /** Repaints a part whenever the field listened to gains or loses the keyboard. */
+    private static java.awt.event.FocusListener repaints(Component shown)
+    {
+        return new java.awt.event.FocusAdapter()
+        {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e)
+            {
+                shown.repaint();
+            }
+
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e)
+            {
+                shown.repaint();
+            }
+        };
+    }
+
     private void wide(JComponent part)
     {
         GridBagConstraints c = at(0, row++);
@@ -900,6 +964,27 @@ public final class StationSettingsWindow extends StationWindowBase
         return typed.trim().isEmpty() ? "0" : typed;
     }
 
+    /** The length the box shows, which the arrows step from; what is not a number counts as 0. */
+    private int lengthNow()
+    {
+        try
+        {
+            return Math.max(0, Integer.parseInt(EditorPrompts.lengthTyped(maxLength.getText()).trim()));
+        }
+        catch (NumberFormatException notANumber)
+        {
+            return 0;
+        }
+    }
+
+    /** One arrow's step, or null past the largest length. */
+    private Object lengthStep(int by)
+    {
+        long next = maxLength.getText().trim().isEmpty() ? 0 : (long) lengthNow() + by;
+
+        return next > Integer.MAX_VALUE ? null : (int) Math.max(next, 0);
+    }
+
     // ----------------------------------------------------------------------------------------- fields apply on leaving
 
     private final Map<JTextField, BiFunction<TileKey, String, String>> typedDoors = new LinkedHashMap<>();
@@ -912,14 +997,14 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         storedValues.put(part, stored);
 
-        part.addActionListener(e -> commit(part));
+        part.addActionListener(e -> commit(part, true));
 
         part.addFocusListener(new java.awt.event.FocusAdapter()
         {
             @Override
             public void focusLost(java.awt.event.FocusEvent e)
             {
-                if (!e.isTemporary()) commit(part);
+                if (!e.isTemporary()) commit(part, false);
             }
 
         });
@@ -951,14 +1036,27 @@ public final class StationSettingsWindow extends StationWindowBase
         keepTyping(part, shown(part));
     }
 
-    private void commit(JTextField part)
+    /** @param entered whether Enter asked, which ends the typing though the field keeps the keyboard */
+    private void commit(JTextField part, boolean entered)
     {
         if (reading || tile == null || !part.isEditable() || !part.isEnabled()) return;
 
         String typed = part.getText();
+        String was = shown(part);
 
-        // Unchanged writes nothing: an untouched station opened and closed changes no setup, nor a field they differ on
-        if (typed.trim().equals(shown(part).trim())) { showProblem(part, null); return; }
+        // A length is the number it means, so Any, 0 and a blank are one; where several differ, any change is one
+        Function<String, String> means = part == maxLength && !was.isEmpty() ? EditorPrompts::lengthTyped : text -> text;
+
+        // Unchanged writes nothing: an untouched station opened and closed changes no setup, nor a field they differ on.
+        // On Enter or leaving, the field shows the value as it reads, so a 0 typed over no limit shows Any; not while it
+        // keeps the keyboard, as a press away or another window does not end the typing.
+        if (means.apply(typed).trim().equals(means.apply(was).trim()))
+        {
+            if (!typed.equals(was) && (entered || !part.isFocusOwner())) part.setText(was);
+
+            showProblem(part, null);
+            return;
+        }
 
         final String[] refused = new String[1];
 
@@ -985,7 +1083,11 @@ public final class StationSettingsWindow extends StationWindowBase
             line.setVisible(why != null);
         }
 
-        part.putClientProperty("JComponent.outline", why == null ? null : "error");
+        // A field with arrows has no border of its own: the arrows' box wears the outline
+        Component around = part.getParent();
+        JComponent framed = around instanceof JSpinner ? (JSpinner) around : part;
+
+        framed.putClientProperty("JComponent.outline", why == null ? null : "error");
 
         if (isVisible() && getPreferredSize().height > getHeight()) pack();
     }
@@ -1022,12 +1124,12 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         if (tile == null) return;
 
-        for (JTextField part : new ArrayList<>(storedValues.keySet())) commit(part);
+        for (JTextField part : new ArrayList<>(storedValues.keySet())) commit(part, false);
     }
 
     /**
-     * A press anywhere in the window but on a text field applies what is typed, as leaving the field does: most of the
-     * window cannot take the keyboard (OB-436).  A refusal rebuilds nothing, so the press still lands.
+     * A press anywhere in the window but on a text field or its arrows applies what is typed, as leaving the field does:
+     * most of the window cannot take the keyboard (OB-436).  A refusal rebuilds nothing, so the press still lands.
      */
     private final java.awt.event.AWTEventListener pressAway = event ->
     {
@@ -1038,7 +1140,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         Component source = (Component) event.getSource();
 
-        if (!(source instanceof javax.swing.text.JTextComponent)
+        if (!(source instanceof javax.swing.text.JTextComponent) && !(source.getParent() instanceof JSpinner)
             && SwingUtilities.getWindowAncestor(source) == this) commitTypedFields();
     };
 
@@ -1069,13 +1171,6 @@ public final class StationSettingsWindow extends StationWindowBase
         String stored = editor.session.getStore().getPointName(square);
 
         return stored == null ? "" : stored;
-    }
-
-    private String maxLengthInStore(TileKey square)
-    {
-        int stored = editor.number(square, "maxTrainLength", 0);
-
-        return stored == 0 ? "" : String.valueOf(stored);
     }
 
     private String priorityInStore(TileKey square)

@@ -1,6 +1,8 @@
 package org.traincontrol.util;
 
 import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -97,14 +99,59 @@ public class Conversion
     }
     
     /**
-     * Generates a hash of the current working directory
+     * The charset Java 8 read and wrote text in by default on this machine: Java 18 and later default to UTF-8 and
+     * name the machine's own as native.encoding (FR-236).
+     */
+    public static Charset nativeCharset()
+    {
+        try
+        {
+            return Charset.forName(System.getProperty("native.encoding"));
+        }
+        catch (RuntimeException none)
+        {
+            return Charset.defaultCharset();
+        }
+    }
+
+    /**
+     * The hash of the current working directory that its settings are kept under: the path in the native charset, as
+     * Java 8 hashed it, unless only the UTF-8 hash Java 18 and later gave a non-English path has settings (FR-236).
      */
     public static String getFolderHash(int lastN)
+    {
+        String path = new File("").getAbsolutePath();
+        String hash = folderHash(path, nativeCharset(), lastN), java18 = folderHash(path, StandardCharsets.UTF_8, lastN);
+
+        return hash.equals(java18) || hasSettings(hash) || !hasSettings(java18) ? hash : java18;
+    }
+
+    /** Whether any setting of the windows' node has this hash: the package by name, so util compiles without gui. */
+    private static boolean hasSettings(String hash)
+    {
+        String run = System.getProperty(Util.PREFERENCES_PROPERTY);
+
+        try
+        {
+            for (String key : Util.preferencesFor("org.traincontrol.gui", run).keys())
+            {
+                if (key.endsWith(hash)) return true;
+            }
+        }
+        catch (java.util.prefs.BackingStoreException unreadable)
+        {
+        }
+
+        return false;
+    }
+
+    /** The last lastN hex digits of the SHA-1 of a path in this charset. */
+    private static String folderHash(String path, Charset charset, int lastN)
     {
         String out = "";
         try
         {
-            out = Conversion.bytesToHex(MessageDigest.getInstance("SHA1").digest(new File("").getAbsolutePath().getBytes()));
+            out = Conversion.bytesToHex(MessageDigest.getInstance("SHA1").digest(path.getBytes(charset)));
             out = out.replaceAll("\\|", "").replaceAll("0x", "");
         }
         catch (NoSuchAlgorithmException e)
