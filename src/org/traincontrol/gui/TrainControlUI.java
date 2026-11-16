@@ -15250,7 +15250,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (!this.model.getNetworkCommState()) return;
 
-        BusyDialog.Closer busy = BusyDialog.showUntilClosed(this, I18n.t("ui.busySyncingWithCS"));
+        // Over the window that asked, such as the Locomotive Database's
+        BusyDialog.Closer busy = BusyDialog.showUntilClosed(c instanceof Window ? (Window) c
+            : SwingUtilities.getWindowAncestor(c), I18n.t("ui.busySyncingWithCS"));
 
         try
         {

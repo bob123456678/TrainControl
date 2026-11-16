@@ -175,9 +175,6 @@ public class testTheSyncAsksAboutRenamedLocomotives
             rig.model.setNetworkCommState(true);
             holding.set(true);
 
-            Pattern done = Pattern.compile(Pattern.quote(I18n.t("ui.infoSyncCompleteItemsAdded"))
-                .replace("{0}", "\\E\\d+\\Q"));
-
             try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
             {
                 SwingUtilities.invokeLater(() -> ui.doSync(ui));
@@ -191,8 +188,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
                 assertNotNull(signs, "the window froze while the rename read waited on the station");
                 assertFalse(signs.isEmpty(), "no busy sign showed while the rename read waited on the station");
 
-                assertTrue(Components.waitFor(() -> answering.asked().stream().anyMatch(m -> done.matcher(m).matches()),
-                    60000), "the sync did not end once the list arrived: " + answering.asked());
+                assertTrue(Components.waitFor(() -> saidDone(answering), 60000), "the sync did not end once the list"
+                    + " arrived: " + answering.asked());
 
                 assertTrue(syncEnded(ui), "a sync never ended");
             }
@@ -201,6 +198,96 @@ public class testTheSyncAsksAboutRenamedLocomotives
                 release.countDown();
             }
         });
+    }
+
+    /**
+     * A rename read the station answers with something unreadable is logged and takes its busy sign down, and the sync
+     * goes on and ends: a sign left up is a modal window nothing closes.
+     *
+     * MUTATION: in `TrainControlUI.askAboutRenames(Component)`, take out the `finally` that closes the busy sign.
+     */
+    @Test(timeOut = 180000)
+    public void testAFailedRenameReadTakesItsBusySignDown() throws Exception
+    {
+        final AtomicBoolean failing = new AtomicBoolean();
+        final BiFunction<String, Integer, byte[]> cs3 = StandInStation.cs3("260", INFO);
+
+        inAWindow((path, n) -> "/app/api/locos".equals(path) && failing.getAndSet(false)
+            ? "<html>not json</html>".getBytes(java.nio.charset.StandardCharsets.UTF_8) : cs3.apply(path, n), (rig, ui) ->
+        {
+            rig.model.setNetworkCommState(true);
+            failing.set(true);
+
+            try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
+            {
+                SwingUtilities.invokeLater(() -> ui.doSync(ui));
+
+                assertTrue(Components.waitFor(() -> saidDone(answering), 60000), "the sync did not end after the rename"
+                    + " read failed: " + answering.asked());
+
+                assertFalse(failing.get(), "precondition: the rename read was not answered unreadably");
+
+                assertTrue(Components.waitFor(() -> new ArrayList<>().equals(Components.busySignsIfAnswering(3000)),
+                    30000), "a busy sign stayed up after the rename read failed");
+            }
+        });
+    }
+
+    /**
+     * Only a pressed Sync asks: the sync an edit owes, run as an editor closes, leaves a locomotive renamed at the
+     * station as it is, asks nothing, and reads the station's locomotives once, for itself.
+     *
+     * MUTATION: in `TrainControlUI.doSync`, ask on every sync (`askAboutRenames(c != null ? c : this)`).
+     */
+    @Test(timeOut = 180000)
+    public void testAnOwedSyncAsksNothingAboutRenames() throws Exception
+    {
+        final String old = "FR-220 owed";
+        final String no = String.valueOf(TrainControlUI.YES_NO_OPTS[1]);
+
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            if (rig.model.getLocByName(STATION_NAME) == null) rig.model.newMM2Locomotive(old, 10);
+            else rig.model.renameLoc(STATION_NAME, old);
+
+            rig.model.setNetworkCommState(true);
+
+            int locos = rig.station.requests("/app/api/locos");
+            int syncs = rig.station.requests("/config/geraet.vrs");
+
+            try (Answering answering = Answering.start(m -> m != null && m.contains(old) ? Answering.press(no)
+                : Answering.pressAt(0)))
+            {
+                // As `editorGone` runs it: a sync owed by an edit, with no window to tell
+                ((AtomicBoolean) support.Reflect.field(TrainControlUI.class, "syncOwed").get(ui)).set(true);
+
+                SwingUtilities.invokeLater(() -> ui.doSync(null));
+
+                assertTrue(Settle.until(() -> rig.station.requests("/config/geraet.vrs") > syncs, 60000),
+                    "the owed sync never ran");
+
+                assertTrue(syncEnded(ui), "the owed sync never ended");
+
+                Components.settle();
+
+                assertFalse(answering.asked().stream().anyMatch(m -> m.contains(old)), "the owed sync asked about the"
+                    + " rename: " + answering.asked());
+            }
+
+            assertEquals(rig.station.requests("/app/api/locos") - locos, 1, "the owed sync read the station's"
+                + " locomotives twice");
+
+            assertNotNull(rig.model.getLocByName(old), "the owed sync renamed " + old);
+        });
+    }
+
+    /** Whether the sync has said it is complete. */
+    private static boolean saidDone(Answering answering)
+    {
+        Pattern done = Pattern.compile(Pattern.quote(I18n.t("ui.infoSyncCompleteItemsAdded")).replace("{0}",
+            "\\E\\d+\\Q"));
+
+        return answering.asked().stream().anyMatch(m -> done.matcher(m).matches());
     }
 
     private interface Claim
