@@ -862,7 +862,8 @@ public final class StationSettingsWindow extends StationWindowBase
         out.setEditor(maxLength);
 
         // FlatLaf rings a spinner's focus only for its own kind of editor
-        out.putClientProperty("JComponent.focusOwner", (Predicate<JComponent>) spinner -> maxLength.hasFocus());
+        out.putClientProperty("JComponent.focusOwner", (Predicate<JComponent>) spinner ->
+            com.formdev.flatlaf.ui.FlatUIUtils.isPermanentFocusOwner(maxLength));
         maxLength.addFocusListener(new java.awt.event.FocusAdapter()
         {
             @Override
@@ -990,14 +991,14 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         storedValues.put(part, stored);
 
-        part.addActionListener(e -> commit(part));
+        part.addActionListener(e -> commit(part, true));
 
         part.addFocusListener(new java.awt.event.FocusAdapter()
         {
             @Override
             public void focusLost(java.awt.event.FocusEvent e)
             {
-                if (!e.isTemporary()) commit(part);
+                if (!e.isTemporary()) commit(part, false);
             }
 
         });
@@ -1029,7 +1030,8 @@ public final class StationSettingsWindow extends StationWindowBase
         keepTyping(part, shown(part));
     }
 
-    private void commit(JTextField part)
+    /** @param entered whether Enter asked, which ends the typing though the field keeps the keyboard */
+    private void commit(JTextField part, boolean entered)
     {
         if (reading || tile == null || !part.isEditable() || !part.isEnabled()) return;
 
@@ -1040,10 +1042,11 @@ public final class StationSettingsWindow extends StationWindowBase
         Function<String, String> means = part == maxLength && !was.isEmpty() ? EditorPrompts::lengthTyped : text -> text;
 
         // Unchanged writes nothing: an untouched station opened and closed changes no setup, nor a field they differ on.
-        // The field shows the value as it reads, so a 0 typed over no limit shows Any.
+        // On Enter or leaving, the field shows the value as it reads, so a 0 typed over no limit shows Any; not while it
+        // keeps the keyboard, as a press away or another window does not end the typing.
         if (means.apply(typed).trim().equals(means.apply(was).trim()))
         {
-            if (!typed.equals(was)) part.setText(was);
+            if (!typed.equals(was) && (entered || !part.isFocusOwner())) part.setText(was);
 
             showProblem(part, null);
             return;
@@ -1114,7 +1117,7 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         if (tile == null) return;
 
-        for (JTextField part : new ArrayList<>(storedValues.keySet())) commit(part);
+        for (JTextField part : new ArrayList<>(storedValues.keySet())) commit(part, false);
     }
 
     /**

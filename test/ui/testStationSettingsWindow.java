@@ -954,7 +954,7 @@ public class testStationSettingsWindow
      * The length box shows Any for 0, no limit, whether the station has none, 0 is typed or the down arrow reaches it
      * (FR-234).
      *
-     * MUTATION: have `StationSettingsWindow.lengthShown` show 0 as a blank, and this fails.
+     * MUTATION: have `EditorPrompts.lengthShown` show 0 as a blank, and this fails.
      */
     @Test(timeOut = 120000)
     public void testNoLimitShowsAnyHoweverItIsReached() throws Exception
@@ -982,7 +982,7 @@ public class testStationSettingsWindow
     /**
      * Any typed in any case, or a cleared box, stores 0, no limit (FR-234).
      *
-     * MUTATION: have `StationSettingsWindow.lengthTyped` take only a blank as 0, and "aNY" is refused as not a number.
+     * MUTATION: have `EditorPrompts.lengthTyped` take only a blank as 0, and "aNY" is refused as not a number.
      */
     @Test(timeOut = 120000)
     public void testAnyInAnyCaseOrABlankStoresNoLimit() throws Exception
@@ -1105,7 +1105,7 @@ public class testStationSettingsWindow
     /**
      * The up arrow stops at the largest length a number can hold, rather than turning it negative (FR-234).
      *
-     * MUTATION: have `StationSettingsWindow.lengthStep` add in int, and the step wraps to a negative length.
+     * MUTATION: have `StationSettingsWindow.lengthStep` add in int, and the step wraps past the largest length to Any.
      */
     @Test(timeOut = 120000)
     public void testTheUpArrowStopsAtTheLargestLength() throws Exception
@@ -1237,6 +1237,77 @@ public class testStationSettingsWindow
         assertEquals(got[5] - got[1], got[4] - got[0], "the length's number is not as far in as the name's text");
 
         StationDoors.close(window);
+    }
+
+    /**
+     * The length box wears FlatLaf's focus ring while its field has the keyboard, and not while Name has it: FlatLaf
+     * rings a spinner only for its own kind of editor (FR-234).
+     *
+     * MUTATION: drop the "JComponent.focusOwner" client property in `StationSettingsWindow.lengthArrows`, and this
+     * fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheLengthBoxRingsWhileItHasTheKeyboard() throws Exception
+    {
+        StationSettingsWindow window = openAtALength(aStation(), 120);
+        JTextField name = StationDoors.part(window, "station.name", JTextField.class);
+        JTextField length = StationDoors.part(window, "station.maxLength", JTextField.class);
+        javax.swing.JSpinner box = StationDoors.part(window, "station.maxLengthArrows", javax.swing.JSpinner.class);
+
+        giveTheKeyboard(window, length);
+
+        assertTrue(Components.onTheEventThread(() -> com.formdev.flatlaf.ui.FlatSpinnerUI.isPermanentFocusOwner(box)),
+            "the length box wears no focus ring while its field has the keyboard");
+
+        giveTheKeyboard(window, name);
+
+        assertFalse(Components.onTheEventThread(() -> com.formdev.flatlaf.ui.FlatSpinnerUI.isPermanentFocusOwner(box)),
+            "the length box wears the focus ring while Name has the keyboard");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * A press away from a field still being typed in applies it but leaves its text as typed, a trailing space too, so
+     * the typing goes on where it was; Enter then shows it as stored (FR-234).
+     *
+     * MUTATION: have `StationSettingsWindow.commit` put the stored text back whatever holds the keyboard, and the press
+     * away trims the name being typed.
+     */
+    @Test(timeOut = 120000)
+    public void testAPressAwayLeavesANameBeingTyped() throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, aStation());
+        JTextField name = StationDoors.part(window, "station.name", JTextField.class);
+        String stored = Components.onTheEventThread(name::getText);
+
+        giveTheKeyboard(window, name);
+        Components.onTheEventThread(() -> { name.setText(stored + " "); return null; });
+
+        support.Mouse.press(Components.find(window.getContentPane(), javax.swing.JLabel.class,
+            l -> I18n.t("autosetup.ui.stationMatrixHeading").equals(l.getText())), java.awt.event.MouseEvent.BUTTON1);
+        StationDoors.current(window);
+
+        assertTrue(Components.onTheEventThread(name::isFocusOwner), "precondition: the press took the keyboard from Name");
+        assertEquals(Components.onTheEventThread(name::getText), stored + " ", "a press away trimmed the name being typed");
+
+        Components.onTheEventThread(() -> { name.postActionEvent(); return null; });
+        StationDoors.current(window);
+
+        assertEquals(Components.onTheEventThread(name::getText), stored, "Enter did not show the name as stored");
+
+        StationDoors.close(window);
+    }
+
+    /** Hands a field the keyboard, the window brought to the front for it. */
+    private static void giveTheKeyboard(StationSettingsWindow window, JTextField field)
+    {
+        Components.onTheEventThread(() -> { window.toFront(); field.requestFocus(); return null; });
+
+        assertTrue(Components.waitFor(() -> Components.onTheEventThread(field::isFocusOwner), 10000),
+            "precondition: " + field.getName() + " never took the keyboard");
+
+        Components.settle();
     }
 
     /** Station Settings of this station, its maximum train length set first; null for no limit. */
