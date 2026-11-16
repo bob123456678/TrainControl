@@ -39,6 +39,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
@@ -74,6 +75,9 @@ public final class StationSettingsWindow extends StationWindowBase
     /** How to set every station where a blank, which leaves them as they are, cannot. */
     private static final String LENGTH_BLANK = "autosetup.ui.stationMixedLengthTip";
     private static final String PRIORITY_BLANK = "autosetup.ui.stationMixedPriorityTip";
+
+    /** The length box's word for 0, no limit (FR-234). */
+    private static final String ANY = "autosetup.ui.stationLengthAny";
 
     private static final int NEVER = 0;
     private static final int MAY = 1;
@@ -569,8 +573,13 @@ public final class StationSettingsWindow extends StationWindowBase
             });
         });
 
-        numberRow("autosetup.ui.stationMaxLength", "maxLength", maxLength, stopSection, this::maxLengthInStore,
-            "maxTrainLength", LENGTH_BLANK);
+        JSpinner lengthArrows = lengthArrows();
+
+        typedRow("autosetup.ui.stationMaxLength", "maxLength", maxLength, leftAligned(lengthArrows), stopSection,
+            each -> lengthShown(editor.number(each, "maxTrainLength", 0)),
+            (each, typed) -> editor.applyNumber(each, "maxTrainLength", lengthTyped(typed), 0));
+        stopSection.add(lengthArrows);
+        mixedMarks.get(maxLength).setToolTipText(mixedTip(LENGTH_BLANK));
 
         rowOf("autosetup.ui.menuArrivalsGroup", "arrivals", arrivals, null, stopSection);
         perStation.addAll(rowsFrom(row - 1));
@@ -831,6 +840,39 @@ public final class StationSettingsWindow extends StationWindowBase
         return out;
     }
 
+    /**
+     * The length box with arrows, which step what it shows and apply as typing does; never under 0, shown as Any.  Its
+     * number starts as far in as the other fields' do, and it is as tall (OB-442).
+     */
+    private JSpinner lengthArrows()
+    {
+        JSpinner out = new JSpinner(new javax.swing.AbstractSpinnerModel()
+        {
+            @Override public Object getValue() { return lengthNow(); }
+            @Override public Object getNextValue() { return lengthNow() + 1; }
+            @Override public Object getPreviousValue() { return Math.max(lengthNow() - 1, 0); }
+
+            @Override
+            public void setValue(Object value)
+            {
+                maxLength.setText(lengthShown(((Number) value).intValue()));
+                fireStateChanged();
+            }
+        });
+
+        out.setName("station.maxLengthArrows");
+        out.setEditor(maxLength);
+
+        java.awt.FontMetrics metrics = maxLength.getFontMetrics(REGULAR);
+
+        // Room for Any in every language
+        maxLength.setColumns(Math.max(5, metrics.stringWidth(I18n.t(ANY)) / metrics.charWidth('m') + 1));
+        maxLength.setBorder(BorderFactory.createEmptyBorder(0, name.getInsets().left - out.getInsets().left, 0, 0));
+        out.setPreferredSize(new Dimension(out.getPreferredSize().width, name.getPreferredSize().height));
+
+        return out;
+    }
+
     private void wide(JComponent part)
     {
         GridBagConstraints c = at(0, row++);
@@ -898,6 +940,30 @@ public final class StationSettingsWindow extends StationWindowBase
     private static String blankIsZero(String typed)
     {
         return typed.trim().isEmpty() ? "0" : typed;
+    }
+
+    private static String lengthShown(int length)
+    {
+        return length == 0 ? I18n.t(ANY) : String.valueOf(length);
+    }
+
+    /** What was typed in the length box, for `applyNumber`: Any, in any case, is 0, as a blank is. */
+    private static String lengthTyped(String typed)
+    {
+        return typed.trim().equalsIgnoreCase(I18n.t(ANY)) ? "0" : blankIsZero(typed);
+    }
+
+    /** The length the box shows, which the arrows step from; what is not a number counts as 0. */
+    private int lengthNow()
+    {
+        try
+        {
+            return Math.max(0, Integer.parseInt(lengthTyped(maxLength.getText()).trim()));
+        }
+        catch (NumberFormatException notANumber)
+        {
+            return 0;
+        }
     }
 
     // ----------------------------------------------------------------------------------------- fields apply on leaving
@@ -985,7 +1051,10 @@ public final class StationSettingsWindow extends StationWindowBase
             line.setVisible(why != null);
         }
 
-        part.putClientProperty("JComponent.outline", why == null ? null : "error");
+        // A field with arrows has no border of its own: the arrows' box wears the outline
+        JComponent framed = part.getParent() instanceof JSpinner ? (JComponent) part.getParent() : part;
+
+        framed.putClientProperty("JComponent.outline", why == null ? null : "error");
 
         if (isVisible() && getPreferredSize().height > getHeight()) pack();
     }
@@ -1026,8 +1095,8 @@ public final class StationSettingsWindow extends StationWindowBase
     }
 
     /**
-     * A press anywhere in the window but on a text field applies what is typed, as leaving the field does: most of the
-     * window cannot take the keyboard (OB-436).  A refusal rebuilds nothing, so the press still lands.
+     * A press anywhere in the window but on a text field or its arrows applies what is typed, as leaving the field does:
+     * most of the window cannot take the keyboard (OB-436).  A refusal rebuilds nothing, so the press still lands.
      */
     private final java.awt.event.AWTEventListener pressAway = event ->
     {
@@ -1038,7 +1107,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
         Component source = (Component) event.getSource();
 
-        if (!(source instanceof javax.swing.text.JTextComponent)
+        if (!(source instanceof javax.swing.text.JTextComponent) && !(source.getParent() instanceof JSpinner)
             && SwingUtilities.getWindowAncestor(source) == this) commitTypedFields();
     };
 
@@ -1069,13 +1138,6 @@ public final class StationSettingsWindow extends StationWindowBase
         String stored = editor.session.getStore().getPointName(square);
 
         return stored == null ? "" : stored;
-    }
-
-    private String maxLengthInStore(TileKey square)
-    {
-        int stored = editor.number(square, "maxTrainLength", 0);
-
-        return stored == 0 ? "" : String.valueOf(stored);
     }
 
     private String priorityInStore(TileKey square)

@@ -951,6 +951,186 @@ public class testStationSettingsWindow
     }
 
     /**
+     * The length box shows Any for 0, no limit, whether the station has none, 0 is typed or the down arrow reaches it
+     * (FR-234).
+     *
+     * MUTATION: have `StationSettingsWindow.lengthShown` show 0 as a blank, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testNoLimitShowsAnyHoweverItIsReached() throws Exception
+    {
+        TileKey square = aStation();
+        String any = I18n.t("autosetup.ui.stationLengthAny");
+        StationSettingsWindow window = openAtALength(square, null);
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), any, "a station with no limit does not show Any");
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "0");
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), any, "a typed 0 does not show Any");
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "1");
+        lengthArrow(window, false);
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), any, "the down arrow to 0 does not show Any");
+
+        StationDoors.close(window);
+
+        assertEquals(lengthOf(square), 0, "Any, stepped to, was not stored as no limit");
+    }
+
+    /**
+     * Any typed in any case, or a cleared box, stores 0, no limit (FR-234).
+     *
+     * MUTATION: have `StationSettingsWindow.lengthTyped` take only a blank as 0, and "aNY" is refused as not a number.
+     */
+    @Test(timeOut = 120000)
+    public void testAnyInAnyCaseOrABlankStoresNoLimit() throws Exception
+    {
+        TileKey square = aStation();
+        StationSettingsWindow window = openAtALength(square, 30);
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "aNY");
+
+        assertFalse(visible(window, "station.maxLengthProblem"), "Any typed in another case was refused");
+        assertEquals(lengthOf(square), 0, "Any typed in another case did not store no limit");
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "30");
+
+        assertEquals(lengthOf(square), 30, "precondition: 30 was not stored");
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "");
+
+        assertEquals(lengthOf(square), 0, "a cleared box did not store no limit");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * The arrows step what the box shows, one a click and never under Any, and apply as typing does, on Enter or leaving:
+     * a run of clicks is one change, not one each (FR-234).
+     *
+     * MUTATION: drop the arrows from the exception in `StationSettingsWindow.pressAway`, and the second click writes the
+     * first one's step.
+     */
+    @Test(timeOut = 120000)
+    public void testTheArrowsStepAndApplyAsTypingDoes() throws Exception
+    {
+        TileKey square = aStation();
+        StationSettingsWindow window = openAtALength(square, 120);
+        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
+
+        lengthArrow(window, true);
+        lengthArrow(window, true);
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), "122", "two clicks on the up arrow did not step twice");
+        assertEquals(lengthOf(square), 120, "a click on an arrow wrote the length before Enter or leaving");
+
+        Components.onTheEventThread(() -> { field.postActionEvent(); return null; });
+        StationDoors.current(window);
+
+        assertEquals(lengthOf(square), 122, "Enter did not apply what the arrows stepped to");
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "1");
+        lengthArrow(window, false);
+        lengthArrow(window, false);
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), I18n.t("autosetup.ui.stationLengthAny"),
+            "the down arrow went under Any");
+
+        StationDoors.close(window);
+
+        assertEquals(lengthOf(square), 0, "Close did not apply what the arrows stepped to");
+    }
+
+    /**
+     * Stations picked together whose lengths differ show a blank with the triangle, and nothing is written until the box
+     * is changed: not by Enter on the blank, a press away, nor an arrow's click alone; the change then goes to each
+     * (FR-234).
+     *
+     * MUTATION: drop the unchanged check at the top of `StationSettingsWindow.commit`, and Enter on the blank writes.
+     */
+    @Test(timeOut = 120000)
+    public void testLengthsThatDifferWriteNothingUntilChanged() throws Exception
+    {
+        TileKey first = aStation();
+        TileKey second = aSecondStation(first);
+
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(first, "maxTrainLength", 11);
+            session.setPointProperty(second, "maxTrainLength", 12);
+
+            return null;
+        });
+
+        StationDoors.press(panel, "autonomy.pickStations");
+
+        for (TileKey each : Arrays.asList(first, second))
+        {
+            Components.onTheEventThread(() -> { panel.tileClicked(each, session.getGraph().getTiles().get(each), false); return null; });
+        }
+
+        StationSettingsWindow window = StationDoors.showing(StationSettingsWindow.class);
+
+        assertNotNull(window, "picking two stations opened no window");
+
+        StationDoors.current(window);
+
+        assertTrue(StationDoors.live(window, "station.maxLengthArrows"), "precondition: the length box is grayed");
+        assertEquals(StationDoors.text(window, "station.maxLength"), "", "lengths that differ show a value");
+        assertTrue(visible(window, "station.maxLengthMixed"), "lengths that differ do not say so");
+
+        String before = setup();
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "");
+        support.Mouse.press(StationDoors.part(window, "station.several", javax.swing.JLabel.class),
+            java.awt.event.MouseEvent.BUTTON1);
+        StationDoors.current(window);
+
+        assertEquals(setup(), before, "Enter on the blank, or a press away from it, wrote to the stations");
+
+        lengthArrow(window, false);
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), I18n.t("autosetup.ui.stationLengthAny"),
+            "the down arrow from the blank did not step to Any");
+        assertEquals(setup(), before, "a click on an arrow wrote before the box was left");
+
+        StationDoors.close(window);
+
+        assertEquals(lengthOf(first), 0, "the change did not go to the first station");
+        assertEquals(lengthOf(second), 0, "the change did not go to the second station");
+    }
+
+    /** Station Settings of this station, its maximum train length set first; null for no limit. */
+    private StationSettingsWindow openAtALength(TileKey square, Integer length) throws Exception
+    {
+        Components.onTheEventThread(() -> { session.setPointProperty(square, "maxTrainLength", length); return null; });
+
+        return StationDoors.open(panel, square);
+    }
+
+    /** Clicks the length box's up or down arrow. */
+    private static void lengthArrow(StationSettingsWindow window, boolean up)
+    {
+        javax.swing.JSpinner arrows = StationDoors.part(window, "station.maxLengthArrows", javax.swing.JSpinner.class);
+
+        support.Mouse.click(StationDoors.part(arrows, up ? "Spinner.nextButton" : "Spinner.previousButton",
+            javax.swing.JButton.class));
+    }
+
+    /** A station's maximum train length, 0 for no limit. */
+    private static int lengthOf(TileKey square)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            Object stored = session.getPointProperty(square, "maxTrainLength");
+
+            return stored instanceof Number ? ((Number) stored).intValue() : 0;
+        });
+    }
+
+    /**
      * A name another station has is refused beside the field and says it is taken (OB-376), with what was typed still
      * there to fix; fixing it clears the reason.
      *
