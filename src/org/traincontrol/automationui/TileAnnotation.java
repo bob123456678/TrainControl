@@ -537,7 +537,7 @@ public class TileAnnotation
         return this;
     }
 
-    private boolean empty = false;
+    private volatile boolean empty = false;
 
     public boolean isLeftEmpty()
     {
