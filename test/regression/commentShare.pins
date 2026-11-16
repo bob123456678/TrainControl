@@ -99,7 +99,7 @@ src/org/traincontrol/gui/autonomy/DiagramTileRegistry.java	515	0
 src/org/traincontrol/gui/autonomy/FacingPrompt.java	534	3
 src/org/traincontrol/gui/autonomy/ManualReversalPrompt.java	541	0
 src/org/traincontrol/gui/autonomyeditor/AutonomyEditorPanel.java	299	82
-src/org/traincontrol/gui/autonomyeditor/EditorMassAssign.java	291	8
+src/org/traincontrol/gui/autonomyeditor/EditorMassAssign.java	288	8
 src/org/traincontrol/gui/autonomyeditor/EditorPrompts.java	379	6
 src/org/traincontrol/gui/autonomyeditor/EditorSignals.java	265	12
 src/org/traincontrol/gui/autonomyeditor/EditorTileMenus.java	382	12

@@ -31,7 +31,7 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 76;
+    private static final int GROUPS_ALLOWED = 75;
 
     /**
      * The tokens standing in a second or later copy in `test/`, summed over its groups: an upper bound, so a commit that
@@ -67,7 +67,6 @@ public class testNoNewCopies
         "CS2Message:2 (242)",
         "Conversion:2 (79)",
         "CurrentKeyRow:1,TileAnnotation:1 (89)",
-        "EditorMassAssign:2 (74)",
         "FeedbackEvents:1,FullAutonomyExample:1 (60)",
         "HomeStaging:2 (60)",
         "ImageUtil:2 (113)",

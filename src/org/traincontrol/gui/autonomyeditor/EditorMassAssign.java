@@ -34,7 +34,6 @@ final class EditorMassAssign
     /**
      * Goes through every piece of track on this page that still has no length, and then its switches (Mass Assign
      * Lengths), each outlined and asked about.  0 is an answer, kept apart from one nobody has measured (OB-274).
-     * `setupChanged` once at the end.
      */
     void massAssignLengths()
     {
@@ -81,11 +80,7 @@ final class EditorMassAssign
 
             if (!switches.isEmpty())
             {
-                editor.outlineAndReveal(switches);
-
-                String question = I18n.f("autosetup.ui.promptMassAssignSwitches", switches.size());
-
-                Integer turnout = askForWholeLength(question, AutonomyEditorPanel.LENGTHS_TITLE);
+                Integer turnout = askOneLengthFor(switches, "autosetup.ui.promptMassAssignSwitches");
 
                 // 0 answers the switches as well (OB-274): two switches back to back are adjacent tracks.
                 if (turnout != null && turnout >= 0 && editor.session.assignSwitchLength(switches, turnout)) wroteAny = true;
@@ -94,19 +89,14 @@ final class EditorMassAssign
             }
         }
 
-        // AND THE SQUARES TWO ROADS SHARE: their own step, because a crossing is not a turnout and need not measure
-        // like one; one length for all of them, as for switches.
+        // AND THE SQUARES TWO ROADS SHARE: their own step, as a crossing need not measure like a turnout.
         if (!stopped)
         {
             crossings = editor.session.sharedSquaresNeedingALengthOn(editor.page);
 
             if (!crossings.isEmpty())
             {
-                editor.outlineAndReveal(crossings);
-
-                String question = I18n.f("autosetup.ui.promptMassAssignCrossings", crossings.size());
-
-                Integer across = askForWholeLength(question, AutonomyEditorPanel.LENGTHS_TITLE);
+                Integer across = askOneLengthFor(crossings, "autosetup.ui.promptMassAssignCrossings");
 
                 if (across != null && across >= 0 && editor.session.assignSwitchLength(crossings, across)) wroteAny = true;
             }
@@ -116,6 +106,14 @@ final class EditorMassAssign
 
         if (wroteAny) editor.setupChanged();
         else editor.refresh();
+    }
+
+    /** Outlines `squares` and asks one length for them all, as `askForWholeLength` answers. */
+    private Integer askOneLengthFor(Set<TileKey> squares, String promptKey)
+    {
+        editor.outlineAndReveal(squares);
+
+        return askForWholeLength(I18n.f(promptKey, squares.size()), AutonomyEditorPanel.LENGTHS_TITLE);
     }
 
     /**
@@ -306,8 +304,7 @@ final class EditorMassAssign
     }
 
     /**
-     * Asks for one number, with Skip beside OK - the Name Everything dialog, for a number.  Both number walks use it: a
-     * stretch's whole length, and a station's maximum train length.
+     * Asks for one number, with Skip beside OK - the Name Everything dialog, for a number.
      *
      * @return the number; -1 for Skip or a blank answer; null for Stop
      */
