@@ -1805,15 +1805,7 @@ public class testStationSettingsWindow
     {
         TileKey square = aStation();
 
-        String train = model.getLocList().get(0);
-
-        Components.onTheEventThread(() ->
-        {
-            session.setPointProperty(square, "maxTrainLength", 30);
-            session.setWhichTrains(square, WhichTrains.WHITELIST, Arrays.asList(train));
-
-            return null;
-        });
+        String train = upTo30AndOneTrain(square);
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
@@ -1856,15 +1848,7 @@ public class testStationSettingsWindow
     {
         TileKey square = aStationWithTwoWaysIn();
 
-        String train = model.getLocList().get(0);
-
-        Components.onTheEventThread(() ->
-        {
-            session.setPointProperty(square, "maxTrainLength", 30);
-            session.setWhichTrains(square, WhichTrains.WHITELIST, Arrays.asList(train));
-
-            return null;
-        });
+        String train = upTo30AndOneTrain(square);
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
@@ -1878,6 +1862,22 @@ public class testStationSettingsWindow
 
         assertTrue(visible(window, "station.matrixProblem"), "precondition: Must with two sides open is no error");
         assertEquals(noticesShown(window).size(), 1, "the error is not the one notice: " + noticesShown(window));
+    }
+
+    /** Limits a station to trains up to 30 long and a whitelist of one train, whose name it gives. */
+    private static String upTo30AndOneTrain(TileKey square)
+    {
+        String train = model.getLocList().get(0);
+
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(square, "maxTrainLength", 30);
+            session.setWhichTrains(square, WhichTrains.WHITELIST, Arrays.asList(train));
+
+            return null;
+        });
+
+        return train;
     }
 
     /** The hover of every cell of the table that says Some trains, for any side. */
