@@ -119,6 +119,9 @@ public abstract class Locomotive
 
     // The Central Station's name for this locomotive that a pressed Sync offered and the user turned down (FR-220)
     private String declinedStationName;
+
+    // The one the Sync running now offered and did not apply, so it adds no copy under it; never saved
+    private String heldBackStationName;
     
     // Used to pause autonomous operation - not persisted.  Volatile, not under the monitor: a command can hold that
     // for a stalled network write, and windows read this every second.
@@ -1553,6 +1556,17 @@ public abstract class Locomotive
     public void setDeclinedStationName(String name)
     {
         this.declinedStationName = name;
+    }
+
+    /** The station's name the Sync running now offered for this locomotive and did not apply, or null. */
+    public String getHeldBackStationName()
+    {
+        return this.heldBackStationName;
+    }
+
+    public void setHeldBackStationName(String name)
+    {
+        this.heldBackStationName = name;
     }
 
     /**

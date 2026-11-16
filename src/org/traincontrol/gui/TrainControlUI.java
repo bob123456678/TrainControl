@@ -15213,6 +15213,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                     syncResult = -1;
                 }
+                finally
+                {
+                    // The offers this sync held back are offered again by the next
+                    for (String name : c == null ? Collections.<String>emptyList() : this.model.getLocList())
+                    {
+                        Locomotive each = this.model.getLocByName(name);
+
+                        if (each != null) each.setHeldBackStationName(null);
+                    }
+                }
 
                 final Integer r = syncResult;
 
@@ -15324,10 +15334,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     I18n.t("loc.ui.dialogConfirmRename"), JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null,
                     YES_NO_OPTS, YES_NO_OPTS[1]);
 
-                if (answer == JOptionPane.NO_OPTION) outcome = keptAfterNo(l, newName);
-
                 // Closed unanswered, it keeps nothing and is asked again
+                outcome = answer == JOptionPane.NO_OPTION ? keptAfterNo(l, newName) : "loc.renameClosed";
+
                 if (answer != JOptionPane.YES_OPTION) continue;
+
+                outcome = "loc.renameNotApplied";
 
                 // Nobody typed a station's name who could be told why it breaks a route condition (OB-074)
                 if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
@@ -15377,8 +15389,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             finally
             {
-                // Every offer's outcome, as the pressed Sync's account of the check (D171)
+                // Every offer's outcome, as the pressed Sync's account of the check (D171); one not applied gets no
+                // copy under the station's name from this sync
                 this.model.logf(outcome, currentName, newName);
+
+                if (!"loc.renameApplied".equals(outcome)) l.setHeldBackStationName(newName);
             }
         }
     }

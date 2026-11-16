@@ -1928,12 +1928,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return num;
     }
     
-    /** Whether a locomotive here at l's address turned down l's name, so the sync adds no copy under it (FR-220). */
+    /**
+     * Whether a locomotive here at l's address turned down l's name, or was offered it by the Sync running now and kept
+     * its own, so the sync adds no copy under it (FR-220).
+     */
     private boolean nameTurnedDown(MarklinLocomotive l)
     {
         for (MarklinLocomotive held : this.locDB.getItems())
         {
-            if (held.getIntUID() == l.getIntUID() && l.getName().equals(held.getDeclinedStationName())) return true;
+            if (held.getIntUID() == l.getIntUID() && (l.getName().equals(held.getDeclinedStationName())
+                || l.getName().equals(held.getHeldBackStationName()))) return true;
         }
 
         return false;
