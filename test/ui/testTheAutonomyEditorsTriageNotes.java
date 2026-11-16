@@ -369,8 +369,8 @@ public class testTheAutonomyEditorsTriageNotes
 
     /**
      * The guard rows are labeled Exit guard signal and Entry guard signal; a press anywhere in the window that takes no
-     * typing applies the Maximum train length and the "Only trains up to" line follows at once; a blank field with
-     * several stations picked writes nothing.
+     * typing applies the Maximum train length and the table's hover follows at once (FR-226); a blank field with several
+     * stations picked writes nothing.
      *
      * MUTATION: put the labels back to Exit guard and Entry guard, drop `StationSettingsWindow.pressAway`, or have a
      * blank several-stations field write 0, and this fails.
@@ -390,11 +390,15 @@ public class testTheAutonomyEditorsTriageNotes
             "the window has no Entry guard signal label");
 
         JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
-        JLabel line = StationDoors.part(window, "station.matrixAlso", JLabel.class);
+
+        // Asked again each time: the table is built again with each answer
+        java.util.function.Supplier<String> line = () -> Components.onTheEventThread(() ->
+            StationDoors.part(window, "station.cell.SENT_HERE.auto", javax.swing.JComponent.class).getToolTipText() + " / "
+            + StationDoors.part(window, "station.cell.SENT_HERE.hand", javax.swing.JComponent.class).getToolTipText());
 
         Components.onTheEventThread(() -> { field.setText("37"); return null; });
 
-        assertFalse(Components.onTheEventThread(line::getText).contains("37"), "typing alone updated the line");
+        assertFalse(line.get().contains("37"), "typing alone updated the hover");
 
         JLabel anywhere = Components.find(window.getContentPane(), JLabel.class,
             l -> I18n.t("autosetup.ui.stationMatrixHeading").equals(l.getText()));
@@ -404,8 +408,7 @@ public class testTheAutonomyEditorsTriageNotes
         StationDoors.current(window);
 
         assertEquals(((Number) session.getPointProperty(square, "maxTrainLength")).intValue(), 37, "the click away did not apply the length");
-        assertTrue(Components.onTheEventThread(line::getText).contains("37"),
-            "the Only trains up to line did not follow: " + Components.onTheEventThread(line::getText));
+        assertTrue(line.get().contains("37"), "the hover did not follow: " + line.get());
 
         StationDoors.close(window);
 
@@ -1206,11 +1209,11 @@ public class testTheAutonomyEditorsTriageNotes
     // ------------------------------------------------------------------------------------------------ MT-961
 
     /**
-     * The notices stand under the picture, the can't-leave warning first and then what a cell cannot say (Adam: "'only
-     * trains up to 4 long are sent here' plus other notices should be below the 'on the track diagram' area"):
-     * TopR1ParkLong made a plain station that takes trains up to 4 long.
+     * The notices stand under the picture (Adam: "'only trains up to 4 long are sent here' plus other notices should be
+     * below the 'on the track diagram' area"): TopR1ParkLong made a plain station that takes trains up to 4 long.  What
+     * a cell cannot say is its hover now (FR-226), so the can't-leave warning is the one notice.
      *
-     * MUTATION: put `also` back under the table in `StationMatrixPanel` rather than in `notices`, and this fails.
+     * MUTATION: put `problem` back under the table in `StationMatrixPanel` rather than in `notices`, and this fails.
      */
     @Test(timeOut = 180000)
     public void testTheNoticesStandUnderThePicture() throws Exception
@@ -1221,19 +1224,13 @@ public class testTheAutonomyEditorsTriageNotes
         StationDoors.typeAndEnter(window, "station.maxLength", "4");
         StationDoors.current(window);
 
-        assertTrue(StationDoors.said(window, "station.matrixAlso").contains(I18n.f("autosetup.ui.stationAlsoLength", 4)),
-            "precondition: the length is not said: " + StationDoors.said(window, "station.matrixAlso"));
-
         Component picture = StationDoors.part(window, "station.picture", Component.class);
         Component problem = StationDoors.part(window, "station.matrixProblem", Component.class);
-        Component also = StationDoors.part(window, "station.matrixAlso", Component.class);
 
         assertTrue(Components.onTheEventThread(problem::isVisible), "precondition: no can't-leave warning for a station");
 
         assertTrue(top(problem) >= top(picture) + Components.onTheEventThread(picture::getHeight),
             "the can't-leave warning is not under the picture");
-        assertTrue(top(also) >= top(problem) + Components.onTheEventThread(problem::getHeight),
-            "the length is not under the can't-leave warning, so not under the picture");
     }
 
     /**
@@ -1265,8 +1262,7 @@ public class testTheAutonomyEditorsTriageNotes
             StationDoors.current(window);
 
             assertEquals((int) Components.onTheEventThread(window::getHeight), height, "the window's height changed at " + step
-                + ", which shows: " + StationDoors.said(window, "station.matrixProblem") + " / "
-                + StationDoors.said(window, "station.matrixAlso"));
+                + ", which shows: " + StationDoors.said(window, "station.matrixProblem"));
 
             if (step.equals("station.preset.STATION"))
             {

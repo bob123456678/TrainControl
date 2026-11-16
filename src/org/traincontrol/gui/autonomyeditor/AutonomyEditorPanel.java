@@ -2708,12 +2708,12 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Sets the four settings a preset names (FR-176), through the doors the window's own controls use.
+     * Sets the settings a preset names (FR-176), through the doors the window's own controls use.
      * @return false where the operator canceled a new station's name, and nothing changed
      */
     boolean applyPreset(TileKey tile, StationPreset preset)
     {
-        if (!setUsage(tile, preset.stops, true)) return false;
+        if (!setUsage(tile, preset.stops, preset.runsThrough)) return false;
 
         if (preset.fullAutonomy != null) session.setAutoDestination(tile, preset.fullAutonomy);
 
@@ -6300,7 +6300,8 @@ public class AutonomyEditorPanel extends JPanel
             turns && !session.isMustTurnAround(tile),
             Boolean.FALSE.equals(session.getPointProperty(tile, "active")),
             // which way a station's track runs out, for the terminus's flat end (FR-118)
-            station ? session.deadEndSide(tile) : null);
+            station ? session.deadEndSide(tile) : null,
+            session.isStopOnly(tile));
     }
 
     /**
