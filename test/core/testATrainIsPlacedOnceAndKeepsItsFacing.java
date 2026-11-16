@@ -42,7 +42,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testAStaleBarDoesNotShutASquareNothingArrivesAt() throws Exception
     {
-        final TileKey middle = new TileKey("main", 3, 1);
+        final TileKey middle = onMain(3, 1);
 
         threeStationsInARow("C6a");
 
@@ -84,7 +84,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testASquareNothingArrivesAtOffersNoHomeFacing() throws Exception
     {
-        final TileKey middle = new TileKey("main", 3, 1);
+        final TileKey middle = onMain(3, 1);
 
         threeStationsInARow("C6b");
 
@@ -135,7 +135,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.open(Arrays.asList(page));
         session.initialize("C7 curve");
 
-        final TileKey curve = new TileKey("main", 2, 2);
+        final TileKey curve = onMain(2, 2);
 
         for (TileKey station : Arrays.asList(new TileKey("main", 2, 0), curve, new TileKey("main", 4, 2)))
         {
@@ -248,7 +248,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.setDirection(new TileKey("main", 2, 1), new RouteId(0, 0), Direction.TOWARD_B);
         session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_A);
 
-        final TileKey middle = new TileKey("main", 3, 1);
+        final TileKey middle = onMain(3, 1);
 
         session.placeLocomotive(middle, "C7 train");
         session.rebuild();
@@ -302,7 +302,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Default");
 
-        TileKey sensor = new TileKey("main", 1, 1);
+        TileKey sensor = onMain(1, 1);
 
         session.setPointName(sensor, "Platform 1");
         session.setStation(sensor, true);
@@ -346,7 +346,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.open(Arrays.asList(throughStationPage()));
         session.initialize("Default");
 
-        TileKey sensor = new TileKey("main", 3, 1);
+        TileKey sensor = onMain(3, 1);
 
         session.setPointName(sensor, "Platform 1");
         session.setStation(sensor, true);
@@ -441,7 +441,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.open(Arrays.asList(throughStationPage()));
         session.initialize("Default");
 
-        TileKey sensor = new TileKey("main", 3, 1);
+        TileKey sensor = onMain(3, 1);
 
         session.setPointName(sensor, "Platform 1");
         session.setStation(sensor, true);
@@ -482,7 +482,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Default");
 
-        TileKey sensor = new TileKey("main", 1, 1);
+        TileKey sensor = onMain(1, 1);
 
         session.setPointName(sensor, "Platform 1");
         session.setStation(sensor, true);
@@ -523,7 +523,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Default");
 
-        TileKey sensor = new TileKey("main", 1, 1);
+        TileKey sensor = onMain(1, 1);
 
         session.setPointName(sensor, "Platform 1");
         session.setStation(sensor, true);
@@ -568,7 +568,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Default");
 
-        TileKey sensor = new TileKey("main", 1, 1);
+        TileKey sensor = onMain(1, 1);
 
         session.setPointName(sensor, "Platform 1");
         session.setStation(sensor, true);
@@ -601,7 +601,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Default");
 
-        TileKey sensor = new TileKey("main", 1, 1);
+        TileKey sensor = onMain(1, 1);
 
         session.setPointName(sensor, "Platform 1");
         session.setStation(sensor, true);
@@ -644,10 +644,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         // offer exactly two facings, and runOfTrack offers none.
         session.open(Arrays.asList(deadEndRun()));
 
-        session.getStore().createConfiguration("Facing", null);
-        session.getStore().setActiveConfiguration("Facing");
+        activeConfiguration("Facing");
 
-        final TileKey departed = new TileKey("main", 4, 1);
+        final TileKey departed = onMain(4, 1);
 
         java.util.List<org.traincontrol.automationui.TilePorts.Side> choices =
             session.facingChoices(departed);
@@ -752,12 +751,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testAPlacementForAnUnknownLocomotiveIsRefused() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
-
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
+        activeConfiguration("Restored");
 
         org.json.JSONObject standing = new org.json.JSONObject();
         standing.put("name", "Sold Years Ago");
@@ -794,12 +790,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testALocomotiveNamedTwiceIsPlacedOnce() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
-
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
+        activeConfiguration("Restored");
 
         org.json.JSONArray points = new org.json.JSONArray();
 
@@ -836,12 +829,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testPlacementsAreTakenAsGivenWhenThereIsNothingToCheckAgainst() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
-
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
+        activeConfiguration("Restored");
 
         org.json.JSONObject standing = new org.json.JSONObject();
         standing.put("name", "Anything At All");
@@ -875,10 +865,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         LayoutDiagram page = throughStationPage();
 
         session.open(Arrays.asList(page));
-        session.getStore().createConfiguration("Homes", null);
-        session.getStore().setActiveConfiguration("Homes");
+        activeConfiguration("Homes");
 
-        TileKey station = new TileKey("main", 3, 1);
+        TileKey station = onMain(3, 1);
 
         session.setStation(station, true);
 
@@ -920,15 +909,12 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testALocomotiveIsRecordedInOnePlaceOnly() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        activeConfiguration("Restored");
 
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
-
-        TileKey was = new TileKey("main", 1, 1);
-        TileKey now = new TileKey("main", 4, 1);
+        TileKey was = onMain(1, 1);
+        TileKey now = onMain(4, 1);
 
         session.placeLocomotive(was, "065 001-0 DB");
 
@@ -957,14 +943,11 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testTakingALocomotiveOffForgetsItAndItsFacing() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        activeConfiguration("Restored");
 
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
-
-        TileKey tile = new TileKey("main", 1, 1);
+        TileKey tile = onMain(1, 1);
 
         session.placeLocomotive(tile, "SM31-108");
         session.setFacing(tile, org.traincontrol.automationui.TilePorts.Side.E);
@@ -984,11 +967,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testAStationTakesTrainsFromAnywhereByDefault() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
-
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
         session.setStation(station, true);
 
@@ -1001,10 +982,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
         session.open(Arrays.asList(pageWithATwoEndedStation()));
 
-        TileKey restricted = new TileKey("main", 3, 1);
+        TileKey restricted = onMain(3, 1);
 
-        session.setStation(restricted, true);
-        session.setPointName(restricted, "Bahnhof");
+        namedStationInSession(restricted, "Bahnhof");
 
         assertTrue(session.arrivalMarks(restricted, false).isEmpty(), "control: the second station is unrestricted too");
 
@@ -1034,10 +1014,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
         session.open(Arrays.asList(page));
 
-        TileKey station = new TileKey("main", 3, 1);
+        TileKey station = onMain(3, 1);
 
-        session.setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStationInSession(station, "Bahnhof");
 
         java.util.List<org.traincontrol.automationui.TilePorts.Side> ways =
             session.arrivalSides(station);
@@ -1086,14 +1065,12 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
         session.open(Arrays.asList(page));
 
-        session.getStore().createConfiguration("Terminus", null);
-        session.getStore().setActiveConfiguration("Terminus");
+        activeConfiguration("Terminus");
         session.rebuild();
 
-        TileKey station = new TileKey("main", 3, 1);
+        TileKey station = onMain(3, 1);
 
-        session.setStation(station, true);
-        session.setPointName(station, "Kopfbahnhof");
+        namedStationInSession(station, "Kopfbahnhof");
         session.setPointFlag(station, AutonomyBuilder.CAN_REVERSE, true);
 
         assertTrue(session.isTurnAround(station), "precondition: trains may turn around here");
@@ -1126,7 +1103,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
         session.open(Arrays.asList(page));
 
-        TileKey station = new TileKey("main", 3, 1);
+        TileKey station = onMain(3, 1);
 
         session.setStation(station, true);
 
@@ -1149,7 +1126,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     {
         session.open(Arrays.asList(pageWithATwoEndedStation()));
 
-        TileKey station = new TileKey("main", 3, 1);
+        TileKey station = onMain(3, 1);
 
         session.setStation(station, true);
 
@@ -1201,7 +1178,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     {
         session.open(Arrays.asList(pageWithATwoEndedStation()));
 
-        TileKey station = new TileKey("main", 3, 1);
+        TileKey station = onMain(3, 1);
 
         session.setStation(station, true);
 
@@ -1238,7 +1215,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     {
         org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aStationWithEverySetting();
 
-        TileKey station = new TileKey("main", 3, 1);
+        TileKey station = onMain(3, 1);
 
         Set<Side> barred = session.getBarredArrivals(station);
 
@@ -1294,7 +1271,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
             session.open(Arrays.asList(page));
             session.initialize("dead end " + orientation);
 
-            TileKey curve = new TileKey("main", 2, 2);
+            TileKey curve = onMain(2, 2);
 
             session.setStation(curve, true);
 
@@ -1336,13 +1313,12 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
         session.open(Arrays.asList(pageWithAGuardedTwoEndedStation()));
         session.initialize("Default");
 
-        TileKey station = new TileKey("main", 3, 1);
-        TileKey caption = new TileKey("main", 3, 3);
-        TileKey exit = new TileKey("main", 2, 1);
-        TileKey entry = new TileKey("main", 4, 1);
+        TileKey station = onMain(3, 1);
+        TileKey caption = onMain(3, 3);
+        TileKey exit = onMain(2, 1);
+        TileKey entry = onMain(4, 1);
 
-        session.setStation(station, true);
-        session.setPointName(station, "Platform");
+        namedStationInSession(station, "Platform");
         session.setCaption(caption, station);
         session.setBarredArrivals(station, new LinkedHashSet<>(Arrays.asList(session.arrivalSides(station).get(0))));
         session.setProtectingSignal(station, exit);
@@ -1379,11 +1355,11 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testASquareThatStopsBeingAPointKeepsItsLocomotive() throws Exception
     {
-        session.open(Arrays.asList(pageOnDisk()));
+        openedPageOnDisk();
         session.initialize("Default");
 
         // 2,1 is certainly ON the page and not a Point, the state a sensor lands in when moved out of its run.
-        TileKey adrift = new TileKey("main", 2, 1);
+        TileKey adrift = onMain(2, 1);
 
         session.setStation(new TileKey("main", 1, 1), true);
 
@@ -1433,8 +1409,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     {
         org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = aStationWithEverySetting();
 
-        TileKey station = new TileKey("main", 3, 1);
-        TileKey caption = new TileKey("main", 3, 3);
+        TileKey station = onMain(3, 1);
+        TileKey caption = onMain(3, 3);
 
         answerTheStationMenu(panel, station, false);
 
@@ -1510,14 +1486,11 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testDemotingAStationLeavesItsLocomotiveToBeRemoved() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        activeConfiguration("Demoted");
 
-        session.getStore().createConfiguration("Demoted", null);
-        session.getStore().setActiveConfiguration("Demoted");
-
-        TileKey tile = new TileKey("main", 1, 1);
+        TileKey tile = onMain(1, 1);
 
         session.setStation(tile, true);
         session.placeLocomotive(tile, "SM31-108");
@@ -1543,21 +1516,16 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testALocomotiveInTwoPlacesIsReportedAsAnError() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        activeConfiguration("Restored");
 
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
+        TileKey first = onMain(1, 1);
+        TileKey second = onMain(4, 1);
 
-        TileKey first = new TileKey("main", 1, 1);
-        TileKey second = new TileKey("main", 4, 1);
+        namedStation(first, "BottomMainA");
 
-        session.getStore().setStation(first, true);
-        session.setPointName(first, "BottomMainA");
-
-        session.getStore().setStation(second, true);
-        session.setPointName(second, "BottomMainC");
+        namedStation(second, "BottomMainC");
 
         // Written straight into the configuration, as it happens: one placement from an import and one made by hand.
         session.setPointProperty(first, "loc", new org.json.JSONObject().put("name", "065 001-0 DB"));
@@ -1596,17 +1564,13 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testALocomotiveInOnePlaceIsNotReported() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        activeConfiguration("Restored");
 
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
+        TileKey tile = onMain(1, 1);
 
-        TileKey tile = new TileKey("main", 1, 1);
-
-        session.getStore().setStation(tile, true);
-        session.setPointName(tile, "BottomMainA");
+        namedStation(tile, "BottomMainA");
         session.placeLocomotive(tile, "065 001-0 DB");
 
         session.rebuild();
@@ -1623,15 +1587,12 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     @Test
     public void testMovingALocomotiveDoesNotLeaveItInTwoPlaces() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        activeConfiguration("Restored");
 
-        session.getStore().createConfiguration("Restored", null);
-        session.getStore().setActiveConfiguration("Restored");
-
-        TileKey was = new TileKey("main", 1, 1);
-        TileKey now = new TileKey("main", 4, 1);
+        TileKey was = onMain(1, 1);
+        TileKey now = onMain(4, 1);
 
         session.placeLocomotive(was, "065 001-0 DB");
         session.placeLocomotive(now, "065 001-0 DB");
@@ -1655,11 +1616,10 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     {
         session.open(Arrays.asList(deadEndRun()));
 
-        session.getStore().createConfiguration("Homes", null);
-        session.getStore().setActiveConfiguration("Homes");
+        activeConfiguration("Homes");
 
-        final TileKey one = new TileKey("main", 1, 1);
-        final TileKey two = new TileKey("main", 7, 1);
+        final TileKey one = onMain(1, 1);
+        final TileKey two = onMain(7, 1);
 
         session.setPointProperty(one, "home", "Loc A");
         session.setPointProperty(two, "home", "Loc B");
@@ -1698,10 +1658,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     {
         session.open(Arrays.asList(deadEndRun()));
 
-        session.getStore().createConfiguration("Facing", null);
-        session.getStore().setActiveConfiguration("Facing");
+        activeConfiguration("Facing");
 
-        final TileKey tile = new TileKey("main", 4, 1);
+        final TileKey tile = onMain(4, 1);
 
         java.util.List<org.traincontrol.automationui.TilePorts.Side> choices =
             session.facingChoices(tile);

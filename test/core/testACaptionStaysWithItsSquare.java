@@ -37,13 +37,12 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     {
         LayoutDiagram page = pageOnDisk();
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey caption = new TileKey("main", 1, 2);
+        TileKey station = onMain(1, 1);
+        TileKey caption = onMain(1, 2);
 
         // Named first, so the migration below has something to attach the old label to
         session.open(Arrays.asList(page));
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.save();
 
         // A caption of the old kind, so the snapshot below is of a file this code demonstrably WRITES (the migration
@@ -82,10 +81,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
         // authored before the migration runs, so the names are there to be matched against
         session.open(Arrays.asList(page));
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.save();
 
         // and now the diagram carries two old-style labels: one live, one naming nothing
@@ -131,16 +129,13 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     @Test
     public void testALegacyLabelDoesNotCaptionAStationTwice() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        TileKey station = onMain(1, 1);
+        TileKey kept = onMain(3, 2);
+        TileKey labelled = onMain(1, 2);
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey kept = new TileKey("main", 3, 2);
-        TileKey labelled = new TileKey("main", 1, 2);
-
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.setCaption(kept, station);
         session.save();
 
@@ -174,14 +169,11 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     @Test
     public void testTheSessionSaysWhichPagesTheMigrationRewrote() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        TileKey station = onMain(1, 1);
 
-        TileKey station = new TileKey("main", 1, 1);
-
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.save();
 
         page.addComponent(componentType.TEXT, 1, 2, 0, 0, 0, 0, accessoryDecoderType.MM2,
@@ -231,15 +223,12 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     @Test
     public void testACaptionCoveredByTextIsReported() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        TileKey station = onMain(1, 1);
+        TileKey caption = onMain(1, 2);
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey caption = new TileKey("main", 1, 2);
-
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.setCaption(caption, station);
 
         assertFalse(hasFinding(org.traincontrol.automationui.AutonomyChecks.CAPTION_COVERED),
@@ -264,17 +253,14 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     @Test
     public void testACaptionOnABlankSquareSurvivesASave() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
-
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
         // 1,2 is blank: pageOnDisk draws track along row 1 only
-        TileKey caption = new TileKey("main", 1, 2);
+        TileKey caption = onMain(1, 2);
 
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.setCaption(caption, station);
 
         session.save();
@@ -309,10 +295,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
 
         session.open(Arrays.asList(page));
 
-        TileKey station = new TileKey("main", 0, 0);
+        TileKey station = onMain(0, 0);
 
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Kopfbahnhof");
+        namedStation(station, "Kopfbahnhof");
 
         assertNull(session.placeCaption(station), "the name found no square at all, even the station's own");
 
@@ -399,10 +384,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
 
         session.open(Arrays.asList(page));
 
-        TileKey station = new TileKey("main", 0, 0);
+        TileKey station = onMain(0, 0);
 
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Kopfbahnhof");
+        namedStation(station, "Kopfbahnhof");
 
         assertNull(session.placeCaption(station), "the name found no square at all, even the station's own");
 
@@ -434,10 +418,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
 
         session.open(Arrays.asList(page));
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.getStore().setCaption(station, station);
 
         String why = session.placeCaption(station);
@@ -455,14 +438,11 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     @Test
     public void testAStationIsOnlyEverCaptionedInOnePlace() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        TileKey station = onMain(1, 1);
 
-        TileKey station = new TileKey("main", 1, 1);
-
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
 
         session.setCaption(new TileKey("main", 1, 2), station);
 
@@ -488,16 +468,13 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     @Test
     public void testACaptionFollowsTheSquareItSitsOn() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        TileKey station = onMain(1, 1);
+        TileKey was = onMain(1, 2);
+        TileKey now = onMain(3, 2);
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey was = new TileKey("main", 1, 2);
-        TileKey now = new TileKey("main", 3, 2);
-
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.setCaption(was, station);
 
         assertTrue(session.moveCaption(was, now), "the move reported doing nothing");
@@ -516,9 +493,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     @Test
     public void testMovingASquareWithNoCaptionDoesNothing() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
+        LayoutDiagram page = openedPageOnDisk();
 
         assertFalse(session.moveCaption(new TileKey("main", 2, 1), new TileKey("main", 3, 1)),
             "a square with nothing written on it reported moving a caption");
@@ -526,10 +501,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
         assertTrue(session.getCaptions().isEmpty(), "a caption was invented by moving a bare tile");
 
         // and a move onto itself is not a move
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.setCaption(station, station);
 
         assertFalse(session.moveCaption(station, station), "a square moved onto itself is not a move");
@@ -553,14 +527,12 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
 
         session.open(Arrays.asList(page));
 
-        TileKey first = new TileKey("main", 3, 1);
-        TileKey second = new TileKey("main", 1, 1);
+        TileKey first = onMain(3, 1);
+        TileKey second = onMain(1, 1);
 
-        session.getStore().setStation(first, true);
-        session.setPointName(first, "BottomMainB");
+        namedStation(first, "BottomMainB");
 
-        session.getStore().setStation(second, true);
-        session.setPointName(second, "BottomMainC");
+        namedStation(second, "BottomMainC");
 
         session.rebuild();
 
@@ -604,15 +576,12 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     @Test
     public void testDeletingTheSquareUnderACaptionTakesItAway() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        TileKey station = onMain(1, 1);
+        TileKey caption = onMain(1, 2);
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey caption = new TileKey("main", 1, 2);
-
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.setCaption(caption, station);
 
         assertTrue(session.forgetCaptionsAt(caption), "nothing was forgotten");
@@ -624,15 +593,12 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     @Test
     public void testDeletingAStationTakesTheCaptionsThatNameIt() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        TileKey station = onMain(1, 1);
+        TileKey caption = onMain(1, 2);
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey caption = new TileKey("main", 1, 2);
-
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.setCaption(caption, station);
 
         assertTrue(session.forgetCaptionsAt(station), "nothing was forgotten");
@@ -650,15 +616,12 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     @Test
     public void testDeletingAnOrdinarySquareForgetsNothing() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        TileKey station = onMain(1, 1);
+        TileKey caption = onMain(1, 2);
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey caption = new TileKey("main", 1, 2);
-
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.setCaption(caption, station);
 
         assertFalse(session.forgetCaptionsAt(new TileKey("main", 3, 1)),
@@ -680,8 +643,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     {
         session.open(Arrays.asList(pageWithATwoEndedStation()));
 
-        TileKey station = new TileKey("main", 3, 1);
-        TileKey plaque = new TileKey("main", 3, 2);
+        TileKey station = onMain(3, 1);
+        TileKey plaque = onMain(3, 2);
 
         session.setStation(station, true);
         session.setCaption(plaque, station);
@@ -710,9 +673,9 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     {
         session.open(Arrays.asList(pageWithATwoEndedStation()));
 
-        TileKey station = new TileKey("main", 3, 1);
-        TileKey first = new TileKey("main", 3, 2);
-        TileKey later = new TileKey("main", 3, 0);
+        TileKey station = onMain(3, 1);
+        TileKey first = onMain(3, 2);
+        TileKey later = onMain(3, 0);
 
         session.setStation(station, true);
         session.setCaption(first, station);
@@ -741,8 +704,8 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     {
         session.open(Arrays.asList(pageWithATwoEndedStation()));
 
-        TileKey station = new TileKey("main", 3, 1);
-        TileKey plaque = new TileKey("main", 3, 2);
+        TileKey station = onMain(3, 1);
+        TileKey plaque = onMain(3, 2);
 
         session.setStation(station, true);
         session.setCaption(plaque, station);
@@ -770,12 +733,10 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
     @Test
     public void testOpeningKeepsTheCaptionOfASquareThatIsNotAStationNow() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
-
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey caption = new TileKey("main", 1, 2);
+        TileKey station = onMain(1, 1);
+        TileKey caption = onMain(1, 2);
 
         session.setStation(station, true);
         session.setCaption(caption, station);

@@ -343,6 +343,43 @@ abstract class AutonomySessionFixture
         return page;
     }
 
+    /** `pageOnDisk`, opened in the session. */
+    LayoutDiagram openedPageOnDisk() throws IOException
+    {
+        LayoutDiagram page = pageOnDisk();
+
+        session.open(Arrays.asList(page));
+
+        return page;
+    }
+
+    /** A configuration of this name, made and made the active one. */
+    void activeConfiguration(String name) throws IOException
+    {
+        session.getStore().createConfiguration(name, null);
+        session.getStore().setActiveConfiguration(name);
+    }
+
+    /** A station through the store's door, and its name. */
+    void namedStation(TileKey square, String name)
+    {
+        session.getStore().setStation(square, true);
+        session.setPointName(square, name);
+    }
+
+    /** A station through the session's door, and its name. */
+    void namedStationInSession(TileKey square, String name)
+    {
+        session.setStation(square, true);
+        session.setPointName(square, name);
+    }
+
+    /** A square of the page `main`. */
+    static TileKey onMain(int x, int y)
+    {
+        return new TileKey("main", x, y);
+    }
+
     /** How many findings of this key the setup gives about this square. */
     int findingsAbout(String messageKey, TileKey square)
     {

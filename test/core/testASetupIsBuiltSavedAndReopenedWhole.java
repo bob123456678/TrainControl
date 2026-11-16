@@ -104,7 +104,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         session.initialize("Evening");
 
         TileKey onTheSecondPage = new TileKey("second", 1, 1);
-        TileKey nowhereOnTheFirst = new TileKey("main", 7, 3);
+        TileKey nowhereOnTheFirst = onMain(7, 3);
 
         session.setPointProperty(onTheSecondPage, "priority", 7);
         session.setPointProperty(nowhereOnTheFirst, "priority", 3);
@@ -148,7 +148,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Evening");
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
         session.setPointName(station, "FR121 Platform");
         session.setStation(station, true);
@@ -191,8 +191,8 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Evening");
 
-        TileKey from = new TileKey("main", 1, 1);
-        TileKey to = new TileKey("main", 4, 1);
+        TileKey from = onMain(1, 1);
+        TileKey to = onMain(4, 1);
 
         String name = "AMS C1 train";
 
@@ -275,7 +275,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         assertEquals(edgesBetween(12, 11), 1, "and back");
 
         // close the middle tile in one direction
-        TileKey middle = new TileKey("main", 2, 1);
+        TileKey middle = onMain(2, 1);
         RouteId route = session.getRoutes(middle).keySet().iterator().next();
 
         session.setDirection(middle, route, Direction.TOWARD_A);
@@ -295,7 +295,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     {
         session.open(Arrays.asList(runOfTrack()));
 
-        TileKey middle = new TileKey("main", 2, 1);
+        TileKey middle = onMain(2, 1);
         RouteId route = session.getRoutes(middle).keySet().iterator().next();
 
         // THE SQUARE'S RUN, as a click sets it: a square of a run takes its run's direction (OB-361)
@@ -491,7 +491,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Evening");
 
-        TileKey sensor = new TileKey("main", 1, 1);
+        TileKey sensor = onMain(1, 1);
 
         session.setPointName(sensor, "Platform 1");
         session.setStation(sensor, true);
@@ -540,7 +540,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Default");
 
-        TileKey first = new TileKey("main", 1, 1);
+        TileKey first = onMain(1, 1);
 
         org.json.JSONObject config = session.getStore().getConfiguration("Default");
 
@@ -788,7 +788,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     {
         session.open(Arrays.asList(pageWithATwoEndedStation()));
 
-        TileKey station = new TileKey("main", 3, 1);
+        TileKey station = onMain(3, 1);
 
         session.setStation(station, true);
 
@@ -836,7 +836,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
 
         session.open(Arrays.asList(page));
 
-        TileKey station = new TileKey("main", 3, 1);
+        TileKey station = onMain(3, 1);
 
         session.setStation(station, true);
 
@@ -865,10 +865,9 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
 
         session.open(Arrays.asList(page));
 
-        TileKey station = new TileKey("main", 3, 1);
+        TileKey station = onMain(3, 1);
 
-        session.setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStationInSession(station, "Bahnhof");
 
         org.traincontrol.automationui.StationIndex index = session.getStationIndex();
 
@@ -898,14 +897,11 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     @Test
     public void testTheIndexIsDroppedWhenTheSetupChanges() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        TileKey station = onMain(1, 1);
 
-        TileKey station = new TileKey("main", 1, 1);
-
-        session.setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStationInSession(station, "Bahnhof");
 
         assertEquals(session.getStationIndex().nameOf(station), "Bahnhof");
 
@@ -925,8 +921,7 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     {
         session.open(Arrays.asList(runOfTrack(), secondPage()));
 
-        session.getStore().createConfiguration("Only", null);
-        session.getStore().setActiveConfiguration("Only");
+        activeConfiguration("Only");
 
         session.setPointName(new TileKey("second", 1, 1), "Second Platform");
         session.save();
@@ -974,11 +969,10 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
     {
         session.open(Arrays.asList(runOfTrack(), secondPage()));
 
-        session.getStore().createConfiguration("Only", null);
-        session.getStore().setActiveConfiguration("Only");
+        activeConfiguration("Only");
 
         TileKey onSecond = new TileKey("second", 1, 1);
-        TileKey onFirst = new TileKey("main", 2, 1);
+        TileKey onFirst = onMain(2, 1);
 
         session.setPointName(onSecond, "Second Platform");
         session.getStore().setStation(onSecond, true);
@@ -1093,10 +1087,9 @@ public class testASetupIsBuiltSavedAndReopenedWhole extends AutonomySessionFixtu
         session.open(Arrays.asList(runOfTrack(), secondPage()));
         session.initialize("Evening");
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
-        session.setStation(station, true);
-        session.setPointName(station, "Platform 1");
+        namedStationInSession(station, "Platform 1");
 
         for (java.util.Map.Entry<String, Object> row : regression.testAutonomyStoreSettingsMatrix.STATION_KEY_VALUES.entrySet())
         {
