@@ -37,5 +37,6 @@ the old reviews use that form) resolves through the table below; code and docs c
 | 7a | A route that meets a train | [routes.md](behaviour/routes.md) | `MarklinRoute.execRoute`, `TrainControlUI.askAboutRouteConflict` | `regression.testARouteDoesNotThrowSwitchesUnderATrain`, `core.testAStopRouteStandsAlone` |
 | 7c | The signals a station commands: the exit guard and the entry guard | [routes.md](behaviour/routes.md) | `Layout` (`refreshProtectingSignal`, `throwEntryGuard`) | |
 | 7b | Routes that come from a file, and the pause between their commands | [routes.md](behaviour/routes.md) | `MarklinRoute` | |
+| 7d | Routes that come from a Central Station sync | [routes.md](behaviour/routes.md) | `MarklinControlStation.adoptCentralStationRoute` | `regression.testASyncKeepsARoutesArming` |
 | 8 | Things that are true of the whole system | [whole-system.md](behaviour/whole-system.md) | `Layout.fromJSON`, `AutonomyBuilder`, the configuration doors | `regression.testNoSetupEditDuringARun`, `regression.testTheImportDoorReadsAnOldFile` |
 | - | Looking up a citation | [citations.md](behaviour/citations.md) | `docs/manual-tests/triagedb.py` | `regression.testEveryCitationResolves`, `regression.testTheRecordsCountTheStore` |
