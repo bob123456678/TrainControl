@@ -41,23 +41,14 @@ public class NetworkProxy
     private volatile DatagramSocket socket;
 
     /**
-     * Whether this process may take ANY receive port instead of the Marklin one.
-     *
-     * Off, and it has to stay off for the application: a Central Station sends to 15730 and nowhere else, so a
-     * TrainControl bound anywhere else would transmit perfectly and hear nothing back, which looks like a railway that
-     * has stopped responding.  That is why this is not a silent fallback when the port is busy.
-     *
-     * It exists for tests: every class that builds a MarklinControlStation binds the port, so only one could run at a
-     * time, and none receives anything from a Central Station anyway.  Read from a system property so the battery turns
-     * it on with one flag: java -Dtraincontrol.anyReceivePort=true ...
+     * Whether this process may take ANY receive port instead of the Marklin one.  Off for the application: a Central
+     * Station sends to 15730 only, so another port would transmit but hear nothing.  For tests, which each bind the
+     * port; the battery sets -Dtraincontrol.anyReceivePort=true.
      */
     public static final boolean ANY_RECEIVE_PORT =
         Boolean.getBoolean("traincontrol.anyReceivePort");
 
-    /**
-     * The TCP port a simulation connects to: none (0), unless a test points it at a stand-in station.  Set by reflection
-     * through TEST_TCP_PORT_FIELD, as MarklinControlStation's test address is.
-     */
+    /** The TCP port a simulation connects to: 0 unless a test sets it through TEST_TCP_PORT_FIELD. */
     private static volatile int TEST_TCP_PORT = 0;
 
     /** The name of the field above, for a test that sets it. */
@@ -83,10 +74,7 @@ public class NetworkProxy
 
     private static volatile long tcpReconnectBackoffMs = TCP_RECONNECT_BACKOFF_MS;
 
-    /**
-     * For tests only: the connect timeout, reconnect tries and backoff, shortened so a claim about giving up on TCP does
-     * not wait out production's schedule.  Not a setting; `restoreTcpTimeoutsAfterATest` puts the real values back.
-     */
+    /** For tests only: shortened connect timeout, tries and backoff; restoreTcpTimeoutsAfterATest undoes it. */
     public static void setTcpTimeoutsForATest(int connectTimeoutMs, int reconnectTries, long reconnectBackoffMs)
     {
         tcpConnectTimeoutMs = connectTimeoutMs;
@@ -101,16 +89,12 @@ public class NetworkProxy
     }
 
     /**
-     * A connection that has carried nothing for this long since a frame was sent on it is taken as hung.  A frame
-     * unanswered past TCP_SUSPECT_MS draws one ping, which every station answers, so the limit is about the connection,
-     * not one frame the station leaves unanswered.  Silence alone is not, as a CS2 may send nothing unasked.
+     * A connection silent this long after a frame was sent on it is taken as hung.  A frame unanswered past
+     * TCP_SUSPECT_MS draws one ping.  Silence alone is not, as a CS2 may send nothing unasked.
      */
     private static final long TCP_ANSWER_LIMIT_MS = 3000;
 
-    /**
-     * The ping the window sends, which every station answers: the probe of a suspect connection.  Its answer is read as
-     * the window's ping's, so a latency reading taken across a probe may come out low by up to one ping interval.
-     */
+    /** The ping that probes a suspect connection; its answer may make a latency reading low by one ping interval. */
     private static final byte[] PROBE = new CS2Message(CS2Message.CAN_CMD_PING, new byte[0]).getRawMessage();
 
     /** A send unanswered this long makes the connection suspect: a Stop then goes over UDP as well. */
@@ -119,10 +103,7 @@ public class NetworkProxy
     /** How often a TCP read wakes to check the answer limit. */
     private static final int TCP_READ_WAKE_MS = 1000;
 
-    /**
-     * A frame counts as received once the connection carried something this long after it was sent: an answer to an
-     * earlier frame can arrive after a later one went out, so a newer frame needs this margin.
-     */
+    /** A frame counts as received once the connection carried something this long after it was sent. */
     private static final long CONFIRM_MARGIN_NS = 250L * 1000000L;
 
     /** The gap between two sensor queries: the Link S88 answers each within about 20 ms, 60 take 0.3 s. */
@@ -172,9 +153,8 @@ public class NetworkProxy
     private volatile boolean stopRequested;
 
     /**
-     * One transport is live at a time.  While TCP runs, the UDP socket stays bound, so a second copy of the program
-     * still finds the port taken, and its datagrams are read and set aside, never delivered.  Guards udpLive and
-     * udpSetAside.
+     * One transport is live at a time; UDP stays bound under TCP so a second copy finds the port taken.  Guards
+     * udpLive.
      */
     private final Object udpLock = new Object();
 
@@ -199,9 +179,7 @@ public class NetworkProxy
     private volatile Map<Integer, Integer> listedDevice = new java.util.HashMap<>();
     private volatile Map<Integer, Integer> savedDevice = new java.util.HashMap<>();
 
-    // Each contact asked, and when a real event for it came since its query (0 for none): an answer, or a late copy,
-    // within RESYNC_WAIT_NS of that event is older than it.  Forgotten RESYNC_WAIT_NS after the last ask; guards asks
-    // and askEnded
+    // Each contact asked, and its first real event since the query (0 for none); guards asks and askEnded
     private final Map<Integer, Long> overtaken = new ConcurrentHashMap<>();
 
     private int asks;
@@ -248,27 +226,20 @@ public class NetworkProxy
         this.transmitPort = NetworkProxy.TX_PORT;
     }
 
-    /**
-     * The TCP port a simulation is given: 0, so it tries no TCP (there is no station, and a refused connect to this
-     * machine takes 2 s on Windows), unless a test set TEST_TCP_PORT.
-     */
+    /** The TCP port a simulation gets: 0 unless a test set TEST_TCP_PORT (a refused local connect takes 2 s). */
     public static int simulationTcpPort()
     {
         return TEST_TCP_PORT;
     }
 
     /**
-     * The receive socket: the Marklin port, or any free one when ANY_RECEIVE_PORT says so.  One method because there
-     * are two call sites, the constructor and the reopen in sendMessage, and a mode applied to only one would give a
-     * test a socket that worked until the first send failure.
+     * The receive socket: the Marklin port, or any free one under ANY_RECEIVE_PORT; shared by constructor and reopen.
      */
     private static DatagramSocket openReceiveSocket() throws IOException
     {
-        // Port 0 asks the operating system for any free port.
         DatagramSocket opened = ANY_RECEIVE_PORT ? new DatagramSocket() : new DatagramSocket(NetworkProxy.RX_PORT);
 
-        // Room for the frames that arrive while the listener is held up; a full buffer drops them, sensor changes
-        // included (OB-421).  A hint: the operating system may grant less, and the listener runs on whatever it got.
+        // Room for frames arriving while the listener is held up (OB-421); a hint, the system may grant less
         try
         {
             opened.setReceiveBufferSize(RECEIVE_BUFFER_BYTES);
@@ -282,9 +253,8 @@ public class NetworkProxy
     }
 
     /**
-     * Moves the frames onto a TCP connection to the station's port when it takes one; otherwise UDP carries on as
-     * before, and the log says why.  Asked for a CS3 only, so a CS2 runs exactly as before (FR-186).  Before setModel,
-     * setModel connects.  A port of 0 does nothing.
+     * Moves the frames onto TCP to the station's port when it takes one, else UDP carries on and the log says why.
+     * CS3 only (FR-186).  Before setModel, setModel connects.  A port of 0 does nothing.
      */
     public void connectOverTcp(int port)
     {
@@ -305,10 +275,7 @@ public class NetworkProxy
         startTcp();
     }
 
-    /**
-     * Connects and starts the TCP listener; on a failure logs it.  UDP stays live until the connection is made, as a
-     * connect can hang for tcpConnectTimeoutMs.
-     */
+    /** Connects and starts the TCP listener, logging a failure; UDP stays live until connected. */
     private void startTcp()
     {
         Socket connected;
@@ -335,11 +302,7 @@ public class NetworkProxy
         reading.start();
     }
 
-    /**
-     * Waits, at most tcpConnectTimeoutMs, until the UDP listener has delivered what the socket held (a datagram the
-     * socket sends itself is read after them), so no frame from before the connect is set aside; one the station sends
-     * while the connect is made may still come twice, or not at all.
-     */
+    /** Waits, at most tcpConnectTimeoutMs, until the UDP listener has delivered what the socket held. */
     private void awaitTheBacklog()
     {
         try
@@ -435,10 +398,9 @@ public class NetworkProxy
     private ReadMessages reader;
 
     /**
-     * Closes the socket, which is what ends the listener.  Nothing needs this while the application runs (the thread is
-     * a daemon); it lets a caller that finishes with a control station give the port back.  The TCP connection is
-     * closed first, not under the lock, which a send stuck in a write may hold, and again under it, in case a reconnect
-     * had just put up a new one; a later send uses UDP.
+     * Closes the socket, which ends the listener, so a caller that finishes with a control station gives the port back.
+     * The TCP connection is closed first, outside the lock a stuck write may hold, and again under it; later sends use
+     * UDP.
      */
     public void stopListening()
     {
@@ -488,27 +450,18 @@ public class NetworkProxy
     }
 
     /**
-     * Makes sure something is listening on the socket, starting a listener if nothing is.
-     *
-     * The other half of the reopen: a listener stops only when the socket closes, and `sendMessage` reopens the socket,
-     * which brings transmission back but, without this, leaves an open socket with nothing on it: able to transmit but
-     * deaf.  One method owns the question so the two halves cannot drift apart.
+     * Makes sure something is listening on the socket, starting a listener if nothing is: the other half of the reopen.
      */
     private synchronized void listen()
     {
         if (this.reader != null && this.reader.isAlive()) return;
 
-        // Not before there is a model to read into: the model is set AFTER this class is constructed, and the control
-        // station's constructor transmits a ping and a power command before it gets there, while `ReadMessages.run()`
-        // opens with `model.initMessageBuffer()`.  Reaching here in that window needs a closed socket, so this is a
-        // precondition rather than a fault anybody has seen.
+        // Not before there is a model: ReadMessages.run() opens with model.initMessageBuffer()
         if (this.model == null) return;
 
         this.reader = new ReadMessages();
 
-        // A DAEMON, because it exists only to serve a running application: its only exit condition is the socket
-        // closing, so as an ordinary thread it kept the JVM alive after an embedding caller (an example, a test) was
-        // done.
+        // A daemon: it exits only when the socket closes, and must not keep the JVM alive
         this.reader.setName("cs2-can-listener");
         this.reader.setDaemon(true);
         this.reader.start();
@@ -598,10 +551,7 @@ public class NetworkProxy
         return ((frame[0] & 0x01) << 7) | ((frame[1] & 0xFF) >> 1);
     }
 
-    /**
-     * Stop, Halt, a locomotive's emergency stop or speed 0 (OB-432): what may overtake.  Go may not, or the power comes
-     * on before a speed 0 sent ahead of it.
-     */
+    /** Stop, Halt, emergency stop or speed 0 (OB-432): what may overtake.  Go may not, or power precedes a speed 0. */
     private static boolean isUrgentStop(byte[] frame)
     {
         if (frame.length < 11) return false;
@@ -664,7 +614,6 @@ public class NetworkProxy
             {
                 this.socket = openReceiveSocket();
 
-                // And something to listen on it.
                 listen();
             }
 
@@ -672,8 +621,7 @@ public class NetworkProxy
         }
         catch (IOException e)
         {
-            // The model is set AFTER this class is constructed, and the control station's constructor transmits before
-            // it gets there, so a send can fail with no model to log to.
+            // No model yet at start-up: the control station's constructor transmits before setModel
             if (this.model != null)
             {
                 this.model.logf(
@@ -719,7 +667,6 @@ public class NetworkProxy
                 return;
             }
 
-            // Send message to listener
             CANMessage message = model.createMessage(buffer);
 
             if (!learn(buffer, message)) model.receiveMessage(message);
@@ -742,11 +689,9 @@ public class NetworkProxy
     }
 
     /**
-     * Once learnsDevices is set, notes a contact's device from a sensor event, a change of state; a frame with the
-     * state unchanged is an answer to a query, counted for the pass that asked.  True, and the frame not to be
-     * delivered, when it is such an answer older than a real event for the contact since its query, less than
-     * RESYNC_WAIT_NS ago (OB-418).  Stamps `message` with the passes under way before an answer can end its pass, as
-     * the frame is parsed on another thread (OB-490).
+     * Once learnsDevices is set, notes a contact's device from a sensor event (a state change); a frame with the state
+     * unchanged is an answer, counted for its pass.  True, and not delivered, when it is an answer older than a real
+     * event for the contact since its query (OB-418).  Stamps `message` with the passes under way (OB-490).
      */
     private boolean learn(byte[] frame, CANMessage message)
     {
@@ -788,10 +733,9 @@ public class NetworkProxy
     }
 
     /**
-     * Asks each sensor whose device is known (deviceOf) for its state, on the live transport, and logs the counts;
-     * returns once every query is answered, or RESYNC_WAIT_NS after the last.  Over UDP twice, as a resync does.  For a
-     * CS3's sync (OB-418): from the first call on, events teach their devices also to a proxy never asked for TCP.
-     * Before setModel, only that.
+     * Asks each sensor whose device is known (deviceOf) for its state on the live transport and logs the counts;
+     * returns when every query is answered or RESYNC_WAIT_NS after the last.  Over UDP twice.  Events teach devices
+     * from the first call on, for a CS3's sync (OB-418).  Before setModel, only that.
      */
     public void syncSensors()
     {
@@ -821,8 +765,7 @@ public class NetworkProxy
     }
 
     /**
-     * The device a contact is asked at: the one a real event showed, else the station's device list's, else the one
-     * saved; null when none.
+     * The device a contact is asked at: a real event's, else the station's list's, else the saved one; null if none.
      */
     public Integer deviceOf(int contact)
     {
@@ -834,9 +777,8 @@ public class NetworkProxy
     }
 
     /**
-     * Whether a CS3's state confirmation after a connect or reconnect is under way, until its wait ends: a sensor
-     * change then updates the state but fires no route (D133).  A later sync's pass holds nothing (D139).  Never for a
-     * CS2, which is never asked.
+     * Whether a CS3's state confirmation after a connect or reconnect is under way: a sensor change then updates the
+     * state but fires no route (D133).  Never for a CS2.
      */
     public boolean isConfirming()
     {
@@ -869,11 +811,9 @@ public class NetworkProxy
     }
 
     /**
-     * Asks each sensor the model knows for its state, on the transport just made live, as frames missed meanwhile are
-     * gone.  The station answers with the state as it answers, on the same transport and after any event it sent
-     * before, so no answer overtakes a newer event.  Only a contact whose device is known (deviceOf) is asked.
-     * `passes` above 1 asks again RESYNC_AGAIN_NS after each start, for a UDP copy that lands after the answer.  On a
-     * thread of its own that stops when the live transport changes.
+     * Asks each sensor the model knows (deviceOf) for its state on the transport just made live, as frames missed
+     * meanwhile are gone.  `passes` above 1 asks again RESYNC_AGAIN_NS after each start, for a late UDP copy.  Runs on
+     * a thread of its own that stops when the live transport changes.
      */
     private void resync(boolean overTcp, int passes)
     {
@@ -927,10 +867,7 @@ public class NetworkProxy
         }
     }
 
-    /**
-     * One pass: the queries, paced, then the answers awaited until `until`, or for RESYNC_WAIT_NS when 0; logged, also
-     * when a new transport cut it short, but not after a stop, under `key`.  False once superseded.
-     */
+    /** One pass: paced queries, then answers awaited until `until` (RESYNC_WAIT_NS when 0).  False once superseded. */
     private boolean askOnce(boolean overTcp, int epoch, long until, String key)
     {
         synchronized (this.passLock)
@@ -1027,9 +964,8 @@ public class NetworkProxy
     }
 
     /**
-     * Writes a sensor query or the probe to the connection; false when it was not written.  Not counted as a command
-     * that may not have arrived, and no start of the answer clock: a resync runs again on the next live transport, and
-     * neither left unanswered says anything of the connection on its own.
+     * Writes a sensor query or the probe; false when not written.  Neither counts as a lost command or starts the
+     * clock.
      */
     private synchronized boolean sendQuery(byte[] query)
     {
@@ -1046,7 +982,6 @@ public class NetworkProxy
         }
         catch (IOException e)
         {
-            // As in sendMessage: the listener, woken by the close, replaces the connection
             startReplacing(reasonOf(e));
             closeQuietly(connection);
             return false;
@@ -1092,10 +1027,7 @@ public class NetworkProxy
         }
     }
 
-    /**
-     * Delivers the frames of one connection, reassembled at 13 bytes however the reads split them, and returns why the
-     * connection ended.
-     */
+    /** Delivers one connection's frames, reassembled at 13 bytes however the reads split them; returns why it ended. */
     private String readUntilLost(Socket connection, byte[] frame)
     {
         int filled = 0;
@@ -1154,15 +1086,13 @@ public class NetworkProxy
     }
 
     /**
-     * Replaces a lost connection: up to tcpReconnectTries new ones, then UDP for the rest of the session.  A
-     * connection that never carried a frame goes straight to UDP.  UDP is live meanwhile and carries every command at
-     * once; nothing is sent again, as another copy or the handset may have commanded since, so the frames that may not
-     * have arrived are only counted in the log (FR-186).  The sensors are resynced on each transport made live.
+     * Replaces a lost connection: up to tcpReconnectTries new ones, then UDP for the session; one that never carried a
+     * frame goes straight to UDP.  UDP carries every command meanwhile and nothing is sent again, so possibly lost
+     * frames are only counted (FR-186).  Sensors are resynced on each transport made live.
      */
     private void recover(Socket lost, String reason)
     {
-        // Reset, not closed in order, so what we had not yet sent is discarded and never goes out late.  Whether the
-        // station still reads frames its kernel had already received is unconfirmed: on Linux (the CS3's) it may.
+        // Reset, so unsent data is discarded and never goes out late.
         try
         {
             lost.setSoLinger(true, 0);
@@ -1291,9 +1221,8 @@ public class NetworkProxy
 
             try
             {
-                // Receive packets as they come in.  A failure must not end this loop: one error would leave
-                // TrainControl able to transmit but deaf (no feedback, echoes or power state, and path validation
-                // failing).  Only a closed socket stops it.
+                // A failure must not end this loop, or TrainControl would transmit but be deaf; only a closed socket
+                // stops it.
                 while (!socket.isClosed())
                 {
                     try
@@ -1301,9 +1230,8 @@ public class NetworkProxy
                         // Wait to receive a datagram
                         socket.receive(packet);
 
-                        // Only a datagram of the right LENGTH is parsed: one buffer is reused for every receive, so a
-                        // short datagram would be parsed as its own header followed by whatever the last message left
-                        // in the tail, a stale command re-applied that the duplicate-suppression window cannot catch.
+                        // Only a datagram of the right length is parsed: the buffer is reused, so a short one would
+                        // re-apply a stale command.
                         if (packet.getLength() == buffer.length) deliverUdp(buffer);
                         else if (packet.getLength() == 1) caughtUp.countDown();
 

@@ -21,9 +21,8 @@ public class Point
     /**
      * The side a train standing here came IN by, which is where its tail lies.
      *
-     * Facing cannot answer this: a train faces the way it will leave, and once turned around its tail points the same
-     * way it faces, so inferring the tail from the heading finds the wrong track.  A compass side rather than an edge,
-     * because an edge is directional and a tail is not.  Null when nothing has said.
+     * Facing cannot answer this: a train faces the way it will leave, so inferring the tail from the heading finds the
+     * wrong track.  A compass side, not an edge, because a tail is not directional.  Null when nothing has said.
      */
     private String arrivedFrom;
 
@@ -45,10 +44,7 @@ public class Point
     private Integer uniqueId;
     private boolean active;
 
-    /**
-     * Whether full autonomy may CHOOSE this station as a destination; true by default.  Separate from active: this only
-     * withholds the station from automatic selection, so a route picked by hand and Return Home still reach it.
-     */
+    /** Whether full autonomy may CHOOSE this station as a destination; picked routes and Return Home still reach it. */
     private boolean autoDestination = true;
 
     /** Whether a trip must end here rather than run through (FR-111); see `isStopOnly`. */
@@ -60,9 +56,8 @@ public class Point
     private Set<Locomotive> excludedLocs;
 
     /**
-     * Whether `excludedLocs` names the ONLY locomotives allowed here rather than the ones kept out (FR-121).
-     * `excludes` reads the list in its mode, so a locomotive added to the database later is excluded too; turning the
-     * mode back keeps the choice.
+     * Whether `excludedLocs` names the ONLY locomotives allowed here, not the ones kept out (FR-121); `excludes` reads
+     * it.
      */
     private boolean allowOnlyListed = false;
 
@@ -76,15 +71,11 @@ public class Point
 
     /**
      * The locomotive this station is the home of, or null.  Held as the object; the file holds its name (the boundary
-     * is `Layout.parseAuto` and `toJSON`).  An assignment outlives placement: a locomotive not on the graph keeps its
-     * station and is ignored while absent, and a name that resolves to no locomotive is reported and cleared on load.
+     * is `Layout.parseAuto` and `toJSON`).  An assignment outlives placement: an absent locomotive keeps its station.
      */
     private Locomotive homeLoc;
 
-    /**
-     * Whether the home was set facing the way this copy faces, so Return Home brings its locomotive back to a copy
-     * facing that way (OB-282).  False means the home is the square, whichever copy.
-     */
+    /** Whether the home was set facing the way this copy faces, so Return Home uses a copy facing that way (OB-282). */
     private boolean homeFacingFixed;
 
     /**
@@ -116,8 +107,7 @@ public class Point
             );
         }
 
-        // Fail where the mistake is made: toJSON does Integer.valueOf(s88), so a non-numeric value must be refused
-        // here, in a public constructor, rather than at save time far from the cause.
+        // Refuse a non-numeric s88 here: toJSON does Integer.valueOf(s88), and save time is far from the cause.
         if (s88 != null)
         {
             try
@@ -185,8 +175,7 @@ public class Point
     }
 
     /**
-     * @param status false to keep autonomy from choosing this station of its own accord.  Routes the
-     *        user picks, and Return Home, are unaffected.
+     * @param status false to keep autonomy from choosing this station; picked routes and Return Home are unaffected.
      */
     public void setAutoDestination(boolean status)
     {
@@ -240,8 +229,7 @@ public class Point
      */
     public Point setPriority(Integer value)
     {
-        // Null means "no priority" (0): the priority dialog sends null when the box is cleared, and the path comparator
-        // and toJSON's `!= 0` need a number.
+        // Null means "no priority" (0): the dialog sends null when cleared.
         this.priority = (value == null) ? 0 : value;
 
         return this;
@@ -289,8 +277,8 @@ public class Point
     }
 
     /**
-     * Removes a locomotive from the exclusion set, if it is in it.  A plain removal is safe because MarklinLocomotive
-     * hashes by identity, so its hash cannot move while it sits in this set.
+     * Removes a locomotive from the exclusion set, if present.  Plain removal is safe: MarklinLocomotive hashes by
+     * identity.
      *
      * @param l the locomotive to stop excluding
      * @return true if it was excluded and no longer is
@@ -464,8 +452,6 @@ public class Point
     }
 
     /**
-     * Records the route a train arrived along, so its tail can be followed past a junction.
-     *
      * @param path the edges in the order they were driven, or null to forget
      */
     public void setArrivedAlong(java.util.List<Edge> path)
@@ -477,17 +463,15 @@ public class Point
     public Point setLocomotive(Locomotive l)
     {
         final Locomotive previousOccupant = this.getCurrentLocomotive();
-        // One locomotive, one place, enforced here because this is the only door: it is swept off every other Point
-        // first, BEFORE this Point's monitor is taken, since holding one Point's lock while taking another's can
-        // deadlock two placements.  Sweep and assignment are not atomic (one thread places a given locomotive at a
-        // time); if that changes, the fix is a placement lock, not a wider monitor.
+        // One locomotive, one place, enforced at this only door: swept off every other Point BEFORE this Point's
+        // monitor is taken (holding two Point locks can deadlock).  Sweep and assignment are not atomic; if that
+        // matters, add a placement lock, not a wider monitor.
         if (l != null && this.layout != null) this.layout.clearLocomotiveExcept(l, this);
 
         assign(l);
 
-        // The signal follows the platform through this one door: red while it is claimed (a standing train or a locked
-        // path that reserved it, not one only passing through - OB-315, `Layout.onlyPassing`), green when not, and
-        // never red while an active path holds it green (OB-340).
+        // The signal follows the platform through this one door: red while claimed (OB-315), green when not, never red
+        // while an active path holds it green (OB-340).
         if (this.layout != null) this.layout.refreshProtectingSignal(this);
 
         // AND THE TAIL BELONGS TO THE TRAIN THAT LEFT.
@@ -507,9 +491,9 @@ public class Point
     }
 
     /**
-     * Puts a locomotive on this Point without taking it off anywhere else: for RESERVING, where a locked path holds
-     * every point along it at once and the sweep of `setLocomotive` would tear the reservation down.  Package-private:
-     * only the layout locks and unlocks paths.
+     * Puts a locomotive on this Point without taking it off elsewhere, for RESERVING: a locked path holds every point
+     * at once and `setLocomotive`'s sweep would tear it down.  Package-private: only the layout locks and unlocks
+     * paths.
      */
     Point reserve(Locomotive l)
     {
@@ -526,8 +510,8 @@ public class Point
 
         this.currentLoc = l;
 
-        // Both clear on a change of occupant, as in setLocomotive; a locomotive reserving the square it stands on keeps
-        // its tail.
+        // Both clear on a change of occupant, as in setLocomotive; a locomotive reserving its own square keeps its
+        // tail.
         if (l != previousOccupant)
         {
             this.arrivedFrom = null;
@@ -538,28 +522,27 @@ public class Point
     }
 
     /**
-     * Which physical piece of track this Point is part of, or null when it stands alone.  A square emitted as several
-     * Points (one per arrival side) shares one block, so a train on one copy occupies its twins.  Not the s88:
-     * different places legitimately share a sensor.  Set by the builder.
+     * Which physical piece of track this Point is part of, or null when alone: the copies of a square share one block,
+     * so a train on one copy occupies its twins.  Not the s88 (places legitimately share a sensor).  Set by the
+     * builder.
      */
     private String block;
 
     /**
-     * The square of the diagram this Point is a copy of, as the build names it, or null on a Point written by hand.
-     * A rebuild carries each train by it: a rename can hand a Point's name to another square.
+     * The square of the diagram this Point is a copy of, as the build names it, or null; a rebuild carries trains by
+     * it.
      */
     private String square;
 
     /**
-     * The accessories thrown to red while this platform is claimed.  A station's protection, not a side's: every copy
-     * of a square carries the same ones.  A list because a platform reachable from two directions needs a signal on
-     * each approach; they are commanded together.  Never null.
+     * The accessories thrown red while this platform is claimed; the same on every copy of a square.  A list because a
+     * platform reachable from two directions needs a signal on each approach.  Never null.
      */
     private final List<String> protectingSignals = new ArrayList<>();
 
     /**
-     * The accessories thrown red when a train arrives here as the end of its journey: the entry guard (FR-096).  Never
-     * turned green here; the next route that needs a signal sets it.  Carried by every copy of the square.  Never null.
+     * Accessories thrown red when a train arrives here as the end of its journey: the entry guard (FR-096).  Never
+     * turned green here.  Carried by every copy of the square.  Never null.
      */
     private final List<String> entrySignals = new ArrayList<>();
 
@@ -622,9 +605,8 @@ public class Point
     }
 
     /**
-     * Where the FR-001 rule looks for who is standing on a watched square.  The two sources cannot be merged: the LIVE
-     * railway (`onTheLiveBlock`, the authority `isPathClear` and the why-window use) and a PLANNED state, which the
-     * staging planner answers from its own shadow occupancy.  Splitting the source out keeps the rule in one place.
+     * Where the FR-001 rule looks for who is standing on a watched square: the LIVE railway (`onTheLiveBlock`) or a
+     * PLANNED state the staging planner answers from its shadow occupancy.
      */
     public interface Occupancy
     {
@@ -636,10 +618,7 @@ public class Point
         boolean heldBySomebodyOtherThan(Point track, Locomotive exempt);
     }
 
-    /**
-     * The live railway's answer: the whole BLOCK, not just the named Point, since a train on another copy of the
-     * watched square is standing on it.
-     */
+    /** The live railway's answer: the whole BLOCK, since a train on another copy of the watched square is on it. */
     public static Occupancy onTheLiveBlock()
     {
         return (track, exempt) ->
@@ -651,9 +630,8 @@ public class Point
     }
 
     /**
-     * The square holding this one back, or null when none is (FR-001), asked of every square a route arrives at
-     * (OB-295).  The one expression of the rule: callers supply only where to look for occupancy.  The train LEAVING
-     * the watched square is exempt.  No caller fences the rule, in any mode.
+     * The square holding this one back, or null (FR-001), asked of every square a route arrives at (OB-295).  Callers
+     * supply only where to look for occupancy; the train LEAVING the watched square is exempt.
      *
      * @param destination the square being arrived at, or any square on the way; null is held back by nothing
      * @param arriving the locomotive arriving, exempt where it is itself the occupant
@@ -784,15 +762,10 @@ public class Point
         return this.layout.locomotiveInBlock(this.block, this);
     }
 
-    /**
-     * The layout this Point belongs to, set by the layout as it takes the Point; null on a Point built and not added.
-     */
+    /** The layout this Point belongs to, set as the layout takes it; null on a Point built and not added. */
     private Layout layout;
 
-    /**
-     * The layout this Point belongs to, or null when it was built and never added.  Package-private: for rules inside
-     * the automation model that ask about a Point's neighbors.
-     */
+    /** The layout this Point belongs to, or null.  Package-private: for rules that ask about a Point's neighbors. */
     Layout getLayout()
     {
         return this.layout;
@@ -885,8 +858,8 @@ public class Point
     }
     
     /**
-     * Whether a trip may end here but not run through (FR-111).  Every copy of a square says the same.  Unlike a
-     * terminus, nothing turns a train round here.  Return Home alone is exempt: `Layout.stopOnlyStationRunThrough`.
+     * Whether a trip may end here but not run through (FR-111).  Every copy of a square says the same; nothing turns a
+     * train round here.  Return Home alone is exempt: `Layout.stopOnlyStationRunThrough`.
      */
     public boolean isStopOnly()
     {
@@ -906,8 +879,8 @@ public class Point
     }
 
     /**
-     * Assigns this station to a locomotive, or clears it with null.  Not validated here: the file holds a name, and one
-     * that matches nothing is reported on load.
+     * Assigns this station to a locomotive, or clears it with null.  Not validated here: a name that matches nothing is
+     * reported on load.
      *
      * @param homeLoc the locomotive, or null
      */
@@ -966,9 +939,9 @@ public class Point
     }
 
     /**
-     * The same, writing the given locomotive as the one standing here - or none, for null - rather than whichever this
-     * point records.  A train under way is recorded on every point of its locked path, and a fold writes it on the one
-     * point it is kept at.  The side it arrived by and its road are written only for the train this point records.
+     * The same, writing the given locomotive as the one standing here (or none, for null) rather than the one this
+     * point records: a fold writes a train under way on the one point it is kept at.  The arrival side and road are
+     * written only for the train this point records.
      *
      * @param standing the locomotive to write as standing here, or null
      * @return the point
@@ -1006,8 +979,7 @@ public class Point
             jsonObj.put("reversing", this.isReversing);
         }
 
-        // Written as well as read (parseAuto takes it back).  One signal is a bare string and several an array: the
-        // single case is what older versions read.
+        // One signal is a bare string and several an array: the single case is what older versions read.
         if (this.protectingSignals.size() == 1)
         {
             jsonObj.put("protectingSignal", this.protectingSignals.get(0));
@@ -1027,15 +999,13 @@ public class Point
             jsonObj.put("entrySignal", new JSONArray(this.entrySignals));
         }
 
-        // Written because parseAuto reads it: without it a re-imported graph splits every square into independent
-        // Points.
+        // Without it a re-imported graph splits every square into independent Points.
         if (this.block != null) jsonObj.put("block", this.block);
 
         // Read back by parseAuto too
         if (this.square != null) jsonObj.put("square", this.square);
 
-        // written only when it differs from the default, so a file gains no noise from a setting
-        // nobody has touched
+        // Only when it differs from the default.
         if (!this.autoDestination) jsonObj.put("autoDestination", this.autoDestination);
 
         if (this.stopOnly) jsonObj.put(RUN_THROUGH, false);
@@ -1066,8 +1036,7 @@ public class Point
             
             locObj.put("name", standing.getName());
             locObj.put("reversible", standing.isReversible());
-            // Written only when it is a speed (MT-233): zero means "not set" to parseAuto, and absence says the same
-            // thing without being misread, as arrivalFunc and departureFunc below do.
+            // Only when it is a speed (MT-233): zero means "not set" to parseAuto.
             if (standing.getPreferredSpeed() > 0) locObj.put("speed", standing.getPreferredSpeed());
             
             if (standing.getArrivalFunc() != null)
@@ -1099,15 +1068,14 @@ public class Point
                 locNames.add(l.getName());
             }
 
-            // SORTED so the file is the same file when nothing changed: Locomotive has no hashCode override, so set
-            // iteration order differs on every JVM run and merely opening and saving a layout rewrote the array.
+            // SORTED so an unchanged layout saves the same file: Locomotive has no hashCode, so set order varies per
+            // run.
             java.util.Collections.sort(locNames);
 
             jsonObj.put("excludedLocs", locNames);
         }
 
-        // The list's mode, written only where it names the locomotives allowed (FR-121) - an empty list then
-        // keeps every locomotive out, so the mode is written whether the list is or not
+        // Only where it names the locomotives allowed (FR-121): an empty list then keeps every locomotive out.
         if (this.allowOnlyListed) jsonObj.put(EXCLUDED_LOCS_MODE, ALLOW_ONLY_LISTED);
 
         if (!this.blockedBy.isEmpty())
@@ -1126,8 +1094,7 @@ public class Point
             jsonObj.put("arrivedFrom", this.arrivedFrom);
         }
 
-        // And the road it came in on, which the side alone cannot say past a junction: [start, end] name pairs, the
-        // form `Layout.roadNamed` reads.
+        // And the road it came in on, which the side cannot say past a junction: name pairs (`Layout.roadNamed`).
         String road = Layout.namesOfRoad(this.arrivedAlong);
 
         if (road != null && standing != null && standing == this.currentLoc)
