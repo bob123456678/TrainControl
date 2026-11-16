@@ -75,7 +75,7 @@ public class testFollowingTheStation
     public static void setUpClass() throws Exception
     {
         // It writes the real preference node, which only docs/tools/one.sh replaces with a node of its own
-        if (System.getProperty(org.traincontrol.util.Util.PREFERENCES_PROPERTY) == null)
+        if (System.getProperty(org.traincontrol.util.Util.PREFERENCES_PROPERTY, "").trim().isEmpty())
             throw new org.testng.SkipException("needs docs/tools/one.sh");
 
         layoutFolder = Files.createTempDirectory("tc-following").toFile();

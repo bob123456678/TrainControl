@@ -64,7 +64,7 @@ public class testCS3SensorStates
     public static void setUpClass() throws Exception
     {
         // It writes the real preference node, which only docs/tools/one.sh replaces with a node of its own
-        if (System.getProperty(org.traincontrol.util.Util.PREFERENCES_PROPERTY) == null)
+        if (System.getProperty(org.traincontrol.util.Util.PREFERENCES_PROPERTY, "").trim().isEmpty())
             throw new org.testng.SkipException("needs docs/tools/one.sh");
 
         // The diagram is read from a folder, through the setting a user picks it with
