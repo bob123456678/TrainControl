@@ -284,16 +284,19 @@ public class testTheAutonomyEditorsTriageNotes
     // ------------------------------------------------------------------------------------------------ OB-438
 
     /**
-     * The column is headed Debugging Tools in every language, Path Type is a black item label, and the radios share
-     * the left edge of the label and buttons around them.
+     * The column is headed Path Debugging in every language, its radios read Auto Path and Manual Path under no label of
+     * their own (D172; Adam: "cut "path type" label and change "Auto" to "Auto path" and "Manual" to "Manual Path""),
+     * and they share the left edge of the buttons around them.
      *
-     * MUTATION: put `autosetup.ui.titleCap` back to Autonomy Tools, make Path Type `UiStyle.heading`, or take the zero
-     * margin and border off the radios, and this fails.
+     * MUTATION: put `autosetup.ui.titleCap` back to Debugging Tools, put the Path Type label back over the radios, or
+     * take the zero margin and border off the radios, and this fails.
      */
     @Test(timeOut = 120000)
     public void testDebuggingToolsAndPathTypeAreBlackAndAligned() throws Exception
     {
-        assertEquals(I18n.t("autosetup.ui.titleCap"), "Debugging Tools");
+        assertEquals(I18n.t("autosetup.ui.titleCap"), "Path Debugging");
+        assertEquals(I18n.t("autosetup.ui.pathTypeAuto"), "Auto Path");
+        assertEquals(I18n.t("autosetup.ui.pathTypeManual"), "Manual Path");
 
         for (String language : new String[] {"da", "de", "es", "fr", "it", "nl", "pl"})
         {
@@ -305,21 +308,19 @@ public class testTheAutonomyEditorsTriageNotes
 
         layOut();
 
-        JLabel pathType = Components.find(panel, JLabel.class, l -> I18n.t("autosetup.ui.labelPathType").equals(l.getText()));
+        Component why = Components.withText(panel, I18n.t("autosetup.ui.toolWhy"));
 
-        assertNotNull(pathType, "no Path Type label");
-        assertEquals(pathType.getForeground(), java.awt.Color.BLACK, "Path Type is not black");
-        assertEquals(pathType.getFont(), UiStyle.LABEL_FONT, "Path Type is not bold-weight like the item labels");
+        assertTrue(top(radio("autosetup.ui.pathTypeAuto")) - (top(why) + Components.onTheEventThread(why::getHeight)) < 10,
+            "something stands between Why not Moving? and Auto Path: the Path Type label is back");
 
-        int edge = left(pathType);
+        int edge = left(Components.withText(panel, I18n.t("autosetup.ui.toolTest")));
 
-        assertEquals(left(radio("autosetup.ui.pathTypeAuto")), edge, "Auto is not flush with Path Type");
-        assertEquals(left(radio("autosetup.ui.pathTypeManual")), edge, "Manual is not flush with Path Type");
+        assertEquals(left(radio("autosetup.ui.pathTypeAuto")), edge, "Auto Path is not flush with Test a path");
+        assertEquals(left(radio("autosetup.ui.pathTypeManual")), edge, "Manual Path is not flush with Test a path");
         assertEquals(left(StationDoors.part(panel, "autonomy.pickStations", Component.class)), edge,
             "Bulk Edit... is not flush with the radios");
 
         Component test = Components.withText(panel, I18n.t("autosetup.ui.toolTest"));
-        Component why = Components.withText(panel, I18n.t("autosetup.ui.toolWhy"));
 
         int radiosGap = top(radio("autosetup.ui.pathTypeManual"))
             - (top(radio("autosetup.ui.pathTypeAuto")) + Components.onTheEventThread(() -> radio("autosetup.ui.pathTypeAuto").getHeight()));

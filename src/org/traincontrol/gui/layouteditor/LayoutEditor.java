@@ -1652,8 +1652,6 @@ public class LayoutEditor extends PositionAwareJFrame
                 ((GroupLayout) formPane.getLayout()).replace(autonomyVisibility, this.showAddressCheckbox);
 
                 autonomyVisibility = null;
-
-                jSeparator1.setVisible(true);
             }
 
             // And the findings come out from under the diagram, and the field is cleared, or coming back would skip the
@@ -1807,9 +1805,6 @@ public class LayoutEditor extends PositionAwareJFrame
                 visibility.setOpaque(false);
 
                 ((GroupLayout) formPane.getLayout()).replace(this.showAddressCheckbox, visibility);
-
-                // No line over Save: the room Grayed-Out Icons takes, so Cancel still fits a 768-pixel screen (OB-399)
-                jSeparator1.setVisible(false);
 
                 this.showAddressCheckbox.setAlignmentX(Component.LEFT_ALIGNMENT);
                 autonomyPanel.getShowLengths().setAlignmentX(Component.LEFT_ALIGNMENT);

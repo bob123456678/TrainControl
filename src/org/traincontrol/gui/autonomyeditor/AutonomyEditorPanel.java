@@ -431,11 +431,7 @@ public class AutonomyEditorPanel extends JPanel
     /** The last Why Not Moving? square, so switching Path Type asks again (MT-434). */
     private TileKey lastWhyTile;
 
-    /**
-     * Which tier the routing check answers for, and the label that names the pair; Auto by default.
-     */
-    private JLabel pathTypeLabel;
-
+    /** Which tier the routing check answers for; Auto Path by default. */
     private JRadioButton pathTypeAuto;
 
     private JRadioButton pathTypeManual;
@@ -675,9 +671,6 @@ public class AutonomyEditorPanel extends JPanel
 
         // Which tier the check answers for (Adam: **"Radio button Auto or Manual dictates what is in scope for the
         // routing check."**): only which stations a train may be sent to differs.
-        // An item label: black, as only section headings are blue (OB-438)
-        pathTypeLabel = UiStyle.label(I18n.t("autosetup.ui.labelPathType"));
-
         pathTypeAuto = new JRadioButton(I18n.t("autosetup.ui.pathTypeAuto"), true);
         pathTypeManual = new JRadioButton(I18n.t("autosetup.ui.pathTypeManual"), false);
 
@@ -685,25 +678,18 @@ public class AutonomyEditorPanel extends JPanel
         pathType.add(pathTypeAuto);
         pathType.add(pathTypeManual);
 
-        // On the label and both radios, so either half shows it.
         String pathTypeTip = wrapped(I18n.t("autosetup.ui.tooltipPathType"));
 
-        pathTypeLabel.setToolTipText(pathTypeTip);
         pathTypeAuto.setToolTipText(pathTypeTip);
         pathTypeManual.setToolTipText(pathTypeTip);
 
-        // Flush with the buttons and label above and below, so the column's left edge is one line (OB-438)
+        // Flush with the buttons above and below, so the column's left edge is one line (OB-438)
         for (JRadioButton radio : new JRadioButton[] {pathTypeAuto, pathTypeManual})
         {
             radio.setFont(FONT_CONTROL);
             radio.setMargin(new Insets(0, 0, 0, 0));
             radio.setBorder(BorderFactory.createEmptyBorder());
         }
-
-        // The air a heading has above and below it, as Station Tools has
-        pathTypeLabel.setBorder(BorderFactory.createEmptyBorder(
-            LayoutEditor.HEADING_GAP + 6, 0,
-            LayoutEditor.HEADING_GAP, 0));
 
         // The route on screen follows the tier (MT-399)
         pathTypeAuto.addActionListener(e -> retestForTheNewTier());
@@ -742,8 +728,7 @@ public class AutonomyEditorPanel extends JPanel
 
         panel.add(row(whyButton));
 
-        // Below Why Not Moving?, on its own row (OB-217), to keep the column narrow.
-        panel.add(row(pathTypeLabel));
+        // Below Why Not Moving?, unlabeled, each on its own row to keep the column narrow (OB-217)
         panel.add(row(pathTypeAuto));
         panel.add(row(pathTypeManual));
 
@@ -6526,7 +6511,6 @@ public class AutonomyEditorPanel extends JPanel
         if (whyButton != null) whyButton.setEnabled(!ignored);
 
         // And the path type (FR-105: "also disable/grey out the auto/manual radio buttons")
-        if (pathTypeLabel != null) pathTypeLabel.setEnabled(!ignored);
         if (pathTypeAuto != null) pathTypeAuto.setEnabled(!ignored);
         if (pathTypeManual != null) pathTypeManual.setEnabled(!ignored);
 
