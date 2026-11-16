@@ -1153,27 +1153,47 @@ public class testStationSettingsWindow
     }
 
     /**
-     * On a station with no limit, a cleared box, 0 or Any changes nothing: each means the limit it already has (FR-234).
+     * On a station with no limit, a cleared box, 0 or Any writes nothing: each means the limit it already has.  Opened
+     * from the track diagram, where every write is saved at once, so a write shows as a file written (FR-234).
      *
      * MUTATION: have `StationSettingsWindow.commit` compare the length's text rather than the number it means, and
-     * the editor is dirtied.
+     * the setup file is written.
      */
     @Test(timeOut = 120000)
-    public void testNoLimitRetypedChangesNothing() throws Exception
+    public void testNoLimitRetypedWritesNothing() throws Exception
     {
-        StationSettingsWindow window = openAtALength(aStation(), null);
+        closeTheEditor();
 
-        assertFalse(panel.isDirty(), "precondition: the editor opened dirty");
+        TileKey square = aStation();
 
-        for (String typed : new String[] {"", "0", "any"})
+        try
         {
-            StationDoors.typeAndEnter(window, "station.maxLength", typed);
-            StationDoors.current(window);
+            Components.onTheEventThread(() ->
+            {
+                session.setPointProperty(square, "maxTrainLength", null);
 
-            assertFalse(panel.isDirty(), "\"" + typed + "\" on a station with no limit dirtied the editor");
+                return session.saveQuietly();
+            });
+
+            StationSettingsWindow window = openedFromTheDiagramsMenu(square);
+            Map<String, Long> files = filesWritten();
+
+            for (String typed : new String[] {"", "0", "any"})
+            {
+                StationDoors.typeAndEnter(window, "station.maxLength", typed);
+                StationDoors.current(window);
+
+                assertEquals(filesWritten(), files, "\"" + typed + "\" on a station with no limit wrote the setup");
+            }
+
+            StationDoors.close(window);
         }
+        finally
+        {
+            frozen.putBack();
 
-        StationDoors.close(window);
+            Components.onTheEventThread(() -> session.saveQuietly());
+        }
     }
 
     /**

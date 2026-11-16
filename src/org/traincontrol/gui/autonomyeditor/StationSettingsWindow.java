@@ -1039,8 +1039,15 @@ public final class StationSettingsWindow extends StationWindowBase
         // A length is the number it means, so Any, 0 and a blank are one; where several differ, any change is one
         Function<String, String> means = part == maxLength && !was.isEmpty() ? EditorPrompts::lengthTyped : text -> text;
 
-        // Unchanged writes nothing: an untouched station opened and closed changes no setup, nor a field they differ on
-        if (means.apply(typed).trim().equals(means.apply(was).trim())) { showProblem(part, null); return; }
+        // Unchanged writes nothing: an untouched station opened and closed changes no setup, nor a field they differ on.
+        // The field shows the value as it reads, so a 0 typed over no limit shows Any.
+        if (means.apply(typed).trim().equals(means.apply(was).trim()))
+        {
+            if (!typed.equals(was)) part.setText(was);
+
+            showProblem(part, null);
+            return;
+        }
 
         final String[] refused = new String[1];
 
