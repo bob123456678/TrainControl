@@ -50,11 +50,19 @@ OWN_LOCK=""
 
 lock()
 {
+    # The holder writes its pid into the lock; a lock is taken over only when that holder is gone, or when it names
+    # no holder and is older than 15 minutes (a run killed between mkdir and the write).
     while ! mkdir "$LOCK" 2>/dev/null
     do
-        if [ -n "$(find "$LOCK" -maxdepth 0 -mmin +15 2>/dev/null)" ]; then rm -rf "$LOCK"; continue; fi
+        holder=$(cat "$LOCK/pid" 2>/dev/null)
+        if [ -n "$holder" ]; then
+            kill -0 "$holder" 2>/dev/null || { rm -rf "$LOCK"; continue; }
+        elif [ -n "$(find "$LOCK" -maxdepth 0 -mmin +15 2>/dev/null)" ]; then
+            rm -rf "$LOCK"; continue
+        fi
         sleep 2
     done
+    echo $$ > "$LOCK/pid"
     OWN_LOCK=1
 }
 

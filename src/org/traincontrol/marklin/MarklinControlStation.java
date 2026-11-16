@@ -34,6 +34,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
@@ -140,8 +141,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Is network communication on?
     private boolean on;
     
-    // Is the power turned on?
-    private boolean powerState = true; // default to true unless power is turned off
+    // Is the power turned on?  volatile because getPowerState() takes no lock: autonomy reads it from its own threads
+    private volatile boolean powerState = true; // default to true unless power is turned off
 
     /** Whether this power cut has warned already; read and set on `locMessageProcessor` only. */
     private boolean powerCutWarned;
@@ -3214,6 +3215,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         return this.powerState;
     }
+
+    // Moves at every change of the track power, so a Stop and Go between two reads of the power is still seen
+    private final AtomicInteger powerEpoch = new AtomicInteger();
+
+    /**
+     * The track power's epoch: it changes whenever the power goes off or comes back on
+     * @return 
+     */
+    @Override
+    public int getPowerEpoch()
+    {
+        return this.powerEpoch.get();
+    }
     
     /**
      * Sets the power
@@ -3223,6 +3237,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         synchronized(this)
         {
+            if (state != this.powerState) this.powerEpoch.incrementAndGet();
+
             this.powerState = state;
             notifyAll();
         }

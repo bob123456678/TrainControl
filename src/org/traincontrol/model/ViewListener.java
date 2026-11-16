@@ -53,6 +53,7 @@ public interface ViewListener
      */
     public Accessory getAccessoryByAddressIfPresent(int address, Accessory.accessoryDecoderType decoderType);
     public boolean getPowerState();
+    public int getPowerEpoch();
     public void allFunctionsOff();
     public void locFunctionsOff(Locomotive l);
     public void lightsOn(List<String> locomotives);
