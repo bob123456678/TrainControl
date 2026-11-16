@@ -12,7 +12,7 @@ Three things move trains, and they do **not** obey the same rules.
 | **Manual** (right-click, Locomotive tab) | no, the operator chooses | yes | yes, about reversals |
 | **Return Home** | no, the planner chooses | **yes** | never |
 
-The middle column is about the **parking marking** (*Can Be Chosen in Full Autonomy*) and nothing else. The occupancy
+The middle column is about the **parking marking** (*May choose this station*) and nothing else. The occupancy
 restriction below is not a tier question.
 
 **No tier moves trains over a setup with errors** (MT-263; Adam: *"trains can still be moved manually via
