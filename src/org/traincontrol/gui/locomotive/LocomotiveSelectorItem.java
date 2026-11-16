@@ -7,6 +7,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.util.I18n;
 
 /**
@@ -24,6 +25,9 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
     public LocomotiveSelectorItem(Locomotive loc, LocomotiveSelector selector)
     {
         initComponents();
+        // The form sets Java's own hand; this one replaces it (FR-224).
+        setCursor(HandPointer.cursor());
+        locIcon.setCursor(HandPointer.cursor());
         
         this.loc = loc;
         this.selector = selector;

@@ -5751,8 +5751,11 @@ public class AutonomyEditorPanel extends JPanel
 
         if (thereByHand || backByHand) notes.add(I18n.t("autosetup.ui.testColorLegend"));
 
-        if (thereByHand) notes.add(whyByHandOnly(testFrom, tile));
-        if (backByHand) notes.add(whyByHandOnly(tile, testFrom));
+        // On every known railway a purple leg ends at a station left alone (D184).
+        Set<TileKey> leftAlone = session.manualOnlyStations();
+
+        if (thereByHand && leftAlone.contains(tile)) notes.add(I18n.f("autosetup.ui.testNotAnAutoDestination", describeTile(tile)));
+        if (backByHand && leftAlone.contains(testFrom)) notes.add(I18n.f("autosetup.ui.testNotAnAutoDestination", describeTile(testFrom)));
 
         StringBuilder said = new StringBuilder();
 
@@ -5768,14 +5771,6 @@ public class AutonomyEditorPanel extends JPanel
         lastTestTo = tile;
 
         testFrom = null;
-    }
-
-    /** Why autonomy has no route from one square to another that a hand send has. */
-    private String whyByHandOnly(TileKey from, TileKey to)
-    {
-        return session.manualOnlyStations().contains(to)
-            ? I18n.f("autosetup.ui.testNotAnAutoDestination", describeTile(to))
-            : I18n.f("autosetup.ui.testTurnsOnTheWay", describeTile(from), describeTile(to));
     }
 
     static String escape(String text)

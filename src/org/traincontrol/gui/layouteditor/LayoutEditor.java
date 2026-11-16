@@ -84,6 +84,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.StationCaption;
@@ -929,7 +930,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 newLabel.setHorizontalTextPosition(JLabel.CENTER);
             }
             
-            newLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            newLabel.setCursor(HandPointer.cursor());
             
             newLabel.setBorder(BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, NEW_COMPONENT_BORDER_WIDTH));
             
@@ -994,7 +995,7 @@ public class LayoutEditor extends PositionAwareJFrame
         boolean turns = autonomyPanel != null && x >= 0 && y >= 0 && autonomyPanel.clickChangesDirections(
             new TileGraph.TileKey(this.layout.getName(), x, y));
 
-        label.setCursor(turns ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
+        label.setCursor(turns ? HandPointer.cursor() : null);
 
         // The line only until a square has been clicked (MT-697); the hand stays
         String says = turns && !squareClicked ? I18n.t("autosetup.ui.tooltipClickToChangeDirections") : null;
@@ -1129,7 +1130,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
                 else if (this.hasToolFlag() && !this.selectMode)
                 {
-                    label.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    label.setCursor(HandPointer.cursor());
                 }
                 else
                 {

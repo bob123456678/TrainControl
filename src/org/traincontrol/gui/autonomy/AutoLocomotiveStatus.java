@@ -29,6 +29,7 @@ import javax.swing.SwingUtilities;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.AutonomyViewerPanel;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 import org.traincontrol.automationui.AutonomySession;
@@ -723,7 +724,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     private void pointerOnTheLine()
     {
         // A pointer that says "there is something to read here", matching the mark on the text
-        locDest.setCursor(Cursor.getPredefinedCursor(noPathsNow ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
+        locDest.setCursor(noPathsNow ? HandPointer.cursor() : Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 
         if (!noPathsNow)
         {

@@ -25,6 +25,7 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.widgets.AddressLabel;
 import org.traincontrol.gui.widgets.AxisRuler;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.LoadingSpinner;
 import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.util.I18n;
@@ -1087,7 +1088,7 @@ public class LayoutGrid
                         }
 
                         // Show the correct cursor
-                        if (c.isClickable() && !inEditor) text.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                        if (c.isClickable() && !inEditor) text.setCursor(HandPointer.cursor());
                     }
                     else
                     {
@@ -1133,7 +1134,7 @@ public class LayoutGrid
                     
                     if (!inEditor)
                     {
-                        text.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                        text.setCursor(HandPointer.cursor());
                     }
                    
                     text.addMouseListener(new MouseAdapter()

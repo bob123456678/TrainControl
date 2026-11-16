@@ -1,7 +1,6 @@
 package org.traincontrol.gui.widgets;
 
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
@@ -20,7 +19,7 @@ public class PillButton extends JToggleButton
 
         setFocusable(false);
         updateLook();
-        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        setCursor(HandPointer.cursor());
     }
 
     @Override
@@ -44,7 +43,7 @@ public class PillButton extends JToggleButton
     public void setEnabled(boolean enabled)
     {
         super.setEnabled(enabled);
-        setCursor(enabled ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
+        setCursor(enabled ? HandPointer.cursor() : null);
     }
 
     @Override

@@ -30,6 +30,8 @@ import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
 import org.traincontrol.gui.locomotive.LocomotiveSelectorItem;
+import org.traincontrol.gui.widgets.About;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
@@ -904,5 +906,33 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
             assertSaidBy(key(page, KeyEvent.VK_A), page, said);
             assertSaidBy(key(ui, KeyEvent.VK_A), ui, said);
         });
+    }
+
+    /**
+     * The database's tiles and About's links show TrainControl's hand (FR-224), though their GUI-builder code sets
+     * Java's own, jagged on Java 8: the constructors set it again.
+     *
+     * MUTATION: dropping the `setCursor(HandPointer.cursor())` lines from `LocomotiveSelectorItem`'s or `About`'s
+     * constructor fails this on Java 8.
+     */
+    @Test
+    public void testTheTilesAndAboutsLinksShowTheApplicationsHand() throws Exception
+    {
+        LocomotiveSelectorItem item = tile(ONE);
+        Component picture = (Component) Reflect.get(LocomotiveSelectorItem.class, item, "locIcon");
+        About about = Components.onTheEventThread(About::new);
+
+        assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(item.getCursor())),
+            "a tile does not show the hand");
+        assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(picture.getCursor())),
+            "a tile's picture does not show the hand");
+
+        for (String link : new String[] {"linkLabel", "linkLabel1"})
+        {
+            Component c = (Component) Reflect.get(About.class, about, link);
+
+            assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(c.getCursor())),
+                "About's " + link + " does not show the hand");
+        }
     }
 }
