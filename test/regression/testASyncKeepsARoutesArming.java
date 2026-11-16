@@ -330,7 +330,8 @@ public class testASyncKeepsARoutesArming
      * pass of queries, which runs after the routes are in, puts it right.  Nor on a real event during a reconnect's
      * confirmation (D133).  The next real clear then made fires it once.
      *
-     * MUTATION: in `MarklinRoute.executeAutoRoute`, take out the `continue` after `isFeedbackCorrected`.
+     * MUTATION: in `MarklinRoute.executeAutoRoute`, take out the `continue` after `isFeedbackCorrected`: red on the
+     * sync's own answer.
      */
     @Test(timeOut = 120000)
     public void testACarriedRouteFiresOnNeitherTheSyncNorTheConfirmation() throws Exception
@@ -340,9 +341,25 @@ public class testASyncKeepsARoutesArming
         connected(contact, (rig, station, served) ->
         {
             List<String> log = new ArrayList<>();
+            int pad = contact + 1;
 
+            station.sensor(pad, false);
+            assertTrue(shows(rig, pad, false), "precondition: the second sensor's event did not arrive");
+            MarklinRoute before = armed(rig, contact);
+            rig.takeLog();
+
+            // The answer waits until the new route watches for the made state, past the clear state's debounce that
+            // would otherwise swallow it; the second sensor's answer waits until it is in, so it is not the pass's
+            // last (OB-490)
             station.sensorUnseen(contact, true);
-            MarklinRoute after = armedThenSynced(rig, served, contact, route(contact, "0", true));
+            station.onQuery(contact, () -> Components.waitFor(() -> rig.model.getRoute(name(contact)) != before
+                && watching(rig.model.getRoute(name(contact))), WAIT_MS));
+            station.onQuery(pad, () -> shows(rig, contact, true));
+            int asked = station.queries().size();
+            MarklinRoute after = syncedAs(rig, served, route(contact, "0", true), before);
+            List<int[]> pass = station.queries().subList(asked, station.queries().size());
+            assertTrue(pass.size() == 2 && pass.get(0)[1] == contact && pass.get(1)[1] == pad,
+                "precondition: the sync did not ask the route's sensor first, then the second");
             assertTrue(shows(rig, contact, true), "precondition: the sync did not put the sensor right");
             settlesUnfired(rig, after, contact, log, "on the sync's own answer");
 

@@ -161,13 +161,6 @@ that sensor as soon as it exists), so a file that failed half way through would 
 switches for the rest of the session, and on a successful import the route replaced and its replacement would both
 watch the same sensor until the old one was deleted.
 
-**A route a Central Station sync replaces keeps its arming** (OB-433). Where the station's definition of a route
-changed, the sync deletes it and adds the station's under the same id (`adoptCentralStationRoute`), and the new route is
-armed exactly when the old one was; a route left unarmed stays unarmed. A route that comes back with no sensor (a
-firmware that drops its items' `typ`) keeps the flag but cannot fire, and the log says so; the sync that brings its
-sensor back arms it. A carried route is an ordinary armed route: it fires on a sensor's next real change only, never on
-a state a connect's confirmation (D133) or a sync's pass puts right.
-
 **A delay below 150 ms is the same as a delay of 150 ms.** The executor pauses for a fixed interval PLUS the larger of
 the command's delay and 150, so the floor is on the delay, not the whole wait. The editor shows the floored number in
 both directions: a delay from an earlier build, from a station or from a JSON file is shown raised too. Zero is left
@@ -179,3 +172,12 @@ makes the gap a three-way switch needs between its two commands real.
 where the command is BUILT, so a route from a JSON file or a Central Station import cannot hold one. The editor instead
 range-checks a typed speed and refuses to save, which tells the operator rather than quietly changing what they wrote.
 An unclamped 150 would be discarded by the head of a multi-unit while every member was sent 100.
+
+## 7d. Routes that come from a Central Station sync
+
+**A route a Central Station sync replaces keeps its arming** (OB-433). Where the station's definition of a route
+changed, the sync deletes it and adds the station's under the same id (`adoptCentralStationRoute`), and the new route is
+armed exactly when the old one was; a route left unarmed stays unarmed. A route that comes back with no sensor (a
+firmware that drops its items' `typ`) keeps the flag but cannot fire, and the log says so; the sync that brings its
+sensor back arms it. A carried route is an ordinary armed route: it fires on a sensor's next real change only, never on
+a state a connect's confirmation (D133) or a sync's pass puts right (but see OB-490).
