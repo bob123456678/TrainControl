@@ -1052,7 +1052,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Puts every tool and its button down (OB-119): a button left looking armed sends the next click to `cycle()`,
      * which edits.  Says whether anything was down (FR-065), as Escape otherwise closes the editor.
-     * @return whether anything was armed, and is not any more
      */
     public boolean putToolsDown()
     {
@@ -1074,7 +1073,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Whether a click on a drawn train is a click on its station: while Test a Path, Why Not Moving? or Bulk Edit...
      * waits for one (OB-354).
-     * @return true where the train's square is the answer
      */
     public boolean takesATrainForItsStation()
     {
@@ -1163,10 +1161,7 @@ public class AutonomyEditorPanel extends JPanel
     /** The square of the finding last clicked, or null. */
     private TileKey chosenFinding;
 
-    /**
-     * The filter box with its clear button, under the list (FR-073, FR-217).  It narrows the list as typed and never selects a
-     * row, so it neither jumps nor copies.
-     */
+    /** The filter box with its clear button, under the list (FR-073, FR-217); it narrows the list, never selects. */
     private JPanel buildFindingsBox(JScrollPane list)
     {
         JPanel box = new JPanel(new BorderLayout());
@@ -1399,10 +1394,7 @@ public class AutonomyEditorPanel extends JPanel
         if (menuTarget != null && onReveal != null) onReveal.accept(menuTarget);
     }
 
-    /**
-     * Flashes the square this one is joined to, when it is on this page (FR-056); silent with no partner, another page,
-     * or not a link.
-     */
+    /** Flashes the square this one is joined to, when it is on this page (FR-056). */
     void highlightPartnerOf(TileKey tile)
     {
         if (tile == null || onReveal == null || menuOnly) return;
@@ -1592,7 +1584,7 @@ public class AutonomyEditorPanel extends JPanel
         return bulk;
     }
 
-    /** A bulk action's item, counted in its label; grayed, with `noneKey` for its tip, when the count is 0. */
+    /** A bulk action's counted item, grayed with `noneKey` for its tip at 0. */
     private JMenuItem bulkItem(String labelKey, int count, Runnable action, Supplier<String> tip, String noneKey)
     {
         JMenuItem made = item(I18n.f(labelKey, count), action);
@@ -2038,7 +2030,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * A tooltip wrapped only where too wide for one line; "Control+A" stays plain text (FR-112).
      * @param text the tooltip, or null
-     * @return the tooltip, wrapped if it needs to be
      */
     public static String wrappedIfLong(String text)
     {
@@ -2075,7 +2066,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * TOOLTIP_WIDTH in measuring pixels: a CSS width is drawn at the screen's resolution, so 320 is 400 at 120 dpi
      * (OB-358).
-     * @return the wrapping width, in pixels
      */
     private static int wrappingWidth()
     {
@@ -2145,10 +2135,7 @@ public class AutonomyEditorPanel extends JPanel
         return menuItem;
     }
 
-    /**
-     * Whether a station's name may be written on this square: anything but a switch or signal, whose click does
-     * something (OB-042, OB-044).
-     */
+    /** Whether a station's name may go on this square: not a switch or signal, whose click acts (OB-042, OB-044). */
     boolean mayCarryACaption(LayoutDiagramComponent component)
     {
         if (component == null) return true;
@@ -2157,10 +2144,7 @@ public class AutonomyEditorPanel extends JPanel
         return !component.isSwitch() && !component.isSignal();
     }
 
-    /**
-     * Whether a dragged station label may land here (FR-035): asked while dragging and on release, so green is what is
-     * accepted.
-     */
+    /** Whether a dragged station label may land here (FR-035), asked while dragging and on release. */
     public boolean canDropCaption(TileKey from, TileKey to, LayoutDiagramComponent onTarget)
     {
         return refuseCaptionDrop(from, to, onTarget) == null;
@@ -2338,7 +2322,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (given != null) return given;
 
-        // No is the default: Yes takes a name off the diagram.  0 is Yes.
+        // No is the default: Yes takes a name off the diagram.
         return JOptionPane.showOptionDialog(owner(), question,
             I18n.t("autosetup.ui.titleStationLabel"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == 0;
@@ -2352,8 +2336,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (!standing.isEmpty() && session.getCaptionTarget(tile) == null)
         {
-            // showOptionDialog for TrainControl's button text (showConfirmDialog's follow the JVM locale); 0 is the
-            // first
+            // showOptionDialog for TrainControl's button text
             int answer = JOptionPane.showOptionDialog(owner(),
                 I18n.f("autosetup.ui.confirmReplaceText", standing),
                 I18n.t("autosetup.ui.titleStationLabel"),
@@ -2926,7 +2909,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * How many things must be fixed, in words agreeing with the number.
-     * @param errors how many
      * @return the line under the findings
      */
     public static String blockingCountText(int errors)
@@ -3104,6 +3086,8 @@ public class AutonomyEditorPanel extends JPanel
      * Why this number cannot be stored under this key, or null.  Only maximum train length has a floor, 0:
      * `Layout.fromJSON` invalidates the whole configuration on a negative one.  Public and static so it can be tested
      * without the modal prompt.
+     * @param key the point property being written
+     * @param value the number typed
      * @return the sentence to show, already translated, or null when the number is fine
      */
     public static String whyNotThisNumber(String key, int value)
@@ -4024,6 +4008,9 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * The home this exclusion list would break, or null: allowed, but shown rather than found at the end of a run
      * (MT-112).
+     * @param home the locomotive homed at this station, or null
+     * @param excluded the locomotives being shut out of it
+     * @return the home that would be broken, or null
      */
     public static String homeBrokenBy(String home, List<String> excluded)
     {
@@ -4032,6 +4019,10 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * The same, read in the list's mode (FR-121): a named home where it shuts out, an unnamed one where it allows only.
+     * @param home the station's home locomotive, or null
+     * @param chosen the locomotives the list names
+     * @param allowOnly whether the list names the only locomotives allowed
+     * @return the home that would be contradicted, or null
      */
     public static String homeBrokenBy(String home, List<String> chosen, boolean allowOnly)
     {
@@ -4043,6 +4034,10 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * What the home list offers (MT-112): "None", the station's current home if autonomy no longer runs it (or OK would
      * clear it unasked, a combo cannot preselect what it lacks), then the locomotives autonomy runs.
+     * @param none the label for "no home"
+     * @param placed the locomotives autonomy runs
+     * @param current the home this station has, or null
+     * @return what the list should offer, in order
      */
     public static List<String> homeChoices(String none, List<String> placed, String current)
     {
@@ -6610,7 +6605,6 @@ public class AutonomyEditorPanel extends JPanel
 
         if (excluded)
         {
-            // showOptionDialog for TrainControl's button text; 0 is the first option.
             int answer = JOptionPane.showOptionDialog(owner(),
                 I18n.f("autosetup.ui.confirmExcludePage", page),
                 I18n.t("autosetup.ui.btnExcludeThisPage"),
@@ -6960,7 +6954,7 @@ public class AutonomyEditorPanel extends JPanel
         setupChanged();
     }
 
-    /** After a bulk edit of squares: the selection goes, and the hint says how many. */
+    /** Clears the selection and says how many squares changed. */
     private void squaresChangedInBulk(int changed, String doneKey)
     {
         selection.clear();
@@ -7003,7 +6997,7 @@ public class AutonomyEditorPanel extends JPanel
         setupChanged();
     }
 
-    /** After a bulk edit of homes: the hint says how many, and the squares redraw. */
+    /** Says how many homes changed, and redraws. */
     private void homesChangedInBulk(int changed, String doneKey)
     {
         say(hint, I18n.f(doneKey, changed));
@@ -7011,7 +7005,7 @@ public class AutonomyEditorPanel extends JPanel
         refresh();
     }
 
-    /** A bulk action's question: `noneKey` in the hint when the count is 0 (OB-057), else the warning; true on Yes. */
+    /** `noneKey` in the hint at 0 (OB-057), else the bulk warning; true on Yes. */
     private boolean confirmedBulk(int count, String noneKey, IntFunction<String> question, String titleKey)
     {
         if (count == 0)

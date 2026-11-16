@@ -136,7 +136,7 @@ final class LayoutEditorUndo
         return history;
     }
 
-    /** Saves the page before an edit, under the editor's monitor (taken by `LayoutEditor.snapshotLayout`). */
+    /** Saves the page before an edit; any caller but `LayoutEditor.snapshotLayout` takes the editor's monitor first. */
     void snapshotLayout()
     {
         // A pending cut is not stood down here.  clipboardWasCut says the squares the clipboard came from are EMPTY, a
@@ -161,7 +161,7 @@ final class LayoutEditorUndo
         this.editor.previousCaptionsRedo.clear();
     }
 
-    /** Steps back one entry, under the editor's monitor (taken by `LayoutEditor.undo`). */
+    /** Steps back one entry; a caller other than `LayoutEditor.undo` takes the editor's monitor first. */
     void undo()
     {
         // A cut that has been undone is no longer a move, and cutMoves settles that per square: stepping through history
@@ -188,7 +188,7 @@ final class LayoutEditorUndo
         }
     }
 
-    /** Steps forward one entry, under the editor's monitor (taken by `LayoutEditor.redo`). */
+    /** Steps forward one entry; a caller other than `LayoutEditor.redo` takes the editor's monitor first. */
     void redo()
     {
         // As in undo(): the cut flag is not stood down here, since cutMoves asks each square.
@@ -200,11 +200,10 @@ final class LayoutEditorUndo
                 List<LayoutDiagramComponent> history = this.editor.previousLayoutComponentsRedo.pop();
                 this.editor.previousLayoutComponents.push(deepCopyLayout());
 
-                // The captions go forward with it, exactly as they came back
+                // The captions go forward with it
                 Map<String, Object> captions =
                     swapCaptions(this.editor.previousCaptionsRedo, this.editor.previousCaptions);
 
-                // Enforce undo limit
                 if (this.editor.previousLayoutComponents.size() >= LayoutEditor.MAX_UNDO_HISTORY)
                 {
                     this.editor.previousLayoutComponents.removeLast();

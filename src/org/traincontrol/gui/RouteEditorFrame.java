@@ -2985,7 +2985,8 @@ public class RouteEditorFrame extends JFrame
             else
             {
                 // The route may have moved under this window: it is not modal, and Save is a delete-and-re-add of
-                // everything it holds, so it would write over Enable/Disable, a delete or an import silently.
+                // everything it holds, so it would write over Enable/Disable, a delete or an import silently.  Asked
+                // rather than refused, because what to do is the operator's to decide.
                 String moved = howTheRouteMoved();
 
                 if ("renamed".equals(moved))
@@ -3004,8 +3005,7 @@ public class RouteEditorFrame extends JFrame
                         return;
                     }
 
-                    // And it keeps the name the other party gave it, unless the operator typed in the name field (a
-                    // rename they asked for).
+                    // And it keeps the name the other party gave it, unless the operator typed a new one.
                     String saveAs = nameToSaveAs(name, nowCalled);
 
                     if (!confirmedMove(I18n.f("route.ui.confirmRouteRenamed", originalName, nowCalled), 1)) return;
@@ -3049,7 +3049,7 @@ public class RouteEditorFrame extends JFrame
             parent.repaintLayout();
 
             // No diagram edit to complete: a tile follows its route by number (rebindRouteTiles), and
-            // layoutEditingComplete would reset autonomy and re-read every page.  A route is no page of the diagram.
+            // layoutEditingComplete would reset autonomy and re-read every page.
 
             // A sync only when the route is NEW and its id could collide with one the station issued (OB-155); read
             // back from the database, because newRoute picks the id.
