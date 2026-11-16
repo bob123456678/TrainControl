@@ -218,6 +218,22 @@ public class LayoutDiagramComponent
     {
         return this.type == componentType.UNCOUPLER;
     }
+
+    /** Whether the tile stands for an accessory: a switch, a signal (lamps included) or an uncoupler. */
+    public boolean isAccessory()
+    {
+        return this.isSwitch() || this.isSignal() || this.isUncoupler();
+    }
+
+    /**
+     * The protocol saving this square writes as `.prot`, or null for none: every addressed accessory's, MM2 included,
+     * so the square keeps the protocol it was saved with (OB-402); any other square's only when not MM2.
+     */
+    public accessoryDecoderType savedProtocol()
+    {
+        return this.protocol != accessoryDecoderType.MM2 || (this.address > 0 && this.isAccessory()) ? this.protocol
+            : null;
+    }
     
     public boolean isSignal()
     {
@@ -754,10 +770,9 @@ public class LayoutDiagramComponent
             builder.append(" .drehung=").append(this.orientation).append("\n");
         }
         
-        // Custom state
-        if (this.protocol != null && this.protocol != Accessory.accessoryDecoderType.MM2)
+        if (savedProtocol() != null)
         {
-            builder.append(" .prot=").append(this.protocol.toString()).append("\n");
+            builder.append(" .prot=").append(savedProtocol().toString()).append("\n");
         }
         
         // Add .artikel (raw address)  

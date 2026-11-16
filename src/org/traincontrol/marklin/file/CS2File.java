@@ -1,5 +1,6 @@
 package org.traincontrol.marklin.file;
 
+import java.awt.Point;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -450,12 +451,7 @@ public final class CS2File
         }
     }
             
-    /**
-     * CS3 Layout Data URL
-     * Parsing this is not currently supported - 
-     * with a CS3 we can display offline CS2 layout files instead
-     * @return 
-     */
+    /** The CS3's own track plans, which tell apart an MM2 and a DCC article at one address (OB-402). */
     public String getCS3LayoutUrl()
     {
         return "http://" + this.IP + "/app/api/gbs";
@@ -877,10 +873,7 @@ public final class CS2File
             {
                 if (m.get("id") == null || m.get("typ") == null)
                 {
-                    control.logf(
-                        "acc.invalidCs2Accessory",
-                        m.toString()
-                    );                    
+                    logMessage(I18n.f("acc.invalidCs2Accessory", m.toString()));
                     continue;
                 }
                 
@@ -903,7 +896,7 @@ public final class CS2File
                 catch (NumberFormatException | ArrayIndexOutOfBoundsException e)
                 {
                     // Skip the record, not the list: a failed accessory list stops the sync (OB-407)
-                    control.logf("acc.invalidCs2Accessory", m.toString());
+                    logMessage(I18n.f("acc.invalidCs2Accessory", m.toString()));
                 }
              }
         }
@@ -2053,13 +2046,34 @@ public final class CS2File
         // missing most of its track, and nothing to say so.  The hazard is named in this file's own
         // comments; only the filename half of it was fixed.
         File masterLayoutFile = new File(configDir, "gleisbild.cs2");
+
+        // A CS3 page names only an address, so where an MM2 and a DCC article share one, the station's diagram is read
+        // by a parser of its own, the CS3's plan telling them apart, and each square is written with its protocol as a
+        // save writes it (OB-465).  Read before anything is written: a plan that fails to arrive writes nothing.
+        String mags = null;
+        Map<String, LayoutDiagram> read = new HashMap<>();
+
+        if (getDefaultLayoutDataLoc().equals(this.layoutDataLoc))
+        {
+            mags = readAll(this.getMagURL(false));
+            List<MarklinAccessory> accDB = parseMags(parseFile(new BufferedReader(new StringReader(mags))));
+
+            if (!addressesWithTwoProtocols(accDB).isEmpty())
+            {
+                for (LayoutDiagram page : new CS2File(this.IP, this.control).parseLayout(accDB))
+                {
+                    read.putIfAbsent(page.getName(), page);
+                }
+            }
+        }
+
         // UTF-8 explicitly, not the platform default: FileWriter would encode in Cp1252 on the
         // Windows/Java 8 configuration this targets, while the only reader of these files -
         // CS2File.fetchURL - decodes UTF-8 whenever the bytes are valid UTF-8.  A layout page whose name contains a
         // non-ASCII character was written in one encoding and read back in another, so the name came
         // back mangled, the file it pointed at could not be found, and syncWithCS2 responded by
         // silently clearing the local-layout override.
-        copyAtomically(gleisbild, masterLayoutFile);
+        copyAtomically(fetchURL(gleisbild), masterLayoutFile);
         
         // Process layout list and write files to localPath/config/gleisbilder/<layoutName>.cs2
         File layoutsDir = new File(configDir, "gleisbilder");
@@ -2073,30 +2087,42 @@ public final class CS2File
             // Sanitised, and matching what getLayoutURL will look for when this folder is read back.
             // The remote fetch above is unaffected: it goes through sanitizeURL on the http branch.
             File layoutFile = new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2");
+            LayoutDiagram page = read.get(layoutName);
 
-            copyAtomically(getLayoutURL(layoutName), layoutFile);
+            copyAtomically(page == null ? fetchURL(getLayoutURL(layoutName))
+                : new BufferedReader(new StringReader(page.withSavedProtocols(readAll(getLayoutURL(layoutName))))),
+                layoutFile);
         }
         
         // Download the accessory file      
         File magsFile = new File(configDir, "magnetartikel.cs2");
 
-        copyAtomically(this.getMagURL(false), magsFile);
+        copyAtomically(mags == null ? fetchURL(this.getMagURL(false)) : new BufferedReader(new StringReader(mags)), magsFile);
+    }
+
+    /** A URL's whole text, its lines joined by "\n". */
+    private static String readAll(String url) throws Exception
+    {
+        try (BufferedReader in = fetchURL(url))
+        {
+            return in.lines().collect(Collectors.joining("\n"));
+        }
     }
     
     /**
-     * Fetches a URL and writes it to a file, all of it or none of it.
+     * Writes a fetched file, all of it or none of it.
      *
      * Staged through a sibling file and moved into place, so a transfer that stops part way leaves
      * whatever was there before rather than a truncated file that the next sync will read as the
      * whole truth.
      *
-     * @param url what to fetch
+     * @param fetched what to write
      * @param target where it goes
      * @throws Exception if the fetch or the write fails, with the previous file untouched
      */
-    private void copyAtomically(String url, File target) throws Exception
+    private void copyAtomically(BufferedReader fetched, File target) throws Exception
     {
-        try (BufferedReader reader = fetchURL(url))
+        try (BufferedReader reader = fetched)
         {
             Util.writeAtomically(target, out ->
             {
@@ -2329,6 +2355,13 @@ public final class CS2File
         
         List<LayoutDiagram> out = new ArrayList<>();
         
+        // Addresses with articles of two protocols, which a CS3 can hold; resolveTwoProtocolTiles handles them (OB-402).
+        // Not asked of the station's type, which a failed detection leaves unknown (SVL2-B1): a station with no plans
+        // answers not found, and its tiles keep the first article's protocol.
+        Map<Integer, String> twoProtocols = addressesWithTwoProtocols(accDB);
+        this.trackPlan = null;
+        this.trackPlanFailure = null;
+
         for (String name : names)
         { 
             String url = getLayoutURL(name);
@@ -2392,6 +2425,8 @@ public final class CS2File
             }
             
             LayoutDiagram layout = new LayoutDiagram(name, maxX + 1, maxY + 1, url, this.control);
+
+            List<LayoutDiagramComponent> unresolved = new ArrayList<>();
                         
             for (Map<String, String> m : l)
             {
@@ -2500,16 +2535,143 @@ public final class CS2File
                            getComponentType(type, address),
                            x, y, orient, state, address, rawAddress, protocol, m.get("text")
                         );
+
+                        if (twoProtocols.containsKey(address) && m.get("prot") == null
+                            && layout.getComponent(x, y).isAccessory())
+                        {
+                            unresolved.add(layout.getComponent(x, y));
+                        }
                     }
                 }
             }
             
             layout.checkBounds();
             
+            if (!unresolved.isEmpty()) resolveTwoProtocolTiles(layout, unresolved, twoProtocols, accDB);
+
             out.add(layout);
         }
         
+        if (this.trackPlanFailure != null) throw this.trackPlanFailure;
+
         return out;
+    }
+
+    // The CS3's own track plans (/app/api/gbs): fetched at most once per parse, and only for an address with two
+    // protocols
+    private CS3TrackPlan trackPlan;
+
+    private IOException trackPlanFailure;
+
+    // The addresses with two protocols this parser has warned about, by address and page, so a refresh after each edit
+    // does not repeat them
+    private final java.util.Set<String> twoProtocolsWarned = new java.util.HashSet<>();
+
+    /** The addresses with articles of more than one protocol, each naming them ("W 14 DCC, W 15 MM2"). */
+    private static Map<Integer, String> addressesWithTwoProtocols(List<MarklinAccessory> accDB)
+    {
+        Map<Integer, String> out = new HashMap<>();
+
+        accDB.stream().collect(Collectors.groupingBy(MarklinAccessory::getAddress)).forEach((address, articles) ->
+        {
+            if (articles.stream().map(MarklinAccessory::getDecoderType).distinct().count() > 1)
+            {
+                out.put(address, articles.stream().map(a -> a.getName() + " " + a.getDecoderType())
+                    .collect(Collectors.joining(", ")));
+            }
+        });
+
+        return out;
+    }
+
+    /**
+     * Gives each tile at an address with two protocols the protocol of the article this page's CS3 plan puts there: the
+     * page's only article at the address, or on a grid page the one on the tile's square.  A tile it cannot tell keeps
+     * the first article's, warned once per page.  A local copy is never checked (OB-402).
+     */
+    private void resolveTwoProtocolTiles(LayoutDiagram page, List<LayoutDiagramComponent> tiles,
+        Map<Integer, String> twoProtocols, List<MarklinAccessory> accDB)
+    {
+        boolean fromStation = getDefaultLayoutDataLoc().equals(this.layoutDataLoc);
+        CS3TrackPlan.Page plan = fromStation ? trackPlan().page(page.getName()) : null;
+
+        // The grid's place on the page, voted by the articles of the addresses with one protocol
+        Map<String, List<Point>> voters = new HashMap<>();
+
+        for (MarklinAccessory a : accDB)
+        {
+            if (plan != null && plan.isGrid() && !twoProtocols.containsKey(a.getAddress()))
+            {
+                voters.merge(a.getName(), page.getAll().stream()
+                    .filter(t -> t.isAccessory() && t.getAddress() == a.getAddress())
+                    .map(t -> new Point(t.getX(), t.getY())).collect(Collectors.toList()),
+                    (x, y) -> { List<Point> both = new ArrayList<>(x); both.addAll(y); return both; });
+            }
+        }
+
+        Point offset = plan == null ? null : plan.gridOffset(voters);
+
+        // The squares of each address that could not be told, and the protocol its untold tiles keep
+        Map<Integer, List<String>> untold = new java.util.TreeMap<>();
+        Map<Integer, Accessory.accessoryDecoderType> kept = new HashMap<>();
+
+        for (LayoutDiagramComponent c : tiles)
+        {
+            List<MarklinAccessory> onPage = accDB.stream()
+                .filter(a -> a.getAddress() == c.getAddress() && plan != null && plan.holds(a.getName()))
+                .collect(Collectors.toList());
+
+            if (onPage.stream().map(MarklinAccessory::getDecoderType).distinct().count() > 1 && offset != null)
+            {
+                onPage.removeIf(a -> !plan.isOn(a.getName(), new Point(c.getX() - offset.x, c.getY() - offset.y)));
+            }
+
+            if (!onPage.isEmpty() && onPage.stream().map(MarklinAccessory::getDecoderType).distinct().count() == 1)
+            {
+                c.setProtocol(onPage.get(0).getDecoderType());
+            }
+            else
+            {
+                untold.computeIfAbsent(c.getAddress(), k -> new ArrayList<>()).add(c.getX() + "," + c.getY());
+                kept.put(c.getAddress(), c.getProtocol());
+            }
+        }
+
+        for (Map.Entry<Integer, List<String>> e : untold.entrySet())
+        {
+            if (!this.twoProtocolsWarned.add(e.getKey() + " " + page.getName())) continue;
+
+            logMessage(I18n.f(fromStation ? "layout.cs3TwoProtocolsUnresolved" : "layout.cs3TwoProtocolsNotChecked",
+                twoProtocols.get(e.getKey()), e.getKey(), page.getName(), String.join(" ", e.getValue()),
+                kept.get(e.getKey())));
+        }
+    }
+
+    /**
+     * The station's track plans, read once per parse; a failed read gives a plan with no pages.  A fetch that fails
+     * other than as not found is kept in trackPlanFailure, which fails the parse once its pages are read.
+     */
+    private CS3TrackPlan trackPlan()
+    {
+        if (this.trackPlan == null)
+        {
+            JSONObject gbs = null;
+
+            try (BufferedReader in = fetchURL(getCS3LayoutUrl()))
+            {
+                gbs = parseJSONObject(in);
+            }
+            catch (Exception e)
+            {
+                logMessage(I18n.f("layout.cs3TrackPlanUnreadable", e), e, true);
+
+                if (e instanceof IOException && !(e instanceof FileNotFoundException)) this.trackPlanFailure = (IOException) e;
+            }
+
+            this.trackPlan = new CS3TrackPlan(gbs);
+        }
+
+        return this.trackPlan;
     }
 
     /**

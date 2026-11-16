@@ -132,6 +132,8 @@
         <test-one-class class="testReturnHomeOnRealLayout"/>
         <test-one-class class="testAtomicWrite"/>
         <test-one-class class="testStationFileDownload"/>
+        <test-one-class class="testTwoProtocolsOnOneAddress"/>
+        <test-one-class class="testCS3TrackPlan"/>
         <test-one-class class="testLayoutRoutePrune"/>
         <test-one-class class="testUpdateDownload"/>
         <test-one-class class="testLayoutIndexAtomic"/>

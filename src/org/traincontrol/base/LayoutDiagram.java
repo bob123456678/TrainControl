@@ -261,6 +261,67 @@ public class LayoutDiagram
     }
     
     /**
+     * A page file's text with each accessory square's `.prot` as a save of this page writes it (OB-465).  Other lines
+     * stay as they were.
+     */
+    public String withSavedProtocols(String text)
+    {
+        List<String> out = new ArrayList<>();
+        List<String> block = new ArrayList<>();
+
+        for (String line : (text + "\nend").split("\n", -1))
+        {
+            // A line naming a block ends the one before it
+            if (line.matches("^[a-zA-Z]+$") && !block.isEmpty())
+            {
+                out.addAll(withSavedProtocol(block));
+                block.clear();
+            }
+
+            block.add(line);
+        }
+
+        return String.join("\n", out);
+    }
+
+    /** One block of withSavedProtocols, its `.prot` set, before its `.artikel`, when it is an accessory square. */
+    private List<String> withSavedProtocol(List<String> block)
+    {
+        java.util.Map<String, String> keys = new java.util.HashMap<>();
+        int at = block.size();
+
+        for (int i = block.size() - 1; i > 0; i--)
+        {
+            String[] parts = block.get(i).replaceFirst("^ \\.", "").split("=", 2);
+
+            if (parts.length == 2) keys.putIfAbsent(parts[0], parts[1]);
+            if (parts[0].equals("artikel") || parts[0].equals("prot")) at = i;
+        }
+
+        LayoutDiagramComponent tile = null;
+
+        try
+        {
+            int coord = keys.get("id") == null ? 0 : Integer.valueOf(keys.get("id").replace("0x", ""), 16);
+
+            if (block.get(0).equalsIgnoreCase("element")) tile = getComponent(coord % 256, (coord >> 8) % 256);
+        }
+        catch (NumberFormatException unreadCoordinate)
+        {
+            // No square to take a protocol from
+        }
+
+        Accessory.accessoryDecoderType saved = tile == null || !tile.isAccessory() ? null : tile.savedProtocol();
+
+        if (saved == null) return block;
+
+        List<String> out = new ArrayList<>(block);
+        out.removeIf(line -> line.startsWith(" .prot="));
+        out.add(Math.min(at, out.size()), " .prot=" + saved);
+        return out;
+    }
+    
+    /**
      * Gets the path to the layout file
      * @return
      * @throws MalformedURLException
