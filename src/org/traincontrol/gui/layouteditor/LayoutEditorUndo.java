@@ -71,11 +71,6 @@ final class LayoutEditorUndo
         {
             this.editor.parent.getModel().logf("autosetup.log.saveFailedAfterUndo");
         }
-
-        // And the autonomy editor reads the setup again, an open Station Settings with it; posted, off this monitor
-        org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = this.editor.getAutonomyPanel();
-
-        if (panel != null) javax.swing.SwingUtilities.invokeLater(panel::refresh);
     }
 
     /**

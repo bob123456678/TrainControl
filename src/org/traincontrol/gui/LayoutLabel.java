@@ -1214,9 +1214,9 @@ public final class LayoutLabel extends JLabel
 
             paintCurvedSensorsArrowsWhole(g);
         }
-        else if (annotation != null && annotation.isLeftEmpty())
+        else if (annotation != null && annotation.isLeftEmpty() && flashTimer == null)
         {
-            // No art (FR-197); the background still, where the label paints its own
+            // No art (FR-197), but a flash still shows; the background still, where the label paints its own
             if (isOpaque())
             {
                 g.setColor(getBackground());

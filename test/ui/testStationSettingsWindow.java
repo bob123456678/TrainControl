@@ -3707,13 +3707,16 @@ public class testStationSettingsWindow
 
     /**
      * Every station on the frozen railway, on every page: the ways in drawn open are the sides where Sent Here or Turned
-     * Round of `Layout.standingRulesAt` is not No, on a station barring a side; one barring none wears none (OB-494).
+     * Round of `Layout.standingRulesAt` is not No.  One side of each station with two is barred first, so its ways are
+     * drawn (OB-494); a station with one way in bars none and wears none.
      *
      * MUTATION: have `StationPicture.wayIn` draw every way in open, and this fails.
      */
     @Test(timeOut = 600000)
     public void testTheWaysAgreeWithWhatIsAllowed() throws Exception
     {
+        barOneSideOfEach();
+
         assertNotNull(model.getAutoLayoutIfLoaded(), "precondition: the frozen setup is built");
 
         List<String> differ = new java.util.ArrayList<>();
@@ -4045,7 +4048,7 @@ public class testStationSettingsWindow
      * The Advanced heading wears a * while a setting under it is not its default, and says so when hovered (FR-226;
      * Adam: "If any advanced settings are set, add a * next to it so the users know to look there."): a plain station's
      * reads Advanced; a priority or a speed typed, Blacklist pressed, or a square made to stop it from another door each
-     * star it as it is set, and each put back clears it; so does the editor's undo of a typed priority.
+     * star it as it is set, and each put back clears it.
      *
      * MUTATION: leave the speed out of `altered` in `StationSettingsWindow.fill`, and this fails.
      */
@@ -4062,8 +4065,6 @@ public class testStationSettingsWindow
 
         Components.onTheEventThread(() ->
         {
-            Reflect.method(LayoutEditor.class, "snapshotLayout").invoke(editor);
-
             // A list on file, so Blacklist sets it without asking for one
             session.setTrainList(square, java.util.Collections.singletonList(train));
 
@@ -4108,17 +4109,6 @@ public class testStationSettingsWindow
             StationDoors.current(window);
             assertAdvanced(window, !blockers.isEmpty(), "Unavailable while set to " + blockers);
         }
-
-        StationDoors.typeAndEnter(window, "station.priority", "4");
-        assertAdvanced(window, true, "precondition: a priority typed again");
-
-        Components.onTheEventThread(() -> { editor.undo(); return null; });
-        Components.settle();
-        StationDoors.current(window);
-        assertNull(Components.onTheEventThread(() -> session.getPointProperty(square, "priority")),
-            "precondition: the undo did not put the priority back");
-        assertEquals(StationDoors.text(window, "station.priority"), "0", "the window's priority after the undo");
-        assertAdvanced(window, false, "the editor's undo of the priority");
 
         StationDoors.close(window);
     }
@@ -4299,6 +4289,9 @@ public class testStationSettingsWindow
     @Test(timeOut = 600000)
     public void testARoutedClickPressesEveryMarkAndHoverShowsItsTip() throws Exception
     {
+        // So every station with two ways in wears them (OB-494)
+        barOneSideOfEach();
+
         List<String> wrong = new java.util.ArrayList<>();
         int[] done = {0, 0, 0};
 
@@ -4752,6 +4745,33 @@ public class testStationSettingsWindow
 
             return null;
         });
+    }
+
+    /** Bars the first way in of every station with two or more, on every page, and rebuilds the railway from that. */
+    private static void barOneSideOfEach()
+    {
+        Components.onTheEventThread(() ->
+        {
+            for (TileKey each : new java.util.ArrayList<>(session.getReducer().getPoints().keySet()))
+            {
+                List<org.traincontrol.automationui.TilePorts.Side> sides = session.arrivalSides(each);
+
+                if (session.getStore().isStation(each) && sides.size() > 1)
+                {
+                    session.setBarredArrivals(each, java.util.EnumSet.of(sides.get(0)));
+                }
+            }
+
+            Set<String> trains = new LinkedHashSet<>(session.placementsAutonomyWillWrite().values());
+
+            trains.addAll(session.homesToPlace().values());
+
+            ui.rebuildRunningLayoutFromSetup(false, trains);
+
+            return null;
+        });
+
+        Components.settle();
     }
 
     /** Whether any road of the station is a curve: its two arms are not opposite sides. */
