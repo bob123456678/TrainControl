@@ -57,9 +57,11 @@ public class NetworkProxy
     private volatile Map<Integer, Integer> savedDevice = new HashMap<>();
 
     // Each contact asked, and when a real event for it came since its query (0 for none): an answer, or a late copy,
-    // within ANSWER_WAIT_NS of that event is older than it.  Forgotten ANSWER_WAIT_NS after the last pass; guards the
-    // fields below up to askEnded
-    private final Map<Integer, Long> overtaken = new ConcurrentHashMap<>();
+    // within ANSWER_WAIT_NS of that event is older than it.  Forgotten ANSWER_WAIT_NS after the last pass
+    private final Map<Integer, Long> overtaken = new HashMap<>();
+
+    // Guards `overtaken` and the fields below up to askEnded; takes no other lock while held
+    private final Object passState = new Object();
 
     private int asks;
 
@@ -143,7 +145,7 @@ public class NetworkProxy
     {
         Boolean holding = null;
 
-        synchronized (this.overtaken)
+        synchronized (this.passState)
         {
             // Set reference
             this.model = model;
@@ -180,7 +182,7 @@ public class NetworkProxy
 
         boolean holding;
 
-        synchronized (this.overtaken)
+        synchronized (this.passState)
         {
             if (this.model == null)
             {
@@ -204,7 +206,7 @@ public class NetworkProxy
         asking.start();
     }
 
-    /** Counts a pass that ask ends, under `overtaken`; true when it holds routes, as the connect's does (D133). */
+    /** Counts a pass that ask ends, under `passState`; true when it holds routes, as the connect's does (D133). */
     private boolean beginAsk()
     {
         boolean holding = !this.connectAsked;
@@ -233,7 +235,7 @@ public class NetworkProxy
         }
         finally
         {
-            synchronized (this.overtaken)
+            synchronized (this.passState)
             {
                 this.asks--;
                 this.askEnded = System.nanoTime();
@@ -275,7 +277,7 @@ public class NetworkProxy
      */
     public boolean isConfirming()
     {
-        synchronized (this.overtaken)
+        synchronized (this.passState)
         {
             return this.learnsDevices && this.holds > 0;
         }
@@ -284,7 +286,7 @@ public class NetworkProxy
     /** Whether any pass of queries to a CS3, a sync's included, is under way: its answers are then no events. */
     public boolean isAsking()
     {
-        synchronized (this.overtaken)
+        synchronized (this.passState)
         {
             return this.learnsDevices && this.asks > 0;
         }
@@ -331,7 +333,10 @@ public class NetworkProxy
                 if (this.socket.isClosed()) break;
 
                 // Marked before it is written, so only a later event overtakes its answer
-                this.overtaken.put(query.getKey(), 0L);
+                synchronized (this.passState)
+                {
+                    this.overtaken.put(query.getKey(), 0L);
+                }
 
                 if (sendMessage(new CS2Message(CS2Message.CMD_ACC_SENSOR, query.getValue()))) sent++;
 
@@ -391,18 +396,21 @@ public class NetworkProxy
 
         int contact = ((frame[7] & 0xFF) << 8) | (frame[8] & 0xFF);
 
-        synchronized (this.overtaken)
+        boolean change = frame[9] != frame[10];
+
+        if (change) this.sensorDevice.put(contact, ((frame[5] & 0xFF) << 8) | (frame[6] & 0xFF));
+
+        synchronized (this.passState)
         {
             if (this.asks == 0 && System.nanoTime() - this.askEnded >= ANSWER_WAIT_NS) this.overtaken.clear();
 
             if (message instanceof CS2Message) ((CS2Message) message).heardDuring(this.asks > 0, this.holds > 0);
-        }
 
-        if (frame[9] != frame[10])
-        {
-            this.sensorDevice.put(contact, ((frame[5] & 0xFF) << 8) | (frame[6] & 0xFF));
-            this.overtaken.replace(contact, System.nanoTime());
-            return false;
+            if (change)
+            {
+                this.overtaken.replace(contact, System.nanoTime());
+                return false;
+            }
         }
 
         synchronized (this.answerLock)
@@ -414,7 +422,12 @@ public class NetworkProxy
             }
         }
 
-        Long event = this.overtaken.get(contact);
+        Long event;
+
+        synchronized (this.passState)
+        {
+            event = this.overtaken.get(contact);
+        }
 
         return event != null && event != 0 && System.nanoTime() - event < ANSWER_WAIT_NS;
     }
