@@ -16214,6 +16214,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             );
         });
     }
+
+    @Override
+    public void showPowerCut(int channel)
+    {
+        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, I18n.f("ui.powerCut", channel),
+            I18n.t("ui.powerCutTitle"), JOptionPane.WARNING_MESSAGE));
+    }
          
     public class CustomTableRenderer extends DefaultTableCellRenderer
     {
