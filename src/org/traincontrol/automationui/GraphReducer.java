@@ -552,7 +552,9 @@ public class GraphReducer
     /** What `searchBySettings` makes of a place: a way through, the end of a walk, the destination, or no way. */
     enum Reached { PASS, STOP, ARRIVE, REFUSE }
 
-    /** Breadth-first by place and settings, no switch set two ways (FR-221): the ways to the first ARRIVE, or null. */
+    /**
+     * Test a path's and the findings' one search, as `Layout.bfsBySettings`/`isPathClear` route (FR-221); null: no way.
+     */
     static <P, W> List<W> searchBySettings(Collection<P> starts, Function<P, List<W>> ways, BiFunction<P, W, P> end,
         Function<W, Map<String, accessorySetting>> commands, Function<P, Object> key, Function<P, Reached> reached)
     {
