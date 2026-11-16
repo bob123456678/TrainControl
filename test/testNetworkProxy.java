@@ -234,6 +234,20 @@ public class testNetworkProxy
     }
 
     /**
+     * The receive socket asks for a 1 MB buffer (OB-421).  Frames that arrive while the listener is held up wait in
+     * that buffer, and the operating system drops them once it is full, sensor changes included; its default is 64 KB.
+     *
+     * Read on the reopened socket, which the constructor's socket shares its opening with: Java 8 holds a socket's
+     * lock while a listener sits in receive, so the first socket cannot be asked.
+     */
+    @Test(priority = 4, dependsOnMethods = "testSendReopensAClosedSocket")
+    public void testTheReceiveSocketAsksForAMegabyte() throws Exception
+    {
+        assertTrue(socketOf(proxy).getReceiveBufferSize() >= 1024 * 1024,
+            "the receive buffer is " + socketOf(proxy).getReceiveBufferSize() / 1024 + " KB, not the 1 MB asked for");
+    }
+
+    /**
      * A datagram shorter than a CAN frame is dropped, not parsed with the tail of the one before.
      *
      * The reader reuses one buffer, so a short datagram used to be read as its own first bytes

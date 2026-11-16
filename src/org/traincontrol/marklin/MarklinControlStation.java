@@ -65,6 +65,7 @@ import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.QueuedLogHandler;
 import org.traincontrol.util.Util;
 import static org.traincontrol.util.Util.escapeCsv;
 
@@ -142,6 +143,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     
     // Is the power turned on?  volatile because getPowerState() takes no lock: autonomy reads it from its own threads
     private volatile boolean powerState = true; // default to true unless power is turned off
+
+    /** Whether this power cut has warned already; read and set on `locMessageProcessor` only. */
+    private boolean powerCutWarned;
         
     // Unique ID of the central station (0 for all stations)
     private int UID = 0;
@@ -229,11 +233,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             @Override
             public String format(LogRecord record)
             {
-                return String.format("%s %s%n", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(System.currentTimeMillis()), record.getMessage());
+                // The record's time, not the clock's: the line is written later, from another thread
+                return String.format("%s %s%n", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(record.getMillis()), record.getMessage());
             }
         });
-        
-        log.addHandler(consoleHandler);
+
+        // Through a queue, so that no thread that logs waits on the console (OB-421)
+        log.addHandler(new QueuedLogHandler(consoleHandler));
         
         // Initialize maps
         this.locDB = new RemoteDeviceCollection<>();
@@ -451,7 +457,32 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
-        for (LayoutDiagram l : fileParser.parseLayout(accs))
+        List<LayoutDiagram> parsed = fileParser.parseLayout(accs);
+
+        // The addresses with tiles of both kinds (OB-464): CAN does not care whether a switch or a signal, so every
+        // tile there shares the accessory the database holds rather than re-creating it for each tile of the other kind
+        Map<Integer, Set<Boolean>> kinds = new HashMap<>();
+
+        for (LayoutDiagram l : parsed)
+        {
+            for (LayoutDiagramComponent c : l.getAll())
+            {
+                if (c.isSwitch() || c.isSignal() || c.isUncoupler())
+                {
+                    int uid = MarklinAccessory.UIDfromAddress(c.getAddress() - 1, c.getProtocol());
+                    kinds.computeIfAbsent(uid, k -> new HashSet<>()).add(c.isSignal());
+
+                    if (c.isThreeWay())
+                    {
+                        kinds.computeIfAbsent(uid + 1, k -> new HashSet<>()).add(c.isSignal());
+                    }
+                }
+            }
+        }
+
+        Set<Integer> mixedAddresses = kinds.keySet().stream().filter(uid -> kinds.get(uid).size() > 1).collect(Collectors.toSet());
+
+        for (LayoutDiagram l : parsed)
         {
             this.layoutDB.add(l, l.getName(), l.getName());
 
@@ -467,12 +498,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     // Make sure all components are added
                     if (!this.accDB.hasId(targetAddress) ||
                         // The acessory exists, but type in our DB does not match what the CS2 has stored.  Re-create the accessory.
-                       (this.accDB.hasId(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal()) ||
+                       (this.accDB.hasId(targetAddress) && !mixedAddresses.contains(targetAddress) && this.accDB.getById(targetAddress).isSignal() != c.isSignal()) ||
                             
                         // Create / convert the second accessory to switch if needed
                         c.isThreeWay() && (
                             !this.accDB.hasId(targetAddress + 1) ||
-                            (this.accDB.hasId(targetAddress + 1) && this.accDB.getById(targetAddress + 1).isSignal() != c.isSignal())
+                            (this.accDB.hasId(targetAddress + 1) && !mixedAddresses.contains(targetAddress + 1) && this.accDB.getById(targetAddress + 1).isSignal() != c.isSignal())
                         )
                     )
                     {
@@ -1189,7 +1220,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     // locomotive hashes by identity, so no mutation moves it out of the collections
                     // holding it - see the note on MarklinLocomotive.hashCode.  Do not re-add repair
                     // machinery here to satisfy it.
-                    if (this.isAutonomyRunning())
+                    //
+                    // And while it has a speed: Stop would command the new address, the train the old (XFF1-C7).
+                    if (this.isAutonomyRunning() || this.locDB.getByName(l.getName()).getSpeed() > 0)
                     {
                         this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
                     }
@@ -2174,37 +2207,42 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             });
         }
-        else if (message.isSysCommand() && 
-           (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO || message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP)
-        )
+        else if (message.isSysCommand() && (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO
+            || message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP
+            || message.getSubCommand() == CS2Message.CMD_SYSSUB_OVERLOAD))
         {
             this.locMessageProcessor.submit(() ->
             {
-                if (message.getSubCommand() == CS2Message.CMD_SYSSUB_GO)
+                boolean on = message.getSubCommand() == CS2Message.CMD_SYSSUB_GO;
+
+                // An overload is the station cutting the track power by itself, after a short circuit, with no Stop
+                // (OB-426); its channel is the output that tripped.
+                boolean overload = message.getSubCommand() == CS2Message.CMD_SYSSUB_OVERLOAD;
+
+                this.setPowerState(on);
+                if (on) this.powerCutWarned = false;
+
+                // For correctly tracking locomotive stats
+                for (MarklinLocomotive l : this.locDB.getItems())
                 {
-                    this.setPowerState(true);
-
-                    // For correctly tracking locomotive stats
-                    for (MarklinLocomotive l : this.locDB.getItems())
-                    {
-                        l.notifyOfPowerStateChange(true);
-                    }
-
-                    if (this.view != null) this.view.updatePowerState();
-                    this.logf("log.powerOn");
+                    l.notifyOfPowerStateChange(on);
                 }
-                else if (message.getSubCommand() == CS2Message.CMD_SYSSUB_STOP)
+
+                if (this.view != null) this.view.updatePowerState();
+
+                if (overload)
                 {
-                    this.setPowerState(false);
+                    int channel = message.getLength() >= 6 ? message.getData()[5] & 0xFF : 0;
 
-                    // For correctly tracking locomotive stats
-                    for (MarklinLocomotive l : this.locDB.getItems())
-                    {
-                        l.notifyOfPowerStateChange(false);   
-                    }
+                    this.logf("log.powerOffOverload", channel);
 
-                    if (this.view != null) this.view.updatePowerState();
-                    this.logf("log.powerOff");
+                    // Once per cut, whether or not a Stop came first: a short repeats the message while it lasts
+                    if (!this.powerCutWarned && this.view != null) this.view.showPowerCut(channel);
+                    this.powerCutWarned = true;
+                }
+                else
+                {
+                    this.logf(on ? "log.powerOn" : "log.powerOff");
                 }
             });
         }
@@ -3662,8 +3700,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Start execution
         proxy.setModel(model);
         
-        // Connection failed - ask for IP on next run
-        if (!model.getNetworkCommState())
+        // Connection failed - ask for IP on next run.  Not after a simulation, which never tries to connect (OB-339)
+        if (!simulate && !model.getNetworkCommState())
         {
             TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF);
         }
