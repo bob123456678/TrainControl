@@ -864,8 +864,8 @@ Tab icons provided by Freepik.
 <details>
 <summary>Show older versions</summary>
 
-* v2.8.x [8/2026 - 9/2026]
-    - Added French, Italian, Spanish, Dutch and Polish translations, Path Integrity Validation, which runs a train only once the Central Station confirms its switches and signals, and a "return home" feature that brings each locomotive back to the station you chose for it.  Later 2.8 versions fixed many autonomy, route and Central Station problems, and 2.8.2 no longer loses page names when you go back to it after using 3.0.
+* v2.8.x [8/2026 - 11/2026]
+    - Added French, Italian, Spanish, Dutch and Polish translations, Path Integrity Validation, which runs a train only once the Central Station confirms its switches and signals, and a "return home" feature that brings each locomotive back to the station you chose for it.  Later 2.8 versions fixed many autonomy, route and Central Station problems, and 2.8.2 no longer loses page names when you go back to it after using 3.0.  2.8.3 brings 3.1’s Central Station fixes to 2.8: a CS3’s sensor states are read before any S88 route fires, an MM2 and a DCC accessory on the same CS3 address each switch the right turnout, a short circuit shows the track power as off, and Download Update works again.
 
 * v2.7.x [5/2026 - 7/2026]
     - Added support for CS3 firmware v2.6.0 (March 2026) alongside older versions, drag and drop of locomotive buttons across pages while the power is off, and a right-click menu on function icons for saving and recalling presets.  Autonomy can be started, stopped and rearranged from the track diagram, update downloads show their progress in the menu bar, and backups are saved to the tc_backup folder.
