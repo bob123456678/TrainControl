@@ -1,19 +1,20 @@
 package org.traincontrol.automationui;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.traincontrol.automationui.GraphReducer.Reached;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.base.Accessory.accessorySetting;
 
 /**
  * Where trains can get to, read off the built graph: the Points and Edges the railway routes over.  The one source
@@ -26,8 +27,10 @@ import org.traincontrol.automationui.TileGraph.TileKey;
  */
 public final class BuiltReach
 {
-    private final Map<String, List<String>> onward = new HashMap<>();
+    /** Each copy to the edges leaving it: the copy each ends at and the switch settings it needs. */
+    private final Map<String, List<Way>> onward = new HashMap<>();
     private final Set<String> stations = new HashSet<>();
+    private final Set<TileKey> stationSquares = new HashSet<>();
     private final Set<String> inactive = new HashSet<>();
     private final Set<String> stopOnly = new HashSet<>();
     private final Map<String, TileKey> squareOf;
@@ -53,6 +56,8 @@ public final class BuiltReach
 
             TileKey square = squareOf.get(name);
 
+            if (point.optBoolean("station", false) && square != null) stationSquares.add(square);
+
             if (square != null) copiesOf.computeIfAbsent(square, k -> new ArrayList<String>()).add(name);
         }
 
@@ -61,8 +66,17 @@ public final class BuiltReach
         for (int i = 0; i < edges.length(); i++)
         {
             JSONObject edge = edges.getJSONObject(i);
+            JSONArray commands = edge.optJSONArray("commands");
+            Map<String, accessorySetting> settings = new HashMap<>();
 
-            onward.computeIfAbsent(edge.getString("start"), k -> new ArrayList<String>()).add(edge.getString("end"));
+            for (int j = 0; commands != null && j < commands.length(); j++)
+            {
+                settings.put(commands.getJSONObject(j).getString("acc"),
+                    accessorySetting.valueOf(commands.getJSONObject(j).getString("state").toUpperCase(Locale.ROOT)));
+            }
+
+            onward.computeIfAbsent(edge.getString("start"), k -> new ArrayList<Way>())
+                .add(new Way(edge.getString("end"), settings));
         }
     }
 
@@ -78,40 +92,86 @@ public final class BuiltReach
     }
 
     /**
-     * The squares, other than its own, where a train starting on this copy can be sent to a station copy.  With
-     * `closures`, a copy out of service is neither a way through nor somewhere to stop, as `isPathClear` refuses it,
-     * and a stop-only station is somewhere to stop and no way through (FR-111); the start is exempt, since a train on a
-     * square switched off is driven off it by hand.
+     * The squares, other than its own, where a train starting on this copy can be sent to a station copy, searched as
+     * the railway routes (`GraphReducer.searchBySettings`): never past another copy of either end, nor throwing a
+     * switch two ways (FR-238).  With `closures`, a copy out of service is neither a way through nor somewhere to stop,
+     * as `isPathClear` refuses it, and a stop-only station is somewhere to stop and no way through (FR-111); the start
+     * is exempt, since a train on a square switched off is driven off it by hand.
      */
     public Set<TileKey> stationsReachedFrom(String copy, boolean closures)
+    {
+        return reach(copy, closures, false);
+    }
+
+    /** Whether a train starting on this copy can be sent to any station copy, closures ignored: the first will do. */
+    public boolean reachesAStation(String copy)
+    {
+        return !reach(copy, false, true).isEmpty();
+    }
+
+    private Set<TileKey> reach(String copy, boolean closures, boolean firstOnly)
     {
         Set<TileKey> reached = new LinkedHashSet<>();
         TileKey home = squareOf.get(copy);
 
-        Set<String> seen = new HashSet<>();
-        Deque<String> queue = new ArrayDeque<>();
-
-        seen.add(copy);
-        queue.add(copy);
-
-        while (!queue.isEmpty())
-        {
-            for (String next : onward.getOrDefault(queue.poll(), Collections.<String>emptyList()))
+        GraphReducer.<Place, Way>searchBySettings(Collections.singleton(new Place(copy, Collections.<TileKey>emptySet())),
+            here -> onward.getOrDefault(here.copy, Collections.<Way>emptyList()), (here, way) -> here.then(way.end),
+            way -> way.settings, here -> here.copy + here.passed, here ->
             {
-                if (closures && inactive.contains(next)) continue;
+                TileKey square = squareOf.get(here.copy);
 
-                TileKey square = squareOf.get(next);
+                if (closures && inactive.contains(here.copy) || square != null && square.equals(home)) return Reached.REFUSE;
 
-                // Never round onto another copy of the start, which `Layout.bfsBySettings` never passes
-                if (square != null && square.equals(home) || !seen.add(next)) continue;
+                if (stations.contains(here.copy) && square != null && !here.passed.contains(square))
+                {
+                    reached.add(square);
 
-                if (stations.contains(next) && square != null) reached.add(square);
+                    if (firstOnly) return Reached.ARRIVE;
+                }
 
-                if (!closures || !stopOnly.contains(next)) queue.add(next);
-            }
-        }
+                return closures && stopOnly.contains(here.copy) ? Reached.STOP : Reached.PASS;
+            });
 
         return reached;
+    }
+
+    /** A copy reached, and the station squares whose other copies the way there has passed, no longer to stop at. */
+    private final class Place
+    {
+        final String copy;
+        final Set<TileKey> passed;
+
+        Place(String copy, Set<TileKey> passed)
+        {
+            this.copy = copy;
+            this.passed = passed;
+        }
+
+        Place then(String next)
+        {
+            TileKey square = squareOf.get(next);
+
+            if (stations.contains(next) || !stationSquares.contains(square)) return new Place(next, passed);
+
+            Set<TileKey> more = new HashSet<>(passed);
+
+            more.add(square);
+
+            return new Place(next, more);
+        }
+    }
+
+    /** An edge of the build as the search walks it. */
+    private static final class Way
+    {
+        final String end;
+        final Map<String, accessorySetting> settings;
+
+        Way(String end, Map<String, accessorySetting> settings)
+        {
+            this.end = end;
+            this.settings = settings;
+        }
     }
 
     /**

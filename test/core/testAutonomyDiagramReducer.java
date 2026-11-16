@@ -1879,12 +1879,13 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * KNOWN DISAGREEMENT, pinned so that a fix shows up: the findings' reach (`BuiltReach`) still counts X reached from
-     * A by running past it to R and turning, past another copy of X, which `findPath` and the railway refuse.  When
-     * this fails, `BuiltReach` has been fixed: turn this into an agreement and correct `AutonomySession.testPath`.
+     * The findings' reach (`BuiltReach`) agrees with `findPath` and the railway: X refusing arrivals from A's side is
+     * not reached from A by running past it to R and turning, past another copy of X (FR-238).
+     *
+     * MUTATION: in `BuiltReach.Place.then`, never note the square of a copy passed, and this fails.
      */
     @Test
-    public void testTheFindingsStillReachPastAnotherCopyOfTheDestination() throws IOException
+    public void testTheFindingsNeverReachPastAnotherCopyOfTheDestination() throws IOException
     {
         GraphReducer reducer = aRunOfThreeStations();
 
@@ -1893,14 +1894,17 @@ public class testAutonomyDiagramReducer
         Set<TileKey> mayTurn = java.util.Collections.singleton(key("main", 5, 1));
         Set<TileKey> none = Collections.emptySet();
 
+        assertTrue(builtReaches(reducer, a, x, mayTurn, none, Collections.<TileKey, Set<Side>>emptyMap(), none),
+            "control: the findings do not reach X from A with nothing barred");
+
         Map<TileKey, Set<Side>> barred = new java.util.LinkedHashMap<>();
 
         barred.put(x, java.util.EnumSet.of(arrivalSideAt(reducer, a, x)));
 
         assertNull(reducer.findPath(a, x, mayTurn, none, barred), "precondition: Test a Path reaches X past its other copy");
 
-        assertTrue(builtReaches(reducer, a, x, mayTurn, none, barred, none), "the findings no longer reach X from A past"
-            + " another copy of X, so they now agree with Test a Path: make this an agreement");
+        assertFalse(builtReaches(reducer, a, x, mayTurn, none, barred, none), "the findings reach X from A by running"
+            + " past it to R and turning, past another copy of X, a route Test a Path and the railway refuse");
     }
 
     /**
