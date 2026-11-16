@@ -81,7 +81,7 @@ The Locomotive Settings window, on its `Basic Settings` tab, with the locomotive
 
 Multi-units can be configured in TrainControl, which can be simpler than using the Central Station.
 
-![Configuring a Marklin multi-unit in TrainControl by linking several locomotives together](assets/multiunit.png?raw=true)
+![Configuring a Marklin multi-unit in TrainControl by linking two DSB railcars, ER 2035 and MF 5028, into one unit](assets/multiunit.png?raw=true)
 
 **Layout View & Layout Editing**
 
