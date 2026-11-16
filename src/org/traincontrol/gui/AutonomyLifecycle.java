@@ -158,7 +158,7 @@ final class AutonomyLifecycle
         ui.autonomySettingsTab.loadAutoLayoutSettings();
 
         ui.startAutonomyButton().setEnabled(true);
-        ui.refreshReturnHomeButton();
+        ui.returnHomeController.refreshReturnHomeButton();
         ui.executeTimetableButton().setEnabled(true);
         ui.gracefulStopButton().setEnabled(false);
 
@@ -695,7 +695,7 @@ final class AutonomyLifecycle
 
         if (!prepareAutonomyReload()) return false;
 
-        ui.writeTheTurnsOwed();
+        ui.diagramLocGestures.writeTheTurnsOwed();
 
         // Folded before it is cleared: the reset asks the model for its railway, which Unload empties first.
         ui.captureRunningLayout(true);
@@ -748,7 +748,7 @@ final class AutonomyLifecycle
 
         ui.findRouteMenuItem = new JMenuItem(I18n.t("route.ui.menuFindRoute"));
 
-        ui.findRouteMenuItem.addActionListener(e -> ui.findRoute());
+        ui.findRouteMenuItem.addActionListener(e -> ui.routeListPanel.findRoute());
 
         // At the top, above Export and Import, which are about the route list as a file.
         ui.routesMenu().add(newRoute, 0);

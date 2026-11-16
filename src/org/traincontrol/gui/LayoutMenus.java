@@ -67,7 +67,7 @@ final class LayoutMenus
             child.setEnabled(!busy);
         }
 
-        ui.applyLayoutEditingAvailability();
+        ui.editorWindows.applyLayoutEditingAvailability();
 
         refreshHeadings();
 

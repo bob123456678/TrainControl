@@ -108,7 +108,7 @@ final class LocomotiveActions
 
             if (RunGates.refuseWhileAutonomyRunning(this.ui, source)) return false;
 
-            if (this.ui.refuseWhileARouteDrivesIt(source, l.getName())) return false;
+            if (RunGates.refuseWhileARouteDrivesIt(this.ui, source, l.getName())) return false;
 
             if (newAddress != null && !"".equals(newAddress.trim()))
             {
@@ -618,7 +618,7 @@ final class LocomotiveActions
         }
 
         // AND NOT WHILE A ROUTE THAT DRIVES IT IS RUNNING.
-        if (this.ui.refuseWhileARouteDrivesIt(source, value)) return false;
+        if (RunGates.refuseWhileARouteDrivesIt(this.ui, source, value)) return false;
         
         // The routes that drive it, counted before it goes: deleting a locomotive removes every command that drives it
         // from every route (see Route.locomotiveDeleted), and an operator who deletes and re-adds it under the same
@@ -655,7 +655,7 @@ final class LocomotiveActions
         {
             // ASKED AGAIN AT YES, BEFORE ANYTHING IS WRITTEN: the question at the top was put before this
             // confirmation opened, and an s88 trigger can start a route that drives the locomotive while it is open.
-            if (this.ui.refuseWhileARouteDrivesIt(source, value)) return false;
+            if (RunGates.refuseWhileARouteDrivesIt(this.ui, source, value)) return false;
 
             Locomotive l = this.ui.getModel().getLocByName(value);
 

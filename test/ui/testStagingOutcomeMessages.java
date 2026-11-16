@@ -34,7 +34,8 @@ public class testStagingOutcomeMessages
 
         TrainControlUI ui = build();
 
-        java.lang.reflect.Method describe = Reflect.method(TrainControlUI.class,
+        Object home = Reflect.get(TrainControlUI.class, ui, "returnHomeController");
+        java.lang.reflect.Method describe = Reflect.method(home.getClass(),
             "describeStagingOutcome", HomeStaging.Outcome.class, java.util.List.class);
 
         Map<String, HomeStaging.Outcome> seen = new HashMap<>();
@@ -43,7 +44,7 @@ public class testStagingOutcomeMessages
         {
             if (outcome == HomeStaging.Outcome.READY) continue;
 
-            String message = (String) describe.invoke(ui, outcome, null);
+            String message = (String) describe.invoke(home, outcome, null);
 
             assertNotNull(message, outcome + " has no message at all");
 

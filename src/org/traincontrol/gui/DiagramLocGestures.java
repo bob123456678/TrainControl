@@ -132,7 +132,7 @@ final class DiagramLocGestures
         // A route too (`aRunHoldsTheSetup`): these keys write a placement into the setup.
         if (ui.aRunHoldsTheSetup())
         {
-            ui.getModel().log(ui.whyTheSetupIsHeld("layout.warnDiagramKeyWhileBusy"));
+            ui.getModel().log(RunGates.whyTheSetupIsHeld(ui, "layout.warnDiagramKeyWhileBusy"));
 
             return true;
         }
@@ -404,7 +404,7 @@ final class DiagramLocGestures
                 }
 
                 // Saved with an editor open, as a followed turn is: the railway's, not the editor's work to ask about
-                if (wrote && ui.anEditorWindow() != null) session.saveWithoutReconciling();
+                if (wrote && ui.editorWindows.anEditorWindow() != null) session.saveWithoutReconciling();
             }
         }
         catch (java.io.IOException notSaved)
