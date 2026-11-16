@@ -139,8 +139,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Is network communication on?
     private boolean on;
     
-    // Is the power turned on?
-    private boolean powerState = true; // default to true unless power is turned off
+    // Is the power turned on?  volatile because getPowerState() takes no lock: autonomy reads it from its own threads
+    private volatile boolean powerState = true; // default to true unless power is turned off
         
     // Unique ID of the central station (0 for all stations)
     private int UID = 0;
