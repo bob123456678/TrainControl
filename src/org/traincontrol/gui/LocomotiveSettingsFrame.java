@@ -734,7 +734,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             return false;
         }
 
-        if (identity && main.refuseWhileARouteDrivesIt(this, loc.getName())) return false;
+        if (identity && RunGates.refuseWhileARouteDrivesIt(main, this, loc.getName())) return false;
 
         if (members && main.locomotiveActions.refuseMultiUnitEdit(this, loc, multiUnitTab.chosen().keySet())) return false;
 

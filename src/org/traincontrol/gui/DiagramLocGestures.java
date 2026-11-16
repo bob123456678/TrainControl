@@ -132,7 +132,7 @@ final class DiagramLocGestures
         // A route too (`aRunHoldsTheSetup`): these keys write a placement into the setup.
         if (ui.aRunHoldsTheSetup())
         {
-            ui.getModel().log(ui.whyTheSetupIsHeld("layout.warnDiagramKeyWhileBusy"));
+            ui.getModel().log(RunGates.whyTheSetupIsHeld(ui, "layout.warnDiagramKeyWhileBusy"));
 
             return true;
         }
@@ -148,7 +148,7 @@ final class DiagramLocGestures
         // The square under the pointer, or the station its LABEL is about: pointing at the name is pointing at it.
         TileGraph.TileKey aimed = over;
 
-        Point point = ui.getAutonomyPointForTile(aimed);
+        Point point = ui.stationCaptions.getAutonomyPointForTile(aimed);
 
         if (point == null)
         {
@@ -159,7 +159,7 @@ final class DiagramLocGestures
             if (captioned != null)
             {
                 aimed = captioned;
-                point = ui.getAutonomyPointForTile(aimed);
+                point = ui.stationCaptions.getAutonomyPointForTile(aimed);
             }
         }
 
@@ -404,7 +404,7 @@ final class DiagramLocGestures
                 }
 
                 // Saved with an editor open, as a followed turn is: the railway's, not the editor's work to ask about
-                if (wrote && ui.anEditorWindow() != null) session.saveWithoutReconciling();
+                if (wrote && ui.editorWindows.anEditorWindow() != null) session.saveWithoutReconciling();
             }
         }
         catch (java.io.IOException notSaved)

@@ -1301,13 +1301,14 @@ public class testAPendingTurnSurvivesTheRebuild
     /** Asks the window which captions to hide, as a setup change does, and waits for its worker's answer to be painted. */
     private static void captionsSettled() throws Exception
     {
-        java.lang.reflect.Method ask = Reflect.method(TrainControlUI.class, "refreshCaptionVisibility");
+        Object captions = Reflect.get(TrainControlUI.class, ui, "captionVisibility");
+        java.lang.reflect.Method ask = Reflect.method(captions.getClass(), "refreshCaptionVisibility");
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
             try
             {
-                ask.invoke(ui);
+                ask.invoke(captions);
             }
             catch (ReflectiveOperationException e)
             {

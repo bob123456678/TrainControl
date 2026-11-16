@@ -677,7 +677,7 @@ public final class LayoutLabel extends JLabel
         // A station gets the station items; every other square gets the menu without them, so a right-click anywhere
         // leads into the autonomy setup.
         final org.traincontrol.automationui.TileGraph.TileKey station =
-            tcUI.autonomyStationAt(autonomyPage, component.getX(), component.getY());
+            tcUI.diagramLocGestures.autonomyStationAt(autonomyPage, component.getX(), component.getY());
 
         // The square itself, which the setup menu acts on whether or not anything has been made of it yet.
         final org.traincontrol.automationui.TileGraph.TileKey here =

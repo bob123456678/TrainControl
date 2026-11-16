@@ -245,7 +245,9 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         {
             try
             {
-                Reflect.method(TrainControlUI.class, "refreshReturnHomeButton").invoke(ui);
+                Object home = Reflect.get(TrainControlUI.class, ui, "returnHomeController");
+
+                Reflect.method(home.getClass(), "refreshReturnHomeButton").invoke(home);
             }
             catch (Exception failed)
             {
