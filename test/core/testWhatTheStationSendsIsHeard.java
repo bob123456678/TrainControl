@@ -368,16 +368,23 @@ public class testWhatTheStationSendsIsHeard
         assertTrue(Components.waitFor(() -> train.getSpeed() == 40, HEARD_MS), "precondition: the train is not running");
 
         // The function echo after it shows the stop for nobody was handled: one thread takes both, in order
-        hear(Packets.trainStop(unknown));
+        hear(Packets.trainStop(unknown, true));
         hear(Packets.functionEcho(train, 3, true));
         assertTrue(Components.waitFor(() -> train.getF(3), HEARD_MS), "precondition: the function echo was not heard");
         assertEquals(train.getSpeed(), 40, "an emergency stop for a UID no locomotive has stopped this train");
 
         int mark = SENT.size();
-        hear(Packets.trainStop(train.getIntUID()));
+        // The stop as a request (another program's) and as the station's answer
+        for (boolean response : new boolean[] {false, true})
+        {
+            hear(Packets.speedEcho(train, 400));
+            assertTrue(Components.waitFor(() -> train.getSpeed() == 40, HEARD_MS), "precondition: the train is not running");
+            hear(Packets.trainStop(train.getIntUID(), response));
 
-        assertTrue(Components.waitFor(() -> train.getSpeed() == 0, HEARD_MS), "the station stopped the train and the "
-            + "model reads speed " + train.getSpeed());
+            assertTrue(Components.waitFor(() -> train.getSpeed() == 0, HEARD_MS), "the station stopped the train (response "
+                + response + ") and the model reads speed " + train.getSpeed());
+        }
+
         assertEquals(SENT.size(), mark, "a stop heard from the station was sent back: " + SENT.subList(mark, SENT.size()));
 
         hear(Packets.speedEcho(train, 400));

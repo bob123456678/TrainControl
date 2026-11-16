@@ -1598,6 +1598,10 @@ public class testTheStationIsReachedOverTcp
                 + this.model.lines);
             assertTrue(Components.waitFor(() -> this.station.received().stream().filter(f -> Arrays.equals(f.bytes,
                 stopTrain)).count() == 2, WAIT_MS), "the speeds 0 did not both go on the connection too");
+
+            // A speed query has no speed bytes, so the zeros after it are padding, not a speed 0
+            this.proxy.sendMessage(new CS2Message(CS2Message.CMD_LOCO_VELOCITY, new byte[] {0, 0, 0, 5}));
+            assertEquals(nextOn(wire, 300), null, "a speed query went over UDP");
         }
     }
 

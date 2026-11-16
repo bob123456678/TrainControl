@@ -130,9 +130,9 @@ public final class Packets
     }
 
     /** A single locomotive's emergency stop ("Lok Nothalt") at the station, addressed by the locomotive's UID. */
-    public static CS2Message trainStop(int uid)
+    public static CS2Message trainStop(int uid, boolean response)
     {
-        return frame(CS2Message.CMD_SYSTEM, true, new byte[] {(byte) (uid >> 24), (byte) (uid >> 16), (byte) (uid >> 8),
+        return frame(CS2Message.CMD_SYSTEM, response, new byte[] {(byte) (uid >> 24), (byte) (uid >> 16), (byte) (uid >> 8),
             (byte) uid, (byte) CS2Message.CMD_SYSSUB_TRAINSTOP});
     }
 
