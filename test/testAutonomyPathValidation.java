@@ -896,6 +896,86 @@ public class testAutonomyPathValidation
     }
 
     /**
+     * Each cut is said once, even after autonomy was stopped during the one before and the power came back while
+     * nothing ran: the next cut said nothing.
+     */
+    @Test(timeOut = 60000)
+    public void testEachCutIsSaidAfterAStopDuringTheLastOne() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        final List<String> keys = Collections.synchronizedList(new ArrayList<>());
+
+        ViewListener recording = (ViewListener) Proxy.newProxyInstance(
+            ViewListener.class.getClassLoader(), new Class<?>[]{ ViewListener.class }, (proxy, method, args) ->
+            {
+                if (method.getName().equals("logf")) keys.add((String) args[0]);
+
+                try
+                {
+                    return method.invoke(model, args);
+                }
+                catch (InvocationTargetException e)
+                {
+                    throw e.getCause();
+                }
+            });
+
+        Layout layout = new Layout(recording);
+
+        MarklinFeedback atA = model.newFeedback(374, null);
+        model.setFeedbackState(atA.getName(), false);
+        layout.createPoint("A_said", true, atA.getName());
+
+        MarklinFeedback atB = model.newFeedback(375, null);
+        model.setFeedbackState(atB.getName(), false);
+        layout.createPoint("B_said", true, atB.getName());
+
+        layout.createEdge("A_said", "B_said");
+
+        String name = "PV said loc";
+        MarklinLocomotive loc = model.newMM2Locomotive(name, 78);
+
+        try
+        {
+            loc.setPreferredSpeed(30);
+            assertTrue(layout.moveLocomotive(name, "A_said", false), "precondition: the train was placed");
+
+            layout.setMaxDelay(1);
+            layout.setMinDelay(1);
+
+            model.stop();
+            waitForPower(false, 1000);
+            layout.runLocomotives();
+            Thread.sleep(600);
+
+            // Stopped during the cut, and the power back while nothing runs
+            layout.stopLocomotives();
+            Thread.sleep(600);
+            model.go();
+            waitForPower(true, 1000);
+            Thread.sleep(300);
+
+            model.stop();
+            waitForPower(false, 1000);
+            layout.runLocomotives();
+            Thread.sleep(600);
+
+            assertEquals(Collections.frequency(new ArrayList<>(keys), "autolayout.infoWaitingForTrackPower"), 2,
+                "Each of the two cuts must be said once: " + keys);
+        }
+        finally
+        {
+            layout.stopLocomotives();
+            model.go();
+            waitForPower(true, 1000);
+            Thread.sleep(600);
+            model.deleteLoc(name);
+        }
+    }
+
+    /**
      * In pure simulation mode there is no real actuation to confirm, so the guard is bypassed entirely -
      * even a deliberately misconfigured accessory must not cut power.
      */

@@ -3101,7 +3101,8 @@ public class Layout
             }
         }
 
-        if (this.control.getPowerState()) this.waitingForThePower.set(false);
+        // Cleared however the wait ends: kept after a stop during a cut, it silenced the next cut's line
+        this.waitingForThePower.set(false);
 
         if (interrupted) Thread.currentThread().interrupt();
 
