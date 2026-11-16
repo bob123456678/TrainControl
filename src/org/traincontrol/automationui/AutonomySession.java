@@ -3905,7 +3905,7 @@ public class AutonomySession
 
             // Not stopped by a square out of service: this finding is an ERROR, and a closure is the operator's to make
             // and undo.
-            if (!reach.stationsReachedFrom(copy, false).isEmpty()) continue;
+            if (reach.reachesAStation(copy)) continue;
 
             // Only where a sibling copy does get somewhere (`badCopies`).
             boolean healthySquare = false;
@@ -3914,7 +3914,7 @@ public class AutonomySession
             {
                 if (sibling.equals(copy) || !here.equals(byName.get(sibling))) continue;
 
-                if (reach.leaves(sibling) && !reach.stationsReachedFrom(sibling, false).isEmpty())
+                if (reach.leaves(sibling) && reach.reachesAStation(sibling))
                 {
                     healthySquare = true;
                     break;
@@ -5282,9 +5282,8 @@ public class AutonomySession
     /**
      * The editor's Test a Path from one square to another, or null where there is none: the search with the sets the
      * build reads, starting on the copies a train stands on, past no other copy of either end and throwing no switch two
-     * ways, as the railway routes.  The findings' reach (`BuiltReach`) still passes other copies of the destination and
-     * ignores switch settings, so the two can disagree (`testTheFindingsStillReachPastAnotherCopyOfTheDestination`,
-     * `testAKickbackThatThrowsItsSwitchBothWaysIsNoWay`).
+     * ways, as the railway routes.  The findings' reach (`BuiltReach`) runs the same search over the build
+     * (`GraphReducer.searchBySettings`), so the two agree (`testTheFindingsAgreeWithTestAPathOnTheFrozenRailway`).
      */
     public List<GraphReducer.ReducedEdge> testPath(TileKey from, TileKey to)
     {

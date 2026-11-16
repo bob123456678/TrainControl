@@ -5,6 +5,8 @@ import org.traincontrol.base.LayoutDiagramComponent;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,6 +15,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import org.traincontrol.base.Accessory.accessorySetting;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.automationui.TileGraph.Exit;
@@ -424,103 +428,236 @@ public class GraphReducer
 
         // The search state is a Point AND the side the train reached it by: what a train may do next depends on which
         // way it is pointing.  With no starting sides the start has no arrival side: the question is whether the TRACK
-        // allows the journey.  And the switch settings so far, as `Layout.bfsBySettings` carries them: a route that
-        // throws one switch two ways is refused whole by `isPathClear`, a turn on the way no excuse (FR-221).
-        Map<String, List<Map<String, accessorySetting>>> seen = new HashMap<>();
-
-        ArrayDeque<Step> frontier = new ArrayDeque<>();
+        // allows the journey.
+        List<Facing> starts = new ArrayList<>();
 
         for (Side arrival : startArrivals == null ? Collections.<Side>singleton(null) : startArrivals)
         {
-            frontier.add(new Step(from, arrival, new HashMap<String, accessorySetting>(), null, null));
+            starts.add(new Facing(from, arrival, placeOf(from, arrival), null, Collections.<String>emptySet()));
         }
+
+        Map<TileKey, List<ReducedEdge>> leaving = new HashMap<>();
+
+        for (ReducedEdge edge : edges)
+        {
+            leaving.computeIfAbsent(edge.getStart(), k -> new ArrayList<ReducedEdge>()).add(edge);
+        }
+
+        return searchBySettings(starts, here -> waysOn(here, leaving, mayTurn, mustTurn), (here, edge) ->
+            {
+                Facing next = new Facing(edge.getEnd(), edge.getEntrySide(), placeOf(edge.getEnd(), edge.getEntrySide()),
+                    here.home, here.passed);
+
+                // A refused arrival at the destination is a copy of it passed, whose place is not to be stopped at after
+                if (!edge.getEnd().equals(to) || !refusesArrival(barred, to, edge.getEntrySide())) return next;
+
+                Set<String> passed = new HashSet<>(here.passed);
+
+                passed.add(next.place);
+
+                return new Facing(next.at, next.arrived, next.place, here.home, passed);
+            }, ReducedEdge::getCommands, there -> Arrays.<Object>asList(there.at, there.arrived, there.home, there.passed),
+            there ->
+            {
+                // Never onto the start's place again, as `Layout.bfsBySettings` never passes another copy of either end
+                // (`Point.isSamePlaceAs`); and a closed square is no destination
+                if (there.at.equals(from) && there.home.equals(from.toString()) || there.place.equals(there.home)
+                    || closed != null && closed.contains(there.at)) return Reached.REFUSE;
+
+                // ARRIVED, unless the square refuses to be arrived at that way (OB-120), a barred side barring coming in
+                // and stopping, not passing through; or its place was passed, then passed again as in `BuiltReach`
+                if (there.at.equals(to) && !refusesArrival(barred, to, there.arrived)
+                    && !there.passed.contains(there.place)) return Reached.ARRIVE;
+
+                return stopOnly.contains(there.at) ? Reached.STOP : Reached.PASS;
+            });
+    }
+
+    /** Where a train arriving by this side stands: the square, or its road on a double curve or overpass (OB-238). */
+    String placeOf(TileKey tile, Side arrival)
+    {
+        LayoutDiagramComponent component = arrival == null || graph == null ? null : graph.getTiles().get(tile);
+
+        if (component == null || component.getType() != componentType.DOUBLE_CURVE
+            && component.getType() != componentType.FEEDBACK_DOUBLE_CURVE && component.getType() != componentType.OVERPASS)
+        {
+            return tile.toString();
+        }
+
+        Set<Side> road = new java.util.TreeSet<>(onwardSides(tile, arrival));
+
+        road.add(arrival);
+
+        return tile + "/" + road.iterator().next();
+    }
+
+    /** The edges a train at this place may take next: on along its track, or back where it may or must turn. */
+    private List<ReducedEdge> waysOn(Facing here, Map<TileKey, List<ReducedEdge>> leaving, Set<TileKey> mayTurn,
+        Set<TileKey> mustTurn)
+    {
+        List<ReducedEdge> out = new ArrayList<>();
+        Set<Side> onward = here.arrived == null ? null : onwardSides(here.at, here.arrived);
+
+        for (ReducedEdge edge : leaving.getOrDefault(here.at, Collections.<ReducedEdge>emptyList()))
+        {
+            if (here.arrived != null)
+            {
+                boolean back = edge.getExitSide() == here.arrived;
+
+                // Where turning is compulsory, going back is the ONLY move: no straight-through copy is built, so a
+                // run that carried on through one is a run no train could make.
+                if (mustTurn.contains(here.at))
+                {
+                    if (!back) continue;
+                }
+                else if (back)
+                {
+                    if (!mayTurn.contains(here.at)) continue;
+                }
+                // Carrying on has to be along the SAME TRACK: at a double-curve sensor (two curves crossing in one
+                // square, unconnected) comparing sides alone would let a train jump tracks mid-square.
+                else if (!onward.contains(edge.getExitSide()))
+                {
+                    continue;
+                }
+            }
+
+            out.add(edge);
+        }
+
+        return out;
+    }
+
+    /**
+     * A square, the side reached by (null: a start facing every way), its place, the start's, the destination's passed.
+     */
+    private static final class Facing
+    {
+        final TileKey at;
+        final Side arrived;
+        final String place;
+        final String home;
+        final Set<String> passed;
+
+        Facing(TileKey at, Side arrived, String place, String home, Set<String> passed)
+        {
+            this.at = at;
+            this.arrived = arrived;
+            this.place = place;
+            this.home = home == null ? place : home;
+            this.passed = passed;
+        }
+    }
+
+    /** What `searchBySettings` makes of a place: a way through, the end of a walk, the destination, or no way. */
+    enum Reached { PASS, STOP, ARRIVE, REFUSE }
+
+    /**
+     * Test a path's and the findings' one search, as `Layout.bfsBySettings`/`isPathClear` route (FR-221); null: no way.
+     */
+    static <P, W> List<W> searchBySettings(Collection<P> starts, Function<P, List<W>> ways, BiFunction<P, W, P> end,
+        Function<W, Map<String, accessorySetting>> commands, Function<P, Object> key, Function<P, Reached> reached)
+    {
+        // The settings so far as one byte per switch met (`index`), its setting's ordinal + 1, 0 where unset: copied
+        // only where a step sets a switch not set before, and shared with every successor that sets none.  A switch
+        // set two ways refuses the step: same rule as `HomeStaging.withCommands`; change both.
+        Map<String, Integer> index = new HashMap<>();
+        Map<Object, List<byte[]>> seen = new HashMap<>();
+        ArrayDeque<Step<P, W>> frontier = new ArrayDeque<>();
+
+        for (P start : starts) frontier.add(new Step<P, W>(start, new byte[0], null, null));
 
         while (!frontier.isEmpty())
         {
-            Step here = frontier.poll();
+            Step<P, W> here = frontier.poll();
 
-            for (ReducedEdge edge : edges)
+            for (W way : ways.apply(here.at))
             {
-                if (!edge.getStart().equals(here.at)) continue;
+                P there = end.apply(here.at, way);
+                Object at = key.apply(there);
+                byte[] settings = here.settings;
 
-                if (here.arrived != null)
+                for (Map.Entry<String, accessorySetting> command : commands.apply(way).entrySet())
                 {
-                    boolean back = edge.getExitSide() == here.arrived;
+                    int i = index.computeIfAbsent(command.getKey(), k -> index.size());
+                    byte set = (byte) (command.getValue().ordinal() + 1);
+                    byte had = i < settings.length ? settings[i] : 0;
 
-                    // Where turning is compulsory, going back is the ONLY move: no straight-through copy is built, so a
-                    // run that carried on through one is a run no train could make.
-                    if (mustTurn.contains(here.at))
+                    if (had == set) continue;
+
+                    if (had != 0)
                     {
-                        if (!back) continue;
+                        settings = null;
+                        break;
                     }
-                    else if (back)
+
+                    if (settings == here.settings || i >= settings.length)
                     {
-                        if (!mayTurn.contains(here.at)) continue;
+                        settings = Arrays.copyOf(settings, Math.max(settings.length, index.size()));
                     }
-                    // Carrying on has to be along the SAME TRACK: at a double-curve sensor (two curves crossing in one
-                    // square, unconnected) comparing sides alone would let a train jump tracks mid-square.
-                    else if (!onwardSides(here.at, here.arrived).contains(edge.getExitSide()))
-                    {
-                        continue;
-                    }
+
+                    settings[i] = set;
                 }
 
-                // Never round onto the start again, as `Layout.bfsBySettings` never passes another copy of either end
-                if (edge.getEnd().equals(from)) continue;
+                if (settings == null || alreadyReached(seen.get(at), settings)) continue;
 
-                Map<String, accessorySetting> commands =
-                    org.traincontrol.automation.HomeStaging.withCommands(edge.getCommands(), here.commands);
+                seen.computeIfAbsent(at, k -> new ArrayList<byte[]>()).add(settings);
 
-                if (commands == null) continue;
+                // Asked only of a way the settings allow, so `reached` may note what it is shown
+                Reached verdict = reached.apply(there);
 
-                // Barred sides only where they mean something (OB-120): a barred side bars COMING IN AND STOPPING, not
-                // passing through, so the refusal belongs on the DESTINATION hop.
-                String key = searchKey(edge.getEnd(), edge.getEntrySide());
+                if (verdict == Reached.REFUSE) continue;
 
-                if (org.traincontrol.automation.HomeStaging.alreadyReached(seen, key, commands)) continue;
+                Step<P, W> next = new Step<>(there, settings, way, here);
 
-                seen.computeIfAbsent(key, k -> new ArrayList<Map<String, accessorySetting>>()).add(commands);
-
-                Step next = new Step(edge.getEnd(), edge.getEntrySide(), commands, edge, here);
-
-                // A closed square is not a destination either: asked before the arrival test, which accepts the square
-                // and returns before the closure is consulted.
-                if (closed != null && closed.contains(edge.getEnd())) continue;
-
-                // ARRIVED, unless the square refuses to be arrived at that way (OB-120).  A refused arrival is another
-                // copy of the destination, which the runtime never passes either, so the walk ends there.
-                if (edge.getEnd().equals(to))
+                if (verdict == Reached.ARRIVE)
                 {
-                    if (refusesArrival(barred, edge.getEnd(), edge.getEntrySide())) continue;
+                    List<W> path = new ArrayList<>();
 
-                    List<ReducedEdge> path = new ArrayList<>();
-
-                    for (Step step = next; step.by != null; step = step.from) path.add(0, step.by);
+                    for (Step<P, W> step = next; step.by != null; step = step.from) path.add(0, step.by);
 
                     return path;
                 }
 
-                if (!stopOnly.contains(edge.getEnd())) frontier.add(next);
+                if (verdict == Reached.PASS) frontier.add(next);
             }
         }
 
         return null;
     }
 
-    /** A place `findPath` has reached: the square, the side it came in by, the settings so far, and how. */
-    private static final class Step
+    /**
+     * Whether an earlier arrival committed to nothing these settings have not; change `HomeStaging.alreadyReached` too.
+     */
+    private static boolean alreadyReached(List<byte[]> earlier, byte[] settings)
     {
-        final TileKey at;
-        final Side arrived;
-        final Map<String, accessorySetting> commands;
-        final ReducedEdge by;
-        final Step from;
+        for (byte[] before : earlier == null ? Collections.<byte[]>emptyList() : earlier)
+        {
+            boolean dominates = true;
 
-        Step(TileKey at, Side arrived, Map<String, accessorySetting> commands, ReducedEdge by, Step from)
+            for (int i = 0; i < before.length && dominates; i++)
+            {
+                dominates = before[i] == 0 || i < settings.length && before[i] == settings[i];
+            }
+
+            if (dominates) return true;
+        }
+
+        return false;
+    }
+
+    /** A place `searchBySettings` has reached, the settings so far, and how. */
+    private static final class Step<P, W>
+    {
+        final P at;
+        final byte[] settings;
+        final W by;
+        final Step<P, W> from;
+
+        Step(P at, byte[] settings, W by, Step<P, W> from)
         {
             this.at = at;
-            this.arrived = arrived;
-            this.commands = commands;
+            this.settings = settings;
             this.by = by;
             this.from = from;
         }
@@ -553,12 +690,6 @@ public class GraphReducer
         }
 
         return out;
-    }
-
-    /** A square together with the side a train reached it by, which is what the path search walks over. */
-    private static String searchKey(TileKey tile, Side arrival)
-    {
-        return tile + "|" + (arrival == null ? "-" : arrival.name());
     }
 
     /**

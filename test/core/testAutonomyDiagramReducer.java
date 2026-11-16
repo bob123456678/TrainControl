@@ -1879,12 +1879,76 @@ public class testAutonomyDiagramReducer
     }
 
     /**
-     * KNOWN DISAGREEMENT, pinned so that a fix shows up: the findings' reach (`BuiltReach`) still counts X reached from
-     * A by running past it to R and turning, past another copy of X, which `findPath` and the railway refuse.  When
-     * this fails, `BuiltReach` has been fixed: turn this into an agreement and correct `AutonomySession.testPath`.
+     * A double-curve station DC refuses arrivals from the west, on its north-west road; its north arm loops round by L
+     * and M into its east side, the other road.  The roads are different places (`AutonomyBuilder.blockFor`,
+     * `Point.isSamePlaceAs`), so the railway routes A past the refused road and round the loop into DC, and the findings
+     * and Test a Path both say A reaches DC (FR-238).
+     *
+     * MUTATION: key `BuiltReach`'s places by square rather than by block, or `GraphReducer.placeOf` by tile alone, and
+     * this fails.
      */
     @Test
-    public void testTheFindingsStillReachPastAnotherCopyOfTheDestination() throws IOException
+    public void testADoubleCurvesOtherRoadIsAnotherPlace() throws IOException
+    {
+        LayoutDiagram page = page("main", 8, 8);
+
+        feedback(page, 0, 2, 11);
+        straight(page, 1, 2);
+        add(page, componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, 0, 22);
+        add(page, componentType.STRAIGHT, 2, 1, 1);
+        add(page, componentType.CURVE, 2, 0, 0);
+        Diagrams.feedback(page, 3, 0, 9, 18);
+        add(page, componentType.CURVE, 4, 0, 3);
+        page.addComponent(componentType.FEEDBACK, 4, 1, 1, 0, 8, 16, accessoryDecoderType.MM2, null);
+        add(page, componentType.CURVE, 4, 2, 2);
+        straight(page, 3, 2);
+        add(page, componentType.STRAIGHT, 2, 3, 1);
+        page.addComponent(componentType.FEEDBACK, 2, 4, 1, 0, 7, 14, accessoryDecoderType.MM2, null);
+
+        TileGraph graph = graph(page);
+
+        for (TileKey tile : graph.getTiles().keySet())
+        {
+            for (RouteId routeId : graph.getRoutes(tile).keySet()) graph.setDirection(tile, routeId, Direction.BOTH);
+        }
+
+        TileKey a = key("main", 0, 2);
+        TileKey dc = key("main", 2, 2);
+        Set<TileKey> stations = new HashSet<>(Arrays.asList(a, dc));
+
+        GraphReducer reducer = reduce(graph, new GraphReducer.NothingAuthored()
+        {
+            @Override
+            public boolean isStation(TileKey tile)
+            {
+                return stations.contains(tile);
+            }
+        });
+
+        Map<TileKey, Set<Side>> barred = new HashMap<>();
+
+        barred.put(dc, java.util.EnumSet.of(Side.W));
+
+        Set<TileKey> mayTurn = new HashSet<>(Arrays.asList(a, key("main", 2, 4)));
+        Set<TileKey> none = Collections.emptySet();
+
+        assertNotNull(reducer.findPath(a, key("main", 4, 1), mayTurn, none, barred), "precondition: A does not reach M");
+
+        assertNotNull(reducer.findPath(a, dc, mayTurn, none, barred), "Test a Path finds no way from A to DC, though"
+            + " the railway runs past DC's refused road and round the loop into its other road");
+
+        assertTrue(builtReaches(reducer, a, dc, mayTurn, none, barred, none), "the findings say A does not reach DC,"
+            + " though the railway runs past DC's refused road and round the loop into its other road");
+    }
+
+    /**
+     * The findings' reach (`BuiltReach`) agrees with `findPath` and the railway: X refusing arrivals from A's side is
+     * not reached from A by running past it to R and turning, past another copy of X (FR-238).
+     *
+     * MUTATION: in `BuiltReach.Place.then`, never note the square of a copy passed, and this fails.
+     */
+    @Test
+    public void testTheFindingsNeverReachPastAnotherCopyOfTheDestination() throws IOException
     {
         GraphReducer reducer = aRunOfThreeStations();
 
@@ -1893,14 +1957,17 @@ public class testAutonomyDiagramReducer
         Set<TileKey> mayTurn = java.util.Collections.singleton(key("main", 5, 1));
         Set<TileKey> none = Collections.emptySet();
 
+        assertTrue(builtReaches(reducer, a, x, mayTurn, none, Collections.<TileKey, Set<Side>>emptyMap(), none),
+            "control: the findings do not reach X from A with nothing barred");
+
         Map<TileKey, Set<Side>> barred = new java.util.LinkedHashMap<>();
 
         barred.put(x, java.util.EnumSet.of(arrivalSideAt(reducer, a, x)));
 
         assertNull(reducer.findPath(a, x, mayTurn, none, barred), "precondition: Test a Path reaches X past its other copy");
 
-        assertTrue(builtReaches(reducer, a, x, mayTurn, none, barred, none), "the findings no longer reach X from A past"
-            + " another copy of X, so they now agree with Test a Path: make this an agreement");
+        assertFalse(builtReaches(reducer, a, x, mayTurn, none, barred, none), "the findings reach X from A by running"
+            + " past it to R and turning, past another copy of X, a route Test a Path and the railway refuse");
     }
 
     /**
