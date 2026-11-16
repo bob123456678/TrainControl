@@ -306,23 +306,16 @@ public class testStartingAutonomyFromTheWindow
     @Test
     public void testStartEndsAtTheDiagramsRightEdge() throws Exception
     {
-        javax.swing.JTabbedPane tabs = (javax.swing.JTabbedPane) Reflect.get(TrainControlUI.class, ui, "KeyboardTab");
-        java.awt.Component page = (java.awt.Component) Reflect.get(TrainControlUI.class, ui, "layoutPanel");
-        java.awt.Component diagram = (java.awt.Component) Reflect.get(TrainControlUI.class, ui, "LayoutArea");
-        java.awt.Container strip = (java.awt.Container) Reflect.get(TrainControlUI.class, ui, "autonomyOverlayToggle");
+        java.awt.Component diagram = field("LayoutArea");
 
-        Components.onTheEventThread(() ->
+        onScreen(() ->
         {
-            ui.setVisible(true);
-            tabs.setSelectedComponent(page);
+            AbstractButton copy = Components.onTheEventThread(() ->
+            {
+                ((javax.swing.JTabbedPane) field("KeyboardTab")).setSelectedComponent(field("layoutPanel"));
 
-            return null;
-        });
-
-        try
-        {
-            AbstractButton copy = Components.onTheEventThread(() -> Components.withText(strip,
-                I18n.t("ui.main.startAutonomy")));
+                return Components.withText(field("autonomyOverlayToggle"), I18n.t("ui.main.startAutonomy"));
+            });
 
             assertNotNull(copy, "precondition: the strip above the diagram offers no Start");
 
@@ -332,23 +325,27 @@ public class testStartingAutonomyFromTheWindow
                 copy.getLocationOnScreen().x + copy.getWidth(), diagram.getLocationOnScreen().x + diagram.getWidth()});
 
             assertEquals(rights[0], rights[1], "Start does not end at the track diagram's right edge");
-        }
-        finally
-        {
-            Components.onTheEventThread(() ->
-            {
-                ui.setVisible(false);
 
-                return null;
-            });
-        }
+            return null;
+        });
     }
 
     /**
      * MT-1001's check with Start as the run's door, the window shown for it: the route list's right-click menu only
-     * opens on a window on screen, and this class's window is otherwise never shown.
+     * opens on a window on screen.
      */
     private static void onScreen(boolean toggled) throws Exception
+    {
+        onScreen(() ->
+        {
+            support.RouteListDoors.HandSwitched.runAndRead(ui, toggled, "Start", () -> startAnsweredYes());
+
+            return null;
+        });
+    }
+
+    /** Runs the work with the window on screen, hidden again after: this class's window is otherwise never shown. */
+    private static void onScreen(java.util.concurrent.Callable<?> work) throws Exception
     {
         Components.onTheEventThread(() ->
         {
@@ -359,7 +356,7 @@ public class testStartingAutonomyFromTheWindow
 
         try
         {
-            support.RouteListDoors.HandSwitched.runAndRead(ui, toggled, "Start", () -> startAnsweredYes());
+            work.call();
         }
         finally
         {
@@ -460,11 +457,13 @@ public class testStartingAutonomyFromTheWindow
         return field("gracefulStop");
     }
 
-    private static JButton field(String name)
+    /** The window's component of this field name, as the type the caller asks for. */
+    @SuppressWarnings("unchecked")
+    private static <T> T field(String name)
     {
         try
         {
-            return (JButton) Reflect.get(TrainControlUI.class, ui, name);
+            return (T) Reflect.get(TrainControlUI.class, ui, name);
         }
         catch (ReflectiveOperationException e)
         {
