@@ -339,4 +339,79 @@ public class testParseCS3Loks
         assertEquals(l.getAddress(), 5,
             "a UID of 0x4005 is address 5 on an MFX decoder; the base was left on");
     }
+
+    private static final String ICON_IP = "192.0.2.1";
+
+    /**
+     * Parses one fixture locomotive with the given icon path and returns its picture URL.
+     */
+    private String iconUrlFor(String icon) throws Exception
+    {
+        org.json.JSONArray all = parseJSONArray(fetchURL(cs3_loks_v260));
+        org.json.JSONObject one = null;
+
+        for (int i = 0; i < all.length() && one == null; i++)
+        {
+            if (!all.getJSONObject(i).has("traktion"))
+            {
+                one = all.getJSONObject(i);
+            }
+        }
+
+        one.put("icon", icon);
+
+        List<MarklinLocomotive> parsed = new CS2File(ICON_IP, null).parseLocomotivesCS3(new org.json.JSONArray().put(one));
+
+        assertEquals(parsed.size(), 1);
+        return parsed.get(0).getImageURL();
+    }
+
+    /**
+     * A CS3 picture in one of the two standard folders is asked for as it always was.
+     */
+    @Test
+    public void testAStandardFolderIconKeepsItsUrl() throws Exception
+    {
+        assertEquals(iconUrlFor("/usr/local/cs3/lokicons/DB BR 118 028-0"),
+            "http://" + ICON_IP + "/app/assets/lok/DB%20BR%20118%20028-0.png");
+        assertEquals(iconUrlFor("/home/cs3/cs3data/lokicons/en57_1000_(1)"),
+            "http://" + ICON_IP + "/app/assets/lok/en57_1000_%281%29.png");
+        assertEquals(iconUrlFor("leere Lok"), "http://" + ICON_IP + "/app/assets/lok/leere%20Lok.png");
+    }
+
+    /**
+     * Every locomotive in the 2.6 fixture, all in the standard folders, keeps the URL the old rule gave it.
+     */
+    @Test
+    public void testEveryFixtureLocomotiveKeepsItsIconUrl() throws Exception
+    {
+        org.json.JSONArray all = parseJSONArray(fetchURL(cs3_loks_v260));
+        CS2File station = new CS2File(ICON_IP, null);
+
+        for (MarklinLocomotive l : station.parseLocomotivesCS3(all))
+        {
+            for (int i = 0; i < all.length(); i++)
+            {
+                if (all.getJSONObject(i).getString("name").equals(l.getName()) && all.getJSONObject(i).has("icon"))
+                {
+                    String[] pieces = all.getJSONObject(i).getString("icon").split("/");
+
+                    assertEquals(l.getImageURL(), station.getImageURLCS3(pieces[pieces.length - 1]), l.getName());
+                }
+            }
+        }
+    }
+
+    /**
+     * A picture on a USB stick, outside the standard folders, is asked for with its folder; a name
+     * ending in .png is not given a second .png.
+     */
+    @Test
+    public void testAnIconOutsideTheStandardFoldersIsAskedForWithItsFolder() throws Exception
+    {
+        assertEquals(iconUrlFor("/media/usb0/my icons/BR 50.png"),
+            "http://" + ICON_IP + "/app/assets/lok/BR%2050.png?path=/media/usb0/my%20icons");
+        assertEquals(iconUrlFor("/usr/local/cs3/lokicons/My Loco.png"),
+            "http://" + ICON_IP + "/app/assets/lok/My%20Loco.png");
+    }
 }
