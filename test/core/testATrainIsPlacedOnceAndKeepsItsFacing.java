@@ -125,9 +125,9 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     {
         LayoutDiagram page = new LayoutDiagram("main", 6, 5, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 2, 0, 1, 0, 70, 70, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 2, 0, 1, 70, 70);
         Diagrams.straight(page, 2, 1, 1);
-        page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, 0, 0, 71, 71, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, 0, 71, 71);
         Diagrams.straight(page, 3, 2);
         Diagrams.feedback(page, 4, 2, 72, 72);
         page.setPageId("1");
@@ -698,7 +698,7 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     {
         LayoutDiagram page = new LayoutDiagram("main", 12, 3, null, null);
 
-        page.addComponent(componentType.END, 1, 1, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.END, 1, 1, 3, 0, 0);
         Diagrams.row(page, 2, 1, "FSSFSSFS", 81, 82, 83);
         page.setPageId("1");
 
@@ -1260,12 +1260,12 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
 
             LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
 
-            if (gone != Side.N) page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
+            if (gone != Side.N) Diagrams.put(page, componentType.FEEDBACK, 2, 1, 1, 21, 21);
             if (gone != Side.W) Diagrams.feedback(page, 1, 2, 22, 22);
             page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, orientation, 0, 25, 25, accessoryDecoderType.MM2,
                 null);
             if (gone != Side.E) Diagrams.feedback(page, 3, 2, 23, 23);
-            if (gone != Side.S) page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
+            if (gone != Side.S) Diagrams.put(page, componentType.FEEDBACK, 2, 3, 1, 24, 24);
             page.setPageId("1");
 
             session.open(Arrays.asList(page));
@@ -1294,8 +1294,8 @@ public class testATrainIsPlacedOnceAndKeepsItsFacing extends AutonomySessionFixt
     {
         LayoutDiagram page = pageWithATwoEndedStation();
 
-        page.addComponent(componentType.SIGNAL, 2, 1, 0, 0, 21, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.SIGNAL, 4, 1, 0, 0, 22, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SIGNAL, 2, 1, 0, 21, 0);
+        Diagrams.put(page, componentType.SIGNAL, 4, 1, 0, 22, 0);
 
         wire(page, 2, 1, 21);
         wire(page, 4, 1, 22);

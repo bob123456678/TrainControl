@@ -750,7 +750,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         Diagrams.straight(page, 2, 1);
         Diagrams.straight(page, 4, 1);
-        page.addComponent(componentType.SWITCH_LEFT, 2, 3, 0, 0, 1, 1, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SWITCH_LEFT, 2, 3, 0, 1, 1);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
@@ -796,7 +796,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 5, 5, null, null);
 
-        page.addComponent(componentType.CUSTOM_PERM_LEFT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CUSTOM_PERM_LEFT, 2, 2, 0, 0, 0);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
@@ -1322,12 +1322,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 2, 1, 1, 21, 21);
         Diagrams.feedback(page, 1, 2, 22, 22);
         page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, 0, 0, 25, 25,
             accessoryDecoderType.MM2, null);
         Diagrams.feedback(page, 3, 2, 23, 23);
-        page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 2, 3, 1, 24, 24);
 
         page.setPageId("1");
 
@@ -1339,12 +1339,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 2, 1, 1, 21, 21);
         Diagrams.feedback(page, 1, 2, 22, 22);
         page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, orientation, 0, 25, 25,
             accessoryDecoderType.MM2, null);
         Diagrams.feedback(page, 3, 2, 23, 23);
-        page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 2, 3, 1, 24, 24);
 
         page.setPageId("1");
 
@@ -1522,7 +1522,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         LayoutDiagram page = throughStationPage();
 
-        page.addComponent(componentType.LINK, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.LINK, 6, 1, 0, 0, 0);
 
         session.open(Arrays.asList(page));
         session.rebuild();
@@ -1810,9 +1810,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
         Diagrams.feedback(page, 3, 1, 6, 12);
-        page.addComponent(componentType.ROUTE, 4, 1, 0, 0, 41, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.ROUTE, 4, 1, 0, 41, 0);
         Diagrams.feedback(page, 5, 1, 7, 13);
-        page.addComponent(componentType.ROUTE, 4, 3, 0, 0, 42, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.ROUTE, 4, 3, 0, 42, 0);
 
         page.setPageId("1");
 

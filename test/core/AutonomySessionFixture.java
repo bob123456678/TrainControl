@@ -428,12 +428,12 @@ abstract class AutonomySessionFixture
 
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
-        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SWITCH_LEFT, 3, 1, 3, 7, 7);
         Diagrams.straight(page, 4, 1);
         Diagrams.feedback(page, 5, 1, 6, 12);
 
         // The branch off the switch, lying north-south so that it has a port facing the switch at all.
-        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 3, 0, 1, 7, 13);
 
         page.getComponent(3, 1).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
             null, 7, org.traincontrol.base.Accessory.accessoryType.SWITCH, accessoryDecoderType.MM2,
@@ -567,7 +567,7 @@ abstract class AutonomySessionFixture
         LayoutDiagram page = pageWithTwoSignals();
 
         Diagrams.feedback(page, 1, 3, 7, 13);
-        page.addComponent(componentType.SIGNAL, 2, 3, 0, 0, 23, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SIGNAL, 2, 3, 0, 23, 0);
         Diagrams.feedback(page, 3, 3, 8, 14);
 
         wire(page, 2, 3, 23);
@@ -591,8 +591,8 @@ abstract class AutonomySessionFixture
         LayoutDiagram page = new LayoutDiagram("main", 8, 4, url, null);
 
         Diagrams.feedback(page, 1, 1, 5, 11);
-        page.addComponent(componentType.SIGNAL, 2, 1, 0, 0, 21, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.SIGNAL, 3, 1, 0, 0, 22, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SIGNAL, 2, 1, 0, 21, 0);
+        Diagrams.put(page, componentType.SIGNAL, 3, 1, 0, 22, 0);
         Diagrams.feedback(page, 4, 1, 6, 12);
 
         // Wired as parsing a real layout does; without an accessory the pairing is dropped on the way to the built

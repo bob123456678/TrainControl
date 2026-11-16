@@ -559,12 +559,12 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         Diagrams.straight(page, 2, 1);
         Diagrams.feedback(page, 3, 1, 6, 12);
         Diagrams.straight(page, 4, 1);
-        page.addComponent(componentType.SWITCH_LEFT, 5, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SWITCH_LEFT, 5, 1, 3, 7, 7);
         Diagrams.straight(page, 6, 1);
         Diagrams.feedback(page, 7, 1, 8, 14);
 
         // The branch off the switch, lying north-south so that it has a port facing the switch at all.
-        page.addComponent(componentType.FEEDBACK, 5, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 5, 0, 1, 7, 13);
 
         page.getComponent(5, 1).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
             null, 7, org.traincontrol.base.Accessory.accessoryType.SWITCH, accessoryDecoderType.MM2,

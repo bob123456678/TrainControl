@@ -289,7 +289,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
         // A station hard against the top-left of the drawn area, its only neighbor to the east a curve: with no plain
         // track to put the name on, the blank squares are looked at, and the ones outside have to be refused (FR-136).
         Diagrams.feedback(page, 0, 0, 5, 11);
-        page.addComponent(componentType.CURVE, 1, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CURVE, 1, 0, 0, 0, 0);
         page.setPageId("1");
         page.checkBounds();
 
@@ -377,7 +377,7 @@ public class testACaptionStaysWithItsSquare extends AutonomySessionFixture
 
         // A station hard against the top-left corner, its only neighbor a curve (so no plain track to put the name on).
         Diagrams.feedback(page, 0, 0, 5, 11);
-        page.addComponent(componentType.CURVE, 1, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CURVE, 1, 0, 0, 0, 0);
         page.setPageId("1");
         page.setEdit(true);
         page.checkBounds();

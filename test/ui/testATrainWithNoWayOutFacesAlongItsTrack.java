@@ -69,12 +69,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         model = frozen.model;
         ui = frozen.ui;
 
-        session = ui.getAutonomySession();
-
-        if (session == null || session.getStore().getActiveConfiguration() == null)
-        {
-            throw new AssertionError("no autonomy configuration on the snapshot");
-        }
+        session = frozen.sessionOrFail("no autonomy configuration on the snapshot");
 
         if (ui.getActiveDiagramConfiguration() == null)
         {

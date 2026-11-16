@@ -151,16 +151,9 @@ public class testARememberedNoneOpensWithTheCaptionsOff
         model = frozen.model;
         ui = frozen.ui;
 
-        session = ui.getAutonomySession();
+        session = frozen.sessionOrFail("no autonomy configuration to draw captions from");
 
-        if (session == null || session.getStore().getActiveConfiguration() == null)
-        {
-            throw new AssertionError("no autonomy configuration to draw captions from");
-        }
-
-        page = model.getLayout(PAGE);
-
-        if (page == null) throw new AssertionError("no page " + PAGE);
+        page = frozen.pageOrFail(PAGE);
 
         captionModeWas = prefs().getInt(PREF_CAPTION_MODE, AutonomyEditorPanel.CAPTIONS_STATIONS);
         textWas = prefs().get(PREF_TEXT_LABELS, null);

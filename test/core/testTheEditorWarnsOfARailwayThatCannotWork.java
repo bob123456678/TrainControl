@@ -189,7 +189,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         // A link's stub faces west unturned, east turned twice
         for (int x : new int[] {2, 4})
         {
-            page.addComponent(componentType.LINK, x, 2, x - 2, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.put(page, componentType.LINK, x, 2, x - 2, 0, 0);
         }
 
         session.open(Arrays.asList(page));

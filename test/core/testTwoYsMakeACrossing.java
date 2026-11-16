@@ -182,7 +182,7 @@ public class testTwoYsMakeACrossing
 
         // toe to toe with a Y switch that has an address
         y(page, 5, 7, 0);
-        page.addComponent(componentType.SWITCH_Y, 5, 8, 2, 0, 5, 5, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SWITCH_Y, 5, 8, 2, 5, 5);
 
         open(page, "OB-320 not pairs");
 
@@ -203,8 +203,8 @@ public class testTwoYsMakeACrossing
         y(page, 5, 6, 2);
 
         // a loop from the lower Y's east leg up to the upper Y's east leg
-        page.addComponent(componentType.CURVE, 6, 6, 2, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.CURVE, 6, 5, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CURVE, 6, 6, 2, 0, 0);
+        Diagrams.put(page, componentType.CURVE, 6, 5, 3, 0, 0);
 
         sensor(page, 4, 5, 0, 1);
         sensor(page, 4, 6, 0, 2);
@@ -416,7 +416,7 @@ public class testTwoYsMakeACrossing
         sensor(page, 1, 5, 0, 1);
 
         // a turnout with no address, toe east, which ends the room as a switch does (5e)
-        page.addComponent(componentType.CUSTOM_PERM_LEFT, 2, 5, 1, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CUSTOM_PERM_LEFT, 2, 5, 1, 0, 0);
         Diagrams.straight(page, 3, 5);
 
         y(page, 4, 5, 0);
@@ -1008,7 +1008,7 @@ public class testTwoYsMakeACrossing
     /** A permanent Y: toe south at orientation 0, east at 1, north at 2, west at 3. */
     private static void y(LayoutDiagram page, int x, int y, int orientation) throws IOException
     {
-        page.addComponent(componentType.CUSTOM_PERM_Y, x, y, orientation, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CUSTOM_PERM_Y, x, y, orientation, 0, 0);
     }
 
     /** A turnout with no address, of the type given, at the orientation given. */
@@ -1020,7 +1020,7 @@ public class testTwoYsMakeACrossing
     /** A sensor: east-west at orientation 0, north-south at 1. */
     private static void sensor(LayoutDiagram page, int x, int y, int orientation, int n) throws IOException
     {
-        page.addComponent(componentType.FEEDBACK, x, y, orientation, 0, 63 + n, 63 + n, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, x, y, orientation, 63 + n, 63 + n);
     }
 
     private void open(LayoutDiagram page, String configuration) throws Exception
