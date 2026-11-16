@@ -1517,9 +1517,9 @@ public class testStationSettingsWindow
             assertEquals(window.litPresetForTest(), preset, "the settings of " + preset + " do not light it");
         }
 
-        // No row has Must with Full Autonomy off
+        // No row has stop only with May
         StationDoors.press(window, "station.preset.PARKING");
-        StationDoors.press(window, "station.turnMust");
+        StationDoors.press(window, "station.turnMay");
         StationDoors.current(window);
 
         assertNull(window.litPresetForTest(), "a button lit though nothing matches");
@@ -1621,6 +1621,34 @@ public class testStationSettingsWindow
 
             Components.onTheEventThread(() -> session.saveQuietly());
         }
+    }
+
+    /**
+     * Parking is a Terminus that full autonomy never chooses (FR-235): pressing it ticks Every train must turn around and
+     * unticks May choose this station, and the window reads it back as Parking, not Terminus.
+     *
+     * MUTATION: put PARKING's `must` back to false in `StationPreset`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testParkingIsATerminusFullAutonomyNeverChooses() throws Exception
+    {
+        TileKey square = aStation();
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.press(window, "station.preset.PARKING");
+        StationDoors.current(window);
+
+        assertTrue(Components.onTheEventThread(() -> session.isMustTurnAround(square)),
+            "Parking did not make every train turn around");
+        assertFalse(Components.onTheEventThread(() -> session.isAutoDestination(square)),
+            "Parking left full autonomy able to choose the station");
+        assertTrue(StationDoors.on(window, "station.turnMust"), "Parking did not tick Must in the window");
+        assertEquals(window.litPresetForTest(), StationPreset.PARKING, "Parking does not light once pressed");
+
+        StationDoors.press(window, "station.preset.TERMINUS");
+        StationDoors.current(window);
+
+        assertEquals(window.litPresetForTest(), StationPreset.TERMINUS, "Terminus does not light once pressed");
     }
 
     /**
@@ -5271,7 +5299,7 @@ public class testStationSettingsWindow
             StationDoors.press(window, "station.fullAutonomy");
         }
 
-        String turn = preset == StationPreset.TERMINUS ? "station.turnMust"
+        String turn = preset == StationPreset.TERMINUS || preset == StationPreset.PARKING ? "station.turnMust"
             : preset == StationPreset.REVERSING_POINT ? "station.turnMay" : "station.turnNever";
 
         if (!StationDoors.on(window, turn)) StationDoors.press(window, turn);
