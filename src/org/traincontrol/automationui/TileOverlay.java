@@ -702,7 +702,6 @@ public class TileOverlay
                 g.drawRect(inset, inset,
                     width - 1 - inset * 2, height - 1 - inset * 2);
             }
-
         }
         finally
         {

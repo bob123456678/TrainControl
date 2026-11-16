@@ -868,7 +868,6 @@ public class LayoutDiagram
         this.showAddress = showAddress;
     }
     
-    
     /**
      * Adds a new column to the layout at the specified index and shifts all existing components one column to the right.
      * @throws IOException

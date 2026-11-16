@@ -140,7 +140,6 @@ public final class DiagramExport
                     g.dispose();
                 }
             });
-
         }
         finally
         {

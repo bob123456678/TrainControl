@@ -120,7 +120,6 @@ public class RightClickMenuListener extends PopupListener
 
             if (ui.buttonHasLocomotive(source))
             {
-
                 addSeparator();
 
                 menuItem = new JMenuItem(

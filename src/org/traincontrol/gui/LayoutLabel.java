@@ -1323,7 +1323,6 @@ public final class LayoutLabel extends JLabel
      */
     public static final Color TRAIN_MARK = org.traincontrol.automationui.DiagramColours.TRAIN;
 
-
     /**
      * How solid a square is drawn while the railway refuses it (MT-278): like `TileAnnotation.IGNORED_ALPHA` (0.62) but
      * lower, as an ignored square is permanent and blocked track a fact about this minute.
@@ -1833,7 +1832,6 @@ public final class LayoutLabel extends JLabel
 
         return annotation == null ? null : annotation.trackCentreOf(overlay.trainSides(), getWidth(), getHeight());
     }
-
 
     /**
      * Reads the state again once the grid has registered this square for its device's changes, where the picture went

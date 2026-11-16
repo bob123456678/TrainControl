@@ -128,8 +128,6 @@ public class LocomotivePlaceholder
             pantograph(g, roofTopLeft + roofTopWidth / 4, roofTop, roofTopWidth / 3, pantograph);
             pantograph(g, roofTopLeft + roofTopWidth - roofTopWidth / 4, roofTop, roofTopWidth / 3,
                 pantograph);
-
-
         }
         finally
         {

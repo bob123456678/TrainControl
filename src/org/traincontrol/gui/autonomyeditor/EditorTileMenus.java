@@ -308,7 +308,6 @@ final class EditorTileMenus
 
                 connections.add(all);
             }
-
         }
 
         // No "Make a One-Way Run from Here" item (OB-006): everything else on this menu names ONE square and acts on it,
@@ -392,7 +391,6 @@ final class EditorTileMenus
 
             menu.add(lengthItem);
         }
-
 
         // A station name can go on almost any square, not only a text square: the label is drawn beside the tile.
         // Allowed on curves and dead ends (OB-042, OB-044); refused only on clickable elements (switches, signals),

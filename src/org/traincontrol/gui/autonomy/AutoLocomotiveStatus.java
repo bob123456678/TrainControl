@@ -898,7 +898,6 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
     private void locAvailPathsMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseEntered
          
-       
     }//GEN-LAST:event_locAvailPathsMouseEntered
 
     private void locAvailPathsMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locAvailPathsMouseMoved

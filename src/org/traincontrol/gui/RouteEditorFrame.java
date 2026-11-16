@@ -147,7 +147,6 @@ public class RouteEditorFrame extends JFrame
         return this.locked;
     }
 
-
     /**
      * Whether this window will let the route be changed.  Asked before a mark is drawn and again before it acts:
      * the marks are painted values, and their click listener ignores a disabled table.
@@ -2475,7 +2474,6 @@ public class RouteEditorFrame extends JFrame
 
         // Automatic with no sensor can never fire: the sensor is what fires it.
         if (enabledBox.isSelected() && s88 == 0) wrong.add(I18n.t("route.ui.frameAutomaticNeedsSensor"));
-
 
         if (commands.rows.isEmpty()) wrong.add(I18n.t("route.ui.frameNeedsACommand"));
 

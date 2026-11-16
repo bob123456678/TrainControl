@@ -327,7 +327,6 @@ final class LocIconActions
                 this.ui.repaintLoc(true, null);
                 this.ui.repaintMappings(Collections.singletonList(l), true);
                 this.ui.getLocSelector().refreshLocSelectorList();
-
             }
         });
     }

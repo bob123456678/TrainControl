@@ -2992,7 +2992,6 @@ public class AutonomyCompanionStore
         return known;
     }
 
-
     /** What a held field's values are made of; an entry is held when ANY square it names is on a page not loaded. */
     private enum Held
     {
@@ -3221,7 +3220,6 @@ public class AutonomyCompanionStore
             if (!knownShared().contains(key)) unknownSharedFields.put(key, wholeRoot.get(key));
         }
     }
-
 
     // The kept collections (OB-025)
 

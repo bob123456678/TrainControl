@@ -2574,7 +2574,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
             //}
         }
           
-                
         return locs;
     }
     
@@ -3595,7 +3594,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         if (newDecoderType == MarklinLocomotive.decoderType.MULTI_UNIT && l.hasLinkedLocomotives())
         {
-            
             throw new Exception(I18n.f("loc.changeToMultiUnitNotAllowed"));       
         }
         

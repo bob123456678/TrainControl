@@ -113,7 +113,6 @@ public final class HomeStaging
     /** The same, in places. */
     private final Map<List<Edge>, Map<String, Locomotive>> placesByAMove = new IdentityHashMap<>();
 
-
     /** Stations with zero incoming edges - hand-staged launch pads; see snapshot. */
     private final Set<String> launchPads;
 
@@ -148,7 +147,6 @@ public final class HomeStaging
         this.stations = stations;
         this.sensorsSet = sensorsSet;
         this.pointsBySensor = pointsBySensor;
-
     }
 
     /**
@@ -1759,7 +1757,6 @@ public final class HomeStaging
     }
 
     // There is no two-argument `connected`: which value the second argument takes is the caller's to make.
-
 
     /**
      * Whether a route exists from one square to another, ignoring who is standing where.

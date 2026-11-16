@@ -554,7 +554,6 @@ public class LayoutGrid
                         }
                     }
                 }
-
             }
 
             /**
@@ -1003,7 +1002,6 @@ public class LayoutGrid
                         }
                     }
 
-
                     text.setForeground(labelColour);
                     text.setBackground(Color.WHITE);
                     // StationCaption.LABEL_FONT: one typeface for every word on a diagram (OB-116).
@@ -1229,7 +1227,6 @@ public class LayoutGrid
                 // Register the tile with autonomy, if it is watching.
                 if (c != null && ui != null)
                 {
-
                     if (ui.getDiagramTileRegistry() != null)
                     {
                         org.traincontrol.automationui.TileGraph.TileKey tile =

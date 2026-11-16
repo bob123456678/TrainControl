@@ -1000,7 +1000,6 @@ public class TileGraph
         return Collections.unmodifiableSet(pages);
     }
 
-
     /** Whether a link points at a page not part of autonomy (OB-150), or at no page (a hand-edited file). */
     private boolean leadsOutsideAutonomy(LayoutDiagramComponent link)
     {

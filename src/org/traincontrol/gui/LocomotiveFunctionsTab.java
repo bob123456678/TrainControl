@@ -829,7 +829,6 @@ final class LocomotiveFunctionsTab extends JPanel
         return url.substring(url.lastIndexOf('/') + 1);
     }
 
-
     /** Asks for one of the user's own images for a row; the table shows it at once and Save writes it. */
     void chooseOwnImage(Row r)
     {

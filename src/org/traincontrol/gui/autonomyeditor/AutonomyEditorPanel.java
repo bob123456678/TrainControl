@@ -403,7 +403,6 @@ public class AutonomyEditorPanel extends JPanel
         I18n.t("autosetup.ui.captionsNone")
     });
 
-
     // Built here, mounted by the window across the bottom of the diagram
     private JScrollPane findingsPanel;
     private JPanel findingsBox;
@@ -677,7 +676,6 @@ public class AutonomyEditorPanel extends JPanel
         nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
         nameAll.addActionListener(e -> nameEverything());
         button(nameAll);
-
 
         // Leaving the page out, from the page itself; ticked, it grays at once and waits for Save.
         excludePage = new JCheckBox(I18n.t("autosetup.ui.btnExcludeThisPage"));
@@ -1303,7 +1301,6 @@ public class AutonomyEditorPanel extends JPanel
             super.removeNotify();
         }
     }
-
 
     /**
      * Everything that can be set on a tile, on one menu built like LayoutEditorRightclickMenu's, items in the graph
@@ -3107,7 +3104,6 @@ public class AutonomyEditorPanel extends JPanel
         return prompts.applyNumber(tile, key, entered, unset);
     }
 
-
     /** A stored number for a point, or the value meaning "not set". */
     int number(TileKey tile, String key, int fallback)
     {
@@ -4209,7 +4205,6 @@ public class AutonomyEditorPanel extends JPanel
     /** Asks for a square's name and writes it (MT-257); others go through `promptNameFor`. */
     void promptName(TileKey tile)
     {
-
         String current = session.getStore().getPointName(tile);
 
         String name = JOptionPane.showInputDialog(owner(),
@@ -6430,7 +6425,6 @@ public class AutonomyEditorPanel extends JPanel
             nameAll.setToolTipText(unnamed > 0
                 ? null : wrapped(I18n.t("autosetup.ui.hintNothingToName")));
         }
-
 
         if (errors > 0)
         {

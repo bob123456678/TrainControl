@@ -182,7 +182,6 @@ public class Layout
         }
     }
 
-
     /**
      * Priority per unit of track (BALANCED_PRIORITY), larger being better.  Divides by at least 1, so a route measured
      * 0 ties here with one measured 1, where SHORTEST_LENGTH prefers the 0.
@@ -918,7 +917,6 @@ public class Layout
             if (p.getCurrentLocomotive() != null) this.claimHome(p.getCurrentLocomotive(), p);
         }
     }
-
 
     /**
      * Assigns a station to a locomotive by name, or clears it when the name is blank; throws if either does not exist.
@@ -2791,7 +2789,6 @@ public class Layout
         }
     }
    
-    
     /**
      * Renames a point
      * @throws Exception 
@@ -4198,7 +4195,6 @@ public class Layout
 
         return behind >= length;
     }
-
 
     /**
      * Whether nothing on this path is measured (Edge.isMeasured), so such a path holds its edges, the safe direction.
@@ -6121,7 +6117,6 @@ public class Layout
                 // A route condition waiting on this sensor would wait forever; updatePendingS88 notifies any waiter.
                 updatePendingS88(loc, null);
 
-
                 this.control.log(e);
 
                 throw e;
@@ -6295,7 +6290,6 @@ public class Layout
             }
         }
         
-                    
         if (loc.hasCallback(CB_ROUTE_START))
         {
             loc.getCallback(CB_ROUTE_START).accept(loc);
@@ -6569,7 +6563,6 @@ public class Layout
                     
                     this.updatePendingS88(loc, current.getS88());
                     
-
                     // With an advisory - see the intermediate points above
                     loc.waitForOccupiedFeedback(current.getS88(),
                         Locomotive.FEEDBACK_DURATION_THRESHOLD, Locomotive.FEEDBACK_ADVISORY_MS, this.retiredRailway);
