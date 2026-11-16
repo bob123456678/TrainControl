@@ -20,11 +20,12 @@ import org.traincontrol.marklin.file.CS2File;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 
 /**
- * The Auto half of the Path Type radio means what autonomy means.
+ * Autonomy's tier of Test a Path means what autonomy means.
  *
- * Adam, 2026-09-05: **"Radio button Auto or Manual dictates what is in scope for the routing check."**
+ * Adam, 2026-09-05: **"Radio button Auto or Manual dictates what is in scope for the routing check."**  The radio is
+ * gone (FR-221) and Test a Path draws both tiers at once.
  *
- * The radio's Auto setting reports a station as somewhere autonomy will never choose, and it decides
+ * Autonomy's tier reports a station as somewhere autonomy will never choose, and it decides
  * that from `AutonomySession.stationsAutonomyWillNotChoose()` - a rule computed from the DIAGRAM.  The
  * railway decides it somewhere else entirely: `Layout` refuses a destination that is reversing or is
  * not an auto destination before it is a candidate at all.  Two rules, two files, one question.
@@ -32,10 +33,10 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
  * `guard-and-affordance-same-question` is the whole reason this exists.  Where this application has
  * asked one question in two places, the two answers have differed - and a check that reports what
  * autonomy will do is worth nothing if it disagrees with what autonomy does.  Nothing covered this set
- * before the radio started reading it.
+ * before the editor started reading it.
  *
  * **This does not assert the rule is right.**  It asserts the two statements of it agree, which is the
- * failure that would make the new control lie.  If Adam changes what autonomy may choose, both sides
+ * failure that would make the editor lie.  If Adam changes what autonomy may choose, both sides
  * move together or this goes red - which is the point.
  */
 public class testTheAutoTierScopeMatchesTheRuntime
@@ -143,7 +144,7 @@ public class testTheAutoTierScopeMatchesTheRuntime
             "no station was compared, so this asserted nothing about anything (" + stations + ")");
 
         assertTrue(disagreements.isEmpty(),
-            "the Path Type check would report the opposite of what autonomy does: " + disagreements);
+            "Test a Path's autonomy tier would report the opposite of what autonomy does: " + disagreements);
     }
 
     /**
@@ -168,8 +169,8 @@ public class testTheAutoTierScopeMatchesTheRuntime
         }
 
         assertFalse(excluded.isEmpty(),
-            "no station is excluded from autonomy on the sample layout, so the Auto setting of the"
-            + " Path Type radio can never say anything different from Manual and the comparison"
+            "no station is excluded from autonomy on the sample layout, so Test a Path's autonomy"
+            + " tier can never say anything different from a hand send's and the comparison"
             + " above passes on a rule that never fires");
 
         assertTrue(excluded.size() < stations,

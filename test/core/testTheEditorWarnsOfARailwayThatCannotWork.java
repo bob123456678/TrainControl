@@ -874,8 +874,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
     /**
      * A square healthy while one of its arrivals gets the train nowhere: a station at each end and a plain sensor
-     * beyond, a dead end nothing may turn at.  From the west you can only carry on into it.  The control is the same
-     * railway with the dead end marked "trains may turn here": nothing is reported.
+     * beyond, a dead end.  From the west you can only carry on into it, and turning there leads back past Middle's other
+     * copy, which no route passes (`testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare`).  The control is the same
+     * railway with the dead end a station: nothing is reported.
      *
      * MUTATION: counting any Point the train can get to, rather than only a STATION, makes this pass with the railway
      * unchanged.
@@ -903,19 +904,19 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         session.setStation(middle, true);
         session.setPointName(middle, "Middle");
 
-        // THE STUB IS DELIBERATELY NOT A STATION: the train gets there and still has nowhere it may stop, which is the
-        // control for reporting on STATIONS rather than Points.
         session.setPointFlag(near, AutonomyBuilder.CAN_REVERSE, true);
         session.setPointFlag(stub, AutonomyBuilder.CAN_REVERSE, true);
+        session.setStation(stub, true);
 
         session.rebuild();
 
         assertTrue(session.destinationCopiesReachingNoStation().isEmpty(),
-            "with the stub marked as somewhere trains may turn, every arrival gets somewhere - and "
+            "with the stub a station, every arrival gets somewhere - and "
             + "this reported one that does not: " + session.destinationCopiesReachingNoStation());
 
-        // NOW TAKE THE TURN AWAY, which is the whole change.
-        session.setPointFlag(stub, AutonomyBuilder.CAN_REVERSE, false);
+        // NOW THE STUB IS NO STATION, which is the whole change: the train gets there and still has nowhere it may stop,
+        // the control for reporting on STATIONS rather than Points.
+        session.setStation(stub, false);
 
         session.rebuild();
 

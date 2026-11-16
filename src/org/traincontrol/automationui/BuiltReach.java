@@ -100,11 +100,12 @@ public final class BuiltReach
             {
                 if (closures && inactive.contains(next)) continue;
 
-                if (!seen.add(next)) continue;
-
                 TileKey square = squareOf.get(next);
 
-                if (stations.contains(next) && square != null && !square.equals(home)) reached.add(square);
+                // Never round onto another copy of the start, which `Layout.bfsBySettings` never passes
+                if (square != null && square.equals(home) || !seen.add(next)) continue;
+
+                if (stations.contains(next) && square != null) reached.add(square);
 
                 if (!closures || !stopOnly.contains(next)) queue.add(next);
             }

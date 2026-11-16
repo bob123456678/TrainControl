@@ -243,7 +243,7 @@ public class testTheAutonomyEditorsTriageNotes
 
     /**
      * A one-page list is eight rows tall by default, and a blue Station Tools heading with a heading's air above and
-     * below sits between Path Type's radios and Bulk Edit....
+     * below sits between Why not Moving? and Bulk Edit....
      *
      * MUTATION: set `LayoutEditor.SIDEBAR_ROWS_AT_LEAST` back to 6, drop the heading, or put it under the button, and
      * this fails.
@@ -270,43 +270,36 @@ public class testTheAutonomyEditorsTriageNotes
 
         int headingY = Components.onTheEventThread(() -> SwingUtilities.convertPoint(heading, 0, 0, panel).y);
         int bulkY = Components.onTheEventThread(() -> SwingUtilities.convertPoint(bulk, 0, 0, panel).y);
-        int manualBottom = Components.onTheEventThread(() ->
+        int whyBottom = Components.onTheEventThread(() ->
         {
-            Component manual = Components.withText(panel, I18n.t("autosetup.ui.pathTypeManual"));
+            Component why = Components.withText(panel, I18n.t("autosetup.ui.toolWhy"));
 
-            return manual == null ? 0 : SwingUtilities.convertPoint(manual, 0, manual.getHeight(), panel).y;
+            return why == null ? Integer.MAX_VALUE : SwingUtilities.convertPoint(why, 0, why.getHeight(), panel).y;
         });
 
         assertTrue(headingY < bulkY, "Station Tools is not above Bulk Edit...");
         assertTrue(headingY + heading.getHeight() <= bulkY, "Station Tools overlaps Bulk Edit...");
-        assertTrue(manualBottom <= headingY, "Station Tools is not under Path Type's radios");
+        assertTrue(whyBottom <= headingY, "Station Tools is not under Why not Moving?");
     }
 
     // ------------------------------------------------------------------------------------------------ OB-438
 
     /**
-     * The column is headed Path Debugging in every language, its radios read Auto Path and Manual Path under no label of
-     * their own (D172; Adam: "cut "path type" label and change "Auto" to "Auto path" and "Manual" to "Manual Path""),
-     * and they share the left edge of the buttons around them.
+     * The column is headed Path Debugging in every language, Test a path and Why not Moving? stand in it with no radios
+     * under them (FR-221; D172's Auto Path and Manual Path are retired, their words gone from every language), and the
+     * buttons share the left edge of Bulk Edit... below.
      *
-     * MUTATION: put `autosetup.ui.titleCap` back to Debugging Tools, put the Path Type label back over the radios, or
-     * take the zero margin and border off the radios, and this fails.
+     * MUTATION: put `autosetup.ui.titleCap` back to Debugging Tools, or put a radio back under Why not Moving?, and
+     * this fails.
      */
     @Test(timeOut = 120000)
-    public void testDebuggingToolsAndPathTypeAreBlackAndAligned() throws Exception
+    public void testPathDebuggingHasNoPathTypeAndItsButtonsAreAligned() throws Exception
     {
         assertEquals(I18n.t("autosetup.ui.titleCap"), "Path Debugging");
-        assertEquals(I18n.t("autosetup.ui.pathTypeAuto"), "Auto Path");
-        assertEquals(I18n.t("autosetup.ui.pathTypeManual"), "Manual Path");
 
-        // Each language's heading, Auto and Manual before D172: none may come back.  No language fell back to its plain
-        // Manual, so that word counts as old too.
-        String[] old = {"da|Debug-v\u00e6rkt\u00f8jer|Automatisk|Manuel", "de|Debugging-Werkzeuge|Automatik|Manuell",
-            "es|Herramientas de depuraci\u00f3n|Autom\u00e1tico|Manual", "fr|Outils de d\u00e9bogage|Automatique|Manuel",
-            "it|Strumenti di debug|Automatico|Manuale", "nl|Debughulpmiddelen|Automatisch|Handmatig",
-            "pl|Narz\u0119dzia debugowania|Automatyczny|R\u0119czny"};
-
-        String[] keys = {"autosetup.ui.titleCap", "autosetup.ui.pathTypeAuto", "autosetup.ui.pathTypeManual"};
+        // Each language's heading before D172: none may come back.  Nor may the retired radios' words.
+        String[] old = {"da|Debug-v\u00e6rkt\u00f8jer", "de|Debugging-Werkzeuge", "es|Herramientas de depuraci\u00f3n",
+            "fr|Outils de d\u00e9bogage", "it|Strumenti di debug", "nl|Debughulpmiddelen", "pl|Narz\u0119dzia debugowania"};
 
         for (String each : old)
         {
@@ -315,37 +308,34 @@ public class testTheAutonomyEditorsTriageNotes
             java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages",
                 new java.util.Locale(language[0]));
 
-            for (int i = 0; i < keys.length; i++)
-            {
-                String now = bundle.getString(keys[i]);
+            String now = bundle.getString("autosetup.ui.titleCap");
 
-                assertNotEquals(now, language[i + 1], language[0] + " " + keys[i] + " is still the old " + now);
-                assertFalse(now.toLowerCase().contains("autonom"), language[0] + " still calls the column Autonomy Tools: "
-                    + now);
+            assertNotEquals(now, language[1], language[0] + " autosetup.ui.titleCap is still the old " + now);
+            assertFalse(now.toLowerCase().contains("autonom"), language[0] + " still calls the column Autonomy Tools: "
+                + now);
+
+            for (String retired : new String[] {"autosetup.ui.pathTypeAuto", "autosetup.ui.pathTypeManual",
+                "autosetup.ui.tooltipPathType"})
+            {
+                assertFalse(bundle.containsKey(retired), language[0] + " still has " + retired + " (FR-221)");
             }
         }
 
         layOut();
 
         Component why = Components.withText(panel, I18n.t("autosetup.ui.toolWhy"));
-
-        assertTrue(top(radio("autosetup.ui.pathTypeAuto")) - (top(why) + Components.onTheEventThread(why::getHeight)) < 10,
-            "something stands between Why not Moving? and Auto Path: the Path Type label is back");
-
-        int edge = left(Components.withText(panel, I18n.t("autosetup.ui.toolTest")));
-
-        assertEquals(left(radio("autosetup.ui.pathTypeAuto")), edge, "Auto Path is not flush with Test a path");
-        assertEquals(left(radio("autosetup.ui.pathTypeManual")), edge, "Manual Path is not flush with Test a path");
-        assertEquals(left(StationDoors.part(panel, "autonomy.pickStations", Component.class)), edge,
-            "Bulk Edit... is not flush with the radios");
-
         Component test = Components.withText(panel, I18n.t("autosetup.ui.toolTest"));
 
-        int radiosGap = top(radio("autosetup.ui.pathTypeManual"))
-            - (top(radio("autosetup.ui.pathTypeAuto")) + Components.onTheEventThread(() -> radio("autosetup.ui.pathTypeAuto").getHeight()));
-        int buttonsGap = top(why) - (top(test) + Components.onTheEventThread(test::getHeight));
+        assertNull(Components.find(panel, javax.swing.JRadioButton.class, null), "a radio is still in the column (FR-221)");
 
-        assertEquals(radiosGap, buttonsGap, "the radios are spaced differently from the buttons above them");
+        int edge = left(test);
+
+        assertEquals(left(why), edge, "Why not Moving? is not flush with Test a path");
+        assertEquals(left(StationDoors.part(panel, "autonomy.pickStations", Component.class)), edge,
+            "Bulk Edit... is not flush with Test a path");
+
+        assertTrue(top(why) - (top(test) + Components.onTheEventThread(test::getHeight)) < 10,
+            "something stands between Test a path and Why not Moving?");
     }
 
     // ------------------------------------------------------------------------------------------------ OB-437
@@ -1418,11 +1408,6 @@ public class testTheAutonomyEditorsTriageNotes
 
             return null;
         });
-    }
-
-    private Component radio(String key)
-    {
-        return Components.withText(panel, I18n.t(key));
     }
 
     private static int left(Component c)

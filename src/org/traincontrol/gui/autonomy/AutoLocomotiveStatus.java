@@ -19,8 +19,6 @@ import java.awt.geom.Path2D;
 import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import javax.swing.DefaultListModel;
 import javax.swing.Icon;
 import javax.swing.JList;
@@ -28,7 +26,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
-import javax.swing.text.SimpleAttributeSet;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.AutonomyViewerPanel;
 import org.traincontrol.gui.TrainControlUI;
@@ -606,9 +603,10 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
      */
     private void showWhyNot()
     {
-        // A styled pane rather than a plain text area, so the two headings can be bold (MT-160, MT-163).
+        // HTML, for the table of destinations (FR-221).
         final JTextPane area = new JTextPane();
 
+        area.setContentType("text/html");
         area.setEditable(false);
         area.setMargin(new Insets(6, 6, 6, 6));
 
@@ -624,7 +622,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
         if (standard == null) standard = new javax.swing.JLabel().getFont();
 
-        area.setFont(standard.deriveFont(14f));
+        final Font font = standard.deriveFont(14f);
 
         JScrollPane scroll = new JScrollPane(area);
 
@@ -640,7 +638,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
                 // No guard on which locomotive this is about: the field is final and a panel belongs to one locomotive
                 // for its whole life.  What is true is smaller: the window may be closed before the answer arrives, and
                 // writing to a text area nobody is looking at costs nothing.
-                write(area, report);
+                // The font goes into the document: an HTML pane takes none from setFont.
+                area.setText("<html><body style=\"font-family:'" + font.getFamily() + "'; font-size:" + font.getSize()
+                    + "pt\">" + report + "</body></html>");
                 area.setCaretPosition(0);
             });
         }).start();
@@ -651,42 +651,8 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }
 
     /**
-     * Puts the report into the pane, with the group headings in bold (MT-160, MT-163).  A heading is recognized by
-     * position, not by its text, which would quietly do nothing in the other seven bundles.
-     */
-    private void write(JTextPane pane, String report)
-    {
-        javax.swing.text.StyledDocument doc = pane.getStyledDocument();
-
-        SimpleAttributeSet bold = new SimpleAttributeSet();
-
-        javax.swing.text.StyleConstants.setBold(bold, true);
-
-        pane.setText("");
-
-        try
-        {
-            for (String line : report.split("\n", -1))
-            {
-                boolean heading = !line.isEmpty() && !line.startsWith("    ");
-
-                doc.insertString(doc.getLength(), line + "\n", heading ? bold : null);
-            }
-        }
-        catch (javax.swing.text.BadLocationException impossible)
-        {
-            // Inserting at getLength() cannot be out of bounds. Falling back to the plain text costs
-            // the bold and nothing else, which is better than an empty window.
-            pane.setText(report);
-        }
-    }
-
-    /**
-     * Every station, grouped by whether autonomy could ever choose it, with the reason for each; the choosable group
-     * first, as it is the actionable one.  The grouping comes from the Layout rather than from matching reason strings,
-     * which would be a second answer to "can autonomy pick this station" that could drift from the search's.
-     * Arrival-side copies are collapsed to the station a person would recognize, and a station counts as choosable if
-     * ANY of its copies is.
+     * Where the train stands, then every station with whether it can go there now, by hand only or not right now, and
+     * why (FR-221), as the editor's Why not Moving? says it; HTML with no `html` tag round it.
      */
     private String whyNotReport()
     {
@@ -700,61 +666,29 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
             if (at != null)
             {
-                out.append(I18n.f("autolayout.ui.whyStanding", locomotive.getName(), stationName(at)))
-                    .append("\n");
+                out.append(escape(I18n.f("autolayout.ui.whyStanding", locomotive.getName(), stationName(at))))
+                    .append("<br><br>");
             }
 
-            // FOR THE TIER THIS LIST IS IN (the REG4 lead): on Manual it offers routes picked by hand, so the
-            // reasons are the ones a hand-driven send meets, as the diagram's Why not Moving? gives them on Manual.
-            boolean byHand = !layout.isAutoRunning();
+            DestinationTable table = destinationTable();
 
-            // Whatever stops the train itself moving comes first and on its own: a list of stations would give one
-            // reason that is not about them.
-            String cannotStart = layout.explainCannotStart(locomotive, byHand);
+            // Whatever stops the train itself moving comes on its own: a list of stations would give one reason that
+            // is not about them.
+            if (table.cannotStart != null) return out.append(escape(table.cannotStart)).toString();
 
-            if (cannotStart != null) return out.append("\n").append(cannotStart).append("\n").toString();
+            if (table.rows().isEmpty()) return out.append(escape(I18n.t("autolayout.ui.whyNothingToReport"))).toString();
 
-            // Both halves under ONE acquisition of the Layout monitor: asked separately, the reasons and the grouping
-            // could be computed against two states, and a line would sit under the wrong heading.
-            Map<String, String> choosable = new TreeMap<>();
-            Map<String, String> barred = new TreeMap<>();
-
-            fileByStation(layout.explainDestinationsGrouped(locomotive, byHand), choosable, barred);
-
-            if (choosable.isEmpty() && barred.isEmpty())
-            {
-                return out.append("\n").append(I18n.t("autolayout.ui.whyNothingToReport"))
-                    .append("\n").toString();
-            }
-
-            // On Manual, the stations it cannot be sent to: autonomy's "could choose" is not the question (MT-434).
-            appendGroup(out, I18n.f(byHand ? "autolayout.ui.whyHeaderByHand" : "autolayout.ui.whyHeaderCandidates",
-                choosable.size()), choosable);
-            appendGroup(out, I18n.f("autolayout.ui.whyHeaderBarred", barred.size()), barred);
-
-            return out.toString();
+            return out.append(table.html(Integer.MAX_VALUE)).toString();
         }
         catch (RuntimeException e)
         {
-            return I18n.t("autolayout.ui.whyCouldNotWorkOut") + "\n\n" + e;
+            return escape(I18n.t("autolayout.ui.whyCouldNotWorkOut") + "  " + e);
         }
     }
 
-    /**
-     * One headed block of "station - reason" lines, skipped entirely when the group is empty (an empty heading reads as
-     * a failed load).
-     */
-    private void appendGroup(StringBuilder out, String heading, Map<String, String> lines)
+    private static String escape(String text)
     {
-        if (lines.isEmpty()) return;
-
-        out.append("\n").append(heading).append("\n");
-
-        for (Map.Entry<String, String> line : lines.entrySet())
-        {
-            out.append("    ").append(line.getKey()).append(" - ").append(line.getValue())
-                .append("\n");
-        }
+        return text.replace("&", "&amp;").replace("<", "&lt;");
     }
 
     /**
@@ -821,25 +755,24 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         }).start();
     }
 
-    /**
-     * Files every Point's reason under its station name, as `Layout.Destinations.fileUnderStation` does: a station it
-     * can go to by any copy is in neither map.
-     */
-    private void fileByStation(Layout.Destinations destinations, Map<String, String> choosable,
-        Map<String, String> barred)
+    /** Both tiers' answer for this train, each copy filed under its station's name. */
+    private DestinationTable destinationTable()
     {
-        java.util.Set<String> canGo = new java.util.HashSet<>();
+        DestinationTable table = new DestinationTable(layout, locomotive);
 
-        for (String point : destinations.getReasons().keySet())
+        for (String point : table.points())
         {
-            destinations.fileUnderStation(point, stationName(layout.getPoint(point)), canGo, choosable, barred);
+            String station = stationName(layout.getPoint(point));
+
+            table.file(point, station, "", station);
         }
+
+        return table;
     }
 
     /**
-     * Why this locomotive has nowhere to go, as a tooltip: a list, so kept out of the panel's text, where a user who is
-     * not asking would have to read it.  The same stations as the window, the ones autonomy could choose first; one
-     * line per station, not per Point (a square is several Points).
+     * Why this locomotive has nowhere to go, as a tooltip: a table, so kept out of the panel's text, where a user who is
+     * not asking would have to read it.  The window's answer, cut at twelve stations.
      */
     private String whyNotToolTip()
     {
@@ -847,43 +780,12 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 
         try
         {
-            // FOR THE TIER THIS LIST IS IN (the REG4 lead): see `whyNotReport`.
-            boolean byHand = !layout.isAutoRunning();
-
-            String cannotStart = layout.explainCannotStart(locomotive, byHand);
+            DestinationTable table = destinationTable();
 
             // WRAPPED: the sentences with a remedy run to two hundred characters, on one line otherwise.
-            if (cannotStart != null) return AutonomyEditorPanel.wrapped(cannotStart);
+            if (table.cannotStart != null) return AutonomyEditorPanel.wrapped(table.cannotStart);
 
-            Map<String, String> choosable = new TreeMap<>();
-            Map<String, String> barred = new TreeMap<>();
-
-            fileByStation(layout.explainDestinationsGrouped(locomotive, byHand), choosable, barred);
-
-            Map<String, String> byStation = new java.util.LinkedHashMap<>(choosable);
-            byStation.putAll(barred);
-
-            if (byStation.isEmpty()) return null;
-
-            StringBuilder out = new StringBuilder("<html>");
-
-            int shown = 0;
-
-            for (Map.Entry<String, String> entry : byStation.entrySet())
-            {
-                if (shown == 12)
-                {
-                    out.append("<br>...");
-                    break;
-                }
-
-                if (shown > 0) out.append("<br>");
-
-                out.append(entry.getKey()).append(": ").append(entry.getValue());
-                shown++;
-            }
-
-            return out.append("</html>").toString();
+            return table.rows().isEmpty() ? null : "<html>" + table.html(12) + "</html>";
         }
         catch (RuntimeException e)
         {

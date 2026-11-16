@@ -217,8 +217,8 @@ public class testManualOnlyPathsAreADifferentColour
 
     /**
      * The tested route's words name the colors its lines are drawn in (Adam: "the description will say yellow/amber
-     * even when the line is purple.  Since purple is used for manual route, make the text match the color"): with
-     * Manual chosen, the leg to a station only a person may send a train to says purple, the ordinary leg back amber.
+     * even when the line is purple.  Since purple is used for manual route, make the text match the color"): the leg
+     * to a station only a person may send a train to says purple, the ordinary leg back amber.
      *
      * MUTATION: make `legColor` answer yellow or amber whatever the station, and the purple leg says yellow.
      */
@@ -228,9 +228,6 @@ public class testManualOnlyPathsAreADifferentColour
         TileKey[] pair = aConnectedPairOfStations();
 
         AutonomyEditorPanel panel = testedToAParkedStation(pair);
-
-        // Manual chosen, as Adam had it: the tested route is redrawn for the tier
-        ((javax.swing.JRadioButton) field(panel, "pathTypeManual")).doClick();
 
         String said = said(panel);
 
@@ -248,8 +245,7 @@ public class testManualOnlyPathsAreADifferentColour
     // Fixtures
 
     /**
-     * The second station of the pair parked (autonomy never chooses it, restored after the claim), then Test a Path
-     * armed as a person arms it, with its button, and the two clicked.
+     * The second station of the pair parked (autonomy never chooses it, restored after the claim), then the pair tested.
      */
     private static AutonomyEditorPanel testedToAParkedStation(TileKey[] pair) throws Exception
     {
@@ -257,6 +253,12 @@ public class testManualOnlyPathsAreADifferentColour
 
         session.setAutoDestination(parked, false);
 
+        return tested(pair);
+    }
+
+    /** Test a Path armed as a person arms it, with its button, and the two squares clicked. */
+    private static AutonomyEditorPanel tested(TileKey[] pair) throws Exception
+    {
         AutonomyEditorPanel panel = new AutonomyEditorPanel(session, null, () -> { });
 
         ((javax.swing.AbstractButton) field(panel, "testButton")).doClick();
@@ -348,58 +350,39 @@ public class testManualOnlyPathsAreADifferentColour
     }
 
     /**
-     * Switching Path Type redraws the tested route for the new tier, without testing it again (MT-399), through the
-     * real two-click gesture and the real radio button.
+     * One test answers for both tiers (FR-221): to a station autonomy leaves alone, the strip says purple is a route only
+     * a hand send takes and why autonomy will not, while between two ordinary stations, both legs autonomy's, it says
+     * neither.
+     *
+     * MUTATION: leave the notes off the strip in `AutonomyEditorPanel.applyTest`, or add them to every test, and this
+     * fails.
      */
     @Test
-    public void testSwitchingPathTypeRedrawsTheTestedRoute() throws Exception
+    public void testTheStripSaysWhichLegOnlyAHandSendTakesAndWhy() throws Exception
     {
         TileKey[] pair = aConnectedPairOfStations();
 
-        try
-        {
-            AutonomyEditorPanel panel = testedToAParkedStation(pair);
+        String legend = escaped(org.traincontrol.util.I18n.t("autosetup.ui.testColorLegend"));
+        String why = escaped(org.traincontrol.util.I18n.f("autosetup.ui.testNotAnAutoDestination",
+            session.describeTile(pair[1])));
 
-            String onAuto = said(panel);
+        String ordinary = said(tested(pair));
 
-            String note = org.traincontrol.util.I18n.t("autosetup.ui.testNotAnAutoDestination");
+        assertFalse(ordinary.contains(legend), "between two stations autonomy goes to, the strip speaks of a route only"
+            + " a hand send takes: " + ordinary);
 
-            String noteStart = note.substring(0, note.indexOf("{0}"));
+        String toAParkedStation = said(testedToAParkedStation(pair));
 
-            assertTrue(onAuto.contains(noteStart),
-                "precondition: on Auto the tested route to a station autonomy will never choose does not say so, so"
-                + " there is no difference for the radio to make: " + onAuto);
+        assertTrue(toAParkedStation.contains(legend), "the strip does not say what the purple leg is: "
+            + toAParkedStation);
 
-            javax.swing.JRadioButton manual = (javax.swing.JRadioButton) field(panel, "pathTypeManual");
+        assertTrue(toAParkedStation.contains(why), "the strip does not say why autonomy will not go to "
+            + session.describeTile(pair[1]) + ": " + toAParkedStation);
+    }
 
-            manual.doClick();
-
-            String onManual = said(panel);
-
-            assertFalse(onManual.contains(noteStart),
-                "switching Path Type to Manual left the Auto verdict on screen - the tested route was not redrawn for"
-                + " the new tier.  Adam, MT-399: 'make it update the shown route to the new selection without having"
-                + " to repeat the button press sequence'.  It says: " + onManual);
-
-            String route = org.traincontrol.util.I18n.t("autosetup.ui.testBothWays");
-
-            assertTrue(onManual.contains(route.substring(route.indexOf("</b> to <b>") >= 0 ? route.indexOf("</b> to <b>") : 0,
-                route.indexOf("</b> to <b>") >= 0 ? route.indexOf("</b> to <b>") + 11 : 0)),
-                "switching Path Type cleared the tested route instead of redrawing it: " + onManual);
-
-            javax.swing.JRadioButton auto = (javax.swing.JRadioButton) field(panel, "pathTypeAuto");
-
-            auto.doClick();
-
-            assertTrue(said(panel).contains(noteStart),
-                "switching back to Auto did not put the Auto verdict back: " + said(panel));
-        }
-        finally
-        {
-            session.setAutoDestination(parked, true);
-
-            parked = null;
-        }
+    private static String escaped(String text)
+    {
+        return text.replace("&", "&amp;").replace("<", "&lt;");
     }
 
     /** What the panel's hint line says, mark-up included. */
@@ -450,10 +433,10 @@ public class testManualOnlyPathsAreADifferentColour
         return null;
     }
 
-    /** As the path test asks it: a train starts on the copies it stands on at `from`. */
+    /** As the path test asks it for autonomy: a train starts on the copies it stands on at `from`. */
     private static boolean pathExists(TileKey from, TileKey to)
     {
-        return session.testPath(from, to) != null;
+        return session.testPathForAutonomy(from, to) != null;
     }
 
     /**

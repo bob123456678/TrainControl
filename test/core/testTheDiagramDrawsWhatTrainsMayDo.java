@@ -38,13 +38,13 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 {
 
     /**
-     * A page left out grays the path type with the tools that test by it (FR-105), not only Test a Path and Why not
-     * Moving?.
+     * A page left out grays the routing tools, Test a Path and Why not Moving?, which test what trains may do there
+     * (FR-105), and has no path type left to gray (FR-221).
      *
-     * MUTATION: leave the path type live on a page left out, and this fails.
+     * MUTATION: leave Test a Path live on a page left out, and this fails.
      */
     @Test
-    public void testAPageLeftOutGreysThePathType() throws Exception
+    public void testAPageLeftOutGreysTheRoutingTools() throws Exception
     {
         threeStationsInARow("FR-105");
 
@@ -59,22 +59,24 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
             panel[0].refresh();
         });
 
-        assertFalse(panelPart(panel[0], "whyButton").isEnabled(), "precondition: Why not Moving? is live on a page left"
-            + " out");
-
-        for (String part : new String[] {"pathTypeLabel", "pathTypeAuto", "pathTypeManual"})
+        for (String part : new String[] {"testButton", "whyButton"})
         {
-            assertFalse(panelPart(panel[0], part).isEnabled(), part + " is live on a page left out of autonomy, beside"
-                + " the tools it chooses for, greyed (FR-105)");
+            assertFalse(panelPart(panel[0], part).isEnabled(), part + " is live on a page left out of autonomy (FR-105)");
         }
 
         session.setPageExcluded("main", false);
 
         javax.swing.SwingUtilities.invokeAndWait(() -> panel[0].refresh());
 
-        for (String part : new String[] {"pathTypeLabel", "pathTypeAuto", "pathTypeManual"})
+        for (String part : new String[] {"testButton", "whyButton"})
         {
             assertTrue(panelPart(panel[0], part).isEnabled(), part + " stayed greyed with the page back in (FR-105)");
+        }
+
+        for (java.lang.reflect.Field field : org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class.getDeclaredFields())
+        {
+            assertFalse(javax.swing.JRadioButton.class.isAssignableFrom(field.getType()), "the editor still has a"
+                + " radio button, " + field.getName() + ": Path Type is retired (FR-221)");
         }
     }
 

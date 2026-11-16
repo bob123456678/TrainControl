@@ -623,8 +623,8 @@ public class TileAnnotation
         /** The train cannot be sent here right now. */
         NOT_NOW,
 
-        /** Autonomy will never choose this station for the train. */
-        NEVER,
+        /** Only a train sent by hand can go here now (FR-221). */
+        BY_HAND,
 
         /** Picked to be set with others in Station Settings (FR-052), in a color no other mark uses. */
         TOGETHER,
@@ -732,7 +732,7 @@ public class TileAnnotation
             case CLICKABLE: return SELECTED;
             case PICKED: return MARK_BLUE;
             case CAN_GO: return MARK_GREEN;
-            case NEVER: return TRACE_MANUAL;
+            case BY_HAND: return TRACE_MANUAL;
             case TOGETHER: return MARK_TEAL;
             case PICKABLE: return PICKABLE_GRAY;
             default: return MARK_GRAY;
