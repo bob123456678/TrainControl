@@ -87,7 +87,7 @@ necessarily stands on the points, and he rules it acceptable. **What decides is 
   and never back past a square the train turns at; a train ending inside that stretch is accepted, and its tail lies on
   the route and blocks it (5c). A leg with no length stops the count. `Layout.theApproachItselfHoldsIt`;
   `regression.testAPassingTrainMayStandAcrossThePoints.testTheRouteInHoldsAThreeUnitTrainAndNotAFourUnitOne`.
-- At a **parking berth** (*Can Be Chosen In Full Autonomy* off) a train is STAYING, and a berth is not worth a road. On
+- At a **parking berth** (*May choose this station* off) a train is STAYING, and a berth is not worth a road. On
   top of the room rule it must foul no track that is not a way in or out of its own square; *"its own"* means the
   SQUARE, since a split platform is several Points and one piece of track.
 
