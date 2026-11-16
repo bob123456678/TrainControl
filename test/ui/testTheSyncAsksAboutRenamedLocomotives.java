@@ -4,6 +4,11 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
+import java.util.regex.Pattern;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
@@ -48,7 +53,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
         final String rename = I18n.f("loc.ui.confirmRenameLocomotive", old, STATION_NAME);
         final String yes = String.valueOf(TrainControlUI.YES_NO_OPTS[0]);
 
-        inAWindow((rig, ui) ->
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
         {
             // The start-up sync may have read the station already: then its locomotive is the one renamed here
             if (rig.model.getLocByName(STATION_NAME) == null) rig.model.newMM2Locomotive(old, 10);
@@ -87,7 +92,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
         final String route = "D137 route";
         final String no = String.valueOf(TrainControlUI.YES_NO_OPTS[1]);
 
-        inAWindow((rig, ui) ->
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
         {
             rig.model.newMM2Locomotive(old, 10);
 
@@ -132,16 +137,81 @@ public class testTheSyncAsksAboutRenamedLocomotives
         });
     }
 
+    /**
+     * The rename read waits on the station behind the busy sign, off the event thread (OB-475): while a slow station
+     * holds back its locomotive list the window still answers with the busy sign up, and once the list arrives the sync
+     * goes on and ends.
+     *
+     * MUTATION: in `TrainControlUI.doSync`, call `askAboutRenames(c)` on the event thread, just before the worker starts,
+     * instead of inside it.
+     */
+    @Test(timeOut = 180000)
+    public void testTheRenameReadLeavesTheWindowFreeWhileTheStationIsSlow() throws Exception
+    {
+        final CountDownLatch asked = new CountDownLatch(1);
+        final CountDownLatch release = new CountDownLatch(1);
+        final AtomicBoolean holding = new AtomicBoolean();
+        final BiFunction<String, Integer, byte[]> cs3 = StandInStation.cs3("260", INFO);
+
+        inAWindow((path, n) ->
+        {
+            if ("/app/api/locos".equals(path) && holding.getAndSet(false))
+            {
+                asked.countDown();
+
+                try
+                {
+                    release.await(60, TimeUnit.SECONDS);
+                }
+                catch (InterruptedException stop)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            return cs3.apply(path, n);
+        }, (rig, ui) ->
+        {
+            rig.model.setNetworkCommState(true);
+            holding.set(true);
+
+            Pattern done = Pattern.compile(Pattern.quote(I18n.t("ui.infoSyncCompleteItemsAdded"))
+                .replace("{0}", "\\E\\d+\\Q"));
+
+            try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
+            {
+                SwingUtilities.invokeLater(() -> ui.doSync(ui));
+
+                assertTrue(asked.await(60, TimeUnit.SECONDS), "the sync did not read the station's locomotives");
+
+                List<String> signs = Components.busySignsIfAnswering(3000);
+
+                release.countDown();
+
+                assertNotNull(signs, "the window froze while the rename read waited on the station");
+                assertFalse(signs.isEmpty(), "no busy sign showed while the rename read waited on the station");
+
+                assertTrue(Components.waitFor(() -> answering.asked().stream().anyMatch(m -> done.matcher(m).matches()),
+                    60000), "the sync did not end once the list arrived: " + answering.asked());
+
+                assertTrue(syncEnded(ui), "a sync never ended");
+            }
+            finally
+            {
+                release.countDown();
+            }
+        });
+    }
+
     private interface Claim
     {
         void run(StationRig rig, TrainControlUI ui) throws Exception;
     }
 
-    /** The claim in the real window against the stand-in, once the window's start-up sync has ended. */
-    private static void inAWindow(Claim claim) throws Exception
+    /** The claim in the real window against a stand-in answering so, once the window's start-up sync has ended. */
+    private static void inAWindow(BiFunction<String, Integer, byte[]> answer, Claim claim) throws Exception
     {
-        try (StationRig rig = new StationRig(Files.createTempDirectory("tc-sync-renames").toFile(),
-            StandInStation.cs3("260", INFO), true))
+        try (StationRig rig = new StationRig(Files.createTempDirectory("tc-sync-renames").toFile(), answer, true))
         {
             TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
 

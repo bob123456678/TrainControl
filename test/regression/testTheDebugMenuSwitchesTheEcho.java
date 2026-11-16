@@ -203,10 +203,11 @@ public class testTheDebugMenuSwitchesTheEcho
     /**
      * Sync Full Function State, answered Yes, only reads: it asks the station for each locomotive's state without
      * switching any function off first, and says how far it has got, "12 of 40" (FR-220).  The read is held at this
-     * train's speed query while the busy sign is read, so the count is seen however fast the rest goes.
+     * train's speed query, a slow station, while the window is asked: it still answers, with the busy sign and its count
+     * on screen, as the read waits off the event thread (OB-475); released, the read ends and the sign goes.
      *
      * MUTATION: in `TrainControlUI.syncFullLocStateMenuItemActionPerformed`, call `this.model.allFunctionsOff()` before
-     * the read, or leave out the `busy.say(...)` of each locomotive.
+     * the read, leave out the `busy.say(...)` of each locomotive, or `run()` the read's thread instead of `start()`.
      */
     @Test(timeOut = 120000)
     public void testSyncFullFunctionStateAnsweredYesAsksTheStation() throws Exception
@@ -255,6 +256,9 @@ public class testTheDebugMenuSwitchesTheEcho
             assertTrue(reached.await(30, java.util.concurrent.TimeUnit.SECONDS), "Sync Full Function State answered"
                 + " Yes did not ask the station for the train's state");
 
+            assertNotNull(support.Components.busySignsIfAnswering(3000), "the window froze while the read waited on"
+                + " the station");
+
             assertTrue(support.Components.waitFor(() -> busySays(progress), 10000), "the read does not say how far it"
                 + " has got (\"" + progress + "\") while it reads the train");
 
@@ -268,22 +272,17 @@ public class testTheDebugMenuSwitchesTheEcho
         }
 
         assertTrue(train.getF(0), "Sync Full Function State answered Yes switched the train's lights off");
+
+        assertTrue(support.Components.waitFor(() -> new java.util.ArrayList<>().equals(
+            support.Components.busySignsIfAnswering(3000)), 30000), "the busy sign stayed up after the read ended");
     }
 
     /** Whether a busy sign on screen says this. */
     private static boolean busySays(String text)
     {
-        return support.Components.onTheEventThread(() ->
-        {
-            for (java.awt.Window w : java.awt.Window.getWindows())
-            {
-                if (w instanceof org.traincontrol.gui.widgets.BusyDialog && w.isShowing()
-                    && !support.Components.all(w, javax.swing.JLabel.class, l -> text.equals(l.getText())).isEmpty())
-                    return true;
-            }
+        java.util.List<String> says = support.Components.busySignsIfAnswering(3000);
 
-            return false;
-        });
+        return says != null && says.contains(text);
     }
 
     /**
