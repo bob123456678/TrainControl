@@ -419,6 +419,9 @@ public class Layout
     private final Map<Locomotive, Set<Edge>> releasedEarly;
     private final Map<Locomotive, String> locomotivePendingS88;
 
+    /** The point each running train last turned at part way, for a failure that stops it there (OB-493). */
+    private final Map<Locomotive, Point> turnedPartWay = new ConcurrentHashMap<>();
+
     /**
      * The pending-s88 monitor, not the layout's: a train blocked in updatePendingS88 behind configureAndLockPath
      * could cross the sensor it was about to wait for.  waitForTheRunToRecord waits here briefly, never while reading
@@ -6044,13 +6047,16 @@ public class Layout
                 // executeTimetable's retry loop.  Membership, read before the removal, means the lock phase succeeded.
                 final boolean hadItsPath;
 
-                // Where the train really stands (whereTheTrainIs's rule), read before its milestones go.
+                // Where the train really stands (whereTheTrainIs's rule), read before its milestones go, and whether it
+                // turned there.
                 final Point reached;
+                final boolean turnedThere;
 
                 synchronized (this.activeLocomotives)
                 {
                     hadItsPath = this.activeLocomotives.containsKey(loc);
                     reached = this.lastMilestone(loc);
+                    turnedThere = this.turnedPartWay.remove(loc) == reached && reached != null;
 
                     this.activeLocomotives.remove(loc);
                     this.locomotiveMilestones.remove(loc);
@@ -6083,19 +6089,27 @@ public class Layout
                 synchronized (this.activeLocomotives)
                 {
                     // Only a path this locomotive actually got: configureAndLockPath recovers a lock-phase failure.
-                    if (hadItsPath)
+                    // In the railway's monitor, so no path can reserve `reached` between the unlock and the placement.
+                    if (hadItsPath) synchronized (this)
                     {
-                        // Read before the unlock, which takes the start's tail with the train.
-                        String tail = reached == null ? null : reached.getArrivedFrom();
-                        List<Edge> along = reached == null ? null : reached.getArrivedAlong();
+                        // The side and road the running walk claims track by, read before the unlock clears the start.
+                        Map.Entry<String, List<Edge>> tail = reached == null ? null
+                            : this.standingTrains.tailOfTheRun(path, reached);
 
                         this.unlockPath(path, loc);
 
                         // Recorded where it last reached, not at the destination its path reserved (OB-493).
                         if (reached != null && reached.getCurrentLocomotive() == null)
                         {
-                            reached.setLocomotive(loc).setArrivedAlong(along);
-                            reached.setArrivedFrom(tail);
+                            reached.setLocomotive(loc).setArrivedAlong(tail.getValue());
+                            reached.setArrivedFrom(tail.getKey());
+
+                            // A turn there stands it on the copy it now faces, as at a destination (MT-368).
+                            if (turnedThere && loc.getName() != null)
+                            {
+                                this.reversedOnArrival.put(loc.getName(), reached.getName());
+                                standOnTheCopyItFacesAfterTheTurn(reached, loc);
+                            }
                         }
                     }
 
@@ -6411,6 +6425,8 @@ public class Layout
                     loc.switchDirection()
                     .delay(this.getMinDelay(), this.getMaxDelay()); // a more realistic appearance
 
+                    this.turnedPartWay.put(loc, current);
+
                     // At this point's own speed, not the journey's, keeping the square's multiplier.
                     int resume = Math.min((int) Math.ceil(
                         (double) speed * current.getSpeedMultiplier()), 100);
@@ -6709,6 +6725,7 @@ public class Layout
 
             this.activeLocomotives.remove(loc);
             this.locomotiveMilestones.remove(loc);
+            this.turnedPartWay.remove(loc);
             this.clearedEdges.remove(loc);
             this.releasedEarly.remove(loc);
 
