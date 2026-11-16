@@ -731,6 +731,7 @@
         <test-one-class class="testTheMenusInTheTitleBarAlwaysShow"/>
         <test-one-class class="testATimetableAtRunTime"/>
         <test-one-class class="testASyncKeepsARoutesArming"/>
+        <test-one-class class="testAStalledCutOrHandDrivenTrain"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
