@@ -176,7 +176,7 @@ Monitor the usage of different locomotives.
 
 **Log**
 
-The Log tab shows what TrainControl is doing.  To scroll it sideways, hold Shift and turn the mouse wheel; a trackpad's sideways swipe only works on newer versions of Java.
+The Log tab shows what TrainControl is doing.  To scroll it sideways, hold Shift and turn the mouse wheel; a trackpad's sideways swipe only works on Java 9 or later.
 
 ## Features
 
@@ -331,7 +331,7 @@ The primary controls are the up and down arrows for speed, the left and right ar
         * Control+O (open Station Settings for the hovered square, or for the finding chosen in the list)
         * Control+V (place the locomotive selected in the main window on the hovered station)
         * Delete (take the train off the hovered station)
-        * Control+Enter (save changes)
+        * Control+Enter (save changes; it also saves in Locomotive Settings and the route editor, and is Done Editing in Station Settings)
         * Double-click a finding (open Station Settings for its station)
         * Shift+click (pick several squares at once)
         * Escape (put down an armed tool; with nothing armed, close the editor)
@@ -464,36 +464,38 @@ Tab icons provided by Freepik.
         - Autonomy
             - `Test a path` and `Why not Moving?` give one answer for both automatic and by-hand sends: a path only a hand send can take is purple, and the destinations are listed in a table.  The `Path Type` choice is gone.
             - The autonomy editor's list of things to look at now agrees with `Test a path` about which stations can be reached, and both are faster.
-            - The `Station` preset lets trains run through, and a small white dot on the track diagram, in the autonomy editor and in `Station Settings` marks a station trains must stop at.  The `Terminus` and `Parking` presets stop trains there, and `Parking` is a terminus full autonomy never chooses.
-            - `Station Settings` has a `Grayed-Out Icons` box under `Visible Elements` to leave out squares autonomy ignores, an `*` on `Advanced` when a setting under it has been changed, and arrows on the longest train box, which shows `Any` at 0.
+            - The `Station` preset lets trains run through, and a small white dot on the track diagram, in the autonomy editor and in `Station Settings` marks a station trains must stop at (a station whose `Trains can pass through` box is unticked).  The `Terminus` and `Parking` presets untick `Trains can pass through`, and `Parking` is a terminus full autonomy never chooses.
+            - The autonomy editor has a `Grayed-Out Icons` box under `Visible Elements`: untick it to leave the squares autonomy ignores empty instead of grayed.
+            - `Station Settings` shows an `*` on `Advanced` when a setting under it has been changed, and the `Maximum train length` box has arrows and shows `Any` at 0.
+            - `Debugging Tools` in the autonomy editor is now `Path Debugging`.
             - Hovering `Some trains` in `Station Settings` explains each condition.
             - The autonomy editor's filter box sits below the list with a gray `Filter` hint inside it.
         - Locomotive Control
-            - `Sync` is now in the `Locomotives` menu, and first asks about locomotives renamed at the Central Station.
+            - `Sync Database w/ Central Station` is now in the `Locomotives` menu and first asks about locomotives renamed at the Central Station; `Check for Renamed Locomotives` is gone.
         - Central Station Protocol
-            - After a sync from a local copy, the log lists each accessory square whose protocol the Central Station disagrees with.
+            - After a sync from a local copy, the log lists each accessory square whose protocol the Central Station does not have at that address.
         - Interface
             - Ctrl+G starts autonomous operation, Ctrl+Q gracefully stops it, and Ctrl+H sends every locomotive home after asking first.  In the autonomy editor, Ctrl+V places the selected locomotive on a station and Delete takes its train off.  Ctrl+Enter saves in the editors, `Locomotive Settings` and the route editor, and is `Done Editing` in `Station Settings`.
             - On Java 8, the pointer over links and buttons is a smooth, bold hand.
             - To scroll the Log tab sideways, hold Shift and turn the mouse wheel.
     - Bug Fixes
         - Central Station Protocol
-            - A train's stop is no longer lost when the connection to a CS3 stalls and resets.
-            - A route that syncing replaces stays armed, and an armed S88 route no longer fires on a late sensor answer during a sync.
+            - A train's stop (speed 0) is no longer lost when a CS3 stops answering.
+            - A route that syncing replaces stays armed, and an armed S88 route no longer fires on a late sensor answer just after a sync.
             - A sync downloads each Central Station file once, and a station picture that never arrives gives up instead of hanging.
+            - A stop sent from a CS3 for a single locomotive now shows that locomotive stopped in TrainControl.
         - Autonomy
-            - Pressing a train's pause while the autonomy editor is open, then Cancel, keeps that pause, and Cancel after a Save goes back to what was saved.
+            - In the autonomy editor, `Cancel` keeps the last pause or go you pressed on a train while the editor was open, even after `Activate All Trains`.
             - A train whose journey fails partway is recorded where it stopped, and its destination is freed.
             - On a station that allows trains from every side, `Station Settings` no longer shows arrival arrows.
             - `Station Settings` steps aside while you pick a train's tail on the diagram.
+            - The station picture in `Station Settings` no longer shows which s88 squares are occupied.
         - Locomotive Control
-            - `Cancel` in `Locomotive Settings` asks before throwing away what you typed, and the revert and crop marks change together with the picture.
+            - `Cancel` in `Locomotive Settings` asks `Save`, `Discard` or `Cancel` before throwing away what you typed, and the revert and crop marks change together with the picture.
         - Interface
             - The `Start Autonomous Operation` button ends at the track diagram's right edge.
             - On newer Java, a scaled Windows display is no longer scaled twice, the file chooser's `Look In` list works, and settings are kept when the folder path has a non-English letter.
             - A new route item starts at address 0, and a selected row's grayed cells stay readable.
-        - Track Diagram
-            - The station picture in `Station Settings` shows s88 squares as free.
 * v3.1.0 [11/15/2026]
     - Central Station Protocol
         - New Features
