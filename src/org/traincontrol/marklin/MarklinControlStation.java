@@ -1923,6 +1923,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
             if (this.on) this.NetworkInterface.syncSensors();
         }
 
+        // A local copy's squares checked against the station, logged only; a check that cannot run costs nothing (FR-219)
+        if (!this.fileParser.isFromStation())
+        {
+            try
+            {
+                this.fileParser.logSquaresTheStationDisagreesWith(this.getLayoutList().stream().map(this::getLayout)
+                    .filter(Objects::nonNull).collect(Collectors.toList()));
+            }
+            catch (Exception e)
+            {
+                if (this.debug) this.log(e);
+            }
+        }
+
         this.logf("loc.syncCompleted");
         
         return num;

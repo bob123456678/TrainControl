@@ -19,11 +19,11 @@
 17	## resync -> 0	  /app/api/devs\n## resync -> 0
 25	## rename proposals -> 0	  /app/api/devs\n## rename proposals -> 0
 56	## sync with a local folder -> 0	  /app/api/devs\n## sync with a local folder -> 0
-64	## rename proposals with a local folder -> 0	  /app/api/devs\n## rename proposals with a local folder -> 0
+64	## rename proposals with a local folder -> 0	  /app/api/devs\n  /config/magnetartikel.cs2\n  /app/api/gbs\n## rename proposals with a local folder -> 0
 699	## resync -> 0	  /app/api/devs\n## resync -> 0
 707	## rename proposals -> 0	  /app/api/devs\n## rename proposals -> 0
 738	## sync with a local folder -> 0	  /app/api/devs\n## sync with a local folder -> 0
-746	## rename proposals with a local folder -> 0	  /app/api/devs\n## rename proposals with a local folder -> 0
+746	## rename proposals with a local folder -> 0	  /app/api/devs\n  /config/magnetartikel.cs2\n  /app/api/gbs\n## rename proposals with a local folder -> 0
 35	  /config/magnetartikel.cs2	  /config/magnetartikel.cs2\n  /app/api/gbs
 717	  /config/magnetartikel.cs2	  /config/magnetartikel.cs2\n  /app/api/gbs
 448	  Adding Switch 1 DCC	  Adding Switch 1 DCC\n  Central Station 3 firmware 2.6.1 (Build 3)
@@ -36,3 +36,5 @@
 706	  /app/api/loks	(gone)
 737	  /app/api/loks	(gone)
 745	  /app/api/loks	(gone)
+678	  Imported layout Main Layout	  Imported layout Main Layout\n  Layout: hint: the square at 10,4 on page Startpackung is address 1 DCC, but the Central Station’s plan of that page puts W 1R (MM2) there.  If the page still matches the station’s, set the square’s protocol in the editor.\n  Layout: hint: the square at 5,9 on page Main Layout is address 25 DCC, but the Central Station’s plan of that page puts W 15 (MM2) there.  If the page still matches the station’s, set the square’s protocol in the editor.
+1324	  Imported layout Main Layout	  Imported layout Main Layout\n  Layout: hint: the square at 10,4 on page Startpackung is address 1 DCC, but the Central Station’s plan of that page puts W 1R (MM2) there.  If the page still matches the station’s, set the square’s protocol in the editor.\n  Layout: hint: the square at 5,9 on page Main Layout is address 25 DCC, but the Central Station’s plan of that page puts W 15 (MM2) there.  If the page still matches the station’s, set the square’s protocol in the editor.

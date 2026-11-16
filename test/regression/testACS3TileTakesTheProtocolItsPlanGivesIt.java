@@ -394,7 +394,7 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
      * one W 2 in the accessory list is one vote, too few to place the grid; listed twice, it is two, and the pair at 25
      * is told.
      *
-     * MUTATION: keep only the last article of a name in the vote (CS2File.resolveTwoProtocolTiles), and the pair is
+     * MUTATION: keep only the last article of a name in the vote (CS2File.plannedArticles), and the pair is
      * not told.
      */
     @Test
