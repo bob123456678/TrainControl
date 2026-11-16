@@ -19,8 +19,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.automationui.TileGraph.Direction;
@@ -2460,10 +2463,7 @@ public class AutonomyCompanionStore
         return out;
     }
 
-    /**
-     * The entries of one collection on one page; generic over {@link SquareKeyed} (FR-013) because erasure makes the
-     * Map signatures equal.
-     */
+    /** The entries of one collection on one page. */
     private static <K extends SquareKeyed<K>, T> Map<K, T> onPage(Map<K, T> from, String page)
     {
         Map<K, T> out = new LinkedHashMap<>();
@@ -2622,10 +2622,7 @@ public class AutonomyCompanionStore
         if (was != null) into.addAll(was);
     }
 
-    /**
-     * Lets go of everything held ABOUT a set of squares and what POINTS AT them (a caption naming a station built
-     * over).
-     */
+    /** Lets go of everything held ABOUT a set of squares and what POINTS AT them. */
     private boolean forgetSquares(Set<TileKey> squares)
     {
         return forgetSquares(squares, null);
@@ -2639,11 +2636,8 @@ public class AutonomyCompanionStore
     {
         if (squares == null || squares.isEmpty()) return false;
 
-        // WHETHER ANYTHING WAS REMOVED (see `Kept.forget`): four callers write the whole setup to disk on true.
         boolean any = false;
 
-        // Each collection drops what it knows about these squares AND anything POINTING at them.  Captions are the
-        // exception via `arriving`, KEY half only; a vacated square is never in this set.
         for (Kept k : kept()) any |= k.forget(squares, arriving);
 
         // The configurations key by square as well - facings, placements, homes, lengths
@@ -2682,35 +2676,6 @@ public class AutonomyCompanionStore
 
         map.clear();
         map.putAll(out);
-    }
-
-    /** The same for a map whose values are LISTS of squares, named apart because erasure makes the signatures equal. */
-    private static void moveListValues(Map<TileKey, List<TileKey>> map, Map<TileKey, TileKey> moves)
-    {
-        for (Map.Entry<TileKey, List<TileKey>> entry : map.entrySet())
-        {
-            List<TileKey> out = new ArrayList<>();
-
-            for (TileKey value : entry.getValue())
-            {
-                TileKey moved = moves.get(value);
-
-                out.add(moved == null ? value : moved);
-            }
-
-            entry.setValue(out);
-        }
-    }
-
-    /** Repoints values that name a square that moved, in place: the entry stays where it is. */
-    private static void moveValues(Map<TileKey, TileKey> map, Map<TileKey, TileKey> moves)
-    {
-        for (Map.Entry<TileKey, TileKey> entry : map.entrySet())
-        {
-            TileKey moved = moves.get(entry.getValue());
-
-            if (moved != null) entry.setValue(moved);
-        }
     }
 
     /** The same for a set of squares. */
@@ -3261,9 +3226,8 @@ public class AutonomyCompanionStore
     // The kept collections (OB-025)
 
     /**
-     * One collection of settings the store keeps, with everything the bookkeeping sites need of it (save, load, clear,
-     * rename, move, forget, snapshot, restore, delete page).  `testStoreCollectionsAreHandledEverywhere` makes an
-     * omission loud; `reconcile` and `applyTo` stay written by hand.
+     * One collection of settings the store keeps, with everything the bookkeeping sites need of it.
+     * `testStoreCollectionsAreHandledEverywhere` makes an omission loud; `reconcile` and `applyTo` stay written by hand.
      */
     private abstract class Kept
     {
@@ -3275,7 +3239,6 @@ public class AutonomyCompanionStore
             this.json = json;
         }
 
-        /** Empties it. */
         abstract void clear();
 
         /** Writes it into the shared file's root object, translated to stored keys. */
@@ -3308,25 +3271,51 @@ public class AutonomyCompanionStore
         abstract void squaresOn(String page, Set<TileKey> into);
     }
 
-    /**
-     * A map from a square to something that is not a square (name, length, restriction); subclasses write and read the
-     * value.
-     */
-    private abstract class SquareMapKept<V> extends Kept
+    private interface Reader<C>
     {
-        final Map<TileKey, V> map;
+        void read(JSONObject root, String field, C into);
+    }
 
-        SquareMapKept(String json, Map<TileKey, V> map)
+    /** A map keyed by squares, written through `stored` and read through `reader`. */
+    private class MapKept<K extends SquareKeyed<K>, V> extends Kept
+    {
+        final Map<K, V> map;
+        private final Function<Map<K, V>, Map<String, ?>> stored;
+        private final Reader<Map<K, V>> reader;
+
+        MapKept(String json, Map<K, V> map, Function<Map<K, V>, Map<String, ?>> stored, Reader<Map<K, V>> reader)
         {
             super(json);
             this.map = map;
+            this.stored = stored;
+            this.reader = reader;
         }
 
         @Override void clear() { map.clear(); }
 
-        @Override void renamePage(String from, String to) { rekey(map, from, to); }
+        @Override void write(JSONObject root) { root.put(json, new JSONObject(stored.apply(map))); }
 
-        @Override void move(Map<TileKey, TileKey> byKey) { moveKeys(map, byKey); }
+        @Override void read(JSONObject root) { reader.read(root, json, map); }
+
+        /** Rewrites the squares the values name; most values name none. */
+        void followValues(UnaryOperator<TileKey> to) { }
+
+        @Override void renamePage(String from, String to)
+        {
+            followValues(square -> rekeyOne(square, from, to));
+            rekey(map, from, to);
+        }
+
+        @Override void move(Map<TileKey, TileKey> byKey)
+        {
+            followValues(square ->
+            {
+                TileKey moved = byKey.get(square);
+
+                return moved == null ? square : moved;
+            });
+            moveKeys(map, byKey);
+        }
 
         @Override boolean forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
         {
@@ -3342,61 +3331,30 @@ public class AutonomyCompanionStore
         @Override @SuppressWarnings("unchecked")
         void restoreTo(String page, Object snapshot)
         {
-            putBack(map, page, (Map<TileKey, V>) snapshot);
+            putBack(map, page, (Map<K, V>) snapshot);
         }
 
         @Override void squaresOn(String page, Set<TileKey> into)
         {
-            addOnPage(map.keySet(), page, into);
+            for (K key : new ArrayList<>(map.keySet()))
+            {
+                TileKey bare = key == null ? null : key.square();
+
+                if (isOnPage(bare, page)) into.add(bare);
+            }
         }
-    }
-
-    /** A square to a string: a name, a barred arrival, a link's label. */
-    private class StringMapKept extends SquareMapKept<String>
-    {
-        StringMapKept(String json, Map<TileKey, String> map) { super(json, map); }
-
-        @Override void write(JSONObject root) { root.put(json, new JSONObject(translateKeys(map))); }
-
-        @Override void read(JSONObject root) { readSquareMap(root, json, map); }
-    }
-
-    /** A square to a length. */
-    private class IntMapKept extends SquareMapKept<Integer>
-    {
-        IntMapKept(String json, Map<TileKey, Integer> map) { super(json, map); }
-
-        @Override void write(JSONObject root)
-        {
-            root.put(json, new JSONObject(translateLengths(map)));
-        }
-
-        @Override void read(JSONObject root) { readSquareIntMap(root, json, map); }
     }
 
     /**
      * A square AND a route across it, to the way the track faces on that route; ask the key which square it is on
      * (FR-013).
      */
-    private class DirectionMapKept extends Kept
+    private class DirectionMapKept extends MapKept<DirectionKey, String>
     {
-        final Map<DirectionKey, String> map;
-
         DirectionMapKept(String json, Map<DirectionKey, String> map)
         {
-            super(json);
-            this.map = map;
+            super(json, map, AutonomyCompanionStore.this::translateKeys, AutonomyCompanionStore.this::readDirectionMap);
         }
-
-        @Override void clear() { map.clear(); }
-
-        @Override void write(JSONObject root) { root.put(json, new JSONObject(translateKeys(map))); }
-
-        @Override void read(JSONObject root) { readDirectionMap(root, json, map); }
-
-        @Override void renamePage(String from, String to) { rekey(map, from, to); }
-
-        @Override void move(Map<TileKey, TileKey> byKey) { moveKeys(map, byKey); }
 
         @Override boolean forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
         {
@@ -3413,61 +3371,25 @@ public class AutonomyCompanionStore
 
             return any;
         }
-
-        @Override Object snapshotOf(String page) { return onPage(map, page); }
-
-        @Override @SuppressWarnings("unchecked")
-        void restoreTo(String page, Object snapshot)
-        {
-            putBack(map, page, (Map<DirectionKey, String>) snapshot);
-        }
-
-        @Override void squaresOn(String page, Set<TileKey> into)
-        {
-            for (DirectionKey key : new LinkedHashSet<>(map.keySet()))
-            {
-                TileKey bare = key.square();
-
-                if (bare != null && isOnPage(bare, page)) into.add(bare);
-            }
-        }
     }
 
     /**
      * A square to another square (a portal to its far end, a caption to its station); both halves follow a rename and a
      * move.
      */
-    private class PairMapKept extends Kept
+    private class PairMapKept extends MapKept<TileKey, TileKey>
     {
-        final Map<TileKey, TileKey> map;
-
         /** Whether a landing square keeps its entry when the arriving tile is what it points at: captions only. */
         final boolean spareArriving;
 
         PairMapKept(String json, Map<TileKey, TileKey> map, boolean spareArriving)
         {
-            super(json);
-            this.map = map;
+            super(json, map, AutonomyCompanionStore.this::translateTileMap,
+                AutonomyCompanionStore.this::readSquarePairMap);
             this.spareArriving = spareArriving;
         }
 
-        @Override void clear() { map.clear(); }
-
-        @Override void write(JSONObject root) { root.put(json, new JSONObject(translateTileMap(map))); }
-
-        @Override void read(JSONObject root) { readSquarePairMap(root, json, map); }
-
-        @Override void renamePage(String from, String to)
-        {
-            rekeyValues(map, from, to);
-            rekey(map, from, to);
-        }
-
-        @Override void move(Map<TileKey, TileKey> byKey)
-        {
-            moveValues(map, byKey);
-            moveKeys(map, byKey);
-        }
+        @Override void followValues(UnaryOperator<TileKey> to) { map.replaceAll((key, value) -> to.apply(value)); }
 
         @Override boolean forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
         {
@@ -3510,7 +3432,7 @@ public class AutonomyCompanionStore
 
         @Override void squaresOn(String page, Set<TileKey> into)
         {
-            addOnPage(map.keySet(), page, into);
+            super.squaresOn(page, into);
             addOnPage(map.values(), page, into);
         }
     }
@@ -3519,42 +3441,22 @@ public class AutonomyCompanionStore
      * A square to a list of squares (signals protecting a station, squares holding it back); the snapshot copies the
      * lists.
      */
-    private class ListMapKept extends Kept
+    private class ListMapKept extends MapKept<TileKey, List<TileKey>>
     {
-        final Map<TileKey, List<TileKey>> map;
-
         ListMapKept(String json, Map<TileKey, List<TileKey>> map)
         {
-            super(json);
-            this.map = map;
+            super(json, map, AutonomyCompanionStore.this::translateTileListMap,
+                AutonomyCompanionStore.this::readSquareListMap);
         }
 
-        @Override void clear() { map.clear(); }
-
-        @Override void write(JSONObject root)
+        @Override void followValues(UnaryOperator<TileKey> to)
         {
-            root.put(json, new JSONObject(translateTileListMap(map)));
-        }
-
-        @Override void read(JSONObject root) { readSquareListMap(root, json, map); }
-
-        @Override void renamePage(String from, String to)
-        {
-            rekeyListValues(map, from, to);
-            rekey(map, from, to);
-        }
-
-        @Override void move(Map<TileKey, TileKey> byKey)
-        {
-            moveListValues(map, byKey);
-            moveKeys(map, byKey);
+            map.replaceAll((key, squares) -> squares.stream().map(to).collect(Collectors.toCollection(ArrayList::new)));
         }
 
         @Override boolean forget(Set<TileKey> squares, Map<TileKey, TileKey> arriving)
         {
-            boolean any = false;
-
-            for (TileKey key : squares) any |= map.remove(key) != null;
+            boolean any = super.forget(squares, arriving);
 
             // A pointer at track that has been built over is one nothing can satisfy or clear.
             return dropPointers(map, squares::contains, gone -> { }) | any;
@@ -3574,7 +3476,7 @@ public class AutonomyCompanionStore
 
         @Override void squaresOn(String page, Set<TileKey> into)
         {
-            addOnPage(map.keySet(), page, into);
+            super.squaresOn(page, into);
 
             for (List<TileKey> pointed : new ArrayList<>(map.values()))
             {
@@ -3583,11 +3485,23 @@ public class AutonomyCompanionStore
         }
     }
 
-    /** A plain set of squares: which are stations, which links are switched off. */
-    private class SquareSetKept extends Kept
+    /** A set the store keeps; subclasses say what its members are. */
+    private abstract class SetKept<T> extends Kept
     {
-        final Set<TileKey> set;
+        final Set<T> set;
 
+        SetKept(String json, Set<T> set)
+        {
+            super(json);
+            this.set = set;
+        }
+
+        @Override void clear() { set.clear(); }
+    }
+
+    /** A plain set of squares: which are stations, which links are switched off. */
+    private class SquareSetKept extends SetKept<TileKey>
+    {
         /** Whether the members are paired across pages, which only `disabledLinks` is. */
         final boolean paired;
 
@@ -3598,12 +3512,9 @@ public class AutonomyCompanionStore
 
         SquareSetKept(String json, Set<TileKey> set, boolean paired)
         {
-            super(json);
-            this.set = set;
+            super(json, set);
             this.paired = paired;
         }
-
-        @Override void clear() { set.clear(); }
 
         @Override void write(JSONObject root) { root.put(json, new JSONArray(translateSet(set))); }
 
@@ -3649,17 +3560,9 @@ public class AutonomyCompanionStore
      * A set of whole PAGES (which pages autonomy ignores); square-level sites do nothing here, by decision.  Translated
      * by page id on write.
      */
-    private class PageSetKept extends Kept
+    private class PageSetKept extends SetKept<String>
     {
-        final Set<String> set;
-
-        PageSetKept(String json, Set<String> set)
-        {
-            super(json);
-            this.set = set;
-        }
-
-        @Override void clear() { set.clear(); }
+        PageSetKept(String json, Set<String> set) { super(json, set); }
 
         @Override void write(JSONObject root) { root.put(json, new JSONArray(translatePages(set))); }
 
@@ -3689,27 +3592,24 @@ public class AutonomyCompanionStore
     /** Built on first use: a field initializer would hold nulls for the collections declared below it. */
     private List<Kept> kept;
 
-    /**
-     * Every collection of settings the store keeps; the list to add to, as clearing, saving, loading, renames, moves,
-     * deletions and snapshots walk it.
-     */
+    /** Every collection of settings the store keeps: the list a new one is added to. */
     private List<Kept> kept()
     {
         if (kept != null) return kept;
 
         List<Kept> all = new ArrayList<>();
 
-        all.add(new StringMapKept("pointNames", pointNames));
+        all.add(new MapKept<>("pointNames", pointNames, this::translateKeys, this::readSquareMap));
         all.add(new SquareSetKept("stations", stations));
-        all.add(new IntMapKept("tileLengths", tileLengths));
+        all.add(new MapKept<>("tileLengths", tileLengths, this::translateLengths, this::readSquareIntMap));
         all.add(new DirectionMapKept("tileDirections", tileDirections));
-        all.add(new StringMapKept("barredArrivals", barredArrivals));
+        all.add(new MapKept<>("barredArrivals", barredArrivals, this::translateKeys, this::readSquareMap));
         all.add(new ListMapKept("stationSignals", stationSignals));
         all.add(new ListMapKept("entrySignals", entrySignals));
         all.add(new ListMapKept("blockedPoints", blockedPoints));
         all.add(new PairMapKept("portals", portals, false));
         all.add(new PairMapKept("captions", captions, true));
-        all.add(new StringMapKept("linkNames", linkNames));
+        all.add(new MapKept<>("linkNames", linkNames, this::translateKeys, this::readSquareMap));
         all.add(new PageSetKept("excludedPages", excludedPages));
 
         // Page NAMES, translated on write like `excludedPages`, so a rename carries the decision with it.
@@ -4332,26 +4232,6 @@ public class AutonomyCompanionStore
 
         map.clear();
         map.putAll(renamed);
-    }
-
-    private static void rekeyValues(Map<TileKey, TileKey> map, String fromPage, String toPage)
-    {
-        for (Map.Entry<TileKey, TileKey> entry : map.entrySet())
-        {
-            entry.setValue(rekeyOne(entry.getValue(), fromPage, toPage));
-        }
-    }
-
-    private static void rekeyListValues(Map<TileKey, List<TileKey>> map, String fromPage, String toPage)
-    {
-        for (Map.Entry<TileKey, List<TileKey>> entry : map.entrySet())
-        {
-            List<TileKey> out = new ArrayList<>();
-
-            for (TileKey value : entry.getValue()) out.add(rekeyOne(value, fromPage, toPage));
-
-            entry.setValue(out);
-        }
     }
 
     /** Keys, as the strings a report shows a person (FR-013): the one door where a key becomes its printed form. */
