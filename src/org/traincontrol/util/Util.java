@@ -136,10 +136,17 @@ public class Util
     /** {@link #preferencesFor(Class)} for a run of this name, null or blank for none. */
     public static java.util.prefs.Preferences preferencesFor(Class<?> owner, String run)
     {
-        if (run == null || run.trim().isEmpty()) return java.util.prefs.Preferences.userNodeForPackage(owner);
+        return preferencesFor(owner.getPackage().getName(), run);
+    }
 
-        return java.util.prefs.Preferences.userRoot().node(ISOLATED_PREFERENCES_ROOT + "/" + run.trim() + "/"
-            + owner.getPackage().getName().replace('.', '/'));
+    /** {@link #preferencesFor(Class, String)} for a package by name, for code that must not compile against it. */
+    public static java.util.prefs.Preferences preferencesFor(String packageName, String run)
+    {
+        String node = packageName.replace('.', '/');
+
+        if (run == null || run.trim().isEmpty()) return java.util.prefs.Preferences.userRoot().node("/" + node);
+
+        return java.util.prefs.Preferences.userRoot().node(ISOLATED_PREFERENCES_ROOT + "/" + run.trim() + "/" + node);
     }
 
     /**
