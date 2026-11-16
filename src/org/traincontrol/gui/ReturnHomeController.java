@@ -359,9 +359,8 @@ final class ReturnHomeController extends SettledQuestion
 
         // Says why it is unavailable, rather than leaving a dead button with no explanation
         // WRAPPED (MT-756): a reason can name many trains
-        this.ui.returnHomeButton().setToolTipText(AutonomyEditorPanel.wrapped(nothingToDo == null
-            ? I18n.t("ui.main.tooltip.returnHome")
-            : describeStagingOutcome(nothingToDo, this.ui.returnHomeTriagePausedAway)));
+        this.ui.tipReturnHome(nothingToDo == null ? null
+            : describeStagingOutcome(nothingToDo, this.ui.returnHomeTriagePausedAway));
     }
 
     /**

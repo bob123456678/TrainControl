@@ -549,6 +549,25 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     }
 
     /**
+     * Delete once the pointer has left the squares takes nothing off the square it last outlined: the key is about the
+     * square under the pointer.
+     *
+     * MUTATION: drop `this.pointerOnGrid` from the FR-200 branch of `LayoutEditor.formKeyPressed`, and the train comes
+     * off.
+     */
+    @Test
+    public void testDeleteWithThePointerOffTheSquaresTakesNothingOff() throws Exception
+    {
+        TileKey square = aStationWithATrain();
+
+        String train = panel().locomotiveAt(square);
+
+        keyOver(square, java.awt.event.KeyEvent.VK_DELETE, 0, true);
+
+        assertEquals(panel().locomotiveAt(square), train, "Delete with the pointer off the squares took " + train + " off");
+    }
+
+    /**
      * Control+Enter is Save: the editor closes, and the change is in the setup read back from disk.
      *
      * MUTATION: drop the Control+Enter branch from `LayoutEditor.formKeyPressed`, and nothing is written.
@@ -623,6 +642,12 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     /** Puts the pointer on a square and presses a key on the editor in the same step, and gives what it asked. */
     private List<String> keyOver(TileKey square, int key, int modifiers) throws Exception
     {
+        return keyOver(square, key, modifiers, false);
+    }
+
+    /** The same, the pointer first leaving the squares for the panel beside them when `left`. */
+    private List<String> keyOver(TileKey square, int key, int modifiers, boolean left) throws Exception
+    {
         final org.traincontrol.gui.LayoutLabel label = ((org.traincontrol.gui.LayoutGrid) support.Reflect.get(
             LayoutEditor.class, editor, "grid")).getValueAt(square.getX(), square.getY());
 
@@ -632,6 +657,9 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
             {
                 editor.receiveMoveEvent(new java.awt.event.MouseEvent(label, java.awt.event.MouseEvent.MOUSE_MOVED,
                     System.currentTimeMillis(), 0, 1, 1, 0, false), label);
+
+                if (left) editor.receiveExitEvent(new java.awt.event.MouseEvent(label,
+                    java.awt.event.MouseEvent.MOUSE_EXITED, System.currentTimeMillis(), 0, -5000, -5000, 0, false), label);
 
                 editor.dispatchEvent(new java.awt.event.KeyEvent(editor, java.awt.event.KeyEvent.KEY_PRESSED,
                     System.currentTimeMillis(), modifiers, key, java.awt.event.KeyEvent.CHAR_UNDEFINED));

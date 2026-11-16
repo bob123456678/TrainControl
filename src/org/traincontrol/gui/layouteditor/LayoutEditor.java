@@ -1053,6 +1053,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // Kept where a shortcut can find it (MT-258): `lastHoveredX/Y` hold -1,-1 and a null label here.
             autonomyHover = label;
+            this.pointerOnGrid = true;
 
             // The square's name and the click hand (FR-112); set outside the invokeLater, as a tooltip is read when the
             // pointer settles.
@@ -3092,7 +3093,7 @@ public class LayoutEditor extends PositionAwareJFrame
      */
     public void receiveExitEvent(MouseEvent e, LayoutLabel label)
     {
-        if (isAutonomyMode() || this.grid == null || label == null || getX(label) < 0) return;
+        if (this.grid == null || label == null || getX(label) < 0) return;
 
         JPanel squares = this.grid.getContainer();
 
@@ -3104,7 +3105,9 @@ public class LayoutEditor extends PositionAwareJFrame
         // Onto a square (or something over one) and in view
         if (squares.contains(to) && squares.getVisibleRect().contains(to) && aSquareAt(squares, to)) return;
 
-        pointerOffTheSquares();
+        // In autonomy mode only Place and Remove's keys ask; the hovered square stays for Control+H, S and E (FR-200)
+        if (isAutonomyMode()) this.pointerOnGrid = false;
+        else pointerOffTheSquares();
     }
 
     /**
@@ -5508,10 +5511,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // Control+V places the main window's selected locomotive on the square under the pointer and Delete takes
             // its train off (FR-200), but never Control+Delete, the main window's database delete.  Above the guard,
-            // whose Control+V is the track editor's paste.
+            // whose Control+V is the track editor's paste.  Only with the pointer on the squares.
             if (isAutonomyMode() && (is(evt, PASTE_KEY) || is(evt, DELETE_KEY) && !evt.isControlDown()))
             {
-                onTheHoveredSquare(over -> autonomyPanel.placeOrRemoveByKey(over, is(evt, PASTE_KEY)));
+                boolean place = is(evt, PASTE_KEY);
+
+                if (this.pointerOnGrid) onTheHoveredSquare(over -> autonomyPanel.placeOrRemoveByKey(over, place));
 
                 return;
             }

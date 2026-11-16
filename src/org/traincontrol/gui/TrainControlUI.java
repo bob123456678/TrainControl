@@ -14585,7 +14585,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 TrainControlUI ui = key.ui;
 
+                // Busy as the diagram's menu reads it, which offers no Start: Return Home planning, a hand send
                 if (ui.refusedByKey(!ui.model.hasAutoLayout() ? I18n.t("autolayout.ui.noAutonomyToStart")
+                    : ui.isAutonomyBusy() ? ui.describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
                     : !ui.canStartAutonomy() ? ui.whyAutonomyWillNotStart() : ui.whyNoTrainMayBeSent(true))) return;
 
                 try
@@ -17434,7 +17436,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         // The item's questions, which the door does not ask, then the door's own gate, all said in the log.
         if (refusedByKey(isAutonomyBusy() ? describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
-            : isReturnHomeOffered() ? whyNoTrainMayBeSent(false) : whyReturnHomeIsNotOffered())
+            : isReturnHomeOffered() ? whyNoTrainMayBeSent(false) : this.returnHomeReason)
             || !isReturnHomeOffered() || askingToReturnHome) return;
 
         askingToReturnHome = true;
@@ -17799,7 +17801,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     void disableReturnHome(String reason)
     {
         this.returnHomeButton.setEnabled(false);
-        this.returnHomeButton.setToolTipText(AutonomyEditorPanel.wrapped(reason));
+        tipReturnHome(reason);
+    }
+
+    /** The plain sentence behind Return Home's tooltip, for Control+H's log line; null while it is offered. */
+    private String returnHomeReason;
+
+    /** Return Home's tooltip: why it is not offered, or with `reason` null what it does. */
+    void tipReturnHome(String reason)
+    {
+        this.returnHomeReason = reason;
+        this.returnHomeButton.setToolTipText(AutonomyEditorPanel.wrapped(reason != null ? reason
+            : I18n.t("ui.main.tooltip.returnHome")));
     }
 
     String describeStagingOutcome(HomeStaging.Outcome outcome, List<Locomotive> blocked)
