@@ -598,13 +598,15 @@ final class LocomotiveActions
     /** Set, on the event thread, only for the length of `deleteLocBecause`. */
     private String because = null;
 
-    /** How `deleteLoc`'s question was last answered: JOptionPane's option, CLOSED_OPTION when it was not asked. */
+    /** How `deleteLoc`'s question was last answered: JOptionPane's option, or NOT_ASKED when it refused first. */
     int answered;
+
+    static final int NOT_ASKED = Integer.MIN_VALUE;
 
     /** Deletes a locomotive from the database after the question, from any door; true when it was deleted. */
     boolean deleteLoc(String value, Component source)
     {
-        this.answered = JOptionPane.CLOSED_OPTION;
+        this.answered = NOT_ASKED;
 
         // The moving rule, at every door (FR-048), and asked again at Yes.
         if (LocomotiveSettings.refuseIfNotEditable(this.ui, this.ui.getModel().getLocByName(value), source)) return false;

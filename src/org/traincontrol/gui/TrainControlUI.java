@@ -15198,12 +15198,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // re-enabling pass below.  Reported as -1, the failure code this method already tells the user about;
                 // the log has the reason.
                 Integer syncResult;
+                List<Locomotive> heldBack = Collections.emptyList();
 
                 try
                 {
                     // A pressed sync first asks about locomotives renamed at the station, so the sync reads them under
                     // their new names and needs no second pass (FR-220)
-                    if (c != null) askAboutRenames(c);
+                    if (c != null) heldBack = askAboutRenames(c);
 
                     syncResult = c == null ? this.runTheOwedSync() : this.syncWithCS2();
                 }
@@ -15215,13 +15216,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
                 finally
                 {
-                    // The offers this sync held back are offered again by the next
-                    for (String name : c == null ? Collections.<String>emptyList() : this.model.getLocList())
-                    {
-                        Locomotive each = this.model.getLocByName(name);
-
-                        if (each != null) each.setHeldBackStationName(null);
-                    }
+                    // The offers this sync held back, and no other sync's, are offered again by the next
+                    for (Locomotive each : heldBack) each.setHeldBackStationName(null);
                 }
 
                 final Integer r = syncResult;
@@ -15254,11 +15250,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Reads, behind the spinner, the station's names for locomotives held here under another name at the same address,
-     * then asks about them over c on the event thread and returns once they are answered.  Off the event thread.
+     * then asks about them over c on the event thread and returns once they are answered, with the locomotives whose
+     * offer it held back.  Off the event thread.
      */
-    private void askAboutRenames(Component c)
+    private List<Locomotive> askAboutRenames(Component c)
     {
-        if (!this.model.getNetworkCommState()) return;
+        List<Locomotive> heldBack = new ArrayList<>();
+
+        if (!this.model.getNetworkCommState()) return heldBack;
 
         // Over the window that asked, such as the Locomotive Database's
         BusyDialog.Closer busy = BusyDialog.showUntilClosed(c instanceof Window ? (Window) c
@@ -15270,7 +15269,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             busy.close();
 
-            SwingUtilities.invokeAndWait(() -> askAboutRenames(c, proposals));
+            SwingUtilities.invokeAndWait(() -> heldBack.addAll(askAboutRenames(c, proposals)));
         }
         catch (Exception e)
         {
@@ -15280,6 +15279,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             busy.close();
         }
+
+        return heldBack;
     }
 
     /**
@@ -15287,8 +15288,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * goes to the log, as do the refused ones (they name their remedy).  A No is kept on the locomotive and not asked
      * again until the station offers it another name (D171).
      */
-    private void askAboutRenames(Component c, RenameProposals proposals)
+    private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)
     {
+        List<Locomotive> heldBack = new ArrayList<>();
+
         java.util.Set<String> offered = new java.util.HashSet<>();
 
         for (String[] pair : proposals.getProposals()) offered.add(pair[0]);
@@ -15362,6 +15365,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // Only a No to the delete question is kept, never a refusal the user could not answer
                     if (this.locomotiveActions.answered == JOptionPane.NO_OPTION) outcome = keptAfterNo(l, newName);
 
+                    if (this.locomotiveActions.answered == JOptionPane.CLOSED_OPTION) outcome = "loc.renameClosed";
+
                     continue;
                 }
 
@@ -15393,9 +15398,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // copy under the station's name from this sync
                 this.model.logf(outcome, currentName, newName);
 
-                if (!"loc.renameApplied".equals(outcome)) l.setHeldBackStationName(newName);
+                if (!"loc.renameApplied".equals(outcome))
+                {
+                    l.setHeldBackStationName(newName);
+                    heldBack.add(l);
+                }
             }
         }
+
+        return heldBack;
     }
 
     /** A rename answered No, kept on the locomotive so the same offer is not asked again; its log line's key. */

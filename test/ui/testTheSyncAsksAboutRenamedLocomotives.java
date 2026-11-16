@@ -578,6 +578,34 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
+     * Closing the delete question a rename onto a held name asks is logged as closed, and keeps nothing.
+     *
+     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, leave out the `loc.renameClosed`
+     * outcome of the delete question.
+     */
+    @Test(timeOut = 180000)
+    public void testAClosedDeleteQuestionIsLoggedAsClosed() throws Exception
+    {
+        final String old = "FR-220 closed delete";
+
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            renamedHere(rig, old);
+
+            if (rig.model.getLocByName(STATION_NAME) == null) rig.model.newMM2Locomotive(STATION_NAME, 10);
+
+            rig.takeLog();
+
+            pressSync(rig, ui, m -> m != null && m.contains(old) ? Answering.pressAt(99) : Answering.pressAt(0),
+                testTheSyncAsksAboutRenamedLocomotives::saidDone);
+
+            assertNull(rig.model.getLocByName(old).getDeclinedStationName(), "closing the delete question kept a No");
+            assertEquals(renameLines(rig, old, STATION_NAME), Collections.singletonList(I18n.f("loc.renameClosed", old,
+                STATION_NAME)), "closing the delete question was not logged as closed");
+        });
+    }
+
+    /**
      * A rename answered Yes but refused after, here for a station name with a comma no route condition could hold, is
      * logged as not renamed, and the sync adds no copy under that name: the next Sync offers the rename again.
      *
