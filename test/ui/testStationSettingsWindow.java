@@ -1010,8 +1010,8 @@ public class testStationSettingsWindow
      * The arrows step what the box shows, one a click and never under Any, and apply as typing does, on Enter or leaving:
      * a run of clicks is one change, not one each (FR-234).
      *
-     * MUTATION: drop the arrows from the exception in `StationSettingsWindow.pressAway`, and the second click writes the
-     * first one's step.
+     * MUTATION: drop the arrows from the exception in `StationSettingsWindow.pressAway`, and each click applies the box as
+     * it presses, so two clicks no longer step it twice.
      */
     @Test(timeOut = 120000)
     public void testTheArrowsStepAndApplyAsTypingDoes() throws Exception
