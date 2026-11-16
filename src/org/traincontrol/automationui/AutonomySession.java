@@ -5281,7 +5281,10 @@ public class AutonomySession
 
     /**
      * The editor's Test a Path from one square to another, or null where there is none: the search with the sets the
-     * build reads, starting on the copies a train stands on, so the path drawn agrees with the findings.
+     * build reads, starting on the copies a train stands on, past no other copy of either end and throwing no switch two
+     * ways, as the railway routes.  The findings' reach (`BuiltReach`) still passes other copies of the destination and
+     * ignores switch settings, so the two can disagree (`testTheFindingsStillReachPastAnotherCopyOfTheDestination`,
+     * `testAKickbackThatThrowsItsSwitchBothWaysIsNoWay`).
      */
     public List<GraphReducer.ReducedEdge> testPath(TileKey from, TileKey to)
     {

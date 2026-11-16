@@ -52,8 +52,15 @@ where the train stands and never on the way, and never to a station it is told t
 (`AutonomySession.testPathForAutonomy`). **Where autonomy has none and a hand send has one, that leg is drawn purple**
 (`AutonomySession.testPath`), and the message strip says what purple is and why autonomy would not take it: the station
 is one autonomy leaves alone, or every way there turns round on the way. The route is still drawn, because the track is
-passable. `core.testTestAPathStartsWhereTheFindingsDo.testALegThatTurnsOnTheWayIsDrawnAsOnlyAHandSendTakesIt`,
-`core.testManualOnlyPathsAreADifferentColour.testTheStripSaysWhichLegOnlyAHandSendTakesAndWhy`.
+passable. `core.testManualOnlyPathsAreADifferentColour.testTheStripSaysWhichLegOnlyAHandSendTakesAndWhy`.
+
+**Neither search passes another copy of either end, nor throws a switch two ways**, as `Layout.bfsBySettings` and
+`isPathClear` route: a kickback, whose only way turns on a spur and comes back through the switch set the other way, is
+no way at all. A way that turns round on the way has to come back over track it has run, so it meets one of those two
+refusals, and no railway is known where the "turns round on the way" note can still show (FR-221; whether it stays is
+Adam's call). `core.testTestAPathStartsWhereTheFindingsDo.testAKickbackThatThrowsItsSwitchBothWaysIsNoWay`,
+`core.testAutonomyDiagramReducer.testNoWalkPassesAnotherCopyOfEitherEnd`; the findings' reach does not yet follow them
+(`testTheFindingsStillReachPastAnotherCopyOfTheDestination`).
 
 **Why Not Moving? gives one answer for both tiers, as a table of destinations** (MT-434; Adam, asked which tool: *"Why
 Not Moving?"*): one row per station, saying whether the train **can go now** (green: autonomy may send it there), **by

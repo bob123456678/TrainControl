@@ -98,13 +98,13 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
 
     /**
      * A kickback spur: Middle lies on a switch's branch, trailing for a train from WestEnd, so the one way between them
-     * runs through the switch to EastTurn, a square that is neither end and no station, turns there and comes back.
-     * Autonomy never turns a train on the way, so both legs are drawn purple and the strip says why (FR-221).
+     * runs through the switch to EastTurn, turns there and comes back through it set the other way.  The railway refuses
+     * a route that throws a switch two ways (`Layout.isPathClear`), turn or no turn, so Test a Path draws no way either.
      *
-     * MUTATION: let `AutonomySession.testPathForAutonomy` turn wherever `mayTurnTiles` allows, and this fails.
+     * MUTATION: in `GraphReducer.findPath`, take the edge whose settings contradict the route so far, and this fails.
      */
     @Test
-    public void testALegThatTurnsOnTheWayIsDrawnAsOnlyAHandSendTakesIt() throws Exception
+    public void testAKickbackThatThrowsItsSwitchBothWaysIsNoWay() throws Exception
     {
         // The switch's toe faces east and its branch runs south to Middle, as in testAutonomyDiagramReversal.junction
         LayoutDiagram page = new LayoutDiagram("main", 10, 5, null, null);
@@ -139,37 +139,22 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
 
         session.rebuild();
 
-        assertNotNull(session.testPath(start, spur), "precondition: a hand send cannot turn at EastTurn for Middle");
-        assertNull(session.testPathForAutonomy(start, spur), "precondition: autonomy reaches Middle without turning");
+        assertNotNull(session.testPath(start, turn), "precondition: no way from WestEnd to EastTurn");
+        assertNotNull(session.testPath(turn, spur), "precondition: no way from EastTurn to Middle");
 
-        AutonomyEditorPanel panel = armed();
+        assertNull(session.testPath(start, spur), "Test a Path finds a way from WestEnd to Middle that throws the switch"
+            + " both ways, which the railway refuses");
 
-        String[] legs = legs(panel, start, spur);
+        String[] legs = legs(armed(), start, spur);
 
-        String said = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
+        assertEquals(legs, new String[] {I18n.t("autosetup.ui.testLegBlocked"), I18n.t("autosetup.ui.testLegBlocked")},
+            "Test a Path draws a way between WestEnd and Middle: " + Arrays.toString(legs));
 
-        assertNotEquals(legs[1], I18n.t("autosetup.ui.testLegBlocked"), "precondition: no route back from Middle");
-
-        for (String[] leg : new String[][] {{"WestEnd", "Middle"}, {"Middle", "WestEnd"}})
-        {
-            assertTrue(said.contains(I18n.f("autosetup.ui.testTurnsOnTheWay", leg[0], leg[1])), "the strip does not say"
-                + " the way from " + leg[0] + " to " + leg[1] + " turns on the way, which autonomy never does: " + said);
-        }
-
-        assertFalse(said.contains("(" + I18n.t("autosetup.ui.testColorYellow") + ")")
-            || said.contains("(" + I18n.t("autosetup.ui.testColorAmber") + ")"), "a leg that turns at EastTurn is"
-            + " called autonomy's color: " + said);
-
-        @SuppressWarnings("unchecked")
-        java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> drawn =
-            (java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>>)
-            Reflect.get(AutonomyEditorPanel.class, panel, "traces");
-
-        boolean purple = false;
-
-        for (org.traincontrol.automationui.TileAnnotation.Trace line : drawn.get(turn)) purple |= line.isManualOnly();
-
-        assertTrue(purple, "the turn at EastTurn is not drawn purple: " + drawn.get(turn));
+        // KNOWN DISAGREEMENT, pinned so that a fix shows up: the findings' reach ignores switch settings
+        assertTrue(org.traincontrol.automationui.BuiltReach.of(new org.json.JSONObject(
+            session.buildConfigurationForInspection()), session.builder(null).tilesByName()).bySquare().get(start)
+            .contains(spur), "the findings no longer reach Middle from WestEnd, so they heed switch settings now: make"
+            + " this an agreement and correct `AutonomySession.testPath`");
     }
 
     /**
@@ -209,13 +194,16 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
     }
 
     /**
-     * On the frozen railway, Test a Path between every pair of stations draws a leg exactly where the reach the setup
-     * check reads off the build (`BuiltReach.bySquare`) says a train there can be sent.
+     * On the frozen railway, Test a Path between every pair of stations draws a leg exactly where the railway itself
+     * has a route: `Layout.bfs` from the copies a train stands on (`BuiltReach.startsOf`), its alternatives tried as
+     * the dispatch loops try them, until one throws no switch two ways (`isPathClear`'s preview).  The findings' reach
+     * is not the measure: it ignores switch settings (FR-221).
      *
-     * MUTATION: pass null for the starting sides in `AutonomyEditorPanel.applyTest`, and this fails at TopMainR1Inter.
+     * MUTATION: pass null for the starting sides in `AutonomyEditorPanel.applyTest`, or take an edge whose settings
+     * contradict the route in `GraphReducer.findPath`, and this fails.
      */
     @Test
-    public void testTestAPathAgreesWithTheFindingsOnTheFrozenRailway() throws Exception
+    public void testTestAPathAgreesWithTheRailwayOnTheFrozenRailway() throws Exception
     {
         support.LayoutSandbox sandbox = null;
 
@@ -236,9 +224,11 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
             session = new org.traincontrol.automationui.AutonomySession(sandbox.getFolder());
             session.open(support.LayoutSandbox.wired(model, parser));
 
-            java.util.Map<TileKey, java.util.Set<TileKey>> reach = org.traincontrol.automationui.BuiltReach.of(
-                new org.json.JSONObject(session.buildConfigurationForInspection()),
-                session.builder(null).tilesByName()).bySquare();
+            java.util.Map<String, TileKey> squareOf = session.builder(null).tilesByName();
+            org.traincontrol.automationui.BuiltReach reach = org.traincontrol.automationui.BuiltReach.of(
+                new org.json.JSONObject(session.buildConfigurationForInspection()), squareOf);
+
+            model.parseAuto(session.buildConfiguration());
 
             java.util.List<TileKey> stations = new java.util.ArrayList<>();
 
@@ -267,8 +257,8 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
                     String[] legs = legs(panel, a, b);
 
                     boolean[] tested = {!legs[0].equals(blocked), !legs[1].equals(blocked)};
-                    boolean[] found = {reach.getOrDefault(a, java.util.Collections.<TileKey>emptySet()).contains(b),
-                        reach.getOrDefault(b, java.util.Collections.<TileKey>emptySet()).contains(a)};
+                    boolean[] found = {railwayGoes(model.getAutoLayout(), reach, squareOf, a, b),
+                        railwayGoes(model.getAutoLayout(), reach, squareOf, b, a)};
 
                     for (int leg = 0; leg < 2; leg++)
                     {
@@ -285,8 +275,7 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
 
             assertTrue(drawn > 100, "precondition: Test a Path drew only " + drawn + " legs on the frozen railway");
 
-            assertTrue(disagree.isEmpty(), "Test a Path and the setup check's reach disagree on the frozen railway: "
-                + disagree);
+            assertTrue(disagree.isEmpty(), "Test a Path and the railway disagree on the frozen railway: " + disagree);
         }
         finally
         {
@@ -294,6 +283,48 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
 
             if (sandbox != null) sandbox.close();
         }
+    }
+
+    /** Whether the railway routes a train standing on `from` to `to` by a route that throws no switch two ways. */
+    private static boolean railwayGoes(org.traincontrol.automation.Layout built,
+        org.traincontrol.automationui.BuiltReach reach, java.util.Map<String, TileKey> squareOf, TileKey from, TileKey to)
+        throws Exception
+    {
+        for (String start : reach.startsOf(from))
+        {
+            for (java.util.Map.Entry<String, TileKey> end : squareOf.entrySet())
+            {
+                if (!to.equals(end.getValue()) || built.getPoint(end.getKey()) == null || built.getPoint(start) == null)
+                {
+                    continue;
+                }
+
+                java.util.List<java.util.List<org.traincontrol.automation.Edge>> tried = new java.util.ArrayList<>();
+                java.util.List<org.traincontrol.automation.Edge> route;
+
+                while (tried.size() < 500 && (route = built.bfs(built.getPoint(start), built.getPoint(end.getKey()), tried)) != null)
+                {
+                    tried.add(route);
+
+                    java.util.Map<String, Object> set = new java.util.HashMap<>();
+                    boolean clash = false;
+
+                    for (org.traincontrol.automation.Edge edge : route)
+                    {
+                        for (java.util.Map.Entry<String, ?> setting : edge.getConfigCommands().entrySet())
+                        {
+                            Object had = set.put(setting.getKey(), setting.getValue());
+
+                            clash |= had != null && !had.equals(setting.getValue());
+                        }
+                    }
+
+                    if (!clash) return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private final TileKey west = new TileKey("main", 1, 1);

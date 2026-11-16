@@ -1156,11 +1156,18 @@ public final class HomeStaging
     static Map<String, Accessory.accessorySetting> withCommandsOf(Edge e,
         Map<String, Accessory.accessorySetting> soFar)
     {
-        if (e.getConfigCommands().isEmpty()) return soFar;
+        return withCommands(e.getConfigCommands(), soFar);
+    }
+
+    /** The settings so far with these added, or null where one is set the other way; the editor's path test asks too. */
+    public static Map<String, Accessory.accessorySetting> withCommands(Map<String, Accessory.accessorySetting> settings,
+        Map<String, Accessory.accessorySetting> soFar)
+    {
+        if (settings.isEmpty()) return soFar;
 
         Map<String, Accessory.accessorySetting> merged = new HashMap<>(soFar);
 
-        for (Map.Entry<String, Accessory.accessorySetting> command : e.getConfigCommands().entrySet())
+        for (Map.Entry<String, Accessory.accessorySetting> command : settings.entrySet())
         {
             Accessory.accessorySetting existing = merged.get(command.getKey());
 
@@ -1176,7 +1183,7 @@ public final class HomeStaging
      * Whether this point was already reached under commands that leave at least as much freedom: an earlier arrival
      * makes this one redundant only if it committed to nothing this one has not also committed to.
      */
-    static boolean alreadyReached(Map<String, List<Map<String, Accessory.accessorySetting>>> seen,
+    public static boolean alreadyReached(Map<String, List<Map<String, Accessory.accessorySetting>>> seen,
         String p, Map<String, Accessory.accessorySetting> commands)
     {
         if (!seen.containsKey(p)) return false;

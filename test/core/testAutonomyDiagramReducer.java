@@ -52,14 +52,7 @@ public class testAutonomyDiagramReducer
     @Test
     public void testBothWalksAgreeAboutAClosedSquare() throws IOException
     {
-        LayoutDiagram page = page("main", 8, 3);
-        feedback(page, 1, 1, 11);
-        straight(page, 2, 1);
-        feedback(page, 3, 1, 12);
-        straight(page, 4, 1);
-        feedback(page, 5, 1, 13);
-
-        GraphReducer reducer = reduce(graph(page), everySensorAStation());
+        GraphReducer reducer = aRunOfThreeStations();
 
         TileKey a = key("main", 1, 1);
         TileKey b = key("main", 3, 1);
@@ -110,14 +103,7 @@ public class testAutonomyDiagramReducer
     @Test
     public void testABarredArrivalCanStillBePassedThrough() throws IOException
     {
-        LayoutDiagram page = page("main", 8, 3);
-        feedback(page, 1, 1, 11);
-        straight(page, 2, 1);
-        feedback(page, 3, 1, 12);
-        straight(page, 4, 1);
-        feedback(page, 5, 1, 13);
-
-        GraphReducer reducer = reduce(graph(page), everySensorAStation());
+        GraphReducer reducer = aRunOfThreeStations();
 
         TileKey a = key("main", 1, 1);
         TileKey b = key("main", 3, 1);
@@ -154,14 +140,7 @@ public class testAutonomyDiagramReducer
     @Test
     public void testTheWalksObeyTheRedArrows() throws IOException
     {
-        LayoutDiagram page = page("main", 8, 3);
-        feedback(page, 1, 1, 11);
-        straight(page, 2, 1);
-        feedback(page, 3, 1, 12);
-        straight(page, 4, 1);
-        feedback(page, 5, 1, 13);
-
-        GraphReducer reducer = reduce(graph(page), everySensorAStation());
+        GraphReducer reducer = aRunOfThreeStations();
 
         TileKey a = key("main", 1, 1);
         TileKey b = key("main", 3, 1);
@@ -1594,6 +1573,19 @@ public class testAutonomyDiagramReducer
         return reach.bySquare().getOrDefault(from, Collections.<TileKey>emptySet()).contains(to);
     }
 
+    /** Three sensors in a row along row 1, at x = 1, 3 and 5, every one a station. */
+    private GraphReducer aRunOfThreeStations() throws IOException
+    {
+        LayoutDiagram page = page("main", 8, 3);
+        feedback(page, 1, 1, 11);
+        straight(page, 2, 1);
+        feedback(page, 3, 1, 12);
+        straight(page, 4, 1);
+        feedback(page, 5, 1, 13);
+
+        return reduce(graph(page), everySensorAStation());
+    }
+
     /** Every sensor a station, so the build has somewhere a train may be sent to on each. */
     private GraphReducer.Authored everySensorAStation()
     {
@@ -1859,14 +1851,7 @@ public class testAutonomyDiagramReducer
     @Test
     public void testNoWalkPassesAnotherCopyOfEitherEnd() throws IOException
     {
-        LayoutDiagram page = page("main", 8, 3);
-        feedback(page, 1, 1, 11);
-        straight(page, 2, 1);
-        feedback(page, 3, 1, 12);
-        straight(page, 4, 1);
-        feedback(page, 5, 1, 13);
-
-        GraphReducer reducer = reduce(graph(page), everySensorAStation());
+        GraphReducer reducer = aRunOfThreeStations();
 
         TileKey a = key("main", 1, 1);
         TileKey x = key("main", 3, 1);
@@ -1891,6 +1876,31 @@ public class testAutonomyDiagramReducer
         assertNull(reducer.findPath(x, a, mayTurn, none, noBars, none, none,
             java.util.EnumSet.of(arrivalSideAt(reducer, a, x))), "a train on X facing R reaches A by turning at R and"
             + " running back past X, a route the railway never offers");
+    }
+
+    /**
+     * KNOWN DISAGREEMENT, pinned so that a fix shows up: the findings' reach (`BuiltReach`) still counts X reached from
+     * A by running past it to R and turning, past another copy of X, which `findPath` and the railway refuse.  When
+     * this fails, `BuiltReach` has been fixed: turn this into an agreement and correct `AutonomySession.testPath`.
+     */
+    @Test
+    public void testTheFindingsStillReachPastAnotherCopyOfTheDestination() throws IOException
+    {
+        GraphReducer reducer = aRunOfThreeStations();
+
+        TileKey a = key("main", 1, 1);
+        TileKey x = key("main", 3, 1);
+        Set<TileKey> mayTurn = java.util.Collections.singleton(key("main", 5, 1));
+        Set<TileKey> none = Collections.emptySet();
+
+        Map<TileKey, Set<Side>> barred = new java.util.LinkedHashMap<>();
+
+        barred.put(x, java.util.EnumSet.of(arrivalSideAt(reducer, a, x)));
+
+        assertNull(reducer.findPath(a, x, mayTurn, none, barred), "precondition: Test a Path reaches X past its other copy");
+
+        assertTrue(builtReaches(reducer, a, x, mayTurn, none, barred, none), "the findings no longer reach X from A past"
+            + " another copy of X, so they now agree with Test a Path: make this an agreement");
     }
 
     /**

@@ -424,53 +424,42 @@ public class GraphReducer
 
         // The search state is a Point AND the side the train reached it by: what a train may do next depends on which
         // way it is pointing.  With no starting sides the start has no arrival side: the question is whether the TRACK
-        // allows the journey.
-        Map<String, ReducedEdge> arrivedBy = new LinkedHashMap<>();
-        Map<String, String> cameFrom = new LinkedHashMap<>();
-        Map<String, TileKey> tileOf = new LinkedHashMap<>();
-        Map<String, Side> sideOf = new LinkedHashMap<>();
+        // allows the journey.  And the switch settings so far, as `Layout.bfsBySettings` carries them: a route that
+        // throws one switch two ways is refused whole by `isPathClear`, a turn on the way no excuse (FR-221).
+        Map<String, List<Map<String, accessorySetting>>> seen = new HashMap<>();
 
-        ArrayDeque<String> frontier = new ArrayDeque<>();
+        ArrayDeque<Step> frontier = new ArrayDeque<>();
 
         for (Side arrival : startArrivals == null ? Collections.<Side>singleton(null) : startArrivals)
         {
-            String start = searchKey(from, arrival);
-
-            arrivedBy.put(start, null);
-            tileOf.put(start, from);
-            sideOf.put(start, arrival);
-
-            frontier.add(start);
+            frontier.add(new Step(from, arrival, new HashMap<String, accessorySetting>(), null, null));
         }
 
         while (!frontier.isEmpty())
         {
-            String here = frontier.poll();
-
-            TileKey at = tileOf.get(here);
-            Side arrived = sideOf.get(here);
+            Step here = frontier.poll();
 
             for (ReducedEdge edge : edges)
             {
-                if (!edge.getStart().equals(at)) continue;
+                if (!edge.getStart().equals(here.at)) continue;
 
-                if (arrived != null)
+                if (here.arrived != null)
                 {
-                    boolean back = edge.getExitSide() == arrived;
+                    boolean back = edge.getExitSide() == here.arrived;
 
                     // Where turning is compulsory, going back is the ONLY move: no straight-through copy is built, so a
                     // run that carried on through one is a run no train could make.
-                    if (mustTurn.contains(at))
+                    if (mustTurn.contains(here.at))
                     {
                         if (!back) continue;
                     }
                     else if (back)
                     {
-                        if (!mayTurn.contains(at)) continue;
+                        if (!mayTurn.contains(here.at)) continue;
                     }
                     // Carrying on has to be along the SAME TRACK: at a double-curve sensor (two curves crossing in one
                     // square, unconnected) comparing sides alone would let a train jump tracks mid-square.
-                    else if (!onwardSides(at, arrived).contains(edge.getExitSide()))
+                    else if (!onwardSides(here.at, here.arrived).contains(edge.getExitSide()))
                     {
                         continue;
                     }
@@ -479,16 +468,20 @@ public class GraphReducer
                 // Never round onto the start again, as `Layout.bfsBySettings` never passes another copy of either end
                 if (edge.getEnd().equals(from)) continue;
 
+                Map<String, accessorySetting> commands =
+                    org.traincontrol.automation.HomeStaging.withCommands(edge.getCommands(), here.commands);
+
+                if (commands == null) continue;
+
                 // Barred sides only where they mean something (OB-120): a barred side bars COMING IN AND STOPPING, not
                 // passing through, so the refusal belongs on the DESTINATION hop.
-                String next = searchKey(edge.getEnd(), edge.getEntrySide());
+                String key = searchKey(edge.getEnd(), edge.getEntrySide());
 
-                if (arrivedBy.containsKey(next)) continue;
+                if (org.traincontrol.automation.HomeStaging.alreadyReached(seen, key, commands)) continue;
 
-                arrivedBy.put(next, edge);
-                cameFrom.put(next, here);
-                tileOf.put(next, edge.getEnd());
-                sideOf.put(next, edge.getEntrySide());
+                seen.computeIfAbsent(key, k -> new ArrayList<Map<String, accessorySetting>>()).add(commands);
+
+                Step next = new Step(edge.getEnd(), edge.getEntrySide(), commands, edge, here);
 
                 // A closed square is not a destination either: asked before the arrival test, which accepts the square
                 // and returns before the closure is consulted.
@@ -502,10 +495,7 @@ public class GraphReducer
 
                     List<ReducedEdge> path = new ArrayList<>();
 
-                    for (String step = next; arrivedBy.get(step) != null; step = cameFrom.get(step))
-                    {
-                        path.add(0, arrivedBy.get(step));
-                    }
+                    for (Step step = next; step.by != null; step = step.from) path.add(0, step.by);
 
                     return path;
                 }
@@ -515,6 +505,25 @@ public class GraphReducer
         }
 
         return null;
+    }
+
+    /** A place `findPath` has reached: the square, the side it came in by, the settings so far, and how. */
+    private static final class Step
+    {
+        final TileKey at;
+        final Side arrived;
+        final Map<String, accessorySetting> commands;
+        final ReducedEdge by;
+        final Step from;
+
+        Step(TileKey at, Side arrived, Map<String, accessorySetting> commands, ReducedEdge by, Step from)
+        {
+            this.at = at;
+            this.arrived = arrived;
+            this.commands = commands;
+            this.by = by;
+            this.from = from;
+        }
     }
 
     /**
