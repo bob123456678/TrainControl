@@ -424,11 +424,11 @@ public class AutonomyEditorPanel extends JPanel
     // The first end of a path test
     private TileKey testFrom;
 
-    /** The last path test's squares, so switching Path Type redraws it (MT-399); cleared with the route. */
+    /** The last path test's squares, so a switch of Auto Path / Manual Path redraws it (MT-399); gone with the route. */
     private TileKey lastTestFrom;
     private TileKey lastTestTo;
 
-    /** The last Why Not Moving? square, so switching Path Type asks again (MT-434). */
+    /** The last Why Not Moving? square, so switching Auto Path / Manual Path asks again (MT-434). */
     private TileKey lastWhyTile;
 
     /** Which tier the routing check answers for; Auto Path by default. */
@@ -5558,7 +5558,7 @@ public class AutonomyEditorPanel extends JPanel
 
         final WhySetup setup = whySetup;
 
-        // The tier (MT-434), read here, and the square remembered so Path Type can ask again.
+        // The tier (MT-434), read here, and the square remembered so Auto Path / Manual Path can ask again.
         final boolean byHand = pathTypeAuto != null && !pathTypeAuto.isSelected();
 
         lastWhyTile = tile;

@@ -527,6 +527,43 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
     }
 
     /**
+     * The line over Save shows in Autonomy Setup, and still shows after switching to Track Diagram and back (D172): with
+     * the Path Type label gone, the column has room for it on a 768-pixel screen.
+     *
+     * MUTATION: hide `jSeparator1` when Autonomy Setup mounts its Visible Elements column, and this fails.
+     */
+    @Test
+    public void testTheLineOverSaveShowsInAutonomySetup() throws Exception
+    {
+        final LayoutEditor editor = autonomyEditor();
+
+        try
+        {
+            final Component line = (Component) field(editor, "jSeparator1");
+            final boolean[] shown = new boolean[3];
+
+            settle(editor);
+            SwingUtilities.invokeAndWait(() -> shown[0] = line.isShowing());
+
+            SwingUtilities.invokeAndWait(() -> editor.setAutonomyMode(null));
+            settle(editor);
+            SwingUtilities.invokeAndWait(() -> shown[1] = line.isShowing());
+
+            SwingUtilities.invokeAndWait(() -> editor.setAutonomyMode(session));
+            settle(editor);
+            SwingUtilities.invokeAndWait(() -> shown[2] = line.isShowing());
+
+            assertTrue(shown[0], "the line over Save is hidden in Autonomy Setup");
+            assertTrue(shown[1], "the line over Save is hidden in Track Diagram after Autonomy Setup");
+            assertTrue(shown[2], "the line over Save is hidden on coming back to Autonomy Setup");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> editor.dispose());
+        }
+    }
+
+    /**
      * The findings under the diagram show 7 rows where the window has room and 5 where it is short, and change as the
      * window is resized: at its smallest size, just under the height that gives up two rows' worth to the list, at
      * that height, and tall, then short again (OB-399; Adam: "Things to look at can be fewer lines (5 instead of 7) on

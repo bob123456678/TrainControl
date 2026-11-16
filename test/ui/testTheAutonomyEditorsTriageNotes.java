@@ -12,6 +12,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -298,12 +299,30 @@ public class testTheAutonomyEditorsTriageNotes
         assertEquals(I18n.t("autosetup.ui.pathTypeAuto"), "Auto Path");
         assertEquals(I18n.t("autosetup.ui.pathTypeManual"), "Manual Path");
 
-        for (String language : new String[] {"da", "de", "es", "fr", "it", "nl", "pl"})
-        {
-            String title = java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages",
-                new java.util.Locale(language)).getString("autosetup.ui.titleCap");
+        // Each language's heading, Auto and Manual before D172: none may come back.  No language fell back to its plain
+        // Manual, so that word counts as old too.
+        String[] old = {"da|Debug-v\u00e6rkt\u00f8jer|Automatisk|Manuel", "de|Debugging-Werkzeuge|Automatik|Manuell",
+            "es|Herramientas de depuraci\u00f3n|Autom\u00e1tico|Manual", "fr|Outils de d\u00e9bogage|Automatique|Manuel",
+            "it|Strumenti di debug|Automatico|Manuale", "nl|Debughulpmiddelen|Automatisch|Handmatig",
+            "pl|Narz\u0119dzia debugowania|Automatyczny|R\u0119czny"};
 
-            assertFalse(title.toLowerCase().contains("autonom"), language + " still calls the column Autonomy Tools: " + title);
+        String[] keys = {"autosetup.ui.titleCap", "autosetup.ui.pathTypeAuto", "autosetup.ui.pathTypeManual"};
+
+        for (String each : old)
+        {
+            String[] language = each.split("\\|");
+
+            java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages",
+                new java.util.Locale(language[0]));
+
+            for (int i = 0; i < keys.length; i++)
+            {
+                String now = bundle.getString(keys[i]);
+
+                assertNotEquals(now, language[i + 1], language[0] + " " + keys[i] + " is still the old " + now);
+                assertFalse(now.toLowerCase().contains("autonom"), language[0] + " still calls the column Autonomy Tools: "
+                    + now);
+            }
         }
 
         layOut();

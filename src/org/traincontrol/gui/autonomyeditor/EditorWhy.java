@@ -41,7 +41,7 @@ final class EditorWhy extends SettledQuestion
      * @param index the square-to-Point translation
      * @param setup the edge names the routes are drawn by, read on the event thread
      * @param tile the square that was clicked
-     * @param byHand true when Path Type is Manual: the reasons a hand-driven send meets (MT-434)
+     * @param byHand true under Manual Path: the reasons a hand-driven send meets (MT-434)
      * @return what to say and what to draw
      */
     AutonomyEditorPanel.WhyAnswer composeWhy(Layout layout,
