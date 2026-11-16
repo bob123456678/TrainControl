@@ -31,7 +31,7 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 73;
+    private static final int GROUPS_ALLOWED = 72;
 
     /**
      * The tokens standing in a second or later copy in `test/`, summed over its groups: an upper bound, so a commit that
@@ -93,7 +93,6 @@ public class testNoNewCopies
         "RouteCommand:1,TrainControlUI:1 (138)",
         "RouteCommand:2 (109)",
         "RouteCommand:2 (64)",
-        "RouteEditorFrame:2 (73)",
         "RouteEditorFrame:2 (65)",
         "RowIcons:2 (64)",
         "TileAnnotation:1,TileOverlay:1 (101)",
