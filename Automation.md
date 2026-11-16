@@ -215,11 +215,11 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
     - `Allowed trains` is `All`, `Blacklist` or `Whitelist`. The pencil beside it opens the list of trains for the last two. A blacklisted train may not stop here, though it can still pass through; on a sensor that is not a station it may not pass at all. On a whitelist only the trains you pick are allowed, so every other one, including any you add later, is kept out, and an empty whitelist keeps every train out. Going back to `All` keeps the list for next time.
     - `Unavailable while` lists other stations that, while occupied, keep trains away from this one.
 
-**`Presets`**, at the top of the right-hand column (above the other settings when you set several stations at once): five buttons, `Station`, `Terminus`, `Parking`, `Reversing` and `Off`, each of which sets the settings in its row at once and leaves everything else as it was. A button shows as pressed whenever those settings match its row, however they got there. `Station`, `Terminus` and `Parking` make a station trains must stop at, so none of them shows as pressed for a station trains can pass through. A station set up before keeps letting trains through until you press one of them. `Off` makes the sensor no station: trains run over it and never stop there.
+**`Presets`**, at the top of the right-hand column (above the other settings when you set several stations at once): five buttons, `Station`, `Terminus`, `Parking`, `Reversing` and `Off`, each of which sets the settings in its row at once and leaves everything else as it was. A button shows as pressed whenever those settings match its row, however they got there. `Terminus` and `Parking` make a station trains must stop at, so neither shows as pressed for a station trains can pass through. A station set up before keeps letting trains through until you press one of them. `Off` makes the sensor no station: trains run over it and never stop there.
 
 | Button | `Trains can stop here` | `Trains can pass through` | `May choose this station` | `Changing direction` |
 | --- | --- | --- | --- | --- |
-| `Station` | on | off | on | `Never` |
+| `Station` | on | on | on | `Never` |
 | `Terminus` | on | off | on | `Must` |
 | `Parking` | on | off | off | `Never` |
 | `Reversing` | on | on | off | `May` |

@@ -1524,9 +1524,9 @@ public class testStationSettingsWindow
 
         assertNull(window.litPresetForTest(), "a button lit though nothing matches");
 
-        // Station leaves Trains can pass through off (MT-1017)
         StationDoors.press(window, "station.preset.STATION");
         StationDoors.press(window, "station.stops");
+        StationDoors.press(window, "station.runsThrough");
         StationDoors.current(window);
 
         assertNull(window.litPresetForTest(), "a button lit with both boxes off, out of service");
@@ -1555,7 +1555,6 @@ public class testStationSettingsWindow
         assertEquals(window.litPresetForTest(), StationPreset.OFF, "Off does not light once pressed");
 
         StationDoors.press(window, "station.preset.STATION");
-        StationDoors.press(window, "station.runsThrough");
         StationDoors.press(window, "station.stops");
         StationDoors.current(window);
 
@@ -1563,11 +1562,12 @@ public class testStationSettingsWindow
     }
 
     /**
-     * Station, Terminus and Parking make a station trains must stop at, Reversing and Off one they run through (Adam,
-     * MT-1017: "station, parking, and terminus"), and each lights once pressed; an old station, which trains run
-     * through, is left as it is by being looked at, and lights none.
+     * Terminus and Parking make a station trains must stop at, Station, Reversing and Off one they run through (Adam,
+     * MT-1017: "the "may pass through" should be default for a station"), and each lights once pressed; an old station,
+     * which trains run through, is left as it is by being looked at, and lights Station.  Saved and read back, a
+     * station trains must stop at stays one.
      *
-     * MUTATION: have STATION leave "Trains can pass through" ticked, or put back `matching`'s early return for a station
+     * MUTATION: have PARKING leave "Trains can pass through" ticked, or put back `matching`'s early return for a station
      * trains cannot pass through, and this fails.
      */
     @Test(timeOut = 120000)
@@ -1582,15 +1582,14 @@ public class testStationSettingsWindow
         StationDoors.current(window);
 
         assertFalse(Components.onTheEventThread(() -> session.isStopOnly(square)), "looking at an old station changed it");
-        assertNull(window.litPresetForTest(), "an old station that trains run through lights a preset");
+        assertEquals(window.litPresetForTest(), StationPreset.STATION, "an old station does not light Station");
 
         for (StationPreset preset : StationPreset.values())
         {
             StationDoors.press(window, "station.preset." + preset.name());
             StationDoors.current(window);
 
-            boolean stopOnly = preset == StationPreset.STATION || preset == StationPreset.TERMINUS
-                || preset == StationPreset.PARKING;
+            boolean stopOnly = preset == StationPreset.TERMINUS || preset == StationPreset.PARKING;
 
             assertEquals((boolean) Components.onTheEventThread(() -> session.isStopOnly(square)), stopOnly,
                 preset + " left the wrong answer to whether trains must stop");
@@ -1602,17 +1601,17 @@ public class testStationSettingsWindow
         // Saved and read back, a station trains must stop at stays one
         try
         {
-            StationDoors.press(window, "station.preset.STATION");
+            StationDoors.press(window, "station.preset.PARKING");
             StationDoors.current(window);
             StationDoors.close(window);
 
             AutonomySession saved = frozen.saveAndReadBack(editor);
 
-            assertTrue(saved.isStopOnly(square), "Save did not keep the Station preset's Trains can pass through");
+            assertTrue(saved.isStopOnly(square), "Save did not keep the Parking preset's Trains can pass through");
 
             StationSettingsWindow again = StationDoors.open(panel, square);
 
-            assertEquals(again.litPresetForTest(), StationPreset.STATION, "Station does not light when opened again");
+            assertEquals(again.litPresetForTest(), StationPreset.PARKING, "Parking does not light when opened again");
 
             StationDoors.close(again);
         }
@@ -1627,8 +1626,8 @@ public class testStationSettingsWindow
     /**
      * A station trains must stop at wears a white dot in its icon wherever it is drawn: the track diagram, the editor and
      * Station Settings' picture (MT-1017, Adam: "white dot if they have to stop, no dot if they behave as today").  It
-     * comes with unticking Trains can pass through or pressing Station, goes with ticking it again, and the editor's Cancel
-     * takes it off the track diagram.
+     * comes with unticking Trains can pass through or pressing Parking, goes with ticking it again or pressing Station,
+     * and the editor's Cancel takes it off the track diagram.
      *
      * MUTATION: build the editor's badge (`badgeFor`) without `isStopOnly`, or leave `stopOnly` out of `Badge.equals`,
      * and this fails.
@@ -1689,10 +1688,18 @@ public class testStationSettingsWindow
 
             dotsAre(false, "Trains can pass through ticked again", window, onTheDiagram, square);
 
+            StationDoors.press(window, "station.preset.PARKING");
+            StationDoors.current(window);
+
+            dotsAre(true, "the Parking preset", window, onTheDiagram, square);
+
             StationDoors.press(window, "station.preset.STATION");
             StationDoors.current(window);
 
-            dotsAre(true, "the Station preset", window, onTheDiagram, square);
+            dotsAre(false, "the Station preset", window, onTheDiagram, square);
+
+            StationDoors.press(window, "station.preset.PARKING");
+            StationDoors.current(window);
 
             AbstractButton cancel = Components.withText(editor, I18n.t("ui.cancel"));
 
@@ -5057,7 +5064,8 @@ public class testStationSettingsWindow
     private static void setByHand(StationSettingsWindow window, StationPreset preset) throws Exception
     {
         boolean stops = preset != StationPreset.OFF;
-        boolean through = preset == StationPreset.REVERSING_POINT || preset == StationPreset.OFF;
+        boolean through = preset == StationPreset.STATION || preset == StationPreset.REVERSING_POINT
+            || preset == StationPreset.OFF;
 
         // Ticks before unticks: both boxes off at once is out of service
         if (stops && !StationDoors.on(window, "station.stops")) StationDoors.press(window, "station.stops");
