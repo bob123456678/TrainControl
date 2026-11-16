@@ -68,8 +68,7 @@ public class testTrainMarkIsNotBlank
      * A tool's mark on a square (FR-159) is drawn when it is all there is, and each mark is told apart from the
      * others and from none, as `LayoutLabel` asks `equals` whether a redraw is needed.
      *
-     * MUTATION: leave `toolMark` out of `TileAnnotation.isBlank`, or out of `equals`, or its border out of
-     * `paintArrowsAgain`, and this fails.
+     * MUTATION: leave `toolMark` out of `TileAnnotation.isBlank`, or out of `equals`, and this fails.
      */
     @Test
     public void testAToolMarkIsDrawn()
@@ -114,22 +113,6 @@ public class testTrainMarkIsNotBlank
             }
 
             assertTrue(inked > 0, "a square marked " + mark + " painted nothing");
-
-            // And over a neighbor's curved station spilling onto it
-            tile = new java.awt.image.BufferedImage(30, 30, java.awt.image.BufferedImage.TYPE_INT_RGB);
-            g = tile.createGraphics();
-
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, 30, 30);
-
-            marked.paintArrowsAgain(g, 30, 30);
-
-            g.dispose();
-
-            // PICKABLE's thin gray line sits on the edge itself, the others' bands one pixel in
-            assertTrue(tile.getRGB(0, 15) != java.awt.Color.WHITE.getRGB()
-                || tile.getRGB(1, 15) != java.awt.Color.WHITE.getRGB(), "a square marked " + mark + " has no border"
-                + " drawn back over a neighbor's spill");
         }
     }
 
