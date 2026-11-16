@@ -30,10 +30,12 @@ public final class BuiltReach
     /** Each copy to the edges leaving it: the copy each ends at and the switch settings it needs. */
     private final Map<String, List<Way>> onward = new HashMap<>();
     private final Set<String> stations = new HashSet<>();
-    private final Set<TileKey> stationSquares = new HashSet<>();
+    /** Each copy's place, which the railway never passes twice on a way to or from it: its block, else itself. */
+    private final Map<String, String> placeOf = new HashMap<>();
+    private final Set<String> stationPlaces = new HashSet<>();
+    private final Map<String, TileKey> squareOf;
     private final Set<String> inactive = new HashSet<>();
     private final Set<String> stopOnly = new HashSet<>();
-    private final Map<String, TileKey> squareOf;
     private final Map<TileKey, List<String>> copiesOf = new LinkedHashMap<>();
 
     private BuiltReach(JSONObject built, Map<String, TileKey> squareOf)
@@ -56,7 +58,9 @@ public final class BuiltReach
 
             TileKey square = squareOf.get(name);
 
-            if (point.optBoolean("station", false) && square != null) stationSquares.add(square);
+            placeOf.put(name, point.optString("block", name));
+
+            if (point.optBoolean("station", false)) stationPlaces.add(placeOf.get(name));
 
             if (square != null) copiesOf.computeIfAbsent(square, k -> new ArrayList<String>()).add(name);
         }
@@ -113,16 +117,18 @@ public final class BuiltReach
     {
         Set<TileKey> reached = new LinkedHashSet<>();
         TileKey home = squareOf.get(copy);
+        String start = placeOf.get(copy);
 
-        GraphReducer.<Place, Way>searchBySettings(Collections.singleton(new Place(copy, Collections.<TileKey>emptySet())),
+        GraphReducer.<Place, Way>searchBySettings(Collections.singleton(new Place(copy, Collections.<String>emptySet())),
             here -> onward.getOrDefault(here.copy, Collections.<Way>emptyList()), (here, way) -> here.then(way.end),
             way -> way.settings, here -> here.copy + here.passed, here ->
             {
                 TileKey square = squareOf.get(here.copy);
 
-                if (closures && inactive.contains(here.copy) || square != null && square.equals(home)) return Reached.REFUSE;
+                if (closures && inactive.contains(here.copy) || placeOf.get(here.copy).equals(start)) return Reached.REFUSE;
 
-                if (stations.contains(here.copy) && square != null && !here.passed.contains(square))
+                if (stations.contains(here.copy) && square != null && !square.equals(home)
+                    && !here.passed.contains(placeOf.get(here.copy)))
                 {
                     reached.add(square);
 
@@ -135,13 +141,13 @@ public final class BuiltReach
         return reached;
     }
 
-    /** A copy reached, and the station squares whose other copies the way there has passed, no longer to stop at. */
+    /** A copy reached, and the station places whose other copies the way there has passed, no longer to stop at. */
     private final class Place
     {
         final String copy;
-        final Set<TileKey> passed;
+        final Set<String> passed;
 
-        Place(String copy, Set<TileKey> passed)
+        Place(String copy, Set<String> passed)
         {
             this.copy = copy;
             this.passed = passed;
@@ -149,13 +155,11 @@ public final class BuiltReach
 
         Place then(String next)
         {
-            TileKey square = squareOf.get(next);
+            if (stations.contains(next) || !stationPlaces.contains(placeOf.get(next))) return new Place(next, passed);
 
-            if (stations.contains(next) || !stationSquares.contains(square)) return new Place(next, passed);
+            Set<String> more = new HashSet<>(passed);
 
-            Set<TileKey> more = new HashSet<>(passed);
-
-            more.add(square);
+            more.add(placeOf.get(next));
 
             return new Place(next, more);
         }

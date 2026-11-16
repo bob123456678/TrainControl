@@ -211,6 +211,42 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
     }
 
     /**
+     * A leg into a terminus, where every train turns, is autonomy's: the turn is on arriving, not on the way, so it is
+     * drawn yellow (FR-221).
+     *
+     * MUTATION: drop `noTurn.remove(to)` from `AutonomySession.testPathForAutonomy`, and this fails.
+     */
+    @Test
+    public void testALegIntoATerminusIsAutonomys() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+        session.initialize("Terminus");
+
+        TileKey east = new TileKey("main", 5, 1);
+
+        session.setStation(west, true);
+        session.setPointName(west, "WestEnd");
+        session.setPointFlag(west, AutonomyBuilder.CAN_REVERSE, true);
+        session.setStation(east, true);
+        session.setPointName(east, "EastEnd");
+        session.setPointFlag(east, AutonomyBuilder.MUST_REVERSE, true);
+        session.rebuild();
+
+        assertTrue(session.mandatoryTurnTiles().contains(east), "precondition: every train does not turn at EastEnd");
+
+        AutonomyEditorPanel panel = armed();
+
+        String[] legs = legs(panel, west, east);
+
+        String said = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
+
+        assertNotEquals(legs[0], I18n.t("autosetup.ui.testLegBlocked"), "precondition: no route to EastEnd");
+
+        assertTrue(said.contains("(" + I18n.t("autosetup.ui.testColorYellow") + ")"), "the leg into the terminus"
+            + " EastEnd is not drawn as autonomy's, in yellow: " + said);
+    }
+
+    /**
      * On the frozen railway, Test a Path between every pair of stations draws a leg exactly where the railway itself
      * has a route: `Layout.bfs` from the copies a train stands on (`BuiltReach.startsOf`), its alternatives tried as
      * the dispatch loops try them, until one throws no switch two ways (`isPathClear`'s preview).

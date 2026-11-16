@@ -432,24 +432,59 @@ public class GraphReducer
 
         for (Side arrival : startArrivals == null ? Collections.<Side>singleton(null) : startArrivals)
         {
-            starts.add(new Facing(from, arrival));
+            starts.add(new Facing(from, arrival, placeOf(from, arrival), null, Collections.<String>emptySet()));
         }
 
-        return searchBySettings(starts, here -> waysOn(here, mayTurn, mustTurn),
-            (here, edge) -> new Facing(edge.getEnd(), edge.getEntrySide()), ReducedEdge::getCommands,
-            there -> searchKey(there.at, there.arrived), there ->
+        return searchBySettings(starts, here -> waysOn(here, mayTurn, mustTurn), (here, edge) ->
             {
-                // Never round onto the start again, as `Layout.bfsBySettings` never passes another copy of either end,
-                // and a closed square is not a destination either
-                if (there.at.equals(from) || closed != null && closed.contains(there.at)) return Reached.REFUSE;
+                Facing next = new Facing(edge.getEnd(), edge.getEntrySide(), placeOf(edge.getEnd(), edge.getEntrySide()),
+                    here.home, here.passed);
+
+                // A refused arrival at the destination is a copy of it passed, whose place is not to be stopped at after
+                if (!edge.getEnd().equals(to) || !refusesArrival(barred, to, edge.getEntrySide())) return next;
+
+                Set<String> passed = new HashSet<>(here.passed);
+
+                passed.add(next.place);
+
+                return new Facing(next.at, next.arrived, next.place, here.home, passed);
+            }, ReducedEdge::getCommands, there -> searchKey(there.at, there.arrived) + there.home + there.passed, there ->
+            {
+                // Never onto the start's place again, nor to a place of the destination passed, as `Layout.bfsBySettings`
+                // never passes another copy of either end (`Point.isSamePlaceAs`); and a closed square is no destination
+                if (there.at.equals(from) && there.home.equals(from.toString()) || there.place.equals(there.home)
+                    || closed != null && closed.contains(there.at)) return Reached.REFUSE;
 
                 // ARRIVED, unless the square refuses to be arrived at that way (OB-120): a barred side bars coming in and
-                // stopping, not passing through.  A refused arrival is another copy of the destination, which the
-                // runtime never passes either, so the walk ends there.
-                if (there.at.equals(to)) return refusesArrival(barred, to, there.arrived) ? Reached.REFUSE : Reached.ARRIVE;
+                // stopping, not passing through.
+                if (there.at.equals(to) && !refusesArrival(barred, to, there.arrived))
+                {
+                    return there.passed.contains(there.place) ? Reached.REFUSE : Reached.ARRIVE;
+                }
 
                 return stopOnly.contains(there.at) ? Reached.STOP : Reached.PASS;
             });
+    }
+
+    /**
+     * The place a train arriving at a square by this side stands on: the square, or on a double curve or overpass,
+     * whose roads never meet, its road (OB-238).  The railway's blocks are named by it (`AutonomyBuilder.blockFor`).
+     */
+    String placeOf(TileKey tile, Side arrival)
+    {
+        LayoutDiagramComponent component = arrival == null || graph == null ? null : graph.getTiles().get(tile);
+
+        if (component == null || component.getType() != componentType.DOUBLE_CURVE
+            && component.getType() != componentType.FEEDBACK_DOUBLE_CURVE && component.getType() != componentType.OVERPASS)
+        {
+            return tile.toString();
+        }
+
+        Set<Side> road = new java.util.TreeSet<>(onwardSides(tile, arrival));
+
+        road.add(arrival);
+
+        return tile + "/" + road.iterator().next();
     }
 
     /** The edges a train at this place may take next: on along its track, or back where it may or must turn. */
@@ -489,16 +524,25 @@ public class GraphReducer
         return out;
     }
 
-    /** A square and the side a train reached it by, null at a start facing every way. */
+    /**
+     * A square, the side a train reached it by (null at a start facing every way) and the place that makes, the start's
+     * place, and the places of the destination passed on the way.
+     */
     private static final class Facing
     {
         final TileKey at;
         final Side arrived;
+        final String place;
+        final String home;
+        final Set<String> passed;
 
-        Facing(TileKey at, Side arrived)
+        Facing(TileKey at, Side arrived, String place, String home, Set<String> passed)
         {
             this.at = at;
             this.arrived = arrived;
+            this.place = place;
+            this.home = home == null ? place : home;
+            this.passed = passed;
         }
     }
 

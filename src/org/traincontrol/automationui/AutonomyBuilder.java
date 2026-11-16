@@ -373,28 +373,18 @@ public class AutonomyBuilder
      */
     private String blockFor(TileKey tile, Node node, List<Node> nodes)
     {
-        LayoutDiagramComponent component = reducer.getGraph() == null ? null : reducer.getGraph().getTiles().get(tile);
+        String place = reducer.placeOf(tile, node.getArrival());
 
-        boolean neverMeet = node.getArrival() != null && component != null
-            && (component.getType() == LayoutDiagramComponent.componentType.DOUBLE_CURVE
-            || component.getType() == LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE
-            || component.getType() == LayoutDiagramComponent.componentType.OVERPASS);
-
-        if (!neverMeet) return nodes.size() > 1 ? tile.toString() : null;
-
-        java.util.SortedSet<TilePorts.Side> road = new TreeSet<>();
-
-        road.add(node.getArrival());
-        road.addAll(onwardFrom(tile, node.getArrival()));
+        if (place.equals(tile.toString())) return nodes.size() > 1 ? place : null;
 
         int copies = 0;
 
         for (Node other : nodes)
         {
-            if (other.getArrival() != null && road.contains(other.getArrival())) copies++;
+            if (other.getArrival() != null && place.equals(reducer.placeOf(tile, other.getArrival()))) copies++;
         }
 
-        return copies > 1 ? tile.toString() + "/" + road.first() : null;
+        return copies > 1 ? place : null;
     }
 
     /**
