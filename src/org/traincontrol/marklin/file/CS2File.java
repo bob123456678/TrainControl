@@ -791,19 +791,27 @@ public final class CS2File
                     continue;
                 }
                 
-                MarklinAccessory acc = new MarklinAccessory(control, 
-                    Integer.parseInt(m.get("id")),
-                    m.get("typ").contains("weiche") ? 
-                        Accessory.accessoryType.SWITCH :
-                        Accessory.accessoryType.SIGNAL, 
-                    m.get("dectyp") != null ?
-                        MarklinAccessory.determineAccessoryDecoderType(m.get("dectyp").toUpperCase().trim()) :
-                        Accessory.accessoryDecoderType.MM2,
-                    m.get("name"), 
-                    !"0".equals(m.get("stellung")), 
-                    0);
-                            
-                out.add(acc);       
+                try
+                {
+                    MarklinAccessory acc = new MarklinAccessory(control,
+                        Integer.parseInt(m.get("id")),
+                        m.get("typ").contains("weiche") ?
+                            Accessory.accessoryType.SWITCH :
+                            Accessory.accessoryType.SIGNAL,
+                        m.get("dectyp") != null ?
+                            MarklinAccessory.determineAccessoryDecoderType(m.get("dectyp").toUpperCase().trim()) :
+                            Accessory.accessoryDecoderType.MM2,
+                        m.get("name"),
+                        !"0".equals(m.get("stellung")),
+                        0);
+
+                    out.add(acc);
+                }
+                catch (NumberFormatException | ArrayIndexOutOfBoundsException e)
+                {
+                    // Skip the record, not the list: a failed accessory list stops the sync (OB-407)
+                    control.logf("acc.invalidCs2Accessory", m.toString());
+                }
              }
         }
         

@@ -396,4 +396,28 @@ public class testParseCS2Layout
         assertTrue(kept.contains("weiche"),
             "the surviving file is not the page that was renamed:\n" + kept);
     }
+
+    /**
+     * An accessory record whose number can't be read is skipped, not the whole list (OB-407): since A8 a failed
+     * accessory list stops the sync, which at start-up reads as "not connected".
+     */
+    @Test
+    public void testAnUnreadableAccessoryNumberSkipsOnlyThatRecord() throws Exception
+    {
+        List<java.util.Map<String, String>> records = new ArrayList<>();
+
+        for (String id : new String[] {"12 ", "", "13"})
+        {
+            java.util.Map<String, String> m = new java.util.HashMap<>();
+            m.put("_type", "artikel");
+            m.put("id", id);
+            m.put("typ", "linksweiche");
+            records.add(m);
+        }
+
+        List<MarklinAccessory> read = parser.parseMags(records);
+
+        assertEquals(read.size(), 1, "expected only accessory 13 to be read: " + read);
+        assertEquals(read.get(0).getAddress(), 13, "the readable record was not the one kept");
+    }
 }
