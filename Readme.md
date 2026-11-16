@@ -367,7 +367,7 @@ Tab icons provided by Freepik.
     - Central Station Bug Fixes
         - Syncing with a Central Station 3 and starting TrainControl now read the real state of its feedback sensors, and a route triggered by an S88 sensor does not fire until the Central Station 3 has confirmed those states.  Previously a route could fire on a sensor state that was out of date
         - A short circuit at the Central Station now shows the track power as off in TrainControl, with one warning each time the power is cut
-        - A Central Station 3 can now have a Märklin Motorola 2 accessory and a DCC accessory on the same address.  Downloading the layout keeps each square’s protocol instead of mixing them up
+        - When a Central Station 3 has a Märklin Motorola 2 accessory and a DCC accessory on the same address, each square on the track diagram now switches the right one, and downloading the layout keeps each square’s protocol
         - Station files that arrive cut off are now fetched again instead of being used, and names with accented letters in files from the Central Station are read correctly
         - A switch and a signal on the same address now both follow the Central Station on the track diagram.  Previously the signal could stay red there while a route had turned it green
         - A short message from the Central Station is no longer taken for an emergency stop, and Stop now works while TrainControl is not connected
