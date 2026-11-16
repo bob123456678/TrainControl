@@ -1,5 +1,8 @@
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
@@ -15,6 +18,7 @@ import org.traincontrol.marklin.MarklinFeedback;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.udp.CS2Message;
+import org.traincontrol.model.ViewListener;
 
 /**
  * Verifies the configureAndLockPath guard in Layout: autonomy trains must not be released until the
@@ -719,6 +723,109 @@ public class testAutonomyPathValidation
         assertFalse(result[0], "executePath must refuse a path the power was cut during");
         assertEquals(loc.getSpeed(), 0, "The train must not have been given a speed");
         assertFalse(tp.path.get(0).isOccupied(dummyLoc()), "The path must be released");
+    }
+
+    /**
+     * With the track power off, autonomy waits for it and says so once.  It used to set the path again at every
+     * retry, a line for each switch and another that the train was not sent.  Once the power is back the train
+     * sets off.
+     */
+    @Test(timeOut = 60000)
+    public void testAutonomyWaitsForThePowerAndSaysSoOnce() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        final List<String> keys = Collections.synchronizedList(new ArrayList<>());
+
+        // The model, with every message key it is asked to log written down on the way through
+        ViewListener recording = (ViewListener) Proxy.newProxyInstance(
+            ViewListener.class.getClassLoader(), new Class<?>[]{ ViewListener.class }, (proxy, method, args) ->
+            {
+                if (method.getName().equals("logf")) keys.add((String) args[0]);
+
+                try
+                {
+                    return method.invoke(model, args);
+                }
+                catch (InvocationTargetException e)
+                {
+                    throw e.getCause();
+                }
+            });
+
+        Layout layout = new Layout(recording);
+
+        MarklinFeedback atA = model.newFeedback(344, null);
+        model.setFeedbackState(atA.getName(), false);
+        layout.createPoint("A_wait", true, atA.getName());
+
+        MarklinFeedback atB = model.newFeedback(345, null);
+        model.setFeedbackState(atB.getName(), false);
+        layout.createPoint("B_wait", true, atB.getName());
+
+        Edge edge = layout.createEdge("A_wait", "B_wait");
+        edge.addConfigCommand(model.newSwitch(340, MM2, false).getName(), accessorySetting.TURN);
+        edge.addConfigCommand(model.newSwitch(341, MM2, false).getName(), accessorySetting.TURN);
+
+        String name = "PV waiting loc";
+        MarklinLocomotive loc = model.newMM2Locomotive(name, 79);
+
+        try
+        {
+            loc.setPreferredSpeed(30);
+            assertTrue(layout.moveLocomotive(name, "A_wait", false), "precondition: the train was placed");
+
+            // A retry every second
+            layout.setMaxDelay(1);
+            layout.setMinDelay(1);
+            layout.setSimulate(true);
+
+            model.stop();
+            waitForPower(false, 1000);
+            assertFalse(model.getPowerState(), "precondition: the power is off");
+
+            keys.clear();
+            layout.runLocomotives();
+
+            // Several retry periods with the power off
+            Thread.sleep(3500);
+
+            List<String> duringTheCut = new ArrayList<>(keys);
+
+            model.go();
+            waitForPower(true, 1000);
+
+            long deadline = System.currentTimeMillis() + 10000;
+
+            while (!keys.contains("autolayout.infoExecutingPathForLocomotive") && System.currentTimeMillis() < deadline)
+            {
+                Thread.sleep(50);
+            }
+
+            assertEquals(Collections.frequency(duringTheCut, "autolayout.infoConfiguringAccessory"), 0,
+                "No switch may be commanded while the power is off: " + duringTheCut);
+            assertEquals(Collections.frequency(duringTheCut, "autolayout.infoWaitingForTrackPower"), 1,
+                "The wait for the power must be logged once: " + duringTheCut);
+            assertTrue(keys.contains("autolayout.infoExecutingPathForLocomotive"),
+                "The train must set off once the power is back: " + keys);
+        }
+        finally
+        {
+            layout.stopLocomotives();
+            model.go();
+            waitForPower(true, 1000);
+
+            // The train finishes the path it set off on before it is deleted
+            long until = System.currentTimeMillis() + 20000;
+
+            while (layout.isRunning() && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(50);
+            }
+
+            model.deleteLoc(name);
+        }
     }
 
     /**

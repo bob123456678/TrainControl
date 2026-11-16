@@ -175,6 +175,10 @@ public class Layout
 
     // How often executeTimetable checks whether the run it dispatched has actually finished
     private static final int COMPLETION_POLL = 250;
+
+    // Whether a run has said it is waiting for the track power in this cut; see waitWhileThePowerIsOff
+    private final AtomicBoolean waitingForThePower = new AtomicBoolean();
+
     private int maxLatency = 0;
     private int maxActiveTrains = 0;
     
@@ -2674,6 +2678,9 @@ public class Layout
         {    
             while(running)
             {                
+                // Nothing chosen while the track power is off
+                if (this.waitWhileThePowerIsOff()) continue;
+
                 List<Edge> path = this.pickPath(loc);
 
                 if (path != null)
@@ -3062,6 +3069,46 @@ public class Layout
     }
 
     /**
+     * Waits while the track power is off, before a run chooses or sends a train (dev's 20c25047).  Autonomy, a
+     * timetable and Return Home, which runs as a timetable, wait here rather than set routes on a railway with no
+     * power and count each refusal: they go on once the power is back.  Said once per cut, by whichever train finds
+     * the power off first.  A stop or a replaced layout ends the wait.  Never called holding a monitor: it sleeps.
+     *
+     * @return whether it waited, so the caller asks again whether its run still goes
+     */
+    private boolean waitWhileThePowerIsOff()
+    {
+        boolean waited = false;
+        boolean interrupted = false;
+
+        while (this.running && this.isCurrentLayout() && !this.control.getPowerState())
+        {
+            if (this.waitingForThePower.compareAndSet(false, true))
+            {
+                this.control.logf("autolayout.infoWaitingForTrackPower");
+            }
+
+            waited = true;
+
+            try
+            {
+                Thread.sleep(COMPLETION_POLL);
+            }
+            catch (InterruptedException e)
+            {
+                // Put back on the way out: re-armed here, the next sleep would throw at once and this would spin
+                interrupted = true;
+            }
+        }
+
+        if (this.control.getPowerState()) this.waitingForThePower.set(false);
+
+        if (interrupted) Thread.currentThread().interrupt();
+
+        return waited;
+    }
+
+    /**
      * Executes the paths in the timetable.
      *
      * Blocks until every train has arrived, not merely until the last one has set off.
@@ -3145,6 +3192,9 @@ public class Layout
             // same question asked at the point that actually spins.
             while (this.running && this.isCurrentLayout())
             {
+                // No entry started while the track power is off
+                if (this.waitWhileThePowerIsOff()) continue;
+
                 if (i > startIndex && (System.currentTimeMillis() - startTime) < ttp.getSecondsToNext())
                 {
                     this.control.logf(
@@ -3180,6 +3230,9 @@ public class Layout
                         {
                             int attempts = 0;
 
+                            // The power's epoch as this attempt began
+                            int powerAtAttempt = this.control.getPowerEpoch();
+
                             while (this.running && !this.executePath(ttp.getPath(), ttp.getLoc(), ttp.getLoc().getPreferredSpeed(), ttp))
                             {
                                 // A SPEED IS NOT A BUSY TRACK.
@@ -3211,9 +3264,13 @@ public class Layout
                                     break;
                                 }
 
-                                attempts++;
+                                // An attempt the power cut is no refusal: Return Home does not give up on it
+                                boolean cut = !this.control.getPowerState()
+                                    || this.control.getPowerEpoch() != powerAtAttempt;
 
-                                if (this.timetableSequential && attempts >= STAGING_MAX_ATTEMPTS)
+                                if (!cut) attempts++;
+
+                                if (!cut && this.timetableSequential && attempts >= STAGING_MAX_ATTEMPTS)
                                 {
                                     // Retrying cannot help here - with one train moving at a time,
                                     // nothing will free the path.  Stop and say so rather than spin.
@@ -3257,6 +3314,10 @@ public class Layout
                                 {
                                     this.pacedWait(ttp.getLoc());
                                 }
+
+                                // Nor tried again with the power off
+                                this.waitWhileThePowerIsOff();
+                                powerAtAttempt = this.control.getPowerEpoch();
                             }
 
                             this.control.logf("autolayout.infoTimetablePathFinished");

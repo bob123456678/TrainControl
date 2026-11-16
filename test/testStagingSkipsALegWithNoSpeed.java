@@ -7,9 +7,11 @@ import org.testng.annotations.Test;
 import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.TimetablePath;
+import org.traincontrol.base.Accessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import static org.traincontrol.marklin.MarklinControlStation.init;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.marklin.udp.CS2Message;
 
 /**
  * A locomotive with no speed loses its own Return Home leg, not everybody else's.
@@ -245,9 +247,144 @@ public class testStagingSkipsALegWithNoSpeed
             "the run reported itself abandoned because one locomotive had no speed set");
     }
 
+    /**
+     * Return Home waits while the track power is off, and goes on once it is back.  Each attempt was refused with
+     * the power off, so after three attempts two seconds apart the run said the leg was stuck, stopped every train
+     * and gave up, with the train still away from home.
+     *
+     * ON A DEADLINE, as above.
+     */
+    @Test(timeOut = 90000)
+    public void testReturnHomeWaitsForThePower() throws Exception
+    {
+        returnHomeThroughACut(false);
+    }
+
+    /**
+     * The same when the power goes off while the leg's route is being set, so that attempt is refused: it is not
+     * counted towards giving up, and the next waits for the power.
+     *
+     * ON A DEADLINE, as above.
+     */
+    @Test(timeOut = 90000)
+    public void testReturnHomeWaitsForThePowerCutWhileItsRouteIsSet() throws Exception
+    {
+        returnHomeThroughACut(true);
+    }
+
+    /**
+     * Sends one train home, one station away, through 9 s of power cut: from the start, or once the leg's route,
+     * five switches, is being set.
+     */
+    private void returnHomeThroughACut(boolean whileTheRouteIsSet) throws Exception
+    {
+        Layout layout = load(ring(LOC_MOVING, null, null));
+
+        if (whileTheRouteIsSet)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                layout.getEdge("SG A", "SG B").addConfigCommand(model.newSwitch(90 + i,
+                    Accessory.accessoryDecoderType.MM2, false).getName(), Accessory.accessorySetting.TURN);
+            }
+        }
+
+        try
+        {
+            layout.setSimulate(true);
+        }
+        catch (Exception e)
+        {
+            throw new SkipException("simulation could not be enabled: " + e.getMessage());
+        }
+
+        layout.setHomeLocomotive("SG B", LOC_MOVING);
+        loc(LOC_MOVING).setPreferredSpeed(35);
+
+        HomeStaging.Plan plan = layout.loadReturnToHomeTimetable();
+
+        assertTrue(plan.isPossible(), "precondition: Return Home must have a plan: " + plan.getOutcome());
+        assertEquals(layout.getTimetable().size(), 1, "precondition: one leg: " + layout.getTimetable());
+
+        final boolean[] ranToTheEnd = new boolean[1];
+        final Throwable[] thrown = new Throwable[1];
+
+        Thread run = new Thread(() ->
+        {
+            try
+            {
+                ranToTheEnd[0] = layout.executeTimetable();
+            }
+            catch (Throwable bad)
+            {
+                thrown[0] = bad;
+            }
+        });
+
+        try
+        {
+            if (whileTheRouteIsSet)
+            {
+                run.start();
+
+                // Setting the route takes about 0.9 s
+                Thread.sleep(300);
+                power(false);
+            }
+            else
+            {
+                power(false);
+                run.start();
+            }
+
+            // Longer than three refused attempts two seconds apart, each setting the route first
+            Thread.sleep(9000);
+
+            assertTrue(run.isAlive(), "the Return Home run ended while the power was off: it gave up on the leg "
+                + "instead of waiting for the power");
+
+            assertEquals(layout.getLocomotiveLocation(loc(LOC_MOVING)).getName(), "SG A",
+                "the train moved while the power was off");
+        }
+        finally
+        {
+            power(true);
+        }
+
+        run.join(60000);
+
+        assertFalse(run.isAlive(), "the Return Home run did not finish within a minute of the power coming back");
+
+        if (thrown[0] != null) throw new RuntimeException(thrown[0]);
+
+        assertTrue(ranToTheEnd[0], "the run reported itself abandoned, the leg stuck and every train stopped, "
+            + "because the power was off for a while");
+
+        assertEquals(layout.getLocomotiveLocation(loc(LOC_MOVING)).getName(), "SG B",
+            "the train never got home after the power came back");
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Fixtures
     // ---------------------------------------------------------------------------------------------
+
+    /**
+     * The track power going off or on, as the Central Station reports it; the simulation sends no echo of its own.
+     */
+    private static void power(boolean on) throws InterruptedException
+    {
+        model.receiveMessage(new CS2Message(CS2Message.CMD_SYSTEM,
+            new byte[] { 0, 0, 0, 0, (byte) (on ? CS2Message.CMD_SYSSUB_GO : CS2Message.CMD_SYSSUB_STOP) }));
+
+        long deadline = System.currentTimeMillis() + 2000;
+
+        while (model.getPowerState() != on && System.currentTimeMillis() < deadline)
+        {
+            Thread.sleep(10);
+        }
+
+        assertEquals(model.getPowerState(), on, "precondition: the power did not go " + (on ? "on" : "off"));
+    }
 
     /**
      * Four stations in a ring, every edge in both directions, so the graph never refuses anything.
