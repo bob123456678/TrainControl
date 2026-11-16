@@ -77,5 +77,4 @@ public class NodeOr extends NodeExpression
 
         return new NodeOr(left, right);
     }
-
 }

@@ -37,7 +37,6 @@ public final class BusyDialog extends JDialog
     {
         super(parent, Dialog.ModalityType.APPLICATION_MODAL);
 
-
         // The window icon (OB-124).
         TrainControlUI.applyWindowIcon(this);
 

@@ -843,7 +843,6 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         ui.updateVisiblePoints();
     }
 
-
     /**
      * One "-> somewhere" item, dispatching this locomotive along this path; shared by the top-level list and `More
      * Destinations` (FR-058), so the checks and the dispatch cannot fall out of step.

@@ -2086,7 +2086,6 @@ public class LayoutEditor extends PositionAwareJFrame
         squareClicked = true;
     }
 
-
     private LayoutLabel lastRevealed;
 
     /**
@@ -2628,7 +2627,6 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         return this.groupClipboard != null && !this.groupClipboard.isEmpty();
     }
-
 
     /**
      * Pastes a copied group with its top left corner at a square, as ONE undoable step.
@@ -3510,8 +3508,6 @@ public class LayoutEditor extends PositionAwareJFrame
         this.reshapeOps.growEdges();
     }
 
-
-
     /**
      * Shrinks the diagram by one, undoing exactly what growEdges adds.
      *
@@ -3648,7 +3644,6 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
-
     /** Tells the setup every square of this page has gone, in one call (`forgetBuiltOver` says why). */
     private void forgetWholePage()
     {
@@ -4218,8 +4213,6 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
             }
         }
-
-
 
         return true;
     }

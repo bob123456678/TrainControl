@@ -110,7 +110,6 @@ public class AutonomyViewerPanel extends JPanel
 
     private final JLabel status = new JLabel();
 
-
     public AutonomyViewerPanel(AutonomySession session, TrainControlUI ui)
     {
         // Fallback for session(); every use asks the window for the current one.
@@ -1965,5 +1964,4 @@ public class AutonomyViewerPanel extends JPanel
 
         return sorted;
     }
-
 }

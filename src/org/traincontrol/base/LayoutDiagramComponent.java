@@ -1061,7 +1061,6 @@ public class LayoutDiagramComponent
         return builder.toString().trim();
     }
     
-
     /**
      * Writes one key of an unmodeled element or block back in the syntax it was read in.  The parser folds a CS2 array
      * (a key line followed by " ..sub=value" lines) into one map entry holding "{a=b,c=d}|{e=f}"; written back as one "

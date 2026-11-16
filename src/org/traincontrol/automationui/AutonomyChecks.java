@@ -810,7 +810,6 @@ public class AutonomyChecks
         return findings;
     }
 
-
     /**
      * A home on a square every train must turn around at, which is emitted as a TERMINUS: the berth is entered nose
      * first and the train has to back out.  THIS NOTICE IS THE ONLY WARNING THERE IS, as Return Home is manual
@@ -920,7 +919,6 @@ public class AutonomyChecks
 
         return findings;
     }
-
 
     /**
      * Included pages that repeat another included page's sensors (OB-150).  The subject is a PAGE, the thing that can

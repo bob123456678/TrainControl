@@ -275,7 +275,6 @@ final class RouteListPanel
      */
     void RouteListMouseClicked(MouseEvent evt)
     {
-
         // Three answers, one for each way of clicking a route (FR-043, MT-217; Adam: "if play button is hit, route
         // executes without confirming.  If route is left-clicked elsewhere, pop up the confirmation first.  If
         // right-clicked, then show the right click menu."): the confirmation was removed when a left click anywhere ran

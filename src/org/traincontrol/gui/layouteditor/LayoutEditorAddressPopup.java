@@ -370,7 +370,6 @@ public class LayoutEditorAddressPopup extends javax.swing.JPanel
         focusTimer.start();
     }//GEN-LAST:event_addressAncestorAdded
 
-
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField address;
     private javax.swing.JComboBox<String> addressSelector;

@@ -143,7 +143,6 @@ public class ProgrammaticControlExample
                 // Why would you do this?  See the "Chaining Commands" section
                 myLoc.setAccessoryState(1, Accessory.accessoryDecoderType.MM2, false);
 
-
                 // Retrieve a switch by its MM2/DCC address
                 // This assumes that the switch exists within the layout
                 MarklinAccessory mySwitch = data.getAccessoryByName("Switch 2");
@@ -159,7 +158,6 @@ public class ProgrammaticControlExample
                 // = Set switch 2 to turnout via the Locomotive API
                 myLoc.setAccessoryState(2, Accessory.accessoryDecoderType.MM2, true);
                 
-   
                 // 
                 // Feedback
                 //
@@ -206,7 +204,6 @@ public class ProgrammaticControlExample
                 // This is an easy way to support event-driven behavior on the layout
                 // For example, this locomotive will first wait for Feedback 1 to show as occupied, and then it will toggle a function and start rolling
                 myLoc.waitForOccupiedFeedback("1").toggleF(3, 1000).setSpeed(5).delay(1000).setSpeed(0);
-
 
                 // This can be put in a loop if the same logic can be repeated
                 // to enable "hard-coded" autonomous operation

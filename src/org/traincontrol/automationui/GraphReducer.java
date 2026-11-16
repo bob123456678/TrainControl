@@ -268,7 +268,6 @@ public class GraphReducer
     // A walk that runs longer than this is a diagram pathology, not a route
     private static final int MAX_PATH_TILES = 2000;
 
-
     private final TileGraph graph;
     private final Authored authored;
 
@@ -795,7 +794,6 @@ public class GraphReducer
                     if (!collectCommands(start, exit.getState(), commands)) continue;
 
                     walk(start, exit, path, commands);
-
                 }
             }
         }

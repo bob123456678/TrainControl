@@ -375,5 +375,4 @@ public class MarklinAccessory extends Accessory
     {
         return MarklinAccessory.THREEWAY_DELAY_MS;
     }
-
 }

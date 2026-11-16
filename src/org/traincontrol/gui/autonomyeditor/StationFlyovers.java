@@ -119,7 +119,6 @@ final class StationFlyovers
     /** `passing` is `keptOut`'s. */
     static String whichTrains(AutonomySession.WhichTrains which, int listed, String passing)
     {
-
         switch (which)
         {
             case BLACKLIST:

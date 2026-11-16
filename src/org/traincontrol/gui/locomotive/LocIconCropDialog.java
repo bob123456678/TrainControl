@@ -76,7 +76,6 @@ public class LocIconCropDialog extends JDialog
     {
         super(owner, title, ModalityType.APPLICATION_MODAL);
 
-
         // OB-124.  A dialog does not reliably inherit its owner's icon, so it is asked for.
         TrainControlUI.applyWindowIcon(this);
 

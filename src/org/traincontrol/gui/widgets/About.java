@@ -113,7 +113,6 @@ public class About extends javax.swing.JPanel
         } catch (IOException | URISyntaxException e1) { }
     }//GEN-LAST:event_linkLabel1MouseClicked
 
-
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;

@@ -1157,7 +1157,6 @@ public class AutonomySession
     /** What came back from a legacy autonomy.json, so the caller can say what happened. */
     public static class LegacyImport
     {
-
         /** Facings the import chose because the file stated none (or the square's own, no better evidence) (OB-304). */
         public int facingsInvented;
 
@@ -5752,7 +5751,6 @@ public class AutonomySession
             if (!component.getLabel().trim().isEmpty()) covered.put(caption.getKey(), caption.getValue());
         }
 
-
         Set<TileKey> givenNoRoom = new LinkedHashSet<>();
 
         Map<TileKey, int[]> runIns = runInFigures(givenNoRoom, inspected, namesForInspection);
@@ -6902,7 +6900,6 @@ public class AutonomySession
 
         return new ArrayList<>(out);
     }
-
 
     /**
      * The diagram tiles a standing train is lying across, for graying out.
@@ -9601,5 +9598,4 @@ public class AutonomySession
 
         return repeats;
     }
-
 }

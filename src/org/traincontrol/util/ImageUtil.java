@@ -18,7 +18,6 @@ import javax.swing.ImageIcon;
  */
 public class ImageUtil
 {
-    
     public static final HashMap<RenderingHints.Key, Object> RenderingProperties = new HashMap<>();
 
     static

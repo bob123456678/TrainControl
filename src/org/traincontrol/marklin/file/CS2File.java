@@ -118,7 +118,6 @@ public final class CS2File
         }
         catch (UnsupportedEncodingException ex)
         {
-            
             this.logMessage(I18n.f(
                 "error.urlEncoding",
                 ex.getMessage()
@@ -848,7 +847,6 @@ public final class CS2File
 
             // Arrays are always valid (never an error object)
             return false;
-
         }
         catch (FileNotFoundException e)
         {
@@ -2759,7 +2757,6 @@ public final class CS2File
             // renumber the rest (autonomy keys on page id).
             try
             {
- 
                 String url = getLayoutURL(name);
             
                 if (control != null && control.isDebug())
@@ -2819,7 +2816,6 @@ public final class CS2File
     private LayoutDiagram parsePage(String name, String url, String pageId, List<Map<String, String>> l,
         List<MarklinAccessory> accDB, Map<Integer, String> twoProtocols) throws Exception
     {
-
         Map<Integer, MarklinAccessory> addressMap = accDB.stream()
             .collect(Collectors.toMap(
                     MarklinAccessory::getAddress, 

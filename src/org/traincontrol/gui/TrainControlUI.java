@@ -1107,7 +1107,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         this.showPageNumbersMenuItem.setSelected(prefs.getBoolean(SHOW_PAGE_NUMBERS, false));
 
- 
         if (prefs.getBoolean(PREFERRED_KEYBOARD_MM2, true))
         {
             this.MM2.setSelected(true);
@@ -5719,7 +5718,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     final ConnectingNotice connectingNotice = new ConnectingNotice(this);
 
-    
     /** FlatLaf's own answer, protected there: are a window's menus drawn in its title bar (never on a Mac)? */
     private static final class TitlePane extends com.formdev.flatlaf.ui.FlatRootPaneUI
     {
@@ -6174,8 +6172,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
     }
-    
-    
     
     /**
      * Has the copy target been set?
@@ -7545,7 +7541,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                                         
                             // Display active locomotive in autonomy UI
                             String windowTitleString = getWindowTitleString();
-                            
                             
                             for (LayoutPopupUI popup : this.popups)
                             {
@@ -14544,7 +14539,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.routeListPanel.executeRoute(route);
     }
 
-        
     public void childWindowKeyEvent(java.awt.event.KeyEvent evt)
     {
         final Component on = evt.getComponent();
@@ -15375,8 +15369,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         return this.layoutFileActions.initializeEmptyLayout(folderName);
     }
-    
-    
     
     /**
      * Restores layout popups
@@ -17302,7 +17294,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    
     private void showKeyboardHintsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showKeyboardHintsMenuItemActionPerformed
         prefs.putBoolean(SHOW_KEYBOARD_HINTS_PREF, this.showKeyboardHintsMenuItem.isSelected());
         displayKeyboardHints(prefs.getBoolean(SHOW_KEYBOARD_HINTS_PREF, true));
@@ -19443,9 +19434,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.turnOnFunctionsOnDeparture;
     }
     
-    
-    
-        
     /**
      * Updates the visibility of certain points and edges
      */
@@ -19484,9 +19472,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
-        
-    
-        
     /**
      * Repaints the timetable once a route completes
      */
@@ -20018,7 +20003,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }
          
-
     /**
      * Routes whose play button is a spinner (FR-043), by name: the table is rebuilt constantly, so a cell's object is
      * not the one the run started against.  Written from route threads, read by the renderer on the event thread.

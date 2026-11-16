@@ -103,7 +103,6 @@ public class TileAnnotation
     /** The red the diagram writes accessory addresses in, so one color means small numbers over track art. */
     private static final Color LENGTH = Color.RED;
 
-
     /** Selected for a bulk edit: a border, not a fill, so the track stays readable while forty tiles are picked. */
     private static final Color SELECTED = new Color(255, 140, 0);
 
@@ -768,7 +767,6 @@ public class TileAnnotation
 
         for (int at = -height; at < width; at += 5) g.drawLine(at, 0, at + height, height);
     }
-
 
     public Badge getBadge()
     {
