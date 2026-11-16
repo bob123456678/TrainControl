@@ -1,5 +1,6 @@
 package org.traincontrol.automation;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -166,18 +167,11 @@ final class StandingTrains
                     // ANCHORED AT THE HEAD: what that Point records is the road's starting point, not what another
                     // reserved Point carries.
                     anchor = head;
-                    side = head.getArrivedFrom();
-                    road = head.getArrivedAlong();
 
-                    List<Edge> driven = whatItHasDriven(running, head);
+                    Map.Entry<String, List<Edge>> tail = tailOfTheRun(running, head);
 
-                    if (!driven.isEmpty())
-                    {
-                        // The road it drove, and the side it came in by at the head taken from the leg it drove to get
-                        // there.
-                        road = driven;
-                        side = owner.entrySideOf(driven.get(driven.size() - 1), head);
-                    }
+                    side = tail.getKey();
+                    road = tail.getValue();
                 }
             }
 
@@ -185,6 +179,22 @@ final class StandingTrains
             // anchored at a milestone and a train at rest at its destination are walked alike.
             walkOneTail(anchor, loc, side, road, covered, places);
         }
+    }
+
+    /**
+     * The side a running train came in by at its head and the road it drove there: from the leg it drove to get there,
+     * else what the head records (MT-438).  Also what a journey that fails part way leaves the train with (OB-493).
+     */
+    Map.Entry<String, List<Edge>> tailOfTheRun(List<Edge> running, Point head)
+    {
+        List<Edge> driven = whatItHasDriven(running, head);
+
+        if (driven.isEmpty())
+        {
+            return new AbstractMap.SimpleImmutableEntry<>(head.getArrivedFrom(), head.getArrivedAlong());
+        }
+
+        return new AbstractMap.SimpleImmutableEntry<>(owner.entrySideOf(driven.get(driven.size() - 1), head), driven);
     }
 
     /**

@@ -426,7 +426,8 @@ public class testAStalledCutOrHandDrivenTrain
 
     /**
      * A failure thrown from the progress callback after the head has moved gives the track back: nothing is left
-     * locked, and the train is not left counted as under way.
+     * locked, the train is not left counted as under way, and it is recorded at FB, the last point it reached, with
+     * its destination free (OB-493).
      *
      * MUTATION: in `Layout.executePath`'s catch, drop `if (hadItsPath) this.unlockPath(path, loc);`, and this fails.
      */
@@ -449,13 +450,197 @@ public class testAStalledCutOrHandDrivenTrain
             assertEquals(j.train.getSpeed(), 0, "the failed journey left the train running");
             j.assertNothingTaken("the failed journey");
 
-            assertNotSame(j.rail.getPoint("FA").getCurrentLocomotive(), j.train, "the failed journey still holds FA");
-            assertNotSame(j.rail.getPoint("FB").getCurrentLocomotive(), j.train, "the failed journey still holds FB");
+            j.assertStandsOnlyAt("FB", "the failed journey");
         }
         finally
         {
             j.train.setSpeed(0);
         }
+    }
+
+    /**
+     * A failure before the train reaches its first sensor leaves it recorded at its start, its tail side kept, and its
+     * destination free (OB-493).
+     *
+     * MUTATION: in `Layout.executePath`'s catch, drop the `reached.setLocomotive(loc)` block, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAFailureBeforeTheFirstSensorLeavesTheTrainAtItsStart() throws Exception
+    {
+        Journey j = new Journey(new MarklinLocomotive(model, 78, MarklinLocomotive.decoderType.MM2,
+            "OB493 failing train"), "GA", "GB", "GC");
+
+        j.rail.getPoint("GA").setArrivedFrom("W");
+
+        j.failsAtTheStart();
+
+        j.assertNothingTaken("the failed journey");
+        j.assertStandsOnlyAt("GA", "the failed journey");
+
+        assertEquals(j.rail.getPoint("GA").getArrivedFrom(), "W", "the failed journey lost the start's tail side");
+    }
+
+    /**
+     * A failure at an intermediate point records there the side the train came in by and the road it drove, as the
+     * running walk had them, so its body still claims the track behind it (OB-493).
+     *
+     * MUTATION: in `Layout.executePath`'s catch, take the tail from `reached.getArrivedFrom()` and
+     * `reached.getArrivedAlong()` instead of `standingTrains.tailOfTheRun`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAFailureAtAnIntermediatePointKeepsTheTrackBehindItClaimed() throws Exception
+    {
+        MarklinLocomotive train = new MarklinLocomotive(model, 81, MarklinLocomotive.decoderType.MM2, "OB493 tail");
+
+        Journey j = new Journey(train, "WA", "WB", "WC", "WD");
+
+        for (Edge e : j.path)
+        {
+            e.setLength(100);
+            e.setEntrySide("W");
+        }
+
+        train.setTrainLength(150);
+
+        AtomicReference<List<Edge>> whileRunning = new AtomicReference<>();
+        RuntimeException failure = new IllegalStateException("thrown by the progress callback");
+
+        // At WC, with the track its body covers while running read just before the failure
+        train.setCallback(Layout.CB_ROUTE_PROG, l ->
+        {
+            if (!j.reached("WC")) return;
+
+            whileRunning.set(j.coveredByTheTrain());
+            throw failure;
+        });
+
+        try
+        {
+            j.go().light("WB").waitsOn("WC");
+            assertSame(j.light("WC").end(), failure, "precondition: the callback's failure did not end the journey");
+
+            j.assertStandsOnlyAt("WC", "the failed journey");
+
+            assertEquals(j.rail.getPoint("WC").getArrivedFrom(), "W", "the train recorded at WC has no tail side");
+            assertEquals(j.rail.getPoint("WC").getArrivedAlong(), j.path.subList(0, 2), "the train recorded at WC "
+                + "has not the road it drove");
+
+            assertFalse(whileRunning.get().isEmpty(), "precondition: the running train covered no track");
+            assertTrue(j.coveredByTheTrain().containsAll(whileRunning.get()), "the track under the stopped train is no "
+                + "longer claimed: while running " + whileRunning.get() + ", after the failure "
+                + j.coveredByTheTrain());
+        }
+        finally
+        {
+            j.train.setSpeed(0);
+        }
+    }
+
+    /**
+     * A failure just after the train turned at an intermediate point stands it on the copy of that square it now faces
+     * on from, and tells the window of the turn, as a turn at a destination does (OB-493, MT-368).
+     *
+     * MUTATION: in `Layout.executePath`'s catch, drop the `standOnTheCopyItFacesAfterTheTurn(reached, loc)` block, and
+     * this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAFailureJustAfterATurnPartWayStandsTheTrainOnTheCopyItFaces() throws Exception
+    {
+        MarklinLocomotive train = new MarklinLocomotive(model, 83, MarklinLocomotive.decoderType.MM2, "OB493 turn");
+
+        Journey j = new Journey(train, "TA", "TB", "TC");
+
+        // TB turns trains; TB2 is the other copy of its square, facing on from the side the train comes in by
+        Point tb = j.rail.getPoint("TB");
+
+        tb.setReversing(true);
+        tb.setBlock("TB square");
+        tb.setCopyFacing("E");
+
+        j.rail.createPoint("TB2", true, tb.getS88()).setBlock("TB square");
+        j.rail.getPoint("TB2").setCopyFacing("W");
+
+        j.path.get(0).setEntrySide("W");
+
+        j.failsAt("TB");
+
+        j.assertStandsOnlyAt("TB2", "the failed journey that turned at TB");
+
+        assertEquals(j.rail.turnedOnArrivalAt(train.getName()), "TB2", "the window was not told of the turn");
+    }
+
+    /**
+     * A failure never takes the point the train last reached from another train that holds it now (OB-493).
+     *
+     * MUTATION: in `Layout.executePath`'s catch, place the train whenever `reached != null`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAFailureLeavesAnotherTrainOnThePointItReached() throws Exception
+    {
+        Journey j = new Journey(new MarklinLocomotive(model, 84, MarklinLocomotive.decoderType.MM2,
+            "OB493 failing train 2"), "KA", "KB", "KC");
+
+        Locomotive other = new MarklinLocomotive(model, 85, MarklinLocomotive.decoderType.MM2, "OB493 other train");
+
+        // Non-atomic, where the unlock leaves a point another train has taken to that train
+        j.rail.setAtomicRoutes(false);
+
+        RuntimeException failure = new IllegalStateException("thrown by the progress callback");
+
+        j.train.setCallback(Layout.CB_ROUTE_PROG, l ->
+        {
+            j.rail.getPoint("KB").setLocomotive(other);
+            throw failure;
+        });
+
+        try
+        {
+            assertSame(j.go().light("KB").end(), failure, "precondition: the callback's failure did not end the "
+                + "journey");
+
+            assertSame(j.rail.getPoint("KB").getCurrentLocomotive(), other, "the failed journey took KB from the "
+                + "train that holds it");
+        }
+        finally
+        {
+            j.train.setSpeed(0);
+        }
+    }
+
+    /**
+     * The train a failure left at its start, tail side and all, is saved and read back the same (OB-493).
+     *
+     * MUTATION: in `Layout.executePath`'s catch, drop `reached.setArrivedFrom(tail.getKey())`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheStartAFailureLeftTheTrainAtRoundTrips() throws Exception
+    {
+        Journey j = new Journey(null, "XA", "XB", "XC");
+
+        j.rail.getPoint("XA").setArrivedFrom("W");
+
+        j.failsAtTheStart();
+
+        assertNull(j.readBack("XA", "W").getPoint("XC").getCurrentLocomotive(), "XC holds a train after the reload");
+    }
+
+    /**
+     * The train a failure left at an intermediate point is saved and read back there, its side and road with it
+     * (OB-493).
+     *
+     * MUTATION: in `Layout.executePath`'s catch, drop the `reached.setLocomotive(loc)` block, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheIntermediatePointAFailureLeftTheTrainAtRoundTrips() throws Exception
+    {
+        Journey j = new Journey(null, "YA", "YB", "YC");
+
+        j.path.get(0).setEntrySide("W");
+
+        j.failsAt("YB");
+
+        assertEquals(Layout.namesOfRoad(j.readBack("YB", "W").getPoint("YB").getArrivedAlong()),
+            Layout.namesOfRoad(j.path.subList(0, 1)), "the road did not survive the reload");
     }
 
     /** A new sensor, clear. */
@@ -607,6 +792,95 @@ public class testAStalledCutOrHandDrivenTrain
             assertFalse(rail.getActiveLocomotives().containsKey(train), who + " left the train counted as under way");
 
             for (Edge e : path) assertFalse(e.isLockHeld(null), who + " left " + e.getName() + " locked");
+        }
+
+        /**
+         * Sends the train with its progress callback failing, lights `point`, and returns once the failure has ended
+         * the journey.  The callback is taken off again: the train may be a database locomotive the next claim drives.
+         */
+        void failsAt(String point) throws InterruptedException
+        {
+            RuntimeException failure = new IllegalStateException("thrown by the progress callback");
+
+            train.setCallback(Layout.CB_ROUTE_PROG, l -> { throw failure; });
+
+            try
+            {
+                assertSame(go().light(point).end(), failure, "precondition: the callback's failure did not end the "
+                    + "journey");
+            }
+            finally
+            {
+                train.setSpeed(0);
+                train.setCallback(Layout.CB_ROUTE_PROG, l -> { });
+            }
+        }
+
+        /** Runs the journey with its start callback failing, and returns once that has ended it; as failsAt. */
+        void failsAtTheStart()
+        {
+            RuntimeException failure = new IllegalStateException("thrown as the journey starts");
+
+            train.setCallback(Layout.CB_ROUTE_START, l -> { throw failure; });
+
+            try
+            {
+                rail.executePath(path, train, SPEED, null);
+                fail("precondition: the start callback's failure did not end the journey");
+            }
+            catch (IllegalStateException e)
+            {
+                assertSame(e, failure, "precondition: the journey ended on another failure");
+            }
+            finally
+            {
+                train.setCallback(Layout.CB_ROUTE_START, l -> { });
+            }
+        }
+
+        /** The railway saved and read back: valid, saved again the same, the train at `point` come in by `side`. */
+        Layout readBack(String point, String side) throws Exception
+        {
+            // A railway saves only with a default speed in range
+            rail.setDefaultLocSpeed(SPEED);
+
+            String saved = rail.toJSON();
+            Layout loaded = Layout.fromJSON(saved, model);
+
+            assertTrue(loaded.isValid(), "the saved railway reads back invalid: " + loaded.getInvalidReason());
+
+            assertSame(loaded.getLocomotiveLocation(train), loaded.getPoint(point), "the train read back is not at "
+                + point);
+            assertEquals(loaded.getPoint(point).getArrivedFrom(), side, "the tail side did not survive the reload");
+            assertEquals(loaded.toJSON(), saved, "the railway read back is not the one saved");
+
+            return loaded;
+        }
+
+        /** The edges the train's body claims, as the walk of standing trains reads them. */
+        List<Edge> coveredByTheTrain()
+        {
+            List<Edge> out = new ArrayList<>();
+
+            for (java.util.Map.Entry<Edge, Locomotive> c : rail.edgesCoveredByStandingTrains().entrySet())
+            {
+                if (c.getValue() == train) out.add(c.getKey());
+            }
+
+            return out;
+        }
+
+        /** The train is recorded at this point and at no other on the railway; `who` names what should have left it so. */
+        void assertStandsOnlyAt(String point, String who)
+        {
+            assertSame(rail.getLocomotiveLocation(train), rail.getPoint(point), who + " did not record the train at "
+                + point);
+
+            for (Point p : rail.getPoints())
+            {
+                if (p != rail.getPoint(point)) assertNotSame(p.getCurrentLocomotive(), train, who + " left the train "
+                    + "recorded at " + p.getName());
+            }
         }
 
         /** The journey is over: nothing taken, the train recorded at its destination and nowhere before. */
