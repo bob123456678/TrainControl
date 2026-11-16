@@ -1226,6 +1226,7 @@ public class AutonomyEditorPanel extends JPanel
         findingFilter.setFont(FONT_CONTROL);
         // Painted by the look and feel while the box is empty, never part of its text
         findingFilter.putClientProperty("JTextField.placeholderText", I18n.t("autosetup.ui.captionFilterFindings"));
+        findingFilter.getAccessibleContext().setAccessibleName(I18n.t("autosetup.ui.captionFilterFindings"));
         findingFilter.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipFilterFindings")));
 
         // Inside the field's right end, as a search field has it, and shown while there is text to clear

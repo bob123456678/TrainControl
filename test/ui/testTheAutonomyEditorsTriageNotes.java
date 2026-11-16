@@ -178,6 +178,8 @@ public class testTheAutonomyEditorsTriageNotes
         assertEquals(Components.onTheEventThread(() -> field.getClientProperty("JTextField.placeholderText")),
             I18n.t("autosetup.ui.captionFilterFindings"), "the caption");
         assertTrue(showsACaption(field), "the empty box paints no caption");
+        assertEquals(Components.onTheEventThread(() -> field.getAccessibleContext().getAccessibleName()),
+            I18n.t("autosetup.ui.captionFilterFindings"), "the box's accessible name");
 
         assertNull(Components.inside(panel.getFindingsBox(), javax.swing.JLabel.class), "a Filter: label is still there");
 
