@@ -669,7 +669,8 @@ public class testLocomotiveIdentityPropagates
         List<String> doors = new ArrayList<>();
 
         doors.add(withoutComments(SourceOf.declaration("    boolean writeNameAndAddress(Component source, Locomotive l,")));
-        doors.add(withoutComments(SourceOf.declaration("private void checkForRenameMenuItemActionPerformed(")));
+        doors.add(withoutComments(SourceOf.declaration(
+            "private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)")));
 
         int counted = 0;
 
@@ -677,9 +678,9 @@ public class testLocomotiveIdentityPropagates
 
         assertEquals(counted, 2, "the two doors named here no longer hold both of the program's renameLoc calls");
 
-        // The refresh block that follows it, bounded by the catch that closes the method; NOT by the next javadoc,
-        // which `withoutComments` has already removed, so the window would become the rest of the file and the rule
-        // would pass whatever the code did.
+        // The refresh block that follows it, bounded by the catch that closes the method, or by the method's end; NOT
+        // by the next javadoc, which `withoutComments` has already removed, so the window would become the rest of the
+        // file and the rule would pass whatever the code did.
         List<String> silent = new ArrayList<>();
 
         List<String> quiet = new ArrayList<>();
@@ -689,7 +690,8 @@ public class testLocomotiveIdentityPropagates
             int at = Math.max(body.indexOf("model.renameLoc("), body.indexOf("getModel().renameLoc("));
 
             // The refresh block that follows, bounded as above.
-            int end = body.indexOf("catch (Exception", at);
+            int caught = body.indexOf("catch (Exception", at);
+            int end = caught < 0 ? body.length() : caught;
 
             assertTrue(end > at && end - at < 6000,
                 "a refresh block could not be bounded, so this rule would read the rest of the file "

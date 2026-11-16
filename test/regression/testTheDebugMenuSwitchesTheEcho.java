@@ -201,12 +201,15 @@ public class testTheDebugMenuSwitchesTheEcho
     }
 
     /**
-     * Sync Full Function State, answered Yes, turns every locomotive's functions off and asks the station for each
-     * locomotive's state.
+     * Sync Full Function State, answered Yes, only reads: it asks the station for each locomotive's state without
+     * switching any function off first, and says how far it has got, "12 of 40" (FR-220).  The read is held at this
+     * train's speed query, a slow station, while the window is asked: it still answers, with the busy sign and its count
+     * on screen, as the read waits off the event thread (OB-475); released, the read ends and the sign goes.
      *
-     * MUTATION: in `TrainControlUI.syncFullLocStateMenuItemActionPerformed`, take out `this.model.allFunctionsOff();`.
+     * MUTATION: in `TrainControlUI.syncFullLocStateMenuItemActionPerformed`, call `this.model.allFunctionsOff()` before
+     * the read, leave out the `busy.say(...)` of each locomotive, or `run()` the read's thread instead of `start()`.
      */
-    @Test
+    @Test(timeOut = 120000)
     public void testSyncFullFunctionStateAnsweredYesAsksTheStation() throws Exception
     {
         final org.traincontrol.marklin.MarklinLocomotive train = aTrainWithItsLightsOn("SYNC asked", 68);
@@ -214,7 +217,31 @@ public class testTheDebugMenuSwitchesTheEcho
         final java.util.List<org.traincontrol.marklin.udp.CS2Message> sent =
             java.util.Collections.synchronizedList(new java.util.ArrayList<>());
 
-        model.setSentMessageObserver(sent::add);
+        final java.util.concurrent.CountDownLatch reached = new java.util.concurrent.CountDownLatch(1);
+        final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+
+        java.util.List<String> names = model.getLocList();
+
+        final String progress = I18n.f("ui.busyReadingFunctions", names.indexOf(train.getName()) + 1, names.size());
+
+        model.setSentMessageObserver(m ->
+        {
+            sent.add(m);
+
+            if (m.getCommand() != org.traincontrol.marklin.udp.CS2Message.CMD_LOCO_VELOCITY || m.getLength() != 4
+                || m.extractUID() != train.getIntUID()) return;
+
+            reached.countDown();
+
+            try
+            {
+                release.await(30, java.util.concurrent.TimeUnit.SECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+        });
 
         try (support.Answering answering = support.Answering.start(message -> message.equals(
             I18n.t("loc.ui.confirmQueryCentralStationFunctions")) ? support.Answering.press(I18n.t("ui.yes"))
@@ -226,15 +253,36 @@ public class testTheDebugMenuSwitchesTheEcho
 
             assertEquals(answering.asked().get(0), I18n.t("loc.ui.confirmQueryCentralStationFunctions"));
 
-            assertTrue(support.Components.waitFor(() -> askedForTheSpeedOf(sent, train), 30000), "Sync Full Function"
-                + " State answered Yes did not ask the station for the train's state");
+            assertTrue(reached.await(30, java.util.concurrent.TimeUnit.SECONDS), "Sync Full Function State answered"
+                + " Yes did not ask the station for the train's state");
+
+            assertNotNull(support.Components.busySignsIfAnswering(3000), "the window froze while the read waited on"
+                + " the station");
+
+            assertTrue(support.Components.waitFor(() -> busySays(progress), 10000), "the read does not say how far it"
+                + " has got (\"" + progress + "\") while it reads the train");
+
+            assertTrue(train.getF(0), "the read switched the train's lights off before reading them");
         }
         finally
         {
+            release.countDown();
+
             model.setSentMessageObserver(null);
         }
 
-        assertFalse(train.getF(0), "Sync Full Function State answered Yes left the train's lights on");
+        assertTrue(train.getF(0), "Sync Full Function State answered Yes switched the train's lights off");
+
+        assertTrue(support.Components.waitFor(() -> new java.util.ArrayList<>().equals(
+            support.Components.busySignsIfAnswering(3000)), 30000), "the busy sign stayed up after the read ended");
+    }
+
+    /** Whether a busy sign on screen says this. */
+    private static boolean busySays(String text)
+    {
+        java.util.List<String> says = support.Components.busySignsIfAnswering(3000);
+
+        return says != null && says.contains(text);
     }
 
     /**

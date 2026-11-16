@@ -116,6 +116,12 @@ public abstract class Locomotive
  
     // User-defined notes about this locomotive
     private String notes = "";
+
+    // The Central Station's name for this locomotive that a pressed Sync offered and the user turned down (FR-220)
+    private String declinedStationName;
+
+    // The one the Sync running now offered and did not apply, so it adds no copy under it; never saved
+    private String heldBackStationName;
     
     // Used to pause autonomous operation - not persisted.  Volatile, not under the monitor: a command can hold that
     // for a stalled network write, and windows read this every second.
@@ -1539,6 +1545,29 @@ public abstract class Locomotive
             LocomotiveNotes wrapper = new LocomotiveNotes(0, 0, "", notes);
             this.notes = wrapper.toJson().toString();
         }
+    }
+
+    /** The station's name for this locomotive the user turned down, or null; Sync does not offer it again. */
+    public String getDeclinedStationName()
+    {
+        return this.declinedStationName;
+    }
+
+    public void setDeclinedStationName(String name)
+    {
+        this.declinedStationName = name;
+    }
+
+    /** Marks the station's name the Sync running now offered for this locomotive and did not apply; null clears it. */
+    public void setHeldBackStationName(String name)
+    {
+        this.heldBackStationName = name;
+    }
+
+    /** Whether this locomotive keeps its name over the station's: turned down, or held back by the Sync running now. */
+    public boolean keepsItsNameOver(String stationName)
+    {
+        return stationName.equals(this.declinedStationName) || stationName.equals(this.heldBackStationName);
     }
 
     /**

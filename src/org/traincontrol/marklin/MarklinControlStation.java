@@ -1796,7 +1796,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         // Show message that we did not sync a loc with a duplicate name
                         this.logf("loc.importSkippedDuplicateName", l.getName());
                     }
-                    else
+                    else if (!nameTurnedDown(l))
                     {
                         this.logf("loc.addedFromCentralStation",
                             l.getDecoderTypeLabel(),
@@ -1943,6 +1943,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return num;
     }
     
+    /**
+     * Whether a locomotive here at l's address turned down l's name, or was offered it by the Sync running now and kept
+     * its own, so the sync adds no copy under it (FR-220).
+     */
+    private boolean nameTurnedDown(MarklinLocomotive l)
+    {
+        for (MarklinLocomotive held : this.locDB.getItems())
+        {
+            if (held.getIntUID() == l.getIntUID() && held.keepsItsNameOver(l.getName())) return true;
+        }
+
+        return false;
+    }
+
     /**
      * Takes one route the Central Station describes into this database: added where new, replaced where its definition
      * changed, and locked either way - except that a route running now is left for the next sync.  One step of
@@ -3497,6 +3511,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             newLoc.setCustomFunctions(c.getCustomFunctions());
             newLoc.setLocalFunctionImageURLs(c.getLocalFunctionImageURLs());
             newLoc.setNotes(c.getLocNotes());
+            newLoc.setDeclinedStationName(c.getDeclinedStationName());
             newLoc.preSetLinkedLocomotives(c.getLinkedLocomotives()); // we need to call setLinkedLocomotives() once all locs are loaded
             newLoc.setModelMultiUnitLocomotives(c.getCentralStationLinkedLocomotives());
             

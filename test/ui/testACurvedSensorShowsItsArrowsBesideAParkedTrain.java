@@ -240,7 +240,8 @@ public class testACurvedSensorShowsItsArrowsBesideAParkedTrain
             Map<TileKey, Set<RouteId>> blocked = new HashMap<>();
             blocked.put(middle, type == componentType.FEEDBACK_DOUBLE_CURVE ? own : new LinkedHashSet<RouteId>());
 
-            window = unconstructedWindow();
+            // A main window allocated without its constructor: these tiles ask it only for the two maps set on it
+            window = Reflect.unconstructed(TrainControlUI.class);
 
             setOn(window, "coveredTrack", covered);
             setOn(window, "blockedTrack", blocked);
@@ -308,19 +309,6 @@ public class testACurvedSensorShowsItsArrowsBesideAParkedTrain
         label.setBounds(at.getX() * size, at.getY() * size, size, size);
 
         return label;
-    }
-
-    /** A main window allocated without its constructor: these tiles ask it only for the two maps set on it. */
-    private static TrainControlUI unconstructedWindow() throws Exception
-    {
-        java.lang.reflect.Field field = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe");
-
-        field.setAccessible(true);
-
-        Object unsafe = field.get(null);
-
-        return TrainControlUI.class.cast(unsafe.getClass().getMethod("allocateInstance", Class.class)
-            .invoke(unsafe, TrainControlUI.class));
     }
 
     private static void setOn(TrainControlUI window, String name, Object value) throws Exception
