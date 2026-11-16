@@ -63,9 +63,7 @@ AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.AutonomySession
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.AutonomySession	updateStoredRecord	dirty	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.AutonomySession	writePointProperty	dirty	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	inGray	gray	1
-AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	inTheEditor	editing	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	needsALength	unmeasured	1
-AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	paintSpill	spilling	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	withAllowedDirections	allowedToo	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	withNoStation	stationless	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	withSmallerIcon	iconShare	1
@@ -253,7 +251,6 @@ EI_EXPOSE_REP	org.traincontrol.automationui.AutonomyChecks$Finding	getRelated	re
 EI_EXPOSE_REP	org.traincontrol.automationui.AutonomySession	getGraph	graph	1
 EI_EXPOSE_REP	org.traincontrol.automationui.AutonomySession	getStore	store	1
 EI_EXPOSE_REP	org.traincontrol.automationui.GraphReducer	getGraph	graph	1
-EI_EXPOSE_REP	org.traincontrol.automationui.TileAnnotation	spillShape	spillRegion	1
 EI_EXPOSE_REP	org.traincontrol.automationui.TileOverlay	getSegments	segments	1
 EI_EXPOSE_REP	org.traincontrol.base.ConditionOutline$Row	getCommand	command	1
 EI_EXPOSE_REP	org.traincontrol.base.LayoutDiagramComponent	getAccessory	accessory	1
@@ -543,7 +540,6 @@ RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.marklin.MarklinControl
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.marklin.MarklinControlStation	parseAuto	autoLayout	1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.marklin.MarklinRoute	heldReason		1
 RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE	org.traincontrol.automation.Layout	lambda$fromJSON		1
-RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	applyTest	session	1
 RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE	org.traincontrol.gui.layouteditor.LayoutEditor	editAddress	layout	1
 RC_REF_COMPARISON_BAD_PRACTICE_BOOLEAN	org.traincontrol.gui.TrainControlUI$KeyShortcuts$Row	stroke	alt	1
 RC_REF_COMPARISON_BAD_PRACTICE_BOOLEAN	org.traincontrol.gui.TrainControlUI$KeyShortcuts$Row	stroke	control	1
@@ -828,7 +824,6 @@ UG_SYNC_SET_UNSYNC_GET	org.traincontrol.marklin.MarklinLocomotive	getAccessorySt
 UG_SYNC_SET_UNSYNC_GET	org.traincontrol.marklin.MarklinLocomotive	getF		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automation.Layout	claimUpToWhereTheRailsPart		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automation.Layout	logPathError		1
-UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automationui.TileAnnotation	block		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automationui.TileAnnotation	opposite		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	askAboutSignals		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	nameForPrompt		1
