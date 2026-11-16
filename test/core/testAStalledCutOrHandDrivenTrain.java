@@ -209,6 +209,8 @@ public class testAStalledCutOrHandDrivenTrain
 
     /**
      * And the same for Return Home's plan, which runs as a timetable one train at a time and retries on its own pace.
+     * The entry is built by hand as a sequential timetable rather than planned by `loadReturnToHomeTimetable`, and the
+     * sensor is cleared after the first refusal: this run tries three times, two seconds apart, before it gives up.
      *
      * MUTATION: in `Layout.isPathClear`, skip the `errorFeedbackNotClear` check for the path's last edge, and this
      * fails.
@@ -353,18 +355,19 @@ public class testAStalledCutOrHandDrivenTrain
 
         try
         {
-            j.go();
+            // Once the journey has set its speed for KB's stretch, so the stop is the last word on it
+            j.go().waitsOn("KB");
 
             // THE OPERATOR'S STOP, through the same call the hand controls make
             j.train.setSpeed(0);
 
             String advisory = I18n.f("autolayout.warnLocomotiveWaitingLong", j.train.getName(), j.s88("KB"), 0);
 
-            assertTrue(until(() -> logged.contains(advisory) || j.train.getSpeed() > 0 || j.reached("KB"), WAIT_MS),
+            assertTrue(until(() -> logged.contains(advisory) || j.train.getSpeed() > 0 || !j.awaits("KB"), WAIT_MS),
                 "nothing happened after a hand stop, not even the notice: " + logged);
 
             assertEquals(j.train.getSpeed(), 0, "autonomy put its speed back after the operator stopped the train");
-            assertFalse(j.reached("KB"), "the journey went on to KB without its sensor");
+            assertTrue(j.awaits("KB") && !j.reached("KB"), "the journey stopped waiting on KB without its sensor");
             assertTrue(logged.contains(advisory), "the notice for a train stopped by hand did not come");
             assertTrue(j.holdsItsRoute(), "a hand stop gave up the train's route: " + j.heldState());
 
@@ -397,7 +400,7 @@ public class testAStalledCutOrHandDrivenTrain
 
         try
         {
-            j.go();
+            j.go().waitsOn("GB");
 
             assertEquals(j.train.getSpeed(), SPEED, "precondition: the train did not set off at the journey's speed");
 
@@ -406,10 +409,10 @@ public class testAStalledCutOrHandDrivenTrain
 
             assertEquals(j.train.getSpeed(), byHand, "the operator's speed was overridden before the next sensor");
 
-            j.light("GB");
+            // GC's stretch is set before its wait begins, so waiting on GC means GB's answer has been acted on
+            j.light("GB").waitsOn("GC");
 
-            assertTrue(until(() -> j.train.getSpeed() == SPEED, WAIT_MS), "autonomy did not put its own speed back at "
-                + "the next sensor; the train is still at " + j.train.getSpeed());
+            assertEquals(j.train.getSpeed(), SPEED, "autonomy did not put its own speed back at the next sensor");
 
             assertEquals(j.light("GC").light("GD").end(), Boolean.TRUE, "the journey did not end at its destination");
             assertEquals(j.train.getSpeed(), 0, "the train was not stopped at its destination");
@@ -538,6 +541,30 @@ public class testAStalledCutOrHandDrivenTrain
         Journey light(String point)
         {
             model.setFeedbackState(s88(point), true);
+
+            return this;
+        }
+
+        /** Whether the journey is waiting on this point's sensor now. */
+        boolean awaits(String point)
+        {
+            try
+            {
+                java.util.Map<?, ?> pending =
+                    (java.util.Map<?, ?>) Reflect.get(Layout.class, rail, "locomotivePendingS88");
+
+                return s88(point).equals(pending.get(train));
+            }
+            catch (Exception e)
+            {
+                throw new AssertionError("cannot read which sensor the journey waits on", e);
+            }
+        }
+
+        /** Returns once the journey is waiting on this point's sensor. */
+        Journey waitsOn(String point)
+        {
+            assertTrue(until(() -> awaits(point), WAIT_MS), "the journey never began waiting on " + point);
 
             return this;
         }
