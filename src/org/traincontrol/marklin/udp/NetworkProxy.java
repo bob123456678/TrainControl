@@ -718,18 +718,20 @@ public class NetworkProxy
             }
 
             // Send message to listener
-            if (!learn(buffer)) model.receiveMessage(model.createMessage(buffer));
+            CANMessage message = model.createMessage(buffer);
+
+            if (!learn(buffer, message)) model.receiveMessage(message);
         }
     }
 
     /** Delivers a TCP frame. */
     private void deliverTcp(byte[] frame)
     {
-        if (learn(frame)) return;
-
         try
         {
-            model.receiveMessage(model.createMessage(frame));
+            CANMessage message = model.createMessage(frame);
+
+            if (!learn(frame, message)) model.receiveMessage(message);
         }
         catch (Exception e)
         {
@@ -741,9 +743,10 @@ public class NetworkProxy
      * Once learnsDevices is set, notes a contact's device from a sensor event, a change of state; a frame with the
      * state unchanged is an answer to a query, counted for the pass that asked.  True, and the frame not to be
      * delivered, when it is such an answer older than a real event for the contact since its query, less than
-     * RESYNC_WAIT_NS ago (OB-418).
+     * RESYNC_WAIT_NS ago (OB-418).  Stamps `message` with the passes under way before an answer can end its pass, as
+     * the frame is parsed on another thread (OB-490).
      */
-    private boolean learn(byte[] frame)
+    private boolean learn(byte[] frame, CANMessage message)
     {
         if (!this.learnsDevices || command(frame) != CS2Message.CMD_ACC_SENSOR || frame[4] != 8) return false;
 
@@ -752,6 +755,8 @@ public class NetworkProxy
         synchronized (this.overtaken)
         {
             if (this.asks == 0 && System.nanoTime() - this.askEnded >= RESYNC_WAIT_NS) this.overtaken.clear();
+
+            if (message instanceof CS2Message) ((CS2Message) message).heardDuring(this.asks > 0, this.holds > 0);
         }
 
         if (frame[9] != frame[10])

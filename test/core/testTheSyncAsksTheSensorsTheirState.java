@@ -250,6 +250,47 @@ public class testTheSyncAsksTheSensorsTheirState
     }
 
     /**
+     * A late answer is still the sync's own (OB-490): the station answers the route's sensor about 300 ms, then about
+     * 1 s, after its query, the last answer of the pass and inside its wait.  The route fires on neither, as on time,
+     * and fires on the next real edges.
+     *
+     * MUTATION: in `MarklinFeedback.parseMessage`, `m.heardAsking()` to `false`.
+     */
+    @Test(timeOut = 120000)
+    public void testALateAnswerToTheSyncFiresNoRoute() throws Exception
+    {
+        connected((rig, station) ->
+        {
+            for (long late : new long[] {300, 900})
+            {
+                int contact = 2810 + (int) (late / 100);
+
+                aCorrectionFiresNoRoute(rig, station, contact, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, () ->
+                {
+                    station.answerLate(contact, late);
+                    synced(rig, station);
+                });
+            }
+        });
+    }
+
+    /**
+     * The same for a reconnect's confirmation (D133): its last answer, about 300 ms late, fires no route.
+     *
+     * MUTATION: in `NetworkProxy.learn`, take out the `heardDuring` call.
+     */
+    @Test(timeOut = 120000)
+    public void testALateAnswerToAReconnectFiresNoRoute() throws Exception
+    {
+        connected((rig, station) -> aCorrectionFiresNoRoute(rig, station, 2820,
+            MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR, () ->
+            {
+                station.answerLate(2820, 300);
+                station.drop();
+            }));
+    }
+
+    /**
      * Once the confirmation is in, every frame is a real event, compared with the state held: a frame whose old state
      * equals its new, as a station's own s88 bus may report one, or a late or another client's answer, is an edge when
      * it changes the state (D133): a route armed clear then occupied fires on it.
@@ -278,7 +319,7 @@ public class testTheSyncAsksTheSensorsTheirState
      * contact when the new connection's query for it arrives, while the pass waits; the route armed clear then occupied
      * does not fire.  After the pass, a real clear then occupied fires it once.
      *
-     * MUTATION: in `MarklinFeedback.parseMessage`, `this.network.isConfirming()` to `false`.
+     * MUTATION: in `MarklinFeedback.parseMessage`, `m.heardConfirming() || this.network.isConfirming()` to `false`.
      */
     @Test(timeOut = 120000)
     public void testARealEventDuringTheConfirmationFiresNoRoute() throws Exception

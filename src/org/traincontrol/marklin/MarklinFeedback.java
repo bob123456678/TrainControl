@@ -99,11 +99,13 @@ public class MarklinFeedback extends Feedback
                     boolean was = this.isSet();
 
                     // Until a connect's or reconnect's confirmation is in, a change only puts the state right (D133);
-                    // during a later sync's pass only an answer, its old state equal to its new, does (D139)
-                    boolean asking = this.network.isAskingSensors();
+                    // during a later sync's pass only an answer, its old state equal to its new, does (D139).  A pass
+                    // under way when the frame was heard counts, as its last answer ends it before this runs (OB-490)
+                    boolean asking = m.heardAsking() || this.network.isAskingSensors();
                     boolean answer = m.getData()[4] == m.getData()[5];
+                    boolean confirming = m.heardConfirming() || this.network.isConfirming();
 
-                    this.changeTo(state == 1, this.network.isConfirming() || (asking && answer));
+                    this.changeTo(state == 1, confirming || (asking && answer));
                                         
                     this.updateTiles();
 
