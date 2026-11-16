@@ -1936,8 +1936,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         for (MarklinLocomotive held : this.locDB.getItems())
         {
-            if (held.getIntUID() == l.getIntUID() && (l.getName().equals(held.getDeclinedStationName())
-                || l.getName().equals(held.getHeldBackStationName()))) return true;
+            if (held.getIntUID() == l.getIntUID() && held.keepsItsNameOver(l.getName())) return true;
         }
 
         return false;

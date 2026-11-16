@@ -1558,15 +1558,16 @@ public abstract class Locomotive
         this.declinedStationName = name;
     }
 
-    /** The station's name the Sync running now offered for this locomotive and did not apply, or null. */
-    public String getHeldBackStationName()
-    {
-        return this.heldBackStationName;
-    }
-
+    /** Marks the station's name the Sync running now offered for this locomotive and did not apply; null clears it. */
     public void setHeldBackStationName(String name)
     {
         this.heldBackStationName = name;
+    }
+
+    /** Whether this locomotive keeps its name over the station's: turned down, or held back by the Sync running now. */
+    public boolean keepsItsNameOver(String stationName)
+    {
+        return stationName.equals(this.declinedStationName) || stationName.equals(this.heldBackStationName);
     }
 
     /**

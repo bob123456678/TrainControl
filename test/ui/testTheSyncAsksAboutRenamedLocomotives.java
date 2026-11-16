@@ -464,6 +464,17 @@ public class testTheSyncAsksAboutRenamedLocomotives
         return lines;
     }
 
+    /** Nothing renamed, kept as a No or copied under the station's name for this offer; its one log line is `key`. */
+    private static void notRenamed(StationRig rig, String old, String station, String key)
+    {
+        assertNotNull(rig.model.getLocByName(old), old + " was renamed to " + station);
+        assertNull(rig.model.getLocByName(old).getDeclinedStationName(), "the offer of " + station + " was kept as a"
+            + " No");
+        assertNull(rig.model.getLocByName(station), "the sync added a copy under " + station);
+        assertEquals(renameLines(rig, old, station), Collections.singletonList(I18n.f(key, old, station)), "the offer"
+            + " was not logged as " + key);
+    }
+
     /** Whether the sync has said it is complete. */
     private static boolean saidDone(Answering answering)
     {
@@ -590,10 +601,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
                 : Answering.pressAt(0), testTheSyncAsksAboutRenamedLocomotives::saidDone), old).size(), 1,
                 "precondition: the rename was not asked");
 
-            assertNotNull(rig.model.getLocByName(old), "the unusable name was applied");
-            assertNull(rig.model.getLocByName(unusable), "the sync added a copy under the name refused");
-            assertEquals(renameLines(rig, old, unusable), Collections.singletonList(I18n.f("loc.renameNotApplied", old,
-                unusable)), "the refusal was not logged as not renamed");
+            notRenamed(rig, old, unusable, "loc.renameNotApplied");
         });
     }
 
@@ -646,11 +654,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
                 support.Reflect.set(MarklinControlStation.class, rig.model, "autoLayout", null);
             }
 
-            assertNotNull(rig.model.getLocByName(old), "the rename was applied while a run was going");
-            assertNull(rig.model.getLocByName(old).getDeclinedStationName(), "the run's refusal was kept as a No");
-            assertNull(rig.model.getLocByName(STATION_NAME), "the sync added a copy under the station's name");
-            assertEquals(renameLines(rig, old, STATION_NAME), Collections.singletonList(I18n.f("loc.renameNotApplied",
-                old, STATION_NAME)), "the refusal was not logged as not renamed");
+            notRenamed(rig, old, STATION_NAME, "loc.renameNotApplied");
         });
     }
 
