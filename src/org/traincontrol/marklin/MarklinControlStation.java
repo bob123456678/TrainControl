@@ -1216,7 +1216,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     // locomotive hashes by identity, so no mutation moves it out of the collections
                     // holding it - see the note on MarklinLocomotive.hashCode.  Do not re-add repair
                     // machinery here to satisfy it.
-                    if (this.isAutonomyRunning())
+                    //
+                    // And while it has a speed: Stop would command the new address, the train the old (XFF1-C7).
+                    if (this.isAutonomyRunning() || this.locDB.getByName(l.getName()).getSpeed() > 0)
                     {
                         this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
                     }

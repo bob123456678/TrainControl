@@ -1,12 +1,18 @@
+import com.sun.net.httpserver.HttpServer;
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -18,6 +24,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.marklin.udp.NetworkProxy;
 import org.traincontrol.model.View;
@@ -40,6 +47,28 @@ public class testFollowingTheStation
      * signal at 45, a three-way at 47 and 48 with a signal at 48, and a signal alone at 46.
      */
     private static File layoutFolder;
+
+    private static StationAt network;
+
+    /**
+     * The station's address, which a claim can point at a stand-in web server on this machine; until then the
+     * loopback address, where no station answers.
+     */
+    private static class StationAt extends NetworkProxy
+    {
+        volatile String ip;
+
+        StationAt() throws IOException
+        {
+            super(InetAddress.getLoopbackAddress());
+        }
+
+        @Override
+        public String getIP()
+        {
+            return this.ip != null ? this.ip : super.getIP();
+        }
+    }
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -77,7 +106,8 @@ public class testFollowingTheStation
             });
 
         // No station answers at this address, so the station starts not connected and sends nothing
-        model = new MarklinControlStation(new NetworkProxy(InetAddress.getLoopbackAddress()), view, false, false);
+        network = new StationAt();
+        model = new MarklinControlStation(network, view, false, false);
         model.setNetworkCommState(false);
     }
 
@@ -211,6 +241,70 @@ public class testFollowingTheStation
                 "read " + read + ": the three-way's second address holds an accessory the station's echoes never reach");
             assertSame(tile(true, 48).getAccessory(), held(48),
                 "read " + read + ": the signal at 48 holds an accessory the station's echoes never reach");
+        }
+    }
+
+    /**
+     * A sync does not re-address a locomotive that has a speed; the next sync after it stops does (XFF1-C7).
+     *
+     * If a locomotive's address was changed at the Central Station while it was driven here, a sync moved it to the
+     * new address, so the train ran on at the old one while Stop here commanded the new one.  The station is a
+     * stand-in web server on this machine serving the locomotive list; no frame is sent.
+     */
+    @Test
+    public void testASyncDoesNotReAddressALocomotiveThatIsMoving() throws Exception
+    {
+        Map<String, String> files = new HashMap<>();
+        files.put("/config/fahrstrassen.cs2", "[fahrstrassen]\nversion\n .minor=4\n");
+        files.put("/config/magnetartikel.cs2", "[magnetartikel]\nversion\n .minor=1\n");
+        files.put("/config/lokomotive.cs2", "[lokomotive]\nversion\n .minor=3\nlokomotive\n .name=Follow moving\n"
+            + " .uid=0x14\n .adresse=0x14\n .typ=mm2_dil8\n");
+
+        HttpServer server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+        server.createContext("/", exchange ->
+        {
+            String body = files.get(exchange.getRequestURI().getPath());
+
+            if (body == null)
+            {
+                exchange.sendResponseHeaders(404, -1);
+            }
+            else
+            {
+                byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(200, bytes.length);
+
+                try (OutputStream out = exchange.getResponseBody())
+                {
+                    out.write(bytes);
+                }
+            }
+
+            exchange.close();
+        });
+        server.start();
+
+        try
+        {
+            network.ip = "127.0.0.1:" + server.getAddress().getPort();
+
+            MarklinLocomotive loc = model.newMM2Locomotive("Follow moving", 10);
+            loc.setSpeed(40);
+
+            assertTrue(model.syncWithCS2() >= 0, "the sync against the stand-in station failed; see the log");
+            assertEquals(model.getLocByName("Follow moving").getAddress(), 10,
+                "a sync moved a locomotive at speed to the station's new address: Stop would now command another decoder");
+
+            loc.setSpeed(0);
+
+            assertTrue(model.syncWithCS2() >= 0, "the second sync against the stand-in station failed; see the log");
+            assertEquals(model.getLocByName("Follow moving").getAddress(), 20,
+                "once the locomotive has stopped, the next sync takes the station's address");
+        }
+        finally
+        {
+            network.ip = null;
+            server.stop(0);
         }
     }
 
