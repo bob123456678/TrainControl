@@ -31,7 +31,7 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 69;
+    private static final int GROUPS_ALLOWED = 68;
 
     /**
      * The tokens standing in a second or later copy in `test/`, summed over its groups: an upper bound, so a commit that
@@ -103,7 +103,6 @@ public class testNoNewCopies
         "TrainControlUI:4 (192)", // the form-accessor runs the gui collaborators read through, lately AutonomyLifecycle
         "TrainControlUI:2 (93)",
         "TrainControlUI:2 (81)",
-        "TrainControlUI:2 (69)",
         "TrainControlUI:2 (62)",
         "TrainControlUI:2 (61)",
         "TrainControlUI:2 (60)",

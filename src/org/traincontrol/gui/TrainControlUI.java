@@ -4076,14 +4076,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     final Object coveredTrackSettled = new Object();
 
     /** Its own thread, since `AutonomyRenderer` sleeps `REPAINT_ROUTE_INTERVAL` before every repaint; daemon. */
-    final ExecutorService CoveredTrackRenderer = Executors.newFixedThreadPool(1, runnable ->
+    final ExecutorService CoveredTrackRenderer = daemonWorker("CoveredTrackRenderer");
+
+    /** One named daemon thread, so an ask outstanding at close cannot keep the process alive. */
+    private static ExecutorService daemonWorker(String name)
     {
-        Thread worker = new Thread(runnable, "CoveredTrackRenderer");
+        return Executors.newFixedThreadPool(1, runnable ->
+        {
+            Thread worker = new Thread(runnable, name);
 
-        worker.setDaemon(true);
+            worker.setDaemon(true);
 
-        return worker;
-    });
+            return worker;
+        });
+    }
 
     /**
      * Redraws the squares whose covered or blocked state changed (OB-180); both marks are diffed since they do not move
@@ -17031,17 +17037,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The one thread "is there anything to send home" is worked out on: its own pool, because `AutonomyRenderer` sleeps
-     * before every route repaint and would delay this answer.  Daemon, so an ask outstanding at close cannot keep the
-     * process alive.
+     * before every route repaint and would delay this answer.
      */
-    final ExecutorService ReturnHomeTriageRenderer = Executors.newFixedThreadPool(1, runnable ->
-    {
-        Thread worker = new Thread(runnable, "ReturnHomeTriageRenderer");
-
-        worker.setDaemon(true);
-
-        return worker;
-    });
+    final ExecutorService ReturnHomeTriageRenderer = daemonWorker("ReturnHomeTriageRenderer");
 
     /** The turning mark on Return Home while its plan is worked out, or null (FR-077). */
     private javax.swing.Timer returnHomeSpinner;
