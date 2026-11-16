@@ -364,6 +364,24 @@ Tab icons provided by Freepik.
 ## Changelog
 
 * v2.8.3
+    - Central Station Bug Fixes
+        - Syncing with a Central Station 3 and starting TrainControl now read the real state of its feedback sensors, and a route triggered by an S88 sensor does not fire until the Central Station 3 has confirmed those states.  Previously a route could fire on a sensor state that was out of date
+        - A short circuit at the Central Station now shows the track power as off in TrainControl, with one warning each time the power is cut
+        - When a Central Station 3 has a Märklin Motorola 2 accessory and a DCC accessory on the same address, each square on the track diagram now switches the right one, and downloading the layout keeps each square’s protocol
+        - Station files that arrive cut off are now fetched again instead of being used, and names with accented letters in files from the Central Station are read correctly
+        - A switch and a signal on the same address now both follow the Central Station on the track diagram.  Previously the signal could stay red there while a route had turned it green
+        - A short message from the Central Station is no longer taken for an emergency stop, and Stop now works while TrainControl is not connected
+        - Locomotive pictures stored outside the Central Station 3’s standard folders now show up
+        - A sync no longer gives a locomotive a new address while it is moving
+        - Starting a simulation now keeps the Central Station’s address
+        - The page list of a downloaded layout is saved safely, so an interrupted download cannot leave it cut off
+        - A sensor that an S88 route uses is no longer lost when the layout is read, even if no track diagram page shows it
+        - Sensor changes are no longer held up when the command window stops accepting output, and short bursts of messages from the Central Station are no longer dropped
+    - Autonomy Bug Fixes
+        - Path Integrity Validation now waits while a busy Central Station 3 is still switching other accessories, instead of reporting a path as broken
+        - Autonomy, timetables and Return Home now wait while the track power is off, and no train leaves while it is off.  If the power is switched off and on again before a train leaves, the train is held back
+    - General Bug Fixes
+        - Download Update works again
 
 * v2.8.2 [9/25/2026]
     - Autonomy Bug Fixes
