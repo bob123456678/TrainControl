@@ -1256,12 +1256,18 @@ public class testTheRouteListShowsWhatRuns
         if (r != null) model.deleteRoute(route);
     }
 
+    /** The button the first question asked starts on. */
+    private static String startsOn(support.Answering answering)
+    {
+        return answering.questions().get(0).startsOn;
+    }
+
     /**
-     * A route renamed elsewhere while its editor is open: Save asks, naming both names, and Yes saves onto the route
-     * under its new name, keeping its id.
+     * A route renamed elsewhere while its editor is open: Save asks, naming both names and starting on No, and Yes
+     * saves onto the route under its new name, keeping its id.
      *
      * MUTATION: in `RouteEditorFrame.nameToSaveAs`, `return typed != null && typed.equals(originalName) ? nowCalled : typed;`
-     * to `return typed;`.
+     * to `return typed;`; or the rename's `confirmedMove(..., 1)` to `confirmedMove(..., 0)`.
      */
     @Test
     public void testSavingARouteRenamedElsewhereAsksAndYesKeepsItsNewName() throws Exception
@@ -1284,6 +1290,9 @@ public class testTheRouteListShowsWhatRuns
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmRouteRenamed", route,
                     renamed));
 
+                assertEquals(startsOn(answering), org.traincontrol.util.I18n.t("ui.no"),
+                    "the rename question does not start on No");
+
                 assertTrue(until(() -> !editor.isShowing(), 10000), "Save answered Yes left the editor open");
             }
 
@@ -1303,8 +1312,8 @@ public class testTheRouteListShowsWhatRuns
     /**
      * The same question answered No saves nothing, and leaves the editor open.
      *
-     * MUTATION: in `RouteEditorFrame.onSave`, after the `route.ui.confirmRouteRenamed` question, the `return;` under
-     * `!= 0)` taken out.
+     * MUTATION: in `RouteEditorFrame.onSave`, the rename's `if (!confirmedMove(...)) return;` to
+     * `confirmedMove(...);`.
      */
     @Test
     public void testSavingARouteRenamedElsewhereAnsweredNoSavesNothing() throws Exception
@@ -1342,9 +1351,11 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
-     * A route deleted elsewhere while its editor is open: Save asks whether to save it as a new route, and Yes does.
+     * A route deleted elsewhere while its editor is open: Save asks whether to save it as a new route, starting on Yes,
+     * and Yes does.
      *
-     * MUTATION: in `RouteEditorFrame.onSave`, the `newRoute` call under `"gone".equals(moved)` to `false`.
+     * MUTATION: in `RouteEditorFrame.onSave`, the `newRoute` call under `"gone".equals(moved)` to `false`; or the gone
+     * route's `confirmedMove(..., 0)` to `confirmedMove(..., 1)`.
      */
     @Test
     public void testSavingARouteDeletedElsewhereAsksAndYesAddsItBack() throws Exception
@@ -1366,6 +1377,9 @@ public class testTheRouteListShowsWhatRuns
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.confirmRouteGoneSaveAsNew",
                     route));
 
+                assertEquals(startsOn(answering), org.traincontrol.util.I18n.t("ui.yes"),
+                    "the deleted route's question does not start on Yes");
+
                 assertTrue(until(() -> model.getRoute(route) != null, 10000), "Save answered Yes did not add the route"
                     + " back");
             }
@@ -1379,10 +1393,11 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
-     * A route changed elsewhere while its editor is open: Save asks, and No keeps the other change and the editor.
+     * A route changed elsewhere while its editor is open: Save asks, starting on No, and No keeps the other change and
+     * the editor.
      *
-     * MUTATION: in `RouteEditorFrame.onSave`, `"changed".equals(moved) && JOptionPane.showOptionDialog(` to
-     * `false && JOptionPane.showOptionDialog(`.
+     * MUTATION: in `RouteEditorFrame.onSave`, `"changed".equals(moved) && !confirmedMove(` to
+     * `false && !confirmedMove(`; or the change's `confirmedMove(..., 1)` to `confirmedMove(..., 0)`.
      */
     @Test
     public void testSavingARouteChangedElsewhereAnsweredNoKeepsTheOtherChange() throws Exception
@@ -1410,6 +1425,9 @@ public class testTheRouteListShowsWhatRuns
 
                 assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f(
                     "route.ui.confirmRouteChangedUnderneath", route));
+
+                assertEquals(startsOn(answering), org.traincontrol.util.I18n.t("ui.no"),
+                    "the changed route's question does not start on No");
 
                 Components.settle();
             }

@@ -2992,9 +2992,13 @@ public class testStationSettingsWindow
     public void testUndoPutsMayDepartBack() throws Exception
     {
         TileKey square = aStationWhereMayDepart();
-        RouteId road = onlyRoad(square);
 
-        // The undo point every edit of the track diagram takes first
+        StationDoors.close(departChosenThenUndone(square, onlyRoad(square)));
+    }
+
+    /** May depart set toward A after the undo point every track diagram edit takes first, then undone; still open. */
+    private StationSettingsWindow departChosenThenUndone(TileKey square, RouteId road) throws Exception
+    {
         java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
 
         Components.onTheEventThread(() -> snapshot.invoke(editor));
@@ -3006,10 +3010,9 @@ public class testStationSettingsWindow
         Components.onTheEventThread(() -> { editor.undo(); return null; });
         Components.settle();
 
-        assertEquals(wayOf(square, road), Direction.BOTH,
-            "the undo did not put May depart back");
+        assertEquals(wayOf(square, road), Direction.BOTH, "the undo did not put May depart back");
 
-        StationDoors.close(window);
+        return window;
     }
 
     /**
@@ -3023,18 +3026,7 @@ public class testStationSettingsWindow
         TileKey square = aStationWhereMayDepart();
         RouteId road = onlyRoad(square);
 
-        java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
-
-        Components.onTheEventThread(() -> snapshot.invoke(editor));
-
-        StationSettingsWindow window = StationDoors.open(panel, square);
-
-        chooseDepartTowardA(window, square, road);
-
-        Components.onTheEventThread(() -> { editor.undo(); return null; });
-        Components.settle();
-
-        assertEquals(wayOf(square, road), Direction.BOTH, "precondition: the undo did not put May depart back");
+        StationSettingsWindow window = departChosenThenUndone(square, road);
 
         Components.onTheEventThread(() -> { editor.redo(); return null; });
         Components.settle();

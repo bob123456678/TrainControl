@@ -146,7 +146,8 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     }
 
     /**
-     * Clear All Home Locomotives, answered Yes: no square has a home, saved; the trains stay where they stand.
+     * Clear All Home Locomotives, answered Yes: no square has a home, the strip says how many were cleared, saved; the
+     * trains stay where they stand.
      *
      * MUTATION: have the Yes skip `session.clearEveryHome()`, and this fails.
      */
@@ -164,6 +165,11 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
 
         assertEquals(asked.get(0), I18n.t("autolayout.ui.confirmClearAllHomeLocomotives"), "the question is not the one"
             + " about clearing the homes");
+
+        Object banner = support.Reflect.get(AutonomyEditorPanel.class, panel(), "messageBanner");
+
+        assertEquals(String.valueOf(support.Reflect.get(banner.getClass(), banner, "saying")),
+            I18n.f("autosetup.ui.infoHomesCleared", homed), "the strip does not say how many homes were cleared");
 
         AutonomySession saved = saveAndReadBack();
 
