@@ -582,8 +582,24 @@ public final class CS2File
 
             while ((n = in.read(chunk)) >= 0) whole.write(chunk, 0, n);
         }
+        catch (IOException e)
+        {
+            if (!(e instanceof FileNotFoundException) && connection instanceof HttpURLConnection
+                && ((HttpURLConnection) connection).getResponseCode() >= 400) throw new ErrorAnswer(e);
+
+            throw e;
+        }
 
         return new Body(whole.toByteArray(), promised);
+    }
+
+    /** An HTTP error answer other than not found, as opposed to a connection that dropped. */
+    private static final class ErrorAnswer extends IOException
+    {
+        ErrorAnswer(IOException e)
+        {
+            super(e.getMessage(), e);
+        }
     }
 
     private static URLConnection openWithTimeouts(String url) throws IOException
@@ -2060,9 +2076,23 @@ public final class CS2File
 
             if (!addressesWithTwoProtocols(accDB).isEmpty())
             {
-                for (LayoutDiagram page : new CS2File(this.IP, this.control).parseLayout(accDB))
+                try
                 {
-                    read.putIfAbsent(page.getName(), page);
+                    for (LayoutDiagram page : new CS2File(this.IP, this.control).parseLayout(accDB))
+                    {
+                        read.putIfAbsent(page.getName(), page);
+                    }
+                }
+                catch (IOException failed)
+                {
+                    throw failed;
+                }
+                catch (Exception unreadable)
+                {
+                    // As before: a page this build cannot read is still downloaded, without each square's protocol
+                    read.clear();
+                    logMessage("The layout is downloaded as the Central Station serves it, without each square's "
+                        + "protocol: " + unreadable);
                 }
             }
         }
@@ -2665,7 +2695,11 @@ public final class CS2File
             {
                 logMessage(I18n.f("layout.cs3TrackPlanUnreadable", e), e, true);
 
-                if (e instanceof IOException && !(e instanceof FileNotFoundException)) this.trackPlanFailure = (IOException) e;
+                // An error answer from a station not known to be a CS3 is no plan, as a 404 is
+                boolean noPlan = e instanceof FileNotFoundException
+                    || (e instanceof ErrorAnswer && !(this.control != null && this.control.isCS3()));
+
+                if (e instanceof IOException && !noPlan) this.trackPlanFailure = (IOException) e;
             }
 
             this.trackPlan = new CS3TrackPlan(gbs);

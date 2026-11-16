@@ -305,6 +305,9 @@ public class LayoutDiagram
             int coord = keys.get("id") == null ? 0 : Integer.valueOf(keys.get("id").replace("0x", ""), 16);
 
             if (block.get(0).equalsIgnoreCase("element")) tile = getComponent(coord % 256, (coord >> 8) % 256);
+
+            // A square changed since this page was read is written as served
+            if (tile != null && !String.valueOf(tile.getRawAddress()).equals(keys.get("artikel"))) tile = null;
         }
         catch (NumberFormatException unreadCoordinate)
         {

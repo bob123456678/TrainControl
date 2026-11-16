@@ -65,6 +65,12 @@ public class testTwoProtocolsOnOneAddress
     /** A path the stand-in drops the connection on, with no answer; null for none. */
     private static volatile String dropped;
 
+    /** An HTTP status the stand-in answers a path with, and no body. */
+    private static final Map<String, Integer> status = new ConcurrentHashMap<>();
+
+    /** What the stand-in serves at a path from its second request on, as a page edited at the station meanwhile. */
+    private static final Map<String, byte[]> later = new ConcurrentHashMap<>();
+
     // What the parser printed: with no control station it logs to the console
     private static final ByteArrayOutputStream console = new ByteArrayOutputStream();
     private static PrintStream consoleWas;
@@ -90,8 +96,15 @@ public class testTwoProtocolsOnOneAddress
                 throw new IllegalStateException("the stand-in drops the connection");
             }
 
+            if (status.containsKey(path))
+            {
+                exchange.sendResponseHeaders(status.get(path), -1);
+                exchange.close();
+                return;
+            }
+
             File file = new File(FIXTURE + (path.startsWith("/app/api/") ? path + ".json" : path));
-            byte[] body = served.containsKey(path) ? served.get(path) : file.isFile() ? Files.readAllBytes(file.toPath())
+            byte[] body = later.containsKey(path) && asked.get(path) > 1 ? later.get(path) : served.containsKey(path) ? served.get(path) : file.isFile() ? Files.readAllBytes(file.toPath())
                 : null;
 
             if (body == null)
@@ -143,6 +156,8 @@ public class testTwoProtocolsOnOneAddress
         served.clear();
         asked.clear();
         dropped = null;
+        status.clear();
+        later.clear();
         console.reset();
     }
 
@@ -735,6 +750,84 @@ public class testTwoProtocolsOnOneAddress
         assertEquals(files, java.util.Collections.singletonList(new File("config/gleisbild.cs2").getPath()),
             "a download whose plan did not arrive wrote into the folder");
         assertEquals(Files.readAllBytes(index.toPath()), before, "a download whose plan did not arrive replaced the index");
+    }
+
+    /**
+     * A station not known to be a CS3 that answers the plan with an HTTP error other than 404 has no plan, as with a
+     * 404: the first article's protocol and a warning, not a failed layout read.
+     *
+     * MUTATION: drop the ErrorAnswer test from `noPlan` in `CS2File.trackPlan`, and the read fails.
+     */
+    @Test
+    public void testAnErrorAnswerFromAStationNotKnownToBeACS3IsNoPlan() throws Exception
+    {
+        for (int code : new int[] {500, 403})
+        {
+            reset();
+            status.put("/app/api/gbs", code);
+
+            readAndCheck(accessoryDecoderType.DCC, accessoryDecoderType.DCC, 3);
+        }
+    }
+
+    private static final String MAIN_LAYOUT = "/config/gleisbilder/Main Layout.cs2";
+
+    /** Main Layout as the fixture has it, with `from` in W 15's square, (5,9), replaced by `to`. */
+    private static byte[] mainLayoutWithW15Square(String from, String to) throws IOException
+    {
+        String square = "element\n .id=0x40905\n .typ=linksweiche\n .drehung=3\n .artikel=50\n";
+        String text = new String(fixture(MAIN_LAYOUT), StandardCharsets.UTF_8).replace("\r\n", "\n");
+        assertTrue(text.contains(square), "the fixture has W 15's square");
+        return text.replace(square, square.replace(from, to)).getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * A square edited at the station between the download's read of a page and its fetch for the copy, (5,9) now W 9
+     * (2000, DCC only), is written as served, not with W 15's MM2; the squares that did not change keep theirs.
+     *
+     * MUTATION: drop the `.artikel` test from `LayoutDiagram.withSavedProtocol`, and (5,9) reads back MM2.
+     */
+    @Test
+    public void testASquareChangedBetweenTheTwoFetchesIsWrittenAsServed() throws Exception
+    {
+        later.put(MAIN_LAYOUT, mainLayoutWithW15Square(" .artikel=50", " .artikel=2000"));
+
+        File copy = download("changed-between-fetches");
+        LayoutDiagram main = page(read(copy), "Main Layout");
+
+        assertEquals(requests(MAIN_LAYOUT), 2, "precondition: the page was fetched twice: " + asked);
+        assertEquals(main.getComponent(5, 9).getAddress(), 1000, "precondition: the copy has the square as served");
+        assertEquals(main.getComponent(5, 9).getProtocol(), accessoryDecoderType.DCC, "W 9's square at (5,9)");
+        assertFalse(new String(Files.readAllBytes(new File(copy, MAIN_LAYOUT).toPath()), StandardCharsets.UTF_8)
+            .replace("\r\n", "\n").contains(" .id=0x40905\n .typ=linksweiche\n .drehung=3\n .prot="),
+            "the changed square was given a protocol");
+        assertEquals(main.getComponent(4, 7).getProtocol(), accessoryDecoderType.DCC, "W 14, unchanged");
+        assertEquals(protocol(read(copy), "Startpackung", 10, 4), accessoryDecoderType.MM2, "W 1R, unchanged");
+    }
+
+    /**
+     * On a station with an address of two protocols, a page this build cannot read is still downloaded, every page as
+     * served, as before; only each square's protocol is not written.
+     *
+     * MUTATION: rethrow everything from the `parseLayout` call in `CS2File.downloadCS2Layout`, and nothing is written.
+     */
+    @Test
+    public void testAPageThatWillNotReadIsDownloadedAsServed() throws Exception
+    {
+        byte[] unreadable = mainLayoutWithW15Square(" .drehung=3", " .drehung=abc");
+        served.put(MAIN_LAYOUT, unreadable);
+
+        File copy = download("unreadable-page");
+
+        for (String name : new String[] {"Main Layout", "Startpackung", "Main", "Something"})
+        {
+            String path = "/config/gleisbilder/" + name + ".cs2";
+            String written = new String(Files.readAllBytes(new File(copy, path).toPath()), StandardCharsets.UTF_8);
+            byte[] sent = path.equals(MAIN_LAYOUT) ? unreadable : fixture(path);
+
+            assertEquals(written.replace("\r\n", "\n").trim(), new String(sent, StandardCharsets.UTF_8)
+                .replace("\r\n", "\n").trim(), name + ": written as served");
+        }
     }
 
     // ---- Saving (OB-402)
