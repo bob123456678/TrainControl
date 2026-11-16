@@ -13,13 +13,13 @@ import org.testng.annotations.Test;
 /**
  * Blank lines stay lean (FR-230): in `src/`, outside the NetBeans generated regions (a line holding `//GEN-BEGIN:`
  * through the one holding `//GEN-END:`), no two blank lines in a row, no blank line right after a line ending in `{`,
- * none right before a line that is only `}`, and the total of blank lines (whitespace-only lines, generated code
- * included) never rises.  One blank line between paragraphs of code is the house style and stays.
+ * none right before a line that is only `}`, and the total of blank lines outside generated code (whitespace-only
+ * lines) never rises, so NetBeans regenerating a form never fails it.  One blank line between paragraphs of code is the house style and stays.
  */
 public class testBlankLinesStayLean
 {
-    /** Blank lines in `src/`, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int BLANK_ALLOWED = 30844;
+    /** Blank lines in `src/` outside generated code, as they stand.  Lower it whenever some go; never raise it. */
+    private static final int BLANK_ALLOWED = 30297;
 
     /** Padding as it stands: lines that follow another blank line, follow a `{` line, or precede a lone `}`. */
     private static final int RUNS_ALLOWED = 0;
@@ -70,7 +70,7 @@ public class testBlankLinesStayLean
      * The blank lines of `src/` only go down.
      *
      * MUTATION: add one blank line anywhere in src (between two statements will do), and this fails naming the total
-     * and the pin; add one inside a generated region and it fails too.
+     * and the pin; one inside a generated region is not counted.
      */
     @Test
     public void testBlankLinesOnlyGoDown() throws Exception
@@ -79,7 +79,11 @@ public class testBlankLinesStayLean
 
         for (Path file : sources())
         {
-            for (String line : lines(file)) if (line.trim().isEmpty()) total++;
+            String[] text = lines(file).toArray(new String[0]);
+
+            boolean[] generated = generated(text);
+
+            for (int i = 0; i < text.length; i++) if (!generated[i] && text[i].trim().isEmpty()) total++;
         }
 
         assertTrue(total <= BLANK_ALLOWED, "src has " + total + " blank lines, the pin is " + BLANK_ALLOWED
@@ -127,18 +131,7 @@ public class testBlankLinesStayLean
     {
         List<Integer> found = new ArrayList<>();
 
-        boolean[] generated = new boolean[text.length];
-
-        boolean inside = false;
-
-        for (int i = 0; i < text.length; i++)
-        {
-            if (text[i].contains("//GEN-BEGIN:")) inside = true;
-
-            generated[i] = inside;
-
-            if (text[i].contains("//GEN-END:")) inside = false;
-        }
+        boolean[] generated = generated(text);
 
         for (int i = 0; i < text.length; i++)
         {
@@ -169,6 +162,25 @@ public class testBlankLinesStayLean
         return found;
     }
 
+    /** Which lines are NetBeans generated code: from the line holding `//GEN-BEGIN:` through the one holding `//GEN-END:`. */
+    private static boolean[] generated(String[] text)
+    {
+        boolean[] generated = new boolean[text.length];
+
+        boolean inside = false;
+
+        for (int i = 0; i < text.length; i++)
+        {
+            if (text[i].contains("//GEN-BEGIN:")) inside = true;
+
+            generated[i] = inside;
+
+            if (text[i].contains("//GEN-END:")) inside = false;
+        }
+
+        return generated;
+    }
+
     private static List<Path> sources() throws Exception
     {
         try (Stream<Path> walk = Files.walk(new File("src").toPath()))
@@ -176,6 +188,8 @@ public class testBlankLinesStayLean
             List<Path> files = new ArrayList<>();
 
             walk.filter(p -> p.toString().endsWith(".java")).sorted().forEach(files::add);
+
+            assertFalse(files.isEmpty(), "no .java file under src: run from the project folder");
 
             return files;
         }
