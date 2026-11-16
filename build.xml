@@ -116,6 +116,7 @@
         <test-one-class class="testAStuckConsoleDoesNotStopTheRailway"/>
         <test-one-class class="testAdvancedRoutes"/>
         <test-one-class class="testAPathThatFailsPartWay"/>
+        <test-one-class class="testARunKeepsItsOwnState"/>
         <test-one-class class="testAutoLayout"/>
         <test-one-class class="testAutoLayoutRace"/>
         <test-one-class class="testAutonomyPathValidation"/>

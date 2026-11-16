@@ -63,6 +63,10 @@ public class testCS3SensorStates
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        // It writes the real preference node, which only docs/tools/one.sh replaces with a node of its own
+        if (System.getProperty(org.traincontrol.util.Util.PREFERENCES_PROPERTY) == null)
+            throw new org.testng.SkipException("needs docs/tools/one.sh");
+
         // The diagram is read from a folder, through the setting a user picks it with
         layoutFolder = Files.createTempDirectory("tc-cs3-sensors").toFile();
         File pages = new File(layoutFolder, "config/gleisbilder");
