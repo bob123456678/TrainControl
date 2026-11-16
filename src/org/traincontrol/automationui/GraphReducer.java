@@ -5,6 +5,7 @@ import org.traincontrol.base.LayoutDiagramComponent;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -435,7 +436,14 @@ public class GraphReducer
             starts.add(new Facing(from, arrival, placeOf(from, arrival), null, Collections.<String>emptySet()));
         }
 
-        return searchBySettings(starts, here -> waysOn(here, mayTurn, mustTurn), (here, edge) ->
+        Map<TileKey, List<ReducedEdge>> leaving = new HashMap<>();
+
+        for (ReducedEdge edge : edges)
+        {
+            leaving.computeIfAbsent(edge.getStart(), k -> new ArrayList<ReducedEdge>()).add(edge);
+        }
+
+        return searchBySettings(starts, here -> waysOn(here, leaving, mayTurn, mustTurn), (here, edge) ->
             {
                 Facing next = new Facing(edge.getEnd(), edge.getEntrySide(), placeOf(edge.getEnd(), edge.getEntrySide()),
                     here.home, here.passed);
@@ -448,7 +456,8 @@ public class GraphReducer
                 passed.add(next.place);
 
                 return new Facing(next.at, next.arrived, next.place, here.home, passed);
-            }, ReducedEdge::getCommands, there -> searchKey(there.at, there.arrived) + there.home + there.passed, there ->
+            }, ReducedEdge::getCommands, there -> Arrays.<Object>asList(there.at, there.arrived, there.home, there.passed),
+            there ->
             {
                 // Never onto the start's place again, as `Layout.bfsBySettings` never passes another copy of either end
                 // (`Point.isSamePlaceAs`); and a closed square is no destination
@@ -486,14 +495,14 @@ public class GraphReducer
     }
 
     /** The edges a train at this place may take next: on along its track, or back where it may or must turn. */
-    private List<ReducedEdge> waysOn(Facing here, Set<TileKey> mayTurn, Set<TileKey> mustTurn)
+    private List<ReducedEdge> waysOn(Facing here, Map<TileKey, List<ReducedEdge>> leaving, Set<TileKey> mayTurn,
+        Set<TileKey> mustTurn)
     {
         List<ReducedEdge> out = new ArrayList<>();
+        Set<Side> onward = here.arrived == null ? null : onwardSides(here.at, here.arrived);
 
-        for (ReducedEdge edge : edges)
+        for (ReducedEdge edge : leaving.getOrDefault(here.at, Collections.<ReducedEdge>emptyList()))
         {
-            if (!edge.getStart().equals(here.at)) continue;
-
             if (here.arrived != null)
             {
                 boolean back = edge.getExitSide() == here.arrived;
@@ -510,7 +519,7 @@ public class GraphReducer
                 }
                 // Carrying on has to be along the SAME TRACK: at a double-curve sensor (two curves crossing in one
                 // square, unconnected) comparing sides alone would let a train jump tracks mid-square.
-                else if (!onwardSides(here.at, here.arrived).contains(edge.getExitSide()))
+                else if (!onward.contains(edge.getExitSide()))
                 {
                     continue;
                 }
@@ -555,12 +564,15 @@ public class GraphReducer
      * @return the ways taken to the first place `reached` calls ARRIVE, or null
      */
     static <P, W> List<W> searchBySettings(Collection<P> starts, Function<P, List<W>> ways, BiFunction<P, W, P> end,
-        Function<W, Map<String, accessorySetting>> commands, Function<P, String> key, Function<P, Reached> reached)
+        Function<W, Map<String, accessorySetting>> commands, Function<P, Object> key, Function<P, Reached> reached)
     {
-        Map<String, List<Map<String, accessorySetting>>> seen = new HashMap<>();
+        // The settings so far as one byte per switch met (`index`), its setting's ordinal + 1, 0 where unset: copied
+        // only where a step sets a switch not set before, and shared with every successor that sets none
+        Map<String, Integer> index = new HashMap<>();
+        Map<Object, List<byte[]>> seen = new HashMap<>();
         ArrayDeque<Step<P, W>> frontier = new ArrayDeque<>();
 
-        for (P start : starts) frontier.add(new Step<P, W>(start, new HashMap<String, accessorySetting>(), null, null));
+        for (P start : starts) frontier.add(new Step<P, W>(start, new byte[0], null, null));
 
         while (!frontier.isEmpty())
         {
@@ -569,14 +581,34 @@ public class GraphReducer
             for (W way : ways.apply(here.at))
             {
                 P there = end.apply(here.at, way);
-                String at = key.apply(there);
+                Object at = key.apply(there);
+                byte[] settings = here.settings;
 
-                Map<String, accessorySetting> settings =
-                    org.traincontrol.automation.HomeStaging.withCommands(commands.apply(way), here.settings);
+                for (Map.Entry<String, accessorySetting> command : commands.apply(way).entrySet())
+                {
+                    int i = index.computeIfAbsent(command.getKey(), k -> index.size());
+                    byte set = (byte) (command.getValue().ordinal() + 1);
+                    byte had = i < settings.length ? settings[i] : 0;
 
-                if (settings == null || org.traincontrol.automation.HomeStaging.alreadyReached(seen, at, settings)) continue;
+                    if (had == set) continue;
 
-                seen.computeIfAbsent(at, k -> new ArrayList<Map<String, accessorySetting>>()).add(settings);
+                    if (had != 0)
+                    {
+                        settings = null;
+                        break;
+                    }
+
+                    if (settings == here.settings || i >= settings.length)
+                    {
+                        settings = Arrays.copyOf(settings, Math.max(settings.length, index.size()));
+                    }
+
+                    settings[i] = set;
+                }
+
+                if (settings == null || alreadyReached(seen.get(at), settings)) continue;
+
+                seen.computeIfAbsent(at, k -> new ArrayList<byte[]>()).add(settings);
 
                 // Asked only of a way the settings allow, so `reached` may note what it is shown
                 Reached verdict = reached.apply(there);
@@ -601,15 +633,36 @@ public class GraphReducer
         return null;
     }
 
+    /**
+     * Whether an earlier arrival committed to nothing these settings have not also committed to, so leaves at least
+     * as much freedom, as `HomeStaging.alreadyReached` asks.
+     */
+    private static boolean alreadyReached(List<byte[]> earlier, byte[] settings)
+    {
+        for (byte[] before : earlier == null ? Collections.<byte[]>emptyList() : earlier)
+        {
+            boolean dominates = true;
+
+            for (int i = 0; i < before.length && dominates; i++)
+            {
+                dominates = before[i] == 0 || i < settings.length && before[i] == settings[i];
+            }
+
+            if (dominates) return true;
+        }
+
+        return false;
+    }
+
     /** A place `searchBySettings` has reached, the settings so far, and how. */
     private static final class Step<P, W>
     {
         final P at;
-        final Map<String, accessorySetting> settings;
+        final byte[] settings;
         final W by;
         final Step<P, W> from;
 
-        Step(P at, Map<String, accessorySetting> settings, W by, Step<P, W> from)
+        Step(P at, byte[] settings, W by, Step<P, W> from)
         {
             this.at = at;
             this.settings = settings;
@@ -645,12 +698,6 @@ public class GraphReducer
         }
 
         return out;
-    }
-
-    /** A square together with the side a train reached it by, which is what the path search walks over. */
-    private static String searchKey(TileKey tile, Side arrival)
-    {
-        return tile + "|" + (arrival == null ? "-" : arrival.name());
     }
 
     /**

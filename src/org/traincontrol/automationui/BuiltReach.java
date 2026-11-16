@@ -1,6 +1,7 @@
 package org.traincontrol.automationui;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -121,7 +122,7 @@ public final class BuiltReach
 
         GraphReducer.<Place, Way>searchBySettings(Collections.singleton(new Place(copy, Collections.<String>emptySet())),
             here -> onward.getOrDefault(here.copy, Collections.<Way>emptyList()), (here, way) -> here.then(way.end),
-            way -> way.settings, here -> here.copy + here.passed, here ->
+            way -> way.settings, here -> Arrays.asList(here.copy, here.passed), here ->
             {
                 TileKey square = squareOf.get(here.copy);
 
