@@ -2979,8 +2979,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             });
         }
-        // Only worry about the message if it's a response
-        else if (message.isLocCommand() && message.getResponse())
+        // Only worry about the message if it's a response; a train's emergency stop is addressed to it too
+        else if (message.isLocCommand() && message.getResponse()
+            || message.isSysCommand() && message.getSubCommand() == CS2Message.CMD_SYSSUB_TRAINSTOP)
         {            
             this.locMessageProcessor.submit(() ->
             {
