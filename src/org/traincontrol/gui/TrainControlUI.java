@@ -3100,11 +3100,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void pauseTrainWhileRunning(Locomotive train, boolean paused)
     {
-        train.setAutonomyPaused(paused);
-
-        trainsPausedChanged();
+        pauseTrainAlone(train, paused);
 
         repaintAutoLocList(false);
+    }
+
+    /** The train alone paused or set going, as its card does, and its icon redrawn; an open editor's Cancel keeps it. */
+    public void pauseTrainAlone(Locomotive train, boolean paused)
+    {
+        train.setAutonomyPaused(paused);
+
+        if (this.autonomySession != null) this.autonomySession.notePressAlone(train);
+
+        trainsPausedChanged();
     }
 
     /**

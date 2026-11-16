@@ -1003,12 +1003,9 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     }//GEN-LAST:event_locAvailPathsMouseMoved
 
     private void pauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pauseButtonActionPerformed
-        locomotive.setAutonomyPaused(pauseButton.isSelected());
-
-        // AND ITS ICON ON THE DIAGRAM (FR-117), gray while paused.  The train alone: this button is pressed while
-        // trains run, when the setup is not edited, and the fold takes it into the setup with the rest of this tab's
-        // settings.
-        parent.trainsPausedChanged();
+        // The train alone, with its icon (FR-117): pressed while trains run, when the setup is not edited, and the fold
+        // takes it into the setup with the rest of this tab's settings.
+        parent.pauseTrainAlone(locomotive, pauseButton.isSelected());
     }//GEN-LAST:event_pauseButtonActionPerformed
 
     private void locNameMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_locNameMouseClicked

@@ -4473,16 +4473,13 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (parent.refuseWhileARunHoldsTheSetup(this)) return false;
 
-            // And the undo point taken again, or a close before the switch would ask straight after a save
+            // And the undo point taken again, both halves, or a Cancel after an exit refused later would put back what the
+            // railway changed before the save (OB-346)
             if (isAutonomyMode())
             {
                 if (!autonomyPanel.save()) return false;
 
-                AutonomySession saved = parent.getAutonomySession();
-
-                this.autonomyAsOpened = saved == null ? null : saved.snapshotSetup();
-
-                pictureTheRailway(saved);
+                takeTheUndoPoint(parent.getAutonomySession());
 
                 return true;
             }
