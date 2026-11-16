@@ -197,6 +197,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     // Thread pools for network messages
     CS2Message lastPacket;
+
+    /**
+     * When lastPacket arrived.  The CS3's duplicate arrives back to back, so anything later than this
+     * window is a second real command rather than an echo of the first.
+     */
+    private long lastPacketAt;
+
+    private static final long DUPLICATE_WINDOW_NS = 250L * 1000000L;
     private ExecutorService locMessageProcessor = Executors.newFixedThreadPool(1);
     private ExecutorService feedbackMessageProcessor = Executors.newFixedThreadPool(1);
     private ExecutorService systemMessageProcessor = Executors.newFixedThreadPool(1);
@@ -574,9 +582,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Prune stale feedback
         if (!feedbackAddresses.isEmpty())
         {
+            // A sensor a route waits on or asks about is kept, drawn or not: a route's monitor waits on the record
+            Set<Integer> routesUse = sensorsTheRoutesUse();
+
             for (Integer feedbackId : this.feedbackDB.getItemIds())
             {
-                if (!feedbackAddresses.contains(feedbackId))
+                if (!feedbackAddresses.contains(feedbackId) && !routesUse.contains(feedbackId))
                 {
                     MarklinFeedback fb = this.feedbackDB.getById(feedbackId);
                     this.logf("layout.pruningFeedbackMissingLayout", fb.getName());
@@ -586,6 +597,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
     }
     
+    /** The sensors the routes trigger on or name in a condition. */
+    private Set<Integer> sensorsTheRoutesUse()
+    {
+        Set<Integer> used = new HashSet<>();
+
+        for (MarklinRoute r : this.routeDB.getItems())
+        {
+            if (r.hasS88()) used.add(r.getS88());
+
+            if (!r.hasConditions()) continue;
+
+            for (RouteCommand rc : NodeExpression.toList(r.getConditions()))
+            {
+                if (rc.isFeedback()) used.add(rc.getAddress());
+            }
+        }
+
+        return used;
+    }
+
     /**
      * Delays until the power state matches the specified state
      * @param state
@@ -1873,10 +1904,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final MarklinFeedback newFeedback(int id, CANMessage message)
     {
-        MarklinFeedback newFb = new MarklinFeedback(this, id, (CS2Message) message);
-                
+        // IN THE DATABASE BEFORE IT PARSES ITS FIRST MESSAGE (CS3-C2).
+        //
+        // The constructor parses the message it is handed, which sets the state and wakes everything waiting on a
+        // sensor - and those waiters ask `isFeedbackSet(name)`, which reads the database.  Adding afterwards meant
+        // the waiter woke, found no such sensor, and went back to sleep until the next event ANYWHERE: a dispatch
+        // polls every five seconds and is merely late, a route monitor waits untimed and stays parked.  Built empty,
+        // added, then told - which is the order the database restore path has always used.
+        MarklinFeedback newFb = new MarklinFeedback(this, id, null);
+
         this.feedbackDB.add(newFb, newFb.getName(), newFb.getUID());
-        
+
+        if (message != null) newFb.parseMessage((CS2Message) message);
+
         return newFb;
     }
     
@@ -1995,9 +2035,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
         synchronized (this)
         {
             // CS3 seems to send respones packets twice.  Ignore the second.
-            if (lastPacket != null && 
-                    (message.isAccessoryCommand() || message.isLocCommand() || message.isFeedbackCommand()) && 
+            // Within a window, now.  The CS3's duplicate follows its original by milliseconds; an
+            // identical packet an hour later is a second real command - the same accessory told to go
+            // to the same place again, which is an ordinary thing to do - and dropping it meant no
+            // confirmation, no log, and nothing to wake whatever was waiting for the actuation.
+            if (lastPacket != null &&
+                    (message.isAccessoryCommand() || message.isLocCommand() || message.isFeedbackCommand()) &&
                     message.equals(lastPacket)
+                    && (System.nanoTime() - this.lastPacketAt) < DUPLICATE_WINDOW_NS
             )
             {
                 if (this.debug && DEBUG_LOG_NETWORK)
@@ -2008,6 +2053,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 return;
             }
         
+            this.lastPacketAt = System.nanoTime();
+
             numMessagesProcessed +=1;
             
             // Prints out each message
@@ -2026,13 +2073,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 int id = message.extractShortUID();
 
-                if (this.feedbackDB.hasId(id))
+                // Resolved once into a local, as the locomotive and accessory branches below do.  This
+                // was hasId followed by getById, two separate acquisitions of the collection's lock -
+                // and syncLayouts prunes feedbacks the freshly loaded diagram does not refer to, on
+                // another thread, which is exactly what a feedback auto-created here for an unknown
+                // s88 is.  The resulting NPE would be swallowed by the executor's Future.
+                //
+                // A dropped feedback event is not a cosmetic loss: the state is a LEVEL, and a driving
+                // thread waiting on that sensor waits without a timeout.  A train whose arrival was
+                // dropped never slows and never stops.
+                MarklinFeedback feedback = this.feedbackDB.getById(id);
+
+                if (feedback != null)
                 {
-                    this.feedbackDB.getById(id).parseMessage(message);
+                    feedback.parseMessage(message);
                 }
-                else
+                // Only a frame the feedback parser reads creates a module (isFeedbackCommand answers for
+                // three commands, the parser acts on one), so an unreadable frame leaves no phantom sensor
+                else if (message.getCommand() == CS2Message.CMD_ACC_SENSOR)
                 {
-                    newFeedback(id, message);   
+                    newFeedback(id, message);
                 }
             });
         }
@@ -2206,6 +2266,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else
         {
+            // A discarded SYSTEM command is said out loud whether or not debugging is on.  Stop, go
+            // and emergency stop all come through here and all return void, so pressing Stop while
+            // the application is in its not-connected state did nothing and reported nothing - and
+            // that state is reached by a failed startup sync, which is exactly when the power may
+            // still physically be on from an earlier session.
+            if (m.isSysCommand() && !(debug && MarklinControlStation.DEBUG_LOG_NETWORK))
+            {
+                this.logf("network.transmissionDisabled", m.toString());
+            }
+
             if (debug && MarklinControlStation.DEBUG_LOG_NETWORK)
             {
                 this.logf("network.transmissionDisabled", m.toString());
@@ -2479,10 +2549,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         MarklinLocomotive.decoderType type, int[] functionTypes, int[] functionTriggerTypes)
     {
         MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, functionTypes, functionTriggerTypes);
-        
+
         this.locDB.add(newLoc, name, newLoc.getUID());
-        
-        return newLoc; 
+
+        // THE CACHE FOLLOWS EVERY ADD, not only the sync's happy path (CS3-C3).  The three-argument overload beside
+        // this one rebuilds; this one did not, and `syncWithCS2` relied on one rebuild after its whole loop - so a
+        // throw part-way through left the cache without the locomotives just added, and every echo for them was
+        // logged as coming from an unknown locomotive until the next add, rename, delete or successful sync.
+        this.rebuildLocIdCache();
+
+        return newLoc;
     }
     
     /**
@@ -3428,8 +3504,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         }
                         else
                         {
-                            try (Scanner scanner = new Scanner(System.in))
+                            // Not try-with-resources: closing a Scanner closes System.in with it,
+                            // and this prompt is inside a retry loop.  A headless user who mistyped
+                            // the address once got NoSuchElementException out of the second prompt -
+                            // uncaught, since only HeadlessException is - instead of another go.
                             {
+                                Scanner scanner = new Scanner(System.in);
+
                                 System.out.print(I18n.t("ui.enterCentralStationIpPrompt"));
                                 initIP = scanner.next();
                             }

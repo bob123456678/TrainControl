@@ -12,6 +12,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Point;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.udp.CS2Message;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.Util;
 import static org.traincontrol.marklin.MarklinControlStation.init;
@@ -460,5 +461,151 @@ public class testControlStationFaults
         }
 
         made.clear();
+    }
+
+    /**
+     * A system frame too short to say anything is not an order to cut the power.
+     *
+     * The parsing constructor always allocates eight data bytes, so a guard on the array's length can
+     * never fire, and a frame carrying four payload bytes returned the untouched fifth byte, zero,
+     * which is the stop sub command.  The field that counts the filled bytes is the right one.
+     */
+    @Test
+    public void testAShortSystemFrameIsNotAStop()
+    {
+        assertEquals(new CS2Message(systemFrame(4)).getSubCommand(), -1,
+            "a system frame with four payload bytes has no sub command, and must not read as a stop");
+    }
+
+    /**
+     * And a real stop is still a stop, and a go still a go, so the guard did not switch the feature off.
+     */
+    @Test
+    public void testARealStopIsStillReadAsAStop()
+    {
+        byte[] stop = systemFrame(5);
+        stop[9] = (byte) CS2Message.CMD_SYSSUB_STOP;
+
+        assertEquals(new CS2Message(stop).getSubCommand(), CS2Message.CMD_SYSSUB_STOP,
+            "a five byte system frame carrying the stop sub command must still read as a stop");
+
+        byte[] go = systemFrame(5);
+        go[9] = (byte) CS2Message.CMD_SYSSUB_GO;
+
+        assertEquals(new CS2Message(go).getSubCommand(), CS2Message.CMD_SYSSUB_GO,
+            "and a go must still read as a go");
+    }
+
+    /**
+     * A raw thirteen byte CAN frame carrying a system command with the given payload length, built by
+     * hand because the point is a declared length that disagrees with the eight byte buffer.
+     */
+    private static byte[] systemFrame(int payloadLength)
+    {
+        byte[] raw = new byte[CS2Message.MESSAGE_LENGTH];
+
+        // Priority 0, command CMD_SYSTEM, response bit clear; a made-up hash; the declared length;
+        // then four bytes of UID, all a short system frame carries
+        raw[2] = 0x47;
+        raw[3] = 0x11;
+        raw[4] = (byte) payloadLength;
+
+        return raw;
+    }
+
+    /**
+     * The Central Station sends many responses twice, back to back, and the second is ignored.  An
+     * identical packet long after the first is a second real command, and must be processed.
+     */
+    @Test
+    public void testAnIdenticalPacketLongAfterTheFirstIsNotADuplicate() throws Exception
+    {
+        CS2Message m = new CS2Message(CS2Message.CMD_ACC_SWITCH, 0x4711, true,
+            new byte[]{ 0, 0, 0x30, 0x2A, 1, 1 });
+
+        int before = model.getNumMessagesProcessed();
+
+        model.receiveMessage(m);
+        assertEquals(model.getNumMessagesProcessed(), before + 1, "the first packet is processed");
+
+        model.receiveMessage(new CS2Message(m));
+        assertEquals(model.getNumMessagesProcessed(), before + 1,
+            "an identical packet straight after the first is the station's duplicate and is ignored");
+
+        Thread.sleep(400);
+
+        model.receiveMessage(new CS2Message(m));
+        assertEquals(model.getNumMessagesProcessed(), before + 2,
+            "an identical packet 400 ms later is a second real command, and was ignored");
+    }
+
+    /**
+     * Pressing Stop while the application is not connected says that it was not sent.
+     */
+    @Test
+    public void testStopWhileNotConnectedSaysSo() throws Exception
+    {
+        java.util.logging.Logger logger =
+            java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+        List<String> said = new ArrayList<>();
+        java.util.logging.Handler h = new java.util.logging.Handler()
+        {
+            @Override public void publish(java.util.logging.LogRecord r) { said.add(r.getMessage()); }
+            @Override public void flush() {}
+            @Override public void close() {}
+        };
+
+        boolean wasLog = MarklinControlStation.DEBUG_LOG_NETWORK;
+        MarklinControlStation.DEBUG_LOG_NETWORK = false;
+        logger.addHandler(h);
+
+        try
+        {
+            model.setNetworkCommState(false);
+            model.stop();
+        }
+        finally
+        {
+            logger.removeHandler(h);
+            MarklinControlStation.DEBUG_LOG_NETWORK = wasLog;
+        }
+
+        assertFalse(said.isEmpty(),
+            "Stop was discarded because comms are off, and nothing was logged about it");
+    }
+
+    /**
+     * A feedback frame the parser does not read creates no sensor; one it reads does.
+     *
+     * isFeedbackCommand answers for three commands and the parser acts on one, so an unknown sensor
+     * used to be created from the other two under whatever bytes 2 and 3 held, and then saved.
+     */
+    @Test
+    public void testAFrameTheParserDoesNotReadCreatesNoSensor() throws Exception
+    {
+        model.receiveMessage(new CS2Message(CS2Message.CAN_S88_REPORT, 0x4712, true,
+            new byte[]{ 0, 0, 0x12, 0x34, 0, 1 }));
+        model.receiveMessage(new CS2Message(CS2Message.CMD_ACC_SENSOR, 0x4713, true,
+            new byte[]{ 0, 0, 0x07, 0x77, 0, 1, 0, 0 }));
+
+        long deadline = System.currentTimeMillis() + 3000;
+
+        while (!model.isFeedbackSet("1911") && System.currentTimeMillis() < deadline)
+        {
+            Thread.sleep(20);
+        }
+
+        assertTrue(model.isFeedbackSet("1911"), "a sensor event creates its sensor");
+        assertFalse(model.isFeedbackSet("4660"), "a frame the parser does not read must not create a sensor");
+    }
+
+    /**
+     * A Central Station route with a padded name is found under its trimmed name.
+     */
+    @Test
+    public void testARouteNameIsTrimmed()
+    {
+        assertEquals(new org.traincontrol.marklin.MarklinRoute(model, "  padded name ", 9).getName(),
+            "padded name", "a padded name could be neither found nor deleted");
     }
 }
