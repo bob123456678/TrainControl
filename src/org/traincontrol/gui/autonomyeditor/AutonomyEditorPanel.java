@@ -3843,6 +3843,12 @@ public class AutonomyEditorPanel extends JPanel
         return out;
     }
 
+    /** Control+V places the main window's selected locomotive on the square, Delete removes its train (FR-200). */
+    public void placeOrRemoveByKey(TileKey tile, boolean place)
+    {
+        tileMenus.clickByKey(tile, place);
+    }
+
     /** Takes the trains leaving a square off it (`trainsLeaving`). */
     void removeLocomotive(TileKey tile)
     {

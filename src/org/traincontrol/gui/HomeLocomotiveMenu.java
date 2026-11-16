@@ -35,6 +35,9 @@ final class HomeLocomotiveMenu
 
         JMenuItem menuItem = new JMenuItem(I18n.t("autolayout.ui.menuReturnToHome"));
 
+        // Shown, though the item does not ask first as the key does (FR-200)
+        TrainControlUI.showShortcut(menuItem, "return locomotives home");
+
         menuItem.addActionListener(event -> ui.requestReturnToHome());
         menuItem.setEnabled(offered);
 

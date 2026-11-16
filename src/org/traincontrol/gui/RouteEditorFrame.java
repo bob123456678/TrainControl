@@ -590,6 +590,10 @@ public class RouteEditorFrame extends JFrame
             KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
             JComponent.WHEN_IN_FOCUSED_WINDOW);
 
+        // Control+Enter is Save (FR-200)
+        getRootPane().registerKeyboardAction(e -> saveButton.doClick(0), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,
+            java.awt.event.InputEvent.CTRL_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
+
         return content;
     }
 

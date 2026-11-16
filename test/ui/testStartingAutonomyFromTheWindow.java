@@ -1,5 +1,7 @@
 package ui;
 
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -25,6 +27,7 @@ import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
+import support.Keys;
 import support.Reflect;
 import support.Settle;
 import support.Teardown;
@@ -270,6 +273,336 @@ public class testStartingAutonomyFromTheWindow
         assertTrue(live.containsAll(java.util.Arrays.asList(I18n.t("autosetup.ui.menuAutonomySetup"),
             I18n.t("autolayout.ui.menuStartAutonomy"))) && live.stream().anyMatch(text -> text.startsWith(remove)),
             "after the trains came in, the menu on " + standing + " is not the menu at rest: " + live);
+    }
+
+    // ---------------------------------------------------------------- the keys (FR-200)
+
+    /**
+     * Control+G starts the run as Start does: autonomy runs and a train sets off.
+     *
+     * MUTATION: drop the "start autonomous operation" row from `TrainControlUI.KeyShortcuts`, and nothing starts.
+     */
+    @Test
+    public void testControlGStartsTheRun() throws Exception
+    {
+        startTheRun(() -> control(KeyEvent.VK_G, message -> null));
+    }
+
+    /**
+     * Control+Q brings a run to rest as Graceful Stop does.
+     *
+     * MUTATION: drop the "stop autonomy gracefully" row from `TrainControlUI.KeyShortcuts`, and the run never comes to
+     * rest.
+     */
+    @Test
+    public void testControlQLetsTheRunComeToRest() throws Exception
+    {
+        Layout layout = startTheRun(() -> press(start(), message -> null));
+
+        control(KeyEvent.VK_Q, message -> null);
+
+        assertRestsWithNothingHeld(layout, "Control+Q");
+    }
+
+    /**
+     * Control+G with the power off starts nothing, asks nothing and says why in the log: a held key repeats, and a dialog
+     * per repeat would pile up.
+     *
+     * MUTATION: have the "start autonomous operation" row call `requestStartAutonomy` without `refusedByKey` first, and
+     * the power's refusal is a dialog.
+     */
+    @Test
+    public void testControlGThatCannotStartOnlySaysWhy() throws Exception
+    {
+        support.SettingsWindow.power(ui, model, false);
+
+        try
+        {
+            List<String> asked = new ArrayList<>();
+
+            List<String> said = logged(() -> asked.addAll(control(KeyEvent.VK_G, message -> null)));
+
+            assertEquals(asked, new ArrayList<String>(), "Control+G with the power off asked something");
+
+            assertTrue(said.contains(I18n.t("autolayout.ui.powerOnToStart")), "Control+G with the power off did not say"
+                + " why in the log: " + said);
+
+            assertFalse(model.getAutoLayout().isAutoRunning(), "Control+G started the run with the power off");
+        }
+        finally
+        {
+            support.SettingsWindow.power(ui, model, true);
+        }
+    }
+
+    /**
+     * Control+G while Return Home plans, while a train is sent by hand, or during a run, presses nothing, asks nothing and
+     * says in the log that trains are running: the diagram's menu offers no Start then.
+     *
+     * MUTATION: drop the `isAutonomyBusy` question from the "start autonomous operation" row, and Start is pressed.
+     */
+    @Test
+    public void testControlGWhileTrainsAreBusyOnlySaysSo() throws Exception
+    {
+        java.lang.reflect.Field planning = Reflect.field(TrainControlUI.class, "stagingFlowActive");
+
+        java.util.concurrent.atomic.AtomicInteger sending = (java.util.concurrent.atomic.AtomicInteger) Reflect.get(
+            Layout.class, model.getAutoLayout(), "locomotiveThreads");
+
+        for (String busy : new String[] {"Return Home planning", "a hand send", "a run"})
+        {
+            if (busy.startsWith("Return")) planning.set(ui, true);
+            else if (busy.startsWith("a hand")) sending.incrementAndGet();
+            else startTheRun(() -> press(start(), message -> null));
+
+            boolean offered = start().isEnabled();
+
+            // The log drops a line that repeats the one before it
+            model.log("FR-200 " + busy);
+
+            try (Answering answering = Answering.start(message -> null))
+            {
+                List<String> said = logged(() -> { control(KeyEvent.VK_G); return null; });
+
+                // Start's worker says its refusals a moment later
+                answering.awaitAsked(1, 3000);
+
+                assertEquals(answering.asked(), new ArrayList<String>(), "Control+G during " + busy + " asked something");
+
+                assertTrue(said.contains(running()), "Control+G during " + busy + " did not say why: " + said);
+
+                assertEquals(start().isEnabled(), offered, "Control+G during " + busy + " pressed Start");
+            }
+            finally
+            {
+                if (busy.startsWith("Return")) planning.set(ui, false);
+                else if (busy.startsWith("a hand")) sending.decrementAndGet();
+            }
+        }
+    }
+
+    /**
+     * Control+H where Return Home is not offered says the button's reason in the log in plain words, not its tooltip's
+     * markup.  Grayed through the door Return Home's triage uses, with every train home.
+     *
+     * MUTATION: have `returnHomeByKey` log `whyReturnHomeIsNotOffered()`, the tooltip, and the line is HTML.
+     */
+    @Test
+    public void testControlHNotOfferedSaysWhyInPlainWords() throws Exception
+    {
+        assertTrue((Boolean) Reflect.method(TrainControlUI.class, "awaitReturnHomeTriage", long.class).invoke(ui, 30000L),
+            "precondition: the Return Home triage did not settle");
+
+        Components.settle();
+
+        final String home = (String) Reflect.method(TrainControlUI.class, "describeStagingOutcome",
+            org.traincontrol.automation.HomeStaging.Outcome.class, List.class).invoke(ui,
+            org.traincontrol.automation.HomeStaging.Outcome.ALREADY_HOME, null);
+
+        final java.lang.reflect.Method gray = Reflect.method(TrainControlUI.class, "disableReturnHome", String.class);
+
+        Components.onTheEventThread(() -> gray.invoke(ui, home));
+
+        List<String> asked = new ArrayList<>();
+
+        List<String> said = logged(() -> asked.addAll(control(KeyEvent.VK_H, message -> null)));
+
+        assertEquals(asked, new ArrayList<String>(), "Control+H, not offered, asked something");
+
+        assertTrue(said.contains(home), "Control+H did not log the reason in plain words: " + said);
+    }
+
+    /**
+     * Control+H asks before sending every train home, which the button does not (D65): No sends nothing, and Yes goes
+     * through Return Home's door, which grays the button as it sets off.
+     *
+     * MUTATION: have `returnHomeByKey` call `requestReturnToHome` without asking, and No sends the trains home.
+     */
+    @Test
+    public void testControlHAsksFirst() throws Exception
+    {
+        List<Boolean> grayed = offerReturnHome();
+
+        assertEquals(control(KeyEvent.VK_H, message -> Answering.press(String.valueOf(TrainControlUI.YES_NO_OPTS[1]))),
+            java.util.Collections.singletonList(I18n.t("autolayout.ui.confirmReturnToHome")),
+            "Control+H did not ask first, or asked more");
+
+        assertEquals(grayed, new ArrayList<Boolean>(), "Control+H answered No set off for home");
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            control(KeyEvent.VK_H);
+
+            assertEquals(answering.asked().get(0), I18n.t("autolayout.ui.confirmReturnToHome"),
+                "Control+H did not ask first");
+
+            assertFalse(grayed.isEmpty(), "Control+H answered Yes did not set off for home: " + answering.asked());
+
+            // Until the trip ends, with its answers given here
+            assertTrue(Settle.until(() -> !(Boolean) field("stagingFlowActive"), Settle.PATIENCE_MS),
+                "the trip home did not end");
+
+            Components.settle();
+        }
+    }
+
+    /**
+     * Control+H pressed again while its question is up asks nothing more: a held key repeats.
+     *
+     * MUTATION: drop `askingToReturnHome` from `returnHomeByKey`'s first return, and the repeat asks over the question.
+     */
+    @Test
+    public void testControlHHeldAsksOnce() throws Exception
+    {
+        offerReturnHome();
+
+        final java.awt.Component keyboard = field("KeyboardTab");
+
+        final java.util.concurrent.atomic.AtomicBoolean repeated = new java.util.concurrent.atomic.AtomicBoolean();
+
+        List<String> asked = control(KeyEvent.VK_H, message ->
+        {
+            // The repeat, delivered while the question is up and before it is answered
+            if (repeated.compareAndSet(false, true)) javax.swing.SwingUtilities.invokeLater(() -> keyboard.dispatchEvent(
+                new KeyEvent(keyboard, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), InputEvent.CTRL_DOWN_MASK,
+                    KeyEvent.VK_H, 'H')));
+
+            return Answering.press(String.valueOf(TrainControlUI.YES_NO_OPTS[1]));
+        });
+
+        assertEquals(asked, java.util.Collections.singletonList(I18n.t("autolayout.ui.confirmReturnToHome")),
+            "Control+H held asked again over its own question");
+    }
+
+    /**
+     * Control+H during a run asks nothing and says in the log that trains are running.
+     *
+     * MUTATION: have `returnHomeByKey` ask its question without its refusals first, and it asks during the run.
+     */
+    @Test
+    public void testControlHDuringARunOnlySaysSo() throws Exception
+    {
+        startTheRun(() -> press(start(), message -> null));
+
+        List<String> asked = new ArrayList<>();
+
+        List<String> said = logged(() -> asked.addAll(control(KeyEvent.VK_H, message -> null)));
+
+        assertEquals(asked, new ArrayList<String>(), "Control+H during the run asked something");
+
+        assertTrue(said.contains(running()), "Control+H during the run did not say the trains are running: " + said);
+    }
+
+    /**
+     * The diagram's Start, Gracefully Stop and Return Home items show the table's keys, and do not act on them
+     * themselves: the table already does.
+     *
+     * MUTATION: drop the `showShortcut` of the Start item in `LayoutRightclickAutonomyMenu`.
+     */
+    @Test
+    public void testTheDiagramsItemsShowTheirKeys() throws Exception
+    {
+        TileKey square = aStationWithATrain();
+
+        String[][] rows = {{"autolayout.ui.menuStartAutonomy", "start autonomous operation"},
+            {"autolayout.ui.menuReturnToHome", "return locomotives home"}};
+
+        for (String[] row : rows) assertKey(diagramItem(square, I18n.t(row[0])), row[1]);
+
+        startTheRun(() -> press(start(), message -> null));
+
+        assertKey(diagramItem(square, I18n.t("autolayout.ui.menuStopAutonomyGracefully")), "stop autonomy gracefully");
+    }
+
+    private static void assertKey(AbstractButton item, String row)
+    {
+        javax.swing.KeyStroke keys = TrainControlUI.KeyShortcuts.named(row).stroke();
+
+        assertEquals(((javax.swing.JMenuItem) item).getAccelerator(), keys, item.getText() + " does not show " + row);
+
+        assertEquals(item.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).get(keys), "none",
+            item.getText() + " acts on its key itself");
+    }
+
+    /** Presses Control and a key on the window, answering by the rule, and gives what it asked. */
+    private static List<String> control(int key, java.util.function.Function<String, Answering.Answer> rule)
+        throws Exception
+    {
+        try (Answering answering = Answering.start(rule))
+        {
+            control(key);
+
+            Components.settle();
+
+            return answering.asked();
+        }
+    }
+
+    /** The press itself, with the window on screen: the focus manager drops a key for a window that is not showing. */
+    private static void control(int key) throws Exception
+    {
+        onScreen(() ->
+        {
+            Keys.press(field("KeyboardTab"), key, InputEvent.CTRL_DOWN_MASK);
+
+            return null;
+        });
+    }
+
+    /** The sentence for trains running, as Return Home's button says it. */
+    private static String running() throws Exception
+    {
+        return (String) Reflect.method(TrainControlUI.class, "describeStagingOutcome",
+            org.traincontrol.automation.HomeStaging.Outcome.class, List.class).invoke(ui,
+            org.traincontrol.automation.HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null);
+    }
+
+    /** What the window logs while this runs. */
+    private static List<String> logged(java.util.concurrent.Callable<?> doThis) throws Exception
+    {
+        List<String> said = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        java.util.logging.Handler tap = support.LogTap.messagesInto(said);
+
+        java.util.logging.Logger at = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+
+        at.addHandler(tap);
+
+        try
+        {
+            doThis.call();
+        }
+        finally
+        {
+            at.removeHandler(tap);
+        }
+
+        return said;
+    }
+
+    /**
+     * Return Home offered, as the button offers it once its triage has answered: on the frozen railway every train may
+     * be home already.  Gives the times the button is grayed from now on.
+     */
+    private static List<Boolean> offerReturnHome() throws Exception
+    {
+        assertTrue((Boolean) Reflect.method(TrainControlUI.class, "awaitReturnHomeTriage", long.class).invoke(ui, 30000L),
+            "precondition: the Return Home triage did not settle");
+
+        final JButton button = field("returnHomeButton");
+
+        final List<Boolean> grayed = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        Components.onTheEventThread(() ->
+        {
+            button.setEnabled(true);
+
+            button.addPropertyChangeListener("enabled", e -> { if (Boolean.FALSE.equals(e.getNewValue())) grayed.add(true); });
+
+            return null;
+        });
+
+        return grayed;
     }
 
     // ---------------------------------------------------------------- doors

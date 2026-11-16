@@ -17,8 +17,9 @@ import support.Components;
 import support.StationDoors;
 
 /**
- * Station Settings' length box and the keyboard (FR-234): its focus ring, and a field still being typed in.  Both ask
- * which component has the keyboard, which belongs to the whole desktop, so the class runs in the serial lane.
+ * Station Settings' length box and the keyboard (FR-234): its focus ring, a field still being typed in, and Control+Enter
+ * (FR-200).  They ask which component has the keyboard, which belongs to the whole desktop, so the class runs in the
+ * serial lane.
  *
  * @author Adam
  */
@@ -27,8 +28,9 @@ public class testTheLengthBoxAndTheKeyboard
     private static support.FrozenEditor frozen;
     private static LayoutEditor editor;
     private static StationSettingsWindow window;
+    private static TileKey station;
 
-    /** One window on a plain named station, for both claims: neither writes the setup. */
+    /** One window on a plain named station, for every claim: only the last, which closes it, writes the draft. */
     @BeforeClass
     public static void openTheWindow() throws Exception
     {
@@ -36,7 +38,7 @@ public class testTheLengthBoxAndTheKeyboard
         editor = frozen.editorOn("1 - Main");
 
         AutonomySession session = frozen.session;
-        TileKey station = Components.onTheEventThread(() -> session.getReducer().getPoints().keySet().stream()
+        station = Components.onTheEventThread(() -> session.getReducer().getPoints().keySet().stream()
             .filter(each -> "1 - Main".equals(each.getPage()) && session.getStore().isStation(each)
                 && !session.isTurnAround(each) && session.getStore().getPointName(each) != null)
             .findFirst().orElseThrow(() -> new AssertionError("precondition: no plain named station")));
@@ -108,6 +110,29 @@ public class testTheLengthBoxAndTheKeyboard
         StationDoors.current(window);
 
         assertEquals(Components.onTheEventThread(name::getText), stored, "Enter did not show the name as stored");
+    }
+
+    /**
+     * Control+Enter in the length box is Done Editing (FR-200): the length typed, with no Enter of its own, is applied
+     * and the window closes.
+     *
+     * MUTATION: drop the Control+Enter binding from `StationWindowBase`, and nothing is applied.
+     */
+    @Test(timeOut = 120000, priority = 1)
+    public void testControlEnterIsDoneEditing() throws Exception
+    {
+        JTextField length = giveTheKeyboard("station.maxLength");
+
+        Components.onTheEventThread(() -> { length.setText("43"); return null; });
+
+        support.Keys.chord(length, java.awt.event.KeyEvent.VK_ENTER, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+
+        assertEquals(Double.parseDouble(String.valueOf(frozen.session.getPointProperty(station, "maxTrainLength"))), 43.0,
+            "Control+Enter did not apply the length typed");
+
+        assertFalse(Components.onTheEventThread(window::isShowing), "Control+Enter left the window open");
+
+        window = null;
     }
 
     /** Hands a named field the keyboard, the window brought to the front for it; the field. */
