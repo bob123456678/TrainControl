@@ -629,6 +629,10 @@ public class testCS3SensorStates
     @Test(timeOut = 120000)
     public void testADeviceIsSavedAndAskedAfterARestart() throws Exception
     {
+        // It saves LocDB.data, which only one.sh's data folder keeps out of the working folder
+        if (System.getProperty(org.traincontrol.util.Util.DATA_DIR_PROPERTY) == null)
+            throw new org.testng.SkipException("needs traincontrol.dataDir (docs/tools/one.sh)");
+
         int contact = 3500;
 
         try (Rig rig = new Rig(true))
