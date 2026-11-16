@@ -286,7 +286,7 @@ public class testTheMenusComeBackAtOneMoment
         return null;
     }
 
-    /** A private no-argument method of the window, by name, on the event thread. */
+    /** A no-argument method of the window's `ConnectingNotice`, by name, on the event thread. */
     private static void call(org.traincontrol.gui.TrainControlUI on, String name) throws Exception
     {
         final Object notice = Reflect.get(org.traincontrol.gui.TrainControlUI.class, on, "connectingNotice");

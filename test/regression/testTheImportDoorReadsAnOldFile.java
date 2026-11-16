@@ -3353,14 +3353,14 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(before >= 2, "precondition: " + train.getName() + " under way holds " + before + " points");
 
-            final Object gestures = Reflect.get(TrainControlUI.class, ui[0], "diagramLocGestures");
-            final java.lang.reflect.Method write = Reflect.method(gestures.getClass(), "writeTheTurnsOwed");
+            final java.lang.reflect.Method write =
+                Reflect.method(Class.forName("org.traincontrol.gui.DiagramLocGestures"), "writeTheTurnsOwed");
 
             SwingUtilities.invokeAndWait(() ->
             {
                 try
                 {
-                    write.invoke(gestures);
+                    write.invoke(Reflect.get(TrainControlUI.class, ui[0], "diagramLocGestures"));
                 }
                 catch (ReflectiveOperationException e)
                 {
