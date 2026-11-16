@@ -143,7 +143,7 @@ public final class MarklinLocomotiveCsv
     /** The text of a file's bytes: UTF-8 when it is, else what Excel saved in on this machine. */
     public static String decode(byte[] bytes)
     {
-        return decode(bytes, fallbackFor(Charset.defaultCharset()));
+        return decode(bytes, fallbackFor(org.traincontrol.util.Conversion.nativeCharset()));
     }
 
     /** What to read a file in after UTF-8 fails: the machine's own code page when it is a single-byte one, else Windows-1252. */

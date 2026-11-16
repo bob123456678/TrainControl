@@ -736,6 +736,7 @@
         <test-one-class class="testALocalCopyLogsTheSquaresTheStationDisagreesWith"/>
         <test-one-class class="testTheSyncAsksAboutRenamedLocomotives"/>
         <test-one-class class="testASilentStationPictureGivesUp"/>
+        <test-one-class class="testANewerJavaKeepsWhatJava8Had"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
@@ -760,6 +761,8 @@
             <zipgroupfileset dir="resources" includes="flatlaf-3.7.2.jar,json-20260814.jar"/>
             <manifest>
                 <attribute name="Main-Class" value="${main.class}"/>
+                <!-- The file chooser's Look In list on Java 9 and later (FR-236); Java 8 ignores it. -->
+                <attribute name="Add-Exports" value="java.desktop/sun.awt.shell"/>
             </manifest>
         </jar>
         <zip destfile="${store.jar}">

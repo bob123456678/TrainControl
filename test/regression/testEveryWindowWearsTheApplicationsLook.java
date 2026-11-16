@@ -99,10 +99,11 @@ public class testEveryWindowWearsTheApplicationsLook
             try
             {
                 java.lang.reflect.Method states =
-                    Reflect.method(org.traincontrol.gui.TrainControlUI.class, "uiScaleFor", int.class);
+                    Reflect.method(org.traincontrol.gui.TrainControlUI.class, "uiScaleFor", int.class, boolean.class);
 
                 expected = Double.parseDouble((String) states.invoke(null,
-                    java.awt.Toolkit.getDefaultToolkit().getScreenResolution()));
+                    java.awt.Toolkit.getDefaultToolkit().getScreenResolution(),
+                    com.formdev.flatlaf.util.UIScale.isSystemScalingEnabled()));
             }
             catch (ReflectiveOperationException e)
             {

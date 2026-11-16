@@ -722,7 +722,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The interface scale, or empty to take it from the display (`dpi / 96`), because FlatLaf's own automatic answer
-     * depends on what touched AWT first.  "1.25" forces the larger interface, "1" the smaller.
+     * depends on what touched AWT first.  "1.25" forces the larger interface, "1" the smaller; on Java 9 and later
+     * either is on top of Java's own scale.
      */
     public static final String UI_SCALE = "";
 
@@ -732,11 +733,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Extra menu font points: one more overflows the French, Spanish and Italian menu bars (testEveryLanguageFits) */
     public static final int MENU_FONT_STEP = 0;
 
-    /** The scale for this many dpi: the UI_SCALE override if set, else dpi / 96, or 1 where the display reports none */
-    private static String uiScaleFor(int dpi)
+    /**
+     * The scale for this many dpi: the UI_SCALE override if set, else dpi / 96, or 1 where the display reports none or
+     * Java scales the window itself (9 and later), where any more would be drawn on top of Java's (FR-236).
+     */
+    private static String uiScaleFor(int dpi, boolean javaScales)
     {
         return !UI_SCALE.isEmpty() ? UI_SCALE
-            : String.valueOf(dpi > 0 ? dpi / (double) REFERENCE_DPI : 1.0);
+            : String.valueOf(dpi > 0 && !javaScales ? dpi / (double) REFERENCE_DPI : 1.0);
     }
 
     /**
@@ -756,7 +760,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         int dpi = Toolkit.getDefaultToolkit().getScreenResolution();
 
         // A system property, not a UI default, because FlatLaf reads it while installing; UI_SCALE overrides.
-        System.setProperty("flatlaf.uiScale", uiScaleFor(dpi));
+        System.setProperty("flatlaf.uiScale", uiScaleFor(dpi, com.formdev.flatlaf.util.UIScale.isSystemScalingEnabled()));
 
         // BEFORE setup(): FlatLaf reads these when it installs itself, and the window decorations are decided once.
         if (!MENUS_IN_THE_TITLE_BAR)

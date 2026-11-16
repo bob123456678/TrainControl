@@ -333,7 +333,7 @@ The primary controls are the up and down arrows for speed, the left and right ar
 
 ## Requirements
 
-* Install Java 8 on your computer (on Java 17 and later, the file chooser shows only the Desktop)
+* Install Java 8 or later on your computer
 * Requires a Marklin Central Station 2 or Central Station 3 connected to your network and layout
 * The computer running TrainControl must be on the same network as your CS2/CS3 (Wi-Fi or Ethernet)
 * Ensure that your firewall allows TrainControl/Java to access the local network
