@@ -299,6 +299,52 @@ public class testStartingAutonomyFromTheWindow
     }
 
     /**
+     * Start above the track diagram ends at the diagram's right edge, to the pixel on screen (OB-473).
+     *
+     * MUTATION: give `AutonomyOverlayToggle`'s border a right inset of 4 again, and this fails.
+     */
+    @Test
+    public void testStartEndsAtTheDiagramsRightEdge() throws Exception
+    {
+        javax.swing.JTabbedPane tabs = (javax.swing.JTabbedPane) Reflect.get(TrainControlUI.class, ui, "KeyboardTab");
+        java.awt.Component page = (java.awt.Component) Reflect.get(TrainControlUI.class, ui, "layoutPanel");
+        java.awt.Component diagram = (java.awt.Component) Reflect.get(TrainControlUI.class, ui, "LayoutArea");
+        java.awt.Container strip = (java.awt.Container) Reflect.get(TrainControlUI.class, ui, "autonomyOverlayToggle");
+
+        Components.onTheEventThread(() ->
+        {
+            ui.setVisible(true);
+            tabs.setSelectedComponent(page);
+
+            return null;
+        });
+
+        try
+        {
+            AbstractButton copy = Components.onTheEventThread(() -> Components.withText(strip,
+                I18n.t("ui.main.startAutonomy")));
+
+            assertNotNull(copy, "precondition: the strip above the diagram offers no Start");
+
+            assertTrue(Settle.until(copy::isShowing, 30000), "precondition: the strip's Start is not on screen");
+
+            int[] rights = Components.onTheEventThread(() -> new int[] {
+                copy.getLocationOnScreen().x + copy.getWidth(), diagram.getLocationOnScreen().x + diagram.getWidth()});
+
+            assertEquals(rights[0], rights[1], "Start does not end at the track diagram's right edge");
+        }
+        finally
+        {
+            Components.onTheEventThread(() ->
+            {
+                ui.setVisible(false);
+
+                return null;
+            });
+        }
+    }
+
+    /**
      * MT-1001's check with Start as the run's door, the window shown for it: the route list's right-click menu only
      * opens on a window on screen, and this class's window is otherwise never shown.
      */

@@ -149,11 +149,11 @@ public class AutonomyOverlayToggle extends JPanel
             if (source != null) source.doClick();
         });
 
-        // The banner's own insets, so the two bands read as one thing stacked (OB-149, OB-151), symmetric so the
-        // content stays centered.
-        setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        // The banner's own insets, so the two bands read as one thing stacked (OB-149, OB-151), but none on the right:
+        // the run button ends where the diagram does (OB-473).
+        setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 0));
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         right.setOpaque(false);
         right.add(run);
 
