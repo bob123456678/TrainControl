@@ -671,6 +671,56 @@ public class testRouteEditorLocked
         }
     }
 
+    /**
+     * OB-487: on a selected row of a locked route, where no cell can be edited, the text still reads on the muted
+     * selection fill, focused or not.
+     *
+     * MUTATION: in `mutedSelection`, darken a dark selection, and the text cannot be read.
+     */
+    @Test
+    public void testASelectedRowOfALockedRouteIsReadable() throws Exception
+    {
+        needsADisplay();
+
+        org.traincontrol.gui.RouteEditorFrame frame = open(locked(true));
+
+        try
+        {
+            for (java.awt.Color selection : new java.awt.Color[]{new java.awt.Color(0x2675BF), new java.awt.Color(0xD3D3D3)})
+            {
+                final java.awt.Color[] seen = new java.awt.Color[2];
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    try
+                    {
+                        javax.swing.JTable table = (javax.swing.JTable) support.Reflect.get(
+                            org.traincontrol.gui.RouteEditorFrame.class, frame, "commands");
+
+                        table.setSelectionBackground(selection);
+                        table.setRowSelectionInterval(0, 0);
+
+                        java.awt.Component cell = frame.commandCellForTest(0, 3);
+
+                        seen[0] = cell.getForeground();
+                        seen[1] = cell.getBackground();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                });
+
+                assertTrue(support.Contrast.between(seen[0], seen[1]) >= 4.5, "text " + seen[0] + " on " + seen[1]
+                    + " cannot be read on a selected row of a locked route, selection " + selection);
+            }
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
     /** A route with one command in it, locked or not. */
     private static Route locked(boolean owned)
     {

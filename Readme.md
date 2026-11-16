@@ -31,7 +31,7 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 
 * `Basic Settings` has the name, address and picture, and a small gray label tells you whether the picture came from your Central Station or from a file on your computer.
 * `Notes` keeps the years it ran in real life, its railway and your own notes, and `Find Similar Locomotives...` finds others like it in your collection.
-* `Autonomy` holds what autonomy needs to know about it, such as how long the train is and whether it can change direction.
+* `Autonomy` has what autonomy needs to know about it, such as how long the train is and whether it can change direction.
 
 *Autonomy on your track diagram.*  Since 3.0.0 you set up automation right on the track diagram, with no files to write: name your stations, click the track to show which way trains may run, and drag each train to the station where it stands.  See [Full Autonomy](#full-autonomy) and [the autonomy guide](Automation.md) to get started, and the [Changelog](#changelog) for everything else in 3.1.0.
 
@@ -415,7 +415,7 @@ To make a backup, select "Back Up TrainControl Data..." from the File menu.  Thi
 
 If your track diagram is on the Central Station, TrainControl offers to download it first so that it is included.  On a CS3, the backup also includes the Central Station's own locomotive, route and accessory data.
 
-To restore, select "Restore from Backup..." from the File menu and pick the zip file.  TrainControl shows what the backup holds and what it will replace, saves your current data first as a backup whose name ends in `before-restore`, puts the backup back, and closes; start it again to use the restored data.  To undo a restore, restore the `before-restore` file.
+To restore, select "Restore from Backup..." from the File menu and pick the zip file.  TrainControl shows what the backup contains and what it will replace, saves your current data first as a backup whose name ends in `before-restore`, puts the backup back, and closes; start it again to use the restored data.  To undo a restore, restore the `before-restore` file.
 
 You can also restore by hand: close TrainControl, unzip the archive next to the JAR file, and start TrainControl again.  `LocDB.data` and `UIState.data` go next to the JAR; the layout folder can go anywhere, and you select it with "Open Layout...".
 
@@ -477,7 +477,7 @@ Tab icons provided by Freepik.
             - Open it with Ctrl+E, with Ctrl+R, Ctrl+N or Ctrl+L on the `Basic Settings`, `Notes` or `Multi-Unit` tab, from the key menu, or by right-clicking the locomotive's name or one of its function buttons.
             - A locomotive can't be edited while autonomy is running or while it is moving with the power on, so the window then opens grayed out, but you can still save the speed and function presets from their hotkeys and the key menu.
             - The `Functions` tab lists every function in one table, with its behavior, icon and `Preset` tick, and a play icon that switches the function on the layout.
-            - The `Autonomy` tab holds the locomotive's `Train Length`, `Reversible`, `Active`, `Departure Function` and `Arrival Function`.
+            - The `Autonomy` tab has the locomotive's `Train Length`, `Reversible`, `Active`, `Departure Function` and `Arrival Function`.
             - `Add Locomotive...` (Ctrl+D) opens the same window, though not while autonomy is running, and a warning triangle next to `Address` now shows by itself when another locomotive uses the same address, in place of `Check Duplicates`.
             - `Sync settings & functions w/ Central Station` has moved from the key menu to the `Basic Settings` tab, under the picture.
             - On a locomotive that is part of a multi-unit, the multi-unit's name in the note on the `Multi-Unit` tab is a link: click it, or press Enter on it, to close this window (asking first about changes you haven't saved) and open the multi-unit's settings.
@@ -586,7 +586,7 @@ Tab icons provided by Freepik.
             - The Log tab keeps its sideways scroll position when a new message arrives.
             - If the locomotive database or the window settings can't be saved when you close TrainControl, it says which file and why, and asks you to `Retry` or `Exit Without Saving`, instead of closing and losing your changes.
             - A backup now names any file it couldn't read, and says in plain words when a file could be neither saved nor copied and so isn't in the backup at all.  It is written whole or not at all, so closing TrainControl during a backup no longer leaves a cut-off archive.
-            - `Restore from Backup` keeps your current file when an older backup holds an empty one, rather than writing an empty file over it, and says so.
+            - `Restore from Backup` keeps your current file when an older backup contains an empty one, rather than writing an empty file over it, and says so.
             - TrainControl no longer sometimes stops at start-up with an error while its main window is being built.
             - Where the menus are in the window's title bar, the main window no longer opens cut off at the bottom, and `Window Always on Top` takes the place of `Toggle Menu Bar` on the Keyboard tab.
     - Notes
@@ -858,7 +858,7 @@ Tab icons provided by Freepik.
     - Notes
         - **Before going back to v2.8.2 or earlier, keep a copy of your settings:** those versions read only the first 10 keyboard pages and discard the rest when they save.
         - A station out of service can no longer be sent to or driven through, even by hand.  To keep a parking track reachable by hand, untick `Can Be Chosen in Full Autonomy` instead.
-        - A route with an emergency stop can no longer hold other commands; older ones are split in two automatically.
+        - A route with an emergency stop can no longer contain other commands; older ones are split in two automatically.
         - The "paste entire row" and "paste entire column" options were removed.
         - The JSON and FlatLaf libraries were updated, and the GraphStream libraries are no longer needed.
 
