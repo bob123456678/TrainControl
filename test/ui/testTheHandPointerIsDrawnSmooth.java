@@ -18,6 +18,8 @@ public class testTheHandPointerIsDrawnSmooth
     /** Windows' pointer boxes on Java 8: 100% and 125%, 150% and 175%, 200%. */
     private static final int[] SIZES = {32, 48, 64};
 
+    private static final String JAVA = System.getProperty("java.specification.version");
+
     /**
      * Java 8 refuses a hotspot outside the picture and rescales a picture of the wrong size without moving the
      * hotspot, so both must match the box; the hotspot is the fingertip, the topmost opaque pixel.
@@ -98,16 +100,27 @@ public class testTheHandPointerIsDrawnSmooth
     @Test
     public void testJava8AloneGetsTheDrawnHand()
     {
-        boolean java8 = "1.8".equals(System.getProperty("java.specification.version"));
         Cursor hand = HandPointer.cursor();
 
-        assertEquals(hand.getType() == Cursor.CUSTOM_CURSOR, java8, "on Java "
-            + System.getProperty("java.specification.version") + " the hand pointer is " + hand);
+        assertEquals(hand.getType() == Cursor.CUSTOM_CURSOR, "1.8".equals(JAVA), "on Java " + JAVA
+            + " the hand pointer is " + hand);
         assertSame(HandPointer.cursor(), hand, "each call makes a new pointer");
         assertTrue(HandPointer.isHand(hand), "the drawn hand is not recognized as the hand");
-        assertTrue(HandPointer.isHand(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)), "Java's own hand is not");
         assertFalse(HandPointer.isHand(Cursor.getDefaultCursor()), "the arrow is taken for a hand");
         assertFalse(HandPointer.isHand(null), "no pointer is taken for a hand");
+    }
+
+    /**
+     * A site that sets Java's own hand shows the jagged one on Java 8, so there it must not pass for the hand; on later
+     * Java the two are the same pointer.
+     *
+     * MUTATION: accepting any pointer of type HAND_CURSOR in HandPointer.isHand fails this on Java 8.
+     */
+    @Test
+    public void testJavasOwnHandIsTheHandOnlyAfterJava8()
+    {
+        assertEquals(HandPointer.isHand(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)), !"1.8".equals(JAVA),
+            "on Java " + JAVA + " Java's own hand is taken for the hand pointer, or the other way round");
     }
 
     private static boolean opaque(BufferedImage img, int x, int y)

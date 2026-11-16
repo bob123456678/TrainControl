@@ -12,7 +12,7 @@ import org.testng.annotations.Test;
 /**
  * OB-124: every window in the application wears the TrainControl icon.  A window added next month is required to ask,
  * and fails here if it does not.  Read from the source rather than by opening windows, which needs a railway and a
- * display.
+ * display.  And every hand pointer in them is TrainControl's (FR-224).
  *
  * @author Adam
  */
@@ -176,6 +176,34 @@ public class testEveryWindowWearsTheIcon
             "these dialogs are built without asking for the application's icon, so they open with "
             + "Java's: " + naked + ". A dialog does not reliably inherit its owner's icon, which is "
             + "what made OB-124 invisible from the code");
+    }
+
+    /**
+     * Every hand pointer is TrainControl's, `HandPointer.cursor()` (FR-224): Java's own hand is the jagged one on
+     * Java 8.  The GUI builder's code is not ours to edit; its windows set the hand again after `initComponents()`.
+     *
+     * MUTATION: setting `Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)` back in `AutoLocomotiveStatus` fails this.
+     */
+    @Test
+    public void testEveryHandPointerIsTheApplications() throws Exception
+    {
+        List<String> own = new ArrayList<>();
+        boolean sawTheHand = false;
+
+        for (File source : javaUnder(new File("src")))
+        {
+            if (source.getName().equals("HandPointer.java"))
+            {
+                sawTheHand = true;
+                continue;
+            }
+            String body = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
+
+            if (withoutGeneratedCode(body).contains("HAND_CURSOR")) own.add(source.getName());
+        }
+        assertTrue(sawTheHand, "HandPointer.java was not found under src/: this ran from the wrong directory");
+        assertTrue(own.isEmpty(), "these files set Java's own hand pointer, which is jagged on Java 8, instead of "
+            + "HandPointer.cursor(): " + own);
     }
 
     /** How far after a dialog is constructed its icon call may sit. */

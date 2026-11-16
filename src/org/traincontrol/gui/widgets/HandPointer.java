@@ -19,7 +19,7 @@ import java.awt.image.BufferedImage;
  * The hand pointer for everything a click acts on (FR-224).  Java 8's own is a jagged 1-bit picture, so there it is
  * TrainControl's smooth bold hand; later Java already shows Windows' own hand at the user's size and color.  Windows
  * keeps only a 1-bit mask of a custom pointer, so the outer edge is cut at half coverage and only the inside is
- * antialiased: the picture returned is exactly what Windows shows.
+ * antialiased: the picture returned is exactly what Windows shows.  The pointer size is read once, at start-up.
  */
 public final class HandPointer
 {
@@ -44,10 +44,10 @@ public final class HandPointer
         return HAND;
     }
 
-    /** True for {@link #cursor()} and for Java's own hand, whose type a custom pointer does not have. */
+    /** True only for {@link #cursor()}: on Java 8 Java's own hand is not it. */
     public static boolean isHand(Cursor c)
     {
-        return c == HAND || c != null && c.getType() == Cursor.HAND_CURSOR;
+        return c != null && c == HAND;
     }
 
     private static Cursor make()
