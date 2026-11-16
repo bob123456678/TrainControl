@@ -542,6 +542,12 @@ public class MarklinLocomotive extends Locomotive
                 );
             }
         }
+        // The station's stop of this train, which a speed 0 does not always follow (FR-211)
+        else if (m.isSysCommand() && m.getSubCommand() == CS2Message.CMD_SYSSUB_TRAINSTOP)
+        {
+            this._setSpeed(0);
+            this.network.logf("loc.settingSpeed", this.getName(), 0);
+        }
     }
     
     /**

@@ -348,6 +348,58 @@ public class testWhatTheStationSendsIsHeard
     }
 
     /**
+     * A train's emergency stop at the station shows the train stopped, as the station may send no speed 0 after it
+     * (FR-211); nothing goes back to the station.  One for a UID no locomotive has changes nothing, and our own stop
+     * still sends the emergency stop and a speed 0.
+     *
+     * MUTATION: in `MarklinLocomotive.parseMessage`, take out the `CMD_SYSSUB_TRAINSTOP` branch.
+     */
+    @Test(dataProvider = "protocols")
+    public void testATrainStopAtTheStationStopsTheTrain(String protocol)
+    {
+        final MarklinLocomotive train = locomotive("emergency stop", 73, protocol);
+        final int unknown = 0x2FFF;
+
+        assertTrue(model.getLocList().stream().noneMatch(n -> model.getLocByName(n).getIntUID() == unknown),
+            "precondition: a locomotive has UID " + unknown);
+
+        hear(Packets.functionEcho(train, 3, false));
+        hear(Packets.speedEcho(train, 400));
+        assertTrue(Components.waitFor(() -> train.getSpeed() == 40, HEARD_MS), "precondition: the train is not running");
+
+        // The function echo after it shows the stop for nobody was handled: one thread takes both, in order
+        hear(Packets.trainStop(unknown, true));
+        hear(Packets.functionEcho(train, 3, true));
+        assertTrue(Components.waitFor(() -> train.getF(3), HEARD_MS), "precondition: the function echo was not heard");
+        assertEquals(train.getSpeed(), 40, "an emergency stop for a UID no locomotive has stopped this train");
+
+        int mark = SENT.size();
+        // The stop as a request (another program's) and as the station's answer
+        for (boolean response : new boolean[] {false, true})
+        {
+            hear(Packets.speedEcho(train, 400));
+            assertTrue(Components.waitFor(() -> train.getSpeed() == 40, HEARD_MS), "precondition: the train is not running");
+            hear(Packets.trainStop(train.getIntUID(), response));
+
+            assertTrue(Components.waitFor(() -> train.getSpeed() == 0, HEARD_MS), "the station stopped the train (response "
+                + response + ") and the model reads speed " + train.getSpeed());
+        }
+
+        assertEquals(SENT.size(), mark, "a stop heard from the station was sent back: " + SENT.subList(mark, SENT.size()));
+
+        hear(Packets.speedEcho(train, 400));
+        assertTrue(Components.waitFor(() -> train.getSpeed() == 40, HEARD_MS), "precondition: the train is not running");
+        train.stop();
+
+        List<CS2Message> sent = new ArrayList<>(SENT.subList(mark, SENT.size()));
+        assertTrue(sent.stream().anyMatch(m -> m.isSysCommand() && m.getSubCommand() == CS2Message.CMD_SYSSUB_TRAINSTOP
+            && m.extractUID() == train.getIntUID()), "our stop sent no emergency stop: " + sent);
+        assertTrue(sent.stream().anyMatch(m -> m.getCommand() == CS2Message.CMD_LOCO_VELOCITY && m.getLength() == 6
+            && m.getData()[4] == 0 && m.getData()[5] == 0), "our stop sent no speed 0: " + sent);
+        assertEquals(train.getSpeed(), 0, "our stop left the train running");
+    }
+
+    /**
      * A change of direction at the station turns the locomotive and stops it, as the decoder does.
      *
      * MUTATION: in `MarklinLocomotive.parseMessage`, take out the `this._setSpeed(0)` under `direction == 2`.

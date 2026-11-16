@@ -599,12 +599,14 @@ public class NetworkProxy
     }
 
     /**
-     * Stop, Halt or a locomotive's emergency stop: what may overtake.  Go may not, or the power comes on before a speed
-     * 0 sent ahead of it.
+     * Stop, Halt, a locomotive's emergency stop or speed 0 (OB-432): what may overtake.  Go may not, or the power comes
+     * on before a speed 0 sent ahead of it.
      */
     private static boolean isUrgentStop(byte[] frame)
     {
-        if (frame.length < 10 || command(frame) != CS2Message.CMD_SYSTEM || frame[4] < 5) return false;
+        if (frame.length < 11) return false;
+        if (command(frame) == CS2Message.CMD_LOCO_VELOCITY) return frame[4] == 6 && frame[9] == 0 && frame[10] == 0;
+        if (command(frame) != CS2Message.CMD_SYSTEM || frame[4] < 5) return false;
 
         int sub = frame[9] & 0xFF;
 
