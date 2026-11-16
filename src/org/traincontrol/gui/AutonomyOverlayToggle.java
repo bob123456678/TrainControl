@@ -77,8 +77,7 @@ public class AutonomyOverlayToggle extends JPanel
         // Toggling only stops the DRAWING, so switching back on shows the current state at once.
         show.setFocusable(false);
 
-        // Opaque and painting its own white: making the strip opaque was not enough, the box has to clear its own
-        // square.
+        // Opaque and painting its own white: an opaque strip alone was not enough.
         show.setOpaque(true);
         show.setBackground(Color.WHITE);
 
@@ -171,9 +170,7 @@ public class AutonomyOverlayToggle extends JPanel
         apply();
     }
 
-    /**
-     * Which of the two real buttons this strip is standing in for, if either.
-     */
+    /** Which real button this strip stands in for, if either. */
     public enum RunButton
     {
         /** Nothing to offer - no setup loaded, or this page is not part of it. */
