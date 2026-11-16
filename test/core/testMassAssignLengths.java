@@ -1245,12 +1245,12 @@ public class testMassAssignLengths
         return first;
     }
 
-    /** The Maximum train length field's text for this maximum: blank for any length. */
+    /** The Maximum train length field's text for this maximum: Any for any length (FR-234). */
     private static String shownAs(Object maximum)
     {
         int value = maximum instanceof Number ? ((Number) maximum).intValue() : 0;
 
-        return value == 0 ? "" : String.valueOf(value);
+        return value == 0 ? org.traincontrol.util.I18n.t("autosetup.ui.stationLengthAny") : String.valueOf(value);
     }
 
     /** The Maximum train length field of Station Settings, opened from the station's right-click menu on its page. */
