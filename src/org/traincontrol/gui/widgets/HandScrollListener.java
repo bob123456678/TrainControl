@@ -16,7 +16,7 @@ import javax.swing.JViewport;
 public class HandScrollListener extends MouseAdapter
 {
     private final Cursor defCursor = Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR);
-    private final Cursor hndCursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
+    private final Cursor hndCursor = HandPointer.cursor();
     private final Point pp = new Point();
     private final JPanel image;
 

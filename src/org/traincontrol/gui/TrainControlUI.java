@@ -165,6 +165,7 @@ import org.traincontrol.gui.widgets.About;
 import org.traincontrol.gui.widgets.BackupAction;
 import org.traincontrol.gui.widgets.BusyDialog;
 import org.traincontrol.gui.widgets.DetailsArea;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.HandScrollListener;
 import org.traincontrol.gui.widgets.LoadingSpinner;
 import org.traincontrol.gui.widgets.RowIcons;
@@ -18392,8 +18393,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         boolean pressable = isOverTheRoutePlayButton(evt)
             && under != null && (routeListEditsRoutes() || !routesExecuting.contains(under.getName()));
 
-        RouteList.setCursor(java.awt.Cursor.getPredefinedCursor(
-            pressable ? java.awt.Cursor.HAND_CURSOR : java.awt.Cursor.DEFAULT_CURSOR));
+        RouteList.setCursor(pressable
+            ? HandPointer.cursor() : java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.DEFAULT_CURSOR));
 
         int row = RouteList.rowAtPoint(evt.getPoint());
         int column = RouteList.columnAtPoint(evt.getPoint());
@@ -19559,7 +19560,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         iconWrench.setToolTipText(I18n.t("loc.ui.tooltip.openSettingsFromPicture"));
         iconWrench.setVisible(false);
         iconWrench.setOpaque(false);
-        iconWrench.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        iconWrench.setCursor(HandPointer.cursor());
 
         iconWrench.addMouseListener(Listen.released(evt ->
         {

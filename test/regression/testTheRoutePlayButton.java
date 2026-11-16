@@ -161,7 +161,7 @@ public class testTheRoutePlayButton
             + "separate opinions about where the button is - and a hand over pixels that do not run "
             + "the route is the interface promising something it will not do");
 
-        assertTrue(body.contains("HAND_CURSOR"),
+        assertTrue(body.contains("HandPointer.cursor()"),
             "the hover no longer sets a hand cursor, so nothing tells the user the strip is a control "
             + "(OB-147)");
 

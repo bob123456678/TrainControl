@@ -3,7 +3,6 @@ package org.traincontrol.gui;
 import java.awt.FlowLayout;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Insets;
 import javax.swing.AbstractButton;
@@ -15,6 +14,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.util.I18n;
 
 /**
@@ -100,7 +100,7 @@ public class AutonomyOverlayToggle extends JPanel
         left_out.setFont(AutonomyBanner.MESSAGE_FONT);
         left_out.setForeground(EXCLUDED_TEXT);
         left_out.setVisible(false);
-        left_out.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        left_out.setCursor(HandPointer.cursor());
         left_out.setToolTipText(I18n.t("autosetup.ui.tooltipPageLeftOut"));
 
         left_out.addMouseListener(Listen.clicked(e ->
@@ -113,7 +113,7 @@ public class AutonomyOverlayToggle extends JPanel
 
         // The banner's own font: two sizes would read as two unrelated notices stacked by accident.
         findings.setFont(AutonomyBanner.MESSAGE_FONT);
-        findings.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        findings.setCursor(HandPointer.cursor());
         findings.setVisible(false);
         findings.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
 

@@ -39,6 +39,7 @@ import org.traincontrol.gui.autonomyeditor.StationPreset;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.locomotive.SegmentedControl;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.PillButton;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -5382,11 +5383,11 @@ public class testStationSettingsWindow
         PillButton lit = StationDoors.part(window, "station.preset.OFF", PillButton.class);
         PillButton unlit = StationDoors.part(window, "station.preset.STATION", PillButton.class);
 
-        assertEquals(toolkitCursor(lit).getType(), java.awt.Cursor.HAND_CURSOR, "no hand cursor on an enabled pill");
+        assertTrue(HandPointer.isHand(toolkitCursor(lit)), "no hand cursor on an enabled pill");
 
         // A pill nobody has enabled or disabled: the constructor alone sets the hand
-        assertEquals(toolkitCursor(Components.onTheEventThread(() -> new PillButton("fresh"))).getType(),
-            java.awt.Cursor.HAND_CURSOR, "a new pill has no hand cursor");
+        assertTrue(HandPointer.isHand(toolkitCursor(Components.onTheEventThread(() -> new PillButton("fresh")))),
+            "a new pill has no hand cursor");
 
         Components.onTheEventThread(() -> { lit.setEnabled(false); unlit.setEnabled(false); return null; });
 

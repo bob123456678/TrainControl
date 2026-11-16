@@ -5,6 +5,7 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.gui.widgets.HandPointer;
 import support.Diagrams;
 import support.Display;
 import support.Reflect;
@@ -356,7 +357,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
 
             assertNotNull(track, "the fixture has no square at 3,2");
 
-            assertEquals(cursorOf(track), java.awt.Cursor.HAND_CURSOR, "the pointer over track a click turns is not a"
+            assertTrue(showsHand(track), "the pointer over track a click turns is not a"
                 + " hand, so nothing says the square can be clicked (FR-112)");
 
             String says = org.traincontrol.util.I18n.t("autosetup.ui.tooltipClickToChangeDirections");
@@ -368,7 +369,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
 
             assertNotNull(blank, "the fixture has no square at 3,5");
 
-            assertNotEquals(cursorOf(blank), java.awt.Cursor.HAND_CURSOR, "a blank square shows a hand, and a click there"
+            assertFalse(showsHand(blank), "a blank square shows a hand, and a click there"
                 + " does nothing");
 
             assertFalse(String.valueOf(blank.getToolTipText()).contains(says), "a blank square says a click changes its"
@@ -386,7 +387,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
             assertEquals(open.editor.getAutonomyPanel().getTool(), org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.Tool.TEST,
                 "precondition: pressing Test did not arm it");
 
-            assertNotEquals(cursorOf(again), java.awt.Cursor.HAND_CURSOR, "with Test armed a click tests a path, and the"
+            assertFalse(showsHand(again), "with Test armed a click tests a path, and the"
                 + " track still shows the hand for changing its directions");
 
             assertFalse(String.valueOf(again.getToolTipText()).contains(says), "with Test armed the track still says a"
@@ -436,7 +437,7 @@ public class testTheAutonomyEditorKnowsWhichSquare
             assertFalse(String.valueOf(track.getToolTipText()).contains(says), "after a square was clicked the track still"
                 + " says a click changes its directions (MT-697's note): " + track.getToolTipText());
 
-            assertEquals(cursorOf(track), java.awt.Cursor.HAND_CURSOR, "the hand went with the line - it is the line that"
+            assertTrue(showsHand(track), "the hand went with the line - it is the line that"
                 + " was asked to go");
 
             // Closed, and opened again: the line is back
@@ -458,14 +459,14 @@ public class testTheAutonomyEditorKnowsWhichSquare
     }
 
 
-    /** The type of the pointer a square shows, read on the event thread. */
-    private static int cursorOf(final org.traincontrol.gui.LayoutLabel label) throws Exception
+    /** Whether a square shows the hand pointer, read on the event thread. */
+    private static boolean showsHand(final org.traincontrol.gui.LayoutLabel label) throws Exception
     {
-        final int[] type = new int[1];
+        final boolean[] hand = new boolean[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> type[0] = label.getCursor().getType());
+        javax.swing.SwingUtilities.invokeAndWait(() -> hand[0] = HandPointer.isHand(label.getCursor()));
 
-        return type[0];
+        return hand[0];
     }
 
     /** A private field of the editor's autonomy panel, by name. */

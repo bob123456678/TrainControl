@@ -1,15 +1,15 @@
 package ui;
 
+import java.awt.Cursor;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.widgets.HandPointer;
-import org.traincontrol.gui.widgets.HandPointer.Look;
 
 /**
- * The hand pointer TrainControl draws for itself (FR-224): a picture of the pointer box Windows asks for, pointing at
- * its hotspot, with a hard outer edge (Windows keeps only a 1-bit mask) and a smooth inside.  Offscreen; no window.
+ * The hand pointer TrainControl draws for itself on Java 8 (FR-224): a picture of the pointer box Windows asks for,
+ * pointing at its hotspot, with a hard outer edge (Windows keeps only a 1-bit mask) and a smooth inside.  No window.
  *
  * @author Adam
  */
@@ -22,38 +22,35 @@ public class testTheHandPointerIsDrawnSmooth
      * Java 8 refuses a hotspot outside the picture and rescales a picture of the wrong size without moving the
      * hotspot, so both must match the box; the hotspot is the fingertip, the topmost opaque pixel.
      *
-     * MUTATION: drawing every look in a 32-pixel square whatever the size asked fails the size assertion at 48.
+     * MUTATION: drawing the hand in a 32-pixel square whatever the size asked fails the size assertion at 48.
      */
     @Test
-    public void testEachLookFillsTheBoxAndPointsWithItsFingertip()
+    public void testTheHandFillsTheBoxAndPointsWithItsFingertip()
     {
-        for (Look look : Look.values())
+        for (int size : SIZES)
         {
-            for (int size : SIZES)
+            BufferedImage img = HandPointer.image(size);
+            Point hot = HandPointer.hotspot(size);
+            String what = "at " + size;
+
+            assertEquals(img.getWidth(), size, what + ": width");
+            assertEquals(img.getHeight(), size, what + ": height");
+            assertEquals(hot.y, 0, what + ": the hotspot is on the top row");
+            assertTrue(opaque(img, hot.x, 0), what + ": the hotspot " + hot + " is on the hand");
+
+            int left = size, right = -1;
+
+            for (int x = 0; x < size; x++)
             {
-                BufferedImage img = HandPointer.image(look, size);
-                Point hot = HandPointer.hotspot(look, size);
-                String what = look + " at " + size;
-
-                assertEquals(img.getWidth(), size, what + ": width");
-                assertEquals(img.getHeight(), size, what + ": height");
-                assertEquals(hot.y, 0, what + ": the hotspot is on the top row");
-                assertTrue(opaque(img, hot.x, 0), what + ": the hotspot " + hot + " is on the hand");
-
-                int left = size, right = -1;
-
-                for (int x = 0; x < size; x++)
+                if (opaque(img, x, 0))
                 {
-                    if (opaque(img, x, 0))
-                    {
-                        left = Math.min(left, x);
-                        right = Math.max(right, x);
-                    }
+                    left = Math.min(left, x);
+                    right = Math.max(right, x);
                 }
-                assertTrue(Math.abs(hot.x - (left + right) / 2.0) <= 1, what + ": the hotspot " + hot.x
-                    + " is the middle of the fingertip, " + left + " to " + right);
-                assertTrue(height(img) >= size * 0.7, what + ": the hand is " + height(img) + " tall in " + size);
             }
+            assertTrue(Math.abs(hot.x - (left + right) / 2.0) <= 1, what + ": the hotspot " + hot.x
+                + " is the middle of the fingertip, " + left + " to " + right);
+            assertTrue(height(img) >= size * 0.7, what + ": the hand is " + height(img) + " tall in " + size);
         }
     }
 
@@ -66,33 +63,51 @@ public class testTheHandPointerIsDrawnSmooth
     @Test
     public void testTheEdgeIsHardAndTheInsideSmooth()
     {
-        for (Look look : Look.values())
+        for (int size : SIZES)
         {
-            for (int size : SIZES)
+            BufferedImage img = HandPointer.image(size);
+            int between = 0;
+
+            for (int y = 0; y < size; y++)
             {
-                BufferedImage img = HandPointer.image(look, size);
-                int between = 0;
-
-                for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
                 {
-                    for (int x = 0; x < size; x++)
+                    int argb = img.getRGB(x, y), alpha = argb >>> 24;
+
+                    assertTrue(alpha == 0 || alpha == 255, "at " + size + ": alpha " + alpha + " at "
+                        + x + "," + y);
+                    int gray = argb & 0xFF;
+
+                    if (alpha == 255 && gray > 40 && gray < 215)
                     {
-                        int argb = img.getRGB(x, y), alpha = argb >>> 24;
-
-                        assertTrue(alpha == 0 || alpha == 255, look + " at " + size + ": alpha " + alpha + " at "
-                            + x + "," + y);
-                        int gray = argb & 0xFF;
-
-                        if (alpha == 255 && gray > 40 && gray < 215)
-                        {
-                            between++;
-                        }
+                        between++;
                     }
                 }
-                assertTrue(between >= size / 2, look + " at " + size + ": only " + between
-                    + " antialiased pixels inside");
             }
+            assertTrue(between >= size / 2, "at " + size + ": only " + between
+                + " antialiased pixels inside");
         }
+    }
+
+    /**
+     * Java 8's own hand is a jagged 1-bit picture, so there the hand is TrainControl's; later Java's own is Windows'
+     * hand at the user's size and color, and stays.  Either way the pointer is recognized as the hand.
+     *
+     * MUTATION: returning Java's own hand from HandPointer.cursor() on every Java fails the first assertion on Java 8.
+     */
+    @Test
+    public void testJava8AloneGetsTheDrawnHand()
+    {
+        boolean java8 = "1.8".equals(System.getProperty("java.specification.version"));
+        Cursor hand = HandPointer.cursor();
+
+        assertEquals(hand.getType() == Cursor.CUSTOM_CURSOR, java8, "on Java "
+            + System.getProperty("java.specification.version") + " the hand pointer is " + hand);
+        assertSame(HandPointer.cursor(), hand, "each call makes a new pointer");
+        assertTrue(HandPointer.isHand(hand), "the drawn hand is not recognized as the hand");
+        assertTrue(HandPointer.isHand(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)), "Java's own hand is not");
+        assertFalse(HandPointer.isHand(Cursor.getDefaultCursor()), "the arrow is taken for a hand");
+        assertFalse(HandPointer.isHand(null), "no pointer is taken for a hand");
     }
 
     private static boolean opaque(BufferedImage img, int x, int y)

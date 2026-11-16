@@ -21,6 +21,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.AutoLocomotiveStatus;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
@@ -80,7 +81,7 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             Mouse.enter(line);
 
-            assertEquals(line.getCursor().getType(), Cursor.HAND_CURSOR, "the pointer does not invite a click");
+            assertTrue(HandPointer.isHand(line.getCursor()), "the pointer does not invite a click");
 
             String tip = tooltipAfterHover(line);
 

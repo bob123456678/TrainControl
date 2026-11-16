@@ -31,6 +31,7 @@ import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
 import org.traincontrol.gui.locomotive.RightClickSelectorMenu;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
@@ -902,7 +903,7 @@ public class testTheLocomotiveSettingsWindow
                 assertTrue(Components.onTheEventThread(note::isFocusable), lang + ": the link cannot be reached by keyboard");
 
                 mouseOnTheNote(java.awt.event.MouseEvent.MOUSE_MOVED, true);
-                assertEquals((int) Components.onTheEventThread(() -> note.getCursor().getType()), java.awt.Cursor.HAND_CURSOR,
+                assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(note.getCursor())),
                     lang + ": no hand over the link");
 
                 mouseOnTheNote(java.awt.event.MouseEvent.MOUSE_MOVED, false);
@@ -1020,7 +1021,7 @@ public class testTheLocomotiveSettingsWindow
             return null;
         });
 
-        return Components.onTheEventThread(() -> note.getCursor().getType()) == java.awt.Cursor.HAND_CURSOR;
+        return Components.onTheEventThread(() -> HandPointer.isHand(note.getCursor()));
     }
 
     /**
