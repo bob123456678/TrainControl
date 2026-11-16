@@ -864,20 +864,7 @@ public final class StationSettingsWindow extends StationWindowBase
         // FlatLaf rings a spinner's focus only for its own kind of editor
         out.putClientProperty("JComponent.focusOwner", (Predicate<JComponent>) spinner ->
             com.formdev.flatlaf.ui.FlatUIUtils.isPermanentFocusOwner(maxLength));
-        maxLength.addFocusListener(new java.awt.event.FocusAdapter()
-        {
-            @Override
-            public void focusGained(java.awt.event.FocusEvent e)
-            {
-                out.repaint();
-            }
-
-            @Override
-            public void focusLost(java.awt.event.FocusEvent e)
-            {
-                out.repaint();
-            }
-        });
+        maxLength.addFocusListener(repaints(out));
 
         java.awt.FontMetrics metrics = maxLength.getFontMetrics(REGULAR);
 
@@ -887,6 +874,25 @@ public final class StationSettingsWindow extends StationWindowBase
         out.setPreferredSize(new Dimension(out.getPreferredSize().width, name.getPreferredSize().height));
 
         return out;
+    }
+
+    /** Repaints a part whenever the field listened to gains or loses the keyboard. */
+    private static java.awt.event.FocusListener repaints(Component shown)
+    {
+        return new java.awt.event.FocusAdapter()
+        {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e)
+            {
+                shown.repaint();
+            }
+
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e)
+            {
+                shown.repaint();
+            }
+        };
     }
 
     private void wide(JComponent part)
@@ -1078,7 +1084,8 @@ public final class StationSettingsWindow extends StationWindowBase
         }
 
         // A field with arrows has no border of its own: the arrows' box wears the outline
-        JComponent framed = part.getParent() instanceof JSpinner ? (JComponent) part.getParent() : part;
+        Component around = part.getParent();
+        JComponent framed = around instanceof JSpinner ? (JSpinner) around : part;
 
         framed.putClientProperty("JComponent.outline", why == null ? null : "error");
 
