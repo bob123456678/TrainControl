@@ -856,9 +856,6 @@ public class testLocIconCrop
 
         boolean cropWas = prefs.getBoolean(TrainControlUI.CROP_LOC_ICON_PREF, false);
 
-        org.traincontrol.base.Locomotive loc = null;
-        String iconWas = null;
-
         // The save below changes the run's data; the classes after this one in the lane read it
         support.SavedData found = support.SavedData.take();
 
@@ -881,10 +878,8 @@ public class testLocIconCrop
 
             write(unreadable, "a png in name only");
 
-            assertFalse(model.getLocomotives().isEmpty(), "precondition: the locomotive database is empty");
-
-            loc = model.getLocomotives().get(0);
-            iconWas = loc.getLocalImageURL();
+            // Its own locomotive: the run's database is a copy of the worktree's, which may hold none
+            final org.traincontrol.base.Locomotive loc = model.newDCCLocomotive("FR-022 unreadable", 8022);
 
             final String goodUrl = good.toPath().toUri().toString();
 
@@ -928,8 +923,6 @@ public class testLocIconCrop
         {
             prefs.putBoolean(TrainControlUI.CROP_LOC_ICON_PREF, cropWas);
 
-            if (loc != null) loc.setLocalImageURL(iconWas);
-
             closeTheWindow(ui);
 
             if (model != null) model.stop();
@@ -966,6 +959,9 @@ public class testLocIconCrop
                 throw new RuntimeException(e);
             }
         });
+
+        // Start-up's posts land first: they set the active locomotive (the database's first, or none) over a claim's
+        Components.drain(4);
 
         return made[0];
     }
@@ -1353,8 +1349,6 @@ public class testLocIconCrop
             model = support.TestStation.simulated();
 
             ui = windowOver(model);
-
-            Components.drain(4);
 
             // A name of its own in the icon folder, which is the real one (see the first claim of this class)
             ours = org.traincontrol.util.Util.getLocIconFile("fr142_test_" + java.util.UUID.randomUUID() + ".png");

@@ -735,6 +735,7 @@
         <test-one-class class="testAStalledCutOrHandDrivenTrain"/>
         <test-one-class class="testALocalCopyLogsTheSquaresTheStationDisagreesWith"/>
         <test-one-class class="testTheSyncAsksAboutRenamedLocomotives"/>
+        <test-one-class class="testASilentStationPictureGivesUp"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

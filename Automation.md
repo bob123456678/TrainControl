@@ -220,7 +220,7 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
 | --- | --- | --- | --- | --- |
 | `Station` | on | on | on | `Never` |
 | `Terminus` | on | off | on | `Must` |
-| `Parking` | on | off | off | `Never` |
+| `Parking` | on | off | off | `Must` |
 | `Reversing` | on | on | off | `May` |
 | `Off` | off | on | (grayed, left as it is) | `Never` |
 

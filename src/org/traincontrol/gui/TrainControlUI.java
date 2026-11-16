@@ -85,7 +85,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
@@ -198,6 +197,7 @@ import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.file.CS2File;
 
 /**
  * UI for controlling trains and switches using the keyboard
@@ -7319,7 +7319,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (!TrainControlUI.getImageCache().containsKey(key))
         {
-            Image img = ImageIO.read(new URL(url));
+            Image img = CS2File.readPicture(url);
             
             if (img != null)
             {

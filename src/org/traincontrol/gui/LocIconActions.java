@@ -14,7 +14,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -30,6 +29,7 @@ import javax.swing.SwingUtilities;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.locomotive.LocIconCropDialog;
 import org.traincontrol.gui.widgets.QuickFileChooser;
+import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 import org.traincontrol.util.Util;
@@ -726,7 +726,7 @@ final class LocIconActions
     {
         try
         {
-            BufferedImage picture = ImageIO.read(new URL(url));
+            BufferedImage picture = CS2File.readPicture(url);
 
             if (picture == null) return null;
 

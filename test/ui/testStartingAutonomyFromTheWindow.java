@@ -299,10 +299,53 @@ public class testStartingAutonomyFromTheWindow
     }
 
     /**
+     * Start above the track diagram ends at the diagram's right edge, to the pixel on screen (OB-473).
+     *
+     * MUTATION: give `AutonomyOverlayToggle`'s border a right inset of 4 again, and this fails.
+     */
+    @Test
+    public void testStartEndsAtTheDiagramsRightEdge() throws Exception
+    {
+        java.awt.Component diagram = field("LayoutArea");
+
+        onScreen(() ->
+        {
+            AbstractButton copy = Components.onTheEventThread(() ->
+            {
+                ((javax.swing.JTabbedPane) field("KeyboardTab")).setSelectedComponent(field("layoutPanel"));
+
+                return Components.withText(field("autonomyOverlayToggle"), I18n.t("ui.main.startAutonomy"));
+            });
+
+            assertNotNull(copy, "precondition: the strip above the diagram offers no Start");
+
+            assertTrue(Settle.until(copy::isShowing, 30000), "precondition: the strip's Start is not on screen");
+
+            int[] rights = Components.onTheEventThread(() -> new int[] {
+                copy.getLocationOnScreen().x + copy.getWidth(), diagram.getLocationOnScreen().x + diagram.getWidth()});
+
+            assertEquals(rights[0], rights[1], "Start does not end at the track diagram's right edge");
+
+            return null;
+        });
+    }
+
+    /**
      * MT-1001's check with Start as the run's door, the window shown for it: the route list's right-click menu only
-     * opens on a window on screen, and this class's window is otherwise never shown.
+     * opens on a window on screen.
      */
     private static void onScreen(boolean toggled) throws Exception
+    {
+        onScreen(() ->
+        {
+            support.RouteListDoors.HandSwitched.runAndRead(ui, toggled, "Start", () -> startAnsweredYes());
+
+            return null;
+        });
+    }
+
+    /** Runs the work with the window on screen, hidden again after: this class's window is otherwise never shown. */
+    private static void onScreen(java.util.concurrent.Callable<?> work) throws Exception
     {
         Components.onTheEventThread(() ->
         {
@@ -313,7 +356,7 @@ public class testStartingAutonomyFromTheWindow
 
         try
         {
-            support.RouteListDoors.HandSwitched.runAndRead(ui, toggled, "Start", () -> startAnsweredYes());
+            work.call();
         }
         finally
         {
@@ -414,11 +457,13 @@ public class testStartingAutonomyFromTheWindow
         return field("gracefulStop");
     }
 
-    private static JButton field(String name)
+    /** The window's component of this field name, as the type the caller asks for. */
+    @SuppressWarnings("unchecked")
+    private static <T> T field(String name)
     {
         try
         {
-            return (JButton) Reflect.get(TrainControlUI.class, ui, name);
+            return (T) Reflect.get(TrainControlUI.class, ui, name);
         }
         catch (ReflectiveOperationException e)
         {
