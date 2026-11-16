@@ -5,7 +5,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.prefs.Preferences;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import org.traincontrol.marklin.MarklinLocomotiveCsv;
@@ -25,6 +24,11 @@ public class testANewerJavaKeepsWhatJava8Had
     private static final String JORGEN = "C:\\Users\\J\u00f8rgen\\Desktop\\TrainControl";
     private static final String JAVA8_KEY = "49873a543b";
     private static final String JAVA21_KEY = "b7c5101b3d";
+
+    /** This folder's key in UTF-8, and in UTF-16, which stands in for a code page the folder hashes differently in. */
+    private static final String HERE = new File("").getAbsolutePath();
+    private static final String IN_UTF8 = key(HERE, StandardCharsets.UTF_8);
+    private static final String IN_NATIVE = key(HERE, StandardCharsets.UTF_16LE);
 
     /**
      * On Java 8 the scale is the display's, as before; on Windows, where Java 9 and later scale the window themselves,
@@ -65,28 +69,9 @@ public class testANewerJavaKeepsWhatJava8Had
         assertEquals(key(JORGEN, Charset.forName("windows-1252")), JAVA8_KEY);
         assertEquals(key(JORGEN, StandardCharsets.UTF_8), JAVA21_KEY);
 
-        String here = new File("").getAbsolutePath();
-        String was = System.getProperty("native.encoding");
-
-        assertEquals(Conversion.getFolderHash(10), key(here, Charset.defaultCharset()), "Java 8's key changed");
-
-        // Through the door every key is made by: UTF-16 stands in for a code page this folder hashes differently in.
-        String inNative = key(here, StandardCharsets.UTF_16LE);
-        Preferences node = isolatedNode();
-
-        try
-        {
-            System.setProperty("native.encoding", "UTF-16LE");
-            node.put("FR236" + inNative, "x");
-
-            assertEquals(Conversion.getFolderHash(10), inNative,
-                "the folder's key is not its path in the machine's code page");
-        }
-        finally
-        {
-            node.remove("FR236" + inNative);
-            restore("native.encoding", was);
-        }
+        assertEquals(Conversion.getFolderHash(10), key(HERE, Charset.defaultCharset()), "Java 8's key changed");
+        assertEquals(keyWithSettingsUnder(IN_NATIVE), IN_NATIVE,
+            "the folder's key is not its path in the machine's code page");
     }
 
     /**
@@ -97,56 +82,19 @@ public class testANewerJavaKeepsWhatJava8Had
     @Test(timeOut = 60000)
     public void testSettingsSavedByANewerJavaAreStillFound() throws Exception
     {
-        String here = new File("").getAbsolutePath();
-        String inUtf8 = key(here, StandardCharsets.UTF_8);
-        Preferences node = isolatedNode();
-        String was = System.getProperty("native.encoding");
-
-        try
-        {
-            System.setProperty("native.encoding", "UTF-16LE");
-            node.put("FR236" + inUtf8, "x");
-
-            assertNotEquals(key(here, StandardCharsets.UTF_16LE), inUtf8, "precondition");
-            assertEquals(Conversion.getFolderHash(10), inUtf8, "the settings saved under the UTF-8 key were dropped");
-        }
-        finally
-        {
-            node.remove("FR236" + inUtf8);
-            restore("native.encoding", was);
-        }
+        assertEquals(keyWithSettingsUnder(IN_UTF8), IN_UTF8, "the settings saved under the UTF-8 key were dropped");
     }
 
     /**
      * A folder neither key has settings for takes the native key, so a first start on Java 18 or later saves where
-     * Java 8 will look.  The run's own keys under either hash are lifted off for the claim and put back.
+     * Java 8 will look.
      *
      * MUTATION: drop `|| !hasSettings(java18)` from `Conversion.getFolderHash`, and a fresh folder takes the UTF-8 key.
      */
     @Test(timeOut = 60000)
     public void testAFreshFolderTakesTheNativeKey() throws Exception
     {
-        String here = new File("").getAbsolutePath();
-        String inNative = key(here, StandardCharsets.UTF_16LE), inUtf8 = key(here, StandardCharsets.UTF_8);
-        Preferences node = isolatedNode();
-        java.util.Map<String, String> lifted = new java.util.HashMap<>();
-        String was = System.getProperty("native.encoding");
-
-        for (String k : node.keys()) if (k.endsWith(inNative) || k.endsWith(inUtf8)) lifted.put(k, node.get(k, null));
-
-        try
-        {
-            for (String k : lifted.keySet()) node.remove(k);
-
-            System.setProperty("native.encoding", "UTF-16LE");
-
-            assertEquals(Conversion.getFolderHash(10), inNative, "a folder with no settings at all took the UTF-8 key");
-        }
-        finally
-        {
-            lifted.forEach(node::put);
-            restore("native.encoding", was);
-        }
+        assertEquals(keyWithSettingsUnder(), IN_NATIVE, "a folder with no settings at all took the UTF-8 key");
     }
 
     /**
@@ -199,6 +147,36 @@ public class testANewerJavaKeepsWhatJava8Had
         }
     }
 
+    /**
+     * `getFolderHash` where the machine's code page is UTF-16 and the run's node holds a setting under exactly these
+     * hashes: its own keys under either are lifted off for the call and put back.
+     */
+    private static String keyWithSettingsUnder(String... hashes) throws Exception
+    {
+        Preferences node = isolatedNode();
+        java.util.Map<String, String> lifted = new java.util.HashMap<>();
+        String was = System.getProperty("native.encoding");
+
+        for (String k : node.keys()) if (k.endsWith(IN_NATIVE) || k.endsWith(IN_UTF8)) lifted.put(k, node.get(k, null));
+
+        try
+        {
+            for (String k : lifted.keySet()) node.remove(k);
+            for (String hash : hashes) node.put("FR236" + hash, "x");
+
+            System.setProperty("native.encoding", "UTF-16LE");
+
+            return Conversion.getFolderHash(10);
+        }
+        finally
+        {
+            for (String hash : hashes) node.remove("FR236" + hash);
+
+            lifted.forEach(node::put);
+            restore("native.encoding", was);
+        }
+    }
+
     /** The run's own preference node for the window class's settings: never the operator's. */
     private static Preferences isolatedNode()
     {
@@ -211,13 +189,20 @@ public class testANewerJavaKeepsWhatJava8Had
     }
 
     /** The last ten hex digits of the SHA-1 of a path in this charset, the folder key's recipe. */
-    private static String key(String path, Charset charset) throws Exception
+    private static String key(String path, Charset charset)
     {
         StringBuilder hex = new StringBuilder();
 
-        for (byte b : java.security.MessageDigest.getInstance("SHA1").digest(path.getBytes(charset)))
+        try
         {
-            hex.append(String.format("%02x", b & 0xff));
+            for (byte b : java.security.MessageDigest.getInstance("SHA1").digest(path.getBytes(charset)))
+            {
+                hex.append(String.format("%02x", b & 0xff));
+            }
+        }
+        catch (java.security.NoSuchAlgorithmException e)
+        {
+            throw new IllegalStateException(e);
         }
 
         return hex.substring(hex.length() - 10);
