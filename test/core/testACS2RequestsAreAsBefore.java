@@ -14,8 +14,9 @@ import support.StandInStation;
  * Every request TrainControl sends a CS2, in the order it sends them with their query strings: a sync from the station,
  * a resync, a sync again from an emptied railway, a sync with a local layout folder, the check for renamed locomotives
  * and the layout download, the last two with and without a local folder set.  The golden,
- * `test/baseline/cs2_requests_golden.txt`, was written by this class run on dev at e9bbd789 and never changes: it is the
- * proof that no CS2 request moves when the CS3 code does.
+ * `test/baseline/cs2_requests_golden.txt`, was written by this class run on dev at e9bbd789: it is the proof that no CS2
+ * request moves when the CS3 code does.  The only change, in `test/baseline/cs2_requests_golden_changes.tsv`, drops the
+ * accessory list a sync read twice (FR-207).
  *
  * MUTATION: have getRenameProposals ask the CS3 locomotive endpoint for a CS2 (call parseLocomotivesCS3 whatever
  * `isCS3` says), and the rename lines differ.

@@ -270,7 +270,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private String lastMessage;
     
     // Is this a CS3?
-    private boolean isCS3 = false;
+    private volatile boolean isCS3 = false;
 
     // The accessory UIDs this sync's pages show as both a switch and a signal (syncLayouts); see wireComponents (OB-405)
     private Set<Integer> mixedAddresses = Collections.emptySet();
@@ -1657,9 +1657,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.lastSyncError = null;
         this.lastSyncPartial = false;
 
-        // Read remote config files
-        this.fileParser = new CS2File(cs2Address(), this);
-             
+        // Read remote config files, each one once for the whole sync (FR-207)
+        final CS2File parser = new CS2File(cs2Address(), this);
+        this.fileParser = parser;
+        parser.startSync();
+
+        try
+        {
+            return this.syncThroughTheNewParser();
+        }
+        finally
+        {
+            parser.endSync();
+        }
+    }
+
+    /** The body of syncWithCS2, with `fileParser` just made and in its sync. */
+    private int syncThroughTheNewParser()
+    {
         this.logf("log.csDBSyncStarting");
 
         int num = 0;

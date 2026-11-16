@@ -480,6 +480,52 @@ public final class CS2File
      */
     public static BufferedReader fetchURL(String url) throws Exception
     {
+        return new BufferedReader(new java.io.StringReader(fetchText(url)));
+    }
+
+    // The files the running sync has read whole, by URL, kept for the sync's own thread only (FR-207)
+    private final Map<String, String> readThisSync = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private volatile Thread syncing;
+
+    /**
+     * From now until endSync, a file the calling thread asks for again through fetchOnce is the copy it read whole, not
+     * a new fetch.  Other threads, and every caller outside a sync, fetch as before: the parser outlives its sync.
+     */
+    public void startSync()
+    {
+        this.readThisSync.clear();
+        this.syncing = Thread.currentThread();
+    }
+
+    /** Ends startSync: every fetch after this goes to the station. */
+    public void endSync()
+    {
+        this.syncing = null;
+        this.readThisSync.clear();
+    }
+
+    /**
+     * fetchURL, once per sync for the syncing thread; a fetch that fails is never kept, so asking again fetches again.
+     * Not private: SpotBugs' throws-clause check does not see a private callee's `throws Exception`.
+     */
+    BufferedReader fetchOnce(String url) throws Exception
+    {
+        if (Thread.currentThread() != this.syncing) return fetchURL(url);
+
+        String text = this.readThisSync.get(url);
+
+        if (text == null)
+        {
+            text = fetchText(url);
+            this.readThisSync.put(url, text);
+        }
+
+        return new BufferedReader(new java.io.StringReader(text));
+    }
+
+    private static String fetchText(String url) throws Exception
+    {
         final Body first = readBody(url);
         Body last = first;
 
@@ -500,7 +546,7 @@ public final class CS2File
                 String.valueOf(last.bytes.length), String.valueOf(last.promised)));
         }
 
-        return new BufferedReader(new java.io.StringReader(decode(last.bytes, url)));
+        return decode(last.bytes, url);
     }
 
     /** A file that ended short of the length promised; the message is for the log, the sync tells the user plainly. */
@@ -777,7 +823,7 @@ public final class CS2File
     /** Helper to detect CS3 404 errors */
     public boolean isNotFoundError(String url)
     {
-        try (BufferedReader in = fetchURL(url))
+        try (BufferedReader in = fetchOnce(url))
         {
             Object json = new JSONTokener(in).nextValue();
 
@@ -821,7 +867,7 @@ public final class CS2File
     {
         try
         {
-            return fetchURL(getCS3LocDBUrl(is260 ? 260 : 250));
+            return fetchOnce(getCS3LocDBUrl(is260 ? 260 : 250));
         }
         catch (FileNotFoundException notThere)
         {
@@ -830,7 +876,7 @@ public final class CS2File
 
             if (probed == is260) throw notThere;
 
-            return fetchURL(getCS3LocDBUrl(probed ? 260 : 250));
+            return fetchOnce(getCS3LocDBUrl(probed ? 260 : 250));
         }
     }
 
@@ -879,6 +925,7 @@ public final class CS2File
 
         for (int attempt = 0; attempt < 2 && body.trim().isEmpty(); attempt++)
         {
+            // Not fetchOnce: the second attempt must ask the station again
             try (BufferedReader in = fetchURL(getCS3MagDBUrl() + "/state"))
             {
                 body = in.lines().collect(Collectors.joining("\n"));
@@ -911,7 +958,7 @@ public final class CS2File
 
         if (mags == null)
         {
-            try (BufferedReader in = fetchURL(getCS3MagDBUrl()))
+            try (BufferedReader in = fetchOnce(getCS3MagDBUrl()))
             {
                 mags = readList(in, null);
             }
@@ -1002,7 +1049,7 @@ public final class CS2File
     {
         // All three in one try-with-resources, so an exception after the first is opened leaks none of them.
         try (BufferedReader routeBR = fetchURL(getCS3RouteDBUrl());
-             BufferedReader magBR   = fetchURL(getCS3MagDBUrl());
+             BufferedReader magBR   = fetchOnce(getCS3MagDBUrl());
              BufferedReader locBR   = openCS3Locos(is260))
         {
             // The routes are the list itself from firmware 2.6, and under "automatics" before; either is read
@@ -2624,7 +2671,7 @@ public final class CS2File
     
     public List<MarklinAccessory> getMagList(boolean local) throws Exception
     {
-        return parseMags(parseFile(fetchURL(getMagURL(local))));
+        return parseMags(parseFile(fetchOnce(getMagURL(local))));
     }
     
     /**

@@ -14,8 +14,8 @@ import support.StandInStation;
  *
  * A stand-in station counts the requests; the layout is a local sandbox, so the layout sync never reaches it.
  *
- * MUTATION: have syncWithCS2 call the no-argument parseLocomotivesCS3(), and a 2.6 sync reads the list four times
- * and a 2.5 sync probes twice.
+ * MUTATION: fetch with `fetchURL` in `CS2File.openCS3Locos` rather than `fetchOnce`, and a 2.6 sync reads the list three
+ * times and a 2.5 sync reads the older list twice.
  *
  * @author Adam
  */
@@ -74,25 +74,25 @@ public class testACS3SyncProbesTheFirmwareOnce
         assertEquals(model.isCS3(), !"cs2".equals(which), "the stand-in was taken for the right station");
     }
 
-    /** 2.6 firmware: one probe, the route import's read and the locomotive import's read. */
+    /** 2.6 firmware: one probe, whose list both imports read (FR-207). */
     @Test
-    public void testA260SyncReadsTheLocomotiveListThreeTimes() throws Exception
+    public void testA260SyncReadsTheLocomotiveListOnce() throws Exception
     {
         sync("260");
 
         assertNotNull(model.getLocByName("02 0314-1 DDR"), "the 2.6 locomotive list was imported");
-        assertEquals(station.requests("/app/api/locos"), 3, "all requests: " + station.asked());
+        assertEquals(station.requests("/app/api/locos"), 1, "all requests: " + station.asked());
         assertEquals(station.requests("/app/api/loks"), 0, "all requests: " + station.asked());
     }
 
-    /** Before 2.6.0: the probe finds no `/app/api/locos` once, and both imports read `/app/api/loks`. */
+    /** Before 2.6.0: the probe finds no `/app/api/locos` once, and both imports read one fetch of `/app/api/loks`. */
     @Test
     public void testA250SyncProbesOnce() throws Exception
     {
         sync("250");
 
         assertEquals(station.requests("/app/api/locos"), 1, "one probe; all requests: " + station.asked());
-        assertEquals(station.requests("/app/api/loks"), 2, "both imports; all requests: " + station.asked());
+        assertEquals(station.requests("/app/api/loks"), 1, "both imports; all requests: " + station.asked());
     }
 
     /** A CS2 never reaches the CS3 interface (green before and after: the CS2 path is not changed). */
