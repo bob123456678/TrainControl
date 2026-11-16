@@ -1673,6 +1673,42 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /**
+     * Typing made before the window locked is still asked about at Cancel: Save on the question is refused with the
+     * moving rule's sentence and keeps the window and the typing, writing nothing; Discard then closes (MT-939).
+     *
+     * MUTATION: have the Cancel button close without asking while the window is locked, and this fails.
+     */
+    @Test
+    public void testTypingFromBeforeTheLockIsAskedAboutAtCancel() throws Exception
+    {
+        open(0);
+        SettingsWindow.type("settings.name", "LS renamed");
+
+        try
+        {
+            SettingsWindow.power(ui, model, true);
+            loc.setSpeed(40);
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(
+                SettingsWindow.part("settings.strip", JLabel.class)::isVisible), WAIT), "precondition: the window did not lock");
+
+            assertEquals(SettingsWindow.asked(() -> cancelAnswering(0)), Arrays.asList(I18n.f("loc.ui.stopToEdit", NAME)),
+                "Save on the question was not refused for a moving train");
+            assertNotNull(SettingsWindow.showing(), "the refused Save closed the window");
+            assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "the refused Save lost the typing");
+            assertEquals(loc.getName(), NAME, "the refused Save wrote the typing");
+
+            assertTrue(cancelAnswering(1), "Discard did not close the locked window");
+            assertEquals(loc.getName(), NAME, "Discard wrote the typing");
+        }
+        finally
+        {
+            loc.setSpeed(0);
+            SettingsWindow.power(ui, model, false);
+        }
+    }
+
+    /**
      * Add Locomotive into a window holding typing asks first, and so does opening a locomotive over Add's typing; Cancel
      * keeps the typing where it was, Discard goes on and writes nothing (MT-939).
      *
