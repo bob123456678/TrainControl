@@ -48,8 +48,8 @@ A terminus **must** be a destination: `setDestination(false)` clears `isTerminus
 is emitted as a plain reversing point rather than as a terminus.
 
 **The editor asks the same question as the runtime** (OB-195).
-`AutonomySession.stationsAutonomyWillNotChoose`, which decides the magenta leg color and the Auto tier's "reachable and
-never chosen" notice (section 7), asks `isStation && !isAutoDestination` and `isActive`: the clauses of the runtime
+`AutonomySession.stationsAutonomyWillNotChoose`, which decides the purple leg color and Test a path's note that a
+station is left alone, asks `isStation && !isAutoDestination` and `isActive`: the clauses of the runtime
 rule a SQUARE can answer. A compulsory turn counts as never chosen only when it is also parking.
 `testACompulsoryTurnIsAnAutoDestinationExactlyWhenItIsNotParking` asks it of the real railway, in the runtime and in the
 editor's set alike.
@@ -204,7 +204,7 @@ Adam, settling OB-195:
 | the marking | the question it answers |
 |---|---|
 | **Changing Direction - Never / May / Must** | what happens when a train ARRIVES here |
-| **Can Be Chosen in Full Autonomy** | whether autonomy may choose it as a STOP; off, it is used only by a train being parked there, by Return Home or by hand |
+| **May choose this station** | whether autonomy may choose it as a STOP; off, it is used only by a train being parked there, by Return Home or by hand |
 
 They are independent, and only the second decides whether autonomy picks a square.
 

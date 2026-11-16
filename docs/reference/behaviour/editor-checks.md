@@ -51,16 +51,16 @@ side is barred, since it is then no longer a destination by any road.
 where the train stands and never on the way, and never to a station it is told to leave alone
 (`AutonomySession.testPathForAutonomy`). **Where autonomy has none and a hand send has one, that leg is drawn purple**
 (`AutonomySession.testPath`), and the message strip says what purple is and why autonomy would not take it: the station
-is one autonomy leaves alone, or every way there turns round on the way. The route is still drawn, because the track is
-passable. `core.testManualOnlyPathsAreADifferentColour.testTheStripSaysWhichLegOnlyAHandSendTakesAndWhy`.
+is one autonomy leaves alone (on every known railway the only cause, D184). The route is still drawn, because the track
+is passable. `core.testManualOnlyPathsAreADifferentColour.testTheStripSaysWhichLegOnlyAHandSendTakesAndWhy`.
 
 **Neither search passes another copy of either end, nor throws a switch two ways**, as `Layout.bfsBySettings` and
 `isPathClear` route: a kickback, whose only way turns on a spur and comes back through the switch set the other way, is
-no way at all. A way that turns round on the way has to come back over track it has run, so it meets one of those two
-refusals, and no railway is known where the "turns round on the way" note can still show (FR-221; whether it stays is
-Adam's call). `core.testTestAPathStartsWhereTheFindingsDo.testAKickbackThatThrowsItsSwitchBothWaysIsNoWay`,
-`core.testAutonomyDiagramReducer.testNoWalkPassesAnotherCopyOfEitherEnd`; the findings' reach does not yet follow them
-(`testTheFindingsStillReachPastAnotherCopyOfTheDestination`).
+no way at all. On Adam's frozen railway and every test railway no hand path turns round on the way, so the strip's note
+for that was removed (D184).
+`core.testTestAPathStartsWhereTheFindingsDo.testAKickbackThatThrowsItsSwitchBothWaysIsNoWay`,
+`core.testAutonomyDiagramReducer.testNoWalkPassesAnotherCopyOfEitherEnd`. The findings use the same search (FR-238):
+`testAStationReachedOnlyPastAnotherCopyOfItsDestinationGetsItsWarning`, `testTheFindingsAgreeWithTestAPathOnTheFrozenRailway`.
 
 **Why Not Moving? gives one answer for both tiers, as a table of destinations** (MT-434; Adam, asked which tool: *"Why
 Not Moving?"*): one row per station, saying whether the train **can go now** (green: autonomy may send it there), **by
@@ -97,12 +97,12 @@ already uses."*, rather than as missing track, chosen from the route the track q
 `core.testARouteIsFoundPastATerminus.testNoRoutePassesAnotherCopyOfTheTrainsOwnSquare`,
 `testNoRoutePassesAnotherCopyOfItsDestination` and `testWhyNotMovingSaysTheOnlyWayThereIsALap`.
 
-**And the drawn route says it too, in its color.** A tested path is drawn yellow on the way out and orange on the way
+**And the drawn route says it too, in its color.** A tested path is drawn yellow on the way out and amber on the way
 back; a leg only a hand send takes, to a station autonomy will never choose **and a person still may** (a parking
-berth) or by a way that turns round on the way, is drawn in magenta, whichever direction it runs.
+berth), is drawn in purple, whichever direction it runs.
 
-**Two squares are deliberately not magenta.** A **compulsory turn** is chosen like any other station (OB-195) when *Can
-Be Chosen in Full Autonomy* is on. A square **switched out of service** is not a manual-only point: nothing may be sent
+**Two squares are deliberately not purple.** A **compulsory turn** is chosen like any other station (OB-195) when *May
+choose this station* is on. A square **switched out of service** is not a manual-only point: nothing may be sent
 there by any tier, and the routing check says so in its own sentence. The color asks
 `AutonomySession.manualOnlyStations`, the runtime rule less the shut squares. Adam: *"just use a different color going to manual-only points.
 yellow is currently forward, and orange is backwards — path, not the chevron arrows."* Every square of that leg carries
