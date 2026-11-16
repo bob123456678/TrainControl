@@ -1,0 +1,8 @@
+[gleisbildseite]
+version
+ .major=1
+page=2
+element
+ .id=0x2080d
+ .typ=gerade
+ .artikel=-1

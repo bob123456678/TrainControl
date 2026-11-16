@@ -1,0 +1,273 @@
+[magnetartikel]
+version
+ .minor=1
+artikel
+ .name=D 1
+ .id=225
+ .typ=digitaldrehscheibe
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=D 2
+ .id=2048
+ .typ=lichtsignal_HP012
+ .stellung=1
+ .schaltzeit=300
+ .dectyp=dcc
+ .decoder=ein_alt
+artikel
+ .name=S 1
+ .id=4
+ .typ=urc_lichtsignal_HP012_SH01
+ .stellung=2
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=S 2
+ .id=6
+ .typ=urc_lichtsignal_HP012_SH01
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=S 3
+ .id=170
+ .typ=lichtsignal_HP012
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=S 4
+ .id=190
+ .typ=lichtsignal_HP012
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=S 89
+ .id=89
+ .typ=lichtsignal_HP01
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 1
+ .id=8
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 10
+ .id=2047
+ .typ=dkw_1antrieb
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=dcc
+ .decoder=ein_alt
+artikel
+ .name=W 11
+ .id=1
+ .typ=dkw_1antrieb
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=dcc
+ .decoder=ein_alt
+artikel
+ .name=W 12
+ .id=320
+ .typ=linksweiche
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 13
+ .id=2048
+ .typ=dkw_1antrieb
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=dcc
+ .decoder=ein_alt
+artikel
+ .name=W 14
+ .id=25
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=dcc
+ .decoder=ein_alt
+artikel
+ .name=W 15
+ .id=25
+ .typ=linksweiche
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 1R
+ .id=1
+ .typ=rechtsweiche
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 2
+ .id=9
+ .typ=rechtsweiche
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 2L
+ .id=2
+ .typ=linksweiche
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 3
+ .id=10
+ .typ=rechtsweiche
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 3R
+ .id=3
+ .typ=rechtsweiche
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 4
+ .id=11
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 5
+ .id=12
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 6
+ .id=13
+ .typ=rechtsweiche
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 7
+ .id=14
+ .typ=dreiwegweiche
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 8
+ .id=24
+ .typ=dkw_1antrieb
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=W 9
+ .id=1000
+ .typ=rechtsweiche
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=dcc
+ .decoder=ein_alt
+artikel
+ .name=X 1
+ .id=80
+ .typ=y_weiche
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .id=84
+ .typ=std_rot_gruen
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=X 3
+ .id=83
+ .typ=hosentraeger
+ .stellung=1
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .id=16
+ .typ=std_rot_gruen
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=Z 1
+ .id=17
+ .typ=lichtsignal_HP01
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=Z 2
+ .id=18
+ .typ=lichtsignal_HP012_SH01
+ .stellung=2
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=Z 3
+ .id=20
+ .typ=lichtvorsignal_VR012
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=Z 4
+ .id=22
+ .typ=licht_str_lampe
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
+artikel
+ .name=Z 5
+ .id=23
+ .typ=licht_str_lampe
+ .stellung=0
+ .schaltzeit=200
+ .dectyp=mm2
+ .decoder=ein_alt
