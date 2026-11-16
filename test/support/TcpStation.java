@@ -267,28 +267,32 @@ public final class TcpStation implements AutoCloseable
 
         if (late != null)
         {
-            Thread answering = new Thread(() ->
-            {
-                try
-                {
-                    Thread.sleep(late);
+            java.util.Timer timer = new java.util.Timer("tcp-station-late-answer", true);
 
-                    synchronized (this)
+            timer.schedule(new java.util.TimerTask()
+            {
+                @Override
+                public void run()
+                {
+                    try
                     {
-                        synchronized (client)
+                        synchronized (TcpStation.this)
                         {
-                            client.getOutputStream().write(answer(device, contact, occupied(contact)));
+                            synchronized (client)
+                            {
+                                client.getOutputStream().write(answer(device, contact, occupied(contact)));
+                            }
                         }
                     }
-                }
-                catch (IOException | InterruptedException gone)
-                {
-                    // The connection closed, or the station did
-                }
-            }, "tcp-station-late-answer");
+                    catch (IOException gone)
+                    {
+                        // The connection closed
+                    }
 
-            answering.setDaemon(true);
-            answering.start();
+                    timer.cancel();
+                }
+            }, late);
+
             return;
         }
 

@@ -15,6 +15,7 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
+import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.marklin.MarklinSimpleComponent;
 import org.traincontrol.marklin.file.CS2File;
@@ -251,10 +252,10 @@ public class testTheSyncAsksTheSensorsTheirState
 
     /**
      * A late answer is still the sync's own (OB-490): the station answers the route's sensor about 300 ms, then about
-     * 1 s, after its query, the last answer of the pass and inside its wait.  The route fires on neither, as on time,
-     * and fires on the next real edges.
+     * 1 s, after its query, the last answer of the pass and inside its wait, and the sensor's parse waits until the
+     * pass is over.  The route fires on neither, as on time, and fires on the next real edges.
      *
-     * MUTATION: in `MarklinFeedback.parseMessage`, `m.heardAsking()` to `false`.
+     * MUTATION: in `NetworkProxy.learn`, take out the `heardDuring` call.
      */
     @Test(timeOut = 120000)
     public void testALateAnswerToTheSyncFiresNoRoute() throws Exception
@@ -264,30 +265,85 @@ public class testTheSyncAsksTheSensorsTheirState
             for (long late : new long[] {300, 900})
             {
                 int contact = 2810 + (int) (late / 100);
+                MarklinFeedback feedback = rig.model.newFeedback(contact, null);
 
                 aCorrectionFiresNoRoute(rig, station, contact, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, () ->
-                {
-                    station.answerLate(contact, late);
-                    synced(rig, station);
-                });
+                    parsedAfter(feedback, () ->
+                    {
+                        station.answerLate(contact, late);
+                        synced(rig, station);
+                    }));
             }
         });
     }
 
     /**
-     * The same for a reconnect's confirmation (D133): its last answer, about 300 ms late, fires no route.
+     * The same for a reconnect's confirmation (D133): its last answer, about 300 ms late and parsed once the pass is
+     * over, fires no route.
      *
-     * MUTATION: in `NetworkProxy.learn`, take out the `heardDuring` call.
+     * MUTATION: as testALateAnswerToTheSyncFiresNoRoute.
      */
     @Test(timeOut = 120000)
     public void testALateAnswerToAReconnectFiresNoRoute() throws Exception
     {
-        connected((rig, station) -> aCorrectionFiresNoRoute(rig, station, 2820,
-            MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR, () ->
+        connected((rig, station) ->
+        {
+            int contact = 2820;
+            MarklinFeedback feedback = rig.model.newFeedback(contact, null);
+
+            aCorrectionFiresNoRoute(rig, station, contact, MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR, () ->
+                parsedAfter(feedback, () ->
+                {
+                    long asked = station.queries().stream().filter(q -> q[1] == contact).count();
+                    station.answerLate(contact, 300);
+                    station.drop();
+
+                    // Over once the new connection's query has come and the confirmation has ended
+                    assertTrue(Components.waitFor(() -> station.queries().stream().filter(q -> q[1] == contact)
+                        .count() > asked && !rig.model.isConfirming(), WAIT_MS), "precondition: no reconnect pass");
+                }));
+        });
+    }
+
+    /**
+     * Runs `pass` while another thread holds the sensor's monitor, so the feedback thread parses the pass's answer
+     * only once `pass` returns, as a busy feedback thread may.
+     */
+    private static void parsedAfter(MarklinFeedback feedback, Correction pass) throws Exception
+    {
+        java.util.concurrent.CountDownLatch held = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch over = new java.util.concurrent.CountDownLatch(1);
+
+        Thread holder = new Thread(() ->
+        {
+            synchronized (feedback)
             {
-                station.answerLate(2820, 300);
-                station.drop();
-            }));
+                held.countDown();
+
+                try
+                {
+                    over.await();
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }, "sync-claim-holder");
+
+        holder.setDaemon(true);
+        holder.start();
+        assertTrue(held.await(WAIT_MS, java.util.concurrent.TimeUnit.MILLISECONDS),
+            "precondition: the monitor was not held");
+
+        try
+        {
+            pass.run();
+        }
+        finally
+        {
+            over.countDown();
+        }
     }
 
     /**
