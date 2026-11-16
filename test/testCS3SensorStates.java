@@ -22,6 +22,7 @@ import java.util.function.BooleanSupplier;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -144,9 +145,15 @@ public class testCS3SensorStates
     /** A sensor frame from the Link S88, sent to the station's port `ms` from now: an event, or an answer when old == new. */
     private static void frame(int contact, boolean old, boolean now, long ms)
     {
+        frame(DEVICE, contact, old, now, ms);
+    }
+
+    /** The same from another device. */
+    private static void frame(int device, int contact, boolean old, boolean now, long ms)
+    {
         byte[] f = new CS2Message(CS2Message.CMD_ACC_SENSOR, 0x7b34, true, new byte[]
-            {0, DEVICE, (byte) (contact >> 8), (byte) contact, (byte) (old ? 1 : 0), (byte) (now ? 1 : 0), 0, 0})
-            .getRawMessage();
+            {(byte) (device >> 8), (byte) device, (byte) (contact >> 8), (byte) contact, (byte) (old ? 1 : 0),
+            (byte) (now ? 1 : 0), 0, 0}).getRawMessage();
 
         Runnable send = () ->
         {
@@ -334,8 +341,8 @@ public class testCS3SensorStates
      * The start-up asks a CS3 each known sensor's state at the device its Link S88 is listed at, and so does a Sync; the
      * answers put each sensor right, one shown clear that is occupied and one the other way round.
      *
-     * MUTATION: in `NetworkProxy.setModel`, take out `if (ask) syncSensors();`.  And: in
-     * `MarklinControlStation.syncWithCS2`, take out `if (this.on) this.NetworkInterface.syncSensors();`.
+     * MUTATION: in `NetworkProxy.setModel`, take out `if (holding != null) ask(holding);`.  And: in
+     * `MarklinControlStation.syncWithCS2`, take out the `syncSensors` call under `if (this.on)`.
      */
     @Test(timeOut = 120000)
     public void testTheStartUpAndASyncAskACS3ItsSensorsTrueStates() throws Exception
@@ -390,9 +397,11 @@ public class testCS3SensorStates
     /**
      * No S88 route fires until the CS3 has confirmed the sensors after the connect (D133): a sensor that changes during
      * the start-up's confirmation is put right but fires nothing, and after it the next real change does.  The change
-     * comes once the first query is out, or after the wait when none comes.
+     * comes once the first query is out, or after the wait when none comes, and once the route has settled on the clear
+     * state: a change inside its wait for a steady clear would be no edge at all.
      *
-     * MUTATION: in `MarklinRoute.executeAutoRoute`, take out the `continue` after `isFeedbackCorrected`.
+     * MUTATION: in `MarklinRoute.executeAutoRoute`, take out the `continue` after `isFeedbackCorrected`.  And: in
+     * `NetworkProxy.beginAsk`, `boolean holding = !this.connectAsked;` to `boolean holding = false;`.
      */
     @Test(timeOut = 120000)
     public void testARouteFiresOnlyOnceTheStartUpHasConfirmedTheSensors() throws Exception
@@ -407,8 +416,9 @@ public class testCS3SensorStates
 
             // Unanswered, so the confirmation lasts its whole wait
             rig.model.newFeedback(3406, null);
+            Thread.sleep(SETTLE_MS);
 
-            Thread starting = new Thread(rig::start, "claim start-up");
+            Thread starting= new Thread(rig::start, "claim start-up");
             starting.start();
 
             waitFor(() -> !rig.network.queries.isEmpty());
@@ -505,6 +515,168 @@ public class testCS3SensorStates
             frame(contact, true, false, 0);
 
             assertTrue(waitFor(() -> rig.fired(name) == 1), "the replaced route did not fire on real changes");
+        }
+    }
+
+    /**
+     * A sensor change that queued on the station's port before the proxy had its model is read during the start-up's
+     * confirmation, and fires no route (D133).
+     *
+     * MUTATION: in `NetworkProxy.beginAsk`, `boolean holding = !this.connectAsked;` to `boolean holding = false;`.
+     */
+    @Test(timeOut = 120000)
+    public void testAChangeHeardBeforeTheStartUpFiresNoRoute() throws Exception
+    {
+        try (Rig rig = new Rig(true))
+        {
+            int contact = 3407;
+            String name = "Sensor claim " + contact;
+
+            rig.model.newFeedback(contact, null);
+            rig.armed(name, contact, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+            Thread.sleep(SETTLE_MS);
+
+            frame(contact, false, true, 0);
+            Thread.sleep(50);
+            rig.start();
+
+            assertTrue(rig.shows(contact, true), "precondition: the change did not arrive");
+            Thread.sleep(SETTLE_MS);
+            assertEquals(rig.fired(name), 0, "a change heard before the start-up's confirmation fired the route");
+        }
+    }
+
+    /**
+     * A later Sync's pass holds no route (D139): a real change that arrives while it waits for its answers fires the
+     * route, as it would outside the pass.
+     *
+     * MUTATION: in `NetworkProxy.beginAsk`, `boolean holding = !this.connectAsked;` to `boolean holding = true;`.  And:
+     * in `MarklinFeedback.parseMessage`, `confirming || (asking && answer)` to `confirming || asking`.
+     */
+    @Test(timeOut = 120000)
+    public void testARealChangeDuringALaterSyncFiresTheRoute() throws Exception
+    {
+        try (Rig rig = new Rig(true))
+        {
+            int contact = 3440;
+            String name = "Sensor claim " + contact;
+
+            rig.model.newFeedback(contact, null);
+
+            // Unanswered, so the pass lasts its whole wait
+            rig.model.newFeedback(3441, null);
+            rig.start();
+            rig.armed(name, contact, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+            Thread.sleep(SETTLE_MS);
+            rig.network.queries.clear();
+
+            Thread sync = new Thread(() -> rig.model.syncWithCS2(), "claim sync");
+            sync.start();
+
+            assertTrue(waitFor(() -> rig.network.queries.contains("9/3441")), "precondition: the pass did not start");
+            frame(contact, false, true, 0);
+            Thread.sleep(SETTLE_MS);
+            assertTrue(rig.network.isAsking(), "precondition: the change did not come during the pass");
+
+            sync.join(WAIT_MS * 2);
+            assertTrue(waitFor(() -> rig.fired(name) == 1), "a real change during a later sync's pass did not fire the route");
+        }
+    }
+
+    /**
+     * An answer older than a real change since its query is dropped (OB-418): the station clears the contact once asked,
+     * and its answer from before, "occupied", comes after the clear.  The contact stays clear.
+     *
+     * MUTATION: in `NetworkProxy.learn`, the last `return event != null && ...` to `return false;`.
+     */
+    @Test(timeOut = 120000)
+    public void testAnAnswerOlderThanAChangeIsDropped() throws Exception
+    {
+        try (Rig rig = new Rig(true))
+        {
+            int contact = 3445;
+
+            rig.model.newFeedback(contact, null);
+            rig.start();
+            frame(contact, false, true, 0);
+            assertTrue(rig.shows(contact, true), "precondition: the change did not arrive");
+
+            rig.network.link.put(contact, true);
+            rig.network.late.put(contact, 300L);
+            rig.network.queries.clear();
+
+            Thread sync = new Thread(() -> rig.model.syncWithCS2(), "claim sync");
+            sync.start();
+            assertTrue(waitFor(() -> rig.network.queries.contains("9/" + contact)), "precondition: the contact was not asked");
+
+            // The real clear, after the query and before its answer; the second pass is not answered
+            rig.network.link.remove(contact);
+            frame(contact, true, false, 0);
+
+            sync.join(WAIT_MS * 2);
+            Thread.sleep(SETTLE_MS);
+            assertFalse(rig.model.getFeedbackState(Integer.toString(contact)),
+                "an answer older than a real change put the sensor back to occupied");
+        }
+    }
+
+    /**
+     * The device a real change showed for a sensor is saved, and the start-up after a restart asks the sensor there: here
+     * a contact the Link S88 list does not place.
+     *
+     * MUTATION: in `MarklinControlStation.s88DeviceToSave`, return null.
+     */
+    @Test(timeOut = 120000)
+    public void testADeviceIsSavedAndAskedAfterARestart() throws Exception
+    {
+        int contact = 3500;
+
+        try (Rig rig = new Rig(true))
+        {
+            rig.model.newFeedback(contact, null);
+            rig.start();
+            frame(12, contact, false, true, 0);
+            assertTrue(rig.shows(contact, true), "precondition: the change did not arrive");
+            rig.model.saveState(false);
+        }
+
+        try (Rig rig = new Rig(true))
+        {
+            assertTrue(rig.model.isFeedbackSet(Integer.toString(contact)), "precondition: the sensor did not come back");
+            rig.start();
+            assertTrue(rig.network.queries.contains("12/" + contact), "the saved device was not asked: "
+                + rig.network.queries);
+        }
+    }
+
+    /**
+     * A Sync on the window's thread does not hold the window while the CS3 answers: once its pass is out, the window
+     * runs the next thing it is given at once, while the pass still waits.
+     *
+     * MUTATION: in `MarklinControlStation.syncWithCS2`, `syncSensors(!javax.swing.SwingUtilities.isEventDispatchThread())`
+     * to `syncSensors(true)`.
+     */
+    @Test(timeOut = 120000)
+    public void testASyncOnTheWindowsThreadLeavesTheWindowFree() throws Exception
+    {
+        try (Rig rig = new Rig(true))
+        {
+            rig.start();
+
+            // Unanswered, so the pass lasts its whole wait, about 1.5 s
+            rig.model.newFeedback(3470, null);
+            rig.network.queries.clear();
+
+            SwingUtilities.invokeLater(() -> rig.model.syncWithCS2());
+            assertTrue(waitFor(() -> rig.network.queries.contains("9/3470")), "precondition: the pass did not start");
+
+            long start = System.nanoTime();
+            SwingUtilities.invokeAndWait(() -> { });
+            long waited = (System.nanoTime() - start) / 1000000L;
+            boolean asking = rig.network.isAsking();
+
+            assertTrue(waitFor(() -> !rig.network.isAsking()), "precondition: the pass did not end");
+            assertTrue(asking && waited < 500, "the window waited " + waited + " ms for the sync's sensor pass");
         }
     }
 

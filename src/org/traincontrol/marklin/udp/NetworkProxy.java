@@ -141,8 +141,19 @@ public class NetworkProxy
      */
     public void setModel(ModelListener model)
     {
-    	// Set reference
-        this.model = model;
+        Boolean holding = null;
+
+        synchronized (this.overtaken)
+        {
+            // Set reference
+            this.model = model;
+
+            // The start-up's sync ran before there was a model: its pass is counted before the listener starts, so no
+            // frame that queued meanwhile fires a route (D133)
+            if (this.askOnModel) holding = beginAsk();
+
+            this.askOnModel = false;
+        }
           
         model.logf(
             "network.initializingCanListener",
@@ -152,25 +163,18 @@ public class NetworkProxy
         // Start reader
         new ReadMessages().start();
 
-        boolean ask;
-
-        synchronized (this.overtaken)
-        {
-            ask = this.askOnModel;
-            this.askOnModel = false;
-        }
-
-        // The start-up's sync ran before there was a model: its sensors are asked now (OB-418)
-        if (ask) syncSensors();
+        // And its sensors are asked now (OB-418)
+        if (holding != null) ask(holding);
     }
 
     /**
      * Asks each sensor whose device is known (deviceOf) for its state, twice, ASK_AGAIN_NS apart, and logs the counts;
-     * returns once every query of the second pass is answered, or ANSWER_WAIT_NS after its last.  For a CS3's sync
-     * only (OB-418): from the first call on, events teach their devices.  Before setModel, only that, and setModel
-     * asks.  The first pass with a model, the connect's, holds routes until it ends (D133).
+     * with `wait`, returns once every query of the second pass is answered, or ANSWER_WAIT_NS after its last, else
+     * asks on a thread of its own.  For a CS3's sync only (OB-418): from the first call on, events teach their
+     * devices.  Before setModel, only that, and setModel asks.  The first pass with a model, the connect's, holds
+     * routes until it ends (D133).
      */
-    public void syncSensors()
+    public void syncSensors(boolean wait)
     {
         this.learnsDevices = true;
 
@@ -184,13 +188,38 @@ public class NetworkProxy
                 return;
             }
 
-            holding = !this.connectAsked;
-            this.connectAsked = true;
-            this.asks++;
-
-            if (holding) this.holds++;
+            // Counted here, not on the thread, so no frame between this call and the thread's start fires a route
+            holding = beginAsk();
         }
 
+        if (wait)
+        {
+            ask(holding);
+            return;
+        }
+
+        Thread asking = new Thread(() -> ask(holding), "cs3-sensor-pass");
+
+        asking.setDaemon(true);
+        asking.start();
+    }
+
+    /** Counts a pass that ask ends, under `overtaken`; true when it holds routes, as the connect's does (D133). */
+    private boolean beginAsk()
+    {
+        boolean holding = !this.connectAsked;
+
+        this.connectAsked = true;
+        this.asks++;
+
+        if (holding) this.holds++;
+
+        return holding;
+    }
+
+    /** The two passes of a pass counted by beginAsk, ASK_AGAIN_NS apart. */
+    private void ask(boolean holding)
+    {
         try
         {
             for (int n = 0; n < 2; n++)

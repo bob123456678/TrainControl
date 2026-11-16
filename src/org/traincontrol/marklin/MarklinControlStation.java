@@ -312,7 +312,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.sendPing(false);
 
             // The sensors' true states, asked of a CS3 once the proxy has its model (OB-418)
-            if (this.isCS3) this.NetworkInterface.syncSensors();
+            if (this.isCS3) this.NetworkInterface.syncSensors(true);
             
             if (autoPowerOn) this.go(); 
         }
@@ -1329,8 +1329,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             this.NetworkInterface.knowDevices(this.fileParser.parseS88DevicesCS3(), this.savedS88Devices);
 
-            // Not while transmission is off; the start-up's sync, before it is on, asks from the constructor
-            if (this.on) this.NetworkInterface.syncSensors();
+            // Not while transmission is off; the start-up's sync, before it is on, asks from the constructor.  A Sync on
+            // the window's thread does not hold the window while the answers come.
+            if (this.on) this.NetworkInterface.syncSensors(!javax.swing.SwingUtilities.isEventDispatchThread());
         }
 
         this.logf("loc.syncCompleted");
