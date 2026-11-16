@@ -1517,9 +1517,9 @@ public class testStationSettingsWindow
             assertEquals(window.litPresetForTest(), preset, "the settings of " + preset + " do not light it");
         }
 
-        // No row has Must with Full Autonomy off
+        // No row has stop only with May
         StationDoors.press(window, "station.preset.PARKING");
-        StationDoors.press(window, "station.turnMust");
+        StationDoors.press(window, "station.turnMay");
         StationDoors.current(window);
 
         assertNull(window.litPresetForTest(), "a button lit though nothing matches");
