@@ -27,24 +27,28 @@ public class testANewerJavaKeepsWhatJava8Had
     private static final String JAVA21_KEY = "b7c5101b3d";
 
     /**
-     * On Java 8 the scale is the display's, as before; where Java scales the window itself it is 1, so 125% is drawn
-     * at 125% and not at about 156%.
+     * On Java 8 the scale is the display's, as before; on Windows, where Java 9 and later scale the window themselves,
+     * it is 1, so 125% is drawn at 125% and not at about 156%.  On a Mac or Linux the dpi is not the display's scale,
+     * so Java 9 and later keep 3.1.0's dpi / 96 there.
      *
-     * MUTATION: drop `&& !javaScales` from `TrainControlUI.uiScaleFor`, and the Java 9 answers are the display's.
+     * MUTATION: `!javaScales` for `!(javaScales && windows)` in `TrainControlUI.uiScaleFor`, and a Mac's scale changes.
      */
     @Test(timeOut = 60000)
     public void testTheWindowIsScaledOnceOnEveryJava() throws Exception
     {
-        java.lang.reflect.Method scale =
-            Reflect.method(org.traincontrol.gui.TrainControlUI.class, "uiScaleFor", int.class, boolean.class);
+        java.lang.reflect.Method scale = Reflect.method(org.traincontrol.gui.TrainControlUI.class, "uiScaleFor",
+            int.class, boolean.class, boolean.class);
 
         int[] dpis = {96, 120, 144, 0};
-        String[] java8 = {"1.0", "1.25", "1.5", "1.0"};
+        String[] display = {"1.0", "1.25", "1.5", "1.0"};
 
         for (int i = 0; i < dpis.length; i++)
         {
-            assertEquals(scale.invoke(null, dpis[i], false), java8[i], "Java 8's scale at " + dpis[i] + " dpi changed");
-            assertEquals(scale.invoke(null, dpis[i], true), "1.0",
+            assertEquals(scale.invoke(null, dpis[i], false, true), display[i], "Java 8's scale at " + dpis[i] + " dpi");
+            assertEquals(scale.invoke(null, dpis[i], false, false), display[i], "Java 8's scale off Windows");
+            assertEquals(scale.invoke(null, dpis[i], true, false), display[i],
+                "off Windows, Java 9 and later no longer get 3.1.0's scale at " + dpis[i] + " dpi");
+            assertEquals(scale.invoke(null, dpis[i], true, true), "1.0",
                 "where Java scales the window itself, the application adds a scale of its own at " + dpis[i] + " dpi");
         }
     }
@@ -110,6 +114,64 @@ public class testANewerJavaKeepsWhatJava8Had
         {
             node.remove("FR236" + inUtf8);
             restore("native.encoding", was);
+        }
+    }
+
+    /**
+     * A folder neither key has settings for takes the native key, so a first start on Java 18 or later saves where
+     * Java 8 will look.  The run's own keys under either hash are lifted off for the claim and put back.
+     *
+     * MUTATION: drop `|| !hasSettings(java18)` from `Conversion.getFolderHash`, and a fresh folder takes the UTF-8 key.
+     */
+    @Test(timeOut = 60000)
+    public void testAFreshFolderTakesTheNativeKey() throws Exception
+    {
+        String here = new File("").getAbsolutePath();
+        String inNative = key(here, StandardCharsets.UTF_16LE), inUtf8 = key(here, StandardCharsets.UTF_8);
+        Preferences node = isolatedNode();
+        java.util.Map<String, String> lifted = new java.util.HashMap<>();
+        String was = System.getProperty("native.encoding");
+
+        for (String k : node.keys()) if (k.endsWith(inNative) || k.endsWith(inUtf8)) lifted.put(k, node.get(k, null));
+
+        try
+        {
+            for (String k : lifted.keySet()) node.remove(k);
+
+            System.setProperty("native.encoding", "UTF-16LE");
+
+            assertEquals(Conversion.getFolderHash(10), inNative, "a folder with no settings at all took the UTF-8 key");
+        }
+        finally
+        {
+            lifted.forEach(node::put);
+            restore("native.encoding", was);
+        }
+    }
+
+    /**
+     * Both jars the build makes export the shell's folders, for the file chooser's Look In list on Java 9 and later:
+     * the store jar's manifest in build.xml and the NetBeans jar's manifest.mf.  Java 8 ignores the attribute.
+     *
+     * MUTATION: drop the Add-Exports attribute from build.xml's package-for-store manifest, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testBothJarsExportTheShellsFolders() throws Exception
+    {
+        String build = new String(java.nio.file.Files.readAllBytes(new File("build.xml").toPath()),
+            StandardCharsets.UTF_8);
+        int store = build.indexOf("<target name=\"package-for-store\"");
+        int from = build.indexOf("<manifest>", store), to = build.indexOf("</manifest>", from);
+
+        assertTrue(store >= 0 && from > store && to > from, "build.xml's package-for-store has no manifest");
+        assertTrue(build.substring(from, to).contains(
+            "<attribute name=\"Add-Exports\" value=\"java.desktop/sun.awt.shell\"/>"),
+            "the store jar does not export sun.awt.shell, so the Look In list shows only the Desktop on Java 9+");
+
+        try (java.io.InputStream in = new java.io.FileInputStream("manifest.mf"))
+        {
+            assertEquals(new java.util.jar.Manifest(in).getMainAttributes().getValue("Add-Exports"),
+                "java.desktop/sun.awt.shell", "manifest.mf does not export sun.awt.shell");
         }
     }
 

@@ -735,12 +735,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The scale for this many dpi: the UI_SCALE override if set, else dpi / 96, or 1 where the display reports none or
-     * Java scales the window itself (9 and later), where any more would be drawn on top of Java's (FR-236).
+     * Java 9 and later scale the window on Windows, where any more is drawn on top of Java's (FR-236).  Elsewhere the
+     * dpi is not the display's scale (points on a Mac), so dpi / 96 stays.
      */
-    private static String uiScaleFor(int dpi, boolean javaScales)
+    private static String uiScaleFor(int dpi, boolean javaScales, boolean windows)
     {
         return !UI_SCALE.isEmpty() ? UI_SCALE
-            : String.valueOf(dpi > 0 && !javaScales ? dpi / (double) REFERENCE_DPI : 1.0);
+            : String.valueOf(dpi > 0 && !(javaScales && windows) ? dpi / (double) REFERENCE_DPI : 1.0);
     }
 
     /**
@@ -760,7 +761,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         int dpi = Toolkit.getDefaultToolkit().getScreenResolution();
 
         // A system property, not a UI default, because FlatLaf reads it while installing; UI_SCALE overrides.
-        System.setProperty("flatlaf.uiScale", uiScaleFor(dpi, com.formdev.flatlaf.util.UIScale.isSystemScalingEnabled()));
+        System.setProperty("flatlaf.uiScale", uiScaleFor(dpi, com.formdev.flatlaf.util.UIScale.isSystemScalingEnabled(),
+            com.formdev.flatlaf.util.SystemInfo.isWindows));
 
         // BEFORE setup(): FlatLaf reads these when it installs itself, and the window decorations are decided once.
         if (!MENUS_IN_THE_TITLE_BAR)

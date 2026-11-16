@@ -126,12 +126,14 @@ public class Conversion
         return hash.equals(java18) || hasSettings(hash) || !hasSettings(java18) ? hash : java18;
     }
 
-    /** Whether any setting of the window class's node is kept under this folder hash. */
+    /** Whether any setting of the windows' node has this hash: the package by name, so util compiles without gui. */
     private static boolean hasSettings(String hash)
     {
+        String run = System.getProperty(Util.PREFERENCES_PROPERTY);
+
         try
         {
-            for (String key : Util.preferencesFor(org.traincontrol.gui.TrainControlUI.class).keys())
+            for (String key : Util.preferencesFor("org.traincontrol.gui", run).keys())
             {
                 if (key.endsWith(hash)) return true;
             }
