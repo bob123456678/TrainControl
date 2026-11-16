@@ -55,8 +55,10 @@ menu names it in the "Stop Showing" item, and the tooltip explains the rest.
 
 **Circles, diamonds and squares** (Adam: *"The icons are hard to work with in reality, because
 they add complexity.  Keep the work on the new icons so we can revisit later, and revert roughly to what we had before"*).
-`TileAnnotation.StationIcons.CLASSIC` is the default; FR-118's icons, below, are kept whole behind
-`TileAnnotation.setStationIcons(StationIcons.SHAPES)`.
+These are the only station icons: FR-118's blocks and hexagons were retired (FR-233).
+To revisit station icons, `git show 844bb9a9:src/org/traincontrol/automationui/TileAnnotation.java` still has both sets
+(`StationIcons.SHAPES`, added in 67cf6045), and `test/support/DrawsFR118Icons.java`, `test/ui/testDiagramLooksRight.java` and
+`test/core/testAutonomyDiagramMonitor.java` at that commit hold the claims that drew the shapes.
 
 | | trains do not turn | trains may turn | trains must turn, or its track runs out |
 |---|---|---|---|
@@ -74,53 +76,15 @@ track, on a curve too. On a curve a station's diamond is 15 and 29, a pixel in f
 *"make sure that the diamonds are correctly
 aligned on curves"*): `testAClassicStationsDiamondOnACurveIsOnItsRails`. `TileAnnotation.classicBox`;
 `core.testAutonomyDiagramMonitor`: `testTheClassicIconsAreTheGridAgain`, `testTheClassicIconsAreTheSizesAdamAskedFor`,
-`testTheClassicOutOfServiceSignIsAStationsOrASensors`, `testTheClassicIconsAreTheSameInTheEditor`,
-`testAStationOnACurveIsWhollyInsideItsSquare`; FR-118's own claims are marked `@DrawsFR118Icons` and drawn with its icons.
-
-**With FR-118's icons**: every station's icon is no taller across its track than the sensor's contact under it (13
-pixels at the small size, 26 at the large) and longer along the track, so a caption stood on end beside it is full size
-(OB-327; *"the small font on the
-vertical labels is really hard to read"*).
-
-| the icon | the station |
-|---|---|
-| a rounded block | a station |
-| a hexagon pointed at both ends | trains may turn around there |
-| two arrow-shaped halves back to back, pointing away from each other, white bars in them, the track's black line between them | trains must turn around there |
-| a hexagon flat at one end, with a bar at that end | a terminus: its track runs out on that side |
-| a white circle with an orange ring and an orange X in it, whatever the square otherwise is | out of service: nothing may pass or stop there |
-
-Blue where autonomy uses the station, gray a berth it does not choose, a color on whatever shape the station has
-(*"shouldn't parking have the same shape as terminus?"*); on the track diagram filled when named, white ringed in the
-color when not; in the autonomy editor every icon is white ringed in its color, so the direction arrows over it read
-clearly (Adam: *"Let's make all of the icons white with a blue border in the editor.
-That way, arrows can be seen clearly."*). The icon covers the sensor's own contact with white, the track drawn back
-across it. A passing point (a sensor that is no station) keeps its small mark; where trains turn there, a little bigger,
-over its contact too. A square out of service, of any kind, is one sign: the white circle with the orange ring and X,
-the contact's size, inside the red arrows the sensor shows while it reads occupied, and no arrows on its square (Adam:
-*"regardless of the type of station or point it otherwise is"*).
+`testTheClassicOutOfServiceSignIsAStationsOrASensors`, `testAStationOnACurveIsWhollyInsideItsSquare`.
 
 **A terminus is a station whose track runs out on one side** (at a buffer stop, or where the drawn track stops) before
 it reaches another sensor (Adam, asked *"a station with only one way out becomes a terminus,
 correct?"*: yes). It is drawn flat against that side whatever its turning setting. The TRACK is asked, not the setup: a
-station trains can leave only one way because of a one-way run or a barred arrival keeps its own shape. With the
-classic icons it is the big square. `AutonomySession.deadEndSide`; `core.testATrainIsPlacedOnceAndKeepsItsFacing.testAStationWhoseTrackRunsOutIsATerminus`.
+station trains can leave only one way because of a one-way run or a barred arrival keeps its own shape. It is the big square. `AutonomySession.deadEndSide`; `core.testATrainIsPlacedOnceAndKeepsItsFacing.testAStationWhoseTrackRunsOutIsATerminus`.
 
-On a curve the icon lies along the line between the curve's two ends, on its rails and its full size; what falls outside
-its square is drawn over the squares beside it, under any caption there, and their arrows, arrival marks and outline are
-drawn again over it (Adam: *"can we instead make the stations spill over onto adjacent tiles?"*), in the editor as on
-the track diagram. On a double-curve sensor it is on the curve the art draws the contact on, and a terminus there faces
-where that curve's track runs out (MT-712). The red and green arrows are drawn over the icon, on the diagram and in the
-editor (MT-710: *"We need to
-render red arrows on top of stations"*). A may-turn hexagon is 24 pixels long at the small size and 47 at the large, a
-terminus 24 and 48, and the must-turn pair no longer than the may-turn (MT-710). The icons:
-`core.testAutonomyDiagramMonitor`: `testAStationIsARoundedBlock`, `testWhereTrainsMayTurnIsTheHexagon`,
-`testWhereTrainsMustTurnIsTwoTerminiBackToBack`, `testAStationAtADeadEndIsATerminusFacingIt`,
-`testParkingIsGreyInItsOwnShape`, `testASquareOutOfServiceIsAnOrangeRingedCircle`, `testAStationCoversTheSensorsContact`,
-`testTheEditorsIconsAreWhiteWithTheirColourRound`, `testTheEditorsIconOnACurveIsOnItsRails`,
-`testTheTurningIconsAreTheLengthsAdamAskedFor`, `testAStationOnACurveIsWhollyInsideItsSquare`,
-`testTheArrowsAreDrawnOverAStationsIcon`; the caption, `ui.testDiagramLooksRight.testAPillOnEndIsFullSize` and
-`testAPillOnEndClearsTheStationsBesideIt`.
+The red and green arrows are drawn over the icon (MT-710: *"We need to render red arrows on top of stations"*):
+`core.testAutonomyDiagramMonitor.testTheArrowsAreDrawnOverAStationsIcon`.
 
 **A train standing still is drawn with the run's locomotive icon** on its station, facing the way it stands, whether it
 is parked with no path or holds one (FR-027, OB-317; Adam: *"same icon as when a run is started"*). **On a curve the icon

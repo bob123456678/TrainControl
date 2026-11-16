@@ -528,69 +528,6 @@ public class LayoutGrid
             {
                 super.paintChildren(g);
 
-                // A station on a curve spills onto the squares beside it, drawn under the captions, trains and
-                // addresses.
-                java.util.Map<LayoutLabel, java.awt.Rectangle> spilt = new java.util.LinkedHashMap<>();
-
-                for (java.awt.Component child : getComponents())
-                {
-                    if (child instanceof LayoutLabel && ((LayoutLabel) child).paintStationSpill(g))
-                    {
-                        spilt.put((LayoutLabel) child, ((LayoutLabel) child).spillReach());
-                    }
-                }
-
-                // The arrows of the squares a spill reached go back over it.
-                if (!spilt.isEmpty())
-                {
-                    // Only where the spill was drawn: arrows over the whole square would come out in front of a
-                    // caption.
-                    java.awt.geom.Area spilled = new java.awt.geom.Area();
-
-                    for (LayoutLabel label : spilt.keySet())
-                    {
-                        java.awt.Shape shape = label.spillShapeOnTheDiagram();
-
-                        if (shape != null) spilled.add(new java.awt.geom.Area(shape));
-                    }
-
-                    java.awt.Graphics2D under = (java.awt.Graphics2D) g.create();
-
-                    try
-                    {
-                        under.clip(spilled);
-
-                        for (java.awt.Component child : getComponents())
-                        {
-                            if (child instanceof LayoutLabel) ((LayoutLabel) child).paintArrowsOverSpill(under, spilt);
-                        }
-
-                        java.awt.Rectangle reach = spilled.getBounds();
-
-                        for (java.awt.Component child : getComponents())
-                        {
-                            if (child instanceof StationCaption && child.isVisible() && child.getBounds().intersects(reach))
-                            {
-                                java.awt.Graphics over = under.create(child.getX(), child.getY(), child.getWidth(),
-                                    child.getHeight());
-
-                                try
-                                {
-                                    child.paint(over);
-                                }
-                                finally
-                                {
-                                    over.dispose();
-                                }
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        under.dispose();
-                    }
-                }
-
                 for (java.awt.Component child : getComponents())
                 {
                     if (child instanceof LayoutLabel) ((LayoutLabel) child).paintTrainOverCaptions(g);
