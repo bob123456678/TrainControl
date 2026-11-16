@@ -176,6 +176,76 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
             + " Middle passes another copy of Middle: " + session.check());
     }
 
+    /**
+     * Two ways from Start reach Junction heading west: the first round the loop, through the switch's branch and back
+     * from Turn; the second, longer, along the line through Turn, throwing nothing.  WestEnd is past the switch set
+     * straight, so only the second goes on there.  An arrival that threw a switch the later one has not met leaves the
+     * later one free, not redundant, so Test a Path finds the way, as the railway routes it.  Asked of the search a
+     * hand send takes: autonomy's turns only at the start, so never meets the first way.
+     *
+     * MUTATION: in `GraphReducer.alreadyReached`, treat a switch the later settings have not met as matching,
+     * `(i >= settings.length || before[i] == settings[i])`, and this fails.
+     */
+    @Test
+    public void testAWayThatThrewNoSwitchIsNotHiddenByOneThatDid() throws Exception
+    {
+        LayoutDiagram page = new LayoutDiagram("main", 16, 6, null, null);
+
+        // The line along row 2, the switch's toe facing east, its branch south into a loop that rejoins east of Start
+        support.Diagrams.row(page, 1, 2, "FS", 11);
+        page.addComponent(LayoutDiagramComponent.componentType.SWITCH_LEFT, 3, 2, 1, 0, 7, 7, MM2, null);
+        support.Diagrams.row(page, 4, 2, "SFSFSFSFSF", 12, 13, 14, 15, 16);
+        page.addComponent(LayoutDiagramComponent.componentType.CURVE, 14, 2, 3, 0, 0, 0, MM2, null);
+        support.Diagrams.straight(page, 14, 3, 1);
+        page.addComponent(LayoutDiagramComponent.componentType.CURVE, 14, 4, 2, 0, 0, 0, MM2, null);
+        support.Diagrams.row(page, 4, 4, "SSSSSSSSSS");
+        page.addComponent(LayoutDiagramComponent.componentType.CURVE, 3, 4, 1, 0, 0, 0, MM2, null);
+        support.Diagrams.straight(page, 3, 3, 1);
+        support.Diagrams.wireAccessories(Arrays.asList(page));
+
+        session.open(Arrays.asList(page));
+        session.initialize("Loop");
+        session.setDirection(java.util.Collections.singleton(new TileKey("main", 3, 2)),
+            org.traincontrol.automationui.TileGraph.Direction.BOTH);
+
+        TileKey westEnd = new TileKey("main", 1, 2);
+        TileKey turn = new TileKey("main", 7, 2);
+        TileKey start = new TileKey("main", 13, 2);
+
+        session.setStation(westEnd, true);
+        session.setPointName(westEnd, "WestEnd");
+        session.setStation(start, true);
+        session.setPointName(start, "Start");
+        session.setPointName(new TileKey("main", 5, 2), "Junction");
+        session.setPointName(turn, "Turn");
+        session.setPointFlag(turn, AutonomyBuilder.CAN_REVERSE, true);
+        session.rebuild();
+
+        assertNotNull(session.testPath(start, westEnd),
+            "Test a Path finds no way from Start to WestEnd, though the way along the line through Turn throws nothing");
+
+        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+        org.traincontrol.marklin.MarklinControlStation model = null;
+
+        try
+        {
+            model = support.TestStation.simulated();
+            model.parseAuto(session.buildConfiguration());
+
+            java.util.Map<String, TileKey> squareOf = session.builder(null).tilesByName();
+
+            assertTrue(railwayGoes(model.getAutoLayout(), org.traincontrol.automationui.BuiltReach.of(
+                new org.json.JSONObject(session.buildConfigurationForInspection()), squareOf), squareOf, start, westEnd),
+                "precondition: the railway does not route Start to WestEnd either");
+        }
+        finally
+        {
+            if (model != null) model.stop();
+
+            sandbox.close();
+        }
+    }
+
     /** The kickback page, WestEnd, EastTurn and Middle as squares 0, 1 and 2, every one a square trains may turn at. */
     private TileKey[] kickback() throws Exception
     {

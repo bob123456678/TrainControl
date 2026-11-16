@@ -567,7 +567,8 @@ public class GraphReducer
         Function<W, Map<String, accessorySetting>> commands, Function<P, Object> key, Function<P, Reached> reached)
     {
         // The settings so far as one byte per switch met (`index`), its setting's ordinal + 1, 0 where unset: copied
-        // only where a step sets a switch not set before, and shared with every successor that sets none
+        // only where a step sets a switch not set before, and shared with every successor that sets none.  A switch
+        // set two ways refuses the step: same rule as `HomeStaging.withCommands`; change both.
         Map<String, Integer> index = new HashMap<>();
         Map<Object, List<byte[]>> seen = new HashMap<>();
         ArrayDeque<Step<P, W>> frontier = new ArrayDeque<>();
@@ -635,7 +636,7 @@ public class GraphReducer
 
     /**
      * Whether an earlier arrival committed to nothing these settings have not also committed to, so leaves at least
-     * as much freedom, as `HomeStaging.alreadyReached` asks.
+     * as much freedom.  Same rule as `HomeStaging.alreadyReached`; change both.
      */
     private static boolean alreadyReached(List<byte[]> earlier, byte[] settings)
     {

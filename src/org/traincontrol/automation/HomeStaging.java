@@ -1159,8 +1159,11 @@ public final class HomeStaging
         return withCommands(e.getConfigCommands(), soFar);
     }
 
-    /** The settings so far with these added, or null where one is set the other way; the editor's path test asks too. */
-    public static Map<String, Accessory.accessorySetting> withCommands(Map<String, Accessory.accessorySetting> settings,
+    /**
+     * The settings so far with these added, or null where one is set the other way.  Same rule as
+     * `GraphReducer.searchBySettings` in byte form; change both.
+     */
+    static Map<String, Accessory.accessorySetting> withCommands(Map<String, Accessory.accessorySetting> settings,
         Map<String, Accessory.accessorySetting> soFar)
     {
         if (settings.isEmpty()) return soFar;
@@ -1181,9 +1184,10 @@ public final class HomeStaging
 
     /**
      * Whether this point was already reached under commands that leave at least as much freedom: an earlier arrival
-     * makes this one redundant only if it committed to nothing this one has not also committed to.
+     * makes this one redundant only if it committed to nothing this one has not also committed to.  Same rule as
+     * `GraphReducer.alreadyReached` in byte form; change both.
      */
-    public static boolean alreadyReached(Map<String, List<Map<String, Accessory.accessorySetting>>> seen,
+    static boolean alreadyReached(Map<String, List<Map<String, Accessory.accessorySetting>>> seen,
         String p, Map<String, Accessory.accessorySetting> commands)
     {
         if (!seen.containsKey(p)) return false;
