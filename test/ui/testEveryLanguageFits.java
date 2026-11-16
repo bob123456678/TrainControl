@@ -45,10 +45,11 @@ public class testEveryLanguageFits
      */
     private static final int LOCALISED_FLOOR = 30;
 
-    /** What each language's window packs to, and the minimum width it then declares. */
+    /** What each language's window packs to. */
     private static final Map<String, Integer> packedWidth = new LinkedHashMap<>();
 
-    private static final Map<String, Integer> minimumWidth = new LinkedHashMap<>();
+    /** 3.1.0's main window in English, as packed here: no language may make it wider (D162). */
+    private static final int WIDEST = 1129;
 
     /**
      * The rule can fail: the eight-language walk cannot carry its own control, so the RULE is controlled on a component
@@ -243,14 +244,21 @@ public class testEveryLanguageFits
 
         assertTrue(pushed.isEmpty(), "components are pushed partly out of sight at the window's minimum size: " + pushed);
 
-        // The window is never wider than English made it, and its minimum is never wider than that (D162).
+        // The window is never wider than 3.1.0's English default (1129 px here), in any language (D162).
         for (String language : LANGUAGES)
         {
-            assertTrue(packedWidth.get(language) <= packedWidth.get("en"), language + " packs to "
-                + packedWidth.get(language) + " px, wider than English's " + packedWidth.get("en"));
-            assertTrue(minimumWidth.get(language) <= packedWidth.get("en"), language + " has a minimum width of "
-                + minimumWidth.get(language) + " px, wider than English's default " + packedWidth.get("en"));
+            assertTrue(packedWidth.get(language) <= WIDEST, language + " packs to " + packedWidth.get(language)
+                + " px, wider than 3.1.0's English default of " + WIDEST);
         }
+
+        // The layout above copies `display()`'s minimum; this keeps the two from drifting apart.
+        String display = new String(java.nio.file.Files.readAllBytes(
+            new File("src/org/traincontrol/gui/TrainControlUI.java").toPath()), "UTF-8");
+        display = display.replace("\r\n", "\n");
+        int packed = display.indexOf("        pack();\n        displayMenuBar();");
+        assertTrue(packed >= 0 && display.indexOf(
+            "setMinimumSize(new Dimension(this.getSize().width, this.getSize().height));", packed) > packed,
+            "display() no longer packs and then takes the packed size as the minimum; update this test's layout to match");
 
         assertEquals(total, 0,
             "text is clipped - the full list is in " + new File(OUT, "clipped.txt")
@@ -379,8 +387,6 @@ public class testEveryLanguageFits
                 // No container-level checks: the per-component rule catches a component whose width is FIXED, since a
                 // free layout grants the wider preferred size and the overflow lands elsewhere.
                 found.addAll(LanguageFit.measure(LEDGER, "window", language, ui[0], inspected));
-
-                minimumWidth.put(language, ui[0].getMinimumSize().width);
 
                 found.addAll(locomotivePanelCut(ui[0], language));
 
