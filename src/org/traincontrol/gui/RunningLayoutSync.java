@@ -31,9 +31,8 @@ final class RunningLayoutSync
     }
 
     /**
-     * Runs a load that folds the running layout, keeping the destination turns the railway has made and not yet written
-     * into the setup: a turn is written only while the railway is idle, so during a run every one made since it started
-     * is still owed.  Put back on whatever railway the load leaves.
+     * Runs a load that folds the running layout, keeping the destination turns the railway made and not yet written
+     * into the setup (a turn is written only while idle).  Put back on whatever railway the load leaves.
      *
      * @param load the load
      */
@@ -52,12 +51,10 @@ final class RunningLayoutSync
     }
 
     /**
-     * Folds what the running layout knows back into the configuration, and writes it: a run moves locomotives, and
-     * where they ended up lives in the running Layout until a fold writes it into the setup.  Each caller asks
-     * `isSetupNewerThanTheRunningLayout` first; stopping autonomy does not capture.  It happens BEFORE a page changes,
-     * while the naming and the store still agree (`renamePage` then rekeys what was captured); refused after a run, it
-     * would discard every placement the run produced and Start could route a train into an occupied block.  Written,
-     * not reconciled: see resetAutonomySession.
+     * Folds what the running layout knows (where a run left the locomotives) back into the configuration and writes it.
+     * Callers ask `isSetupNewerThanTheRunningLayout` first; it happens BEFORE a page changes, while the naming and the
+     * store agree (`renamePage` rekeys it): refused after a run, Start could route a train into an occupied block.
+     * Written, not reconciled: see resetAutonomySession.
      */
     void captureRunningLayout()
     {
@@ -68,8 +65,7 @@ final class RunningLayoutSync
 
     /**
      * The same, told whether a railway that holds a path is folded too, each train under way written on the one point
-     * it is kept at: Unload's fold, made after its Yes has stopped the trains.  Every other door here keeps the rule
-     * that a railway reading busy is not folded.
+     * it is kept at (Unload's fold, after its Yes stopped the trains); other doors do not fold a railway reading busy.
      *
      * @param underWayToo whether to fold a railway that holds a path
      * @return what kept the fold from being written, for the caller to log or report; null when written or not needed
@@ -84,10 +80,9 @@ final class RunningLayoutSync
             return null;
         }
 
-        // While a setup edit waits for a load, what the railway owns and nothing of the setup's: the edit is in the
-        // configuration and not in the running layout, so folding the whole running layout would write the older layout
-        // over it, and folding nothing would lose where the run left the trains and the timetable.  The rebuild or load
-        // that replaces the running layout clears the flag.
+        // While a setup edit waits for a load, fold only what the railway owns: folding all would write the older
+        // layout over the edit, folding nothing would lose where the run left the trains.  The rebuild or load clears
+        // the flag.
         try
         {
             // Each train under way on the one point it is kept at; a railway at rest keeps none
@@ -95,17 +90,16 @@ final class RunningLayoutSync
 
             String railway = folding.toJSON(folding.getLastPointsReached());
 
-            // While the setup is newer than the railway, what the railway owns alone: where the trains stand, the
-            // settings and the timetable, not its older homes, lengths and priorities.
+            // While the setup is newer, what the railway owns alone: where the trains stand, the settings, the
+            // timetable.
             if (this.ui.setupEditDeclinedDuringRun)
             {
                 this.ui.autonomySession().captureWhatTheRailwayOwns(railway, this.ui.getActiveDiagramConfiguration(), settingsAsBuiltFor(folding));
             }
             else this.ui.autonomySession().captureFromLayout(railway, this.ui.getActiveDiagramConfiguration(), settingsAsBuiltFor(folding));
 
-            // Written, not reconciled: on the editor path the pages this session holds are the ones the editor mutated
-            // in place, and Cancel re-reads into new page objects, so reconciling would delete the settings of every
-            // square the user deleted and thought better of.
+            // Written, not reconciled: on the editor path the pages are mutated in place and Cancel re-reads new page
+            // objects, so reconciling would delete the settings of every square the user deleted and restored.
             this.ui.autonomySession().saveWithoutReconciling();
 
             return null;
@@ -118,8 +112,8 @@ final class RunningLayoutSync
 
     /**
      * Writes these trains' pauses into the railway's settings as built, for a door that changed them on the railway and
-     * in the setup together.  Only the trains the door changed (OB-343): the railway's whole list would hide a pause
-     * made by the Auto tab's button.
+     * in the setup together.  Only the trains the door changed (OB-343): the whole list would hide the Auto tab's
+     * pauses.
      */
     void notePausesAsBuilt(java.util.Collection<Locomotive> changed)
     {
@@ -152,8 +146,8 @@ final class RunningLayoutSync
     }
 
     /**
-     * Reads the railway just built's settings and timetable, for the folds to compare against.  Called by the
-     * one door that builds a railway, straight after it.
+     * Reads the settings and timetable of the railway just built, for the folds to compare against; called straight
+     * after.
      */
     void noteTheRailwaysSettingsAsBuilt()
     {
@@ -176,8 +170,7 @@ final class RunningLayoutSync
 
     /**
      * @param railway a railway
-     * @return its settings as it was built, or null where this window does not know them; the folds change it in place to
-     *         what they take into the setup (OB-343)
+     * @return its settings as built, or null where unknown; the folds change it in place (OB-343)
      */
     JSONObject settingsAsBuiltFor(Object railway)
     {
@@ -185,20 +178,17 @@ final class RunningLayoutSync
     }
 
     /**
-     * Rebuilds the running layout from what the setup now says (OB-034), lifted out of autonomyEditorClosed so an edit
-     * made from the diagram's own menu can ask for it too (renaming a station there changes what the copies are
-     * called).  Not while trains are moving: see prepareAutonomyReload.
+     * Rebuilds the running layout from what the setup now says (OB-034); the diagram's own menu asks for it too.  Not
+     * while trains are moving: see prepareAutonomyReload.
      */
     void rebuildRunningLayoutFromSetup()
     {
-        // No placement edit is pending here: the callers are autonomyEditorClosed() and
-        // LayoutEditor.discardAutonomyWork, and every placement made in the editor already reached the running layout.
+        // No placement edit is pending: every placement made in the editor already reached the running layout.
         rebuildRunningLayoutFromSetup(false, null, null);
     }
 
     /**
-     * The road a train came in on, put back on the Point it was put back on; `was` is what `whereTheTrainsAre`
-     * recorded.
+     * The road a train came in on, put back on the Point it was put back on; `was` is from `whereTheTrainsAre`.
      */
     private static void putTheRoadBack(Layout built,
         Point back, String[] was)
@@ -211,8 +201,8 @@ final class RunningLayoutSync
     }
 
     /**
-     * The destination turns the railway has made and not yet written into the setup, DRAINED rather than copied as the
-     * Layout is about to be thrown away; pairs with `putThePendingTurnsBack`.
+     * The destination turns the railway made and not yet written into the setup, DRAINED as the Layout is about to be
+     * thrown away; pairs with `putThePendingTurnsBack`.
      */
     Map<String, String[]> takeThePendingTurns()
     {
@@ -235,8 +225,7 @@ final class RunningLayoutSync
     }
 
     /**
-     * Puts those turns onto the rebuilt Layout.  `restoreReversalsOnArrival` puts each back only IF ABSENT (stated on
-     * the Layout), so a train that has turned again on the new railway keeps its newer record.
+     * Puts those turns onto the rebuilt Layout, each only IF ABSENT, so a train that has turned again keeps its record.
      */
     void putThePendingTurnsBack(Map<String, String[]> turns)
     {
@@ -262,9 +251,9 @@ final class RunningLayoutSync
     }
 
     /**
-     * Puts each train back where it stood before the rebuild (OB-183), on the Point the rebuild gives the copy it stood
-     * on; a train whose square is gone is left where the rebuild put it.  `placementsJustEdited` is the trains the
-     * setup was just given a new placement for, or null.
+     * Puts each train back where it stood before the rebuild (OB-183), on the Point the rebuild gives its copy; a train
+     * whose square is gone stays where the rebuild put it.  `placementsJustEdited`: trains just given a placement, or
+     * null.
      */
     void putTheTrainsBack(Map<String, String[]> standing,
         Set<String> placementsJustEdited)
@@ -287,11 +276,9 @@ final class RunningLayoutSync
     }
 
     /**
-     * A train the rebuild could not put back where the railway had it, taken off wherever the rebuild put it and
-     * recorded in the setup (a null `setup` records nothing) where it stands, facing the way it faces: otherwise the
-     * square it stands on reads free and another train could be sent into it.  Recorded, the build stands it on no
-     * Point where no copy faces its way, and the setup check's error stops every send until it is turned, moved, or the
-     * track is put back.
+     * A train the rebuild could not put back is taken off wherever the rebuild put it and recorded in the setup (null
+     * `setup` records nothing) where it stands and faces, so its square does not read free; where no copy faces its
+     * way the setup check's error stops every send until it is turned, moved, or the track is put back.
      */
     static void recordTheTrainsNotPutBack(Layout built,
         Map<String, String[]> standing, Set<String> notBack,
@@ -328,8 +315,7 @@ final class RunningLayoutSync
 
             if (facing != null) setup.setFacing(square, facing);
 
-            // AND THE SIDE IT CAME IN BY, AND ITS ROAD: without them the track put back stood it with no tail, and
-            // the track its tail lies over was offered to other trains
+            // AND THE SIDE IT CAME IN BY, AND ITS ROAD: without them the track its tail lies over was offered to others
             if (was.length > 1 && was[1] != null) setup.setArrivedFrom(square, was[1]);
 
             if (was.length > 2 && was[2] != null)
@@ -356,8 +342,8 @@ final class RunningLayoutSync
     }
 
     /**
-     * The same, each train and its road put back on the Point the rebuild gives the copy it stood on, found by
-     * `namedNow` from the name, square and facing recorded; `namedNow` null goes by the names recorded.
+     * The same, each train and road put back on the Point `namedNow` gives its copy from the name, square and facing
+     * recorded; null goes by the names recorded.
      */
     static Set<String> putTheTrainsBack(Layout built,
         Map<String, String[]> standing, Consumer<String> log,
@@ -378,9 +364,8 @@ final class RunningLayoutSync
     }
 
     /**
-     * What `whereTheTrainsAre` recorded in the names the rebuild gives the same Points (each Point and road by the
-     * square it copied and its facing); a train whose Point the rebuild lacks is left out and stays where the rebuild
-     * put it.
+     * What `whereTheTrainsAre` recorded in the names the rebuild gives the same Points; a train whose Point the rebuild
+     * lacks is left out and stays where the rebuild put it.
      */
     private static Map<String, String[]> namedNow(Map<String, String[]> standing,
         TrainControlUI.NamedNow namedNow, Set<String> nowhere)
@@ -457,10 +442,9 @@ final class RunningLayoutSync
     }
 
     /**
-     * The same, told which trains the setup has just been given a new placement for (`placementsJustEdited`, or null).
-     * Where the rebuilt placement and `standing` disagree, the setup is newer where somebody just placed a train in the
-     * editor (MT-337), the record where a run moved a train after the last capture (OB-183).  Decided per TRAIN.
-     * Returns the trains it could not put back, left where the rebuild put them; `log` is where to say so.
+     * The same, told which trains the setup was just given a new placement for (`placementsJustEdited`, or null).
+     * Where the rebuilt placement and `standing` disagree, the setup wins for a just-edited train (MT-337), the record
+     * otherwise (OB-183), per TRAIN.  Returns the trains it could not put back; `log` is where to say so.
      */
     static Set<String> putTheTrainsBack(Layout built,
         Map<String, String[]> standing, Consumer<String> log,
@@ -485,25 +469,22 @@ final class RunningLayoutSync
                     continue;
                 }
 
-                // A station copy facing the same way, where the recorded one is barred and the square has one (a
-                // turning copy at a square trains may turn at): autonomy can start the train there.
+                // A station copy facing the same way where the recorded one is barred: autonomy can start the train
+                // there.
                 Point twin = built.startableTwinOf(back);
 
                 if (twin != null) back = twin;
 
-                // The railway wins, unless this train's placement is the edit (OB-183): where a train IS is a fact, and
-                // where the file thinks it is is a record.  The door that placed the train supplies the exception; it
-                // is not inferred.
+                // The railway wins, unless this train's placement is the edit (OB-183): where a train IS is a fact,
+                // where the file thinks it is a record.  The door that placed the train supplies the exception.
                 if (placementsJustEdited == null || !placementsJustEdited.contains(was.getKey()))
                 {
                     if (back.getCurrentLocomotive() == null
                         || !was.getKey().equals(back.getCurrentLocomotive().getName()))
                     {
-                        // And only where it went: `moveLocomotive` refuses a square that is not a destination (a
-                        // station demoted with the train still on it) and logs it, while the side and road below were
-                        // written regardless.  Except a barred copy of a station: a train reversed there on the
-                        // throttle, or turned by the Facing menu, stands on that copy because it IS its direction.
-                        // Onto its own copy even where that is no station now.
+                        // And only where it went: `moveLocomotive` refuses a square that is not a destination.  Except
+                        // a barred copy of a station, which a reversed or Facing-menu-turned train stands on because it
+                        // IS its direction; onto its own copy even where that is no station now.
                         if (!built.moveLocomotive(was.getKey(), back.getName(), false, true, true))
                         {
                             notBack.add(was.getKey());
@@ -513,19 +494,18 @@ final class RunningLayoutSync
                     }
 
                     // The arrival side goes back with the train: `Point.setLocomotive` clears it on a change of
-                    // occupant, so the tail blocking would switch itself off on every rebuild (OB-183).
+                    // occupant (OB-183).
                     if (was.getValue()[1] != null) back.setArrivedFrom(was.getValue()[1]);
 
-                    // And the road, looked up again on this layout, after the move above, which clears both on a change
-                    // of occupant.
+                    // And the road, looked up again on this layout after the move, which clears both.
                     putTheRoadBack(built, back, was.getValue());
 
                     continue;
                 }
 
-                // Where the rebuild put it, which is where the SETUP says it is: a rebuild is asked for because the
-                // setup just changed, so writing this record over it undoes the edit (MT-337).  Reached only for trains
-                // somebody chose to place (`AutonomySession.placeLocomotive` writes `loc` into the setup).
+                // Where the rebuild put it, which is where the SETUP says it is: writing this record over it would undo
+                // the edit (MT-337).  Reached only for trains somebody chose to place
+                // (`AutonomySession.placeLocomotive`).
                 Point now = null;
 
                 for (Point each : built.getPoints())
@@ -544,18 +524,17 @@ final class RunningLayoutSync
 
                 if (now == back && was.getValue()[1] != null)
                 {
-                    // Only the arrival side, and only where it did not move: `Point.setLocomotive` clears `arrivedFrom`
-                    // whenever the occupant changes, wrong for the same train rebuilt onto its own square.
+                    // Only the arrival side, and only where it did not move: `Point.setLocomotive` clears it on a new
+                    // occupant.
                     back.setArrivedFrom(was.getValue()[1]);
                 }
 
-                // And `now == null` is an answer too: the Remove item and Clear Every Locomotive write "nowhere" into the setup and nowhere
-                // else, so a rebuild that places this train on no square is carrying the edit rather than losing the train.
+                // And `now == null` is an answer too: Remove and Clear Every Locomotive write "nowhere" into the setup,
+                // so a rebuild that places this train on no square carries the edit.
             }
             catch (Exception cannotPutItBack)
             {
-                // One train, not the rebuild: a locomotive that cannot be put back is worth saying out loud, and is no
-                // reason to abandon the others.
+                // One train, not the rebuild: a locomotive that cannot be put back is said out loud, the others go on.
                 if (log != null) log.accept(cannotPutItBack.getMessage());
 
                 notBack.add(was.getKey());
@@ -566,11 +545,10 @@ final class RunningLayoutSync
     }
 
     /**
-     * The same rebuild, saying so when it declines one the operator has not been warned about (`sayIfDeclined`).  A run
-     * starting inside the coalesced rebuild's event finds the gate shut and the edit is thrown away, correctly; a
-     * deferred rebuild would put each train back where it started (OB-144).  The remedy: stop the run and make the edit
-     * again.  `placementsJustEdited` is the locomotives whose placement this gesture wrote into the setup, or null.
-     * `standingBefore`, from a Cancel, is where the railway had each train when the editor opened, or null.
+     * The same rebuild, saying so (`sayIfDeclined`) when it declines one the operator was not warned about.  A run
+     * starting inside the coalesced rebuild's event finds the gate shut and the edit is thrown away (OB-144): stop the
+     * run and edit again.  `placementsJustEdited`: locomotives whose placement this gesture wrote, or null;
+     * `standingBefore`: from a Cancel, where each train stood when the editor opened, or null.
      */
     void rebuildRunningLayoutFromSetup(boolean sayIfDeclined,
         Set<String> placementsJustEdited, Map<String, String[]> standingBefore)
@@ -582,10 +560,8 @@ final class RunningLayoutSync
         }
 
         // A declined edit is recorded so the exit does not delete it: the save on the way out folds the RUNNING layout
-        // back over the configuration (`captureFromLayout` removes what the layout lacks), and that layout was built
-        // before the edit.  Only from the door that carries an edit: the flag rides on `sayIfDeclined`, because
-        // `autonomyEditorClosed()` reaches here on every close.  The excluded door cannot reach here while autonomy is
-        // busy (OB-047); if that guard is relaxed, this flag needs its own parameter.
+        // over the configuration, and that layout was built before the edit.  Only from the door that carries an edit
+        // (it rides on `sayIfDeclined`); the excluded door cannot reach here while autonomy is busy (OB-047).
         if (sayIfDeclined && this.ui.getActiveDiagramConfiguration() != null && this.ui.isAutonomyBusy()
             && this.ui.getAutonomyViewerPanel() != null)
         {
@@ -595,11 +571,9 @@ final class RunningLayoutSync
         if (this.ui.getActiveDiagramConfiguration() != null && !this.ui.isAutonomyBusy()
             && this.ui.getAutonomyViewerPanel() != null)
         {
-            // Without capturing the running layout's state first: every caller reaches here because the setup just
-            // changed, so an ordinary load would fold the running layout's stale answer over the edit.  "Newer of the
-            // two" holds only because `openLayoutEditor` captures the running layout before it constructs the editor.
-            // Where the trains ARE survives the rebuild (OB-183): placements only, with the one exception named
-            // (`placementsJustEdited`, MT-337).
+            // Without capturing the running layout first: the setup just changed, so a fold would write the running
+            // layout's stale answer over the edit.  Where the trains ARE survives the rebuild (OB-183): placements
+            // only, except `placementsJustEdited` (MT-337).
             Map<String, String[]> standing = this.ui.whereTheTrainsAre();
 
             // A Cancel stands each train back where the railway had it when the editor opened; one it did not have then
@@ -615,9 +589,8 @@ final class RunningLayoutSync
                 }
             }
 
-            // And the turns nobody has managed to write down yet: `Layout.reversedOnArrival` lives on the Layout, which
-            // the load below replaces wholesale; a turn that declined to write is put back and retried at the next
-            // idle refresh (OB-189).
+            // And the turns nobody has written down yet: `Layout.reversedOnArrival` lives on the Layout the load
+            // replaces; a declined turn is put back and retried at the next idle refresh (OB-189).
             Map<String, String[]> pendingTurns = takeThePendingTurns();
 
             // Asked, not built, as the carry asks
@@ -625,10 +598,8 @@ final class RunningLayoutSync
 
             try
             {
-                // The railway's settings and timetable first: the Auto tab and a run write them to the railway, and
-                // this rebuilds from the setup.  Only what the railway changed since it was built, and only where this
-                // window knows how it was built, as a door can have edited the setup's own settings before asking for
-                // this rebuild.
+                // The railway's settings and timetable first, as the Auto tab and a run write them to the railway; only
+                // what it changed since it was built, and only where this window knows how it was built.
                 if (runningBefore instanceof Layout && this.ui.autonomySession() != null
                     && settingsAsBuiltFor(runningBefore) != null
                     && ((Layout) runningBefore).isValid()
@@ -649,29 +620,25 @@ final class RunningLayoutSync
 
                 this.ui.getAutonomyViewerPanel().load(this.ui.getActiveDiagramConfiguration(), false, false);
 
-                // Only over a railway the load replaced: a load declined for a problem that stops the build leaves the
-                // railway as it was, while the setup's naming is the edited one; every train whose copy the edit
-                // renamed would be put back in those names, taken off the railway and recorded where nothing kept it.
+                // Only over a railway the load replaced: a declined load leaves the old railway while the naming is the
+                // edited one, so trains would be put back in those names and recorded where nothing kept them.
                 if (this.ui.getModel() != null && this.ui.getModel().getAutoLayoutIfLoaded() != runningBefore)
                 {
                     putTheTrainsBack(standing, placementsJustEdited);
                 }
                 else if (runningBefore != null && this.ui.getActiveDiagramConfiguration() != null)
                 {
-                    // And the setup is then newer than the railway, as after a rebuild a run declined: every fold of
-                    // the railway built before the edit would write its homes, priorities, lengths and placements back
-                    // over it.
+                    // And the setup is then newer than the railway, so no fold of the older railway writes its homes,
+                    // priorities, lengths and placements back over the edit.
                     this.ui.setupNewerThanTheRailway(true);
 
-                    // And the diagram told of the edit all the same, as the Autonomy menu's door tells it: a load the
-                    // build refuses did not go through autonomyLoadedFromDiagram, so a page left out came back with its
-                    // old captions.
+                    // And the diagram told of the edit all the same: a refused load did not go through
+                    // autonomyLoadedFromDiagram, so a page left out came back with its old captions.
                     this.ui.autonomySetupChanged();
                 }
 
-                // And a declined edit has now been carried: the running layout is the newer of the two again, and left
-                // up the guard stopped every fold for the rest of the session (OB-183).  Only when the layout was
-                // REPLACED: a declined `load` carried nothing.
+                // And a declined edit has now been carried: left up, the guard stopped every fold for the rest of the
+                // session (OB-183).  Only when the layout was REPLACED.
                 if (this.ui.setupEditDeclinedDuringRun && this.ui.getModel() != null && this.ui.getModel().hasAutoLayout()
                     && this.ui.getModel().getAutoLayout() != runningBefore && this.ui.getModel().getAutoLayout().isValid())
                 {
@@ -680,16 +647,15 @@ final class RunningLayoutSync
             }
             finally
             {
-                // In a `finally`, because the drain above has already emptied the old map: a load that throws part way
-                // would lose the turns as surely as the rebuild did.
+                // In a `finally`: the drain above already emptied the old map, so a load that throws would lose the
+                // turns.
                 putThePendingTurnsBack(pendingTurns);
             }
         }
 
-        // And both marks follow the edit (MT-278): a placement reaches the marks through `updateVisiblePoints`, a train
-        // length through `applyTrainLength`, a tile length through this rebuild, but everything else the editor can
-        // change alters which edges exist and so what a standing train covers.  This is the one door every setup change
-        // goes through; `refreshCoveredTrack` repaints only the squares whose mark changed.
+        // And both marks follow the edit (MT-278): everything else the editor can change alters which edges exist and
+        // so what a standing train covers.  This is the one door every setup change goes through; `refreshCoveredTrack`
+        // repaints only the squares whose mark changed.
         this.ui.blockedTrackChanged();
     }
 }
