@@ -1116,8 +1116,7 @@ public final class HomeStaging
     }
 
     /**
-     * The settings so far with these added, or null where one is set the other way.  Same rule as
-     * `GraphReducer.searchBySettings` in byte form; change both.
+     * The settings so far plus these, or null where one is set two ways; change `GraphReducer.searchBySettings` too.
      */
     static Map<String, Accessory.accessorySetting> withCommands(Map<String, Accessory.accessorySetting> settings,
         Map<String, Accessory.accessorySetting> soFar)
@@ -1139,9 +1138,7 @@ public final class HomeStaging
     }
 
     /**
-     * Whether this point was already reached under commands that leave at least as much freedom: an earlier arrival
-     * makes this one redundant only if it committed to nothing this one has not also committed to.  Same rule as
-     * `GraphReducer.alreadyReached` in byte form; change both.
+     * Whether an earlier arrival here committed to nothing these have not; change `GraphReducer.alreadyReached` too.
      */
     static boolean alreadyReached(Map<String, List<Map<String, Accessory.accessorySetting>>> seen,
         String p, Map<String, Accessory.accessorySetting> commands)

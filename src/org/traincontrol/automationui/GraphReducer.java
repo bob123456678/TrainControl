@@ -473,10 +473,7 @@ public class GraphReducer
             });
     }
 
-    /**
-     * The place a train arriving at a square by this side stands on: the square, or on a double curve or overpass,
-     * whose roads never meet, its road (OB-238).  The railway's blocks are named by it (`AutonomyBuilder.blockFor`).
-     */
+    /** Where a train arriving by this side stands: the square, or its road on a double curve or overpass (OB-238). */
     String placeOf(TileKey tile, Side arrival)
     {
         LayoutDiagramComponent component = arrival == null || graph == null ? null : graph.getTiles().get(tile);
@@ -532,8 +529,7 @@ public class GraphReducer
     }
 
     /**
-     * A square, the side a train reached it by (null at a start facing every way) and the place that makes, the start's
-     * place, and the places of the destination passed on the way.
+     * A square, the side reached by (null: a start facing every way), its place, the start's, the destination's passed.
      */
     private static final class Facing
     {
@@ -556,13 +552,7 @@ public class GraphReducer
     /** What `searchBySettings` makes of a place: a way through, the end of a walk, the destination, or no way. */
     enum Reached { PASS, STOP, ARRIVE, REFUSE }
 
-    /**
-     * Breadth-first by place and the switch settings so far, as `Layout.bfsBySettings` carries them: a route that
-     * throws one switch two ways is refused whole by `isPathClear`, a turn on the way no excuse (FR-221).  The one
-     * search of Test a path (`findPath`) and the findings (`BuiltReach`).
-     *
-     * @return the ways taken to the first place `reached` calls ARRIVE, or null
-     */
+    /** Breadth-first by place and settings, no switch set two ways (FR-221): the ways to the first ARRIVE, or null. */
     static <P, W> List<W> searchBySettings(Collection<P> starts, Function<P, List<W>> ways, BiFunction<P, W, P> end,
         Function<W, Map<String, accessorySetting>> commands, Function<P, Object> key, Function<P, Reached> reached)
     {
@@ -635,8 +625,7 @@ public class GraphReducer
     }
 
     /**
-     * Whether an earlier arrival committed to nothing these settings have not also committed to, so leaves at least
-     * as much freedom.  Same rule as `HomeStaging.alreadyReached`; change both.
+     * Whether an earlier arrival committed to nothing these settings have not; change `HomeStaging.alreadyReached` too.
      */
     private static boolean alreadyReached(List<byte[]> earlier, byte[] settings)
     {

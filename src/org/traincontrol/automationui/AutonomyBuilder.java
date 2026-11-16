@@ -854,12 +854,10 @@ public class AutonomyBuilder
                     if (watching.length() > 0) json.put("blockedBy", watching);
                 }
 
-                // The signals thrown to red while this platform is claimed, on every copy because the copies are one
-                // platform, including a copy whose arrival side is barred (so not conditioned on `stops`): a bar stops
-                // autonomy routing a train in, not a person driving or placing one, and refreshOneSignal asks only the
-                // Points whose protecting signals hold the accessory.  Safe on a non-station: setProtectingSignals
-                // stores what it is given, unlike the terminus flag below.  One is a bare string, several an array
-                // (parseAuto).
+                // The signals thrown to red while this platform is claimed, on every copy, a barred one too (not on
+                // `stops`): a bar stops autonomy routing a train in, not a person driving or placing one, and
+                // refreshOneSignal asks only the Points holding the accessory.  Safe on a non-station, unlike the
+                // terminus flag below.  One is a bare string, several an array (parseAuto).
                 List<String> protecting = protectingSignals.get(point.getTile());
 
                 if (protecting != null && !protecting.isEmpty())
@@ -876,15 +874,10 @@ public class AutonomyBuilder
                     json.put("entrySignal", entry.size() == 1 ? (Object) entry.get(0) : new JSONArray(entry));
                 }
 
-                // COORDINATES ALWAYS, not only for the inspection copy: `arrivedFrom` is a compass side, which cannot
-                // be resolved to a piece of track without knowing where the neighbors lie.
-                //
-                // Roughly one tile per 60 units (the spacing the hand-written files use), each page stacked below the
-                // last, with split copies fanned out a little so they do not land on one another.
-                //
-                // Without a page list the stacking is dropped, not the coordinates: pages then overlap, which matters
-                // only when comparing points on DIFFERENT pages, and the only reader, `sideTowards`, asks about
-                // immediate neighbors.  A portal neighbor is the exception.
+                // Coordinates always, not only for the inspection copy: `arrivedFrom` is a compass side, resolved to
+                // track only by where the neighbors lie.  About one tile per 60 units, pages stacked, split copies
+                // fanned apart.  Without a page list pages overlap, which only a portal neighbor notices: `sideTowards`
+                // asks only immediate neighbors.
                 int page = coordinatePages == null ? 0
                     : Math.max(0, coordinatePages.indexOf(point.getTile().getPage()));
 
@@ -928,12 +921,11 @@ public class AutonomyBuilder
                     }
                 }
 
-                // A station turns around at a terminus, anything else at a reversing point: a terminus is a destination
-                // that reverses on arrival, a reversing point one autonomy never chooses to stop at.  Either the copy
-                // that exists to turn trains round, or, where the square was marked and nothing arrives at it by a side
-                // of the grid, the single Point it became (must, not may: the flag means every arriving train reverses,
-                // and on a may-turn square it would make a through station unroutable; where may cannot be expressed
-                // nothing is emitted, and the checks report that the marking means nothing here).
+                // A station turns at a terminus (a destination that reverses on arrival), anything else at a reversing
+                // point (one autonomy never stops at): the copy that turns trains, or, where the square was marked and
+                // nothing arrives by a side of the grid, the single Point it became: must, as every arriving train
+                // reverses (may would make a through station unroutable; where may cannot be expressed nothing is
+                // emitted, and the checks say the marking means nothing here).
                 if (node.reverse
                     || (mandatory.contains(point.getTile()) && splitSides(point.getTile()).isEmpty()))
                 {
