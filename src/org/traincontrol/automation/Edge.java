@@ -25,17 +25,11 @@ import org.traincontrol.util.Util;
 public class Edge
 {
     /**
-     * How many claims are standing on this edge, not whether any is: a boolean cannot hold two claims, and the first
-     * release would free track a second train is still crossing.  setOccupied raises this edge and each of its lock
-     * edges and setUnoccupied lowers them; the "LockedEdge" methods do the same without the cascade.  Floored at zero
-     * (see release()).
+     * Count of claims standing on this edge, not a boolean: the first release must not free track a second train still
+     * crosses.  setOccupied raises it on this edge and its lock edges; floored at zero (see release()).
      */
     private int occupancy;
-    /**
-     * How many paths are running over this rail, as against holding it clear (OB-269).  `occupancy` counts both (a path
-     * also claims every edge in each edge's `lockEdges`), too wide for whether a candidate path may use this rail,
-     * which `isRunOver` answers.
-     */
+    /** Paths running over this rail, as against holding it clear (OB-269); `isRunOver` answers it. */
     private int runOver;
     private final Point start;
     private final Point end;
@@ -44,10 +38,8 @@ public class Edge
     private int length = 0;
 
     /**
-     * The track between the last switch on this edge and the Point it ends at.  `Integer.MIN_VALUE` (the default) when
-     * the edge crosses no switch, as every hand-written or pre-3.0.0 configuration leaves it: such an edge does not
-     * bound where a train may come to rest.  `-1` when it crosses one and nothing in the stretch after it is measured:
-     * bounded but unknown, which this guard declines to act on.
+     * The track between the last switch on this edge and the Point it ends at; `Integer.MIN_VALUE` (default) when the
+     * edge crosses no switch, `-1` when it crosses one and the stretch is unmeasured.
      *
      * Adam: "you need to measure total distance between points, not validate that every edge has a length > 0.  It is
      * only indeterminate if the entire logical segment has length 0."  An unmeasured tile contributes nothing and the
@@ -298,9 +290,7 @@ public class Edge
     }
     
     /**
-     * The side of the END point this edge comes in by, as the build names it (OB-182), not the compass direction of the
-     * neighboring Point (`Layout.sideTowards`).  Null for a configuration written before this existed: readers fall
-     * back to the geometry.
+     * The side of the END point this edge enters by, as the build names it (OB-182); null: readers use the geometry.
      */
     private String entrySide = null;
 
@@ -321,17 +311,14 @@ public class Edge
     }
 
     /**
-     * The places this edge runs over, in order from its start, and what each measures (OB-207); the lengths sum to
-     * `getLength()`.  Empty for a hand-written or pre-3.0.0 configuration: readers fall back to the whole-edge answer.
+     * The places this edge runs over, in order from its start, and what each measures (OB-207); empty for old configs.
      */
     private List<String> placeIds = Collections.emptyList();
 
     private List<Integer> placeLengths = Collections.emptyList();
 
     /**
-     * Records where this edge runs, as the build worked it out.
-     *
-     * Ignored unless the two lists agree in size, because a reader walks them in step.
+     * Records where this edge runs, as the build worked it out; ignored unless the two lists agree in size.
      *
      * @param ids the place identifiers, in path order
      * @param lengths what each of them measures, in the same order
@@ -362,10 +349,8 @@ public class Edge
     }
 
     /**
-     * The places answered 0 on purpose (Adam: *"stop listing answered zeros as missing"*).
-     *
-     * They measure 0 - track of no length, which a leg answered throughout is measured as (`isMeasured`) - and a refusal
-     * that counts the squares with no length leaves them out: the operator has already answered them.
+     * The places answered 0 on purpose (Adam: *"stop listing answered zeros as missing"*); they count as measured
+     * (`isMeasured`).
      */
     private java.util.Set<String> answeredPlaces = Collections.emptySet();
 
@@ -388,8 +373,7 @@ public class Edge
     }
 
     /**
-     * What Mass Assign Lengths would ask a length for on this edge, place by place (OB-297); the own-tail note counts
-     * these.  Empty for a configuration built before (`knowsPiecesToMeasure`): its edges are read whole.
+     * What Mass Assign Lengths would ask a length for, place by place (OB-297); empty before `knowsPiecesToMeasure`.
      */
     private java.util.Map<String, String> piecesToMeasure = Collections.emptyMap();
 
@@ -426,7 +410,7 @@ public class Edge
 
     /**
      * Whether this edge is measured: it has a length, or every place on it was answered 0 on purpose (OB-300).  Every
-     * length rule asks this one question of a leg with no length, so they must agree.
+     * length rule asks this, so they must agree.
      *
      * @return true when the edge is measured
      */
@@ -515,29 +499,22 @@ public class Edge
     }
 
     /**
-     * Whether this edge is held by another route, which is the question a LOCK edge asks: the reservation flag and
-     * nothing else.  A lock edge is track held clear so that two routes cannot take one throat at the same time; it is
-     * not a claim on the point beyond it, and a train standing there is not using the throat.  (Counted as occupancy
-     * instead, a train parked next to a junction would block every route across it, and two such trains could
-     * deadlock.)
+     * Whether another route holds this edge, the question a LOCK edge asks: the reservation flag only.  A lock edge is
+     * track held clear so two routes cannot take one throat at once; a train standing there does not count (it would
+     * block every route across a junction and could deadlock).
      *
-     * Reduction cuts an edge at every sensor, so a Point's tile is an endpoint of the edges that meet there and an
-     * intermediate step of none, and a train stands on a sensor.
+     * Locks need not be symmetric (GraphEdgeEdit writes one direction only): the same list is used both ways, so an
+     * asymmetric relation still refuses both orderings.
      *
-     * Locks need not be symmetric (GraphEdgeEdit writes one direction only), and nothing here relies on it: the SAME
-     * list is used in both directions of the transaction, locking writing this flag onto every edge in each edge's
-     * lockEdges and checking reading it off the same, so an asymmetric relation still refuses both orderings.
-     *
-     * @param loc the locomotive asking, kept for symmetry with isOccupied and for future ownership
+     * @param loc the locomotive asking, kept for symmetry with isOccupied
      */
     synchronized public boolean isLockHeld(Locomotive loc)
     {
         return occupancy > 0;
     }
     /**
-     * Whether a path is running over this rail, rather than holding it clear (OB-269): the narrow half of `isLockHeld`,
-     * asked only by `isPathClear`, so a reserved throat's accessories stay protected.
-     *
+     * Whether a path is running over this rail rather than holding it clear (OB-269): the narrow half of `isLockHeld`,
+     * asked only by `isPathClear`.
      * @param loc the locomotive asking, kept for symmetry with its siblings
      * @return true when some path is running over this rail
      */
@@ -547,23 +524,16 @@ public class Edge
     }
 
     /**
-     * @param wholeBlock whether a train on ANOTHER copy of the end square counts as occupying it.
-     *
-     * True when asking "may this train run onto that track" - the copies of a square are one piece of
-     * rail and a train on either is in the way.  False asks only about the copy itself, which is what
-     * a caller wants when it has already decided which copy it means.
-     *
-     * Neither is the question a lock edge asks - see isLockHeld.
+     * @param wholeBlock true when asking "may this train run onto that track": a train on ANOTHER copy of the end
+     * square counts, as the copies are one piece of rail; false asks about this copy only.  Not the question a lock
+     * edge asks (isLockHeld).
      */
     synchronized public boolean isOccupied(Locomotive loc, boolean wholeBlock)
     {
         // Read once.  Point.isOccupied is synchronized but getCurrentLocomotive is not, so testing the
         // first and dereferencing the second let another thread clear the point in between - which threw
         // a NullPointerException inside isPathClear, on a locomotive thread
-        //
-        // The whole block, not just this Point: a square emitted as several copies is one piece of track, so asking
-        // only this copy let a second train be routed onto its twin.  On a Point with no block this is exactly
-        // getCurrentLocomotive.
+        // The whole block, not just this Point: a square emitted as several copies is one piece of track.
         Locomotive endLocomotive = wholeBlock
             ? this.end.getBlockLocomotive() : this.end.getCurrentLocomotive();
 
@@ -576,14 +546,9 @@ public class Edge
     }
 
     /**
-     * Gives up one claim, and never fewer than none.  The floor is a contract: configureAndLockPath counts an edge as
-     * taken BEFORE it takes it, so that an edge a throw leaves occupied is still inside the range its recovery
-     * releases.
-     *
-     * The floor holds for THIS edge only: `setUnoccupied` cascades to every entry in `lockEdges`, each decrementing its
-     * own count.  An over-release is unreachable because `setOccupied` increments as its first statement, so only
-     * locked siblings a mid-loop throw never reached could be released untaken.  Going negative would be worse: the
-     * next train to lock the edge would find it free.
+     * Gives up one claim, never fewer than none.  The floor is a contract: configureAndLockPath counts an edge as taken
+     * BEFORE it takes it, so an edge a throw leaves occupied is still in the range its recovery releases.  The floor
+     * is per edge; going negative would let the next train find the edge free.
      */
     private void release()
     {
@@ -637,8 +602,7 @@ public class Edge
     {
         release();
 
-        // The same floor as `release`: a release can arrive for a claim that was never made, and going negative would
-        // leave the next train finding occupied rail free.
+        // Floored like `release`.
         if (this.runOver > 0) this.runOver--;
         
         for (Edge e : this.lockEdges)
@@ -698,18 +662,13 @@ public class Edge
         jsonObj.put("end", this.end.getName());
         jsonObj.put("length", this.getLength());
 
-        // Only when there is one - see the field.  An absent key means "crosses no switch", which is
-        // what every hand-written and pre-3.0.0 configuration should read as.
+        // Only when there is one: an absent key means "crosses no switch".
         if (this.crossesASwitch()) jsonObj.put("roomAtTheEnd", this.getRoomAtTheEnd());
 
-        // The arrival side, written only when there is one: Layout.fromJSON reads `entrySide`, so without it an export
-        // is not a configuration the program can reload, and arrival-side reasoning (which side of a station a train
-        // comes in on, so what counts as a reversal) is lost.  An absent key means "not traced", like roomAtTheEnd
-        // above.
+        // Written only when there is one: without it an export cannot be reloaded (Layout.fromJSON reads `entrySide`).
         if (this.entrySide != null) jsonObj.put("entrySide", this.entrySide);
 
-        // And the places, for the same reason: reloading without them silently returns the whole-edge coverage
-        // (OB-207).
+        // And the places, so a reload keeps them (OB-207).
         if (!this.placeIds.isEmpty())
         {
             List<JSONObject> placeList = new LinkedList<>();
