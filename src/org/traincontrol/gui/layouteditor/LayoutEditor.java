@@ -1848,7 +1848,9 @@ public class LayoutEditor extends PositionAwareJFrame
                 captionChoice.setAlignmentX(Component.LEFT_ALIGNMENT);
 
                 visibility.add(captionChoice);
-                visibility.add(sideHeading("autosetup.ui.labelDirections"));
+
+                JLabel directionsLabel = sideHeading("autosetup.ui.labelDirections");
+                visibility.add(directionsLabel);
 
                 JComboBox<String> choice = autonomyPanel.getShowDirections();
                 choice.setAlignmentX(Component.LEFT_ALIGNMENT);
