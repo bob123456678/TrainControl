@@ -117,6 +117,42 @@ public class testAFeedbackChangeIsAnnounced
             + "was invisible to a route being recorded (W21-B1). What was announced: " + announced);
     }
 
+    /**
+     * A Link S88's own input 5, its bus 1 contact 5 and its bus 2 contact 5 arrive as 5, 1005 and 2005 (OB-424): three
+     * sensors, so a frame for one moves and announces only that one.
+     *
+     * MUTATION: in `CS2Message.extractShortUID`, add `% 1000` to the result.
+     */
+    @Test
+    public void testABusContactIsItsOwnSensor() throws Exception
+    {
+        final int[] contacts = {5, 1005, 2005};
+
+        for (int c : contacts)
+        {
+            if (!model.isFeedbackSet(String.valueOf(c))) model.newFeedback(c, null);
+
+            model.setFeedbackState(String.valueOf(c), false);
+        }
+
+        for (int c : contacts)
+        {
+            announced.clear();
+            model.receiveMessage(support.Packets.s88(c, true));
+            assertTrue(support.Components.waitFor(() -> model.getFeedbackState(String.valueOf(c)), 5000),
+                "a frame for contact " + c + " did not occupy sensor " + c + ": " + announced);
+
+            for (int other : contacts)
+            {
+                if (other != c) assertTrue(!model.getFeedbackState(String.valueOf(other)),
+                    "a frame for contact " + c + " also occupied sensor " + other);
+            }
+
+            assertEquals(announced, Arrays.asList(c + "=true"), "a frame for contact " + c + " announced other sensors");
+            model.setFeedbackState(String.valueOf(c), false);
+        }
+    }
+
     /** A sensor frame from the station: `was` and `is` the old and new state, equal in an answer to a query. */
     private static void parse(MarklinFeedback feedback, int address, int was, int is)
     {
