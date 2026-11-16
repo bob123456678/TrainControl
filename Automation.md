@@ -215,13 +215,13 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
     - `Allowed trains` is `All`, `Blacklist` or `Whitelist`. The pencil beside it opens the list of trains for the last two. A blacklisted train may not stop here, though it can still pass through; on a sensor that is not a station it may not pass at all. On a whitelist only the trains you pick are allowed, so every other one, including any you add later, is kept out, and an empty whitelist keeps every train out. Going back to `All` keeps the list for next time.
     - `Unavailable while` lists other stations that, while occupied, keep trains away from this one.
 
-**`Presets`**, at the top of the right-hand column (above the other settings when you set several stations at once): five buttons, `Station`, `Terminus`, `Parking`, `Reversing` and `Off`, each of which sets the settings in its row at once and leaves everything else as it was. A button shows as pressed whenever those settings match its row, however they got there. `Off` makes the sensor no station: trains run over it and never stop there.
+**`Presets`**, at the top of the right-hand column (above the other settings when you set several stations at once): five buttons, `Station`, `Terminus`, `Parking`, `Reversing` and `Off`, each of which sets the settings in its row at once and leaves everything else as it was. A button shows as pressed whenever those settings match its row, however they got there. `Station`, `Terminus` and `Parking` make a station trains must stop at, so none of them shows as pressed for a station trains can pass through. A station set up before keeps letting trains through until you press one of them. `Off` makes the sensor no station: trains run over it and never stop there.
 
 | Button | `Trains can stop here` | `Trains can pass through` | `May choose this station` | `Changing direction` |
 | --- | --- | --- | --- | --- |
-| `Station` | on | on | on | `Never` |
-| `Terminus` | on | on | on | `Must` |
-| `Parking` | on | on | off | `Never` |
+| `Station` | on | off | on | `Never` |
+| `Terminus` | on | off | on | `Must` |
+| `Parking` | on | off | off | `Never` |
 | `Reversing` | on | on | off | `May` |
 | `Off` | off | on | (grayed, left as it is) | `Never` |
 
@@ -522,7 +522,7 @@ So if a short train seems to be blocking a surprising amount of track, the answe
 
 **Each train is drawn as a small locomotive** on its station, pointing the way it faces, whether or not autonomy is running, and on its route while it moves. A train standing still on a route it holds, while its switches are set or while it is held on its way, is drawn the same, where it stands.
 
-**What the marks on the diagram mean.** Each station has a mark on its square, the same on the track diagram and in the editor. The shape says whether trains turn around there: a circle where they do not, a diamond where they may (`Changing direction` set to `May`), and a square where they must (`Must`) or where the track runs out. The mark is blue, or gray where autonomy will not choose the station by itself (`May choose this station` unticked), and hollow until the station has a name. A sensor that is not a station gets a smaller mark of the same kind: on every sensor in the editor, and on the track diagram only where trains turn around. A station or sensor out of service (both `Trains can stop here` and `Trains can pass through` unticked) shows an orange sign with an X instead: solid orange with a white X on a station, white with an orange ring and X on a plain sensor.
+**What the marks on the diagram mean.** Each station has a mark on its square, the same on the track diagram and in the editor. The shape says whether trains turn around there: a circle where they do not, a diamond where they may (`Changing direction` set to `May`), and a square where they must (`Must`) or where the track runs out. The mark is blue, or gray where autonomy will not choose the station by itself (`May choose this station` unticked), and hollow until the station has a name. A white dot in the middle marks a station trains must stop at (`Trains can pass through` unticked); on a hollow mark the dot is drawn in the mark's color. A sensor that is not a station gets a smaller mark of the same kind: on every sensor in the editor, and on the track diagram only where trains turn around. A station or sensor out of service (both `Trains can stop here` and `Trains can pass through` unticked) shows an orange sign with an X instead: solid orange with a white X on a station, white with an orange ring and X on a plain sensor.
 
 **Station names are shown on the diagram.** In the editor, right-click a square beside a station and choose `Show a Station Name Here...` (or press Control+N over it); a station square shows its own name. `Station Labels` then chooses what every such caption shows: the station, the train parked there, or its home locomotive. A text label typed as `Point:StationName` that names a station the setup knows is taken over as a caption, and removed from its page so it is not shown twice; the page keeps a `.bak` copy of itself as it was, and the log names each page changed. To hide the names of stations autonomy will never send a train to, or to draw captions in blue rather than light gray, see **Preferences** → Autonomy.
 

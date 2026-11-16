@@ -145,6 +145,9 @@ public class TileAnnotation
         /** The side whose track runs out before another sensor (FR-118), or null; a station there is a terminus. */
         private final Side deadEnd;
 
+        /** A station trains must stop at, none running through (MT-1017): a dot at the icon's center. */
+        private final boolean stopOnly;
+
         public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
             boolean named)
         {
@@ -172,6 +175,13 @@ public class TileAnnotation
         public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
             boolean named, Side a, Side b, boolean optional, boolean shut, Side deadEnd)
         {
+            this(station, terminus, reversing, parking, named, a, b, optional, shut, deadEnd, false);
+        }
+
+        public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
+            boolean named, Side a, Side b, boolean optional, boolean shut, Side deadEnd, boolean stopOnly)
+        {
+            this.stopOnly = stopOnly;
             this.deadEnd = deadEnd;
             this.shut = shut;
             this.optional = optional;
@@ -237,6 +247,11 @@ public class TileAnnotation
             return named;
         }
 
+        public boolean isStopOnly()
+        {
+            return stopOnly;
+        }
+
         @Override
         public boolean equals(Object o)
         {
@@ -248,7 +263,7 @@ public class TileAnnotation
             return station == other.station && terminus == other.terminus
                 && optional == other.optional
                 && reversing == other.reversing && parking == other.parking && named == other.named
-                && shut == other.shut
+                && shut == other.shut && stopOnly == other.stopOnly
                 && a == other.a && b == other.b && deadEnd == other.deadEnd;
         }
 
@@ -256,7 +271,8 @@ public class TileAnnotation
         public int hashCode()
         {
             return (station ? 1 : 0) + (terminus ? 2 : 0) + (reversing ? 4 : 0)
-                + (parking ? 8 : 0) + (named ? 16 : 0) + (optional ? 32 : 0) + (shut ? 64 : 0);
+                + (parking ? 8 : 0) + (named ? 16 : 0) + (optional ? 32 : 0) + (shut ? 64 : 0)
+                + (stopOnly ? 128 : 0);
         }
 
         @Override
@@ -267,6 +283,7 @@ public class TileAnnotation
             return (station ? (parking ? "parking" : "station") : "point")
                 + (terminus ? (optional ? " may turn" : " terminus") : "")
                 + (reversing ? " reversing" : "")
+                + (stopOnly ? " stop-only" : "")
                 + (named ? "" : " (unnamed)");
         }
     }
@@ -1710,6 +1727,32 @@ public class TileAnnotation
             g.setColor(line);
             g.drawOval(x, y, size, size);
         }
+
+        if (badge.isStation()) stopDot(g, x + size / 2.0, y + size / 2.0, size, 1, line);
+    }
+
+    /**
+     * The stop-only station's dot (MT-1017), a third of the icon's height across and never under 3 pixels, in the
+     * outline's color: white on a filled icon, the icon's blue on a white one.
+     */
+    private void stopDot(Graphics2D g, double x, double y, double iconHeight, double scale, Color line)
+    {
+        if (!badge.isStopOnly()) return;
+
+        double across = Math.max(3 / scale, iconHeight / 3);
+
+        Graphics2D d = (Graphics2D) g.create();
+
+        try
+        {
+            ImageUtil.smooth(d);
+            d.setColor(line);
+            d.fill(new Ellipse2D.Double(x - across / 2, y - across / 2, across, across));
+        }
+        finally
+        {
+            d.dispose();
+        }
     }
 
     /** The sensor's contact covered under a plain sensor's turn mark, kept inside the square. */
@@ -1889,6 +1932,8 @@ public class TileAnnotation
             {
                 body(s, outline, fill, line);
             }
+
+            stopDot(s, 0, 0, h, scale, line);
         }
         finally
         {

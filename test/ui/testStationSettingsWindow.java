@@ -1524,9 +1524,9 @@ public class testStationSettingsWindow
 
         assertNull(window.litPresetForTest(), "a button lit though nothing matches");
 
+        // Station leaves Trains can pass through off (MT-1017)
         StationDoors.press(window, "station.preset.STATION");
         StationDoors.press(window, "station.stops");
-        StationDoors.press(window, "station.runsThrough");
         StationDoors.current(window);
 
         assertNull(window.litPresetForTest(), "a button lit with both boxes off, out of service");
@@ -1555,10 +1555,232 @@ public class testStationSettingsWindow
         assertEquals(window.litPresetForTest(), StationPreset.OFF, "Off does not light once pressed");
 
         StationDoors.press(window, "station.preset.STATION");
+        StationDoors.press(window, "station.runsThrough");
         StationDoors.press(window, "station.stops");
         StationDoors.current(window);
 
         assertEquals(window.litPresetForTest(), StationPreset.OFF, "a station unticked by hand does not light Off");
+    }
+
+    /**
+     * Station, Terminus and Parking make a station trains must stop at, Reversing and Off one they run through (Adam,
+     * MT-1017: "station, parking, and terminus"), and each lights once pressed; an old station, which trains run
+     * through, is left as it is by being looked at, and lights none.
+     *
+     * MUTATION: have STATION leave "Trains can pass through" ticked, or put back `matching`'s early return for a station
+     * trains cannot pass through, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheStopPresetsMakeAStationTrainsMustStopAt() throws Exception
+    {
+        TileKey square = aStation();
+
+        assertFalse(Components.onTheEventThread(() -> session.isStopOnly(square)), "precondition: a stop-only station");
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.current(window);
+
+        assertFalse(Components.onTheEventThread(() -> session.isStopOnly(square)), "looking at an old station changed it");
+        assertNull(window.litPresetForTest(), "an old station that trains run through lights a preset");
+
+        for (StationPreset preset : StationPreset.values())
+        {
+            StationDoors.press(window, "station.preset." + preset.name());
+            StationDoors.current(window);
+
+            boolean stopOnly = preset == StationPreset.STATION || preset == StationPreset.TERMINUS
+                || preset == StationPreset.PARKING;
+
+            assertEquals((boolean) Components.onTheEventThread(() -> session.isStopOnly(square)), stopOnly,
+                preset + " left the wrong answer to whether trains must stop");
+            assertEquals(StationDoors.on(window, "station.runsThrough"), !stopOnly,
+                preset + " left Trains can pass through " + (stopOnly ? "ticked" : "unticked"));
+            assertEquals(window.litPresetForTest(), preset, preset + " does not light once pressed");
+        }
+
+        // Saved and read back, a station trains must stop at stays one
+        try
+        {
+            StationDoors.press(window, "station.preset.STATION");
+            StationDoors.current(window);
+            StationDoors.close(window);
+
+            AutonomySession saved = frozen.saveAndReadBack(editor);
+
+            assertTrue(saved.isStopOnly(square), "Save did not keep the Station preset's Trains can pass through");
+
+            StationSettingsWindow again = StationDoors.open(panel, square);
+
+            assertEquals(again.litPresetForTest(), StationPreset.STATION, "Station does not light when opened again");
+
+            StationDoors.close(again);
+        }
+        finally
+        {
+            frozen.putBack();
+
+            Components.onTheEventThread(() -> session.saveQuietly());
+        }
+    }
+
+    /**
+     * A station trains must stop at wears a white dot in its icon wherever it is drawn: the track diagram, the editor and
+     * Station Settings' picture (MT-1017, Adam: "white dot if they have to stop, no dot if they behave as today").  It
+     * comes with unticking Trains can pass through or pressing Station, goes with ticking it again, and the editor's Cancel
+     * takes it off the track diagram.
+     *
+     * MUTATION: build the editor's badge (`badgeFor`) without `isStopOnly`, or leave `stopOnly` out of `Badge.equals`,
+     * and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheDotShowsWhereverTheStationIsDrawn() throws Exception
+    {
+        // No train standing on it, whose mark covers the icon; on a straight, where the icon is in the middle
+        TileKey square = Components.onTheEventThread(() ->
+        {
+            for (TileKey each : session.getReducer().getPoints().keySet())
+            {
+                org.traincontrol.automationui.TilePorts.Route road = session.stationRoad(each);
+
+                if (PAGE.equals(each.getPage()) && session.getStore().isStation(each) && !session.isTurnAround(each)
+                    && session.getStore().getPointName(each) != null && session.isAutoDestination(each)
+                    && !session.placementsAutonomyWillWrite().containsKey(each)
+                    && !session.homesToPlace().containsKey(each) && road != null && road.getA().opposite() == road.getB())
+                {
+                    return each;
+                }
+            }
+
+            throw new AssertionError("precondition: no plain station on a straight without a train on " + PAGE);
+        });
+
+        assertFalse(Components.onTheEventThread(() -> session.isStopOnly(square)), "precondition: a stop-only station");
+
+        org.traincontrol.gui.LayoutLabel onTheDiagram = Components.onTheEventThread(() ->
+        {
+            org.traincontrol.gui.LayoutLabel label = new org.traincontrol.gui.LayoutLabel(
+                session.getGraph().getTiles().get(square), new javax.swing.JPanel(), 30, ui, false);
+
+            label.setSquare(square);
+            label.setSize(30, 30);
+
+            ui.getDiagramTileRegistry().register(square, label);
+            ui.showStaticAutonomyLayer(true);
+
+            return label;
+        });
+
+        try
+        {
+            StationSettingsWindow window = StationDoors.open(panel, square);
+
+            StationDoors.current(window);
+
+            dotsAre(false, "an old station", window, onTheDiagram, square);
+
+            StationDoors.press(window, "station.runsThrough");
+            StationDoors.current(window);
+
+            dotsAre(true, "Trains can pass through unticked", window, onTheDiagram, square);
+
+            StationDoors.press(window, "station.runsThrough");
+            StationDoors.current(window);
+
+            dotsAre(false, "Trains can pass through ticked again", window, onTheDiagram, square);
+
+            StationDoors.press(window, "station.preset.STATION");
+            StationDoors.current(window);
+
+            dotsAre(true, "the Station preset", window, onTheDiagram, square);
+
+            AbstractButton cancel = Components.withText(editor, I18n.t("ui.cancel"));
+
+            assertNotNull(cancel, "precondition: the editor has no Cancel");
+
+            StationDoors.pressAndAnswer(cancel, message -> Answering.pressAt(0));
+
+            editor = null;
+
+            Components.settle();
+
+            assertFalse(PURE_WHITE.test(atTheIcon(onTheDiagram)), "the track diagram keeps the dot after Cancel");
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { ui.getDiagramTileRegistry().reset(); return null; });
+        }
+    }
+
+    private static final java.util.function.IntPredicate PURE_WHITE =
+        rgb -> ((rgb >> 16) & 0xFF) >= 245 && ((rgb >> 8) & 0xFF) >= 245 && (rgb & 0xFF) >= 245;
+
+    /** The stations' blue, as the classic filled icon has it. */
+    private static final java.util.function.IntPredicate STATION_BLUE =
+        rgb -> (rgb & 0xFF) > 150 && ((rgb >> 16) & 0xFF) < 90 && ((rgb >> 8) & 0xFF) < 90;
+
+    /** The middle of the station's icon in each of the three places: white where the dot is, the icon's blue elsewhere. */
+    private void dotsAre(boolean dot, String what, StationSettingsWindow window,
+        org.traincontrol.gui.LayoutLabel onTheDiagram, TileKey square) throws Exception
+    {
+        // Asked each time: an edit builds the editor's grid again
+        org.traincontrol.gui.LayoutLabel inTheEditor = squareOn(square);
+
+        org.traincontrol.gui.LayoutLabel inThePicture = (org.traincontrol.gui.LayoutLabel) Reflect.get(
+            Class.forName("org.traincontrol.gui.autonomyeditor.StationPicture"),
+            Reflect.get(StationSettingsWindow.class, window, "picture"), "square");
+
+        assertNotNull(inThePicture, "precondition: the picture draws no station square");
+
+        String[] places = {"the track diagram", "the editor", "Station Settings' picture"};
+        org.traincontrol.gui.LayoutLabel[] labels = {onTheDiagram, inTheEditor, inThePicture};
+
+        for (int i = 0; i < labels.length; i++)
+        {
+            int rgb = atTheIcon(labels[i]);
+
+            assertTrue((dot ? PURE_WHITE : STATION_BLUE).test(rgb), what + ": the middle of the icon on " + places[i]
+                + " is " + new Color(rgb) + ", " + (dot ? "not the white dot" : "not the icon's blue, so a dot is drawn"));
+        }
+    }
+
+    /** The color a square paints at the middle of its station's icon. */
+    private static int atTheIcon(org.traincontrol.gui.LayoutLabel label) throws Exception
+    {
+        return Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automationui.TileAnnotation annotation = worn(label);
+
+            assertNotNull(annotation, "precondition: the square wears no annotation");
+
+            BufferedImage image = new BufferedImage(label.getWidth(), label.getHeight(), BufferedImage.TYPE_INT_RGB);
+
+            java.awt.Graphics2D g = image.createGraphics();
+
+            g.setColor(Color.WHITE);
+            g.fillRect(0, 0, image.getWidth(), image.getHeight());
+
+            label.paint(g);
+
+            g.dispose();
+
+            int[] centre = annotation.trackCentre(label.getWidth(), label.getHeight());
+
+            return image.getRGB(centre[0], centre[1]);
+        });
+    }
+
+    private static org.traincontrol.automationui.TileAnnotation worn(org.traincontrol.gui.LayoutLabel label)
+    {
+        try
+        {
+            return (org.traincontrol.automationui.TileAnnotation) Reflect.get(org.traincontrol.gui.LayoutLabel.class, label,
+                "autonomyAnnotation");
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new AssertionError(e);
+        }
     }
 
     // ------------------------------------------------------------------------------------------------------------ matrix
@@ -3257,7 +3479,7 @@ public class testStationSettingsWindow
 
             assertFalse(terminus.equals(plain), "a terminus is drawn as a station");
 
-            StationDoors.press(window, "station.runsThrough");
+            // Terminus leaves Trains can pass through off (MT-1017)
             StationDoors.press(window, "station.stops");
             StationDoors.current(window);
 
@@ -4712,12 +4934,16 @@ public class testStationSettingsWindow
     private static void setByHand(StationSettingsWindow window, StationPreset preset) throws Exception
     {
         boolean stops = preset != StationPreset.OFF;
+        boolean through = preset == StationPreset.REVERSING_POINT || preset == StationPreset.OFF;
 
+        // Ticks before unticks: both boxes off at once is out of service
         if (stops && !StationDoors.on(window, "station.stops")) StationDoors.press(window, "station.stops");
 
-        if (!StationDoors.on(window, "station.runsThrough")) StationDoors.press(window, "station.runsThrough");
+        if (through && !StationDoors.on(window, "station.runsThrough")) StationDoors.press(window, "station.runsThrough");
 
         if (!stops && StationDoors.on(window, "station.stops")) StationDoors.press(window, "station.stops");
+
+        if (!through && StationDoors.on(window, "station.runsThrough")) StationDoors.press(window, "station.runsThrough");
 
         boolean wantsAuto = preset == StationPreset.STATION || preset == StationPreset.TERMINUS;
 

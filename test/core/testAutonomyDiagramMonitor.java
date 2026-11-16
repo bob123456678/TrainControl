@@ -2771,6 +2771,140 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
+     * A station trains must stop at wears a dot at the middle of its icon, a third of the icon's height across (never under
+     * 3 pixels); one trains run through wears none (MT-1017, Adam: "white dot if they have to stop, no dot if they behave
+     * as today").  White on a filled icon, the icon's own color on a white one (unnamed), every classic shape, diagram
+     * and editor, 30 and 60 pixels.
+     *
+     * MUTATION: drop the `stopDot` call from `paintBadge`, or draw the dot white whatever the icon's fill, and this fails.
+     */
+    @Test
+    public void testAStopOnlyStationWearsADotWithTheClassicIcons()
+    {
+        stopDotsDrawn();
+    }
+
+    /**
+     * The same with FR-118's icons, which the editor draws white, so there the dot is the icon's blue.
+     *
+     * MUTATION: drop the `stopDot` call from `paintStation`, and this fails.
+     */
+    @Test
+    @support.DrawsFR118Icons
+    public void testAStopOnlyStationWearsADotWithTheShapes()
+    {
+        stopDotsDrawn();
+    }
+
+    /** Each kind of station drawn with and without the stop-only flag: the dot, its size, place and color. */
+    private static void stopDotsDrawn()
+    {
+        boolean shapes = TileAnnotation.stationIcons() == TileAnnotation.StationIcons.SHAPES;
+
+        for (int size : new int[] {30, 60})
+        {
+            for (int kind = 0; kind < 4; kind++)
+            {
+                for (boolean named : new boolean[] {true, false})
+                {
+                    for (boolean parking : new boolean[] {false, true})
+                    {
+                        for (boolean editor : new boolean[] {false, true})
+                        {
+                            boolean turns = kind > 0, may = kind == 2;
+                            Side deadEnd = kind == 3 ? Side.W : null;
+
+                            TileAnnotation.Badge through = new TileAnnotation.Badge(true, turns, false, parking, named,
+                                Side.W, Side.E, turns && may, false, deadEnd, false);
+                            TileAnnotation.Badge stops = new TileAnnotation.Badge(true, turns, false, parking, named,
+                                Side.W, Side.E, turns && may, false, deadEnd, true);
+
+                            String what = stops + (editor ? " in the editor" : " on the diagram") + " at " + size;
+
+                            java.awt.image.BufferedImage without = onTrack(through, size, editor);
+                            java.awt.image.BufferedImage with = onTrack(stops, size, editor);
+
+                            java.awt.Rectangle dot = changed(without, with);
+
+                            assertNotNull(dot, what + " wears no dot");
+
+                            int most = Math.round(size * 0.2f) + 2;
+
+                            assertTrue(dot.width >= 3 && dot.height >= 3 && dot.width <= most && dot.height <= most,
+                                what + ": the dot is " + dot.width + "x" + dot.height + ", not 3 to " + most + " across");
+
+                            // A terminus's flat end moves its icon off the middle
+                            if (deadEnd == null)
+                            {
+                                assertTrue(Math.abs(dot.getCenterX() - size / 2.0) <= 1.5
+                                    && Math.abs(dot.getCenterY() - size / 2.0) <= 1.5,
+                                    what + ": the dot is at " + dot.getCenterX() + "," + dot.getCenterY() + ", not the middle");
+                            }
+
+                            boolean filled = named && !(shapes && editor);
+
+                            java.util.function.IntPredicate dotColour = filled ? PURE_WHITE : parking ? GREY : BLUE;
+
+                            int cx = (int) dot.getCenterX(), cy = (int) dot.getCenterY();
+
+                            assertTrue(dotColour.test(with.getRGB(cx, cy)), what + ": the dot is "
+                                + new java.awt.Color(with.getRGB(cx, cy)) + ", not " + (filled ? "white" : "the icon's color"));
+
+                            assertFalse(dotColour.test(without.getRGB(cx, cy)), what + ": a station trains run through"
+                                + " is already that color there, so the dot cannot be told from it");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** A station on a road from W to E, painted as the diagram or the editor paints it, over dark track. */
+    private static java.awt.image.BufferedImage onTrack(TileAnnotation.Badge badge, int size, boolean editor)
+    {
+        java.awt.image.BufferedImage image =
+            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        java.awt.Graphics2D g = image.createGraphics();
+
+        try
+        {
+            g.setColor(new java.awt.Color(64, 64, 64));
+            g.fillRect(0, 0, size, size);
+
+            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), -1,
+                false, badge, false, false, false, null, true, null);
+
+            (editor ? annotation.inTheEditor() : annotation).paint(g, size, size);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        return image;
+    }
+
+    /** The box round every pixel that differs between two pictures of one size, or null where none does. */
+    private static java.awt.Rectangle changed(java.awt.image.BufferedImage a, java.awt.image.BufferedImage b)
+    {
+        java.awt.Rectangle box = null;
+
+        for (int x = 0; x < a.getWidth(); x++)
+        {
+            for (int y = 0; y < a.getHeight(); y++)
+            {
+                if (a.getRGB(x, y) == b.getRGB(x, y)) continue;
+
+                if (box == null) box = new java.awt.Rectangle(x, y, 1, 1);
+                else box.add(new java.awt.Rectangle(x, y, 1, 1));
+            }
+        }
+
+        return box;
+    }
+
+    /**
      * A square out of service carries no arrows and no arrival marks, diagram or editor; its directions stay as set and
      * return with it.  Station and sensor, straight and curve: none of the arrows' red or green, none of the arrival
      * marks' yellow.

@@ -8648,7 +8648,8 @@ public class AutonomySession
                 isTurnAround(tile) && !isMustTurnAround(tile),
                 shut,
                 // which way a station's track runs out, for a terminus's flat end (FR-118)
-                store.isStation(tile) ? deadEndSide(tile) : null),
+                store.isStation(tile) ? deadEndSide(tile) : null,
+                isStopOnly(tile)),
             false, isCurveSquare(tile), false, null,
             // Restricted only: open both ways is the default and nearly every square
             arrows,
