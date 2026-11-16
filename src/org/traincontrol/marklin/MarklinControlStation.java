@@ -157,6 +157,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     // Is this a CS3?
     private boolean isCS3 = false;
     
+    // Each sensor's s88 device as the saved file had it, handed to a CS3's proxy only (OB-418)
+    private final Map<Integer, Integer> savedS88Devices = new java.util.concurrent.ConcurrentHashMap<>();
+    
     // Automation controller
     private Layout autoLayout;
     
@@ -284,6 +287,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {   
                 newFeedback(c.getAddress(), null);
                 
+                if (c.getS88Device() != null) this.savedS88Devices.put(c.getAddress(), c.getS88Device());
+
                 // It would be more consistent not to restore this...
                 // When we restore the state, it might be invalid if the CS2 was used without this program running
                 // Feedbacks are clickable and should be synced manually
@@ -305,6 +310,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.on = true;
             
             this.sendPing(false);
+
+            // The sensors' true states, asked of a CS3 once the proxy has its model (OB-418)
+            if (this.isCS3) this.NetworkInterface.syncSensors(true);
             
             if (autoPowerOn) this.go(); 
         }
@@ -1120,6 +1128,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // Set only where this loop deletes the same route to re-read it; a route arriving for
                 // the first time was never in the selection and must not be put into it.
                 boolean wasActivated = false;
+                boolean wasArmed = false;
 
                 // Other existing route with same name but different ID
                 if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
@@ -1144,6 +1153,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     // changed - so the operator's autonomy selection survives it.
                     wasActivated = this.isRouteActivatedByAutonomy(r.getId());
 
+                    // And its arming, kept even while it has no sensor to watch, so a sync that brings one back arms it
+                    // again (OB-433)
+                    wasArmed = this.routeDB.getById(r.getId()).isEnabled();
+
                     this.deleteRoute(this.routeDB.getById(r.getId()).getName());
                 }
                 
@@ -1155,6 +1168,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         this.restoreRouteActivation(r.getId(), wasActivated);
 
                         this.logf("route.added", r.getName());
+
+                        // Armed as Enable Auto Execution arms it, the old route's watch retired by the delete: an
+                        // ordinary armed route, which no state a confirmation puts right fires (D133)
+                        if (wasArmed)
+                        {
+                            r.enable();
+                            r.executeAutoRoute();
+                            this.logf(r.hasS88() ? "route.syncKeptArmed" : "route.syncKeptArmedNoSensor", r.getName());
+                        }
+
                         num++;
                     }
                     else
@@ -1301,6 +1324,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         this.rebuildLocIdCache();
                 
+        // The sensors' true states, asked of a CS3 only: a query sets nothing on the station (OB-418)
+        if (this.isCS3)
+        {
+            this.NetworkInterface.knowDevices(this.fileParser.parseS88DevicesCS3(), this.savedS88Devices);
+
+            // Not while transmission is off; the start-up's sync, before it is on, asks from the constructor.  A Sync on
+            // the window's thread does not hold the window while the answers come.
+            if (this.on) this.NetworkInterface.syncSensors(!javax.swing.SwingUtilities.isEventDispatchThread());
+        }
+
         this.logf("loc.syncCompleted");
         
         return num;
@@ -1391,7 +1424,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         for (MarklinFeedback f : this.feedbackDB.getItems())
         {
-            l.add(new MarklinSimpleComponent(f));
+            l.add(new MarklinSimpleComponent(f, s88DeviceToSave(f.getUID())));
         }
         
         // The database that would not load, kept before this one goes on top of it.
@@ -1983,6 +2016,43 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
            
         return false;
+    }
+
+    /** Whether a CS3's sensor state confirmation after the connect is under way (D133): no route fires. */
+    public final boolean isConfirming()
+    {
+        return this.NetworkInterface.isConfirming();
+    }
+
+    /** Whether any pass of sensor queries to a CS3, a sync's included, is under way. */
+    final boolean isAskingSensors()
+    {
+        return this.NetworkInterface.isAsking();
+    }
+
+    /** Whether a sensor's state was last changed during a state confirmation, not an edge: no route fires on it. */
+    public final boolean isFeedbackCorrected(String name)
+    {
+        MarklinFeedback fb = this.feedbackDB.getByName(name);
+
+        return fb != null && fb.isCorrected();
+    }
+
+    /**
+     * A sensor's s88 device to save: the one a CS3's real event showed, else the one saved before; never one only the
+     * station's device list gave, as the list is read again at each sync (OB-418).
+     */
+    private Integer s88DeviceToSave(int contact)
+    {
+        Integer device = this.isCS3 ? this.NetworkInterface.learnedDeviceOf(contact) : null;
+
+        return device != null ? device : this.savedS88Devices.get(contact);
+    }
+
+    @Override
+    public List<Integer> knownSensors()
+    {
+        return this.feedbackDB.getItemIds();
     }
     
     /**

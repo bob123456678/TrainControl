@@ -26,6 +26,9 @@ public class MarklinFeedback extends Feedback
     // while updateTiles iterates and prunes from a Central Station message thread.  A plain HashSet
     // threw ConcurrentModificationException there, silently killing the thread mid-refresh.
     private final Set<LayoutLabel> tiles;
+
+    // Whether the state was last changed by a correction, not by an edge
+    private volatile boolean corrected;
         
     public MarklinFeedback(MarklinControlStation network, int id, CS2Message m)
     { 
@@ -90,7 +93,14 @@ public class MarklinFeedback extends Feedback
                                    
                 if (id == this.UID && this.readyForUpdate(System.currentTimeMillis()))
                 {
-                    this._setState((state == 1));
+                    // Until the connect's confirmation is in, a change only puts the state right (D133); during a
+                    // later sync's pass only an answer, its old state equal to its new, does.  A pass under way when
+                    // the frame was heard counts, as its last answer ends it before this runs (OB-490)
+                    boolean asking = m.heardAsking() || this.network.isAskingSensors();
+                    boolean answer = m.getData()[4] == m.getData()[5];
+                    boolean confirming = m.heardConfirming() || this.network.isConfirming();
+
+                    this.changeTo(state == 1, confirming || (asking && answer));
                                         
                     this.updateTiles();
                     
@@ -112,7 +122,7 @@ public class MarklinFeedback extends Feedback
     @Override
     public void setState(boolean val)
     {
-        this._setState(val);
+        this.changeTo(val, false);
         
         if (this.network.isDebug())
         {
@@ -127,6 +137,20 @@ public class MarklinFeedback extends Feedback
         }
         
         this.updateTiles();
+    }
+    
+    /** Sets the state, noting whether a change of it is a correction rather than an edge, before waiters wake. */
+    private void changeTo(boolean set, boolean correction)
+    {
+        if (set != this.isSet()) this.corrected = correction;
+
+        this._setState(set);
+    }
+
+    /** Whether the state was last changed by a correction (OB-418), which no route takes for its trigger. */
+    public boolean isCorrected()
+    {
+        return this.corrected;
     }
     
     /**
