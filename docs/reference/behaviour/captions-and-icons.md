@@ -56,6 +56,9 @@ menu names it in the "Stop Showing" item, and the tooltip explains the rest.
 **Circles, diamonds and squares** (Adam: *"The icons are hard to work with in reality, because
 they add complexity.  Keep the work on the new icons so we can revisit later, and revert roughly to what we had before"*).
 These are the only station icons: FR-118's blocks and hexagons were retired (FR-233).
+To revisit station icons, `git show 844bb9a9:src/org/traincontrol/automationui/TileAnnotation.java` still has both sets
+(`StationIcons.SHAPES`, added in 67cf6045), and `test/support/DrawsFR118Icons.java`, `test/ui/testDiagramLooksRight.java` and
+`test/core/testAutonomyDiagramMonitor.java` at that commit hold the claims that drew the shapes.
 
 | | trains do not turn | trains may turn | trains must turn, or its track runs out |
 |---|---|---|---|
