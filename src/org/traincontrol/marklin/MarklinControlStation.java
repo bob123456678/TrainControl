@@ -3681,8 +3681,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Start execution
         proxy.setModel(model);
         
-        // Connection failed - ask for IP on next run
-        if (!model.getNetworkCommState())
+        // Connection failed - ask for IP on next run.  Not after a simulation, which never tries to connect (OB-339)
+        if (!simulate && !model.getNetworkCommState())
         {
             TrainControlUI.getPrefs().remove(TrainControlUI.IP_PREF);
         }

@@ -155,6 +155,7 @@
         <test-one-class class="testParseWebServer"/>
         <test-one-class class="testRouteRoundTrip"/>
         <test-one-class class="testRoutes"/>
+        <test-one-class class="testSimulationKeepsTheAddress"/>
         <test-one-class class="testStagingSkipsALegWithNoSpeed"/>
     </target>
     <target name="package-for-store" depends="jar">
