@@ -27,6 +27,8 @@ public class testACS3SyncAsksForEachFileOnce
 
     private static final String INFO_251 = "{\"softwareVersion\":\"2.5.1 (Build 1)\"}";
 
+    private static final byte[] NOT_JSON = "not json".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
     /** Each request of the log that came before, one to a line. */
     private static List<String> repeated(List<String> log)
     {
@@ -39,21 +41,26 @@ public class testACS3SyncAsksForEachFileOnce
     }
 
     /**
-     * A first sync (which reads the diagram from the station) and a resync, for firmware 2.6.1, 2.5.1, and a station
-     * whose firmware is found by the probe of the 2.6 locomotive list: no request comes twice.
+     * A first sync (which reads the diagram from the station) and a resync, for firmware 2.6.1, 2.5.1, a station whose
+     * firmware is found by the probe of the 2.6 locomotive list, and a 2.6.1 station whose route list will not read, so
+     * the positions find no accessory list of the routes' and read the sync's one: no request comes twice.
      *
      * MUTATION: fetch with `fetchURL` in `CS2File.openCS3Locos` rather than `fetchOnce`, and the locomotive list is
-     * asked for twice in each sync.
+     * asked for twice in each sync.  Or fetch `/app/api/mags` with `fetchURL` in `parseAccessoryStatesCS3`, and the
+     * station whose route list will not read is asked for it twice.
      */
     @Test
     public void testASyncAsksForEachFileOnce() throws Exception
     {
-        String[][] stations = { {"260", INFO_261}, {"250", INFO_251}, {"260", null} };
+        String[][] stations = { {"260", INFO_261}, {"250", INFO_251}, {"260", null}, {"260", INFO_261, "no routes"} };
 
         for (String[] kind : stations)
         {
-            try (StationRig rig = new StationRig(Files.createTempDirectory("tc-cs3-once").toFile(),
-                StandInStation.cs3(kind[0], kind[1])))
+            java.util.function.BiFunction<String, Integer, byte[]> cs3 = StandInStation.cs3(kind[0], kind[1]);
+            boolean noRoutes = kind.length > 2;
+
+            try (StationRig rig = new StationRig(Files.createTempDirectory("tc-cs3-once").toFile(), (path, n) ->
+                noRoutes && path.equals("/app/api/automatics") ? NOT_JSON : cs3.apply(path, n)))
             {
                 for (String sync : new String[] {"first sync", "resync"})
                 {
@@ -64,6 +71,7 @@ public class testACS3SyncAsksForEachFileOnce
 
                     assertEquals(repeated(log), new ArrayList<String>(), "the " + sync + " with firmware " + kind[0]
                         + " and info " + kind[1] + " asks for these again: " + log);
+                    assertEquals(rig.station.requests("/app/api/mags"), 1, "the accessory list, " + sync + ": " + log);
                 }
             }
         }
