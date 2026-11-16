@@ -1,17 +1,14 @@
 package regression;
 
-import java.util.Arrays;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
-import support.Trees;
-import static support.Diagrams.aPageWithARunAndALabel;
+import support.MenuPage;
 
 /**
  * Control+B acts exactly where the right-click menu offers a maximum train length, and nowhere else (MT-313).  A key
@@ -36,23 +33,12 @@ public class testControlBAsksTheMenusQuestion
     @Test
     public void testTheTwoDoorsAgreeAboutEverySquareOnThePage() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-b-page").toFile();
-
-        try
+        // Two sensors: one becomes a station and the other does not, the pair the interesting claim needs.
+        try (MenuPage fixture = new MenuPage("tc-ctrl-b-page"))
         {
-            AutonomySession session = new AutonomySession(folder);
+            AutonomySession session = fixture.session;
 
-            // Two sensors: one becomes a station and the other does not, the pair the interesting claim needs.
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
-
-            session.initialize("CtrlB");
-
-            TileKey station = new TileKey("main", 1, 1);
-
-            session.setStation(station, true);
-            session.rebuild();
+            TileKey station = fixture.aStation();
 
             assertTrue(session.getStore().isStation(station),
                 "the fixture did not take: " + station + " has to be a station or every square on this"
@@ -115,10 +101,6 @@ public class testControlBAsksTheMenusQuestion
                 "every square on this page offers a maximum, so the comparison above is between two"
                 + " predicates that both answer true everywhere");
         }
-        finally
-        {
-            Trees.delete(folder);
-        }
     }
 
     /**
@@ -129,23 +111,12 @@ public class testControlBAsksTheMenusQuestion
     @Test
     public void testASensorThatIsNotAStationIsRefused() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-b-plain").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-ctrl-b-plain"))
         {
-            AutonomySession session = new AutonomySession(folder);
+            AutonomySession session = fixture.session;
 
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
-
-            session.initialize("CtrlB");
-
-            TileKey station = new TileKey("main", 1, 1);
+            TileKey station = fixture.aStation();
             TileKey plainSensor = new TileKey("main", 6, 1);
-
-            session.setStation(station, true);
-            session.rebuild();
 
             assertTrue(session.getReducer().getPoints().containsKey(plainSensor),
                 "the fixture did not take: " + plainSensor + " has to be a Point, or it is refused for"
@@ -166,10 +137,6 @@ public class testControlBAsksTheMenusQuestion
                 "the station at " + station + " is refused too, so the key refuses everything and the"
                 + " claim above is not about stations at all");
         }
-        finally
-        {
-            Trees.delete(folder);
-        }
     }
 
     /**
@@ -179,22 +146,11 @@ public class testControlBAsksTheMenusQuestion
     @Test
     public void testTheFieldCarriesItsTooltip() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-b-tip").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-ctrl-b-tip"))
         {
-            AutonomySession session = new AutonomySession(folder);
+            AutonomySession session = fixture.session;
 
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
-
-            session.initialize("CtrlB");
-
-            TileKey station = new TileKey("main", 1, 1);
-
-            session.setStation(station, true);
-            session.rebuild();
+            TileKey station = fixture.aStation();
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -211,20 +167,6 @@ public class testControlBAsksTheMenusQuestion
                 "nothing on screen says the shortcut exists: " + maximum.getToolTipText());
 
             support.StationDoors.close(window);
-        }
-        finally
-        {
-            Trees.delete(folder);
-        }
-    }
-
-    /** `AutonomyEditorPanel` builds real Swing components, so this needs a display. */
-    private static void needsADisplay()
-    {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs a"
-                + " display");
         }
     }
 }
