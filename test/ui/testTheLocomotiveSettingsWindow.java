@@ -1594,33 +1594,28 @@ public class testTheLocomotiveSettingsWindow
     {
         open(0);
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
-        SettingsWindow.press(SettingsWindow.cancel());
+        assertTrue(cancelAnswering(2), "a window with nothing typed did not just close");
 
-        assertNull(SettingsWindow.showing(), "a window with nothing typed did not just close");
+        for (int answer = 2; answer >= 0; answer--)
+        {
+            if (SettingsWindow.showing() == null)
+            {
+                open(2);
+                typeArea("notes.text", "typed notes");
+            }
 
-        open(2);
-        typeArea("notes.text", "typed notes");
+            assertEquals(cancelAnswering(answer), answer < 2,
+                "answer " + answer + " to the question: the window stayed, or Cancel closed it without asking");
 
-        SettingsWindow.press(SettingsWindow.cancel());
+            if (answer == 2)
+            {
+                assertEquals(Components.onTheEventThread(() -> SettingsWindow.part("notes.text", JTextArea.class).getText()),
+                    "typed notes", "Cancel on the question lost the typing");
+            }
 
-        assertNotNull(SettingsWindow.showing(), "Cancel closed the window without asking about the notes typed");
-        assertEquals(Components.onTheEventThread(() -> SettingsWindow.part("notes.text", JTextArea.class).getText()),
-            "typed notes", "Cancel on the question lost the typing");
+            if (answer == 1) assertEquals(loc.getStructuredNotes().getNotes(), "first notes", "Discard wrote the notes");
+        }
 
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
-        SettingsWindow.press(SettingsWindow.cancel());
-
-        assertNull(SettingsWindow.showing(), "Discard did not close the window");
-        assertEquals(loc.getStructuredNotes().getNotes(), "first notes", "Discard wrote the notes");
-
-        open(2);
-        typeArea("notes.text", "typed notes");
-
-        LocomotiveSettingsFrame.unsavedAnswerForTest = 0;
-        SettingsWindow.press(SettingsWindow.cancel());
-
-        assertNull(SettingsWindow.showing(), "Save on the question did not close the window");
         assertEquals(loc.getStructuredNotes().getNotes(), "typed notes", "Save on the question did not write the notes");
     }
 
@@ -1653,9 +1648,7 @@ public class testTheLocomotiveSettingsWindow
                 }
                 else
                 {
-                    SettingsWindow.press(SettingsWindow.cancel());
-
-                    assertNull(SettingsWindow.showing(), "a locked window with nothing typed did not close at Cancel");
+                    assertTrue(cancelAnswering(2), "a locked window with nothing typed did not close at Cancel");
                 }
 
                 loc.setSpeed(0);
@@ -1669,9 +1662,7 @@ public class testTheLocomotiveSettingsWindow
             assertTrue(Components.waitFor(() -> Components.onTheEventThread(
                 SettingsWindow.part("settings.strip", JLabel.class)::isVisible), WAIT), "precondition: autonomy did not lock the window");
 
-            SettingsWindow.press(SettingsWindow.cancel());
-
-            assertNull(SettingsWindow.showing(), "a window locked by autonomy with nothing typed did not close at Cancel");
+            assertTrue(cancelAnswering(2), "a window locked by autonomy with nothing typed did not close at Cancel");
         }
         finally
         {
@@ -2240,9 +2231,7 @@ public class testTheLocomotiveSettingsWindow
             Components.settle();
             assertEquals(marks(crop, revert), "", "marks showed over a picture still on its way");
 
-            held.get("a").countDown();
-            assertEquals(pillShows(station), station, "the station's picture arrived without its pill");
-            assertEquals(marks(crop, revert), "crop", "the crop did not come with the station's picture");
+            arrives(held, "a", station, crop, revert, "crop");
 
             // A local picture slow to load, as the wrench sets one
             javax.swing.Icon stations = Components.onTheEventThread(picture::getIcon);
@@ -2250,12 +2239,9 @@ public class testTheLocomotiveSettingsWindow
             loc.setLocalImageURL(slowPicture(slow, "b"));
             look(window);
 
-            assertSame(Components.onTheEventThread(picture::getIcon), stations, "precondition: the station's picture left at once");
-            assertEquals(marks(crop, revert), "crop", "the revert came before the local picture it clears");
+            stillUp(picture, stations, marks(crop, revert), "crop", "the revert came before the local picture it clears");
 
-            held.get("b").countDown();
-            assertEquals(pillShows(local), local, "the local picture arrived without its pill");
-            assertEquals(marks(crop, revert), "crop revert", "the revert did not come with the local picture");
+            arrives(held, "b", local, crop, revert, "crop revert");
 
             // The revert, with the station's picture now slow: the local one keeps its marks until it is replaced
             javax.swing.Icon own = Components.onTheEventThread(picture::getIcon);
@@ -2265,12 +2251,9 @@ public class testTheLocomotiveSettingsWindow
             assertTrue(Components.waitFor(() -> loc.getLocalImageURL() == null, WAIT), "the revert did not clear the icon");
             look(window);
 
-            assertSame(Components.onTheEventThread(picture::getIcon), own, "precondition: the local picture left at once");
-            assertEquals(marks(crop, revert), "crop revert", "the marks changed before the station's picture arrived");
+            stillUp(picture, own, marks(crop, revert), "crop revert", "the marks changed before the station's picture arrived");
 
-            held.get("c").countDown();
-            assertEquals(pillShows(station), station, "the station's picture arrived without its pill");
-            assertEquals(marks(crop, revert), "crop", "the revert stayed over the station's picture");
+            arrives(held, "c", station, crop, revert, "crop");
         }
         finally
         {
@@ -2385,6 +2368,32 @@ public class testTheLocomotiveSettingsWindow
 
             return null;
         });
+    }
+
+    /** Lets the named picture through, and asserts that its pill and these marks came with it. */
+    private static void arrives(java.util.Map<String, java.util.concurrent.CountDownLatch> held, String name, String pill,
+        Component crop, Component revert, String expected) throws Exception
+    {
+        held.get(name).countDown();
+
+        assertEquals(pillShows(pill), pill, "picture " + name + " arrived without its pill");
+        assertEquals(marks(crop, revert), expected, "picture " + name + " arrived without its marks");
+    }
+
+    /** While the next picture is on its way, the one before is still on screen with its marks. */
+    private static void stillUp(JLabel picture, javax.swing.Icon before, String marks, String expected, String message)
+    {
+        assertSame(Components.onTheEventThread(picture::getIcon), before, "precondition: the picture left before the next one came");
+        assertEquals(marks, expected, message);
+    }
+
+    /** Presses Cancel with this answer ready for the question, if it asks; true when the window closed. */
+    private static boolean cancelAnswering(int answer)
+    {
+        LocomotiveSettingsFrame.unsavedAnswerForTest = answer;
+        SettingsWindow.press(SettingsWindow.cancel());
+
+        return SettingsWindow.showing() == null;
     }
 
     /** Which of the picture's marks show: "crop", "revert", both or neither. */
