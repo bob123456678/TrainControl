@@ -26,7 +26,7 @@ import support.Teardown;
  * something else already names that station.  Only two captions beside a station on one page are an ERROR (OB-341).
  * Asserted by DRAWING it: the editor is built, its captions are read off the container, and the home name is counted.
  *
- * MUTATION: drop the `captionsFor` clause from `StationCaptions.autonomyCaptionAt` and
+ * MUTATION: drop the `captionsFor` loop from `AutonomySession.isCaptionDrawn` and
  * `testAStationNamedTwiceDrawsItsHomeOnce` fails with "drawn 2 times". Suppress the self-caption
  * unconditionally and `testAStationNamedOnlyOnItsOwnSquareKeepsIt` fails; suppress the offset one
  * instead and `testAStationNamedOnlyBesideItselfKeepsIt` fails.

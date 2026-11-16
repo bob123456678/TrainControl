@@ -562,10 +562,10 @@ public class testTheWindowTakesTheKeyboard
         java.awt.KeyboardFocusManager real =
             java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager();
 
+        java.awt.Component keyboard = (java.awt.Component) field(up.ui, "KeyboardTab");
+
         try
         {
-            java.awt.Component keyboard = (java.awt.Component) field(up.ui, "KeyboardTab");
-
             final java.awt.Component typing = somewhereToType(up.ui.getContentPane());
 
             assertNotNull(typing,
@@ -609,7 +609,7 @@ public class testTheWindowTakesTheKeyboard
                 }
             });
 
-            Reflect.set(org.traincontrol.gui.TrainControlUI.class, up.ui, "KeyboardTab", counting[0]);
+            keyboardTabIs(up.ui, counting[0]);
 
             final Object notice = noticeOf(up.ui);
             java.lang.reflect.Method focus = Reflect.method(notice.getClass(), "focusTheKeyboard");
@@ -646,17 +646,33 @@ public class testTheWindowTakesTheKeyboard
 
             javax.swing.SwingUtilities.invokeAndWait(comeBack);
 
-            Reflect.set(org.traincontrol.gui.TrainControlUI.class, up.ui, "KeyboardTab", keyboard);
-
             assertEquals(asked.get(), 1, "precondition: coming back with nothing being typed did not ask for the"
                 + " keyboard, so this cannot see it held back");
         }
         finally
         {
+            keyboardTabIs(up.ui, keyboard);
+
             java.awt.KeyboardFocusManager.setCurrentKeyboardFocusManager(real);
 
             up.close();
         }
+    }
+
+    /** Puts `pane` in the window's `KeyboardTab` field on the event thread, where the window reads it. */
+    private static void keyboardTabIs(org.traincontrol.gui.TrainControlUI ui, java.awt.Component pane) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui, "KeyboardTab", pane);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
     }
     /**
      * `display()` does not take the topmost flag off after showing the window (OB-170): showing is asynchronous, so a

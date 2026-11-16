@@ -3353,20 +3353,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(before >= 2, "precondition: " + train.getName() + " under way holds " + before + " points");
 
-            final java.lang.reflect.Method write =
-                Reflect.method(Class.forName("org.traincontrol.gui.DiagramLocGestures"), "writeTheTurnsOwed");
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    write.invoke(Reflect.get(TrainControlUI.class, ui[0], "diagramLocGestures"));
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
+            support.TurnsOwed.write(ui[0]);
 
             assertEquals(pointsHeldBy(railway, train), before, "writing the turns during a run stood "
                 + train.getName() + ", under way from where it turned, on another copy of that square - sweeping it off"
