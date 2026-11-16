@@ -88,7 +88,7 @@ public class testEditorSurfaceRules
                 "Add Locomotive"},
             {"    boolean writeNameAndAddress(Component source, Locomotive l, String newName, String newAddress,",
                 "the rename dialog and the Locomotive Settings window"},
-            {"private void checkForRenameMenuItemActionPerformed(java.awt.event.ActionEvent evt)",
+            {"private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)",
                 "the Central Station name"},
             {"private List<String> problemsWith(CommandRow row)", "the route editor"},
         };

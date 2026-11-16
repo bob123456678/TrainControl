@@ -109,14 +109,16 @@ public class testTheMenuBarIsWired
     {
         String gray = " [gray]";
 
-        assertEquals(read(menu("ui.main.toolbar.file")), keys("ui.main.toolbar.syncDBWithCS", "ui.main.toolbar.changeIP",
+        // Sync joins the function read in Locomotives; Check for Renamed Locomotives is gone, as Sync asks (FR-220)
+        assertEquals(read(menu("ui.main.toolbar.file")), keys("ui.main.toolbar.changeIP",
             "---", "ui.main.toolbar.backupData", "ui.main.toolbar.restoreData", "---", "ui.main.toolbar.exportLog", "---",
             "ui.main.toolbar.exit"), "File");
 
         assertEquals(read(menu("ui.main.toolbar.locomotives")), keys("ui.main.toolbar.quickFindLoc",
             "ui.main.toolbar.browseDatabase", "ui.main.toolbar.addLoc", "---", "ui.main.toolbar.turnOffFunctions",
-            "ui.main.toolbar.turnOnLights", "ui.main.toolbar.syncFullFunctionState", "ui.main.toolbar.checkForRenamedLocs",
-            "---", "ui.main.toolbar.exportToCSV", "ui.main.toolbar.importFromCSV"), "Locomotives");
+            "ui.main.toolbar.turnOnLights", "---", "ui.main.toolbar.syncDBWithCS", "ui.main.toolbar.syncFullFunctionState",
+            "---", "ui.main.toolbar.exportToCSV", "ui.main.toolbar.importFromCSV"),
+            "Locomotives");
 
         List<String> layouts = keys("ui.main.toolbar.openLayout", "ui.main.toolbar.recentLayouts", "ui.main.toolbar.managePages",
             "ui.main.toolbar.createLayout", "---");
@@ -207,7 +209,7 @@ public class testTheMenuBarIsWired
             + " locomotives>quickFindLoc quickFindMenuItem; locomotives>browseDatabase viewDatabaseMenuItem;"
             + " locomotives>addLoc addLocomotiveMenuItem; locomotives>turnOffFunctions turnOffFunctionsMenuItem;"
             + " locomotives>turnOnLights turnOnLightsMenuItem; locomotives>syncFullFunctionState syncFullLocStateMenuItem;"
-            + " locomotives>checkForRenamedLocs checkForRenameMenuItem; locomotives>exportToCSV exportLocsToCSVMenuItem;"
+            + " locomotives>syncDBWithCS syncMenuItem; locomotives>exportToCSV exportLocsToCSVMenuItem;"
             + " layouts>createLayout initializeLocalLayoutMenuItem; layouts>downloadCSLayout downloadCSLayoutMenuItem;"
             + " layouts>recentLayouts>showCurrentLayoutFolder showCurrentLayoutFolderMenuItem;"
             + " preferences>locControl>slidersChangeActiveLoc slidersChangeActiveLocMenuItem;"
@@ -337,11 +339,10 @@ public class testTheMenuBarIsWired
 
         assertNotNull(railway, "precondition: no autonomy setup to run");
 
-        String[][] items = {{"ui.main.toolbar.file", "ui.main.toolbar.syncDBWithCS"},
+        String[][] items = {{"ui.main.toolbar.locomotives", "ui.main.toolbar.syncDBWithCS"},
             {"ui.main.toolbar.locomotives", "ui.main.toolbar.addLoc"},
             {"ui.main.toolbar.locomotives", "ui.main.toolbar.importFromCSV"},
-            {"ui.main.toolbar.locomotives", "ui.main.toolbar.syncFullFunctionState"},
-            {"ui.main.toolbar.locomotives", "ui.main.toolbar.checkForRenamedLocs"}};
+            {"ui.main.toolbar.locomotives", "ui.main.toolbar.syncFullFunctionState"}};
 
         String[] restore = {"ui.main.toolbar.file", "ui.main.toolbar.restoreData"};
 
@@ -403,7 +404,7 @@ public class testTheMenuBarIsWired
 
         working.setAccessible(true);
 
-        String[] sync = {"ui.main.toolbar.file", "ui.main.toolbar.syncDBWithCS"};
+        String[] sync = {"ui.main.toolbar.locomotives", "ui.main.toolbar.syncDBWithCS"};
 
         try
         {
@@ -427,8 +428,8 @@ public class testTheMenuBarIsWired
 
         assertTrue(itemAt(sync).isEnabled(), "Sync Database stays gray after the run, kept from the sync it outlived");
 
-        for (String key : new String[] {"ui.main.toolbar.syncFullFunctionState", "ui.main.toolbar.checkForRenamedLocs",
-            "ui.main.toolbar.turnOffFunctions", "ui.main.toolbar.turnOnLights"})
+        for (String key : new String[] {"ui.main.toolbar.syncFullFunctionState", "ui.main.toolbar.turnOffFunctions",
+            "ui.main.toolbar.turnOnLights"})
         {
             assertTrue(itemAt(new String[] {"ui.main.toolbar.locomotives", key}).isEnabled(), key + " stays gray");
         }
