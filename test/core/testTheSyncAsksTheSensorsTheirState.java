@@ -15,6 +15,7 @@ import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.RouteCommand;
+import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.marklin.MarklinSimpleComponent;
 import org.traincontrol.marklin.file.CS2File;
@@ -250,6 +251,140 @@ public class testTheSyncAsksTheSensorsTheirState
     }
 
     /**
+     * A late answer is still the sync's own (OB-490): the station answers the route's sensor about 300 ms, then about
+     * 600 ms, after its query, the last answer of the pass and well inside its 1 s wait, and the sensor's parse waits
+     * until the pass is over.  The route fires on neither, as on time, and fires on the next real edges.
+     *
+     * MUTATION: in `NetworkProxy.learn`, take out the `heardDuring` call.
+     */
+    @Test(timeOut = 120000)
+    public void testALateAnswerToTheSyncFiresNoRoute() throws Exception
+    {
+        connected((rig, station) ->
+        {
+            for (long late : new long[] {300, 600})
+            {
+                int contact = 2810 + (int) (late / 100);
+                MarklinFeedback feedback = rig.model.newFeedback(contact, null);
+
+                aCorrectionFiresNoRoute(rig, station, contact, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, () ->
+                    parsedAfter(feedback, () ->
+                    {
+                        station.answerLate(contact, late);
+                        synced(rig, station);
+                    }));
+            }
+        });
+    }
+
+    /**
+     * The same for a reconnect's confirmation (D133): its last answer, about 300 ms late and parsed once the pass is
+     * over, fires no route.
+     *
+     * MUTATION: as testALateAnswerToTheSyncFiresNoRoute.
+     */
+    @Test(timeOut = 120000)
+    public void testALateAnswerToAReconnectFiresNoRoute() throws Exception
+    {
+        connected((rig, station) ->
+        {
+            int contact = 2820;
+            MarklinFeedback feedback = rig.model.newFeedback(contact, null);
+
+            aCorrectionFiresNoRoute(rig, station, contact, MarklinRoute.s88Triggers.OCCUPIED_THEN_CLEAR, () ->
+                parsedAfter(feedback, () ->
+                {
+                    long asked = station.queries().stream().filter(q -> q[1] == contact).count();
+                    station.answerLate(contact, 300);
+                    station.drop();
+
+                    // Over once the new connection's query has come and the confirmation has ended
+                    assertTrue(Components.waitFor(() -> station.queries().stream().filter(q -> q[1] == contact)
+                        .count() > asked && !rig.model.isConfirming(), WAIT_MS), "precondition: no reconnect pass");
+                }));
+        });
+    }
+
+    /**
+     * A real event heard during a reconnect's confirmation fires no route even when it is parsed after the confirmation
+     * has ended (D133, OB-490): the station occupies the contact when the new connection's query for it arrives, and
+     * the parse waits until the pass is over.  The route armed clear then occupied does not fire.
+     *
+     * MUTATION: in `MarklinFeedback.parseMessage`, `m.heardConfirming() || this.network.isConfirming()` to
+     * `this.network.isConfirming()`.
+     */
+    @Test(timeOut = 120000)
+    public void testARealEventHeardDuringAReconnectFiresNoRouteWhenParsedLate() throws Exception
+    {
+        connected((rig, station) ->
+        {
+            int contact = 2950;
+            String name = "Sync claim " + contact;
+            List<String> log = new ArrayList<>();
+            MarklinFeedback feedback = rig.model.newFeedback(contact, null);
+            MarklinRoute route = armedRoute(rig, station, contact, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+
+            assertTrue(Components.waitFor(() -> !rig.model.isConfirming(), WAIT_MS),
+                "precondition: the connect's confirmation did not end");
+            station.onQuery(contact, () -> station.sensor(contact, true));
+
+            parsedAfter(feedback, () ->
+            {
+                long asked = station.queries().stream().filter(q -> q[1] == contact).count();
+                station.drop();
+                assertTrue(Components.waitFor(() -> station.queries().stream().filter(q -> q[1] == contact)
+                    .count() > asked && !rig.model.isConfirming(), WAIT_MS), "precondition: no reconnect pass");
+            });
+
+            assertTrue(shows(rig, contact, true), "precondition: the event did not arrive");
+            assertTrue(Components.waitFor(() -> RouteMonitor.waitingFor(route, false), WAIT_MS),
+                "the route's monitor did not go back to waiting");
+            assertEquals(fired(rig, log, name), 0, "a real event heard during the confirmation fired the route: " + log);
+        });
+    }
+
+    /**
+     * Runs `pass` while another thread holds the sensor's monitor, so the feedback thread parses the pass's answer
+     * only once `pass` returns, as a busy feedback thread may.
+     */
+    private static void parsedAfter(MarklinFeedback feedback, Correction pass) throws Exception
+    {
+        java.util.concurrent.CountDownLatch held = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch over = new java.util.concurrent.CountDownLatch(1);
+
+        Thread holder = new Thread(() ->
+        {
+            synchronized (feedback)
+            {
+                held.countDown();
+
+                try
+                {
+                    over.await();
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }, "sync-claim-holder");
+
+        holder.setDaemon(true);
+        holder.start();
+        assertTrue(held.await(WAIT_MS, java.util.concurrent.TimeUnit.MILLISECONDS),
+            "precondition: the monitor was not held");
+
+        try
+        {
+            pass.run();
+        }
+        finally
+        {
+            over.countDown();
+        }
+    }
+
+    /**
      * Once the confirmation is in, every frame is a real event, compared with the state held: a frame whose old state
      * equals its new, as a station's own s88 bus may report one, or a late or another client's answer, is an edge when
      * it changes the state (D133): a route armed clear then occupied fires on it.
@@ -278,7 +413,7 @@ public class testTheSyncAsksTheSensorsTheirState
      * contact when the new connection's query for it arrives, while the pass waits; the route armed clear then occupied
      * does not fire.  After the pass, a real clear then occupied fires it once.
      *
-     * MUTATION: in `MarklinFeedback.parseMessage`, `this.network.isConfirming()` to `false`.
+     * MUTATION: in `MarklinFeedback.parseMessage`, `m.heardConfirming() || this.network.isConfirming()` to `false`.
      */
     @Test(timeOut = 120000)
     public void testARealEventDuringTheConfirmationFiresNoRoute() throws Exception
@@ -394,6 +529,10 @@ public class testTheSyncAsksTheSensorsTheirState
         station.sensor(contact, !first);
         assertTrue(Components.waitFor(() -> fired(rig, log, name) == 1, WAIT_MS), "real events did not fire the route: "
             + log);
+
+        // The log tap is global: a route still running past the claim would log into the next claim's rig
+        assertTrue(Components.waitFor(() -> fired(rig, log, name) == 1 && log.contains(I18n.f("route.executed", name)),
+            WAIT_MS), "the route did not finish: " + log);
     }
 
     /** How many times the route has fired by the log, `log` keeping what was taken before. */

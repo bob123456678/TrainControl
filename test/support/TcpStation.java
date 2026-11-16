@@ -217,6 +217,15 @@ public final class TcpStation implements AutoCloseable
         this.onQuery.put(contact, then);
     }
 
+    // Contacts whose next query is answered this many milliseconds late, while other queries are answered at once
+    private final java.util.Map<Integer, Long> answersLate = new java.util.HashMap<>();
+
+    /** The next query for the contact is answered `ms` late, with its state then; the others are not held up. */
+    public synchronized void answerLate(int contact, long ms)
+    {
+        this.answersLate.put(contact, ms);
+    }
+
     /** A contact's state as this station knows it. */
     public synchronized boolean occupied(int contact)
     {
@@ -253,6 +262,39 @@ public final class TcpStation implements AutoCloseable
         Runnable then = this.onQuery.remove(contact);
 
         if (then != null) then.run();
+
+        Long late = this.answersLate.remove(contact);
+
+        if (late != null)
+        {
+            java.util.Timer timer = new java.util.Timer("tcp-station-late-answer", true);
+
+            timer.schedule(new java.util.TimerTask()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        synchronized (TcpStation.this)
+                        {
+                            synchronized (client)
+                            {
+                                client.getOutputStream().write(answer(device, contact, occupied(contact)));
+                            }
+                        }
+                    }
+                    catch (IOException gone)
+                    {
+                        // The connection closed
+                    }
+
+                    timer.cancel();
+                }
+            }, late);
+
+            return;
+        }
 
         boolean state = occupied(contact);
 
