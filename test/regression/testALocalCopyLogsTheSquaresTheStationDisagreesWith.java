@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -48,6 +49,10 @@ public class testALocalCopyLogsTheSquaresTheStationDisagreesWith
     /** While set, the stand-in's device file says Central Station 2. */
     private static volatile boolean cs2;
 
+    /** What the stand-in serves at a path in place of the snapshot's file; a null body is a 404. */
+    private static final java.util.Map<String, byte[]> instead =
+        Collections.synchronizedMap(new java.util.HashMap<>());
+
     private static final String MISMATCH = "Layout: the square at 8,1 on page Main Layout is address 10 DCC, but the"
         + " Central Station has address 10 only as MM2.  If the station is right, set the square’s protocol in the"
         + " editor.";
@@ -62,11 +67,7 @@ public class testALocalCopyLogsTheSquaresTheStationDisagreesWith
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("cs3-main-layout"));
         model = support.TestStation.simulated();
 
-        String snapshot = sandbox.getFolder().getAbsolutePath();
-        java.util.function.BiFunction<String, Integer, byte[]> rest = StandInStation.cs3("260",
-            new String(StandInStation.file(snapshot + "/app/api/info.json"), StandardCharsets.UTF_8));
-
-        station = new StandInStation((path, n) ->
+        station = StandInStation.ofSnapshot(sandbox.getFolder(), (path, answer) ->
         {
             if (cs2 && "/config/geraet.vrs".equals(path))
             {
@@ -75,9 +76,7 @@ public class testALocalCopyLogsTheSquaresTheStationDisagreesWith
 
             if (cs2 && "/config/lokomotive.cs2".equals(path)) return "[lokomotive]\n".getBytes(StandardCharsets.UTF_8);
 
-            byte[] own = StandInStation.file(snapshot + (path.startsWith("/app/api/") ? path + ".json" : path));
-
-            return own != null ? own : rest.apply(path, n);
+            return instead.containsKey(path) ? instead.get(path) : answer;
         });
 
         addressWas = support.TestStationAddress.get();
@@ -93,6 +92,36 @@ public class testALocalCopyLogsTheSquaresTheStationDisagreesWith
 
         setToDCC("0x40108");
         setToDCC("0x40905");
+
+        // A sensor at (3,10) whose artikel gives address 10, DCC in the copy's own list, MM2 on the station; and a
+        // switch at (3,11), address 777, which the station has no article for
+        addElement(".id=0x40a03\n .typ=s88kontakt\n .artikel=20");
+        addElement(".id=0x40b03\n .typ=rechtsweiche\n .prot=DCC\n .artikel=1554");
+
+        File mags = new File(copy, "config/magnetartikel.cs2");
+        String list = new String(Files.readAllBytes(mags.toPath()), StandardCharsets.UTF_8);
+        Matcher w3 = Pattern.compile("(?ms)(^ \\.id=10\\r?$(?:(?!^artikel).)*?^ \\.dectyp=)mm2").matcher(list);
+
+        assertTrue(w3.find(), "the copy's accessory list has address 10 as MM2");
+        Files.write(mags.toPath(), (list.substring(0, w3.start()) + w3.group(1) + "dcc" + list.substring(w3.end()))
+            .getBytes(StandardCharsets.UTF_8));
+    }
+
+    @AfterMethod(alwaysRun = true)
+    public void servedAsItWas()
+    {
+        instead.clear();
+    }
+
+    /** Adds an element, given from its first key on, to the end of the copy's Main Layout page. */
+    private static void addElement(String keys) throws Exception
+    {
+        File page = new File(copy, "config/gleisbilder/Main Layout.cs2");
+        String text = new String(Files.readAllBytes(page.toPath()), StandardCharsets.UTF_8);
+        String nl = text.contains("\r\n") ? "\r\n" : "\n";
+
+        Files.write(page.toPath(), (text + (text.endsWith("\n") ? "" : nl) + ("element\n " + keys + "\n").replace("\n", nl))
+            .getBytes(StandardCharsets.UTF_8));
     }
 
     @AfterClass(alwaysRun = true)
@@ -130,6 +159,14 @@ public class testALocalCopyLogsTheSquaresTheStationDisagreesWith
     /** Syncs from the copy and returns the squares' lines it logged. */
     private static List<String> syncFromTheCopy() throws Exception
     {
+        return syncLines().stream().filter(l -> l.contains("the square at")).collect(Collectors.toList());
+    }
+
+    /** Syncs from the copy, which must succeed, and returns every line it logged. */
+    private static List<String> syncLines() throws Exception
+    {
+        model.log("next sync " + System.nanoTime());
+        logged.clear();
         TrainControlUI.getPrefs().put(TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, copy.getAbsolutePath());
 
         try
@@ -143,7 +180,7 @@ public class testALocalCopyLogsTheSquaresTheStationDisagreesWith
 
         synchronized (logged)
         {
-            return logged.stream().filter(l -> l.contains("the square at")).collect(Collectors.toList());
+            return new ArrayList<>(logged);
         }
     }
 
@@ -173,5 +210,70 @@ public class testALocalCopyLogsTheSquaresTheStationDisagreesWith
         assertEquals(syncFromTheCopy(), Collections.singletonList(MISMATCH), "the lines of a sync from the copy, on a CS2");
         assertEquals(station.requests("/app/api/gbs"), 0, "all requests: " + station.asked());
         assertNoSquareChanged();
+    }
+
+    /**
+     * A sensor square is not an accessory, so its protocol is not checked, though its artikel gives an address the
+     * station has with another protocol.
+     *
+     * MUTATION: drop `!c.isAccessory()` from the filter in `CS2File.logSquaresTheStationDisagreesWith`, and (3,10) is
+     * logged.
+     */
+    @Test(timeOut = 120000)
+    public void testASensorSquareIsNotChecked() throws Exception
+    {
+        List<String> lines = syncFromTheCopy();
+        org.traincontrol.base.LayoutDiagramComponent sensor = model.getLayout("Main Layout").getComponent(3, 10);
+
+        assertTrue(sensor.isFeedback() && sensor.getAddress() == 10 && "DCC".equals(String.valueOf(sensor.getProtocol())),
+            "precondition: (3,10) is a sensor at address 10, DCC by the copy's list");
+        assertFalse(lines.stream().anyMatch(l -> l.contains("square at 3,10 ")), "a sensor square was logged: " + lines);
+    }
+
+    /**
+     * A square at an address the station has no article for is not logged: there is no protocol there to disagree with.
+     *
+     * MUTATION: drop `!has.isEmpty()` from `CS2File.logSquaresTheStationDisagreesWith`, and (3,11) is logged.
+     */
+    @Test(timeOut = 120000)
+    public void testASquareAtAnAddressTheStationLacksIsNotLogged() throws Exception
+    {
+        List<String> lines = syncFromTheCopy();
+        org.traincontrol.base.LayoutDiagramComponent square = model.getLayout("Main Layout").getComponent(3, 11);
+
+        assertTrue(square.isAccessory() && square.getAddress() == 777, "precondition: (3,11) is a switch at address 777");
+        assertFalse(lines.stream().anyMatch(l -> l.contains("square at 3,11 ")),
+            "a square at an address the station has no article for was logged: " + lines);
+    }
+
+    /**
+     * A check that cannot run, its plan not found or unreadable or the station's accessory list not found, logs nothing
+     * outside debug, and the sync succeeds.
+     *
+     * MUTATION: log the check's failure outside debug too (`MarklinControlStation.syncThroughTheNewParser`), and the
+     * missing accessory list adds a line.
+     */
+    @Test(timeOut = 240000)
+    public void testACheckThatCannotRunIsSilentAndTheSyncSucceeds() throws Exception
+    {
+        // Compared with a second healthy sync, as the first from the copy also logs the accessories it adds
+        syncLines();
+        List<String> healthy = withoutTheSquaresLines(syncLines());
+        String[][] failures = { { "/app/api/gbs", null }, { "/app/api/gbs", "not a plan" },
+            { "/config/magnetartikel.cs2", null } };
+
+        for (String[] failure : failures)
+        {
+            instead.clear();
+            instead.put(failure[0], failure[1] == null ? null : failure[1].getBytes(StandardCharsets.UTF_8));
+
+            assertEquals(withoutTheSquaresLines(syncLines()), healthy,
+                "with " + failure[0] + " " + (failure[1] == null ? "not found" : "unreadable") + ", what the sync logged, against " + healthy);
+        }
+    }
+
+    private static List<String> withoutTheSquaresLines(List<String> lines)
+    {
+        return lines.stream().filter(l -> !l.contains("the square at")).collect(Collectors.toList());
     }
 }

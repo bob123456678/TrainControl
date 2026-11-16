@@ -565,7 +565,7 @@ public class testACS3TileTakesTheProtocolItsPlanGivesIt
         assertEquals(station.requests("/app/api/gbs"), 0, "all requests: " + station.asked());
         assertEquals(protocol(pages, "Main Layout", 5, 9), accessoryDecoderType.DCC);
         assertEquals(warnings().size(), 3, "each address with two protocols is named once per page: " + warnings());
-        assertTrue(warnings().stream().allMatch(w -> w.contains("not checked against the Central Station")),
+        assertTrue(warnings().stream().allMatch(w -> w.contains("Until the Central Station is reached")),
             "the local copy's wording: " + warnings());
     }
 
