@@ -363,7 +363,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v2.8.3
+* v2.8.3 [11/16/2026]
     - Central Station Bug Fixes
         - Syncing with a Central Station 3 and starting TrainControl now read the real state of its feedback sensors, and a route triggered by an S88 sensor does not fire until the Central Station 3 has confirmed those states.  Previously a route could fire on a sensor state that was out of date
         - A short circuit at the Central Station now shows the track power as off in TrainControl, with one warning each time the power is cut
