@@ -119,8 +119,6 @@ public class testNoSelfRecursiveWrappers
             "TrainControlUI", "ui." },
         { "coveredTrackView", "src/org/traincontrol/gui/CoveredTrackView.java", "CoveredTrackView", WINDOW,
             "TrainControlUI", "ui." },
-        { "captionVisibility", "src/org/traincontrol/gui/CaptionVisibility.java", "CaptionVisibility", WINDOW,
-            "TrainControlUI", "ui." },
         { "tileMenus", "src/org/traincontrol/gui/autonomyeditor/EditorTileMenus.java", "EditorTileMenus", AUTONOMY_EDITOR,
             "AutonomyEditorPanel", "editor." },
         { "prompts", "src/org/traincontrol/gui/autonomyeditor/EditorPrompts.java", "EditorPrompts", AUTONOMY_EDITOR,
@@ -141,6 +139,10 @@ public class testNoSelfRecursiveWrappers
         { "autonomyLifecycle", "src/org/traincontrol/gui/AutonomyLifecycle.java", "AutonomyLifecycle", WINDOW,
             "TrainControlUI", "ui." },
         { "diagramLocGestures", "src/org/traincontrol/gui/DiagramLocGestures.java", "DiagramLocGestures", WINDOW,
+            "TrainControlUI", "ui." },
+        { "stationCaptions", "src/org/traincontrol/gui/StationCaptions.java", "StationCaptions", WINDOW,
+            "TrainControlUI", "ui." },
+        { "connectingNotice", "src/org/traincontrol/gui/ConnectingNotice.java", "ConnectingNotice", WINDOW,
             "TrainControlUI", "ui." },
     };
 

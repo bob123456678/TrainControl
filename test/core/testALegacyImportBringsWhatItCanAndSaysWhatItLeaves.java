@@ -35,14 +35,11 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testLegacyNamesLandOnTheSquaresCarryingTheirSensors() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
+        LayoutDiagram page = openedPageOnDisk();
 
         // A configuration to import INTO: operational settings are stored per configuration and are skipped without
         // one.
-        session.getStore().createConfiguration("Legacy", null);
-        session.getStore().setActiveConfiguration("Legacy");
+        activeConfiguration("Legacy");
 
         org.json.JSONArray points = new org.json.JSONArray();
 
@@ -64,7 +61,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         AutonomySession.LegacyImport result = session.importLegacy(legacy);
 
-        TileKey tile = new TileKey("main", 1, 1);
+        TileKey tile = onMain(1, 1);
 
         assertEquals(session.getStore().getPointName(tile), "Hauptbahnhof",
             "the name did not reach the square carrying its sensor");
@@ -219,7 +216,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     {
         LayoutDiagram page = openOnAConfigurationCalled("Restored");
 
-        TileKey tile = new TileKey("main", 1, 1);
+        TileKey tile = onMain(1, 1);
 
         session.setPointName(tile, "The name I typed");
 
@@ -280,8 +277,8 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         assertEquals(result.reversing, 2, "both squares should have been marked");
 
-        TileKey terminusTile = new TileKey("main", 1, 1);
-        TileKey berthTile = new TileKey("main", 4, 1);
+        TileKey terminusTile = onMain(1, 1);
+        TileKey berthTile = onMain(4, 1);
 
         assertEquals(session.getPointProperty(terminusTile, AutonomyBuilder.MUST_REVERSE),
             Boolean.TRUE, "the terminus does not turn trains round");
@@ -303,7 +300,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     {
         LayoutDiagram page = openOnAConfigurationCalled("Restored");
 
-        TileKey tile = new TileKey("main", 1, 1);
+        TileKey tile = onMain(1, 1);
 
         // Somebody has already said this square MAY turn trains, which is not the same as must
         session.setPointFlag(tile, AutonomyBuilder.CAN_REVERSE, true);
@@ -363,7 +360,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
 
         assertEquals(result.settings, 4, "all four settings should have been carried");
 
-        TileKey tile = new TileKey("main", 1, 1);
+        TileKey tile = onMain(1, 1);
 
         assertEquals(session.getPointProperty(tile, "priority"), -3, "the priority did not come across");
 
@@ -396,7 +393,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     {
         LayoutDiagram page = openOnAConfigurationCalled("Restored");
 
-        TileKey tile = new TileKey("main", 1, 1);
+        TileKey tile = onMain(1, 1);
 
         session.setPointProperty(tile, "priority", 5);
 
@@ -427,11 +424,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testTheDiagramSeesTheImportWithoutBeingReloaded() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
-
-        TileKey tile = new TileKey("main", 1, 1);
+        TileKey tile = onMain(1, 1);
 
         // Not null: an unnamed square gets a generated name; what matters is that it is not ALREADY the imported one.
         assertNotEquals(session.getReducer().getPoints().get(tile).getName(), "Hauptbahnhof",
@@ -464,17 +459,14 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testATerminusAndAStationSwitchSurviveAnExportAndImport() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
-
-        TileKey tile = new TileKey("main", 1, 1);
+        TileKey tile = onMain(1, 1);
 
         session.getStore().createConfiguration("Adam 1", null);
         session.getStore().setActiveConfiguration("Adam 1");
 
-        session.getStore().setStation(tile, true);
-        session.setPointName(tile, "Hauptbahnhof");
+        namedStation(tile, "Hauptbahnhof");
 
         // What a terminus is authored as, and a station's own switch
         session.setPointProperty(tile, AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
@@ -736,11 +728,10 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         // A setup that already has a configuration: an import onto an empty setup happened to work since it loaded
         // afterwards.
         session.open(Arrays.asList(page));
-        session.getStore().createConfiguration("Existing", null);
-        session.getStore().setActiveConfiguration("Existing");
+        activeConfiguration("Existing");
         session.rebuild();
 
-        TileKey station = new TileKey("main", 4, 1);
+        TileKey station = onMain(4, 1);
 
         assertFalse(session.getReducer().getPoints().get(station).isStation(),
             "precondition: this square is not a station before the import");
@@ -782,14 +773,11 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testAnImportFromADifferentLayoutKeepsWhatItCannotPlace() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
-        session.getStore().createConfiguration("Existing", null);
-        session.getStore().setActiveConfiguration("Existing");
+        LayoutDiagram page = openedPageOnDisk();
+        activeConfiguration("Existing");
         session.rebuild();
 
-        TileKey here = new TileKey("main", 4, 1);
+        TileKey here = onMain(4, 1);
 
         // A square on a page this layout has never heard of
         TileKey elsewhere = new TileKey("goods yard", 30, 30);
@@ -878,9 +866,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
             "a second real autonomy.json is not recognised as one");
 
         // A bundle, built the way exportBundle builds one, so this cannot drift from what the exporter writes
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
+        LayoutDiagram page = openedPageOnDisk();
         session.getStore().createConfiguration("Adam 1", null);
 
         // Given the globals every real configuration carries: one holding only its name is not claimed (see
@@ -961,13 +947,10 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testAnImportLeavesOneHomePerLocomotive() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
+        LayoutDiagram page = openedPageOnDisk();
 
         // Homes live in a configuration, so there has to be one to write into.
-        session.getStore().createConfiguration("Only", null);
-        session.getStore().setActiveConfiguration("Only");
+        activeConfiguration("Only");
 
         org.json.JSONArray points = new org.json.JSONArray();
 
@@ -1018,13 +1001,12 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     @Test
     public void testAnImportSaysWhatItLeftOnATakenSquare() throws Exception
     {
-        session.open(Arrays.asList(pageOnDisk()));
+        openedPageOnDisk();
 
-        session.getStore().createConfiguration("Only", null);
-        session.getStore().setActiveConfiguration("Only");
+        activeConfiguration("Only");
 
-        TileKey west = new TileKey("main", 1, 1);
-        TileKey east = new TileKey("main", 4, 1);
+        TileKey west = onMain(1, 1);
+        TileKey east = onMain(4, 1);
 
         session.placeLocomotive(west, "BR 01");
         session.setHome(east, "BR 01");
@@ -1071,10 +1053,9 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     {
         session.open(Arrays.asList(pageWithATwoEndedStation()));
 
-        session.getStore().createConfiguration("Barred", null);
-        session.getStore().setActiveConfiguration("Barred");
+        activeConfiguration("Barred");
 
-        TileKey middle = new TileKey("main", 3, 1);
+        TileKey middle = onMain(3, 1);
 
         // A STATION, whose barred sides are read - a square that is not one has them ignored
         session.setStation(middle, true);
@@ -1113,8 +1094,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
         // THE BAR LIFTED, in a configuration of its own: the same way is now one trains may arrive in, and stays
         session.setBarredArrivals(middle, java.util.EnumSet.noneOf(Side.class));
 
-        session.getStore().createConfiguration("Open", null);
-        session.getStore().setActiveConfiguration("Open");
+        activeConfiguration("Open");
         session.rebuild();
 
         assertTrue(session.homeFacingsFor(middle).contains(barredWay), "precondition: with the bar lifted, " + barredWay
@@ -1357,9 +1337,7 @@ public class testALegacyImportBringsWhatItCanAndSaysWhatItLeaves extends Autonom
     /** The page on disk, opened in the session with a configuration of that name made and active. */
     private LayoutDiagram openOnAConfigurationCalled(String name) throws IOException
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
+        LayoutDiagram page = openedPageOnDisk();
 
         session.getStore().createConfiguration(name, null);
         session.getStore().setActiveConfiguration(name);

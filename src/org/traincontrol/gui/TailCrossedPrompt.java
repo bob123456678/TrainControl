@@ -186,8 +186,8 @@ public class TailCrossedPrompt
         // main window, and a list hung from it was centered on the window the editor covers.  Not a minimized editor,
         // which hides what it owns: `openLayoutEditorWindow` answers null for it.  Else the window whose door this is.
         Component over = !(parent instanceof TrainControlUI) ? parent
-            : ((TrainControlUI) parent).openLayoutEditorWindow() != null
-                ? ((TrainControlUI) parent).openLayoutEditorWindow() : ((TrainControlUI) parent).dialogParent();
+            : ((TrainControlUI) parent).editorWindows.openLayoutEditorWindow() != null
+                ? ((TrainControlUI) parent).editorWindows.openLayoutEditorWindow() : ((TrainControlUI) parent).dialogParent();
 
         Reply reply = pick != null ? pick.ask()
             : reply(over, train, shownName(shown, at), choices, preselectedIndex(choices, recorded));

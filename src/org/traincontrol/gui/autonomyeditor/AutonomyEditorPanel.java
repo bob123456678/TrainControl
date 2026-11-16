@@ -3843,6 +3843,12 @@ public class AutonomyEditorPanel extends JPanel
         return out;
     }
 
+    /** Control+V places the main window's selected locomotive on the square, Delete removes its train (FR-200). */
+    public void placeOrRemoveByKey(TileKey tile, boolean place)
+    {
+        tileMenus.clickByKey(tile, place);
+    }
+
     /** Takes the trains leaving a square off it (`trainsLeaving`). */
     void removeLocomotive(TileKey tile)
     {
@@ -6008,9 +6014,7 @@ public class AutonomyEditorPanel extends JPanel
             badgeFor(tile), shaded, isCurved(tile), isPairedPortal(tile),
             traces.get(tile), directionsView() == 1,
             ignored ? null
-                : session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS))
-            // FR-118's white icons, in the editor only, where arrows are drawn over them.
-            .inTheEditor();
+                : session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS));
 
         // Unticked, a square autonomy ignores is left empty; picking a signal still grays the rest (FR-197).
         if (shaded && !showIgnored.isSelected() && isIgnored(tile)) annotation.leftEmpty();

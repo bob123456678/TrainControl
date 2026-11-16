@@ -141,7 +141,7 @@ public class testBarredArrivalIsNotADestination
 
         // A signal off to one side, wired as parsing a real layout does: without an accessory it has no address to
         // command and the pairing is dropped.
-        page.addComponent(componentType.SIGNAL, 1, 2, 0, 0, 23, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SIGNAL, 1, 2, 0, 23, 0);
 
         page.getComponent(1, 2).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
             null, 23, org.traincontrol.base.Accessory.accessoryType.SIGNAL,

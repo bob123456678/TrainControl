@@ -532,8 +532,8 @@ public class testTheEditorSaysWhatItsToolsDo
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
         Diagrams.feedback(page, 3, 1, 6, 12);
-        page.addComponent(componentType.SIGNAL, 2, 0, 0, 0, 86, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.SIGNAL, 3, 0, 0, 0, 87, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SIGNAL, 2, 0, 0, 86, 0);
+        Diagrams.put(page, componentType.SIGNAL, 3, 0, 0, 87, 0);
 
         // Wired, as parsing a real layout does: a signal with no accessory is not one a guard can be
         for (int x : new int[] {2, 3})

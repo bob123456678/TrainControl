@@ -35,6 +35,9 @@ final class HomeLocomotiveMenu
 
         JMenuItem menuItem = new JMenuItem(I18n.t("autolayout.ui.menuReturnToHome"));
 
+        // Shown, though the item does not ask first as the key does (FR-200)
+        TrainControlUI.showShortcut(menuItem, "return locomotives home");
+
         menuItem.addActionListener(event -> ui.requestReturnToHome());
         menuItem.setEnabled(offered);
 
@@ -42,7 +45,7 @@ final class HomeLocomotiveMenu
         {
             // WRAPPED, as Start's item beside it is: the setup's sentence runs to two hundred characters.
             menuItem.setToolTipText(broken != null ? AutonomyEditorPanel.wrapped(broken) : ui.isAutonomyBusy()
-                ? ui.describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
+                ? ui.returnHomeController.describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
                 : ui.whyReturnHomeIsNotOffered());
         }
 

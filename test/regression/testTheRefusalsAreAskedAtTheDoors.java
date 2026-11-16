@@ -387,9 +387,9 @@ public class testTheRefusalsAreAskedAtTheDoors
         // Over the whole program's code.
         String source = SourceOf.allCode();
 
-        // One of each occurrence is the declaration of the method itself; `refuseWhileAutonomyRunning` has two more,
-        // the window's delegator handing to `RunGates`' declaration.
-        int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 3 + occurrences(source, GATE) - 1;
+        // One of each occurrence is the declaration of the method itself (`refuseWhileAutonomyRunning`'s is `RunGates`';
+        // the doors call it there, with no delegator on the window).
+        int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 1 + occurrences(source, GATE) - 1;
 
         // Counted inside the declared doors, not from the list's own arithmetic: two errors can cancel in a total,
         // while reading the bodies names a door that does not ask and counts one that asks twice as two.

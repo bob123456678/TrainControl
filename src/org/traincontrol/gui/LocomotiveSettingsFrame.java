@@ -254,9 +254,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         setContentPane(content);
 
-        // Escape is Cancel
+        // Escape is Cancel, Control+Enter is Save (FR-200)
         getRootPane().registerKeyboardAction(e -> closeAsking(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
             JComponent.WHEN_IN_FOCUSED_WINDOW);
+        getRootPane().registerKeyboardAction(e -> save.doClick(0), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,
+            java.awt.event.InputEvent.CTRL_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         setAlwaysOnTop(main.isAlwaysOnTop());
     }
@@ -731,7 +733,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             return false;
         }
 
-        if (identity && main.refuseWhileARouteDrivesIt(this, loc.getName())) return false;
+        if (identity && RunGates.refuseWhileARouteDrivesIt(main, this, loc.getName())) return false;
 
         if (members && main.locomotiveActions.refuseMultiUnitEdit(this, loc, multiUnitTab.chosen().keySet())) return false;
 

@@ -416,8 +416,8 @@ public class testTheWindowTakesTheKeyboard
 
         try
         {
-            java.lang.reflect.Method raise =
-                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "comeToTheForeground");
+            final Object notice = noticeOf(up.ui);
+            java.lang.reflect.Method raise = Reflect.method(notice.getClass(), "comeToTheForeground");
 
             for (final boolean onTop : new boolean[] { false, true })
             {
@@ -438,7 +438,7 @@ public class testTheWindowTakesTheKeyboard
                 {
                     try
                     {
-                        raise.invoke(up.ui);
+                        raise.invoke(notice);
                     }
                     catch (ReflectiveOperationException e)
                     {
@@ -493,8 +493,8 @@ public class testTheWindowTakesTheKeyboard
 
         try
         {
-            java.lang.reflect.Method raise =
-                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "comeToTheForeground");
+            final Object notice = noticeOf(up.ui);
+            java.lang.reflect.Method raise = Reflect.method(notice.getClass(), "comeToTheForeground");
 
             javax.swing.SwingUtilities.invokeAndWait(() -> up.ui.setExtendedState(
                 java.awt.Frame.ICONIFIED | java.awt.Frame.MAXIMIZED_BOTH));
@@ -513,7 +513,7 @@ public class testTheWindowTakesTheKeyboard
             {
                 try
                 {
-                    raise.invoke(up.ui);
+                    raise.invoke(notice);
                 }
                 catch (ReflectiveOperationException e)
                 {
@@ -545,7 +545,10 @@ public class testTheWindowTakesTheKeyboard
     /**
      * It does NOT take the caret back from something that already has it (alt-tabbing away from a half-typed station
      * name and back), so `focusTheKeyboard` is conditional.  The `KeyboardFocusManager` answers null for windows the
-     * OS has not focused, so a fake that answers is installed, restored before the window is disposed.
+     * OS has not focused, so a fake that answers is installed, restored before the window is disposed.  A window the OS
+     * has not focused also ignores `requestFocusInWindow`, so the focus owner alone cannot show the keyboard being
+     * asked for: the tabbed pane is swapped for one that counts the asks, and a press with nothing typed shows the
+     * count can move.
      *
      * MUTATION: delete the `isDescendingFrom` early return from `focusTheKeyboard`.
      */
@@ -559,10 +562,10 @@ public class testTheWindowTakesTheKeyboard
         java.awt.KeyboardFocusManager real =
             java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager();
 
+        java.awt.Component keyboard = (java.awt.Component) field(up.ui, "KeyboardTab");
+
         try
         {
-            java.awt.Component keyboard = (java.awt.Component) field(up.ui, "KeyboardTab");
-
             final java.awt.Component typing = somewhereToType(up.ui.getContentPane());
 
             assertNotNull(typing,
@@ -578,47 +581,98 @@ public class testTheWindowTakesTheKeyboard
             assertSame(up.ui.getMostRecentFocusOwner(), typing,
                 "precondition: the caret is supposed to be somewhere other than the keyboard");
 
+            final java.util.concurrent.atomic.AtomicReference<java.awt.Component> owner =
+                new java.util.concurrent.atomic.AtomicReference<>(typing);
+
             java.awt.KeyboardFocusManager.setCurrentKeyboardFocusManager(
                 new java.awt.DefaultKeyboardFocusManager()
                 {
                     @Override
                     public java.awt.Component getFocusOwner()
                     {
-                        return typing;
+                        return owner.get();
                     }
                 });
 
-            java.lang.reflect.Method focus =
-                Reflect.method(org.traincontrol.gui.TrainControlUI.class, "focusTheKeyboard");
+            final java.util.concurrent.atomic.AtomicInteger asked = new java.util.concurrent.atomic.AtomicInteger();
+
+            final javax.swing.JTabbedPane[] counting = new javax.swing.JTabbedPane[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> counting[0] = new javax.swing.JTabbedPane()
+            {
+                @Override
+                public boolean requestFocusInWindow()
+                {
+                    asked.incrementAndGet();
+
+                    return false;
+                }
+            });
+
+            keyboardTabIs(up.ui, counting[0]);
+
+            final Object notice = noticeOf(up.ui);
+            java.lang.reflect.Method focus = Reflect.method(notice.getClass(), "focusTheKeyboard");
 
             final java.lang.reflect.Method call = focus;
 
-            javax.swing.SwingUtilities.invokeAndWait(() ->
+            final Runnable comeBack = () ->
             {
                 try
                 {
-                    call.invoke(up.ui);
+                    call.invoke(notice);
                 }
                 catch (ReflectiveOperationException e)
                 {
                     throw new RuntimeException(e);
                 }
-            });
+            };
+
+            javax.swing.SwingUtilities.invokeAndWait(comeBack);
 
             Components.drain(5);
+
+            assertEquals(asked.get(), 0, "coming back to the window asked for the keyboard while "
+                + typing.getClass().getName() + " was being typed in");
 
             assertSame(up.ui.getMostRecentFocusOwner(), typing,
                 "coming back to the window took the keyboard away from "
                 + typing.getClass().getName() + ", which already had it - so anybody who alt-tabs "
                 + "away from a half-typed name and back loses their place, which is a worse fault "
                 + "than the one being fixed");
+
+            // THE CONTROL: with nothing being typed, the same call does ask, so the count above could have moved
+            owner.set(null);
+
+            javax.swing.SwingUtilities.invokeAndWait(comeBack);
+
+            assertEquals(asked.get(), 1, "precondition: coming back with nothing being typed did not ask for the"
+                + " keyboard, so this cannot see it held back");
         }
         finally
         {
+            keyboardTabIs(up.ui, keyboard);
+
             java.awt.KeyboardFocusManager.setCurrentKeyboardFocusManager(real);
 
             up.close();
         }
+    }
+
+    /** Puts `pane` in the window's `KeyboardTab` field on the event thread, where the window reads it. */
+    private static void keyboardTabIs(org.traincontrol.gui.TrainControlUI ui, java.awt.Component pane) throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui, "KeyboardTab", pane);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
     }
     /**
      * `display()` does not take the topmost flag off after showing the window (OB-170): showing is asynchronous, so a
@@ -733,18 +787,25 @@ public class testTheWindowTakesTheKeyboard
         }
     }
 
+    /** The window's `ConnectingNotice`, which keeps the menus, the raise and the keyboard of its arrival. */
+    private static Object noticeOf(org.traincontrol.gui.TrainControlUI ui) throws Exception
+    {
+        return Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "connectingNotice");
+    }
+
     /**
-     * A private no-argument method of the window, by name, on the event thread.
+     * A no-argument method of the window's `ConnectingNotice`, by name, on the event thread.
      */
     private static void call(org.traincontrol.gui.TrainControlUI on, String name) throws Exception
     {
-        final java.lang.reflect.Method m = Reflect.method(org.traincontrol.gui.TrainControlUI.class, name);
+        final Object notice = noticeOf(on);
+        final java.lang.reflect.Method m = Reflect.method(notice.getClass(), name);
 
         javax.swing.SwingUtilities.invokeAndWait(() ->
         {
             try
             {
-                m.invoke(on);
+                m.invoke(notice);
             }
             catch (Exception e)
             {

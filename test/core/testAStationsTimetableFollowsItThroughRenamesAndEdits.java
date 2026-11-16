@@ -140,7 +140,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
         String[] leg = aLegBetween("Beta", "Gamma", "Beta");
 
         // A TRAIN AT GAMMA, come in from the west along Beta -> Gamma
-        TileKey gamma = new TileKey("main", 5, 1);
+        TileKey gamma = onMain(5, 1);
 
         session.placeLocomotive(gamma, "C4 train");
         session.setArrivedFrom(gamma, "W");
@@ -169,7 +169,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         LayoutDiagram page = threeStationsInARow("A");
 
-        TileKey beta = new TileKey("main", 3, 1);
+        TileKey beta = onMain(3, 1);
 
         session.setPointName(new TileKey("main", 1, 1), "Alpha");
         session.setPointName(beta, "Beta");
@@ -253,7 +253,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
         // AND A TRAIN AT ALPHA, come in along the rail from the unnamed station
         String[] step = aLegBetween("main 3,1", "Alpha", "the unnamed station");
 
-        TileKey alpha = new TileKey("main", 1, 1);
+        TileKey alpha = onMain(1, 1);
 
         session.placeLocomotive(alpha, "B2 train");
         session.setArrivedAlong(alpha, new org.json.JSONArray().put(new org.json.JSONArray().put(step[0]).put(step[1]))
@@ -552,7 +552,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         threeStationsInARow("C2 delete");
 
-        TileKey alpha = new TileKey("main", 1, 1);
+        TileKey alpha = onMain(1, 1);
 
         session.setPointName(alpha, "Alpha");
         session.placeLocomotive(alpha, "C2 train");
@@ -1023,7 +1023,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
     {
         LayoutDiagram page = threeStationsInARow("A1 cancel");
 
-        TileKey beta = new TileKey("main", 3, 1);
+        TileKey beta = onMain(3, 1);
 
         session.setPointName(new TileKey("main", 1, 1), "Alpha");
         session.setPointName(beta, "Beta");
@@ -1205,7 +1205,7 @@ public class testAStationsTimetableFollowsItThroughRenamesAndEdits extends Auton
 
         nameTheThreeStations();
 
-        TileKey beta = new TileKey("main", 3, 1);
+        TileKey beta = onMain(3, 1);
 
         session.setPointFlag(beta, AutonomyBuilder.CAN_REVERSE, true);
 

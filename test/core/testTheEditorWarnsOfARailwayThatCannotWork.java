@@ -132,7 +132,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         threeStationsInARow("FR139 copies");
 
-        TileKey middle = new TileKey("main", 3, 1);
+        TileKey middle = onMain(3, 1);
 
         int copies = 0;
 
@@ -162,7 +162,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("OB472 arrow");
 
-        TileKey sensor = new TileKey("main", 1, 1);
+        TileKey sensor = onMain(1, 1);
 
         session.getStore().setTileDirection(sensor, session.getRoutes(sensor).keySet().iterator().next(),
             Direction.TOWARD_A);
@@ -189,7 +189,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         // A link's stub faces west unturned, east turned twice
         for (int x : new int[] {2, 4})
         {
-            page.addComponent(componentType.LINK, x, 2, x - 2, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.put(page, componentType.LINK, x, 2, x - 2, 0, 0);
         }
 
         session.open(Arrays.asList(page));
@@ -310,7 +310,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         threeStationsInARow("R34 facing");
 
-        TileKey beta = new TileKey("main", 3, 1);
+        TileKey beta = onMain(3, 1);
 
         session.setPointName(new TileKey("main", 1, 1), "Alpha");
         session.setPointName(beta, "Beta");
@@ -345,8 +345,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         threeStationsInARow("R34 towards");
 
-        TileKey beta = new TileKey("main", 3, 1);
-        TileKey west = new TileKey("main", 2, 1);
+        TileKey beta = onMain(3, 1);
+        TileKey west = onMain(2, 1);
 
         session.setPointName(new TileKey("main", 1, 1), "Alpha");
         session.setPointName(beta, "Beta");
@@ -384,7 +384,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         // TRAINS TURN AROUND AT BOTH ENDS, so a train reaches 3,1 from either side (OB-361)
         turnTrainsRoundAtBothEnds();
 
-        TileKey beta = new TileKey("main", 3, 1);
+        TileKey beta = onMain(3, 1);
 
         // EAST OF BETA, ONE WAY TOWARDS IT: a train arriving from the west cannot go on, one from the east can
         session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
@@ -427,7 +427,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         turnTrainsRoundAtBothEnds();
 
-        TileKey beta = new TileKey("main", 3, 1);
+        TileKey beta = onMain(3, 1);
 
         session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
         session.rebuild();
@@ -462,11 +462,11 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         turnTrainsRoundAtBothEnds();
 
-        TileKey beta = new TileKey("main", 3, 1);
+        TileKey beta = onMain(3, 1);
 
-        TileKey west = new TileKey("main", 2, 1);
+        TileKey west = onMain(2, 1);
 
-        TileKey east = new TileKey("main", 4, 1);
+        TileKey east = onMain(4, 1);
 
         // ONE WAY TOWARDS BETA FROM BOTH SIDES: trapped from the east and the west, and closing both would leave no way in
         session.setDirection(west, new RouteId(0, 0), Direction.TOWARD_A);
@@ -532,7 +532,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         turnTrainsRoundAtBothEnds();
 
-        TileKey beta = new TileKey("main", 3, 1);
+        TileKey beta = onMain(3, 1);
 
         session.setDirection(new TileKey("main", 4, 1), new RouteId(0, 0), Direction.TOWARD_B);
         session.rebuild();
@@ -600,7 +600,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         threeStationsInARow("R34 end");
 
-        TileKey alpha = new TileKey("main", 1, 1);
+        TileKey alpha = onMain(1, 1);
 
         session.setPointName(alpha, "Alpha");
         session.setPointName(new TileKey("main", 3, 1), "Beta");
@@ -743,21 +743,17 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.open(Arrays.asList(page));
 
-        session.getStore().createConfiguration("Copies", null);
-        session.getStore().setActiveConfiguration("Copies");
+        activeConfiguration("Copies");
 
-        TileKey near = new TileKey("main", 1, 1);
-        TileKey middle = new TileKey("main", 4, 1);
-        TileKey stub = new TileKey("main", 7, 1);
+        TileKey near = onMain(1, 1);
+        TileKey middle = onMain(4, 1);
+        TileKey stub = onMain(7, 1);
 
-        session.setStation(near, true);
-        session.setPointName(near, "NearEnd");
+        namedStationInSession(near, "NearEnd");
 
-        session.setStation(middle, true);
-        session.setPointName(middle, "Middle");
+        namedStationInSession(middle, "Middle");
 
-        session.setStation(stub, true);
-        session.setPointName(stub, "FarEnd");
+        namedStationInSession(stub, "FarEnd");
 
         // Both ends may turn: an unmarked dead end traps its arrivals, and the fixture would start with two.
         session.setPointFlag(near, AutonomyBuilder.CAN_REVERSE, true);
@@ -891,18 +887,15 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.open(Arrays.asList(page));
 
-        session.getStore().createConfiguration("Reaches", null);
-        session.getStore().setActiveConfiguration("Reaches");
+        activeConfiguration("Reaches");
 
-        TileKey near = new TileKey("main", 1, 1);
-        TileKey middle = new TileKey("main", 4, 1);
-        TileKey stub = new TileKey("main", 7, 1);
+        TileKey near = onMain(1, 1);
+        TileKey middle = onMain(4, 1);
+        TileKey stub = onMain(7, 1);
 
-        session.setStation(near, true);
-        session.setPointName(near, "NearEnd");
+        namedStationInSession(near, "NearEnd");
 
-        session.setStation(middle, true);
-        session.setPointName(middle, "Middle");
+        namedStationInSession(middle, "Middle");
 
         session.setPointFlag(near, AutonomyBuilder.CAN_REVERSE, true);
         session.setPointFlag(stub, AutonomyBuilder.CAN_REVERSE, true);
@@ -967,19 +960,17 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.open(Arrays.asList(page));
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey farEnd = new TileKey("main", 1, 3);
-        TileKey reversing = new TileKey("main", 4, 3);
+        TileKey station = onMain(1, 1);
+        TileKey farEnd = onMain(1, 3);
+        TileKey reversing = onMain(4, 3);
 
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.setPointName(farEnd, "Siding End");
         session.setPointName(reversing, "Turnback");
 
         // Reversing is a property of the ACTIVE configuration, and setPointProperty returns quietly
         // when there is none - so without these two lines the flag below does nothing at all.
-        session.getStore().createConfiguration("Reversing", null);
-        session.getStore().setActiveConfiguration("Reversing");
+        activeConfiguration("Reversing");
 
         session.setPointFlag(reversing, AutonomyBuilder.CAN_REVERSE, true);
 
@@ -1039,17 +1030,15 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.open(Arrays.asList(page));
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey farEnd = new TileKey("main", 1, 3);
-        TileKey reversing = new TileKey("main", 4, 3);
+        TileKey station = onMain(1, 1);
+        TileKey farEnd = onMain(1, 3);
+        TileKey reversing = onMain(4, 3);
 
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.setPointName(farEnd, "Siding End");
         session.setPointName(reversing, "Turnback");
 
-        session.getStore().createConfiguration("Reversing", null);
-        session.getStore().setActiveConfiguration("Reversing");
+        activeConfiguration("Reversing");
 
         session.setPointFlag(reversing, AutonomyBuilder.CAN_REVERSE, true);
 
@@ -1100,13 +1089,11 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     @Test
     public void testASquareIsNamedByWhatIsKnownAboutIt() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
-
-        TileKey named = new TileKey("main", 1, 1);
-        TileKey sensor = new TileKey("main", 4, 1);
-        TileKey plain = new TileKey("main", 2, 1);
+        TileKey named = onMain(1, 1);
+        TileKey sensor = onMain(4, 1);
+        TileKey plain = onMain(2, 1);
 
         session.setPointName(named, "  Bahnhof  ");
 
@@ -1138,12 +1125,11 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.open(Arrays.asList(page));
 
-        session.getStore().createConfiguration("OB123", null);
-        session.getStore().setActiveConfiguration("OB123");
+        activeConfiguration("OB123");
 
-        TileKey middle = new TileKey("main", 3, 1);
-        TileKey east = new TileKey("main", 5, 1);
-        TileKey west = new TileKey("main", 1, 1);
+        TileKey middle = onMain(3, 1);
+        TileKey east = onMain(5, 1);
+        TileKey west = onMain(1, 1);
 
         session.setPointName(middle, "LowerBack");
         session.setPointName(west, "Stub");
@@ -1198,11 +1184,10 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.open(Arrays.asList(page));
 
-        session.getStore().createConfiguration("OB123b", null);
-        session.getStore().setActiveConfiguration("OB123b");
+        activeConfiguration("OB123b");
 
-        TileKey middle = new TileKey("main", 3, 1);
-        TileKey west = new TileKey("main", 1, 1);
+        TileKey middle = onMain(3, 1);
+        TileKey west = onMain(1, 1);
 
         session.setPointName(middle, "LowerBack");
 
@@ -1242,17 +1227,14 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.open(Arrays.asList(page));
 
-        session.getStore().createConfiguration("OB120", null);
-        session.getStore().setActiveConfiguration("OB120");
+        activeConfiguration("OB120");
 
-        TileKey west = new TileKey("main", 1, 1);
-        TileKey east = new TileKey("main", 5, 1);
+        TileKey west = onMain(1, 1);
+        TileKey east = onMain(5, 1);
 
-        session.setStation(west, true);
-        session.setPointName(west, "WestEnd");
+        namedStationInSession(west, "WestEnd");
 
-        session.setStation(east, true);
-        session.setPointName(east, "EastEnd");
+        namedStationInSession(east, "EastEnd");
 
         // Trains turn around at the west end, or a train standing there faces the buffers and is sent nowhere
         session.setPointFlag(west, AutonomyBuilder.CAN_REVERSE, true);
@@ -1300,17 +1282,14 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.open(Arrays.asList(page));
 
-        session.getStore().createConfiguration("AMG", null);
-        session.getStore().setActiveConfiguration("AMG");
+        activeConfiguration("AMG");
 
-        TileKey west = new TileKey("main", 1, 1);
-        TileKey east = new TileKey("main", 5, 1);
+        TileKey west = onMain(1, 1);
+        TileKey east = onMain(5, 1);
 
-        session.setStation(west, true);
-        session.setPointName(west, "WestEnd");
+        namedStationInSession(west, "WestEnd");
 
-        session.setStation(east, true);
-        session.setPointName(east, "EastEnd");
+        namedStationInSession(east, "EastEnd");
 
         session.setPointFlag(west, AutonomyBuilder.MUST_REVERSE, true);
 
@@ -1367,14 +1346,12 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         session.open(Arrays.asList(pageWithATwoEndedStation()));
         session.initialize("OneCopy");
 
-        TileKey west = new TileKey("main", 1, 1);
-        TileKey middle = new TileKey("main", 3, 1);
-        TileKey east = new TileKey("main", 5, 1);
+        TileKey west = onMain(1, 1);
+        TileKey middle = onMain(3, 1);
+        TileKey east = onMain(5, 1);
 
-        session.setStation(middle, true);
-        session.setPointName(middle, "Middle");
-        session.setStation(east, true);
-        session.setPointName(east, "EastEnd");
+        namedStationInSession(middle, "Middle");
+        namedStationInSession(east, "EastEnd");
         session.setPointFlag(east, AutonomyBuilder.CAN_REVERSE, true);
         session.rebuild();
 
@@ -1406,14 +1383,12 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         session.open(Arrays.asList(pageWithATwoEndedStation()));
         session.initialize("Barred");
 
-        TileKey west = new TileKey("main", 1, 1);
-        TileKey middle = new TileKey("main", 3, 1);
+        TileKey west = onMain(1, 1);
+        TileKey middle = onMain(3, 1);
 
-        session.setStation(west, true);
-        session.setPointName(west, "WestEnd");
+        namedStationInSession(west, "WestEnd");
         session.setPointFlag(west, AutonomyBuilder.CAN_REVERSE, true);
-        session.setStation(middle, true);
-        session.setPointName(middle, "Middle");
+        namedStationInSession(middle, "Middle");
         session.rebuild();
 
         assertFalse(strandedNames().contains("Middle"),
@@ -1451,8 +1426,8 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         session.open(Arrays.asList(platformWithTwoApproaches()));
         session.initialize("Closed");
 
-        TileKey platform = new TileKey("main", 5, 1);
-        TileKey other = new TileKey("main", 1, 1);
+        TileKey platform = onMain(5, 1);
+        TileKey other = onMain(1, 1);
 
         session.setStation(platform, true);
         session.setStation(other, true);
@@ -1493,7 +1468,7 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
         session.open(Arrays.asList(pageWithATwoEndedStation()));
         session.initialize("Termini");
 
-        TileKey middle = new TileKey("main", 3, 1);
+        TileKey middle = onMain(3, 1);
 
         session.setStation(middle, true);
         session.setPointProperty(middle, "mustReverse", Boolean.TRUE);
@@ -1585,10 +1560,9 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
 
         session.open(Arrays.asList(page));
 
-        TileKey station = new TileKey("main", 3, 1);
+        TileKey station = onMain(3, 1);
 
-        session.setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStationInSession(station, "Bahnhof");
 
         session.setBarredArrivals(station,
             new java.util.LinkedHashSet<>(session.arrivalSides(station)));
@@ -1627,12 +1601,11 @@ public class testTheEditorWarnsOfARailwayThatCannotWork extends AutonomySessionF
     {
         session.open(Arrays.asList(deadEndRun()));
 
-        session.getStore().createConfiguration("CutOff", null);
-        session.getStore().setActiveConfiguration("CutOff");
+        activeConfiguration("CutOff");
 
-        final TileKey near = new TileKey("main", 1, 1);
-        final TileKey middle = new TileKey("main", 4, 1);
-        final TileKey far = new TileKey("main", 7, 1);
+        final TileKey near = onMain(1, 1);
+        final TileKey middle = onMain(4, 1);
+        final TileKey far = onMain(7, 1);
 
         session.setStation(near, true);
         session.setStation(far, true);
