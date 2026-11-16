@@ -270,7 +270,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private String lastMessage;
     
     // Is this a CS3?
-    private boolean isCS3 = false;
+    private volatile boolean isCS3 = false;
 
     // The accessory UIDs this sync's pages show as both a switch and a signal (syncLayouts); see wireComponents (OB-405)
     private Set<Integer> mixedAddresses = Collections.emptySet();

@@ -505,8 +505,11 @@ public final class CS2File
         this.readThisSync.clear();
     }
 
-    /** fetchURL, once per sync for the syncing thread; a fetch that fails is never kept, so asking again fetches again. */
-    private BufferedReader fetchOnce(String url) throws Exception
+    /**
+     * fetchURL, once per sync for the syncing thread; a fetch that fails is never kept, so asking again fetches again.
+     * Not private: SpotBugs' throws-clause check does not see a private callee's `throws Exception`.
+     */
+    BufferedReader fetchOnce(String url) throws Exception
     {
         if (Thread.currentThread() != this.syncing) return fetchURL(url);
 
