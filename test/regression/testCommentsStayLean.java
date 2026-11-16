@@ -35,6 +35,13 @@ import org.testng.annotations.Test;
  * so a prefix added to it is guarded from that day.  OB, MT and FR are Adam's tracker ids, which comments may cite, and
  * are not counted.  The generated regions are counted too.</li>
  * </ul>
+ * Two more ratchets read `COMMENT_PINS` (a file beside this one), one line per file of `src/` that needs one: COMMENT
+ * SHARE, the comment characters (`//`, block and javadoc, delimiters included) as a fraction of the file, in tenths of
+ * a percent, and PRIVATE JAVADOC, the javadoc blocks of over 3 lines on a declaration that is neither public nor
+ * protected (interface members count, as they have no modifier).  A file not in the pins may carry up to
+ * `SHARE_CEILING` and no long private javadoc, and a file under `SHARE_FLOOR` characters is exempt from the share; a
+ * pinned file may not rise above its pin.
+ *
  * The first two count `test/` too, under pins of its own.  Not counted by them: the NetBeans generated regions (from a line holding `//GEN-BEGIN` to the one
  * holding `//GEN-END`, which includes the "Variables declaration - do not modify" block).
  *
@@ -60,6 +67,21 @@ import org.testng.annotations.Test;
 public class testCommentsStayLean
 {
     private static final int BLOCK_LINES = 15;
+
+    /** Where the per-file pins live: `path<TAB>share in tenths of a percent, or -<TAB>count`, `#` for comments. */
+    private static final String COMMENT_PINS = "test/regression/commentShare.pins";
+
+    /** The share, in tenths of a percent, a file without a pin may carry (all of `src/` stood at 29.0% when set). */
+    private static final int SHARE_CEILING = 250;
+
+    /** A file with fewer characters than this has no share ceiling: a few lines of javadoc are most of it. */
+    private static final int SHARE_FLOOR = 1000;
+
+    /** Tenths a pin may stand above its file's share before the failure asks for it to be lowered. */
+    private static final int SHARE_SLACK = 20;
+
+    /** Javadoc blocks over this many lines on a non-public, non-protected declaration are counted. */
+    private static final int PRIVATE_JAVADOC_LINES = 3;
 
     private static final String LEAN_ADVICE = "see CLAUDE.md, 'Comments stay lean': state the current rule, put history "
         + "in the commit message.";
@@ -146,7 +168,7 @@ public class testCommentsStayLean
     {
         Map<String, List<String>> found = new TreeMap<>();
 
-        scanSource(new String[]{"src"}, found, null, null);
+        scanSource(new String[]{"src"}, found, null, null, null);
 
         ratchet("lines of history in comments", found, HISTORY_ALLOWED, HISTORY_BY_FILE, "HISTORY_ALLOWED",
             "HISTORY_BY_FILE", "a comment line with a date, 'used to', 'Round N' or 'found by <reviewer>' in it",
@@ -158,7 +180,7 @@ public class testCommentsStayLean
     {
         Map<String, List<String>> found = new TreeMap<>();
 
-        scanSource(new String[]{"src"}, null, found, null);
+        scanSource(new String[]{"src"}, null, found, null, null);
 
         ratchet("comment blocks over " + BLOCK_LINES + " lines", found, LONG_BLOCKS_ALLOWED, LONG_BLOCKS_BY_FILE,
             "LONG_BLOCKS_ALLOWED", "LONG_BLOCKS_BY_FILE", "a run of more than " + BLOCK_LINES
@@ -170,7 +192,7 @@ public class testCommentsStayLean
     {
         Map<String, List<String>> found = new TreeMap<>();
 
-        scanSource(new String[]{"test"}, found, null, null);
+        scanSource(new String[]{"test"}, found, null, null, null);
 
         ratchet("lines of history in test comments", found, TEST_HISTORY_ALLOWED, TEST_HISTORY_BY_FILE,
             "TEST_HISTORY_ALLOWED", "TEST_HISTORY_BY_FILE", "a comment line with a date, 'used to', 'Round N' or "
@@ -182,7 +204,7 @@ public class testCommentsStayLean
     {
         Map<String, List<String>> found = new TreeMap<>();
 
-        scanSource(new String[]{"test"}, null, found, null);
+        scanSource(new String[]{"test"}, null, found, null, null);
 
         ratchet("test comment blocks over " + BLOCK_LINES + " lines", found, TEST_LONG_BLOCKS_ALLOWED,
             TEST_LONG_BLOCKS_BY_FILE, "TEST_LONG_BLOCKS_ALLOWED", "TEST_LONG_BLOCKS_BY_FILE", "a run of more than "
@@ -195,10 +217,128 @@ public class testCommentsStayLean
     {
         Map<String, List<String>> found = new TreeMap<>();
 
-        scanSource(new String[]{"src", "test"}, null, null, found);
+        scanSource(new String[]{"src", "test"}, null, null, found, null);
 
         ratchet("review ids in comments", found, IDS_ALLOWED, IDS_BY_FILE, "IDS_ALLOWED", "IDS_BY_FILE",
             "a review-finding id in a comment", "Review ids stay out of comments: see CLAUDE.md.");
+    }
+
+    /**
+     * A file's comments, as a share of its characters, stay under its pin (or, with no pin, under the ceiling).  A trim
+     * that takes a pinned file more than SHARE_SLACK below its pin fails until the pin is lowered.
+     *
+     * MUTATION: add a 40-line comment to a pinned file or to an unpinned one, and this fails naming the file, its share
+     * and its pin; or raise a file's pin in the pins file by 30 above its share, and this fails asking for it to be lowered.
+     */
+    @Test
+    public void testCommentShareOnlyGoesDown() throws Exception
+    {
+        Map<String, int[]> shapes = new TreeMap<>();
+
+        scanSource(new String[]{"src"}, null, null, null, shapes);
+
+        Map<String, int[]> pins = readPins();
+
+        List<String> failures = new ArrayList<>();
+
+        for (Map.Entry<String, int[]> each : shapes.entrySet())
+        {
+            String file = each.getKey();
+
+            int[] shape = each.getValue();
+
+            int share = shape[1] < SHARE_FLOOR ? 0 : shape[0];
+
+            int[] pin = pins.get(file);
+
+            boolean pinned = pin != null && pin[0] >= 0;
+
+            int limit = pinned ? pin[0] : SHARE_CEILING;
+
+            String what = file + " has " + tenths(share) + " of its characters in comments, " + (pinned
+                ? "pinned at " + tenths(limit) : "above the " + tenths(SHARE_CEILING) + " ceiling for a file without a pin");
+
+            if (share > limit)
+            {
+                failures.add(what + ": trim its comments to the current rule (CLAUDE.md, 'Comments stay lean'); if you "
+                    + "trimmed and the pin is above the new share, lower the pin in " + COMMENT_PINS + ".  Never raise it.");
+            }
+            else if (pinned && share < limit - SHARE_SLACK)
+            {
+                failures.add(what + ": it is down to " + tenths(share) + ", so lower its pin in " + COMMENT_PINS
+                    + " to " + share + " to keep the gain.");
+            }
+        }
+
+        assertTrue(failures.isEmpty(), "comment share: " + String.join("\n", failures));
+    }
+
+    /**
+     * The long javadoc on non-public declarations only goes down, per file, and a file without a pin has none.
+     *
+     * MUTATION: put a 5-line javadoc on a private method of an unpinned file, or lower a pinned count by one in the
+     * pins file, and this fails naming the file, its count and its pin.
+     */
+    @Test
+    public void testLongPrivateJavadocOnlyGoesDown() throws Exception
+    {
+        Map<String, int[]> shapes = new TreeMap<>();
+
+        scanSource(new String[]{"src"}, null, null, null, shapes);
+
+        Map<String, int[]> pins = readPins();
+
+        List<String> failures = new ArrayList<>();
+
+        for (Map.Entry<String, int[]> each : shapes.entrySet())
+        {
+            int[] pin = pins.get(each.getKey());
+
+            int allowed = pin == null ? 0 : pin[1];
+
+            int count = each.getValue()[2];
+
+            if (count > allowed)
+            {
+                failures.add(each.getKey() + " has " + count + " javadoc blocks of over " + PRIVATE_JAVADOC_LINES
+                    + " lines on private or package-private declarations, pinned at " + allowed
+                    + ": cut them to " + PRIVATE_JAVADOC_LINES + " lines or fewer (CLAUDE.md).  Never raise the pin.");
+            }
+            else if (count < allowed)
+            {
+                failures.add(each.getKey() + " is down to " + count + " (pinned at " + allowed + "): lower its pin in "
+                    + COMMENT_PINS + " to keep the gain.");
+            }
+        }
+
+        assertTrue(failures.isEmpty(), "private javadoc: " + String.join("\n", failures));
+    }
+
+    private static String tenths(int tenths)
+    {
+        return (tenths / 10) + "." + (tenths % 10) + "%";
+    }
+
+    /** The pins by path: {share tenths or -1, long private javadoc blocks}.  A pin for a missing file fails. */
+    private Map<String, int[]> readPins() throws IOException
+    {
+        Map<String, int[]> pins = new TreeMap<>();
+
+        for (String line : Files.readAllLines(new File(COMMENT_PINS).toPath(), StandardCharsets.UTF_8))
+        {
+            if (line.startsWith("#") || line.trim().isEmpty()) continue;
+
+            String[] part = line.split("\t");
+
+            assertEquals(part.length, 3, COMMENT_PINS + " has a malformed line: " + line);
+
+            assertTrue(new File(part[0]).isFile(), COMMENT_PINS + " pins " + part[0] + ", which is gone: remove its line");
+
+            assertNull(pins.put(part[0], new int[] {part[1].equals("-") ? -1 : Integer.parseInt(part[1]),
+                Integer.parseInt(part[2])}), COMMENT_PINS + " pins " + part[0] + " twice");
+        }
+
+        return pins;
     }
 
     /**
@@ -331,9 +471,12 @@ public class testCommentsStayLean
             + " so the improvement is kept, and in " + listName + ": " + fell);
     }
 
-    /** Fills the maps asked for (the others may be null) with `path:line: text` for each offender, per file. */
+    /**
+     * Fills the maps asked for (the others may be null) with `path:line: text` for each offender, per file; `shapes`
+     * gets {comment share in tenths, rounded up; characters; long private javadoc blocks} per file.
+     */
     private void scanSource(String[] roots, Map<String, List<String>> history, Map<String, List<String>> longBlocks,
-        Map<String, List<String>> ids) throws IOException
+        Map<String, List<String>> ids, Map<String, int[]> shapes) throws IOException
     {
         List<File> files = new ArrayList<>();
 
@@ -363,7 +506,15 @@ public class testCommentsStayLean
 
             Map<Integer, List<String>> idLines = new LinkedHashMap<>();
 
-            scanFile(path, source, historyLines, blocks, idPattern, idLines);
+            int[] shape = new int[2];
+
+            scanFile(path, source, historyLines, blocks, idPattern, idLines, shape);
+
+            if (shapes != null)
+            {
+                shapes.put(path, new int[] {(shape[0] * 1000 + source.length() - 1) / Math.max(1, source.length()),
+                    source.length(), shape[1]});
+            }
 
             if (history != null && !historyLines.isEmpty())
             {
@@ -440,10 +591,10 @@ public class testCommentsStayLean
     /**
      * One file: the comment lines that carry a history marker (by line number), the long blocks (both leaving out the
      * generated regions) and the review ids.  Comments are found the way javac finds them, so a `//` or a quote inside a
-     * string literal is never a comment.
+     * string literal is never a comment.  `shape` receives the comment characters and the long private javadocs.
      */
     private void scanFile(String path, String source, Map<Integer, String> historyLines, List<String> blocks,
-        Pattern idPattern, Map<Integer, List<String>> idLines)
+        Pattern idPattern, Map<Integer, List<String>> idLines, int[] shape)
     {
         Set<Integer> generated = generatedLines(source);
 
@@ -484,6 +635,8 @@ public class testCommentsStayLean
 
                 noteIds(line, source.substring(i, end), idPattern, idLines);
 
+                shape[0] += end - i;
+
                 if (!codeOnLine && !generated.contains(line)) fullLineComments.add(line);
 
                 i = end;
@@ -506,6 +659,10 @@ public class testCommentsStayLean
                 }
 
                 boolean javadoc = text.startsWith("/**") && !text.startsWith("/**/");
+
+                shape[0] += text.length();
+
+                if (javadoc && parts.length > PRIVATE_JAVADOC_LINES && !isPublicOrProtected(source, end)) shape[1]++;
 
                 if (!javadoc && parts.length > BLOCK_LINES && !generated.contains(line))
                 {
@@ -540,6 +697,25 @@ public class testCommentsStayLean
 
             from = k;
         }
+    }
+
+    /** Whether the declaration after `from` has a public or protected modifier, looking before its `(`, `{`, `;` or `=`. */
+    private boolean isPublicOrProtected(String source, int from)
+    {
+        String rest = source.substring(from).trim();
+
+        while (rest.startsWith("@"))
+        {
+            int eol = rest.indexOf('\n');
+
+            rest = eol < 0 ? "" : rest.substring(eol + 1).trim();
+        }
+
+        Matcher end = Pattern.compile("[({;=]").matcher(rest);
+
+        String head = end.find() ? rest.substring(0, end.start()) : rest;
+
+        return Pattern.compile("\\b(?:public|protected)\\b").matcher(head).find();
     }
 
     private void noteHistory(String path, int line, String commentLine, Set<Integer> generated,
