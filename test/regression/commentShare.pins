@@ -118,7 +118,7 @@ src/org/traincontrol/gui/layouteditor/LayoutEditorReshape.java	467	11
 src/org/traincontrol/gui/layouteditor/LayoutEditorRightclickMenu.java	252	2
 src/org/traincontrol/gui/layouteditor/LayoutEditorSelection.java	373	16
 src/org/traincontrol/gui/layouteditor/LayoutEditorTrainDrag.java	-	3
-src/org/traincontrol/gui/layouteditor/LayoutEditorUndo.java	412	7
+src/org/traincontrol/gui/layouteditor/LayoutEditorUndo.java	396	4
 src/org/traincontrol/gui/locomotive/CurrentKeyRow.java	354	3
 src/org/traincontrol/gui/locomotive/LocIconCropDialog.java	342	16
 src/org/traincontrol/gui/locomotive/LocomotiveMenuItems.java	313	2
