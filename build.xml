@@ -113,6 +113,7 @@
         </macrodef>
 
         <test-one-class class="testAccessory"/>
+        <test-one-class class="testAStuckConsoleDoesNotStopTheRailway"/>
         <test-one-class class="testAdvancedRoutes"/>
         <test-one-class class="testAPathThatFailsPartWay"/>
         <test-one-class class="testAutoLayout"/>

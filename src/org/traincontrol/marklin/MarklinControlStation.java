@@ -64,6 +64,7 @@ import org.traincontrol.model.View;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.QueuedLogHandler;
 import org.traincontrol.util.Util;
 import static org.traincontrol.util.Util.escapeCsv;
 
@@ -231,11 +232,13 @@ public class MarklinControlStation implements ViewListener, ModelListener
             @Override
             public String format(LogRecord record)
             {
-                return String.format("%s %s%n", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(System.currentTimeMillis()), record.getMessage());
+                // The record's time, not the clock's: the line is written later, from another thread
+                return String.format("%s %s%n", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(record.getMillis()), record.getMessage());
             }
         });
-        
-        log.addHandler(consoleHandler);
+
+        // Through a queue, so that no thread that logs waits on the console (OB-421)
+        log.addHandler(new QueuedLogHandler(consoleHandler));
         
         // Initialize maps
         this.locDB = new RemoteDeviceCollection<>();
