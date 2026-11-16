@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.base.Accessory.accessorySetting;
@@ -963,29 +964,18 @@ public class AutonomyBuilder
 
         JSONArray edgeList = new JSONArray();
 
-        // Which emitted name pairs each reduced edge became, so a lock on one edge becomes a lock on every copy:
-        // over-locking rather than under, since all are still the same piece of track.
+        // Which emitted name pairs each reduced edge became, so a lock on one edge locks every copy.
         Map<ReducedEdge, List<String[]>> emitted = new LinkedHashMap<>();
 
         for (ReducedEdge edge : edges)
         {
             List<String[]> pairs = new ArrayList<>();
 
-            for (Node from : nodesFor(edge.getStart()))
+            eachCopyPair(edge, (from, to) -> pairs.add(new String[]
             {
-                if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival))) continue;
-
-                for (Node to : nodesFor(edge.getEnd()))
-                {
-                    if (!to.arrivesBy(edge.getEntrySide())) continue;
-
-                    pairs.add(new String[]
-                    {
-                        nodeName(names.get(edge.getStart()), from, taken),
-                        nodeName(names.get(edge.getEnd()), to, taken)
-                    });
-                }
-            }
+                nodeName(names.get(edge.getStart()), from, taken),
+                nodeName(names.get(edge.getEnd()), to, taken)
+            }));
 
             emitted.put(edge, pairs);
         }
@@ -1274,20 +1264,25 @@ public class AutonomyBuilder
 
             if (start == null || end == null) continue;
 
-            for (Node from : nodesFor(edge.getStart()))
-            {
-                if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival))) continue;
-
-                for (Node to : nodesFor(edge.getEnd()))
-                {
-                    if (!to.arrivesBy(edge.getEntrySide())) continue;
-
-                    out.put(nodeName(start, from, taken) + " -> " + nodeName(end, to, taken), edge);
-                }
-            }
+            eachCopyPair(edge,
+                (from, to) -> out.put(nodeName(start, from, taken) + " -> " + nodeName(end, to, taken), edge));
         }
 
         return out;
+    }
+
+    /** Each pair of copies the edge joins. */
+    private void eachCopyPair(ReducedEdge edge, BiConsumer<Node, Node> pair)
+    {
+        for (Node from : nodesFor(edge.getStart()))
+        {
+            if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival))) continue;
+
+            for (Node to : nodesFor(edge.getEnd()))
+            {
+                if (to.arrivesBy(edge.getEntrySide())) pair.accept(from, to);
+            }
+        }
     }
 
     /**

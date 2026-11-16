@@ -31,18 +31,17 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 67;
+    private static final int GROUPS_ALLOWED = 66;
 
     /**
      * The tokens standing in a second or later copy in `test/`, summed over its groups: an upper bound, so a commit that
      * removes copies need not touch it.  Never raise it; `docs/tools/codesize.py` prints the figure now, to lower it to.
      */
-    private static final long TEST_COPIED_TOKENS_ALLOWED = 177229;
+    private static final long TEST_COPIED_TOKENS_ALLOWED = 176598;
 
     /** Each group: the classes holding its copies with how many each, and the tokens of its longest copy. */
     private static final String[] GROUPS = {
         "AutonomyBuilder:1,AutonomyChecks:1 (75)",
-        "AutonomyBuilder:2 (62)",
         "AutonomyChecks:2 (63)",
         "AutonomyCompanionStore:2 (65)",
         "AutonomyCompanionStore:2 (64)",
