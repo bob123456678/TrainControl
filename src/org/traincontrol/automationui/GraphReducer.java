@@ -450,17 +450,15 @@ public class GraphReducer
                 return new Facing(next.at, next.arrived, next.place, here.home, passed);
             }, ReducedEdge::getCommands, there -> searchKey(there.at, there.arrived) + there.home + there.passed, there ->
             {
-                // Never onto the start's place again, nor to a place of the destination passed, as `Layout.bfsBySettings`
-                // never passes another copy of either end (`Point.isSamePlaceAs`); and a closed square is no destination
+                // Never onto the start's place again, as `Layout.bfsBySettings` never passes another copy of either end
+                // (`Point.isSamePlaceAs`); and a closed square is no destination
                 if (there.at.equals(from) && there.home.equals(from.toString()) || there.place.equals(there.home)
                     || closed != null && closed.contains(there.at)) return Reached.REFUSE;
 
-                // ARRIVED, unless the square refuses to be arrived at that way (OB-120): a barred side bars coming in and
-                // stopping, not passing through.
-                if (there.at.equals(to) && !refusesArrival(barred, to, there.arrived))
-                {
-                    return there.passed.contains(there.place) ? Reached.REFUSE : Reached.ARRIVE;
-                }
+                // ARRIVED, unless the square refuses to be arrived at that way (OB-120), a barred side barring coming in
+                // and stopping, not passing through; or its place was passed, then passed again as in `BuiltReach`
+                if (there.at.equals(to) && !refusesArrival(barred, to, there.arrived)
+                    && !there.passed.contains(there.place)) return Reached.ARRIVE;
 
                 return stopOnly.contains(there.at) ? Reached.STOP : Reached.PASS;
             });
