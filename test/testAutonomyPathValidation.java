@@ -81,10 +81,29 @@ public class testAutonomyPathValidation
      */
     private TestPath buildPath(int addressBase, String suffix) throws Exception
     {
+        return buildPath(addressBase, suffix, false);
+    }
+
+    /**
+     * The same, with the start a station when startIsStation, as a path autonomy picks must start (its sensor
+     * is addressBase + 4).
+     */
+    private TestPath buildPath(int addressBase, String suffix, boolean startIsStation) throws Exception
+    {
         TestPath tp = new TestPath();
 
         tp.layout = new Layout(model);
-        tp.layout.createPoint("A" + suffix, false, null);
+
+        if (startIsStation)
+        {
+            MarklinFeedback start = model.newFeedback(addressBase + 4, null);
+            model.setFeedbackState(start.getName(), false);
+            tp.layout.createPoint("A" + suffix, true, start.getName());
+        }
+        else
+        {
+            tp.layout.createPoint("A" + suffix, false, null);
+        }
 
         // Destination points require an s88 feedback; register one (named Integer.toString(id)) and keep
         // it clear so the path reads as available in isPathClear.
@@ -232,6 +251,12 @@ public class testAutonomyPathValidation
     }
 
     /**
+     * The validation period the busy-station claims run with.  Each echo buys two periods, a full second, so a
+     * stall of half a second on a loaded machine cannot end a wait that the stand-in station is keeping alive.
+     */
+    private static final int BUSY_PERIOD = 500;
+
+    /**
      * A full 13-byte accessory echo, as the Central Station sends it.  receiveMessage only routes a message
      * whose response bit (the low bit of the second byte) is set, and it drops a packet identical to the one
      * before it, so callers alternate settings or accessories.
@@ -258,16 +283,60 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * A stand-in station that sends the given echoes, one every 50 ms, until it runs out or is stopped.
+     * One thing the stand-in station does, after a pause.
+     */
+    private static class Step
+    {
+        final long pauseMs;
+        final Runnable action;
+
+        Step(long pauseMs, Runnable action)
+        {
+            this.pauseMs = pauseMs;
+            this.action = action;
+        }
+    }
+
+    /**
+     * Adds count echoes of acc, alternating turned and straight, one every 50 ms.
+     */
+    private static void busyWith(List<Step> steps, MarklinAccessory acc, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            boolean switched = i % 2 == 0;
+            steps.add(new Step(50, () -> model.receiveMessage(accessoryEcho(acc, switched))));
+        }
+    }
+
+    /**
+     * Adds an echo of acc after the given pause.
+     */
+    private static void answer(List<Step> steps, long pauseMs, MarklinAccessory acc, boolean switched)
+    {
+        steps.add(new Step(pauseMs, () -> model.receiveMessage(accessoryEcho(acc, switched))));
+    }
+
+    /**
+     * The track power going off, as the Central Station reports it.
+     */
+    private static void powerOff(List<Step> steps)
+    {
+        steps.add(new Step(50, () -> model.receiveMessage(new CS2Message(CS2Message.CMD_SYSTEM,
+            new byte[] { 0, 0, 0, 0, (byte) CS2Message.CMD_SYSSUB_STOP }))));
+    }
+
+    /**
+     * A stand-in station that runs its steps until it runs out or is stopped.
      */
     private static class Station extends Thread
     {
-        private final List<CS2Message> echoes;
+        private final List<Step> steps;
         private volatile boolean stopped = false;
 
-        Station(List<CS2Message> echoes)
+        Station(List<Step> steps)
         {
-            this.echoes = echoes;
+            this.steps = steps;
             this.setDaemon(true);
         }
 
@@ -276,12 +345,13 @@ public class testAutonomyPathValidation
         {
             try
             {
-                for (CS2Message m : echoes)
+                for (Step s : steps)
                 {
+                    Thread.sleep(s.pauseMs);
+
                     if (stopped) return;
 
-                    model.receiveMessage(m);
-                    Thread.sleep(50);
+                    s.action.run();
                 }
             }
             catch (InterruptedException ex)
@@ -298,13 +368,14 @@ public class testAutonomyPathValidation
     }
 
     /**
-     * Configures the path with the simulated echo off, so its switches are answered only by the stand-in
-     * station.  Returns how long configureAndLockPath took, in ms, and puts its result in result[0].
+     * Configures the path with BUSY_PERIOD and the simulated echo off, so its switches are answered only by the
+     * stand-in station.  Returns how long configureAndLockPath took, in ms, and puts its result in result[0].
      */
-    private long timePathWithStation(TestPath tp, List<CS2Message> echoes, boolean[] result) throws Exception
+    private long timePathWithStation(TestPath tp, List<Step> steps, boolean[] result) throws Exception
     {
         MarklinControlStation.DEBUG_SIMULATE_PACKETS = false;
-        Station station = new Station(echoes);
+        Layout.PATH_VALIDATION_MS = BUSY_PERIOD;
+        Station station = new Station(steps);
 
         try
         {
@@ -316,16 +387,25 @@ public class testAutonomyPathValidation
         finally
         {
             station.finish();
+            Layout.PATH_VALIDATION_MS = 100;
             MarklinControlStation.DEBUG_SIMULATE_PACKETS = true;
         }
     }
 
     /**
+     * The longest a busy station is waited for, in ms.
+     */
+    private static long busyCap()
+    {
+        return (long) BUSY_PERIOD * Layout.PATH_VALIDATION_BUSY_MAX;
+    }
+
+    /**
      * A station still answering other accessories is waited for: a CS3 switches one at a time, about a second
      * each, so a path's switches can be answered long after PATH_VALIDATION_MS * (switches + 1).  Here the
-     * path's two switches are answered after 1.5 s of echoes for another switch, five times the plain deadline.
+     * path's two switches are answered after 3 s of echoes for another switch, twice the plain deadline.
      */
-    @Test(timeOut = 30000)
+    @Test(timeOut = 60000)
     public void testABusyStationIsWaitedFor() throws Exception
     {
         model.go();
@@ -334,27 +414,53 @@ public class testAutonomyPathValidation
         TestPath tp = buildPath(140, "_busy");
         MarklinAccessory other = model.newSwitch(143, MM2, false);
 
-        List<CS2Message> echoes = new ArrayList<>();
-
-        for (int i = 0; i < 30; i++)
-        {
-            echoes.add(accessoryEcho(other, i % 2 == 0));
-        }
-
-        echoes.add(accessoryEcho(tp.acc1, true));
-        echoes.add(accessoryEcho(tp.acc2, true));
+        List<Step> steps = new ArrayList<>();
+        busyWith(steps, other, 60);
+        answer(steps, 50, tp.acc1, true);
+        answer(steps, 50, tp.acc2, true);
 
         boolean[] result = new boolean[1];
-        timePathWithStation(tp, echoes, result);
+        timePathWithStation(tp, steps, result);
 
         assertTrue(result[0], "A path whose switches are answered after a busy station's backlog must pass");
+    }
+
+    /**
+     * After another train's backlog a CS3 answers the path's own switches about a second apart, so each of those
+     * answers keeps the wait alive too.  Otherwise the third switch lands after the deadline the backlog left,
+     * every time, and the train is stopped with "could not be confirmed".
+     */
+    @Test(timeOut = 60000)
+    public void testThreeSwitchesAnsweredAboutAPeriodApartAfterABacklogPass() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildPath(180, "_three");
+        MarklinAccessory acc3 = model.newSwitch(182, MM2, false);
+        tp.path.get(0).addConfigCommand(acc3.getName(), accessorySetting.TURN);
+        MarklinAccessory other = model.newSwitch(183, MM2, false);
+
+        long apart = BUSY_PERIOD * 9 / 10;
+
+        List<Step> steps = new ArrayList<>();
+        busyWith(steps, other, 60);
+        answer(steps, apart, tp.acc1, true);
+        answer(steps, apart, tp.acc2, true);
+        answer(steps, apart, acc3, true);
+
+        boolean[] result = new boolean[1];
+        timePathWithStation(tp, steps, result);
+
+        assertTrue(result[0], "Three switches answered about a period apart after a backlog must pass");
+        assertEquals(tp.layout.getPathValidationFailureCount(), 0, "Nothing may be counted against the accessories");
     }
 
     /**
      * A station that keeps answering other accessories but never ours is waited for only up to
      * PATH_VALIDATION_BUSY_MAX periods, so a lost echo cannot hold the train forever.
      */
-    @Test(timeOut = 30000)
+    @Test(timeOut = 60000)
     public void testABusyStationIsWaitedForOnlyUpToTheCap() throws Exception
     {
         model.go();
@@ -364,28 +470,24 @@ public class testAutonomyPathValidation
         MarklinAccessory other = model.newSwitch(153, MM2, false);
 
         // Far longer than the cap: the station is stopped once the path gives up
-        List<CS2Message> echoes = new ArrayList<>();
-
-        for (int i = 0; i < 400; i++)
-        {
-            echoes.add(accessoryEcho(other, i % 2 == 0));
-        }
+        List<Step> steps = new ArrayList<>();
+        busyWith(steps, other, (int) (busyCap() / 50) * 2);
 
         boolean[] result = new boolean[1];
-        long elapsed = timePathWithStation(tp, echoes, result);
-        long cap = (long) Layout.PATH_VALIDATION_MS * Layout.PATH_VALIDATION_BUSY_MAX;
+        long elapsed = timePathWithStation(tp, steps, result);
 
         assertFalse(result[0], "A path whose switches are never answered must fail");
-        assertTrue(elapsed >= cap, "The busy station must be waited for up to the cap, but the path failed after "
-            + elapsed + " ms (cap " + cap + " ms)");
-        assertTrue(elapsed < cap + 2500, "The cap must end the wait, but the path took " + elapsed + " ms (cap "
-            + cap + " ms)");
+        assertTrue(elapsed >= busyCap(), "The busy station must be waited for up to the cap, but the path failed "
+            + "after " + elapsed + " ms (cap " + busyCap() + " ms)");
+        assertTrue(elapsed < busyCap() + 2500, "The cap must end the wait, but the path took " + elapsed + " ms (cap "
+            + busyCap() + " ms)");
     }
 
     /**
-     * A silent station still fails at the plain deadline, PATH_VALIDATION_MS * (switches + 1).
+     * A silent station still fails at the plain deadline, PATH_VALIDATION_MS * (switches + 1), well short of the
+     * cap.
      */
-    @Test(timeOut = 30000)
+    @Test(timeOut = 60000)
     public void testASilentStationStillTimesOutOnTime() throws Exception
     {
         model.go();
@@ -397,14 +499,15 @@ public class testAutonomyPathValidation
         long elapsed = timePathWithStation(tp, new ArrayList<>(), result);
 
         assertFalse(result[0], "A path whose switches are never answered must fail");
-        assertTrue(elapsed < 1500, "A silent station must not be waited for, but the path took " + elapsed + " ms");
+        assertTrue(elapsed < busyCap() / 2, "A silent station must not be waited for, but the path took " + elapsed
+            + " ms");
     }
 
     /**
-     * Echoes of the path's own switches do not count as a busy station: a path that the station keeps
-     * reporting in the wrong position still fails at the plain deadline.
+     * Echoes of the path's own switches in the wrong position do not count as a busy station: a path that the
+     * station keeps reporting switched back still fails at the plain deadline, well short of the cap.
      */
-    @Test(timeOut = 30000)
+    @Test(timeOut = 60000)
     public void testEchoesOfThePathsOwnSwitchesDoNotExtendTheWait() throws Exception
     {
         model.go();
@@ -413,19 +516,139 @@ public class testAutonomyPathValidation
         TestPath tp = buildPath(170, "_own");
 
         // Both switches answered straight, the opposite of the path's TURN, for far longer than the cap
-        List<CS2Message> echoes = new ArrayList<>();
+        List<Step> steps = new ArrayList<>();
 
-        for (int i = 0; i < 400; i++)
+        for (int i = 0; i < (int) (busyCap() / 50) * 2; i++)
         {
-            echoes.add(accessoryEcho(i % 2 == 0 ? tp.acc1 : tp.acc2, false));
+            answer(steps, 50, i % 2 == 0 ? tp.acc1 : tp.acc2, false);
         }
 
         boolean[] result = new boolean[1];
-        long elapsed = timePathWithStation(tp, echoes, result);
+        long elapsed = timePathWithStation(tp, steps, result);
 
         assertFalse(result[0], "A path its own switches contradict must fail");
-        assertTrue(elapsed < 1500, "Echoes of the path's own switches must not extend the wait, but the path took "
-            + elapsed + " ms");
+        assertTrue(elapsed < busyCap() / 2, "Echoes of the path's own switches in the wrong position must not "
+            + "extend the wait, but the path took " + elapsed + " ms");
+    }
+
+    /**
+     * The track power going off ends the wait: a station that goes on answering after the cut must not confirm
+     * the path, or the train would set off as soon as the power came back.  The train stays where it is, and
+     * nothing is counted against the accessories.
+     */
+    @Test(timeOut = 60000)
+    public void testAPowerCutDuringTheWaitKeepsTheTrainBack() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildPath(190, "_power");
+        MarklinAccessory other = model.newSwitch(193, MM2, false);
+
+        List<Step> steps = new ArrayList<>();
+        busyWith(steps, other, 10);
+        powerOff(steps);
+        busyWith(steps, other, 10);
+        answer(steps, 50, tp.acc1, true);
+        answer(steps, 50, tp.acc2, true);
+
+        boolean[] result = new boolean[1];
+
+        try
+        {
+            timePathWithStation(tp, steps, result);
+        }
+        finally
+        {
+            model.go();
+            waitForPower(true, 1000);
+        }
+
+        assertFalse(result[0], "A path whose wait the power cut ended must not be run");
+        assertEquals(tp.layout.getPathValidationFailureCount(), 0, "A power cut is not a misconfigured path");
+        assertFalse(tp.path.get(0).isOccupied(dummyLoc()), "The path must be released");
+    }
+
+    /**
+     * Stopping autonomy gracefully ends the wait of a train autonomy sent: it does not depart, and nothing is
+     * counted against the accessories.
+     */
+    @Test(timeOut = 60000)
+    public void testStoppingAutonomyDuringTheWaitKeepsTheTrainBack() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildPath(200, "_stop", true);
+        MarklinAccessory other = model.newSwitch(203, MM2, false);
+
+        // A run with no locomotives of its own, so only this path is sent
+        tp.layout.runLocomotives();
+        assertTrue(tp.layout.isPathClear(tp.path, dummyLoc()), "precondition: autonomy may send this path");
+
+        List<Step> steps = new ArrayList<>();
+        busyWith(steps, other, 10);
+        steps.add(new Step(50, () -> tp.layout.stopLocomotives()));
+        busyWith(steps, other, 10);
+        answer(steps, 50, tp.acc1, true);
+        answer(steps, 50, tp.acc2, true);
+
+        boolean[] result = new boolean[1];
+
+        try
+        {
+            timePathWithStation(tp, steps, result);
+        }
+        finally
+        {
+            tp.layout.stopLocomotives();
+        }
+
+        assertFalse(result[0], "A train autonomy sent must not depart after autonomy was stopped");
+        assertEquals(tp.layout.getPathValidationFailureCount(), 0, "A stop is not a misconfigured path");
+        assertFalse(tp.path.get(0).isOccupied(dummyLoc()), "The path must be released");
+    }
+
+    /**
+     * No train is given a speed while the power is off, even with Path Integrity Validation turned off: the
+     * station would remember the speed and the train would set off when the power came back.
+     */
+    @Test(timeOut = 60000)
+    public void testNoTrainDepartsWhileThePowerIsOff() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        TestPath tp = buildPath(210, "_off");
+        MarklinLocomotive loc = dummyLoc();
+        tp.layout.getPoint("A_off").setLocomotive(loc);
+
+        boolean[] result = { true };
+        Thread send = new Thread(() -> result[0] = tp.layout.executePath(tp.path, loc, 30, null));
+        send.setDaemon(true);
+
+        Layout.PATH_INTEGRITY_VALIDATION = false;
+
+        try
+        {
+            model.stop();
+            waitForPower(false, 1000);
+            assertFalse(model.getPowerState(), "precondition: the power is off");
+
+            send.start();
+            send.join(5000);
+        }
+        finally
+        {
+            Layout.PATH_INTEGRITY_VALIDATION = true;
+            model.go();
+            waitForPower(true, 1000);
+        }
+
+        assertFalse(send.isAlive(), "The train must not have been sent on its way");
+        assertFalse(result[0], "executePath must refuse while the power is off");
+        assertEquals(loc.getSpeed(), 0, "The train must not have been given a speed");
+        assertFalse(tp.path.get(0).isOccupied(dummyLoc()), "The path must be released");
     }
 
     /**
