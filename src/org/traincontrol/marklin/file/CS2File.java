@@ -2097,37 +2097,38 @@ public final class CS2File
             }
         }
 
+        // The pages are read before any is written, and the index is written last: an index naming a page whose fetch
+        // failed sent the next load to a missing file, and that load cleared the local-layout override
+        String index = readAll(gleisbild);
+        File layoutsDir = new File(configDir, "gleisbilder");
+        Map<File, String> pages = new java.util.LinkedHashMap<>();
+
+        for (String layoutName : parseLayoutList(new BufferedReader(new StringReader(index))))
+        {
+            // Sanitised, and matching what getLayoutURL will look for when this folder is read back.
+            // The remote fetch is unaffected: it goes through sanitizeURL on the http branch.
+            LayoutDiagram page = read.get(layoutName);
+            String served = readAll(getLayoutURL(layoutName));
+
+            pages.put(new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2"),
+                page == null ? served : page.withSavedProtocols(served));
+        }
+
+        if (!layoutsDir.exists())
+        {
+            layoutsDir.mkdirs();
+        }
+
         // UTF-8 explicitly, not the platform default: FileWriter would encode in Cp1252 on the
         // Windows/Java 8 configuration this targets, while the only reader of these files -
         // CS2File.fetchURL - decodes UTF-8 whenever the bytes are valid UTF-8.  A layout page whose name contains a
         // non-ASCII character was written in one encoding and read back in another, so the name came
         // back mangled, the file it pointed at could not be found, and syncWithCS2 responded by
         // silently clearing the local-layout override.
-        copyAtomically(fetchURL(gleisbild), masterLayoutFile);
-        
-        // Process layout list and write files to localPath/config/gleisbilder/<layoutName>.cs2
-        File layoutsDir = new File(configDir, "gleisbilder");
-        if (!layoutsDir.exists())
-        {
-            layoutsDir.mkdirs();
-        }
-        
-        for (String layoutName : parseLayoutList())
-        {
-            // Sanitised, and matching what getLayoutURL will look for when this folder is read back.
-            // The remote fetch above is unaffected: it goes through sanitizeURL on the http branch.
-            File layoutFile = new File(layoutsDir, sanitizeFilename(layoutName) + ".cs2");
-            LayoutDiagram page = read.get(layoutName);
+        for (Map.Entry<File, String> page : pages.entrySet()) copyAtomically(page.getValue(), page.getKey());
 
-            copyAtomically(page == null ? fetchURL(getLayoutURL(layoutName))
-                : new BufferedReader(new StringReader(page.withSavedProtocols(readAll(getLayoutURL(layoutName))))),
-                layoutFile);
-        }
-        
-        // Download the accessory file      
-        File magsFile = new File(configDir, "magnetartikel.cs2");
-
-        copyAtomically(mags == null ? fetchURL(this.getMagURL(false)) : new BufferedReader(new StringReader(mags)), magsFile);
+        copyAtomically(mags != null ? mags : readAll(this.getMagURL(false)), new File(configDir, "magnetartikel.cs2"));
+        copyAtomically(index, masterLayoutFile);
     }
 
     /** A URL's whole text, its lines joined by "\n". */
@@ -2150,9 +2151,9 @@ public final class CS2File
      * @param target where it goes
      * @throws Exception if the fetch or the write fails, with the previous file untouched
      */
-    private void copyAtomically(BufferedReader fetched, File target) throws Exception
+    private void copyAtomically(String fetched, File target) throws Exception
     {
-        try (BufferedReader reader = fetched)
+        try (BufferedReader reader = new BufferedReader(new StringReader(fetched)))
         {
             Util.writeAtomically(target, out ->
             {
@@ -2183,9 +2184,9 @@ public final class CS2File
      * @return
      * @throws Exception 
      */
-    private List<String> parseLayoutList() throws Exception
+    private List<String> parseLayoutList(BufferedReader index) throws Exception
     {
-        List<Map<String, String> > l = parseFile(fetchURL(getLayoutMasterURL()));
+        List<Map<String, String> > l = parseFile(index);
         
         List<String> out = new ArrayList<>();
         
@@ -2381,7 +2382,7 @@ public final class CS2File
      */
     public List<LayoutDiagram> parseLayout(List<MarklinAccessory> accDB) throws Exception
     {
-        List<String> names = this.parseLayoutList();
+        List<String> names = this.parseLayoutList(fetchURL(getLayoutMasterURL()));
         
         List<LayoutDiagram> out = new ArrayList<>();
         
