@@ -11,15 +11,16 @@ import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
 /**
- * Blank lines stay lean (FR-230): in `src/`, outside the NetBeans generated regions (a line holding `//GEN-BEGIN:`
- * through the one holding `//GEN-END:`), no two blank lines in a row, no blank line right after a line ending in `{`,
+ * Blank lines stay lean (FR-230): in `src/`, outside the NetBeans generated code (a line holding `//GEN-BEGIN:`
+ * through the one holding `//GEN-END:`, an event handler from `//GEN-FIRST:` through `//GEN-LAST:`, and the blank line
+ * NetBeans puts before a handler), no two blank lines in a row, no blank line right after a line ending in `{`,
  * none right before a line that is only `}`, and the total of blank lines outside generated code (whitespace-only
  * lines) never rises, so NetBeans regenerating a form never fails it.  One blank line between paragraphs of code is the house style and stays.
  */
 public class testBlankLinesStayLean
 {
     /** Blank lines in `src/` outside generated code, as they stand.  Lower it whenever some go; never raise it. */
-    private static final int BLANK_ALLOWED = 30297;
+    private static final int BLANK_ALLOWED = 29825;
 
     /** Padding as it stands: lines that follow another blank line, follow a `{` line, or precede a lone `}`. */
     private static final int RUNS_ALLOWED = 0;
@@ -111,6 +112,27 @@ public class testBlankLinesStayLean
         }
     }
 
+    /**
+     * A NetBeans event handler is generated code too: from `//GEN-FIRST:` through `//GEN-LAST:`, and the blank line
+     * NetBeans puts before it, so regenerating a form's handlers never fails the scan or the total.
+     *
+     * MUTATION: drop either `//GEN-FIRST:` test in `generated`, and this fails.
+     */
+    @Test
+    public void testTheScanSkipsEventHandlers()
+    {
+        String[] handler = {"class A", "{", "    int x;", "", "",
+            "    private void hit(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_hit", "", "", "        go();", "",
+            "    }//GEN-LAST:event_hit", "}"};
+
+        for (Kind kind : Kind.values()) assertEquals(scan(handler, kind).size(), 0, kind + " around an event handler");
+
+        boolean[] generated = generated(handler);
+
+        assertEquals(generated[3], false, "the blank line after code, two above the handler, is ours");
+        assertEquals(generated[4], true, "the blank line right before the handler is NetBeans's");
+    }
+
     private enum Kind { RUN, AFTER_OPEN, BEFORE_CLOSE }
 
     private void check(Kind kind, int allowed, String what) throws Exception
@@ -162,7 +184,7 @@ public class testBlankLinesStayLean
         return found;
     }
 
-    /** Which lines are NetBeans generated code: from the line holding `//GEN-BEGIN:` through the one holding `//GEN-END:`. */
+    /** NetBeans generated lines: `//GEN-BEGIN:` through `//GEN-END:`, and a handler with the blank line before it. */
     private static boolean[] generated(String[] text)
     {
         boolean[] generated = new boolean[text.length];
@@ -171,11 +193,12 @@ public class testBlankLinesStayLean
 
         for (int i = 0; i < text.length; i++)
         {
-            if (text[i].contains("//GEN-BEGIN:")) inside = true;
+            if (text[i].contains("//GEN-BEGIN:") || text[i].contains("//GEN-FIRST:")) inside = true;
 
-            generated[i] = inside;
+            generated[i] = inside
+                || text[i].trim().isEmpty() && i + 1 < text.length && text[i + 1].contains("//GEN-FIRST:");
 
-            if (text[i].contains("//GEN-END:")) inside = false;
+            if (text[i].contains("//GEN-END:") || text[i].contains("//GEN-LAST:")) inside = false;
         }
 
         return generated;

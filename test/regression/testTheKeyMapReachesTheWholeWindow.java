@@ -262,6 +262,8 @@ public class testTheKeyMapReachesTheWholeWindow
                 fail("the modal question never showed, so nothing could be pressed in it");
             }
 
+            // The keyboard follows the window a moment after it shows.
+            Components.waitFor(() -> question[0].isFocused(), 5000);
             Components.drain(5);
 
             java.awt.Component holding = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();

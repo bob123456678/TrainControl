@@ -64,7 +64,7 @@ src/org/traincontrol/gui/LayoutFileActions.java	304	11
 src/org/traincontrol/gui/LayoutGrid.java	261	5
 src/org/traincontrol/gui/LayoutLabel.java	334	20
 src/org/traincontrol/gui/LayoutMenus.java	-	11
-src/org/traincontrol/gui/LayoutPopupUI.java	338	9
+src/org/traincontrol/gui/LayoutPopupUI.java	338	8
 src/org/traincontrol/gui/LayoutRightclickAutonomyMenu.java	403	24
 src/org/traincontrol/gui/LocIconActions.java	332	14
 src/org/traincontrol/gui/LocomotiveActions.java	-	5
@@ -86,10 +86,9 @@ src/org/traincontrol/gui/SettledQuestion.java	495	0
 src/org/traincontrol/gui/StationCaptions.java	319	7
 src/org/traincontrol/gui/TailCrossedPrompt.java	359	11
 src/org/traincontrol/gui/TimetableTab.java	271	2
-src/org/traincontrol/gui/TrainControlUI.java	-	112
+src/org/traincontrol/gui/TrainControlUI.java	-	111
 src/org/traincontrol/gui/autonomy/ArrivalSidePrompt.java	524	4
-src/org/traincontrol/gui/autonomy/AutoJSONExport.java	-	1
-src/org/traincontrol/gui/autonomy/AutoLocomotiveStatus.java	364	13
+src/org/traincontrol/gui/autonomy/AutoLocomotiveStatus.java	364	12
 src/org/traincontrol/gui/autonomy/AutonomyBanner.java	401	9
 src/org/traincontrol/gui/autonomy/AutonomyReport.java	438	1
 src/org/traincontrol/gui/autonomy/DestinationTable.java	-	1
@@ -112,8 +111,8 @@ src/org/traincontrol/gui/autonomyeditor/StationWindowBase.java	266	6
 src/org/traincontrol/gui/autonomyeditor/StationWindows.java	285	2
 src/org/traincontrol/gui/autonomyeditor/TrainTab.java	-	2
 src/org/traincontrol/gui/layouteditor/FindAPointPrompt.java	-	2
-src/org/traincontrol/gui/layouteditor/LayoutEditor.java	291	73
-src/org/traincontrol/gui/layouteditor/LayoutEditorAddressPopup.java	-	3
+src/org/traincontrol/gui/layouteditor/LayoutEditor.java	291	72
+src/org/traincontrol/gui/layouteditor/LayoutEditorAddressPopup.java	-	2
 src/org/traincontrol/gui/layouteditor/LayoutEditorReshape.java	467	11
 src/org/traincontrol/gui/layouteditor/LayoutEditorRightclickMenu.java	252	2
 src/org/traincontrol/gui/layouteditor/LayoutEditorSelection.java	373	16
@@ -123,11 +122,8 @@ src/org/traincontrol/gui/locomotive/CurrentKeyRow.java	354	3
 src/org/traincontrol/gui/locomotive/LocIconCropDialog.java	342	16
 src/org/traincontrol/gui/locomotive/LocomotiveMenuItems.java	313	2
 src/org/traincontrol/gui/locomotive/LocomotivePlaceholder.java	358	3
-src/org/traincontrol/gui/locomotive/LocomotiveSelector.java	-	1
-src/org/traincontrol/gui/locomotive/LocomotiveSelectorItem.java	-	1
-src/org/traincontrol/gui/locomotive/LocomotiveStats.java	-	2
+src/org/traincontrol/gui/locomotive/LocomotiveStats.java	-	1
 src/org/traincontrol/gui/locomotive/UsageChart.java	-	1
-src/org/traincontrol/gui/widgets/About.java	-	1
 src/org/traincontrol/gui/widgets/AddressLabel.java	320	0
 src/org/traincontrol/gui/widgets/AxisRuler.java	453	1
 src/org/traincontrol/gui/widgets/BackupAction.java	395	3
