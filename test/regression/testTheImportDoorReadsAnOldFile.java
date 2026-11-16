@@ -3353,19 +3353,7 @@ public class testTheImportDoorReadsAnOldFile
 
             assertTrue(before >= 2, "precondition: " + train.getName() + " under way holds " + before + " points");
 
-            final java.lang.reflect.Method write = Reflect.method(TrainControlUI.class, "writeTheTurnsOwed");
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    write.invoke(ui[0]);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
+            support.TurnsOwed.write(ui[0]);
 
             assertEquals(pointsHeldBy(railway, train), before, "writing the turns during a run stood "
                 + train.getName() + ", under way from where it turned, on another copy of that square - sweeping it off"
@@ -3477,9 +3465,10 @@ public class testTheImportDoorReadsAnOldFile
 
             assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
-            final java.lang.reflect.Method arrow = TrainControlUI.class.getDeclaredMethod("facingArrowOf",
+            final Object captions = Reflect.get(TrainControlUI.class, ui, "stationCaptions");
+            final java.lang.reflect.Method arrow = captions.getClass().getDeclaredMethod("facingArrowOf",
                 org.traincontrol.automation.Point.class, TileKey.class);
-            final java.lang.reflect.Method labels = TrainControlUI.class.getDeclaredMethod("updateStationLabels",
+            final java.lang.reflect.Method labels = captions.getClass().getDeclaredMethod("updateStationLabels",
                 org.traincontrol.automation.Point.class);
 
             arrow.setAccessible(true);
@@ -3489,8 +3478,8 @@ public class testTheImportDoorReadsAnOldFile
             {
                 try
                 {
-                    labels.invoke(ui, at);
-                    arrow.invoke(ui, at, square);
+                    labels.invoke(captions, at);
+                    arrow.invoke(captions, at, square);
                     ui.getAutonomyPointForTile(square);
                     ui.getAutonomyOccupantsForTile(square);
                 }

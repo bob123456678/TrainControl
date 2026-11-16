@@ -43,6 +43,13 @@ public final class Diagrams
         }
     }
 
+    /** A square of this type at (x, y) with this orientation, address and raw address; MM2, no text, state 0. */
+    public static void put(LayoutDiagram page, componentType type, int x, int y, int orientation, int address, int raw)
+        throws IOException
+    {
+        page.addComponent(type, x, y, orientation, 0, address, raw, accessoryDecoderType.MM2, null);
+    }
+
     /** An unturned feedback (sensor) square at (x, y) with this address and raw address. */
     public static void feedback(LayoutDiagram page, int x, int y, int address, int raw) throws IOException
     {

@@ -54,16 +54,9 @@ public class testCancelUndoesAutonomyEdits
         model = frozen.model;
         ui = frozen.ui;
 
-        session = ui.getAutonomySession();
+        session = frozen.sessionOrFail("no autonomy configuration, so there is no autonomy mode to open");
 
-        if (session == null || session.getStore().getActiveConfiguration() == null)
-        {
-            throw new AssertionError("no autonomy configuration, so there is no autonomy mode to open");
-        }
-
-        page = model.getLayout(PAGE);
-
-        if (page == null) throw new AssertionError("no page " + PAGE);
+        page = frozen.pageOrFail(PAGE);
 
         // A CONFIGURATION LOADED, as on Adam's railway: the rebuild each gesture asks for, and the save inside it, run
         // only then.

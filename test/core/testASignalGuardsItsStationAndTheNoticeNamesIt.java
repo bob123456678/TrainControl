@@ -34,10 +34,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     @Test
     public void testAProtectingSignalIsKeptAndForgottenWithTheStation() throws Exception
     {
-        session.open(Arrays.asList(pageOnDisk()));
+        openedPageOnDisk();
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey signal = new TileKey("main", 2, 1);
+        TileKey station = onMain(1, 1);
+        TileKey signal = onMain(2, 1);
 
         session.setStation(station, true);
         session.setProtectingSignal(station, signal);
@@ -66,11 +66,11 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     @Test
     public void testAStationKeepsEverySignalGuardingIt() throws Exception
     {
-        session.open(Arrays.asList(pageOnDisk()));
+        openedPageOnDisk();
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey north = new TileKey("main", 2, 1);
-        TileKey south = new TileKey("main", 3, 1);
+        TileKey station = onMain(1, 1);
+        TileKey north = onMain(2, 1);
+        TileKey south = onMain(3, 1);
 
         session.setStation(station, true);
         session.setProtectingSignals(station, Arrays.asList(north, south));
@@ -103,10 +103,10 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
             ("{\"stations\": [\"1:1,1\"], \"stationSignals\": {\"1:1,1\": \"1:2,1\"}}")
                 .getBytes(StandardCharsets.UTF_8));
 
-        session.open(Arrays.asList(pageOnDisk()));
+        openedPageOnDisk();
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey signal = new TileKey("main", 2, 1);
+        TileKey station = onMain(1, 1);
+        TileKey signal = onMain(2, 1);
 
         assertEquals(session.getProtectingSignals(station), Arrays.asList(signal),
             "a pairing written as a bare string was not read at all, which would silently unprotect "
@@ -138,7 +138,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
 
         session.open(Arrays.asList(pageOnDisk(), elsewhere));
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
         TileKey signal = new TileKey("second", 1, 1);
 
         session.setStation(station, true);
@@ -164,9 +164,9 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     @Test
     public void testOneSignalIsStillWrittenAsAString() throws Exception
     {
-        session.open(Arrays.asList(pageOnDisk()));
+        openedPageOnDisk();
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
         session.setStation(station, true);
         session.setProtectingSignal(station, new TileKey("main", 2, 1));
@@ -203,7 +203,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         session.open(Arrays.asList(pageWithTwoSignals()));
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
         session.setStation(station, true);
         session.setProtectingSignals(station,
@@ -243,11 +243,11 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     @Test
     public void testAnEntryGuardIsKeptApartAndForgottenWithTheStation() throws Exception
     {
-        session.open(Arrays.asList(pageOnDisk()));
+        openedPageOnDisk();
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey north = new TileKey("main", 2, 1);
-        TileKey south = new TileKey("main", 3, 1);
+        TileKey station = onMain(1, 1);
+        TileKey north = onMain(2, 1);
+        TileKey south = onMain(3, 1);
 
         session.setStation(station, true);
         session.setEntrySignals(station, Arrays.asList(north, south));
@@ -273,7 +273,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         session.open(Arrays.asList(pageWithTwoSignals()));
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
         session.setStation(station, true);
         session.setEntrySignals(station, Arrays.asList(new TileKey("main", 2, 1), new TileKey("main", 3, 1)));
@@ -312,9 +312,9 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         session.open(Arrays.asList(pageWithTwoSignals()));
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey first = new TileKey("main", 2, 1);
-        TileKey second = new TileKey("main", 3, 1);
+        TileKey station = onMain(1, 1);
+        TileKey first = onMain(2, 1);
+        TileKey second = onMain(3, 1);
 
         session.setStation(station, true);
         session.setProtectingSignals(station, Arrays.asList(first));
@@ -340,8 +340,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         session.open(Arrays.asList(pageWithTwoSignals()));
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey signal = new TileKey("main", 2, 1);
+        TileKey station = onMain(1, 1);
+        TileKey signal = onMain(2, 1);
 
         session.setStation(station, true);
         session.setProtectingSignals(station, Arrays.asList(signal));
@@ -379,7 +379,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         openTheGuardedLine(pageWithAGuardOffTheLine());
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
         int errorsBefore = session.errorCount();
         boolean brokenBefore = session.hasErrors();
@@ -431,9 +431,9 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         session.open(Arrays.asList(pageWithAGuardOffTheLine()));
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey far = new TileKey("main", 4, 1);
-        TileKey signal = new TileKey("main", 2, 1);
+        TileKey station = onMain(1, 1);
+        TileKey far = onMain(4, 1);
+        TileKey signal = onMain(2, 1);
 
         session.setStation(station, true);
         session.setStation(far, true);
@@ -468,9 +468,9 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         session.open(Arrays.asList(pageWithAGuardOffTheLine()));
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey far = new TileKey("main", 4, 1);
-        TileKey signal = new TileKey("main", 2, 1);
+        TileKey station = onMain(1, 1);
+        TileKey far = onMain(4, 1);
+        TileKey signal = onMain(2, 1);
 
         session.setStation(station, true);
         session.setStation(far, true);
@@ -502,8 +502,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         openTheGuardedLine(pageWithAGuardOffTheLine());
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey signal = new TileKey("main", 2, 3);
+        TileKey station = onMain(1, 1);
+        TileKey signal = onMain(2, 3);
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
@@ -553,9 +553,9 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         openTheGuardedLine(pageWithAGuardOffTheLine());
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey signal = new TileKey("main", 2, 3);
-        TileKey elsewhere = new TileKey("main", 4, 1);
+        TileKey station = onMain(1, 1);
+        TileKey signal = onMain(2, 3);
+        TileKey elsewhere = onMain(4, 1);
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
@@ -593,8 +593,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         openTheGuardedLine(pageWithAGuardOffTheLine());
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey signal = new TileKey("main", 2, 3);
+        TileKey station = onMain(1, 1);
+        TileKey signal = onMain(2, 3);
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
@@ -623,8 +623,8 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         openTheGuardedLine(pageWithAGuardOffTheLine(), aSecondPage());
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey signal = new TileKey("main", 2, 3);
+        TileKey station = onMain(1, 1);
+        TileKey signal = onMain(2, 3);
 
         session.setEntrySignals(station, Arrays.asList(signal));
 
@@ -662,7 +662,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         threeStationsInARow("OB-352");
 
-        TileKey alpha = new TileKey("main", 1, 1);
+        TileKey alpha = onMain(1, 1);
 
         session.rebuild();
 
@@ -695,7 +695,7 @@ public class testASignalGuardsItsStationAndTheNoticeNamesIt extends AutonomySess
     {
         threeStationsInARow("OB-352 far");
 
-        TileKey alpha = new TileKey("main", 1, 1);
+        TileKey alpha = onMain(1, 1);
 
         session.rebuild();
 

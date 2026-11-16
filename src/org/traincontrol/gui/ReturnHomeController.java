@@ -359,9 +359,8 @@ final class ReturnHomeController extends SettledQuestion
 
         // Says why it is unavailable, rather than leaving a dead button with no explanation
         // WRAPPED (MT-756): a reason can name many trains
-        this.ui.returnHomeButton().setToolTipText(AutonomyEditorPanel.wrapped(nothingToDo == null
-            ? I18n.t("ui.main.tooltip.returnHome")
-            : describeStagingOutcome(nothingToDo, this.ui.returnHomeTriagePausedAway)));
+        this.ui.tipReturnHome(nothingToDo == null ? null
+            : describeStagingOutcome(nothingToDo, this.ui.returnHomeTriagePausedAway));
     }
 
     /**
@@ -398,6 +397,7 @@ final class ReturnHomeController extends SettledQuestion
         // The button's own state and tooltip, so the item can never offer what the button refuses (FR-129)
         JMenuItem run = new JMenuItem(I18n.t("autolayout.ui.menuRunTrainsToTheirHomes"));
 
+        TrainControlUI.showShortcut(run, "return locomotives home");
         run.setEnabled(this.ui.isReturnHomeOffered());
         run.setToolTipText(this.ui.whyReturnHomeIsNotOffered());
         run.addActionListener(e -> requestReturnToHome());

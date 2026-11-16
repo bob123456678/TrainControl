@@ -35,7 +35,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Lengths");
 
-        TileKey turns = new TileKey("main", 1, 1);
+        TileKey turns = onMain(1, 1);
 
         session.setStation(turns, true);
         session.setPointProperty(turns, "canReverse", Boolean.TRUE);
@@ -66,7 +66,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Lengths");
 
-        TileKey turns = new TileKey("main", 1, 1);
+        TileKey turns = onMain(1, 1);
 
         session.setStation(turns, true);
         session.setPointProperty(turns, "canReverse", Boolean.TRUE);
@@ -131,8 +131,8 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(platformBehindASwitch()));
         session.initialize("Short");
 
-        TileKey platform = new TileKey("main", 5, 1);
-        TileKey start = new TileKey("main", 1, 1);
+        TileKey platform = onMain(5, 1);
+        TileKey start = onMain(1, 1);
 
         session.setStation(platform, true);
         session.setPointProperty(platform, "maxTrainLength", 4);
@@ -203,14 +203,12 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("ShortTurn");
 
-        TileKey turns = new TileKey("main", 1, 1);
-        TileKey berth = new TileKey("main", 4, 1);
+        TileKey turns = onMain(1, 1);
+        TileKey berth = onMain(4, 1);
 
-        session.setStation(turns, true);
-        session.setPointName(turns, "Turns");
+        namedStationInSession(turns, "Turns");
         session.setPointProperty(turns, "canReverse", Boolean.TRUE);
-        session.setStation(berth, true);
-        session.setPointName(berth, "Berth");
+        namedStationInSession(berth, "Berth");
         session.setPointProperty(berth, "maxTrainLength", 9);
         session.setTileLength(new TileKey("main", 2, 1), 2);
         session.setTileLength(new TileKey("main", 3, 1), 2);
@@ -281,12 +279,11 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(platformBehindASwitch()));
         session.initialize("Refused");
 
-        TileKey platform = new TileKey("main", 5, 1);
+        TileKey platform = onMain(5, 1);
 
         session.setStation(new TileKey("main", 1, 1), true);
         session.setPointName(new TileKey("main", 1, 1), "Behind");
-        session.setStation(platform, true);
-        session.setPointName(platform, "Platform");
+        namedStationInSession(platform, "Platform");
         session.setPointProperty(platform, "maxTrainLength", 6);
         session.setTileLength(new TileKey("main", 2, 1), 2);
         session.setTileLength(new TileKey("main", 4, 1), 2);
@@ -327,14 +324,12 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(platformBehindAStationAndASwitch()));
         session.initialize("NoFigure");
 
-        TileKey behind = new TileKey("main", 3, 1);
-        TileKey platform = new TileKey("main", 7, 1);
+        TileKey behind = onMain(3, 1);
+        TileKey platform = onMain(7, 1);
 
-        session.setStation(behind, true);
-        session.setPointName(behind, "Behind");
+        namedStationInSession(behind, "Behind");
         session.setBarredArrivals(behind, java.util.EnumSet.of(org.traincontrol.automationui.TilePorts.Side.W));
-        session.setStation(platform, true);
-        session.setPointName(platform, "Platform");
+        namedStationInSession(platform, "Platform");
         session.setPointProperty(platform, "maxTrainLength", 6);
         session.setTileLength(new TileKey("main", 4, 1), 2);
         session.setTileLength(new TileKey("main", 6, 1), 2);
@@ -369,17 +364,15 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(platformBehindAStationAndASwitch()));
         session.initialize("BackOverASensor");
 
-        TileKey start = new TileKey("main", 1, 1);
-        TileKey platform = new TileKey("main", 7, 1);
+        TileKey start = onMain(1, 1);
+        TileKey platform = onMain(7, 1);
 
-        session.setStation(start, true);
-        session.setPointName(start, "Start");
+        namedStationInSession(start, "Start");
 
         // A DEAD END TRAINS TURN AT: otherwise a train that came in there can never leave towards the platform, and the
         // build has no way in from it at all.
         session.setPointProperty(start, "canReverse", Boolean.TRUE);
-        session.setStation(platform, true);
-        session.setPointName(platform, "Platform");
+        namedStationInSession(platform, "Platform");
         session.setPointProperty(platform, "maxTrainLength", 6);
         session.setTileLength(new TileKey("main", 2, 1), 2);
         session.setTileLength(new TileKey("main", 4, 1), 1);
@@ -566,12 +559,12 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         Diagrams.straight(page, 2, 1);
         Diagrams.feedback(page, 3, 1, 6, 12);
         Diagrams.straight(page, 4, 1);
-        page.addComponent(componentType.SWITCH_LEFT, 5, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SWITCH_LEFT, 5, 1, 3, 7, 7);
         Diagrams.straight(page, 6, 1);
         Diagrams.feedback(page, 7, 1, 8, 14);
 
         // The branch off the switch, lying north-south so that it has a port facing the switch at all.
-        page.addComponent(componentType.FEEDBACK, 5, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 5, 0, 1, 7, 13);
 
         page.getComponent(5, 1).setAccessory(new org.traincontrol.marklin.MarklinAccessory(
             null, 7, org.traincontrol.base.Accessory.accessoryType.SWITCH, accessoryDecoderType.MM2,
@@ -622,7 +615,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(platformWithTwoApproaches()));
         session.initialize("Barred");
 
-        TileKey platform = new TileKey("main", 5, 1);
+        TileKey platform = onMain(5, 1);
 
         session.setStation(platform, true);
         session.setPointProperty(platform, "maxTrainLength", 4);
@@ -688,7 +681,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(platformWithTwoApproaches()));
         session.initialize("BarredTurn");
 
-        TileKey platform = new TileKey("main", 5, 1);
+        TileKey platform = onMain(5, 1);
 
         session.setStation(platform, true);
         session.setPointProperty(platform, "canReverse", Boolean.TRUE);
@@ -720,7 +713,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(platformWithTwoApproaches()));
         session.initialize("BarredHalf");
 
-        TileKey berth = new TileKey("main", 5, 1);
+        TileKey berth = onMain(5, 1);
 
         session.setStation(berth, true);
         session.setAutoDestination(berth, false);
@@ -750,7 +743,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(platformBehindASwitch()));
         session.initialize("Wording");
 
-        TileKey platform = new TileKey("main", 5, 1);
+        TileKey platform = onMain(5, 1);
 
         session.setStation(platform, true);
         session.setPointProperty(platform, "maxTrainLength", 4);
@@ -792,8 +785,8 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(aBerthWithARunPast()));
         session.initialize("Home");
 
-        TileKey berth = new TileKey("main", 1, 1);
-        TileKey far = new TileKey("main", 7, 1);
+        TileKey berth = onMain(1, 1);
+        TileKey far = onMain(7, 1);
 
         session.setStation(berth, true);
         session.setPointProperty(berth, org.traincontrol.automationui.AutonomyBuilder.MUST_REVERSE, Boolean.TRUE);
@@ -945,7 +938,7 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Capacity");
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
         session.setStation(station, true);
         session.rebuild();
@@ -981,8 +974,8 @@ public class testThePlatformNoticeKnowsWhatATrainIsRefusedAt extends AutonomySes
         session.open(Arrays.asList(runOfTrack()));
         session.initialize("Capacity");
 
-        TileKey withMaximum = new TileKey("main", 1, 1);
-        TileKey without = new TileKey("main", 4, 1);
+        TileKey withMaximum = onMain(1, 1);
+        TileKey without = onMain(4, 1);
 
         session.setStation(withMaximum, true);
         session.setStation(without, true);

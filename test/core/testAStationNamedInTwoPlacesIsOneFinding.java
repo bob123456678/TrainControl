@@ -35,9 +35,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     @Test
     public void testAnImportedStationIsLabelledOnItsOwnSquare() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
-
-        session.open(Arrays.asList(page));
+        LayoutDiagram page = openedPageOnDisk();
 
         org.json.JSONObject point = new org.json.JSONObject();
         point.put("name", "Hauptbahnhof");
@@ -52,7 +50,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
         session.importLegacy(legacy);
 
-        TileKey tile = new TileKey("main", 1, 1);
+        TileKey tile = onMain(1, 1);
 
         assertEquals(session.getCaptionTarget(tile), tile,
             "the imported station is not labelled on its own square");
@@ -72,14 +70,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     @Test
     public void testAnUnlabelledStationIsAnError() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        TileKey tile = onMain(1, 1);
 
-        TileKey tile = new TileKey("main", 1, 1);
-
-        session.getStore().setStation(tile, true);
-        session.setPointName(tile, "Hauptbahnhof");
+        namedStation(tile, "Hauptbahnhof");
 
         session.rebuild();
 
@@ -114,14 +109,12 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     @Test
     public void testAStationShownTwiceIsAnErrorNamingTheStationAndBothSquares() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
-
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey other = new TileKey("main", 4, 1);
-        TileKey beside = new TileKey("main", 1, 2);
-        TileKey further = new TileKey("main", 1, 3);
+        TileKey station = onMain(1, 1);
+        TileKey other = onMain(4, 1);
+        TileKey beside = onMain(1, 2);
+        TileKey further = onMain(1, 3);
 
         session.getStore().setStation(station, true);
         session.getStore().setStation(other, true);
@@ -202,13 +195,13 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     @Test
     public void testAStationShownInThreePlacesIsOneErrorAndTheEditorClearsIt() throws Exception
     {
-        session.open(Arrays.asList(pageOnDisk()));
+        openedPageOnDisk();
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey other = new TileKey("main", 4, 1);
-        TileKey first = new TileKey("main", 1, 2);
-        TileKey second = new TileKey("main", 1, 3);
-        TileKey third = new TileKey("main", 2, 2);
+        TileKey station = onMain(1, 1);
+        TileKey other = onMain(4, 1);
+        TileKey first = onMain(1, 2);
+        TileKey second = onMain(1, 3);
+        TileKey third = onMain(2, 2);
 
         session.getStore().setStation(station, true);
         session.getStore().setStation(other, true);
@@ -266,14 +259,13 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     @Test
     public void testAStationNamedOnItsOwnSquareAndBesideItIsDrawnOnceAndIsNoError() throws Exception
     {
-        session.open(Arrays.asList(pageOnDisk()));
+        openedPageOnDisk();
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey beside = new TileKey("main", 1, 2);
-        TileKey further = new TileKey("main", 1, 3);
+        TileKey station = onMain(1, 1);
+        TileKey beside = onMain(1, 2);
+        TileKey further = onMain(1, 3);
 
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Hauptbahnhof");
+        namedStation(station, "Hauptbahnhof");
 
         // On its own square only: drawn there
         session.getStore().setCaption(station, station);
@@ -314,10 +306,9 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     {
         session.open(Arrays.asList(runOfTrack()));
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
 
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Hauptbahnhof");
+        namedStation(station, "Hauptbahnhof");
 
         // One real caption beside it, and one on a page that is gone
         session.getStore().setCaption(new TileKey("main", 1, 2), station);
@@ -351,7 +342,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
         session.open(Arrays.asList(page, secondPage()));
 
-        TileKey alone = new TileKey("main", 6, 3);
+        TileKey alone = onMain(6, 3);
         TileKey left = new TileKey("second", 1, 1);
 
         session.getStore().setStation(alone, true);
@@ -392,11 +383,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     @Test
     public void testAnUnnamedStationOutOfServiceIsNotReportedForWhatIsNotDrawn() throws Exception
     {
-        session.open(Arrays.asList(pageOnDisk()));
+        openedPageOnDisk();
         session.initialize("Evening");
 
-        TileKey shut = new TileKey("main", 1, 1);
-        TileKey open = new TileKey("main", 4, 1);
+        TileKey shut = onMain(1, 1);
+        TileKey open = onMain(4, 1);
 
         session.getStore().setStation(shut, true);
         session.getStore().setStation(open, true);
@@ -442,7 +433,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     {
         session.open(Arrays.asList(runOfTrack(), secondPage()));
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
         TileKey thereOne = new TileKey("second", 3, 2);
         TileKey thereTwo = new TileKey("second", 3, 3);
 
@@ -480,8 +471,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
         TileKey station = new TileKey("second", 1, 1);
 
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Nebengleis");
+        namedStation(station, "Nebengleis");
         session.getStore().setCaption(new TileKey("second", 1, 2), station);
         session.getStore().setCaption(new TileKey("second", 1, 3), station);
         session.rebuild();
@@ -505,7 +495,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     {
         session.open(Arrays.asList(runOfTrack(), secondPage()));
 
-        TileKey station = new TileKey("main", 1, 1);
+        TileKey station = onMain(1, 1);
         TileKey elsewhere = new TileKey("second", 3, 2);
         TileKey gone = new TileKey("gone", 1, 1);
 
@@ -554,9 +544,9 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     {
         session.open(Arrays.asList(runOfTrack(), secondPage()));
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey hereOne = new TileKey("main", 1, 2);
-        TileKey hereTwo = new TileKey("main", 1, 3);
+        TileKey station = onMain(1, 1);
+        TileKey hereOne = onMain(1, 2);
+        TileKey hereTwo = onMain(1, 3);
         TileKey thereOne = new TileKey("second", 3, 2);
         TileKey thereTwo = new TileKey("second", 3, 3);
 
@@ -630,10 +620,10 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     @Test
     public void testTheSquaresAreNamedInReadingOrderWhateverOrderTheSetupHoldsThem() throws Exception
     {
-        session.open(Arrays.asList(pageOnDisk()));
+        openedPageOnDisk();
 
-        TileKey early = new TileKey("main", 1, 1);
-        TileKey late = new TileKey("main", 4, 1);
+        TileKey early = onMain(1, 1);
+        TileKey late = onMain(4, 1);
 
         session.getStore().setStation(early, true);
         session.getStore().setStation(late, true);
@@ -672,8 +662,8 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     @Test
     public void testAnImportDoesNotCaptionAStationTheSetupAlreadyShows() throws Exception
     {
-        TileKey shown = new TileKey("main", 1, 1);
-        TileKey notShown = new TileKey("main", 4, 1);
+        TileKey shown = onMain(1, 1);
+        TileKey notShown = onMain(4, 1);
 
         File exporting = Files.createTempDirectory("tc-autonomy-export").toFile();
 
@@ -728,7 +718,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     @Test
     public void testAnImportThatNamesAStationSeveralTimesKeepsTheFirstSquare() throws Exception
     {
-        TileKey shown = new TileKey("main", 1, 1);
+        TileKey shown = onMain(1, 1);
 
         File exporting = Files.createTempDirectory("tc-autonomy-export").toFile();
 
@@ -754,8 +744,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
             session.open(Arrays.asList(runOfTrack()));
             session.initialize("Morning");
-            session.setStation(shown, true);
-            session.setPointName(shown, "Hauptbahnhof");
+            namedStationInSession(shown, "Hauptbahnhof");
 
             session.importBundle("Imported", new org.json.JSONObject(bundle.toString()));
 
@@ -776,7 +765,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     @Test
     public void testAnImportKeepsACaptionOnAnotherPageAndSkipsASecondOnThePage() throws Exception
     {
-        TileKey shown = new TileKey("main", 1, 1);
+        TileKey shown = onMain(1, 1);
 
         File exporting = Files.createTempDirectory("tc-autonomy-export").toFile();
 
@@ -797,8 +786,7 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
             // This setup: the station beside itself on its own page already
             session.open(Arrays.asList(runOfTrack(), secondPage()));
             session.initialize("Morning");
-            session.setStation(shown, true);
-            session.setPointName(shown, "Hauptbahnhof");
+            namedStationInSession(shown, "Hauptbahnhof");
             session.setCaption(new TileKey("main", 1, 3), shown);
 
             session.importBundle("Imported", new org.json.JSONObject(bundle.toString()));
@@ -826,8 +814,8 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     {
         session.open(Arrays.asList(runOfTrack(), secondPage()));
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey beside = new TileKey("main", 1, 2);
+        TileKey station = onMain(1, 1);
+        TileKey beside = onMain(1, 2);
         TileKey there = new TileKey("second", 3, 2);
         TileKey thereToo = new TileKey("second", 3, 3);
 
@@ -915,12 +903,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
         session.open(Arrays.asList(main, second));
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey kept = new TileKey("main", 3, 2);
+        TileKey station = onMain(1, 1);
+        TileKey kept = onMain(3, 2);
         TileKey labelled = new TileKey("second", 1, 2);
 
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
         session.setCaption(kept, station);
         session.save();
 
@@ -954,8 +941,8 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
 
         session.open(Arrays.asList(page, secondPage()));
 
-        TileKey other = new TileKey("main", 1, 1);
-        TileKey same = new TileKey("main", 4, 1);
+        TileKey other = onMain(1, 1);
+        TileKey same = onMain(4, 1);
 
         session.getStore().setCaption(new TileKey("second", 3, 2), other);
         session.getStore().setCaption(new TileKey("main", 4, 2), same);
@@ -1016,14 +1003,11 @@ public class testAStationNamedInTwoPlacesIsOneFinding extends AutonomySessionFix
     @Test
     public void testShowingAStationNameMovesItRatherThanAddingASecond() throws Exception
     {
-        LayoutDiagram page = pageOnDisk();
+        LayoutDiagram page = openedPageOnDisk();
 
-        session.open(Arrays.asList(page));
+        TileKey station = onMain(1, 1);
 
-        TileKey station = new TileKey("main", 1, 1);
-
-        session.getStore().setStation(station, true);
-        session.setPointName(station, "Bahnhof");
+        namedStation(station, "Bahnhof");
 
         // Captioned on its own square, which is where an import leaves it
         session.getStore().setCaption(station, station);

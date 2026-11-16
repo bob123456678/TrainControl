@@ -153,6 +153,10 @@ abstract class StationWindowBase extends JDialog
         // Escape ends a tail pick waiting first, else closes; a field's own Escape is tried before either
         getRootPane().registerKeyboardAction(e -> { if (!editor.endTailPick(tile)) closeWindow(); },
             KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+        // Control+Enter is Done Editing (FR-200): every typed field commits as its Enter does, then the window closes
+        getRootPane().registerKeyboardAction(e -> done(), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,
+            java.awt.event.InputEvent.CTRL_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
     }
 
     /**

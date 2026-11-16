@@ -77,16 +77,9 @@ public class testTheDiagramIsNotRebuiltForAnArrow
         model = frozen.model;
         ui = frozen.ui;
 
-        session = ui.getAutonomySession();
+        session = frozen.sessionOrFail("no autonomy configuration, so there are no arrows to change");
 
-        if (session == null || session.getStore().getActiveConfiguration() == null)
-        {
-            throw new AssertionError("no autonomy configuration, so there are no arrows to change");
-        }
-
-        final LayoutDiagram page = model.getLayout(PAGE);
-
-        if (page == null) throw new AssertionError("no page " + PAGE);
+        final LayoutDiagram page = frozen.pageOrFail(PAGE);
 
         track = plainTrackOn(page);
 
@@ -94,16 +87,7 @@ public class testTheDiagramIsNotRebuiltForAnArrow
 
         route = session.getRoutes(track).keySet().iterator().next();
 
-        final LayoutEditor[] built = new LayoutEditor[1];
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            built[0] = new LayoutEditor(page, 30, ui, 0);
-            built[0].render();
-            built[0].setAutonomyMode(session);
-        });
-
-        editor = built[0];
+        editor = frozen.render(page, true);
 
         settle();
 

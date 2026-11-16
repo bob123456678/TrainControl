@@ -157,7 +157,7 @@ public class testDiagramShiftKeepsSetup
             // A run of track with a link at the end of it, on each page
             Diagrams.feedback(main, 1, 5, 5, 11);
             Diagrams.straight(main, 2, 5);
-            main.addComponent(componentType.LINK, 3, 5, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.put(main, componentType.LINK, 3, 5, 0, 0, 0);
 
             far.addComponent(componentType.LINK, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
             Diagrams.straight(far, 2, 1);
@@ -220,7 +220,7 @@ public class testDiagramShiftKeepsSetup
 
             Diagrams.feedback(main, 5, 2, 5, 11);
             Diagrams.straight(main, 6, 2);
-            main.addComponent(componentType.LINK, 7, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.put(main, componentType.LINK, 7, 2, 0, 0, 0);
 
             far.addComponent(componentType.LINK, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
 

@@ -45,10 +45,10 @@ public class testTheMenuShowsWhereALinkGoes
         LayoutDiagram page = new LayoutDiagram(name, 12, 4, null, null);
 
         // A tunnel at orientation 0 opens to the south, so the track it meets runs vertically.
-        page.addComponent(componentType.TUNNEL, 1, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.TUNNEL, 1, 1, 0, 0, 0);
         Diagrams.straight(page, 1, 2, 1);
 
-        page.addComponent(componentType.TUNNEL, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.TUNNEL, 5, 1, 0, 0, 0);
         Diagrams.straight(page, 5, 2, 1);
 
         page.setPageId(name);

@@ -676,7 +676,7 @@ public final class LayoutLabel extends JLabel
         // A station gets the station items; every other square gets the menu without them, so a right-click anywhere
         // leads into the autonomy setup.
         final org.traincontrol.automationui.TileGraph.TileKey station =
-            tcUI.autonomyStationAt(autonomyPage, component.getX(), component.getY());
+            tcUI.diagramLocGestures.autonomyStationAt(autonomyPage, component.getX(), component.getY());
 
         // The square itself, which the setup menu acts on whether or not anything has been made of it yet.
         final org.traincontrol.automationui.TileGraph.TileKey here =
@@ -1134,9 +1134,6 @@ public final class LayoutLabel extends JLabel
         if (effective == null ? autonomyAnnotation == null
             : effective.equals(autonomyAnnotation)) return;
 
-        // And a station that spilled, which this may take away: its spill is on the squares around.
-        boolean spilled = spills(autonomyAnnotation);
-
         autonomyAnnotation = effective;
 
         // And the tiles around it where a train stands: the icon reaches past this tile.
@@ -1144,7 +1141,7 @@ public final class LayoutLabel extends JLabel
 
         TileOverlay train = autonomyOverlay;
 
-        if (around != null && (spilled || train != null && train.hasTrain()))
+        if (around != null && (train != null && train.hasTrain()))
         {
             around.repaint(getX() - getWidth(), getY() - getHeight(), 3 * getWidth(), 3 * getHeight());
         }
@@ -1810,117 +1807,6 @@ public final class LayoutLabel extends JLabel
         java.awt.Shape area = overlay.trainArea(getWidth(), getHeight(), theTrainsRoadCentre(overlay, autonomyAnnotation));
 
         return area != null && area.contains(at);
-    }
-
-    /**
-     * What of this square's station icon spills onto the squares beside it, drawn by the diagram once every square is
-     * drawn (`TileAnnotation.paintSpill`); true if anything was drawn: a spill reaching what is being repainted.
-     */
-    public boolean paintStationSpill(java.awt.Graphics g)
-    {
-        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
-
-        if (!spills(annotation) || !isVisible()) return false;
-
-        java.awt.Rectangle clip = g.getClipBounds();
-
-        if (clip != null && !clip.intersects(spillReach())) return false;
-
-        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
-
-        try
-        {
-            g2.translate(getX(), getY());
-
-            annotation.paintSpill(g2, getWidth(), getHeight());
-        }
-        finally
-        {
-            g2.dispose();
-        }
-
-        return true;
-    }
-
-    /**
-     * This square's arrows back over a neighbor's spilled station (`TileAnnotation.paintArrowsAgain`), asked by the
-     * diagram once spills are drawn; only where another square's spill reaches this one.
-     */
-    void paintArrowsOverSpill(java.awt.Graphics g, java.util.Map<LayoutLabel, java.awt.Rectangle> spilt)
-    {
-        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
-
-        if (annotation == null || !isVisible()) return;
-
-        java.awt.Rectangle mine = getBounds();
-
-        java.awt.Rectangle clip = g.getClipBounds();
-
-        if (clip != null && !clip.intersects(mine)) return;
-
-        boolean under = false;
-
-        for (java.util.Map.Entry<LayoutLabel, java.awt.Rectangle> spill : spilt.entrySet())
-        {
-            if (spill.getKey() != this && spill.getValue().intersects(mine)) under = true;
-        }
-
-        if (!under) return;
-
-        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create(getX(), getY(), getWidth(), getHeight());
-
-        try
-        {
-            annotation.paintArrowsAgain(g2, getWidth(), getHeight());
-        }
-        finally
-        {
-            g2.dispose();
-        }
-    }
-
-    /**
-     * And the squares around it where this square's station spills: the diagram paints neighbors only where asked, so
-     * repainting this alone would leave the old spill.
-     */
-    @Override
-    public void repaint(long tm, int x, int y, int width, int height)
-    {
-        java.awt.Container around = getParent();
-
-        if (around != null && spills(autonomyAnnotation))
-        {
-            java.awt.Rectangle reach = spillReach();
-
-            around.repaint(tm, reach.x, reach.y, reach.width, reach.height);
-
-            return;
-        }
-
-        super.repaint(tm, x, y, width, height);
-    }
-
-    /** What this square's spill covers, in the diagram's coordinates, or null - `TileAnnotation.spillShape`. */
-    java.awt.Shape spillShapeOnTheDiagram()
-    {
-        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
-
-        java.awt.Shape shape = annotation == null ? null : annotation.spillShape(getWidth(), getHeight());
-
-        return shape == null ? null
-            : java.awt.geom.AffineTransform.getTranslateInstance(getX(), getY()).createTransformedShape(shape);
-    }
-
-    /** Whether an annotation's station spills past its square (`TileAnnotation.spillsOverItsSquare`). */
-    private static boolean spills(org.traincontrol.automationui.TileAnnotation annotation)
-    {
-        return annotation != null && annotation.spillsOverItsSquare();
-    }
-
-    /** As far as a spill reaches, in the diagram's coordinates: half a square past each edge - a curve's icon less. */
-    java.awt.Rectangle spillReach()
-    {
-        return new java.awt.Rectangle(getX() - getWidth() / 2, getY() - getHeight() / 2, 2 * getWidth(), 2 * getHeight());
     }
 
     /**

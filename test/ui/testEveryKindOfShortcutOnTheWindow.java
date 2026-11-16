@@ -257,7 +257,7 @@ public class testEveryKindOfShortcutOnTheWindow
     /**
      * A bare letter shows its button, on each keyboard layout; Shift and Alt do not stop it, Control does.
      *
-     * MUTATION: in "show a letter's button", `Held.ANY`, and this fails at Control+Q; `Held.NEITHER`, and it fails at
+     * MUTATION: in "show a letter's button", `Held.ANY`, and this fails at Control+J; `Held.NEITHER`, and it fails at
      * Alt+B.
      */
     @Test
@@ -280,9 +280,9 @@ public class testEveryKindOfShortcutOnTheWindow
 
         JButton before = settled();
 
-        Keys.press(keyboard(), KeyEvent.VK_Q, CTRL);
+        Keys.press(keyboard(), KeyEvent.VK_J, CTRL);
 
-        assertSame(settled(), before, "Control+Q chose a button");
+        assertSame(settled(), before, "Control+J chose a button");
 
         String[] layouts = {TrainControlUI.KEYBOARD_QWERTZ, TrainControlUI.KEYBOARD_AZERTY, TrainControlUI.KEYBOARD_QWERTY};
 

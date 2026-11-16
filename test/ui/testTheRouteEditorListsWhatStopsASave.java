@@ -78,4 +78,38 @@ public class testTheRouteEditorListsWhatStopsASave
             SwingUtilities.invokeAndWait(() -> frame[0].dispose());
         }
     }
+
+    /**
+     * Control+Enter is Save (FR-200), pressed in the name field: on a blank route it says what Save says.
+     *
+     * MUTATION: drop the Control+Enter binding from `RouteEditorFrame`, and nothing is said.
+     */
+    @Test
+    public void testControlEnterIsSave() throws Exception
+    {
+        if (GraphicsEnvironment.isHeadless()) throw new SkipException("the route editor is a window");
+
+        final RouteEditorFrame[] frame = new RouteEditorFrame[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            frame[0] = new RouteEditorFrame(null, null);
+            frame[0].setVisible(true);
+        });
+
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("route.ui.frameGoAndFixIt"))))
+        {
+            support.Keys.chord((java.awt.Component) support.Reflect.get(RouteEditorFrame.class, frame[0], "nameField"),
+                java.awt.event.KeyEvent.VK_ENTER, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+
+            assertTrue(answering.awaitAsked(1, 15000), "Control+Enter on a blank route said nothing");
+
+            assertEquals(answering.shapes().get(0).sentence, I18n.t("route.ui.frameCannotSaveYet"),
+                "Control+Enter did not say what Save says");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> frame[0].dispose());
+        }
+    }
 }

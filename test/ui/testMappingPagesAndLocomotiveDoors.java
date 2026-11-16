@@ -398,6 +398,28 @@ public class testMappingPagesAndLocomotiveDoors
     }
 
     /**
+     * Control+Enter in the Locomotive Settings window is Save, pressed in the field typed into (FR-200): the year is kept
+     * and the window closes.
+     *
+     * MUTATION: drop the Control+Enter binding from `LocomotiveSettingsFrame`, and the year is not kept.
+     */
+    @Test
+    public void testControlEnterSavesTheSettings() throws Exception
+    {
+        openWithControl(KeyEvent.VK_N, 2);
+
+        support.SettingsWindow.type("notes.startYear", "1962");
+
+        Keys.chord(support.SettingsWindow.part("notes.startYear", javax.swing.JTextField.class), KeyEvent.VK_ENTER,
+            InputEvent.CTRL_DOWN_MASK);
+
+        assertTrue(waitFor(() -> one.getStructuredNotes().getStartYear() == 1962),
+            "Control+Enter did not keep the year typed: " + one.getStructuredNotes().getStartYear());
+
+        assertTrue(waitFor(() -> support.SettingsWindow.showing() == null), "Control+Enter left the window open");
+    }
+
+    /**
      * Find Similar Locomotives, from the key's right-click menu, finds the trains of the same railway and years, and
      * "Map to Page" puts them, and the train searched from, on the page chosen.
      *
