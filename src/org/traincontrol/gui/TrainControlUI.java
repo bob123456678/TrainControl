@@ -3371,9 +3371,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public List<String> unmeasuredTrackAutonomyRunsOver()
     {
-        if (this.model == null || !this.model.hasAutoLayout()) return new ArrayList<>();
-
-        Layout layout = this.model.getAutoLayout();
+        Layout layout = railwayToAsk();
 
         return layout == null ? new ArrayList<>() : layout.unmeasuredTrackThatCouldBeReleased();
     }
@@ -3381,9 +3379,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Every locomotive autonomy would run, name to train length (MT-533); empty with no railway to ask. */
     public Map<String, Integer> trainLengths()
     {
-        if (this.model == null || !this.model.hasAutoLayout()) return new LinkedHashMap<>();
-
-        Layout layout = this.model.getAutoLayout();
+        Layout layout = railwayToAsk();
 
         return layout == null ? new LinkedHashMap<>() : layout.trainLengths();
     }
@@ -3391,11 +3387,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Names of the locomotives autonomy would run that have no train length; empty when none or no railway to ask. */
     public List<String> trainsWithoutALength()
     {
-        if (this.model == null || !this.model.hasAutoLayout()) return new ArrayList<>();
-
-        Layout layout = this.model.getAutoLayout();
+        Layout layout = railwayToAsk();
 
         return layout == null ? new ArrayList<>() : layout.trainsWithNoLength();
+    }
+
+    /** The autonomy layout, or null when there is no railway to ask. */
+    private Layout railwayToAsk()
+    {
+        return this.model == null || !this.model.hasAutoLayout() ? null : this.model.getAutoLayout();
     }
 
     /**
@@ -3405,9 +3405,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void keepAtomicRoutesOnWhileTheRailwayCouldReleaseTrack()
     {
-        if (this.model == null || !this.model.hasAutoLayout()) return;
-
-        Layout layout = this.model.getAutoLayout();
+        Layout layout = railwayToAsk();
 
         if (layout == null || layout.isAtomicRoutes()) return;
 
@@ -3980,9 +3978,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The roads of a square that are blocked; never null, empty when nothing blocks it or its road cannot be named. */
     public Set<TileGraph.RouteId> blockedRoutesAt(TileGraph.TileKey square)
     {
+        return roadsAt(blockedTrack, square);
+    }
+
+    /** A square's roads in `track`; never null. */
+    private static Set<TileGraph.RouteId> roadsAt(Map<TileGraph.TileKey, Set<TileGraph.RouteId>> track,
+        TileGraph.TileKey square)
+    {
         if (square == null) return Collections.emptySet();
 
-        Set<TileGraph.RouteId> roads = blockedTrack.get(square);
+        Set<TileGraph.RouteId> roads = track.get(square);
 
         return roads == null ? Collections.<TileGraph.RouteId>emptySet() : roads;
     }
@@ -4020,11 +4025,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public Set<TileGraph.RouteId> coveredRoutesAt(
         TileGraph.TileKey square)
     {
-        if (square == null) return Collections.emptySet();
-
-        Set<TileGraph.RouteId> roads = coveredTrack.get(square);
-
-        return roads == null ? Collections.<TileGraph.RouteId>emptySet() : roads;
+        return roadsAt(coveredTrack, square);
     }
 
     void refreshCoveredTrack()
