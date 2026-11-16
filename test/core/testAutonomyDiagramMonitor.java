@@ -1436,7 +1436,7 @@ public class testAutonomyDiagramMonitor
     {
         final int size = 40;
 
-        // THE CROSS'S OWN COLOR (FR-118): a station's cross is drawn over a gray block now, which outweighs it
+        // THE CROSS'S OWN COLOR: a station's cross is drawn over its closed icon, which outweighs it
         java.awt.Color shut = crossColour(plainBadge(true, true), size);
         java.awt.Color shutAlone = crossColour(plainBadge(false, true), size);
         java.awt.Color parking = markColour(plainBadge(true, false), size);
@@ -1483,7 +1483,7 @@ public class testAutonomyDiagramMonitor
     @Test
     public void testTheCrossKeepsItsWeightAsTheTileGrows() throws Exception
     {
-        // A PASSING POINT'S, the cross alone: a station's sits on a gray block (FR-118), whose ink grows with the
+        // A PASSING POINT'S, the cross alone: a station's sits on its closed icon, whose ink grows with the
         // square of the tile whatever the cross does
         int small = inkOf(badgeAt(false, true, true, 40));
         int large = inkOf(badgeAt(false, true, true, 80));
@@ -1495,7 +1495,7 @@ public class testAutonomyDiagramMonitor
             + "not, so it thins out as the diagram gets bigger.  Ink " + small + " then " + large);
     }
 
-    // FR-118: the station icons
+    // The station icons
 
     /** The art turned a quarter turn at a time until its track runs along the road; "which" names it in the failure. */
     private static java.awt.image.BufferedImage turnedToRun(java.awt.image.BufferedImage art, Side[] road, String which)
@@ -1511,8 +1511,8 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * Every station icon covers the sensor's contact (14 at 30, 26 at 60) with white, the black band redrawn across it
-     * (FR-118): no gray ring above and below the band.
+     * Every station icon covers the sensor's contact (14 at 30, 28 at 60) with white, the black band redrawn across it:
+     * no gray ring above and below the band.
      *
      * MUTATION: drop the cover.
      */
@@ -1615,7 +1615,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * The sensor's contact under a curve icon is covered, as on straight track (FR-118): no dark ring pixel off the
+     * The sensor's contact under a curve icon is covered, as on straight track: no dark ring pixel off the
      * rails.
      *
      * MUTATION: cover the contact on straight track only.
@@ -1730,7 +1730,7 @@ public class testAutonomyDiagramMonitor
         {
             assertEquals(classicShape(new TileAnnotation.Badge(true, may, false, false, true, road[0], road[1], may, false,
                 Side.W)), "square", "a station whose track runs out" + (may ? ", where trains may turn," : "") + " is not"
-                + " the terminus's square (FR-118: a station with one way out is a terminus)");
+                + " the terminus's square (a station with one way out is a terminus)");
         }
     }
 
@@ -1799,7 +1799,7 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * Classic icon sizes: a station's mark 14 at 30 and 28 at 60, a pixel under FR-118's; a sensor's 10 and 20, the
+     * Classic icon sizes: a station's mark 14 at 30 and 28 at 60; a sensor's 10 and 20, the
      * inside of its contact's ring.  A diamond is bigger than the circle beside it, a station's bigger than a sensor's.
      *
      * MUTATION: draw a classic station's mark a pixel smaller again.
@@ -1905,7 +1905,7 @@ public class testAutonomyDiagramMonitor
      * With the classic icons a square out of service is an orange sign: 14 at 30 and 28 at 60 on a station (solid
      * orange, white X), 12 and 24 on a sensor (white circle, orange ring, orange X).
      *
-     * MUTATION: draw every classic square out of service at FR-118's one size, or a station's white again.
+     * MUTATION: draw every classic square out of service at one size, or a station's white again.
      */
     @Test
     public void testTheClassicOutOfServiceSignIsAStationsOrASensors()
@@ -2499,7 +2499,7 @@ public class testAutonomyDiagramMonitor
 
     /**
      * The color a cross is drawn in, read off the cross alone: the commonest solid color where the badge differs from
-     * a gray station's block, which is what a station's cross is drawn over (FR-118).
+     * a gray parking station's icon, which is what a station's cross is drawn over.
      */
     private static java.awt.Color crossColour(TileAnnotation.Badge b, int size) throws Exception
     {
