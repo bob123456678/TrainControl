@@ -179,6 +179,44 @@ public class testStationFileDownload
             "the previous accessory file was replaced by the part that arrived");
     }
 
+    /**
+     * A page whose fetch fails leaves the folder's previous index and pages as they were.  The index was written first,
+     * so it named a page never written, the next load found no file, and that load cleared the local-layout override.
+     *
+     * MUTATION: in `CS2File.downloadCS2Layout`, write the index before reading the pages.
+     */
+    @Test
+    public void testAPageThatFailsLeavesThePreviousIndexAndPages() throws Exception
+    {
+        File index = new File(dir, "config/gleisbild.cs2");
+        File main = new File(dir, "config/gleisbilder/Main.cs2");
+        byte[] oldIndex = "[gleisbild]\nseite\n .name=Main\n".getBytes(StandardCharsets.UTF_8);
+        byte[] oldMain = "[gleisbildseite]\nthe previous page\n".getBytes(StandardCharsets.UTF_8);
+
+        main.getParentFile().mkdirs();
+        Files.write(index.toPath(), oldIndex);
+        Files.write(main.toPath(), oldMain);
+
+        files.put("/config/gleisbild.cs2", "[gleisbild]\nversion\n .minor=0\nseite\n .name=Main\nseite\n .name=Yard\n"
+            .getBytes(StandardCharsets.UTF_8));
+        cutPath = "/config/gleisbilder/Yard.cs2";
+        cuts = new int[]{ 30, 20, 10 };
+
+        try
+        {
+            station().downloadCS2Layout(dir);
+            fail("a page that did not arrive must fail the download");
+        }
+        catch (Exception expected)
+        {
+            // Expected
+        }
+
+        assertEquals(Files.readAllBytes(index.toPath()), oldIndex, "the index was replaced though a page did not arrive");
+        assertEquals(Files.readAllBytes(main.toPath()), oldMain, "a page was replaced though another did not arrive");
+        assertFalse(new File(main.getParentFile(), "Yard.cs2").exists(), "the page that did not arrive was written");
+    }
+
     /** The whole text CS2File reads from a path on the stand-in station. */
     private String fetch(String path) throws Exception
     {

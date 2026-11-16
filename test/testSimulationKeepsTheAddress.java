@@ -20,6 +20,10 @@ public class testSimulationKeepsTheAddress
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        // It writes the real preference node, which only docs/tools/one.sh replaces with a node of its own
+        if (System.getProperty(org.traincontrol.util.Util.PREFERENCES_PROPERTY, "").trim().isEmpty())
+            throw new org.testng.SkipException("needs docs/tools/one.sh");
+
         TrainControlUI.getPrefs().put(TrainControlUI.IP_PREF, SAVED);
 
         init(null, true, false, false, false);
