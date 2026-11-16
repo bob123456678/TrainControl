@@ -4949,13 +4949,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void arrangeMainMenus()
     {
         // Locomotives: no Utilities drawer; its items are grayed one by one while they work.  Sync joins the function
-        // read; Check for Renamed Locomotives stays out, as Sync asks itself (FR-220).
+        // read, after the functions; Check for Renamed Locomotives stays out, as Sync asks itself (FR-220).
         this.locomotiveMenu.remove(this.functionsMenu);
 
         arrange(this.locomotiveMenu, 3,
             new Component[] {this.quickFindMenuItem, this.viewDatabaseMenuItem, this.addLocomotiveMenuItem},
-            new Component[] {this.syncMenuItem, this.syncFullLocStateMenuItem},
             new Component[] {this.turnOffFunctionsMenuItem, this.turnOnLightsMenuItem},
+            new Component[] {this.syncMenuItem, this.syncFullLocStateMenuItem},
             new Component[] {this.exportLocsToCSVMenuItem, this.importLocsFromCSVMenuItem});
 
         arrangeFileMenu();

@@ -115,9 +115,9 @@ public class testTheMenuBarIsWired
             "ui.main.toolbar.exit"), "File");
 
         assertEquals(read(menu("ui.main.toolbar.locomotives")), keys("ui.main.toolbar.quickFindLoc",
-            "ui.main.toolbar.browseDatabase", "ui.main.toolbar.addLoc", "---", "ui.main.toolbar.syncDBWithCS",
-            "ui.main.toolbar.syncFullFunctionState", "---", "ui.main.toolbar.turnOffFunctions",
-            "ui.main.toolbar.turnOnLights", "---", "ui.main.toolbar.exportToCSV", "ui.main.toolbar.importFromCSV"),
+            "ui.main.toolbar.browseDatabase", "ui.main.toolbar.addLoc", "---", "ui.main.toolbar.turnOffFunctions",
+            "ui.main.toolbar.turnOnLights", "---", "ui.main.toolbar.syncDBWithCS", "ui.main.toolbar.syncFullFunctionState",
+            "---", "ui.main.toolbar.exportToCSV", "ui.main.toolbar.importFromCSV"),
             "Locomotives");
 
         List<String> layouts = keys("ui.main.toolbar.openLayout", "ui.main.toolbar.recentLayouts", "ui.main.toolbar.managePages",
