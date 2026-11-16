@@ -180,7 +180,8 @@ one copy). So a station renamed, or a square given more copies or fewer, carries
 - Cancel also keeps what the railway changed alone while the editor was open (an Auto tab setting, a timetable entry, a
   card's pause), with the legs of a kept timetable carried to the names of the edit's last build (OB-343). That holds
   for a card's pause an editor gesture then overtook, and Cancel asks about the gesture even where it leaves the setup
-  as the editor opened it (OB-346).
+  as the editor opened it (OB-346). The card's later presses count too: Cancel keeps its last. A Save on the way out
+  starts this afresh, so a Cancel after an exit refused later goes back to what was saved.
 - Cancel and every Discard put each train back where it stood when the editor opened without changing which way any
   train faces, and send the Central Station nothing: the trains go back in the model alone.
 - A station name two pages share is settled over every page, those out of autonomy too, so the plain name does not move
