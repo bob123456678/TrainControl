@@ -230,7 +230,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         tabs.putClientProperty("JTabbedPane.tabWidthMode", "preferred");
 
         save.addActionListener(e -> save());
-        cancel.addActionListener(e -> close());
+        cancel.addActionListener(e -> closeAsking());
 
         // Save, then Cancel, at the bottom right, spaced as the route editor's are
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
@@ -570,7 +570,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         save.setEnabled(adding || isDirty() && !blocked);
     }
 
-    /** The X and Escape: closes, asking first what to do with typing that is not saved. */
+    /** The X, Escape and Cancel: closes, asking first what to do with typing that is not saved (MT-939). */
     void closeAsking()
     {
         if (isDirty() && !settleUnsaved()) return;
@@ -889,6 +889,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         private final int loadedSpeed = adding ? 0 : loc.getPreferredSpeed();
         private String shownPicture = "";
 
+        /** The picture on screen, which the pill and the marks belong to; shownPicture is the one asked for. */
+        private String onScreen = "";
+
         LocomotiveTab()
         {
             super(new GridBagLayout());
@@ -999,6 +1002,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             mark(wrench, noted(I18n.t("loc.ui.menuSetLocalLocomotiveIcon")), e -> main.setLocIcon(loc, e));
             mark(crop, noted(I18n.t("loc.ui.tooltip.recrop")), e -> main.recropLocIcon(loc, LocomotiveSettingsFrame.this));
             mark(revert, noted(I18n.t("loc.ui.menuClearLocalLocomotiveIcon")), e -> main.clearLocIcon(loc));
+
+            // They come with the first picture
+            crop.setVisible(false);
+            revert.setVisible(false);
 
             trash.setToolTipText(I18n.t("loc.ui.menuDeleteFromDatabase"));
             trash.setFocusable(false);
@@ -1199,7 +1206,10 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             mark.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             mark.addMouseListener(Listen.released(e ->
             {
-                if (!mark.isVisible() || !moveAllowed()) return;
+                // The crop and the revert act on the picture on screen, never on one still on its way (OB-482)
+                boolean waiting = mark != wrench && !Objects.equals(onScreen, shownPicture);
+
+                if (!mark.isVisible() || waiting || !moveAllowed()) return;
 
                 doThis.accept(e);
             }));
@@ -1373,7 +1383,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             revert.setEnabled(!m);
         }
 
-        /** Shows the locomotive's picture and the marks that fit it. */
+        /** Shows the locomotive's picture, and the pill and the marks that fit it once it is on screen. */
         void refreshPicture()
         {
             String url = loc.getImageURL();
@@ -1383,19 +1393,23 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             {
                 shownPicture = url;
 
+                // The pill and the marks belong to the picture on screen, so they change with it
+                final boolean crops = TrainControlUI.offersACrop(loc);
+                final boolean reverts = loc.getLocalImageURL() != null;
+
                 if (url == null || url.isEmpty())
                 {
                     // The application's stand-in, as the locomotive buttons and the database show it (FR-054)
                     picture.setIcon(new ImageIcon(
                         org.traincontrol.gui.locomotive.LocomotivePlaceholder.image(PICTURE_WIDTH - 2)));
-                    source.setText(null);
+                    arrived(url, null, crops, reverts);
                 }
                 else
                 {
                     // A fetch may be over the network: loaded off the event thread, and a result for a locomotive the
-                    // window has since left is ignored.  The pill names the picture on screen, so it changes with it.
+                    // window has since left is ignored
                     final Locomotive target = loc;
-                    final String from = I18n.t(loc.getLocalImageURL() != null ? "loc.ui.settingsPictureLocal"
+                    final String from = I18n.t(reverts ? "loc.ui.settingsPictureLocal"
                         : "loc.ui.settingsPictureFromStation");
 
                     main.getImageLoader().execute(() ->
@@ -1419,15 +1433,21 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                             if (loc == target && url.equals(shownPicture))
                             {
                                 picture.setIcon(shown);
-                                source.setText(shown == null ? null : from);
+                                arrived(url, shown == null ? null : from, crops, reverts);
                             }
                         });
                     });
                 }
             }
+        }
 
-            crop.setVisible(TrainControlUI.offersACrop(loc));
-            revert.setVisible(loc.getLocalImageURL() != null);
+        /** The picture asked for is on screen: its pill and its marks come with it (OB-482). */
+        private void arrived(String url, String pill, boolean crops, boolean reverts)
+        {
+            onScreen = url;
+            source.setText(pill);
+            crop.setVisible(crops);
+            revert.setVisible(reverts);
         }
     }
 

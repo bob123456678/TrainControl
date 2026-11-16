@@ -770,7 +770,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         assertSaveSays(window, said);
 
-        SettingsWindow.press(SettingsWindow.cancel());
+        SettingsWindow.cancelDiscarding();
 
         for (Window pressed : new Window[] {page, ui})
         {
@@ -780,7 +780,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
             assertSaveSays(fromTheKey, said);
 
-            SettingsWindow.press(SettingsWindow.cancel());
+            SettingsWindow.cancelDiscarding();
         }
 
         assertEquals(one.getName(), ONE, "a refused rename renamed it");
@@ -974,7 +974,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         assertSaveSays(opened, said);
 
-        SettingsWindow.press(SettingsWindow.cancel());
+        SettingsWindow.cancelDiscarding();
     }
 
     /**

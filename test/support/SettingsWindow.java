@@ -107,6 +107,21 @@ public final class SettingsWindow
         Components.settle();
     }
 
+    /** Presses Cancel and answers Discard when it asks about typing not saved: Cancel that throws the typing away. */
+    public static void cancelDiscarding()
+    {
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+
+        try
+        {
+            press(cancel());
+        }
+        finally
+        {
+            LocomotiveSettingsFrame.unsavedAnswerForTest = null;
+        }
+    }
+
     /** Selects a tab of the window, as a click on it does. */
     public static void selectTab(int index)
     {

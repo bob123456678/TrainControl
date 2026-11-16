@@ -326,10 +326,7 @@ public class testTheLocomotiveSettingsAutonomyTab
 
         assertTrue(SettingsWindow.save().isEnabled(), "Save is gray with the tab changed");
 
-        try (Answering answering = Answering.start(message -> Answering.pressAt(1)))
-        {
-            SettingsWindow.press(SettingsWindow.cancel());
-        }
+        SettingsWindow.cancelDiscarding();
 
         assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, 8000), "Cancel did not close the window");
         assertEquals(values(), "4 false null null", "Cancel wrote the tab onto the train");
