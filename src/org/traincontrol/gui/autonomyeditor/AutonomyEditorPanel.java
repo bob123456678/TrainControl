@@ -5751,7 +5751,8 @@ public class AutonomyEditorPanel extends JPanel
 
         if (thereByHand || backByHand) notes.add(I18n.t("autosetup.ui.testColorLegend"));
 
-        // A way that turns round on the way is refused by both searches (FR-221), so the only cause left is the station.
+        // The hand search may still turn at a reversing square on the way, but since FR-221 no known railway gives such a
+        // leg (D184: all 240 purple pairs on the frozen railway end at a station left alone), so only that cause is named.
         Set<TileKey> leftAlone = session.manualOnlyStations();
 
         if (thereByHand && leftAlone.contains(tile)) notes.add(I18n.f("autosetup.ui.testNotAnAutoDestination", describeTile(tile)));
