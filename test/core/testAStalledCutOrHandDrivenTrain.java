@@ -472,19 +472,7 @@ public class testAStalledCutOrHandDrivenTrain
 
         j.rail.getPoint("GA").setArrivedFrom("W");
 
-        RuntimeException failure = new IllegalStateException("thrown as the journey starts");
-
-        j.train.setCallback(Layout.CB_ROUTE_START, l -> { throw failure; });
-
-        try
-        {
-            j.rail.executePath(j.path, j.train, SPEED, null);
-            fail("precondition: the start callback's failure did not end the journey");
-        }
-        catch (IllegalStateException e)
-        {
-            assertSame(e, failure, "precondition: the journey ended on another failure");
-        }
+        j.failsAtTheStart();
 
         j.assertNothingTaken("the failed journey");
         j.assertStandsOnlyAt("GA", "the failed journey");
@@ -574,23 +562,11 @@ public class testAStalledCutOrHandDrivenTrain
 
         j.path.get(0).setEntrySide("W");
 
-        RuntimeException failure = new IllegalStateException("thrown by the progress callback");
+        j.failsAt("TB");
 
-        train.setCallback(Layout.CB_ROUTE_PROG, l -> { throw failure; });
+        j.assertStandsOnlyAt("TB2", "the failed journey that turned at TB");
 
-        try
-        {
-            assertSame(j.go().light("TB").end(), failure, "precondition: the callback's failure did not end the "
-                + "journey");
-
-            j.assertStandsOnlyAt("TB2", "the failed journey that turned at TB");
-
-            assertEquals(j.rail.turnedOnArrivalAt(train.getName()), "TB2", "the window was not told of the turn");
-        }
-        finally
-        {
-            j.train.setSpeed(0);
-        }
+        assertEquals(j.rail.turnedOnArrivalAt(train.getName()), "TB2", "the window was not told of the turn");
     }
 
     /**
@@ -634,50 +610,18 @@ public class testAStalledCutOrHandDrivenTrain
     /**
      * The train a failure left at its start, tail side and all, is saved and read back the same (OB-493).
      *
-     * MUTATION: in `Layout.executePath`'s catch, drop `reached.setArrivedFrom(tail)`, and this fails.
+     * MUTATION: in `Layout.executePath`'s catch, drop `reached.setArrivedFrom(tail.getKey())`, and this fails.
      */
     @Test(timeOut = 120000)
     public void testTheStartAFailureLeftTheTrainAtRoundTrips() throws Exception
     {
         Journey j = new Journey(null, "XA", "XB", "XC");
 
-        // A railway saves only with a default speed in range
-        j.rail.setDefaultLocSpeed(SPEED);
-
         j.rail.getPoint("XA").setArrivedFrom("W");
 
-        RuntimeException failure = new IllegalStateException("thrown as the journey starts");
+        j.failsAtTheStart();
 
-        j.train.setCallback(Layout.CB_ROUTE_START, l -> { throw failure; });
-
-        try
-        {
-            try
-            {
-                j.rail.executePath(j.path, j.train, SPEED, null);
-                fail("precondition: the start callback's failure did not end the journey");
-            }
-            catch (IllegalStateException e)
-            {
-                assertSame(e, failure, "precondition: the journey ended on another failure");
-            }
-
-            String saved = j.rail.toJSON();
-            Layout loaded = Layout.fromJSON(saved, model);
-
-            assertTrue(loaded.isValid(), "the saved railway reads back invalid: " + loaded.getInvalidReason());
-
-            assertSame(loaded.getLocomotiveLocation(j.train), loaded.getPoint("XA"), "the train read back is not at "
-                + "XA");
-            assertEquals(loaded.getPoint("XA").getArrivedFrom(), "W", "the tail side did not survive the reload");
-            assertNull(loaded.getPoint("XC").getCurrentLocomotive(), "XC holds a train after the reload");
-            assertEquals(loaded.toJSON(), saved, "the railway read back is not the one saved");
-        }
-        finally
-        {
-            // A database locomotive: its next claim must not inherit the failure
-            j.train.setCallback(Layout.CB_ROUTE_START, l -> { });
-        }
+        assertNull(j.readBack("XA", "W").getPoint("XC").getCurrentLocomotive(), "XC holds a train after the reload");
     }
 
     /**
@@ -691,38 +635,12 @@ public class testAStalledCutOrHandDrivenTrain
     {
         Journey j = new Journey(null, "YA", "YB", "YC");
 
-        // A railway saves only with a default speed in range
-        j.rail.setDefaultLocSpeed(SPEED);
-
         j.path.get(0).setEntrySide("W");
 
-        RuntimeException failure = new IllegalStateException("thrown by the progress callback");
+        j.failsAt("YB");
 
-        j.train.setCallback(Layout.CB_ROUTE_PROG, l -> { throw failure; });
-
-        try
-        {
-            assertSame(j.go().light("YB").end(), failure, "precondition: the callback's failure did not end the "
-                + "journey");
-
-            String saved = j.rail.toJSON();
-            Layout loaded = Layout.fromJSON(saved, model);
-
-            assertTrue(loaded.isValid(), "the saved railway reads back invalid: " + loaded.getInvalidReason());
-
-            assertSame(loaded.getLocomotiveLocation(j.train), loaded.getPoint("YB"), "the train read back is not at "
-                + "YB");
-            assertEquals(loaded.getPoint("YB").getArrivedFrom(), "W", "the tail side did not survive the reload");
-            assertEquals(Layout.namesOfRoad(loaded.getPoint("YB").getArrivedAlong()),
-                Layout.namesOfRoad(j.path.subList(0, 1)), "the road did not survive the reload");
-            assertEquals(loaded.toJSON(), saved, "the railway read back is not the one saved");
-        }
-        finally
-        {
-            j.train.setSpeed(0);
-            // A database locomotive: its next claim must not inherit the failure
-            j.train.setCallback(Layout.CB_ROUTE_PROG, l -> { });
-        }
+        assertEquals(Layout.namesOfRoad(j.readBack("YB", "W").getPoint("YB").getArrivedAlong()),
+            Layout.namesOfRoad(j.path.subList(0, 1)), "the road did not survive the reload");
     }
 
     /** A new sensor, clear. */
@@ -874,6 +792,69 @@ public class testAStalledCutOrHandDrivenTrain
             assertFalse(rail.getActiveLocomotives().containsKey(train), who + " left the train counted as under way");
 
             for (Edge e : path) assertFalse(e.isLockHeld(null), who + " left " + e.getName() + " locked");
+        }
+
+        /**
+         * Sends the train with its progress callback failing, lights `point`, and returns once the failure has ended
+         * the journey.  The callback is taken off again: the train may be a database locomotive the next claim drives.
+         */
+        void failsAt(String point) throws InterruptedException
+        {
+            RuntimeException failure = new IllegalStateException("thrown by the progress callback");
+
+            train.setCallback(Layout.CB_ROUTE_PROG, l -> { throw failure; });
+
+            try
+            {
+                assertSame(go().light(point).end(), failure, "precondition: the callback's failure did not end the "
+                    + "journey");
+            }
+            finally
+            {
+                train.setSpeed(0);
+                train.setCallback(Layout.CB_ROUTE_PROG, l -> { });
+            }
+        }
+
+        /** Runs the journey with its start callback failing, and returns once that has ended it; as failsAt. */
+        void failsAtTheStart()
+        {
+            RuntimeException failure = new IllegalStateException("thrown as the journey starts");
+
+            train.setCallback(Layout.CB_ROUTE_START, l -> { throw failure; });
+
+            try
+            {
+                rail.executePath(path, train, SPEED, null);
+                fail("precondition: the start callback's failure did not end the journey");
+            }
+            catch (IllegalStateException e)
+            {
+                assertSame(e, failure, "precondition: the journey ended on another failure");
+            }
+            finally
+            {
+                train.setCallback(Layout.CB_ROUTE_START, l -> { });
+            }
+        }
+
+        /** The railway saved and read back: valid, saved again the same, the train at `point` come in by `side`. */
+        Layout readBack(String point, String side) throws Exception
+        {
+            // A railway saves only with a default speed in range
+            rail.setDefaultLocSpeed(SPEED);
+
+            String saved = rail.toJSON();
+            Layout loaded = Layout.fromJSON(saved, model);
+
+            assertTrue(loaded.isValid(), "the saved railway reads back invalid: " + loaded.getInvalidReason());
+
+            assertSame(loaded.getLocomotiveLocation(train), loaded.getPoint(point), "the train read back is not at "
+                + point);
+            assertEquals(loaded.getPoint(point).getArrivedFrom(), side, "the tail side did not survive the reload");
+            assertEquals(loaded.toJSON(), saved, "the railway read back is not the one saved");
+
+            return loaded;
         }
 
         /** The edges the train's body claims, as the walk of standing trains reads them. */

@@ -803,6 +803,7 @@ public class Layout
 
         this.runPolicies.remove(l);
         this.locomotiveMilestones.remove(l);
+        this.turnedPartWay.remove(l);
         this.clearedEdges.remove(l);
         this.releasedEarly.remove(l);
 
