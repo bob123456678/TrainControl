@@ -4,8 +4,11 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
 
 ## 7. Routing checks in the editor
 
-**Auto Path / Manual Path** (the radios under Path Debugging) decide which tier the check answers for. The two differ **only** in where a train may be
-sent: an inactive square stops both, a barred arrival stops both, a compulsory turn turns both.
+**Test a path and Why not Moving? answer for both tiers at once** (FR-221; Adam: *"I do think we can retire it, with
+the missing details clearly shown in the output.  also, the output should include a table of destinations, rather than
+just text."*). The Auto Path / Manual Path radios under Path Debugging are gone, and nothing remembered them. The two
+tiers differ **only** in where a train may be sent: an inactive square stops both, a barred arrival stops both, a
+compulsory turn turns both.
 
 **A BARRED ARRIVAL STOPS BEING SENT THERE, AND NOTHING ELSE ABOUT THE TRACK** (Adam, of RampDown and
 BottomMainPost: *"may need station restrictions but not pass through restrictions, since they are meant
@@ -44,25 +47,41 @@ squares are `canReverse`, so both are that shape.
 **Barring every way in is reported, not enforced.** `AutonomySession.shutStations` names a station whose every arrival
 side is barred, since it is then no longer a destination by any road.
 
-On **Auto**, a station autonomy is told to leave alone is reported as reachable **and never chosen**. The route is still
-drawn, because the track is passable.
+**Test a path draws autonomy's route each way**, yellow there and amber back: the search autonomy runs, turning only
+where the train stands and never on the way, and never to a station it is told to leave alone
+(`AutonomySession.testPathForAutonomy`). **Where autonomy has none and a hand send has one, that leg is drawn purple**
+(`AutonomySession.testPath`), and the message strip says what purple is and why autonomy would not take it: the station
+is one autonomy leaves alone, or every way there turns round on the way. The route is still drawn, because the track is
+passable. `core.testManualOnlyPathsAreADifferentColour.testTheStripSaysWhichLegOnlyAHandSendTakesAndWhy`.
 
-**Why Not Moving? follows Auto Path / Manual Path as well** (MT-434; Adam, asked which tool: *"Why Not
-Moving?"*). On **Auto** it answers for autonomy: the stations it could choose but cannot right now, and those it will
-never choose, each with autonomy's reason. On **Manual** it answers for a train sent by hand, as the right-click menu
-decides what to offer: autonomy's standing bars (not to be chosen, a reversing square on the way or at the end) are not
-reasons there, so those stations are listed as reachable when a route is clear, and every refusal is under *Stations the
-train cannot be sent to right now*. **What the menu itself leaves out is still a reason by hand**: a station that
-excludes the train, and a terminus autonomy may choose for a train that cannot reverse (OB-205), asked through
-`Layout.isOfferableToOperator`, so the list and its explanation cannot disagree. A switched-off station is still refused
-by hand and listed there saying it is switched off. Switching the radio asks the last square again.
-`Layout.explainDestinations(Locomotive, boolean)`;
-`regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingFollowsPathType`.
+**Neither search passes another copy of either end, nor throws a switch two ways**, as `Layout.bfsBySettings` and
+`isPathClear` route: a kickback, whose only way turns on a spur and comes back through the switch set the other way, is
+no way at all. A way that turns round on the way has to come back over track it has run, so it meets one of those two
+refusals, and no railway is known where the "turns round on the way" note can still show (FR-221; whether it stays is
+Adam's call). `core.testTestAPathStartsWhereTheFindingsDo.testAKickbackThatThrowsItsSwitchBothWaysIsNoWay`,
+`core.testAutonomyDiagramReducer.testNoWalkPassesAnotherCopyOfEitherEnd`; the findings' reach does not yet follow them
+(`testTheFindingsStillReachPastAnotherCopyOfTheDestination`).
 
-**The locomotive list answers the same way**: its "No available paths" tooltip and its why-window answer for a train
-sent by hand whenever autonomy is not running, and for autonomy while it runs, or a train on a copy that is no station
-would be told it could go nowhere while the list offered it routes.
-`regression.testTheDestinationDoorsAgree.testEveryWhyNamesItsTier` holds every why-window under `gui/` to a tier.
+**Why Not Moving? gives one answer for both tiers, as a table of destinations** (MT-434; Adam, asked which tool: *"Why
+Not Moving?"*): one row per station, saying whether the train **can go now** (green: autonomy may send it there), **by
+hand only** (purple: a hand send may, autonomy will not, with autonomy's reason, and "Return Home only" where it is the
+train's home by `HomeStaging.atHome`; D177), or **not right now** (gray: neither may, with what stops a hand send, and
+autonomy's reason as well where it differs). A station shows the best of its copies, and the headline counts the green
+ones only (D175); the diagram marks each square as its row says, and draws autonomy's route to a green one and the hand
+send's to a purple one. Rows run by answer, then stations before berths (FR-080), then by page and name (MT-429). By
+hand the reasons are the ones the right-click menu meets: autonomy's standing bars (not to be chosen, a reversing square
+on the way or at the end) are not reasons there. **What the menu itself leaves out is still a reason by hand**: a
+station that excludes the train, and a terminus autonomy may choose for a train that cannot reverse (OB-205), asked
+through `Layout.isOfferableToOperator`, so the list and its explanation cannot disagree. A switched-off station is still
+refused by hand and says it is switched off. Where only autonomy will not start the train (paused, say), the answer says
+so over the table and no station can go now; where nothing may move it, that one reason is the answer.
+`gui.autonomy.DestinationTable`, over `Layout.explainDestinationsGrouped(Locomotive, boolean)` asked for each tier;
+`regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingShowsBothTiersInATable`.
+
+**The locomotive list answers the same way**: its "No available paths" tooltip (the first twelve rows) and its
+why-window (every row) show the same table, under where the train stands.
+`regression.testTheDestinationDoorsAgree.testEveryWhyNamesItsTier` holds every why-window to name its tier, and both
+doors to `DestinationTable`.
 
 **And where the only way there is a lap, it says so.** No route in any tier passes another copy of the square it starts
 at or the square it ends at: such a route goes round a loop to where the train already was, or drives through its
@@ -79,8 +98,8 @@ already uses."*, rather than as missing track, chosen from the route the track q
 `testNoRoutePassesAnotherCopyOfItsDestination` and `testWhyNotMovingSaysTheOnlyWayThereIsALap`.
 
 **And the drawn route says it too, in its color.** A tested path is drawn yellow on the way out and orange on the way
-back; a leg whose **destination** is a station autonomy will never choose **and a person still may** (a parking berth)
-is drawn in magenta, whichever direction it runs.
+back; a leg only a hand send takes, to a station autonomy will never choose **and a person still may** (a parking
+berth) or by a way that turns round on the way, is drawn in magenta, whichever direction it runs.
 
 **Two squares are deliberately not magenta.** A **compulsory turn** is chosen like any other station (OB-195) when *Can
 Be Chosen in Full Autonomy* is on. A square **switched out of service** is not a manual-only point: nothing may be sent

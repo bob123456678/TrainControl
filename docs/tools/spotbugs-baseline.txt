@@ -63,9 +63,7 @@ AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.AutonomySession
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.AutonomySession	updateStoredRecord	dirty	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.AutonomySession	writePointProperty	dirty	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	inGray	gray	1
-AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	inTheEditor	editing	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	needsALength	unmeasured	1
-AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	paintSpill	spilling	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	withAllowedDirections	allowedToo	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	withNoStation	stationless	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automationui.TileAnnotation	withSmallerIcon	iconShare	1
@@ -129,7 +127,6 @@ AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.marklin.MarklinControlStatio
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.marklin.MarklinControlStation	lambda$receiveMessage	UID	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.marklin.MarklinControlStation	restoreState	databaseLoadFailed	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.marklin.MarklinControlStation	saveState	databaseLoadFailed	1
-AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.marklin.MarklinControlStation	syncWithCS2	isCS3	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.marklin.MarklinLocomotive	setAddress	UID	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.marklin.MarklinLocomotive	setAddress	address	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.marklin.MarklinLocomotive	setCustomFunctions	customFunctions	1
@@ -226,7 +223,6 @@ DM_CONVERT_CASE	org.traincontrol.util.JarUpdater	backupName		1
 DM_CONVERT_CASE	org.traincontrol.util.SelfUpdate	jarAt		1
 DM_CONVERT_CASE	org.traincontrol.util.SelfUpdate	whyNotAWholeJar		1
 DM_DEFAULT_ENCODING	org.traincontrol.marklin.MarklinControlStation	init		1
-DM_DEFAULT_ENCODING	org.traincontrol.util.Conversion	getFolderHash		1
 DM_EXIT	org.traincontrol.gui.widgets.RestoreAction	closeWithoutSaving		1
 DM_EXIT	org.traincontrol.marklin.MarklinControlStation	init		1
 DM_INVALID_MIN_MAX	org.traincontrol.gui.layouteditor.LayoutEditor	scrollable		1
@@ -255,7 +251,6 @@ EI_EXPOSE_REP	org.traincontrol.automationui.AutonomyChecks$Finding	getRelated	re
 EI_EXPOSE_REP	org.traincontrol.automationui.AutonomySession	getGraph	graph	1
 EI_EXPOSE_REP	org.traincontrol.automationui.AutonomySession	getStore	store	1
 EI_EXPOSE_REP	org.traincontrol.automationui.GraphReducer	getGraph	graph	1
-EI_EXPOSE_REP	org.traincontrol.automationui.TileAnnotation	spillShape	spillRegion	1
 EI_EXPOSE_REP	org.traincontrol.automationui.TileOverlay	getSegments	segments	1
 EI_EXPOSE_REP	org.traincontrol.base.ConditionOutline$Row	getCommand	command	1
 EI_EXPOSE_REP	org.traincontrol.base.LayoutDiagramComponent	getAccessory	accessory	1
@@ -432,7 +427,7 @@ JLM_JSR166_UTILCONCURRENT_MONITORENTER	org.traincontrol.marklin.udp.NetworkProxy
 JLM_JSR166_UTILCONCURRENT_MONITORENTER	org.traincontrol.marklin.udp.NetworkProxy	syncSensors	overtaken	1
 LI_LAZY_INIT_STATIC	org.traincontrol.util.SelfUpdate	letGoOfTheExitLock	exitChannel	1
 LI_LAZY_INIT_STATIC	org.traincontrol.util.SelfUpdate	letGoOfTheExitLock	exitLock	1
-MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.LocomotiveSettingsFrame	<init>		5
+MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.LocomotiveSettingsFrame	<init>		4
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.RouteEditorFrame	<init>		2
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	<init>		2
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.autonomyeditor.StationWindowBase	<init>		2
@@ -443,7 +438,7 @@ MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.locomotive.RightC
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.locomotive.UsageChart	<init>		2
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.widgets.LoadingSpinner	<init>		1
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.gui.widgets.PositionAwareJFrame	<init>		1
-MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.marklin.MarklinControlStation	<init>		3
+MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.marklin.MarklinControlStation	<init>		2
 MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR	org.traincontrol.marklin.MarklinRoute	<init>		2
 MS_CANNOT_BE_FINAL	org.traincontrol.base.Accessory		echoes	1
 MS_CANNOT_BE_FINAL	org.traincontrol.base.Accessory		lastEchoed	1
@@ -545,7 +540,6 @@ RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.marklin.MarklinControl
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.marklin.MarklinControlStation	parseAuto	autoLayout	1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.marklin.MarklinRoute	heldReason		1
 RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE	org.traincontrol.automation.Layout	lambda$fromJSON		1
-RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	applyTest	session	1
 RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE	org.traincontrol.gui.layouteditor.LayoutEditor	editAddress	layout	1
 RC_REF_COMPARISON_BAD_PRACTICE_BOOLEAN	org.traincontrol.gui.TrainControlUI$KeyShortcuts$Row	stroke	alt	1
 RC_REF_COMPARISON_BAD_PRACTICE_BOOLEAN	org.traincontrol.gui.TrainControlUI$KeyShortcuts$Row	stroke	control	1
@@ -830,7 +824,6 @@ UG_SYNC_SET_UNSYNC_GET	org.traincontrol.marklin.MarklinLocomotive	getAccessorySt
 UG_SYNC_SET_UNSYNC_GET	org.traincontrol.marklin.MarklinLocomotive	getF		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automation.Layout	claimUpToWhereTheRailsPart		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automation.Layout	logPathError		1
-UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automationui.TileAnnotation	block		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.automationui.TileAnnotation	opposite		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	askAboutSignals		1
 UPM_UNCALLED_PRIVATE_METHOD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	nameForPrompt		1

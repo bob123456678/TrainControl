@@ -53,7 +53,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
-import javax.swing.JRadioButton;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -424,17 +423,12 @@ public class AutonomyEditorPanel extends JPanel
     // The first end of a path test
     private TileKey testFrom;
 
-    /** The last path test's squares, so a switch of Auto Path / Manual Path redraws it (MT-399); gone with the route. */
+    /** The last path test's squares, which stay marked while its answer shows (OB-395); gone with the route. */
     private TileKey lastTestFrom;
     private TileKey lastTestTo;
 
-    /** The last Why Not Moving? square, so switching Auto Path / Manual Path asks again (MT-434). */
+    /** The last Why Not Moving? square, whose answer the marks show. */
     private TileKey lastWhyTile;
-
-    /** Which tier the routing check answers for; Auto Path by default. */
-    private JRadioButton pathTypeAuto;
-
-    private JRadioButton pathTypeManual;
 
     /** The one-way run tool, a button and not a menu item (OB-006). */
     private JToggleButton oneWayButton;
@@ -669,32 +663,6 @@ public class AutonomyEditorPanel extends JPanel
         // No heading: the editor prints one.  Stacked, as two buttons in a row would set the column's width.
         testButton = toolButton(Tool.TEST, I18n.t("autosetup.ui.toolTest"));
 
-        // Which tier the check answers for (Adam: **"Radio button Auto or Manual dictates what is in scope for the
-        // routing check."**): only which stations a train may be sent to differs.
-        pathTypeAuto = new JRadioButton(I18n.t("autosetup.ui.pathTypeAuto"), true);
-        pathTypeManual = new JRadioButton(I18n.t("autosetup.ui.pathTypeManual"), false);
-
-        ButtonGroup pathType = new ButtonGroup();
-        pathType.add(pathTypeAuto);
-        pathType.add(pathTypeManual);
-
-        String pathTypeTip = wrapped(I18n.t("autosetup.ui.tooltipPathType"));
-
-        pathTypeAuto.setToolTipText(pathTypeTip);
-        pathTypeManual.setToolTipText(pathTypeTip);
-
-        // Flush with the buttons above and below, so the column's left edge is one line (OB-438)
-        for (JRadioButton radio : new JRadioButton[] {pathTypeAuto, pathTypeManual})
-        {
-            radio.setFont(FONT_CONTROL);
-            radio.setMargin(new Insets(0, 0, 0, 0));
-            radio.setBorder(BorderFactory.createEmptyBorder());
-        }
-
-        // The route on screen follows the tier (MT-399)
-        pathTypeAuto.addActionListener(e -> retestForTheNewTier());
-        pathTypeManual.addActionListener(e -> retestForTheNewTier());
-
         whyButton = toolButton(Tool.WHY, I18n.t("autosetup.ui.toolWhy"));
         whyButton.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipWhy")));
 
@@ -727,10 +695,6 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(first);
 
         panel.add(row(whyButton));
-
-        // Below Why Not Moving?, unlabeled, each on its own row to keep the column narrow (OB-217)
-        panel.add(row(pathTypeAuto));
-        panel.add(row(pathTypeManual));
 
         // A section of its own, headed as the Visible Elements column's headings are (MT-890)
         JLabel stationTools = UiStyle.heading(I18n.t("autosetup.ui.headingStationTools"));
@@ -2149,7 +2113,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /** The width a tooltip wraps at, in pixels. */
-    private static final int TOOLTIP_WIDTH = 320;
+    public static final int TOOLTIP_WIDTH = 320;
 
     /**
      * TOOLTIP_WIDTH in measuring pixels: a CSS width is drawn at the screen's resolution, so 320 is 400 at 120 dpi
@@ -3879,6 +3843,12 @@ public class AutonomyEditorPanel extends JPanel
         return out;
     }
 
+    /** Control+V places the main window's selected locomotive on the square, Delete removes its train (FR-200). */
+    public void placeOrRemoveByKey(TileKey tile, boolean place)
+    {
+        tileMenus.clickByKey(tile, place);
+    }
+
     /** Takes the trains leaving a square off it (`trainsLeaving`). */
     void removeLocomotive(TileKey tile)
     {
@@ -5558,9 +5528,6 @@ public class AutonomyEditorPanel extends JPanel
 
         final WhySetup setup = whySetup;
 
-        // The tier (MT-434), read here, and the square remembered so Auto Path / Manual Path can ask again.
-        final boolean byHand = pathTypeAuto != null && !pathTypeAuto.isSelected();
-
         lastWhyTile = tile;
 
         // Said now, as the answer lands a beat later.
@@ -5573,7 +5540,7 @@ public class AutonomyEditorPanel extends JPanel
 
         try
         {
-            WhyRenderer.execute(() -> workOutWhy(asked, layout, index, setup, tile, byHand));
+            WhyRenderer.execute(() -> workOutWhy(asked, layout, index, setup, tile));
         }
         catch (RuntimeException refused)
         {
@@ -5590,7 +5557,7 @@ public class AutonomyEditorPanel extends JPanel
      * thread.
      */
     private void workOutWhy(long asked, Layout layout,
-        StationIndex index, WhySetup setup, TileKey tile, boolean byHand)
+        StationIndex index, WhySetup setup, TileKey tile)
     {
         try
         {
@@ -5598,7 +5565,7 @@ public class AutonomyEditorPanel extends JPanel
 
             try
             {
-                answer = composeWhy(layout, index, setup, tile, byHand);
+                answer = composeWhy(layout, index, setup, tile);
             }
             catch (RuntimeException failed)
             {
@@ -5617,9 +5584,9 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     private WhyAnswer composeWhy(Layout layout,
-        StationIndex index, WhySetup setup, TileKey tile, boolean byHand)
+        StationIndex index, WhySetup setup, TileKey tile)
     {
-        return whyAnswers.composeWhy(layout, index, setup, tile, byHand);
+        return whyAnswers.composeWhy(layout, index, setup, tile);
     }
 
     /** Paints the worker's answer, on the event thread; only the latest ask's answer (`asked`) paints. */
@@ -5763,35 +5730,38 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        List<GraphReducer.ReducedEdge> there = session.testPath(testFrom, tile);
-        List<GraphReducer.ReducedEdge> back = session.testPath(tile, testFrom);
+        // Autonomy's route each way, else one only a hand send can take, drawn purple (FR-221)
+        Map<TileKey, Set<org.traincontrol.automationui.TilePorts.Side>> arrivals = session.startingArrivals();
+
+        List<GraphReducer.ReducedEdge> there = session.testPathForAutonomy(testFrom, tile, arrivals);
+        List<GraphReducer.ReducedEdge> back = session.testPathForAutonomy(tile, testFrom, arrivals);
+
+        boolean thereByHand = there == null && (there = session.testPath(testFrom, tile, arrivals)) != null;
+        boolean backByHand = back == null && (back = session.testPath(tile, testFrom, arrivals)) != null;
 
         traces.clear();
 
-        // Each direction its own line, colored by where it ends.
-        trace(traces, there, testFrom, true, tile);
-        trace(traces, back, tile, false, testFrom);
+        trace(traces, there, testFrom, true, thereByHand);
+        trace(traces, back, tile, false, backByHand);
 
-        // And whether the radio's tier would send a train there: a shut square binds every tier, said on both; a
-        // manual-only one is said on Auto alone.  As well as the route, which is passable.
-        String tierNote = "";
+        // A shut square binds every tier; a purple leg says why autonomy would not take it.
+        Set<String> notes = new LinkedHashSet<>();
 
-        if (session != null && session.shutTiles().contains(tile))
-        {
-            tierNote = "<br>" + escape(I18n.f("autosetup.ui.testSquareIsOutOfService",
-                describeTile(tile)));
-        }
-        else if (pathTypeAuto != null && pathTypeAuto.isSelected() && session != null
-            && session.manualOnlyStations().contains(tile))
-        {
-            tierNote = "<br>" + escape(I18n.f("autosetup.ui.testNotAnAutoDestination",
-                describeTile(tile)));
-        }
+        if (session.shutTiles().contains(tile)) notes.add(I18n.f("autosetup.ui.testSquareIsOutOfService", describeTile(tile)));
+
+        if (thereByHand || backByHand) notes.add(I18n.t("autosetup.ui.testColorLegend"));
+
+        if (thereByHand) notes.add(whyByHandOnly(testFrom, tile));
+        if (backByHand) notes.add(whyByHandOnly(tile, testFrom));
+
+        StringBuilder said = new StringBuilder();
+
+        for (String note : notes) said.append("<br>").append(escape(note));
 
         // Named: the sensors it calls at say where it went.
         answer(I18n.f("autosetup.ui.testBothWays",
             escape(describeTile(testFrom)), escape(describeTile(tile)),
-            leg(there), escape(via(there)), leg(back), legColor(tile, true), legColor(testFrom, false)) + tierNote,
+            leg(there), escape(via(there)), leg(back), legColor(thereByHand, true), legColor(backByHand, false)) + said,
             true);
 
         lastTestFrom = testFrom;
@@ -5800,38 +5770,12 @@ public class AutonomyEditorPanel extends JPanel
         testFrom = null;
     }
 
-    /**
-     * Reruns the last path test for the radio's tier (MT-399), only while the test tool is armed and nothing half-made.
-     */
-    private void retestForTheNewTier()
+    /** Why autonomy has no route from one square to another that a hand send has. */
+    private String whyByHandOnly(TileKey from, TileKey to)
     {
-        // And the why answer (MT-434), through the click's door.
-        if (tool == Tool.WHY && lastWhyTile != null)
-        {
-            try
-            {
-                applyWhy(lastWhyTile, componentAt(lastWhyTile));
-            }
-            catch (RuntimeException e)
-            {
-                JOptionPane.showMessageDialog(owner(), String.valueOf(e.getMessage()));
-            }
-
-            refresh();
-
-            return;
-        }
-
-        if (tool != Tool.TEST || testFrom != null || lastTestFrom == null || lastTestTo == null) return;
-
-        TileKey from = lastTestFrom;
-        TileKey to = lastTestTo;
-
-        testFrom = from;
-
-        applyTest(to, componentAt(to));
-
-        refresh();
+        return session.manualOnlyStations().contains(to)
+            ? I18n.f("autosetup.ui.testNotAnAutoDestination", describeTile(to))
+            : I18n.f("autosetup.ui.testTurnsOnTheWay", describeTile(from), describeTile(to));
     }
 
     static String escape(String text)
@@ -5845,42 +5789,21 @@ public class AutonomyEditorPanel extends JPanel
             : I18n.f("autosetup.ui.testLegReachable", run.size());
     }
 
+    /** The color a tested leg is drawn in, as `trace` draws it: purple where only a hand send takes it. */
+    private String legColor(boolean byHand, boolean forward)
+    {
+        return I18n.t(byHand ? "autosetup.ui.testColorPurple"
+            : forward ? "autosetup.ui.testColorYellow" : "autosetup.ui.testColorAmber");
+    }
+
     /**
-     * Lays one leg of a tested route onto the squares it crosses, into a given map: a worker builds its own and the
-     * event thread installs it.  `to` is the square the leg ENDS at, which decides whether it is drawn as manual-only.
+     * Lays one leg of a route onto the squares it crosses, into a given map: a worker builds its own and the event thread
+     * installs it.  `manualOnly` draws it purple, as a route only a hand send takes.
      */
     void trace(Map<TileKey,
         List<TileAnnotation.Trace>> into,
         List<GraphReducer.ReducedEdge> run,
-        TileKey from, boolean forward, TileKey to)
-    {
-        // Asked once for the whole leg, as a color on its last square alone could be off the page.
-        // `manualOnlyStations`, not `stationsAutonomyWillNotChoose`: a shut square is no manual-only point.
-        trace(into, run, from, forward, to, endsManualOnly(to));
-    }
-
-    /** Whether a tested leg ending here is drawn purple; its words ask this too (OB-398). */
-    private boolean endsManualOnly(TileKey to)
-    {
-        return to != null && session != null && session.manualOnlyStations().contains(to);
-    }
-
-    /**
-     * The color a tested leg is drawn in, as `trace` picks it: purple where it ends at a station only a person may
-     * send a train to, else yellow there and amber back.
-     */
-    private String legColor(TileKey to, boolean forward)
-    {
-        if (endsManualOnly(to)) return I18n.t("autosetup.ui.testColorPurple");
-
-        return I18n.t(forward ? "autosetup.ui.testColorYellow" : "autosetup.ui.testColorAmber");
-    }
-
-    /** The same, in the color asked for: Why not Moving? knows which stations autonomy will never choose this train. */
-    void trace(Map<TileKey,
-        List<TileAnnotation.Trace>> into,
-        List<GraphReducer.ReducedEdge> run,
-        TileKey from, boolean forward, TileKey to, boolean manualOnly)
+        TileKey from, boolean forward, boolean manualOnly)
     {
         if (run == null) return;
 
@@ -6091,9 +6014,7 @@ public class AutonomyEditorPanel extends JPanel
             badgeFor(tile), shaded, isCurved(tile), isPairedPortal(tile),
             traces.get(tile), directionsView() == 1,
             ignored ? null
-                : session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS))
-            // FR-118's white icons, in the editor only, where arrows are drawn over them.
-            .inTheEditor();
+                : session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS));
 
         // Unticked, a square autonomy ignores is left empty; picking a signal still grays the rest (FR-197).
         if (shaded && !showIgnored.isSelected() && isIgnored(tile)) annotation.leftEmpty();
@@ -6509,10 +6430,6 @@ public class AutonomyEditorPanel extends JPanel
         // Nothing else here works on an ignored page: grayed, not hidden, so the column keeps its shape.
         if (testButton != null) testButton.setEnabled(!ignored);
         if (whyButton != null) whyButton.setEnabled(!ignored);
-
-        // And the path type (FR-105: "also disable/grey out the auto/manual radio buttons")
-        if (pathTypeAuto != null) pathTypeAuto.setEnabled(!ignored);
-        if (pathTypeManual != null) pathTypeManual.setEnabled(!ignored);
 
         // And One-Way Run (OB-235), put down here if armed, not through cancelPendingGesture, which refreshes.
         if (oneWayButton != null)

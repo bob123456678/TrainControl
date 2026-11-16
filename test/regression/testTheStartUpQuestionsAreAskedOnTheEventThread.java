@@ -7,7 +7,6 @@ import java.awt.Toolkit;
 import java.awt.event.AWTEventListener;
 import java.awt.event.HierarchyEvent;
 import java.net.InetSocketAddress;
-import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,7 +40,7 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
 
     private final Preferences prefs = TrainControlUI.getPrefs();
     private String storedAddress;
-    private NoExit noExit;
+    private support.NoExit noExit;
     private Watcher watcher;
     private support.LayoutSandbox sandbox;
 
@@ -56,7 +55,7 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
         storedAddress = prefs.get(TrainControlUI.IP_PREF, null);
         prefs.remove(TrainControlUI.IP_PREF);
 
-        noExit = new NoExit();
+        noExit = new support.NoExit();
         System.setSecurityManager(noExit);
 
         watcher = new Watcher();
@@ -488,37 +487,6 @@ public class testTheStartUpQuestionsAreAskedOnTheEventThread
             {
                 return new ArrayList<>(seen);
             }
-        }
-    }
-
-    /** Allows everything but an exit, whose status it keeps ("exitVM.1" is exit 1). */
-    private static final class NoExit extends SecurityManager
-    {
-        private final List<String> refused = new java.util.concurrent.CopyOnWriteArrayList<>();
-
-        List<Integer> exits()
-        {
-            List<Integer> statuses = new ArrayList<>();
-
-            for (String name : refused) statuses.add(Integer.valueOf(name.substring("exitVM.".length())));
-
-            return statuses;
-        }
-
-        @Override
-        public void checkPermission(Permission asked)
-        {
-            if (!asked.getName().startsWith("exitVM.")) return;
-
-            refused.add(asked.getName());
-
-            throw new SecurityException("start-up may not exit in a test");
-        }
-
-        @Override
-        public void checkPermission(Permission asked, Object context)
-        {
-            checkPermission(asked);
         }
     }
 }

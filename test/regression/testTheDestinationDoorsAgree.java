@@ -112,11 +112,12 @@ public class testTheDestinationDoorsAgree
     }
 
     /**
-     * Every why-window names the tier it answers for, so on Manual none of them gives autonomy's reasons (OB-225).  A
-     * source census over every file under `gui/`, so a door added later is counted without being listed; each tier's
-     * answers are tested where they live (`core.testWhyStuck`).
+     * Every why-window names the tier it asks (OB-225), and the two doors, the locomotive list and Why not Moving?, ask
+     * both through `DestinationTable` (FR-221).  A source census over every file of the program, so a door added later is
+     * counted without being listed; each tier's answers are tested where they live (`core.testWhyStuck`).
      *
-     * MUTATION: give either call in `AutoLocomotiveStatus` its one-argument form back, and this names it.
+     * MUTATION: give either `explainCannotStart` call in `DestinationTable` its one-argument form back, and this names
+     * it.
      */
     @Test
     public void testEveryWhyNamesItsTier() throws Exception
@@ -158,11 +159,20 @@ public class testTheDestinationDoorsAgree
             }
         }
 
-        assertTrue(calls >= 6, "precondition: the census found " + calls + " calls to the three explain methods in the"
-            + " program, fewer than the diagram's two and the locomotive list's four - it is not reading the doors");
+        assertTrue(calls >= 4, "precondition: the census found " + calls + " calls to the three explain methods in the"
+            + " program, fewer than the two tiers' two that `DestinationTable` asks - it is not reading the doors");
 
-        assertTrue(untiered.isEmpty(), "a why-window asks autonomy's question whatever the Path Type, so on Manual it"
-            + " gives reasons that stop nothing a hand-driven send does (REG4, GUI3-C1; Adam, OB-225).  Name the tier -"
-            + " `!layout.isAutoRunning()` where the door has no Path Type of its own: " + untiered);
+        assertTrue(untiered.isEmpty(), "a why-window asks autonomy's question without saying so, so it can pass for a"
+            + " hand-driven send's and give reasons that stop nothing one does (REG4, GUI3-C1; Adam, OB-225).  Name"
+            + " the tier: " + untiered);
+
+        for (String door : new String[] {"gui/autonomyeditor/EditorWhy.java", "gui/autonomy/AutoLocomotiveStatus.java"})
+        {
+            String source = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/org/traincontrol/"
+                + door)), java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(SourceOf.withoutComments(source).contains("new DestinationTable("), door + " does not answer for"
+                + " both tiers through DestinationTable (FR-221)");
+        }
     }
 }

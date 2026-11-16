@@ -69,6 +69,12 @@ public final class I18n
         return bundle.getString(key);
     }
 
+    /** A key's text in the root (English) bundle, whatever language is on show. */
+    public static String root(String key)
+    {
+        return ResourceBundle.getBundle(BUNDLE_NAME, Locale.ROOT).getString(key);
+    }
+
     /**
      * Fetch a formatted string with placeholders.
      * Example: messages.properties -> log.userLogin=User {0} logged in.  Usage: I18n.f("log.userLogin", username);

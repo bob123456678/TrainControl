@@ -528,7 +528,7 @@ public class testTheVisibleElementsHeadingIsSpacedLikeTheOthers
 
     /**
      * The line over Save shows in Autonomy Setup, and still shows after switching to Track Diagram and back (D172): with
-     * the Path Type label gone, the column has room for it on a 768-pixel screen.
+     * no Path Type radios since FR-221, the column has room for it on a 768-pixel screen.
      *
      * MUTATION: hide `jSeparator1` when Autonomy Setup mounts its Visible Elements column, and this fails.
      */

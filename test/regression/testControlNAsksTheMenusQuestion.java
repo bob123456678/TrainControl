@@ -15,9 +15,9 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
-import support.Display;
+import support.MenuPage;
+import static support.MenuPage.itemNames;
 import support.Reflect;
-import support.Trees;
 import static support.Diagrams.aPageWithARunAndALabel;
 
 /**
@@ -35,15 +35,9 @@ public class testControlNAsksTheMenusQuestion
     @Test
     public void testTheKeyOffersNoNameWhereTheMenuOffersNone() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-n").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-ctrl-n"))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
+            AutonomySession session = fixture.session;
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -88,10 +82,6 @@ public class testControlNAsksTheMenusQuestion
                 + " the right-click menu offers " + (ignored == null ? "nothing" : itemNames(ignored).toString())
                 + " (MFR-B3)");
         }
-        finally
-        {
-            Trees.delete(folder);
-        }
     }
 
     /**
@@ -103,15 +93,9 @@ public class testControlNAsksTheMenusQuestion
     @Test
     public void testEveryEditorKeyPutsDownAGestureAsTheMenuDoes() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-keys").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-ctrl-keys"))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
+            AutonomySession session = fixture.session;
 
             final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -151,10 +135,6 @@ public class testControlNAsksTheMenusQuestion
                     + " - one key disarms a gesture and another leaves it waiting for a click (MFV-C4)");
             }
         }
-        finally
-        {
-            Trees.delete(folder);
-        }
     }
 
     /**
@@ -167,15 +147,9 @@ public class testControlNAsksTheMenusQuestion
     @Test
     public void testAStationSquareAsksBeforeTakingAnotherStationsOnlyName() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-n-other").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-ctrl-n-other"))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
+            AutonomySession session = fixture.session;
 
             TileKey here = new TileKey("main", 1, 1);
             TileKey other = new TileKey("main", 6, 1);
@@ -217,8 +191,6 @@ public class testControlNAsksTheMenusQuestion
         finally
         {
             AutonomyEditorPanel.answerTakeAnotherNameForTests(null);
-
-            Trees.delete(folder);
         }
     }
 
@@ -231,15 +203,9 @@ public class testControlNAsksTheMenusQuestion
     @Test
     public void testAStationSquareAsksAboutAnotherStationsOnlyNameOnThisPageOnly() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-n-page").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-ctrl-n-page", "main", "second"))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            session.open(Arrays.asList(aPageWithARunAndALabel("main"), aPageWithARunAndALabel("second")));
+            AutonomySession session = fixture.session;
 
             TileKey here = new TileKey("main", 1, 1);
             TileKey other = new TileKey("main", 6, 1);
@@ -281,8 +247,6 @@ public class testControlNAsksTheMenusQuestion
         finally
         {
             AutonomyEditorPanel.answerTakeAnotherNameForTests(null);
-
-            Trees.delete(folder);
         }
     }
 
@@ -294,15 +258,9 @@ public class testControlNAsksTheMenusQuestion
     @Test
     public void testALabelDropsOnlyOnItsOwnPageAndMovesOnlyThatPagesCaption() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-drop-page").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-drop-page", "main", "second"))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            session.open(Arrays.asList(aPageWithARunAndALabel("main"), aPageWithARunAndALabel("second")));
+            AutonomySession session = fixture.session;
 
             TileKey station = new TileKey("main", 1, 1);
             TileKey here = new TileKey("main", 1, 2);
@@ -331,10 +289,6 @@ public class testControlNAsksTheMenusQuestion
             assertEquals(session.captionsFor(station), new java.util.LinkedHashSet<>(Arrays.asList(free, there)),
                 "moving the label took the other page's caption of the station off");
         }
-        finally
-        {
-            Trees.delete(folder);
-        }
     }
 
     /**
@@ -348,15 +302,9 @@ public class testControlNAsksTheMenusQuestion
     @Test
     public void testNoNameIsOfferedOnASquareTheRunningDiagramDoesNotDraw() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-outside-area").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-outside-area"))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
+            AutonomySession session = fixture.session;
 
             TileKey station = new TileKey("main", 1, 1);
             // (4,2) is blank inside the drawn area, (9,2) outside it.
@@ -402,10 +350,6 @@ public class testControlNAsksTheMenusQuestion
 
             assertEquals(session.getCaptionTarget(new TileKey("main", 5, 2)), station, "a refused drop took the caption off");
         }
-        finally
-        {
-            Trees.delete(folder);
-        }
     }
 
     /** A private boolean question of the panel's, with the square or with nothing. */
@@ -432,15 +376,9 @@ public class testControlNAsksTheMenusQuestion
     @Test
     public void testControlHOffersAHomeOnlyWhereTheMenuDoes() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-h").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-ctrl-h"))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
+            AutonomySession session = fixture.session;
 
             TileKey station = new TileKey("main", 1, 1);
             TileKey track = new TileKey("main", 3, 1);
@@ -473,10 +411,6 @@ public class testControlNAsksTheMenusQuestion
             assertFalse(keyOffers(panel, "offersAHome", station),
                 "Control+H offers a home on " + station + ", on a page left out of autonomy (MFW-B1)");
         }
-        finally
-        {
-            Trees.delete(folder);
-        }
     }
 
     /**
@@ -486,15 +420,9 @@ public class testControlNAsksTheMenusQuestion
     @Test
     public void testControlHSaysWhyItOffersNoHome() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-h-why").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-ctrl-h-why"))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
+            AutonomySession session = fixture.session;
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -520,10 +448,6 @@ public class testControlNAsksTheMenusQuestion
             assertTrue(!ownStart.isEmpty() && shown.contains(ownStart),
                 "Control+H refused a home on plain track without saying a home needs a station: " + shown);
         }
-        finally
-        {
-            Trees.delete(folder);
-        }
     }
 
     /**
@@ -533,15 +457,9 @@ public class testControlNAsksTheMenusQuestion
     @Test
     public void testTheMainWindowsMenuDoesNotNameTheEditorsKey() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-n-main").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-ctrl-n-main"))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
+            AutonomySession session = fixture.session;
 
             TileKey empty = new TileKey("main", 4, 2);
 
@@ -565,10 +483,6 @@ public class testControlNAsksTheMenusQuestion
             assertNull(inTheMainWindow.getAccelerator(), "the main window's menu shows "
                 + inTheMainWindow.getAccelerator() + ", and Control+N is the notes key in that window (MFX-C3)");
         }
-        finally
-        {
-            Trees.delete(folder);
-        }
     }
 
     /**
@@ -580,20 +494,14 @@ public class testControlNAsksTheMenusQuestion
     @Test
     public void testStopShowingIsOnTheMenuOfEverySquareACaptionSitsOn() throws Exception
     {
-        needsADisplay();
+        LayoutDiagram page = aPageWithARunAndALabel("main");
 
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-stop-showing").toFile();
+        // A signal, which a caption may not be put on
+        page.addComponent(componentType.SIGNAL, 8, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
 
-        try
+        try (MenuPage fixture = new MenuPage("tc-stop-showing", page))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            LayoutDiagram page = aPageWithARunAndALabel("main");
-
-            // A signal, which a caption may not be put on
-            page.addComponent(componentType.SIGNAL, 8, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-
-            session.open(Arrays.asList(page));
+            AutonomySession session = fixture.session;
 
             TileKey station = new TileKey("main", 1, 1);
             TileKey signal = new TileKey("main", 8, 1);
@@ -642,10 +550,6 @@ public class testControlNAsksTheMenusQuestion
             stopOnTheTrack.doClick();
 
             assertEquals(session.getCaptionTarget(track), null, "the menu's Stop Showing left the caption on the ignored page");
-        }
-        finally
-        {
-            Trees.delete(folder);
         }
     }
 
@@ -729,24 +633,5 @@ public class testControlNAsksTheMenusQuestion
 
         return names.contains(I18n.t("autosetup.ui.menuShowStationHere"))
             || names.contains(I18n.t("autosetup.ui.menuShowStationHereNamed"));
-    }
-
-    private static java.util.List<String> itemNames(javax.swing.JPopupMenu menu)
-    {
-        java.util.List<String> out = new java.util.ArrayList<>();
-
-        if (menu == null) return out;
-
-        for (java.awt.Component each : menu.getComponents())
-        {
-            if (each instanceof javax.swing.JMenuItem) out.add(((javax.swing.JMenuItem) each).getText());
-        }
-
-        return out;
-    }
-
-    private static void needsADisplay()
-    {
-        Display.needed("AutonomyEditorPanel builds real Swing components - this needs a display");
     }
 }

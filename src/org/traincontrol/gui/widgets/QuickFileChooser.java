@@ -264,7 +264,8 @@ public class QuickFileChooser extends javax.swing.JFileChooser
 
     /**
      * The Look In list's folders as the shell gives them - what Swing asked for itself - or null where it gives none.
-     * Through reflection, as everything of `sun.awt.shell` here: it is not on the compiler's public list.
+     * Through reflection, as everything of `sun.awt.shell` here: it is not on the compiler's public list, and Java 9 and
+     * later allow it only to a jar whose manifest exports it, as build.xml's does (FR-236).
      */
     private static File[] theShellsPlaces()
     {

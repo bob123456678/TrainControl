@@ -301,7 +301,7 @@ public class testTheWhyAnswerIsOnScreen
     private static String answer(int stations)
     {
         StringBuilder out = new StringBuilder(
-            "<b>DRG 06 001</b>: can go to 2 station(s) - BottomMainA, BottomMainC");
+            "<b>DRG 06 001</b> can go to 2 stations now.");
 
         for (int at = 1; at <= stations; at++)
         {

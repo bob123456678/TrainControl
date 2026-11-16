@@ -5281,12 +5281,47 @@ public class AutonomySession
 
     /**
      * The editor's Test a Path from one square to another, or null where there is none: the search with the sets the
-     * build reads, starting on the copies a train stands on, so the path drawn agrees with the findings.
+     * build reads, starting on the copies a train stands on, past no other copy of either end and throwing no switch two
+     * ways, as the railway routes.  The findings' reach (`BuiltReach`) still passes other copies of the destination and
+     * ignores switch settings, so the two can disagree (`testTheFindingsStillReachPastAnotherCopyOfTheDestination`,
+     * `testAKickbackThatThrowsItsSwitchBothWaysIsNoWay`).
      */
     public List<GraphReducer.ReducedEdge> testPath(TileKey from, TileKey to)
     {
+        return testPath(from, to, startingArrivals());
+    }
+
+    /** The same, given `startingArrivals`, which builds the setup, so asked once for several searches. */
+    public List<GraphReducer.ReducedEdge> testPath(TileKey from, TileKey to, Map<TileKey, Set<Side>> arrivals)
+    {
         return reducer == null ? null : reducer.findPath(from, to, mayTurnTiles(), mandatoryTurnTiles(), barredArrivals(),
-            shutTiles(), stopOnlyTiles(), startingArrivals().get(from));
+            shutTiles(), stopOnlyTiles(), arrivals.get(from));
+    }
+
+    /**
+     * The same as autonomy would run it (FR-221): turning only where it stands, as a train that turned on arriving
+     * there, never on the way, nor to a station it leaves alone; null where only a hand send gets there.
+     */
+    public List<GraphReducer.ReducedEdge> testPathForAutonomy(TileKey from, TileKey to)
+    {
+        return testPathForAutonomy(from, to, startingArrivals());
+    }
+
+    /** The same, given `startingArrivals`. */
+    public List<GraphReducer.ReducedEdge> testPathForAutonomy(TileKey from, TileKey to, Map<TileKey, Set<Side>> arrivals)
+    {
+        if (reducer == null || manualOnlyStations().contains(to)) return null;
+
+        Set<TileKey> noTurn = new HashSet<>(mandatoryTurnTiles());
+
+        noTurn.remove(to);
+        noTurn.addAll(shutTiles());
+
+        Set<TileKey> turnAtTheStart = mayTurnTiles().contains(from) ? Collections.singleton(from)
+            : Collections.<TileKey>emptySet();
+
+        return reducer.findPath(from, to, turnAtTheStart, mandatoryTurnTiles(), barredArrivals(), noTurn,
+            stopOnlyTiles(), arrivals.get(from));
     }
 
     /**

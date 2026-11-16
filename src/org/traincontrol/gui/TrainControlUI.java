@@ -722,7 +722,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * The interface scale, or empty to take it from the display (`dpi / 96`), because FlatLaf's own automatic answer
-     * depends on what touched AWT first.  "1.25" forces the larger interface, "1" the smaller.
+     * depends on what touched AWT first.  "1.25" forces the larger interface, "1" the smaller; on Java 9 and later
+     * either is on top of Java's own scale.
      */
     public static final String UI_SCALE = "";
 
@@ -732,11 +733,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Extra menu font points: one more overflows the French, Spanish and Italian menu bars (testEveryLanguageFits) */
     public static final int MENU_FONT_STEP = 0;
 
-    /** The scale for this many dpi: the UI_SCALE override if set, else dpi / 96, or 1 where the display reports none */
-    private static String uiScaleFor(int dpi)
+    /**
+     * The scale for this many dpi: the UI_SCALE override if set, else dpi / 96, or 1 where the display reports none or
+     * Java 9 and later scale the window on Windows, where any more is drawn on top of Java's (FR-236).  Elsewhere the
+     * dpi is not the display's scale (points on a Mac), so dpi / 96 stays.
+     */
+    private static String uiScaleFor(int dpi, boolean javaScales, boolean windows)
     {
         return !UI_SCALE.isEmpty() ? UI_SCALE
-            : String.valueOf(dpi > 0 ? dpi / (double) REFERENCE_DPI : 1.0);
+            : String.valueOf(dpi > 0 && !(javaScales && windows) ? dpi / (double) REFERENCE_DPI : 1.0);
     }
 
     /**
@@ -756,7 +761,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         int dpi = Toolkit.getDefaultToolkit().getScreenResolution();
 
         // A system property, not a UI default, because FlatLaf reads it while installing; UI_SCALE overrides.
-        System.setProperty("flatlaf.uiScale", uiScaleFor(dpi));
+        System.setProperty("flatlaf.uiScale", uiScaleFor(dpi, com.formdev.flatlaf.util.UIScale.isSystemScalingEnabled(),
+            com.formdev.flatlaf.util.SystemInfo.isWindows));
 
         // BEFORE setup(): FlatLaf reads these when it installs itself, and the window decorations are decided once.
         if (!MENUS_IN_THE_TITLE_BAR)
@@ -5006,7 +5012,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Shows a shortcut table row's keys on a menu item without binding them: the table alone acts on keys. */
-    private static void showShortcut(JMenuItem item, String row)
+    static void showShortcut(JMenuItem item, String row)
     {
         showShortcut(item, KeyShortcuts.named(row).stroke());
     }
@@ -14573,6 +14579,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             });
             row("cut the button", Held.CONTROL.on(KeyEvent.VK_X),
                 key -> key.ui.setCopyTarget(key.ui.currentButton, true));
+            // Autonomy's run doors (FR-200), Control alone: AltGr, which Windows reports as Control+Alt, types @ on Q.
+            // What refuses is said in the log, not a dialog, as a held key repeats.
+            row("start autonomous operation", Held.CONTROL_ONLY.on(KeyEvent.VK_G), key ->
+            {
+                TrainControlUI ui = key.ui;
+
+                // Busy as the diagram's menu reads it, which offers no Start: Return Home planning, a hand send
+                if (ui.refusedByKey(!ui.model.hasAutoLayout() ? I18n.t("autolayout.ui.noAutonomyToStart")
+                    : ui.isAutonomyBusy() ? ui.describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
+                    : !ui.canStartAutonomy() ? ui.whyAutonomyWillNotStart() : ui.whyNoTrainMayBeSent(true))) return;
+
+                try
+                {
+                    ui.requestStartAutonomy();
+                }
+                catch (Exception e)
+                {
+                    ui.refusedByKey(e.getMessage());
+                }
+            });
+            row("return locomotives home", Held.CONTROL_ONLY.on(KeyEvent.VK_H), key -> key.ui.returnHomeByKey());
+            row("stop autonomy gracefully", Held.CONTROL_ONLY.on(KeyEvent.VK_Q), key ->
+            {
+                try
+                {
+                    key.ui.requestStopAutonomy();
+                }
+                catch (Exception e)
+                {
+                    // Said only while the trains finish: with nothing running there is nothing to stop.
+                    if (key.ui.isAutonomyBusy()) key.ui.refusedByKey(e.getMessage());
+                }
+            });
             row("clear the button", Held.NOT_CONTROL.on(KeyEvent.VK_DELETE), key ->
             {
                 // This is the same as clearing the button
@@ -17381,6 +17420,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.returnHomeController.requestReturnToHome();
     }
 
+    /** Says a key's refusal in the log; whether there was one. */
+    private boolean refusedByKey(String why)
+    {
+        if (why != null) this.model.log(why);
+
+        return why != null;
+    }
+
+    /** Whether Control+H's question is up, so a held key does not ask again. */
+    private boolean askingToReturnHome;
+
+    /** Control+H (FR-200): Return Home's door, asked first; the button and the item do not ask. */
+    private void returnHomeByKey()
+    {
+        // The item's questions, which the door does not ask, then the door's own gate, all said in the log.
+        if (refusedByKey(isAutonomyBusy() ? describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
+            : isReturnHomeOffered() ? whyNoTrainMayBeSent(false) : this.returnHomeReason)
+            || !isReturnHomeOffered() || askingToReturnHome) return;
+
+        askingToReturnHome = true;
+
+        try
+        {
+            if (JOptionPane.showOptionDialog(dialogParent(), I18n.t("autolayout.ui.confirmReturnToHome"),
+                I18n.t("ui.dialogConfirm"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, YES_NO_OPTS,
+                YES_NO_OPTS[1]) == 0) requestReturnToHome();
+        }
+        finally
+        {
+            askingToReturnHome = false;
+        }
+    }
+
     /**
      * Whether autonomy is doing anything at all: running, finishing, or planning a staging run (`Layout.isRunning`
      * alone misses that, hence `stagingFlowActive`).  Surfaces offering an autonomy action ask this, not their own
@@ -17729,7 +17801,18 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     void disableReturnHome(String reason)
     {
         this.returnHomeButton.setEnabled(false);
-        this.returnHomeButton.setToolTipText(AutonomyEditorPanel.wrapped(reason));
+        tipReturnHome(reason);
+    }
+
+    /** The plain sentence behind Return Home's tooltip, for Control+H's log line; null while it is offered. */
+    private String returnHomeReason;
+
+    /** Return Home's tooltip: why it is not offered, or with `reason` null what it does. */
+    void tipReturnHome(String reason)
+    {
+        this.returnHomeReason = reason;
+        this.returnHomeButton.setToolTipText(AutonomyEditorPanel.wrapped(reason != null ? reason
+            : I18n.t("ui.main.tooltip.returnHome")));
     }
 
     String describeStagingOutcome(HomeStaging.Outcome outcome, List<Locomotive> blocked)

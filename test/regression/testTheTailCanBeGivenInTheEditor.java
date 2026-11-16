@@ -412,6 +412,47 @@ public class testTheTailCanBeGivenInTheEditor
     }
 
     /**
+     * Station Settings steps off the diagram while the tail is picked from its Train tab, so the sensor to click is not
+     * under it, and is back where it was once the click records the road, or Escape lets go (OB-486).
+     *
+     * MUTATION: drop `editor.tailPickFor() != null` from `StationWindows.followTheGuardPick`, and this fails.
+     */
+    @Test
+    public void testStationSettingsStepsAsideWhileTheTailIsPicked() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            for (boolean escape : new boolean[] {false, true})
+            {
+                org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+
+                assertTrue(Components.onTheEventThread(window::isShowing), "precondition: the window is not up");
+
+                pressPick(f, window);
+
+                assertNotNull(f.panel.tailPickFor(), "precondition: the pick did not begin");
+                assertFalse(Components.onTheEventThread(window::isShowing), "Station Settings stays over the diagram while the tail is picked");
+
+                if (escape) SwingUtilities.invokeAndWait(() -> f.panel.putToolsDown());
+                else f.clickOnTheOnlyRoad();
+
+                Components.drain(8);
+
+                assertNull(f.panel.tailPickFor(), "the pick did not end");
+                assertTrue(Components.onTheEventThread(window::isShowing), "Station Settings did not come back when the pick ended");
+
+                support.StationDoors.close(window);
+            }
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
      * Pick on the Diagram stays pressed in while the pick waits; pressing it again ends the pick and takes the outlines
      * down, and the window stays open (MT-959).
      *
@@ -448,13 +489,11 @@ public class testTheTailCanBeGivenInTheEditor
     }
 
     /**
-     * Escape ends the tail pick: in Station Settings, which stays open until a second Escape, and in the editor
-     * (`putToolsDown`, what its Escape runs), after which the window's button is up again (MT-959).
-     *
-     * MUTATION: bind Escape in `StationWindowBase` to `closeWindow` alone again, and this fails.
+     * Escape in the editor (`putToolsDown`, what its Escape runs) ends the tail pick, and Station Settings, hidden
+     * meanwhile, is back with its button up (MT-959, OB-486).
      */
     @Test
-    public void testEscapeEndsThePickInEitherWindow() throws Exception
+    public void testEscapeEndsThePick() throws Exception
     {
         Fixture f = Fixture.open();
 
@@ -466,20 +505,13 @@ public class testTheTailCanBeGivenInTheEditor
 
             List<TileKey> outlined = new ArrayList<>(f.panel.tailPickSquares());
 
-            support.Keys.press(window.getRootPane(), java.awt.event.KeyEvent.VK_ESCAPE);
-            Components.drain(8);
-
-            assertNull(f.panel.tailPickFor(), "Escape in Station Settings did not end the pick");
-            assertEquals(stillOutlined(f, outlined), new ArrayList<TileKey>(), "Escape there left sensors outlined");
-            assertTrue(Components.onTheEventThread(window::isShowing), "Escape closed Station Settings with a pick to end");
-
-            pressPick(f, window);
-
             SwingUtilities.invokeAndWait(() -> f.panel.putToolsDown());
             Components.drain(8);
 
             assertNull(f.panel.tailPickFor(), "Escape in the editor did not end the pick");
-            assertFalse(support.StationDoors.on(window, "train.tailPick"), "the button stayed pressed in after Escape in the editor");
+            assertEquals(stillOutlined(f, outlined), new ArrayList<TileKey>(), "Escape left sensors outlined");
+            assertFalse(support.StationDoors.on(window, "train.tailPick"), "the button stayed pressed in after Escape");
+            assertTrue(Components.onTheEventThread(window::isShowing), "Station Settings did not come back");
 
             support.Keys.press(window.getRootPane(), java.awt.event.KeyEvent.VK_ESCAPE);
             Components.drain(8);
