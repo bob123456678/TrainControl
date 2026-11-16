@@ -5498,6 +5498,24 @@ public class LayoutEditor extends PositionAwareJFrame
                 return;
             }
 
+            // Control+Enter is Save in both modes (FR-200).
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_ENTER)
+            {
+                if (!switching && !changingPage) saveButton.doClick(0);
+
+                return;
+            }
+
+            // Control+V places the main window's selected locomotive on the square under the pointer and Delete takes
+            // its train off (FR-200), but never Control+Delete, the main window's database delete.  Above the guard,
+            // whose Control+V is the track editor's paste.
+            if (isAutonomyMode() && (is(evt, PASTE_KEY) || is(evt, DELETE_KEY) && !evt.isControlDown()))
+            {
+                onTheHoveredSquare(over -> autonomyPanel.placeOrRemoveByKey(over, is(evt, PASTE_KEY)));
+
+                return;
+            }
+
             // Every shortcut below places, cuts, rotates or retextures a tile, which autonomy mode must not, nor a
             // window between a switch's Discard and its arrival, which would write the page being left.
             if (isAutonomyMode() || switching || changingPage) return;

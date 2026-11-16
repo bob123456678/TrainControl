@@ -5006,7 +5006,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Shows a shortcut table row's keys on a menu item without binding them: the table alone acts on keys. */
-    private static void showShortcut(JMenuItem item, String row)
+    static void showShortcut(JMenuItem item, String row)
     {
         showShortcut(item, KeyShortcuts.named(row).stroke());
     }
@@ -14573,6 +14573,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             });
             row("cut the button", Held.CONTROL.on(KeyEvent.VK_X),
                 key -> key.ui.setCopyTarget(key.ui.currentButton, true));
+            // Autonomy's run doors (FR-200), Control alone: AltGr, which Windows reports as Control+Alt, types @ on Q.
+            // What refuses is said in the log, not a dialog, as a held key repeats.
+            row("start autonomous operation", Held.CONTROL_ONLY.on(KeyEvent.VK_G), key ->
+            {
+                TrainControlUI ui = key.ui;
+
+                if (ui.refusedByKey(!ui.model.hasAutoLayout() ? I18n.t("autolayout.ui.noAutonomyToStart")
+                    : !ui.canStartAutonomy() ? ui.whyAutonomyWillNotStart() : ui.whyNoTrainMayBeSent(true))) return;
+
+                try
+                {
+                    ui.requestStartAutonomy();
+                }
+                catch (Exception e)
+                {
+                    ui.refusedByKey(e.getMessage());
+                }
+            });
+            row("return locomotives home", Held.CONTROL_ONLY.on(KeyEvent.VK_H), key -> key.ui.returnHomeByKey());
+            row("stop autonomy gracefully", Held.CONTROL_ONLY.on(KeyEvent.VK_Q), key ->
+            {
+                try
+                {
+                    key.ui.requestStopAutonomy();
+                }
+                catch (Exception e)
+                {
+                    // Said only while the trains finish: with nothing running there is nothing to stop.
+                    if (key.ui.isAutonomyBusy()) key.ui.refusedByKey(e.getMessage());
+                }
+            });
             row("clear the button", Held.NOT_CONTROL.on(KeyEvent.VK_DELETE), key ->
             {
                 // This is the same as clearing the button
@@ -17379,6 +17410,39 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void requestReturnToHome()
     {
         this.returnHomeController.requestReturnToHome();
+    }
+
+    /** Says a key's refusal in the log; whether there was one. */
+    private boolean refusedByKey(String why)
+    {
+        if (why != null) this.model.log(why);
+
+        return why != null;
+    }
+
+    /** Whether Control+H's question is up, so a held key does not ask again. */
+    private boolean askingToReturnHome;
+
+    /** Control+H (FR-200): Return Home's door, asked first; the button and the item do not ask. */
+    private void returnHomeByKey()
+    {
+        // The item's questions, which the door does not ask, then the door's own gate, all said in the log.
+        if (refusedByKey(isAutonomyBusy() ? describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
+            : isReturnHomeOffered() ? whyNoTrainMayBeSent(false) : whyReturnHomeIsNotOffered())
+            || !isReturnHomeOffered() || askingToReturnHome) return;
+
+        askingToReturnHome = true;
+
+        try
+        {
+            if (JOptionPane.showOptionDialog(dialogParent(), I18n.t("autolayout.ui.confirmReturnToHome"),
+                I18n.t("ui.dialogConfirm"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, YES_NO_OPTS,
+                YES_NO_OPTS[1]) == 0) requestReturnToHome();
+        }
+        finally
+        {
+            askingToReturnHome = false;
+        }
     }
 
     /**

@@ -398,6 +398,7 @@ final class ReturnHomeController extends SettledQuestion
         // The button's own state and tooltip, so the item can never offer what the button refuses (FR-129)
         JMenuItem run = new JMenuItem(I18n.t("autolayout.ui.menuRunTrainsToTheirHomes"));
 
+        TrainControlUI.showShortcut(run, "return locomotives home");
         run.setEnabled(this.ui.isReturnHomeOffered());
         run.setToolTipText(this.ui.whyReturnHomeIsNotOffered());
         run.addActionListener(e -> requestReturnToHome());

@@ -318,6 +318,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         {
             menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStartAutonomy"));
 
+            TrainControlUI.showShortcut(menuItem, "start autonomous operation");
+
             // Grayed when it could not start (OB-050): canStartAutonomy asks the predicate the guard asks.  Asked once:
             // AutonomySession.check() is not cached and walks every point on the event thread.
             boolean canStart = ui.canStartAutonomy();
@@ -352,6 +354,8 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         else if (ready)
         {
             menuItem = new JMenuItem(I18n.t("autolayout.ui.menuStopAutonomyGracefully"));
+
+            TrainControlUI.showShortcut(menuItem, "stop autonomy gracefully");
             menuItem.addActionListener(event ->
             {
                 try
