@@ -148,7 +148,7 @@ final class DiagramLocGestures
         // The square under the pointer, or the station its LABEL is about: pointing at the name is pointing at it.
         TileGraph.TileKey aimed = over;
 
-        Point point = ui.getAutonomyPointForTile(aimed);
+        Point point = ui.stationCaptions.getAutonomyPointForTile(aimed);
 
         if (point == null)
         {
@@ -159,7 +159,7 @@ final class DiagramLocGestures
             if (captioned != null)
             {
                 aimed = captioned;
-                point = ui.getAutonomyPointForTile(aimed);
+                point = ui.stationCaptions.getAutonomyPointForTile(aimed);
             }
         }
 

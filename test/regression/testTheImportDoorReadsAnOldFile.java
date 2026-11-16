@@ -3478,9 +3478,10 @@ public class testTheImportDoorReadsAnOldFile
 
             assertFalse(ui.getModel().hasAutoLayout(), "precondition: Unload left a railway loaded");
 
-            final java.lang.reflect.Method arrow = TrainControlUI.class.getDeclaredMethod("facingArrowOf",
+            final Object captions = Reflect.get(TrainControlUI.class, ui, "stationCaptions");
+            final java.lang.reflect.Method arrow = captions.getClass().getDeclaredMethod("facingArrowOf",
                 org.traincontrol.automation.Point.class, TileKey.class);
-            final java.lang.reflect.Method labels = TrainControlUI.class.getDeclaredMethod("updateStationLabels",
+            final java.lang.reflect.Method labels = captions.getClass().getDeclaredMethod("updateStationLabels",
                 org.traincontrol.automation.Point.class);
 
             arrow.setAccessible(true);
@@ -3490,8 +3491,8 @@ public class testTheImportDoorReadsAnOldFile
             {
                 try
                 {
-                    labels.invoke(ui, at);
-                    arrow.invoke(ui, at, square);
+                    labels.invoke(captions, at);
+                    arrow.invoke(captions, at, square);
                     ui.getAutonomyPointForTile(square);
                     ui.getAutonomyOccupantsForTile(square);
                 }

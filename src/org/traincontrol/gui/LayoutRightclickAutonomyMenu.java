@@ -68,7 +68,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         // here, on the event thread, as `getAutonomyPointForTile` goes through the LAZY `getAutonomySession()`; only
         // the Point, a value, crosses to the worker.
         final Point standing = ui != null && ui.getModel() != null && ui.getModel().hasAutoLayout()
-            ? ui.getAutonomyPointForTile(station != null ? station : here) : null;
+            ? ui.stationCaptions.getAutonomyPointForTile(station != null ? station : here) : null;
 
         Thread gathering = new Thread(() ->
         {
@@ -278,7 +278,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
         final boolean held = ui.aRunHoldsTheSetup();
 
         // Found from the SQUARE, not the station, which is null on a pass-through Point (MT-069).
-        final Point current = ready ? ui.getAutonomyPointForTile(station != null ? station : here) : null;
+        final Point current = ready ? ui.stationCaptions.getAutonomyPointForTile(station != null ? station : here) : null;
 
         // A destination, or anywhere a train stands: a copy barred as a non-destination can hold one placed by hand.
         final boolean stationHere = current != null && (current.isDestination() || current.getCurrentLocomotive() != null);

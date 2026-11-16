@@ -28,7 +28,7 @@ import support.Reflect;
  * A running route's captions speak the route's colors, its destination is a warm yellow, and the Auto tab's station
  * badge is the captions' blue (Adam: "Build 2,3,5,6", the diagram look proposals), asked of the real window on his
  * frozen railway with a run staged part way along its route.  The colors themselves are claimed beside the pill
- * (`ui.testDiagramLooksRight`); this asks `TrainControlUI.updateStationLabels`, since a rule tested apart from its
+ * (`ui.testDiagramLooksRight`); this asks `StationCaptions.updateStationLabels`, since a rule tested apart from its
  * caller says nothing about the caller.
  */
 public class testARunsCaptionsSpeakInItsColours
