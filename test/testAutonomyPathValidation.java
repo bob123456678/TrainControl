@@ -397,6 +397,12 @@ public class testAutonomyPathValidation
     }
 
     /**
+     * How soon a power cut or a stop must end the wait, in ms from the start of the path.  The cut lands about
+     * 0.55 s in, and the wait looks for it every 250 ms; the station goes on answering until about 3.6 s in.
+     */
+    private static final long CUT_ENDS_THE_WAIT_MS = 2000;
+
+    /**
      * The longest a busy station is waited for, in ms.
      */
     private static long busyCap()
@@ -549,18 +555,20 @@ public class testAutonomyPathValidation
         TestPath tp = buildPath(190, "_power");
         MarklinAccessory other = model.newSwitch(193, MM2, false);
 
+        // The station goes on answering for 3 s after the cut, which would keep the wait alive that long
         List<Step> steps = new ArrayList<>();
         busyWith(steps, other, 10);
         powerOff(steps);
-        busyWith(steps, other, 10);
+        busyWith(steps, other, 60);
         answer(steps, 50, tp.acc1, true);
         answer(steps, 50, tp.acc2, true);
 
         boolean[] result = new boolean[1];
+        long elapsed;
 
         try
         {
-            timePathWithStation(tp, steps, result);
+            elapsed = timePathWithStation(tp, steps, result);
         }
         finally
         {
@@ -569,6 +577,8 @@ public class testAutonomyPathValidation
         }
 
         assertFalse(result[0], "A path whose wait the power cut ended must not be run");
+        assertTrue(elapsed < CUT_ENDS_THE_WAIT_MS, "The power cut must end the wait at once, but the path took "
+            + elapsed + " ms");
         assertEquals(tp.layout.getPathValidationFailureCount(), 0, "A power cut is not a misconfigured path");
         assertFalse(tp.path.get(0).isOccupied(dummyLoc()), "The path must be released");
     }
@@ -590,18 +600,20 @@ public class testAutonomyPathValidation
         tp.layout.runLocomotives();
         assertTrue(tp.layout.isPathClear(tp.path, dummyLoc()), "precondition: autonomy may send this path");
 
+        // The station goes on answering for 3 s after the stop, which would keep the wait alive that long
         List<Step> steps = new ArrayList<>();
         busyWith(steps, other, 10);
         steps.add(new Step(50, () -> tp.layout.stopLocomotives()));
-        busyWith(steps, other, 10);
+        busyWith(steps, other, 60);
         answer(steps, 50, tp.acc1, true);
         answer(steps, 50, tp.acc2, true);
 
         boolean[] result = new boolean[1];
+        long elapsed;
 
         try
         {
-            timePathWithStation(tp, steps, result);
+            elapsed = timePathWithStation(tp, steps, result);
         }
         finally
         {
@@ -609,6 +621,8 @@ public class testAutonomyPathValidation
         }
 
         assertFalse(result[0], "A train autonomy sent must not depart after autonomy was stopped");
+        assertTrue(elapsed < CUT_ENDS_THE_WAIT_MS, "Stopping autonomy must end the wait at once, but the path took "
+            + elapsed + " ms");
         assertEquals(tp.layout.getPathValidationFailureCount(), 0, "A stop is not a misconfigured path");
         assertFalse(tp.path.get(0).isOccupied(dummyLoc()), "The path must be released");
     }
