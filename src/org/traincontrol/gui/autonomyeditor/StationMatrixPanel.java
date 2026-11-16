@@ -45,7 +45,6 @@ final class StationMatrixPanel extends JPanel
 
     private final JPanel table = new JPanel(new GridBagLayout());
     private final JLabel problem = new JLabel();
-    private final JLabel also = new JLabel();
 
     /** A cell as drawn, for a test to compare with the real doors: row, tier and answer per side. */
     private final Map<String, Map<String, Answer>> drawn = new LinkedHashMap<>();
@@ -73,22 +72,16 @@ final class StationMatrixPanel extends JPanel
 
         problem.setName("station.matrixProblem");
         problem.setForeground(new Color(170, 0, 0));
-        // The gap between the two lines, so the first stands as far under the picture as the picture under the table
+        problem.setFont(CELL_FONT);
+        problem.setVisible(false);
+        problem.setAlignmentX(LEFT_ALIGNMENT);
+        // The gap under it, so it stands as far under the picture as the picture under the table
         problem.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
-
-        also.setName("station.matrixAlso");
 
         notices.setName("station.notices");
         notices.setLayout(new BoxLayout(notices, BoxLayout.Y_AXIS));
         notices.setOpaque(false);
-
-        for (JLabel line : new JLabel[] {problem, also})
-        {
-            line.setFont(CELL_FONT);
-            line.setVisible(false);
-            line.setAlignmentX(LEFT_ALIGNMENT);
-            notices.add(line);
-        }
+        notices.add(problem);
 
         add(table, BorderLayout.CENTER);
 
@@ -96,8 +89,8 @@ final class StationMatrixPanel extends JPanel
     }
 
     /**
-     * Why the setup stops this square, then what a cell cannot say: for the window to show under the picture, in room
-     * kept for four lines so the window keeps its height as they come and go (MT-919, MT-961).
+     * Why the setup stops this square, only an error (FR-226): for the window to show under the picture, in room kept for
+     * four lines so the window keeps its height as it comes and goes (MT-919, MT-961).
      */
     JComponent notices()
     {
@@ -207,9 +200,8 @@ final class StationMatrixPanel extends JPanel
      * @param rules what the railway answered, or null with `error` to say
      * @param error why every cell reads No, or null
      * @param stuck why a train here could not leave again, said in red where `error` is not (OB-441); or null
-     * @param alsoLine what a cell cannot say: the length, the list, what must be free; or null
      */
-    void show(StandingRules rules, String error, String stuck, String alsoLine)
+    void show(StandingRules rules, String error, String stuck)
     {
         table.removeAll();
         drawn.clear();
@@ -234,9 +226,6 @@ final class StationMatrixPanel extends JPanel
 
         problem.setText(said == null ? "" : wrapAt(said));
         problem.setVisible(said != null);
-
-        also.setText(alsoLine == null ? "" : wrapAt(alsoLine));
-        also.setVisible(alsoLine != null);
 
         revalidate();
         repaint();

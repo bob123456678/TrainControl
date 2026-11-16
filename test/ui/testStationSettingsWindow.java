@@ -1837,14 +1837,14 @@ public class testStationSettingsWindow
     }
 
     /**
-     * The line under the picture still says a station's limits beside the Some trains hover (Adam, FR-226: "I liked the
-     * red warning message because it was clear"): the length and the whitelist, and with Must with two sides open the
-     * error above it.
+     * The notice under the picture is only for an error (Adam, FR-226: "This replaces the inline text unless there is
+     * an error"): a station limited by its length and its list says nothing there, while Must with two sides open
+     * still says why.
      *
-     * MUTATION: drop `alsoLine` from `askTheRailway`, and this fails.
+     * MUTATION: put the line of what a cell cannot say back under the picture, and this fails.
      */
     @Test(timeOut = 120000)
-    public void testTheLineUnderThePictureSaysTheLimits() throws Exception
+    public void testTheNoticeUnderThePictureIsOnlyForAnError() throws Exception
     {
         TileKey square = aStationWithTwoWaysIn();
 
@@ -1855,23 +1855,13 @@ public class testStationSettingsWindow
         StationDoors.current(window);
 
         assertFalse(someTrainsHovers(window).isEmpty(), "precondition: no cell says Some trains");
-
-        List<String> limits = Arrays.asList(I18n.f("autosetup.ui.stationAlsoLength", 30),
-            I18n.f("autosetup.ui.stationAlsoWhite", 1));
-
-        for (String limit : limits)
-        {
-            assertTrue(String.join(" ", noticesShown(window)).replaceAll("<[^>]*>", " ").replaceAll("\\s+", " ")
-                .contains(limit), "the line under the picture does not say: "
-                + limit + ", it shows " + noticesShown(window));
-        }
+        assertEquals(noticesShown(window), Arrays.asList(), "the notices under the picture say something with no error");
 
         StationDoors.press(window, "station.turnMust");
         StationDoors.current(window);
 
         assertTrue(visible(window, "station.matrixProblem"), "precondition: Must with two sides open is no error");
-        assertEquals(noticesShown(window).size(), 2, "the error and the limits are not the two notices: "
-            + noticesShown(window));
+        assertEquals(noticesShown(window).size(), 1, "the error is not the one notice: " + noticesShown(window));
     }
 
     /** Limits a station to trains up to 30 long and a whitelist of one train, whose name it gives. */
@@ -3110,8 +3100,6 @@ public class testStationSettingsWindow
 
         JComponent block = StationDoors.part(window, "station.picture.ways", JComponent.class);
 
-        assertTrue(visible(window, "station.matrixAlso"), "precondition: no line under the picture");
-
         int[] one = whiteAround(window, block);
 
         assertEquals(one[0], 10, "the white above a one-row picture");
@@ -3121,10 +3109,10 @@ public class testStationSettingsWindow
         {
             java.awt.Component table = Components.named(window, "station.matrix", JComponent.class);
             java.awt.Component picture = Components.named(window, "station.picture", JComponent.class);
-            JComponent also = Components.named(window, "station.matrixAlso", JComponent.class);
+            JComponent notices = Components.named(window, "station.notices", JComponent.class);
 
             int underTable = picture.getLocationOnScreen().y - table.getLocationOnScreen().y - table.getHeight();
-            int underPicture = also.getLocationOnScreen().y + also.getInsets().top - block.getLocationOnScreen().y
+            int underPicture = notices.getLocationOnScreen().y + notices.getInsets().top - block.getLocationOnScreen().y
                 - block.getHeight();
 
             assertEquals(underPicture, underTable, "the line under the picture is not as far below it as the picture is "
