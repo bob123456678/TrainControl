@@ -252,8 +252,8 @@ public class testTheSyncAsksTheSensorsTheirState
 
     /**
      * A late answer is still the sync's own (OB-490): the station answers the route's sensor about 300 ms, then about
-     * 1 s, after its query, the last answer of the pass and inside its wait, and the sensor's parse waits until the
-     * pass is over.  The route fires on neither, as on time, and fires on the next real edges.
+     * 600 ms, after its query, the last answer of the pass and well inside its 1 s wait, and the sensor's parse waits
+     * until the pass is over.  The route fires on neither, as on time, and fires on the next real edges.
      *
      * MUTATION: in `NetworkProxy.learn`, take out the `heardDuring` call.
      */
@@ -262,7 +262,7 @@ public class testTheSyncAsksTheSensorsTheirState
     {
         connected((rig, station) ->
         {
-            for (long late : new long[] {300, 900})
+            for (long late : new long[] {300, 600})
             {
                 int contact = 2810 + (int) (late / 100);
                 MarklinFeedback feedback = rig.model.newFeedback(contact, null);
@@ -302,6 +302,44 @@ public class testTheSyncAsksTheSensorsTheirState
                     assertTrue(Components.waitFor(() -> station.queries().stream().filter(q -> q[1] == contact)
                         .count() > asked && !rig.model.isConfirming(), WAIT_MS), "precondition: no reconnect pass");
                 }));
+        });
+    }
+
+    /**
+     * A real event heard during a reconnect's confirmation fires no route even when it is parsed after the confirmation
+     * has ended (D133, OB-490): the station occupies the contact when the new connection's query for it arrives, and
+     * the parse waits until the pass is over.  The route armed clear then occupied does not fire.
+     *
+     * MUTATION: in `MarklinFeedback.parseMessage`, `m.heardConfirming() || this.network.isConfirming()` to
+     * `this.network.isConfirming()`.
+     */
+    @Test(timeOut = 120000)
+    public void testARealEventHeardDuringAReconnectFiresNoRouteWhenParsedLate() throws Exception
+    {
+        connected((rig, station) ->
+        {
+            int contact = 2950;
+            String name = "Sync claim " + contact;
+            List<String> log = new ArrayList<>();
+            MarklinFeedback feedback = rig.model.newFeedback(contact, null);
+            MarklinRoute route = armedRoute(rig, station, contact, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED);
+
+            assertTrue(Components.waitFor(() -> !rig.model.isConfirming(), WAIT_MS),
+                "precondition: the connect's confirmation did not end");
+            station.onQuery(contact, () -> station.sensor(contact, true));
+
+            parsedAfter(feedback, () ->
+            {
+                long asked = station.queries().stream().filter(q -> q[1] == contact).count();
+                station.drop();
+                assertTrue(Components.waitFor(() -> station.queries().stream().filter(q -> q[1] == contact)
+                    .count() > asked && !rig.model.isConfirming(), WAIT_MS), "precondition: no reconnect pass");
+            });
+
+            assertTrue(shows(rig, contact, true), "precondition: the event did not arrive");
+            assertTrue(Components.waitFor(() -> RouteMonitor.waitingFor(route, false), WAIT_MS),
+                "the route's monitor did not go back to waiting");
+            assertEquals(fired(rig, log, name), 0, "a real event heard during the confirmation fired the route: " + log);
         });
     }
 
