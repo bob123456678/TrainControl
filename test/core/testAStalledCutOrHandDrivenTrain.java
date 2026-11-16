@@ -426,7 +426,8 @@ public class testAStalledCutOrHandDrivenTrain
 
     /**
      * A failure thrown from the progress callback after the head has moved gives the track back: nothing is left
-     * locked, and the train is not left counted as under way.
+     * locked, the train is not left counted as under way, and it is recorded at FB, the last point it reached, with
+     * its destination free (OB-493).
      *
      * MUTATION: in `Layout.executePath`'s catch, drop `if (hadItsPath) this.unlockPath(path, loc);`, and this fails.
      */
@@ -449,13 +450,46 @@ public class testAStalledCutOrHandDrivenTrain
             assertEquals(j.train.getSpeed(), 0, "the failed journey left the train running");
             j.assertNothingTaken("the failed journey");
 
-            assertNotSame(j.rail.getPoint("FA").getCurrentLocomotive(), j.train, "the failed journey still holds FA");
-            assertNotSame(j.rail.getPoint("FB").getCurrentLocomotive(), j.train, "the failed journey still holds FB");
+            j.assertStandsOnlyAt("FB", "the failed journey");
         }
         finally
         {
             j.train.setSpeed(0);
         }
+    }
+
+    /**
+     * A failure before the train reaches its first sensor leaves it recorded at its start, its tail side kept, and its
+     * destination free (OB-493).
+     *
+     * MUTATION: in `Layout.executePath`'s catch, drop the `reached.setLocomotive(loc)` block, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAFailureBeforeTheFirstSensorLeavesTheTrainAtItsStart() throws Exception
+    {
+        Journey j = new Journey(new MarklinLocomotive(model, 78, MarklinLocomotive.decoderType.MM2,
+            "OB493 failing train"), "GA", "GB", "GC");
+
+        j.rail.getPoint("GA").setArrivedFrom("W");
+
+        RuntimeException failure = new IllegalStateException("thrown as the journey starts");
+
+        j.train.setCallback(Layout.CB_ROUTE_START, l -> { throw failure; });
+
+        try
+        {
+            j.rail.executePath(j.path, j.train, SPEED, null);
+            fail("precondition: the start callback's failure did not end the journey");
+        }
+        catch (IllegalStateException e)
+        {
+            assertSame(e, failure, "precondition: the journey ended on another failure");
+        }
+
+        j.assertNothingTaken("the failed journey");
+        j.assertStandsOnlyAt("GA", "the failed journey");
+
+        assertEquals(j.rail.getPoint("GA").getArrivedFrom(), "W", "the failed journey lost the start's tail side");
     }
 
     /** A new sensor, clear. */
@@ -607,6 +641,19 @@ public class testAStalledCutOrHandDrivenTrain
             assertFalse(rail.getActiveLocomotives().containsKey(train), who + " left the train counted as under way");
 
             for (Edge e : path) assertFalse(e.isLockHeld(null), who + " left " + e.getName() + " locked");
+        }
+
+        /** The train is recorded at this point and at no other on the railway; `who` names what should have left it so. */
+        void assertStandsOnlyAt(String point, String who)
+        {
+            assertSame(rail.getLocomotiveLocation(train), rail.getPoint(point), who + " did not record the train at "
+                + point);
+
+            for (Point p : rail.getPoints())
+            {
+                if (p != rail.getPoint(point)) assertNotSame(p.getCurrentLocomotive(), train, who + " left the train "
+                    + "recorded at " + p.getName());
+            }
         }
 
         /** The journey is over: nothing taken, the train recorded at its destination and nowhere before. */
