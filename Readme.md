@@ -454,7 +454,7 @@ Tab icons provided by Freepik.
         - New Features
             - TrainControl now connects to a CS3 over TCP and falls back to UDP, saying so in the log.  A CS2 still uses UDP.
             - If the connection to a CS3 drops, TrainControl switches to UDP right away, and a warning shows while the Central Station isn't answering.
-            - Startup and sync with a CS3 now read the state of every sensor, so the track diagram shows them as they are.
+            - Startup and sync with a CS3 now read the state of every sensor, so the track diagram shows them as they are.  S88 routes wait until every sensor has reported before they can fire.
             - `Download Central Station Layout Files...` asks before replacing a layout and no longer freezes the window.
             - When the Central Station cuts the track power after a short circuit, TrainControl shows the power as off and names the output that tripped.
             - A failed `Sync` says what went wrong in one sentence, with `Retry`, and a CS3 sync skips what it can't read instead of failing.
@@ -701,7 +701,7 @@ Tab icons provided by Freepik.
             - Confirmations that delete or overwrite no longer have Yes selected.
     - Notes
         - **Before going back to v2.8.2 or earlier, keep a copy of your settings:** those versions read only the first 10 keyboard pages and discard the rest when they save.
-        - A station out of service can no longer be sent to or driven through, even by hand.  To keep a parking track reachable by hand, untick its `Full autonomy` choice instead.
+        - A station out of service can no longer be sent to or driven through, even by hand.  To keep a parking track reachable by hand, untick its `Full autonomy` choice in `Station Settings` instead.
         - A route with an emergency stop can no longer contain other commands; older ones are split in two automatically.
         - The "paste entire row" and "paste entire column" options were removed.
 * v2.8.x [8/2026 - 9/2026]
