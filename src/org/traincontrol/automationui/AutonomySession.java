@@ -2253,6 +2253,17 @@ public class AutonomySession
         }
     }
 
+    /** A train's pause or going pressed alone (its card) over one already noted: Cancel keeps the last press (OB-346). */
+    public void notePressAlone(Locomotive train)
+    {
+        if (pausesTakenFromTheRailway == null || train == null || train.getName() == null) return;
+
+        for (Map<String, Boolean> pauses : pausesTakenFromTheRailway.values())
+        {
+            pauses.replace(train.getName(), train.isAutonomyPaused());
+        }
+    }
+
     /**
      * Whether the setup now says other than a pause Cancel would keep from the railway: a gesture overtook it, and
      * Cancel has that to discard even where the setup reads as the editor opened it (OB-346).
