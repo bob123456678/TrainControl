@@ -116,6 +116,9 @@ public abstract class Locomotive
  
     // User-defined notes about this locomotive
     private String notes = "";
+
+    // The Central Station's name for this locomotive that a pressed Sync offered and the user turned down (FR-220)
+    private String declinedStationName;
     
     // Used to pause autonomous operation - not persisted.  Volatile, not under the monitor: a command can hold that
     // for a stalled network write, and windows read this every second.
@@ -1539,6 +1542,17 @@ public abstract class Locomotive
             LocomotiveNotes wrapper = new LocomotiveNotes(0, 0, "", notes);
             this.notes = wrapper.toJson().toString();
         }
+    }
+
+    /** The station's name for this locomotive the user turned down, or null; Sync does not offer it again. */
+    public String getDeclinedStationName()
+    {
+        return this.declinedStationName;
+    }
+
+    public void setDeclinedStationName(String name)
+    {
+        this.declinedStationName = name;
     }
 
     /**

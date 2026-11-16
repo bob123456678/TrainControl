@@ -15273,68 +15273,123 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Asks over c about each rename the station suggests and renames those answered Yes.  A refused one is said in the
-     * log alone, which names its remedy: a pressed sync would otherwise say it every time.
+     * Asks over c about each rename the station suggests, No first, and renames those answered Yes; each one's outcome
+     * goes to the log, as do the refused ones (they name their remedy).  A No is kept on the locomotive and not asked
+     * again until the station offers it another name (D171).
      */
     private void askAboutRenames(Component c, RenameProposals proposals)
     {
+        java.util.Set<String> offered = new java.util.HashSet<>();
+
+        for (String[] pair : proposals.getProposals()) offered.add(pair[0]);
+
+        // A No the station no longer offers is forgotten, so nothing is left to hold back a later offer
+        for (String name : model.getLocList())
+        {
+            Locomotive each = model.getLocByName(name);
+
+            if (!offered.contains(name) && each != null) each.setDeclinedStationName(null);
+        }
+
+        if (proposals.getProposals().isEmpty() && !proposals.hasRefusals())
+        {
+            this.model.logf("loc.ui.infoNoLocomotivesToRename");
+        }
+
         // A run may have begun since Sync was pressed
-        if (proposals.getProposals().isEmpty() || refuseWhileAutonomyRunning(c)) return;
+        boolean refused = !proposals.getProposals().isEmpty() && refuseWhileAutonomyRunning(c);
 
         for (String[] pair : proposals.getProposals())
         {
             String currentName = pair[0];
             String newName = pair[1];
-
-            // A name another locomotive holds is asked about once, below, in the delete door's question, which counts
-            // the routes that lose commands and starts on No
-            if (model.getLocByName(newName) == null && JOptionPane.showOptionDialog(c,
-                I18n.f("loc.ui.confirmRenameLocomotive", currentName, newName), I18n.t("loc.ui.dialogConfirmRename"),
-                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, YES_NO_OPTS, YES_NO_OPTS[0])
-                != JOptionPane.YES_OPTION) continue;
-
-            // Nobody typed a station's name who could be told why it breaks a route condition (OB-074)
-            if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
-            {
-                JOptionPane.showMessageDialog(c, I18n.t("loc.ui.errorLocomotiveNameUnusable"));
-
-                continue;
-            }
-
-            // Like the other doors into `renameLoc`, this rewrites every route command naming the locomotive
-            if (refuseWhileARouteDrivesIt(c, currentName)) continue;
-
-            if (refuseWhileARouteDrivesIt(c, newName)) continue;
-
             Locomotive l = model.getLocByName(currentName);
+            String outcome = "loc.renameNotApplied";
 
-            if (model.getLocByName(newName) != null) this.locomotiveActions.deleteLocBecause(
-                I18n.f("loc.ui.confirmRenameOntoLocomotive", currentName, newName), newName, c);
-
-            if (model.getLocByName(newName) != null) continue;
-
-            model.renameLoc(currentName, newName);
-
-            clearCopyTarget();
-            repaintLoc(true, null);
-            repaintMappings(null, false);
-            this.refreshRouteList();
-            selector.refreshLocSelectorList();
-
-            if (this.model.hasAutoLayout())
+            try
             {
-                this.model.getAutoLayout().sanitizeMultiUnits(l);
-                this.model.getAutoLayout().refreshUI();
+                if (newName.equals(l.getDeclinedStationName()))
+                {
+                    outcome = "loc.renameKeptAsAnswered";
 
-                // And the station labels, as the rename dialog does (OB-081)
-                this.updateVisiblePoints();
-                this.repaintAutoLocList(false);
+                    continue;
+                }
 
-                this.repaintTimetable();
+                // A name another locomotive holds is asked about once, below, in the delete door's question, which
+                // counts the routes that lose commands and starts on No
+                if (!refused && model.getLocByName(newName) == null && JOptionPane.showOptionDialog(c,
+                    I18n.f("loc.ui.confirmRenameLocomotive", currentName, newName), I18n.t("loc.ui.dialogConfirmRename"),
+                    JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, YES_NO_OPTS, YES_NO_OPTS[1])
+                    != JOptionPane.YES_OPTION)
+                {
+                    outcome = keptAfterNo(l, newName);
+
+                    continue;
+                }
+
+                if (refused) continue;
+
+                // Nobody typed a station's name who could be told why it breaks a route condition (OB-074)
+                if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
+                {
+                    JOptionPane.showMessageDialog(c, I18n.t("loc.ui.errorLocomotiveNameUnusable"));
+
+                    continue;
+                }
+
+                // Like the other doors into `renameLoc`, this rewrites every route command naming the locomotive
+                if (refuseWhileARouteDrivesIt(c, currentName)) continue;
+
+                if (refuseWhileARouteDrivesIt(c, newName)) continue;
+
+                if (model.getLocByName(newName) != null) this.locomotiveActions.deleteLocBecause(
+                    I18n.f("loc.ui.confirmRenameOntoLocomotive", currentName, newName), newName, c);
+
+                if (model.getLocByName(newName) != null)
+                {
+                    outcome = keptAfterNo(l, newName);
+
+                    continue;
+                }
+
+                model.renameLoc(currentName, newName);
+                l.setDeclinedStationName(null);
+                outcome = "loc.renameApplied";
+
+                clearCopyTarget();
+                repaintLoc(true, null);
+                repaintMappings(null, false);
+                this.refreshRouteList();
+                selector.refreshLocSelectorList();
+
+                if (this.model.hasAutoLayout())
+                {
+                    this.model.getAutoLayout().sanitizeMultiUnits(l);
+                    this.model.getAutoLayout().refreshUI();
+
+                    // And the station labels, as the rename dialog does (OB-081)
+                    this.updateVisiblePoints();
+                    this.repaintAutoLocList(false);
+
+                    this.repaintTimetable();
+                }
+            }
+            finally
+            {
+                // Every offer's outcome, as the pressed Sync's account of the check (D171)
+                this.model.logf(outcome, currentName, newName);
             }
         }
     }
-    
+
+    /** A rename answered No, kept on the locomotive so the same offer is not asked again; its log line's key. */
+    private static String keptAfterNo(Locomotive l, String newName)
+    {
+        l.setDeclinedStationName(newName);
+
+        return "loc.renameKept";
+    }
+
     /**
      * Puts the current keyboard mappings on the keyboard
      */
