@@ -129,6 +129,7 @@
         <test-one-class class="testReturnHomeOnRealLayout"/>
         <test-one-class class="testAtomicWrite"/>
         <test-one-class class="testUpdateDownload"/>
+        <test-one-class class="testLayoutIndexAtomic"/>
         <test-one-class class="testInvalidInput"/>
         <test-one-class class="testLayoutBfs"/>
         <test-one-class class="testLayoutBfsEquivalence"/>
