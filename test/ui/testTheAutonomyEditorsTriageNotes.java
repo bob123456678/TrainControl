@@ -79,13 +79,13 @@ public class testTheAutonomyEditorsTriageNotes
     // ------------------------------------------------------------------------------------------------ MT-889
 
     /**
-     * The filter's clear X sits inside the text field, shows only while there is text, and the row has air above it.
+     * The filter's clear X sits inside the text field and shows only while there is text.
      *
      * MUTATION: add the clear button to the row beside the field instead of giving it to the field as its trailing
-     * component, drop its `setVisible`, or take the top inset off the row's border, and this fails.
+     * component, or drop its `setVisible`, and this fails.
      */
     @Test(timeOut = 120000)
-    public void testTheFilterCrossIsInsideTheBoxAndThereIsAGapAbove() throws Exception
+    public void testTheFilterCrossIsInsideTheBox() throws Exception
     {
         JTextField field = Components.inside(panel.getFindingsBox(), JTextField.class);
         JButton cross = Components.inside(field, JButton.class);
@@ -99,10 +99,6 @@ public class testTheAutonomyEditorsTriageNotes
 
         layOut();
 
-        int gap = Components.onTheEventThread(() -> SwingUtilities.convertPoint(field, 0, 0, panel.getFindingsBox()).y);
-
-        assertTrue(gap >= LayoutEditor.HEADING_GAP, "the filter row has " + gap + " px above it");
-
         int right = Components.onTheEventThread(() -> SwingUtilities.convertPoint(cross, cross.getWidth(), 0, field).x);
 
         assertTrue(right <= field.getWidth(), "the X ends past the field's right end");
@@ -110,6 +106,136 @@ public class testTheAutonomyEditorsTriageNotes
         Components.onTheEventThread(() -> { cross.doClick(); return null; });
 
         assertEquals(field.getText(), "", "the X did not clear the box");
+    }
+
+    // ------------------------------------------------------------------------------------------------ FR-217
+
+    /** Whether the box paints anything its caption adds: its picture with the caption differs from one without. */
+    private static boolean showsACaption(JTextField field)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            Object caption = field.getClientProperty("JTextField.placeholderText");
+
+            java.awt.image.BufferedImage with = paint(field);
+
+            field.putClientProperty("JTextField.placeholderText", null);
+
+            java.awt.image.BufferedImage without = paint(field);
+
+            field.putClientProperty("JTextField.placeholderText", caption);
+
+            for (int y = 0; y < with.getHeight(); y++)
+            {
+                for (int x = 0; x < with.getWidth(); x++)
+                {
+                    if (with.getRGB(x, y) != without.getRGB(x, y)) return true;
+                }
+            }
+
+            return false;
+        });
+    }
+
+    private static java.awt.image.BufferedImage paint(JTextField field)
+    {
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(Math.max(1, field.getWidth()),
+            Math.max(1, field.getHeight()), java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        field.paint(image.getGraphics());
+
+        return image;
+    }
+
+    private java.util.List<String> shownRows()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            javax.swing.JList<?> list = (javax.swing.JList<?>) panel.getFindingsPanel().getViewport().getView();
+            java.util.List<String> rows = new java.util.ArrayList<>();
+
+            for (int i = 0; i < list.getModel().getSize(); i++) rows.add(String.valueOf(list.getModel().getElementAt(i)));
+
+            return rows;
+        });
+    }
+
+    /**
+     * An empty filter box shows "Filter" as a caption that is not its text, there is no Filter: label, and the list
+     * is unfiltered.
+     *
+     * MUTATION: put "Filter" into the box as its text, drop the placeholder property, or bring the label back, and
+     * this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAnEmptyFilterBoxShowsTheCaptionAndFiltersNothing() throws Exception
+    {
+        JTextField field = Components.inside(panel.getFindingsBox(), JTextField.class);
+
+        layOut();
+
+        assertEquals(Components.onTheEventThread(field::getText), "", "the box's text");
+        assertEquals(Components.onTheEventThread(() -> field.getClientProperty("JTextField.placeholderText")),
+            I18n.t("autosetup.ui.captionFilterFindings"), "the caption");
+        assertTrue(showsACaption(field), "the empty box paints no caption");
+        assertEquals(Components.onTheEventThread(() -> field.getAccessibleContext().getAccessibleName()),
+            I18n.t("autosetup.ui.captionFilterFindings"), "the box's accessible name");
+
+        assertNull(Components.inside(panel.getFindingsBox(), javax.swing.JLabel.class), "a Filter: label is still there");
+
+        assertTrue(shownRows().size() > 2, "precondition: the check found nothing to list");
+        assertEquals(panel.getFindingFilter(), "", "the text the filter reads");
+    }
+
+    /**
+     * Typing hides the caption and filters; emptying the box brings the caption and the whole list back.
+     *
+     * MUTATION: keep the caption over typed text, or take it away once the box has been typed in, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTypingHidesTheCaptionAndEmptyingBringsItBack() throws Exception
+    {
+        JTextField field = Components.inside(panel.getFindingsBox(), JTextField.class);
+
+        layOut();
+
+        java.util.List<String> all = shownRows();
+
+        Components.onTheEventThread(() -> { field.setText("zzzzqqq"); return null; });
+
+        assertFalse(showsACaption(field), "the caption is still painted over typed text");
+        assertEquals(panel.getFindingFilter(), "zzzzqqq", "the text read is not what was typed");
+        assertTrue(shownRows().size() < all.size(), "typing did not filter the list");
+
+        Components.onTheEventThread(() -> { field.setText(""); return null; });
+
+        assertTrue(showsACaption(field), "the caption did not come back when the box was emptied");
+        assertEquals(panel.getFindingFilter(), "", "the text read after emptying");
+        assertEquals(shownRows(), all, "emptying the box did not bring the whole list back");
+    }
+
+    /**
+     * The box sits under the list and over the warning bar, with the list's left and right edges.
+     *
+     * MUTATION: put the box back over the list, or give its row a side inset, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheFilterBoxIsBelowTheListAboveTheBarAndAlignedToTheList() throws Exception
+    {
+        JTextField field = Components.inside(panel.getFindingsBox(), JTextField.class);
+
+        layOut();
+
+        Component list = panel.getFindingsPanel();
+        Component bar = panel.getBanner();
+
+        assertTrue(top(field) >= top(list) + Components.onTheEventThread(list::getHeight),
+            "the box is not below the list");
+        assertTrue(top(field) + Components.onTheEventThread(field::getHeight) <= top(bar),
+            "the box is not above the warning bar");
+        assertEquals(left(field), left(list), "the box's left edge is not the list's");
+        assertEquals(left(field) + Components.onTheEventThread(field::getWidth),
+            left(list) + Components.onTheEventThread(list::getWidth), "the box's right edge is not the list's");
     }
 
     // ------------------------------------------------------------------------------------------------ MT-890

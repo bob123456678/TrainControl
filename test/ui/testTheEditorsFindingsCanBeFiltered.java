@@ -684,7 +684,7 @@ public class testTheEditorsFindingsCanBeFiltered
 
     private static javax.swing.JButton theCross(LayoutEditor editor)
     {
-        return support.Components.inside(editor.getAutonomyPanel().getFindingsBox(), javax.swing.JButton.class);
+        return support.Components.inside(box(editor), javax.swing.JButton.class);
     }
 
     /** Typing: the text set in the box, as the document sees it. */

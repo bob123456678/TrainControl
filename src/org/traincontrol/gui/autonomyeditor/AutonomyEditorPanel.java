@@ -1212,22 +1212,21 @@ public class AutonomyEditorPanel extends JPanel
     private TileKey chosenFinding;
 
     /**
-     * The filter box with its clear button, over the list (FR-073).  It narrows the list as typed and never selects a
+     * The filter box with its clear button, under the list (FR-073, FR-217).  It narrows the list as typed and never selects a
      * row, so it neither jumps nor copies.
      */
     private JPanel buildFindingsBox(JScrollPane list)
     {
-        JPanel box = new JPanel(new BorderLayout(4, 0));
+        JPanel box = new JPanel(new BorderLayout());
 
         box.setOpaque(false);
-        // Air above, as under a heading, so the box does not touch the diagram over it (MT-889)
-        box.setBorder(BorderFactory.createEmptyBorder(LayoutEditor.HEADING_GAP, 4, 2, 4));
-
-        JLabel label = UiStyle.label(I18n.t("autosetup.ui.labelFilterFindings"));
-
-        label.setFocusable(false);
+        // Edge to edge with the list over it, and a little air between it and the list and the banner (FR-217)
+        box.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
         findingFilter.setFont(FONT_CONTROL);
+        // Painted by the look and feel while the box is empty, never part of its text
+        findingFilter.putClientProperty("JTextField.placeholderText", I18n.t("autosetup.ui.captionFilterFindings"));
+        findingFilter.getAccessibleContext().setAccessibleName(I18n.t("autosetup.ui.captionFilterFindings"));
         findingFilter.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipFilterFindings")));
 
         // Inside the field's right end, as a search field has it, and shown while there is text to clear
@@ -1250,14 +1249,13 @@ public class AutonomyEditorPanel extends JPanel
             showFindings();
         };
 
-        box.add(label, BorderLayout.WEST);
         box.add(findingFilter, BorderLayout.CENTER);
 
         JPanel whole = new JPanel(new BorderLayout());
 
         whole.setOpaque(false);
-        whole.add(box, BorderLayout.NORTH);
         whole.add(list, BorderLayout.CENTER);
+        whole.add(box, BorderLayout.SOUTH);
 
         return whole;
     }
