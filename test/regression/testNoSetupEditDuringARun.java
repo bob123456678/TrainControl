@@ -1877,24 +1877,7 @@ public class testNoSetupEditDuringARun
         try
         {
             // NO EXIT, whatever happens: an answer the claim did not mean to give must not end the test's JVM
-            System.setSecurityManager(new SecurityManager()
-            {
-                @Override
-                public void checkExit(int status)
-                {
-                    throw new SecurityException("the close tried to exit the test's JVM");
-                }
-
-                @Override
-                public void checkPermission(java.security.Permission perm)
-                {
-                }
-
-                @Override
-                public void checkPermission(java.security.Permission perm, Object context)
-                {
-                }
-            });
+            System.setSecurityManager(new support.NoExit());
 
             sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot"));
 

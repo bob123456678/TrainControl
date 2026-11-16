@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,7 +73,7 @@ public class testRestoreFromBackup
 
     private MarklinControlStation model;
     private TrainControlUI ui;
-    private NoExit guard;
+    private support.NoExit guard;
     private Set<String> backupsBefore;
     private final List<File> made = new ArrayList<>();
 
@@ -132,7 +131,7 @@ public class testRestoreFromBackup
 
         Components.settle();
 
-        guard = new NoExit();
+        guard = new support.NoExit();
 
         System.setSecurityManager(guard);
     }
@@ -1590,38 +1589,6 @@ public class testRestoreFromBackup
                 out.write(entry.getValue());
                 out.closeEntry();
             }
-        }
-    }
-
-    /** Refuses, and records, an exit; everything else is allowed. */
-    private static final class NoExit extends SecurityManager
-    {
-        private final List<Integer> exits = Collections.synchronizedList(new ArrayList<>());
-
-        List<Integer> exits()
-        {
-            synchronized (exits)
-            {
-                return new ArrayList<>(exits);
-            }
-        }
-
-        @Override
-        public void checkExit(int status)
-        {
-            exits.add(status);
-
-            throw new SecurityException("no exit in a test");
-        }
-
-        @Override
-        public void checkPermission(Permission permission)
-        {
-        }
-
-        @Override
-        public void checkPermission(Permission permission, Object context)
-        {
         }
     }
 }
