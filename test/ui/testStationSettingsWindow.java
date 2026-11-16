@@ -1010,8 +1010,8 @@ public class testStationSettingsWindow
      * The arrows step what the box shows, one a click and never under Any, and apply as typing does, on Enter or leaving:
      * a run of clicks is one change, not one each (FR-234).
      *
-     * MUTATION: drop the arrows from the exception in `StationSettingsWindow.pressAway`, and each click applies the box as
-     * it presses, so two clicks no longer step it twice.
+     * MUTATION: drop the arrows from the exception in `StationSettingsWindow.pressAway`, and each click after the first
+     * writes the length as it presses, before Enter or leaving.
      */
     @Test(timeOut = 120000)
     public void testTheArrowsStepAndApplyAsTypingDoes() throws Exception
@@ -1023,8 +1023,8 @@ public class testStationSettingsWindow
         lengthArrow(window, true);
         lengthArrow(window, true);
 
-        assertEquals(StationDoors.text(window, "station.maxLength"), "122", "two clicks on the up arrow did not step twice");
         assertEquals(lengthOf(square), 120, "a click on an arrow wrote the length before Enter or leaving");
+        assertEquals(StationDoors.text(window, "station.maxLength"), "122", "two clicks on the up arrow did not step twice");
 
         Components.onTheEventThread(() -> { field.postActionEvent(); return null; });
         StationDoors.current(window);
@@ -1045,8 +1045,8 @@ public class testStationSettingsWindow
 
     /**
      * Stations picked together whose lengths differ show a blank with the triangle, and nothing is written until the box
-     * is changed: not by Enter on the blank, a press away, nor an arrow's click alone; the change then goes to each
-     * (FR-234).
+     * is changed: not by Enter on the blank, a press away, nor an arrow's click alone; the change then goes to each.  An
+     * arrow either way steps the blank to Any, so a stray press never proposes 1 (FR-234).
      *
      * MUTATION: drop the unchanged check at the top of `StationSettingsWindow.commit`, and Enter on the blank writes.
      */
@@ -1090,16 +1090,133 @@ public class testStationSettingsWindow
 
         assertEquals(setup(), before, "Enter on the blank, or a press away from it, wrote to the stations");
 
-        lengthArrow(window, false);
+        lengthArrow(window, true);
 
         assertEquals(StationDoors.text(window, "station.maxLength"), I18n.t("autosetup.ui.stationLengthAny"),
-            "the down arrow from the blank did not step to Any");
+            "the up arrow from the blank did not step to Any");
         assertEquals(setup(), before, "a click on an arrow wrote before the box was left");
 
         StationDoors.close(window);
 
         assertEquals(lengthOf(first), 0, "the change did not go to the first station");
         assertEquals(lengthOf(second), 0, "the change did not go to the second station");
+    }
+
+    /**
+     * The up arrow stops at the largest length a number can hold, rather than turning it negative (FR-234).
+     *
+     * MUTATION: have `StationSettingsWindow.lengthStep` add in int, and the step wraps to a negative length.
+     */
+    @Test(timeOut = 120000)
+    public void testTheUpArrowStopsAtTheLargestLength() throws Exception
+    {
+        String largest = String.valueOf(Integer.MAX_VALUE);
+        StationSettingsWindow window = openAtALength(aStation(), Integer.MAX_VALUE);
+
+        lengthArrow(window, true);
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), largest, "the up arrow went past the largest length");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * The English Any is taken whatever language the window is in, as well as the language's own word (FR-234).
+     *
+     * MUTATION: have `EditorPrompts.lengthTyped` take only `I18n.t(ANY)`, and "any" is refused in German.
+     */
+    @Test(timeOut = 120000)
+    public void testTheEnglishAnyIsTakenInEveryLanguage() throws Exception
+    {
+        java.util.Locale was = I18n.getLocale();
+        TileKey square = aStation();
+
+        try
+        {
+            I18n.setLocale(java.util.Locale.GERMAN);
+
+            StationSettingsWindow window = openAtALength(square, 30);
+
+            assertEquals(StationDoors.text(window, "station.maxLength"), "30", "precondition: the length is not shown");
+
+            StationDoors.typeAndEnter(window, "station.maxLength", "any");
+
+            assertFalse(visible(window, "station.maxLengthProblem"), "the English Any was refused in German");
+            assertEquals(lengthOf(square), 0, "the English Any did not store no limit in German");
+
+            StationDoors.close(window);
+        }
+        finally
+        {
+            I18n.setLocale(was);
+        }
+    }
+
+    /**
+     * On a station with no limit, a cleared box, 0 or Any changes nothing: each means the limit it already has (FR-234).
+     *
+     * MUTATION: have `StationSettingsWindow.commit` compare the length's text rather than the number it means, and
+     * the editor is dirtied.
+     */
+    @Test(timeOut = 120000)
+    public void testNoLimitRetypedChangesNothing() throws Exception
+    {
+        StationSettingsWindow window = openAtALength(aStation(), null);
+
+        assertFalse(panel.isDirty(), "precondition: the editor opened dirty");
+
+        for (String typed : new String[] {"", "0", "any"})
+        {
+            StationDoors.typeAndEnter(window, "station.maxLength", typed);
+            StationDoors.current(window);
+
+            assertFalse(panel.isDirty(), "\"" + typed + "\" on a station with no limit dirtied the editor");
+        }
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * The length box lines up with the Name box above it, as Adam asked for its "correct inset": the same left edge,
+     * the same height, and its number as far in from that edge as the name (FR-234, OB-442).
+     *
+     * MUTATION: take the left inset off the length field's border in `StationSettingsWindow.lengthArrows`, and this
+     * fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheLengthBoxHasTheNamesInset() throws Exception
+    {
+        StationSettingsWindow window = openAtALength(aStation(), 120);
+        JTextField name = StationDoors.part(window, "station.name", JTextField.class);
+        JTextField length = StationDoors.part(window, "station.maxLength", JTextField.class);
+        javax.swing.JSpinner box = StationDoors.part(window, "station.maxLengthArrows", javax.swing.JSpinner.class);
+
+        int[] got = Components.onTheEventThread(() ->
+        {
+            try
+            {
+                name.setCaretPosition(0);
+                length.setCaretPosition(0);
+
+                return new int[] {
+                    javax.swing.SwingUtilities.convertPoint(name, 0, 0, window).x,
+                    javax.swing.SwingUtilities.convertPoint(box, 0, 0, window).x,
+                    name.getHeight(), box.getHeight(),
+                    javax.swing.SwingUtilities.convertPoint(name, name.modelToView(0).x, 0, window).x,
+                    javax.swing.SwingUtilities.convertPoint(length, length.modelToView(0).x, 0, window).x};
+            }
+            catch (javax.swing.text.BadLocationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        assertEquals(got[1], got[0], "the length box's left edge is not the name box's");
+        assertEquals(got[3], got[2], "the length box is not as tall as the name box");
+        assertTrue(got[4] > got[0], "precondition: the name's text starts at its box's edge");
+        assertEquals(got[5] - got[1], got[4] - got[0], "the length's number is not as far in as the name's text");
+
+        StationDoors.close(window);
     }
 
     /** Station Settings of this station, its maximum train length set first; null for no limit. */

@@ -76,9 +76,6 @@ public final class StationSettingsWindow extends StationWindowBase
     private static final String LENGTH_BLANK = "autosetup.ui.stationMixedLengthTip";
     private static final String PRIORITY_BLANK = "autosetup.ui.stationMixedPriorityTip";
 
-    /** The length box's word for 0, no limit (FR-234). */
-    private static final String ANY = "autosetup.ui.stationLengthAny";
-
     private static final int NEVER = 0;
     private static final int MAY = 1;
     private static final int MUST = 2;
@@ -576,8 +573,8 @@ public final class StationSettingsWindow extends StationWindowBase
         JSpinner lengthArrows = lengthArrows();
 
         typedRow("autosetup.ui.stationMaxLength", "maxLength", maxLength, leftAligned(lengthArrows), stopSection,
-            each -> lengthShown(editor.number(each, "maxTrainLength", 0)),
-            (each, typed) -> editor.applyNumber(each, "maxTrainLength", lengthTyped(typed), 0));
+            each -> EditorPrompts.lengthShown(editor.number(each, "maxTrainLength", 0)),
+            (each, typed) -> editor.applyNumber(each, "maxTrainLength", typed, 0));
         stopSection.add(lengthArrows);
         mixedMarks.get(maxLength).setToolTipText(mixedTip(LENGTH_BLANK));
 
@@ -841,21 +838,22 @@ public final class StationSettingsWindow extends StationWindowBase
     }
 
     /**
-     * The length box with arrows, which step what it shows and apply as typing does; never under 0, shown as Any.  Its
-     * number starts as far in as the other fields' do, and it is as tall (OB-442).
+     * The length box with arrows, which step what it shows and apply as typing does; never under 0, shown as Any, and a
+     * blank, as several stations that differ show, steps to Any either way.  Its number starts as far in as the other
+     * fields' do, and it is as tall (OB-442).
      */
     private JSpinner lengthArrows()
     {
         JSpinner out = new JSpinner(new javax.swing.AbstractSpinnerModel()
         {
             @Override public Object getValue() { return lengthNow(); }
-            @Override public Object getNextValue() { return lengthNow() + 1; }
-            @Override public Object getPreviousValue() { return Math.max(lengthNow() - 1, 0); }
+            @Override public Object getNextValue() { return lengthStep(1); }
+            @Override public Object getPreviousValue() { return lengthStep(-1); }
 
             @Override
             public void setValue(Object value)
             {
-                maxLength.setText(lengthShown(((Number) value).intValue()));
+                maxLength.setText(EditorPrompts.lengthShown(((Number) value).intValue()));
                 fireStateChanged();
             }
         });
@@ -863,10 +861,27 @@ public final class StationSettingsWindow extends StationWindowBase
         out.setName("station.maxLengthArrows");
         out.setEditor(maxLength);
 
+        // FlatLaf rings a spinner's focus only for its own kind of editor
+        out.putClientProperty("JComponent.focusOwner", (Predicate<JComponent>) spinner -> maxLength.hasFocus());
+        maxLength.addFocusListener(new java.awt.event.FocusAdapter()
+        {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e)
+            {
+                out.repaint();
+            }
+
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e)
+            {
+                out.repaint();
+            }
+        });
+
         java.awt.FontMetrics metrics = maxLength.getFontMetrics(REGULAR);
 
         // Room for Any in every language
-        maxLength.setColumns(Math.max(5, metrics.stringWidth(I18n.t(ANY)) / metrics.charWidth('m') + 1));
+        maxLength.setColumns(Math.max(5, metrics.stringWidth(I18n.t(EditorPrompts.ANY)) / metrics.charWidth('m') + 1));
         maxLength.setBorder(BorderFactory.createEmptyBorder(0, name.getInsets().left - out.getInsets().left, 0, 0));
         out.setPreferredSize(new Dimension(out.getPreferredSize().width, name.getPreferredSize().height));
 
@@ -942,28 +957,25 @@ public final class StationSettingsWindow extends StationWindowBase
         return typed.trim().isEmpty() ? "0" : typed;
     }
 
-    private static String lengthShown(int length)
-    {
-        return length == 0 ? I18n.t(ANY) : String.valueOf(length);
-    }
-
-    /** What was typed in the length box, for `applyNumber`: Any, in any case, is 0, as a blank is. */
-    private static String lengthTyped(String typed)
-    {
-        return typed.trim().equalsIgnoreCase(I18n.t(ANY)) ? "0" : blankIsZero(typed);
-    }
-
     /** The length the box shows, which the arrows step from; what is not a number counts as 0. */
     private int lengthNow()
     {
         try
         {
-            return Math.max(0, Integer.parseInt(lengthTyped(maxLength.getText()).trim()));
+            return Math.max(0, Integer.parseInt(EditorPrompts.lengthTyped(maxLength.getText()).trim()));
         }
         catch (NumberFormatException notANumber)
         {
             return 0;
         }
+    }
+
+    /** One arrow's step, or null past the largest length. */
+    private Object lengthStep(int by)
+    {
+        long next = maxLength.getText().trim().isEmpty() ? 0 : (long) lengthNow() + by;
+
+        return next > Integer.MAX_VALUE ? null : (int) Math.max(next, 0);
     }
 
     // ----------------------------------------------------------------------------------------- fields apply on leaving
@@ -1022,9 +1034,13 @@ public final class StationSettingsWindow extends StationWindowBase
         if (reading || tile == null || !part.isEditable() || !part.isEnabled()) return;
 
         String typed = part.getText();
+        String was = shown(part);
+
+        // A length is the number it means, so Any, 0 and a blank are one; where several differ, any change is one
+        Function<String, String> means = part == maxLength && !was.isEmpty() ? EditorPrompts::lengthTyped : text -> text;
 
         // Unchanged writes nothing: an untouched station opened and closed changes no setup, nor a field they differ on
-        if (typed.trim().equals(shown(part).trim())) { showProblem(part, null); return; }
+        if (means.apply(typed).trim().equals(means.apply(was).trim())) { showProblem(part, null); return; }
 
         final String[] refused = new String[1];
 
