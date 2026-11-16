@@ -80,6 +80,9 @@ public class testEveryMessageKeyIsAskedFor
         "ui.confirmDeleteFromDatabaseWithRoutesFew",
         "autosetup.ui.facingsGuessedOne",
         "autosetup.ui.facingsGuessedFew",
+        // EditorWhy's Why not Moving? headline, "autosetup.ui.whyCanGo" + I18n.countForm (FR-221, D175)
+        "autosetup.ui.whyCanGoOne",
+        "autosetup.ui.whyCanGoFew",
 
         // RouteEditorFrame.settingLabel -> route.ui.setting.<word>, the setting words a route stores (OB-367)
         "route.ui.setting.",
