@@ -3013,6 +3013,38 @@ public class testStationSettingsWindow
     }
 
     /**
+     * And the editor's redo brings the edit back: the page's setup as it was before the undo, not as the undo left it.
+     *
+     * MUTATION: swap the arguments of redo's `swapCaptions` in LayoutEditorUndo, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testRedoBringsMayDepartBack() throws Exception
+    {
+        TileKey square = aStationWhereMayDepart();
+        RouteId road = onlyRoad(square);
+
+        java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
+
+        Components.onTheEventThread(() -> snapshot.invoke(editor));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        chooseDepartTowardA(window, square, road);
+
+        Components.onTheEventThread(() -> { editor.undo(); return null; });
+        Components.settle();
+
+        assertEquals(wayOf(square, road), Direction.BOTH, "precondition: the undo did not put May depart back");
+
+        Components.onTheEventThread(() -> { editor.redo(); return null; });
+        Components.settle();
+
+        assertEquals(wayOf(square, road), Direction.TOWARD_A, "the redo did not bring the May depart choice back");
+
+        StationDoors.close(window);
+    }
+
+    /**
      * Where the track on one side of a station runs out, trains can only leave the other way, so May depart is grayed,
      * shows that way and says why (Adam: "can be set except when a one direction run is forced, such as a terminus").
      * An old arrow shutting that one way leaves it live, so the arrow can be changed.
