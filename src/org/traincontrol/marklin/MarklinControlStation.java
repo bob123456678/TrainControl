@@ -449,8 +449,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // true to prefer the local file
             accs = fileParser.getMagList(true);
         }
-        catch (Exception e)
+        catch (java.io.FileNotFoundException none)
         {
+            // Only a missing list means none; any other failure fails here, before anything is changed, as the tiles
+            // would otherwise all be built as MM2
             if (isDebug())
             {
                 this.logf("layout.noDCC");
