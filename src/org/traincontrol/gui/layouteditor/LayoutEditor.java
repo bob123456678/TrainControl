@@ -3086,7 +3086,7 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The pointer left a square of the track editor: onto another, whose hover answers, or off the squares altogether,
+     * The pointer left a square: onto another, whose hover answers, or off the squares altogether,
      * which the margin does not always see.
      * @param e the exit, in the square's coordinates
      * @param label the square left
@@ -3105,9 +3105,9 @@ public class LayoutEditor extends PositionAwareJFrame
         // Onto a square (or something over one) and in view
         if (squares.contains(to) && squares.getVisibleRect().contains(to) && aSquareAt(squares, to)) return;
 
-        // In autonomy mode only Place and Remove's keys ask; the hovered square stays for Control+H, S and E (FR-200)
-        if (isAutonomyMode()) this.pointerOnGrid = false;
-        else pointerOffTheSquares();
+        // In autonomy mode too, as the margin does: Place and Remove's keys then wait for the squares (FR-200), while
+        // the hovered square stays for Control+H, S and E
+        pointerOffTheSquares();
     }
 
     /**
