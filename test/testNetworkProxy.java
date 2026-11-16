@@ -1,3 +1,4 @@
+import java.net.InetAddress;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.lang.reflect.Field;
@@ -230,5 +231,63 @@ public class testNetworkProxy
         assertTrue(sent, "A8: sending should reopen the socket and succeed");
 
         assertFalse(socketOf(proxy).isClosed(), "A8: the socket should have been reopened");
+    }
+
+    /**
+     * A datagram shorter than a CAN frame is dropped, not parsed with the tail of the one before.
+     *
+     * The reader reuses one buffer, so a short datagram used to be read as its own first bytes
+     * followed by whatever the last full frame left there.  A loopback socket sends a full frame, then
+     * a short one, to the model's own port; only the full one may be counted.
+     */
+    @Test(priority = 0)
+    public void testAShortDatagramIsNotParsedWithTheTailOfThePreviousOne() throws Exception
+    {
+        long deadline = System.currentTimeMillis() + 5000;
+
+        while (countReaderThreads() == 0 && System.currentTimeMillis() < deadline)
+        {
+            Thread.sleep(50);
+        }
+
+        InetAddress loopback = InetAddress.getLoopbackAddress();
+        int before = model.getNumMessagesProcessed();
+
+        try (DatagramSocket sender = new DatagramSocket(0, loopback))
+        {
+            byte[] full = new CS2Message(CS2Message.CMD_ACC_SWITCH, 0x4711, true,
+                new byte[]{ 0, 0, 0x30, 0x2A, 1, 1 }).getRawMessage();
+
+            sender.send(new DatagramPacket(full, full.length, loopback, NetworkProxy.RX_PORT));
+
+            deadline = System.currentTimeMillis() + 5000;
+
+            while (model.getNumMessagesProcessed() < before + 1 && System.currentTimeMillis() < deadline)
+            {
+                Thread.sleep(20);
+            }
+
+            assertEquals(model.getNumMessagesProcessed(), before + 1, "the full frame is processed");
+
+            byte[] shortOne = new byte[]{ 0, 0x20, 0x47, 0x11, 1 };
+
+            sender.send(new DatagramPacket(shortOne, shortOne.length, loopback, NetworkProxy.RX_PORT));
+
+            // A full frame behind it proves the short one has been read and passed over
+            full[1] = (byte) (full[1] ^ 0x02);
+            sender.send(new DatagramPacket(full, full.length, loopback, NetworkProxy.RX_PORT));
+
+            deadline = System.currentTimeMillis() + 5000;
+
+            while (model.getNumMessagesProcessed() < before + 2 && System.currentTimeMillis() < deadline)
+            {
+                Thread.sleep(20);
+            }
+
+            Thread.sleep(200);
+
+            assertEquals(model.getNumMessagesProcessed(), before + 2,
+                "the short datagram was parsed as a message of its own");
+        }
     }
 }

@@ -1881,10 +1881,19 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public final MarklinFeedback newFeedback(int id, CANMessage message)
     {
-        MarklinFeedback newFb = new MarklinFeedback(this, id, (CS2Message) message);
-                
+        // IN THE DATABASE BEFORE IT PARSES ITS FIRST MESSAGE (CS3-C2).
+        //
+        // The constructor parses the message it is handed, which sets the state and wakes everything waiting on a
+        // sensor - and those waiters ask `isFeedbackSet(name)`, which reads the database.  Adding afterwards meant
+        // the waiter woke, found no such sensor, and went back to sleep until the next event ANYWHERE: a dispatch
+        // polls every five seconds and is merely late, a route monitor waits untimed and stays parked.  Built empty,
+        // added, then told - which is the order the database restore path has always used.
+        MarklinFeedback newFb = new MarklinFeedback(this, id, null);
+
         this.feedbackDB.add(newFb, newFb.getName(), newFb.getUID());
-        
+
+        if (message != null) newFb.parseMessage((CS2Message) message);
+
         return newFb;
     }
     
@@ -2041,13 +2050,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 int id = message.extractShortUID();
 
-                if (this.feedbackDB.hasId(id))
+                // Resolved once into a local, as the locomotive and accessory branches below do.  This
+                // was hasId followed by getById, two separate acquisitions of the collection's lock -
+                // and syncLayouts prunes feedbacks the freshly loaded diagram does not refer to, on
+                // another thread, which is exactly what a feedback auto-created here for an unknown
+                // s88 is.  The resulting NPE would be swallowed by the executor's Future.
+                //
+                // A dropped feedback event is not a cosmetic loss: the state is a LEVEL, and a driving
+                // thread waiting on that sensor waits without a timeout.  A train whose arrival was
+                // dropped never slows and never stops.
+                MarklinFeedback feedback = this.feedbackDB.getById(id);
+
+                if (feedback != null)
                 {
-                    this.feedbackDB.getById(id).parseMessage(message);
+                    feedback.parseMessage(message);
                 }
-                else
+                // Only a frame the feedback parser reads creates a module (isFeedbackCommand answers for
+                // three commands, the parser acts on one), so an unreadable frame leaves no phantom sensor
+                else if (message.getCommand() == CS2Message.CMD_ACC_SENSOR)
                 {
-                    newFeedback(id, message);   
+                    newFeedback(id, message);
                 }
             });
         }
@@ -2504,10 +2526,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
         MarklinLocomotive.decoderType type, int[] functionTypes, int[] functionTriggerTypes)
     {
         MarklinLocomotive newLoc = new MarklinLocomotive(this, address, type, name, functionTypes, functionTriggerTypes);
-        
+
         this.locDB.add(newLoc, name, newLoc.getUID());
-        
-        return newLoc; 
+
+        // THE CACHE FOLLOWS EVERY ADD, not only the sync's happy path (CS3-C3).  The three-argument overload beside
+        // this one rebuilds; this one did not, and `syncWithCS2` relied on one rebuild after its whole loop - so a
+        // throw part-way through left the cache without the locomotives just added, and every echo for them was
+        // logged as coming from an unknown locomotive until the next add, rename, delete or successful sync.
+        this.rebuildLocIdCache();
+
+        return newLoc;
     }
     
     /**

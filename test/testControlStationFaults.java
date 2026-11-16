@@ -573,4 +573,39 @@ public class testControlStationFaults
         assertFalse(said.isEmpty(),
             "Stop was discarded because comms are off, and nothing was logged about it");
     }
+
+    /**
+     * A feedback frame the parser does not read creates no sensor; one it reads does.
+     *
+     * isFeedbackCommand answers for three commands and the parser acts on one, so an unknown sensor
+     * used to be created from the other two under whatever bytes 2 and 3 held, and then saved.
+     */
+    @Test
+    public void testAFrameTheParserDoesNotReadCreatesNoSensor() throws Exception
+    {
+        model.receiveMessage(new CS2Message(CS2Message.CAN_S88_REPORT, 0x4712, true,
+            new byte[]{ 0, 0, 0x12, 0x34, 0, 1 }));
+        model.receiveMessage(new CS2Message(CS2Message.CMD_ACC_SENSOR, 0x4713, true,
+            new byte[]{ 0, 0, 0x07, 0x77, 0, 1, 0, 0 }));
+
+        long deadline = System.currentTimeMillis() + 3000;
+
+        while (!model.isFeedbackSet("1911") && System.currentTimeMillis() < deadline)
+        {
+            Thread.sleep(20);
+        }
+
+        assertTrue(model.isFeedbackSet("1911"), "a sensor event creates its sensor");
+        assertFalse(model.isFeedbackSet("4660"), "a frame the parser does not read must not create a sensor");
+    }
+
+    /**
+     * A Central Station route with a padded name is found under its trimmed name.
+     */
+    @Test
+    public void testARouteNameIsTrimmed()
+    {
+        assertEquals(new org.traincontrol.marklin.MarklinRoute(model, "  padded name ", 9).getName(),
+            "padded name", "a padded name could be neither found nor deleted");
+    }
 }
