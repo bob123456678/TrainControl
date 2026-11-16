@@ -203,7 +203,7 @@ final class StationCaptions
             this.ui.getModel() == null ? null : this.ui.getModel().getAutoLayoutIfLoaded());
 
         // A crowded square speaks for the copy handed in, not for the first occupied one.
-        if (facing == null && at != null) facing = session.getStationIndex().facingsAt(square).get(at.getName());
+        if (facing == null) facing = session.getStationIndex().facingsAt(square).get(at.getName());
 
         // A square that never splits has one copy and no facing of its own; use what a hand-placed train wrote there.
         if (facing == null) return facingArrow(square);
