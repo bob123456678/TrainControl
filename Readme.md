@@ -116,7 +116,7 @@ If you have an older CS3 or don't want to use the CS3 Track Board layouts, you c
 
 Complete editing support is accessible via the "Edit" button within the Track Diagram tab.  In the editor, a strip of icons under `Page` adds, duplicates, renames, deletes and moves pages, and the `Tools` menu has the rest, such as `Sort Pages by Name`.  Pages are shown in the order they have in the layout's files.  This will let you fully customize your layout.
 
-If you change the local files, clicking on "Sync Database w/ Central Station" from the File menu will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
+If you change the local files, clicking on "Sync Database w/ Central Station" in the Locomotives menu will update the layouts.  This effectively lets you customize the layout even without a CS2/CS3.  Some users might find this easier than inputting data into the Central Station UI.
 
 Some sample files are included in the `cs2_sample_layout` folder.
 
@@ -704,7 +704,27 @@ Tab icons provided by Freepik.
         - A station out of service can no longer be sent to or driven through, even by hand.  To keep a parking track reachable by hand, untick its `Full autonomy` choice in `Station Settings` instead.
         - A route with an emergency stop can no longer contain other commands; older ones are split in two automatically.
         - The "paste entire row" and "paste entire column" options were removed.
-* v2.8.x [8/2026 - 9/2026]
+* v2.8.3 [11/16/2026]
+    - Bug Fixes
+        - Central Station
+            - Syncing with a CS3 and starting TrainControl now read the real state of its feedback sensors, and a route triggered by an S88 sensor does not fire until the CS3 has confirmed those states.  Previously a route could fire on a sensor state that was out of date.
+            - A short circuit at the Central Station now shows the track power as off in TrainControl, with one warning each time the power is cut.
+            - When a CS3 has an MM2 accessory and a DCC accessory on the same address, each square on the track diagram now switches the right one, and downloading the layout keeps each square's protocol.
+            - Station files that arrive cut off are now fetched again instead of being used, and names with accented letters in files from the Central Station are read correctly.
+            - A switch and a signal on the same address now both follow the Central Station on the track diagram.  Previously the signal could stay red there while a route had turned it green.
+            - A short message from the Central Station is no longer taken for an emergency stop, and Stop now works while TrainControl is not connected.
+            - Locomotive pictures stored outside the CS3's standard folders now show up.
+            - A sync no longer gives a locomotive a new address while it is moving.
+            - Starting a simulation now keeps the Central Station's address.
+            - The page list of a downloaded layout is saved safely, so an interrupted download cannot leave it cut off.
+            - A sensor that an S88 route uses is no longer lost when the layout is read, even if no track diagram page shows it.
+            - Sensor changes are no longer held up when the command window stops accepting output, and short bursts of messages from the Central Station are no longer dropped.
+        - Autonomy
+            - `Path Integrity Validation` now waits while a busy CS3 is still switching other accessories, instead of reporting a path as broken.
+            - Autonomy, timetables and `Return Home` now wait while the track power is off, and no train leaves while it is off.  If the power is switched off and on again before a train leaves, the train is held back.
+        - General
+            - `Download Update` works again.
+* v2.8.x [8/2026 - 11/2026]
     - Added French, Italian, Spanish, Dutch and Polish translations, Path Integrity Validation (a train runs only once the Central Station confirms its switches and signals), and a "return home" feature.  Later 2.8 versions fixed many autonomy, route and Central Station problems, and 2.8.2 no longer loses page names when you go back to it after using 3.0.
 
 <details>

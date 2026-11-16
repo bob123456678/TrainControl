@@ -981,8 +981,8 @@ public class testLocomotiveCsvImport
 
     /**
      * The export's columns and the saved form of a locomotive are as they were, apart from the LastRun column Adam asked
-     * for: the header the importer reads, the saved record's version and fields (a change there is a change to
-     * LocDB.data), and an imported locomotive saves and loads like any other.
+     * for and the saved field of a rename turned down (D171): the header the importer reads, the saved record's version
+     * and fields (a change there is a change to LocDB.data), and an imported locomotive saves and loads like any other.
      *
      * MUTATION: add a column to the export or a field to MarklinSimpleComponent, and this fails.
      */
@@ -1000,7 +1000,7 @@ public class testLocomotiveCsvImport
         for (ObjectStreamField f : saved.getFields()) fields.add(f.getName());
 
         assertEquals(new TreeSet<>(fields), new TreeSet<>(Arrays.asList("address", "arrivalFunction", "centralStationLinkedLocomotives",
-            "conditions", "customFunctions", "departureFunction", "functionTriggerTypes", "functionTypes", "functions",
+            "conditions", "customFunctions", "declinedStationName", "departureFunction", "functionTriggerTypes", "functionTypes", "functions",
             "historicalOperatingTimeNew", "linkedLocomotives", "localFunctionImageURLs", "localImageURL", "name", "notes",
             "numActuations", "preferredFunctions", "preferredSpeed", "accessoryDecoderType", "reversible", "route",
             "routeEnabled", "s88", "s88TriggerType", "state", "trainLength", "type")), "the saved record's fields changed");

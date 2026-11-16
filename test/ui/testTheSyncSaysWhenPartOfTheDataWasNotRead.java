@@ -96,7 +96,7 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
     }
 
     /** True once the sync a press posted has ended; a wait of fixed length would let a slow sync outlive its claim. */
-    private static boolean syncEnded(TrainControlUI ui) throws Exception
+    static boolean syncEnded(TrainControlUI ui) throws Exception
     {
         // A posted sync takes the flag before this runs, in the spinner's own event loop
         SwingUtilities.invokeAndWait(() -> { });
