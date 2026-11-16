@@ -42,11 +42,11 @@ This guide takes you from a track diagram with nothing set up on it to a layout 
 
 **Digital switches where routes divide: required.** Autonomy sets every switch along a train's route before the train sets off, so the switches your trains run through need a decoder and an address TrainControl can set. A switch on the diagram with no address is listed under `Must be fixed` in the [setup check](#the-setup-check), and autonomy will not start until it has one.
 
-**Digital signals: optional.** Autonomy does not need signals: it brings each train to a smooth stop on its own sensors. Where you have them, TrainControl sets the signals on a route to green along with its switches. It sets a signal back to red only where you pair it with a station: in a station's `Station Settings`, `Exit guard signal` holds it red while a train stands there, and `Entry guard signal` turns it red when a train arrives. A signal you do not pair stays green. Guard signals look right, and add a layer of safety; a station without one is only listed under `Worth tidying`.
+**Digital signals: optional.** Autonomy does not need signals: it brings each train to a smooth stop on its own sensors. Where you have them, TrainControl sets the signals on a route to green along with its switches. It sets a signal back to red only where you pair it with a station: in a station's `Station Settings`, `Exit guard signal` keeps it red while a train stands there, and `Entry guard signal` turns it red when a train arrives. A signal you do not pair stays green. Guard signals look right, and add a layer of safety; a station without one is only listed under `Worth tidying`.
 
 **Switches you throw by hand, and signals that are only scenery.** Draw a hand-thrown switch with one of the track editor's *(Static)* switch tiles: autonomy then runs trains through it only from its legs towards the points, where the blades' position does not matter. Two `Y Switch (Static)` tiles drawn point to point count as a diagonal crossing. Any other switch, and any signal, on a page autonomy uses needs its address. A scissor switch cannot be used, and trains are not run across a turntable. Leave out a page that is only a picture (`Exclude Page`).
 
-**A track diagram stored on this computer.** Either downloaded from your Central Station with **Layouts → Download Central Station Layout Files**, or drawn in TrainControl's own editor. A diagram read from the Central Station each time TrainControl starts cannot carry an autonomy setup, so download it first (the Autonomy menu offers to). The download asks before replacing a layout already in the folder, and opens the copy when it is done. Automation is set up on this diagram, so if your diagram does not yet match your railway, start there.
+**A track diagram stored on this computer.** Either downloaded from your Central Station with **Layouts → Download Central Station Layout Files**, or drawn in TrainControl's own editor. A diagram read from the Central Station each time TrainControl starts cannot store an autonomy setup, so download it first (the Autonomy menu offers to). The download asks before replacing a layout already in the folder, and opens the copy when it is done. Automation is set up on this diagram, so if your diagram does not yet match your railway, start there.
 
 **Locomotives with addresses that work.** If you cannot drive a locomotive by hand from TrainControl, automation will not be able to either.
 
@@ -106,7 +106,7 @@ A layout is ready to run once three things are done: the diagram matches the tra
 
 **Optional, when you want them:**
 
-- **Guard signals.** In a station's `Station Settings`, `Exit guard signal` holds signals at red while a train stands there or is on its way, and turns them green as a train leaves, and `Entry guard signal` turns them red when a train arrives. The pencil beside each picks the signals. They are for the look of it and an extra layer of safety: autonomy stops trains on their sensors either way.
+- **Guard signals.** In a station's `Station Settings`, `Exit guard signal` keeps signals at red while a train stands there or is on its way, and turns them green as a train leaves, and `Entry guard signal` turns them red when a train arrives. The pencil beside each picks the signals. They are for the look of it and an extra layer of safety: autonomy stops trains on their sensors either way.
 - **Exclusions.** Keep trains off what they should not use: click track to make it one-way or close it (or `Trains May Depart...`); leave a whole page out with `Exclude Page`; take a station out of service by unticking both `Trains can stop here` and `Trains can pass through` in its `Station Settings`; untick `May choose this station` (or click `Parking`) for a berth only you and Return Home will use; and keep particular trains from stopping at a station, or from passing a sensor that is not one, with `Allowed trains` under `Advanced`.
 - **Advanced settings.** A station's `Station Settings` has `Priority`, `Speed into here` and `Unavailable while` under `Advanced`; `Maximum train length` and `May arrive from`, which says which sides it takes trains from, are under `Trains can stop here`. Settings for the whole layout (delays, speeds, how many trains run at once) are on the Auto tab: see [Settings](#settings-and-what-each-one-is-for).
 
@@ -204,7 +204,7 @@ Everything else a station has is in its `Station Settings`: its name, whether tr
 - `Name`: the station's name. It is left out when you set several stations at once.
 - `Changing direction`, above both boxes because it applies to both: `Never`, `May` (a train may stop, reverse and carry on, to reach a siding behind it) or `Must` (every train turns around: a terminus, or a berth trains back into). It grays out when both boxes are unticked.
 - `May depart`, under it and above both boxes too, as it belongs to neither: the sides trains may leave by, `Both Ways` or `One Way, Toward` a side. It sets the arrows on the station's own square and nothing else. Where the track on one side runs out before it reaches another sensor, as at a terminus at the end of a line, trains can only leave the other way, so it shows that way grayed and its (i) says why. Elsewhere it stays live, and a direction that leaves trains sent here no way out is listed under `Things to look at` and shown in a red notice under the picture. It is grayed too when both boxes are unticked, as it also says how a stopped train leaves. There is no `Closed` choice: to keep trains from stopping here, untick `Trains can stop here` or press `Off`; to take the square out of service, untick both boxes. A station closed by an earlier version stays closed and shows no choice until you pick one.
-- `Trains can stop here`: whether the square is a station. Unticked, nothing stops here and what is under it grays out. It holds:
+- `Trains can stop here`: whether the square is a station. Unticked, nothing stops here and what is under it grays out. It has:
     - `May choose this station`: untick it and autonomy never chooses the station, though Return Home and the trips you send by hand still use it. This is for a parking berth.
     - `Maximum train length`: the longest train that may be sent here. Blank means any length.
     - `May arrive from`: a box for each side trains may arrive from and stop. One side must stay open. Trains can still run through from a side that is closed. On a square no track leads a train onto it says `(none)`, as there is no side to choose.
@@ -248,7 +248,7 @@ A station with only `Trains can stop here` ticked is not a terminus: a train may
 
 ![The Train Placement tab of Bramley's Station Settings: BR 218 standing there, active, facing West](assets/automation/15-train-placement.png)
 
-`Station Settings` for one station has two tabs, `Settings` and `Train Placement`. On a station with a train on it, `Change Train at` *station* `...` opens it on the `Train Placement` tab; on an empty one, `Place a Locomotive Here...` does the same. The tab holds:
+`Station Settings` for one station has two tabs, `Settings` and `Train Placement`. On a station with a train on it, `Change Train at` *station* `...` opens it on the `Train Placement` tab; on an empty one, `Place a Locomotive Here...` does the same. The tab has:
 
 - `Train`: the locomotive standing here. Pick another to put it here, or `(none)` to take it off.
 - `Locomotive Settings...`: opens the `Autonomy` tab of that locomotive's `Locomotive Settings`: its `Train Length`, `Reversible`, `Active`, and the `Departure Function` and `Arrival Function` switched as it sets off and arrives.
@@ -414,7 +414,7 @@ Press start. A train leaves A. It can reach B two ways, through the loop past C 
 
 ![A run of track closed by clicking it: its square marked, and the message strip saying it is now closed](assets/automation/09-loop-closed.png)
 
-**Try this too.** Right-click C, open `Station Settings...`, open `Advanced`, and set `Priority` higher than the others. Trains will now go to C whenever it is free and they have a clear route there; the other stations are chosen only when C is not available. (That holds under every routing rule except *Completely at Random*, which ignores priority, and *Weighing Station Priority Against Distance*, which treats it as a weight rather than a rule.)
+**Try this too.** Right-click C, open `Station Settings...`, open `Advanced`, and set `Priority` higher than the others. Trains will now go to C whenever it is free and they have a clear route there; the other stations are chosen only when C is not available. (That applies under every routing rule except *Completely at Random*, which ignores priority, and *Weighing Station Priority Against Distance*, which treats it as a weight rather than a rule.)
 
 ---
 
