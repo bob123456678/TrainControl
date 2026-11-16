@@ -8951,8 +8951,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         turnOffFunctionsMenuItem = new javax.swing.JMenuItem();
         turnOnLightsMenuItem = new javax.swing.JMenuItem();
         syncFullLocStateMenuItem = new javax.swing.JMenuItem();
-        jSeparator1 = new javax.swing.JPopupMenu.Separator();
-        checkForRenameMenuItem = new javax.swing.JMenuItem();
         jSeparator6 = new javax.swing.JPopupMenu.Separator();
         exportLocsToCSVMenuItem = new javax.swing.JMenuItem();
         layoutMenu = new javax.swing.JMenu();
@@ -13933,16 +13931,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         });
         functionsMenu.add(syncFullLocStateMenuItem);
-        functionsMenu.add(jSeparator1);
-
-        checkForRenameMenuItem.setText(bundle.getString("ui.main.toolbar.checkForRenamedLocs")); // NOI18N
-        checkForRenameMenuItem.setToolTipText(bundle.getString("ui.main.toolbar.tooltip.checkForRenamedLocs")); // NOI18N
-        checkForRenameMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                checkForRenameMenuItemActionPerformed(evt);
-            }
-        });
-        functionsMenu.add(checkForRenameMenuItem);
 
         locomotiveMenu.add(functionsMenu);
         locomotiveMenu.add(jSeparator6);
@@ -18715,10 +18703,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         toggleLocKeyTabs();
     }//GEN-LAST:event_showPageTabsPreferenceActionPerformed
 
-    private void checkForRenameMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkForRenameMenuItemActionPerformed
-        // In no menu: Sync asks about renamed locomotives itself (FR-220)
-    }//GEN-LAST:event_checkForRenameMenuItemActionPerformed
-
     private void exportLocsToCSVMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportLocsToCSVMenuItemActionPerformed
 
         showExport(() -> this.getModel().exportLocsToCSV(), "locs", "csv", "loc.ui.dialogExportLocomotiveData",
@@ -21215,7 +21199,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.ButtonGroup buttonGroup4;
     private javax.swing.ButtonGroup buttonGroup5;
     private javax.swing.JMenuItem changeIPMenuItem;
-    private javax.swing.JMenuItem checkForRenameMenuItem;
     private javax.swing.JCheckBoxMenuItem checkForUpdates;
     private javax.swing.JMenuItem chooseLocalDataFolderMenuItem;
     private javax.swing.JMenuItem combineLinkedPagesMenuItem;
@@ -21296,7 +21279,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane6;
-    private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JSeparator jSeparator10;
     private javax.swing.JSeparator jSeparator11;
     private javax.swing.JSeparator jSeparator12;
