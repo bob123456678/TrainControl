@@ -1786,6 +1786,131 @@ public class testStationSettingsWindow
     // ------------------------------------------------------------------------------------------------------------ matrix
 
     /**
+     * Hovering Some trains names each condition that decides which trains, by the setting it comes from (Adam, FR-226:
+     * "hovering "some trains" should give an explanation of what the conditions are"): Maximum train length and Allowed
+     * trains on a station, and Changing direction too on a terminus, which only a train that can reverse may use.
+     *
+     * MUTATION: give a Some trains cell the plain tooltip again in `StationMatrixPanel.cell`, or have `limited` return a
+     * Some trains cell without the length and the list, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testHoveringSomeTrainsNamesEachCondition() throws Exception
+    {
+        TileKey square = aStation();
+
+        String train = model.getLocList().get(0);
+
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(square, "maxTrainLength", 30);
+            session.setWhichTrains(square, WhichTrains.WHITELIST, Arrays.asList(train));
+
+            return null;
+        });
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        for (StationPreset preset : new StationPreset[] {StationPreset.STATION, StationPreset.TERMINUS})
+        {
+            StationDoors.press(window, "station.preset." + preset.name(), message -> Answering.pressAt(0));
+            StationDoors.current(window);
+
+            List<String> hovers = someTrainsHovers(window);
+
+            assertFalse(hovers.isEmpty(), preset + ": no cell says Some trains");
+
+            String all = String.join(" / ", hovers);
+
+            String length = I18n.f("autosetup.ui.stationCellSide", "<b>" + I18n.t("autosetup.ui.stationMaxLength") + "</b>",
+                I18n.f("autolayout.rules.limitLength", 30));
+            String list = I18n.f("autosetup.ui.stationCellSide", "<b>" + I18n.t("autosetup.ui.stationWhich") + "</b>",
+                I18n.f("autolayout.rules.limitWhitelist", train));
+
+            assertTrue(all.contains(I18n.t("autosetup.ui.stationSomeTrains")), preset + ": the hover does not say a train"
+                + " must meet each condition: " + all);
+            assertTrue(all.contains(length), preset + ": the hover does not name Maximum train length: " + all);
+            assertTrue(all.contains(list), preset + ": the hover does not name Allowed trains: " + all);
+
+            assertEquals(all.contains("<b>" + I18n.t("autosetup.ui.stationTurning") + "</b>"),
+                preset == StationPreset.TERMINUS, preset + ": the hover " + (preset == StationPreset.TERMINUS
+                    ? "does not name" : "names") + " Changing direction: " + all);
+        }
+    }
+
+    /**
+     * The notice under the picture is only for an error (Adam, FR-226: "This replaces the inline text unless there is
+     * an error"): a station limited by its length and its list says nothing there, while Must with two sides open
+     * still says why.
+     *
+     * MUTATION: put the line of what a cell cannot say back under the picture, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheNoticeUnderThePictureIsOnlyForAnError() throws Exception
+    {
+        TileKey square = aStationWithTwoWaysIn();
+
+        String train = model.getLocList().get(0);
+
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(square, "maxTrainLength", 30);
+            session.setWhichTrains(square, WhichTrains.WHITELIST, Arrays.asList(train));
+
+            return null;
+        });
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.current(window);
+
+        assertFalse(someTrainsHovers(window).isEmpty(), "precondition: no cell says Some trains");
+        assertEquals(noticesShown(window), Arrays.asList(), "the notices under the picture say something with no error");
+
+        StationDoors.press(window, "station.turnMust");
+        StationDoors.current(window);
+
+        assertTrue(visible(window, "station.matrixProblem"), "precondition: Must with two sides open is no error");
+        assertEquals(noticesShown(window).size(), 1, "the error is not the one notice: " + noticesShown(window));
+    }
+
+    /** The hover of every cell of the table that says Some trains, for any side. */
+    private static List<String> someTrainsHovers(StationSettingsWindow window)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            List<String> out = new java.util.ArrayList<>();
+
+            for (StandingRules.Row row : StandingRules.Row.values())
+            {
+                for (String tier : new String[] {"auto", "hand"})
+                {
+                    if (!window.drawnForTest(row, tier).containsValue(StandingRules.Answer.SOME)) continue;
+
+                    out.add(Components.named(window, "station.cell." + row + "." + tier, JComponent.class).getToolTipText());
+                }
+            }
+
+            return out;
+        });
+    }
+
+    /** What the lines under the picture show. */
+    private static List<String> noticesShown(StationSettingsWindow window)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            List<String> out = new java.util.ArrayList<>();
+
+            for (java.awt.Component each : Components.named(window, "station.notices", JComponent.class).getComponents())
+            {
+                if (each.isVisible() && each instanceof javax.swing.JLabel) out.add(((javax.swing.JLabel) each).getText());
+            }
+
+            return out;
+        });
+    }
+
+    /**
      * The matrix follows the settings: untick Full Autonomy and automatic runs no longer choose the square.
      *
      * MUTATION: have `changed` skip the reload, and the matrix stands still and this fails.
@@ -2968,8 +3093,6 @@ public class testStationSettingsWindow
 
         JComponent block = StationDoors.part(window, "station.picture.ways", JComponent.class);
 
-        assertTrue(visible(window, "station.matrixAlso"), "precondition: no line under the picture");
-
         int[] one = whiteAround(window, block);
 
         assertEquals(one[0], 10, "the white above a one-row picture");
@@ -2979,10 +3102,10 @@ public class testStationSettingsWindow
         {
             java.awt.Component table = Components.named(window, "station.matrix", JComponent.class);
             java.awt.Component picture = Components.named(window, "station.picture", JComponent.class);
-            JComponent also = Components.named(window, "station.matrixAlso", JComponent.class);
+            JComponent notices = Components.named(window, "station.notices", JComponent.class);
 
             int underTable = picture.getLocationOnScreen().y - table.getLocationOnScreen().y - table.getHeight();
-            int underPicture = also.getLocationOnScreen().y + also.getInsets().top - block.getLocationOnScreen().y
+            int underPicture = notices.getLocationOnScreen().y + notices.getInsets().top - block.getLocationOnScreen().y
                 - block.getHeight();
 
             assertEquals(underPicture, underTable, "the line under the picture is not as far below it as the picture is "

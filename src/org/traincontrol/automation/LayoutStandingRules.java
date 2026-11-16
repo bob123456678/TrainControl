@@ -1,6 +1,7 @@
 package org.traincontrol.automation;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import org.traincontrol.automation.StandingRules.Answer;
 import org.traincontrol.automation.StandingRules.Cell;
+import org.traincontrol.automation.StandingRules.Limit;
 import org.traincontrol.automation.StandingRules.Row;
 import org.traincontrol.util.I18n;
 
@@ -187,7 +189,7 @@ final class LayoutStandingRules
             }
             else if (mayEndAt(stop))
             {
-                here = cell(Answer.SOME, "autolayout.rules.reversibleThatCanLeave");
+                here = reversing("autolayout.rules.reversibleThatCanLeave");
             }
             else
             {
@@ -207,7 +209,7 @@ final class LayoutStandingRules
         for (Point stop : stops)
         {
             Cell here = explanations.strandsATrainThatCannotReverse(stop)
-                ? cell(Answer.SOME, "autolayout.rules.reversibleOffered")
+                ? reversing("autolayout.rules.reversibleOffered")
                 : cell(Answer.YES, stop.isAutoDestination() ? "autolayout.rules.mayBeSentHere" : "autolayout.rules.mayBeSentHereMore");
 
             best = better(best, limited(here, stop));
@@ -373,11 +375,11 @@ final class LayoutStandingRules
         else
         {
             auto = !owner.isSendableDestination(terminus) ? cell(Answer.NO, "autolayout.rules.notChosen")
-                : mayEndAt(terminus) ? cell(Answer.SOME, "autolayout.rules.reversibleThatCanLeave")
+                : mayEndAt(terminus) ? reversing("autolayout.rules.reversibleThatCanLeave")
                 : cell(Answer.NO, "autolayout.rules.couldNotLeave");
 
-            hand = plain ? cell(Answer.SOME, "autolayout.rules.askedWhenSent")
-                : explanations.strandsATrainThatCannotReverse(terminus) ? cell(Answer.SOME, "autolayout.rules.reversibleOffered")
+            hand = plain ? reversing("autolayout.rules.askedWhenSent")
+                : explanations.strandsATrainThatCannotReverse(terminus) ? reversing("autolayout.rules.reversibleOffered")
                 : cell(Answer.YES, "autolayout.rules.mayBeSentAndTurns");
 
             auto = limited(auto, terminus);
@@ -499,9 +501,10 @@ final class LayoutStandingRules
     }
 
     /**
-     * A Yes says Some trains while a limit keeps trains out, the reason naming it (OB-440); an empty whitelist, which
-     * keeps every train out (`Point.excludes`), says No.  A trip ending at `at` meets its maximum length and its list;
-     * one running through, turning on or starting from it meets only the list of a square that is no station.
+     * A Yes or Some trains says Some trains while a limit keeps trains out, the reason naming it (OB-440, FR-226); an
+     * empty whitelist, which keeps every train out (`Point.excludes`), says No.  A trip ending at `at` meets its maximum
+     * length and its list; one running through, turning on or starting from it meets only the list of a square that is
+     * no station.
      */
     private Cell limited(Cell yes, Point at, boolean ending)
     {
@@ -512,9 +515,14 @@ final class LayoutStandingRules
             return cell(Answer.NO, ending ? "autolayout.rules.limitNoneAllowed" : "autolayout.rules.limitNoneThrough");
         }
 
-        List<String> limits = new ArrayList<>();
+        Map<Limit, String> limits = new EnumMap<>(Limit.class);
 
-        if (ending && at.isDestination() && at.getMaxTrainLength() > 0) limits.add(I18n.f("autolayout.rules.limitLength", at.getMaxTrainLength()));
+        limits.putAll(yes.getLimits());
+
+        if (ending && at.isDestination() && at.getMaxTrainLength() > 0)
+        {
+            limits.put(Limit.LENGTH, I18n.f("autolayout.rules.limitLength", at.getMaxTrainLength()));
+        }
 
         if (at.isAllowOnlyListed() || !at.getExcludedLocs().isEmpty())
         {
@@ -524,12 +532,18 @@ final class LayoutStandingRules
 
             java.util.Collections.sort(names);
 
-            limits.add(I18n.f(at.isAllowOnlyListed() ? "autolayout.rules.limitWhitelist" : "autolayout.rules.limitBlacklist",
-                String.join(", ", names)));
+            limits.put(Limit.LIST, I18n.f(at.isAllowOnlyListed() ? "autolayout.rules.limitWhitelist"
+                : "autolayout.rules.limitBlacklist", String.join(", ", names)));
         }
 
-        return yes.getAnswer() != Answer.YES || limits.isEmpty() ? yes
-            : new Cell(Answer.SOME, yes.getWhy() + "  " + String.join("  ", limits));
+        return yes.getAnswer() == Answer.NO || limits.equals(yes.getLimits()) ? yes
+            : new Cell(Answer.SOME, yes.getAnswer() == Answer.YES ? yes.getWhy() : yes.getReason(), limits);
+    }
+
+    /** Some trains: only one that can reverse, as the sentence says. */
+    private static Cell reversing(String key)
+    {
+        return new Cell(Answer.SOME, null, java.util.Collections.singletonMap(Limit.REVERSING, I18n.t(key)));
     }
 
     private static Cell closed()
