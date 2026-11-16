@@ -582,9 +582,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Prune stale feedback
         if (!feedbackAddresses.isEmpty())
         {
+            // A sensor a route waits on or asks about is kept, drawn or not: a route's monitor waits on the record
+            Set<Integer> routesUse = sensorsTheRoutesUse();
+
             for (Integer feedbackId : this.feedbackDB.getItemIds())
             {
-                if (!feedbackAddresses.contains(feedbackId))
+                if (!feedbackAddresses.contains(feedbackId) && !routesUse.contains(feedbackId))
                 {
                     MarklinFeedback fb = this.feedbackDB.getById(feedbackId);
                     this.logf("layout.pruningFeedbackMissingLayout", fb.getName());
@@ -594,6 +597,26 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
     }
     
+    /** The sensors the routes trigger on or name in a condition. */
+    private Set<Integer> sensorsTheRoutesUse()
+    {
+        Set<Integer> used = new HashSet<>();
+
+        for (MarklinRoute r : this.routeDB.getItems())
+        {
+            if (r.hasS88()) used.add(r.getS88());
+
+            if (!r.hasConditions()) continue;
+
+            for (RouteCommand rc : NodeExpression.toList(r.getConditions()))
+            {
+                if (rc.isFeedback()) used.add(rc.getAddress());
+            }
+        }
+
+        return used;
+    }
+
     /**
      * Delays until the power state matches the specified state
      * @param state
