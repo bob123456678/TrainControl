@@ -280,7 +280,11 @@ command was sent, is held only once it is found, and the station's own routes st
 we have to assume we don't know what is going on."*). The handset or another copy of TrainControl may have commanded the
 layout since, so a late command could undo a newer one. While the connection is replaced every command goes over UDP at
 once; a command that may have been cut off at the drop is counted in the log and never sent again. The lost connection is
-reset, so the station drops what it has not read rather than running it late.
+reset, so the station drops what it has not read rather than running it late. A Stop, Halt, a train's emergency stop or
+a train's speed 0 sent once the connection has answered nothing for 1 s also goes over UDP at once (OB-432), and still on
+TCP, so a recovered connection ends at the stop too.
+`core.testTheStationIsReachedOverTcp.testAStopOnAnUnansweredConnectionAlsoGoesOverUdp`,
+`core.testTheStationIsReachedOverTcp.testASpeedZeroOnAnUnansweredConnectionAlsoGoesOverUdp`,
 `core.testTheStationIsReachedOverTcp.testAFrameWrittenBeforeTheDropIsNotSentAgain`,
 `core.testTheStationIsReachedOverTcp.testACommandDuringAReconnectGoesOverUdpAtOnce`,
 `core.testTheStationIsReachedOverTcp.testAHungConnectionIsResetSoTheStationRunsNothingLate`.
