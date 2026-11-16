@@ -376,7 +376,7 @@ final class StationPicture extends JPanel
         return out;
     }
 
-    /** A station side's way in, beside the side's axis by its edge, where the editor's arrivals view draws one. */
+    /** A station side's way in, beside the side's axis by its edge, where the track diagram draws one (OB-494). */
     private void wayIn(List<Mark> out, Rectangle at, Side side)
     {
         Side other = otherEnd(side);
@@ -386,7 +386,7 @@ final class StationPicture extends JPanel
         // None on a square that is no station (OB-441)
         boolean wayIn = false;
 
-        for (TileAnnotation.Arrival arrival : session.arrivalMarks(showing, true)) wayIn |= arrival.getSide() == side;
+        for (TileAnnotation.Arrival arrival : session.arrivalMarks(showing, false)) wayIn |= arrival.getSide() == side;
 
         if (!wayIn) return;
 

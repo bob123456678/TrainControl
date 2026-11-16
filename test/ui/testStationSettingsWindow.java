@@ -3236,9 +3236,10 @@ public class testStationSettingsWindow
             if (UiStyle.BLUE.equals(each.getForeground())) blue.add(each.getText());
         }
 
+        // The Advanced heading as it reads without its * (FR-226)
         for (AbstractButton each : Components.all(window, AbstractButton.class, null))
         {
-            if (UiStyle.BLUE.equals(each.getForeground())) blue.add(each.getText());
+            if (UiStyle.BLUE.equals(each.getForeground())) blue.add(each.getText().replace(" *", ""));
         }
 
         assertEquals(blue, new java.util.TreeSet<>(Arrays.asList(I18n.t("autosetup.ui.stationSectionStop"),
@@ -3631,7 +3632,8 @@ public class testStationSettingsWindow
     /**
      * The picture draws no green arrow on the station's square (Adam: "make sure that station popup also doesn't show
      * the red/green arrows on the station track", OB-472), and a red one only at a side May depart shuts:
-     * TopMainR1 keeps its way in from the south, and one way toward its side A draws red at its side B alone.
+     * TopMainR1, allowing its one way in, wears none (OB-494), and one way toward its side A draws red at its side B
+     * alone.
      *
      * MUTATION: have `StationPicture.show` give the station no marks, and this fails.
      */
@@ -3642,7 +3644,7 @@ public class testStationSettingsWindow
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
-        assertWays(window, set("S"));
+        assertWays(window, set());
         assertEquals(sidesDrawnIn(window, CLOSED_RED), set(), "a station leaving both ways wears a red arrow");
 
         StationDoors.close(window);
@@ -3661,8 +3663,8 @@ public class testStationSettingsWindow
     }
 
     /**
-     * TopR1ParkLong's track runs on to its east side and stops there: the picture draws a way in at the west, and no
-     * mark at the east.
+     * TopR1ParkLong's track runs on to its east side and stops there: with its way in from the west barred, so the ways
+     * are drawn (OB-494), the picture draws that way in at the west and no mark at the east.
      *
      * MUTATION: have `StationPicture.wayIn` draw a way in at every side the station's track meets, and this fails.
      */
@@ -3682,9 +3684,16 @@ public class testStationSettingsWindow
             return false;
         }), "precondition: the station's track reaches its east side");
 
+        Components.onTheEventThread(() ->
+        {
+            session.setBarredArrivals(square, java.util.EnumSet.of(org.traincontrol.automationui.TilePorts.Side.W));
+
+            return null;
+        });
+
         StationSettingsWindow window = StationDoors.open(panel, square);
 
-        assertWays(window, set("W"));
+        assertEquals(waysInDrawn(window), set("W"), "the ways in");
 
         for (int mark : new int[] {CLOSED_RED, ARRIVAL_YELLOW})
         {
@@ -3698,7 +3707,7 @@ public class testStationSettingsWindow
 
     /**
      * Every station on the frozen railway, on every page: the ways in drawn open are the sides where Sent Here or Turned
-     * Round of `Layout.standingRulesAt` is not No.
+     * Round of `Layout.standingRulesAt` is not No, on a station barring a side; one barring none wears none (OB-494).
      *
      * MUTATION: have `StationPicture.wayIn` draw every way in open, and this fails.
      */
@@ -3748,6 +3757,8 @@ public class testStationSettingsWindow
                             }
                         }
                     }
+
+                    if (Components.onTheEventThread(() -> session.getBarredArrivals(square).isEmpty())) in.clear();
 
                     Set<String> drawnIn = Components.onTheEventThread(window::pictureWaysInForTest);
 
@@ -3967,8 +3978,8 @@ public class testStationSettingsWindow
         // Some trains rather than Yes, as BottomMainA has a Maximum train length (OB-440)
         assertEquals(Components.onTheEventThread(() -> window.drawnForTest(StandingRules.Row.SENT_HERE, "hand")).get("E"),
             StandingRules.Answer.SOME, "the table did not follow the way in");
-        assertTrue(Components.onTheEventThread(window::pictureWaysInForTest).contains("E"),
-            "the picture did not follow the way in");
+        // Every side allowed now, so no way in is drawn, as on the track diagram (OB-494)
+        assertEquals(waysInDrawn(window), set(), "the picture did not follow the way in");
 
         // The square to the west, its arrow at its own west side
         clickOn(window, "NEXT.W.W");
@@ -3994,6 +4005,149 @@ public class testStationSettingsWindow
     }
 
     /**
+     * The picture draws the ways in by the track diagram's rule (OB-494): at BottomMainA, with arrivals from the east
+     * barred, a way in at each of its two sides; with May Arrive From East ticked, so every side is allowed, none, as
+     * the diagram then draws none; unticked again, both back.
+     *
+     * MUTATION: have `StationPicture.wayIn` ask `arrivalMarks` for every arrival side however few are barred, and this
+     * fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAStationAllowingEverySideWearsNoWaysIn() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        assertFalse(StationDoors.on(window, "station.arrive.E"), "precondition: arrivals from the east are closed");
+        assertEquals(waysInDrawn(window), set("E", "W"), "with the east barred, the picture's ways in");
+
+        StationDoors.press(window, "station.arrive.E");
+        StationDoors.current(window);
+
+        assertTrue(Components.onTheEventThread(() -> session.getBarredArrivals(square).isEmpty()),
+            "precondition: the setup still bars a side");
+        assertEquals(Components.onTheEventThread(() -> session.staticAnnotations(java.util.Collections.singleton(square),
+            true, true).get(square).getArrivals()), java.util.Collections.emptyList(),
+            "precondition: the track diagram draws an arrival mark on a station allowing every side");
+        assertEquals(waysInDrawn(window), set(), "a station allowing every side wears ways in - Adam: \"No arrows should"
+            + " be shown if all is allowed.\"");
+
+        StationDoors.press(window, "station.arrive.E");
+        StationDoors.current(window);
+
+        assertEquals(waysInDrawn(window), set("E", "W"), "barred again, the picture's ways in");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * The Advanced heading wears a * while a setting under it is not its default, and says so when hovered (FR-226;
+     * Adam: "If any advanced settings are set, add a * next to it so the users know to look there."): a plain station's
+     * reads Advanced; a priority or a speed typed, Blacklist pressed, or a square made to stop it from another door each
+     * star it as it is set, and each put back clears it; so does the editor's undo of a typed priority.
+     *
+     * MUTATION: leave the speed out of `altered` in `StationSettingsWindow.fill`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAdvancedWearsAStarWhileASettingUnderItIsSet() throws Exception
+    {
+        // A station with nothing under Advanced set: no priority, speed, list in force or Unavailable while
+        TileKey square = stationsOn(PAGE).stream().filter(each -> Components.onTheEventThread(() ->
+            session.getPointProperty(each, "priority") == null && session.getPointProperty(each, "speedMultiplier") == null
+            && session.getWhichTrains(each) == WhichTrains.ALL && session.getStore().getBlockingPoints(each).isEmpty()))
+            .findFirst().orElseThrow(() -> new AssertionError("precondition: every station has a setting under Advanced"));
+        TileKey other = stationsOn(PAGE).stream().filter(each -> !each.equals(square)).findFirst().get();
+        String train = model.getLocList().get(0);
+
+        Components.onTheEventThread(() ->
+        {
+            Reflect.method(LayoutEditor.class, "snapshotLayout").invoke(editor);
+
+            // A list on file, so Blacklist sets it without asking for one
+            session.setTrainList(square, java.util.Collections.singletonList(train));
+
+            return null;
+        });
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
+
+        assertAdvanced(window, false, "a plain station");
+
+        StationDoors.typeAndEnter(window, "station.priority", "4");
+        assertAdvanced(window, true, "a priority typed");
+        StationDoors.typeAndEnter(window, "station.priority", "0");
+        assertAdvanced(window, false, "the priority put back");
+
+        StationDoors.typeAndEnter(window, "station.speed", "80");
+        assertAdvanced(window, true, "a speed typed");
+        StationDoors.typeAndEnter(window, "station.speed", "100");
+        assertAdvanced(window, false, "the speed put back");
+
+        StationDoors.press(window, "station.whichBlack");
+        StationDoors.current(window);
+        assertAdvanced(window, true, "Blacklist pressed");
+        StationDoors.press(window, "station.whichAll");
+        StationDoors.current(window);
+        assertAdvanced(window, false, "All trains pressed again");
+
+        for (List<TileKey> blockers : java.util.Arrays.asList(java.util.Collections.singletonList(other),
+            java.util.Collections.<TileKey>emptyList()))
+        {
+            Components.onTheEventThread(() ->
+            {
+                session.getStore().setBlockingPoints(square, blockers);
+                panel.refresh();
+
+                return null;
+            });
+
+            Components.settle();
+            StationDoors.current(window);
+            assertAdvanced(window, !blockers.isEmpty(), "Unavailable while set to " + blockers);
+        }
+
+        StationDoors.typeAndEnter(window, "station.priority", "4");
+        assertAdvanced(window, true, "precondition: a priority typed again");
+
+        Components.onTheEventThread(() -> { editor.undo(); return null; });
+        Components.settle();
+        StationDoors.current(window);
+        assertNull(Components.onTheEventThread(() -> session.getPointProperty(square, "priority")),
+            "precondition: the undo did not put the priority back");
+        assertEquals(StationDoors.text(window, "station.priority"), "0", "the window's priority after the undo");
+        assertAdvanced(window, false, "the editor's undo of the priority");
+
+        StationDoors.close(window);
+    }
+
+    /** The Advanced heading reads Advanced with a * and its tooltip, or plain with none. */
+    private static void assertAdvanced(StationSettingsWindow window, boolean starred, String what) throws Exception
+    {
+        AbstractButton heading = StationDoors.part(window, "station.advanced", AbstractButton.class);
+        String plain = I18n.t("autosetup.ui.stationSectionAdvanced");
+
+        assertEquals(Components.onTheEventThread(heading::getText), starred ? plain + " *" : plain, what + ": the heading");
+        assertEquals(Components.onTheEventThread(heading::getToolTipText), starred
+            ? AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.stationAdvancedSet")) : null, what + ": the heading's tooltip");
+    }
+
+    /** The sides the picture draws a station's way in at, open or shut. */
+    private static Set<String> waysInDrawn(StationSettingsWindow window) throws Exception
+    {
+        Set<String> sides = new java.util.TreeSet<>();
+
+        for (String mark : Components.onTheEventThread(window::pictureStateForTest))
+        {
+            if (mark.startsWith("IN.")) sides.add(mark.substring(3, 4));
+        }
+
+        return sides;
+    }
+
+    /**
      * On every station of the page each side's way in stands beside that side's axis, pointing in, off the axis and the
      * station's art (Adam: "the yellow/grey egress arrows should be offset from the station"); inside the station's
      * square and clear of every next square.  A curve keeps its ways in each plainly nearer its own side (Adam: "I7 put
@@ -4013,6 +4167,17 @@ public class testStationSettingsWindow
 
         for (TileKey square : stations)
         {
+            // One side barred, so every way in is drawn (OB-494)
+            Components.onTheEventThread(() ->
+            {
+                if (!session.arrivalSides(square).isEmpty())
+                {
+                    session.setBarredArrivals(square, java.util.EnumSet.of(session.arrivalSides(square).get(0)));
+                }
+
+                return null;
+            });
+
             StationSettingsWindow window = StationDoors.open(panel, square);
 
             Map<String, java.awt.Shape> marks = Components.onTheEventThread(window::pictureMarksForTest);
@@ -4150,6 +4315,9 @@ public class testStationSettingsWindow
 
             for (String key : keys)
             {
+                // A press that leaves every side allowed takes the ways in away (OB-494)
+                if (!Components.onTheEventThread(() -> window.pictureMarksForTest().containsKey(key))) continue;
+
                 Set<String> before = Components.onTheEventThread(window::pictureStateForTest);
                 String setupBefore = setup();
 

@@ -927,8 +927,8 @@ public class testTheAutonomyEditorsTriageNotes
     }
 
     /**
-     * The picture draws a way in only where the editor's arrivals view does: on every arrival side of a station, and
-     * none on a square that is no station.
+     * The picture draws a way in only where the track diagram does (OB-494): on every arrival side of a station barring
+     * one, TopR1ParkLong with its west barred here, and none on a square that is no station.
      *
      * MUTATION: put back `session.arrivalSides(showing)` as the test in `StationPicture.stationMarks`, and this fails.
      */
@@ -947,6 +947,13 @@ public class testTheAutonomyEditorsTriageNotes
 
         assertNotNull(plain, "precondition: no plain sensor with ways in on " + PAGE);
 
+        Components.onTheEventThread(() ->
+        {
+            session.setBarredArrivals(named("TopR1ParkLong"), java.util.EnumSet.of(org.traincontrol.automationui.TilePorts.Side.W));
+
+            return null;
+        });
+
         for (TileKey square : new TileKey[] {plain, named("TopR1ParkLong")})
         {
             StationSettingsWindow window = StationDoors.open(panel, square);
@@ -960,12 +967,14 @@ public class testTheAutonomyEditorsTriageNotes
 
             java.util.Set<String> editors = new java.util.TreeSet<>();
 
-            for (org.traincontrol.automationui.TileAnnotation.Arrival arrival : Components.onTheEventThread(() -> session.arrivalMarks(square, true)))
+            for (org.traincontrol.automationui.TileAnnotation.Arrival arrival : Components.onTheEventThread(() -> session.arrivalMarks(square, false)))
             {
                 editors.add(arrival.getSide().name());
             }
 
-            assertEquals(drawn, editors, "the picture's ways in at " + square + " are not the editor's");
+            assertEquals(drawn, editors, "the picture's ways in at " + square + " are not the track diagram's");
+
+            if (square != plain) assertFalse(drawn.isEmpty(), "precondition: no way in drawn at " + square);
         }
     }
 

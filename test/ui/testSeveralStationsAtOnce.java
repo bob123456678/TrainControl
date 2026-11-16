@@ -500,6 +500,54 @@ public class testSeveralStationsAtOnce
     }
 
     /**
+     * For several stations the Advanced heading wears a * while a setting under it is set on any of them (FR-226): none
+     * set, plain; one station's priority set from another door, so they differ, starred; 0 typed for all, plain again.
+     *
+     * MUTATION: have `altered` in `StationSettingsWindow.fill` take a priority they differ on (`rank` null) for the
+     * default, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAdvancedWearsAStarWhereTheyDifferUnderIt() throws Exception
+    {
+        List<TileKey> two = stations(2);
+
+        Components.onTheEventThread(() ->
+        {
+            for (TileKey each : two) session.setPointProperty(each, "priority", null);
+
+            return null;
+        });
+
+        StationSettingsWindow window = pick(two);
+
+        AbstractButton heading = StationDoors.part(window, "station.advanced", AbstractButton.class);
+        String plain = I18n.t("autosetup.ui.stationSectionAdvanced");
+
+        assertEquals(on(heading::getText), plain, "precondition: the heading of two stations with nothing under Advanced");
+
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(two.get(1), "priority", 3);
+            panel.refresh();
+
+            return null;
+        });
+
+        Components.settle();
+        StationDoors.current(window);
+
+        assertEquals(on(heading::getText), plain + " *", "the heading where their priorities differ");
+
+        Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
+
+        StationDoors.typeAndEnter(window, "station.priority", "0");
+
+        assertEquals(on(heading::getText), plain, "the heading once 0 is typed for both");
+
+        StationDoors.close(window);
+    }
+
+    /**
      * Where they differ, each row's (i) is wrapped as every other (i) is, not one line across the screen.
      *
      * MUTATION: return the sentence unwrapped from `StationSettingsWindow.mixedTip`, and this fails.
