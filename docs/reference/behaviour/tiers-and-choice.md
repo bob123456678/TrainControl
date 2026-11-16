@@ -23,8 +23,8 @@ tooltip**, as the right-click Start beside it is; the Return Home, Execute Timet
 explain on a click. `regression.testAHandSendIsRefusedWhileTheSetupIsBroken`.
 
 **Return Home sits with Manual on the question of where a train may be sent.** `isAutoDestination` appears
-nowhere in `HomeStaging`, and Adam: *"Return Home still fills it; only full autonomy leaves it alone."* The Path
-Type control in the editor says Manual for this reason.
+nowhere in `HomeStaging`, and Adam: *"Return Home still fills it; only full autonomy leaves it alone."* Test a path and
+Why not Moving? show it in purple, by hand only, for this reason.
 
 **Occupancy restrictions bind every tier.** A station can be marked unavailable while some other named square has a
 train standing on it, and **autonomy, a hand-driven send and Return Home all obey it**. Adam:

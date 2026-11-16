@@ -48,7 +48,7 @@ This guide takes you from a track diagram with nothing set up on it to a layout 
 
 **A track diagram stored on this computer.** Either download it from your Central Station with **Layouts → Download Central Station Layout Files**, or draw it in TrainControl's own editor. A diagram read from the Central Station each time TrainControl starts cannot store an autonomy setup, so download it first (the Autonomy menu offers to). The download asks before it replaces a layout already in the folder, and opens the copy when it is done. Autonomy is set up on this diagram, so if your diagram does not match your railway yet, start there.
 
-Every time TrainControl syncs with the Central Station (when it starts, when you press `Sync`, and when you open a layout), it compares the switch and signal squares of the stored diagram with the Central Station's own list. The log names each square at an address the Central Station has, but not in the square's protocol (MM2 or DCC). On a CS3 with an MM2 and a DCC accessory at one address, it also gives a hint where the CS3's own plan of the page puts the other one on that square. Nothing is changed: if the Central Station is right, set the square's protocol in the track diagram editor.
+After a sync from a diagram stored on this computer (at start-up, from `Locomotives` > `Sync Database w/ Central Station`, or when you open a layout), TrainControl compares the switch and signal squares of the stored diagram with the Central Station's own list. The log names each square at an address the Central Station has, but not in the square's protocol (MM2 or DCC). On a CS3 with an MM2 and a DCC accessory at one address, it also gives a hint where the CS3's own plan of the page puts the other one on that square. Nothing is changed: if the Central Station is right, set the square's protocol in the track diagram editor.
 
 **Locomotives with addresses that work.** If you cannot drive a locomotive by hand from TrainControl, autonomy cannot either.
 
@@ -125,7 +125,7 @@ The window's title is "Autonomy Editor: *page* (*configuration*)". The sidebar i
 
 ![The autonomy editor, its parts numbered](assets/automation/01-editor.png)
 
-- **`Editing`**: `Track Diagram` switches to drawing track and `Autonomy Setup` to setting up autonomy, on the same page. With two or more pages, a `Page` list above it moves between pages.
+- **`Editing`**: `Track Diagram` switches to drawing track and `Autonomy Setup` to setting up autonomy, on the same page. A `Page` list above it moves between pages.
 - **The message strip** says what just happened and what to do next.
 - **Your diagram.** Click track to set which way trains may run; right-click any square for everything else. Hover over a station to see its name. Signals and lamps are drawn in gray to keep the picture simple; while you pick a guard signal, the signals you can pick are in color.
 - **`Things to look at`** lists what the [setup check](#the-setup-check) has found. Click a finding to go to its square, or double-click it (or press Control+O) to open that station's `Station Settings`. The `Filter` box under the list narrows it as you type: it matches any part of a row's words, ignoring capitals, and the counts elsewhere still count everything.
@@ -207,7 +207,7 @@ Everything else about a station is in its `Station Settings`: its name, whether 
 
 ![Bramley's Station Settings on its Settings tab: its name and what trains may do there on the left; the Presets, the table of what's allowed here and the picture of the station on the right](assets/station_settings.png)
 
-`Station Settings...` opens one window for the station you right-clicked. In the autonomy editor it first opens to the right of the editor, or over the editor's right-hand column where the screen has no room to the right. From the track diagram it opens to the right of that window where there is room. It stays open beside the diagram: right-click another square, or point at one and press Control+O, and it shows that one. In the autonomy editor every change goes straight into the editor's draft, so the editor's `Cancel` undoes it; on the track diagram each change is saved at once. While autonomy runs, the window opens but nothing in it can be changed. An (i) beside a setting says what it is set to now and what changing it does: rest the pointer on it, or click it to read it at once.
+`Station Settings...` opens one window for the station you right-clicked. In the autonomy editor it first opens to the right of the editor, or over the editor's right-hand column where the screen has no room to the right. From the track diagram it opens to the right of that window where there is room. It stays open beside the diagram: right-click another square, or point at one and press Control+O, and it shows that one. In the autonomy editor every change goes straight into the editor's draft, so the editor's `Cancel` undoes it; on the track diagram each change is saved at once. `Done Editing`, at the bottom right (Control+Enter), closes the window. While autonomy runs, the window opens but nothing in it can be changed. An (i) beside a setting says what it is set to now and what changing it does: rest the pointer on it, or click it to read it at once.
 
 **The settings, from the top of the left-hand column:**
 
@@ -337,7 +337,7 @@ Each "Clear" asks first, and says how many it would clear.
 
 A tool stays armed until you press its button again, press Escape, or right-click.
 
-**`Test a path`** answers "could a train get from here to there?" Click the sensor a train would start from, then the sensor it should reach. The route autonomy would take there is drawn in yellow and the route back in amber, and the message strip says how many routes there are each way, or "no way through". Where autonomy has no way but a train you send yourself has one, that leg is drawn in purple, and the strip says why autonomy would not take it: the station is one autonomy is told to leave alone, or every way there turns the train round on the way, which autonomy never does. A way that needs a switch set two ways at once (out along a spur and back through the same switch, for example) is no way, as the railway itself would refuse it. The tool uses the setup as you have it, unsaved changes included.
+**`Test a path`** answers "could a train get from here to there?" Click the sensor a train would start from, then the sensor it should reach. The route autonomy would take there is drawn in yellow and the route back in amber, and the message strip says how many routes there are each way, or "no way through". Where autonomy has no way but a train you send yourself has one, that leg is drawn in purple, and the strip says why: the station is one autonomy is told to leave alone. A way that needs a switch set two ways at once (out along a spur and back through the same switch, for example) is no way, as the railway itself would refuse it. The tool uses the setup as you have it, unsaved changes included.
 
 ![Test a path from Ashby to Carlton: the route there drawn in yellow, and the message strip counting the routes](assets/automation/07-test-path.png)
 
@@ -369,7 +369,7 @@ These act on the square under the pointer.
 | Control+D | Show or hide Addresses |
 | Control+K | Show or hide the Grid |
 | + and - | Next and previous page (the number pad ones too) |
-| Control+Enter | Save Changes |
+| Control+Enter | Save Changes in the editor; Done Editing in Station Settings |
 | Double-click a finding | Station Settings for its station |
 | Shift+click | Pick a square, or let it go |
 | Escape | Put down an armed tool; with nothing armed, the same as Cancel |
@@ -761,7 +761,7 @@ Change any of these and every configuration sees the change.
 - each station's home locomotive, longest train, priority, speed and the locomotives kept out of it
 - the settings in [Autonomy settings](#autonomy-settings), including how trains pick their route, and the timetable
 
-So two configurations can offer different routes over the same track. Whether trains may or must change direction at a station changes the routes that use it: where trains *may* change direction, autonomy can also turn trains around there; where they *must*, every train that arrives turns around. A station trains cannot pass through is never used on the way somewhere else. What two configurations cannot differ in is the track itself, its directions, its links, or which pages are in play: those belong to every configuration at once.
+So two configurations can offer different routes over the same track. Whether trains may or must change direction at a station changes the routes that use it: where trains *may* change direction, autonomy can also turn trains around there; where they *must*, every train that arrives turns around. Autonomy and the trips you send by hand never route through a station trains cannot pass through. What two configurations cannot differ in is the track itself, its directions, its links, or which pages are in play: those belong to every configuration at once.
 
 ---
 
@@ -786,7 +786,7 @@ The log names the train, the route, and the reason, too.
 - While it reconnects, autonomy, a timetable and Return Home start no new trip, a train you send is refused with the reason in the log, and trains already on their way carry on. The log says when trips are held and when they start again.
 - While the Central Station isn't answering, `Power OFF` in the main window shows a warning triangle, and the network latency names the protocol in use: `(TCP)` while a CS3 is on TCP, and `(UDP)` for a CS2 or once TrainControl has switched to UDP.
 
-**The autonomy editor is open.** No train is sent while it is open, so Save or Cancel first. Linking a multi-unit, changing an address or decoder, pressing `Sync`, and a locomotive CSV import that changes addresses are also refused until then, with a message; switching, creating or downloading a layout and the `Autonomy` menu's configuration items are grayed. A sync that a route edit or a function reset runs afterward waits, and runs once when the editor closes.
+**The autonomy editor is open.** No train is sent while it is open, so Save or Cancel first. Linking a multi-unit, changing an address or decoder, `Sync Database w/ Central Station`, and a locomotive CSV import that changes addresses are also refused until then, with a message; switching, creating or downloading a layout and the `Autonomy` menu's configuration items are grayed. A sync that a route edit or a function reset runs afterward waits, and runs once when the editor closes.
 
 **A route is running.** Start, Execute Timetable, Return Home and every train you send by hand are refused until it has finished, with a message naming it: "The route ... is running.  Wait for it to finish, then try again." With several routes running, the first few are named. Routes that a sensor fires while autonomy is already running do not stop it.
 

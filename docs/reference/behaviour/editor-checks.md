@@ -56,8 +56,8 @@ is passable. `core.testManualOnlyPathsAreADifferentColour.testTheStripSaysWhichL
 
 **Neither search passes another copy of either end, nor throws a switch two ways**, as `Layout.bfsBySettings` and
 `isPathClear` route: a kickback, whose only way turns on a spur and comes back through the switch set the other way, is
-no way at all. A way that turns round on the way has to come back over track it has run, so it meets one of those two
-refusals: on Adam's frozen railway and every test railway no hand path turns on the way, so its note was removed (D184).
+no way at all. On Adam's frozen railway and every test railway no hand path turns round on the way, so the strip's note
+for that was removed (D184).
 `core.testTestAPathStartsWhereTheFindingsDo.testAKickbackThatThrowsItsSwitchBothWaysIsNoWay`,
 `core.testAutonomyDiagramReducer.testNoWalkPassesAnotherCopyOfEitherEnd`. The findings use the same search (FR-238):
 `testAStationReachedOnlyPastAnotherCopyOfItsDestinationGetsItsWarning`, `testTheFindingsAgreeWithTestAPathOnTheFrozenRailway`.
@@ -99,7 +99,7 @@ already uses."*, rather than as missing track, chosen from the route the track q
 
 **And the drawn route says it too, in its color.** A tested path is drawn yellow on the way out and amber on the way
 back; a leg only a hand send takes, to a station autonomy will never choose **and a person still may** (a parking
-berth) or by a way that turns round on the way, is drawn in purple, whichever direction it runs.
+berth), is drawn in purple, whichever direction it runs.
 
 **Two squares are deliberately not purple.** A **compulsory turn** is chosen like any other station (OB-195) when *May
 choose this station* is on. A square **switched out of service** is not a manual-only point: nothing may be sent
