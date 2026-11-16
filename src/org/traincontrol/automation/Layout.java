@@ -1905,6 +1905,9 @@ public class Layout
         // Whether this train was sent by a running autonomy, so stopping autonomy during the wait below keeps it back
         boolean sentByAutonomy = this.running;
 
+        // The power's epoch before the first switch, so a Stop and Go while the path is set is seen
+        final int power = this.control.getPowerEpoch();
+
         synchronized (this)
         {
             // Return if this path isn't clear
@@ -1954,13 +1957,13 @@ public class Layout
         // Layout monitor).  If not, stop the locomotive and release its locks (returning false so
         // executePath does not run it); power is left on and autonomy re-attempts the path organically on
         // its next cycle, so no explicit retry is needed here.
-        boolean confirmed = this.validatePathActuation(path, sentByAutonomy);
+        boolean confirmed = this.validatePathActuation(path, sentByAutonomy, power);
 
         // A power cut or a stopped autonomy run ends the wait: the train stays where it is, and nothing is counted
         // against the accessories.
-        if (this.stoppedSince(sentByAutonomy))
+        if (this.stoppedSince(sentByAutonomy, power))
         {
-            this.giveBackUnrun(path, loc, this.control.getPowerState() ? "autolayout.log.notSentAfterTheStop"
+            this.giveBackUnrun(path, loc, sentByAutonomy && !this.running ? "autolayout.log.notSentAfterTheStop"
                 : "autolayout.log.notSentPowerOff");
             return false;
         }
@@ -1975,11 +1978,13 @@ public class Layout
     }
 
     /**
-     * Whether the track power is off, or the autonomy run that sent a train (sentByAutonomy) has been stopped since.
+     * Whether the track power is off or has been off since its epoch read power, or the autonomy run that sent a train
+     * (sentByAutonomy) has been stopped since.
      */
-    private boolean stoppedSince(boolean sentByAutonomy)
+    private boolean stoppedSince(boolean sentByAutonomy, int power)
     {
-        return !this.control.getPowerState() || (sentByAutonomy && !this.running);
+        return !this.control.getPowerState() || this.control.getPowerEpoch() != power
+            || (sentByAutonomy && !this.running);
     }
 
     /**
@@ -2018,9 +2023,10 @@ public class Layout
      * not blocked.
      * @param path
      * @param sentByAutonomy whether autonomy was running when the path was configured
+     * @param power the power's epoch before the path was configured
      * @return true if all accessories on the path are confirmed at their commanded state
      */
-    private boolean validatePathActuation(List<Edge> path, boolean sentByAutonomy)
+    private boolean validatePathActuation(List<Edge> path, boolean sentByAutonomy, int power)
     {
         List<Accessory> accessories = new ArrayList<>();
         List<Boolean> desired = new ArrayList<>();
@@ -2056,7 +2062,7 @@ public class Layout
             {
                 long remaining = deadline - System.currentTimeMillis();
 
-                if (remaining <= 0 || this.stoppedSince(sentByAutonomy))
+                if (remaining <= 0 || this.stoppedSince(sentByAutonomy, power))
                 {
                     break;
                 }
@@ -3584,6 +3590,10 @@ public class Layout
         
         boolean result;
         
+        // The power's epoch before the first switch: a Stop and Go while the switches are commanded (about 150 ms
+        // each) may leave some unmoved, and a station that echoes while stopped confirms them anyway
+        final int power = this.control.getPowerEpoch();
+
         result = configureAndLockPath(path, loc);
 
         if (!result)
@@ -3592,7 +3602,7 @@ public class Layout
             // that stopped the loco and released its locks) - do not run the locomotive.
             return false;
         }
-        else if (!this.control.getPowerState())
+        else if (!this.control.getPowerState() || this.control.getPowerEpoch() != power)
         {
             // A train given a speed while the power is off would set off as soon as the power came back
             this.giveBackUnrun(path, loc, "autolayout.log.notSentPowerOff");

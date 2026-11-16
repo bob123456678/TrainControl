@@ -652,6 +652,76 @@ public class testAutonomyPathValidation
     }
 
     /**
+     * A Stop and a Go while the path's switches are still being commanded keep the train back.  Commanding takes
+     * about 150 ms a switch, so on a long path a quick Stop and Go fits inside it, and a station that echoes
+     * commands while stopped confirms switches that never moved.  The train is released unrun.
+     */
+    @Test(timeOut = 60000)
+    public void testAStopAndGoWhileTheRouteIsSetKeepsTheTrainBack() throws Exception
+    {
+        stopAndGoWhileTheRouteIsSet(300, "_sg", true);
+    }
+
+    /**
+     * The same with Path Integrity Validation turned off.
+     */
+    @Test(timeOut = 60000)
+    public void testAStopAndGoWhileTheRouteIsSetKeepsTheTrainBackWithoutValidation() throws Exception
+    {
+        stopAndGoWhileTheRouteIsSet(320, "_sgo", false);
+    }
+
+    private void stopAndGoWhileTheRouteIsSet(int addressBase, String suffix, boolean validate) throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        // Ten switches, so commanding the path takes about 1.6 s
+        TestPath tp = buildPath(addressBase, suffix);
+
+        for (int i = 2; i < 10; i++)
+        {
+            tp.path.get(0).addConfigCommand(model.newSwitch(addressBase + i, MM2, false).getName(),
+                accessorySetting.TURN);
+        }
+
+        MarklinLocomotive loc = dummyLoc();
+        tp.layout.getPoint("A" + suffix).setLocomotive(loc);
+
+        boolean[] result = { true };
+        Thread send = new Thread(() -> result[0] = tp.layout.executePath(tp.path, loc, 30, null));
+        send.setDaemon(true);
+
+        Layout.PATH_INTEGRITY_VALIDATION = validate;
+
+        try
+        {
+            send.start();
+            Thread.sleep(300);
+
+            model.stop();
+            waitForPower(false, 1000);
+            assertFalse(model.getPowerState(), "precondition: the power went off");
+
+            model.go();
+            waitForPower(true, 1000);
+            assertTrue(model.getPowerState(), "precondition: the power came back");
+            assertEquals(loc.getSpeed(), 0, "precondition: the Stop and Go must land before the train sets off");
+
+            send.join(5000);
+        }
+        finally
+        {
+            Layout.PATH_INTEGRITY_VALIDATION = true;
+        }
+
+        assertFalse(send.isAlive(), "The train must not have been sent on its way");
+        assertFalse(result[0], "executePath must refuse a path the power was cut during");
+        assertEquals(loc.getSpeed(), 0, "The train must not have been given a speed");
+        assertFalse(tp.path.get(0).isOccupied(dummyLoc()), "The path must be released");
+    }
+
+    /**
      * In pure simulation mode there is no real actuation to confirm, so the guard is bypassed entirely -
      * even a deliberately misconfigured accessory must not cut power.
      */
