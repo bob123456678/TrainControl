@@ -72,6 +72,7 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.ThreeWaySwitch;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.util.I18n;
@@ -2005,7 +2006,7 @@ public class RouteEditorFrame extends JFrame
                     && !"".equals(String.valueOf(table.getValueAt(row, column)))
                     && isAmong(column, marked);
 
-                table.setCursor(Cursor.getPredefinedCursor(live ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
+                table.setCursor(live ? HandPointer.cursor() : Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
             }
         });
     }
@@ -5248,7 +5249,7 @@ public class RouteEditorFrame extends JFrame
         @Override
         Cursor cursorAt(Point point)
         {
-            return captionUnder(point) >= 0 ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : super.cursorAt(point);
+            return captionUnder(point) >= 0 ? HandPointer.cursor() : super.cursorAt(point);
         }
 
         @Override

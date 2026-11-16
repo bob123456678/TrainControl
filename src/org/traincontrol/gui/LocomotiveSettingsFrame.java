@@ -50,6 +50,7 @@ import javax.swing.text.View;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.TabIcons;
 import org.traincontrol.gui.widgets.UiStyle;
@@ -216,7 +217,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         closeShared.setName("settings.sharedClose");
         closeShared.setToolTipText(I18n.t("autosetup.ui.stationClose"));
         closeShared.setFocusable(false);
-        closeShared.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        closeShared.setCursor(HandPointer.cursor());
         closeShared.setForeground(STRIP_TEXT);
         closeShared.putClientProperty("JButton.buttonType", "toolBarButton");
         closeShared.addActionListener(e -> showShared(false));
@@ -1011,7 +1012,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
             trash.setToolTipText(I18n.t("loc.ui.menuDeleteFromDatabase"));
             trash.setFocusable(false);
-            trash.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            trash.setCursor(HandPointer.cursor());
             trash.setBorderPainted(false);
             trash.setContentAreaFilled(false);
             trash.addActionListener(e -> delete());
@@ -1205,7 +1206,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         private void mark(JLabel mark, String tip, Consumer<MouseEvent> doThis)
         {
             mark.setToolTipText(tip);
-            mark.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            mark.setCursor(HandPointer.cursor());
             mark.addMouseListener(Listen.released(e ->
             {
                 // The crop and the revert act on the picture on screen, never on one still on its way (OB-482)
@@ -1268,8 +1269,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             sameAddress.setIcon(also.isEmpty() ? null : RowIcons.warning(16));
             sameAddress.setToolTipText(also.isEmpty() ? null : org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel
                 .wrapped(I18n.f("loc.ui.settingsAlsoUsedBy", String.join(", ", also))));
-            sameAddress.setCursor(Cursor.getPredefinedCursor(
-                also.isEmpty() ? Cursor.DEFAULT_CURSOR : Cursor.HAND_CURSOR));
+            sameAddress.setCursor(also.isEmpty()
+                ? Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR) : HandPointer.cursor());
 
             setSharers(also);
         }
@@ -1599,8 +1600,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 @Override
                 public void mouseMoved(MouseEvent e)
                 {
-                    note.setCursor(Cursor.getPredefinedCursor(onLink.test(e.getPoint())
-                        ? Cursor.HAND_CURSOR : Cursor.TEXT_CURSOR));
+                    note.setCursor(onLink.test(e.getPoint())
+                        ? HandPointer.cursor() : Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
                 }
             });
             note.addMouseListener(Listen.released(e ->
