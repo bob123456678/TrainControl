@@ -319,6 +319,8 @@ public class AutonomyEditorPanel extends JPanel
 
     private static final String PREF_TRAINS = "autonomyEditorTrains";
 
+    private static final String PREF_IGNORED = "autonomyEditorIgnoredSquares";
+
     /**
      * What the captions say, as one choice, not three switches that could contradict (FR-061, OB-174).  Adam:
      * *"Station Names should be default, with the setting remembered between open."*
@@ -351,6 +353,9 @@ public class AutonomyEditorPanel extends JPanel
 
     /** Shows the diagram's text, or hides it (FR-133); station captions are the dropdown's. */
     private final JCheckBox showText = new JCheckBox(I18n.t("layout.ui.textLabels"), false);
+
+    /** Draws the squares autonomy ignores grayed out, or leaves them empty (FR-197). */
+    private final JCheckBox showIgnored = new JCheckBox(I18n.t("autosetup.ui.btnShowIgnored"), true);
 
     /** The squares it highlights, worked out once per refresh; null until asked. */
     private Set<TileKey> unmeasuredSquares = null;
@@ -419,18 +424,14 @@ public class AutonomyEditorPanel extends JPanel
     // The first end of a path test
     private TileKey testFrom;
 
-    /** The last path test's squares, so switching Path Type redraws it (MT-399); cleared with the route. */
+    /** The last path test's squares, so a switch of Auto Path / Manual Path redraws it (MT-399); gone with the route. */
     private TileKey lastTestFrom;
     private TileKey lastTestTo;
 
-    /** The last Why Not Moving? square, so switching Path Type asks again (MT-434). */
+    /** The last Why Not Moving? square, so switching Auto Path / Manual Path asks again (MT-434). */
     private TileKey lastWhyTile;
 
-    /**
-     * Which tier the routing check answers for, and the label that names the pair; Auto by default.
-     */
-    private JLabel pathTypeLabel;
-
+    /** Which tier the routing check answers for; Auto Path by default. */
     private JRadioButton pathTypeAuto;
 
     private JRadioButton pathTypeManual;
@@ -670,9 +671,6 @@ public class AutonomyEditorPanel extends JPanel
 
         // Which tier the check answers for (Adam: **"Radio button Auto or Manual dictates what is in scope for the
         // routing check."**): only which stations a train may be sent to differs.
-        // An item label: black, as only section headings are blue (OB-438)
-        pathTypeLabel = UiStyle.label(I18n.t("autosetup.ui.labelPathType"));
-
         pathTypeAuto = new JRadioButton(I18n.t("autosetup.ui.pathTypeAuto"), true);
         pathTypeManual = new JRadioButton(I18n.t("autosetup.ui.pathTypeManual"), false);
 
@@ -680,25 +678,18 @@ public class AutonomyEditorPanel extends JPanel
         pathType.add(pathTypeAuto);
         pathType.add(pathTypeManual);
 
-        // On the label and both radios, so either half shows it.
         String pathTypeTip = wrapped(I18n.t("autosetup.ui.tooltipPathType"));
 
-        pathTypeLabel.setToolTipText(pathTypeTip);
         pathTypeAuto.setToolTipText(pathTypeTip);
         pathTypeManual.setToolTipText(pathTypeTip);
 
-        // Flush with the buttons and label above and below, so the column's left edge is one line (OB-438)
+        // Flush with the buttons above and below, so the column's left edge is one line (OB-438)
         for (JRadioButton radio : new JRadioButton[] {pathTypeAuto, pathTypeManual})
         {
             radio.setFont(FONT_CONTROL);
             radio.setMargin(new Insets(0, 0, 0, 0));
             radio.setBorder(BorderFactory.createEmptyBorder());
         }
-
-        // The air a heading has above and below it, as Station Tools has
-        pathTypeLabel.setBorder(BorderFactory.createEmptyBorder(
-            LayoutEditor.HEADING_GAP + 6, 0,
-            LayoutEditor.HEADING_GAP, 0));
 
         // The route on screen follows the tier (MT-399)
         pathTypeAuto.addActionListener(e -> retestForTheNewTier());
@@ -737,8 +728,7 @@ public class AutonomyEditorPanel extends JPanel
 
         panel.add(row(whyButton));
 
-        // Below Why Not Moving?, on its own row (OB-217), to keep the column narrow.
-        panel.add(row(pathTypeLabel));
+        // Below Why Not Moving?, unlabeled, each on its own row to keep the column narrow (OB-217)
         panel.add(row(pathTypeAuto));
         panel.add(row(pathTypeManual));
 
@@ -764,6 +754,8 @@ public class AutonomyEditorPanel extends JPanel
         showUnmeasured.setSelected(VIEW_PREFS.getBoolean(PREF_UNMEASURED, false));
 
         showTrains.setSelected(VIEW_PREFS.getBoolean(PREF_TRAINS, true));
+
+        showIgnored.setSelected(VIEW_PREFS.getBoolean(PREF_IGNORED, true));
 
         // One remembered setting, which the two boxes follow (FR-061); the older preferences could contradict it.
         int rememberedMode = VIEW_PREFS.getInt(PREF_CAPTION_MODE, CAPTIONS_STATIONS);
@@ -809,6 +801,9 @@ public class AutonomyEditorPanel extends JPanel
         showText.setFocusable(false);
         showText.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowTextLabels")));
 
+        showIgnored.setFocusable(false);
+        showIgnored.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowIgnored")));
+
         directions.setFocusable(false);
 
         directions.addActionListener(e ->
@@ -817,17 +812,9 @@ public class AutonomyEditorPanel extends JPanel
             refresh();
         });
 
-        showLengths.addActionListener(e ->
-        {
-            VIEW_PREFS.putBoolean(PREF_LENGTHS, showLengths.isSelected());
-            refresh();
-        });
-
-        showUnmeasured.addActionListener(e ->
-        {
-            VIEW_PREFS.putBoolean(PREF_UNMEASURED, showUnmeasured.isSelected());
-            refresh();
-        });
+        remembers(showLengths, PREF_LENGTHS);
+        remembers(showUnmeasured, PREF_UNMEASURED);
+        remembers(showIgnored, PREF_IGNORED);
 
         // Redrawn, and the whole window, as train icons come from the railway, which may hold trains the setup lacks.
         showTrains.addActionListener(e ->
@@ -5571,7 +5558,7 @@ public class AutonomyEditorPanel extends JPanel
 
         final WhySetup setup = whySetup;
 
-        // The tier (MT-434), read here, and the square remembered so Path Type can ask again.
+        // The tier (MT-434), read here, and the square remembered so Auto Path / Manual Path can ask again.
         final boolean byHand = pathTypeAuto != null && !pathTypeAuto.isSelected();
 
         lastWhyTile = tile;
@@ -6108,6 +6095,9 @@ public class AutonomyEditorPanel extends JPanel
             // FR-118's white icons, in the editor only, where arrows are drawn over them.
             .inTheEditor();
 
+        // Unticked, a square autonomy ignores is left empty; picking a signal still grays the rest (FR-197).
+        if (shaded && !showIgnored.isSelected() && isIgnored(tile)) annotation.leftEmpty();
+
         // None where a crossing's squares meet (OB-322)
         session.withoutTheCrossingsMiddle(tile, annotation);
 
@@ -6521,7 +6511,6 @@ public class AutonomyEditorPanel extends JPanel
         if (whyButton != null) whyButton.setEnabled(!ignored);
 
         // And the path type (FR-105: "also disable/grey out the auto/manual radio buttons")
-        if (pathTypeLabel != null) pathTypeLabel.setEnabled(!ignored);
         if (pathTypeAuto != null) pathTypeAuto.setEnabled(!ignored);
         if (pathTypeManual != null) pathTypeManual.setEnabled(!ignored);
 
@@ -7348,6 +7337,22 @@ public class AutonomyEditorPanel extends JPanel
     public JCheckBox getShowTextLabels()
     {
         return control(showText);
+    }
+
+    /** A display box whose tick is remembered and redraws the diagram. */
+    private void remembers(JCheckBox box, String pref)
+    {
+        box.addActionListener(e ->
+        {
+            VIEW_PREFS.putBoolean(pref, box.isSelected());
+            refresh();
+        });
+    }
+
+    /** @return the Grayed-Out Icons box, for the window to mount under Text Labels (FR-197) */
+    public JCheckBox getShowIgnored()
+    {
+        return control(showIgnored);
     }
 
     /** @return the Exclude Page box, for the window to mount under its Page Settings heading, below the mode buttons */

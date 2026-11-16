@@ -1834,6 +1834,12 @@ public class LayoutEditor extends PositionAwareJFrame
                 autonomyPanel.getShowTextLabels().setAlignmentX(Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowTextLabels());
 
+                // And the squares autonomy ignores (FR-197)
+                visibility.add(Box.createVerticalStrut(CHECKBOX_GAP));
+
+                autonomyPanel.getShowIgnored().setAlignmentX(Component.LEFT_ALIGNMENT);
+                visibility.add(autonomyPanel.getShowIgnored());
+
                 // What the captions say, as one choice (FR-061), in jLabel1's heading style.
                 JLabel captionsLabel = new JLabel(I18n.t("autosetup.ui.captionsHeading"));
                 captionsLabel.setFont(this.jLabel1.getFont());

@@ -530,6 +530,20 @@ public class TileAnnotation
 
     private boolean stationless = false;
 
+    /** Leaves an ignored square empty: neither its art nor the graying is drawn (FR-197). */
+    public TileAnnotation leftEmpty()
+    {
+        this.empty = true;
+        return this;
+    }
+
+    private volatile boolean empty = false;
+
+    public boolean isLeftEmpty()
+    {
+        return empty;
+    }
+
     /** Has the square's own art drawn without color, as the editor draws its signals and lamps. */
     public TileAnnotation inGray()
     {
@@ -849,7 +863,7 @@ public class TileAnnotation
             // would invite a click.
             if (ignored)
             {
-                paintGreyedOut(g, width, height);
+                if (!empty) paintGreyedOut(g, width, height);
 
                 // The tested route still shows over the graying: it answers the user's question.
                 if (!traces.isEmpty())
@@ -2427,7 +2441,7 @@ public class TileAnnotation
             && occupied == other.occupied && editing == other.editing && unmeasured == other.unmeasured
             && toolMark == other.toolMark && gray == other.gray
             && allowedToo == other.allowedToo && allowedOnly == other.allowedOnly && bareSide == other.bareSide
-            && marks.equals(other.marks) && arrivals.equals(other.arrivals);
+            && marks.equals(other.marks) && arrivals.equals(other.arrivals) && empty == other.empty;
     }
 
     @Override
@@ -2439,7 +2453,8 @@ public class TileAnnotation
             + traces.hashCode() * 3
             + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0) + (allowedOnly ? 16384 : 0)
             + (bareSide == null ? 0 : (bareSide.ordinal() + 1) * 32768) + (stationless ? 131072 : 0)
-            + arrivals.hashCode() * 7 + (toolMark == null ? 0 : (toolMark.ordinal() + 1) * 262144) + (gray ? 8 : 0);
+            + arrivals.hashCode() * 7 + (toolMark == null ? 0 : (toolMark.ordinal() + 1) * 262144) + (gray ? 8 : 0)
+            + (empty ? 32 : 0);
     }
 
     @Override
@@ -2448,7 +2463,7 @@ public class TileAnnotation
         return marks + (length >= 0 ? " len=" + length : "") + (selected ? " selected" : "")
             + (badge == null ? "" : " " + badge)
             + (arrivals.isEmpty() ? "" : " " + arrivals)
-            + (ignored ? " ignored" : "") + (stationless ? " no station" : "")
+            + (ignored ? " ignored" : "") + (empty ? " empty" : "") + (stationless ? " no station" : "")
             + (toolMark == null ? "" : " " + toolMark);
     }
 }

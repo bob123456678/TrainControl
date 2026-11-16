@@ -4,7 +4,7 @@ Part of the behavior reference: [`../behaviour.md`](../behaviour.md) is the inde
 
 ## 7. Routing checks in the editor
 
-**Path Type (Auto / Manual)** decides which tier the check answers for. The two differ **only** in where a train may be
+**Auto Path / Manual Path** (the radios under Path Debugging) decide which tier the check answers for. The two differ **only** in where a train may be
 sent: an inactive square stops both, a barred arrival stops both, a compulsory turn turns both.
 
 **A BARRED ARRIVAL STOPS BEING SENT THERE, AND NOTHING ELSE ABOUT THE TRACK** (Adam, of RampDown and
@@ -47,7 +47,7 @@ side is barred, since it is then no longer a destination by any road.
 On **Auto**, a station autonomy is told to leave alone is reported as reachable **and never chosen**. The route is still
 drawn, because the track is passable.
 
-**Why Not Moving? follows Path Type as well** (MT-434; Adam, asked which tool: *"Why Not
+**Why Not Moving? follows Auto Path / Manual Path as well** (MT-434; Adam, asked which tool: *"Why Not
 Moving?"*). On **Auto** it answers for autonomy: the stations it could choose but cannot right now, and those it will
 never choose, each with autonomy's reason. On **Manual** it answers for a train sent by hand, as the right-click menu
 decides what to offer: autonomy's standing bars (not to be chosen, a reversing square on the way or at the end) are not

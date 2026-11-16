@@ -131,12 +131,22 @@ public class testEveryLanguageFitsTheSettingsWindows
 
             try
             {
+                TileKey station = aStationWithATrain();
+
+                // A priority, so the Advanced heading wears its * (FR-226)
+                Components.onTheEventThread(() -> { railway.session.setPointProperty(station, "priority", 5); return null; });
+
                 StationSettingsWindow window = StationDoors.open(Components.onTheEventThread(editor::getAutonomyPanel),
-                    aStationWithATrain());
+                    station);
 
                 List<String> found = LanguageFit.measureNow(LEDGER, "station-settings", language, window, 20);
 
                 List<String> named = new ArrayList<>();
+
+                if (!LEDGER.saw("station-settings", language, I18n.t("autosetup.ui.stationSectionAdvanced") + " *"))
+                {
+                    unseen.add(language + " the starred Advanced heading");
+                }
 
                 if ("de".equals(language))
                 {

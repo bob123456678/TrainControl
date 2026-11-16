@@ -1201,13 +1201,20 @@ public final class StationSettingsWindow extends StationWindowBase
         fly("which", which == null || listed == null ? mixedTip()
             : StationFlyovers.whichTrains(which, listed, StationFlyovers.keptOut(session, targets())));
 
+        String blockers = many ? null : namesOf(session.getStore().getBlockingPoints(tile));
+
         if (!many)
         {
-            String blockers = namesOf(session.getStore().getBlockingPoints(tile));
-
             unavailable.setText(blockers == null ? I18n.t("autosetup.ui.labelNone") : blockers);
             fly("unavailable", StationFlyovers.unavailable(blockers));
         }
+
+        // A * while a setting under Advanced is not its default, a mixed one included (FR-226)
+        boolean altered = !Integer.valueOf(0).equals(rank) || !Integer.valueOf(100).equals(pace) || which != WhichTrains.ALL
+            || blockers != null;
+
+        advanced.setText(I18n.t("autosetup.ui.stationSectionAdvanced") + (altered ? " *" : ""));
+        advanced.setToolTipText(altered ? AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.stationAdvancedSet")) : null);
 
         enable(stopSection, Boolean.TRUE.equals(stopping) && !readOnly);
         enable(throughSection, !readOnly && Boolean.TRUE.equals(agreed(each ->

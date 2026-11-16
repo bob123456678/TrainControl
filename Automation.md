@@ -123,10 +123,10 @@ The window is titled "Autonomy Editor: *page* (*configuration*)", naming the pag
 3. **Your diagram.** Click track to set which way trains may run; right-click any square for everything else. Hover over a station to see its name. Signals and lamps are drawn in gray to keep the picture simple; while you pick a guard signal, the signals you can pick are in color.
 4. **Things to look at** lists what the [setup check](#the-setup-check) has found. Click a finding to go to its square, or double-click it (or press Control+O) to open that station's `Station Settings`. The `Filter` box above the list narrows it as you type: it matches any part of a row's words, ignoring capitals, and the counts elsewhere still count everything.
 5. **The line under it** says whether the setup is ready to run.
-6. **`Debugging Tools`**: `Test a path` and `Why not Moving?`; see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run).
-7. **`Path Type`**: `Auto` or `Manual`: whether those two tools answer for autonomy choosing a destination, or for a train you send yourself (and Return Home).
+6. **`Path Debugging`**: `Test a path` and `Why not Moving?`; see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run).
+7. **`Auto Path` and `Manual Path`**, under them: whether those two tools answer for autonomy choosing a destination, or for a train you send yourself (and Return Home).
 8. **`Page Settings`**: `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled`.
-9. **`Visible Elements`**: `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` (each square's recorded length, Control+G), `Unmeasured Track`, the track with no length yet, and `Show Trains`, whether the editor draws the trains standing on its diagram (the track diagram's own are not affected), and `Text Labels`, whether your own text on the diagram is drawn.
+9. **`Visible Elements`**: `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` (each square's recorded length, Control+G), `Unmeasured Track`, the track with no length yet, and `Show Trains`, whether the editor draws the trains standing on its diagram (the track diagram's own are not affected), and `Text Labels`, whether your own text on the diagram is drawn, and `Grayed-Out Icons`, whether the squares autonomy ignores are drawn grayed out or left empty.
 10. **`Station Labels`** chooses what the station captions show: `Station Names`, `Standing Locs` (the train standing there), `Home Locs` (the station's home locomotive), or `Hide`. Control+L steps through them.
 11. **`Track Directions`** chooses which direction marks are drawn: `Show All`, `Restrictions only` (just the directions you have shut, the usual one), `Allowed only` (just the directions trains may run), `Hide All`, or `Station Arrivals` (which sides each station takes trains from).
 12. **`Save Changes`** and **`Cancel`**: see [Saving, canceling, and changing page](#saving-canceling-and-changing-page).
@@ -308,7 +308,7 @@ Each "Clear" asks first, and says how many it would clear.
 
 A tool stays armed until you press its button again, press Escape, or right-click.
 
-**`Test a path`** answers "could a train get from here to there?" Click the sensor a train would start from, then the sensor it should reach. The route there is drawn in yellow and the route back in amber (a leg ending at a station autonomy will not choose is drawn in magenta), and the message strip says how many routes there are each way, or "no way through". `Path Type` says whether to answer for autonomy (`Auto`) or for a train you send yourself (`Manual`); changing it redraws the last test. It uses the setup as you have it, unsaved changes included.
+**`Test a path`** answers "could a train get from here to there?" Click the sensor a train would start from, then the sensor it should reach. The route there is drawn in yellow and the route back in amber (a leg ending at a station autonomy will not choose is drawn in magenta), and the message strip says how many routes there are each way, or "no way through". `Auto Path` answers for autonomy and `Manual Path` for a train you send yourself; changing it redraws the last test. It uses the setup as you have it, unsaved changes included.
 
 ![Test a path from Ashby to Carlton: the route there drawn in yellow, and the message strip counting the routes](assets/automation/07-test-path.png)
 

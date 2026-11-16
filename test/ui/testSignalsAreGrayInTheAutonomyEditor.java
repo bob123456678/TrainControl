@@ -254,6 +254,257 @@ public class testSignalsAreGrayInTheAutonomyEditor
         }
     }
 
+    /**
+     * Grayed-Out Icons, unticked, leaves the squares autonomy ignores empty in the autonomy editor, the page's lamps
+     * here, while its signals stay drawn in gray; the track diagram still draws the lamps; ticked again, the editor
+     * draws them and the tick is remembered (FR-197; Adam: "option to hide greyed out icons").  A default start opens it
+     * ticked, and a start with it remembered unticked opens unticked at the default start's size.
+     *
+     * MUTATION: drop the `leftEmpty()` call in `AutonomyEditorPanel.annotationFor`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testGrayedOutIconsUntickedLeavesTheIgnoredSquaresEmpty() throws Exception
+    {
+        java.util.prefs.Preferences prefs = org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.TrainControlUI.class);
+        String was = prefs.get(PREF_IGNORED, null);
+
+        LayoutEditor editor = null;
+
+        try
+        {
+            prefs.remove(PREF_IGNORED);
+
+            editor = frozen.editorOn(PAGE);
+
+            javax.swing.JCheckBox box = grayedOutIcons(editor);
+
+            assertTrue(Components.onTheEventThread(box::isSelected), "a default start opens with Grayed-Out Icons unticked");
+
+            java.awt.Dimension asDefault = Components.onTheEventThread(editor::getSize);
+
+            for (LayoutLabel lamp : drawnSquares(editor, LAMP)) assertTrue(ink(lamp) > 0, "precondition: a lamp is not drawn");
+
+            support.FrozenEditor.dispose(editor);
+
+            prefs.putBoolean(PREF_IGNORED, false);
+
+            editor = frozen.editorOn(PAGE);
+            box = grayedOutIcons(editor);
+
+            assertFalse(Components.onTheEventThread(box::isSelected), "a start with it remembered unticked opens it ticked");
+            assertEquals(Components.onTheEventThread(editor::getSize), asDefault,
+                "the editor started with Grayed-Out Icons unticked is not the size of a default start");
+
+            assertLeftEmpty(editor, drawnSquares(editor, LAMP), "unticked");
+
+            for (LayoutLabel signal : drawnSquares(editor, SIGNAL))
+            {
+                assertTrue(ink(signal) > 0, "unticked, a signal is left empty");
+                assertEquals(coloredArt(signal), 0, "unticked, a signal is not gray");
+            }
+
+            support.Rendered diagram = support.Rendered.open(frozen.model.getLayout(PAGE), frozen.ui);
+
+            diagram.settle();
+
+            for (LayoutLabel lamp : drawnSquares(diagram.host(), LAMP))
+            {
+                assertTrue(ink(lamp) > 0, "with the editor's box unticked, the track diagram leaves a lamp empty");
+            }
+
+            final javax.swing.JCheckBox ticked = box;
+
+            Components.onTheEventThread(() -> { ticked.doClick(); return null; });
+            Components.settle();
+
+            for (LayoutLabel lamp : drawnSquares(editor, LAMP)) assertTrue(ink(lamp) > 0, "ticked again, a lamp is not drawn");
+
+            assertTrue(prefs.getBoolean(PREF_IGNORED, false), "the tick was not remembered");
+        }
+        finally
+        {
+            support.FrozenEditor.dispose(editor);
+
+            if (was == null) prefs.remove(PREF_IGNORED);
+            else prefs.put(PREF_IGNORED, was);
+        }
+    }
+
+    /**
+     * Unticking Grayed-Out Icons on an open editor empties its lamps at once, and ticking it again draws them gray
+     * (FR-197): the box acts on the editor as it stands, not only at the next opening.
+     *
+     * MUTATION: drop `empty == other.empty` from `TileAnnotation.equals`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testUntickingGrayedOutIconsEmptiesAnOpenEditor() throws Exception
+    {
+        withGrayedOutIcons(null, PAGE, editor ->
+        {
+            javax.swing.JCheckBox box = grayedOutIcons(editor);
+            List<LayoutLabel> lamps = drawnSquares(editor, LAMP);
+
+            for (LayoutLabel lamp : lamps) assertTrue(ink(lamp) > 0, "precondition: a lamp is not drawn");
+
+            Components.onTheEventThread(() -> { box.doClick(); return null; });
+            Components.settle();
+
+            assertLeftEmpty(editor, lamps, "unticked on an open editor");
+
+            Components.onTheEventThread(() -> { box.doClick(); return null; });
+            Components.settle();
+
+            for (LayoutLabel lamp : lamps)
+            {
+                assertTrue(ink(lamp) > 0, "ticked again, a lamp is left empty");
+                assertEquals(coloredArt(lamp), 0, "ticked again, a lamp is not gray");
+            }
+        });
+    }
+
+    /**
+     * With Grayed-Out Icons unticked, a flash on a square left empty shows: a finding on an ignored square, clicked,
+     * scrolls to it and flashes it, so it must not stay blank (FR-197).
+     *
+     * MUTATION: drop `flashTimer == null` from the left-empty branch of `LayoutLabel.paintComponent`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAFlashShowsOnASquareLeftEmpty() throws Exception
+    {
+        withGrayedOutIcons(false, PAGE, editor ->
+        {
+            LayoutLabel lamp = drawnSquares(editor, LAMP).get(0);
+
+            assertLeftEmpty(editor, java.util.Collections.singletonList(lamp), "precondition: unticked");
+
+            // A flash held for 3 seconds, so the picture is taken while it is up
+            Components.onTheEventThread(() -> { lamp.flashHighlight(java.awt.Color.YELLOW, 3000); return null; });
+
+            assertTrue(Pixels.differing(Pixels.paint(lamp, 30), emptySquare(editor)) > 0,
+                "a flash on a lamp left empty shows nothing");
+
+            assertTrue(Components.waitFor(() -> !Components.onTheEventThread(lamp::isFlashOutstanding), 20000),
+                "the flash never ended");
+        });
+    }
+
+    /**
+     * With Grayed-Out Icons unticked, a switched-off link stays drawn: it is track the user turned off, not a square
+     * autonomy cannot use (FR-197).
+     *
+     * MUTATION: leave `isIgnored(tile)` out of the left-empty test in `AutonomyEditorPanel.annotationFor`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testASwitchedOffLinkStaysDrawnUnticked() throws Exception
+    {
+        TileKey link = Components.onTheEventThread(() -> frozen.session.getGraph().getTiles().entrySet().stream()
+            .filter(e -> org.traincontrol.automationui.TilePorts.hasPortal(e.getValue().getType())).map(e -> e.getKey())
+            .findFirst().orElse(null));
+
+        assertNotNull(link, "precondition: the railway has no link");
+
+        try
+        {
+            Components.onTheEventThread(() -> { frozen.session.setPortalDisabled(link, true); return null; });
+
+            withGrayedOutIcons(false, link.getPage(), editor ->
+            {
+                LayoutLabel shown = Components.all(editor, LayoutLabel.class, l -> l.getComponent() != null
+                    && l.getComponent().getX() == link.getX() && l.getComponent().getY() == link.getY()).get(0);
+
+                same(java.util.Collections.singletonList(shown), shown.getComponent());
+
+                assertTrue(Pixels.differing(Pixels.paint(shown, 30), emptySquare(editor)) > 0, "unticked, the switched-off"
+                    + " link at " + link + " is left empty");
+            });
+        }
+        finally
+        {
+            frozen.putBack();
+        }
+    }
+
+    /** What a claim does on the editor it is given. */
+    private interface OnTheEditor
+    {
+        void check(LayoutEditor editor) throws Exception;
+    }
+
+    /** A claim on a page's editor opened with Grayed-Out Icons remembered so (null: never set); the preference put back. */
+    private static void withGrayedOutIcons(Boolean remembered, String page, OnTheEditor claim) throws Exception
+    {
+        java.util.prefs.Preferences prefs = org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.TrainControlUI.class);
+        String was = prefs.get(PREF_IGNORED, null);
+
+        LayoutEditor editor = null;
+
+        try
+        {
+            if (remembered == null) prefs.remove(PREF_IGNORED);
+            else prefs.putBoolean(PREF_IGNORED, remembered);
+
+            editor = frozen.editorOn(page);
+
+            claim.check(editor);
+        }
+        finally
+        {
+            support.FrozenEditor.dispose(editor);
+
+            if (was == null) prefs.remove(PREF_IGNORED);
+            else prefs.put(PREF_IGNORED, was);
+        }
+    }
+
+    /** Each square drawn as a square with nothing on it, which keeps the editor's grid lines. */
+    private static void assertLeftEmpty(LayoutEditor editor, List<LayoutLabel> squares, String what) throws Exception
+    {
+        BufferedImage empty = emptySquare(editor);
+
+        for (LayoutLabel square : squares)
+        {
+            assertEquals(Pixels.differing(Pixels.paint(square, 30), empty), 0, what + ", a square is drawn at "
+                + square.getComponent().getX() + "," + square.getComponent().getY());
+        }
+    }
+
+    private static BufferedImage emptySquare(LayoutEditor editor) throws Exception
+    {
+        return Pixels.paint(Components.all(editor, LayoutLabel.class, l -> l.getComponent() == null).get(0), 30);
+    }
+
+    private static final String PREF_IGNORED = "autonomyEditorIgnoredSquares";
+
+    /** The autonomy editor's Grayed-Out Icons box, by its words. */
+    private static javax.swing.JCheckBox grayedOutIcons(LayoutEditor editor)
+    {
+        javax.swing.JCheckBox box = Components.onTheEventThread(() -> editor.getAutonomyPanel().getShowIgnored());
+
+        assertEquals(Components.onTheEventThread(box::getText), org.traincontrol.util.I18n.t("autosetup.ui.btnShowIgnored"),
+            "the box is not Grayed-Out Icons");
+        assertTrue(Components.onTheEventThread(box::isShowing), "the Grayed-Out Icons box is not in the editor");
+
+        return box;
+    }
+
+    /** Every square of this type on the page, each once its picture has arrived, so an empty one is left empty. */
+    private static List<LayoutLabel> drawnSquares(java.awt.Container window, LayoutDiagramComponent.componentType type)
+    {
+        List<LayoutLabel> squares = squaresIn(window, type);
+
+        assertFalse(squares.isEmpty(), "precondition: no " + type + " on " + PAGE);
+
+        for (LayoutLabel square : squares) same(squares, square.getComponent());
+
+        return squares;
+    }
+
+    /** Pixels in any but the square's commonest color. */
+    private static int ink(LayoutLabel tile) throws Exception
+    {
+        return Pixels.drawn(Pixels.paint(tile, 30));
+    }
+
     /** Sets or clears the station a guard signal is being picked for, as "click it on the diagram" does. */
     private static void picking(AutonomyEditorPanel panel, TileKey station) throws Exception
     {
