@@ -869,15 +869,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /** Never narrower than the width the window packs to: the form's 1110 left the locomotive panel 20 px cut (OB-488). */
-    @Override
-    public Dimension getMinimumSize()
-    {
-        Dimension declared = super.getMinimumSize();
-
-        return new Dimension(Math.max(declared.width, getPreferredSize().width), declared.height);
-    }
-
     public TrainControlUI()
     {
         // `PositionAwareJFrame`'s static initializer installs the look and feel before the root pane is created.

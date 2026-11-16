@@ -263,8 +263,7 @@ public class testEveryLanguageFits
      * in every language (OB-488).  A component is cut where its visible part is narrower than it is; pushed where it
      * overlaps another button or label of the panel.
      *
-     * MUTATION: setting the minimum width back to the form's 1110 (dropping the `getMinimumSize` override in
-     * `TrainControlUI`) cuts the ON button, the ">>>>>>>" button and the F3/F7/F11 column, and this fails.
+     * MUTATION: laying the window out at the form's declared 1110 (the test's `setMinimumSize(getSize())` removed) cuts the ON button, the ">>>>>>>" button and the F3/F7/F11 column, and this fails.
      */
     private static List<String> locomotivePanelCut(TrainControlUI ui, String language)
     {
@@ -365,9 +364,10 @@ public class testEveryLanguageFits
 
                 packedWidth.put(language, ui[0].getWidth());
 
-                // Then the size the form declares, the window an operator gets on first run (its minimum size); pack()
-                // would give whatever the longest string in THIS language needs, which is the question rather than the
-                // answer.
+                // Then the window as the app leaves it: `display()` sets the minimum to the packed size, which is the
+                // narrowest an operator can make it.  The form's declared 1110 is narrower than the locomotive panel needs
+                // and is never what a user gets.
+                ui[0].setMinimumSize(ui[0].getSize());
                 ui[0].setSize(ui[0].getMinimumSize());
                 ui[0].validate();
             });
