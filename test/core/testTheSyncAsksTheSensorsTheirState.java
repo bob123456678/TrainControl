@@ -828,11 +828,12 @@ public class testTheSyncAsksTheSensorsTheirState
 
     /**
      * A file an older build saved, its sensors with no device, opens: its 58 sensors read back with none.
-     * And the saved file keeps 3.0.8's shape: the device rides in a field 3.0.8 already had (a route's trigger), so a
-     * 3.0.8 build reads a file this one saved as before, and takes only a sensor's address and state from it.
+     * And a 3.0.8 build still reads a file this one saved: the serialVersionUID and every 3.0.8 field are unchanged
+     * (the sensor's device rides in a route's trigger, a field 3.0.8 had), and the only fields added are object fields
+     * listed in ADDED_SINCE_308, which an older build skips (Java serialization, section 5.6.2).
      *
      * MUTATION: in `MarklinSimpleComponent.getS88Device`, take out `&& this.s88 > 0`.  And: add a field to
-     * `MarklinSimpleComponent`.
+     * `MarklinSimpleComponent`, or change one 3.0.8 had.
      */
     @Test(timeOut = 120000)
     public void testAnOlderFileOpensAndTheFileKeeps308sShape() throws Exception
@@ -857,8 +858,19 @@ public class testTheSyncAsksTheSensorsTheirState
 
         for (java.io.ObjectStreamField f : shape.getFields()) fields.append(' ').append(f.getName()).append(f.getTypeCode());
 
-        assertEquals(fields.toString(), SHAPE_308, "the saved file's shape is no longer 3.0.8's");
+        String now = fields.toString() + ' ';
+
+        for (String was : SHAPE_308.split(" ")) assertTrue(now.contains(' ' + was + ' ') || now.startsWith(was + ' '),
+            "3.0.8 can no longer read the saved file: its field " + was + " changed or went: " + now);
+
+        assertEquals(now.split(" ").length, SHAPE_308.split(" ").length + ADDED_SINCE_308.length,
+            "a field was added to the saved file: list it in ADDED_SINCE_308 only if it is an object field: " + now);
+
+        for (String added : ADDED_SINCE_308) assertTrue(now.contains(' ' + added + ' '), "not in the file: " + added);
     }
+
+    /** Object fields the saved file gained after 3.0.8; 3.0.8 skips them.  FR-220 (D171): a declined station name. */
+    private static final String[] ADDED_SINCE_308 = {"declinedStationNameL"};
 
     /** MarklinSimpleComponent's serialized shape in 3.0.8: its serialVersionUID, then each field's name and type code. */
     private static final String SHAPE_308 =
