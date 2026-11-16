@@ -5,6 +5,12 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.LockSupport;
 import org.traincontrol.base.udp.CANMessage;
 import org.traincontrol.model.ModelListener;
 
@@ -30,6 +36,53 @@ public class NetworkProxy
     // Transmission IP/port
     private final InetAddress transmitIP;
     private final int transmitPort;
+    
+    /** The gap between two sensor queries: the Link S88 answers each within about 20 ms, 60 take 0.3 s. */
+    private static final long QUERY_PACE_NS = 5L * 1000000L;
+
+    /** How long a pass of sensor queries waits for its answers after the last query. */
+    private static final long ANSWER_WAIT_NS = 1000L * 1000000L;
+
+    /** When the second pass starts after the first, for a UDP copy of an older event that lands after the answer. */
+    private static final long ASK_AGAIN_NS = 500L * 1000000L;
+
+    // Each s88 contact's device, learned from the station's events once learnsDevices is set: for a CS3 only
+    private final Map<Integer, Integer> sensorDevice = new ConcurrentHashMap<>();
+
+    // Set by a CS3's sync (syncSensors)
+    private volatile boolean learnsDevices;
+
+    // Each contact's device as the station's device list has it, and as last saved, for a contact no event placed
+    private volatile Map<Integer, Integer> listedDevice = new HashMap<>();
+    private volatile Map<Integer, Integer> savedDevice = new HashMap<>();
+
+    // Each contact asked, and when a real event for it came since its query (0 for none): an answer, or a late copy,
+    // within ANSWER_WAIT_NS of that event is older than it.  Forgotten ANSWER_WAIT_NS after the last pass; guards the
+    // fields below up to askEnded
+    private final Map<Integer, Long> overtaken = new ConcurrentHashMap<>();
+
+    private int asks;
+
+    // The passes among `asks` that hold routes: the connect's, the first with a model (D133)
+    private int holds;
+
+    private boolean connectAsked;
+
+    // The start-up's sync asked before there was a model: setModel asks
+    private boolean askOnModel;
+
+    private long askEnded;
+
+    // Held for a whole pass of queries, so two passes cannot share `awaiting`
+    private final Object passLock = new Object();
+
+    // Woken by an answer: what a pass waits on
+    private final Object answerLock = new Object();
+
+    // The contacts the running pass asked and has not had answered, or null; guarded by answerLock
+    private Set<Integer> awaiting;
+
+    private int answered;
     
     // Model listener class reference
     private ModelListener model;
@@ -98,6 +151,243 @@ public class NetworkProxy
         
         // Start reader
         new ReadMessages().start();
+
+        boolean ask;
+
+        synchronized (this.overtaken)
+        {
+            ask = this.askOnModel;
+            this.askOnModel = false;
+        }
+
+        // The start-up's sync ran before there was a model: its sensors are asked now (OB-418)
+        if (ask) syncSensors();
+    }
+
+    /**
+     * Asks each sensor whose device is known (deviceOf) for its state, twice, ASK_AGAIN_NS apart, and logs the counts;
+     * returns once every query of the second pass is answered, or ANSWER_WAIT_NS after its last.  For a CS3's sync
+     * only (OB-418): from the first call on, events teach their devices.  Before setModel, only that, and setModel
+     * asks.  The first pass with a model, the connect's, holds routes until it ends (D133).
+     */
+    public void syncSensors()
+    {
+        this.learnsDevices = true;
+
+        boolean holding;
+
+        synchronized (this.overtaken)
+        {
+            if (this.model == null)
+            {
+                this.askOnModel = true;
+                return;
+            }
+
+            holding = !this.connectAsked;
+            this.connectAsked = true;
+            this.asks++;
+
+            if (holding) this.holds++;
+        }
+
+        try
+        {
+            for (int n = 0; n < 2; n++)
+            {
+                long start = System.nanoTime();
+
+                if (!askOnce(n == 0 ? start + ASK_AGAIN_NS : 0)) return;
+
+                if (n == 0 && !waitFor(start + ASK_AGAIN_NS, false)) return;
+            }
+        }
+        finally
+        {
+            synchronized (this.overtaken)
+            {
+                this.asks--;
+                this.askEnded = System.nanoTime();
+
+                if (holding) this.holds--;
+            }
+        }
+    }
+
+    /**
+     * The device a contact is asked at: the one a real event showed, else the station's device list's, else the one
+     * saved; null when none.
+     */
+    public Integer deviceOf(int contact)
+    {
+        Integer device = this.sensorDevice.get(contact);
+
+        if (device == null) device = this.listedDevice.get(contact);
+
+        return device != null ? device : this.savedDevice.get(contact);
+    }
+
+    /** The device a real event showed for a contact, or null. */
+    public Integer learnedDeviceOf(int contact)
+    {
+        return this.sensorDevice.get(contact);
+    }
+
+    /** The devices the station's device list places, and those saved before a restart (OB-418). */
+    public void knowDevices(Map<Integer, Integer> listed, Map<Integer, Integer> saved)
+    {
+        this.listedDevice = new HashMap<>(listed);
+        this.savedDevice = new HashMap<>(saved);
+    }
+
+    /**
+     * Whether a CS3's state confirmation after the connect is under way: a sensor change then updates the state but
+     * fires no route (D133).  A later sync's pass holds nothing.  Never for a CS2, which is never asked.
+     */
+    public boolean isConfirming()
+    {
+        synchronized (this.overtaken)
+        {
+            return this.learnsDevices && this.holds > 0;
+        }
+    }
+
+    /** Whether any pass of queries to a CS3, a sync's included, is under way: its answers are then no events. */
+    public boolean isAsking()
+    {
+        synchronized (this.overtaken)
+        {
+            return this.learnsDevices && this.asks > 0;
+        }
+    }
+
+    /**
+     * One pass: the queries, paced, then the answers awaited until `until`, or for ANSWER_WAIT_NS when 0; logged.
+     * False once the socket is closed.
+     */
+    private boolean askOnce(long until)
+    {
+        synchronized (this.passLock)
+        {
+            Map<Integer, byte[]> queries = new LinkedHashMap<>();
+            Set<Integer> asked = ConcurrentHashMap.newKeySet();
+            int skipped = 0;
+
+            for (Integer contact : this.model.knownSensors())
+            {
+                Integer device = deviceOf(contact);
+
+                if (device == null)
+                {
+                    skipped++;
+                }
+                else
+                {
+                    asked.add(contact);
+                    queries.put(contact, new byte[]
+                        {(byte) (device >> 8), (byte) (int) device, (byte) (contact >> 8), (byte) (int) contact});
+                }
+            }
+
+            synchronized (this.answerLock)
+            {
+                this.awaiting = asked;
+                this.answered = 0;
+            }
+
+            int sent = 0;
+
+            for (Map.Entry<Integer, byte[]> query : queries.entrySet())
+            {
+                if (this.socket.isClosed()) break;
+
+                // Marked before it is written, so only a later event overtakes its answer
+                this.overtaken.put(query.getKey(), 0L);
+
+                if (sendMessage(new CS2Message(CS2Message.CMD_ACC_SENSOR, query.getValue()))) sent++;
+
+                LockSupport.parkNanos(QUERY_PACE_NS);
+            }
+
+            boolean current = waitFor(until != 0 ? until : System.nanoTime() + ANSWER_WAIT_NS, true);
+            int got;
+
+            synchronized (this.answerLock)
+            {
+                got = this.answered;
+                this.awaiting = null;
+            }
+
+            this.model.logf("network.sensorsSynced", sent, got, skipped);
+
+            return current;
+        }
+    }
+
+    /** Waits until `deadline`, or until every query is answered when `answers`; false once the socket is closed. */
+    private boolean waitFor(long deadline, boolean answers)
+    {
+        synchronized (this.answerLock)
+        {
+            try
+            {
+                for (long left = deadline - System.nanoTime(); left > 0 && !this.socket.isClosed()
+                    && !(answers && this.awaiting.isEmpty()); left = deadline - System.nanoTime())
+                {
+                    this.answerLock.wait(Math.max(1, left / 1000000L));
+                }
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+
+        return !this.socket.isClosed();
+    }
+
+    /**
+     * Once learnsDevices is set, notes a contact's device from a sensor event, a change of state; a frame with the
+     * state unchanged is an answer to a query, counted for the pass that asked.  True, and the frame not to be
+     * delivered, when it is such an answer older than a real event for the contact since its query, less than
+     * ANSWER_WAIT_NS ago (OB-418).  Stamps `message` with the passes under way before an answer can end its pass, as
+     * the frame is parsed on another thread (OB-490).
+     */
+    private boolean learn(byte[] frame, CANMessage message)
+    {
+        int command = ((frame[0] & 0x01) << 7) | ((frame[1] & 0xFF) >> 1);
+
+        if (!this.learnsDevices || command != CS2Message.CMD_ACC_SENSOR || frame[4] != 8) return false;
+
+        int contact = ((frame[7] & 0xFF) << 8) | (frame[8] & 0xFF);
+
+        synchronized (this.overtaken)
+        {
+            if (this.asks == 0 && System.nanoTime() - this.askEnded >= ANSWER_WAIT_NS) this.overtaken.clear();
+
+            if (message instanceof CS2Message) ((CS2Message) message).heardDuring(this.asks > 0, this.holds > 0);
+        }
+
+        if (frame[9] != frame[10])
+        {
+            this.sensorDevice.put(contact, ((frame[5] & 0xFF) << 8) | (frame[6] & 0xFF));
+            this.overtaken.replace(contact, System.nanoTime());
+            return false;
+        }
+
+        synchronized (this.answerLock)
+        {
+            if (this.awaiting != null && this.awaiting.remove(contact))
+            {
+                this.answered++;
+                this.answerLock.notifyAll();
+            }
+        }
+
+        Long event = this.overtaken.get(contact);
+
+        return event != null && event != 0 && System.nanoTime() - event < ANSWER_WAIT_NS;
     }
     
     /**
@@ -213,7 +503,9 @@ public class NetworkProxy
                         if (packet.getLength() == buffer.length)
                         {
                             // Send message to listener
-                            model.receiveMessage(model.createMessage(buffer));
+                            CANMessage message = model.createMessage(buffer);
+
+                            if (!learn(buffer, message)) model.receiveMessage(message);
                         }
 
                         // Reset the length of the packet just in case
