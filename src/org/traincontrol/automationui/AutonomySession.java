@@ -3902,7 +3902,7 @@ public class AutonomySession
 
             if (here == null || out.containsKey(here)) continue;
 
-            // Not stopped by a square out of service: this finding is an ERROR, and a closure is the operator's to make
+            // Not stopped by a square out of service: this finding is a WARNING, and a closure is the operator's to make
             // and undo.
             if (reach.reachesAStation(copy)) continue;
 

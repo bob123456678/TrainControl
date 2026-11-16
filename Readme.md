@@ -176,7 +176,7 @@ Monitor the usage of different locomotives.
 
 **Log**
 
-The Log tab shows what TrainControl is doing.  To scroll it sideways, hold Shift and turn the mouse wheel; a trackpad's sideways swipe only works on Java 9 or later.
+The Log tab shows what TrainControl is doing.  To scroll it sideways, click in the log text first, then hold Shift and turn the mouse wheel; until the log has the keyboard, Shift is the slow stop for the current locomotive.  A trackpad's sideways swipe only works on Java 9 or later.
 
 ## Features
 
@@ -320,6 +320,10 @@ The primary controls are the up and down arrows for speed, the left and right ar
         * Control+E (set the length of the hovered piece of track)
         * Control+B (set the hovered station's longest train)
         * Control+H (set the hovered station's home locomotive)
+    * Trains and saving
+        * Control+V (place the locomotive selected in the main window on the hovered station)
+        * Delete (take the train off the hovered station)
+        * Control+Enter (save changes; it also saves in Locomotive Settings and the route editor, and is Done Editing in Station Settings)
     * What is shown
         * Control+G (show track lengths)
         * Control+L (step through the station caption options)
@@ -329,9 +333,6 @@ The primary controls are the up and down arrows for speed, the left and right ar
         * Plus/minus, also on the number pad (next / previous page)
         * Control+F (find a point by its name, on any page)
         * Control+O (open Station Settings for the hovered square, or for the finding chosen in the list)
-        * Control+V (place the locomotive selected in the main window on the hovered station)
-        * Delete (take the train off the hovered station)
-        * Control+Enter (save changes; it also saves in Locomotive Settings and the route editor, and is Done Editing in Station Settings)
         * Double-click a finding (open Station Settings for its station)
         * Shift+click (pick several squares at once)
         * Escape (put down an armed tool; with nothing armed, close the editor)
@@ -463,7 +464,7 @@ Tab icons provided by Freepik.
     - New Features
         - Autonomy
             - `Test a path` and `Why not Moving?` give one answer for both automatic and by-hand sends: a path only a hand send can take is purple, and the destinations are listed in a table.  The `Path Type` choice is gone.
-            - The autonomy editor's list of things to look at now agrees with `Test a path` about which stations can be reached, and both are faster.
+            - The autonomy editor's list of things to look at now agrees with `Test a path` about which stations can be reached.
             - The `Station` preset lets trains run through, and a small white dot on the track diagram, in the autonomy editor and in `Station Settings` marks a station trains must stop at (a station whose `Trains can pass through` box is unticked).  The `Terminus` and `Parking` presets untick `Trains can pass through`, and `Parking` is a terminus full autonomy never chooses.
             - The autonomy editor has a `Grayed-Out Icons` box under `Visible Elements`: untick it to leave the squares autonomy ignores empty instead of grayed.
             - `Station Settings` shows an `*` on `Advanced` when a setting under it has been changed, and the `Maximum train length` box has arrows and shows `Any` at 0.

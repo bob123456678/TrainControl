@@ -5641,8 +5641,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             Component owner = pressed.getComponent() != null ? pressed.getComponent()
                 : KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
 
-            // This window, not any window: a modal dialog's keys are its own.
-            if (owner == null || !SwingUtilities.isDescendingFrom(owner, this)) return false;
+            // Only keys held in this frame: a dialog it owns counts as its child in getParent(), but keeps its own keys.
+            if (owner == null) return false;
+            if ((owner instanceof Window ? owner : SwingUtilities.getWindowAncestor(owner)) != this) return false;
 
             // A text component claims a letter on KEY_TYPED, after this, so the consumed test cannot cover typing.
             if (owner instanceof JTextComponent) return false;

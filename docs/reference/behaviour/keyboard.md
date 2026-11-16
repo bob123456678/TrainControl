@@ -50,7 +50,9 @@ only for keys the focused component left unconsumed, so the precedence is the to
   a list keeps its type-ahead;
 - what nothing claimed reaches the map;
 - **typing is stepped around by name**, because a text component claims a letter at KEY_TYPED, after this runs;
-- and only in this window: a dialog's components do not descend from the frame, so its keys stay its own.
+- and only when the focus owner's window is this frame itself: a dialog the frame owns (a modal question included)
+  keeps its keys, though its `getParent()` is the frame, so the test is the focus owner's window, not
+  `isDescendingFrom`.
 
 The focus-moving of `OB-170` stays; the post-processor only ever sees what the focus owner did not want.
-`regression.testTheKeyMapReachesTheWholeWindow` holds the three halves of that rule.
+`regression.testTheKeyMapReachesTheWholeWindow` holds each part of that rule.
