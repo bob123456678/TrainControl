@@ -31,7 +31,7 @@ import support.CopyScan;
 public class testNoNewCopies
 {
     /** The groups as they stand.  Never raise it. */
-    private static final int GROUPS_ALLOWED = 80;
+    private static final int GROUPS_ALLOWED = 78;
 
     /**
      * The tokens standing in a second or later copy in `test/`, summed over its groups: an upper bound, so a commit that
@@ -48,9 +48,7 @@ public class testNoNewCopies
         "AutonomyCompanionStore:2 (64)",
         "AutonomyEditorPanel:1,EditorPrompts:1 (80)",
         "AutonomyEditorPanel:2 (66)",
-        "AutonomyEditorPanel:3 (108)",
-        "AutonomyEditorPanel:4 (136)",
-        "AutonomyEditorPanel:4 (98)",
+        "AutonomyEditorPanel:3 (98)",
         "AutonomySession:2 (76)",
         "AutonomySession:2 (73)",
         "AutonomySession:2 (70)",
