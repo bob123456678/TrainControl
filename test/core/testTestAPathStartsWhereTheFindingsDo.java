@@ -221,28 +221,31 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
         session.setPointFlag(turn, AutonomyBuilder.CAN_REVERSE, true);
         session.rebuild();
 
-        assertNotNull(session.testPath(start, westEnd),
-            "Test a Path finds no way from Start to WestEnd, though the way along the line through Turn throws nothing");
+        assertNotNull(session.testPath(start, westEnd), "Test a Path finds no way from Start to WestEnd, though the way"
+            + " along the line through Turn throws nothing");
 
-        support.LayoutSandbox sandbox = support.LayoutSandbox.open();
+        support.LayoutSandbox sandbox = null;
         org.traincontrol.marklin.MarklinControlStation model = null;
 
         try
         {
+            sandbox = support.LayoutSandbox.open();
             model = support.TestStation.simulated();
             model.parseAuto(session.buildConfiguration());
 
             java.util.Map<String, TileKey> squareOf = session.builder(null).tilesByName();
 
-            assertTrue(railwayGoes(model.getAutoLayout(), org.traincontrol.automationui.BuiltReach.of(
-                new org.json.JSONObject(session.buildConfigurationForInspection()), squareOf), squareOf, start, westEnd),
+            org.traincontrol.automationui.BuiltReach reach = org.traincontrol.automationui.BuiltReach.of(
+                new org.json.JSONObject(session.buildConfigurationForInspection()), squareOf);
+
+            assertTrue(railwayGoes(model.getAutoLayout(), reach, squareOf, start, westEnd),
                 "precondition: the railway does not route Start to WestEnd either");
         }
         finally
         {
             if (model != null) model.stop();
 
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
     }
 
