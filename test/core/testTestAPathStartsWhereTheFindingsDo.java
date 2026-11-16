@@ -8,7 +8,9 @@ import org.traincontrol.automationui.AutonomyBuilder;
 import org.traincontrol.automationui.AutonomyChecks;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.automationui.TilePorts.Side;
+import static org.traincontrol.base.Accessory.accessoryDecoderType.MM2;
 import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 import support.Reflect;
@@ -95,41 +97,68 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
     }
 
     /**
-     * Middle takes trains from the east only, so from WestEnd the one way there runs past it to EastTurn, a square that
-     * is no station, turns there and comes back.  Autonomy never turns a train on the way, so that leg is drawn purple
-     * and the strip says why, while the leg back needs no turn and is autonomy's, in amber (FR-221).
+     * A kickback spur: Middle lies on a switch's branch, trailing for a train from WestEnd, so the one way between them
+     * runs through the switch to EastTurn, a square that is neither end and no station, turns there and comes back.
+     * Autonomy never turns a train on the way, so both legs are drawn purple and the strip says why (FR-221).
      *
      * MUTATION: let `AutonomySession.testPathForAutonomy` turn wherever `mayTurnTiles` allows, and this fails.
      */
     @Test
     public void testALegThatTurnsOnTheWayIsDrawnAsOnlyAHandSendTakesIt() throws Exception
     {
-        westEndAndMiddleBarred("Turning", Side.W);
+        // The switch's toe faces east and its branch runs south to Middle, as in testAutonomyDiagramReversal.junction
+        LayoutDiagram page = new LayoutDiagram("main", 10, 5, null, null);
 
-        TileKey east = new TileKey("main", 5, 1);
+        support.Diagrams.row(page, 1, 2, "FS", 5);
+        page.addComponent(LayoutDiagramComponent.componentType.SWITCH_LEFT, 3, 2, 1, 0, 7, 7, MM2, null);
+        support.Diagrams.row(page, 4, 2, "SFSF", 2, 6);
+        page.addComponent(LayoutDiagramComponent.componentType.FEEDBACK, 3, 3, 1, 0, 9, 18, MM2, null);
+        support.Diagrams.wireAccessories(Arrays.asList(page));
 
-        session.setPointName(east, "EastTurn");
-        session.setPointFlag(east, AutonomyBuilder.CAN_REVERSE, true);
+        session.open(Arrays.asList(page));
+        session.initialize("Turning");
+
+        // A switch runs out of its toe only until the operator opens it both ways
+        session.setDirection(java.util.Collections.singleton(new TileKey("main", 3, 2)),
+            org.traincontrol.automationui.TileGraph.Direction.BOTH);
+
+        TileKey start = new TileKey("main", 1, 2);
+        TileKey turn = new TileKey("main", 5, 2);
+        TileKey spur = new TileKey("main", 3, 3);
+
+        session.setPointName(turn, "EastTurn");
+        session.setStation(start, true);
+        session.setPointName(start, "WestEnd");
+        session.setStation(spur, true);
+        session.setPointName(spur, "Middle");
+
+        for (TileKey square : Arrays.asList(turn, start, spur))
+        {
+            session.setPointFlag(square, AutonomyBuilder.CAN_REVERSE, true);
+        }
+
         session.rebuild();
 
-        assertNotNull(session.testPath(west, middle), "precondition: a hand send cannot turn at EastTurn to reach Middle");
+        assertNotNull(session.testPath(start, spur), "precondition: a hand send cannot turn at EastTurn for Middle");
+        assertNull(session.testPathForAutonomy(start, spur), "precondition: autonomy reaches Middle without turning");
 
         AutonomyEditorPanel panel = armed();
 
-        String[] legs = legs(panel, west, middle);
-
-        assertNotEquals(legs[1], I18n.t("autosetup.ui.testLegBlocked"), "precondition: no route back from Middle");
+        String[] legs = legs(panel, start, spur);
 
         String said = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
 
-        String turns = I18n.f("autosetup.ui.testTurnsOnTheWay", "WestEnd", "Middle");
+        assertNotEquals(legs[1], I18n.t("autosetup.ui.testLegBlocked"), "precondition: no route back from Middle");
 
-        assertTrue(said.contains(turns), "the strip does not say the way to Middle turns on the way, which autonomy never"
-            + " does: " + said);
+        for (String[] leg : new String[][] {{"WestEnd", "Middle"}, {"Middle", "WestEnd"}})
+        {
+            assertTrue(said.contains(I18n.f("autosetup.ui.testTurnsOnTheWay", leg[0], leg[1])), "the strip does not say"
+                + " the way from " + leg[0] + " to " + leg[1] + " turns on the way, which autonomy never does: " + said);
+        }
 
-        assertTrue(said.contains("(" + I18n.t("autosetup.ui.testColorPurple") + ")")
-            && said.contains("(" + I18n.t("autosetup.ui.testColorAmber") + ")"), "the leg there is not called purple"
-            + " and the leg back amber: " + said);
+        assertFalse(said.contains("(" + I18n.t("autosetup.ui.testColorYellow") + ")")
+            || said.contains("(" + I18n.t("autosetup.ui.testColorAmber") + ")"), "a leg that turns at EastTurn is"
+            + " called autonomy's color: " + said);
 
         @SuppressWarnings("unchecked")
         java.util.Map<TileKey, java.util.List<org.traincontrol.automationui.TileAnnotation.Trace>> drawn =
@@ -138,9 +167,45 @@ public class testTestAPathStartsWhereTheFindingsDo extends AutonomySessionFixtur
 
         boolean purple = false;
 
-        for (org.traincontrol.automationui.TileAnnotation.Trace line : drawn.get(east)) purple |= line.isManualOnly();
+        for (org.traincontrol.automationui.TileAnnotation.Trace line : drawn.get(turn)) purple |= line.isManualOnly();
 
-        assertTrue(purple, "the turn at EastTurn is not drawn purple: " + drawn.get(east));
+        assertTrue(purple, "the turn at EastTurn is not drawn purple: " + drawn.get(turn));
+    }
+
+    /**
+     * A leg into a terminus, where every train turns, is autonomy's: the turn is on arriving, not on the way, so it is
+     * drawn yellow (FR-221).
+     *
+     * MUTATION: drop `noTurn.remove(to)` from `AutonomySession.testPathForAutonomy`, and this fails.
+     */
+    @Test
+    public void testALegIntoATerminusIsAutonomys() throws Exception
+    {
+        session.open(Arrays.asList(pageWithATwoEndedStation()));
+        session.initialize("Terminus");
+
+        TileKey east = new TileKey("main", 5, 1);
+
+        session.setStation(west, true);
+        session.setPointName(west, "WestEnd");
+        session.setPointFlag(west, AutonomyBuilder.CAN_REVERSE, true);
+        session.setStation(east, true);
+        session.setPointName(east, "EastEnd");
+        session.setPointFlag(east, AutonomyBuilder.MUST_REVERSE, true);
+        session.rebuild();
+
+        assertTrue(session.mandatoryTurnTiles().contains(east), "precondition: every train does not turn at EastEnd");
+
+        AutonomyEditorPanel panel = armed();
+
+        String[] legs = legs(panel, west, east);
+
+        String said = ((javax.swing.JLabel) Reflect.get(AutonomyEditorPanel.class, panel, "hint")).getText();
+
+        assertNotEquals(legs[0], I18n.t("autosetup.ui.testLegBlocked"), "precondition: no route to EastEnd");
+
+        assertTrue(said.contains("(" + I18n.t("autosetup.ui.testColorYellow") + ")"), "the leg into the terminus"
+            + " EastEnd is not drawn as autonomy's, in yellow: " + said);
     }
 
     /**

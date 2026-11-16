@@ -731,12 +731,11 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * The why answer names every station the train can go to, not the first four (MT-865), and its table says each of
-     * them can go now, in the green it is marked in (FR-221).
+     * The why answer counts every station the train can go to, not the first four (MT-865), as a count only (D175, Adam:
+     * "A count only"), and its table says each of them can go now, in the green it is marked in (FR-221).
      *
-     * MUTATION: put back the cap of four in the "can go to" list (`String.join(", ", available)` limited to four
-     * names), and this fails on the fifth station; give `DestinationTable.Status.CAN_GO` another color, and it fails
-     * on the color.
+     * MUTATION: in `EditorWhy.composeWhy`, count every row rather than the ones that can go now, and this fails on the
+     * count; give `DestinationTable.Status.CAN_GO` another color, and it fails on the color.
      */
     @Test
     public void testTheWhyAnswerNamesEveryStationAndItsTableColorsThem() throws Exception
@@ -790,11 +789,11 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         String first = said.split("<br>")[0];
 
-        for (String station : canGo)
-        {
-            assertTrue(first.contains(station.replace("&", "&amp;").replace("<", "&lt;")), station + " is a station "
-                + train.getName() + " can go to, and the answer's first line leaves it out: " + first);
-        }
+        String count = org.traincontrol.util.I18n.f("autosetup.ui.whyCanGo"
+            + org.traincontrol.util.I18n.countForm(canGo.size()), train.getName(), canGo.size());
+
+        assertTrue(first.contains(count), "the answer's first line does not say " + train.getName() + " can go to "
+            + canGo.size() + " stations: " + first);
 
         java.util.List<String> green = support.DestinationRows.answering(said, "autolayout.ui.whyCanGoNow");
 

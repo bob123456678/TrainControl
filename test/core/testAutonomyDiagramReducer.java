@@ -1850,14 +1850,14 @@ public class testAutonomyDiagramReducer
 
 
     /**
-     * A station reached by a barred side first and an open one after turning past it: the destination appears TWICE in
-     * one search.  A ---- X ---- R, X refusing arrivals from A's side, R a reversing point: the train runs A to X the
-     * wrong way, on to R, turns, and enters X by its other side, so `findPath` must not refuse the first hop into X.
+     * A ---- X ---- R, R a reversing point: no walk runs past another copy of either end, as `Layout.bfsBySettings`
+     * never does (`testNoRoutePassesAnotherCopyOfItsDestination`).  X refusing arrivals from A's side is not reached
+     * by running past it to R and turning, and a train on X facing R does not reach A by turning at R and passing X.
      *
-     * MUTATION: moving the refusal back onto the hop.
+     * MUTATION: dropping either `continue` at the ends in `findPath`.
      */
     @Test
-    public void testAStationReachableOnlyByTurningPastIt() throws IOException
+    public void testNoWalkPassesAnotherCopyOfEitherEnd() throws IOException
     {
         LayoutDiagram page = page("main", 8, 3);
         feedback(page, 1, 1, 11);
@@ -1874,41 +1874,23 @@ public class testAutonomyDiagramReducer
 
         Set<TileKey> none = Collections.emptySet();
         Set<TileKey> mayTurn = java.util.Collections.singleton(r);
-        // CONTROL: without it a fault that breaks the fixture rather than the rule reads as a pass.
-        assertNotNull(reducer.findPath(a, x, mayTurn, none),
-            "A cannot reach X at all with nothing barred, so this fixture proves nothing about "
-            + "barring - check the page and the reversing point before reading anything below");
+        Map<TileKey, Set<Side>> noBars = Collections.emptyMap();
+
+        // CONTROLS: without them a fault that breaks the fixture rather than the rule reads as a pass.
+        assertNotNull(reducer.findPath(a, x, mayTurn, none), "A cannot reach X at all with nothing barred");
+        assertNotNull(reducer.findPath(x, a, mayTurn, none, noBars, none, none,
+            java.util.EnumSet.of(arrivalSideAt(reducer, r, x))), "a train on X facing A cannot reach A");
 
         Map<TileKey, Set<Side>> barred = new java.util.LinkedHashMap<>();
 
         barred.put(x, java.util.EnumSet.of(arrivalSideAt(reducer, a, x)));
 
-        boolean walked = reducer.findPath(a, x, mayTurn, none, barred) != null;
-        boolean counted = builtReaches(reducer, a, x, mayTurn, none, barred, none);
+        assertNull(reducer.findPath(a, x, mayTurn, none, barred), "Test a Path reaches X by running past it to R and"
+            + " turning there, past another copy of X, a route the railway never offers");
 
-        assertTrue(counted,
-            "the build no longer reaches X by turning at R, so this test is not asking what "
-            + "it was written to ask");
-
-        assertEquals(walked, counted,
-            "the path test and the findings panel disagree about X: findings say " + counted
-            + ", the path test says " + walked + ". Two files carry a comment promising they cannot "
-            + "- Adam edits his diagram on the strength of the findings, then finds the route he was "
-            + "told exists cannot be drawn");
-
-        assertTrue(walked,
-            "no route from A to X, although a train runs to R, turns, and comes back into X by a side "
-            + "it is allowed to stop at - the barred hop threw away the search state for X, so the "
-            + "track beyond it was never explored");
-
-        // And the bar still means something: barred BOTH ways, X is not a destination at all.
-        Map<TileKey, Set<Side>> shut = new java.util.LinkedHashMap<>();
-
-        shut.put(x, java.util.EnumSet.allOf(Side.class));
-
-        assertNull(reducer.findPath(a, x, mayTurn, none, shut),
-            "a station that refuses arrivals from every side is still offered as a destination, so "
-            + "the refusal has been dropped rather than moved");
+        assertNull(reducer.findPath(x, a, mayTurn, none, noBars, none, none,
+            java.util.EnumSet.of(arrivalSideAt(reducer, a, x))), "a train on X facing R reaches A by turning at R and"
+            + " running back past X, a route the railway never offers");
     }
 
     /**

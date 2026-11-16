@@ -55,18 +55,19 @@ is one autonomy leaves alone, or every way there turns round on the way. The rou
 passable. `core.testTestAPathStartsWhereTheFindingsDo.testALegThatTurnsOnTheWayIsDrawnAsOnlyAHandSendTakesIt`,
 `core.testManualOnlyPathsAreADifferentColour.testTheStripSaysWhichLegOnlyAHandSendTakesAndWhy`.
 
-**Why Not Moving? gives one answer for both tiers, as a table of destinations** (MT-434; Adam, asked which tool:
-*"Why Not Moving?"*): one row per station, saying whether the train **can go now** (green: autonomy may send it there),
-**by hand only** (purple: a hand send may, autonomy will not, with autonomy's reason), or **not right now** (gray:
-neither may, with what stops a hand send, and autonomy's reason as well where it differs). A station shows the best of
-its copies; the diagram marks each square as its row says, and draws autonomy's route to a green one and the hand
+**Why Not Moving? gives one answer for both tiers, as a table of destinations** (MT-434; Adam, asked which tool: *"Why
+Not Moving?"*): one row per station, saying whether the train **can go now** (green: autonomy may send it there), **by
+hand only** (purple: a hand send may, autonomy will not, with autonomy's reason, and "Return Home only" where it is the
+train's home by `HomeStaging.atHome`; D177), or **not right now** (gray: neither may, with what stops a hand send, and
+autonomy's reason as well where it differs). A station shows the best of its copies, and the headline counts the green
+ones only (D175); the diagram marks each square as its row says, and draws autonomy's route to a green one and the hand
 send's to a purple one. Rows run by answer, then stations before berths (FR-080), then by page and name (MT-429). By
 hand the reasons are the ones the right-click menu meets: autonomy's standing bars (not to be chosen, a reversing square
 on the way or at the end) are not reasons there. **What the menu itself leaves out is still a reason by hand**: a
 station that excludes the train, and a terminus autonomy may choose for a train that cannot reverse (OB-205), asked
 through `Layout.isOfferableToOperator`, so the list and its explanation cannot disagree. A switched-off station is still
-refused by hand and says it is switched off. Where only autonomy will not start the train (paused, say), the answer
-says so over the table and no station can go now; where nothing may move it, that one reason is the answer.
+refused by hand and says it is switched off. Where only autonomy will not start the train (paused, say), the answer says
+so over the table and no station can go now; where nothing may move it, that one reason is the answer.
 `gui.autonomy.DestinationTable`, over `Layout.explainDestinationsGrouped(Locomotive, boolean)` asked for each tier;
 `regression.testPathTypeRedrawsTheTestInTheEditor.testWhyNotMovingShowsBothTiersInATable`.
 

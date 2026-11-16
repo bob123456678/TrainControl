@@ -397,7 +397,7 @@ public class GraphReducer
      * START is exempt.  The editor's test-a-path tool is `AutonomySession.testPath`, held to this search by
      * `testAutonomyDiagramReducer`.
      *
-     * @param barred arrival sides closed off - passed through, not stopped at
+     * @param barred arrival sides closed off: passed through on the way elsewhere, never at `to`
      * @param closed squares nothing may pass through
      * @return the path, or null when there is none
      */
@@ -476,6 +476,9 @@ public class GraphReducer
                     }
                 }
 
+                // Never round onto the start again, as `Layout.bfsBySettings` never passes another copy of either end
+                if (edge.getEnd().equals(from)) continue;
+
                 // Barred sides only where they mean something (OB-120): a barred side bars COMING IN AND STOPPING, not
                 // passing through, so the refusal belongs on the DESTINATION hop.
                 String next = searchKey(edge.getEnd(), edge.getEntrySide());
@@ -487,15 +490,16 @@ public class GraphReducer
                 tileOf.put(next, edge.getEnd());
                 sideOf.put(next, edge.getEntrySide());
 
-                // ARRIVED, unless the square refuses to be arrived at that way (OB-120).  Tested HERE and not at the
-                // hop above: refusing the hop would discard the search state, so the track BEYOND would never be
-                // explored.  A closed square is not a destination either: asked before the arrival test, which accepts
-                // the square and returns before the closure is consulted.
+                // A closed square is not a destination either: asked before the arrival test, which accepts the square
+                // and returns before the closure is consulted.
                 if (closed != null && closed.contains(edge.getEnd())) continue;
 
-                if (edge.getEnd().equals(to)
-                    && !refusesArrival(barred, edge.getEnd(), edge.getEntrySide()))
+                // ARRIVED, unless the square refuses to be arrived at that way (OB-120).  A refused arrival is another
+                // copy of the destination, which the runtime never passes either, so the walk ends there.
+                if (edge.getEnd().equals(to))
                 {
+                    if (refusesArrival(barred, edge.getEnd(), edge.getEntrySide())) continue;
+
                     List<ReducedEdge> path = new ArrayList<>();
 
                     for (String step = next; arrivedBy.get(step) != null; step = cameFrom.get(step))

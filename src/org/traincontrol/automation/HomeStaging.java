@@ -1882,7 +1882,7 @@ public final class HomeStaging
      * Whether a locomotive standing here is at its home (MT-165): any copy of a split square is the same platform, by
      * `Point.isSamePlaceAs`, shared with `Layout.claimHome`.
      */
-    private static boolean atHome(Point home, Point where)
+    public static boolean atHome(Point home, Point where)
     {
         if (home == null || !home.isSamePlaceAs(where)) return false;
 

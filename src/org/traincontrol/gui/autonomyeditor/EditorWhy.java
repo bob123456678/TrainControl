@@ -144,16 +144,20 @@ final class EditorWhy extends SettledQuestion
                 : square.getValue() == Status.BY_HAND ? ToolMark.BY_HAND : ToolMark.NOT_NOW);
         }
 
-        List<String> available = new ArrayList<>();
+        int available = 0;
+        boolean byHand = false;
 
         for (DestinationTable.Row row : table.rows())
         {
-            if (row.status == Status.CAN_GO) available.add(row.station);
+            if (row.status == Status.CAN_GO) available++;
+
+            byHand |= row.status == Status.BY_HAND;
         }
 
-        String going = available.isEmpty()
-            ? I18n.t("autosetup.ui.whyNowhere")
-            : I18n.f("autosetup.ui.whyCanGo", available.size(), AutonomyEditorPanel.escape(String.join(", ", available)));
+        // A count only, the table names them (D175)
+        String name = AutonomyEditorPanel.escape(standing.getName());
+        String going = available == 0 ? I18n.f("autosetup.ui.whyReport", name, I18n.t("autosetup.ui.whyNowhere"), "")
+            : I18n.f("autosetup.ui.whyCanGo" + I18n.countForm(available), name, available);
 
         // "Nowhere to go", with nothing after it, is not an answer: "every station refused this train" cannot be told
         // from "there were no stations to refuse it", which need opposite things done.  So when nothing was considered,
@@ -165,9 +169,9 @@ final class EditorWhy extends SettledQuestion
             : "<br>" + table.html(Integer.MAX_VALUE);
 
         // The reason behind the reason: "No track route leads there", said once per station, is what a severed railway
-        // looks like (a switch or signal drawn without an accessory address cannot be routed over), so with nothing
-        // available and blocking findings, say that first.
-        if (available.isEmpty())
+        // looks like (a switch or signal drawn without an accessory address cannot be routed over), so with nowhere
+        // either tier can send it and blocking findings, say that first.
+        if (available == 0 && !byHand)
         {
             int blockingFindings = countBlockingFindings();
 
@@ -178,8 +182,7 @@ final class EditorWhy extends SettledQuestion
             }
         }
 
-        return new AutonomyEditorPanel.WhyAnswer(I18n.f("autosetup.ui.whyReport", AutonomyEditorPanel.escape(standing.getName()),
-            going, detail + unsavedWarning()), true, drawn, marks);
+        return new AutonomyEditorPanel.WhyAnswer(going + detail + unsavedWarning(), true, drawn, marks);
     }
 
     /**

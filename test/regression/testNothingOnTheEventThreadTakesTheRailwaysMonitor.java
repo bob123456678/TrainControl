@@ -65,6 +65,13 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         "standTheTrainsBack"
     };
 
+    /** Classes whose constructor reaches the monitor, so `new X(` is a door too, kept by hand as the list above. */
+    private static final String[] CONSTRUCTED_ON_THE_MONITOR =
+    {
+        // Asks both tiers of `explainDestinationsGrouped` and `explainCannotStart` (FR-221)
+        "DestinationTable"
+    };
+
     /**
      * Every door, and what makes it acceptable.  Keyed `File.java#member`; the value must begin `OFF THE EVENT THREAD:
      * ` or `ON THE EVENT THREAD: `.
@@ -103,11 +110,17 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
             + " says why the search and the legend reads both happen there");
 
         ALLOWED.put("DestinationTable.java#DestinationTable",
-            "OFF THE EVENT THREAD: built by the locomotive list's whyNotReport, on the `new Thread` showWhyNot starts"
-            + " before it opens the window, and whyNotToolTip, on the one explainOnHover starts (OB-079 - hovering"
-            + " that label during a dispatch used to freeze the whole window); and by EditorWhy.composeWhy, on"
-            + " WhyRenderer, whose answer is painted in an invokeLater (D3-C1, Adam 2026-09-09: \"I would rather"
-            + " take it off EDT\")");
+            "OFF THE EVENT THREAD: the constructor asks both tiers, so each `new DestinationTable` is a door of its own,"
+            + " listed under its caller below");
+
+        ALLOWED.put("AutoLocomotiveStatus.java#destinationTable",
+            "OFF THE EVENT THREAD: called by whyNotReport, on the `new Thread` showWhyNot starts before it opens the"
+            + " window, and by whyNotToolTip, on the one explainOnHover starts (OB-079 - hovering that label during a"
+            + " dispatch used to freeze the whole window)");
+
+        ALLOWED.put("EditorWhy.java#composeWhy",
+            "OFF THE EVENT THREAD: WhyRenderer, whose answer is painted in an invokeLater (D3-C1, Adam 2026-09-09:"
+            + " \"I would rather take it off EDT\")");
 
         ALLOWED.put("LayoutRightclickAutonomyMenu.java#gatherPathOptions",
             "OFF THE EVENT THREAD: the worker showFor starts before it builds the menu, which is the"
@@ -239,9 +252,14 @@ public class testNothingOnTheEventThreadTakesTheRailwaysMonitor
         {
             String code = withoutComments(read(source));
 
-            for (String door : guarded)
+            List<String> doors = new ArrayList<>();
+
+            for (String door : guarded) doors.add("\\.\\s*" + door + "\\s*\\(");
+            for (String built : CONSTRUCTED_ON_THE_MONITOR) doors.add("\\bnew\\s+" + built + "\\s*\\(");
+
+            for (String door : doors)
             {
-                Matcher calls = Pattern.compile("\\.\\s*" + door + "\\s*\\(").matcher(code);
+                Matcher calls = Pattern.compile(door).matcher(code);
 
                 while (calls.find())
                 {

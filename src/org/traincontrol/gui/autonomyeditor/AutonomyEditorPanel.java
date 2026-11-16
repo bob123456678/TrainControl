@@ -2113,7 +2113,7 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /** The width a tooltip wraps at, in pixels. */
-    private static final int TOOLTIP_WIDTH = 320;
+    public static final int TOOLTIP_WIDTH = 320;
 
     /**
      * TOOLTIP_WIDTH in measuring pixels: a CSS width is drawn at the screen's resolution, so 320 is 400 at 120 dpi
@@ -5725,11 +5725,13 @@ public class AutonomyEditorPanel extends JPanel
         }
 
         // Autonomy's route each way, else one only a hand send can take, drawn purple (FR-221)
-        List<GraphReducer.ReducedEdge> there = session.testPathForAutonomy(testFrom, tile);
-        List<GraphReducer.ReducedEdge> back = session.testPathForAutonomy(tile, testFrom);
+        Map<TileKey, Set<org.traincontrol.automationui.TilePorts.Side>> arrivals = session.startingArrivals();
 
-        boolean thereByHand = there == null && (there = session.testPath(testFrom, tile)) != null;
-        boolean backByHand = back == null && (back = session.testPath(tile, testFrom)) != null;
+        List<GraphReducer.ReducedEdge> there = session.testPathForAutonomy(testFrom, tile, arrivals);
+        List<GraphReducer.ReducedEdge> back = session.testPathForAutonomy(tile, testFrom, arrivals);
+
+        boolean thereByHand = there == null && (there = session.testPath(testFrom, tile, arrivals)) != null;
+        boolean backByHand = back == null && (back = session.testPath(tile, testFrom, arrivals)) != null;
 
         traces.clear();
 

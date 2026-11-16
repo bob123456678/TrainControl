@@ -1084,11 +1084,11 @@ public class testPathTypeRedrawsTheTestInTheEditor
         Components.drain(8);
     }
 
-    /** The count in "can go to N station(s)", or 0 where the answer says it can go nowhere. */
+    /** The count in "can go to N stations now", or 0 where the answer says it can go nowhere. */
     private static int placesItCanGo(String shown)
     {
         String pattern = org.traincontrol.util.I18n.t("autosetup.ui.whyCanGo");
-        String before = pattern.substring(0, pattern.indexOf("{0}"));
+        String before = pattern.substring(pattern.indexOf("{0}") + 3, pattern.indexOf("{1}"));
 
         java.util.regex.Matcher count = java.util.regex.Pattern.compile(java.util.regex.Pattern.quote(before) + "(\\d+)")
             .matcher(shown);

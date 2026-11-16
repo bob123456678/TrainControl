@@ -1,13 +1,16 @@
 package org.traincontrol.gui.autonomy;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.traincontrol.automation.Edge;
+import org.traincontrol.automation.HomeStaging;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 
@@ -47,12 +50,24 @@ public final class DestinationTable
     /** Station to its row, filed by `file`. */
     private final Map<String, Row> rows = new LinkedHashMap<>();
 
+    /** The copies Return Home stands this train on: its home (`HomeStaging.atHome`). */
+    private final Set<String> home = new HashSet<>();
+
     public DestinationTable(Layout layout, Locomotive loc)
     {
-        cannotStart = layout.explainCannotStart(loc, true);
-        autonomyWillNotStart = cannotStart == null ? layout.explainCannotStart(loc, false) : null;
-        auto = layout.explainDestinationsGrouped(loc, false);
-        hand = layout.explainDestinationsGrouped(loc, true);
+        // One hold of the railway's monitor, so no dispatch moves a train between the tiers' answers
+        synchronized (layout)
+        {
+            cannotStart = layout.explainCannotStart(loc, true);
+            autonomyWillNotStart = cannotStart == null ? layout.explainCannotStart(loc, false) : null;
+            auto = layout.explainDestinationsGrouped(loc, false);
+            hand = layout.explainDestinationsGrouped(loc, true);
+
+            for (String point : hand.getReasons().keySet())
+            {
+                if (HomeStaging.atHome(layout.getHomeStation(loc), layout.getPoint(point))) home.add(point);
+            }
+        }
     }
 
     /** Every copy reported on, in autonomy's order of preference. */
@@ -90,7 +105,10 @@ public final class DestinationTable
 
         if (status == Status.BY_HAND)
         {
-            return byAutonomy != null ? byAutonomy : I18n.t("autolayout.ui.whyNotStartedByAutonomy");
+            String why = byAutonomy != null ? byAutonomy : I18n.t("autolayout.ui.whyNotStartedByAutonomy");
+
+            // D177, Adam: "you can add a note of "return home only" if needed"
+            return home.contains(point) ? why + "\n" + I18n.t("autolayout.ui.whyReturnHomeOnly") : why;
         }
 
         return byAutonomy == null || byAutonomy.equals(byHand) ? byHand : byHand + "\n" + byAutonomy;
@@ -137,9 +155,12 @@ public final class DestinationTable
     {
         StringBuilder out = new StringBuilder();
 
+        // In a cell as wide as a wrapped tooltip: the reasons run to three hundred characters
         if (autonomyWillNotStart != null)
         {
-            out.append(escape(I18n.f("autolayout.ui.whyAutonomyWillNotStart", autonomyWillNotStart))).append("<br>");
+            out.append("<table cellspacing=0 cellpadding=1><tr><td width=").append(AutonomyEditorPanel.TOOLTIP_WIDTH)
+                .append('>').append(escape(I18n.f("autolayout.ui.whyAutonomyWillNotStart", autonomyWillNotStart)))
+                .append("</td></tr></table>");
         }
 
         out.append("<table cellspacing=0 cellpadding=1><tr>");

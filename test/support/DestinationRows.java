@@ -12,7 +12,8 @@ import org.traincontrol.util.I18n;
  */
 public final class DestinationRows
 {
-    private static final Pattern ROW = Pattern.compile("<tr><td[^>]*>(.*?)</td><td[^>]*><font color=[^>]*>(.*?)</font>"
+    // The station is escaped text, so its cell cannot run on past a cell of autonomy's refusal
+    private static final Pattern ROW = Pattern.compile("<tr><td[^>]*>([^<]*)</td><td[^>]*><font color=[^>]*>(.*?)</font>"
         + "</td><td[^>]*>(.*?)</td></tr>");
 
     private DestinationRows()

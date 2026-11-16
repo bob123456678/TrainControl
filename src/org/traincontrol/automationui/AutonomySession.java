@@ -5285,8 +5285,14 @@ public class AutonomySession
      */
     public List<GraphReducer.ReducedEdge> testPath(TileKey from, TileKey to)
     {
+        return testPath(from, to, startingArrivals());
+    }
+
+    /** The same, given `startingArrivals`, which builds the setup, so asked once for several searches. */
+    public List<GraphReducer.ReducedEdge> testPath(TileKey from, TileKey to, Map<TileKey, Set<Side>> arrivals)
+    {
         return reducer == null ? null : reducer.findPath(from, to, mayTurnTiles(), mandatoryTurnTiles(), barredArrivals(),
-            shutTiles(), stopOnlyTiles(), startingArrivals().get(from));
+            shutTiles(), stopOnlyTiles(), arrivals.get(from));
     }
 
     /**
@@ -5294,6 +5300,12 @@ public class AutonomySession
      * there, never on the way, nor to a station it leaves alone; null where only a hand send gets there.
      */
     public List<GraphReducer.ReducedEdge> testPathForAutonomy(TileKey from, TileKey to)
+    {
+        return testPathForAutonomy(from, to, startingArrivals());
+    }
+
+    /** The same, given `startingArrivals`. */
+    public List<GraphReducer.ReducedEdge> testPathForAutonomy(TileKey from, TileKey to, Map<TileKey, Set<Side>> arrivals)
     {
         if (reducer == null || manualOnlyStations().contains(to)) return null;
 
@@ -5306,7 +5318,7 @@ public class AutonomySession
             : Collections.<TileKey>emptySet();
 
         return reducer.findPath(from, to, turnAtTheStart, mandatoryTurnTiles(), barredArrivals(), noTurn,
-            stopOnlyTiles(), startingArrivals().get(from));
+            stopOnlyTiles(), arrivals.get(from));
     }
 
     /**

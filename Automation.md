@@ -118,17 +118,17 @@ The window is titled "Autonomy Editor: *page* (*configuration*)", naming the pag
 
 ![The autonomy editor, its parts numbered](assets/automation/01-editor.png)
 
-1. **`Editing`**: `Track Diagram` and `Autonomy Setup` switch between drawing track and setting up autonomy, on the same page. With two or more pages, a `Page` list above it goes from page to page.
-2. **The message strip** says what just happened and what to do next.
-3. **Your diagram.** Click track to set which way trains may run; right-click any square for everything else. Hover over a station to see its name. Signals and lamps are drawn in gray to keep the picture simple; while you pick a guard signal, the signals you can pick are in color.
-4. **Things to look at** lists what the [setup check](#the-setup-check) has found. Click a finding to go to its square, or double-click it (or press Control+O) to open that station's `Station Settings`. The `Filter` box above the list narrows it as you type: it matches any part of a row's words, ignoring capitals, and the counts elsewhere still count everything.
-5. **The line under it** says whether the setup is ready to run.
-6. **`Path Debugging`**: `Test a path` and `Why not Moving?`, which answer both for autonomy choosing a destination and for a train you send yourself (and Return Home); see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run).
-7. **`Page Settings`**: `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled`.
-8. **`Visible Elements`**: `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` (each square's recorded length, Control+G), `Unmeasured Track`, the track with no length yet, and `Show Trains`, whether the editor draws the trains standing on its diagram (the track diagram's own are not affected), and `Text Labels`, whether your own text on the diagram is drawn, and `Grayed-Out Icons`, whether the squares autonomy ignores are drawn grayed out or left empty.
-9. **`Station Labels`** chooses what the station captions show: `Station Names`, `Standing Locs` (the train standing there), `Home Locs` (the station's home locomotive), or `Hide`. Control+L steps through them.
-10. **`Track Directions`** chooses which direction marks are drawn: `Show All`, `Restrictions only` (just the directions you have shut, the usual one), `Allowed only` (just the directions trains may run), `Hide All`, or `Station Arrivals` (which sides each station takes trains from).
-11. **`Save Changes`** and **`Cancel`**: see [Saving, canceling, and changing page](#saving-canceling-and-changing-page).
+- **`Editing`**: `Track Diagram` and `Autonomy Setup` switch between drawing track and setting up autonomy, on the same page. With two or more pages, a `Page` list above it goes from page to page.
+- **The message strip** says what just happened and what to do next.
+- **Your diagram.** Click track to set which way trains may run; right-click any square for everything else. Hover over a station to see its name. Signals and lamps are drawn in gray to keep the picture simple; while you pick a guard signal, the signals you can pick are in color.
+- **Things to look at** lists what the [setup check](#the-setup-check) has found. Click a finding to go to its square, or double-click it (or press Control+O) to open that station's `Station Settings`. The `Filter` box above the list narrows it as you type: it matches any part of a row's words, ignoring capitals, and the counts elsewhere still count everything.
+- **The line under it** says whether the setup is ready to run.
+- **`Path Debugging`**: `Test a path` and `Why not Moving?`, which answer both for autonomy choosing a destination and for a train you send yourself (and Return Home); see [the tools](#the-tools-test-a-path-why-not-moving-one-way-run).
+- **`Page Settings`**: `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled`.
+- **`Visible Elements`**: `Grid` (Control+K), `Addresses` (Control+D), `Track Lengths` (each square's recorded length, Control+G), `Unmeasured Track`, the track with no length yet, and `Show Trains`, whether the editor draws the trains standing on its diagram (the track diagram's own are not affected), and `Text Labels`, whether your own text on the diagram is drawn, and `Grayed-Out Icons`, whether the squares autonomy ignores are drawn grayed out or left empty.
+- **`Station Labels`** chooses what the station captions show: `Station Names`, `Standing Locs` (the train standing there), `Home Locs` (the station's home locomotive), or `Hide`. Control+L steps through them.
+- **`Track Directions`** chooses which direction marks are drawn: `Show All`, `Restrictions only` (just the directions you have shut, the usual one), `Allowed only` (just the directions trains may run), `Hide All`, or `Station Arrivals` (which sides each station takes trains from).
+- **`Save Changes`** and **`Cancel`**: see [Saving, canceling, and changing page](#saving-canceling-and-changing-page).
 
 The visibility settings are remembered between openings.
 
@@ -311,7 +311,7 @@ A tool stays armed until you press its button again, press Escape, or right-clic
 
 ![Test a path from Ashby to Carlton: the route there drawn in yellow, and the message strip counting the routes](assets/automation/07-test-path.png)
 
-**`Why not Moving?`** answers "why is this train not being sent anywhere?" Click the square a train is standing on: the message strip shows a table of the stations, each with whether the train **can go now**, can go **by hand only** (autonomy will not send it there, but you can), or **not right now**, and the reason: occupied and by whom, switched off, excluded, too short, no track at all, or why autonomy will not go there. Each station is marked on the diagram in its row's color, green, purple or gray, and the route to each green or purple one is drawn on the track. A train with somewhere to go draws lines; a train with nowhere draws none. This tool reads the configuration as last **saved**: if you have unsaved changes it says so.
+**`Why not Moving?`** answers "why is this train not being sent anywhere?" Click the square a train is standing on: the message strip says how many stations it can go to now, then shows a table of the stations, each with whether the train **can go now**, can go **by hand only** (autonomy will not send it there, but you can), or **not right now**, and the reason: occupied and by whom, switched off, excluded, too short, no track at all, or why autonomy will not go there. A by hand only station that is the train's home also says `Return Home only`, as Return Home still takes it there. Each station is marked on the diagram in its row's color, green, purple or gray, and the route to each green or purple one is drawn on the track. A train with somewhere to go draws lines; a train with nowhere draws none. This tool reads the configuration as last **saved**: if you have unsaved changes it says so.
 
 ![Why not Moving? on BR 218 at Bramley: it can go to Ashby and Carlton, both marked green with the routes to them drawn in yellow, while Thornbury, where ICE 3 is standing, is marked gray](assets/automation/08-why-not-moving.png)
 
