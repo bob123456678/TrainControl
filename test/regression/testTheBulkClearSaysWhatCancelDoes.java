@@ -59,16 +59,9 @@ public class testTheBulkClearSaysWhatCancelDoes
         model = frozen.model;
         ui = frozen.ui;
 
-        session = ui.getAutonomySession();
+        session = frozen.sessionOrFail("no autonomy configuration, so there is no bulk tool to open");
 
-        if (session == null || session.getStore().getActiveConfiguration() == null)
-        {
-            throw new AssertionError("no autonomy configuration, so there is no bulk tool to open");
-        }
-
-        final LayoutDiagram page = model.getLayout(PAGE);
-
-        if (page == null) throw new AssertionError("no page " + PAGE);
+        final LayoutDiagram page = frozen.pageOrFail(PAGE);
 
         editor = buildTheEditor(page);
 

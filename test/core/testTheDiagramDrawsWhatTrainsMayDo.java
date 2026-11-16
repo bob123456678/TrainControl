@@ -159,7 +159,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         assertTrue(session.setOneWayRun(new TileKey("main", 1, 1), new TileKey("main", 6, 1)) > 0,
             "precondition: the run could not be made one-way");
 
-        TileKey odd = new TileKey("main", 4, 1);
+        TileKey odd = onMain(4, 1);
 
         assertFalse(odd.equals(leader), "precondition: the square closed is the run's first");
 
@@ -281,7 +281,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         session.save();
 
-        TileKey laid = new TileKey("main", 5, 1);
+        TileKey laid = onMain(5, 1);
 
         Diagrams.straight(page, 5, 1);
 
@@ -314,8 +314,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         TileKey leader = session.runLeaders().get(run.get(0));
 
-        TileKey west = new TileKey("main", 2, 1);
-        TileKey east = new TileKey("main", 5, 1);
+        TileKey west = onMain(2, 1);
+        TileKey east = onMain(5, 1);
 
         // ONE END ONE WAY, THE OTHER THE OTHER, as no door of the editor does but a file or an older version can
         session.setDirection(west, new RouteId(0, 0), Direction.TOWARD_A);
@@ -595,7 +595,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         threeStationsInARow("Allowed only");
 
-        final TileKey straight = new TileKey("main", 2, 1);
+        final TileKey straight = onMain(2, 1);
 
         session.setDirection(straight, new RouteId(0, 0), Direction.TOWARD_B);
         session.rebuild();
@@ -750,15 +750,15 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         Diagrams.straight(page, 2, 1);
         Diagrams.straight(page, 4, 1);
-        page.addComponent(componentType.SWITCH_LEFT, 2, 3, 0, 0, 1, 1, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SWITCH_LEFT, 2, 3, 0, 1, 1);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
         session.initialize("FR-108");
 
-        TileKey oneWay = new TileKey("main", 2, 1);
-        TileKey closed = new TileKey("main", 4, 1);
-        TileKey turnout = new TileKey("main", 2, 3);
+        TileKey oneWay = onMain(2, 1);
+        TileKey closed = onMain(4, 1);
+        TileKey turnout = onMain(2, 3);
 
         session.setDirection(oneWay, new RouteId(0, 0), Direction.TOWARD_B);
         session.setDirection(closed, new RouteId(0, 0), Direction.NONE);
@@ -796,13 +796,13 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 5, 5, null, null);
 
-        page.addComponent(componentType.CUSTOM_PERM_LEFT, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CUSTOM_PERM_LEFT, 2, 2, 0, 0, 0);
         page.setPageId("1");
 
         session.open(Arrays.asList(page));
         session.initialize("FR-108 permanent");
 
-        TileKey turnout = new TileKey("main", 2, 2);
+        TileKey turnout = onMain(2, 2);
 
         assertFalse(session.routesNotOpenBothWays().containsKey(turnout), "a turnout with no address, at its default, is"
             + " counted as shut, though nothing a setting does opens it further");
@@ -897,12 +897,11 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         session.open(Arrays.asList(page));
 
-        session.getStore().createConfiguration("Shut", null);
-        session.getStore().setActiveConfiguration("Shut");
+        activeConfiguration("Shut");
 
         // The MIDDLE sensor is neither a station nor anywhere trains turn around, so only being switched off can earn it
         // a badge.
-        TileKey plain = new TileKey("main", 4, 1);
+        TileKey plain = onMain(4, 1);
 
         session.rebuild();
 
@@ -944,10 +943,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         session.open(Arrays.asList(page));
 
-        session.getStore().createConfiguration("ShutBuild", null);
-        session.getStore().setActiveConfiguration("ShutBuild");
+        activeConfiguration("ShutBuild");
 
-        TileKey plain = new TileKey("main", 4, 1);
+        TileKey plain = onMain(4, 1);
 
         session.rebuild();
 
@@ -1027,7 +1025,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         session.open(Arrays.asList(permanentTurnout()));
 
-        TileKey toe = new TileKey("main", 3, 1);
+        TileKey toe = onMain(3, 1);
 
         java.util.Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes =
             session.getRoutes(toe);
@@ -1106,7 +1104,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         session.open(Arrays.asList(doubleCurveCrossroads()));
 
-        TileKey curve = new TileKey("main", 2, 2);
+        TileKey curve = onMain(2, 2);
 
         session.rebuild();
 
@@ -1166,7 +1164,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
             session.open(Arrays.asList(page));
             session.initialize("contact " + orientation);
 
-            TileKey curve = new TileKey("main", 2, 2);
+            TileKey curve = onMain(2, 2);
 
             session.setStation(curve, true);
 
@@ -1205,7 +1203,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
             session.open(Arrays.asList(page));
             session.initialize("arrows " + orientation);
 
-            TileKey curve = new TileKey("main", 2, 2);
+            TileKey curve = onMain(2, 2);
 
             for (java.util.Map.Entry<RouteId, Route> route : session.getGraph().getRoutes(curve).entrySet())
             {
@@ -1324,12 +1322,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 2, 1, 1, 21, 21);
         Diagrams.feedback(page, 1, 2, 22, 22);
         page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, 0, 0, 25, 25,
             accessoryDecoderType.MM2, null);
         Diagrams.feedback(page, 3, 2, 23, 23);
-        page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 2, 3, 1, 24, 24);
 
         page.setPageId("1");
 
@@ -1341,12 +1339,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 2, 1, 1, 21, 21);
         Diagrams.feedback(page, 1, 2, 22, 22);
         page.addComponent(componentType.FEEDBACK_DOUBLE_CURVE, 2, 2, orientation, 0, 25, 25,
             accessoryDecoderType.MM2, null);
         Diagrams.feedback(page, 3, 2, 23, 23);
-        page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 2, 3, 1, 24, 24);
 
         page.setPageId("1");
 
@@ -1366,13 +1364,12 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         session.open(Arrays.asList(page));
 
-        session.getStore().createConfiguration("FR037", null);
-        session.getStore().setActiveConfiguration("FR037");
+        activeConfiguration("FR037");
 
         // A STRAIGHT, deliberately: the feedbacks are at 1, 3 and 5, so this square is track and nothing else.
-        TileKey straight = new TileKey("main", 2, 1);
-        TileKey west = new TileKey("main", 1, 1);
-        TileKey east = new TileKey("main", 5, 1);
+        TileKey straight = onMain(2, 1);
+        TileKey west = onMain(1, 1);
+        TileKey east = onMain(5, 1);
 
         assertFalse(session.getReducer().getPoints().containsKey(straight),
             "precondition: the square being tested is a Point, so it would have drawn an arrow even "
@@ -1449,13 +1446,11 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
 
         session.open(Arrays.asList(page));
 
-        session.getStore().createConfiguration("Ingress", null);
-        session.getStore().setActiveConfiguration("Ingress");
+        activeConfiguration("Ingress");
 
-        TileKey station = new TileKey("main", 3, 1);
+        TileKey station = onMain(3, 1);
 
-        session.setStation(station, true);
-        session.setPointName(station, "Platform");
+        namedStationInSession(station, "Platform");
 
         session.rebuild();
 
@@ -1527,7 +1522,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         LayoutDiagram page = throughStationPage();
 
-        page.addComponent(componentType.LINK, 6, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.LINK, 6, 1, 0, 0, 0);
 
         session.open(Arrays.asList(page));
         session.rebuild();
@@ -1595,8 +1590,8 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
 
-        final TileKey unnamed = new TileKey("main", 5, 1);
-        final TileKey named = new TileKey("main", 1, 1);
+        final TileKey unnamed = onMain(5, 1);
+        final TileKey named = onMain(1, 1);
 
         session.setPointName(named, "North Yard");
 
@@ -1678,10 +1673,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
 
-        final TileKey station = new TileKey("main", 3, 1);
+        final TileKey station = onMain(3, 1);
 
-        session.setStation(station, true);
-        session.setPointName(station, "Platform");
+        namedStationInSession(station, "Platform");
         session.placeLocomotive(station, "Probe Train");
 
         assertNotNull(session.getLocomotiveNameAt(station), "precondition: no train placed on the station");
@@ -1816,9 +1810,9 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
         Diagrams.feedback(page, 3, 1, 6, 12);
-        page.addComponent(componentType.ROUTE, 4, 1, 0, 0, 41, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.ROUTE, 4, 1, 0, 41, 0);
         Diagrams.feedback(page, 5, 1, 7, 13);
-        page.addComponent(componentType.ROUTE, 4, 3, 0, 0, 42, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.ROUTE, 4, 3, 0, 42, 0);
 
         page.setPageId("1");
 
@@ -1875,7 +1869,7 @@ public class testTheDiagramDrawsWhatTrainsMayDo extends AutonomySessionFixture
     {
         final org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel panel = anEditorOverATwoEndedStation();
 
-        final TileKey square = new TileKey("main", 3, 1);
+        final TileKey square = onMain(3, 1);
         final RouteId road = session.getRoutes(square).keySet().iterator().next();
 
         assertTrue(session.isSensorSquare(square), "precondition: the square at main 3,1 is not an s88 square");

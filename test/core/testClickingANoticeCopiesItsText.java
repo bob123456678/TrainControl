@@ -30,8 +30,8 @@ public class testClickingANoticeCopiesItsText extends AutonomySessionFixture
 
         openTheGuardedLine(pageWithAGuardOffTheLine());
 
-        TileKey station = new TileKey("main", 1, 1);
-        TileKey signal = new TileKey("main", 2, 3);
+        TileKey station = onMain(1, 1);
+        TileKey signal = onMain(2, 3);
 
         session.setEntrySignals(station, Arrays.asList(signal));
 

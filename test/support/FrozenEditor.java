@@ -112,6 +112,40 @@ public final class FrozenEditor implements AutoCloseable
         Components.settle();
     }
 
+    /** The setup's session; an AssertionError saying `why` when the snapshot has no active autonomy configuration. */
+    public AutonomySession sessionOrFail(String why)
+    {
+        if (session == null || session.getStore().getActiveConfiguration() == null) throw new AssertionError(why);
+
+        return session;
+    }
+
+    /** The page of this name; an AssertionError when the snapshot has none. */
+    public LayoutDiagram pageOrFail(String name)
+    {
+        LayoutDiagram page = model.getLayout(name);
+
+        if (page == null) throw new AssertionError("no page " + name);
+
+        return page;
+    }
+
+    /** An editor on this page, rendered on the event thread, in autonomy mode when asked. */
+    public LayoutEditor render(LayoutDiagram page, boolean autonomy) throws Exception
+    {
+        final LayoutEditor[] built = new LayoutEditor[1];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            built[0] = new LayoutEditor(page, 30, ui, 0);
+            built[0].render();
+
+            if (autonomy) built[0].setAutonomyMode(session);
+        });
+
+        return built[0];
+    }
+
     /** The editor on this page. */
     public LayoutEditor editorOn(String page)
     {
