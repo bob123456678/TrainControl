@@ -764,7 +764,7 @@ public class LayoutGrid
                         layout.getName(), x + offsetX, y + offsetY);
 
                 final org.traincontrol.automationui.TileGraph.TileKey captioned =
-                    hidesCaptions ? null : (ui == null ? null : ui.autonomyCaptionAt(square));
+                    hidesCaptions ? null : (ui == null ? null : ui.stationCaptions.autonomyCaptionAt(square));
 
                 captionsAsBuilt.put(square, captioned);
 
@@ -823,7 +823,7 @@ public class LayoutGrid
                     final String own = c == null || c.getLabel() == null ? "" : c.getLabel();
 
                     final String captionName = captioned == null
-                        ? null : ui.autonomyStationNameAt(captioned);
+                        ? null : ui.stationCaptions.autonomyStationNameAt(captioned);
 
                     if (captioned != null) captionNamesAsBuilt.put(captioned, captionName);
 
@@ -888,7 +888,7 @@ public class LayoutGrid
                                     // By square: a square where trains may turn is several Points, none called what the
                                     // diagram says.
                                     org.traincontrol.automation.Point standing =
-                                        ui.getAutonomyPointForTile(station);
+                                        ui.stationCaptions.getAutonomyPointForTile(station);
 
                                     if (standing != null)
                                     {
@@ -921,7 +921,7 @@ public class LayoutGrid
                                 && ((LayoutEditor) master).getAutonomyPanel() != null
                                 && ((LayoutEditor) master).getAutonomyPanel().isShowingHomeLocomotives();
 
-                            String home = homes ? ui.autonomyHomeAt(captioned) : null;
+                            String home = homes ? ui.stationCaptions.autonomyHomeAt(captioned) : null;
 
                             if (home != null)
                             {
@@ -929,7 +929,7 @@ public class LayoutGrid
 
                                 // Away is the dark fill, and `StationCaption.onPill` picks the readable foreground for
                                 // it.
-                                String standing = ui.autonomyLocomotiveAt(captioned);
+                                String standing = ui.stationCaptions.autonomyLocomotiveAt(captioned);
 
                                 boolean athome = home.equals(standing);
 
@@ -961,7 +961,7 @@ public class LayoutGrid
                             // What the setup puts on this square, which is what the editor is about (there may be no
                             // run).
                             {
-                            String placed = ui.autonomyCaptionTextAt(captioned);
+                            String placed = ui.stationCaptions.autonomyCaptionTextAt(captioned);
 
                             if (placed != null)
                             {
@@ -1363,11 +1363,11 @@ public class LayoutGrid
         for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey,
             org.traincontrol.automationui.TileGraph.TileKey> cell : captionsAsBuilt.entrySet())
         {
-            org.traincontrol.automationui.TileGraph.TileKey now = hides ? null : window.autonomyCaptionAt(cell.getKey());
+            org.traincontrol.automationui.TileGraph.TileKey now = hides ? null : window.stationCaptions.autonomyCaptionAt(cell.getKey());
 
             if (!java.util.Objects.equals(now, cell.getValue())) return false;
 
-            if (now != null && !java.util.Objects.equals(window.autonomyStationNameAt(now), captionNamesAsBuilt.get(now)))
+            if (now != null && !java.util.Objects.equals(window.stationCaptions.autonomyStationNameAt(now), captionNamesAsBuilt.get(now)))
             {
                 return false;
             }

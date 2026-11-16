@@ -886,19 +886,7 @@ public class testNoSetupEditDuringARun
             final String recorded = String.valueOf(session.getStore().getConfiguration(inUse).getJSONObject("points")
                 .opt(square));
 
-            final java.lang.reflect.Method write = Reflect.method(TrainControlUI.class, "writeTheTurnsOwed");
-
-            SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    write.invoke(ui[0]);
-                }
-                catch (ReflectiveOperationException e)
-                {
-                    throw new IllegalStateException(e);
-                }
-            });
+            support.TurnsOwed.write(ui[0]);
 
             assertEquals(pointsHeldBy(railway, train), before, "writing the turns stood " + train.getName() + ", locking"
                 + " its path from where it turned, on another copy of that square - sweeping it off the path it had"

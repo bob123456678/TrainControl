@@ -122,7 +122,7 @@ public class AutonomyMenu extends JMenu
     {
         JMenuItem item = new JMenuItem(I18n.t("autosetup.ui.menuGoToOpenEditor"));
 
-        item.addActionListener(e -> ui.showOpenEditor());
+        item.addActionListener(e -> ui.editorWindows.showOpenEditor());
 
         return item;
     }

@@ -395,8 +395,8 @@ public class testStartingAutonomyFromTheWindow
 
         Components.settle();
 
-        final String home = (String) Reflect.method(TrainControlUI.class, "describeStagingOutcome",
-            org.traincontrol.automation.HomeStaging.Outcome.class, List.class).invoke(ui,
+        final String home = (String) Reflect.method(home().getClass(), "describeStagingOutcome",
+            org.traincontrol.automation.HomeStaging.Outcome.class, List.class).invoke(home(),
             org.traincontrol.automation.HomeStaging.Outcome.ALREADY_HOME, null);
 
         final java.lang.reflect.Method gray = Reflect.method(TrainControlUI.class, "disableReturnHome", String.class);
@@ -549,11 +549,17 @@ public class testStartingAutonomyFromTheWindow
         });
     }
 
+    /** The window's Return Home controller, which words its outcomes. */
+    private static Object home() throws Exception
+    {
+        return Reflect.get(TrainControlUI.class, ui, "returnHomeController");
+    }
+
     /** The sentence for trains running, as Return Home's button says it. */
     private static String running() throws Exception
     {
-        return (String) Reflect.method(TrainControlUI.class, "describeStagingOutcome",
-            org.traincontrol.automation.HomeStaging.Outcome.class, List.class).invoke(ui,
+        return (String) Reflect.method(home().getClass(), "describeStagingOutcome",
+            org.traincontrol.automation.HomeStaging.Outcome.class, List.class).invoke(home(),
             org.traincontrol.automation.HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null);
     }
 

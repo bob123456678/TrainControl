@@ -913,9 +913,10 @@ public class testTheActiveTickPausesATrain
     /** The window's record of how the railway was built, for the railway given. */
     private static org.json.JSONObject recordOf(Layout railway) throws Exception
     {
-        Method record = Reflect.method(TrainControlUI.class, "settingsAsBuiltFor", Object.class);
+        Object sync = Reflect.get(TrainControlUI.class, ui, "runningLayoutSync");
+        Method record = Reflect.method(sync.getClass(), "settingsAsBuiltFor", Object.class);
 
-        return (org.json.JSONObject) record.invoke(ui, railway);
+        return (org.json.JSONObject) record.invoke(sync, railway);
     }
 
     /**

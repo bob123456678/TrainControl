@@ -45,7 +45,7 @@ final class HomeLocomotiveMenu
         {
             // WRAPPED, as Start's item beside it is: the setup's sentence runs to two hundred characters.
             menuItem.setToolTipText(broken != null ? AutonomyEditorPanel.wrapped(broken) : ui.isAutonomyBusy()
-                ? ui.describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
+                ? ui.returnHomeController.describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
                 : ui.whyReturnHomeIsNotOffered());
         }
 
