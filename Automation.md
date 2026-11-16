@@ -128,7 +128,7 @@ The window's title is "Autonomy Editor: *page* (*configuration*)". The sidebar i
 - **`Editing`**: `Track Diagram` switches to drawing track and `Autonomy Setup` to setting up autonomy, on the same page. With two or more pages, a `Page` list above it moves between pages.
 - **The message strip** says what just happened and what to do next.
 - **Your diagram.** Click track to set which way trains may run; right-click any square for everything else. Hover over a station to see its name. Signals and lamps are drawn in gray to keep the picture simple; while you pick a guard signal, the signals you can pick are in color.
-- **`Things to look at`** lists what the [setup check](#the-setup-check) has found. Click a finding to go to its square, or double-click it (or press Control+O) to open that station's `Station Settings`. The `Filter` box above the list narrows it as you type: it matches any part of a row's words, ignoring capitals, and the counts elsewhere still count everything.
+- **`Things to look at`** lists what the [setup check](#the-setup-check) has found. Click a finding to go to its square, or double-click it (or press Control+O) to open that station's `Station Settings`. The `Filter` box under the list narrows it as you type: it matches any part of a row's words, ignoring capitals, and the counts elsewhere still count everything.
 - **The line under it** says whether the setup is ready to run.
 - **`Path Debugging`**: `Test a path` and `Why not Moving?`. Each answers both for autonomy choosing a destination and for a train you send yourself (and Return Home); see [Test a path, Why not Moving? and One-Way Run](#test-a-path-why-not-moving-and-one-way-run).
 - **`Page Settings`**: `Exclude Page` leaves this whole page out of autonomy: its sensors stop being stations and nothing on it is driven. Put it back from `Autonomy` → `Pages with Autonomy Enabled`.
@@ -225,7 +225,7 @@ Everything else about a station is in its `Station Settings`: its name, whether 
     - `Exit guard signal` and `Entry guard signal`: the signals that follow the station. The pencil beside each picks them, in a window that opens just under `Station Settings`. Add a signal with `Click It on the Diagram` or `Enter Its Address...`, and take one off with the red X at the end of its row.
     - `Home locomotive`: the train Return Home brings back here, or `(none)`.
 - `Trains can pass through`: whether trains may pass over the square without stopping.
-- `Advanced`, folded away until you open it: `Priority` (higher is chosen first; 0 is the default), `Speed into here` (trains run at this percentage of their speed on the track leading in), `Allowed trains` and `Unavailable while`.
+- `Advanced`, folded away until you open it, and marked with a `*` while a setting under it is not at its default (or, for several stations, while they differ on one): `Priority` (higher is chosen first; 0 is the default), `Speed into here` (trains run at this percentage of their speed on the track leading in), `Allowed trains` and `Unavailable while`.
     - `Allowed trains` is `All`, `Blacklist` or `Whitelist`. For the last two, the pencil beside it opens the list of trains. A blacklisted train may not stop here, though it can still pass through; on a sensor that is not a station it may not pass at all. On a whitelist only the trains you pick are allowed: every other train, including any you add later, is kept out, and an empty whitelist keeps every train out. Going back to `All` keeps the list for next time.
     - `Unavailable while` lists other stations that keep trains away from this one while they are occupied.
 
@@ -254,7 +254,7 @@ Everything else about a station is in its `Station Settings`: its name, whether 
 
 A station with only `Trains can stop here` ticked is not a terminus: a train may set off again the way it was going, as `May depart` allows. Autonomy and the trips you send by hand won't plan a route through it. Return Home is the exception, and may run through it.
 
-**The picture, `On the track diagram`.** The station and the track beside it, drawn as the diagram draws them. The station has a red outline arrow only at a side `May depart` keeps trains from leaving by. An arrow into the station marks a side trains may arrive from and stop. The track beside it has the diagram's arrows: green where trains may run that way, a red outline where they may not. Click a way into the station or a neighbor's arrow to change it. Signals are shown in gray.
+**The picture, `On the track diagram`.** The station and the track beside it, drawn as the diagram draws them. The station has a red outline arrow only at a side `May depart` keeps trains from leaving by. Once `May arrive from` closes a side, an arrow into the station shows each side: yellow where trains may arrive and stop, gray where they may not. A station that takes trains from every side shows none, as on the track diagram. The track beside it has the diagram's arrows: green where trains may run that way, a red outline where they may not. Click a way into the station or a neighbor's arrow to change it. Signals are shown in gray.
 
 **The table, `What's allowed here`.** For `Sent here`, `Sent through here`, `Sent from here` and `Turned around here`, it says `Yes`, `Some trains` or `No`, both for trains chosen `Automatically` by autonomy and for trains sent `Manually` from the right-click menu. Rest the pointer on a cell for the reason.
 
@@ -487,11 +487,11 @@ Autonomy chooses T like any other station. If T is a parking track or a shunting
 
 Some stations only make sense to arrive at from one direction: a platform on a one-way loop, a bay that faces east, or a station where arriving from the west means fouling a junction.
 
-Right-click the station, open `Station Settings...` and look at **`May arrive from`**. By default a station takes trains from every side. Untick the sides you do not want, and TrainControl only routes trains to it from the sides you left ticked. The last open side cannot be unticked, and a station with only one way in has nothing to choose. Clicking the arrows into the station in the window's picture does the same.
+Right-click the station, open `Station Settings...` and look at **`May arrive from`**. By default a station takes trains from every side. Untick the sides you do not want, and TrainControl only routes trains to it from the sides you left ticked. The last open side cannot be unticked, and a station with only one way in has nothing to choose. Once a side is closed, the window's picture shows an arrow into the station at each side, and clicking one opens or closes that side too.
 
 Set `Track Directions` to `Station Arrivals` to see, for every station at once, the sides it takes trains from.
 
-![Bramley's Station Settings: May arrive from, with both sides open](assets/automation/11-arrivals.png)
+![Bramley's Station Settings: May arrive from, with both sides open, so the picture draws no arrows into the station](assets/automation/11-arrivals.png)
 
 **Where this matters most** is a station that is really two platforms. On the diagram it is one square, but a train arriving from the east and a train arriving from the west need different switches set and occupy different track. Arrival sides say which of those you want.
 
