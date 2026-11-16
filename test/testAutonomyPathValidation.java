@@ -331,6 +331,15 @@ public class testAutonomyPathValidation
     }
 
     /**
+     * The track power coming back on, as the Central Station reports it.
+     */
+    private static void powerOn(List<Step> steps)
+    {
+        steps.add(new Step(50, () -> model.receiveMessage(new CS2Message(CS2Message.CMD_SYSTEM,
+            new byte[] { 0, 0, 0, 0, (byte) CS2Message.CMD_SYSSUB_GO }))));
+    }
+
+    /**
      * A stand-in station that runs its steps until it runs out or is stopped.
      */
     private static class Station extends Thread
@@ -624,6 +633,50 @@ public class testAutonomyPathValidation
         assertTrue(elapsed < CUT_ENDS_THE_WAIT_MS, "Stopping autonomy must end the wait at once, but the path took "
             + elapsed + " ms");
         assertEquals(tp.layout.getPathValidationFailureCount(), 0, "A stop is not a misconfigured path");
+        assertFalse(tp.path.get(0).isOccupied(dummyLoc()), "The path must be released");
+    }
+
+    /**
+     * A Stop and Go while a validated route is set ends the validation wait at once, though the power is back on
+     * before the wait begins.  The station never confirms the switches it was sent while stopped, so waiting out the
+     * timeout would count the path as misconfigured, toward the popup.  The train is released unrun.
+     */
+    @Test(timeOut = 60000)
+    public void testAStopAndGoWhileAValidatedRouteIsSetEndsTheWait() throws Exception
+    {
+        model.go();
+        waitForPower(true, 1000);
+
+        // Four switches: setting the route takes about 0.75 s, and the validation timeout is 2.5 s after that
+        TestPath tp = buildPath(360, "_sgv");
+
+        for (int i = 2; i < 4; i++)
+        {
+            tp.path.get(0).addConfigCommand(model.newSwitch(360 + i, MM2, false).getName(), accessorySetting.TURN);
+        }
+
+        // A Stop and a Go while the first switches are commanded, and no switch ever confirmed
+        List<Step> steps = new ArrayList<>();
+        powerOff(steps);
+        powerOn(steps);
+
+        boolean[] result = new boolean[1];
+        long elapsed;
+
+        try
+        {
+            elapsed = timePathWithStation(tp, steps, result);
+        }
+        finally
+        {
+            model.go();
+            waitForPower(true, 1000);
+        }
+
+        assertFalse(result[0], "A path the power was cut during must not be run");
+        assertTrue(elapsed < CUT_ENDS_THE_WAIT_MS, "The Stop and Go must end the validation wait at once, but the "
+            + "path took " + elapsed + " ms");
+        assertEquals(tp.layout.getPathValidationFailureCount(), 0, "A Stop and Go is not a misconfigured path");
         assertFalse(tp.path.get(0).isOccupied(dummyLoc()), "The path must be released");
     }
 
