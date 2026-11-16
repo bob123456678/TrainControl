@@ -5751,8 +5751,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (thereByHand || backByHand) notes.add(I18n.t("autosetup.ui.testColorLegend"));
 
-        // The hand search may still turn at a reversing square on the way, but since FR-221 no known railway gives such a
-        // leg (D184: all 240 purple pairs on the frozen railway end at a station left alone), so only that cause is named.
+        // On every known railway a purple leg ends at a station left alone (D184).
         Set<TileKey> leftAlone = session.manualOnlyStations();
 
         if (thereByHand && leftAlone.contains(tile)) notes.add(I18n.f("autosetup.ui.testNotAnAutoDestination", describeTile(tile)));
