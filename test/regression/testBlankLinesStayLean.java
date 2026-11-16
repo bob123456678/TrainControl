@@ -1,0 +1,190 @@
+package regression;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+import static org.testng.Assert.*;
+import org.testng.annotations.Test;
+
+/**
+ * Blank lines stay lean (FR-230): in `src/`, outside the NetBeans generated regions (a line holding `//GEN-BEGIN:`
+ * through the one holding `//GEN-END:`), no two blank lines in a row, no blank line right after a line ending in `{`,
+ * none right before a line that is only `}`, and the total of blank lines (whitespace-only lines, generated code
+ * included) never rises.  One blank line between paragraphs of code is the house style and stays.
+ */
+public class testBlankLinesStayLean
+{
+    /** Blank lines in `src/`, as they stand.  Lower it whenever some go; never raise it. */
+    private static final int BLANK_ALLOWED = 30939;
+
+    /** Padding as it stands: lines that follow another blank line, follow a `{` line, or precede a lone `}`. */
+    private static final int RUNS_ALLOWED = 70;
+
+    private static final int AFTER_OPEN_ALLOWED = 12;
+
+    private static final int BEFORE_CLOSE_ALLOWED = 14;
+
+    private static final String HOW = ". Take the padding out (one blank line between paragraphs of code stays); never raise the number.";
+
+    /**
+     * No blank line follows another one.
+     *
+     * MUTATION: put two blank lines in a row between two methods of any src file (outside a generated region), and
+     * this fails naming the file and line; stop `scan` treating a blank previous line as padding and it fails.
+     */
+    @Test
+    public void testNoTwoBlankLinesInARow() throws Exception
+    {
+        check(Kind.RUN, RUNS_ALLOWED, "blank lines that follow another blank line");
+    }
+
+    /**
+     * No blank line follows a line ending in an opening brace.
+     *
+     * MUTATION: put a blank line after any method's `{` outside a generated region, and this fails naming the file
+     * and line; stop `scan` testing the previous line's last character and it fails.
+     */
+    @Test
+    public void testNoBlankLineAfterAnOpeningBrace() throws Exception
+    {
+        check(Kind.AFTER_OPEN, AFTER_OPEN_ALLOWED, "blank lines right after a line ending in {");
+    }
+
+    /**
+     * No blank line precedes a line that is only a closing brace.
+     *
+     * MUTATION: put a blank line above any lone `}` outside a generated region, and this fails naming the file and
+     * line; stop `scan` looking past the blank run to the next line and it fails.
+     */
+    @Test
+    public void testNoBlankLineBeforeAClosingBrace() throws Exception
+    {
+        check(Kind.BEFORE_CLOSE, BEFORE_CLOSE_ALLOWED, "blank lines right before a line that is only }");
+    }
+
+    /**
+     * The blank lines of `src/` only go down.
+     *
+     * MUTATION: add one blank line anywhere in src (between two statements will do), and this fails naming the total
+     * and the pin; add one inside a generated region and it fails too.
+     */
+    @Test
+    public void testBlankLinesOnlyGoDown() throws Exception
+    {
+        int total = 0;
+
+        for (Path file : sources())
+        {
+            for (String line : lines(file)) if (line.trim().isEmpty()) total++;
+        }
+
+        assertTrue(total <= BLANK_ALLOWED, "src has " + total + " blank lines, the pin is " + BLANK_ALLOWED
+            + ": take the new blank lines out (one between paragraphs of code is enough); when blank lines went, lower "
+            + "BLANK_ALLOWED in testBlankLinesStayLean to " + total + ".  Never raise it.");
+    }
+
+    /**
+     * The scan itself, on a fixture: padding is found outside a generated region and left alone inside one.
+     *
+     * MUTATION: drop the generated-region test in `scan` and this fails.
+     */
+    @Test
+    public void testTheScanSkipsGeneratedRegions()
+    {
+        String[] fixture = {"class A", "{", "", "    int x;", "", "", "    int y;", "", "}"};
+
+        assertEquals(scan(fixture, Kind.RUN).size(), 1);
+        assertEquals(scan(fixture, Kind.AFTER_OPEN).size(), 1);
+        assertEquals(scan(fixture, Kind.BEFORE_CLOSE).size(), 1);
+
+        String[] generated = {"    // <editor-fold> //GEN-BEGIN:initComponents", "    void f() {", "", "", "", "",
+            "    }//GEN-END:initComponents", ""};
+
+        assertEquals(scan(generated, Kind.RUN).size(), 0);
+        assertEquals(scan(generated, Kind.AFTER_OPEN).size(), 0);
+        assertEquals(scan(generated, Kind.BEFORE_CLOSE).size(), 0);
+    }
+
+    private enum Kind { RUN, AFTER_OPEN, BEFORE_CLOSE }
+
+    private void check(Kind kind, int allowed, String what) throws Exception
+    {
+        List<String> found = new ArrayList<>();
+
+        for (Path file : sources())
+        {
+            for (int line : scan(lines(file).toArray(new String[0]), kind)) found.add(file + ":" + line);
+        }
+
+        assertTrue(found.size() <= allowed, "src has " + found.size() + " " + what + ", allowed " + allowed + ": "
+            + found.subList(0, Math.min(10, found.size())) + " ..." + HOW);
+    }
+
+    /** The 1-based lines of `text` that are padding of this kind, outside generated regions. */
+    private static List<Integer> scan(String[] text, Kind kind)
+    {
+        List<Integer> found = new ArrayList<>();
+
+        boolean[] generated = new boolean[text.length];
+
+        boolean inside = false;
+
+        for (int i = 0; i < text.length; i++)
+        {
+            if (text[i].contains("//GEN-BEGIN:")) inside = true;
+
+            generated[i] = inside;
+
+            if (text[i].contains("//GEN-END:")) inside = false;
+        }
+
+        for (int i = 0; i < text.length; i++)
+        {
+            if (generated[i] || !text[i].trim().isEmpty()) continue;
+
+            boolean hit;
+
+            if (kind == Kind.RUN)
+            {
+                hit = i > 0 && text[i - 1].trim().isEmpty();
+            }
+            else if (kind == Kind.AFTER_OPEN)
+            {
+                hit = i > 0 && text[i - 1].trim().endsWith("{");
+            }
+            else
+            {
+                int next = i + 1;
+
+                while (next < text.length && !generated[next] && text[next].trim().isEmpty()) next++;
+
+                hit = next < text.length && !generated[next] && text[next].trim().equals("}");
+            }
+
+            if (hit) found.add(i + 1);
+        }
+
+        return found;
+    }
+
+    private static List<Path> sources() throws Exception
+    {
+        try (Stream<Path> walk = Files.walk(new File("src").toPath()))
+        {
+            List<Path> files = new ArrayList<>();
+
+            walk.filter(p -> p.toString().endsWith(".java")).sorted().forEach(files::add);
+
+            return files;
+        }
+    }
+
+    private static List<String> lines(Path file) throws Exception
+    {
+        return Files.readAllLines(file, StandardCharsets.UTF_8);
+    }
+}
