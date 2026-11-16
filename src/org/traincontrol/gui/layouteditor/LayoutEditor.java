@@ -1652,6 +1652,8 @@ public class LayoutEditor extends PositionAwareJFrame
                 ((GroupLayout) formPane.getLayout()).replace(autonomyVisibility, this.showAddressCheckbox);
 
                 autonomyVisibility = null;
+
+                jSeparator1.setVisible(true);
             }
 
             // And the findings come out from under the diagram, and the field is cleared, or coming back would skip the
@@ -1806,6 +1808,9 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 ((GroupLayout) formPane.getLayout()).replace(this.showAddressCheckbox, visibility);
 
+                // No line over Save: the room Grayed-Out Icons takes, so Cancel still fits a 768-pixel screen (OB-399)
+                jSeparator1.setVisible(false);
+
                 this.showAddressCheckbox.setAlignmentX(Component.LEFT_ALIGNMENT);
                 autonomyPanel.getShowLengths().setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -1833,6 +1838,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 autonomyPanel.getShowTextLabels().setAlignmentX(Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowTextLabels());
+
+                // And the squares autonomy ignores (FR-197)
+                visibility.add(Box.createVerticalStrut(CHECKBOX_GAP));
+
+                autonomyPanel.getShowIgnored().setAlignmentX(Component.LEFT_ALIGNMENT);
+                visibility.add(autonomyPanel.getShowIgnored());
 
                 // What the captions say, as one choice (FR-061), in jLabel1's heading style.
                 JLabel captionsLabel = new JLabel(I18n.t("autosetup.ui.captionsHeading"));

@@ -319,6 +319,8 @@ public class AutonomyEditorPanel extends JPanel
 
     private static final String PREF_TRAINS = "autonomyEditorTrains";
 
+    private static final String PREF_IGNORED = "autonomyEditorIgnoredSquares";
+
     /**
      * What the captions say, as one choice, not three switches that could contradict (FR-061, OB-174).  Adam:
      * *"Station Names should be default, with the setting remembered between open."*
@@ -351,6 +353,9 @@ public class AutonomyEditorPanel extends JPanel
 
     /** Shows the diagram's text, or hides it (FR-133); station captions are the dropdown's. */
     private final JCheckBox showText = new JCheckBox(I18n.t("layout.ui.textLabels"), false);
+
+    /** Draws the squares autonomy ignores grayed out, or leaves them empty (FR-197). */
+    private final JCheckBox showIgnored = new JCheckBox(I18n.t("autosetup.ui.btnShowIgnored"), true);
 
     /** The squares it highlights, worked out once per refresh; null until asked. */
     private Set<TileKey> unmeasuredSquares = null;
@@ -765,6 +770,8 @@ public class AutonomyEditorPanel extends JPanel
 
         showTrains.setSelected(VIEW_PREFS.getBoolean(PREF_TRAINS, true));
 
+        showIgnored.setSelected(VIEW_PREFS.getBoolean(PREF_IGNORED, true));
+
         // One remembered setting, which the two boxes follow (FR-061); the older preferences could contradict it.
         int rememberedMode = VIEW_PREFS.getInt(PREF_CAPTION_MODE, CAPTIONS_STATIONS);
         boolean rememberedText = VIEW_PREFS.getBoolean(PREF_TEXT_LABELS, false);
@@ -809,6 +816,9 @@ public class AutonomyEditorPanel extends JPanel
         showText.setFocusable(false);
         showText.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowTextLabels")));
 
+        showIgnored.setFocusable(false);
+        showIgnored.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowIgnored")));
+
         directions.setFocusable(false);
 
         directions.addActionListener(e ->
@@ -817,17 +827,9 @@ public class AutonomyEditorPanel extends JPanel
             refresh();
         });
 
-        showLengths.addActionListener(e ->
-        {
-            VIEW_PREFS.putBoolean(PREF_LENGTHS, showLengths.isSelected());
-            refresh();
-        });
-
-        showUnmeasured.addActionListener(e ->
-        {
-            VIEW_PREFS.putBoolean(PREF_UNMEASURED, showUnmeasured.isSelected());
-            refresh();
-        });
+        remembers(showLengths, PREF_LENGTHS);
+        remembers(showUnmeasured, PREF_UNMEASURED);
+        remembers(showIgnored, PREF_IGNORED);
 
         // Redrawn, and the whole window, as train icons come from the railway, which may hold trains the setup lacks.
         showTrains.addActionListener(e ->
@@ -6108,6 +6110,9 @@ public class AutonomyEditorPanel extends JPanel
             // FR-118's white icons, in the editor only, where arrows are drawn over them.
             .inTheEditor();
 
+        // Unticked, a square autonomy ignores is left empty; picking a signal still grays the rest (FR-197).
+        if (shaded && !showIgnored.isSelected() && isIgnored(tile)) annotation.leftEmpty();
+
         // None where a crossing's squares meet (OB-322)
         session.withoutTheCrossingsMiddle(tile, annotation);
 
@@ -7348,6 +7353,22 @@ public class AutonomyEditorPanel extends JPanel
     public JCheckBox getShowTextLabels()
     {
         return control(showText);
+    }
+
+    /** A display box whose tick is remembered and redraws the diagram. */
+    private void remembers(JCheckBox box, String pref)
+    {
+        box.addActionListener(e ->
+        {
+            VIEW_PREFS.putBoolean(pref, box.isSelected());
+            refresh();
+        });
+    }
+
+    /** @return the Grayed-Out Icons box, for the window to mount under Text Labels (FR-197) */
+    public JCheckBox getShowIgnored()
+    {
+        return control(showIgnored);
     }
 
     /** @return the Exclude Page box, for the window to mount under its Page Settings heading, below the mode buttons */

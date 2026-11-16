@@ -1214,6 +1214,15 @@ public final class LayoutLabel extends JLabel
 
             paintCurvedSensorsArrowsWhole(g);
         }
+        else if (annotation != null && annotation.isLeftEmpty())
+        {
+            // No art (FR-197); the background still, where the label paints its own
+            if (isOpaque())
+            {
+                g.setColor(getBackground());
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
+        }
         else if (annotation != null && annotation.isInGray() && flashTimer == null)
         {
             // Grayed as it is painted, so the shared icon keeps its color; a flash keeps its yellow.
