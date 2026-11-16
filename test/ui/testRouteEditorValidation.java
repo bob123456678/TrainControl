@@ -2179,7 +2179,8 @@ public class testRouteEditorValidation
      * OB-487: on a highlighted switch row, the Number cell (which a switch does not use) is painted differently from
      * the Address cell, so active and inactive cells can be told apart.
      *
-     * MUTATION: in `greyWhatCannotBeEdited`, drop the `mutedSelection` background, and both cells share the fill.
+     * MUTATION: in `greyWhatCannotBeEdited`, drop the `mutedSelection` background, and both cells share the fill; make
+     * `mutedSelection` darken a dark selection, and the text cannot be read.
      */
     @Test
     public void testAHighlightedRowStillShowsWhichCellsAreInactive() throws Exception
@@ -2200,9 +2201,9 @@ public class testRouteEditorValidation
 
             // Selected, with the table focused and not (FlatLaf's unfocused selection is a light gray): the unused cell
             // stays at least 30 levels from the active cell's fill and from an unselected unused cell's
-            for (java.awt.Color selection : new java.awt.Color[]{null, new java.awt.Color(0xD3D3D3)})
+            for (java.awt.Color selection : new java.awt.Color[]{new java.awt.Color(0x2675BF), new java.awt.Color(0xD3D3D3)})
             {
-                final java.awt.Color[] seen = new java.awt.Color[3];
+                final java.awt.Color[] seen = new java.awt.Color[4];
                 final java.awt.Color chosen = selection;
 
                 javax.swing.SwingUtilities.invokeAndWait(() ->
@@ -2210,10 +2211,11 @@ public class testRouteEditorValidation
                     javax.swing.JTable table = commandsOf(frame);
                     int row = table.getRowCount() - 1;
 
-                    if (chosen != null) table.setSelectionBackground(chosen);
+                    table.setSelectionBackground(chosen);
 
                     seen[0] = frame.commandCellForTest(row, 3).getBackground();
                     seen[1] = frame.commandCellForTest(row, 4).getBackground();
+                    seen[3] = frame.commandCellForTest(row, 4).getForeground();
 
                     table.clearSelection();
                     seen[2] = frame.commandCellForTest(row, 4).getBackground();
@@ -2224,6 +2226,8 @@ public class testRouteEditorValidation
                     + seen[1] + " against " + seen[0]);
                 assertTrue(apart(seen[1], seen[2]) >= 30, "the selected unused cell is too like an unselected one: "
                     + seen[1] + " against " + seen[2]);
+                assertTrue(support.Contrast.between(seen[3], seen[1]) >= 4.5, "the selected unused cell's text cannot be"
+                    + " read: " + seen[3] + " on " + seen[1] + " under the selection " + selection);
             }
 
             final java.awt.Color[] fills = new java.awt.Color[2];

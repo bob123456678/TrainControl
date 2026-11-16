@@ -2036,11 +2036,20 @@ public class RouteEditorFrame extends JFrame
         return false;
     }
 
-    /** The selection fill of a cell that cannot be edited: the selection pulled toward gray, darker than the unusable wash. */
+    /**
+     * The selection fill of a cell that cannot be edited: a dark selection lightened halfway to white, a light one
+     * darkened by 36 levels, so dark gray text reads on it and it differs from the selection and the unusable wash.
+     */
     static Color mutedSelection(Color selection)
     {
-        return new Color((selection.getRed() + 128) / 2, (selection.getGreen() + 128) / 2,
-            (selection.getBlue() + 128) / 2);
+        if (selection.getRed() + selection.getGreen() + selection.getBlue() < 3 * 128)
+        {
+            return new Color((selection.getRed() + 255) / 2, (selection.getGreen() + 255) / 2,
+                (selection.getBlue() + 255) / 2);
+        }
+
+        return new Color(Math.max(0, selection.getRed() - 36), Math.max(0, selection.getGreen() - 36),
+            Math.max(0, selection.getBlue() - 36));
     }
 
     /**
