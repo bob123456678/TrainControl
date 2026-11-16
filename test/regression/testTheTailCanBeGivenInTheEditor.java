@@ -412,6 +412,47 @@ public class testTheTailCanBeGivenInTheEditor
     }
 
     /**
+     * Station Settings steps off the diagram while the tail is picked from its Train tab, so the sensor to click is not
+     * under it, and is back where it was once the click records the road, or Escape lets go (OB-486).
+     *
+     * MUTATION: drop `editor.tailPickFor() != null` from `StationWindows.followTheGuardPick`, and this fails.
+     */
+    @Test
+    public void testStationSettingsStepsAsideWhileTheTailIsPicked() throws Exception
+    {
+        Fixture f = Fixture.open();
+
+        try
+        {
+            for (boolean escape : new boolean[] {false, true})
+            {
+                org.traincontrol.gui.autonomyeditor.StationSettingsWindow window = support.StationDoors.openTrain(f.panel, f.tile);
+
+                assertTrue(Components.onTheEventThread(window::isShowing), "precondition: the window is not up");
+
+                pressPick(f, window);
+
+                assertNotNull(f.panel.tailPickFor(), "precondition: the pick did not begin");
+                assertFalse(Components.onTheEventThread(window::isShowing), "Station Settings stays over the diagram while the tail is picked");
+
+                if (escape) SwingUtilities.invokeAndWait(() -> f.panel.putToolsDown());
+                else f.clickOnTheOnlyRoad();
+
+                Components.drain(8);
+
+                assertNull(f.panel.tailPickFor(), "the pick did not end");
+                assertTrue(Components.onTheEventThread(window::isShowing), "Station Settings did not come back when the pick ended");
+
+                support.StationDoors.close(window);
+            }
+        }
+        finally
+        {
+            f.close();
+        }
+    }
+
+    /**
      * Pick on the Diagram stays pressed in while the pick waits; pressing it again ends the pick and takes the outlines
      * down, and the window stays open (MT-959).
      *

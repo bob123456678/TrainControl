@@ -66,7 +66,7 @@ final class StationWindows
      */
     void followTheGuardPick()
     {
-        if (station != null) station.stepAside(editor.isFocusedOnSignals());
+        if (station != null) station.stepAside(editor.isFocusedOnSignals() || editor.tailPickFor() != null);
     }
 
     /** Something may have changed: read again once this gesture is over, after the rebuild it posted. */
