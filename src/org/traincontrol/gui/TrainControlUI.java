@@ -15315,19 +15315,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     continue;
                 }
 
+                if (refused) continue;
+
                 // A name another locomotive holds is asked about once, below, in the delete door's question, which
                 // counts the routes that lose commands and starts on No
-                if (!refused && model.getLocByName(newName) == null && JOptionPane.showOptionDialog(c,
-                    I18n.f("loc.ui.confirmRenameLocomotive", currentName, newName), I18n.t("loc.ui.dialogConfirmRename"),
-                    JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null, YES_NO_OPTS, YES_NO_OPTS[1])
-                    != JOptionPane.YES_OPTION)
-                {
-                    outcome = keptAfterNo(l, newName);
+                int answer = model.getLocByName(newName) != null ? JOptionPane.YES_OPTION
+                    : JOptionPane.showOptionDialog(c, I18n.f("loc.ui.confirmRenameLocomotive", currentName, newName),
+                    I18n.t("loc.ui.dialogConfirmRename"), JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+                    YES_NO_OPTS, YES_NO_OPTS[1]);
 
-                    continue;
-                }
+                if (answer == JOptionPane.NO_OPTION) outcome = keptAfterNo(l, newName);
 
-                if (refused) continue;
+                // Closed unanswered, it keeps nothing and is asked again
+                if (answer != JOptionPane.YES_OPTION) continue;
 
                 // Nobody typed a station's name who could be told why it breaks a route condition (OB-074)
                 if (!org.traincontrol.base.RouteCommand.isNameUsable(newName))
@@ -15347,7 +15347,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (model.getLocByName(newName) != null)
                 {
-                    outcome = keptAfterNo(l, newName);
+                    // Only a No to the delete question is kept, never a refusal the user could not answer
+                    if (this.locomotiveActions.answered == JOptionPane.NO_OPTION) outcome = keptAfterNo(l, newName);
 
                     continue;
                 }

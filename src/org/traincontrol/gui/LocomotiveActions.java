@@ -598,9 +598,14 @@ final class LocomotiveActions
     /** Set, on the event thread, only for the length of `deleteLocBecause`. */
     private String because = null;
 
+    /** How `deleteLoc`'s question was last answered: JOptionPane's option, CLOSED_OPTION when it was not asked. */
+    int answered;
+
     /** Deletes a locomotive from the database after the question, from any door; true when it was deleted. */
     boolean deleteLoc(String value, Component source)
     {
+        this.answered = JOptionPane.CLOSED_OPTION;
+
         // The moving rule, at every door (FR-048), and asked again at Yes.
         if (LocomotiveSettings.refuseIfNotEditable(this.ui, this.ui.getModel().getLocByName(value), source)) return false;
 
@@ -631,7 +636,7 @@ final class LocomotiveActions
             ? I18n.f("ui.confirmDeleteFromDatabaseWithRoutes" + I18n.countForm(drivenBy), value, drivenBy)
             : I18n.f("ui.confirmDeleteFromDatabase", value);
 
-        if (JOptionPane.YES_OPTION == JOptionPane.showOptionDialog(
+        this.answered = JOptionPane.showOptionDialog(
                 source,
                 this.because == null ? question : this.because + "\n\n" + question,
                 I18n.t("layout.ui.dialogPleaseConfirm"),
@@ -642,7 +647,9 @@ final class LocomotiveActions
                 // Default to No - deleting a locomotive from the database is not recoverable
                 // from this dialog, and should not be one Enter keypress away.
                 TrainControlUI.YES_NO_OPTS[1]
-            ))
+            );
+
+        if (JOptionPane.YES_OPTION == this.answered)
         {
             // ASKED AGAIN AT YES, BEFORE ANYTHING IS WRITTEN: the question at the top was put before this
             // confirmation opened, and an s88 trigger can start a route that drives the locomotive while it is open.
