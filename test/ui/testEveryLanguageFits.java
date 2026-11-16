@@ -148,14 +148,7 @@ public class testEveryLanguageFits
 
         int total = LanguageFit.total(clipped);
 
-        report.append(System.lineSeparator()).append("components with text inspected:")
-            .append(System.lineSeparator());
-
-        for (Map.Entry<String, Integer> e : inspected.entrySet())
-        {
-            report.append("   ").append(e.getKey()).append("  ").append(e.getValue())
-                .append(System.lineSeparator());
-        }
+        counts(report, "components with text inspected:", inspected);
 
         // How many components the locale actually moves, the reach of this test: most of this form's text is baked into
         // the generated layout rather than passed through `I18n`, so a German run leaves it in English and it says
@@ -182,14 +175,7 @@ public class testEveryLanguageFits
                 moved.put(e.getKey(), differs);
             }
 
-            report.append(System.lineSeparator()).append("of those, how many the locale changes:")
-                .append(System.lineSeparator());
-
-            for (Map.Entry<String, Integer> e : moved.entrySet())
-            {
-                report.append("   ").append(e.getKey()).append("  ").append(e.getValue())
-                    .append(System.lineSeparator());
-            }
+            counts(report, "of those, how many the locale changes:", moved);
         }
 
         java.nio.file.Files.write(new File(OUT, "clipped.txt").toPath(),
@@ -338,6 +324,16 @@ public class testEveryLanguageFits
             if (leaf) leaves.add(each);
 
             cutIn(panel, each, language, leaves, out);
+        }
+    }
+
+    private static void counts(StringBuilder report, String title, Map<String, Integer> counts)
+    {
+        report.append(System.lineSeparator()).append(title).append(System.lineSeparator());
+
+        for (Map.Entry<String, Integer> e : counts.entrySet())
+        {
+            report.append("   ").append(e.getKey()).append("  ").append(e.getValue()).append(System.lineSeparator());
         }
     }
 
