@@ -239,6 +239,40 @@ public class testTheAutonomyEditorsTriageNotes
             left(list) + Components.onTheEventThread(list::getWidth), "the box's right edge is not the list's");
     }
 
+    /**
+     * The filter box sits inside the Things to look at frame, with the list: the frame's titled border is on the panel
+     * that holds both, and the box lies within the frame's padding (MT-1034, Adam: "inside the \"things to look at\"
+     * frame").
+     *
+     * MUTATION: put the titled border back on the list's scroll pane, and the box is outside the frame.
+     */
+    @Test(timeOut = 120000)
+    public void testTheFilterBoxIsInsideTheThingsToLookAtFrame() throws Exception
+    {
+        JTextField field = Components.inside(panel.getFindingsBox(), JTextField.class);
+
+        layOut();
+
+        javax.swing.JComponent frame = panel.getFindingsBox();
+
+        assertTrue(Components.onTheEventThread(() -> frame.getBorder() instanceof javax.swing.border.TitledBorder),
+            "the frame holding the list does not carry the Things to look at title");
+        assertTrue(Components.onTheEventThread(() -> SwingUtilities.isDescendingFrom(panel.getFindingsPanel(), frame)),
+            "the list is not inside the frame");
+
+        java.awt.Rectangle inner = Components.onTheEventThread(() ->
+        {
+            java.awt.Insets in = frame.getInsets();
+
+            return new java.awt.Rectangle(in.left, in.top, frame.getWidth() - in.left - in.right,
+                frame.getHeight() - in.top - in.bottom);
+        });
+        java.awt.Rectangle box = Components.onTheEventThread(() ->
+            SwingUtilities.convertRectangle(field.getParent(), field.getBounds(), frame));
+
+        assertTrue(inner.contains(box), "the filter box " + box + " is not inside the frame's padding " + inner);
+    }
+
     // ------------------------------------------------------------------------------------------------ MT-890
 
     /**

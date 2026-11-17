@@ -1134,13 +1134,7 @@ public class AutonomyEditorPanel extends JPanel
 
         JScrollPane scroll = new JScrollPane(findings);
 
-        javax.swing.border.TitledBorder titled =
-            BorderFactory.createTitledBorder(I18n.t("autosetup.ui.colWarnings"));
-
-        titled.setTitleFont(AutonomyViewerPanel.FONT_GROUP);
-        titled.setTitleColor(new Color(0, 0, 155));
-
-        scroll.setBorder(titled);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.setPreferredSize(new Dimension(width - 20, 160));
 
         return scroll;
@@ -1159,7 +1153,7 @@ public class AutonomyEditorPanel extends JPanel
     /** The square of the finding last clicked, or null. */
     private TileKey chosenFinding;
 
-    /** The filter box with its clear button, under the list (FR-073, FR-217); it narrows the list, never selects. */
+    /** The framed list with the filter box under it (FR-073, FR-217); the box narrows the list, never selects. */
     private JPanel buildFindingsBox(JScrollPane list)
     {
         JPanel box = new JPanel(new BorderLayout());
@@ -1199,6 +1193,13 @@ public class AutonomyEditorPanel extends JPanel
         JPanel whole = new JPanel(new BorderLayout());
 
         whole.setOpaque(false);
+
+        javax.swing.border.TitledBorder titled =
+            BorderFactory.createTitledBorder(I18n.t("autosetup.ui.colWarnings"));
+
+        titled.setTitleFont(AutonomyViewerPanel.FONT_GROUP);
+        titled.setTitleColor(new Color(0, 0, 155));
+        whole.setBorder(titled);
         whole.add(list, BorderLayout.CENTER);
         whole.add(box, BorderLayout.SOUTH);
 
