@@ -58,6 +58,7 @@ import javax.swing.JTextField;
 import javax.swing.JViewport;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
@@ -2069,6 +2070,7 @@ public class RouteEditorFrame extends JFrame
         {
             ((JComponent) out).setOpaque(true);
             out.setBackground(which.getBackground());
+            out.setForeground(which.getForeground());
         }
 
         return out;
@@ -2100,6 +2102,10 @@ public class RouteEditorFrame extends JFrame
                 Object shown = which instanceof ConditionTable
                     ? ((ConditionTable) which).shownAs(row, column, value) : value;
 
+                // A cell this kind of row has no use for says so in the disabled gray, on the ordinary fill
+                boolean unused = which instanceof HandledTable && "".equals(shown)
+                    && ((HandledTable) which).notUsed(row, column);
+                if (unused) shown = "---";
                 // OB-367: the setting is stored as the English word and shown in the user's language
                 int settingColumn = which instanceof ConditionTable ? ConditionTable.SETTING : CommandTable.SETTING;
 
@@ -2109,6 +2115,7 @@ public class RouteEditorFrame extends JFrame
 
                 boolean editable = which.getModel().isCellEditable(row, column);
 
+                if (unused) out.setEnabled(true);
                 // A group's caption line is left alone: it is the outline's, not a condition with nothing to fill in.
                 if (which instanceof ConditionTable && ((ConditionTable) which).isCaptionLine(row))
                 {
@@ -2146,13 +2153,13 @@ public class RouteEditorFrame extends JFrame
                 else
                 {
                     out.setForeground(refused != null && editable ? WRONG
-                        : editable ? which.getForeground() : Color.GRAY);
+                        : editable ? which.getForeground() : unused ? UIManager.getColor("Label.disabledForeground") : Color.GRAY);
 
                     // A background, not only gray text: most of these cells are empty, and gray text in an empty cell
                     // shows nothing.  Not the position column, which is the row's number.
                     boolean position = which instanceof CommandTable && column == POSITION;
 
-                    if (!editable && !position && out instanceof JComponent)
+                    if (!editable && !position && !unused && out instanceof JComponent)
                     {
                         ((JComponent) out).setOpaque(true);
                         out.setBackground(UNUSABLE);
@@ -3317,6 +3324,12 @@ public class RouteEditorFrame extends JFrame
         /** @return whether the rows may be changed */
         abstract boolean handlesWork();
 
+        /** @return whether a cell of a row that can be changed has no use for its kind, so it reads as ---, not muted */
+        boolean notUsed(int line, int column)
+        {
+            return handlesWork() && rowOf(line) >= 0 && column != HANDLE && !isMark(column)
+                && !getModel().isCellEditable(line, column);
+        }
         /** @return the row a table line shows, or -1 for a line that shows none */
         abstract int rowOf(int line);
 
@@ -4093,6 +4106,11 @@ public class RouteEditorFrame extends JFrame
             return !locked;
         }
 
+        @Override
+        boolean notUsed(int line, int column)
+        {
+            return super.notUsed(line, column) && rows.get(line).isEditable();
+        }
         @Override
         int rowOf(int line)
         {

@@ -58,7 +58,7 @@ public class testRouteEditorShading
 
                 Component grey = render(conditions, 1, column);
 
-                if (grey.getBackground() != null && !grey.getBackground().equals(plain))
+                if (!grey.getForeground().equals(conditions.getForeground()))
                 {
                     primed = true;
                 }
@@ -73,6 +73,9 @@ public class testRouteEditorShading
             for (int column = 1; column < conditions.getColumnCount(); column++)
             {
                 Component cell = render(conditions, caption, column);
+
+                assertEquals(cell.getForeground(), conditions.getForeground(), "column " + column
+                    + " of the caption line kept the grayed ink of the cell before it");
 
                 assertEquals(cell.getBackground(), plain,
                     "column " + column + " of the caption line came back " + cell.getBackground()
