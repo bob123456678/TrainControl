@@ -10,6 +10,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
+import javax.swing.RepaintManager;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
@@ -178,6 +179,78 @@ public class testTheOverlayBoxDuringARun
         {
             assertTrue(support.Rendered.showsTheTrainMark(tile), "with the box ticked again, a square the train lies on"
                 + " draws no line");
+        }
+    }
+
+    /**
+     * A click on the box, either way, asks every square a standing train lies on or holds to redraw, even one that
+     * wears no autonomy mark (plain track with the restriction arrows off), whose line and fade would otherwise stay as
+     * they were until something else redrew it.
+     *
+     * MUTATION: drop the repaint from `AutonomyOverlayToggle.apply`, and this fails.
+     */
+    @Test
+    public void testEverySquareATrainHoldsIsRedrawnWhenTheBoxIsClicked() throws Exception
+    {
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        String arrows = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
+        RepaintManager was = Components.onTheEventThread(() -> RepaintManager.currentManager(box));
+        Set<java.awt.Component> asked = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+        try
+        {
+            prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, false);
+            tick(false);
+            tick(true);
+            support.CoveredMarks.refresh(ui);
+
+            List<LayoutLabel> held = new ArrayList<>();
+            boolean unmarked = false;
+
+            for (TileKey square : everyTile())
+            {
+                if (!ui.isTrackCovered(square) && !ui.isTrackBlocked(square)) continue;
+
+                for (LayoutLabel tile : ui.getDiagramTileRegistry().labelsFor(square))
+                {
+                    held.add(tile);
+                    unmarked |= Reflect.get(LayoutLabel.class, tile, "autonomyAnnotation") == null;
+                }
+            }
+
+            assertTrue(unmarked, "precondition: every square a train holds wears an autonomy mark");
+
+            SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(new RepaintManager()
+            {
+                @Override
+                public void addDirtyRegion(javax.swing.JComponent c, int x, int y, int w, int h)
+                {
+                    asked.add(c);
+                    super.addDirtyRegion(c, x, y, w, h);
+                }
+            }));
+
+            for (boolean on : new boolean[] {false, true})
+            {
+                asked.clear();
+                tick(on);
+
+                for (LayoutLabel tile : held)
+                {
+                    assertTrue(asked.contains(tile), "the box " + (on ? "ticked" : "unticked") + " leaves the square"
+                        + " a train holds, " + tile.getComponent() + ", as it was drawn");
+                }
+            }
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(was));
+
+            if (arrows == null) prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+            else prefs.put(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, arrows);
+
+            tick(false);
+            tick(true);
         }
     }
 
