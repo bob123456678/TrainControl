@@ -2033,7 +2033,49 @@ public class testAutonomyDiagramMonitor
         }
     }
 
-    /** A station on a road from W to E, over dark track. */
+    /**
+     * The stop-only dot sits at the middle of the icon it marks, straight, upright or on a bend, plain, terminus or may
+     * turn, at any size: within a quarter pixel of the icon's own middle (MT-1040, Adam: "the dot does not appear
+     * centered over the station icon").
+     *
+     * MUTATION: draw the dot with pure strokes again while the icon keeps the default stroke control, and this fails.
+     */
+    @Test
+    public void testTheStopDotSitsAtTheIconsMiddle()
+    {
+        Side[][] roads = {{Side.W, Side.E}, {Side.N, Side.S}, {Side.N, Side.E}, {Side.S, Side.W}};
+
+        for (int size : new int[] {24, 30, 36, 45, 60})
+        {
+            for (Side[] road : roads)
+            {
+                for (int kind = 0; kind < 3; kind++)
+                {
+                    boolean turns = kind > 0, may = kind == 2;
+
+                    TileAnnotation.Badge through = new TileAnnotation.Badge(true, turns, false, false, true, road[0],
+                        road[1], may, false, null, false);
+                    TileAnnotation.Badge stops = new TileAnnotation.Badge(true, turns, false, false, true, road[0],
+                        road[1], may, false, null, true);
+
+                    java.awt.image.BufferedImage without = onTrack(through, size);
+
+                    java.awt.Rectangle icon = extent(without, BLUE), dot = changed(without, onTrack(stops, size));
+
+                    String what = stops + " from " + road[0] + " to " + road[1] + " at " + size;
+
+                    assertNotNull(dot, what + " wears no dot");
+
+                    assertTrue(Math.abs(dot.getCenterX() - icon.getCenterX()) <= 0.25
+                        && Math.abs(dot.getCenterY() - icon.getCenterY()) <= 0.25, what + ": the dot's middle is "
+                        + dot.getCenterX() + "," + dot.getCenterY() + ", the icon's " + icon.getCenterX() + ","
+                        + icon.getCenterY());
+                }
+            }
+        }
+    }
+
+    /** A station on its badge's own road, over dark track. */
     private static java.awt.image.BufferedImage onTrack(TileAnnotation.Badge badge, int size)
     {
         java.awt.image.BufferedImage image =
@@ -2046,8 +2088,8 @@ public class testAutonomyDiagramMonitor
             g.setColor(new java.awt.Color(64, 64, 64));
             g.fillRect(0, 0, size, size);
 
-            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(Side.W, Side.E, null)), -1,
-                false, badge, false, false, false, null, true, null);
+            TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(badge.getA(), badge.getB(), null)),
+                -1, false, badge, false, false, false, null, true, null);
 
             annotation.paint(g, size, size);
         }

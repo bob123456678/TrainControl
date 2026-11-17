@@ -556,5 +556,11 @@ public class AutonomyOverlayToggle extends JPanel
         // Monitoring only paints while trains move, so also switch the static layer (stations, restricted track), or
         // the checkbox does nothing before a run.
         ui.showStaticAutonomyLayer(show.isSelected());
+
+        // The trains' lines are drawn by the squares they lie on, which ask this box as they paint (OB-496).
+        for (TileGraph.TileKey square : ui.coveredTrack.keySet())
+        {
+            for (LayoutLabel label : ui.getDiagramTileRegistry().labelsFor(square)) label.repaint();
+        }
     }
 }

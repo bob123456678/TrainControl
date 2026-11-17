@@ -1685,26 +1685,25 @@ public class TileAnnotation
             g.drawOval(x, y, size, size);
         }
 
-        if (badge.isStation()) stopDot(g, x + size / 2.0, y + size / 2.0, size, 1, line);
+        if (badge.isStation() && badge.isStopOnly()) stopDot(g, x, y, size, line);
     }
 
     /**
-     * The stop-only station's dot (MT-1017), a third of the icon's height across and never under 3 pixels, in the
-     * outline's color: white on a filled icon, the icon's blue on a white one.
+     * The stop-only station's dot (MT-1017), a third of the icon's box and never under 3 pixels, in the outline's color,
+     * centered on that outline: stroked with the default control, it lies half a pixel right of and below its box.
      */
-    private void stopDot(Graphics2D g, double x, double y, double iconHeight, double scale, Color line)
+    private static void stopDot(Graphics2D g, int x, int y, int size, Color line)
     {
-        if (!badge.isStopOnly()) return;
-
-        double across = Math.max(3 / scale, iconHeight / 3);
-
+        double across = Math.max(3, size / 3.0);
+        double at = (size - across) / 2
+            + (RenderingHints.VALUE_STROKE_PURE.equals(g.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL)) ? 0 : 0.5);
         Graphics2D d = (Graphics2D) g.create();
 
         try
         {
             ImageUtil.smooth(d);
             d.setColor(line);
-            d.fill(new Ellipse2D.Double(x - across / 2, y - across / 2, across, across));
+            d.fill(new Ellipse2D.Double(x + at, y + at, across, across));
         }
         finally
         {
