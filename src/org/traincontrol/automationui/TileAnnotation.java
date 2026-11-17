@@ -1932,13 +1932,11 @@ public class TileAnnotation
     private void diamond(Graphics2D g, int x, int y, int size, Color fill, Color line)
     {
         Path2D.Double shape = new Path2D.Double();
-
         shape.moveTo(x + size / 2.0, y);
         shape.lineTo(x + size, y + size / 2.0);
         shape.lineTo(x + size / 2.0, y + size);
         shape.lineTo(x, y + size / 2.0);
         shape.closePath();
-
         g.setColor(fill);
         g.fill(shape);
         g.setColor(line);
