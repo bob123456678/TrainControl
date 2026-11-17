@@ -112,13 +112,18 @@ public final class LayoutLabel extends JLabel
      */
     private volatile TileOverlay autonomyOverlay;
 
-    /** Whether this square draws its trains, asked as it paints: the autonomy editor's Show Trains switch (FR-119). */
-    private java.util.function.BooleanSupplier trainsShown = () -> true;
+    /** Whether this square draws trains, asked in paint: the editor's Show Trains, else the overlay box (OB-496). */
+    private java.util.function.BooleanSupplier trainsShown = this::overlayShown;
 
     /** Has this square ask `shown` whether to draw the trains on it (FR-119). */
     public void setTrainsShown(java.util.function.BooleanSupplier shown)
     {
-        this.trainsShown = shown == null ? () -> true : shown;
+        this.trainsShown = shown == null ? this::overlayShown : shown;
+    }
+
+    private boolean overlayShown()
+    {
+        return tcUI == null || tcUI.autonomyOverlayToggle == null || tcUI.autonomyOverlayToggle.isOverlayShown();
     }
 
     // What the autonomy editor draws here - directions, lengths, selection.  Separate from the overlay
