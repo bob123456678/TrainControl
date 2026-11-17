@@ -1164,9 +1164,9 @@ public final class LayoutLabel extends JLabel
     @Override
     protected void paintComponent(java.awt.Graphics g)
     {
-        // The square itself, faintly, where the railway refuses it (MT-278): the composite is set before
-        // `super.paintComponent` and undone after; everything autonomy draws on top is at full strength.
-        boolean refused = !edit && square != null && tcUI != null && tcUI.isTrackBlocked(square);
+        // The square itself, faintly, where the railway refuses it (MT-278), unless the overlay box is off: the
+        // composite is set before `super.paintComponent` and undone after; what autonomy draws on top is full strength.
+        boolean refused = !edit && square != null && tcUI != null && overlayShown() && tcUI.isTrackBlocked(square);
 
         org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
 

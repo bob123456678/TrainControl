@@ -182,6 +182,69 @@ public class testTheOverlayBoxDuringARun
     }
 
     /**
+     * Unticked, track a standing train holds is drawn at full strength, as a square with nothing on it is; the box
+     * hides everything autonomy draws on the diagram, the fade under standing trains with the rest.
+     *
+     * MUTATION: drop `overlayShown()` from the fade in `LayoutLabel.paintComponent`, and this fails.
+     */
+    @Test
+    public void testUntickingTheBoxLiftsTheFadeUnderStandingTrains() throws Exception
+    {
+        tick(true);
+        support.CoveredMarks.refresh(ui);
+
+        int blocked = 0;
+
+        try
+        {
+            tick(false);
+
+            for (TileKey square : everyTile())
+            {
+                if (!ui.isTrackBlocked(square)) continue;
+
+                for (LayoutLabel tile : ui.getDiagramTileRegistry().labelsFor(square))
+                {
+                    LayoutLabel bare = new LayoutLabel(tile.getComponent(), OURS, 30, ui, false);
+
+                    assertTrue(Components.waitFor(() -> bare.getIcon() != null, 10000), "precondition: no picture for "
+                        + square);
+
+                    blocked++;
+
+                    assertTrue(java.util.Arrays.equals(pixelsOf(tile), pixelsOf(bare)), "with the box unticked, "
+                        + square + ", held by a standing train, is not drawn as a square with nothing on it");
+                }
+            }
+        }
+        finally
+        {
+            tick(true);
+        }
+
+        assertTrue(blocked > 0, "precondition: a standing train holds no track");
+    }
+
+    /** A tile painted on white at 30 pixels, as its pixels. */
+    private static int[] pixelsOf(LayoutLabel tile) throws Exception
+    {
+        return Components.onTheEventThread(() ->
+        {
+            java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(30, 30,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+            java.awt.Graphics2D g = image.createGraphics();
+
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, 30, 30);
+            tile.setSize(30, 30);
+            tile.paint(g);
+            g.dispose();
+
+            return image.getRGB(0, 0, 30, 30, null, 0, 30);
+        });
+    }
+
+    /**
      * Toggled again and again while a train runs to another station: every click goes through, the setup stays shut to
      * edits all the while, the train arrives, and once ticked the diagram draws it where it now stands, not where it was.
      *
