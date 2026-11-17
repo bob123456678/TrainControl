@@ -4185,7 +4185,7 @@ public class testStationSettingsWindow
 
     /**
      * Nothing in the picture is grayed (MT-1037, Adam: "Just avoid greying altogether in the preview in the station
-     * settings"): each next square, a signal with its red lamp among them, is drawn as it draws itself, with neither
+     * settings"): each next square, a signal with its lamp among them, is drawn as it draws itself, with neither
      * the arrows' wash nor the yellow flash of a change, apart from under the picture's marks.
      *
      * MUTATION: paint the next squares through `ImageUtil.inGray` again, give their arrows the wash, or drop
@@ -4218,7 +4218,7 @@ public class testStationSettingsWindow
                 marked.add(new java.awt.geom.Area(new java.awt.BasicStroke(12).createStrokedShape(mark.getValue())));
             }
 
-            int squares = 0, red = 0;
+            int squares = 0, colored = 0;
 
             // The art lives in the first child, out of the pointer's way
             for (java.awt.Component each : ((java.awt.Container) block.getComponent(0)).getComponents())
@@ -4239,7 +4239,9 @@ public class testStationSettingsWindow
 
                 assertFalse(((org.traincontrol.gui.LayoutLabel) each).isAccessoryHighlightOutstanding(), "the picture's"
                     + " next square at " + at.x + "," + at.y + " wears the yellow wash of a change");
-                red += pixels(own, new java.awt.Rectangle(at.getSize()), RED);
+                // a lamp, red or green
+                colored += pixels(own, new java.awt.Rectangle(at.getSize()),
+                    rgb -> RED.test(rgb) || (rgb >> 8 & 0xff) - (rgb >> 16 & 0xff) > 100);
 
                 for (int y = 0; y < at.height; y++)
                 {
@@ -4257,12 +4259,48 @@ public class testStationSettingsWindow
             }
 
             assertTrue(squares > 1, "precondition: the picture draws no next squares");
-            assertTrue(red > 0, "precondition: no next square's own art has red");
+            assertTrue(colored > 0, "precondition: no next square's own art has color");
 
             return null;
         });
 
         StationDoors.close(window);
+    }
+
+    /**
+     * A signal beside the station is drawn at rest, whatever it shows on the railway, as a sensor is (OB-485): the
+     * picture shows the setup, and its squares hear of no change after it is built.
+     *
+     * MUTATION: have `LayoutLabel.ignoresState` leave a picture's signals and switches live again, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testANeighborsSignalIsDrawnAtRestWhateverItShows() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
+
+        org.traincontrol.base.Accessory signal = Components.onTheEventThread(() -> session.getGraph().getTiles()
+            .get(square.beside(org.traincontrol.automationui.TilePorts.Side.E)).getAccessory());
+
+        assertNotNull(signal, "precondition: the square east of the station is no signal");
+
+        boolean was = signal.isSwitched();
+
+        try
+        {
+            signal.setSwitched(false);
+
+            java.awt.image.BufferedImage one = pictureOf(square);
+
+            signal.setSwitched(true);
+
+            java.awt.image.BufferedImage other = pictureOf(square);
+
+            assertEquals(difference(one, other, 0), 0, "pixels of the picture that differ with the signal switched");
+        }
+        finally
+        {
+            signal.setSwitched(was);
+        }
     }
 
     /**
