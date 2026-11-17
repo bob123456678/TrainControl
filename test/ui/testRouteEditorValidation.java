@@ -2176,8 +2176,8 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-487: on a switch row, selected or not, the Number cell (which a switch does not use) reads --- in the disabled gray on
-     * the fill of the cell beside it (muted fill when selected), and the text can be read.
+     * OB-487: on an unselected switch row, the Number cell (which a switch does not use) reads --- in the disabled gray
+     * on the fill of the cell beside it, and can be read.
      *
      * MUTATION: in `greyWhatCannotBeEdited`, drop the `unused` test, and the cell is empty and muted.
      */
@@ -2192,51 +2192,110 @@ public class testRouteEditorValidation
         {
             javax.swing.SwingUtilities.invokeAndWait(frame::addCommandRowForTest);
 
-            for (boolean selected : new boolean[]{false, true})
+            final java.awt.Component[] seen = new java.awt.Component[2];
+            final java.awt.Color[] ink = new java.awt.Color[4];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
             {
-                for (java.awt.Color selection : new java.awt.Color[]{new java.awt.Color(0x2675BF),
-                    new java.awt.Color(0xD3D3D3)})
+                javax.swing.JTable table = commandsOf(frame);
+                int row = table.getRowCount() - 1;
+
+                table.clearSelection();
+                seen[0] = frame.commandCellForTest(row, 3);
+                ink[0] = seen[0].getForeground();
+                ink[1] = seen[0].getBackground();
+                seen[1] = frame.commandCellForTest(row, 4);
+                ink[2] = seen[1].getForeground();
+                ink[3] = seen[1].getBackground();
+            });
+
+            assertEquals(((javax.swing.JLabel) seen[1]).getText(), "---", "the unused Number cell");
+
+            java.awt.Color gray = javax.swing.UIManager.getColor("Label.disabledForeground");
+
+            assertEquals(ink[2], gray == null ? java.awt.Color.GRAY : gray, "the unused cell is not in the disabled gray");
+            assertEquals(ink[3], ink[1], "the unused cell's fill differs from the Address cell's");
+            assertTrue(support.Contrast.between(ink[2], ink[3]) >= 3.0, "the unused cell's text " + ink[2] + " on "
+                + ink[3] + " cannot be read");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-487: on a selected switch row, as painted, the Number cell's --- keeps the row's own selection fill and is
+     * dimmer than the Address text beside it, yet at least 3:1 on the fill, under the focused and the unfocused
+     * selection colors.
+     *
+     * MUTATION: in `greyWhatCannotBeEdited`, put the `mutedSelection` fill back on an unused cell and the fill differs;
+     * drop `out.setEnabled(true)` and the disabled label paints #808080, 1.94:1 on the focused blue.
+     */
+    @Test
+    public void testAnUnusedCellOnASelectedRowIsDimmedAsPainted() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.addCommandRowForTest();
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final java.awt.Color[][] pairs = {{new java.awt.Color(0x2675BF), java.awt.Color.WHITE},
+                {new java.awt.Color(0xD3D3D3), java.awt.Color.BLACK}};
+
+            for (java.awt.Color[] pair : pairs)
+            {
+                final double[] seen = new double[2];
+                final java.awt.Color[] fills = new java.awt.Color[2];
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
                 {
-                    final java.awt.Component[] seen = new java.awt.Component[2];
-                    final java.awt.Color[] ink = new java.awt.Color[4];
+                    javax.swing.JTable table = commandsOf(frame);
+                    int row = table.getRowCount() - 1;
 
-                    javax.swing.SwingUtilities.invokeAndWait(() ->
+                    table.setSelectionBackground(pair[0]);
+                    table.setSelectionForeground(pair[1]);
+                    table.setRowSelectionInterval(row, row);
+
+                    java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(table.getWidth(),
+                        table.getHeight(), java.awt.image.BufferedImage.TYPE_INT_RGB);
+                    java.awt.Graphics2D g = image.createGraphics();
+
+                    table.paint(g);
+                    g.dispose();
+
+                    for (int column = 3; column <= 4; column++)
                     {
-                        javax.swing.JTable table = commandsOf(frame);
-                        int row = table.getRowCount() - 1;
+                        java.awt.Rectangle cell = table.getCellRect(row, column, false);
+                        java.awt.Color fill = new java.awt.Color(image.getRGB(cell.x + cell.width - 3, cell.y + 2));
+                        double best = 1;
 
-                        table.setSelectionBackground(selection);
+                        for (int x = cell.x + 1; x < cell.x + cell.width - 1; x++)
+                        {
+                            for (int y = cell.y + 1; y < cell.y + cell.height - 1; y++)
+                            {
+                                best = Math.max(best, support.Contrast.between(new java.awt.Color(image.getRGB(x, y)), fill));
+                            }
+                        }
 
-                        if (selected) table.setRowSelectionInterval(row, row);
-                        else table.clearSelection();
-
-                        seen[0] = frame.commandCellForTest(row, 3);
-                        ink[0] = seen[0].getForeground();
-                        ink[1] = seen[0].getBackground();
-                        seen[1] = frame.commandCellForTest(row, 4);
-                        ink[2] = seen[1].getForeground();
-                        ink[3] = seen[1].getBackground();
-                    });
-
-                    assertEquals(((javax.swing.JLabel) seen[1]).getText(), "---", "the unused Number cell");
-
-                    java.awt.Color gray = javax.swing.UIManager.getColor("Label.disabledForeground");
-
-                    if (gray == null) gray = java.awt.Color.GRAY;
-
-                    if (selected)
-                    {
-                        assertTrue(support.Contrast.between(ink[2], ink[3]) >= 4.5, "the selected unused cell's text "
-                            + ink[2] + " on " + ink[3] + " cannot be read under the selection " + selection);
+                        fills[column - 3] = fill;
+                        seen[column - 3] = best;
                     }
-                    else
-                    {
-                        assertEquals(ink[2], gray, "the unused cell is not drawn in the disabled gray");
-                        assertEquals(ink[3], ink[1], "the unused cell's fill differs from the Address cell's");
-                        assertTrue(support.Contrast.between(ink[2], ink[3]) >= 3.0, "the unused cell's text " + ink[2]
-                            + " on " + ink[3] + " cannot be read");
-                    }
-                }
+                });
+
+                assertEquals(fills[0], pair[0], "the Address cell is not painted in the selection fill");
+                assertEquals(fills[1], pair[0], "the unused cell is not painted in the row's selection fill");
+                assertTrue(seen[1] >= 3.0, "the --- is " + seen[1] + ":1 on the selection " + pair[0]);
+                assertTrue(seen[1] < seen[0], "the --- is not dimmer than the row's text: " + seen[1] + " against "
+                    + seen[0]);
             }
         }
         finally
@@ -2792,6 +2851,99 @@ public class testRouteEditorValidation
     }
 
     /**
+     * OB-396: on a locked route, where the cells are still the 242 gray, a condition's gray Protocol cell stops inside its
+     * group's outline at every depth, and nothing is painted between the innermost outline and the table's right edge.
+     *
+     * MUTATION: in `ConditionTable.prepareRenderer`, drop the matte border, and the gray runs out past the outline.
+     */
+    @Test
+    public void testTheGrayOfALockedRouteStaysInsideTheOutline() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open(lockedWithOneCommand());
+
+        try
+        {
+            showRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 2:23 2AND 2:24"));
+
+            final javax.swing.JTable table = conditionTable(frame);
+
+            final String[] wrong = support.Components.onTheEventThread(() ->
+            {
+                java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(table.getWidth(),
+                    table.getHeight(), java.awt.image.BufferedImage.TYPE_INT_RGB);
+                java.awt.Graphics2D g = image.createGraphics();
+
+                table.clearSelection();
+                table.paint(g);
+                g.dispose();
+
+                int gray = new java.awt.Color(242, 242, 242).getRGB();
+                java.awt.Rectangle protocol = table.getCellRect(0, 4, true);
+                int right = protocol.x + protocol.width;
+
+                for (int at = 0; at < 4; at++)
+                {
+                    int line = (Integer) call(table, "lineOf", at * 2);
+                    java.awt.Rectangle cell = table.getCellRect(line, 4, true);
+                    int edge = (Integer) call(table, "outlineRight", Math.min(at, 2));
+                    int y = cell.y + cell.height / 2;
+
+                    // MT-868: nor down through the gap under a line where a group ends, its bottom edge drawn there.
+                    for (int below = cell.y + cell.height; below < cell.y + table.getRowHeight(line); below++)
+                    {
+                        if (image.getRGB(edge - 4, below) == gray)
+                        {
+                            return new String[]{"the depth " + Math.min(at, 2) + " Protocol cell of condition " + at
+                                + " is gray at y=" + below + ", under its content, which ends at "
+                                + (cell.y + cell.height)};
+                        }
+                    }
+
+                    if (image.getRGB(edge - 4, y) != gray)
+                    {
+                        return new String[]{"the depth " + at + " Protocol cell is not gray inside its outline"};
+                    }
+
+                    for (int x = edge + 1; x < right; x++)
+                    {
+                        if (image.getRGB(x, y) == gray)
+                        {
+                            return new String[]{"the depth " + at + " Protocol cell is gray at x=" + x + ", past its"
+                                + " outline at " + edge};
+                        }
+                    }
+                }
+
+                return new String[]{null};
+            });
+
+            assertNull(wrong[0], wrong[0]);
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /** A locked route with one command: its cells are all the gray of what cannot be changed. */
+    private static org.traincontrol.base.Route lockedWithOneCommand()
+    {
+        java.util.List<org.traincontrol.base.RouteCommand> commands = new java.util.ArrayList<>();
+
+        commands.add(org.traincontrol.base.RouteCommand.RouteCommandAccessory(80,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true));
+
+        org.traincontrol.marklin.MarklinRoute route = new org.traincontrol.marklin.MarklinRoute(null, "Imported", 4242,
+            commands, 0, org.traincontrol.base.Route.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        route.setLocked(true);
+
+        return route;
+    }
+
+    /**
      * OB-396: a selected condition is painted in the selection's colors from Kind to Protocol only, never on its
      * handle or trash, and a caption line in the selection is never painted as selected.
      *
@@ -2843,7 +2995,7 @@ public class testRouteEditorValidation
             assertEquals(painted, "-- S- S- S- S- -- --", "each column of the selected condition and of the caption"
                 + " above it: S where painted as selected, from the handle to the copy mark");
 
-            // A sensor has no Protocol: that cell reads --- and keeps its muted selection fill (OB-487)
+            // A sensor has no Protocol: that cell reads --- on the selection fill, dimmed (OB-487)
             final int sensor = screen(table, 4);
 
             final String sensorRow = support.Components.onTheEventThread(() ->
@@ -2854,7 +3006,7 @@ public class testRouteEditorValidation
                     .equals(table.getSelectionBackground()) ? "S" : "-";
             });
 
-            assertEquals(sensorRow, "-", "a sensor condition's unused Protocol cell is painted as selected");
+            assertEquals(sensorRow, "S", "a sensor condition's unused Protocol cell is not painted as selected");
         }
         finally
         {

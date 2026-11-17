@@ -278,7 +278,7 @@ public class testSignalsAreGrayInTheAutonomyEditor
 
             javax.swing.JCheckBox box = grayedOutIcons(editor);
 
-            assertTrue(Components.onTheEventThread(box::isSelected), "a default start opens with Grayed-out Icons unticked");
+            assertTrue(Components.onTheEventThread(box::isSelected), "a default start opens with Grayed-out Icons ticked");
 
             java.awt.Dimension asDefault = Components.onTheEventThread(editor::getSize);
 
@@ -291,7 +291,7 @@ public class testSignalsAreGrayInTheAutonomyEditor
             editor = frozen.editorOn(PAGE);
             box = grayedOutIcons(editor);
 
-            assertFalse(Components.onTheEventThread(box::isSelected), "a start with it remembered unticked opens it ticked");
+            assertFalse(Components.onTheEventThread(box::isSelected), "a start with it remembered unticked opens it unticked");
             assertEquals(Components.onTheEventThread(editor::getSize), asDefault,
                 "the editor started with Grayed-out Icons unticked is not the size of a default start");
 
