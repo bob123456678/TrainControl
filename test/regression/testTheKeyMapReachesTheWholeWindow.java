@@ -23,9 +23,10 @@ import support.Reflect;
  *
  * The map is a `KeyListener`, which hears only the component holding the keyboard, and refocusing the tabbed pane
  * (OB-170) cannot work when the operator is USING what has it.  `letTheWholeWindowDriveTrains` registers a key event
- * POST processor for keys that came back unconsumed.  Four claims: it reaches a component that is not the keyboard, it
- * does NOT fire twice when the focused component is one the map listens to, it leaves a text component's letters
- * alone, and a dialog the window owns keeps its keys.  ON THE FROZEN RAILWAY, never `cs2_sample_layout`.
+ * POST processor for keys that came back unconsumed.  Its claims: it reaches a component that is not the keyboard, and
+ * the run keys reach it wherever the keyboard is; it does NOT fire twice when the focused component is one the map
+ * listens to, it leaves a text component's letters alone, and a dialog the window owns keeps its keys.  ON THE FROZEN
+ * RAILWAY, never `cs2_sample_layout`.
  *
  * MUTATION: remove the `letTheWholeWindowDriveTrains()` call from `display()` (first test, and the third's control);
  * drop the `JTextComponent` guard (third).  The second test is not mutation-backed and says so.
@@ -309,6 +310,61 @@ public class testTheKeyMapReachesTheWholeWindow
         }
     }
 
+    /**
+     * Control+G, Control+H and Control+Q reach the key table from every place in this window that can hold the
+     * keyboard, posted through the queue to whatever holds it, as the operating system delivers a key (MT-1048).  Text
+     * boxes are left out: they keep their keys by design.
+     *
+     * MUTATION: remove the `letTheWholeWindowDriveTrains()` call from `display()`, and only the tabbed pane is reached.
+     */
+    @Test(timeOut = 120000)
+    public void testTheRunKeysReachTheTableWhereverTheKeyboardIs() throws Exception
+    {
+        int wasOn = tabs().getSelectedIndex();
+        java.util.Set<String> places = new java.util.TreeSet<>();
+        java.util.List<String> missed = new java.util.ArrayList<>();
+
+        try
+        {
+            onEachTab(which ->
+            {
+                for (java.awt.Component place : Components.all(ui.getContentPane(), java.awt.Component.class,
+                    c -> c.isShowing() && c.isFocusable() && c.isEnabled() && !(c instanceof javax.swing.text.JTextComponent)))
+                {
+                    javax.swing.SwingUtilities.invokeAndWait(() -> place.requestFocusInWindow());
+                    Components.drain(5);
+
+                    java.awt.Component holding = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+
+                    if (holding != place) continue;
+
+                    places.add(place.getClass().getSimpleName());
+
+                    for (int key : new int[]{java.awt.event.KeyEvent.VK_G, java.awt.event.KeyEvent.VK_H, java.awt.event.KeyEvent.VK_Q})
+                    {
+                        if (post(holding, key, java.awt.event.InputEvent.CTRL_DOWN_MASK) != field("theKeyTheMapAlreadySaw"))
+                        {
+                            missed.add("Control+" + (char) key + " on " + place.getClass().getSimpleName() + " (tab " + which + ")");
+                        }
+                    }
+                }
+
+                return null;
+            });
+        }
+        finally
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() -> tabs().setSelectedIndex(wasOn));
+            Components.drain(5);
+        }
+
+        if (places.isEmpty()) throw new SkipException("this desktop would not give any part of the window the keyboard");
+
+        org.testng.Assert.assertTrue(missed.isEmpty(), missed.size() + " run keys pressed where the keyboard was never "
+            + "reached the window's key table, such as " + missed.subList(0, Math.min(5, missed.size()))
+            + " (the keyboard was held by " + places + ")");
+    }
+
     private static boolean autonomyRuns()
     {
         return model.hasAutoLayout() && model.getAutoLayout().isRunning();
@@ -321,6 +377,18 @@ public class testTheKeyMapReachesTheWholeWindow
      */
     private static javax.swing.text.JTextComponent findSomewhereToType() throws Exception
     {
+        return onEachTab(which -> somewhereToType(ui.getContentPane()));
+    }
+
+    /** What a tab shown on its own gives, or null to go on to the next. */
+    private interface OnATab<T>
+    {
+        T at(int tab) throws Exception;
+    }
+
+    /** Shows each enabled tab in turn until one gives an answer; null when none does. */
+    private static <T> T onEachTab(OnATab<T> ask) throws Exception
+    {
         for (int which = 0; which < tabs().getTabCount(); which++)
         {
             if (!tabs().isEnabledAt(which)) continue;
@@ -331,7 +399,7 @@ public class testTheKeyMapReachesTheWholeWindow
 
             Components.drain(5);
 
-            javax.swing.text.JTextComponent found = somewhereToType(ui.getContentPane());
+            T found = ask.at(which);
 
             if (found != null) return found;
         }
@@ -375,16 +443,23 @@ public class testTheKeyMapReachesTheWholeWindow
         post(on, keyCode, 0);
     }
 
-    /** Posted through the queue, as the operating system delivers a key, to the component holding the keyboard. */
-    private static void post(java.awt.Component on, int keyCode, int modifiers) throws Exception
+    /**
+     * Posted through the queue, as the operating system delivers a key, to the component holding the keyboard; with
+     * its extended key code, which Swing's key bindings look up first.
+     */
+    private static java.awt.event.KeyEvent post(java.awt.Component on, int keyCode, int modifiers) throws Exception
     {
         final java.awt.event.KeyEvent pressed = new java.awt.event.KeyEvent(on,
             java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(), modifiers, keyCode,
             (char) keyCode);
 
+        Reflect.field(java.awt.event.KeyEvent.class, "extendedKeyCode").setLong(pressed, keyCode);
+
         java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(pressed);
 
         Components.drain(5);
+
+        return pressed;
     }
 
     /**
