@@ -305,29 +305,135 @@ public class testStartingAutonomyFromTheWindow
     }
 
     /**
-     * Control+G with the power off starts nothing, asks nothing and says why in the log: a held key repeats, and a dialog
-     * per repeat would pile up.
+     * Control+G with the power off starts nothing and says why on screen, once, as Start does: in the log alone, Adam
+     * saw no effect (MT-1048).
      *
-     * MUTATION: have the "start autonomous operation" row call `requestStartAutonomy` without `refusedByKey` first, and
-     * the power's refusal is a dialog.
+     * MUTATION: pass `false` for `shown` at the row's second `refusedByKey`, and the refusal is only logged.
      */
     @Test
-    public void testControlGThatCannotStartOnlySaysWhy() throws Exception
+    public void testControlGWithThePowerOffSaysWhyOnScreen() throws Exception
     {
         support.SettingsWindow.power(ui, model, false);
 
         try
         {
-            List<String> asked = new ArrayList<>();
-
-            List<String> said = logged(() -> asked.addAll(control(KeyEvent.VK_G, message -> null)));
-
-            assertEquals(asked, new ArrayList<String>(), "Control+G with the power off asked something");
-
-            assertTrue(said.contains(I18n.t("autolayout.ui.powerOnToStart")), "Control+G with the power off did not say"
-                + " why in the log: " + said);
+            assertEquals(control(KeyEvent.VK_G, message -> null), java.util.Collections.singletonList(
+                I18n.t("autolayout.ui.powerOnToStart")), "Control+G with the power off did not say why on screen, once");
 
             assertFalse(model.getAutoLayout().isAutoRunning(), "Control+G started the run with the power off");
+        }
+        finally
+        {
+            support.SettingsWindow.power(ui, model, true);
+        }
+    }
+
+    /**
+     * Control+G held with the power off says why once: repeats of Control+G and Control+H that reach the key table while
+     * its message is up show nothing more.
+     *
+     * MUTATION: drop `ui.keysAsking > 0 ||` from the "start autonomous operation" row, and the repeat says it again.
+     */
+    @Test
+    public void testControlGHeldSaysWhyOnce() throws Exception
+    {
+        support.SettingsWindow.power(ui, model, false);
+
+        try
+        {
+            offerReturnHome();
+
+            final java.awt.Component keyboard = field("KeyboardTab");
+
+            final java.util.concurrent.atomic.AtomicBoolean repeated = new java.util.concurrent.atomic.AtomicBoolean();
+
+            List<String> asked = control(KeyEvent.VK_G, message ->
+            {
+                if (repeated.compareAndSet(false, true)) repeat(keyboard, KeyEvent.VK_G, KeyEvent.VK_H);
+
+                return null;
+            });
+
+            assertEquals(asked, java.util.Collections.singletonList(I18n.t("autolayout.ui.powerOnToStart")),
+                "Control+G held said more over its own message");
+        }
+        finally
+        {
+            support.SettingsWindow.power(ui, model, true);
+        }
+    }
+
+    /**
+     * Control+G on a page window with the power off says why over that window, once: repeats on the page and on the
+     * main window show nothing more.
+     *
+     * MUTATION: `this` for `dialogParent()` in `refusedByKey`, and the message hangs off the main window.
+     */
+    @Test
+    public void testControlGOnAPageWindowSaysWhyOverItOnce() throws Exception
+    {
+        support.SettingsWindow.power(ui, model, false);
+
+        org.traincontrol.gui.LayoutPopupUI page = null;
+
+        try
+        {
+            final org.traincontrol.gui.LayoutPopupUI opened = page = support.AskingWindows.openThePage(ui);
+
+            final java.awt.Component keyboard = field("KeyboardTab");
+
+            final java.util.concurrent.atomic.AtomicBoolean repeated = new java.util.concurrent.atomic.AtomicBoolean();
+
+            try (Answering answering = Answering.start(message ->
+            {
+                if (repeated.compareAndSet(false, true))
+                {
+                    repeat(opened, KeyEvent.VK_G, KeyEvent.VK_H);
+                    repeat(keyboard, KeyEvent.VK_G);
+                }
+
+                return null;
+            }))
+            {
+                repeat(opened, KeyEvent.VK_G);
+
+                answering.awaitAsked(2, 3000);
+
+                Components.settle();
+
+                assertEquals(answering.asked(), java.util.Collections.singletonList(I18n.t("autolayout.ui.powerOnToStart")),
+                    "Control+G on a page window did not say why once");
+
+                support.AskingWindows.assertSaid(answering.questions().get(0), opened, I18n.t("autolayout.ui.powerOnToStart"));
+            }
+        }
+        finally
+        {
+            support.AskingWindows.closeThePage(page);
+
+            support.SettingsWindow.power(ui, model, true);
+        }
+    }
+
+    /**
+     * Control+H with the power off and Return Home offered (the power does not gray it) asks nothing and says why on
+     * screen, as the button does.
+     *
+     * MUTATION: pass `false` for `shown` at `returnHomeByKey`'s second `refusedByKey`, and the refusal is only logged.
+     */
+    @Test
+    public void testControlHWithThePowerOffSaysWhyOnScreen() throws Exception
+    {
+        support.SettingsWindow.power(ui, model, false);
+
+        try
+        {
+            List<Boolean> grayed = offerReturnHome();
+
+            assertEquals(control(KeyEvent.VK_H, message -> null), java.util.Collections.singletonList(
+                I18n.t("autolayout.ui.powerOnToStart")), "Control+H with the power off did not say why on screen, once");
+
+            assertEquals(grayed, new ArrayList<Boolean>(), "Control+H with the power off set off for home");
         }
         finally
         {
@@ -449,7 +555,7 @@ public class testStartingAutonomyFromTheWindow
     /**
      * Control+H pressed again while its question is up asks nothing more: a held key repeats.
      *
-     * MUTATION: drop `askingToReturnHome` from `returnHomeByKey`'s first return, and the repeat asks over the question.
+     * MUTATION: drop `keysAsking > 0` from `returnHomeByKey`'s first return, and the repeat asks over the question.
      */
     @Test
     public void testControlHHeldAsksOnce() throws Exception
@@ -546,6 +652,24 @@ public class testStartingAutonomyFromTheWindow
             Keys.press(field("KeyboardTab"), key, InputEvent.CTRL_DOWN_MASK);
 
             return null;
+        });
+    }
+
+    /** Control and this key pressed on a component. */
+    private static KeyEvent controlAnd(java.awt.Component on, int key)
+    {
+        return new KeyEvent(on, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), InputEvent.CTRL_DOWN_MASK, key, (char) key);
+    }
+
+    /**
+     * Control and these keys as a held key's repeats reach the component's own listeners, posted, so a repeat sent while
+     * a message is up lands before it is answered: past the modal message, which keeps one posted through the queue.
+     */
+    private static void repeat(java.awt.Component on, int... keys)
+    {
+        javax.swing.SwingUtilities.invokeLater(() ->
+        {
+            for (int key : keys) for (java.awt.event.KeyListener each : on.getKeyListeners()) each.keyPressed(controlAnd(on, key));
         });
     }
 
