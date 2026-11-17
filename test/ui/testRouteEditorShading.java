@@ -74,6 +74,9 @@ public class testRouteEditorShading
             {
                 Component cell = render(conditions, caption, column);
 
+                assertEquals(cell.getForeground(), conditions.getForeground(), "column " + column
+                    + " of the caption line kept the grayed ink of the cell before it");
+
                 assertEquals(cell.getBackground(), plain,
                     "column " + column + " of the caption line came back " + cell.getBackground()
                     + " rather than the table's own " + plain + ". The renderer hands back one "
@@ -245,6 +248,9 @@ public class testRouteEditorShading
         MarklinRoute route = new MarklinRoute(null, "OB-121", 40,
             new java.util.ArrayList<>(), 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false,
             new NodeRouteCommand(RouteCommand.RouteCommandFeedback(10, false)));
+
+        // Locked, so every cell of the condition is washed gray: an editable one has no wash to prime with
+        route.setLocked(true);
 
         final org.traincontrol.gui.RouteEditorFrame[] frame =
             new org.traincontrol.gui.RouteEditorFrame[1];

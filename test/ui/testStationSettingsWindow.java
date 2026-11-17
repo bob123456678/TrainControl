@@ -4184,13 +4184,15 @@ public class testStationSettingsWindow
     }
 
     /**
-     * Only arrows carry color: the square east of BottomMainA is a signal whose art has a red lamp, and the picture draws
-     * that square with no red in it.
+     * Nothing in the picture is grayed (MT-1037, Adam: "Just avoid greying altogether in the preview in the station
+     * settings"): each next square, a signal with its lamp among them, is drawn as it draws itself, with neither
+     * the arrows' wash nor the yellow flash of a change, apart from under the picture's marks.
      *
-     * MUTATION: have `StationPicture` paint the next squares without `inGray`, and this fails.
+     * MUTATION: paint the next squares through `ImageUtil.inGray` again, give their arrows the wash, or drop
+     * `!sensorsFree` from `LayoutLabel`'s accessory highlight, and this fails.
      */
     @Test(timeOut = 120000)
-    public void testANeighborsSignalIsDrawnWithoutColor() throws Exception
+    public void testTheNextSquaresAreDrawnInTheirOwnColors() throws Exception
     {
         TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
 
@@ -4202,31 +4204,103 @@ public class testStationSettingsWindow
 
         javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
 
-        int[] red = Components.onTheEventThread(() ->
+        Components.onTheEventThread(() ->
         {
-            java.awt.Rectangle east = (java.awt.Rectangle) window.pictureMarksForTest().get("SQUARE.E");
+            Map<String, java.awt.Shape> marks = window.pictureMarksForTest();
+            java.awt.image.BufferedImage picture = drawnOn(block);
+            java.awt.geom.Area marked = new java.awt.geom.Area();
 
-            assertNotNull(east, "the picture has no square east of the station");
+            for (Map.Entry<String, java.awt.Shape> mark : marks.entrySet())
+            {
+                if (!mark.getKey().startsWith("IN.") && !mark.getKey().startsWith("NEXT.")) continue;
 
-            java.awt.Component signal = null;
+                marked.add(new java.awt.geom.Area(mark.getValue()));
+                marked.add(new java.awt.geom.Area(new java.awt.BasicStroke(12).createStrokedShape(mark.getValue())));
+            }
+
+            int squares = 0, colored = 0;
 
             // The art lives in the first child, out of the pointer's way
             for (java.awt.Component each : ((java.awt.Container) block.getComponent(0)).getComponents())
             {
-                if (each.getBounds().equals(east)) signal = each;
+                if (each.getBounds().equals(marks.get("SQUARE"))) continue;
+
+                java.awt.Rectangle at = each.getBounds();
+                java.awt.image.BufferedImage own = new java.awt.image.BufferedImage(at.width, at.height,
+                    java.awt.image.BufferedImage.TYPE_INT_RGB);
+                java.awt.Graphics2D g = own.createGraphics();
+
+                g.setColor(block.getBackground());
+                g.fillRect(0, 0, at.width, at.height);
+                each.paint(g);
+                g.dispose();
+
+                squares++;
+
+                assertFalse(((org.traincontrol.gui.LayoutLabel) each).isAccessoryHighlightOutstanding(), "the picture's"
+                    + " next square at " + at.x + "," + at.y + " wears the yellow wash of a change");
+                // a lamp, red or green
+                colored += pixels(own, new java.awt.Rectangle(at.getSize()),
+                    rgb -> RED.test(rgb) || (rgb >> 8 & 0xff) - (rgb >> 16 & 0xff) > 100);
+
+                for (int y = 0; y < at.height; y++)
+                {
+                    for (int x = 0; x < at.width; x++)
+                    {
+                        java.awt.Point p = new java.awt.Point(at.x + x, at.y + y);
+
+                        if (marked.contains(p)) continue;
+
+                        assertEquals(new java.awt.Color(picture.getRGB(p.x, p.y)), new java.awt.Color(own.getRGB(x, y)),
+                            "the picture's next square at " + at.x + "," + at.y + " is not drawn as it draws itself, at "
+                            + x + "," + y);
+                    }
+                }
             }
 
-            assertNotNull(signal, "no square of the picture is the signal");
+            assertTrue(squares > 1, "precondition: the picture draws no next squares");
+            assertTrue(colored > 0, "precondition: no next square's own art has color");
 
-            return new int[] {pixels(drawnOn((javax.swing.JComponent) signal), new java.awt.Rectangle(signal.getSize()), RED),
-                pixels(drawnOn(block), east, RED)};
+            return null;
         });
 
-        assertTrue(red[0] > 0, "precondition: the signal's own art has no red");
-
-        assertEquals(red[1], 0, "red pixels on the signal's square in the picture");
-
         StationDoors.close(window);
+    }
+
+    /**
+     * A signal beside the station is drawn at rest, whatever it shows on the railway, as a sensor is (OB-485): the
+     * picture shows the setup, and its squares hear of no change after it is built.
+     *
+     * MUTATION: have `LayoutLabel.ignoresState` leave a picture's signals and switches live again, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testANeighborsSignalIsDrawnAtRestWhateverItShows() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
+
+        org.traincontrol.base.Accessory signal = Components.onTheEventThread(() -> session.getGraph().getTiles()
+            .get(square.beside(org.traincontrol.automationui.TilePorts.Side.E)).getAccessory());
+
+        assertNotNull(signal, "precondition: the square east of the station is no signal");
+
+        boolean was = signal.isSwitched();
+
+        try
+        {
+            signal.setSwitched(false);
+
+            java.awt.image.BufferedImage one = pictureOf(square);
+
+            signal.setSwitched(true);
+
+            java.awt.image.BufferedImage other = pictureOf(square);
+
+            assertEquals(difference(one, other, 0), 0, "pixels of the picture that differ with the signal switched");
+        }
+        finally
+        {
+            signal.setSwitched(was);
+        }
     }
 
     /**

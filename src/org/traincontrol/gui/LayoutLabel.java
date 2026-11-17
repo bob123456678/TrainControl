@@ -99,10 +99,10 @@ public final class LayoutLabel extends JLabel
     /** Volatile: set after the constructor has started a decode, which reads it on another thread. */
     private volatile boolean sensorsFree;
 
-    /** Whether the picture ignores the device's state: always in the editor, and a sensor's in `sensorsAsFree`. */
+    /** Whether the picture ignores the device's state: in the editor, and in `sensorsAsFree`'s picture. */
     private boolean ignoresState()
     {
-        return edit || sensorsFree && component.isFeedback();
+        return edit || sensorsFree;
     }
 
     /**
@@ -112,13 +112,18 @@ public final class LayoutLabel extends JLabel
      */
     private volatile TileOverlay autonomyOverlay;
 
-    /** Whether this square draws its trains, asked as it paints: the autonomy editor's Show Trains switch (FR-119). */
-    private java.util.function.BooleanSupplier trainsShown = () -> true;
+    /** Whether this square draws trains, asked in paint: the editor's Show Trains, else the overlay box (OB-496). */
+    private java.util.function.BooleanSupplier trainsShown = this::overlayShown;
 
     /** Has this square ask `shown` whether to draw the trains on it (FR-119). */
     public void setTrainsShown(java.util.function.BooleanSupplier shown)
     {
-        this.trainsShown = shown == null ? () -> true : shown;
+        this.trainsShown = shown == null ? this::overlayShown : shown;
+    }
+
+    private boolean overlayShown()
+    {
+        return tcUI == null || tcUI.autonomyOverlayToggle == null || tcUI.autonomyOverlayToggle.isOverlayShown();
     }
 
     // What the autonomy editor draws here - directions, lengths, selection.  Separate from the overlay
@@ -169,7 +174,7 @@ public final class LayoutLabel extends JLabel
         this(c, parent, size, tcUI, edit, null);
     }
 
-    /** A square as the track diagram draws it, but a sensor always as free: a picture of the setup (OB-485). */
+    /** A square as the track diagram draws it, but each device at rest and no change flashed: a picture (OB-485). */
     public static LayoutLabel sensorsAsFree(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI)
     {
         LayoutLabel out = new LayoutLabel(c, parent, size, tcUI, false);
@@ -881,7 +886,7 @@ public final class LayoutLabel extends JLabel
                         // painted in `paintCoveredMark`, so a tile flashing yellow still shows both.
                         
                         // Temporarily highlight changes when they happen from a route/CS/keyboard command
-                        if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
+                        if (!edit && !sensorsFree && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                         {
                             // The one before it is stopped first (OB-333): nulling the field would leave the old timer
                             // to `setIcon(lastIcon)` over a later highlight.
@@ -1159,9 +1164,9 @@ public final class LayoutLabel extends JLabel
     @Override
     protected void paintComponent(java.awt.Graphics g)
     {
-        // The square itself, faintly, where the railway refuses it (MT-278): the composite is set before
-        // `super.paintComponent` and undone after; everything autonomy draws on top is at full strength.
-        boolean refused = !edit && square != null && tcUI != null && tcUI.isTrackBlocked(square);
+        // The square itself, faintly, where the railway refuses it (MT-278), unless the overlay box is off: the
+        // composite is set before `super.paintComponent` and undone after; what autonomy draws on top is full strength.
+        boolean refused = !edit && square != null && tcUI != null && overlayShown() && tcUI.isTrackBlocked(square);
 
         org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
 

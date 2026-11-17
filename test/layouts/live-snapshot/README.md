@@ -182,3 +182,4 @@ not fix it. Name the square.
 - `ui.testEveryLanguageFitsTheEditors`
 - `ui.testEveryLanguageFitsThePopups`
 - `ui.testReturnHomeGivesTheSamePlanEveryTime`
+- `regression.testTheOverlayBoxDuringARun`

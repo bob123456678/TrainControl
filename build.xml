@@ -740,6 +740,7 @@
         <test-one-class class="testANewerJavaKeepsWhatJava8Had"/>
         <test-one-class class="testTheLengthBoxAndTheKeyboard"/>
         <test-one-class class="testBlankLinesStayLean"/>
+        <test-one-class class="testTheOverlayBoxDuringARun"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

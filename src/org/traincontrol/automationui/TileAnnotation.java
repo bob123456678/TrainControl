@@ -11,6 +11,7 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.Stroke;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -1685,31 +1686,42 @@ public class TileAnnotation
             g.drawOval(x, y, size, size);
         }
 
-        if (badge.isStation()) stopDot(g, x + size / 2.0, y + size / 2.0, size, 1, line);
+        if (badge.isStation() && badge.isStopOnly()) stopDot(g, x, y, size, line);
     }
 
     /**
-     * The stop-only station's dot (MT-1017), a third of the icon's height across and never under 3 pixels, in the
-     * outline's color: white on a filled icon, the icon's blue on a white one.
+     * The stop-only station's dot (MT-1017), a third of the icon's box and never under 3 pixels, in the outline's color,
+     * centered on that outline as drawn.
      */
-    private void stopDot(Graphics2D g, double x, double y, double iconHeight, double scale, Color line)
+    private static void stopDot(Graphics2D g, int x, int y, int size, Color line)
     {
-        if (!badge.isStopOnly()) return;
-
-        double across = Math.max(3 / scale, iconHeight / 3);
-
+        double across = Math.max(3, size / 3.0);
+        AffineTransform t = g.getTransform();
         Graphics2D d = (Graphics2D) g.create();
 
         try
         {
             ImageUtil.smooth(d);
             d.setColor(line);
-            d.fill(new Ellipse2D.Double(x - across / 2, y - across / 2, across, across));
+            d.fill(new Ellipse2D.Double(drawnMiddle(g, x, size, t.getScaleX(), t.getTranslateX()) - across / 2,
+                drawnMiddle(g, y, size, t.getScaleY(), t.getTranslateY()) - across / 2, across, across));
         }
         finally
         {
             d.dispose();
         }
+    }
+
+    /** An outline's middle on one axis: the default stroke control moves each end to the middle of its screen pixel. */
+    private static double drawnMiddle(Graphics2D g, int at, int size, double scale, double shift)
+    {
+        if (RenderingHints.VALUE_STROKE_PURE.equals(g.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL)))
+        {
+            return at + size / 2.0;
+        }
+
+        double ends = Math.floor(at * scale + shift) + Math.floor((at + size) * scale + shift);
+        return ((ends + 1) / 2 - shift) / scale;
     }
 
     /** The sensor's contact covered under a plain sensor's turn mark, kept inside the square. */
@@ -1915,17 +1927,19 @@ public class TileAnnotation
         return EnumSet.of(a, b);
     }
 
+    /** Corners at the middles of the box's sides, halves included, so an odd size is no lopsided (MT-1040). */
     private void diamond(Graphics2D g, int x, int y, int size, Color fill, Color line)
     {
-        int half = size / 2;
-
-        int[] xs = {x + half, x + size, x + half, x};
-        int[] ys = {y, y + half, y + size, y + half};
-
+        Path2D.Double shape = new Path2D.Double();
+        shape.moveTo(x + size / 2.0, y);
+        shape.lineTo(x + size, y + size / 2.0);
+        shape.lineTo(x + size / 2.0, y + size);
+        shape.lineTo(x, y + size / 2.0);
+        shape.closePath();
         g.setColor(fill);
-        g.fillPolygon(xs, ys, 4);
+        g.fill(shape);
         g.setColor(line);
-        g.drawPolygon(xs, ys, 4);
+        g.draw(shape);
     }
 
     private void paintLength(Graphics2D g, int width, int height)

@@ -444,16 +444,13 @@ public class testTheKeyMapReachesTheWholeWindow
     }
 
     /**
-     * Posted through the queue, as the operating system delivers a key, to the component holding the keyboard; with
-     * its extended key code, which Swing's key bindings look up first.
+     * Posted through the queue, as the operating system delivers a key, to the component holding the keyboard.
      */
     private static java.awt.event.KeyEvent post(java.awt.Component on, int keyCode, int modifiers) throws Exception
     {
         final java.awt.event.KeyEvent pressed = new java.awt.event.KeyEvent(on,
             java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(), modifiers, keyCode,
             (char) keyCode);
-
-        Reflect.field(java.awt.event.KeyEvent.class, "extendedKeyCode").setLong(pressed, keyCode);
 
         java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(pressed);
 
