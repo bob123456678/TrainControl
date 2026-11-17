@@ -466,11 +466,11 @@ Tab icons provided by Freepik.
             - `Test a path` and `Why not Moving?` give one answer for both automatic and by-hand sends: a path only a hand send can take is purple, and the destinations are listed in a table.  The `Path Type` choice is gone.
             - The autonomy editor's list of things to look at now agrees with `Test a path` about which stations can be reached.
             - The `Station` preset lets trains run through, and a small white dot on the track diagram, in the autonomy editor and in `Station Settings` marks a station trains must stop at (a station whose `Trains can pass through` box is unticked).  The `Terminus` and `Parking` presets untick `Trains can pass through`, and `Parking` is a terminus full autonomy never chooses.
-            - The autonomy editor has a `Grayed-Out Icons` box under `Visible Elements`: untick it to leave the squares autonomy ignores empty instead of grayed.
+            - The autonomy editor has a `Grayed-out Icons` box under `Visible Elements`: untick it to leave the squares autonomy ignores empty instead of grayed.
             - `Station Settings` shows an `*` on `Advanced` when a setting under it has been changed, and the `Maximum train length` box has arrows and shows `Any` at 0.
             - `Debugging Tools` in the autonomy editor is now `Path Debugging`.
             - Hovering `Some trains` in `Station Settings` explains each condition.
-            - The autonomy editor's filter box sits below the list with a gray `Filter` hint inside it.
+            - The autonomy editor's filter box sits inside `Things to look at`, below the list, with a gray `Filter` hint inside it.
         - Locomotive Control
             - `Sync Database w/ Central Station` is now in the `Locomotives` menu and first asks about locomotives renamed at the Central Station; `Check for Renamed Locomotives` is gone.
         - Central Station Protocol
@@ -490,13 +490,14 @@ Tab icons provided by Freepik.
             - A train whose journey fails partway is recorded where it stopped, and its destination is freed.
             - On a station that allows trains from every side, `Station Settings` no longer shows arrival arrows.
             - `Station Settings` steps aside while you pick a train's tail on the diagram.
-            - The station picture in `Station Settings` no longer shows which s88 squares are occupied.
+            - The station picture in `Station Settings` no longer shows which s88 squares are occupied, and nothing in it is grayed.
+            - The `Autonomy Controls` box above the track diagram also hides the trains' orange lines.
         - Locomotive Control
             - `Cancel` in `Locomotive Settings` asks `Save`, `Discard` or `Cancel` before throwing away what you typed, and the revert and crop marks change together with the picture.
         - Interface
             - The `Start Autonomous Operation` button ends at the track diagram's right edge.
             - On newer Java, a scaled Windows display is no longer scaled twice, the file chooser's `Look In` list works, and settings are kept when the folder path has a non-English letter.
-            - A new route item starts at address 0, and a selected row's grayed cells stay readable.
+            - A new route item starts at address 0, and a cell a row has no use for shows a gray `---`.
 * v3.1.0 [11/15/2026]
     - Central Station Protocol
         - New Features
