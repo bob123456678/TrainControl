@@ -16846,7 +16846,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void askedByKey(Runnable ask)
     {
         aKeyIsAsking = true;
-
         try
         {
             ask.run();

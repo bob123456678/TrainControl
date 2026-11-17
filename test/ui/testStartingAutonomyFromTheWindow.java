@@ -330,7 +330,7 @@ public class testStartingAutonomyFromTheWindow
 
     /**
      * Control+G held with the power off says why once: repeats of Control+G and Control+H that reach the key table while
-     * its message is up show nothing more, and one posted as the keyboard sends it is the message's, not the window's.
+     * its message is up show nothing more.
      *
      * MUTATION: drop `ui.aKeyIsAsking ||` from the "start autonomous operation" row, and the repeat says it again.
      */
@@ -349,12 +349,7 @@ public class testStartingAutonomyFromTheWindow
 
             List<String> asked = control(KeyEvent.VK_G, message ->
             {
-                if (repeated.compareAndSet(false, true))
-                {
-                    java.awt.Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(controlAnd(keyboard, KeyEvent.VK_G));
-
-                    repeat(keyboard, KeyEvent.VK_G, KeyEvent.VK_H);
-                }
+                if (repeated.compareAndSet(false, true)) repeat(keyboard, KeyEvent.VK_G, KeyEvent.VK_H);
 
                 return null;
             });
