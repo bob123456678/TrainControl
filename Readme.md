@@ -476,7 +476,7 @@ Tab icons provided by Freepik.
         - Central Station Protocol
             - After a sync from a local copy, the log lists each accessory square whose protocol the Central Station does not have at that address.
         - Interface
-            - Ctrl+G starts autonomous operation, Ctrl+Q gracefully stops it, and Ctrl+H sends every locomotive home after asking first.  In the autonomy editor, Ctrl+V places the selected locomotive on a station and Delete takes its train off.  Ctrl+Enter saves in the editors, `Locomotive Settings` and the route editor, and is `Done Editing` in `Station Settings`.
+            - Ctrl+G starts autonomous operation, Ctrl+Q gracefully stops it, and Ctrl+H sends every locomotive home after asking first.  When Ctrl+G or Ctrl+H cannot run because the track power is off or the setup is not ready, a message says why.  In the autonomy editor, Ctrl+V places the selected locomotive on a station and Delete takes its train off.  Ctrl+Enter saves in the editors, `Locomotive Settings` and the route editor, and is `Done Editing` in `Station Settings`.
             - On Java 8, the pointer over links and buttons is a smooth, bold hand.
             - To scroll the Log tab sideways, hold Shift and turn the mouse wheel.
     - Bug Fixes
@@ -490,7 +490,7 @@ Tab icons provided by Freepik.
             - A train whose journey fails partway is recorded where it stopped, and its destination is freed.
             - On a station that allows trains from every side, `Station Settings` no longer shows arrival arrows.
             - `Station Settings` steps aside while you pick a train's tail on the diagram.
-            - The station picture in `Station Settings` no longer shows which s88 squares are occupied, and nothing in it is grayed.
+            - The station picture in `Station Settings` no longer shows which s88 squares are occupied, and nothing in it is faded.
             - The `Autonomy Controls` box above the track diagram also hides the trains' orange lines.
         - Locomotive Control
             - `Cancel` in `Locomotive Settings` asks `Save`, `Discard` or `Cancel` before throwing away what you typed, and the revert and crop marks change together with the picture.
