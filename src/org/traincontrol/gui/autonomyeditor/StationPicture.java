@@ -46,7 +46,7 @@ import org.traincontrol.util.I18n;
 /**
  * The station and the track squares its track meets, as the track diagram draws them at 60 pixels (FR-111): the station
  * with a red arrow only at a side May depart shuts, and its ways in to stop, from `Layout.standingRulesAt`; the next
- * squares with only their own arrows, over gray art.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
+ * squares with only their own arrows.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
  */
 final class StationPicture extends JPanel
 {
@@ -277,7 +277,8 @@ final class StationPicture extends JPanel
 
             if (!kept.isEmpty())
             {
-                nextMarks.put(side, new TileAnnotation(kept, -1, false, null, false, their.isCurved()).withAllowedDirections());
+                nextMarks.put(side, new TileAnnotation(kept, -1, false, null, false, their.isCurved(), false, null, true)
+                    .withAllowedDirections());
             }
         }
 
@@ -541,7 +542,7 @@ final class StationPicture extends JPanel
             edge[1] - (edge[1] - from[1]) / length * SQUARE);
     }
 
-    /** The squares, the next ones in gray, and the marks over them. */
+    /** The squares and the marks over them; nothing grayed (MT-1037). */
     private final class Block extends JPanel
     {
         Block()
@@ -630,19 +631,15 @@ final class StationPicture extends JPanel
                 {
                     Rectangle at = cell(each.getKey());
 
-                    // Without color, so a signal's lamps are not read as the station's arrows.
-                    org.traincontrol.util.ImageUtil.inGray(g2, at, each.getValue()::paint);
+                    Graphics2D over = (Graphics2D) g2.create(at.x, at.y, at.width, at.height);
+
+                    each.getValue().paint(over);
 
                     TileAnnotation their = nextMarks.get(each.getKey());
 
-                    if (their != null)
-                    {
-                        Graphics2D over = (Graphics2D) g2.create(at.x, at.y, at.width, at.height);
+                    if (their != null) their.paint(over, at.width, at.height);
 
-                        their.paint(over, at.width, at.height);
-
-                        over.dispose();
-                    }
+                    over.dispose();
                 }
 
                 Rectangle middle = cell(null);

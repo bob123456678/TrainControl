@@ -169,7 +169,7 @@ public final class LayoutLabel extends JLabel
         this(c, parent, size, tcUI, edit, null);
     }
 
-    /** A square as the track diagram draws it, but a sensor always as free: a picture of the setup (OB-485). */
+    /** A square as the track diagram draws it, but a sensor always free and no change flashed: a picture (OB-485). */
     public static LayoutLabel sensorsAsFree(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI)
     {
         LayoutLabel out = new LayoutLabel(c, parent, size, tcUI, false);
@@ -881,7 +881,7 @@ public final class LayoutLabel extends JLabel
                         // painted in `paintCoveredMark`, so a tile flashing yellow still shows both.
                         
                         // Temporarily highlight changes when they happen from a route/CS/keyboard command
-                        if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
+                        if (!edit && !sensorsFree && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                         {
                             // The one before it is stopped first (OB-333): nulling the field would leave the old timer
                             // to `setIcon(lastIcon)` over a later highlight.
