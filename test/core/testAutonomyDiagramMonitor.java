@@ -2035,58 +2035,93 @@ public class testAutonomyDiagramMonitor
 
     /**
      * The stop-only dot sits at the middle of the icon it marks, straight, upright or on a bend, plain, terminus or may
-     * turn, at any size: within a quarter pixel of the icon's own middle (MT-1040, Adam: "the dot does not appear
-     * centered over the station icon").
+     * turn, at any size and at Windows' display scales: within a quarter of a screen pixel of the icon's own middle
+     * (MT-1040, Adam: "the dot does not appear centered over the station icon").
      *
-     * MUTATION: draw the dot with pure strokes again while the icon keeps the default stroke control, and this fails.
+     * MUTATION: draw the dot with pure strokes again while the icon keeps the default stroke control, or move it by a
+     * fixed half pixel whatever the scale, and this fails.
      */
     @Test
     public void testTheStopDotSitsAtTheIconsMiddle()
     {
         Side[][] roads = {{Side.W, Side.E}, {Side.N, Side.S}, {Side.N, Side.E}, {Side.S, Side.W}};
 
-        for (int size : new int[] {24, 30, 36, 45, 60})
+        for (double scale : new double[] {1, 1.25, 1.5, 1.75, 2})
         {
-            for (Side[] road : roads)
+            for (int size : new int[] {24, 30, 36, 45, 60})
             {
-                for (int kind = 0; kind < 3; kind++)
+                for (Side[] road : roads)
                 {
-                    boolean turns = kind > 0, may = kind == 2;
+                    for (int kind = 0; kind < 3; kind++)
+                    {
+                        boolean turns = kind > 0, may = kind == 2;
 
-                    TileAnnotation.Badge through = new TileAnnotation.Badge(true, turns, false, false, true, road[0],
-                        road[1], may, false, null, false);
-                    TileAnnotation.Badge stops = new TileAnnotation.Badge(true, turns, false, false, true, road[0],
-                        road[1], may, false, null, true);
+                        TileAnnotation.Badge through = new TileAnnotation.Badge(true, turns, false, false, true,
+                            road[0], road[1], may, false, null, false);
+                        TileAnnotation.Badge stops = new TileAnnotation.Badge(true, turns, false, false, true,
+                            road[0], road[1], may, false, null, true);
 
-                    java.awt.image.BufferedImage without = onTrack(through, size);
+                        java.awt.image.BufferedImage without = onTrack(through, size, scale);
 
-                    java.awt.Rectangle icon = extent(without, BLUE), dot = changed(without, onTrack(stops, size));
+                        double[] icon = middleOf(without, null), dot = middleOf(onTrack(stops, size, scale), without);
 
-                    String what = stops + " from " + road[0] + " to " + road[1] + " at " + size;
+                        String what = stops + " from " + road[0] + " to " + road[1] + " at " + size + " by " + scale;
 
-                    assertNotNull(dot, what + " wears no dot");
-
-                    assertTrue(Math.abs(dot.getCenterX() - icon.getCenterX()) <= 0.25
-                        && Math.abs(dot.getCenterY() - icon.getCenterY()) <= 0.25, what + ": the dot's middle is "
-                        + dot.getCenterX() + "," + dot.getCenterY() + ", the icon's " + icon.getCenterX() + ","
-                        + icon.getCenterY());
+                        assertTrue(Math.abs(dot[0] - icon[0]) <= 0.25 && Math.abs(dot[1] - icon[1]) <= 0.25, what
+                            + ": the dot's middle is " + dot[0] + "," + dot[1] + ", the icon's " + icon[0] + ","
+                            + icon[1]);
+                    }
                 }
             }
         }
     }
 
-    /** A station on its badge's own road, over dark track. */
     private static java.awt.image.BufferedImage onTrack(TileAnnotation.Badge badge, int size)
     {
+        return onTrack(badge, size, 1);
+    }
+
+    /** The middle of a picture's blue, weighed by how blue each pixel is; or, given `base`, of what differs from it. */
+    private static double[] middleOf(java.awt.image.BufferedImage image, java.awt.image.BufferedImage base)
+    {
+        double x = 0, y = 0, sum = 0;
+
+        for (int i = 0; i < image.getWidth(); i++)
+        {
+            for (int j = 0; j < image.getHeight(); j++)
+            {
+                int rgb = image.getRGB(i, j), was = base == null ? 0 : base.getRGB(i, j);
+                double weight = base == null
+                    ? Math.max(0, channel(rgb, 0) - Math.max(channel(rgb, 16), channel(rgb, 8)))
+                    : Math.abs(channel(rgb, 16) - channel(was, 16)) + Math.abs(channel(rgb, 8) - channel(was, 8))
+                    + Math.abs(channel(rgb, 0) - channel(was, 0));
+
+                x += weight * (i + 0.5);
+                y += weight * (j + 0.5);
+                sum += weight;
+            }
+        }
+
+        assertTrue(sum > 0, base == null ? "no blue icon is drawn" : "no dot is drawn");
+
+        return new double[] {x / sum, y / sum};
+    }
+
+    /** A station on its badge's own road, over dark track, drawn at a display scale as Java 9 and later draw it. */
+    private static java.awt.image.BufferedImage onTrack(TileAnnotation.Badge badge, int size, double scale)
+    {
+        int pixels = (int) Math.ceil(size * scale);
+
         java.awt.image.BufferedImage image =
-            new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_RGB);
+            new java.awt.image.BufferedImage(pixels, pixels, java.awt.image.BufferedImage.TYPE_INT_RGB);
 
         java.awt.Graphics2D g = image.createGraphics();
 
         try
         {
             g.setColor(new java.awt.Color(64, 64, 64));
-            g.fillRect(0, 0, size, size);
+            g.fillRect(0, 0, pixels, pixels);
+            g.scale(scale, scale);
 
             TileAnnotation annotation = new TileAnnotation(Arrays.asList(new TileAnnotation.Mark(badge.getA(), badge.getB(), null)),
                 -1, false, badge, false, false, false, null, true, null);
