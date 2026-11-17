@@ -668,7 +668,7 @@ public class testStartingAutonomyFromTheWindow
 
     /**
      * Control and these keys as a held key's repeats reach the component's own listeners, posted, so a repeat sent while
-     * a message is up lands before it is answered: past the modal filter, which drops repeats from the queue.
+     * a message is up lands before it is answered: past the modal message, which keeps one posted through the queue.
      */
     private static void repeat(java.awt.Component on, int... keys)
     {
