@@ -52,7 +52,7 @@ import time
 import datetime
 
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox, simpledialog, filedialog
 
 
 # --------------------------------------------------------------------------------------------
@@ -808,6 +808,29 @@ def _describe_tried(tried):
         for label, path in tried)
 
 
+# THE JAVA 21 TO TEST ON (Adam, 2026-11-17: "controls for display scaling and Java version there, so I can run those
+# tests"): TC_JAVA21_HOME, then JAVA_HOME (Android Studio's JDK 21 on this machine), then the usual install folders.
+JAVA21_GLOBS = [r"C:\Program Files\%s\jdk-21*\bin\java.exe" % vendor
+                for vendor in ("Java", "Eclipse Adoptium", "Microsoft", "Zulu", "Amazon Corretto")]
+
+
+def find_java21():
+    """A java.exe that reports version 21, or None."""
+
+    homes = [os.environ.get("TC_JAVA21_HOME"), os.environ.get("JAVA_HOME"),
+             r"C:\Program Files\Android\Android Studio\jbr"]
+    paths = [os.path.join(h, "bin", "java.exe") for h in homes if h]
+
+    for pattern in JAVA21_GLOBS:
+        paths += sorted(glob.glob(pattern), reverse=True)
+
+    return next((p for p in paths if os.path.exists(p) and '"21' in _java_version_report(p)), None)
+
+
+# The scales a launch on Java 21 can be given (sun.java2d.uiScale); None is Windows' own.  Java 8 has no such setting.
+SCALES = [("Windows' scale", None), ("100%", "1"), ("125%", "1.25"), ("150%", "1.5"), ("175%", "1.75"), ("200%", "2")]
+
+
 def newest_mtime(folder):
     newest = 0
 
@@ -857,19 +880,27 @@ def project_jars():
     return jars
 
 
-def launch_plan(language=None, regular=False):
+def launch_plan(language=None, regular=False, java21=False, scale=None, chosen_jar=None):
     """What would be run, and how fresh it is.
 
     :param language: one of LANGUAGES to run it in, or None for whatever this computer's is
     :param regular: True to start it as it starts on its own - no simulation, no debug, connecting to the Central
         Station (Adam, 2026-09-29: "launch TC in regular mode (without debug+simulate) via the tools menu")
+    :param java21: True to run on Java 21 (`find_java21`) rather than Java 8
+    :param scale: a SCALES value, the scale Java 21 draws at instead of Windows'; ignored on Java 8, which has no such
+        setting
+    :param chosen_jar: a jar to run instead of build/classes, for a test of the built jar (its manifest, its folder)
 
     Prefers build/classes, which NetBeans refreshes on every Run, over dist/TrainControl.jar, which
     only moves on a Clean and Build.  Which one is in use is reported rather than assumed: a result
     recorded against a stale jar is the exact failure the disposition rule exists to stop.
     """
 
-    java, verified, tried = find_java()
+    java, verified, tried = (find_java21(), True, None) if java21 else find_java()
+
+    if java21 and not java:
+        return None, ("No Java 21 found.  Set TC_JAVA21_HOME to a JDK 21 install, or install one under "
+                      "C:\\Program Files.")
 
     if not java:
         return None, (
@@ -896,6 +927,19 @@ def launch_plan(language=None, regular=False):
     if language:
         props = ["-Duser.language=%s" % language[0], "-Duser.country=%s" % language[1]]
         said += "in %s - " % language[2]
+
+    if java21:
+        said += "Java 21 at %s - " % next(name for name, value in SCALES if value == scale)
+
+        if scale:
+            props.append("-Dsun.java2d.uiScale=%s" % scale)
+
+    if chosen_jar:
+        if not os.path.exists(chosen_jar):
+            return None, "The jar chosen to launch is gone: %s" % chosen_jar
+
+        return ([java] + props + ["-jar", chosen_jar] + args, "%s%s, built %s - java: %s" % (
+            said, chosen_jar, time.strftime("%d %b %H:%M", time.localtime(os.path.getmtime(chosen_jar))), java_note))
 
     if os.path.isdir(classes):
         stamp = newest_mtime(classes)
@@ -1286,8 +1330,20 @@ class Triage(tk.Tk):
         if self.language_var.get() not in names:
             self.language_var.set(names[0])
 
+        # The Java, its scale and what is run, beside the language and remembered with it (Adam, 2026-11-17).
+        self.java_var = tk.StringVar(value=self.state_.data.get("java", "Java 8"))
+        self.scale_var = tk.StringVar(value=self.state_.data.get("scale", SCALES[0][0]))
+        self.jar_var = tk.StringVar(value=self.state_.data.get("jar", ""))
+
+        if self.java_var.get() not in ("Java 8", "Java 21"):
+            self.java_var.set("Java 8")
+
+        if self.scale_var.get() not in [name for name, _ in SCALES]:
+            self.scale_var.set(SCALES[0][0])
+
         self._build_menu()
         self._build_toolbar()
+        self._show_launch_choice()
 
         # THE STATUS LINE BEFORE THE PANES.  Packed after them it was given what they left, and together they ask for
         # more height than the window has, so it was given nothing - and it is where the Show filter is named.
@@ -1353,6 +1409,28 @@ class Triage(tk.Tk):
                                       command=self._launch_in_chosen_language)
 
         t.add_cascade(label="Launch TrainControl in", menu=languages)
+
+        # THE JAVA, ITS SCALE AND WHAT IS RUN (Adam, 2026-11-17: "controls for display scaling and Java version"): here, as
+        # the toolbar would run off a narrow window; the Launch button says when they are not the usual.
+        javas = tk.Menu(t, tearoff=0)
+        scales = tk.Menu(t, tearoff=0)
+        source = tk.Menu(t, tearoff=0)
+
+        for name in ("Java 8", "Java 21"):
+            javas.add_radiobutton(label=name, value=name, variable=self.java_var, command=self._on_launch_choice)
+
+        for name, _ in SCALES:
+            scales.add_radiobutton(label=name, value=name, variable=self.scale_var, command=self._on_launch_choice)
+
+        # A jar when a test needs the built one - its manifest, or the folder it is run from.
+        source.add_radiobutton(label="Compiled classes (build\\classes)", value="", variable=self.jar_var,
+                               command=self._on_launch_choice)
+        source.add_command(label="A jar…", command=self._choose_jar)
+
+        t.add_cascade(label="Java", menu=javas)
+        t.add_cascade(label="Display scale (Java 21 only)", menu=scales)
+        self.scale_entry = t.index(tk.END)
+        t.add_cascade(label="Launch from", menu=source)
         t.add_command(label="Show TrainControl output", command=self.show_output)
         t.add_command(label="Show compile output", command=self.show_compile_output)
         t.add_separator()
@@ -1383,8 +1461,8 @@ class Triage(tk.Tk):
         self.compile_button = ttk.Button(top, text="Compile", command=self.compile)
         self.compile_button.pack(side=tk.LEFT)
 
-        ttk.Button(top, text="\u25b6  Launch TrainControl", style="Big.TButton",
-                   command=self.launch).pack(side=tk.LEFT, padx=(6, 0))
+        self.launch_button = ttk.Button(top, style="Big.TButton", command=self.launch)
+        self.launch_button.pack(side=tk.LEFT, padx=(6, 0))
 
         # THE LANGUAGE IT LAUNCHES IN, beside the button that launches it (Adam, 2026-09-24: "so that I can easily
         # launch in a chosen language").
@@ -2591,6 +2669,43 @@ class Triage(tk.Tk):
                   % ("in regular mode - no simulation, no debug, connected to the Central Station"
                      if self.regular_var.get() else "in simulation, with debug"))
 
+    def _show_launch_choice(self):
+        """Grays the scale on Java 8, which follows Windows' own and has no setting for another, and has the Launch
+        button say when it runs a jar or Java 21."""
+
+        java21 = self.java_var.get() == "Java 21"
+
+        self.tools_menu.entryconfig(self.scale_entry, state=tk.NORMAL if java21 else tk.DISABLED)
+
+        what = "jar" if self.jar_var.get() else "" if java21 else "TrainControl"
+
+        self.launch_button.configure(text="▶  Launch " + " ".join(filter(None, [what, "on Java 21" * java21])))
+
+    def _on_launch_choice(self):
+        """Remembers the Java, scale and jar, and says what Launch will now run."""
+
+        for key, var in (("java", self.java_var), ("scale", self.scale_var), ("jar", self.jar_var)):
+            self.state_.data[key] = var.get()
+
+        self.state_.save()
+        self._show_launch_choice()
+
+        java21 = self.java_var.get() == "Java 21"
+
+        self._say("Launch will run %s on %s%s." % (
+            self.jar_var.get() or "build\\classes", self.java_var.get(),
+            " at %s" % self.scale_var.get() if java21 else ", at Windows' own scale (Java 8 has no other)"))
+
+    def _choose_jar(self):
+        chosen = filedialog.askopenfilename(
+            parent=self, title="The jar to launch", filetypes=[("Java archive", "*.jar")],
+            initialdir=os.path.dirname(self.jar_var.get()) or os.path.join(os.path.expanduser("~"), "Downloads"))
+
+        if chosen:
+            self.jar_var.set(os.path.normpath(chosen))
+
+        self._on_launch_choice()
+
     def _launch_in_chosen_language(self):
         self._remember_language()
         self.launch()
@@ -2610,7 +2725,11 @@ class Triage(tk.Tk):
                 "NetBeans, stop it there rather than killing it." % CS2_PORT, parent=self)
             return
 
-        command, note = launch_plan(self._language(), bool(self.regular_var.get()))
+        java21 = self.java_var.get() == "Java 21"
+        jar = self.jar_var.get() or None
+
+        command, note = launch_plan(self._language(), bool(self.regular_var.get()), java21,
+                                    dict(SCALES)[self.scale_var.get()], jar)
 
         if not command:
             messagebox.showerror("Cannot launch", note, parent=self)
@@ -2639,7 +2758,7 @@ class Triage(tk.Tk):
 
         try:
             self.process = subprocess.Popen(
-                command, cwd=ROOT, stdout=handle, stderr=subprocess.STDOUT)
+                command, cwd=os.path.dirname(jar) if jar else ROOT, stdout=handle, stderr=subprocess.STDOUT)
 
         except Exception as bad:
             handle.close()
@@ -2654,8 +2773,9 @@ class Triage(tk.Tk):
 
         stamp = re.search(r"(?:compiled|built) \d\d \w{3} \d\d:\d\d", note)
 
-        self.run_info = "%s%s, %s" % ("regular mode, " if self.regular_var.get() else "",
-                                      stamp.group(0) if stamp else "build unknown", self._language()[2])
+        self.run_info = "%s%s, %s%s" % ("regular mode, " if self.regular_var.get() else "",
+                                        stamp.group(0) if stamp else "build unknown", self._language()[2],
+                                        ", Java 21 at %s" % self.scale_var.get() if java21 else "")
         self._retitle("running")
 
         self._say("TrainControl started, %s.  Output: %s"
@@ -2861,7 +2981,8 @@ class Triage(tk.Tk):
             "Layout: the toolbar in one row, then the list, the entry's steps and the answer, with "
             "draggable dividers.  Show is a menu in the menu bar and the status line starts with what it "
             "is showing.  While TrainControl runs, the window title says when it was compiled and in what "
-            "language; its output and the compile output are in the Tools menu.  The list leaves out the date (it is in the entry's heading); steps and comments "
+            "language; its output and the compile output are in the Tools menu, as are the Java (8 or 21), "
+            "the scale Java 21 draws at, and a jar to launch instead of the compiled classes.  The list leaves out the date (it is in the entry's heading); steps and comments "
             "are reflowed to the window and their Markdown drawn.  Size and dividers are remembered, and "
             "when another process writes to the store the window shows it within two seconds, keeping "
             "what you have typed.\n\n"
