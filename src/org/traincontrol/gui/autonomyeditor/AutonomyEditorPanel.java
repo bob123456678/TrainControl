@@ -7148,7 +7148,7 @@ public class AutonomyEditorPanel extends JPanel
         });
     }
 
-    /** @return the Grayed-Out Icons box, for the window to mount under Text Labels (FR-197) */
+    /** @return the Grayed-out Icons box, for the window to mount under Text Labels (FR-197) */
     public JCheckBox getShowIgnored()
     {
         return control(showIgnored);

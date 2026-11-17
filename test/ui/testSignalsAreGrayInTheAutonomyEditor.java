@@ -255,7 +255,7 @@ public class testSignalsAreGrayInTheAutonomyEditor
     }
 
     /**
-     * Grayed-Out Icons, unticked, leaves the squares autonomy ignores empty in the autonomy editor, the page's lamps
+     * Grayed-out Icons, unticked, leaves the squares autonomy ignores empty in the autonomy editor, the page's lamps
      * here, while its signals stay drawn in gray; the track diagram still draws the lamps; ticked again, the editor
      * draws them and the tick is remembered (FR-197; Adam: "option to hide greyed out icons").  A default start opens it
      * ticked, and a start with it remembered unticked opens unticked at the default start's size.
@@ -278,7 +278,7 @@ public class testSignalsAreGrayInTheAutonomyEditor
 
             javax.swing.JCheckBox box = grayedOutIcons(editor);
 
-            assertTrue(Components.onTheEventThread(box::isSelected), "a default start opens with Grayed-Out Icons unticked");
+            assertTrue(Components.onTheEventThread(box::isSelected), "a default start opens with Grayed-out Icons unticked");
 
             java.awt.Dimension asDefault = Components.onTheEventThread(editor::getSize);
 
@@ -293,7 +293,7 @@ public class testSignalsAreGrayInTheAutonomyEditor
 
             assertFalse(Components.onTheEventThread(box::isSelected), "a start with it remembered unticked opens it ticked");
             assertEquals(Components.onTheEventThread(editor::getSize), asDefault,
-                "the editor started with Grayed-Out Icons unticked is not the size of a default start");
+                "the editor started with Grayed-out Icons unticked is not the size of a default start");
 
             assertLeftEmpty(editor, drawnSquares(editor, LAMP), "unticked");
 
@@ -331,7 +331,7 @@ public class testSignalsAreGrayInTheAutonomyEditor
     }
 
     /**
-     * Unticking Grayed-Out Icons on an open editor empties its lamps at once, and ticking it again draws them gray
+     * Unticking Grayed-out Icons on an open editor empties its lamps at once, and ticking it again draws them gray
      * (FR-197): the box acts on the editor as it stands, not only at the next opening.
      *
      * MUTATION: drop `empty == other.empty` from `TileAnnotation.equals`, and this fails.
@@ -363,7 +363,7 @@ public class testSignalsAreGrayInTheAutonomyEditor
     }
 
     /**
-     * With Grayed-Out Icons unticked, a flash on a square left empty shows: a finding on an ignored square, clicked,
+     * With Grayed-out Icons unticked, a flash on a square left empty shows: a finding on an ignored square, clicked,
      * scrolls to it and flashes it, so it must not stay blank (FR-197).
      *
      * MUTATION: drop `flashTimer == null` from the left-empty branch of `LayoutLabel.paintComponent`, and this fails.
@@ -389,7 +389,7 @@ public class testSignalsAreGrayInTheAutonomyEditor
     }
 
     /**
-     * With Grayed-Out Icons unticked, a switched-off link stays drawn: it is track the user turned off, not a square
+     * With Grayed-out Icons unticked, a switched-off link stays drawn: it is track the user turned off, not a square
      * autonomy cannot use (FR-197).
      *
      * MUTATION: leave `isIgnored(tile)` out of the left-empty test in `AutonomyEditorPanel.annotationFor`, and this fails.
@@ -430,7 +430,7 @@ public class testSignalsAreGrayInTheAutonomyEditor
         void check(LayoutEditor editor) throws Exception;
     }
 
-    /** A claim on a page's editor opened with Grayed-Out Icons remembered so (null: never set); the preference put back. */
+    /** A claim on a page's editor opened with Grayed-out Icons remembered so (null: never set); the preference put back. */
     private static void withGrayedOutIcons(Boolean remembered, String page, OnTheEditor claim) throws Exception
     {
         java.util.prefs.Preferences prefs = org.traincontrol.util.Util.preferencesFor(org.traincontrol.gui.TrainControlUI.class);
@@ -475,14 +475,14 @@ public class testSignalsAreGrayInTheAutonomyEditor
 
     private static final String PREF_IGNORED = "autonomyEditorIgnoredSquares";
 
-    /** The autonomy editor's Grayed-Out Icons box, by its words. */
+    /** The autonomy editor's Grayed-out Icons box, by its words. */
     private static javax.swing.JCheckBox grayedOutIcons(LayoutEditor editor)
     {
         javax.swing.JCheckBox box = Components.onTheEventThread(() -> editor.getAutonomyPanel().getShowIgnored());
 
-        assertEquals(Components.onTheEventThread(box::getText), org.traincontrol.util.I18n.t("autosetup.ui.btnShowIgnored"),
-            "the box is not Grayed-Out Icons");
-        assertTrue(Components.onTheEventThread(box::isShowing), "the Grayed-Out Icons box is not in the editor");
+        assertEquals(Components.onTheEventThread(box::getText), "Grayed-out Icons",
+            "the box is not Grayed-out Icons");
+        assertTrue(Components.onTheEventThread(box::isShowing), "the Grayed-out Icons box is not in the editor");
 
         return box;
     }
