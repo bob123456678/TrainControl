@@ -332,7 +332,7 @@ public class testStartingAutonomyFromTheWindow
      * Control+G held with the power off says why once: repeats of Control+G and Control+H that reach the key table while
      * its message is up show nothing more.
      *
-     * MUTATION: drop `ui.aKeyIsAsking ||` from the "start autonomous operation" row, and the repeat says it again.
+     * MUTATION: drop `ui.keysAsking > 0 ||` from the "start autonomous operation" row, and the repeat says it again.
      */
     @Test
     public void testControlGHeldSaysWhyOnce() throws Exception
@@ -555,7 +555,7 @@ public class testStartingAutonomyFromTheWindow
     /**
      * Control+H pressed again while its question is up asks nothing more: a held key repeats.
      *
-     * MUTATION: drop `aKeyIsAsking` from `returnHomeByKey`'s first return, and the repeat asks over the question.
+     * MUTATION: drop `keysAsking > 0` from `returnHomeByKey`'s first return, and the repeat asks over the question.
      */
     @Test
     public void testControlHHeldAsksOnce() throws Exception

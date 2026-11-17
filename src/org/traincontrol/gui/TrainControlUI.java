@@ -13998,10 +13998,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 TrainControlUI ui = key.ui;
 
                 // Busy as the diagram's menu reads it, which offers no Start: Return Home planning, a hand send
-                if (ui.aKeyIsAsking || ui.refusedByKey(!ui.model.hasAutoLayout() ? I18n.t("autolayout.ui.noAutonomyToStart")
+                if (ui.keysAsking > 0 || ui.refusedByKey(!ui.model.hasAutoLayout() ? I18n.t("autolayout.ui.noAutonomyToStart")
                     : ui.isAutonomyBusy() ? ui.returnHomeController.describeStagingOutcome(HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null)
                     : null, false)
-                    || ui.refusedByKey(!ui.canStartAutonomy() ? ui.whyAutonomyWillNotStart() : ui.whyNoTrainMayBeSent(true), true)) return;
+                    || (ui.canStartAutonomy() ? ui.refusedByKey(ui.whyNoTrainMayBeSent(true), true) : ui.refusedByKey(
+                        ui.whyAutonomyWillNotStart(), ui.isRemoteLayout() || ui.autonomyHasErrors()))) return;
 
                 try
                 {
@@ -16839,20 +16840,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return why != null;
     }
 
-    /** Whether a key's message or Control+H's question is up, so a held key shows nothing more. */
-    private boolean aKeyIsAsking;
+    /** How many key messages or Control+H questions are up; while any is, a held key shows nothing more. */
+    private int keysAsking;
 
-    /** Shows a key's message or question with `aKeyIsAsking` up. */
+    /** Shows a key's message or question counted in `keysAsking`. */
     private void askedByKey(Runnable ask)
     {
-        aKeyIsAsking = true;
+        keysAsking++;
         try
         {
             ask.run();
         }
         finally
         {
-            aKeyIsAsking = false;
+            keysAsking--;
         }
     }
 
@@ -16860,7 +16861,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private void returnHomeByKey()
     {
         // The item's questions, which the door does not ask, in the log; then the door's own gate, on screen.
-        if (aKeyIsAsking || refusedByKey(isAutonomyBusy() ? this.returnHomeController.describeStagingOutcome(
+        if (keysAsking > 0 || refusedByKey(isAutonomyBusy() ? this.returnHomeController.describeStagingOutcome(
             HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null) : isReturnHomeOffered() ? null : this.returnHomeReason, false)
             || !isReturnHomeOffered() || refusedByKey(whyNoTrainMayBeSent(false), true)) return;
 
