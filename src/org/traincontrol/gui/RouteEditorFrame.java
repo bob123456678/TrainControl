@@ -2041,6 +2041,42 @@ public class RouteEditorFrame extends JFrame
         return false;
     }
 
+    /** The ink blended toward its fill as far as keeps it 3:1 on it, so it reads as dimmed beside the row's text. */
+    static Color dimmed(Color ink, Color fill)
+    {
+        for (int toward = 60; toward > 0; toward -= 10)
+        {
+            Color out = new Color((ink.getRed() * (100 - toward) + fill.getRed() * toward) / 100,
+                (ink.getGreen() * (100 - toward) + fill.getGreen() * toward) / 100,
+                (ink.getBlue() * (100 - toward) + fill.getBlue() * toward) / 100);
+
+            if (lightness(out, fill) >= 3.0) return out;
+        }
+
+        return ink;
+    }
+
+    /** @return the ratio of the lighter to the darker relative luminance of two colors, each plus 0.05 */
+    private static double lightness(Color a, Color b)
+    {
+        double one = luminance(a);
+        double two = luminance(b);
+
+        return (Math.max(one, two) + 0.05) / (Math.min(one, two) + 0.05);
+    }
+
+    private static double luminance(Color c)
+    {
+        double[] part = {c.getRed() / 255.0, c.getGreen() / 255.0, c.getBlue() / 255.0};
+
+        for (int at = 0; at < 3; at++)
+        {
+            part[at] = part[at] <= 0.03928 ? part[at] / 12.92 : Math.pow((part[at] + 0.055) / 1.055, 2.4);
+        }
+
+        return 0.2126 * part[0] + 0.7152 * part[1] + 0.0722 * part[2];
+    }
+
     /**
      * The selection fill of a cell that cannot be edited: a dark selection lightened halfway to white, a light one
      * darkened by 36 levels, so dark gray text reads on it and it differs from the selection and the unusable wash.
@@ -2102,10 +2138,11 @@ public class RouteEditorFrame extends JFrame
                 Object shown = which instanceof ConditionTable
                     ? ((ConditionTable) which).shownAs(row, column, value) : value;
 
-                // A cell this kind of row has no use for says so in the disabled gray, on the ordinary fill
+                // A cell this kind of row has no use for says so: gray, on the row's own fill (selected or not)
                 boolean unused = which instanceof HandledTable && "".equals(shown)
                     && ((HandledTable) which).notUsed(row, column);
                 if (unused) shown = "---";
+
                 // OB-367: the setting is stored as the English word and shown in the user's language
                 int settingColumn = which instanceof ConditionTable ? ConditionTable.SETTING : CommandTable.SETTING;
 
@@ -2116,6 +2153,7 @@ public class RouteEditorFrame extends JFrame
                 boolean editable = which.getModel().isCellEditable(row, column);
 
                 if (unused) out.setEnabled(true);
+
                 // A group's caption line is left alone: it is the outline's, not a condition with nothing to fill in.
                 if (which instanceof ConditionTable && ((ConditionTable) which).isCaptionLine(row))
                 {
@@ -2143,7 +2181,8 @@ public class RouteEditorFrame extends JFrame
 
                 if (selected)
                 {
-                    if (greyed)
+                    if (unused) out.setForeground(dimmed(out.getForeground(), out.getBackground()));
+                    else if (greyed)
                     {
                         ((JComponent) out).setOpaque(true);
                         out.setBackground(mutedSelection(which.getSelectionBackground()));
@@ -2153,7 +2192,8 @@ public class RouteEditorFrame extends JFrame
                 else
                 {
                     out.setForeground(refused != null && editable ? WRONG
-                        : editable ? which.getForeground() : unused ? UIManager.getColor("Label.disabledForeground") : Color.GRAY);
+                        : editable ? which.getForeground()
+                        : unused ? UIManager.getColor("Label.disabledForeground") : Color.GRAY);
 
                     // A background, not only gray text: most of these cells are empty, and gray text in an empty cell
                     // shows nothing.  Not the position column, which is the row's number.
@@ -3324,12 +3364,13 @@ public class RouteEditorFrame extends JFrame
         /** @return whether the rows may be changed */
         abstract boolean handlesWork();
 
-        /** @return whether a cell of a row that can be changed has no use for its kind, so it reads as ---, not muted */
+        /** @return whether a cell of a row that can be changed has no use for its kind, so it reads as --- in gray */
         boolean notUsed(int line, int column)
         {
             return handlesWork() && rowOf(line) >= 0 && column != HANDLE && !isMark(column)
                 && !getModel().isCellEditable(line, column);
         }
+
         /** @return the row a table line shows, or -1 for a line that shows none */
         abstract int rowOf(int line);
 
@@ -4111,6 +4152,7 @@ public class RouteEditorFrame extends JFrame
         {
             return super.notUsed(line, column) && rows.get(line).isEditable();
         }
+
         @Override
         int rowOf(int line)
         {
