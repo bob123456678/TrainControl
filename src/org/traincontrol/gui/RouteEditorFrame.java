@@ -2044,7 +2044,7 @@ public class RouteEditorFrame extends JFrame
     /** The ink blended toward its fill as far as keeps it 3:1 on it, so it reads as dimmed beside the row's text. */
     static Color dimmed(Color ink, Color fill)
     {
-        // Contrast by an approximate gamma, so 3.2 here is 3 by the standard's
+        // Contrast by an approximate gamma: 3.2 here keeps the app's selection colors above 3 by the standard's
         java.util.function.ToDoubleFunction<Color> glow = c -> 0.2126 * Math.pow(c.getRed() / 255.0, 2.2)
             + 0.7152 * Math.pow(c.getGreen() / 255.0, 2.2) + 0.0722 * Math.pow(c.getBlue() / 255.0, 2.2);
         for (int toward = 60; toward > 0; toward -= 10)

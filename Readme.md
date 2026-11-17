@@ -497,7 +497,7 @@ Tab icons provided by Freepik.
         - Interface
             - The `Start Autonomous Operation` button ends at the track diagram's right edge.
             - On newer Java, a scaled Windows display is no longer scaled twice, the file chooser's `Look In` list works, and settings are kept when the folder path has a non-English letter.
-            - A new route item starts at address 0, and a cell a row has no use for shows a gray `---`.
+            - A new route item starts at address 0, and in a route you can edit, a cell its row has no use for shows `---`.
 * v3.1.0 [11/15/2026]
     - Central Station Protocol
         - New Features
