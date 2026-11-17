@@ -225,8 +225,8 @@ public class testTheOverlayBoxDuringARun
                 @Override
                 public void addDirtyRegion(javax.swing.JComponent c, int x, int y, int w, int h)
                 {
-                    asked.add(c);
                     super.addDirtyRegion(c, x, y, w, h);
+                    asked.add(c);
                 }
             }));
 

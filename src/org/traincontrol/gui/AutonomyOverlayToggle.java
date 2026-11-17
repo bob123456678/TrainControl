@@ -560,9 +560,7 @@ public class AutonomyOverlayToggle extends JPanel
         // The trains' lines and the fade under them are drawn by their squares, which ask this box as they paint; a
         // square with no autonomy mark is not redrawn by the layer above (OB-496).
         java.util.Set<TileGraph.TileKey> held = new java.util.HashSet<>(ui.coveredTrack.keySet());
-
         held.addAll(ui.blockedTrack.keySet());
-
         for (TileGraph.TileKey square : held)
         {
             for (LayoutLabel label : ui.getDiagramTileRegistry().labelsFor(square)) label.repaint();

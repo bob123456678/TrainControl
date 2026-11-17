@@ -1721,7 +1721,6 @@ public class TileAnnotation
         }
 
         double ends = Math.floor(at * scale + shift) + Math.floor((at + size) * scale + shift);
-
         return ((ends + 1) / 2 - shift) / scale;
     }
 
