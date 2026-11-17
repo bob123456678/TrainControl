@@ -2044,37 +2044,18 @@ public class RouteEditorFrame extends JFrame
     /** The ink blended toward its fill as far as keeps it 3:1 on it, so it reads as dimmed beside the row's text. */
     static Color dimmed(Color ink, Color fill)
     {
+        // Contrast by an approximate gamma, so 3.2 here is 3 by the standard's
+        java.util.function.ToDoubleFunction<Color> glow = c -> 0.2126 * Math.pow(c.getRed() / 255.0, 2.2)
+            + 0.7152 * Math.pow(c.getGreen() / 255.0, 2.2) + 0.0722 * Math.pow(c.getBlue() / 255.0, 2.2);
         for (int toward = 60; toward > 0; toward -= 10)
         {
             Color out = new Color((ink.getRed() * (100 - toward) + fill.getRed() * toward) / 100,
                 (ink.getGreen() * (100 - toward) + fill.getGreen() * toward) / 100,
                 (ink.getBlue() * (100 - toward) + fill.getBlue() * toward) / 100);
-
-            if (lightness(out, fill) >= 3.0) return out;
+            double one = glow.applyAsDouble(out), two = glow.applyAsDouble(fill);
+            if ((Math.max(one, two) + 0.05) / (Math.min(one, two) + 0.05) >= 3.2) return out;
         }
-
         return ink;
-    }
-
-    /** @return the ratio of the lighter to the darker relative luminance of two colors, each plus 0.05 */
-    private static double lightness(Color a, Color b)
-    {
-        double one = luminance(a);
-        double two = luminance(b);
-
-        return (Math.max(one, two) + 0.05) / (Math.min(one, two) + 0.05);
-    }
-
-    private static double luminance(Color c)
-    {
-        double[] part = {c.getRed() / 255.0, c.getGreen() / 255.0, c.getBlue() / 255.0};
-
-        for (int at = 0; at < 3; at++)
-        {
-            part[at] = part[at] <= 0.03928 ? part[at] / 12.92 : Math.pow((part[at] + 0.055) / 1.055, 2.4);
-        }
-
-        return 0.2126 * part[0] + 0.7152 * part[1] + 0.0722 * part[2];
     }
 
     /**
@@ -2142,18 +2123,13 @@ public class RouteEditorFrame extends JFrame
                 boolean unused = which instanceof HandledTable && "".equals(shown)
                     && ((HandledTable) which).notUsed(row, column);
                 if (unused) shown = "---";
-
                 // OB-367: the setting is stored as the English word and shown in the user's language
                 int settingColumn = which instanceof ConditionTable ? ConditionTable.SETTING : CommandTable.SETTING;
 
                 if (column == settingColumn && shown instanceof String) shown = settingLabel((String) shown);
-
                 Component out = was.getTableCellRendererComponent(which, shown, selected, focused, row, column);
-
                 boolean editable = which.getModel().isCellEditable(row, column);
-
                 if (unused) out.setEnabled(true);
-
                 // A group's caption line is left alone: it is the outline's, not a condition with nothing to fill in.
                 if (which instanceof ConditionTable && ((ConditionTable) which).isCaptionLine(row))
                 {
