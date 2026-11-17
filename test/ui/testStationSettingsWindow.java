@@ -4184,21 +4184,18 @@ public class testStationSettingsWindow
     }
 
     /**
-     * Nothing in the picture is grayed (MT-1037, Adam: "Just avoid greying altogether in the preview in the station
-     * settings"): each next square, a signal with its lamp among them, is drawn as it draws itself, with neither
-     * the arrows' wash nor the yellow flash of a change, apart from under the picture's marks.
+     * Nothing in the picture but a signal is grayed (MT-1037), and nothing is faded (Adam: "Grey color is fine, just
+     * don't fade anything out."): each next square that is no signal is drawn as it draws itself, with neither the
+     * arrows' wash nor the yellow flash of a change, apart from under the picture's marks.  The frozen railway's track
+     * has no color, so graying it would draw the same pixels; the station's own color is checked by the next claim.
      *
-     * MUTATION: paint the next squares through `ImageUtil.inGray` again, give their arrows the wash, or drop
-     * `!sensorsFree` from `LayoutLabel`'s accessory highlight, and this fails.
+     * MUTATION: give the next squares' arrows the wash, or drop `!sensorsFree` from `LayoutLabel`'s accessory highlight,
+     * and this fails.
      */
     @Test(timeOut = 120000)
     public void testTheNextSquaresAreDrawnInTheirOwnColors() throws Exception
     {
         TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
-
-        assertTrue(Components.onTheEventThread(() -> session.getGraph().getTiles()
-            .get(square.beside(org.traincontrol.automationui.TilePorts.Side.E)).isSignal()),
-            "precondition: the square east of the station is a signal");
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
@@ -4208,40 +4205,23 @@ public class testStationSettingsWindow
         {
             Map<String, java.awt.Shape> marks = window.pictureMarksForTest();
             java.awt.image.BufferedImage picture = drawnOn(block);
-            java.awt.geom.Area marked = new java.awt.geom.Area();
+            java.awt.geom.Area marked = marked(marks);
 
-            for (Map.Entry<String, java.awt.Shape> mark : marks.entrySet())
-            {
-                if (!mark.getKey().startsWith("IN.") && !mark.getKey().startsWith("NEXT.")) continue;
-
-                marked.add(new java.awt.geom.Area(mark.getValue()));
-                marked.add(new java.awt.geom.Area(new java.awt.BasicStroke(12).createStrokedShape(mark.getValue())));
-            }
-
-            int squares = 0, colored = 0;
+            int squares = 0;
 
             // The art lives in the first child, out of the pointer's way
             for (java.awt.Component each : ((java.awt.Container) block.getComponent(0)).getComponents())
             {
-                if (each.getBounds().equals(marks.get("SQUARE"))) continue;
+                if (each.getBounds().equals(marks.get("SQUARE"))
+                    || ((org.traincontrol.gui.LayoutLabel) each).getComponent().isSignal()) continue;
 
                 java.awt.Rectangle at = each.getBounds();
-                java.awt.image.BufferedImage own = new java.awt.image.BufferedImage(at.width, at.height,
-                    java.awt.image.BufferedImage.TYPE_INT_RGB);
-                java.awt.Graphics2D g = own.createGraphics();
-
-                g.setColor(block.getBackground());
-                g.fillRect(0, 0, at.width, at.height);
-                each.paint(g);
-                g.dispose();
+                java.awt.image.BufferedImage own = ownArt(each, block.getBackground());
 
                 squares++;
 
                 assertFalse(((org.traincontrol.gui.LayoutLabel) each).isAccessoryHighlightOutstanding(), "the picture's"
                     + " next square at " + at.x + "," + at.y + " wears the yellow wash of a change");
-                // a lamp, red or green
-                colored += pixels(own, new java.awt.Rectangle(at.getSize()),
-                    rgb -> RED.test(rgb) || (rgb >> 8 & 0xff) - (rgb >> 16 & 0xff) > 100);
 
                 for (int y = 0; y < at.height; y++)
                 {
@@ -4258,13 +4238,117 @@ public class testStationSettingsWindow
                 }
             }
 
-            assertTrue(squares > 1, "precondition: the picture draws no next squares");
-            assertTrue(colored > 0, "precondition: no next square's own art has color");
+            assertTrue(squares > 0, "precondition: the picture draws no next square that is no signal");
 
             return null;
         });
 
         StationDoors.close(window);
+    }
+
+    /**
+     * A signal beside the station is drawn without color, as the editor draws its signals, so its green lamp is not
+     * read as the station's arrows; at full strength, not faded (Adam: "Grey color is fine, just don't fade anything
+     * out."): each of its pixels is its own art's brightness.  The station keeps its own color.
+     *
+     * MUTATION: paint the next squares as they draw themselves, with no `ImageUtil.inGray`, or with an alpha composite,
+     * and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testANeighborsSignalIsDrawnInGrayNotFaded() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
+
+        assertTrue(Components.onTheEventThread(() -> session.getGraph().getTiles()
+            .get(square.beside(org.traincontrol.automationui.TilePorts.Side.E)).isSignal()),
+            "precondition: the square east of the station is a signal");
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        Components.onTheEventThread(() ->
+        {
+            Map<String, java.awt.Shape> marks = window.pictureMarksForTest();
+            java.awt.image.BufferedImage picture = drawnOn(block);
+            java.awt.geom.Area marked = marked(marks);
+
+            java.awt.Rectangle at = marks.get("SQUARE.E").getBounds();
+            java.awt.image.BufferedImage own = null;
+
+            for (java.awt.Component each : ((java.awt.Container) block.getComponent(0)).getComponents())
+            {
+                if (each.getBounds().equals(at)) own = ownArt(each, block.getBackground());
+            }
+
+            assertNotNull(own, "precondition: the picture draws no signal east of the station");
+
+            assertTrue(pixels(own, new java.awt.Rectangle(at.getSize()), COLORED) > 0, "precondition: the signal's own art"
+                + " has no color");
+
+            assertTrue(pixels(picture, marks.get("SQUARE").getBounds(), COLORED) > 0, "the station is drawn without color");
+
+            int compared = 0;
+
+            for (int y = 0; y < at.height; y++)
+            {
+                for (int x = 0; x < at.width; x++)
+                {
+                    if (marked.contains(at.x + x, at.y + y)) continue;
+
+                    int drawn = picture.getRGB(at.x + x, at.y + y) & 0xffffff;
+                    int mine = own.getRGB(x, y);
+                    int light = ((mine >> 16 & 0xff) * 299 + (mine >> 8 & 0xff) * 587 + (mine & 0xff) * 114) / 1000;
+
+                    compared++;
+
+                    assertEquals(Integer.toHexString(drawn), Integer.toHexString(light * 0x010101), "the picture's signal at "
+                        + x + "," + y + " is not its own art in gray at full strength");
+                }
+            }
+
+            assertTrue(compared > at.width * at.height / 2, "precondition: only " + compared + " of the signal's pixels"
+                + " lie clear of the marks");
+
+            return null;
+        });
+
+        StationDoors.close(window);
+    }
+
+    /** Pixels with color in them: a lamp's red or green, the station's blue. */
+    private static final java.util.function.IntPredicate COLORED = rgb -> Math.max(rgb >> 16 & 0xff,
+        Math.max(rgb >> 8 & 0xff, rgb & 0xff)) - Math.min(rgb >> 16 & 0xff, Math.min(rgb >> 8 & 0xff, rgb & 0xff)) > 60;
+
+    /** Where the picture's ways in and the next squares' arrows are drawn, with a margin: the rest is the squares' art. */
+    private static java.awt.geom.Area marked(Map<String, java.awt.Shape> marks)
+    {
+        java.awt.geom.Area out = new java.awt.geom.Area();
+
+        for (Map.Entry<String, java.awt.Shape> mark : marks.entrySet())
+        {
+            if (!mark.getKey().startsWith("IN.") && !mark.getKey().startsWith("NEXT.")) continue;
+
+            out.add(new java.awt.geom.Area(mark.getValue()));
+            out.add(new java.awt.geom.Area(new java.awt.BasicStroke(12).createStrokedShape(mark.getValue())));
+        }
+
+        return out;
+    }
+
+    /** A square of the picture as it draws itself, on this background. */
+    private static java.awt.image.BufferedImage ownArt(java.awt.Component square, Color background)
+    {
+        java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(square.getWidth(), square.getHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+        java.awt.Graphics2D g = out.createGraphics();
+
+        g.setColor(background);
+        g.fillRect(0, 0, out.getWidth(), out.getHeight());
+        square.paint(g);
+        g.dispose();
+
+        return out;
     }
 
     /**

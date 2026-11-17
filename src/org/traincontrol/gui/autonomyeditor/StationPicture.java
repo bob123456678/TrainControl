@@ -542,7 +542,7 @@ final class StationPicture extends JPanel
             edge[1] - (edge[1] - from[1]) / length * SQUARE);
     }
 
-    /** The squares and the marks over them; nothing grayed (MT-1037). */
+    /** The squares and the marks over them: a signal in gray, lest its lamps read as the station's arrows (MT-1037). */
     private final class Block extends JPanel
     {
         Block()
@@ -633,7 +633,8 @@ final class StationPicture extends JPanel
 
                     Graphics2D over = (Graphics2D) g2.create(at.x, at.y, at.width, at.height);
 
-                    each.getValue().paint(over);
+                    if (!each.getValue().getComponent().isSignal()) each.getValue().paint(over);
+                    else org.traincontrol.util.ImageUtil.inGray(over, new Rectangle(at.getSize()), each.getValue()::paint);
 
                     TileAnnotation their = nextMarks.get(each.getKey());
 
