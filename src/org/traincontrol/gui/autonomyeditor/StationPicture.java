@@ -542,7 +542,7 @@ final class StationPicture extends JPanel
             edge[1] - (edge[1] - from[1]) / length * SQUARE);
     }
 
-    /** The squares and the marks over them: a signal in gray, lest its lamps read as the station's arrows (MT-1037). */
+    /** The squares and the marks over them: a signal in gray, so its lamps are not taken for arrows; nothing faded (D190). */
     private final class Block extends JPanel
     {
         Block()

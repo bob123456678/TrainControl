@@ -4185,8 +4185,8 @@ public class testStationSettingsWindow
 
     /**
      * Nothing in the picture but a signal is grayed (MT-1037), and nothing is faded (Adam: "Grey color is fine, just
-     * don't fade anything out."): each next square that is no signal is drawn as it draws itself, with neither the
-     * arrows' wash nor the yellow flash of a change, apart from under the picture's marks.  The frozen railway's track
+     * don't fade anything out."): no next square wears the yellow flash of a change, and each that is no signal is
+     * drawn as it draws itself, without the arrows' wash, apart from under the picture's marks.  The frozen railway's track
      * has no color, so graying it would draw the same pixels; the station's own color is checked by the next claim.
      *
      * MUTATION: give the next squares' arrows the wash, or drop `!sensorsFree` from `LayoutLabel`'s accessory highlight,
@@ -4207,21 +4207,27 @@ public class testStationSettingsWindow
             java.awt.image.BufferedImage picture = drawnOn(block);
             java.awt.geom.Area marked = marked(marks);
 
-            int squares = 0;
+            int squares = 0, accessories = 0;
 
             // The art lives in the first child, out of the pointer's way
             for (java.awt.Component each : ((java.awt.Container) block.getComponent(0)).getComponents())
             {
-                if (each.getBounds().equals(marks.get("SQUARE"))
-                    || ((org.traincontrol.gui.LayoutLabel) each).getComponent().isSignal()) continue;
+                if (each.getBounds().equals(marks.get("SQUARE"))) continue;
 
                 java.awt.Rectangle at = each.getBounds();
-                java.awt.image.BufferedImage own = ownArt(each, block.getBackground());
-
-                squares++;
+                org.traincontrol.base.LayoutDiagramComponent art = ((org.traincontrol.gui.LayoutLabel) each).getComponent();
 
                 assertFalse(((org.traincontrol.gui.LayoutLabel) each).isAccessoryHighlightOutstanding(), "the picture's"
                     + " next square at " + at.x + "," + at.y + " wears the yellow wash of a change");
+
+                if (art.isSignal() || art.isSwitch()) accessories++;
+
+                // A signal's pixels are the next claim's
+                if (art.isSignal()) continue;
+
+                java.awt.image.BufferedImage own = ownArt(each, block.getBackground());
+
+                squares++;
 
                 for (int y = 0; y < at.height; y++)
                 {
@@ -4239,6 +4245,7 @@ public class testStationSettingsWindow
             }
 
             assertTrue(squares > 0, "precondition: the picture draws no next square that is no signal");
+            assertTrue(accessories > 0, "precondition: the picture draws no signal or switch beside the station");
 
             return null;
         });
