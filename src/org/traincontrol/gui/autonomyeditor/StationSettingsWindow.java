@@ -1809,12 +1809,14 @@ public final class StationSettingsWindow extends StationWindowBase
         if (!editor.session.canCarryDirection(square) || at < 0) return said(null, I18n.f("autosetup.ui.stationPicNextCannot", name));
 
         int mask = editor.armMask(square, routes, arms);
-        final boolean open = (mask & 1 << at) != 0;
+
+        // As the picture shows it: a run pointing opposite ways is drawn closed
+        final boolean open = mark.open;
 
         if (routes.size() == 1)
         {
             final Map.Entry<RouteId, TilePorts.Route> only = routes.entrySet().iterator().next();
-            final Direction wanted = TileGraph.answerFor(only.getValue(), arms, mask ^ 1 << at);
+            final Direction wanted = TileGraph.answerFor(only.getValue(), arms, open ? mask & ~(1 << at) : mask | 1 << at);
 
             if (!TileGraph.directionIsPossible(wanted, only.getValue()))
             {

@@ -8541,7 +8541,7 @@ public class AutonomySession
         return path >= 3;
     }
 
-    /** Sets a direction on every tile of a leader's run, in the leader's sense; returns how many tiles changed. */
+    /** Sets a direction on every tile of a square's run, in that square's sense; returns how many tiles changed. */
     public int setRunDirection(TileKey leader, RouteId routeId, Direction direction)
     {
         return sessionRuns.setRunDirection(leader, routeId, direction);

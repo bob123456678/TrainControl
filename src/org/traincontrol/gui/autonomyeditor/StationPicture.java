@@ -46,7 +46,7 @@ import org.traincontrol.util.I18n;
 /**
  * The station and the track squares its track meets, as the track diagram draws them at 60 pixels (FR-111): the station
  * with a red arrow only at a side May depart shuts, and its ways in to stop, from `Layout.standingRulesAt`; the next
- * squares with only their own arrows.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
+ * squares with the arrows in effect on them.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
  */
 final class StationPicture extends JPanel
 {
@@ -255,30 +255,28 @@ final class StationPicture extends JPanel
 
         nextMarks.clear();
 
-        List<TileKey> squares = new ArrayList<>();
-
-        for (Side side : next.keySet()) squares.add(tile.beside(side));
-
-        Map<TileKey, TileAnnotation> theirs = session.staticAnnotations(squares, true, true);
-
         for (Side side : next.keySet())
         {
-            TileAnnotation their = theirs.get(tile.beside(side));
+            TileKey beside = tile.beside(side);
 
-            if (their == null) continue;
-
-            // Only the arrows of the track that meets the station
+            // In effect on the track that meets the station: the diagram draws a run's on its first square (MT-1061)
             List<TileAnnotation.Mark> kept = new ArrayList<>();
 
-            for (TileAnnotation.Mark road : their.getMarks())
+            // A run pointing opposite ways is closed, as its first square draws it (OB-361)
+            boolean shut = session.getGraph().runsPointingOppositeWays().values().stream()
+                .anyMatch(run -> run.getTiles().contains(beside));
+
+            for (TileAnnotation.Mark road : session.directionMarks(beside))
             {
-                if (road.getA() == side.opposite() || road.getB() == side.opposite()) kept.add(road);
+                if (road.getA() != side.opposite() && road.getB() != side.opposite()) continue;
+
+                kept.add(shut ? new TileAnnotation.Mark(road.getA(), road.getB(), Direction.NONE) : road);
             }
 
-            if (!kept.isEmpty())
+            if (!kept.isEmpty() && !session.isDisabledLink(beside))
             {
-                nextMarks.put(side, new TileAnnotation(kept, -1, false, null, false, their.isCurved(), false, null, true)
-                    .withAllowedDirections());
+                nextMarks.put(side, new TileAnnotation(kept, -1, false, null, false, session.isCurveSquare(beside), false, null,
+                    true).withAllowedDirections());
             }
         }
 

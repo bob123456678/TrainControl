@@ -4543,6 +4543,266 @@ public class testStationSettingsWindow
     }
 
     /**
+     * A next square that follows its run wears the run's way, though the track diagram draws that arrow on the run's
+     * first square alone (MT-1061, Adam: "I would like to see the effective, computed arrows from he nearest tile with
+     * arrows"): each of its arms open as trains may leave by it.
+     *
+     * MUTATION: have `StationPicture.show` take the next squares' marks from `staticAnnotations` again, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testANextSquareWearsItsRunsWayFromItsFirstSquare() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+
+        runAwayFrom(found[1], sideBetween(found[0], found[1]).opposite());
+
+        assertNull(Components.onTheEventThread(() -> session.staticAnnotations(java.util.Collections.singleton(found[1]), true,
+            true).get(found[1])), "precondition: the diagram draws an arrow on the square that follows its run");
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+
+        assertEquals(nextSquareState(window, found[1]), armsInForce(found[1]), "the picture does not wear the run's way");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * A click on such an inherited arrow sets the whole run, as the right-click menu does on any of its squares: its
+     * tooltip reads true, the arm flips, the picture follows, and the run's first square draws the new way.  The run
+     * starts one way away from the station, as a click that only narrowed it would pass with the square set alone.
+     *
+     * MUTATION: have `SessionRuns.setRunDirection` look the run up by its first square only again, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAClickOnAnInheritedArrowSetsTheRun() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+        String arm = "NEIGHBOR." + side.opposite() + " " + found[1] + ":";
+
+        runAwayFrom(found[1], side.opposite());
+
+        TileKey leader = Components.onTheEventThread(() -> session.runLeaders().get(found[1]));
+        RouteId road = onlyRoad(leader);
+        Direction was = Components.onTheEventThread(() -> session.directionAsDrawn(leader, road));
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+
+        assertTrue(nextSquareState(window, found[1]).contains(arm + false), "precondition: the arrow at the station is not drawn shut");
+
+        opensTheShutArrowAtTheStation(window, found);
+        assertEquals(nextSquareState(window, found[1]), armsInForce(found[1]), "the picture and the square disagree");
+        assertNotEquals(Components.onTheEventThread(() -> session.directionAsDrawn(leader, road)), was,
+            "the run's first square still draws the old way: the click set the square alone");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * From an open run, a click on either arm of a following square shuts that arm on the whole run: the square leaves
+     * by the other, the picture agrees, and the run's first square is no longer open both ways, with no opposite-ways
+     * warning.
+     *
+     * MUTATION: have `nextSquare` open the arm clicked instead of shutting it, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testNarrowingAnOpenRunFromAFollowingSquareSetsItTheWayClicked() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+        org.traincontrol.automationui.TilePorts.Side near = side.opposite();
+        org.traincontrol.automationui.TilePorts.Side far = Components.onTheEventThread(() ->
+            session.getRoutes(found[1]).values().iterator().next().other(near));
+
+        TileKey leader = Components.onTheEventThread(() -> session.runLeaders().get(found[1]));
+        RouteId road = onlyRoad(leader);
+
+        for (org.traincontrol.automationui.TilePorts.Side clicked : new org.traincontrol.automationui.TilePorts.Side[] {near, far})
+        {
+            Components.onTheEventThread(() -> session.setRunDirection(leader, road, Direction.BOTH));
+
+            StationSettingsWindow window = StationDoors.open(panel, found[0]);
+
+            assertEquals(armsInForce(found[1]), set("NEIGHBOR." + near + " " + found[1] + ":true",
+                "NEIGHBOR." + far + " " + found[1] + ":true"), "precondition: open both ways");
+
+            routedClick(window, "NEXT." + side + "." + clicked, null);
+            StationDoors.current(window);
+
+            org.traincontrol.automationui.TilePorts.Side other = clicked == near ? far : near;
+
+            assertEquals(armsInForce(found[1]), set("NEIGHBOR." + clicked + " " + found[1] + ":false",
+                "NEIGHBOR." + other + " " + found[1] + ":true"), "the following square is not set the way clicked (" + clicked
+                + ")");
+            assertEquals(nextSquareState(window, found[1]), armsInForce(found[1]), "the picture and the square disagree");
+            assertNotEquals(Components.onTheEventThread(() -> session.directionAsDrawn(leader, road)), Direction.BOTH,
+                "the run's first square is still open both ways after " + clicked);
+            assertFalse(pointsOppositeWays(), "the run points opposite ways after " + clicked);
+
+            StationDoors.close(window);
+        }
+    }
+
+    /**
+     * A run pointing opposite ways, as a file or an older version can leave it, is drawn closed at its first square, so
+     * a following square beside the station is shown closed too, and its tooltip says so; a click opens the arm clicked
+     * on the whole run, and the warning goes.
+     *
+     * MUTATION: have `StationPicture.show` draw a following square by its own stored way, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testARunPointingOppositeWaysIsShownClosed() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+
+        TileKey leader = Components.onTheEventThread(() -> session.runLeaders().get(found[1]));
+        RouteId road = onlyRoad(leader);
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+
+        // The square one way toward the station, then its run's first square the other way
+        Components.onTheEventThread(() ->
+        {
+            session.setRunDirection(leader, road, Direction.BOTH);
+
+            org.traincontrol.automationui.TilePorts.Route own = session.getRoutes(found[1]).values().iterator().next();
+
+            session.setDirection(found[1], onlyRoad(found[1]), own.getA() == side.opposite() ? Direction.TOWARD_A
+                : Direction.TOWARD_B);
+            session.setDirection(leader, road, session.getGraph().getDirection(leader, road) == Direction.TOWARD_A
+                ? Direction.TOWARD_B : Direction.TOWARD_A);
+
+            return null;
+        });
+
+        assertTrue(pointsOppositeWays(), "precondition: the run does not point opposite ways");
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+
+        assertEquals(nextSquareState(window, found[1]), set("NEIGHBOR." + side.opposite() + " " + found[1] + ":false",
+            "NEIGHBOR." + side + " " + found[1] + ":false"),
+            "the picture does not show the run closed, as the diagram draws it");
+
+        opensTheShutArrowAtTheStation(window, found);
+        assertFalse(pointsOppositeWays(), "the run still points opposite ways after the click");
+
+        StationDoors.close(window);
+    }
+
+    /** Clicks a following square's arrow at the station, drawn shut: its tooltip says so, and the click opens it. */
+    private static void opensTheShutArrowAtTheStation(StationSettingsWindow window, TileKey[] found) throws Exception
+    {
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+
+        String[] hover = new String[3];
+
+        routedClick(window, "NEXT." + side + "." + side.opposite(), hover);
+        StationDoors.current(window);
+
+        assertTrue(hover[2].contains(I18n.f("autosetup.ui.stationPicMeansNextShut", "")), "the tooltip does not say the"
+            + " arrow is shut: " + hover[2]);
+        assertTrue(nextSquareState(window, found[1]).contains("NEIGHBOR." + side.opposite() + " " + found[1] + ":true"),
+            "the click did not open the arm clicked: " + nextSquareState(window, found[1]));
+    }
+
+    private static boolean pointsOppositeWays()
+    {
+        return Components.onTheEventThread(() -> session.check().stream().anyMatch(finding ->
+            org.traincontrol.automationui.AutonomyChecks.RUN_POINTS_OPPOSITE_WAYS.equals(finding.getMessageKey())));
+    }
+
+    /** A station on the page with a square that follows its run beside it, their tracks meeting: {station, square}. */
+    private static TileKey[] aStationBesideAFollowingSquare()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            for (TileKey each : session.getReducer().getPoints().keySet())
+            {
+                if (!PAGE.equals(each.getPage()) || !session.getStore().isStation(each)) continue;
+
+                for (org.traincontrol.automationui.TilePorts.Side side : org.traincontrol.automationui.TilePorts.Side.values())
+                {
+                    TileKey beside = each.beside(side);
+
+                    if (session.followsItsRun(beside) && touches(each, side) && touches(beside, side.opposite()))
+                    {
+                        return new TileKey[] {each, beside};
+                    }
+                }
+            }
+
+            throw new AssertionError("precondition: no station on " + PAGE + " beside a square that follows its run");
+        });
+    }
+
+    private static boolean touches(TileKey square, org.traincontrol.automationui.TilePorts.Side side)
+    {
+        return session.getRoutes(square).values().stream().anyMatch(road -> road.getA() == side || road.getB() == side);
+    }
+
+    private static org.traincontrol.automationui.TilePorts.Side sideBetween(TileKey station, TileKey square)
+    {
+        for (org.traincontrol.automationui.TilePorts.Side side : org.traincontrol.automationui.TilePorts.Side.values())
+        {
+            if (station.beside(side).equals(square)) return side;
+        }
+
+        throw new AssertionError(square + " is not beside " + station);
+    }
+
+    /** Sets a square's run one way through its first square, the way that shuts the square's arm at `arm`. */
+    private static void runAwayFrom(TileKey square, org.traincontrol.automationui.TilePorts.Side arm)
+    {
+        Components.onTheEventThread(() ->
+        {
+            TileKey leader = session.runLeaders().get(square);
+
+            for (Direction way : new Direction[] {Direction.TOWARD_A, Direction.TOWARD_B})
+            {
+                session.setRunDirection(leader, session.getRoutes(leader).keySet().iterator().next(), way);
+
+                if (armsInForce(square).contains("NEIGHBOR." + arm + " " + square + ":false")
+                    && armsInForce(square).contains("NEIGHBOR." + arm.opposite() + " " + square + ":true")) return null;
+            }
+
+            throw new AssertionError("precondition: the run of " + square + " cannot be set one way away from " + arm);
+        });
+    }
+
+    /** The picture's marks on one next square, as `pictureStateForTest` words them. */
+    private static Set<String> nextSquareState(StationSettingsWindow window, TileKey square)
+    {
+        Set<String> out = new java.util.TreeSet<>();
+
+        for (String each : Components.onTheEventThread(window::pictureStateForTest))
+        {
+            if (each.startsWith("NEIGHBOR.") && each.contains(" " + square + ":")) out.add(each);
+        }
+
+        return out;
+    }
+
+    /** Each arm of a square with whether trains may leave by it, as Station Settings' click asks, in the same words. */
+    private static Set<String> armsInForce(TileKey square)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            Set<String> out = new java.util.TreeSet<>();
+
+            Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(square);
+            List<org.traincontrol.automationui.TilePorts.Side> arms = org.traincontrol.automationui.TileGraph.armsOf(
+                routes.values());
+
+            int mask = session.getGraph().armMask(square, routes, arms);
+
+            for (int i = 0; i < arms.size(); i++) out.add("NEIGHBOR." + arms.get(i) + " " + square + ":" + ((mask & 1 << i) != 0));
+
+            return out;
+        });
+    }
+
+    /**
      * The picture draws the ways in by the track diagram's rule (OB-494): at BottomMainA, with arrivals from the east
      * barred, a way in at each of its two sides; with May Arrive From East ticked, so every side is allowed, none, as
      * the diagram then draws none; unticked again, both back.
