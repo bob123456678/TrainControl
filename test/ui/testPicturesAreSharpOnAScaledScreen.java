@@ -93,8 +93,8 @@ public class testPicturesAreSharpOnAScaledScreen
      * At 125% a column of squares running down the page meets with no light line between them, at Small (squares 37.5
      * screen pixels apart) and at Large (75 pixels across, an odd number, so turning about a whole pixel shifts it).
      *
-     * MUTATION: in `LayoutDiagramComponent.getImage`, turn about `getWidth(null)/2`; or in `SharpIcon.paintIcon`, round
-     * the edges with `Math.round`.
+     * MUTATION: in `LayoutDiagramComponent.getImage`, turn about `getWidth(null)/2`; in `SharpIcon.paintIcon`, round the
+     * edges with `Math.round`; or in `LayoutLabel.setImageOnEDT`, make the copy `w` across rather than the longer side.
      */
     @Test
     public void testSquaresSideBySideMeet() throws Exception
