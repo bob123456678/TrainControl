@@ -409,6 +409,58 @@ public class testTheOverlayBoxDuringARun
             + " ticked again the monitor draws nothing where the train stands");
     }
 
+    /**
+     * Ticked again, the box brings the trains back at once, not at the monitor's next look (MT-1063: Adam saw "a slight
+     * delay before trains appear").  The monitor's own looking is stopped, so only the tick of the box can bring them.
+     *
+     * MUTATION: drop the `schedule(aTick(), 0)` from `DiagramMonitorDriver.setEnabled`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testTickingTheBoxShowsTheTrainsWithoutWaitingForTheMonitor() throws Exception
+    {
+        tick(true);
+
+        org.traincontrol.gui.autonomy.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+
+        assertTrue(Components.waitFor(() -> trainSquare() != null, 10000), "precondition: the monitor draws no train");
+
+        java.util.Timer looking = (java.util.Timer) Reflect.get(driver.getClass(), driver, "timer");
+        java.util.Timer idle = new java.util.Timer("idle", true);
+
+        try
+        {
+            looking.cancel();
+            Reflect.set(driver.getClass(), driver, "timer", idle);
+            tick(false);
+
+            assertNull(trainSquare(), "precondition: unticked, a train is still drawn");
+
+            tick(true);
+
+            assertTrue(Components.waitFor(() -> trainSquare() != null, 5000), "ticked again,"
+                + " the box leaves the trains off the diagram until the monitor looks again");
+        }
+        finally
+        {
+            idle.cancel();
+            Reflect.set(driver.getClass(), driver, "timer", null);
+            SwingUtilities.invokeAndWait(driver::start);
+        }
+    }
+
+    /** A square the diagram draws a train on, or null. */
+    private static TileKey trainSquare()
+    {
+        for (TileKey square : everyTile())
+        {
+            org.traincontrol.automationui.TileOverlay drawn = ui.getDiagramTileRegistry().overlayAt(square);
+
+            if (drawn != null && drawn.hasTrain()) return square;
+        }
+
+        return null;
+    }
+
     /** Sets the box as a click does, through its own listener. */
     private static void tick(boolean on) throws Exception
     {
