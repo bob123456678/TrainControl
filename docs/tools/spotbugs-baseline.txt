@@ -398,7 +398,6 @@ ES_COMPARING_STRINGS_WITH_EQ	org.traincontrol.gui.layouteditor.LayoutEditorAddre
 ES_COMPARING_STRINGS_WITH_EQ	org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup	getLinkedPage	NO_PAGE	1
 HE_EQUALS_USE_HASHCODE	org.traincontrol.marklin.udp.CS2Message	equals		1
 IA_AMBIGUOUS_INVOCATION_OF_INHERITED_OR_OUTER_METHOD	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel$N	getMaximumSize		1
-ICAST_IDIV_CAST_TO_DOUBLE	org.traincontrol.base.LayoutDiagramComponent	getImage		1
 ICAST_IDIV_CAST_TO_DOUBLE	org.traincontrol.gui.AutonomySettingsTab	loadAutoLayoutSettings		1
 ICAST_INTEGER_MULTIPLY_CAST_TO_LONG	org.traincontrol.automation.Layout	checkForSlowerLoc		1
 ICAST_INTEGER_MULTIPLY_CAST_TO_LONG	org.traincontrol.automation.Layout	lambda$runLocomotive		1
