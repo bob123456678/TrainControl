@@ -6757,9 +6757,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // Higher quality scaling
                     ImageUtil.getScaledImage(ImageUtil.toTransparentBufferedImage(img), size, (int) (size * aspect))
                 );
-                // The original, for a scaled screen (D191), no wider than the largest picture at three times its size
-                TrainControlUI.getImageCache().putIfAbsent(url, img.getWidth(null) <= 3 * LOC_ICON_WIDTH ? img
-                    : img.getScaledInstance(3 * LOC_ICON_WIDTH, -1, Image.SCALE_SMOOTH));
+                // The original, kept only for a scaled screen (D191), as a copy no wider than the largest picture at
+                // three times its size
+                if (SharpIcon.screenScale(this) > 1) TrainControlUI.getImageCache().putIfAbsent(url,
+                    img.getWidth(null) <= 3 * LOC_ICON_WIDTH ? img : ImageUtil.toTransparentBufferedImage(
+                        new ImageIcon(img.getScaledInstance(3 * LOC_ICON_WIDTH, -1, Image.SCALE_SMOOTH)).getImage()));
             }
         }
 
@@ -6775,7 +6777,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** `getLocImageMaxHeight`'s picture as an icon, which a scaled screen draws from the original (D191). */
     public ImageIcon getLocIcon(String url, int size, int maxHeight) throws IOException
     {
-        return new SharpIcon(getLocImageMaxHeight(url, size, maxHeight), getImageCache().get(url));
+        Image picture = getLocImageMaxHeight(url, size, maxHeight), original = getImageCache().get(url);
+        return original == null ? new ImageIcon(picture) : new SharpIcon(picture, original);
     }
     
     /**

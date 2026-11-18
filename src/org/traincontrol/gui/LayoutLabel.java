@@ -752,7 +752,6 @@ public final class LayoutLabel extends JLabel
         // picture under the occupied key for the session.
         final String name = c.getImageName(size, edit);
         final String key = c.getImageKey(name, size);
-
         return DECODING.computeIfAbsent(key, k -> CompletableFuture.runAsync(() ->
         {
             try
@@ -760,8 +759,14 @@ public final class LayoutLabel extends JLabel
                 if (TrainControlUI.getImageCache().get(k) == null)
                 {
                     Image img = c.getImage(name, size);
-
                     if (img != null) TrainControlUI.getImageCache().putIfAbsent(k, img);
+
+                    // And the copies a scaled screen draws (D191), so its first paint need not make them
+                    double scale = org.traincontrol.util.SharpIcon.screenScale(tcUI);
+                    if (scale > 1) for (double side : new double[] {Math.floor(size * scale), Math.ceil(size * scale)})
+                    {
+                        sharp(name, (int) side, c.getOrientation());
+                    }
                 }
             }
             catch (IOException ex)
@@ -774,6 +779,17 @@ public final class LayoutLabel extends JLabel
                 DECODING.remove(k);
             }
         }, tcUI.getTileImageLoader()));
+    }
+
+    /** A square's sharp copy `side` pixels across (D191), made once into the image cache. */
+    private static Image sharp(String name, int side, int turn) throws IOException
+    {
+        String key = name + "_" + turn + "_" + side + "_sharp";
+        Image made = TrainControlUI.getImageCache().get(key);
+        if (made == null) TrainControlUI.getImageCache().putIfAbsent(key,
+            made = LayoutDiagramComponent.toBufferedImage(LayoutDiagramComponent.getImage(name, side, turn)));
+
+        return made;
     }
 
     /**
@@ -877,12 +893,11 @@ public final class LayoutLabel extends JLabel
                         final int turn = this.component.getOrientation();
                         // Square: a side a pixel longer than the other is clipped, as the square is
                         lastIcon = ICONS.computeIfAbsent(img, i -> new org.traincontrol.util.SharpIcon(i,
-                            (w, h) -> LayoutDiagramComponent.getImage(shown, Math.max(w, h), turn)));
+                            (w, h) -> sharp(shown, Math.max(w, h), turn)));
 
                         // A flash that is up is given up whenever the picture is replaced: its timer holds the icon it
                         // captured and would draw the tile as it was.
                         discardFlash();
-
                         this.setIcon(lastIcon);
 
                         // Neither mark is an icon (MT-309): the train line and the gray wash over blocked track are

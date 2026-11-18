@@ -32,11 +32,31 @@ public class SharpIcon extends ImageIcon
         this.art = art;
     }
 
-    /** `picture`, drawn on a scaled screen from `finer` area-averaged to the screen's pixels, once loaded. */
+    /**
+     * `picture`, drawn on a scaled screen from `finer` resampled to the screen's pixels once loaded: area-averaged, or
+     * bilinear where `finer` is the smaller, which area-averaging would make blocky.
+     */
     public SharpIcon(Image picture, Image finer)
     {
-        this(picture, (w, h) -> ImageUtil.toTransparentBufferedImage(
-            new ImageIcon(finer.getScaledInstance(w, h, Image.SCALE_SMOOTH)).getImage()));
+        this(picture, (w, h) -> new ImageIcon(finer).getIconWidth() < w
+            ? ImageUtil.getScaledImage(ImageUtil.toTransparentBufferedImage(finer), w, h)
+            : ImageUtil.toTransparentBufferedImage(
+                new ImageIcon(finer.getScaledInstance(w, h, Image.SCALE_SMOOTH)).getImage()));
+    }
+
+    /** The scale the screen showing `c` draws at, the default screen's without one: 1 on Java 8 and with no screen. */
+    public static double screenScale(Component c)
+    {
+        try
+        {
+            java.awt.GraphicsConfiguration on = c == null ? null : c.getGraphicsConfiguration();
+            return (on != null ? on : java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
+                .getDefaultScreenDevice().getDefaultConfiguration()).getDefaultTransform().getScaleX();
+        }
+        catch (java.awt.HeadlessException noScreen)
+        {
+            return 1;
+        }
     }
 
     /** `icon` with `change` made to its picture, and to each sharp copy if it is a SharpIcon. */
@@ -74,7 +94,6 @@ public class SharpIcon extends ImageIcon
         int height = (int) Math.ceil(t.getScaleY() * (y + getIconHeight()) + t.getTranslateY() - 0.5) - top;
         Image sharp = t.getScaleX() > 1 && t.getScaleY() > 1 && t.getShearX() == 0 && t.getShearY() == 0
             && width > 0 && height > 0 ? at(width, height) : null;
-
         if (sharp == null)
         {
             super.paintIcon(c, g, x, y);

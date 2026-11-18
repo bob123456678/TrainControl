@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
@@ -13,12 +14,14 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Accessory;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.util.ImageUtil;
 import support.Display;
 
 /**
@@ -90,9 +93,9 @@ public class testPicturesAreSharpOnAScaledScreen
      * At 125% a column of squares running down the page meets with no light line between them, at Small (squares 37.5
      * screen pixels apart) and at Large (75 pixels across, an odd number, so turning about a whole pixel shifts it).
      *
-     * MUTATION: in `LayoutDiagramComponent.getImage`, turn about `getWidth(null)/2`; in `SharpIcon.paintIcon`, round the
-     * edges with `Math.round` (red on Java 21, whose clip the edges follow); or in `LayoutLabel.setImageOnEDT`, make the
-     * copy `w` across rather than the longer side.
+     * MUTATION: in `LayoutDiagramComponent.getImage`, turn about `getWidth(null)/2`; in `SharpIcon.paintIcon`, round
+     * the edges with `Math.round` (red on Java 21, whose clip the edges follow); or in `LayoutLabel.sharp`'s caller,
+     * make the copy `w` across rather than the longer side.
      */
     @Test
     public void testSquaresSideBySideMeet() throws Exception
@@ -149,7 +152,7 @@ public class testPicturesAreSharpOnAScaledScreen
 
     /**
      * At scale 1 every one of these paints exactly what a plain ImageIcon of its picture paints, so Java 8 and an
-     * unscaled screen see what they saw before; the function icon is the picture `getLocImage` makes, as before.
+     * unscaled screen see what they saw before; a function icon is the picture `getLocImage` makes, as before.
      *
      * MUTATION: in `SharpIcon.paintIcon`, draw the sharp copy at a scale of 1 too (`>= 1`).
      */
@@ -157,10 +160,14 @@ public class testPicturesAreSharpOnAScaledScreen
     public void testAtScaleOneNothingChanges() throws Exception
     {
         String function = TrainControlUI.class.getResource("resources/functions/FktIcon_a_ge_01.png").toString();
-        ImageIcon functionIcon = ui.getLocIcon(function, TrainControlUI.BUTTON_ICON_WIDTH);
+        Image picture = ui.getLocImage(function, TrainControlUI.BUTTON_ICON_WIDTH);
 
-        assertSame(functionIcon.getImage(), ui.getLocImage(function, TrainControlUI.BUTTON_ICON_WIDTH),
+        assertSame(ui.getLocIcon(function, TrainControlUI.BUTTON_ICON_WIDTH).getImage(), picture,
             "the function icon's picture is not the one getLocImage makes");
+
+        // As a scaled screen keeps it, with its 48-pixel original
+        Icon functionIcon = new org.traincontrol.util.SharpIcon(picture,
+            javax.imageio.ImageIO.read(new java.net.URL(function)));
 
         Icon[] icons = {square(componentType.SWITCH_LEFT, 1, 30), square(componentType.CURVE, 3, 60),
             square(componentType.SIGNAL, 2, TrainControlUI.MEDIUM_TILE_SIZE), TrainControlUI.TAB_ICON_LAYOUT,
@@ -171,6 +178,207 @@ public class testPicturesAreSharpOnAScaledScreen
             assertEquals(differing(painted(icon, 1), painted(new ImageIcon(((ImageIcon) icon).getImage()), 1)), 0,
                 icon.getIconWidth() + "-pixel " + icon.getClass().getSimpleName() + " at scale 1 is not what it was");
         }
+    }
+
+    /**
+     * At scale 1 the pictures are the ones the code before D191 made, built here the old way: a square's at Small,
+     * Medium and Large in each turn, the locomotive tab's page badge, and a locomotive button's picture with the black
+     * shadow of its name.
+     *
+     * MUTATION: move the button's first shadow (`Math.round(2 * scale)`) or the badge (`x`) one pixel right.
+     */
+    @Test
+    public void testAtScaleOneThePicturesAreTheOldOnes() throws Exception
+    {
+        for (int size : new int[] {30, TrainControlUI.MEDIUM_TILE_SIZE, 60})
+        {
+            for (int turn = 0; turn < 4; turn++)
+            {
+                for (componentType kind : new componentType[] {componentType.CURVE, componentType.SWITCH_LEFT})
+                {
+                    String name = new LayoutDiagramComponent(kind, 0, 0, 0, 0, 0, 0,
+                        Accessory.accessoryDecoderType.MM2).getTypeName();
+
+                    assertEquals(differing(onClear(((ImageIcon) square(kind, turn, size)).getImage()),
+                        onClear(oldSquare(name, size, turn))), 0, kind + " at " + size + ", turned " + turn);
+                }
+            }
+        }
+
+        javax.swing.JTabbedPane tabs = (javax.swing.JTabbedPane) support.Reflect.get(TrainControlUI.class, ui,
+            "KeyboardTab");
+        java.lang.reflect.Method page = support.Reflect.method(TrainControlUI.class, "switchLocMapping", int.class);
+
+        onTheWindow(page, 3);
+        assertEquals(differing(onClear(((ImageIcon) tabs.getIconAt(0)).getImage()), oldBadge("3")), 0,
+            "the locomotive tab's badge for page 3");
+        onTheWindow(page, 1);
+
+        // A real keyboard button showing a locomotive with a picture
+        java.io.File file = new java.io.File(System.getProperty("java.io.tmpdir"), "d191-button.png");
+        BufferedImage photo = new BufferedImage(300, 116, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D pg = photo.createGraphics();
+
+        pg.setColor(new java.awt.Color(60, 120, 60));
+        pg.fillRect(20, 20, 260, 76);
+        pg.dispose();
+        javax.imageio.ImageIO.write(photo, "png", file);
+
+        String url = file.toURI().toURL().toString();
+        Locomotive loc = model.getLocomotives().get(0);
+        @SuppressWarnings("unchecked")
+        java.util.Map<JButton, Locomotive> keys = (java.util.Map<JButton, Locomotive>)
+            support.Reflect.method(TrainControlUI.class, "currentLocMapping").invoke(ui);
+        JButton button = keys.keySet().iterator().next();
+        Locomotive had = keys.get(button);
+        String urlWas = loc.getImageURL(), textWas = button.getText();
+
+        try
+        {
+            loc.setImageURL(url);
+            keys.put(button, loc);
+            SwingUtilities.invokeAndWait(() -> button.setText("BR 218"));
+            onTheWindow(support.Reflect.method(TrainControlUI.class, "repaintIcon", JButton.class, Locomotive.class,
+                Integer.class), button, loc, 1);
+
+            assertTrue(support.Components.waitFor(() -> button.getIcon() instanceof ImageIcon, 10000),
+                "the button never showed its picture");
+
+            BufferedImage old = (BufferedImage) ui.getLocImage(url, 66);
+            BufferedImage shadow = ImageUtil.generateImageWithText("BR 218", java.awt.Color.BLACK, button.getFont(),
+                old.getWidth(), old.getHeight(), 2, 1);
+            BufferedImage shadow2 = ImageUtil.generateImageWithText("BR 218", java.awt.Color.BLACK, button.getFont(),
+                old.getWidth(), old.getHeight(), 1, -1);
+
+            assertEquals(differing(onClear(((ImageIcon) button.getIcon()).getImage()),
+                onClear(ImageUtil.mergeImages(ImageUtil.mergeImages(old, shadow), shadow2))), 0,
+                "the locomotive button's picture with its name's shadow");
+        }
+        finally
+        {
+            keys.put(button, had);
+            loc.setImageURL(urlWas);
+            SwingUtilities.invokeAndWait(() -> button.setText(textWas));
+        }
+    }
+
+    /** Calls one of the window's own methods on the event thread. */
+    private static void onTheWindow(java.lang.reflect.Method method, Object... arguments) throws Exception
+    {
+        AtomicReference<Exception> failed = new AtomicReference<>();
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                method.invoke(ui, arguments);
+            }
+            catch (ReflectiveOperationException e)
+            {
+                failed.set(e);
+            }
+        });
+
+        if (failed.get() != null) throw failed.get();
+    }
+
+    /** A square's picture as before D191: the 30 or 60 art, scaled smoothly, turned about a whole pixel. */
+    private static BufferedImage oldSquare(String name, int size, int turn) throws Exception
+    {
+        BufferedImage art = javax.imageio.ImageIO.read(TrainControlUI.class.getResource(
+            "resources/icons" + (size <= 30 ? 30 : 60) + "/" + name + ".gif"));
+        Image img = size == art.getWidth() ? art : art.getScaledInstance(size, size, Image.SCALE_SMOOTH);
+
+        if (turn == 0) return onClear(img);
+
+        java.awt.geom.AffineTransform t = new java.awt.geom.AffineTransform();
+
+        t.rotate(Math.toRadians((4 - turn) * 90), size / 2, size / 2);
+
+        return new java.awt.image.AffineTransformOp(t, java.awt.image.AffineTransformOp.TYPE_BILINEAR).filter(
+            LayoutDiagramComponent.toBufferedImage(new ImageIcon(img).getImage()), null);
+    }
+
+    /** The locomotive tab's icon with a page badge, as before D191. */
+    private static BufferedImage oldBadge(String text)
+    {
+        BufferedImage out = onClear(((ImageIcon) TrainControlUI.TAB_ICON_CONTROL).getImage());
+        Graphics2D g = out.createGraphics();
+
+        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+            java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 10));
+
+        java.awt.geom.Rectangle2D ink = g.getFont().createGlyphVector(g.getFontRenderContext(), text).getVisualBounds();
+        int tall = 13, wide = Math.max(tall, (int) Math.ceil(ink.getWidth()) + 7);
+        int x = Math.max(0, (out.getWidth() - wide) / 2), y = Math.max(0, (out.getHeight() - tall) / 2);
+
+        g.setColor(new java.awt.Color(0x26, 0x75, 0xBF));
+        g.fillRoundRect(x, y, wide, tall, tall, tall);
+        g.setColor(java.awt.Color.WHITE);
+        g.drawString(text, (float) (x + (wide - ink.getWidth()) / 2 - ink.getX()),
+            (float) (y + (tall - ink.getHeight()) / 2 - ink.getY()));
+        g.dispose();
+
+        return out;
+    }
+
+    /**
+     * A big locomotive picture shown where the application shows one leaves nothing in the image cache holding it at
+     * full size: on an unscaled screen no original is kept, on a scaled one a copy no wider than 888 pixels.
+     *
+     * MUTATION: in `TrainControlUI.getLocImageMaxHeight`, keep `img.getScaledInstance(...)` as the original.
+     */
+    @Test
+    public void testABigPictureIsNotKeptWhole() throws Exception
+    {
+        java.io.File file = new java.io.File(System.getProperty("java.io.tmpdir"), "d191-big.png");
+        BufferedImage big = new BufferedImage(2000, 1500, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = big.createGraphics();
+
+        g.setColor(java.awt.Color.ORANGE);
+        g.fillOval(200, 200, 1600, 1100);
+        g.dispose();
+        javax.imageio.ImageIO.write(big, "png", file);
+
+        String url = file.toURI().toURL().toString();
+
+        // As the selector, the locomotive panel and a keyboard button ask for it
+        ui.getLocIcon(url, 142);
+        ui.getLocIcon(url, TrainControlUI.LOC_ICON_WIDTH, TrainControlUI.LOC_ICON_HEIGHT);
+        ui.getLocIcon(url, 66);
+
+        for (java.util.Map.Entry<String, Image> kept : TrainControlUI.getImageCache().entrySet())
+        {
+            if (!kept.getKey().startsWith(url)) continue;
+
+            assertTrue(kept.getValue() instanceof BufferedImage
+                && kept.getValue().getWidth(null) <= 3 * TrainControlUI.LOC_ICON_WIDTH, kept.getKey() + " is kept as a "
+                + kept.getValue().getClass().getSimpleName() + " " + kept.getValue().getWidth(null) + " wide");
+        }
+    }
+
+    /**
+     * A picture whose original is smaller than the screen's size for it is drawn from the original smoothly
+     * (bilinear), not area-averaged, which magnifies in blocks.
+     *
+     * MUTATION: in `SharpIcon(Image, Image)`, area-average whatever the sizes.
+     */
+    @Test
+    public void testASmallOriginalIsEnlargedSmoothly()
+    {
+        BufferedImage small = new BufferedImage(40, 16, BufferedImage.TYPE_INT_ARGB);
+
+        for (int x = 0; x < 40; x++)
+        {
+            for (int y = 0; y < 16; y++) small.setRGB(x, y, (x + y) % 2 == 0 ? 0xff000000 : 0xffffffff);
+        }
+
+        Icon icon = new org.traincontrol.util.SharpIcon(ImageUtil.getScaledImage(small, 34, 14), small);
+
+        assertEquals(differing(painted(icon, 2), onClear(ImageUtil.getScaledImage(small, 68, 28))), 0,
+            "a 40-pixel original drawn 68 pixels across is not the bilinear enlargement");
     }
 
     /** The icon a square of this kind shows at `size`, turned `turn` quarters, once its picture has arrived. */
