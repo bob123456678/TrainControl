@@ -2988,7 +2988,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The curve and switch tiles are the mirror images their shapes say they are, at both sizes: a curve between south
+     * The curve and switch tiles are the mirror images their shapes say they are, at every size: a curve between south
      * and east mirrors across the diagonal, a left switch is a right switch turned over.  A pixel more than a shade out
      * (12 of 255) on either side is counted (icons come from `docs/tools/tile-icons.py`).
      *
@@ -3008,11 +3008,12 @@ public class testDiagramLooksRight
             {"crossswitch_active", "H"}, {"crossswitch_active", "T"},
             {"custom_scissors", "TB"}, {"custom_scissors_active", "TB"}, {"custom_perm_scissors", "TB"},
             {"custom_perm_left", "custom_perm_right"}, {"custom_perm_y", "LR"}, {"custom_perm_threeway", "LR"},
-            {"s88", "LR"}, {"s88", "TB"}, {"s88_active", "LR"}, {"s88_active", "TB"}, {"end", "LR"}};
+            {"s88", "LR"}, {"s88", "TB"}, {"s88_active", "LR"}, {"s88_active", "TB"}, {"end", "LR"},
+            {"decouple", "LR"}};
 
         java.util.List<String> off = new java.util.ArrayList<>();
 
-        for (int size : new int[] {30, 60})
+        for (int size : new int[] {30, 60, 120})
         {
             for (String[] check : checks)
             {
@@ -3056,7 +3057,7 @@ public class testDiagramLooksRight
     /** A tile's icon, as the diagram loads it. */
     private static BufferedImage icon(int size, String name) throws Exception
     {
-        java.net.URL at = TrainControlUI.class.getResource("/org/traincontrol/gui/resources/icons" + size + "/" + name + ".gif");
+        java.net.URL at = TrainControlUI.class.getResource("/org/traincontrol/gui/resources/icons" + size + "/" + name + (size == 120 ? ".png" : ".gif"));
 
         assertNotNull(at, "no icon " + name + " at " + size);
 
