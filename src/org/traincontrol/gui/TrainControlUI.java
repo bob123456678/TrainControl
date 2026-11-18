@@ -753,7 +753,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // The scale is asked of the display: FlatLaf caches one scale per process and its automatic answer depends on
         // AWT state (1.25 or 1.0 on a 120-dpi display, by what ran first). 96 dpi is the unscaled baseline.
-        int dpi = Toolkit.getDefaultToolkit().getScreenResolution();
+        // "tc.dpi" is the tests' way to a display of another scale.
+        int dpi = Integer.getInteger("tc.dpi", Toolkit.getDefaultToolkit().getScreenResolution());
 
         // A system property, not a UI default, because FlatLaf reads it while installing; UI_SCALE overrides.
         System.setProperty("flatlaf.uiScale", uiScaleFor(dpi, com.formdev.flatlaf.util.UIScale.isSystemScalingEnabled(),
@@ -853,7 +854,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         String[] keys =
         {
             "Menu.font", "MenuBar.font", "MenuItem.font",
-            "CheckBoxMenuItem.font", "RadioButtonMenuItem.font", "PopupMenu.font"
+            "CheckBoxMenuItem.font", "RadioButtonMenuItem.font", "PopupMenu.font",
+            "Menu.acceleratorFont", "MenuItem.acceleratorFont", "CheckBoxMenuItem.acceleratorFont",
+            "RadioButtonMenuItem.acceleratorFont"
         };
 
         for (String key : keys)

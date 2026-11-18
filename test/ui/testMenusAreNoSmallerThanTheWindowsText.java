@@ -6,6 +6,8 @@ import java.util.List;
 import javax.swing.JMenuBar;
 import javax.swing.UIManager;
 import static org.testng.Assert.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import support.Display;
@@ -15,8 +17,8 @@ import support.Reflect;
 
 /**
  * The menus are never smaller than the window's main text (14), whatever FlatLaf's own size is: at a scale of 1 its menu font
- * is 12 (MT-1053).  FlatLaf keeps one scale per JVM, so this class installs the look and feel at a scale of 1 itself, as
- * `installLookAndFeel` does, and asks for the menu step.
+ * is 12 (MT-1053).  FlatLaf keeps one scale per JVM, so this class runs the application's own `installLookAndFeel` for a
+ * display of 96 dpi (`tc.dpi`).
  *
  * @author Adam
  */
@@ -24,76 +26,95 @@ public class testMenusAreNoSmallerThanTheWindowsText
 {
     private static final String[] KEYS =
     {
-        "Menu.font", "MenuBar.font", "MenuItem.font", "CheckBoxMenuItem.font", "RadioButtonMenuItem.font", "PopupMenu.font"
+        "Menu.font", "MenuBar.font", "MenuItem.font", "CheckBoxMenuItem.font", "RadioButtonMenuItem.font", "PopupMenu.font",
+        "Menu.acceleratorFont", "MenuItem.acceleratorFont", "CheckBoxMenuItem.acceleratorFont",
+        "RadioButtonMenuItem.acceleratorFont"
     };
 
-    private static void enlarge() throws Exception
+    private String dpiWas;
+
+    private String scaleWas;
+
+    /** The application's own install, on a display of 96 dpi (a scale of 1), which `tc.dpi` stands in for. */
+    @BeforeClass
+    public void installAtScaleOne()
     {
-        Reflect.method(TrainControlUI.class, "enlargeTheMenus").invoke(null);
+        Display.needed("a look and feel needs a display");
+
+        dpiWas = System.getProperty("tc.dpi");
+        scaleWas = System.getProperty("flatlaf.uiScale");
+
+        System.setProperty("tc.dpi", "96");
+
+        TrainControlUI.installLookAndFeel();
     }
 
-    /** Every menu font at the size FlatLaf gives at a scale of 1, as a claim before may have left them. */
-    private static void flatLafsOwn()
+    @AfterClass(alwaysRun = true)
+    public void putThePropertiesBack()
+    {
+        restore("tc.dpi", dpiWas);
+        restore("flatlaf.uiScale", scaleWas);
+    }
+
+    private static void restore(String name, String was)
+    {
+        if (was == null) System.clearProperty(name);
+        else System.setProperty(name, was);
+    }
+
+    private static void assertScaleOne()
+    {
+        assertTrue(UIManager.getLookAndFeel() instanceof com.formdev.flatlaf.FlatLightLaf, "precondition: installed");
+        assertEquals(com.formdev.flatlaf.util.UIScale.getUserScaleFactor(), 1f, 0.001f, "precondition: a scale of 1");
+    }
+
+    private static void assertMenusAtLeastTheWindowsText()
     {
         for (String key : KEYS)
         {
-            UIManager.put(key, new javax.swing.plaf.FontUIResource(UIManager.getFont(key).deriveFont(12f)));
+            assertTrue(UIManager.getFont(key).getSize() >= TrainControlUI.MENU_FONT_MIN,
+                key + " is " + UIManager.getFont(key).getSize() + ", smaller than the window's text at a scale of 1");
         }
-    }
-
-    /** The look and feel at a scale of 1, as the application installs it, but for the menu step, which the claims run. */
-    private static void installAtScaleOne()
-    {
-        if (UIManager.getLookAndFeel() instanceof com.formdev.flatlaf.FlatLightLaf) return;
-
-        System.setProperty("flatlaf.uiScale", "1");
-
-        com.formdev.flatlaf.FlatLightLaf.setup();
-
-        UIManager.put("TitlePane.menuBarEmbedded", TrainControlUI.MENUS_IN_THE_TITLE_BAR);
-        UIManager.put("TabbedPane.tabWidthMode", "compact");
-        UIManager.put("TabbedPane.tabInsets", new java.awt.Insets(8, 8, 8, 8));
     }
 
     /**
      * At a scale of 1 every menu font is 14, not FlatLaf's 12; a larger one stays as it is.
      *
-     * MUTATION: no step in `enlargeTheMenus` leaves 12 and fails the first assertion; a step that sets 14 whatever the
-     * size shrinks the 15 and fails the last.
+     * MUTATION: removing the `enlargeTheMenus();` call from `installLookAndFeel` leaves 12 and fails; a step that sets 14
+     * whatever the size shrinks the 15 and fails the last assertion.
      */
     @Test
     public void testAMenuIsNeverSmallerThanTheWindowsText() throws Exception
     {
-        Display.needed("a look and feel needs a display");
+        assertScaleOne();
 
-        installAtScaleOne();
+        assertMenusAtLeastTheWindowsText();
 
-        assertEquals(com.formdev.flatlaf.util.UIScale.getUserScaleFactor(), 1f, 0.001f, "precondition: a scale of 1");
+        // What 1.25 and 1.5 give FlatLaf (15 and 18) is kept; the fonts are put back after.
+        java.util.Map<String, Font> was = new java.util.LinkedHashMap<>();
 
-        flatLafsOwn();
+        for (String key : KEYS) was.put(key, UIManager.getFont(key));
 
-        enlarge();
-
-        for (String key : KEYS)
+        try
         {
-            assertEquals(UIManager.getFont(key).getSize(), TrainControlUI.MENU_FONT_MIN,
-                key + " is smaller than the window's text at a scale of 1 (12 is FlatLaf's own)");
+            for (int size : new int[] {15, 18})
+            {
+                for (String key : KEYS)
+                {
+                    UIManager.put(key, new javax.swing.plaf.FontUIResource(was.get(key).deriveFont((float) size)));
+                }
+
+                Reflect.method(TrainControlUI.class, "enlargeTheMenus").invoke(null);
+
+                for (String key : KEYS)
+                {
+                    assertEquals(UIManager.getFont(key).getSize(), size, key + " was shrunk from " + size);
+                }
+            }
         }
-
-        // What 1.25 and 1.5 give FlatLaf (15 and 18) is kept.
-        for (int size : new int[] {15, 18})
+        finally
         {
-            for (String key : KEYS)
-            {
-                UIManager.put(key, new javax.swing.plaf.FontUIResource(UIManager.getFont(key).deriveFont((float) size)));
-            }
-
-            enlarge();
-
-            for (String key : KEYS)
-            {
-                assertEquals(UIManager.getFont(key).getSize(), size, key + " was shrunk from " + size);
-            }
+            for (String key : KEYS) UIManager.put(key, new javax.swing.plaf.FontUIResource(was.get(key)));
         }
     }
 
@@ -106,11 +127,9 @@ public class testMenusAreNoSmallerThanTheWindowsText
     {
         Display.needed("a window has to be laid out to be measured");
 
-        installAtScaleOne();
+        assertScaleOne();
 
-        flatLafsOwn();
-
-        enlarge();
+        assertMenusAtLeastTheWindowsText();
 
         LayoutSandbox sandbox = LayoutSandbox.open();
 
