@@ -4657,24 +4657,9 @@ public class testStationSettingsWindow
     {
         TileKey[] found = aStationBesideAFollowingSquare();
 
-        TileKey leader = Components.onTheEventThread(() -> session.runLeaders().get(found[1]));
-        RouteId road = onlyRoad(leader);
         org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
 
-        // The square one way toward the station, then its run's first square the other way
-        Components.onTheEventThread(() ->
-        {
-            session.setRunDirection(leader, road, Direction.BOTH);
-
-            org.traincontrol.automationui.TilePorts.Route own = session.getRoutes(found[1]).values().iterator().next();
-
-            session.setDirection(found[1], onlyRoad(found[1]), own.getA() == side.opposite() ? Direction.TOWARD_A
-                : Direction.TOWARD_B);
-            session.setDirection(leader, road, session.getGraph().getDirection(leader, road) == Direction.TOWARD_A
-                ? Direction.TOWARD_B : Direction.TOWARD_A);
-
-            return null;
-        });
+        opposeTheRun(found, true);
 
         assertTrue(pointsOppositeWays(), "precondition: the run does not point opposite ways");
 
@@ -4688,6 +4673,99 @@ public class testStationSettingsWindow
         assertFalse(pointsOppositeWays(), "the run still points opposite ways after the click");
 
         StationDoors.close(window);
+    }
+
+    /**
+     * A run pointing opposite ways is drawn closed on both arms of a square beside the station, though that square's own
+     * stored way leaves the station.  A click on the shut arm toward the station opens that arm alone: the far arm,
+     * which the picture showed shut, stays shut.
+     *
+     * MUTATION: have `nextSquare` start from the square's stored arms on a run drawn closed, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAClickOnAShutArmOfAnOppositeWaysRunOpensThatArmAlone() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+
+        opposeTheRun(found, false);
+
+        assertTrue(pointsOppositeWays(), "precondition: the run does not point opposite ways");
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+
+        opensTheShutArrowAtTheStation(window, found);
+        assertTrue(nextSquareState(window, found[1]).contains("NEIGHBOR." + side + " " + found[1] + ":false"),
+            "the click opened the far arm too, which the picture showed shut: " + nextSquareState(window, found[1]));
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * The moment a run starts, before the window has read it, a hover on a following square's arrow already says nothing
+     * can be changed.
+     *
+     * MUTATION: have `pictureClick` read the window's cached hold again, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testThePictureKnowsARunHasStartedAtOnce() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        Components.settle();
+
+        try
+        {
+            String tip = Components.onTheEventThread(() ->
+            {
+                staging.set(ui, true);
+
+                double[] middle = middleOf(window.pictureMarksForTest().get("NEXT." + side + "." + side.opposite()));
+
+                return block.getToolTipText(new java.awt.event.MouseEvent(block, java.awt.event.MouseEvent.MOUSE_MOVED, 0, 0,
+                    (int) Math.round(middle[0]), (int) Math.round(middle[1]), 0, false));
+            });
+
+            assertTrue(tip.contains(I18n.t(org.traincontrol.gui.RunGates.NO_EDITS_WHILE_RUNNING)),
+                "the tooltip offers the edit as a run starts: " + tip);
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { staging.set(ui, false); return null; });
+
+            StationDoors.close(window);
+        }
+    }
+
+    /** Sets the square beside the station one way, toward the station or away, and its run's first square the other. */
+    private static void opposeTheRun(TileKey[] found, boolean towardStation)
+    {
+        TileKey leader = Components.onTheEventThread(() -> session.runLeaders().get(found[1]));
+        RouteId road = onlyRoad(leader);
+        org.traincontrol.automationui.TilePorts.Side near = sideBetween(found[0], found[1]).opposite();
+
+        for (Direction first : new Direction[] {Direction.TOWARD_A, Direction.TOWARD_B})
+        {
+            Components.onTheEventThread(() ->
+            {
+                session.setRunDirection(leader, road, Direction.BOTH);
+
+                boolean aIsNear = session.getRoutes(found[1]).values().iterator().next().getA() == near;
+
+                session.setDirection(found[1], onlyRoad(found[1]), aIsNear == towardStation ? Direction.TOWARD_A : Direction.TOWARD_B);
+                session.setDirection(leader, road, first);
+
+                return null;
+            });
+
+            if (pointsOppositeWays()) return;
+        }
     }
 
     /** Clicks a following square's arrow at the station, drawn shut: its tooltip says so, and the click opens it. */
