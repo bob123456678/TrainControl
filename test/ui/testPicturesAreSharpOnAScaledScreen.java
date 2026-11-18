@@ -325,10 +325,10 @@ public class testPicturesAreSharpOnAScaledScreen
     }
 
     /**
-     * For a scaled screen a big locomotive picture's original is kept as a copy of its own no wider than 888 pixels,
-     * never as a picture that still holds the full-size one.
+     * For a scaled screen a big locomotive picture's original is kept as a copy of its own no wider and no taller than
+     * 888 pixels, never as a picture that still holds the full-size one; a tall, narrow one too (F311J-C3).
      *
-     * MUTATION: in `TrainControlUI.keptOriginal`, keep `img.getScaledInstance(...)` itself.
+     * MUTATION: in `TrainControlUI.keptOriginal`, keep `img.getScaledInstance(...)` itself; or bound the width only.
      */
     @Test
     public void testABigPictureIsKeptOnlyAsASmallCopy() throws Exception
@@ -337,6 +337,10 @@ public class testPicturesAreSharpOnAScaledScreen
 
         assertTrue(kept instanceof BufferedImage && kept.getWidth(null) <= 3 * TrainControlUI.LOC_ICON_WIDTH,
             "kept as a " + kept.getClass().getSimpleName() + " " + kept.getWidth(null) + " wide");
+
+        Image tall = keptOriginal(new BufferedImage(800, 6000, BufferedImage.TYPE_INT_ARGB), 1.25);
+
+        assertTrue(tall.getHeight(null) <= 3 * TrainControlUI.LOC_ICON_WIDTH, "kept " + tall.getHeight(null) + " tall");
     }
 
     /**
