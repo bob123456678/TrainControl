@@ -6764,10 +6764,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return TrainControlUI.getImageCache().get(key);
     }
 
-    /**
-     * The original a screen at `scale` draws a locomotive picture from (D191): none at scale 1, otherwise a copy no
-     * wider than the largest picture at three times its size.
-     */
+    /** The original kept for a screen at `scale` (D191): none at 1, else a copy at most 3 x the largest picture. */
     static Image keptOriginal(Image img, double scale)
     {
         if (scale <= 1) return null;
