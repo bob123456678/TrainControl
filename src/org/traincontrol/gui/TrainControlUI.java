@@ -6764,12 +6764,15 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return TrainControlUI.getImageCache().get(key);
     }
 
-    /** The original kept for a screen at `scale` (D191): none at 1, else a copy at most 3 x the largest picture. */
+    /** The original kept for a screen at `scale` (D191): none at 1, else a copy within 3 x the largest picture's width. */
     static Image keptOriginal(Image img, double scale)
     {
+        int w = img.getWidth(null), h = img.getHeight(null), most = 3 * LOC_ICON_WIDTH;
+
         if (scale <= 1) return null;
-        return img.getWidth(null) <= 3 * LOC_ICON_WIDTH ? img : ImageUtil.toTransparentBufferedImage(
-            new ImageIcon(img.getScaledInstance(3 * LOC_ICON_WIDTH, -1, Image.SCALE_SMOOTH)).getImage());
+        if (Math.max(w, h) <= most) return img;
+        return ImageUtil.toTransparentBufferedImage(new ImageIcon(img.getScaledInstance(w >= h ? most : -1,
+            w >= h ? -1 : most, Image.SCALE_SMOOTH)).getImage());
     }
 
     /** `getLocImage`'s picture as an icon, which a scaled screen draws from the original (D191). */
