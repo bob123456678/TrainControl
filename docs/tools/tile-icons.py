@@ -353,5 +353,5 @@ def build_others():
 
 if __name__ == "__main__":
     for size in (30, 60, 120):
-        made = build(size)
+        build(size)
     print("wrote the 30, 60 and 120 tiles to", OUT)
