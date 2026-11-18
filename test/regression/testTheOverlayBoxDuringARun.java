@@ -418,19 +418,11 @@ public class testTheOverlayBoxDuringARun
     @Test(timeOut = 60000)
     public void testTickingTheBoxShowsTheTrainsWithoutWaitingForTheMonitor() throws Exception
     {
-        tick(true);
-
-        org.traincontrol.gui.autonomy.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
-
-        assertTrue(Components.waitFor(() -> trainSquare() != null, 10000), "precondition: the monitor draws no train");
-
-        java.util.Timer looking = (java.util.Timer) Reflect.get(driver.getClass(), driver, "timer");
         java.util.Timer idle = new java.util.Timer("idle", true);
 
         try
         {
-            looking.cancel();
-            Reflect.set(driver.getClass(), driver, "timer", idle);
+            stopTheMonitorLooking(idle);
             tick(false);
 
             assertNull(trainSquare(), "precondition: unticked, a train is still drawn");
@@ -442,10 +434,117 @@ public class testTheOverlayBoxDuringARun
         }
         finally
         {
-            idle.cancel();
-            Reflect.set(driver.getClass(), driver, "timer", null);
-            SwingUtilities.invokeAndWait(driver::start);
+            startTheMonitorLooking();
         }
+    }
+
+    /**
+     * Unticked and ticked in one turn of the event thread, as two clicks queued behind a busy one are, the box still
+     * shows the standing trains: the untick's wipe lands after the tick has already looked (MT-1063).  The monitor's own
+     * looking is stopped, so nothing else can put them back.
+     *
+     * MUTATION: drop the `invalidate()` from `DiagramMonitorDriver.setEnabled`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testTwoClicksInOneTurnLeaveTheTrainsDrawn() throws Exception
+    {
+        java.util.Timer idle = new java.util.Timer("idle", true);
+
+        try
+        {
+            stopTheMonitorLooking(idle);
+
+            for (int round = 1; round <= 3; round++)
+            {
+                // Off and on one click at a time first, so what the monitor last published is what is drawn
+                tick(false);
+                tick(true);
+
+                assertTrue(Components.waitFor(() -> trainSquare() != null, 5000), "precondition: round " + round
+                    + " ticked one click at a time draws no train");
+
+                java.util.concurrent.CountDownLatch looked = new java.util.concurrent.CountDownLatch(1);
+
+                // The timer runs one task at a time, so once this one has run the tick's own look is over, before the
+                // turn ends and the untick's wipe can run.
+                assertTrue(Components.onTheEventThread(() ->
+                {
+                    box.doClick();
+                    box.doClick();
+                    idle.schedule(new java.util.TimerTask()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            looked.countDown();
+                        }
+                    }, 0);
+
+                    return box.isSelected() && looked.await(10, TimeUnit.SECONDS);
+                }), "precondition: round " + round + " did not end ticked, or the tick did not look");
+
+                // The untick's wipe, which a stale picture would leave the diagram empty after
+                Components.drain(1);
+
+                assertTrue(Components.waitFor(() -> trainSquare() != null, 5000), "round " + round + ": unticked and"
+                    + " ticked in one turn, the box leaves the standing train off the diagram");
+            }
+        }
+        finally
+        {
+            startTheMonitorLooking();
+        }
+    }
+
+    /**
+     * With the monitor's timer ended (an Error kills its thread), ticking the box still goes through: the click does not
+     * throw part way, before the setup's own layer is drawn again (MT-1063).
+     *
+     * MUTATION: drop the `catch (IllegalStateException dead)` from `DiagramMonitorDriver.setEnabled`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testTickingTheBoxGoesThroughWithTheMonitorsTimerEnded() throws Exception
+    {
+        try
+        {
+            stopTheMonitorLooking(null);
+            tick(false);
+            tick(true);
+
+            assertTrue(box.isSelected() && ui.getDiagramMonitorDriver().isEnabled(), "the box ticked with the timer"
+                + " ended is not on");
+        }
+        finally
+        {
+            startTheMonitorLooking();
+        }
+    }
+
+    /**
+     * Ticks the box, waits for a train drawn, and stops the monitor looking by itself: its timer ended, with `instead`
+     * in its place unless null.
+     */
+    private static void stopTheMonitorLooking(java.util.Timer instead) throws Exception
+    {
+        tick(true);
+
+        assertTrue(Components.waitFor(() -> trainSquare() != null, 10000), "precondition: the monitor draws no train");
+
+        org.traincontrol.gui.autonomy.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+
+        ((java.util.Timer) Reflect.get(driver.getClass(), driver, "timer")).cancel();
+
+        if (instead != null) Reflect.set(driver.getClass(), driver, "timer", instead);
+    }
+
+    /** Ends whichever timer the monitor holds and starts it looking again on its own. */
+    private static void startTheMonitorLooking() throws Exception
+    {
+        org.traincontrol.gui.autonomy.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+
+        ((java.util.Timer) Reflect.get(driver.getClass(), driver, "timer")).cancel();
+        Reflect.set(driver.getClass(), driver, "timer", null);
+        SwingUtilities.invokeAndWait(driver::start);
     }
 
     /** A square the diagram draws a train on, or null. */

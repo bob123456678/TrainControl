@@ -261,10 +261,23 @@ public class DiagramMonitorDriver
         if (enabled)
         {
             // Catch up with whatever happened while it was off, on the TIMER thread: refresh() walks the live layout.
-            // Now, not at the next tick, or the trains come back after the rest (MT-1063); it runs between ticks.
+            // Now, not at the next tick, or the trains come back after the rest (MT-1063); it runs between ticks.  What
+            // was published is forgotten first: the wipe that turned this off may still be queued behind the click.
+            DiagramMonitor current = monitor;
             Timer running = timer;
-            if (monitor != null) monitor.markDirty();
-            if (running != null) running.schedule(aTick(), 0);
+            if (current != null)
+            {
+                current.invalidate();
+                current.markDirty();
+            }
+            try
+            {
+                if (running != null) running.schedule(aTick(), 0);
+            }
+            catch (IllegalStateException dead)
+            {
+                // A timer an Error has ended refuses tasks; the rest of the click must still happen.
+            }
         }
         else
         {
