@@ -218,14 +218,19 @@ public class DiagramMonitorDriver
         // daemon, so a window closed with monitoring on does not keep the process alive
         timer = new Timer("DiagramMonitor", true);
 
-        timer.scheduleAtFixedRate(new TimerTask()
+        timer.scheduleAtFixedRate(aTick(), TICK_MS, TICK_MS);
+    }
+
+    private TimerTask aTick()
+    {
+        return new TimerTask()
         {
             @Override
             public void run()
             {
                 tick();
             }
-        }, TICK_MS, TICK_MS);
+        };
     }
 
     /**
@@ -253,11 +258,26 @@ public class DiagramMonitorDriver
         if (this.enabled == enabled) return;
 
         this.enabled = enabled;
-
         if (enabled)
         {
             // Catch up with whatever happened while it was off, on the TIMER thread: refresh() walks the live layout.
-            if (monitor != null) monitor.markDirty();
+            // Now, not at the next tick, or the trains come back after the rest (MT-1063); it runs between ticks.  What
+            // was published is forgotten first: the wipe that turned this off may still be queued behind the click.
+            DiagramMonitor current = monitor;
+            Timer running = timer;
+            if (current != null)
+            {
+                current.invalidate();
+                current.markDirty();
+            }
+            try
+            {
+                if (running != null) running.schedule(aTick(), 0);
+            }
+            catch (IllegalStateException dead)
+            {
+                // A timer an Error has ended refuses tasks; the rest of the click must still happen.
+            }
         }
         else
         {
