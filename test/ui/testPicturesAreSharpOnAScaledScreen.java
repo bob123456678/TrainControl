@@ -90,6 +90,49 @@ public class testPicturesAreSharpOnAScaledScreen
     }
 
     /**
+     * At 125% a column of squares running down the page meets with no light line between them, at Small (squares 37.5
+     * screen pixels apart) and at Large (75 pixels across, an odd number, so turning about a whole pixel shifts it).
+     *
+     * MUTATION: in `LayoutDiagramComponent.getImage`, turn about `getWidth(null)/2`; or in `SharpIcon.paintIcon`, round
+     * the edges with `Math.round`.
+     */
+    @Test
+    public void testSquaresSideBySideMeet() throws Exception
+    {
+        for (int size : new int[] {30, 60})
+        {
+            Icon square = square(componentType.STRAIGHT, 1, size);
+            BufferedImage column = new BufferedImage((int) (size * 1.25), (int) (3 * size * 1.25),
+                BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = column.createGraphics();
+
+            g.setColor(java.awt.Color.WHITE);
+            g.fillRect(0, 0, column.getWidth(), column.getHeight());
+            g.scale(1.25, 1.25);
+
+            // Each through its own clip, as Swing paints a square
+            for (int i = 0; i < 3; i++)
+            {
+                java.awt.Graphics each = g.create(0, i * size, size, size);
+
+                square.paintIcon(null, each, 0, 0);
+                each.dispose();
+            }
+
+            g.dispose();
+
+            java.util.List<Integer> light = new java.util.ArrayList<>();
+
+            for (int y = 0; y < column.getHeight(); y++)
+            {
+                if ((column.getRGB(column.getWidth() / 2, y) & 0xff) > 200) light.add(y);
+            }
+
+            assertTrue(light.isEmpty(), "squares " + size + " across at 125% leave light rows in the track: " + light);
+        }
+    }
+
+    /**
      * A tab icon at twice the scale is its 512-pixel art area-averaged to 60 pixels, not its 30-pixel picture
      * stretched.
      *

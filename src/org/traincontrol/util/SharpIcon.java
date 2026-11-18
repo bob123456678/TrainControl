@@ -67,11 +67,11 @@ public class SharpIcon extends ImageIcon
     public void paintIcon(Component c, Graphics g, int x, int y)
     {
         AffineTransform t = g instanceof Graphics2D ? ((Graphics2D) g).getTransform() : new AffineTransform();
-        // Edges rounded to whole screen pixels, so squares side by side still meet
-        int left = (int) Math.round(t.getScaleX() * x + t.getTranslateX());
-        int top = (int) Math.round(t.getScaleY() * y + t.getTranslateY());
-        int width = (int) Math.round(t.getScaleX() * (x + getIconWidth()) + t.getTranslateX()) - left;
-        int height = (int) Math.round(t.getScaleY() * (y + getIconHeight()) + t.getTranslateY()) - top;
+        // The screen pixels whose centers the icon covers, as Java's clip counts them, so squares side by side meet
+        int left = (int) Math.ceil(t.getScaleX() * x + t.getTranslateX() - 0.5);
+        int top = (int) Math.ceil(t.getScaleY() * y + t.getTranslateY() - 0.5);
+        int width = (int) Math.ceil(t.getScaleX() * (x + getIconWidth()) + t.getTranslateX() - 0.5) - left;
+        int height = (int) Math.ceil(t.getScaleY() * (y + getIconHeight()) + t.getTranslateY() - 0.5) - top;
         Image sharp = t.getScaleX() > 1 && t.getScaleY() > 1 && t.getShearX() == 0 && t.getShearY() == 0
             && width > 0 && height > 0 ? at(width, height) : null;
 

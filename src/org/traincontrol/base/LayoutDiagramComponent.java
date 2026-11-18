@@ -417,7 +417,7 @@ public class LayoutDiagramComponent
          if (orientation > 0)
          {
             AffineTransform transform = new AffineTransform();
-            transform.rotate(Math.toRadians ((4 - orientation) * 90), img.getWidth(null)/2, img.getHeight(null)/2);
+            transform.rotate(Math.toRadians ((4 - orientation) * 90), img.getWidth(null) / 2.0, img.getHeight(null) / 2.0);
             AffineTransformOp op = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR);
             return op.filter(toBufferedImage(img), null);
          }
