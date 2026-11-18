@@ -23,11 +23,13 @@ The geometry is the originals' own, measured off them:
   - the buffer stop is the straight's band, without its dash, down to a bar as wide as the dash is long
   - the uncoupler is the straight with a hump on its north edge, flat from 4.5 to 25.5 at 9 units and down at 45
     degrees to the band, edged as the band is
+  - the turntable (D192) is a pit of radius 9 edged a unit thick, its bridge west to east with a dash 11 long, and
+    eight tracks out of it to the edge: the straight both ways, so they meet it with no seam, and diagonals 4.4 across
 
 At 120 pixels each tile is its 60 drawn twice as large, as PNG: the straight is the 60 doubled, and the samples are
 the 60's own (8 a pixel), so a 120 averaged 2 by 2 is its 60.  The tunnel and overpass, drawn by hand at 30 and 60, are
-their 60 doubled with the arch and the parapets' slopes drawn from the 60's geometry; the lamp, route and turntable,
-which have none, are their 60 scaled up with Lanczos.  Then run `link-signal-icons.py`, which reads the 120 straight.
+their 60 doubled with the arch and the parapets' slopes drawn from the 60's geometry; the lamp and route, which have
+none, are their 60 scaled up with Lanczos.  Then run `link-signal-icons.py`, which reads the 120 straight.
 
 Run from the project folder, to rewrite the icons in place (needs PIL and numpy):
 
@@ -43,7 +45,7 @@ from PIL import Image
 SRC, OUT = sys.argv[1], sys.argv[2]
 SS = {30: 16, 60: 16, 120: 8}
 
-BLACK, DASH, IDLE, WHITE = (0, 0, 0), (153, 153, 153), (204, 204, 204), (255, 255, 255)
+BLACK, DASH, IDLE, WHITE, PIT = (0, 0, 0), (153, 153, 153), (204, 204, 204), (255, 255, 255), (230, 230, 230)
 YELLOW, RED = (255, 255, 0), (230, 0, 0)
 
 # How much farther from its contact a curved sensor's arrows stand than a straight's, in units, by pixel size: clear of
@@ -248,6 +250,21 @@ class Tile:
         self.poly([(2.5, 11), (4.5, 9), (25.5, 9), (27.5, 11)], edge)
         self.poly([(2.5 + i, 11 + e), (4.5 + i, 9 + e), (25.5 - i, 9 + e), (27.5 - i, 11 + e)], BLACK)
 
+    def ray(self, angle, r0, r1, half, fill):
+        """A band along a ray from the centre, r0 to r1 out, half either side."""
+        ux, uy = math.cos(math.radians(angle)), math.sin(math.radians(angle))
+        r = (r0 + r1) / 2
+        self.poly(rot_rect(15 + ux * r, 15 + uy * r, ux, uy, (r1 - r0) / 2, half), fill)
+
+    def turntable(self):
+        self.straight(False, True); self.straight(True, True)
+        for angle in range(45, 360, 90):
+            self.ray(angle, 8, 22, 2.2, BLACK)
+        self.ellipse(15, 15, 9, BLACK)
+        self.ellipse(15, 15, 7.9, PIT)
+        self.ray(0, -7.9, 7.9, 4, BLACK)
+        self.ray(0, -5.5, 5.5, 1.4, DASH)
+
     def save(self, name, colour=False):
         n, ss = self.size, self.ss
         small = Image.fromarray(np.rint(self.rgb.reshape(n, ss, n, ss, 3).mean(axis=(1, 3))).astype(np.uint8), 'RGB')
@@ -324,6 +341,7 @@ def build(size):
         made["s88" + ("_active" if set_ else "")] = t.save("s88" + ("_active" if set_ else ""), colour=set_)
     t = tile(); t.paste_final(raster(end_pixels)); made["end"] = t.save("end")
     t = tile(); t.straight(False, True); t.uncoupler(); made["decouple"] = t.save("decouple")
+    t = tile(); t.turntable(); made["turntable"] = t.save("turntable")
     if size == 120:
         build_others()
     return made
@@ -346,7 +364,7 @@ def build_others():
                      ((24.25, 7.25), (23.25, 6.25), (21, 8.5), (23, 8.5))):
             t.poly([flip(x, y) for x, y in part], BLACK)
     t.save("overpass")
-    for name in ("lamp", "lamp_active", "route", "route_active", "turntable", "empty", "text"):
+    for name in ("lamp", "lamp_active", "route", "route_active", "empty", "text"):
         im = sixty(name).convert("RGBA").convert("RGBa").resize((120, 120), Image.Resampling.LANCZOS).convert("RGBA")
         im.save(os.path.join(OUT, "icons120", name + ".png"))
 
