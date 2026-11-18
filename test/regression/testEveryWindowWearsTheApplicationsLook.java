@@ -78,8 +78,7 @@ public class testEveryWindowWearsTheApplicationsLook
                 + "controls measure the wrong thing");
 
             // AND THE MENU FONT MOVED, the symptom of the report: asserted too, since the look and feel could be
-            // installed without its fonts reaching the menus.  Not "menus are bigger than labels": `MENU_FONT_STEP` is
-            // 0.
+            // installed without its fonts reaching the menus.
             java.awt.Font menusNow = javax.swing.UIManager.getFont("MenuBar.font");
 
             assertTrue(menusNow != null, "the installed look and feel has no menu font at all");

@@ -365,6 +365,7 @@
         <!-- Added 2026-09-11: Adam - the menu font differed between test windows and the production
              app, because a window built cold installed no look and feel at all. -->
         <test-one-class class="testEveryWindowWearsTheApplicationsLook"/>
+        <test-one-class class="testMenusAreNoSmallerThanTheWindowsText"/>
 
         <!-- Added 2026-09-11: TWV-C5 - two of that round's fixes shipped with no test. -->
         <test-one-class class="testAFeedbackChangeIsAnnounced"/>
