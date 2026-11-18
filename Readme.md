@@ -345,7 +345,7 @@ The primary controls are the up and down arrows for speed, the left and right ar
 
 ## Requirements
 
-* Install Java 8 or later on your computer
+* Install Java 8 or later on your computer.  TrainControl also runs on Java 21: on a Windows display set above 100% (for example 125% or 150%), Java 21 draws the whole window at the size Windows asks for, with sharp text, icons and track diagram, while Java 8 keeps most of the window at its usual size
 * Requires a Marklin Central Station 2 or Central Station 3 connected to your network and layout
 * The computer running TrainControl must be on the same network as your CS2/CS3 (Wi-Fi or Ethernet)
 * Ensure that your firewall allows TrainControl/Java to access the local network
@@ -479,6 +479,7 @@ Tab icons provided by Freepik.
             - Ctrl+G starts autonomous operation, Ctrl+Q gracefully stops it, and Ctrl+H sends every locomotive home after asking first.  When Ctrl+G or Ctrl+H cannot run because the track power is off or the setup is not ready, a message says why.  In the autonomy editor, Ctrl+V places the selected locomotive on a station and Delete takes its train off.  Ctrl+Enter saves in the editors, `Locomotive Settings` and the route editor, and is `Done Editing` in `Station Settings`.
             - On Java 8, the pointer over links and buttons is a smooth, bold hand.
             - To scroll the Log tab sideways, hold Shift and turn the mouse wheel.
+            - On Java 21, with Windows display scaling above 100%, the track diagram, the tab icons, locomotive pictures and function icons are drawn sharp at the larger size instead of stretched; the Large track diagram uses new, finer square pictures.
     - Bug Fixes
         - Central Station Protocol
             - A train's stop (speed 0) is no longer lost when a CS3 stops answering.
@@ -491,12 +492,15 @@ Tab icons provided by Freepik.
             - On a station that allows trains from every side, `Station Settings` no longer shows arrival arrows.
             - `Station Settings` steps aside while you pick a train's tail on the diagram.
             - The station picture in `Station Settings` no longer shows which s88 squares are occupied, and nothing in it is faded.
-            - The `Autonomy Controls` box above the track diagram also hides the trains' orange lines.
+            - The `Autonomy Controls` box above the track diagram also hides the trains' orange lines, and ticking it again shows the trains at once.
+            - The picture in `Station Settings` shows which way trains may run on the track beside the station, even where the track diagram draws that arrow further along, and clicking it sets that whole stretch of track.
         - Locomotive Control
             - `Cancel` in `Locomotive Settings` asks `Save`, `Discard` or `Cancel` before throwing away what you typed, and the revert and crop marks change together with the picture.
         - Interface
             - The `Start Autonomous Operation` button ends at the track diagram's right edge.
-            - On newer Java, a scaled Windows display is no longer scaled twice, the file chooser's `Look In` list works, and settings are kept when the folder path has a non-English letter.
+            - On Java 21 and other Java newer than 8, a scaled Windows display is no longer scaled twice, the file chooser's `Look In` list works, and settings are kept when the folder path has a non-English letter.
+            - At 100% display scaling, menus are no longer smaller than the rest of the window's text.
+            - The uncoupler square on the track diagram is symmetric and meets the track beside it without a seam.
             - A new route item starts at address 0, and in a route you can edit, a cell its row has no use for shows `---`.
 * v3.1.0 [11/15/2026]
     - Central Station Protocol
