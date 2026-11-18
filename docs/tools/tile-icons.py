@@ -21,10 +21,17 @@ The geometry is the originals' own, measured off them:
     comes out grey); set, it is yellow, with two red arrows that are mirror images of each other, a curve's farther
     out (`CURVE_ARROWS_OUT`), each stopping `EDGE_CLEAR` short of the tile's edge
   - the buffer stop is the straight's band, without its dash, down to a bar as wide as the dash is long
+  - the uncoupler is the straight with a hump on its north edge, flat from 4.5 to 25.5 at 9 units and down at 45
+    degrees to the band, edged as the band is
+
+At 120 pixels each tile is its 60 drawn twice as large, as PNG: the straight is the 60 doubled, and the samples are
+the 60's own (8 a pixel), so a 120 averaged 2 by 2 is its 60.  The tunnel and overpass, drawn by hand at 30 and 60, are
+their 60 doubled with the arch and the parapets' slopes drawn from the 60's geometry; the lamp, route and turntable,
+which have none, are their 60 scaled up with Lanczos.  Then run `link-signal-icons.py`, which reads the 120 straight.
 
 Run from the project folder, to rewrite the icons in place (needs PIL and numpy):
 
-    python docs/tools/tile-icons.py src/org/traincontrol/gui/resources src/org/traincontrol/gui/resources
+    py -3.10 docs/tools/tile-icons.py src/org/traincontrol/gui/resources src/org/traincontrol/gui/resources
 """
 import math
 import os
@@ -34,7 +41,7 @@ import numpy as np
 from PIL import Image
 
 SRC, OUT = sys.argv[1], sys.argv[2]
-SS = 16
+SS = {30: 16, 60: 16, 120: 8}
 
 BLACK, DASH, IDLE, WHITE = (0, 0, 0), (153, 153, 153), (204, 204, 204), (255, 255, 255)
 YELLOW, RED = (255, 255, 0), (230, 0, 0)
@@ -42,7 +49,7 @@ YELLOW, RED = (255, 255, 0), (230, 0, 0)
 # How much farther from its contact a curved sensor's arrows stand than a straight's, in units, by pixel size: clear of
 # a locomotive parked there, turned along the rail over the contact, and its halo (OB-400).  Wider at the small size
 # for its size, because the halo is never under 2 pixels there.
-CURVE_ARROWS_OUT = {30: 6.35, 60: 5.5}
+CURVE_ARROWS_OUT = {30: 6.35, 60: 5.5, 120: 5.5}
 
 # How far short of the tile's edge an arrow's tail stops, in units: a pixel at 30 and two at 60, which Medium (the 60
 # scaled to 46) keeps clear too, so the arrows of two sensor tracks side by side never touch (Adam: "there should be a
@@ -74,10 +81,17 @@ def rot_rect(cx, cy, ux, uy, half_len, half_dep):
             for s, t in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
 
 
+def straight_image(size):
+    """The straight tile, the reference every band matches: at 120, the 60 doubled."""
+    if size == 120:
+        return straight_image(60).resize((120, 120), Image.Resampling.NEAREST)
+    return Image.open(os.path.join(SRC, "icons%d" % size, "straight.gif")).convert("RGB")
+
+
 def straight_parts(size):
     """The straight tile at this size, as numbers: the picture, its band's first and last rows, the band with its dash
     painted out, and the dash itself (a box, and which of its pixels are its light core rather than its soft rim)."""
-    a = np.asarray(Image.open(os.path.join(SRC, "icons%d" % size, "straight.gif")).convert("L")).astype(int)
+    a = np.asarray(straight_image(size).convert("L")).astype(int)
     rows = [y for y in range(size) if a[y, 0] != 255]
     lo, hi = rows[0], rows[-1]
     inner = a[lo + 1:hi, :]
@@ -124,9 +138,9 @@ class Tile:
     bottom edges and not the left and top, which left a one-sided grey on every edge)."""
 
     def __init__(self, size):
-        self.size = size
-        n = size * SS
-        self.k = size / 30.0 * SS
+        self.size, self.ss = size, SS[size]
+        n = size * self.ss
+        self.k = size / 30.0 * self.ss
         c = (np.arange(n) + 0.5) / self.k
         self.X, self.Y = np.meshgrid(c, c)
         self.rgb = np.full((n, n, 3), 255.0)
@@ -160,7 +174,7 @@ class Tile:
 
     def straight(self, vertical, active):
         """The straight tile's own band, or its outline in the idle grey."""
-        src = Image.open(os.path.join(SRC, "icons%d" % self.size, "straight.gif")).convert("RGB")
+        src = straight_image(self.size)
         rows = [y for y in range(self.size) if src.getpixel((0, y)) != WHITE]
         lo, hi = rows[0], rows[-1] + 1
         u = 30.0 / self.size
@@ -173,9 +187,9 @@ class Tile:
         band = src.crop((0, lo, self.size, hi))
         if vertical:
             band = band.transpose(Image.Transpose.ROTATE_90)
-        big = np.asarray(band.resize((band.width * SS, band.height * SS), Image.Resampling.NEAREST), dtype=float)
-        x0, y0 = ((lo, 0) if vertical else (0, lo))
-        self.rgb[y0 * SS:y0 * SS + big.shape[0], x0 * SS:x0 * SS + big.shape[1]] = big
+        big = np.asarray(band.resize((band.width * self.ss, band.height * self.ss), Image.Resampling.NEAREST), dtype=float)
+        x0, y0 = ((lo * self.ss, 0) if vertical else (0, lo * self.ss))
+        self.rgb[y0:y0 + big.shape[0], x0:x0 + big.shape[1]] = big
 
     def sensor(self, a, b, set_):
         (ax, ay), (bx, by) = MID[a], MID[b]
@@ -201,7 +215,7 @@ class Tile:
     def paste_final(self, grey, idle=False):
         """Lays a picture drawn at this tile's own size over the canvas, wherever it is not white - in the idle grey
         instead, for a leg that is not set."""
-        big = np.kron(grey, np.ones((SS, SS), int))
+        big = np.kron(grey, np.ones((self.ss, self.ss), int))
         mask = big < 255
         if idle:
             self.rgb[mask] = IDLE
@@ -222,12 +236,26 @@ class Tile:
                 self.poly([(15.0 + x, 15.0 + y) for x, y in part], RED)
                 self.poly([(15.0 + x, 15.0 - y) for x, y in part], RED)
 
+    def base(self, im):
+        """A picture at this tile's size as the canvas, to draw over."""
+        self.rgb = np.asarray(im.convert("RGB").resize((self.size * self.ss,) * 2, Image.Resampling.NEAREST), dtype=float)
+
+    def uncoupler(self):
+        """The hump: the band's edge in its own grey and width (a pixel at 30 and 60), the black inside it."""
+        a, lo = straight_parts(self.size)[:2]
+        edge, e = (int(a[lo, 0]),) * 3, 30.0 / min(self.size, 60)
+        i = e * (math.sqrt(2) - 1)
+        self.poly([(2.5, 11), (4.5, 9), (25.5, 9), (27.5, 11)], edge)
+        self.poly([(2.5 + i, 11 + e), (4.5 + i, 9 + e), (25.5 - i, 9 + e), (27.5 - i, 11 + e)], BLACK)
+
     def save(self, name, colour=False):
-        n = self.size
-        small = Image.fromarray(np.rint(self.rgb.reshape(n, SS, n, SS, 3).mean(axis=(1, 3))).astype(np.uint8), 'RGB')
+        n, ss = self.size, self.ss
+        small = Image.fromarray(np.rint(self.rgb.reshape(n, ss, n, ss, 3).mean(axis=(1, 3))).astype(np.uint8), 'RGB')
         os.makedirs(os.path.join(OUT, "icons%d" % self.size), exist_ok=True)
         path = os.path.join(OUT, "icons%d" % self.size, name + ".gif")
-        if colour:
+        if n == 120:
+            small.save(path[:-3] + "png")
+        elif colour:
             small.quantize(colors=256, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).save(path)
         else:
             grey = small.convert("L")
@@ -243,6 +271,10 @@ def build(size):
 
     def tile():
         return Tile(size)
+
+    def raster(f):
+        """A picture drawn pixel by pixel off the straight: at 120, its 60 doubled."""
+        return np.kron(f(60), np.ones((2, 2), int)) if size == 120 else f(size)
 
     t = tile(); t.chord("S", "E", True); made["curve"] = t.save("curve")
     t = tile(); t.chord("N", "W", True); t.chord("S", "E", True); made["curve_parallel"] = t.save("curve_parallel")
@@ -265,10 +297,10 @@ def build(size):
     t = tile(); t.chord("S", "W", False); t.straight(True, False); t.chord("S", "E", True); made["threeway_active2"] = t.save("threeway_active2")
     # THE CROSSING AND THE CROSSING SWITCH: the crossing is the straight both ways; the switch's other routes are the
     # same 45-degree pieces as a curve, north-west and south-east
-    t = tile(); t.paste_final(cross_pixels(size)); made["cross"] = t.save("cross")
-    t = tile(); t.chord("N", "W", False); t.chord("S", "E", False); t.paste_final(cross_pixels(size))
+    t = tile(); t.paste_final(raster(cross_pixels)); made["cross"] = t.save("cross")
+    t = tile(); t.chord("N", "W", False); t.chord("S", "E", False); t.paste_final(raster(cross_pixels))
     made["crossswitch"] = t.save("crossswitch")
-    t = tile(); t.paste_final(cross_pixels(size), idle=True); t.chord("N", "W", True); t.chord("S", "E", True)
+    t = tile(); t.paste_final(raster(cross_pixels), idle=True); t.chord("N", "W", True); t.chord("S", "E", True)
     made["crossswitch_active"] = t.save("crossswitch_active")
 
     # THE SCISSORS: the straight, and two pieces off to the east, north and south
@@ -290,11 +322,36 @@ def build(size):
     for set_ in (False, True):
         t = tile(); t.straight(False, True); t.straight_sensor(set_)
         made["s88" + ("_active" if set_ else "")] = t.save("s88" + ("_active" if set_ else ""), colour=set_)
-    t = tile(); t.paste_final(end_pixels(size)); made["end"] = t.save("end")
+    t = tile(); t.paste_final(raster(end_pixels)); made["end"] = t.save("end")
+    t = tile(); t.straight(False, True); t.uncoupler(); made["decouple"] = t.save("decouple")
+    if size == 120:
+        build_others()
     return made
 
 
+def build_others():
+    """The rest at 120, from their 60 (see the top)."""
+    def sixty(name):
+        return Image.open(os.path.join(SRC, "icons60", name + ".gif"))
+
+    straight_image(120).save(os.path.join(OUT, "icons120", "straight.png"))
+    t = Tile(120); t.base(sixty("tunnel")); t.rect(11, 7.5, 19, 11.5, (238, 238, 238))
+    t._fill(((t.X - 15) ** 2 + (t.Y - 11.5) ** 2 <= 16) & (t.Y <= 11.5), BLACK)
+    t.save("tunnel")
+    t = Tile(120); t.base(sixty("overpass"))
+    for flip in (lambda x, y: (x, y), lambda x, y: (x, 30 - y)):
+        for x0, x1 in ((5, 11), (19, 25)):
+            t.poly([flip(x, y) for x, y in ((x0, 6), (x1, 6), (x1, 10), (x0, 10))], WHITE)
+        for part in (((5.75, 7.25), (6.75, 6.25), (9, 8.5), (7, 8.5)), ((7, 8.5), (23, 8.5), (21.5, 10), (8.5, 10)),
+                     ((24.25, 7.25), (23.25, 6.25), (21, 8.5), (23, 8.5))):
+            t.poly([flip(x, y) for x, y in part], BLACK)
+    t.save("overpass")
+    for name in ("lamp", "lamp_active", "route", "route_active", "turntable", "empty", "text"):
+        im = sixty(name).convert("RGBA").convert("RGBa").resize((120, 120), Image.Resampling.LANCZOS).convert("RGBA")
+        im.save(os.path.join(OUT, "icons120", name + ".png"))
+
+
 if __name__ == "__main__":
-    for size in (30, 60):
-        made = build(size)
-    print("wrote", len(made) * 2, "tiles to", OUT)
+    for size in (30, 60, 120):
+        build(size)
+    print("wrote the 30, 60 and 120 tiles to", OUT)
