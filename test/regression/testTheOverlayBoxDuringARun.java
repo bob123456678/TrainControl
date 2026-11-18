@@ -542,7 +542,9 @@ public class testTheOverlayBoxDuringARun
     {
         org.traincontrol.gui.autonomy.DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
 
-        ((java.util.Timer) Reflect.get(driver.getClass(), driver, "timer")).cancel();
+        java.util.Timer timer = (java.util.Timer) Reflect.get(driver.getClass(), driver, "timer");
+
+        if (timer != null) timer.cancel();
         Reflect.set(driver.getClass(), driver, "timer", null);
         SwingUtilities.invokeAndWait(driver::start);
     }
