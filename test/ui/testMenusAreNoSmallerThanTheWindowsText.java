@@ -131,12 +131,14 @@ public class testMenusAreNoSmallerThanTheWindowsText
 
         assertMenusAtLeastTheWindowsText();
 
-        LayoutSandbox sandbox = LayoutSandbox.open();
+        LayoutSandbox sandbox = null;
 
         List<String> found = new ArrayList<>();
 
         try
         {
+            sandbox = LayoutSandbox.open();
+
             for (String language : LanguageFit.LANGUAGES)
             {
                 LanguageFit.speak(language);
@@ -171,7 +173,7 @@ public class testMenusAreNoSmallerThanTheWindowsText
         {
             LanguageFit.speak("en");
 
-            sandbox.close();
+            if (sandbox != null) sandbox.close();
         }
 
         assertTrue(found.isEmpty(), "a menu does not fit with 14-point menus at a scale of 1: " + found);
