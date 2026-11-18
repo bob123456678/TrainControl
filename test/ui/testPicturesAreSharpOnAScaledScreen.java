@@ -94,7 +94,8 @@ public class testPicturesAreSharpOnAScaledScreen
      * screen pixels apart) and at Large (75 pixels across, an odd number, so turning about a whole pixel shifts it).
      *
      * MUTATION: in `LayoutDiagramComponent.getImage`, turn about `getWidth(null)/2`; in `SharpIcon.paintIcon`, round the
-     * edges with `Math.round`; or in `LayoutLabel.setImageOnEDT`, make the copy `w` across rather than the longer side.
+     * edges with `Math.round` (red on Java 21, whose clip the edges follow); or in `LayoutLabel.setImageOnEDT`, make the
+     * copy `w` across rather than the longer side.
      */
     @Test
     public void testSquaresSideBySideMeet() throws Exception
