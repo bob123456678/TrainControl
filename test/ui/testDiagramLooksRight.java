@@ -3009,7 +3009,7 @@ public class testDiagramLooksRight
             {"custom_scissors", "TB"}, {"custom_scissors_active", "TB"}, {"custom_perm_scissors", "TB"},
             {"custom_perm_left", "custom_perm_right"}, {"custom_perm_y", "LR"}, {"custom_perm_threeway", "LR"},
             {"s88", "LR"}, {"s88", "TB"}, {"s88_active", "LR"}, {"s88_active", "TB"}, {"end", "LR"},
-            {"decouple", "LR"}};
+            {"decouple", "LR"}, {"turntable", "LR"}, {"turntable", "TB"}};
 
         java.util.List<String> off = new java.util.ArrayList<>();
 
@@ -4804,11 +4804,12 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The link and the two signal tiles meet the straight beside them with no seam: the band's rows where the track
-     * comes in are the straight's own, at both sizes (FR-135), since an edge row of another shade on a signal would be
-     * a lighter stripe between two straights.
+     * The link, the two signal tiles and the turntable's four straight tracks meet the straight beside them with no
+     * seam: the band's rows where the track comes in are the straight's own, at both sizes (FR-135, D192), since an
+     * edge row of another shade would be a stripe between two straights.
      *
-     * MUTATION: put the old Large signal back, or draw the link's shaft pure black to its edge, and this fails.
+     * MUTATION: put the old Large signal back, or draw the link's shaft or the turntable's tracks pure black to the
+     * edge, and this fails.
      */
     @Test
     public void testTheLinkAndTheSignalsMeetTheStraightWithNoSeam() throws Exception
@@ -4823,13 +4824,19 @@ public class testDiagramLooksRight
 
             assertFalse(band.isEmpty(), "precondition: the straight at " + size + " has no band at its west edge");
 
-            BufferedImage link = icon(size, "link");
+            BufferedImage link = icon(size, "link"), turntable = icon(size, "turntable");
 
             for (int y : band)
             {
-                assertEquals(String.format("%06X", link.getRGB(0, y) & 0xFFFFFF), String.format("%06X",
-                    straight.getRGB(0, y) & 0xFFFFFF), "the link at " + size + " meets the track with a seam at row " + y
-                    + ": its shaft is not the straight's band there (FR-135)");
+                String want = String.format("%06X", straight.getRGB(0, y) & 0xFFFFFF);
+                assertEquals(String.format("%06X", link.getRGB(0, y) & 0xFFFFFF), want, "the link at " + size
+                    + " meets the track with a seam at row " + y + ": its shaft is not the straight's band there (FR-135)");
+
+                for (int[] at : new int[][] {{0, y}, {size - 1, y}, {y, 0}, {y, size - 1}})
+                {
+                    assertEquals(String.format("%06X", turntable.getRGB(at[0], at[1]) & 0xFFFFFF), want, "the turntable at "
+                        + size + " meets a straight with a seam at " + at[0] + "," + at[1] + " (D192)");
+                }
             }
 
             int top = band.get(0), bottom = band.get(band.size() - 1);
