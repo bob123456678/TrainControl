@@ -28,9 +28,9 @@ import support.Display;
  */
 public class testPicturesAreSharpOnAScaledScreen
 {
+    private static final support.SandboxedWindow held = new support.SandboxedWindow();
     private static MarklinControlStation model;
     private static TrainControlUI ui;
-    private static support.LayoutSandbox sandbox;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -38,25 +38,22 @@ public class testPicturesAreSharpOnAScaledScreen
         Display.needed("a diagram square needs the window's picture loader");
 
         // Before the model: MarklinControlStation.init reads the layout preference too (OB-111)
-        sandbox = support.LayoutSandbox.open();
+        held.hold(support.LayoutSandbox.open());
         model = support.TestStation.simulatedInDebug();
-
-        SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
-        ui.setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+        ui = held.openWindow(model);
     }
 
     @AfterClass(alwaysRun = true)
     public static void tearDownClass() throws Exception
     {
-        if (ui != null)
+        try
         {
-            final TrainControlUI closing = ui;
-
-            SwingUtilities.invokeAndWait(() -> closing.dispose());
+            if (model != null) model.stop();
         }
-
-        if (model != null) model.stop();
-        if (sandbox != null) sandbox.close();
+        finally
+        {
+            held.close();
+        }
     }
 
     /**
@@ -186,11 +183,8 @@ public class testPicturesAreSharpOnAScaledScreen
         SwingUtilities.invokeAndWait(() -> label.set(new LayoutLabel(c, new JPanel(), size, ui, false)));
 
         // The picture is decoded off the event thread and applied on it, over a blank stand-in
-        long deadline = System.currentTimeMillis() + 10000;
-
-        while (!(label.get().getIcon() instanceof ImageIcon) && System.currentTimeMillis() < deadline) Thread.sleep(20);
-
-        assertTrue(label.get().getIcon() instanceof ImageIcon, kind + " at " + size + " never got its picture");
+        assertTrue(support.Components.waitFor(() -> label.get().getIcon() instanceof ImageIcon, 10000),
+            kind + " at " + size + " never got its picture");
 
         return label.get().getIcon();
     }
