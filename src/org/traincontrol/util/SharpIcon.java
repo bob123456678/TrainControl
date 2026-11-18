@@ -20,7 +20,7 @@ public class SharpIcon extends ImageIcon
     /** Makes the picture at a size in screen pixels. */
     public interface Art
     {
-        Image at(int width, int height) throws Exception;
+        Image at(int width, int height) throws java.io.IOException;
     }
 
     private final Art art;
@@ -76,7 +76,7 @@ public class SharpIcon extends ImageIcon
             {
                 return art.at(d.width, d.height);
             }
-            catch (Exception noArt)
+            catch (java.io.IOException | RuntimeException noArt)
             {
                 return null;
             }
