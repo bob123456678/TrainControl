@@ -761,12 +761,21 @@ public final class LayoutLabel extends JLabel
                     Image img = c.getImage(name, size);
                     if (img != null) TrainControlUI.getImageCache().putIfAbsent(k, img);
 
-                    // And the copies a scaled screen draws (D191), so its first paint need not make them
+                    // Then, apart, the copies a scaled screen draws (D191), so its first paint need not make them
                     double scale = org.traincontrol.util.SharpIcon.screenScale(tcUI);
-                    if (scale > 1) for (double side : new double[] {Math.floor(size * scale), Math.ceil(size * scale)})
+                    int turn = c.getOrientation();
+                    if (scale > 1) tcUI.getTileImageLoader().execute(() ->
                     {
-                        sharp(name, (int) side, c.getOrientation());
-                    }
+                        try
+                        {
+                            sharp(name, (int) Math.floor(size * scale), turn);
+                            sharp(name, (int) Math.ceil(size * scale), turn);
+                        }
+                        catch (IOException ex)
+                        {
+                            tcUI.getModel().log(ex.getMessage());
+                        }
+                    });
                 }
             }
             catch (IOException ex)

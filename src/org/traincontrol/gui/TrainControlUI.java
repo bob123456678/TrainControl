@@ -6757,15 +6757,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                     // Higher quality scaling
                     ImageUtil.getScaledImage(ImageUtil.toTransparentBufferedImage(img), size, (int) (size * aspect))
                 );
-                // The original, kept only for a scaled screen (D191), as a copy no wider than the largest picture at
-                // three times its size
-                if (SharpIcon.screenScale(this) > 1) TrainControlUI.getImageCache().putIfAbsent(url,
-                    img.getWidth(null) <= 3 * LOC_ICON_WIDTH ? img : ImageUtil.toTransparentBufferedImage(
-                        new ImageIcon(img.getScaledInstance(3 * LOC_ICON_WIDTH, -1, Image.SCALE_SMOOTH)).getImage()));
+                Image kept = keptOriginal(img, SharpIcon.screenScale(this));
+                if (kept != null) TrainControlUI.getImageCache().putIfAbsent(url, kept);
             }
         }
-
         return TrainControlUI.getImageCache().get(key);
+    }
+
+    /**
+     * The original a screen at `scale` draws a locomotive picture from (D191): none at scale 1, otherwise a copy no
+     * wider than the largest picture at three times its size.
+     */
+    static Image keptOriginal(Image img, double scale)
+    {
+        if (scale <= 1) return null;
+        return img.getWidth(null) <= 3 * LOC_ICON_WIDTH ? img : ImageUtil.toTransparentBufferedImage(
+            new ImageIcon(img.getScaledInstance(3 * LOC_ICON_WIDTH, -1, Image.SCALE_SMOOTH)).getImage());
     }
 
     /** `getLocImage`'s picture as an icon, which a scaled screen draws from the original (D191). */

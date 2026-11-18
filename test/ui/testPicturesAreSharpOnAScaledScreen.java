@@ -325,13 +325,46 @@ public class testPicturesAreSharpOnAScaledScreen
     }
 
     /**
-     * A big locomotive picture shown where the application shows one leaves nothing in the image cache holding it at
-     * full size: on an unscaled screen no original is kept, on a scaled one a copy no wider than 888 pixels.
+     * For a scaled screen a big locomotive picture's original is kept as a copy of its own no wider than 888 pixels,
+     * never as a picture that still holds the full-size one.
      *
-     * MUTATION: in `TrainControlUI.getLocImageMaxHeight`, keep `img.getScaledInstance(...)` as the original.
+     * MUTATION: in `TrainControlUI.keptOriginal`, keep `img.getScaledInstance(...)` itself.
      */
     @Test
-    public void testABigPictureIsNotKeptWhole() throws Exception
+    public void testABigPictureIsKeptOnlyAsASmallCopy() throws Exception
+    {
+        Image kept = keptOriginal(javax.imageio.ImageIO.read(new java.net.URL(bigPicture())), 1.25);
+
+        assertTrue(kept instanceof BufferedImage && kept.getWidth(null) <= 3 * TrainControlUI.LOC_ICON_WIDTH,
+            "kept as a " + kept.getClass().getSimpleName() + " " + kept.getWidth(null) + " wide");
+    }
+
+    /**
+     * At scale 1 (Java 8, or a screen at 100%) no original is kept, so memory is as before: showing a big picture where
+     * the application shows one leaves nothing under its address in the image cache.
+     *
+     * MUTATION: in `TrainControlUI.keptOriginal`, drop the `scale <= 1` return.
+     */
+    @Test
+    public void testNothingIsKeptAtScaleOne() throws Exception
+    {
+        String url = bigPicture();
+
+        assertNull(keptOriginal(javax.imageio.ImageIO.read(new java.net.URL(url)), 1), "an original kept at scale 1");
+
+        // As the selector, the locomotive panel and a keyboard button ask for it, where the screen is not scaled
+        ui.getLocIcon(url, 142);
+        ui.getLocIcon(url, TrainControlUI.LOC_ICON_WIDTH, TrainControlUI.LOC_ICON_HEIGHT);
+        ui.getLocIcon(url, 66);
+
+        if (org.traincontrol.util.SharpIcon.screenScale(ui) <= 1)
+        {
+            assertNull(TrainControlUI.getImageCache().get(url), "the original is kept under its address");
+        }
+    }
+
+    /** The address of a 2000-pixel-wide picture written for these claims. */
+    private static String bigPicture() throws Exception
     {
         java.io.File file = new java.io.File(System.getProperty("java.io.tmpdir"), "d191-big.png");
         BufferedImage big = new BufferedImage(2000, 1500, BufferedImage.TYPE_INT_ARGB);
@@ -342,21 +375,14 @@ public class testPicturesAreSharpOnAScaledScreen
         g.dispose();
         javax.imageio.ImageIO.write(big, "png", file);
 
-        String url = file.toURI().toURL().toString();
+        return file.toURI().toURL().toString();
+    }
 
-        // As the selector, the locomotive panel and a keyboard button ask for it
-        ui.getLocIcon(url, 142);
-        ui.getLocIcon(url, TrainControlUI.LOC_ICON_WIDTH, TrainControlUI.LOC_ICON_HEIGHT);
-        ui.getLocIcon(url, 66);
-
-        for (java.util.Map.Entry<String, Image> kept : TrainControlUI.getImageCache().entrySet())
-        {
-            if (!kept.getKey().startsWith(url)) continue;
-
-            assertTrue(kept.getValue() instanceof BufferedImage
-                && kept.getValue().getWidth(null) <= 3 * TrainControlUI.LOC_ICON_WIDTH, kept.getKey() + " is kept as a "
-                + kept.getValue().getClass().getSimpleName() + " " + kept.getValue().getWidth(null) + " wide");
-        }
+    /** What `TrainControlUI.keptOriginal` keeps of `original` for a screen at `scale`. */
+    private static Image keptOriginal(Image original, double scale) throws Exception
+    {
+        return (Image) support.Reflect.method(TrainControlUI.class, "keptOriginal", Image.class, double.class)
+            .invoke(null, original, scale);
     }
 
     /**
