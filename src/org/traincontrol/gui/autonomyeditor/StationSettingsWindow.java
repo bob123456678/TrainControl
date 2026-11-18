@@ -1808,10 +1808,10 @@ public final class StationSettingsWindow extends StationWindowBase
 
         if (!editor.session.canCarryDirection(square) || at < 0) return said(null, I18n.f("autosetup.ui.stationPicNextCannot", name));
 
-        int mask = editor.armMask(square, routes, arms);
-
-        // As the picture shows it: a run pointing opposite ways is drawn closed
+        // As the picture shows it: a run pointing opposite ways is drawn closed, whatever the square stores
         final boolean open = mark.open;
+        int mask = !open && editor.session.getGraph().runsPointingOppositeWays().values().stream()
+            .anyMatch(run -> run.getTiles().contains(square)) ? 0 : editor.armMask(square, routes, arms);
 
         if (routes.size() == 1)
         {

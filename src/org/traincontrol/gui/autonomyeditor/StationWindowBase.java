@@ -289,7 +289,7 @@ abstract class StationWindowBase extends JDialog
         }
     }
 
-    /** What the watch sees change without the panel saying so; the base reads who holds the setup. */
+    /** What the watch sees change without the panel saying so. */
     void watched()
     {
         if (tile == null) return;
@@ -311,19 +311,21 @@ abstract class StationWindowBase extends JDialog
         if (was == null ? held != null : !was.equals(held)) reload();
     }
 
-    /** @return why nothing in the window may be changed now, or null */
+    /** @return why nothing may be changed now, or null */
     final String whyHeld()
     {
-        return held;
+        TrainControlUI main = editor.parentWindow();
+
+        if (main == null) return null;
+
+        if (editor.menuOnly && main.isLayoutEditorOpen()) return I18n.t("autosetup.ui.menuEditorOpen");
+
+        return main.aRunHoldsTheSetup() ? I18n.t(RunGates.NO_EDITS_WHILE_RUNNING) : null;
     }
 
     private void readHeld()
     {
-        TrainControlUI main = editor.parentWindow();
-
-        if (main == null) held = null;
-        else if (editor.menuOnly && main.isLayoutEditorOpen()) held = I18n.t("autosetup.ui.menuEditorOpen");
-        else held = main.aRunHoldsTheSetup() ? I18n.t(RunGates.NO_EDITS_WHILE_RUNNING) : null;
+        held = whyHeld();
 
         showTheStrip();
     }
@@ -435,8 +437,8 @@ abstract class StationWindowBase extends JDialog
     }
 
     /**
-     * Asked again at the click, as the watch asks: the setup still the one the window opened on (else it goes), then in
-     * `readHeld`'s order an editor open over the track diagram's setup, and a run.
+     * Asked again at the click: the setup still the one the window opened on (else it goes), then an editor open over
+     * the track diagram's setup, and a run.
      */
     private boolean refused()
     {
