@@ -156,22 +156,6 @@ public class ImageUtil
         return mergedImage;
     }
 
-    public static BufferedImage convertIconToBufferedImage(ImageIcon icon)
-    {
-        // Extract the image from the icon
-        Image image = icon.getImage();
-
-        // Create a buffered image with transparency
-        BufferedImage bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_ARGB);
-
-        // Draw the image onto the buffered image
-        Graphics2D g2d = bufferedImage.createGraphics();
-        g2d.drawImage(image, 0, 0, null);
-        g2d.dispose();
-
-        return bufferedImage;
-    }
-    
     // No covered-tile wash lives here: LayoutLabel.paintCoveredMark draws it beside the line and under it (MT-309), so
     // one place draws it and it survives an accessory highlight swapping the icon underneath.
 
@@ -189,22 +173,20 @@ public class ImageUtil
      */
     public static ImageIcon addHighlightOverlay(ImageIcon originalIcon, Color wash)
     {
-        int width = originalIcon.getIconWidth();
-        int height = originalIcon.getIconHeight();
+        return SharpIcon.map(originalIcon, picture ->
+        {
+            int width = picture.getWidth(null);
+            int height = picture.getHeight(null);
+            BufferedImage highlightedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = highlightedImage.createGraphics();
 
-        BufferedImage highlightedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = highlightedImage.createGraphics();
+            g2d.drawImage(picture, 0, 0, null);
+            g2d.setColor(wash == null ? HIGHLIGHT : wash);
+            g2d.fillRect(0, 0, width, height);
+            g2d.dispose();
 
-        // Draw the original image
-        g2d.drawImage(originalIcon.getImage(), 0, 0, null);
-
-        g2d.setColor(wash == null ? HIGHLIGHT : wash);
-
-        g2d.fillRect(0, 0, width, height);
-
-        g2d.dispose();
-
-        return new ImageIcon(highlightedImage);
+            return highlightedImage;
+        });
     }
 
     /** The diagram's ordinary flash: what a square does when something happens to it */

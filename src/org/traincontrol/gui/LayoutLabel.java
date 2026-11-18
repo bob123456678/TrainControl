@@ -874,7 +874,9 @@ public final class LayoutLabel extends JLabel
                         }
                         
                         boolean hadIcon = (this.getIcon() != null);
-                        lastIcon = ICONS.computeIfAbsent(img, ImageIcon::new);
+                        final int turn = this.component.getOrientation();
+                        lastIcon = ICONS.computeIfAbsent(img, i -> new org.traincontrol.util.SharpIcon(i,
+                            (w, h) -> LayoutDiagramComponent.getImage(shown, w, turn)));
 
                         // A flash that is up is given up whenever the picture is replaced: its timer holds the icon it
                         // captured and would draw the tile as it was.

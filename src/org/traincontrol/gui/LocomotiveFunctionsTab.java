@@ -354,8 +354,8 @@ final class LocomotiveFunctionsTab extends JPanel
 
                 try
                 {
-                    loaded = new ImageIcon(ui.getLocImage(loc.getFunctionIconUrl(which, active, true),
-                        TrainControlUI.BUTTON_ICON_WIDTH));
+                    loaded = ui.getLocIcon(loc.getFunctionIconUrl(which, active, true),
+                        TrainControlUI.BUTTON_ICON_WIDTH);
                 }
                 catch (Exception e)
                 {
@@ -728,7 +728,7 @@ final class LocomotiveFunctionsTab extends JPanel
 
                 try
                 {
-                    loaded = new ImageIcon(ui.getLocImage(path, TrainControlUI.BUTTON_ICON_WIDTH));
+                    loaded = ui.getLocIcon(path, TrainControlUI.BUTTON_ICON_WIDTH);
                 }
                 catch (Exception ex)
                 {

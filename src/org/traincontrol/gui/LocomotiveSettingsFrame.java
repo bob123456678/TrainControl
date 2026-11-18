@@ -1403,8 +1403,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 if (url == null || url.isEmpty())
                 {
                     // The application's stand-in, as the locomotive buttons and the database show it (FR-054)
-                    picture.setIcon(new ImageIcon(
-                        org.traincontrol.gui.locomotive.LocomotivePlaceholder.image(PICTURE_WIDTH - 2)));
+                    picture.setIcon(org.traincontrol.gui.locomotive.LocomotivePlaceholder.icon(PICTURE_WIDTH - 2));
                     arrived(url, null, crops, reverts);
                 }
                 else
@@ -1421,7 +1420,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
                         try
                         {
-                            loaded = new ImageIcon(main.getLocImageMaxHeight(url, PICTURE_WIDTH - 2, PICTURE_HEIGHT - 2));
+                            loaded = main.getLocIcon(url, PICTURE_WIDTH - 2, PICTURE_HEIGHT - 2);
                         }
                         catch (Exception e)
                         {

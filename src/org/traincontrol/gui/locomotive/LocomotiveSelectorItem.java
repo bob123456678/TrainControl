@@ -44,9 +44,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
             {
                 try 
                 {
-                    ImageIcon ic = new javax.swing.ImageIcon(
-                        this.selector.getUI().getLocImage(loc.getImageURL(), 142)
-                    );
+                    ImageIcon ic = this.selector.getUI().getLocIcon(loc.getImageURL(), 142);
                     
                     locIcon.setIcon(ic);      
                     locIcon.setText("");
@@ -64,8 +62,7 @@ public final class LocomotiveSelectorItem extends javax.swing.JPanel
         else
         {
             // A placeholder rather than nothing (FR-054): a blank reads as a list that has failed to load.
-            locIcon.setIcon(new javax.swing.ImageIcon(
-                org.traincontrol.gui.locomotive.LocomotivePlaceholder.image(142)));
+            locIcon.setIcon(LocomotivePlaceholder.icon(142));
 
             locIcon.setText("");
         }

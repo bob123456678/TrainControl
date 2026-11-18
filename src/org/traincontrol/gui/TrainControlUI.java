@@ -188,6 +188,7 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
+import org.traincontrol.util.SharpIcon;
 import org.traincontrol.util.Util;
 import org.traincontrol.util.JarUpdater;
 import org.traincontrol.util.SelfUpdate;
@@ -4860,9 +4861,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 I18n.f("loc.ui.tooltip.locomotiveControlPage", this.locMappingNumber)
             );
 
-            this.KeyboardTab.setIconAt(0, new ImageIcon(withPageBadge(
-                ImageUtil.convertIconToBufferedImage((ImageIcon) TAB_ICON_CONTROL),
-                this.locMappingNumber)));
+            final int page = this.locMappingNumber;
+            this.KeyboardTab.setIconAt(0, SharpIcon.map((ImageIcon) TAB_ICON_CONTROL,
+                tab -> withPageBadge(ImageUtil.toTransparentBufferedImage(tab), page)));
        }
        else 
        {
@@ -5171,8 +5172,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static ImageIcon getTabIcon(int size, String file)
     {
         ImageIcon icon = new ImageIcon(TrainControlUI.class.getResource("resources/" + file)); 
-        Image scaledImage = icon.getImage().getScaledInstance(-1, size, Image.SCALE_SMOOTH); 
-        return new ImageIcon(scaledImage);
+        Image scaledImage = icon.getImage().getScaledInstance(-1, size, Image.SCALE_SMOOTH);
+        return new SharpIcon(scaledImage, icon.getImage());
     }
     
     public void setViewListener(ViewListener listener, CountDownLatch latch) throws IOException
@@ -6740,30 +6741,41 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public Image getLocImageMaxHeight(String url, int size, int maxHeight) throws IOException
     {
         String key = maxHeight == NO_HEIGHT_LIMIT ? url + size : url + size + 'x' + maxHeight;
-        
         if (!TrainControlUI.getImageCache().containsKey(key))
         {
             Image img = CS2File.readPicture(url);
-            
             if (img != null)
             {
                 float aspect = (float) img.getHeight(null) / (float) img.getWidth(null);
-                
                 // Limit maximum height
                 if (maxHeight != NO_HEIGHT_LIMIT && size * aspect > maxHeight)
                 {
                     size = (int) (size * (maxHeight / (size * aspect)));
                 }
-                
                 TrainControlUI.getImageCache().put(key, 
                     // img.getScaledInstance(size, (int) (size * aspect), 1)
                     // Higher quality scaling
                     ImageUtil.getScaledImage(ImageUtil.toTransparentBufferedImage(img), size, (int) (size * aspect))
                 );
+                // The original, for a scaled screen (D191), no wider than the largest picture at three times its size
+                TrainControlUI.getImageCache().putIfAbsent(url, img.getWidth(null) <= 3 * LOC_ICON_WIDTH ? img
+                    : img.getScaledInstance(3 * LOC_ICON_WIDTH, -1, Image.SCALE_SMOOTH));
             }
         }
 
-        return TrainControlUI.getImageCache().get(key);        
+        return TrainControlUI.getImageCache().get(key);
+    }
+
+    /** `getLocImage`'s picture as an icon, which a scaled screen draws from the original (D191). */
+    public ImageIcon getLocIcon(String url, int size) throws IOException
+    {
+        return getLocIcon(url, size, NO_HEIGHT_LIMIT);
+    }
+
+    /** `getLocImageMaxHeight`'s picture as an icon, which a scaled screen draws from the original (D191). */
+    public ImageIcon getLocIcon(String url, int size, int maxHeight) throws IOException
+    {
+        return new SharpIcon(getLocImageMaxHeight(url, size, maxHeight), getImageCache().get(url));
     }
     
     /**
@@ -6785,18 +6797,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     try 
                     {
-                        BufferedImage locImage = (BufferedImage) getLocImage(l.getImageURL(), 66);
-                      
-                        // Generate shadow images
-                        BufferedImage textImage = ImageUtil.generateImageWithText(b.getText(), Color.BLACK, b.getFont(), 
-                            locImage.getWidth(null), locImage.getHeight(null), 2, 1);
-                        
-                        BufferedImage textImage2 = ImageUtil.generateImageWithText(b.getText(), Color.BLACK, b.getFont(), 
-                            locImage.getWidth(null), locImage.getHeight(null), 1, -1);
-                        
-                        ImageIcon ic = new ImageIcon(
-                            ImageUtil.mergeImages(ImageUtil.mergeImages(locImage, textImage), textImage2)
-                        );
+                        final String text = b.getText();
+                        final Font plain = b.getFont();
+                        ImageIcon ic = SharpIcon.map(getLocIcon(l.getImageURL(), 66), picture ->
+                        {
+                            BufferedImage locImage = (BufferedImage) picture;
+                            // Generate shadow images, at the picture's scale
+                            float scale = locImage.getWidth() / 66f;
+                            Font font = plain.deriveFont(plain.getSize2D() * scale);
+
+                            int w = locImage.getWidth(), h = locImage.getHeight();
+                            BufferedImage textImage = ImageUtil.generateImageWithText(text, Color.BLACK, font, w, h,
+                                Math.round(2 * scale), Math.round(scale));
+                            BufferedImage textImage2 = ImageUtil.generateImageWithText(text, Color.BLACK, font, w, h,
+                                Math.round(scale), -Math.round(scale));
+                            return ImageUtil.mergeImages(ImageUtil.mergeImages(locImage, textImage), textImage2);
+                        });
                         
                         // The active page has changed since this thread was called.  No need to update the UI.
                         if (this.locMappingNumber != correspondingLocMappingNumber)
@@ -7571,8 +7587,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                             Image picture = getLocImageMaxHeight(url, LOC_ICON_WIDTH, LOC_ICON_HEIGHT);
 
                                             // A picture that will not decode shows the placeholder, as no picture does
-                                            ImageIcon icon = new ImageIcon(picture != null ? picture
-                                                : LocomotivePlaceholder.image(LOC_ICON_WIDTH));
+                                            ImageIcon icon = picture == null
+                                                ? LocomotivePlaceholder.icon(LOC_ICON_WIDTH)
+                                                : getLocIcon(url, LOC_ICON_WIDTH, LOC_ICON_HEIGHT);
                                             
                                             // If the network is laggy, this could show an icon even though no loc is selected
                                             // Check to ensure there is still an active loc and it hasn't changed
@@ -7602,7 +7619,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                                     else
                                     {
                                         // A placeholder (FR-054): a blank panel reads as an icon that failed to load.
-                                        locIcon.setIcon(new ImageIcon(LocomotivePlaceholder.image(LOC_ICON_WIDTH)));
+                                        locIcon.setIcon(LocomotivePlaceholder.icon(LOC_ICON_WIDTH));
 
                                         locIcon.setText("");
                                         locIcon.setVisible(true);
@@ -7639,7 +7656,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                                                 if (icon != null && this.activeLoc != null)
                                                 {
-                                                    bt.setIcon(new ImageIcon(icon));
+                                                    bt.setIcon(getLocIcon(targetURL, BUTTON_ICON_WIDTH));
 
                                                     bt.setText("");                                    
                                                 }
@@ -18906,6 +18923,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         g.drawImage(icon, 0, 0, null);
 
+        // Laid out at the tab icon's size, then scaled to the picture's, which a sharp copy makes larger
+        double scale = (double) icon.getHeight() / TAB_ICON_CONTROL.getIconHeight();
+        g.scale(scale, scale);
         g.setFont(new Font("Segoe UI", Font.BOLD, 10));
 
         // Center on the digits' ink, not font metrics: getHeight() includes leading and stringWidth the side bearings,
@@ -18919,8 +18939,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         int wide = Math.max(tall, (int) Math.ceil(ink.getWidth()) + 7);
 
         // Clamped at zero: an icon narrower than its badge would start off the left edge.
-        int x = Math.max(0, (out.getWidth() - wide) / 2);
-        int y = Math.max(0, (out.getHeight() - tall) / 2);
+        int x = Math.max(0, (TAB_ICON_CONTROL.getIconWidth() - wide) / 2);
+        int y = Math.max(0, (TAB_ICON_CONTROL.getIconHeight() - tall) / 2);
 
         g.setColor(PAGE_BADGE_BLUE);
         g.fillRoundRect(x, y, wide, tall, tall, tall);

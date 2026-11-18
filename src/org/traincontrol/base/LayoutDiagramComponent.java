@@ -371,7 +371,7 @@ public class LayoutDiagramComponent
                     
         // TODO - check if folder exists, else use a default
         // TODO - switch to /gbsicons/ 
-        return RESOURCE_PATH + Integer.toString(artSize(size)) + "/" + this.getTypeName() + stateString + ".gif";
+        return artName(this.getTypeName() + stateString, size);
     }
     
     /** Each icon file as read, by name: one file serves every rotation and size drawn from it.  Never drawn on. */
@@ -385,6 +385,13 @@ public class LayoutDiagramComponent
     /** The picture `getImageName` named, at `size` and turned to this square, so key and picture share one state. */
     public Image getImage(String imageName, int size) throws IOException
     {
+        return getImage(imageName, size, this.orientation);
+    }
+
+    /** The picture `imageName` names, from the icon set for `size` (D191), at `size` and turned to `orientation`. */
+    public static Image getImage(String imageName, int size, int orientation) throws IOException
+    {
+         imageName = artName(imageName.substring(imageName.lastIndexOf('/') + 1, imageName.lastIndexOf('.')), size);
          Image img = SOURCES.get(imageName);
 
          if (img == null)
@@ -402,16 +409,15 @@ public class LayoutDiagramComponent
          if (size != img.getWidth(null))
          {
             float aspect = (float) img.getHeight(null) / (float) img.getWidth(null);
-
             // Smoothly: a set scaled down to a size of its own (FR-122) is a picture somebody looks at, not a stopgap
             img = img.getScaledInstance(size, (int) (size * aspect), Image.SCALE_SMOOTH);
          }
          
          // Rotate
-         if (this.orientation > 0)
+         if (orientation > 0)
          {
             AffineTransform transform = new AffineTransform();
-            transform.rotate(Math.toRadians ((4 - this.orientation) * 90), img.getWidth(null)/2, img.getHeight(null)/2);
+            transform.rotate(Math.toRadians ((4 - orientation) * 90), img.getWidth(null)/2, img.getHeight(null)/2);
             AffineTransformOp op = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR);
             return op.filter(toBufferedImage(img), null);
          }
@@ -876,16 +882,22 @@ public class LayoutDiagramComponent
     }
 
     /**
-     * Which icon set a square of this size is drawn from: the size's own where there is one (30 and 60), otherwise the
-     * next larger, scaled down (FR-122).
+     * Which icon set a square of this size is drawn from: the size's own where there is one (30, 60 and 120), otherwise
+     * the next larger, scaled down (FR-122).
      *
      * @param size the square's edge in pixels
      * @return the icon set's size
      */
     public static int artSize(int size)
     {
-        return size <= 30 ? 30 : 60;
-    } 
+        return size <= 30 ? 30 : size <= 60 ? 60 : 120;
+    }
+
+    /** The file of the picture `name` in the icon set for `size`. */
+    private static String artName(String name, int size)
+    {
+        return RESOURCE_PATH + artSize(size) + "/" + name + (artSize(size) == 120 ? ".png" : ".gif");
+    }
     
     /**
      * Everything the file said about this square that this class has no field for, kept only so it can be written back.
