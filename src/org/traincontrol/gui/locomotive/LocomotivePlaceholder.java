@@ -46,6 +46,12 @@ public class LocomotivePlaceholder
         return image(width, Math.max(10, Math.round(width * ASPECT)));
     }
 
+    /** As an icon, sharp on a scaled screen (D191). */
+    public static javax.swing.ImageIcon icon(int width)
+    {
+        return new org.traincontrol.util.SharpIcon(image(width), LocomotivePlaceholder::image);
+    }
+
     /**
      * A placeholder locomotive drawn to fill the given box.
      *
