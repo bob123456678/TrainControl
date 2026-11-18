@@ -725,8 +725,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Whether the menu bar is drawn INSIDE the window title bar, FlatLaf-style; false gives the plain bar. */
     public static final boolean MENUS_IN_THE_TITLE_BAR = true;
 
-    /** Extra menu font points: one more overflows the French, Spanish and Italian menu bars (testEveryLanguageFits) */
-    public static final int MENU_FONT_STEP = 0;
+    /** The smallest menu font: the window's main text is 14, and FlatLaf's own menu font is 12 at a scale of 1. */
+    public static final int MENU_FONT_MIN = 14;
 
     /**
      * The scale for this many dpi: the UI_SCALE override if set, else dpi / 96, or 1 where the display reports none or
@@ -753,7 +753,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         // The scale is asked of the display: FlatLaf caches one scale per process and its automatic answer depends on
         // AWT state (1.25 or 1.0 on a 120-dpi display, by what ran first). 96 dpi is the unscaled baseline.
-        int dpi = Toolkit.getDefaultToolkit().getScreenResolution();
+        // "tc.dpi" is the tests' way to a display of another scale.
+        int dpi = Integer.getInteger("tc.dpi", Toolkit.getDefaultToolkit().getScreenResolution());
 
         // A system property, not a UI default, because FlatLaf reads it while installing; UI_SCALE overrides.
         System.setProperty("flatlaf.uiScale", uiScaleFor(dpi, com.formdev.flatlaf.util.UIScale.isSystemScalingEnabled(),
@@ -847,26 +848,25 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         UIManager.put("FileChooser.cancelButtonText", I18n.t("ui.cancel"));
     }
 
-    /** Gives every menu class `MENU_FONT_STEP` points more than the rest, derived from the look and feel's own font. */
+    /** Raises every menu class's font to `MENU_FONT_MIN`; a larger one (15 at a scale of 1.25) stays. */
     private static void enlargeTheMenus()
     {
-        if (MENU_FONT_STEP == 0) return;
-
         String[] keys =
         {
             "Menu.font", "MenuBar.font", "MenuItem.font",
-            "CheckBoxMenuItem.font", "RadioButtonMenuItem.font", "PopupMenu.font"
+            "CheckBoxMenuItem.font", "RadioButtonMenuItem.font", "PopupMenu.font",
+            "Menu.acceleratorFont", "MenuItem.acceleratorFont", "CheckBoxMenuItem.acceleratorFont",
+            "RadioButtonMenuItem.acceleratorFont"
         };
 
         for (String key : keys)
         {
             Font was = UIManager.getFont(key);
 
-            if (was == null) continue;
-
-            UIManager.put(key,
-                new javax.swing.plaf.FontUIResource(was.deriveFont((float) was.getSize()
-                    + MENU_FONT_STEP)));
+            if (was != null && was.getSize() < MENU_FONT_MIN)
+            {
+                UIManager.put(key, new javax.swing.plaf.FontUIResource(was.deriveFont((float) MENU_FONT_MIN)));
+            }
         }
     }
 
