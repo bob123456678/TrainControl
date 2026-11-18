@@ -262,9 +262,15 @@ final class StationPicture extends JPanel
             // In effect on the track that meets the station: the diagram draws a run's on its first square (MT-1061)
             List<TileAnnotation.Mark> kept = new ArrayList<>();
 
+            // A run pointing opposite ways is closed, as its first square draws it (OB-361)
+            boolean shut = session.getGraph().runsPointingOppositeWays().values().stream()
+                .anyMatch(run -> run.getTiles().contains(beside));
+
             for (TileAnnotation.Mark road : session.directionMarks(beside))
             {
-                if (road.getA() == side.opposite() || road.getB() == side.opposite()) kept.add(road);
+                if (road.getA() != side.opposite() && road.getB() != side.opposite()) continue;
+
+                kept.add(shut ? new TileAnnotation.Mark(road.getA(), road.getB(), Direction.NONE) : road);
             }
 
             if (!kept.isEmpty() && !session.isDisabledLink(beside))
