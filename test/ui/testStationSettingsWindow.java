@@ -4781,13 +4781,7 @@ public class testStationSettingsWindow
                 java.awt.Point at = javax.swing.SwingUtilities.convertPoint(block, (int) Math.round(middle[0]),
                     (int) Math.round(middle[1]), window);
 
-                for (int id : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED,
-                    java.awt.event.MouseEvent.MOUSE_RELEASED, java.awt.event.MouseEvent.MOUSE_CLICKED})
-                {
-                    window.dispatchEvent(new java.awt.event.MouseEvent(window, id, System.currentTimeMillis(),
-                        id == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0,
-                        at.x, at.y, 1, false, java.awt.event.MouseEvent.BUTTON1));
-                }
+                click(window, at);
 
                 return null;
             });
@@ -5670,16 +5664,22 @@ public class testStationSettingsWindow
             window.dispatchEvent(new java.awt.event.MouseEvent(window, java.awt.event.MouseEvent.MOUSE_MOVED,
                 System.currentTimeMillis(), 0, at.x, at.y, 0, false, java.awt.event.MouseEvent.NOBUTTON));
 
-            for (int id : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
-                java.awt.event.MouseEvent.MOUSE_CLICKED})
-            {
-                window.dispatchEvent(new java.awt.event.MouseEvent(window, id, System.currentTimeMillis(),
-                    id == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0, at.x, at.y, 1,
-                    false, java.awt.event.MouseEvent.BUTTON1));
-            }
+            click(window, at);
 
             return null;
         });
+    }
+
+    /** A left button pressed, released and clicked at `at` in `window`, on the event thread. */
+    private static void click(java.awt.Window window, java.awt.Point at)
+    {
+        for (int id : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
+            java.awt.event.MouseEvent.MOUSE_CLICKED})
+        {
+            window.dispatchEvent(new java.awt.event.MouseEvent(window, id, System.currentTimeMillis(),
+                id == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0,
+                at.x, at.y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+        }
     }
 
     /** Bars the first way in of every station with two or more, on every page, and rebuilds the railway from that. */
