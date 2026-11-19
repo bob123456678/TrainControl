@@ -5469,6 +5469,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (this.model != null && this.checkForUpdates.isSelected()) checkForUpdate(false);
                 
+        warnOnStop(false);
+
         // Monitor latency
         if (this.model != null && model.getNetworkCommState() && PING_INTERVAL > 0)
         {            
@@ -5814,8 +5816,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         model.sendPing(false);
     }
 
-    /** The warning triangle left of Power OFF while the station is not answering (FR-192). */
-    private final JLabel stationNotAnswering = new JLabel(RowIcons.warning(16));
+    /** The triangle left of Power OFF: yellow while the station is not answering (FR-192), red in simulation (FR-228). */
+    private final JLabel stationNotAnswering = new JLabel();
 
     /**
      * Power OFF and its triangle share the place the generated layout gives the button: shown, the triangle takes its
@@ -5846,17 +5848,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         ((GroupLayout) LocFunctionsPanel.getLayout()).replace(PowerOff, shared);
 
-        stationNotAnswering.setToolTipText(I18n.t("ui.main.tooltip.stationNotAnswering"));
-        stationNotAnswering.setVisible(false);
-
         shared.add(stationNotAnswering, BorderLayout.WEST);
         shared.add(PowerOff, BorderLayout.CENTER);
+
+        warnOnStop(false);
     }
 
     private void warnOnStop(boolean on)
     {
-        if (stationNotAnswering.isVisible() == on) return;
+        boolean simulated = model != null && model.isSimulation();
+        String why = I18n.t(simulated ? "ui.main.tooltip.simulation" : "ui.main.tooltip.stationNotAnswering");
 
+        on |= simulated;
+
+        if (stationNotAnswering.isVisible() == on && why.equals(stationNotAnswering.getToolTipText())) return;
+
+        stationNotAnswering.setIcon(RowIcons.warning(16, simulated));
+        stationNotAnswering.setToolTipText(why);
         stationNotAnswering.setVisible(on);
         stationNotAnswering.getParent().revalidate();
     }
