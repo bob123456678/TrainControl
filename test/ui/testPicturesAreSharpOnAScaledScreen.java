@@ -94,34 +94,14 @@ public class testPicturesAreSharpOnAScaledScreen
      * screen pixels apart) and at Large (75 pixels across, an odd number, so turning about a whole pixel shifts it).
      *
      * MUTATION: in `LayoutDiagramComponent.getImage`, turn about `getWidth(null)/2`; in `SharpIcon.paintIcon`, round
-     * the edges with `Math.round` (red on Java 21, whose clip the edges follow); or in `LayoutLabel.sharp`'s caller,
-     * make the copy `w` across rather than the longer side.
+     * the edges with `Math.round` (red on Java 21, whose clip the edges follow), or round a tile's art down.
      */
     @Test
     public void testSquaresSideBySideMeet() throws Exception
     {
         for (int size : new int[] {30, 60})
         {
-            Icon square = square(componentType.STRAIGHT, 1, size);
-            BufferedImage column = new BufferedImage((int) (size * 1.25), (int) (3 * size * 1.25),
-                BufferedImage.TYPE_INT_RGB);
-            Graphics2D g = column.createGraphics();
-
-            g.setColor(java.awt.Color.WHITE);
-            g.fillRect(0, 0, column.getWidth(), column.getHeight());
-            g.scale(1.25, 1.25);
-
-            // Each through its own clip, as Swing paints a square
-            for (int i = 0; i < 3; i++)
-            {
-                java.awt.Graphics each = g.create(0, i * size, size, size);
-
-                square.paintIcon(null, each, 0, 0);
-                each.dispose();
-            }
-
-            g.dispose();
-
+            BufferedImage column = run(square(componentType.STRAIGHT, 1, size), true, 1.25);
             java.util.List<Integer> light = new java.util.ArrayList<>();
 
             for (int y = 0; y < column.getHeight(); y++)
@@ -131,6 +111,67 @@ public class testPicturesAreSharpOnAScaledScreen
 
             assertTrue(light.isEmpty(), "squares " + size + " across at 125% leave light rows in the track: " + light);
         }
+    }
+
+    /**
+     * At 125% and 175% a run of straights, across the page and down it, draws the same track on either side of every
+     * joint, though its squares cover a screen pixel more or less by where they lie: no edge lighter in every other
+     * square.
+     *
+     * MUTATION: in `SharpIcon.paintIcon`, make a tile's art the pixels it covers (`width` by `height`).
+     */
+    @Test
+    public void testARunOfStraightsLinesUp() throws Exception
+    {
+        for (double scale : new double[] {1.25, 1.75})
+        {
+            for (int size : new int[] {30, 46, 60})
+            {
+                for (int turn = 0; turn < 4; turn++)
+                {
+                    BufferedImage run = run(square(componentType.STRAIGHT, turn, size), turn % 2 == 1, scale);
+
+                    for (int i = 1; i < 4; i++)
+                    {
+                        int joint = (int) Math.ceil(scale * size * i - 0.5);
+                        java.util.List<Integer> differ = new java.util.ArrayList<>();
+
+                        for (int across = 0; across < (int) (size * scale); across++)
+                        {
+                            if (turn % 2 == 1 ? run.getRGB(across, joint - 1) != run.getRGB(across, joint)
+                                : run.getRGB(joint - 1, across) != run.getRGB(joint, across)) differ.add(across);
+                        }
+
+                        assertTrue(differ.isEmpty(), "straights " + size + " across, turned " + turn + ", at "
+                            + scale + " differ across joint " + i + " at " + differ);
+                    }
+                }
+            }
+        }
+    }
+
+    /** Four of `square` in a row, or a column if `down`, on white at `scale`, each clipped as Swing paints a square. */
+    private static BufferedImage run(Icon square, boolean down, double scale)
+    {
+        int size = square.getIconWidth(), along = (int) (4 * size * scale), across = (int) (size * scale);
+        BufferedImage run = new BufferedImage(down ? across : along, down ? along : across, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = run.createGraphics();
+
+        g.setColor(java.awt.Color.WHITE);
+        g.fillRect(0, 0, run.getWidth(), run.getHeight());
+        g.scale(scale, scale);
+
+        for (int i = 0; i < 4; i++)
+        {
+            java.awt.Graphics each = down ? g.create(0, i * size, size, size) : g.create(i * size, 0, size, size);
+
+            square.paintIcon(null, each, 0, 0);
+            each.dispose();
+        }
+
+        g.dispose();
+
+        return run;
     }
 
     /**

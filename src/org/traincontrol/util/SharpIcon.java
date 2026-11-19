@@ -24,12 +24,20 @@ public class SharpIcon extends ImageIcon
     }
 
     private final Art art;
+    private final boolean tile;
     private final Map<Dimension, Image> made = new java.util.concurrent.ConcurrentHashMap<>();
 
     public SharpIcon(Image picture, Art art)
     {
+        this(picture, art, false);
+    }
+
+    /** A `tile`, a diagram square, draws the same art wherever it lies, cut at its far sides: a run's edges line up */
+    public SharpIcon(Image picture, Art art, boolean tile)
+    {
         super(picture);
         this.art = art;
+        this.tile = tile;
     }
 
     /**
@@ -64,7 +72,8 @@ public class SharpIcon extends ImageIcon
     {
         Image picture = change.apply(icon.getImage());
         SharpIcon from = icon instanceof SharpIcon ? (SharpIcon) icon : null;
-        return from == null ? new ImageIcon(picture) : new SharpIcon(picture, (w, h) -> change.apply(from.at(w, h)));
+        return from == null ? new ImageIcon(picture)
+            : new SharpIcon(picture, (w, h) -> change.apply(from.at(w, h)), from.tile);
     }
 
     /** The picture at a size in screen pixels, made once; null if it cannot be made. */
@@ -93,7 +102,8 @@ public class SharpIcon extends ImageIcon
         int width = (int) Math.ceil(t.getScaleX() * (x + getIconWidth()) + t.getTranslateX() - 0.5) - left;
         int height = (int) Math.ceil(t.getScaleY() * (y + getIconHeight()) + t.getTranslateY() - 0.5) - top;
         Image sharp = t.getScaleX() > 1 && t.getScaleY() > 1 && t.getShearX() == 0 && t.getShearY() == 0
-            && width > 0 && height > 0 ? at(width, height) : null;
+            && width > 0 && height > 0 ? at(tile ? (int) Math.ceil(t.getScaleX() * getIconWidth()) : width,
+                tile ? (int) Math.ceil(t.getScaleY() * getIconHeight()) : height) : null;
         if (sharp == null)
         {
             super.paintIcon(c, g, x, y);
@@ -104,6 +114,7 @@ public class SharpIcon extends ImageIcon
         try
         {
             screen.setTransform(new AffineTransform());
+            screen.clipRect(left, top, width, height);
             screen.drawImage(sharp, left, top, null);
         }
         finally
