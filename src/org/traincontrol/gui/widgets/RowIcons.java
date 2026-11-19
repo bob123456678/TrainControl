@@ -379,6 +379,12 @@ public final class RowIcons
     /** A warning triangle: amber, a dark edge and an exclamation mark - beside a line that is wrong. */
     public static Icon warning(final int size)
     {
+        return warning(size, false);
+    }
+
+    /** The same, or red with a darker red edge and a light mark, for a warning that stays (FR-228). */
+    public static Icon warning(final int size, final boolean red)
+    {
         return new Painted(size)
         {
             @Override
@@ -394,10 +400,10 @@ public final class RowIcons
                 triangle.lineTo(1f, height - 1.5f);
                 triangle.closePath();
 
-                g.setColor(new Color(250, 190, 40));
+                g.setColor(red ? new Color(210, 35, 35) : new Color(250, 190, 40));
                 g.fill(triangle);
 
-                g.setColor(new Color(150, 95, 0));
+                g.setColor(red ? new Color(120, 0, 0) : new Color(150, 95, 0));
                 g.setStroke(new BasicStroke(1.1f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g.draw(triangle);
 
@@ -406,7 +412,7 @@ public final class RowIcons
                 int dot = height - 5;
                 int bar = dot - 1 - (height - 4) / 3;
 
-                g.setColor(new Color(40, 30, 0));
+                g.setColor(red ? new Color(255, 245, 235) : new Color(40, 30, 0));
                 g.fill(new RoundRectangle2D.Float(left, bar, 2, dot - 1 - bar, 1, 1));
                 g.fill(new RoundRectangle2D.Float(left, dot, 2, 2, 1, 1));
             }

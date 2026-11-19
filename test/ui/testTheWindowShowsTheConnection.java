@@ -19,7 +19,8 @@ import support.WindowField;
 
 /**
  * The main window shows the state of the connection to the Central Station: "(UDP)" after the latency once a CS3's TCP
- * connection has been given up for UDP, and the warning triangle on Power OFF while the station is not answering.
+ * connection has been given up for UDP, and the warning triangle on Power OFF while the station is not answering, or
+ * red throughout a simulation.
  */
 public class testTheWindowShowsTheConnection
 {
@@ -27,6 +28,11 @@ public class testTheWindowShowsTheConnection
     private static MarklinControlStation model;
     private static TrainControlUI ui;
     private static NetworkProxy proxy;
+
+    /** The triangle as the window was built, in a simulation: its icon drawn, its tooltip, and whether it shows. */
+    private static java.awt.image.BufferedImage simulatedIcon;
+    private static String simulatedTip;
+    private static boolean simulatedShown;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -37,6 +43,55 @@ public class testTheWindowShowsTheConnection
         model = support.TestStation.simulatedWithWindowInDebug();
         ui = (TrainControlUI) model.getGUI();
         proxy = (NetworkProxy) Reflect.get(MarklinControlStation.class, model, "NetworkInterface");
+
+        JLabel triangle = WindowField.of(ui, "stationNotAnswering");
+
+        Components.onTheEventThread(() ->
+        {
+            simulatedIcon = new java.awt.image.BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+            java.awt.Graphics2D g = simulatedIcon.createGraphics();
+
+            triangle.getIcon().paintIcon(triangle, g, 0, 0);
+            g.dispose();
+
+            simulatedTip = triangle.getToolTipText();
+            simulatedShown = triangle.isVisible();
+            return null;
+        });
+
+        // The other claims are about a real station, which is not a simulation: the window asks the model which it is
+        Reflect.set(MarklinControlStation.class, model, "simulation", false);
+        answered();
+    }
+
+    /**
+     * In a simulation there is no Central Station to answer: the triangle beside Power OFF shows from the start, red,
+     * and its tooltip says TrainControl is not connected (FR-228).
+     *
+     * MUTATION: drop `on |= simulated` from `TrainControlUI.warnOnStop`, or have `RowIcons.warning` fill amber whatever
+     * `red` asks, and this fails.
+     */
+    @Test
+    public void testASimulationShowsTheRedTriangleFromTheStart() throws Exception
+    {
+        assertTrue(simulatedShown, "no triangle beside Power OFF in a simulation");
+        assertEquals(simulatedTip, org.traincontrol.util.I18n.t("ui.main.tooltip.simulation"),
+            "the triangle does not say TrainControl is simulating");
+
+        int red = 0, amber = 0, light = 0;
+
+        for (int argb : simulatedIcon.getRGB(0, 0, 16, 16, null, 0, 16))
+        {
+            if ((argb >>> 24) < 255) continue;
+
+            if (amber(argb)) amber++;
+            if (((argb >> 16) & 255) > 180 && ((argb >> 8) & 255) < 80 && (argb & 255) < 80) red++;
+            if (((argb >> 16) & 255) > 220 && ((argb >> 8) & 255) > 220 && (argb & 255) > 220) light++;
+        }
+
+        assertTrue(red > 40 && amber == 0, "the triangle is not red: " + red + " red and " + amber + " amber pixels");
+        assertTrue(light >= 4, "the triangle's mark does not read light on the red: " + light + " light pixels");
     }
 
     @AfterClass(alwaysRun = true)
