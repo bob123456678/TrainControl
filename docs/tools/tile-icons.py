@@ -23,8 +23,9 @@ The geometry is the originals' own, measured off them:
   - the buffer stop is the straight's band, without its dash, down to a bar as wide as the dash is long
   - the uncoupler is the straight with a hump on its north edge, flat from 4.5 to 25.5 at 9 units and down at 45
     degrees to the band, edged as the band is
-  - the turntable (D192) is a pit of radius 9 edged a unit thick, its bridge west to east with a dash 11 long, and
-    eight tracks out of it to the edge: the straight both ways, so they meet it with no seam, and diagonals 4.4 across
+  - the turntable (D192) is a pit of radius 9 edged a unit thick, its bridge west to east with the straight's own
+    dash cut to 12 long (as high as the straight's, MT-1071), and eight tracks out of it to the edge: the straight both
+    ways, so they meet it with no seam, and diagonals 4.4 across
 
 At 120 pixels each tile is its 60 drawn twice as large, as PNG: the straight is the 60 doubled, and the samples are
 the 60's own (8 a pixel), so a 120 averaged 2 by 2 is its 60.  The tunnel and overpass, drawn by hand at 30 and 60, are
@@ -263,7 +264,21 @@ class Tile:
         self.ellipse(15, 15, 9, BLACK)
         self.ellipse(15, 15, 7.9, PIT)
         self.ray(0, -7.9, 7.9, 4, BLACK)
-        self.ray(0, -5.5, 5.5, 1.4, DASH)
+        self.dash(12)
+
+    def dash(self, length):
+        """The straight's own dash, its ends kept and its middle cut to `length` units about the centre, so it is as
+        high as the straight's (MT-1071)."""
+        n = 60 if self.size == 120 else self.size
+        y0, y1, x0, x1 = straight_parts(n)[4]
+        d, k = straight_image(n).crop((x0, y0, x1, y1)), round(length * n / 30) // 2
+        cut = Image.new("RGB", (2 * k, d.height))
+        cut.paste(d.crop((0, 0, k, d.height)), (0, 0))
+        cut.paste(d.crop((d.width - k, 0, d.width, d.height)), (k, 0))
+        f = self.ss * self.size // n
+        big = np.asarray(cut.resize((cut.width * f, cut.height * f), Image.Resampling.NEAREST), dtype=float)
+        left = (self.size * self.ss - big.shape[1]) // 2
+        self.rgb[y0 * f:y0 * f + big.shape[0], left:left + big.shape[1]] = big
 
     def save(self, name, colour=False):
         n, ss = self.size, self.ss

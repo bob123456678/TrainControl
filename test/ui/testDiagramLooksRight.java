@@ -4804,6 +4804,40 @@ public class testDiagramLooksRight
     }
 
     /**
+     * The turntable's bridge carries the straight's own dash: down its middle column, every row between the edges of
+     * the straight's band is the straight's, so the gray is as high as on every other track (Adam, MT-1071: "make the
+     * gray inside the middle track the same thickness (height) as other gray").
+     *
+     * MUTATION: draw the bridge's dash 2.8 units high again, as D192 first did, and this fails.
+     */
+    @Test
+    public void testTheTurntablesDashIsAsHighAsTheStraights() throws Exception
+    {
+        for (int size : new int[] {30, 60, 120})
+        {
+            BufferedImage straight = icon(size, "straight"), turntable = icon(size, "turntable");
+
+            java.util.List<Integer> band = new java.util.ArrayList<>();
+
+            for (int y = 0; y < size; y++) if ((straight.getRGB(0, y) & 0xFFFFFF) != 0xFFFFFF) band.add(y);
+
+            assertTrue(band.size() > 4, "precondition: the straight at " + size + " has no band at its west edge");
+
+            // the band's gray edge, a row at 30 and 60 and two at 120, is the bridge's black on the turntable
+            int edge = 0;
+
+            while (straight.getRGB(0, band.get(edge)) == straight.getRGB(0, band.get(0))) edge++;
+
+            for (int y = band.get(edge); y <= band.get(band.size() - 1 - edge); y++)
+            {
+                assertEquals(String.format("%06X", turntable.getRGB(size / 2, y) & 0xFFFFFF), String.format("%06X",
+                    straight.getRGB(size / 2, y) & 0xFFFFFF), "the turntable's dash at " + size + " is not the straight's"
+                    + " at row " + y + " (MT-1071)");
+            }
+        }
+    }
+
+    /**
      * The link, the two signal tiles and the turntable's four straight tracks meet the straight beside them with no
      * seam: the band's rows where the track comes in are the straight's own, at both sizes (FR-135, D192), since an
      * edge row of another shade would be a stripe between two straights.
