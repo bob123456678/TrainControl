@@ -4781,8 +4781,8 @@ public class testStationSettingsWindow
                 java.awt.Point at = javax.swing.SwingUtilities.convertPoint(block, (int) Math.round(middle[0]),
                     (int) Math.round(middle[1]), window);
 
-                for (int id : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
-                    java.awt.event.MouseEvent.MOUSE_CLICKED})
+                for (int id : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED,
+                    java.awt.event.MouseEvent.MOUSE_RELEASED, java.awt.event.MouseEvent.MOUSE_CLICKED})
                 {
                     window.dispatchEvent(new java.awt.event.MouseEvent(window, id, System.currentTimeMillis(),
                         id == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0,

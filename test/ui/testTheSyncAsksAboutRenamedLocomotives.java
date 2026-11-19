@@ -578,8 +578,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
-     * A closed rename question holds its offer back from its own sync alone: the sync an edit owes next treats the offer
-     * as one never asked about, and adds the station's locomotive under the station's name.
+     * A closed rename question holds its offer back from its own sync alone: the sync an edit owes next treats the
+     * offer as one never asked about, and adds the station's locomotive under the station's name.
      *
      * MUTATION: in `TrainControlUI.doSync`, leave out the `finally` that clears each held-back offer, and this fails.
      */

@@ -579,7 +579,8 @@ public class testAStalledCutOrHandDrivenTrain
     @Test(timeOut = 120000)
     public void testAFailureAfterATurnFurtherBackLeavesTheTrainOnTheCopyItArrivedOn() throws Exception
     {
-        MarklinLocomotive train = new MarklinLocomotive(model, 86, MarklinLocomotive.decoderType.MM2, "OB493 turn back");
+        MarklinLocomotive train = new MarklinLocomotive(model, 86, MarklinLocomotive.decoderType.MM2,
+            "OB493 turn back");
 
         Journey j = new Journey(train, "UA", "UB", "UC", "UD");
 
