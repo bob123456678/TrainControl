@@ -120,7 +120,9 @@ public class testMenusAreNoSmallerThanTheWindowsText
 
     /**
      * With 14-point menus at a scale of 1, the menu bar and every menu fit in every language.  Measured as
-     * `testEveryLanguageFits` does, on the window laid out at its minimum, and the menu bar's own widths are listed.
+     * `testEveryLanguageFits` does, on the window laid out at its minimum, and the menu bar wants no more than it has.
+     *
+     * MUTATION: lengthen a menu bar title (e.g. `ui.main.toolbar.file`) by 80 letters, and this fails.
      */
     @Test
     public void testTheMenuBarFitsInEveryLanguageAtScaleOne() throws Exception
@@ -159,6 +161,12 @@ public class testMenusAreNoSmallerThanTheWindowsText
 
                     System.out.println("FIT " + language + ": window " + ui[0].getWidth() + ", menu bar wants "
                         + bar.getPreferredSize().width + " has " + bar.getWidth() + ", font " + font.getSize());
+
+                    if (bar.getPreferredSize().width > bar.getWidth())
+                    {
+                        found.add(language + ": the menu bar wants " + bar.getPreferredSize().width + " and has "
+                            + bar.getWidth());
+                    }
 
                     for (String one : LanguageFit.measure(new LanguageFit.Ledger(), "window", language, ui[0], new int[1]))
                     {

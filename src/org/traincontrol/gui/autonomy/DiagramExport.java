@@ -42,9 +42,8 @@ public final class DiagramExport
     private static final int TILE_WAIT_SECONDS = 30;
 
     /**
-     * The size the diagram is DRAWN at: tile icons exist only as icons30 and icons60, so a grid at any other size loads
-     * no icons and renders blank.  The grid is always built at 60 and the finished picture is scaled, which is also
-     * sharper and far cheaper than scaling the tiles.
+     * The size the diagram is DRAWN at: the grid is always built at 60, a size the tile art is drawn at, and the
+     * finished picture is scaled, which is sharper and far cheaper than scaling the tiles.
      */
     private static final int NATIVE_TILE_SIZE = 60;
 
