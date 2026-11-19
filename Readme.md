@@ -500,7 +500,7 @@ Tab icons provided by Freepik.
             - The `Start Autonomous Operation` button ends at the track diagram's right edge.
             - On Java 21 and other Java newer than 8, a scaled Windows display is no longer scaled twice, the file chooser's `Look In` list works, and settings are kept when the folder path has a non-English letter.
             - At 100% display scaling, menus are no longer smaller than the rest of the window's text.
-            - The uncoupler square on the track diagram is symmetric and meets the track beside it without a seam.
+            - The uncoupler square on the track diagram is symmetric and meets the track beside it without a seam, and the turntable square is redrawn, with eight tracks leading out of it.
             - A new route item starts at address 0, and in a route you can edit, a cell its row has no use for shows `---`.
 * v3.1.0 [11/15/2026]
     - Central Station Protocol
