@@ -4831,8 +4831,8 @@ public class testDiagramLooksRight
             for (int y = band.get(edge); y <= band.get(band.size() - 1 - edge); y++)
             {
                 assertEquals(String.format("%06X", turntable.getRGB(size / 2, y) & 0xFFFFFF), String.format("%06X",
-                    straight.getRGB(size / 2, y) & 0xFFFFFF), "the turntable's dash at " + size + " is not the straight's"
-                    + " at row " + y + " (MT-1071)");
+                    straight.getRGB(size / 2, y) & 0xFFFFFF), "the turntable's dash at " + size
+                    + " is not the straight's at row " + y + " (MT-1071)");
             }
         }
     }
