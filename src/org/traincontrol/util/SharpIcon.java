@@ -32,7 +32,7 @@ public class SharpIcon extends ImageIcon
         this(picture, art, false);
     }
 
-    /** A `tile`, a diagram square, draws the same art wherever it lies, cut at its far sides, so a run's edges line up. */
+    /** A `tile`, a diagram square, draws the same art wherever it lies, cut at its far sides: a run's edges line up */
     public SharpIcon(Image picture, Art art, boolean tile)
     {
         super(picture);
@@ -72,7 +72,8 @@ public class SharpIcon extends ImageIcon
     {
         Image picture = change.apply(icon.getImage());
         SharpIcon from = icon instanceof SharpIcon ? (SharpIcon) icon : null;
-        return from == null ? new ImageIcon(picture) : new SharpIcon(picture, (w, h) -> change.apply(from.at(w, h)));
+        return from == null ? new ImageIcon(picture)
+            : new SharpIcon(picture, (w, h) -> change.apply(from.at(w, h)), from.tile);
     }
 
     /** The picture at a size in screen pixels, made once; null if it cannot be made. */
