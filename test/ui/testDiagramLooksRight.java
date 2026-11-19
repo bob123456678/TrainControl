@@ -4838,12 +4838,12 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The link, the two signal tiles and the turntable's four straight tracks meet the straight beside them with no
-     * seam: the band's rows where the track comes in are the straight's own, at both sizes (FR-135, D192), since an
-     * edge row of another shade would be a stripe between two straights.
+     * The link, the two signal tiles, the uncoupler and the turntable's four straight tracks meet the straight beside
+     * them with no seam: the band's rows where the track comes in are the straight's own, at both sizes (FR-135, D192),
+     * since an edge row of another shade would be a stripe between two straights.
      *
-     * MUTATION: put the old Large signal back, or draw the link's shaft or the turntable's tracks pure black to the
-     * edge, and this fails.
+     * MUTATION: put the old Large signal back, or draw the link's shaft, the uncoupler's band or the turntable's tracks
+     * pure black to the edge, and this fails.
      */
     @Test
     public void testTheLinkAndTheSignalsMeetTheStraightWithNoSeam() throws Exception
@@ -4859,6 +4859,7 @@ public class testDiagramLooksRight
             assertFalse(band.isEmpty(), "precondition: the straight at " + size + " has no band at its west edge");
 
             BufferedImage link = icon(size, "link"), turntable = icon(size, "turntable");
+            BufferedImage uncoupler = icon(size, "decouple");
 
             for (int y : band)
             {
@@ -4870,6 +4871,12 @@ public class testDiagramLooksRight
                 {
                     assertEquals(String.format("%06X", turntable.getRGB(at[0], at[1]) & 0xFFFFFF), want, "the turntable at "
                         + size + " meets a straight with a seam at " + at[0] + "," + at[1] + " (D192)");
+                }
+
+                for (int x : new int[] {0, size - 1})
+                {
+                    assertEquals(String.format("%06X", uncoupler.getRGB(x, y) & 0xFFFFFF), want, "the uncoupler at "
+                        + size + " meets a straight with a seam at " + x + "," + y);
                 }
             }
 
