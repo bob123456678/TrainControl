@@ -5816,7 +5816,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         model.sendPing(false);
     }
 
-    /** The triangle left of Power OFF: yellow while the station is not answering (FR-192), red in simulation (FR-228). */
+    /** Left of Power OFF: a yellow triangle while the station is not answering (FR-192), red in simulation (FR-228) */
     private final JLabel stationNotAnswering = new JLabel();
 
     /**
@@ -5870,8 +5870,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Updates the latency value, with the protocol in use after it, and shows the triangle beside Power OFF only while the station
-     * isn't answering.
+     * Updates the latency value, with the protocol in use after it, and the triangle beside Power OFF (`warnOnStop`).
      */
     @Override
     public void updateLatency(double latency)
