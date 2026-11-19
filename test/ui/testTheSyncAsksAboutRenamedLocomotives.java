@@ -260,24 +260,12 @@ public class testTheSyncAsksAboutRenamedLocomotives
             rig.model.setNetworkCommState(true);
 
             int locos = rig.station.requests("/app/api/locos");
-            int syncs = rig.station.requests("/config/geraet.vrs");
-
             rig.takeLog();
 
             try (Answering answering = Answering.start(m -> m != null && m.contains(old) ? Answering.press(no)
                 : Answering.pressAt(0)))
             {
-                // As `editorGone` runs it: a sync owed by an edit, with no window to tell
-                ((AtomicBoolean) support.Reflect.field(TrainControlUI.class, "syncOwed").get(ui)).set(true);
-
-                SwingUtilities.invokeLater(() -> ui.doSync(null));
-
-                assertTrue(Settle.until(() -> rig.station.requests("/config/geraet.vrs") > syncs, 60000),
-                    "the owed sync never ran");
-
-                assertTrue(syncEnded(ui), "the owed sync never ended");
-
-                Components.settle();
+                owedSync(rig, ui);
 
                 assertEquals(renameLines(rig, old, STATION_NAME), new ArrayList<String>(), "the owed sync logged the"
                     + " rename check");
@@ -421,6 +409,22 @@ public class testTheSyncAsksAboutRenamedLocomotives
             return new String(body, StandardCharsets.UTF_8).replace(quoted, "\"" + name.get() + "\"")
                 .getBytes(StandardCharsets.UTF_8);
         };
+    }
+
+    /** Runs a sync owed by an edit, as `editorGone` runs it with no window to tell, to its end. */
+    private static void owedSync(StationRig rig, TrainControlUI ui) throws Exception
+    {
+        int syncs = rig.station.requests("/config/geraet.vrs");
+
+        ((AtomicBoolean) support.Reflect.field(TrainControlUI.class, "syncOwed").get(ui)).set(true);
+
+        SwingUtilities.invokeLater(() -> ui.doSync(null));
+
+        assertTrue(Settle.until(() -> rig.station.requests("/config/geraet.vrs") > syncs, 60000),
+            "the owed sync never ran");
+        assertTrue(syncEnded(ui), "the owed sync never ended");
+
+        Components.settle();
     }
 
     /** The station's locomotive at address 10 held here as `old`, as though renamed at the station since. */
@@ -574,6 +578,37 @@ public class testTheSyncAsksAboutRenamedLocomotives
             assertEquals(next.size(), 1, "the next Sync did not ask again");
             assertEquals(next.get(0).message, I18n.f("loc.ui.confirmRenameLocomotive", old, STATION_NAME),
                 "the next Sync did not ask the rename question");
+        });
+    }
+
+    /**
+     * A closed rename question holds its offer back from its own sync alone: the sync an edit owes next treats the
+     * offer as one never asked about, and adds the station's locomotive under the station's name.
+     *
+     * MUTATION: in `TrainControlUI.doSync`, leave out the `finally` that clears each held-back offer, and this fails.
+     */
+    @Test(timeOut = 240000)
+    public void testAClosedQuestionHoldsItsOfferBackFromItsOwnSyncAlone() throws Exception
+    {
+        final String old = "FR-220 closed, then owed";
+
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            renamedHere(rig, old);
+
+            assertEquals(about(pressSync(rig, ui, m -> m != null && m.contains(old) ? Answering.pressAt(99)
+                : Answering.pressAt(0), testTheSyncAsksAboutRenamedLocomotives::saidDone), old).size(), 1,
+                "precondition: the rename was not asked");
+            assertNull(rig.model.getLocByName(STATION_NAME), "precondition: closing the question added a copy");
+
+            try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
+            {
+                owedSync(rig, ui);
+            }
+
+            assertNotNull(rig.model.getLocByName(STATION_NAME), "the owed sync still held back the offer the closed"
+                + " question's sync held back");
+            assertNotNull(rig.model.getLocByName(old), "the owed sync renamed " + old);
         });
     }
 

@@ -570,6 +570,56 @@ public class testAStalledCutOrHandDrivenTrain
     }
 
     /**
+     * A train that turned part way and drove on, failing at a later point, stands on the copy of that square it arrived
+     * on, and the window is told of no turn: only a turn at the point it reached moves it (OB-493).
+     *
+     * MUTATION: in `Layout.executePath`'s catch, count a turn anywhere on the journey (`turnedPartWay.remove(loc) !=
+     * null`), and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAFailureAfterATurnFurtherBackLeavesTheTrainOnTheCopyItArrivedOn() throws Exception
+    {
+        MarklinLocomotive train = new MarklinLocomotive(model, 86, MarklinLocomotive.decoderType.MM2,
+            "OB493 turn back");
+
+        Journey j = new Journey(train, "UA", "UB", "UC", "UD");
+
+        // UB turns trains; UC2 is the other copy of UC's square, the one a turn at UC would stand the train on
+        j.rail.getPoint("UB").setReversing(true);
+
+        Point uc = j.rail.getPoint("UC");
+
+        uc.setBlock("UC square");
+        uc.setCopyFacing("E");
+
+        j.rail.createPoint("UC2", true, uc.getS88()).setBlock("UC square");
+        j.rail.getPoint("UC2").setCopyFacing("W");
+
+        j.path.get(1).setEntrySide("W");
+
+        RuntimeException failure = new IllegalStateException("thrown by the progress callback");
+
+        train.setCallback(Layout.CB_ROUTE_PROG, l ->
+        {
+            if (j.reached("UC")) throw failure;
+        });
+
+        try
+        {
+            j.go().light("UB").waitsOn("UC");
+            assertSame(j.light("UC").end(), failure, "precondition: the callback's failure did not end the journey");
+
+            j.assertStandsOnlyAt("UC", "the failed journey that turned at UB");
+
+            assertNull(j.rail.turnedOnArrivalAt(train.getName()), "the window was told of a turn at the point reached");
+        }
+        finally
+        {
+            train.setSpeed(0);
+        }
+    }
+
+    /**
      * A failure never takes the point the train last reached from another train that holds it now (OB-493).
      *
      * MUTATION: in `Layout.executePath`'s catch, place the train whenever `reached != null`, and this fails.

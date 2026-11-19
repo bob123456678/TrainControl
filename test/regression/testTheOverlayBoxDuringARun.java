@@ -194,8 +194,6 @@ public class testTheOverlayBoxDuringARun
     {
         java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
         String arrows = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
-        RepaintManager was = Components.onTheEventThread(() -> RepaintManager.currentManager(box));
-        Set<java.awt.Component> asked = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
         try
         {
@@ -220,16 +218,86 @@ public class testTheOverlayBoxDuringARun
 
             assertTrue(unmarked, "precondition: every square a train holds wears an autonomy mark");
 
-            SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(new RepaintManager()
-            {
-                @Override
-                public void addDirtyRegion(javax.swing.JComponent c, int x, int y, int w, int h)
-                {
-                    super.addDirtyRegion(c, x, y, w, h);
-                    asked.add(c);
-                }
-            }));
+            assertRedrawnByEachClick(held);
+        }
+        finally
+        {
+            if (arrows == null) prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+            else prefs.put(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, arrows);
 
+            tick(false);
+            tick(true);
+        }
+    }
+
+    /**
+     * A click on the box, either way, redraws track a standing train holds where its line does not reach: here every
+     * square lengthened in the setup since the railway was built, so the line ends on the train's own square while the
+     * railway still holds the track behind it, plain and unmarked.
+     *
+     * MUTATION: drop `held.addAll(ui.blockedTrack.keySet())` from `AutonomyOverlayToggle.apply`, and this fails.
+     */
+    @Test
+    public void testHeldTrackTheLineDoesNotReachIsRedrawnWhenTheBoxIsClicked() throws Exception
+    {
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+        String arrows = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
+
+        try
+        {
+            prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, false);
+            SwingUtilities.invokeAndWait(() -> support.TileLengths.measureEveryTileAs(session, train.getTrainLength()));
+            tick(false);
+            tick(true);
+            support.CoveredMarks.refresh(ui);
+
+            List<LayoutLabel> beyond = new ArrayList<>();
+
+            for (TileKey square : everyTile())
+            {
+                if (ui.isTrackCovered(square) || !ui.isTrackBlocked(square)) continue;
+
+                for (LayoutLabel tile : ui.getDiagramTileRegistry().labelsFor(square))
+                {
+                    if (Reflect.get(LayoutLabel.class, tile, "autonomyAnnotation") == null) beyond.add(tile);
+                }
+            }
+
+            assertFalse(beyond.isEmpty(), "precondition: no plain square is held by the train beyond its line");
+
+            assertRedrawnByEachClick(beyond);
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() -> support.TileLengths.measureEveryTileAs(session, 1));
+
+            if (arrows == null) prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+            else prefs.put(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, arrows);
+
+            tick(false);
+            tick(true);
+            support.CoveredMarks.refresh(ui);
+        }
+    }
+
+    /** Clicks the box off and on, asserting each click asks every one of these tiles to redraw. */
+    private static void assertRedrawnByEachClick(List<LayoutLabel> held) throws Exception
+    {
+        RepaintManager was = Components.onTheEventThread(() -> RepaintManager.currentManager(box));
+        Set<java.awt.Component> asked = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+        SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(new RepaintManager()
+        {
+            @Override
+            public void addDirtyRegion(javax.swing.JComponent c, int x, int y, int w, int h)
+            {
+                super.addDirtyRegion(c, x, y, w, h);
+                asked.add(c);
+            }
+        }));
+
+        try
+        {
             for (boolean on : new boolean[] {false, true})
             {
                 asked.clear();
@@ -245,12 +313,6 @@ public class testTheOverlayBoxDuringARun
         finally
         {
             SwingUtilities.invokeAndWait(() -> RepaintManager.setCurrentManager(was));
-
-            if (arrows == null) prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
-            else prefs.put(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, arrows);
-
-            tick(false);
-            tick(true);
         }
     }
 
