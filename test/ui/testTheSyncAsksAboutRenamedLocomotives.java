@@ -578,6 +578,48 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
+     * A closed rename question holds its offer back from its own sync alone: the sync an edit owes next treats the offer
+     * as one never asked about, and adds the station's locomotive under the station's name.
+     *
+     * MUTATION: in `TrainControlUI.doSync`, leave out the `finally` that clears each held-back offer, and this fails.
+     */
+    @Test(timeOut = 240000)
+    public void testAClosedQuestionHoldsItsOfferBackFromItsOwnSyncAlone() throws Exception
+    {
+        final String old = "FR-220 closed, then owed";
+
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            renamedHere(rig, old);
+
+            assertEquals(about(pressSync(rig, ui, m -> m != null && m.contains(old) ? Answering.pressAt(99)
+                : Answering.pressAt(0), testTheSyncAsksAboutRenamedLocomotives::saidDone), old).size(), 1,
+                "precondition: the rename was not asked");
+            assertNull(rig.model.getLocByName(STATION_NAME), "precondition: closing the question added a copy");
+
+            int syncs = rig.station.requests("/config/geraet.vrs");
+
+            try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
+            {
+                // As `editorGone` runs it: a sync owed by an edit, with no window to tell
+                ((AtomicBoolean) support.Reflect.field(TrainControlUI.class, "syncOwed").get(ui)).set(true);
+
+                SwingUtilities.invokeLater(() -> ui.doSync(null));
+
+                assertTrue(Settle.until(() -> rig.station.requests("/config/geraet.vrs") > syncs, 60000),
+                    "the owed sync never ran");
+                assertTrue(syncEnded(ui), "the owed sync never ended");
+
+                Components.settle();
+            }
+
+            assertNotNull(rig.model.getLocByName(STATION_NAME), "the owed sync still held back the offer the closed"
+                + " question's sync held back");
+            assertNotNull(rig.model.getLocByName(old), "the owed sync renamed " + old);
+        });
+    }
+
+    /**
      * Closing the delete question a rename onto a held name asks is logged as closed, and keeps nothing.
      *
      * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, leave out the `loc.renameClosed`

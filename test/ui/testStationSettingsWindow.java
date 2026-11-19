@@ -4743,6 +4743,68 @@ public class testStationSettingsWindow
         }
     }
 
+    /**
+     * A click on a following square's arrow in the turn a run begins, before the window has read it, changes neither
+     * the run's way nor the setup (MT-1068).
+     *
+     * MUTATION: have `pictureClick` press whatever `whyHeld` says and `actAlone` run its door without `refused()`, and
+     * this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAClickOnAFollowingSquaresArrowAsARunBeginsChangesNothing() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+        TileKey leader = Components.onTheEventThread(() -> session.runLeaders().get(found[1]));
+        RouteId road = onlyRoad(leader);
+
+        Components.onTheEventThread(() -> session.setRunDirection(leader, road, Direction.BOTH));
+
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        Components.settle();
+
+        Set<String> before = armsInForce(found[1]);
+        String setupBefore = setup();
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            // Pressed, released and clicked in the one event-thread turn the run starts in
+            Components.onTheEventThread(() ->
+            {
+                staging.set(ui, true);
+
+                double[] middle = middleOf(window.pictureMarksForTest().get("NEXT." + side + "." + side.opposite()));
+                java.awt.Point at = javax.swing.SwingUtilities.convertPoint(block, (int) Math.round(middle[0]),
+                    (int) Math.round(middle[1]), window);
+
+                for (int id : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
+                    java.awt.event.MouseEvent.MOUSE_CLICKED})
+                {
+                    window.dispatchEvent(new java.awt.event.MouseEvent(window, id, System.currentTimeMillis(),
+                        id == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0,
+                        at.x, at.y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+                }
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertEquals(armsInForce(found[1]), before, "a click as a run began changed the run's direction");
+            assertEquals(setup(), setupBefore, "a click as a run began changed the setup");
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { staging.set(ui, false); return null; });
+
+            StationDoors.close(window);
+        }
+    }
+
     /** Sets the square beside the station one way, toward the station or away, and its run's first square the other. */
     private static void opposeTheRun(TileKey[] found, boolean towardStation)
     {

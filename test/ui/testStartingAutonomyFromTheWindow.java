@@ -329,6 +329,46 @@ public class testStartingAutonomyFromTheWindow
     }
 
     /**
+     * Control+G over a setup with an error, here a station without a name, starts nothing and says why on screen, once.
+     *
+     * MUTATION: pass `false` for `shown` where the row refuses with `whyAutonomyWillNotStart`, and the refusal is only
+     * logged.
+     */
+    @Test
+    public void testControlGOverASetupWithErrorsSaysWhyOnScreen() throws Exception
+    {
+        final TileKey station = Components.onTheEventThread(() ->
+        {
+            for (TileKey each : session.getStore().getNamedTiles())
+            {
+                if (session.getStore().isStation(each)) return each;
+            }
+
+            return null;
+        });
+
+        assertNotNull(station, "precondition: no named station");
+
+        Components.onTheEventThread(() ->
+        {
+            session.getStore().setPointName(station, "");
+            session.rebuild();
+
+            return null;
+        });
+
+        Components.settle();
+
+        assertTrue(Components.onTheEventThread(() -> ui.autonomyHasErrors()), "precondition: the setup has no error");
+
+        String why = Components.onTheEventThread(() -> ui.whyAutonomyWillNotStart());
+
+        assertEquals(control(KeyEvent.VK_G, message -> null), java.util.Collections.singletonList(why),
+            "Control+G over a setup with errors did not say why on screen, once");
+        assertFalse(model.getAutoLayout().isAutoRunning(), "Control+G started the run over a setup with errors");
+    }
+
+    /**
      * Control+G held with the power off says why once: repeats of Control+G and Control+H that reach the key table while
      * its message is up show nothing more.
      *
