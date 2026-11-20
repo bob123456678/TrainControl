@@ -243,7 +243,8 @@ public final class CS2File
     /**
      * Whether the last parseLayout read no page although the index named some.  Neither an exception nor an empty list
      * says so, as a page that will not read comes back as a blank stand-in, and an index this parser does not
-     * understand yields no pages and no failures.  An index that names no page is the empty layout it is.
+     * understand yields no pages and no failures.  False for an index that names no page: the sync reads it as the empty
+     * layout it is, but `opensAsALayout` refuses it, as no layout of the program's own has none.
      */
     public boolean readNoPage(List<LayoutDiagram> parsed)
     {
