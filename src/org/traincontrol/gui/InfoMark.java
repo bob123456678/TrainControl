@@ -64,7 +64,7 @@ public final class InfoMark
         int size = Math.min(width, height);
         int stem = Math.max(1, 2 * (int) Math.round((2.0 * size / 14 - size % 2) / 2) + size % 2);
         int left = (size - stem) / 2, dot = (int) Math.round(3.0 * size / 14);
-        int top = (int) Math.round(6.0 * size / 14), bottom = (int) Math.round(11.0 * size / 14);
+        int top = (int) Math.round(6.0 * size / 14), bottom = size - dot;
         BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         java.awt.Graphics2D g = out.createGraphics();
 
