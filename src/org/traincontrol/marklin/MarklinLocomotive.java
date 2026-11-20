@@ -1373,10 +1373,11 @@ public class MarklinLocomotive extends Locomotive
         {
             for (String s : this.centralStationMultiUnitLocomotiveNames.keySet())
             {
-                if (this.network.getLocByName(s) != null)
-                {
-                    output.add(this.network.getLocByName(s));
-                }
+                Locomotive member = this.network.getLocByName(s);
+                // A member whose rename was answered No is the locomotive here that kept its own name (FR-220)
+                if (member == null) member = this.network.getLocomotives().stream().filter(l -> l.keepsItsNameOver(s))
+                    .findFirst().orElse(null);
+                if (member != null) output.add(member);
             }
         }
         

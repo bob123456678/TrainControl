@@ -661,6 +661,41 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
+     * A Central Station multi-unit still lists a member whose rename was answered No: the station names the member by
+     * the name turned down, which is the locomotive here that kept its own.
+     *
+     * MUTATION: in `MarklinLocomotive.getModelMultiUnitLocomotives`, look each member up by its name alone again.
+     */
+    @Test(timeOut = 240000)
+    public void testAMultiUnitStillListsAMemberWhoseRenameWasAnsweredNo() throws Exception
+    {
+        final String head = "MF+ER";
+        final String member = "MF 5028 DSB";
+        final String old = "XFF member";
+
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            if (rig.model.getLocByName(head) == null)
+            {
+                try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
+                {
+                    owedSync(rig, ui);
+                }
+            }
+
+            assertNotNull(rig.model.getLocByName(member), "precondition: the station's member is not here");
+
+            rig.model.renameLoc(member, old);
+
+            assertEquals(about(answeringNo(rig, ui, old), old).size(), 1, "precondition: the rename was not asked");
+            assertNull(rig.model.getLocByName(member), "precondition: the sync added a copy under the name turned down");
+
+            assertEquals(rig.model.getLocByName(head).getModelMultiUnitLocomotives(), Collections.singletonList(
+                rig.model.getLocByName(old)), "the multi-unit does not list the member that kept its own name");
+        });
+    }
+
+    /**
      * Closing the delete question a rename onto a held name asks is logged as closed, and keeps nothing.
      *
      * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, leave out the `loc.renameClosed`
