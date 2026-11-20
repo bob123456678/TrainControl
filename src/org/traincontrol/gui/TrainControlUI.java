@@ -19824,41 +19824,45 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             // Asked once, not built: this can land after Unload.
             final Layout shown = this.model.getAutoLayoutIfLoaded();
+            List<Locomotive> locs = shown == null ? null : autoTabOrder(shown, shown.getLocomotivesToRun());
 
-            // Display locomotive status and possible paths
-            this.autoLocPanel.removeAll();
+            // Kept when they are these trains in this order (OB-460), each shown afresh on the running layout.
+            // Otherwise built empty and filled in afterwards: AutoLocomotiveStatus's constructor would search paths
+            // (synchronized on the Layout, the whole graph, once per locomotive) on the EDT.
+            final java.util.List<AutoLocomotiveStatus> kept = theCardsOf(locs);
+            final java.util.List<AutoLocomotiveStatus> panels = kept != null ? kept : new java.util.LinkedList<>();
 
-            if (shown == null)
+            if (kept != null)
             {
-                this.autoLocPanel.revalidate();
-                this.autoLocPanel.repaint();
-
-                return;
+                for (AutoLocomotiveStatus panel : kept) panel.showOn(shown);
             }
-
-            // Number of columns in the grid
-            int gridCols = 3;
-
-            autoLocPanel.setLayout(new java.awt.GridLayout(
-                (int) Math.ceil((double) shown.getLocomotivesToRun().size() / gridCols), 
-                gridCols, // cols
-                5, // padding
-                5)
-            );
-            
-            List<Locomotive> locs = autoTabOrder(shown, shown.getLocomotivesToRun());
-
-            // Built empty and filled in afterwards: AutoLocomotiveStatus's constructor would search paths (synchronized
-            // on the Layout, the whole graph, once per locomotive) on the EDT.
-            final java.util.List<AutoLocomotiveStatus> panels = new java.util.LinkedList<>();
-
-            for (Locomotive loc : locs)
+            else
             {
-                AutoLocomotiveStatus panel = new AutoLocomotiveStatus(loc, this, true);
+                // Display locomotive status and possible paths
+                this.autoLocPanel.removeAll();
 
-                panels.add(panel);
+                if (shown == null)
+                {
+                    this.autoLocPanel.revalidate();
+                    this.autoLocPanel.repaint();
+                    return;
+                }
 
-                this.autoLocPanel.add(panel);
+                // Number of columns in the grid
+                int gridCols = 3;
+                autoLocPanel.setLayout(new java.awt.GridLayout(
+                    (int) Math.ceil((double) shown.getLocomotivesToRun().size() / gridCols), 
+                    gridCols, // cols
+                    5, // padding
+                    5)
+                );
+
+                for (Locomotive loc : locs)
+                {
+                    AutoLocomotiveStatus panel = new AutoLocomotiveStatus(loc, this, true);
+                    panels.add(panel);
+                    this.autoLocPanel.add(panel);
+                }
             }
 
             AutonomyRenderer.submit(() ->
@@ -19925,6 +19929,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .thenComparing(Locomotive::getName));
 
         return sorted;
+    }
+
+    /** The Auto tab's cards when they are these trains, in this order; otherwise, or for none, null.  Event thread. */
+    private java.util.List<AutoLocomotiveStatus> theCardsOf(List<Locomotive> due)
+    {
+        final Component[] standing = this.autoLocPanel.getComponents();
+        if (due == null || due.isEmpty() || standing.length != due.size()) return null;
+
+        final java.util.List<AutoLocomotiveStatus> cards = new java.util.ArrayList<>();
+        for (int i = 0; i < standing.length; i++)
+        {
+            if (!(standing[i] instanceof AutoLocomotiveStatus)
+                || ((AutoLocomotiveStatus) standing[i]).getLocomotive() != due.get(i)) return null;
+            cards.add((AutoLocomotiveStatus) standing[i]);
+        }
+        return cards;
     }
 
     /** Re-lays the Auto tab's cards in the due order (FR-126), moving rather than rebuilding them.  Event thread. */
