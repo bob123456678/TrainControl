@@ -353,6 +353,22 @@ public class testTheWindowShowsTheConnection
         });
     }
 
+    /** Where Power OFF, Power ON and the two labels above the locomotive's rows are, in the panel's coordinates. */
+    private static String top()
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (String name : new String[] {"PowerOff", "OnButton", "CurrentKeyLabel", "ActiveLocLabel"})
+        {
+            java.awt.Component c = WindowField.of(ui, name);
+
+            out.append(name).append(' ').append(SwingUtilities.convertRectangle(c.getParent(), c.getBounds(), panel()))
+                .append(';');
+        }
+
+        return out.toString();
+    }
+
     /** Makes `loc` (null for none) the active locomotive and lets the window draw it, then lays the window out. */
     private static void show(org.traincontrol.base.Locomotive loc) throws Exception
     {
@@ -381,10 +397,14 @@ public class testTheWindowShowsTheConnection
      * The triangle stands in the lower right of the locomotive panel, in the empty end of the function tabs' strip
      * (Adam on MT-1073: "can it actually go in the lower-right of the app, where there is negative space from the
      * function tabbed pane?"): right of the last tab and inside the panel, centered on the strip within a pixel, shown
-     * in a simulation with no locomotive too, where it stands exactly as with one, and with Power OFF and every other part where they stand without it.
+     * in a simulation with no locomotive too, where it stands exactly as with one. Nothing else moves with the triangle,
+     * and with no locomotive Power OFF, Power ON and the two labels above the rows stand as with one. Versus dev only
+     * the picture's empty label moves then (it holds no icon or text and draws nothing), since the rows hidden with
+     * no locomotive keep their room.
      *
-     * MUTATION: put the triangle in a panel with Power OFF again (the old `installNotAnsweringMark`), or leave it out
-     * of the holder `installNotAnsweringMark` puts around the function tabs, and this fails.
+     * MUTATION: put the triangle in a panel with Power OFF again (the old `installNotAnsweringMark`), leave it out
+     * of the holder `installNotAnsweringMark` puts around the function tabs, or drop its `setHonorsVisibility` calls, and
+     * this fails.
      */
     @Test
     public void testTheTriangleStandsInTheLowerRightPastTheFunctionTabs() throws Exception
@@ -395,6 +415,7 @@ public class testTheWindowShowsTheConnection
         org.traincontrol.marklin.MarklinLocomotive two = model.newMFXLocomotive("TriangleTwo", 4002);
 
         java.awt.Rectangle[] first = new java.awt.Rectangle[1];
+        String[] firstTop = new String[1];
 
         try
         {
@@ -448,6 +469,12 @@ public class testTheWindowShowsTheConnection
                     assertTrue(at.x > panel.getWidth() / 2, what + ": the triangle is not on the right: " + at);
                     if (first[0] == null) first[0] = at;
 
+                    JLabel icon = WindowField.of(ui, "locIcon");
+
+                    // The picture's label is empty with no locomotive: it draws nothing, and its tools need a locomotive
+                    assertTrue(loc != null || (icon.getIcon() == null && icon.getText().isEmpty() && !icon.isOpaque()),
+                        what + ": the picture's label draws something");
+                    assertEquals(top(), loc == null ? firstTop[0] : (firstTop[0] = top()), what + ": a part above moved");
                     assertEquals(at, first[0], what + ": the triangle is not where it is with a locomotive");
                     assertEquals(at.y + at.height / 2.0, strip.y + strip.height / 2.0, 1.0, what + ": not centered on the strip");
                     return null;

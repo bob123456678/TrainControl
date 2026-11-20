@@ -5851,23 +5851,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return FunctionTabs.getMaximumSize();
             }
 
-            // With no locomotive the rows above the tabs are hidden and take no room: stand where they would put the tabs (the 49 is the slider's height in the generated layout)
-            @Override
-            public void setBounds(int x, int y, int width, int height)
-            {
-                if (!FunctionTabs.isVisible())
-                {
-                    javax.swing.LayoutStyle style = javax.swing.LayoutStyle.getInstance();
-                    y += style.getPreferredGap(ActiveLocLabel, Backward, javax.swing.LayoutStyle.ComponentPlacement.RELATED,
-                        SwingConstants.SOUTH, LocFunctionsPanel) + Math.max(Backward.getPreferredSize().height,
-                        Forward.getPreferredSize().height) + style.getPreferredGap(Backward, SpeedSlider,
-                        javax.swing.LayoutStyle.ComponentPlacement.RELATED, SwingConstants.SOUTH, LocFunctionsPanel)
-                        + 49;
-                }
-
-                super.setBounds(x, y, width, height);
-            }
-
             @Override
             public void doLayout()
             {
@@ -5883,7 +5866,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         };
 
         holder.setOpaque(false);
-        ((GroupLayout) LocFunctionsPanel.getLayout()).replace(FunctionTabs, holder);
+        GroupLayout layout = (GroupLayout) LocFunctionsPanel.getLayout();
+
+        layout.replace(FunctionTabs, holder);
+
+        // The rows hidden with no locomotive keep their room, so the tabs and the triangle stay where they are with one
+        for (Component row : new Component[] {Backward, Forward, SpeedSlider}) layout.setHonorsVisibility(row, false);
+
         holder.add(stationNotAnswering);
         holder.add(FunctionTabs);
 
