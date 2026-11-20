@@ -218,7 +218,8 @@ public final class CS2File
     /**
      * Whether a folder opens as a layout, read as the sync reads it: its index, and a page that reads.  A door asks
      * before it switches, as a folder whose every page fails sends the sync back to the station's layout; one unreadable
-     * page costs that page only (OB-408).
+     * page costs that page only (OB-408).  An index that names no page does not open: no layout of the program's own
+     * has none, as the last page cannot be deleted.
      */
     public static boolean opensAsALayout(File folder)
     {
@@ -230,7 +231,8 @@ public final class CS2File
 
         try
         {
-            return !reader.readNoPage(reader.parseLayout(reader.layoutAccessories()));
+            List<LayoutDiagram> parsed = reader.parseLayout(reader.layoutAccessories());
+            return !parsed.isEmpty() && !reader.readNoPage(parsed);
         }
         catch (Exception unreadable)
         {

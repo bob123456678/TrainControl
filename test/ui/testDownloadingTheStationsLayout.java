@@ -1,6 +1,7 @@
 package ui;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.SwingUtilities;
 import javax.swing.event.MenuListener;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterMethod;
@@ -46,6 +48,9 @@ public class testDownloadingTheStationsLayout
     /** How many page requests from now get a page with a square no parser can place, so the copy will not open. */
     private final java.util.concurrent.atomic.AtomicInteger unreadablePages = new java.util.concurrent.atomic.AtomicInteger();
 
+    /** While set, the page index the station serves in place of its own. */
+    private volatile String servedIndex;
+
     @BeforeMethod
     public void openOnTheStation() throws Exception
     {
@@ -60,6 +65,9 @@ public class testDownloadingTheStationsLayout
         rig = new StationRig(root, (path, n) ->
         {
             CountDownLatch held = pagesHeld;
+            String index = servedIndex;
+
+            if (index != null && "/config/gleisbild.cs2".equals(path)) return index.getBytes(StandardCharsets.UTF_8);
 
             if (held != null && path.startsWith("/config/gleisbilder/"))
             {
@@ -467,6 +475,58 @@ public class testDownloadingTheStationsLayout
         finally
         {
             unreadablePages.set(0);
+        }
+    }
+
+    /**
+     * Download, and Open Layout, from the station's layout with a page window open, of a page index that is empty and
+     * of one that is text naming no page: each says the copy or folder will not open and changes nothing
+     * (`testRecentLayouts.everythingAbout`).
+     *
+     * MUTATION: in `CS2File.opensAsALayout`, ask `readNoPage` alone again, and the window leaves the station's layout.
+     */
+    @Test(timeOut = 240000)
+    public void testAnIndexNamingNoPageIsRefusedAndNothingChanges() throws Exception
+    {
+        final String wontOpen = I18n.t("layout.ui.errorInvalidPathOrCorruptData");
+
+        support.AskingWindows.openThePage(ui);
+
+        for (String index : testRecentLayouts.NO_PAGE_INDEXES)
+        {
+            final File into = aFolder("index" + index.length());
+            final String was = testRecentLayouts.everythingAbout(ui);
+
+            servedIndex = index;
+
+            try (Answering answering = press(into, message -> Answering.pressAt(0)))
+            {
+                settledOn(answering, wontOpen, completeFor(into));
+
+                assertTrue(answering.asked().contains(wontOpen) && !answering.asked().contains(completeFor(into)),
+                    "a download of an index of '" + index + "' was not said to fail: " + answering.asked());
+            }
+            finally
+            {
+                servedIndex = null;
+            }
+
+            assertEquals(testRecentLayouts.everythingAbout(ui), was, "a download of an index of '" + index
+                + "' changed it");
+
+            File folder = testRecentLayouts.withTheIndex(index);
+
+            try
+            {
+                assertTrue(testRecentLayouts.openLayout(ui, folder).contains(wontOpen), "Open Layout did not refuse"
+                    + " an index of '" + index + "'");
+                assertEquals(testRecentLayouts.everythingAbout(ui), was, "Open Layout on an index of '" + index
+                    + "' changed it");
+            }
+            finally
+            {
+                Trees.delete(folder);
+            }
         }
     }
 }
