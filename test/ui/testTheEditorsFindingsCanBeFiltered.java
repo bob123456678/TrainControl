@@ -37,6 +37,7 @@ public class testTheEditorsFindingsCanBeFiltered
     private static TrainControlUI ui;
     private static AutonomySession session;
     private static LayoutDiagram page;
+    private static support.LayoutSandbox sandbox;
 
     private static final String PAGE = "1 - Main";
     private static final String OTHER_PAGE = "2 - Bottom";
@@ -46,7 +47,7 @@ public class testTheEditorsFindingsCanBeFiltered
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the autonomy editor needs a display");
 
-        held.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
+        sandbox = held.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
         model = support.TestStation.simulatedInDebug();
 
@@ -528,10 +529,11 @@ public class testTheEditorsFindingsCanBeFiltered
     }
 
     /**
-     * Control+Enter typed into the filter saves the editor once (FR-200) and closes it; plain Enter only gives the
-     * keyboard back.
+     * Control+Enter typed into the filter saves the editor once (FR-200) and closes it, writing the setup files;
+     * plain Enter only gives the keyboard back.
      *
-     * MUTATION: drop the hand-up of Control+Enter in the filter's Enter branch; the editor stays open.
+     * MUTATION: drop the hand-up of Control+Enter in the filter's Enter branch; the editor stays open.  Or let the
+     * hand-up close the editor without `autonomyPanel.save()`, and no setup file is written.
      */
     @Test
     public void testControlEnterInTheBoxSaves() throws Exception
@@ -554,6 +556,13 @@ public class testTheEditorsFindingsCanBeFiltered
             assertTrue(editor.isDisplayable(), "plain Enter must not save");
             assertFalse(box.isFocusable(), "plain Enter gives the keyboard back");
 
+            // Every setup file back-dated, so that only a Save can make one newer
+            java.io.File[] files = new java.io.File(sandbox.getFolder(), "config/autonomy").listFiles();
+
+            assertNotNull(files, "precondition: no autonomy folder");
+
+            for (java.io.File f : files) assertTrue(f.setLastModified(1000), "precondition: " + f + " cannot be back-dated");
+
             SwingUtilities.invokeAndWait(() -> box.dispatchEvent(new java.awt.event.MouseEvent(box,
                 java.awt.event.MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), 0, 2, 2, 1, false)));
             SwingUtilities.invokeAndWait(() -> box.dispatchEvent(new java.awt.event.KeyEvent(box,
@@ -563,6 +572,8 @@ public class testTheEditorsFindingsCanBeFiltered
 
             assertFalse(editor.isDisplayable(), "Control+Enter in the box saves and closes the editor");
             assertFalse(box.isFocusable(), "Control+Enter gives the keyboard back");
+            assertTrue(java.util.Arrays.stream(files).anyMatch(f -> f.lastModified() > 1000),
+                "Control+Enter closed the editor without writing the setup");
         }
         finally
         {
