@@ -527,6 +527,51 @@ public class testTheEditorsFindingsCanBeFiltered
         }
     }
 
+    /**
+     * Control+Enter typed into the filter saves the editor once (FR-200) and closes it; plain Enter only gives the
+     * keyboard back.
+     *
+     * MUTATION: drop the hand-up of Control+Enter in the filter's Enter branch; the editor stays open.
+     */
+    @Test
+    public void testControlEnterInTheBoxSaves() throws Exception
+    {
+        LayoutEditor editor = anEditor();
+
+        try
+        {
+            final javax.swing.JTextField box = box(editor);
+
+            SwingUtilities.invokeAndWait(() -> box.dispatchEvent(new java.awt.event.MouseEvent(box,
+                java.awt.event.MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), 0, 2, 2, 1, false)));
+            type(editor, "ab");
+
+            SwingUtilities.invokeAndWait(() -> box.dispatchEvent(new java.awt.event.KeyEvent(box,
+                java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ENTER,
+                (char) 10)));
+            Components.settle();
+
+            assertTrue(editor.isDisplayable(), "plain Enter must not save");
+            assertFalse(box.isFocusable(), "plain Enter gives the keyboard back");
+
+            SwingUtilities.invokeAndWait(() -> box.dispatchEvent(new java.awt.event.MouseEvent(box,
+                java.awt.event.MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), 0, 2, 2, 1, false)));
+            SwingUtilities.invokeAndWait(() -> box.dispatchEvent(new java.awt.event.KeyEvent(box,
+                java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(),
+                java.awt.event.InputEvent.CTRL_MASK, java.awt.event.KeyEvent.VK_ENTER, (char) 10)));
+            Components.settle();
+
+            assertFalse(editor.isDisplayable(), "Control+Enter in the box saves and closes the editor");
+            assertFalse(box.isFocusable(), "Control+Enter gives the keyboard back");
+        }
+        finally
+        {
+            close(editor);
+        }
+    }
+
+    
+
     // ---- helpers
 
     private static LayoutEditor anEditor() throws Exception
