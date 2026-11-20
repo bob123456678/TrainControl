@@ -3269,26 +3269,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /** The window icon's sizes, in pixels: the title bar and taskbar at each Windows scale pick the nearest. */
     static final int[] WINDOW_ICON_SIZES = {16, 20, 24, 32, 40, 48, 64, 256};
-
     private static List<Image> windowIcons;
 
     /** The window icon at each size, area-averaged once from the 256-pixel art: a title bar shrinks it jagged (V21S-1). */
     static synchronized List<Image> windowIcons(URL icon)
     {
-        if (windowIcons == null)
+        if (windowIcons != null) return windowIcons;
+        Image art = new ImageIcon(icon).getImage();
+        windowIcons = new ArrayList<>();
+        for (int size : WINDOW_ICON_SIZES)
         {
-            Image art = new ImageIcon(icon).getImage();
-            List<Image> made = new ArrayList<>();
-
-            for (int size : WINDOW_ICON_SIZES)
-            {
-                made.add(size == art.getWidth(null) ? art : ImageUtil.toTransparentBufferedImage(
-                    new ImageIcon(art.getScaledInstance(size, size, Image.SCALE_SMOOTH)).getImage()));
-            }
-
-            windowIcons = made;
+            windowIcons.add(size == art.getWidth(null) ? art : ImageUtil.toTransparentBufferedImage(
+                new ImageIcon(art.getScaledInstance(size, size, Image.SCALE_SMOOTH)).getImage()));
         }
-
         return windowIcons;
     }
 
@@ -3299,13 +3292,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public static void applyWindowIcon(Window window)
     {
         if (window == null) return;
-
         try
         {
             URL icon = TrainControlUI.class.getResource("resources/locicon.png");
-
             if (icon == null) return;
-
             if (System.getProperty("java.specification.version").indexOf('.') < 0)
             {
                 window.setIconImages(windowIcons(icon));

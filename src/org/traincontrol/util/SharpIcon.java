@@ -84,7 +84,6 @@ public class SharpIcon extends ImageIcon implements com.formdev.flatlaf.FlatLaf.
     public javax.swing.Icon getDisabledIcon()
     {
         com.formdev.flatlaf.FlatLaf laf = (com.formdev.flatlaf.FlatLaf) javax.swing.UIManager.getLookAndFeel();
-
         return map(this, picture -> ((ImageIcon) laf.getDisabledIcon(null, new ImageIcon(picture))).getImage());
     }
 
@@ -121,7 +120,6 @@ public class SharpIcon extends ImageIcon implements com.formdev.flatlaf.FlatLaf.
             super.paintIcon(c, g, x, y);
             return;
         }
-
         Graphics2D screen = (Graphics2D) g.create();
         try
         {
