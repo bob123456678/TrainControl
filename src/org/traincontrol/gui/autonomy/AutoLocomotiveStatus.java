@@ -181,10 +181,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         return this.locomotive;
     }
 
-    /**
-     * Shows this card's train on a running layout as a card built now would (OB-460): its name, its route list from
-     * the top, and the deferred build's state until the caller's search answers through updateState.
-     */
+    /** Shows the train on this running layout as a new card would (OB-460); the caller's search fills the routes. */
     public void showOn(Layout running)
     {
         this.layout = running;
