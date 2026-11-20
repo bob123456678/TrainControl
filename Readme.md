@@ -479,7 +479,7 @@ Tab icons provided by Freepik.
             - Ctrl+G starts autonomous operation, Ctrl+Q gracefully stops it, and Ctrl+H sends every locomotive home after asking first.  When Ctrl+G or Ctrl+H cannot run because the track power is off or the setup is not ready, a message says why.  In the autonomy editor, Ctrl+V places the selected locomotive on a station and Delete takes its train off.  Ctrl+Enter saves in the editors, `Locomotive Settings` and the route editor, and is `Done Editing` in `Station Settings`.
             - On Java 8, the pointer over links and buttons is a smooth, bold hand.
             - To scroll the Log tab sideways, hold Shift and turn the mouse wheel.
-            - In simulation, a red triangle stands left of `Power OFF` from the start, as a reminder that TrainControl is not connected to a Central Station.
+            - In simulation, a red triangle stands in the lower right of the main window, past the function tabs, from the start, as a reminder that TrainControl is not connected to a Central Station.
             - On Java 21, with Windows display scaling above 100%, the track diagram, the tab icons, locomotive pictures and function icons are drawn sharp at the larger size instead of stretched; the Large track diagram uses new, finer square pictures.
     - Bug Fixes
         - Central Station Protocol
