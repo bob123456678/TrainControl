@@ -5,3 +5,12 @@ release	review	prefix	A	B	C	note
 3.1.0	concurrency	THR1	0	0	5	two passes
 3.1.0	upgrade path	FRU1	0	0	3	
 3.1.0	translation wording	TR	0	0	11	6 wording fixes, 5 widths
+3.1.1	cross-feature (Opus)	XFO2	0	0	0	paths 3 to 6 not finished; completed by XFC1
+3.1.1	cross-feature completion (Opus)	XFC1	0	0	3	C2 and C3 predate 3.1.0 (cards D196, D197)
+3.1.1	cross-feature (Fable)	XFF2	0	1	2	B1 the rest of XFF1-B2; escape row
+3.1.1	data safety	WFL2	0	0	1	
+3.1.1	concurrency	THR2	0	0	1	
+3.1.1	translation wording	TR2	0	0	19	17 table rows plus two decisions (D195)
+3.1.1	fix review (Opus)	FXO1-3	0	2	6	converged in round 3
+3.1.1	fix review (Fable)	FXF1-3	0	3	15	converged in round 3
+3.1.1	upgrade path	FRU2	0	0	3	rerun after the first stalled; C2 the release checklist (pre-release flag, changelog date)
