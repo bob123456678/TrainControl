@@ -77,7 +77,7 @@ public class SharpIcon extends ImageIcon implements com.formdev.flatlaf.FlatLaf.
     }
 
     /**
-     * The disabled picture, made as FlatLaf makes it from `getImage`, and from each sharp copy too (V21S-5): FlatLaf
+     * The disabled picture, made as FlatLaf makes it from `getImage`, and from each sharp copy too: FlatLaf
      * would otherwise gray the picture at scale 1 and have it stretched.
      */
     @Override

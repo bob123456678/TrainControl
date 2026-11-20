@@ -367,7 +367,7 @@ public class testPicturesAreSharpOnAScaledScreen
 
     /**
      * For a scaled screen a big locomotive picture's original is kept as a copy of its own no wider and no taller than
-     * 888 pixels, never as a picture that still holds the full-size one; a tall, narrow one too (F311J-C3).
+     * 888 pixels, never as a picture that still holds the full-size one; a tall, narrow one too.
      *
      * MUTATION: in `TrainControlUI.keptOriginal`, keep `img.getScaledInstance(...)` itself; or bound the width only.
      */
