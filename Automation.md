@@ -165,7 +165,7 @@ The editor remembers the visibility settings between openings.
 
 With no tool armed, a left-click on track changes which way trains may run on it, and the message strip says what it is now.
 
-- **Plain track**: each click changes the whole run of plain track between two switches or sensors, in this order: both ways, one way, the other way, closed, and back to both ways.
+- **Plain track**: each click changes the whole run of plain track between two switches or sensors, in this order: both ways, one way, the other way, closed, and back to both ways. When the new setting lets trains go a way the run did not, it carries on along the line: past sensors that are not stations and through switches where the line joins, up to the next station, a switch where the line splits, or track that already lets trains go that way. If that would change track past the run, every square that would change is highlighted and TrainControl asks first; `No` changes nothing. A setting that only takes a way away changes the run alone.
 - **A switch, crossing or double curve**: each click steps to the next combination of open arms, the common ones first: all open, each route on its own, closed, then the rest. You can also tick the arms one by one from the right-click menu.
 - **An s88 square** (a sensor, whether a station or not): a click opens its `Station Settings`, so a double-click on a station opens them too, even while autonomy runs (read only then). Its arrows are set under `May depart` there.
 - **A page link or tunnel** has no direction of its own: set the track leading up to it.
@@ -290,7 +290,7 @@ Putting a train here asks which way it came in, and where its tail lies, as the 
 
 ### On track, switches and signals
 
-- **`Trains May Depart...`** on plain track and signals: `Both Ways`, `One Way, Toward` *a compass point*, or `Closed - No Trains`. On a switch or crossing, tick each side trains may leave by (`The N Side` and so on), or open or close `Every Branch of This Switch` at once. On a switch, three-way switch or double slip, the arrows decide everything: a train may run through it exactly where the side it leaves by is green. To keep trains out of a branch altogether, close the track beyond it. A crossing still sets each road on its own (`Branch E to W`...).
+- **`Trains May Depart...`** on plain track and signals: `Both Ways`, `One Way, Toward` *a compass point*, or `Closed - No Trains`. On a switch or crossing, tick each side trains may leave by (`The N Side` and so on), or open or close `Every Branch of This Switch` at once. On a switch, three-way switch or double slip, the arrows decide everything: a train may run through it exactly where the side it leaves by is green. To keep trains out of a branch altogether, close the track beyond it. A crossing still sets each road on its own (`Branch E to W`...). On plain track the setting carries on along the line as a click does (see [Which way trains may run](#which-way-trains-may-run)).
 - **`Segment Length...`**, and on plain track and crossings the caption item, `Show a Station Name Here...`.
 
 Names cannot be put on switches or signals.

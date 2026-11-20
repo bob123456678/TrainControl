@@ -5144,7 +5144,8 @@ public class AutonomyEditorPanel extends JPanel
 
         Direction next = after(session.directionAsDrawn(target, only.getKey()));
 
-        int changed = session.setRunDirection(target, only.getKey(), next);
+        if (!agreedAlongTheLine(target, only.getKey(), next)) return;
+        int changed = session.setRunDirection(target, only.getKey(), next, true);
 
         // The tile changed can be the head of a long run, so it is flashed too.
         if (!target.equals(tile) && onReveal != null) onReveal.accept(target);
@@ -6111,7 +6112,8 @@ public class AutonomyEditorPanel extends JPanel
     void setRunDirection(TileKey tile, RouteId routeId, Direction direction)
     {
         // Set on the run, not the tile: a run has one direction.
-        int set = session.setRunDirection(tile, routeId, direction);
+        if (!agreedAlongTheLine(tile, routeId, direction)) return;
+        int set = session.setRunDirection(tile, routeId, direction, true);
 
         if (set == 0) say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
 
@@ -6119,6 +6121,54 @@ public class AutonomyEditorPanel extends JPanel
 
         // Here, beside the write, through the light door (MT-334).
         annotationsChanged();
+    }
+
+    /**
+     * Whether a run's direction may be set carried on along the line (MT-1068): where that changes squares past the
+     * run, a notice asks first with every square to change lit, and No changes nothing.
+     */
+    private boolean agreedAlongTheLine(TileKey tile, RouteId routeId, Direction direction)
+    {
+        Set<TileKey> further = session.alongTheLine(tile, routeId, direction).keySet();
+        if (!further.isEmpty())
+        {
+            Set<TileKey> lit = new LinkedHashSet<>(session.getGraph().runOf(tile).getTiles());
+            lit.addAll(further);
+            light(lit, true);
+            try
+            {
+                String asked = I18n.f("autosetup.ui.alongTheLine" + I18n.countForm(further.size()), further.size());
+                if (JOptionPane.showOptionDialog(owner(), asked, I18n.t("autosetup.ui.titleAlongTheLine"),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE, null, TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[0])
+                    != JOptionPane.YES_OPTION) return false;
+            }
+            finally
+            {
+                light(lit, false);
+            }
+        }
+        return true;
+    }
+
+    /** Lights squares where this surface draws, or puts them out: outlined in the editor, yellow on the track diagram. */
+    private void light(Set<TileKey> squares, boolean on)
+    {
+        if (menuOnly && parentWindow() != null)
+        {
+            for (TileKey square : squares)
+            {
+                for (org.traincontrol.gui.LayoutLabel label : parentWindow().getDiagramTileRegistry().labelsFor(square))
+                {
+                    if (on) label.flashHighlight(org.traincontrol.util.ImageUtil.HIGHLIGHT, Integer.MAX_VALUE);
+                    else label.endFlash();
+                }
+            }
+            return;
+        }
+        noticeOutline.clear();
+        if (on) noticeOutline.addAll(squares);
+        redrawTheMarks();
     }
 
     /** What this sensor has been designated as, or null when it is not a station. */
