@@ -65,8 +65,8 @@ final class MultiUnitPanel extends JPanel
         // Sort allLocomotives to prioritize currentLinkedLocos and then alphabetically by name
         Collections.sort(allLocomotives, (a, b) ->
         {
-            boolean aLinked = currentLinkedLocos.containsKey(a.getName());
-            boolean bLinked = currentLinkedLocos.containsKey(b.getName());
+            boolean aLinked = a.memberKeyIn(currentLinkedLocos) != null;
+            boolean bLinked = b.memberKeyIn(currentLinkedLocos) != null;
 
             if (aLinked && !bLinked) return -1;
             else if (!aLinked && bLinked) return 1;
@@ -202,16 +202,18 @@ final class MultiUnitPanel extends JPanel
     {
         JPanel rowPanel = new JPanel(new GridBagLayout());
 
+        String key = loco.memberKeyIn(currentLinkedLocos);
+
         rowPanel.setOpaque(false);
 
         JCheckBox checkBox = new JCheckBox(loco.getName().length() > TrainControlUI.MAX_MU_SELECTOR_LOC_NAME_LENGTH
             ? loco.getName().substring(0, TrainControlUI.MAX_MU_SELECTOR_LOC_NAME_LENGTH) + "..."
-            : loco.getName(), currentLinkedLocos.containsKey(loco.getName()));
+            : loco.getName(), key != null);
 
         checkBox.setToolTipText(loco.getName());
         checkBox.setFocusable(false);
 
-        double multiplierValue = currentLinkedLocos.getOrDefault(loco.getName(), 1.0);
+        double multiplierValue = key == null ? 1.0 : currentLinkedLocos.get(key);
         boolean isReversed = multiplierValue < 0;
 
         // Rounded: 0.57 * 100 is 56.99..., which a cast would show, and the next Save write, as 56

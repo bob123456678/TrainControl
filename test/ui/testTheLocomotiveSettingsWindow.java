@@ -2772,4 +2772,53 @@ public class testTheLocomotiveSettingsWindow
             assertEquals(loc.getLinkedLocomotiveNames().get(OTHER), set, 1e-9, "Save changed the multiplier set at " + set);
         }
     }
+
+    /**
+     * A station multi-unit's read-only list shows a member whose rename was answered No as ticked, at the station's
+     * percent and reversed as the station has it.
+     *
+     * MUTATION: in `MultiUnitPanel.buildRow`, look the member up in the station's names by `loco.getName()` again.
+     */
+    @Test(timeOut = 120000)
+    public void testAStationMultiUnitShowsAMemberWhoseRenameWasAnsweredNo() throws Exception
+    {
+        final String head = "LS station head";
+        final String station = "LS station name";
+
+        model.newMFXLocomotive(head, 3410);
+        model.changeLocAddress(head, 3410, MarklinLocomotive.decoderType.MULTI_UNIT);
+
+        try
+        {
+            ((MarklinLocomotive) model.getLocByName(head)).setModelMultiUnitLocomotives(
+                java.util.Collections.singletonMap(station, -0.5));
+            other.setDeclinedStationName(station);
+
+            assertTrue(SettingsWindow.open(ui, model.getLocByName(head), LocomotiveSettingsFrame.Tab.MULTI_UNIT, null),
+                "the window did not open");
+
+            List<Boolean> shown = Components.onTheEventThread(() ->
+            {
+                javax.swing.JCheckBox member = Components.find(SettingsWindow.showing().getContentPane(),
+                    javax.swing.JCheckBox.class, b -> OTHER.equals(b.getToolTipText()));
+
+                List<javax.swing.JCheckBox> boxes = Components.all(member.getParent(), javax.swing.JCheckBox.class,
+                    b -> true);
+
+                return Arrays.asList(member.isSelected(), boxes.get(1).isSelected(),
+                    Components.find(member.getParent(), javax.swing.JSlider.class, s -> true).getValue() == 50);
+            });
+
+            assertEquals(shown, Arrays.asList(true, true, true), "the member opened ticked, reversed and at 50%: "
+                + shown);
+        }
+        finally
+        {
+            other.setDeclinedStationName(null);
+
+            fixture.quiet();
+
+            model.deleteLoc(head);
+        }
+    }
 }

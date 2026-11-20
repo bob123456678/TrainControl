@@ -1030,4 +1030,74 @@ public class testLocomotiveCsvImport
         assertEquals(back.getHistoricalOperatingTime().values().stream().mapToLong(Long::longValue).sum(), 7200000L);
         assertTrue(back.getLocNotes().contains("LNER"));
     }
+
+    /** A multi-unit of the station whose member kept its own name here: the member is "named" by the station's name. */
+    private static MarklinLocomotive[] aHeadWhoseMemberKeptItsName(String tag, int address) throws Exception
+    {
+        String station = tag + " station name";
+
+        MarklinLocomotive head = make(tag + " head", decoderType.MM2, address);
+        MarklinLocomotive member = make(tag + " member", decoderType.MM2, address + 1);
+        MarklinLocomotive other = make(tag + " other", decoderType.MM2, address + 2);
+
+        model.changeLocAddress(head.getName(), address, decoderType.MULTI_UNIT);
+
+        Map<String, Double> names = new HashMap<>();
+
+        names.put(station, 0.5);
+        names.put(other.getName(), 1.0);
+
+        head.setModelMultiUnitLocomotives(names);
+        member.setDeclinedStationName(station);
+
+        return new MarklinLocomotive[] { head, member, other };
+    }
+
+    /**
+     * A member of a station multi-unit whose rename was answered No still counts as moving with its head, and the
+     * import keeps its address.
+     *
+     * MUTATION: in `LocomotiveSettings.hasSpeed`, look the member up in the head's names by `l.getName()` again.
+     */
+    @Test(timeOut = 60000)
+    public void testAMemberWhoseRenameWasAnsweredNoIsMovingWithItsStationHead() throws Exception
+    {
+        MarklinLocomotive[] rig = aHeadWhoseMemberKeptItsName("FXO1", 60);
+        MarklinLocomotive head = rig[0];
+        MarklinLocomotive member = rig[1];
+
+        try
+        {
+            head.setSpeed(1);
+            head.waitForSpeedAtOrAbove(1);
+
+            assertTrue(org.traincontrol.gui.LocomotiveSettings.hasSpeed(model, member),
+                "Locomotive Settings does not see the member as moving with its head");
+        }
+        finally
+        {
+            head.setSpeed(0);
+            head.waitForSpeedBelow(1);
+        }
+    }
+
+    /**
+     * The same member is a member to the import: given the address of the head's other member, it keeps its own.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.membersOf`, keep the station's names as they are instead of the names here.
+     */
+    @Test
+    public void testAMemberWhoseRenameWasAnsweredNoKeepsItsAddressInTheImport() throws Exception
+    {
+        MarklinLocomotive[] rig = aHeadWhoseMemberKeptItsName("FXO2", 70);
+        MarklinLocomotive member = rig[1];
+        MarklinLocomotive other = rig[2];
+
+        MarklinLocomotiveCsv.Result result = importText(OLD + member.getName() + ",,MM2," + other.getAddress()
+            + ",0,0:00:00,0,0,,\n");
+
+        assertEquals(result.kept.size(), 1, "the address change that breaks a consist is not counted");
+        assertEquals(result.kept.get(0).why, MarklinLocomotiveCsv.Keep.CONSIST);
+        assertEquals(member.getAddress(), 71, "a member was given the address of another of its station's members");
+    }
 }
