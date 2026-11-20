@@ -271,8 +271,8 @@ public final class MarklinLocomotiveCsv
         {
             for (String s : head.getModelMultiUnitLocomotiveNames().keySet())
             {
-                members.add(model.getLocomotives().stream().filter(l -> l.isMemberNamed(s)).map(Locomotive::getName)
-                    .findFirst().orElse(s));
+                Locomotive member = Locomotive.stationMember(s, model.getLocomotives());
+                members.add(member == null ? s : member.getName());
             }
         }
 

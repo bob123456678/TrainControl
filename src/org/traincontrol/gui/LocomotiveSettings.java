@@ -54,7 +54,7 @@ public final class LocomotiveSettings
             java.util.Map<String, Double> held = other.getDecoderType() == Locomotive.decoderType.MULTI_UNIT
                 ? other.getModelMultiUnitLocomotiveNames() : null;
 
-            if (held != null && l.memberKeyIn(held) != null) return true;
+            if (held != null && l.stationMemberKeyIn(held, model.getLocomotives()) != null) return true;
         }
 
         return false;

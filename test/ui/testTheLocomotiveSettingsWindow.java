@@ -2821,4 +2821,86 @@ public class testTheLocomotiveSettingsWindow
             model.deleteLoc(head);
         }
     }
+
+    /**
+     * A head's own links are keyed by names here: a locomotive that declined a member's name at the station opens
+     * unticked, and a Save of another change on the tab does not link it.
+     *
+     * MUTATION: in `MultiUnitPanel`'s `keyOf`, let a head's own link match a name the row's locomotive kept its own
+     * over (`keepsItsNameOver`) as well as its name.
+     */
+    @Test(timeOut = 120000)
+    public void testAnEditableListDoesNotTickALocomotiveThatDeclinedAMembersName() throws Exception
+    {
+        assertEquals(loc.setLinkedLocomotives(java.util.Collections.singletonMap(OTHER, 0.5)), 1,
+            "precondition: the consist was not made");
+        model.newMFXLocomotive("LS elsewhere", 3404);
+
+        try
+        {
+            third.setDeclinedStationName(OTHER);
+            open(3);
+
+            boolean ticked = Components.onTheEventThread(() -> Components.find(SettingsWindow.showing().getContentPane(),
+                javax.swing.JCheckBox.class, b -> THIRD.equals(b.getToolTipText())).isSelected());
+
+            SettingsWindow.tickMember("LS elsewhere");
+            SettingsWindow.press(SettingsWindow.save());
+
+            assertTrue(Components.waitFor(() -> loc.getLinkedLocomotiveNames().containsKey("LS elsewhere"), WAIT),
+                "precondition: Save did not make LS elsewhere a member");
+            assertEquals(Arrays.asList(ticked, loc.getLinkedLocomotiveNames().containsKey(THIRD)), Arrays.asList(false, false),
+                "a locomotive that declined a member's name [opened ticked, was linked by Save]");
+        }
+        finally
+        {
+            third.setDeclinedStationName(null);
+        }
+    }
+
+    /**
+     * A station multi-unit's read-only list shows the locomotive that holds a member's name, not one that declined it,
+     * in either database order: the two trains swap roles.
+     *
+     * MUTATION: in `Locomotive.stationMember`, take the first locomotive in the list that holds or declined the name.
+     */
+    @Test(timeOut = 120000)
+    public void testAStationMultiUnitShowsTheHolderOfANameOverItsDecliner() throws Exception
+    {
+        final String head = "LS station head";
+
+        model.newMFXLocomotive(head, 3410);
+        model.changeLocAddress(head, 3410, MarklinLocomotive.decoderType.MULTI_UNIT);
+
+        try
+        {
+            for (MarklinLocomotive[] roles : new MarklinLocomotive[][] { { other, third }, { third, other } })
+            {
+                ((MarklinLocomotive) model.getLocByName(head)).setModelMultiUnitLocomotives(
+                    java.util.Collections.singletonMap(roles[0].getName(), 0.5));
+                roles[1].setDeclinedStationName(roles[0].getName());
+
+                assertTrue(SettingsWindow.open(ui, model.getLocByName(head), LocomotiveSettingsFrame.Tab.MULTI_UNIT, null),
+                    "the window did not open");
+
+                List<String> rows = Components.onTheEventThread(() -> Components.all(
+                    SettingsWindow.showing().getContentPane(), javax.swing.JCheckBox.class,
+                    b -> OTHER.equals(b.getToolTipText()) || THIRD.equals(b.getToolTipText())).stream()
+                    .map(b -> b.getToolTipText() + (b.isSelected() ? " ticked" : "")).collect(java.util.stream.Collectors.toList()));
+
+                assertEquals(rows, Arrays.asList(roles[0].getName() + " ticked"), roles[1].getName() + " declined "
+                    + roles[0].getName() + "'s name");
+
+                roles[1].setDeclinedStationName(null);
+                fixture.quiet();
+            }
+        }
+        finally
+        {
+            other.setDeclinedStationName(null);
+            third.setDeclinedStationName(null);
+            fixture.quiet();
+            model.deleteLoc(head);
+        }
+    }
 }

@@ -1373,7 +1373,8 @@ public class MarklinLocomotive extends Locomotive
         {
             for (String s : this.centralStationMultiUnitLocomotiveNames.keySet())
             {
-                this.network.getLocomotives().stream().filter(l -> l.isMemberNamed(s)).findFirst().ifPresent(output::add);
+                Locomotive member = Locomotive.stationMember(s, this.network.getLocomotives());
+                if (member != null) output.add(member);
             }
         }
         
