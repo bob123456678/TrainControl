@@ -5816,40 +5816,65 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         model.sendPing(false);
     }
 
-    /** Left of Power OFF: a yellow triangle while the station is not answering (FR-192), red in simulation (FR-228) */
+    /** Lower right, past the function tabs: a yellow triangle while the station is not answering (FR-192), red in simulation (FR-228) */
     private final JLabel stationNotAnswering = new JLabel();
 
     /**
-     * Power OFF and its triangle share the place the generated layout gives the button: shown, the triangle takes its
-     * width and gap from the button, so nothing else in the row moves.
+     * The function tabs stand in a panel that also holds the triangle over the empty end of their strip. The panel
+     * stays shown with no locomotive, when the tabs are hidden, so the warning does; it sizes as the tabs do.
      */
     private void installNotAnsweringMark()
     {
-        JPanel shared = new JPanel(new BorderLayout(4, 0))
+        JPanel holder = new JPanel(null)
         {
-            // The row lines up on the button's text
             @Override
-            public int getBaseline(int width, int height)
+            public boolean isOptimizedDrawingEnabled()
             {
-                return PowerOff.getBaseline(width, height);
+                return false;
             }
 
             @Override
-            public Component.BaselineResizeBehavior getBaselineResizeBehavior()
+            public Dimension getPreferredSize()
             {
-                return PowerOff.getBaselineResizeBehavior();
+                return FunctionTabs.getPreferredSize();
+            }
+
+            @Override
+            public Dimension getMinimumSize()
+            {
+                return FunctionTabs.getMinimumSize();
+            }
+
+            @Override
+            public Dimension getMaximumSize()
+            {
+                return FunctionTabs.getMaximumSize();
+            }
+
+            @Override
+            public void doLayout()
+            {
+                FunctionTabs.setBounds(0, 0, getWidth(), getHeight());
+                FunctionTabs.validate();
+
+                Rectangle strip = FunctionTabs.getBoundsAt(FunctionTabs.getTabCount() - 1);
+                Dimension size = stationNotAnswering.getPreferredSize();
+
+                stationNotAnswering.setBounds(Math.max(getWidth() - 4 - size.width, strip.x + strip.width + 4),
+                    strip.y + (strip.height - size.height) / 2, size.width, size.height);
             }
         };
 
-        shared.setOpaque(false);
-        shared.setPreferredSize(PowerOff.getPreferredSize());
-        shared.setMinimumSize(PowerOff.getMinimumSize());
-        shared.setMaximumSize(PowerOff.getMaximumSize());
+        holder.setOpaque(false);
+        GroupLayout layout = (GroupLayout) LocFunctionsPanel.getLayout();
 
-        ((GroupLayout) LocFunctionsPanel.getLayout()).replace(PowerOff, shared);
+        layout.replace(FunctionTabs, holder);
 
-        shared.add(stationNotAnswering, BorderLayout.WEST);
-        shared.add(PowerOff, BorderLayout.CENTER);
+        // The rows hidden with no locomotive keep their room, so the tabs and the triangle stay where they are with one
+        for (Component row : new Component[] {Backward, Forward, SpeedSlider}) layout.setHonorsVisibility(row, false);
+
+        holder.add(stationNotAnswering);
+        holder.add(FunctionTabs);
 
         warnOnStop(false);
     }
@@ -5870,7 +5895,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Updates the latency value, with the protocol in use after it, and the triangle beside Power OFF (`warnOnStop`).
+     * Updates the latency value, with the protocol in use after it, and the not-answering triangle (`warnOnStop`).
      */
     @Override
     public void updateLatency(double latency)
