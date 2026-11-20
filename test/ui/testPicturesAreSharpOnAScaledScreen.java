@@ -532,6 +532,17 @@ public class testPicturesAreSharpOnAScaledScreen
         boolean java8 = System.getProperty("java.specification.version").indexOf('.') >= 0;
         java.util.List<Image> icons = iconsOf(ui);
 
+        // Every window that sets the picture in designer code asks for the list in its own
+        for (String file : new String[] {"gui/TrainControlUI", "gui/LayoutPopupUI", "gui/layouteditor/LayoutEditor",
+            "gui/locomotive/LocomotiveSelector"})
+        {
+            String body = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/org/traincontrol/"
+                + file + ".java")), java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(body.replaceAll("(?s)//GEN-BEGIN:initComponents.*?//GEN-END:initComponents", "")
+                .contains("applyWindowIcon(this)"), file + " never asks for the list");
+        }
+
         if (java8)
         {
             assertEquals(icons.size(), 1, "Java 8 keeps the one picture");
@@ -552,17 +563,6 @@ public class testPicturesAreSharpOnAScaledScreen
 
             assertTrue(differing(onClear(icons.get(i)), smooth) <= sizes[i] * sizes[i] / 20,
                 "the " + sizes[i] + " icon is not smooth-scaled from the art");
-        }
-
-        // Every window that sets the picture in designer code asks for the list in its own
-        for (String file : new String[] {"gui/TrainControlUI", "gui/LayoutPopupUI", "gui/layouteditor/LayoutEditor",
-            "gui/locomotive/LocomotiveSelector"})
-        {
-            String body = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/org/traincontrol/"
-                + file + ".java")), java.nio.charset.StandardCharsets.UTF_8);
-
-            assertTrue(body.replaceAll("(?s)//GEN-BEGIN:initComponents.*?//GEN-END:initComponents", "")
-                .contains("applyWindowIcon(this)"), file + " never asks for the list");
         }
     }
 
