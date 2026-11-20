@@ -201,7 +201,6 @@ final class MultiUnitPanel extends JPanel
     private JPanel buildRow(Locomotive loco, Map<String, Double> currentLinkedLocos)
     {
         JPanel rowPanel = new JPanel(new GridBagLayout());
-
         String key = loco.memberKeyIn(currentLinkedLocos);
 
         rowPanel.setOpaque(false);

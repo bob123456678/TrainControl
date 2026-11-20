@@ -3676,16 +3676,14 @@ public class AutonomyCompanionStore
         return forgetTheNote() == Note.GONE;
     }
 
-    /** What is left of the pre-edit note: nothing, a copy of the setup as it stands, or the old note. */
+    /** What is left of the note: nothing, a copy of the setup, or the old note. */
     public enum Note { GONE, REWRITTEN, STALE }
 
-    /** `forgetBeforeEdit` saying which of its three outcomes it reached. */
+    /** `forgetBeforeEdit`, saying which outcome it reached. */
     public Note forgetTheNote()
     {
         File was = beforeEditFile();
-
         if (!was.isFile() || was.delete()) return Note.GONE;
-
         // The delete failed (not exotic under OneDrive), and a note that cannot be removed will be APPLIED, undoing the
         // saved work.  So it is overwritten with the current setup IN PLACE, not through writeAtomically (its move
         // needs the DELETE access that just failed); a torn write fails unfinishedEdit's shape check and is kept and
@@ -3693,7 +3691,6 @@ public class AutonomyCompanionStore
         try (FileOutputStream out = new FileOutputStream(was))
         {
             out.write(snapshotSetup().toString(2).getBytes(StandardCharsets.UTF_8));
-
             out.flush();
         }
         catch (IOException | RuntimeException norThat)
@@ -3701,7 +3698,6 @@ public class AutonomyCompanionStore
             return Note.STALE;
         }
 
-        // The note is harmless now, but it is still there.
         return Note.REWRITTEN;
     }
 

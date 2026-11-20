@@ -1570,17 +1570,16 @@ public abstract class Locomotive
         return stationName.equals(this.declinedStationName) || stationName.equals(this.heldBackStationName);
     }
 
-    /** Whether this is the member a station multi-unit names `s`: by its name here, or by the name it kept over the station's. */
+    /** Whether this is the member a station multi-unit names `s`: by its name, or by the one it kept over the station's. */
     public boolean isMemberNamed(String s)
     {
         return getName().equals(s) || keepsItsNameOver(s);
     }
 
-    /** The key of `members` (a station multi-unit's names) that names this locomotive, or null when none does. */
+    /** The key of `members` that names this locomotive, or null. */
     public String memberKeyIn(Map<String, Double> members)
     {
         for (String key : members.keySet()) if (isMemberNamed(key)) return key;
-
         return null;
     }
 
