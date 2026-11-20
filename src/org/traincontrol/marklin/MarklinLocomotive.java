@@ -68,7 +68,7 @@ public class MarklinLocomotive extends Locomotive
     private volatile Map <Locomotive, Double> linkedLocomotives = java.util.Collections.emptyMap();     
     private Map <String, Double> preLinkedLocomotives;
     
-    // For informational purposes, this is the list of locomotives in a central station (not a TrainControl) multi unit
+    // The locomotives of a central station multi unit (not a TrainControl one)
     private Map <String, Double> centralStationMultiUnitLocomotiveNames;
     
     /**
@@ -1373,10 +1373,8 @@ public class MarklinLocomotive extends Locomotive
         {
             for (String s : this.centralStationMultiUnitLocomotiveNames.keySet())
             {
-                if (this.network.getLocByName(s) != null)
-                {
-                    output.add(this.network.getLocByName(s));
-                }
+                Locomotive member = Locomotive.stationMember(s, this.network.getLocomotives());
+                if (member != null) output.add(member);
             }
         }
         

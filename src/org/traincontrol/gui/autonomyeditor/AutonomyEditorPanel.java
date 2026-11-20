@@ -1275,6 +1275,13 @@ public class AutonomyEditorPanel extends JPanel
                     {
                         letGo();
                         e.consume();
+                        // Control+Enter is Save (FR-200) and the editor hears it on its frame, so hand it up.
+                        java.awt.Window frame = SwingUtilities.getWindowAncestor(FilterField.this);
+                        if (e.isControlDown() && frame != null)
+                        {
+                            frame.dispatchEvent(new KeyEvent(frame, e.getID(), e.getWhen(), e.getModifiers(),
+                                e.getKeyCode(), e.getKeyChar()));
+                        }
                     }
                 }
             });

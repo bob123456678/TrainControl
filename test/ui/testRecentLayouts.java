@@ -537,6 +537,145 @@ public class testRecentLayouts
         }
     }
 
+    /**
+     * Recent Layouts and Open Layout, from A with a page window open, on a folder whose page index is empty and on one
+     * whose index is text naming no page: each is refused with the message and changes nothing (`everythingAbout`).
+     *
+     * MUTATION: in `CS2File.opensAsALayout`, ask `readNoPage` alone again, and the folder becomes the layout in use.
+     */
+    @Test(timeOut = 240000)
+    public void testAFolderWhoseIndexNamesNoPageIsRefusedAndNothingChanges() throws Exception
+    {
+        String a = sandbox.getFolder().getAbsolutePath();
+
+        try
+        {
+            support.AskingWindows.openThePage(ui);
+
+            for (String index : NO_PAGE_INDEXES)
+            {
+                File folder = withTheIndex(index);
+
+                try
+                {
+                    record(folder.getAbsolutePath(), a);
+
+                    assertEquals(shown(), Collections.singletonList(folder.getAbsolutePath()), "precondition: Recent"
+                        + " Layouts does not list the folder");
+
+                    String was = everythingAbout(ui);
+
+                    assertEquals(click(folder.getAbsolutePath()), REFUSED, "Recent Layouts did not refuse an index of '"
+                        + index + "'");
+                    assertEquals(everythingAbout(ui), was, "Recent Layouts on an index of '" + index + "' changed it");
+
+                    assertEquals(openLayout(ui, folder), REFUSED, "Open Layout did not refuse an index of '" + index + "'");
+                    assertEquals(everythingAbout(ui), was, "Open Layout on an index of '" + index + "' changed it");
+                }
+                finally
+                {
+                    Util.deleteTree(folder, 0);
+                }
+            }
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (java.awt.Window w : java.awt.Window.getWindows()) if (w instanceof LayoutPopupUI) w.dispose();
+            });
+
+            if (!a.equals(new File(String.valueOf(ui.localLayoutPath())).getAbsolutePath()))
+            {
+                record(a);
+                open(a);
+            }
+        }
+    }
+
+    /** An empty page index, and one of text that names no page. */
+    static final String[] NO_PAGE_INDEXES = {"", "not a page index\r\nat all\r\n"};
+
+    static final List<String> REFUSED = Collections.singletonList(I18n.t("layout.ui.errorInvalidPathOrCorruptData"));
+
+    /** A new folder whose `config/gleisbild.cs2` holds `index` and nothing else. */
+    static File withTheIndex(String index) throws java.io.IOException
+    {
+        File folder = Files.createTempDirectory("tc-index-no-page").toFile();
+        File config = new File(folder, "config");
+
+        assertTrue(config.mkdirs(), "cannot make " + config);
+
+        Files.write(new File(config, "gleisbild.cs2").toPath(), index.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        return folder;
+    }
+
+    /** Layouts &gt; Open Layout, through its handler, choosing `folder`; gives back what was asked. */
+    static List<String> openLayout(TrainControlUI window, File folder) throws Exception
+    {
+        javax.swing.JMenuItem door = (javax.swing.JMenuItem) support.Reflect.get(TrainControlUI.class, window,
+            "chooseLocalDataFolderMenuItem");
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)).choosing(folder))
+        {
+            SwingUtilities.invokeAndWait(() -> door.getActionListeners()[0].actionPerformed(
+                new java.awt.event.ActionEvent(door, java.awt.event.ActionEvent.ACTION_PERFORMED, "")));
+
+            answering.awaitAsked(1, 5000);
+
+            Components.settle();
+
+            return answering.asked();
+        }
+    }
+
+    /**
+     * What a failed open must leave as it was: the layout in use, its preferences and Recent Layouts, the pages, the
+     * page box, the page windows, the Autonomy menu as it opens, and the autonomy session.
+     */
+    static String everythingAbout(TrainControlUI window)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            StringBuilder s = new StringBuilder("in use: " + (window.isRemoteLayout() ? "station" : window.localLayoutPath()));
+
+            for (String key : new String[] {TrainControlUI.LAYOUT_OVERRIDE_PATH_PREF, TrainControlUI.RECENT_LAYOUTS_PREF,
+                TrainControlUI.LAST_LOCAL_LAYOUT_PREF}) s.append("\n").append(key).append(": ")
+                .append(TrainControlUI.getPrefs().get(key, null));
+
+            s.append("\npages: ").append(window.getModel().getLayoutList());
+
+            javax.swing.JComboBox box = (javax.swing.JComboBox) support.Reflect.get(TrainControlUI.class, window,
+                "LayoutList");
+
+            s.append("\npage box:");
+
+            for (int i = 0; i < box.getItemCount(); i++) s.append(" ").append(box.getItemAt(i));
+
+            s.append("\npage windows:");
+
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (w instanceof LayoutPopupUI && w.isShowing()) s.append(" ").append(((LayoutPopupUI) w).getLayoutTitle());
+            }
+
+            JMenu autonomy = (JMenu) Components.withText(window, I18n.t("autosetup.ui.menuAutonomy"));
+
+            for (javax.swing.event.MenuListener listener : autonomy.getMenuListeners()) listener.menuSelected(null);
+
+            s.append("\nAutonomy menu: ").append(autonomy.isEnabled()).append(" ").append(autonomy.getToolTipText());
+
+            for (int i = 0; i < autonomy.getItemCount(); i++)
+            {
+                if (autonomy.getItem(i) != null) s.append(" | ").append(autonomy.getItem(i).getText());
+            }
+
+            return s.append("\nsession: ").append(System.identityHashCode(window.getAutonomySession())).append(" ")
+                .append(System.identityHashCode(window.getModel().getAutoLayoutIfLoaded())).toString();
+        });
+    }
+
     /** Opens the folder from Recent Layouts, with A open: refused with the message, and the layout and pages stay. */
     private static void refusedAndNothingChanges(File folder, String what) throws Exception
     {

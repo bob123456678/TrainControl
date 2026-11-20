@@ -432,7 +432,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.autonomySessionForTheNote = live;
 
-        if (live != null) live.beginEditSession();
+        // A note that cannot be renewed is stale, so it goes; said only when it could neither go nor be made harmless
+        if (live != null && !live.beginEditSession() && live.getStore().hasUnfinishedEditNote()
+            && live.getStore().forgetTheNote() == AutonomyCompanionStore.Note.STALE)
+        {
+            parent.getModel().logf("autosetup.log.noteRenewalFailed");
+        }
 
         pictureTheRailway(live);
     }

@@ -1571,6 +1571,28 @@ public abstract class Locomotive
     }
 
     /**
+     * The member a station multi-unit names `s`, among `here`: the locomotive named `s`, else one that kept its name over
+     * `s`.  Only for the station's names: TrainControl's own links are names here, matched by name alone.
+     */
+    public static Locomotive stationMember(String s, List<? extends Locomotive> here)
+    {
+        Locomotive kept = null;
+        for (Locomotive l : here)
+        {
+            if (l.getName().equals(s)) return l;
+            if (kept == null && l.keepsItsNameOver(s)) kept = l;
+        }
+        return kept;
+    }
+
+    /** The key of a station multi-unit's `members` whose member among `here` is this locomotive, or null. */
+    public String stationMemberKeyIn(Map<String, Double> members, List<? extends Locomotive> here)
+    {
+        for (String key : members.keySet()) if (stationMember(key, here) == this) return key;
+        return null;
+    }
+
+    /**
      * Returns raw notes string (JSON or plain text).
      */
     public String getNotes()

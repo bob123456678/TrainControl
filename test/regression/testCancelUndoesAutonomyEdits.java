@@ -797,6 +797,103 @@ public class testCancelUndoesAutonomyEdits
             java.nio.file.Files.deleteIfExists(note.toPath());
         }
     }
+    /** How the note stands when a Save from the leave or exit question renews it. */
+    private enum Held { OPEN, LOCKED }
+
+    /** Makes one edit, then Saves with the note held as asked; returns what the Save logged. */
+    private List<String> logOfASaveWithTheNote(Held held) throws Exception
+    {
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        final LayoutEditor editor = opened();
+
+        java.io.File note = new java.io.File(sandbox.getFolder(), "config/autonomy/setup-before-edit.json");
+
+        List<String> logged = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+
+        java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
+
+        try
+        {
+            Map<String, String> before = directions(session);
+
+            click(editor, aSquareWithOneRoute());
+
+            Map<String, String> edited = directions(session);
+
+            assertNotEquals(edited, before, "precondition: the click changed no arrow");
+
+            assertTrue(note.isFile(), "precondition: the editor wrote no crash note");
+
+            logger.addHandler(tap);
+
+            // Open allows writing but not deleting; a lock on top of it stops the write as well
+            try (java.io.RandomAccessFile holding = new java.io.RandomAccessFile(note, "rw"))
+            {
+                java.nio.channels.FileLock lock = held == Held.LOCKED ? holding.getChannel().lock() : null;
+
+                press(editor, "saveBeforeLeaving");
+            }
+
+            logger.removeHandler(tap);
+
+            AutonomySession restarted = fromDisk();
+
+            restarted.revertUnfinishedEdit();
+
+            if (held != Held.LOCKED)
+            {
+                assertEquals(directions(restarted).toString(), edited.toString(), "after a Save whose note could not be"
+                    + " renewed, the next start put the setup back to before the Save");
+            }
+
+            return logged;
+        }
+        finally
+        {
+            logger.removeHandler(tap);
+
+            dispose(editor);
+
+            session.restoreSetup(asFound);
+
+            session.endEditSession();
+
+            java.nio.file.Files.deleteIfExists(note.toPath());
+        }
+    }
+
+    /**
+     * A Save from the leave or exit question renews the crash note; when the note is held open (a OneDrive upload, a
+     * scanner) and cannot be replaced, the old one must not survive to undo the Save at the next start, and nothing the
+     * user must act on is logged: the note was rewritten with the saved setup.
+     *
+     * MUTATION: ignore the result of `beginEditSession` in `takeTheUndoPoint` again, and the next start undoes the Save;
+     * log the warning for every outcome, and the log has it.
+     */
+    @Test
+    public void testASaveWhoseNoteIsHeldOpenLeavesNoStaleNoteAndNoWarning() throws Exception
+    {
+        assertEquals(logOfASaveWithTheNote(Held.OPEN).stream().filter(m -> m.contains("setup-before-edit")).count(), 0L,
+            "a note rewritten with the saved setup was reported as a problem");
+    }
+
+    /**
+     * A note that can be neither removed nor rewritten is reported, with the file to delete.
+     *
+     * MUTATION: leave out the `logf("autosetup.log.noteRenewalFailed")` in `takeTheUndoPoint`, and this fails.
+     */
+    @Test
+    public void testASaveWhoseNoteCanBeNeitherRemovedNorRewrittenLogsTheWarning() throws Exception
+    {
+        List<String> said = logOfASaveWithTheNote(Held.LOCKED);
+
+        assertEquals(said.stream().filter(m -> m.equals(org.traincontrol.util.I18n.f("autosetup.log.noteRenewalFailed"))).count(), 1L,
+            "a note that stays stale was not reported: " + said);
+    }
+
     /**
      * The crash note puts each train back where the editor opened it, turned as often as it was turned since.
      *
