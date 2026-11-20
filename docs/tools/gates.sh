@@ -59,7 +59,7 @@ if [ -z "$TC_LAST_RELEASE" ]; then echo "gates: no release tag found" >&2; exit 
 
 STANDING="regression.testEveryTestIsInTheBattery regression.testNoNewCopies regression.testCommentsStayLean
 regression.testTestSleepsOnlyGoDown regression.testJavadocsAreAttached core.testMessageBundles
-regression.testEveryMessageKeyIsAskedFor regression.testEveryScenarioIsUsedAndSaysSo"
+regression.testEveryMessageKeyIsAskedFor regression.testEveryScenarioIsUsedAndSaysSo regression.testBlankLinesStayLean"
 
 RESULTS=""
 failed=0

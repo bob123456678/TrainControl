@@ -5856,10 +5856,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 FunctionTabs.setBounds(0, 0, getWidth(), getHeight());
                 FunctionTabs.validate();
-
                 Rectangle strip = FunctionTabs.getBoundsAt(FunctionTabs.getTabCount() - 1);
                 Dimension size = stationNotAnswering.getPreferredSize();
-
                 stationNotAnswering.setBounds(Math.max(getWidth() - 4 - size.width, strip.x + strip.width + 4),
                     strip.y + (strip.height - size.height) / 2, size.width, size.height);
             }
@@ -5867,7 +5865,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         holder.setOpaque(false);
         GroupLayout layout = (GroupLayout) LocFunctionsPanel.getLayout();
-
         layout.replace(FunctionTabs, holder);
 
         // The rows hidden with no locomotive keep their room, so the tabs and the triangle stay where they are with one
