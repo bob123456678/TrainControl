@@ -3669,15 +3669,22 @@ public class AutonomyCompanionStore
 
     /**
      * Forgets the pre-edit snapshot when the editing session ended properly (Save, or Cancel after the editor put the
-     * setup back); "still here" means the last session did not finish.
+     * setup back); "still here" means the last session did not finish.  Returns whether the note is gone.
      */
     public boolean forgetBeforeEdit()
     {
+        return forgetTheNote() == Note.GONE;
+    }
+
+    /** What is left of the pre-edit note: nothing, a copy of the setup as it stands, or the old note. */
+    public enum Note { GONE, REWRITTEN, STALE }
+
+    /** `forgetBeforeEdit` saying which of its three outcomes it reached. */
+    public Note forgetTheNote()
+    {
         File was = beforeEditFile();
 
-        if (!was.isFile()) return true;
-
-        if (was.delete()) return true;
+        if (!was.isFile() || was.delete()) return Note.GONE;
 
         // The delete failed (not exotic under OneDrive), and a note that cannot be removed will be APPLIED, undoing the
         // saved work.  So it is overwritten with the current setup IN PLACE, not through writeAtomically (its move
@@ -3691,11 +3698,11 @@ public class AutonomyCompanionStore
         }
         catch (IOException | RuntimeException norThat)
         {
-            return false;
+            return Note.STALE;
         }
 
-        // Still false: the note is harmless now, but it is still there, and the caller says so.
-        return false;
+        // The note is harmless now, but it is still there.
+        return Note.REWRITTEN;
     }
 
     /**

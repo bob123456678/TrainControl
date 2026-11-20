@@ -1062,7 +1062,7 @@ public class testLocomotiveCsvImport
     @Test(timeOut = 60000)
     public void testAMemberWhoseRenameWasAnsweredNoIsMovingWithItsStationHead() throws Exception
     {
-        MarklinLocomotive[] rig = aHeadWhoseMemberKeptItsName("FXO1", 60);
+        MarklinLocomotive[] rig = aHeadWhoseMemberKeptItsName("SMU1", 60);
         MarklinLocomotive head = rig[0];
         MarklinLocomotive member = rig[1];
 
@@ -1089,7 +1089,7 @@ public class testLocomotiveCsvImport
     @Test
     public void testAMemberWhoseRenameWasAnsweredNoKeepsItsAddressInTheImport() throws Exception
     {
-        MarklinLocomotive[] rig = aHeadWhoseMemberKeptItsName("FXO2", 70);
+        MarklinLocomotive[] rig = aHeadWhoseMemberKeptItsName("SMU2", 70);
         MarklinLocomotive member = rig[1];
         MarklinLocomotive other = rig[2];
 
