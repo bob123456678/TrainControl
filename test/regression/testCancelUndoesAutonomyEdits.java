@@ -798,6 +798,57 @@ public class testCancelUndoesAutonomyEdits
         }
     }
     /**
+     * A Save from the leave or exit question renews the crash note; when the note is held open (a OneDrive upload, a
+     * scanner) and cannot be replaced, the old one must not survive to undo the Save at the next start (WFL2-C1).
+     *
+     * MUTATION: ignore the result of `beginEditSession` in `takeTheUndoPoint` again, and this fails.
+     */
+    @Test
+    public void testASaveWhoseNoteCannotBeRenewedLeavesNoStaleNote() throws Exception
+    {
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        final LayoutEditor editor = opened();
+
+        java.io.File note = new java.io.File(sandbox.getFolder(), "config/autonomy/setup-before-edit.json");
+
+        try
+        {
+            Map<String, String> before = directions(session);
+
+            click(editor, aSquareWithOneRoute());
+
+            Map<String, String> edited = directions(session);
+
+            assertNotEquals(edited, before, "precondition: the click changed no arrow");
+
+            assertTrue(note.isFile(), "precondition: the editor wrote no crash note");
+
+            try (java.io.FileInputStream holding = new java.io.FileInputStream(note))
+            {
+                press(editor, "saveBeforeLeaving");
+            }
+
+            AutonomySession restarted = fromDisk();
+
+            restarted.revertUnfinishedEdit();
+
+            assertEquals(directions(restarted).toString(), edited.toString(), "after a Save whose crash note could not"
+                + " be renewed, the next start put the setup back to before the Save (WFL2-C1)");
+        }
+        finally
+        {
+            dispose(editor);
+
+            session.restoreSetup(asFound);
+
+            session.endEditSession();
+
+            java.nio.file.Files.deleteIfExists(note.toPath());
+        }
+    }
+
+    /**
      * The crash note puts each train back where the editor opened it, turned as often as it was turned since.
      *
      * MUTATION: leave the note out of `AutonomySession.turned`, and the train comes back facing as at opening.
