@@ -115,7 +115,7 @@ public class testBlankLinesStayLean
     /**
      * A NetBeans event handler's `//GEN-FIRST:` and `//GEN-LAST:` lines and the blank line NetBeans puts before it are
      * generated, so regenerating a form's handlers never fails the scan or the total; the body between is ours and is
-     * scanned (F311R2-B1).
+     * scanned.
      *
      * MUTATION: drop the `//GEN-FIRST:` test for the blank line before a handler, or treat the body as generated, and
      * this fails.

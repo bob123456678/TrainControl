@@ -3271,7 +3271,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     static final int[] WINDOW_ICON_SIZES = {16, 20, 24, 32, 40, 48, 64, 256};
     private static List<Image> windowIcons;
 
-    /** The window icon at each size, area-averaged once from the 256-pixel art: a title bar shrinks it jagged (V21S-1). */
+    /** The window icon at each size, area-averaged once from the 256-pixel art: a title bar shrinks it jagged. */
     static synchronized List<Image> windowIcons(URL icon)
     {
         if (windowIcons != null) return windowIcons;
