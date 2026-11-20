@@ -517,6 +517,96 @@ public class testPicturesAreSharpOnAScaledScreen
             "its picture");
     }
 
+    /**
+     * The window icon is the 256-pixel art and smooth-scaled copies of it at each size in the list, made once, not the
+     * one big picture a title bar shrinks without smoothing; and the four windows whose designer code sets the single
+     * picture ask for the list too.  On Java 8 it stays the one picture.
+     *
+     * MUTATION: in `TrainControlUI.applyWindowIcon`, call `setIconImage` of the one picture on every Java.
+     */
+    @Test
+    public void testTheWindowIconIsAListOfSmoothSizes() throws Exception
+    {
+        java.net.URL url = TrainControlUI.class.getResource("resources/locicon.png");
+        BufferedImage art = javax.imageio.ImageIO.read(url);
+        boolean java8 = System.getProperty("java.specification.version").indexOf('.') >= 0;
+        java.util.List<Image> icons = iconsOf(ui);
+
+        // Every window that sets the picture in designer code asks for the list in its own
+        for (String file : new String[] {"gui/TrainControlUI", "gui/LayoutPopupUI", "gui/layouteditor/LayoutEditor",
+            "gui/locomotive/LocomotiveSelector"})
+        {
+            String body = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("src/org/traincontrol/"
+                + file + ".java")), java.nio.charset.StandardCharsets.UTF_8);
+
+            assertTrue(body.replaceAll("(?s)//GEN-BEGIN:initComponents.*?//GEN-END:initComponents", "")
+                .contains("applyWindowIcon(this)"), file + " never asks for the list");
+        }
+
+        if (java8)
+        {
+            assertEquals(icons.size(), 1, "Java 8 keeps the one picture");
+
+            return;
+        }
+
+        int[] sizes = {16, 20, 24, 32, 40, 48, 64, 256};
+
+        assertEquals(icons.size(), sizes.length, "the icon list");
+
+        for (int i = 0; i < sizes.length; i++)
+        {
+            assertEquals(icons.get(i).getWidth(null), sizes[i], "the icon at index " + i);
+
+            BufferedImage smooth = sizes[i] == 256 ? art : onClear(ImageUtil.toTransparentBufferedImage(new ImageIcon(
+                art.getScaledInstance(sizes[i], sizes[i], Image.SCALE_AREA_AVERAGING)).getImage()));
+
+            assertTrue(differing(onClear(icons.get(i)), smooth) <= sizes[i] * sizes[i] / 20,
+                "the " + sizes[i] + " icon is not smooth-scaled from the art");
+        }
+    }
+
+    private static java.util.List<Image> iconsOf(TrainControlUI window) throws Exception
+    {
+        return support.Components.onTheEventThread(window::getIconImages);
+    }
+
+    /**
+     * A disabled SharpIcon is FlatLaf's disabled picture of the 1x picture at scale 1, and at 1.25 the same gray
+     * treatment of the art made at the real size, not the grayed small picture stretched.
+     *
+     * MUTATION: in `SharpIcon`, take out `implements FlatLaf.DisabledIconProvider`.
+     */
+    @Test
+    public void testADisabledSharpIconIsDrawnAtTheScreensPixels() throws Exception
+    {
+        com.formdev.flatlaf.FlatLaf laf = (com.formdev.flatlaf.FlatLaf) javax.swing.UIManager.getLookAndFeel();
+        org.traincontrol.util.SharpIcon.Art art = (w, h) ->
+        {
+            BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+
+            for (int x = 0; x < w; x++)
+            {
+                for (int y = 0; y < h; y++) out.setRGB(x, y, 0xff000000 | (x * 255 / w) << 16 | (y * 255 / h) << 8 | 0x80);
+            }
+
+            return out;
+        };
+        Icon icon = new org.traincontrol.util.SharpIcon(art.at(20, 20), art);
+        Icon disabled = laf.getDisabledIcon(null, icon);
+
+        assertEquals(differing(painted(disabled, 1), painted(laf.getDisabledIcon(null, new ImageIcon(
+            ((ImageIcon) icon).getImage())), 1)), 0, "at scale 1 it is not FlatLaf's picture of today");
+        assertTrue(differing(painted(disabled, 1), painted(icon, 1)) > 0, "the disabled icon is not grayed");
+
+        int size = (int) Math.ceil(20 * 1.25 - 0.5);
+        BufferedImage expected = onClear(((ImageIcon) laf.getDisabledIcon(null, new ImageIcon(art.at(size, size))))
+            .getImage());
+
+        assertEquals(differing(painted(disabled, 1.25).getSubimage(0, 0, size, size), expected), 0,
+            "at 1.25 it is not the gray of the art made " + size + " pixels across");
+    }
+
     private static boolean isWhite(BufferedImage image, int x, int y)
     {
         return (image.getRGB(x, y) & 0xffffffff) == 0xffffffff;

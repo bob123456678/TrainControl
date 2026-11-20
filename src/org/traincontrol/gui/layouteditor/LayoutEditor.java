@@ -737,6 +737,7 @@ public class LayoutEditor extends PositionAwareJFrame
     public LayoutEditor(LayoutDiagram l, int size, TrainControlUI ui, int pageIndex)
     {
         initComponents();
+        TrainControlUI.applyWindowIcon(this);
 
         // Bold 12 like every other button; the designer drew these at 11.
         UiStyle.button(saveButton);

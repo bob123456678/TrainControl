@@ -29,6 +29,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
     public LayoutPopupUI(LayoutDiagram l, int size, TrainControlUI ui)
     {
         initComponents();
+        TrainControlUI.applyWindowIcon(this);
         
         this.ExtLayoutPanel.setLayout(new FlowLayout());
         this.parent = ui;
