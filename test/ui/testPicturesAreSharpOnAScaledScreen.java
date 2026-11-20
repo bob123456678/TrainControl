@@ -452,6 +452,76 @@ public class testPicturesAreSharpOnAScaledScreen
             "a 40-pixel original drawn 68 pixels across is not the bilinear enlargement");
     }
 
+    /**
+     * The (i) mark at 125% and 200% is drawn from art made at the screen's pixels: the picture `InfoMark` makes for
+     * that size, its white dot and stem mirror symmetric with the stem exactly in the middle (an odd width on an odd
+     * size), not the 14-pixel picture stretched, which doubles some rows and columns and sits off center.
+     *
+     * MUTATION: in `InfoMark.load`, return `new ImageIcon(out)` again.
+     */
+    @Test
+    public void testTheInfoMarkIsDrawnAtTheScreensPixels() throws Exception
+    {
+        java.lang.reflect.Method art = support.Reflect.method(org.traincontrol.gui.InfoMark.class, "art", int.class,
+            int.class);
+
+        for (double scale : new double[] {1.25, 2})
+        {
+            int size = (int) Math.ceil(14 * scale - 0.5);
+            BufferedImage drawn = painted(org.traincontrol.gui.InfoMark.icon(), scale).getSubimage(0, 0, size, size);
+
+            assertEquals(differing(drawn, onClear((Image) art.invoke(null, size, size))), 0,
+                "the mark at " + scale + " is not the art made " + size + " pixels across");
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    assertEquals(isWhite(drawn, x, y), isWhite(drawn, size - 1 - x, y),
+                        "the mark at " + scale + " is not mirror symmetric at " + x + "," + y);
+                }
+            }
+
+            int stem = 0;
+
+            for (int x = 0; x < size; x++) if (isWhite(drawn, x, size * 8 / 14)) stem++;
+
+            assertEquals(stem % 2, size % 2, "the stem at " + scale + " is " + stem + " wide on " + size);
+            assertTrue(stem >= 2 * size / 14 - 1 && stem <= 2 * size / 14 + 1, "the stem at " + scale + " is " + stem);
+        }
+    }
+
+    /**
+     * At scale 1 the mark is the GIF with its dark disk turned gray, pixel for pixel, as before.
+     *
+     * MUTATION: in `SharpIcon.paintIcon`, draw the sharp copy at a scale of 1 too (`>= 1`).
+     */
+    @Test
+    public void testTheInfoMarkAtScaleOneIsTheGif() throws Exception
+    {
+        BufferedImage gif = javax.imageio.ImageIO.read(TrainControlUI.class.getResource("resources/info.gif"));
+        BufferedImage gray = new BufferedImage(gif.getWidth(), gif.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        for (int x = 0; x < gif.getWidth(); x++)
+        {
+            for (int y = 0; y < gif.getHeight(); y++)
+            {
+                int p = gif.getRGB(x, y);
+
+                gray.setRGB(x, y, (p & 0xff) < 128 ? (p & 0xff000000) | 0xCCCCCC : p);
+            }
+        }
+
+        assertEquals(differing(painted(org.traincontrol.gui.InfoMark.icon(), 1), onClear(gray)), 0, "the mark at scale 1");
+        assertEquals(differing(painted(new ImageIcon(org.traincontrol.gui.InfoMark.icon().getImage()), 1), onClear(gray)), 0,
+            "its picture");
+    }
+
+    private static boolean isWhite(BufferedImage image, int x, int y)
+    {
+        return (image.getRGB(x, y) & 0xffffffff) == 0xffffffff;
+    }
+
     /** The icon a square of this kind shows at `size`, turned `turn` quarters, once its picture has arrived. */
     private static Icon square(componentType kind, int turn, int size) throws Exception
     {
