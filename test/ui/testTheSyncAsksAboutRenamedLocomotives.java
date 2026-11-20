@@ -613,6 +613,54 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
+     * Questions that end in a throw partway still hold their offers back from their own sync alone: here the second
+     * offer's locomotive is renamed away while the first is asked, and the sync an edit owes next adds the first
+     * offer's locomotive under the station's name.
+     *
+     * MUTATION: in `TrainControlUI.askAboutRenames(Component)`, leave out the catch's `addAll` of every locomotive, and
+     * the first offer stays held back for the session.
+     */
+    @Test(timeOut = 240000)
+    public void testQuestionsThatThrowPartwayHoldNothingBackAfter() throws Exception
+    {
+        final String first = "THR first";
+        final String firstAtTheStation = "1047 005-2";
+        final String gone = "THR gone";
+
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            renamedHere(rig, gone);
+
+            // MM2 address 16, which the station lists before BR 10 001, so it is asked first
+            if (rig.model.getLocByName(firstAtTheStation) == null) rig.model.newMM2Locomotive(first, 16);
+            else rig.model.renameLoc(firstAtTheStation, first);
+
+            List<Answering.Question> asked = pressSync(rig, ui, m ->
+            {
+                if (m == null || !m.contains(first)) return Answering.pressAt(0);
+
+                rig.model.renameLoc(gone, gone + " away");
+
+                return Answering.pressAt(99);
+            }, testTheSyncAsksAboutRenamedLocomotives::saidDone);
+
+            assertEquals(about(asked, first).size(), 1, "precondition: the first offer was not asked");
+            assertNull(rig.model.getLocByName(gone), "precondition: the second offer's locomotive is still there");
+            assertNull(rig.model.getLocByName(firstAtTheStation), "precondition: closing the question added a copy");
+
+            assertFalse(rig.model.getLocByName(first).keepsItsNameOver(firstAtTheStation), "the offer is still held back"
+                + " after the sync");
+
+            try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
+            {
+                owedSync(rig, ui);
+            }
+
+            assertNotNull(rig.model.getLocByName(firstAtTheStation), "the owed sync still held back the offer");
+        });
+    }
+
+    /**
      * Closing the delete question a rename onto a held name asks is logged as closed, and keeps nothing.
      *
      * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, leave out the `loc.renameClosed`

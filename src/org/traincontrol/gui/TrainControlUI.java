@@ -14818,6 +14818,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         catch (Exception e)
         {
             this.model.log(e);
+            // Questions that end in a throw hand back no list, and the offers they held back are let go all the same
+            heldBack.addAll(this.model.getLocomotives());
         }
         finally
         {
