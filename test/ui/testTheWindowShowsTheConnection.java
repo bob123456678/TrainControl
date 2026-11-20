@@ -279,7 +279,6 @@ public class testTheWindowShowsTheConnection
 
                 int back = drawn.getRGB(icon.x, icon.y);
 
-
                 // The mark: near-black inside the triangle
                 int[] mark = inkBox(drawn, icon, rgb -> ((rgb >> 16) & 255) < 100 && ((rgb >> 8) & 255) < 100);
 
@@ -434,7 +433,6 @@ public class testTheWindowShowsTheConnection
                 assertTrue(Components.onTheEventThread(triangle::isVisible), what + ": no triangle in a simulation");
 
                 String without = others(tabsShown);
-                java.nio.file.Files.write(java.nio.file.Paths.get("C:/Users/adamo/AppData/Local/Temp/claude/c0de5eaf98d88a6b/47b1af23-030b-45c7-b147-c1195fda94d2/scratchpad/w-corner1073-scratch/others.txt"), (what + "\n" + without + "\n").getBytes(), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
 
                 // And a station that is not answering shows it, too: nothing moves
                 Reflect.set(MarklinControlStation.class, model, "simulation", false);
