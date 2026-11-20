@@ -529,11 +529,13 @@ public class testTheEditorsFindingsCanBeFiltered
     }
 
     /**
-     * Control+Enter typed into the filter saves the editor once (FR-200) and closes it, writing the setup files;
-     * plain Enter only gives the keyboard back.
+     * Control+Enter typed into the filter saves the editor once (FR-200) and closes it; plain Enter only gives the
+     * keyboard back.  The save is seen by what only Save does: closing saves the setup too, but a Save that fails keeps
+     * the editor open and says why.
      *
-     * MUTATION: drop the hand-up of Control+Enter in the filter's Enter branch; the editor stays open.  Or let the
-     * hand-up close the editor without `autonomyPanel.save()`, and no setup file is written.
+     * MUTATION: in `LayoutEditor.saveButtonActionPerformed`, close the autonomy editor without `autonomyPanel.save()`;
+     * the editor closes over the failed save.  Or drop the hand-up of Control+Enter in the filter's Enter branch; the
+     * editor stays open.
      */
     @Test
     public void testControlEnterInTheBoxSaves() throws Exception
@@ -556,29 +558,43 @@ public class testTheEditorsFindingsCanBeFiltered
             assertTrue(editor.isDisplayable(), "plain Enter must not save");
             assertFalse(box.isFocusable(), "plain Enter gives the keyboard back");
 
-            // Every setup file back-dated, so that only a Save can make one newer
-            java.io.File[] files = new java.io.File(sandbox.getFolder(), "config/autonomy").listFiles();
+            // Open allows writing but not replacing; a lock on top of it stops the write as well
+            java.io.File setup = new java.io.File(sandbox.getFolder(), "config/autonomy/setup.json");
 
-            assertNotNull(files, "precondition: no autonomy folder");
+            assertTrue(setup.isFile(), "precondition: no setup file");
 
-            for (java.io.File f : files) assertTrue(f.setLastModified(1000), "precondition: " + f + " cannot be back-dated");
+            try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(0));
+                java.io.RandomAccessFile holding = new java.io.RandomAccessFile(setup, "rw");
+                java.nio.channels.FileLock lock = holding.getChannel().lock())
+            {
+                SwingUtilities.invokeLater(() -> controlEnter(box));
 
-            SwingUtilities.invokeAndWait(() -> box.dispatchEvent(new java.awt.event.MouseEvent(box,
-                java.awt.event.MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), 0, 2, 2, 1, false)));
-            SwingUtilities.invokeAndWait(() -> box.dispatchEvent(new java.awt.event.KeyEvent(box,
-                java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(),
-                java.awt.event.InputEvent.CTRL_MASK, java.awt.event.KeyEvent.VK_ENTER, (char) 10)));
+                assertTrue(answering.awaitAsked(1, 8000), "a Save that failed said nothing");
+
+                Components.settle();
+
+                assertTrue(editor.isDisplayable(), "Control+Enter closed the editor without saving the setup");
+            }
+
+            SwingUtilities.invokeAndWait(() -> controlEnter(box));
             Components.settle();
 
             assertFalse(editor.isDisplayable(), "Control+Enter in the box saves and closes the editor");
             assertFalse(box.isFocusable(), "Control+Enter gives the keyboard back");
-            assertTrue(java.util.Arrays.stream(files).anyMatch(f -> f.lastModified() > 1000),
-                "Control+Enter closed the editor without writing the setup");
         }
         finally
         {
             close(editor);
         }
+    }
+
+    /** Clicks into the filter box and types Control+Enter there, on the event thread. */
+    private static void controlEnter(javax.swing.JTextField box)
+    {
+        box.dispatchEvent(new java.awt.event.MouseEvent(box, java.awt.event.MouseEvent.MOUSE_PRESSED,
+            System.currentTimeMillis(), 0, 2, 2, 1, false));
+        box.dispatchEvent(new java.awt.event.KeyEvent(box, java.awt.event.KeyEvent.KEY_PRESSED,
+            System.currentTimeMillis(), java.awt.event.InputEvent.CTRL_MASK, java.awt.event.KeyEvent.VK_ENTER, (char) 10));
     }
 
     
