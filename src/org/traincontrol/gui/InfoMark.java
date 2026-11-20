@@ -32,14 +32,12 @@ public final class InfoMark
     private static ImageIcon load()
     {
         java.net.URL url = TrainControlUI.class.getResource("resources/info.gif");
-
         if (url == null) return null;
 
         try
         {
             BufferedImage read = javax.imageio.ImageIO.read(url);
             BufferedImage out = new BufferedImage(read.getWidth(), read.getHeight(), BufferedImage.TYPE_INT_ARGB);
-
             int[] pixels = read.getRGB(0, 0, read.getWidth(), read.getHeight(), null, 0, read.getWidth());
 
             for (int i = 0; i < pixels.length; i++)
@@ -49,7 +47,6 @@ public final class InfoMark
             }
 
             out.setRGB(0, 0, read.getWidth(), read.getHeight(), pixels, 0, read.getWidth());
-
             return new org.traincontrol.util.SharpIcon(out, InfoMark::art);
         }
         catch (java.io.IOException | RuntimeException ex)
@@ -67,7 +64,6 @@ public final class InfoMark
         int top = (int) Math.round(6.0 * size / 14), bottom = size - dot;
         BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         java.awt.Graphics2D g = out.createGraphics();
-
         g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
         g.setColor(new java.awt.Color(GRAY));
         g.fillOval(0, 0, size, size);
@@ -75,7 +71,6 @@ public final class InfoMark
         g.fillRect(left, dot, stem, Math.max(1, (int) Math.round(size / 14.0)));
         g.fillRect(left, top, stem, bottom - top);
         g.dispose();
-
         return out;
     }
 
@@ -99,14 +94,12 @@ public final class InfoMark
 
         // A window closed under the pointer sends no exit
         mark.addHierarchyListener(e -> { if (!mark.isShowing()) leave(mark); });
-
         mark.addMouseListener(new java.awt.event.MouseAdapter()
         {
             @Override
             public void mouseEntered(MouseEvent e)
             {
                 if (hovered == null) normal = ToolTipManager.sharedInstance().getDismissDelay();
-
                 hovered = mark;
                 ToolTipManager.sharedInstance().setDismissDelay(DISMISS_MS);
             }
@@ -131,7 +124,6 @@ public final class InfoMark
     private static void leave(JLabel mark)
     {
         if (hovered != mark) return;
-
         hovered = null;
         ToolTipManager.sharedInstance().setDismissDelay(normal);
     }
@@ -140,9 +132,7 @@ public final class InfoMark
     private static void showNow(JLabel mark, int x, int y)
     {
         ToolTipManager tips = ToolTipManager.sharedInstance();
-
         int initial = tips.getInitialDelay();
-
         tips.setInitialDelay(0);
 
         try
