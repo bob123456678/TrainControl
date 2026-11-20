@@ -46,6 +46,7 @@ public final class LocomotiveSelector extends javax.swing.JFrame
         this.parent = ui;
 
         initComponents();
+        TrainControlUI.applyWindowIcon(this);
     }
     
     /**

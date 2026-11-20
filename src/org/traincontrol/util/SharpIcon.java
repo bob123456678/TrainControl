@@ -15,7 +15,7 @@ import javax.swing.ImageIcon;
  * made once at the screen's real pixels from finer art, rather than stretching its own.  At scale 1 (and always on
  * Java 8) it paints exactly as an ImageIcon, and `getImage` is always the picture at scale 1.
  */
-public class SharpIcon extends ImageIcon
+public class SharpIcon extends ImageIcon implements com.formdev.flatlaf.FlatLaf.DisabledIconProvider
 {
     /** Makes the picture at a size in screen pixels. */
     public interface Art
@@ -74,6 +74,21 @@ public class SharpIcon extends ImageIcon
         SharpIcon from = icon instanceof SharpIcon ? (SharpIcon) icon : null;
         return from == null ? new ImageIcon(picture)
             : new SharpIcon(picture, (w, h) -> change.apply(from.at(w, h)), from.tile);
+    }
+
+    /**
+     * The disabled picture, made as FlatLaf makes it from `getImage`, and from each sharp copy too (V21S-5): FlatLaf
+     * would otherwise gray the picture at scale 1 and have it stretched.
+     */
+    @Override
+    public javax.swing.Icon getDisabledIcon()
+    {
+        javax.swing.LookAndFeel laf = javax.swing.UIManager.getLookAndFeel();
+
+        return map(this, laf instanceof com.formdev.flatlaf.FlatLaf
+            ? picture -> ((ImageIcon) ((com.formdev.flatlaf.FlatLaf) laf).getDisabledIcon(null,
+                new ImageIcon(picture))).getImage()
+            : javax.swing.GrayFilter::createDisabledImage);
     }
 
     /** The picture at a size in screen pixels, made once; null if it cannot be made. */

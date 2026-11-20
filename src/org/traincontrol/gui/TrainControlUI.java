@@ -875,6 +875,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         // `PositionAwareJFrame`'s static initializer installs the look and feel before the root pane is created.
         initComponents();
+        applyWindowIcon(this);
 
         installCurrentKeyRow();
 
@@ -3266,7 +3267,35 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.stationCaptions.autonomyCaptionTextAt(station);
     }
 
-    /** Puts the application's icon on a window (OB-124); a dialog does not reliably inherit its owner's icon. */
+    /** The window icon's sizes, in pixels: the title bar and taskbar at each Windows scale pick the nearest. */
+    static final int[] WINDOW_ICON_SIZES = {16, 20, 24, 32, 40, 48, 64, 256};
+
+    private static List<Image> windowIcons;
+
+    /** The window icon at each size, area-averaged once from the 256-pixel art: a title bar shrinks it jagged (V21S-1). */
+    static synchronized List<Image> windowIcons(URL icon)
+    {
+        if (windowIcons == null)
+        {
+            Image art = new ImageIcon(icon).getImage();
+            List<Image> made = new ArrayList<>();
+
+            for (int size : WINDOW_ICON_SIZES)
+            {
+                made.add(size == art.getWidth(null) ? art : ImageUtil.toTransparentBufferedImage(
+                    new ImageIcon(art.getScaledInstance(size, size, Image.SCALE_SMOOTH)).getImage()));
+            }
+
+            windowIcons = made;
+        }
+
+        return windowIcons;
+    }
+
+    /**
+     * Puts the application's icon on a window (OB-124); a dialog does not reliably inherit its owner's icon.  On Java 9
+     * and later it is the list of sizes; Java 8 keeps the one picture, drawn as ever.
+     */
     public static void applyWindowIcon(Window window)
     {
         if (window == null) return;
@@ -3275,7 +3304,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             URL icon = TrainControlUI.class.getResource("resources/locicon.png");
 
-            if (icon != null) window.setIconImage(Toolkit.getDefaultToolkit().getImage(icon));
+            if (icon == null) return;
+
+            if (System.getProperty("java.specification.version").indexOf('.') < 0)
+            {
+                window.setIconImages(windowIcons(icon));
+            }
+            else
+            {
+                window.setIconImage(Toolkit.getDefaultToolkit().getImage(icon));
+            }
         }
         catch (RuntimeException e)
         {
