@@ -269,8 +269,9 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     }
 
     /**
-     * A page window's route square follows a route written anew as the main window's does: disarming a route made here,
-     * the window's square shows the new route running, without a redraw of the window.
+     * A page window's route square follows a route written anew as the main window's does, the window kept through an
+     * editor's Cancel (FR-216): disarming a route made here, the window's square shows the new route running, without a
+     * redraw of the window.
      *
      * MUTATION: leave the page windows out of the grids `TrainControlUI.redrawRouteSquaresOrRebuild` binds again, and
      * this fails.
@@ -282,16 +283,13 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         final MarklinRoute route = (MarklinRoute) square.getRoute();
         final boolean wasLocked = route.isLocked();
         final boolean wasEnabled = route.isEnabled();
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final LayoutPopupUI window = aKeptWindow();
 
         route.setLocked(false);
 
         try
         {
-            final LayoutLabel inWindow = Components.onTheEventThread(() ->
-                Components.find(window, LayoutLabel.class, each -> each.getComponent() == square));
-
-            assertNotNull(inWindow, "precondition: the page window does not draw the route square of " + PAGE);
+            final LayoutLabel inWindow = squareIn(window, square);
 
             disarm(route);
 
@@ -780,7 +778,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
      * An edit to one page draws only that page's window again (FR-216): every other window keeps its grid and its
      * title, its squares registered again so the trains and marks still reach them.
      *
-     * MUTATION: in `LayoutPopupUI.goToLayoutPage`, leave out `registerTilesAgain`, and a kept window's squares are
+     * MUTATION: in `LayoutGrid.keep`, leave out the registry's `register`, and a kept window's squares are
      * registered nowhere.
      */
     @Test(timeOut = 180000)
@@ -831,8 +829,8 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
      * Show Addresses draws every page window again, with the addresses and then without (FR-216): the tick changes
      * how every page looks.
      *
-     * MUTATION: in `LayoutPopupUI.drawsAs`, compare the page's flag with that of the page the window holds rather than
-     * the one it was drawn with, and the windows keep their old look.
+     * MUTATION: in `LayoutPopupUI.sameSquares`, compare the page's flag with that of the page the window holds rather
+     * than the one it was drawn with, and the windows keep their old look.
      */
     @Test(timeOut = 180000)
     public void testShowAddressesDrawsEveryPageWindowAgain() throws Exception
@@ -869,8 +867,8 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
      * A page renamed draws again its own window, under the new name, and each window whose arrows lead to it, which
      * then name it (FR-216); a window whose page does not lead there keeps its grid.
      *
-     * MUTATION: in `LayoutPopupUI.drawsAs`, leave out the linked page's name, and an arrow to the renamed page still
-     * names the old one.
+     * MUTATION: in `LayoutPopupUI.sameSquares`, leave out the linked page's name, and an arrow to the renamed page
+     * still names the old one.
      */
     @Test(timeOut = 180000)
     public void testARenameDrawsTheWindowsThatLeadToThePageAgain() throws Exception
@@ -959,6 +957,131 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
             closeAll(windows);
 
             showTheMainPage();
+        }
+    }
+
+    /**
+     * A page window kept through an editor's Cancel runs a route as the route editor's Save left it (FR-216): a click
+     * on its route square sends what a click on the main window's sends, not the commands the route had.
+     *
+     * MUTATION: in `LayoutGrid.keep`, leave every square on its old component (no `bindTo`, no counterpart check), and
+     * the click sends the route's old commands.
+     */
+    @Test(timeOut = 180000)
+    public void testAKeptWindowRunsARouteAsEdited() throws Exception
+    {
+        final LayoutDiagramComponent square = aRouteSquareWhere(route -> route.getRoute().size() > 1);
+        final MarklinRoute route = (MarklinRoute) square.getRoute();
+        final String name = route.getName();
+        final List<org.traincontrol.base.RouteCommand> commands = new ArrayList<>(route.getRoute());
+        final boolean wasLocked = route.isLocked();
+        final LayoutPopupUI window = aKeptWindow();
+
+        try
+        {
+            final int before = commandsOnAClick(labelOf(squareNow(square)));
+
+            route.setLocked(false);
+
+            // What the route editor's Save does
+            assertTrue(model.editRoute(name, name, new ArrayList<>(commands.subList(0, commands.size() - 1)),
+                route.getS88(), route.getTriggerType(), route.isEnabled(), route.getConditions()), "precondition: "
+                + name + " was not edited");
+
+            rebuildThePage();
+
+            final int edited = commandsOnAClick(labelOf(squareNow(square)));
+
+            assertNotEquals(edited, before, "precondition: the edit to " + name + " did not change what it sends");
+            assertEquals(commandsOnAClick(squareIn(window, square)), edited, "a click on the kept page window's square"
+                + " of " + name + " did not send the route as edited");
+        }
+        finally
+        {
+            final MarklinRoute now = (MarklinRoute) model.getRoute(name);
+
+            now.setLocked(false);
+            model.editRoute(name, name, commands, now.getS88(), now.getTriggerType(), now.isEnabled(),
+                now.getConditions());
+            ((MarklinRoute) model.getRoute(name)).setLocked(wasLocked);
+
+            SwingUtilities.invokeAndWait(window::dispose);
+
+            rebuildThePage();
+        }
+    }
+
+    /**
+     * A page window kept through an editor's Cancel lets go of a route renumbered, and then of one deleted (FR-216):
+     * its square names no route and a click on it sends nothing.
+     *
+     * MUTATION: in `LayoutGrid.keep`, leave every square on its old component (no `bindTo`, no counterpart check), and
+     * the square still runs the route.
+     */
+    @Test(timeOut = 180000)
+    public void testAKeptWindowLetsGoOfARouteRenumberedOrDeleted() throws Exception
+    {
+        final LayoutDiagramComponent square = aBoundRouteSquare();
+        final MarklinRoute route = (MarklinRoute) square.getRoute();
+        final String name = route.getName();
+        final int id = route.getId();
+        final boolean wasLocked = route.isLocked();
+        final LayoutPopupUI window = aKeptWindow();
+        int highest = 999;
+
+        for (String each : model.getRouteList()) highest = Math.max(highest, model.getRouteId(each));
+
+        final String free = Integer.toString(highest + 1);
+
+        route.setLocked(false);
+
+        try
+        {
+            try (Answering answering = Answering.start(message -> Answering.type(free)))
+            {
+                SwingUtilities.invokeAndWait(() -> ui.changeRouteId(name));
+            }
+
+            Settle.theDiagram(ui);
+
+            assertEquals(Integer.toString(route.getId()), free, "precondition: " + name + " was not renumbered");
+            assertNull(squareIn(window, square).getComponent().getRoute(), "the kept page window's square still holds"
+                + " " + name + " after it was renumbered");
+            assertEquals(commandsOnAClick(squareIn(window, square)), 0, "a click on the kept page window's square ran "
+                + name + " after it was renumbered");
+
+            model.changeRouteId(name, id);
+
+            try (Answering answering = Answering.start(message -> Answering.press(AskingWindows.YES)))
+            {
+                SwingUtilities.invokeAndWait(() -> ui.deleteRoute(name));
+            }
+
+            Settle.theDiagram(ui);
+
+            assertNull(model.getRoute(name), "precondition: " + name + " was not deleted");
+            assertNull(squareIn(window, square).getComponent().getRoute(), "the kept page window's square still holds"
+                + " " + name + " after it was deleted");
+            assertEquals(commandsOnAClick(squareIn(window, square)), 0, "a click on the kept page window's square ran "
+                + name + " after it was deleted");
+        }
+        finally
+        {
+            if (model.getRoute(name) == null)
+            {
+                model.newRoute(name, id, route.getRoute(), route.getS88(), route.getTriggerType(), route.isEnabled(),
+                    route.getConditions());
+            }
+            else if (model.getRouteId(name) != id)
+            {
+                model.changeRouteId(name, id);
+            }
+
+            ((MarklinRoute) model.getRoute(name)).setLocked(wasLocked);
+
+            SwingUtilities.invokeAndWait(window::dispose);
+
+            rebuildThePage();
         }
     }
 
@@ -1119,6 +1242,65 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
             && page.equals(each.getComponent().getLinkPageName()));
     }
 
+    /** The page shown in its own window, kept through the track editor's hand-over (its Save or Cancel). */
+    private static LayoutPopupUI aKeptWindow() throws Exception
+    {
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final Object grid = gridOf(window);
+
+        editingComplete();
+
+        assertSame(gridOf(window), grid, "precondition: the hand-over drew the page window again");
+
+        return window;
+    }
+
+    /** The label a page window draws where a square of its page is. */
+    private static LayoutLabel squareIn(LayoutPopupUI window, LayoutDiagramComponent square) throws Exception
+    {
+        final LayoutLabel found = Components.onTheEventThread(() -> Components.find(window, LayoutLabel.class, each ->
+            each.getComponent() != null && each.getComponent().getX() == square.getX()
+            && each.getComponent().getY() == square.getY()));
+
+        assertNotNull(found, "precondition: the page window draws nothing where " + square + " is");
+
+        return found;
+    }
+
+    /** How many accessory commands a click on a square sends, the power question answered Proceed. */
+    private static int commandsOnAClick(LayoutLabel square) throws Exception
+    {
+        final support.WireRecorder wire = support.WireRecorder.open();
+
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("layout.ui.optionProceed"))))
+        {
+            final int mark = wire.mark();
+            final long[] heard = {System.currentTimeMillis(), -1};
+
+            support.Mouse.click(square);
+
+            // Done once no accessory command has come for two seconds: a route sends its commands a beat apart
+            Components.waitFor(() ->
+            {
+                long now = wire.since(mark).stream().filter(line -> line.contains("Type: Accessory")).count();
+
+                if (now != heard[1])
+                {
+                    heard[1] = now;
+                    heard[0] = System.currentTimeMillis();
+                }
+
+                return System.currentTimeMillis() - heard[0] > 2000;
+            }, 20000);
+
+            return (int) heard[1];
+        }
+        finally
+        {
+            wire.close();
+        }
+    }
+
     private static Object gridOf(LayoutPopupUI window)
     {
         try
@@ -1181,10 +1363,18 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     /** A route square on the page shown whose route the database has. */
     private static LayoutDiagramComponent aBoundRouteSquare() throws Exception
     {
+        return aRouteSquareWhere(route -> true);
+    }
+
+    /** A route square on the page shown whose route the database has and passes `which`. */
+    private static LayoutDiagramComponent aRouteSquareWhere(java.util.function.Predicate<MarklinRoute> which)
+        throws Exception
+    {
         LayoutDiagramComponent found = Components.onTheEventThread(() ->
         {
             for (LayoutLabel square : Components.all(shownPage(), LayoutLabel.class, each -> each.getComponent() != null
-                && each.getComponent().isRoute() && each.getComponent().getRoute() instanceof MarklinRoute))
+                && each.getComponent().isRoute() && each.getComponent().getRoute() instanceof MarklinRoute
+                && which.test((MarklinRoute) each.getComponent().getRoute())))
             {
                 return square.getComponent();
             }
@@ -1192,7 +1382,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
             return null;
         });
 
-        assertNotNull(found, "precondition: no route square on " + PAGE + " has its route");
+        assertNotNull(found, "precondition: no route square on " + PAGE + " has its route, one that will do");
 
         return found;
     }

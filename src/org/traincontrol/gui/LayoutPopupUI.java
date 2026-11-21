@@ -6,7 +6,9 @@ import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.swing.JPanel;
 import org.traincontrol.base.LayoutDiagram;
@@ -95,23 +97,23 @@ public class LayoutPopupUI extends PositionAwareJFrame
         }
     }
 
-    /** Whether a page read again draws as the grid on screen (FR-216): its name, text, addresses, ties and captions. */
-    private boolean drawsAs(LayoutDiagram page)
+    /** The squares on screen paired with a page read again's that draws the same (FR-216), else null. */
+    private Map<LayoutDiagramComponent, LayoutDiagramComponent> sameSquares(LayoutDiagram page)
     {
         if (this.grid == null || page == null || !page.getName().equals(this.layout.getName())
             || page.getShowAddress() != this.drawnWithAddresses || !TrainControlUI.sameText(page, this.layout)
-            || !this.grid.captionsAreAsBuilt()) return false;
+            || !this.grid.captionsAreAsBuilt()) return null;
 
         List<LayoutDiagramComponent> was = this.layout.getAll(), now = page.getAll();
-        boolean same = was.size() == now.size();
-        for (int i = 0; same && i < was.size(); i++)
+        Map<LayoutDiagramComponent, LayoutDiagramComponent> same = new IdentityHashMap<>();
+        for (int i = 0; was.size() == now.size() && i < was.size(); i++)
         {
             LayoutDiagramComponent a = was.get(i), b = now.get(i);
-            same = a.getX() == b.getX() && a.getY() == b.getY() && a.getAccessory() == b.getAccessory()
-                && a.getAccessory2() == b.getAccessory2() && a.getFeedback() == b.getFeedback()
-                && a.getRoute() == b.getRoute() && Objects.equals(a.getLinkPageName(), b.getLinkPageName());
+            if (a.getX() != b.getX() || a.getY() != b.getY()
+                || !Objects.equals(a.getLinkPageName(), b.getLinkPageName())) return null;
+            same.put(a, b);
         }
-        return same;
+        return was.size() == now.size() ? same : null;
     }
     
     /**
@@ -281,8 +283,8 @@ public class LayoutPopupUI extends PositionAwareJFrame
      *
      * @param index the page
      * @param fit whether to size the window to it, as `drawGrid` says
-     * @param keepTheSame whether a page that `drawsAs` the grid keeps it, held as the page shown (a page read again is
-     * redrawn), its squares registered again and its title set
+     * @param keepTheSame whether a page with the `sameSquares` keeps the grid, held as the page shown (a page read
+     * again is redrawn) and its title set
      */
     private void goToLayoutPage(int index, boolean fit, boolean keepTheSame)
     {
@@ -294,12 +296,12 @@ public class LayoutPopupUI extends PositionAwareJFrame
             {
                 LayoutDiagram shown = this.parent.getModel().getLayout(
                     this.parent.getModel().getLayoutList().get(index));
-                boolean kept = keepTheSame && drawsAs(shown);
+                Map<LayoutDiagramComponent, LayoutDiagramComponent> same = keepTheSame ? sameSquares(shown) : null;
+                boolean kept = same != null && this.grid.keep(same);
                 this.layout = shown;
 
                 if (kept)
                 {
-                    this.grid.registerTilesAgain();
                     refreshTitle();
                 }
                 else

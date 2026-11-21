@@ -430,11 +430,12 @@ public final class LayoutLabel extends JLabel
                                         // green (red is what protection does); tested on the command, as a three-way's
                                         // `execSwitching` bypasses `Accessory.doSwitch()`.
                                         boolean protecting =
-                                            aboutToClearProtection(tcUI, c.getAccessory())
-                                            || aboutToClearProtection(tcUI, c.getAccessory2());
+                                            aboutToClearProtection(tcUI, component.getAccessory())
+                                            || aboutToClearProtection(tcUI, component.getAccessory2());
 
-                                        if (activeAccs.contains(c.getAccessory()) || 
-                                                (c.getAccessory2() != null && activeAccs.contains(c.getAccessory2()))
+                                        if (activeAccs.contains(component.getAccessory()) || 
+                                                (component.getAccessory2() != null
+                                                    && activeAccs.contains(component.getAccessory2()))
                                                 || protecting)
                                         {
                                             Object[] options = {
@@ -475,9 +476,9 @@ public final class LayoutLabel extends JLabel
                                     // (`activeAccs.contains(null)` is false); every route here is a MarklinRoute, the
                                     // only kind that knows the autonomy graph.
                                     final org.traincontrol.marklin.MarklinRoute onTile =
-                                        c.isRoute()
-                                            && c.getRoute() instanceof org.traincontrol.marklin.MarklinRoute
-                                        ? (org.traincontrol.marklin.MarklinRoute) c.getRoute() : null;
+                                        component.isRoute()
+                                            && component.getRoute() instanceof org.traincontrol.marklin.MarklinRoute
+                                        ? (org.traincontrol.marklin.MarklinRoute) component.getRoute() : null;
 
                                     lastClicked = System.currentTimeMillis();
 
@@ -559,8 +560,8 @@ public final class LayoutLabel extends JLabel
                                         // over an occupied platform).  Refused rather than re-asked, as asking would
                                         // hold the one switching thread; skipped for a click already accepted.
                                         if (!warnedAboutProtection
-                                            && (aboutToClearProtection(tcUI, c.getAccessory())
-                                                || aboutToClearProtection(tcUI, c.getAccessory2())))
+                                            && (aboutToClearProtection(tcUI, component.getAccessory())
+                                                || aboutToClearProtection(tcUI, component.getAccessory2())))
                                         {
                                             tcUI.getModel().logf("layout.warnProtectionArrived",
                                                 component.getAddress());
@@ -1926,6 +1927,12 @@ public final class LayoutLabel extends JLabel
     public LayoutDiagramComponent getComponent()
     {
         return component;
+    }
+
+    /** Draws the same square of a page read again from now on (FR-216): a click acts on its accessories and route. */
+    void bindTo(LayoutDiagramComponent now)
+    {
+        this.component = now;
     }
 
     /**
