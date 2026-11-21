@@ -276,6 +276,7 @@ EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Answer	getRoad	road	1
 EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Answer	roadToRecord	road	1
 EI_EXPOSE_REP	org.traincontrol.gui.TailCrossedPrompt$Choice	getFarthest	farthest	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	getLocomotive	locomotive	1
+EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	getRunningLayout	layout	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomy.AutonomyBanner	getActionButton	action	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	getBanner	banner	1
 EI_EXPOSE_REP	org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel	getExcludePage	excludePage	1
@@ -349,6 +350,7 @@ EI_EXPOSE_REP2	org.traincontrol.gui.TrainControlUI$CustomTableRenderer	<init>	th
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutoJSONExport	<init>	tcui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	<init>	locomotive	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	<init>	parent	1
+EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.AutoLocomotiveStatus	showOn	layout	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.DiagramMonitorDriver	<init>	registry	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.DiagramMonitorDriver	<init>	ui	1
 EI_EXPOSE_REP2	org.traincontrol.gui.autonomy.DiagramMonitorDriver	bind	boundTo	1
