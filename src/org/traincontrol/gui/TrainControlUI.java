@@ -19775,13 +19775,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found =
                     new java.util.LinkedHashMap<>();
                 final java.util.Map<AutoLocomotiveStatus, Layout> searchedOn = new java.util.IdentityHashMap<>();
-
                 for (AutoLocomotiveStatus panel : panels)
                 {
                     try
                     {
-                        searchedOn.put(panel, panel.getRunningLayout());
-                        found.put(panel, panel.findPaths());
+                        searchCard(panel, found, searchedOn);
                     }
                     catch (RuntimeException e)
                     {
@@ -19808,6 +19806,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }
     
+    /** A card's search, noting the running layout it searched on so a later landing can drop a stale answer. */
+    private static void searchCard(AutoLocomotiveStatus panel, java.util.Map<AutoLocomotiveStatus,
+        java.util.List<java.util.List<Edge>>> found, java.util.Map<AutoLocomotiveStatus, Layout> searchedOn)
+    {
+        searchedOn.put(panel, panel.getRunningLayout());
+        found.put(panel, panel.findPaths());
+    }
+
     /**
      * Fully repaints the auto locomotive list based on auto layout state
      *
@@ -19872,13 +19878,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found
                     = new java.util.LinkedHashMap<>();
                 final java.util.Map<AutoLocomotiveStatus, Layout> searchedOn = new java.util.IdentityHashMap<>();
-
                 for (AutoLocomotiveStatus panel : panels)
                 {
                     try
                     {
-                        searchedOn.put(panel, panel.getRunningLayout());
-                        found.put(panel, panel.findPaths());
+                        searchCard(panel, found, searchedOn);
                     }
                     catch (Exception e)
                     {
