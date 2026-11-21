@@ -181,6 +181,17 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
         return this.locomotive;
     }
 
+    public Layout getRunningLayout()
+    {
+        return this.layout;
+    }
+
+    /** A search's answer, dropped when this card has gone to another running layout since the search began. */
+    public void updateState(Locomotive someLoc, List<List<Edge>> found, boolean haveFound, Layout searchedOn)
+    {
+        if (searchedOn == this.layout) updateState(someLoc, found, haveFound);
+    }
+
     /** Shows the train on this running layout as a new card would (OB-460); the caller's search fills the routes. */
     public void showOn(Layout running)
     {

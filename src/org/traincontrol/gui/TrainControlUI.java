@@ -19774,11 +19774,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found =
                     new java.util.LinkedHashMap<>();
+                final java.util.Map<AutoLocomotiveStatus, Layout> searchedOn = new java.util.IdentityHashMap<>();
 
                 for (AutoLocomotiveStatus panel : panels)
                 {
                     try
                     {
+                        searchedOn.put(panel, panel.getRunningLayout());
                         found.put(panel, panel.findPaths());
                     }
                     catch (RuntimeException e)
@@ -19799,7 +19801,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         // nothing to correct it.
                         java.util.List<java.util.List<Edge>> answer = found.get(panel);
 
-                        panel.updateState(null, answer, answer != null);
+                        panel.updateState(null, answer, answer != null, searchedOn.get(panel));
                     }
                 });
             });
@@ -19869,11 +19871,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 final java.util.Map<AutoLocomotiveStatus, java.util.List<java.util.List<Edge>>> found
                     = new java.util.LinkedHashMap<>();
+                final java.util.Map<AutoLocomotiveStatus, Layout> searchedOn = new java.util.IdentityHashMap<>();
 
                 for (AutoLocomotiveStatus panel : panels)
                 {
                     try
                     {
+                        searchedOn.put(panel, panel.getRunningLayout());
                         found.put(panel, panel.findPaths());
                     }
                     catch (Exception e)
@@ -19893,7 +19897,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                         java.util.List<java.util.List<Edge>>> entry : found.entrySet())
                     {
                         entry.getKey().updateState(entry.getKey().getLocomotive(),
-                            entry.getValue(), entry.getValue() != null);
+                            entry.getValue(), entry.getValue() != null, searchedOn.get(entry.getKey()));
                     }
                 });
             });

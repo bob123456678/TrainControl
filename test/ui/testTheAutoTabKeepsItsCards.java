@@ -129,6 +129,31 @@ public class testTheAutoTabKeepsItsCards
     }
 
     /**
+     * A search begun on the running layout before a rebuild that keeps the cards does not land on them afterwards: the
+     * card goes on saying what a new card says, so a double-click cannot send the old layout's routes.  The landing is
+     * driven directly, as the moment a search straddles the rebuild cannot be timed from a test.
+     *
+     * MUTATION: in the four-argument `AutoLocomotiveStatus.updateState`, drop the layout comparison, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testASearchFromBeforeTheRebuildDoesNotLand() throws Exception
+    {
+        AutoLocomotiveStatus card = card(alpha);
+        Layout before = card.getRunningLayout();
+
+        rebuild();
+
+        assertTrue(card == card(alpha) && card.getRunningLayout() == railway() && railway() != before, "precondition: the"
+            + " rebuild did not keep the card on a new running layout");
+        assertFalse(((JList<?>) field(card, "locAvailPaths")).getModel().getSize() == 0, "precondition: the card"
+            + " offers no routes, so an answer of none would change nothing");
+
+        SwingUtilities.invokeAndWait(() -> card.updateState(alpha, new ArrayList<>(), true, before));
+
+        assertEveryCardIsAsNew();
+    }
+
+    /**
      * A kept card reads the timetable's start afresh: its train's entry taken out, the card waiting for its search no
      * longer marks the station as where the timetable starts, as a new card does not.
      *
