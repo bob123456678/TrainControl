@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -772,6 +773,84 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
             closeAll(windows);
         }
+    }
+
+    /**
+     * The trains stay on the diagram and in the page windows through an editor hand-over that keeps the event thread
+     * busy past a monitor tick after the setup is loaded again (OB-498), as one soon after the page windows open can:
+     * the wipe of the old picture lands after a tick that found the picture unchanged.
+     *
+     * MUTATION: leave out the `markDirty()` in `DiagramMonitor.invalidate`, and every train icon is gone.
+     */
+    @Test(timeOut = 180000)
+    public void testABusyHandOverKeepsTheTrainsOnTheDiagram() throws Exception
+    {
+        final List<LayoutPopupUI> windows = popUpAll();
+        final javax.swing.JButton edit = WindowField.of(ui, "editLayoutButton");
+        final AtomicBoolean held = new AtomicBoolean();
+        // Held where the hand-over lights Edit Layout again, after the setup's reload, until a tick has looked
+        final java.beans.PropertyChangeListener busy = event ->
+        {
+            if (Boolean.TRUE.equals(event.getNewValue())) held.set(Components.waitFor(() -> !theDiagramOwesALook(),
+                5000));
+        };
+
+        try
+        {
+            final LayoutPopupUI window = windows.stream().filter(each -> PAGE.equals(each.getLayoutTitle()))
+                .findFirst().get();
+            final int trains = trainsIn(window);
+
+            assertTrue(trains > 0 && trainsIn(shownPage()) == trains, "precondition: " + PAGE + " shows " + trains
+                + " trains in its window and " + trainsIn(shownPage()) + " on the diagram");
+
+            edit.addPropertyChangeListener("enabled", busy);
+            editingComplete();
+            edit.removePropertyChangeListener("enabled", busy);
+
+            assertTrue(held.get(), "precondition: the hand-over was not held until the monitor had looked");
+            assertTrue(Settle.until(() -> trainsIn(window) == trains && trainsIn(shownPageNow()) == trains, 5000),
+                "after the hand-over " + PAGE + "'s window shows " + trainsIn(window) + " of its " + trains
+                + " trains, and the diagram " + trainsIn(shownPageNow()));
+        }
+        finally
+        {
+            edit.removePropertyChangeListener("enabled", busy);
+            closeAll(windows);
+        }
+    }
+
+    /** Whether the diagram has been told something moved and has not yet looked (`DiagramMonitor.markDirty`). */
+    private static boolean theDiagramOwesALook()
+    {
+        try
+        {
+            Object watching = Reflect.get(DiagramMonitorDriver.class, ui.getDiagramMonitorDriver(), "monitor");
+
+            return ((AtomicBoolean) Reflect.get(watching.getClass(), watching, "dirty")).get();
+        }
+        catch (ReflectiveOperationException failed)
+        {
+            throw new IllegalStateException(failed);
+        }
+    }
+
+    /** How many squares inside carry a train in what autonomy last told them, whether or not trains are shown. */
+    private static int trainsIn(Container inside)
+    {
+        return inside == null ? 0 : Components.all(inside, LayoutLabel.class, each ->
+        {
+            try
+            {
+                Object overlay = Reflect.get(LayoutLabel.class, each, "autonomyOverlay");
+
+                return overlay != null && ((org.traincontrol.automationui.TileOverlay) overlay).hasTrain();
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        }).size();
     }
 
     /**
