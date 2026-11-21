@@ -69,7 +69,8 @@ public class testTheAutoTabKeepsItsCards
 
     /**
      * Each change a card shows still reaches it through its door: a train placed, moved, turned, renamed, taken off,
-     * and arriving from a run; after each, every card says what a new card says.
+     * and arriving from a run; after each, every card says what a new card says.  Placing and taking off change the
+     * list of trains, so they build the cards; the other four keep them.
      *
      * MUTATION: in `AutoLocomotiveStatus.showOn`, leave out the name, and the rename fails.
      */
@@ -85,22 +86,26 @@ public class testTheAutoTabKeepsItsCards
         assertEveryCardIsAsNew();
 
         Object facing = session.facingOf(gamma.getName());
+        List<AutoLocomotiveStatus> kept = cards();
 
         SwingUtilities.invokeAndWait(() -> call("followTheTurn", gamma.getName()));
         quiesce();
 
         assertNotEquals(session.facingOf(gamma.getName()), facing, "precondition: the train did not turn");
+        assertSameCards(kept, "a turn");
         assertEveryCardIsAsNew();
 
         stand(gamma, 7, 3);
         rebuild();
 
         assertTrue(station(gamma).contains("MainPlatform"), "a train moved has its old station: " + station(gamma));
+        assertSameCards(kept, "a move");
         assertEveryCardIsAsNew();
 
         renamed(alpha, "Aardvark Train");
 
         assertEquals(text(card(alpha), "locName"), "Aardvark Train", "a train renamed has its old name");
+        assertSameCards(kept, "a rename");
         assertEveryCardIsAsNew();
 
         SwingUtilities.invokeAndWait(() ->
@@ -113,11 +118,50 @@ public class testTheAutoTabKeepsItsCards
         assertNull(railway().getLocomotiveLocation(gamma), "precondition: the train is still on the railway");
         assertEveryCardIsAsNew();
 
+        kept = cards();
+
         arrives(beta, "Approach");
         rebuild();
 
         assertTrue(station(beta).contains("Approach"), "a train arrived has its old station: " + station(beta));
+        assertSameCards(kept, "an arrival");
         assertEveryCardIsAsNew();
+    }
+
+    /**
+     * A kept card reads the timetable's start afresh: its train's entry taken out, the card waiting for its search no
+     * longer marks the station as where the timetable starts, as a new card does not.
+     *
+     * MUTATION: in `AutoLocomotiveStatus.showOn`, leave out `haveGatheredTimetableStart = false`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAKeptCardReadsTheTimetableAfresh() throws Exception
+    {
+        List<Edge> route = railway().getPossiblePaths(alpha, true).get(0);
+
+        railway().setTimetable(new ArrayList<>(java.util.Arrays.asList(
+            new org.traincontrol.automation.TimetablePath(alpha, route, 0))));
+        SwingUtilities.invokeAndWait(() -> ui.repaintAutoLocList(false));
+        quiesce();
+
+        assertTrue(station(alpha).contains(" *"), "precondition: the card does not mark the timetable's start: "
+            + station(alpha));
+
+        railway().emptyTimetable();
+
+        assertWaitingCardIsAsNew(card(alpha), card -> { });
+    }
+
+    /**
+     * A kept card shows its routes from the top, as a new card does, though it was scrolled down before.
+     *
+     * MUTATION: in `AutoLocomotiveStatus.showOn`, leave out the scroll reset, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAKeptCardShowsItsRoutesFromTheTop() throws Exception
+    {
+        assertWaitingCardIsAsNew(card(alpha), card -> scroller(card).getViewport().setViewPosition(new java.awt.Point(0,
+            40)));
     }
 
     // ---------------------------------------------------------------- the railway
@@ -353,6 +397,34 @@ public class testTheAutoTabKeepsItsCards
                 Components.onTheEventThread(() -> look(fresh[0])), "the card of " + train.getName()
                 + " does not say what a new card says");
         }
+    }
+
+    /**
+     * The card, after `before`, shown on the running layout as the rebuild that keeps it does, and read in the same
+     * turn of the event thread, before its search lands: it says what a new card says while it waits.
+     */
+    private void assertWaitingCardIsAsNew(AutoLocomotiveStatus card, java.util.function.Consumer<AutoLocomotiveStatus>
+        before) throws Exception
+    {
+        String[] looks = new String[2];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            before.accept(card);
+            card.showOn(railway());
+
+            AutoLocomotiveStatus fresh = new AutoLocomotiveStatus(card.getLocomotive(), ui, true);
+
+            looks[0] = look(card) + " at " + scroller(card).getViewport().getViewPosition();
+            looks[1] = look(fresh) + " at " + scroller(fresh).getViewport().getViewPosition();
+        });
+
+        assertEquals(looks[0], looks[1], "the kept card, waiting for its search, does not say what a new card says");
+    }
+
+    private static javax.swing.JScrollPane scroller(AutoLocomotiveStatus card)
+    {
+        return (javax.swing.JScrollPane) field(card, "availablePathScroll");
     }
 
     /** All a card shows, and the running layout it sends on. */
