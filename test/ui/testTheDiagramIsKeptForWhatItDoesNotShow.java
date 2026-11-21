@@ -1184,18 +1184,20 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     @Test(timeOut = 180000)
     public void testARenamedStationDrawsItsWindowAgain() throws Exception
     {
+        // The setup now: a refresh earlier in the class replaces the one the class opened on
+        final AutonomySession now = ui.getAutonomySession();
         TileKey station = null;
 
-        for (TileKey each : session.getLabelledStationTiles())
+        for (TileKey each : now.getLabelledStationTiles())
         {
-            if (station == null && PAGE.equals(each.getPage()) && session.getLocomotiveNameAt(each) == null
-                && session.getStore().getPointName(each) != null) station = each;
+            if (station == null && PAGE.equals(each.getPage()) && now.getLocomotiveNameAt(each) == null
+                && now.getStore().getPointName(each) != null) station = each;
         }
 
         assertNotNull(station, "precondition: " + PAGE + " has no named station with no train at it");
 
         final TileKey renamed = station;
-        final String name = session.getStore().getPointName(renamed);
+        final String name = now.getStore().getPointName(renamed);
         final LayoutPopupUI window = AskingWindows.openThePage(ui);
 
         try
@@ -1204,7 +1206,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
             SwingUtilities.invokeAndWait(() ->
             {
-                session.setPointName(renamed, name + " renamed");
+                now.setPointName(renamed, name + " renamed");
                 ui.autonomySetupChanged();
             });
 
@@ -1215,7 +1217,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         {
             SwingUtilities.invokeAndWait(() ->
             {
-                session.setPointName(renamed, name);
+                now.setPointName(renamed, name);
                 ui.autonomySetupChanged();
             });
 
