@@ -1395,6 +1395,20 @@ public class LayoutGrid
         return true;
     }
 
+    /** Registers every tile again after the registry forgot them (FR-216), each blanked first as a new tile starts. */
+    public void registerTilesAgain()
+    {
+        DiagramTileRegistry registry = window == null ? null : window.getDiagramTileRegistry();
+        if (registry == null) return;
+        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, LayoutLabel> tile
+            : tilesAsRegistered.entrySet())
+        {
+            tile.getValue().setAutonomyOverlay(null);
+            tile.getValue().setAutonomyAnnotation(null);
+            registry.register(tile.getKey(), tile.getValue());
+        }
+    }
+
     /**
      * Binds each route square again to the route its square names now, and says so on hover, as a rebuild would: a
      * route deleted, renumbered or written anew is bound by the model to the page's squares, not to their labels.

@@ -15557,36 +15557,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
-    /**
-     * Updates the list of popups, and optionally refreshes the diagrams
-     */
+    /** Forgets the page windows closed and, when asked, draws the others again where their page changed (FR-216). */
     private void updatePopups(boolean doRefresh)
     {
-        ListIterator<LayoutPopupUI> iter = this.popups.listIterator();
-        while(iter.hasNext())
-        {
-            LayoutPopupUI currentPopup = iter.next();
-            
-            if (currentPopup.isVisible())
-            {
-                if (doRefresh)
-                {
-                    currentPopup.refreshDiagram();
-                }
-            }
-            else
-            {
-                iter.remove();
-            }
-        }
-        
-        if (this.model.isDebug())
-        {
-            this.model.logf(
-                "layout.ui.infoCurrentlyActivePopups",
-                this.popups.size()
-            );
-        }
+        this.popups.removeIf(popup -> !popup.isVisible());
+        if (doRefresh) for (LayoutPopupUI popup : this.popups) popup.refreshDiagram();
+        if (this.model.isDebug()) this.model.logf("layout.ui.infoCurrentlyActivePopups", this.popups.size());
     }
     
     private void EditFunction(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_EditFunction
@@ -16402,14 +16378,36 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         openLayoutEditor(null, null, null);
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 
+    // The page windows asked for and not built yet, as page and tile size
+    private final List<Map.Entry<String, Integer>> popupsAsked = new ArrayList<>();
+
+    /** Opens a page window; those asked for together are drawn, then shown, their shared work done once (FR-216). */
     private void showLayoutPopup(String layoutName, int size)
     {
+        synchronized (this.popupsAsked)
+        {
+            this.popupsAsked.add(new java.util.AbstractMap.SimpleImmutableEntry<>(layoutName, size));
+            if (this.popupsAsked.size() > 1) return;
+        }
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            LayoutPopupUI popup = new LayoutPopupUI(this.model.getLayout(layoutName), size, this);
+            List<LayoutPopupUI> built = new ArrayList<>();
+            synchronized (this.popupsAsked)
+            {
+                for (Map.Entry<String, Integer> page : this.popupsAsked)
+                {
+                    built.add(new LayoutPopupUI(this.model.getLayout(page.getKey()), page.getValue(), this));
+                }
+                this.popupsAsked.clear();
+            }
 
-            popup.render();
-            popups.add(popup);
+            for (LayoutPopupUI popup : built) popup.render();
+
+            // Update auto layout station labels on the track diagram, then show the windows that have them
+            updateVisiblePoints();
+            for (LayoutPopupUI popup : built) popup.setVisible(true);
+            popups.addAll(built);
             updatePopups(false);
             repaintLoc();
         });
@@ -21353,7 +21351,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Whether two pages save to the same text; false where either will not export. */
-    private static boolean sameText(LayoutDiagram a, LayoutDiagram b)
+    static boolean sameText(LayoutDiagram a, LayoutDiagram b)
     {
         try
         {

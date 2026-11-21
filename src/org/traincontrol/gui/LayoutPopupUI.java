@@ -6,8 +6,11 @@ import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.List;
+import java.util.Objects;
 import javax.swing.JPanel;
 import org.traincontrol.base.LayoutDiagram;
+import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.util.I18n;
 
@@ -37,8 +40,9 @@ public class LayoutPopupUI extends PositionAwareJFrame
         this.layout = l;
     }
 
-    // The grid on screen now, so that the next one can tell it to stop
+    // The grid on screen now, so that the next one can tell it to stop, and whether it was drawn with the addresses
     private LayoutGrid grid;
+    private boolean drawnWithAddresses;
     
     /**
      * Draws the page into the window.
@@ -63,6 +67,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
             true, parent);
         
         this.grid = grid;
+        this.drawnWithAddresses = this.layout.getShowAddress();
 
         // Half a square at a time on both axes, as the main window's diagram (MT-726, MT-727)
         LayoutGrid.scrollHalfASquareAtATime(this.jScrollPane1, size);
@@ -88,9 +93,25 @@ public class LayoutPopupUI extends PositionAwareJFrame
 
             saveWindowBounds();
         }
-        
-        // Update auto layout station labels on the track diagram
-        this.parent.updateVisiblePoints();
+    }
+
+    /** Whether a page read again draws as the grid on screen (FR-216): its name, text, addresses, ties and captions. */
+    private boolean drawsAs(LayoutDiagram page)
+    {
+        if (this.grid == null || page == null || !page.getName().equals(this.layout.getName())
+            || page.getShowAddress() != this.drawnWithAddresses || !TrainControlUI.sameText(page, this.layout)
+            || !this.grid.captionsAreAsBuilt()) return false;
+
+        List<LayoutDiagramComponent> was = this.layout.getAll(), now = page.getAll();
+        boolean same = was.size() == now.size();
+        for (int i = 0; same && i < was.size(); i++)
+        {
+            LayoutDiagramComponent a = was.get(i), b = now.get(i);
+            same = a.getX() == b.getX() && a.getY() == b.getY() && a.getAccessory() == b.getAccessory()
+                && a.getAccessory2() == b.getAccessory2() && a.getFeedback() == b.getFeedback()
+                && a.getRoute() == b.getRoute() && Objects.equals(a.getLinkPageName(), b.getLinkPageName());
+        }
+        return same;
     }
     
     /**
@@ -180,14 +201,11 @@ public class LayoutPopupUI extends PositionAwareJFrame
         setTitle(titleWith(this.parent.getWindowTitleString()));
     }
     
+    /** Draws the page, sized to it; `TrainControlUI.showLayoutPopup` shows the window once it has its captions. */
     public void render()
-    {        
+    {
         this.setAlwaysOnTop(parent.isAlwaysOnTop());
-                      
         drawGrid(true);
-             
-        setVisible(true);
-        
         // Hide the window on close so that LayoutLabels know they can be deleted
         addWindowListener(new WindowAdapter()
         {
@@ -199,13 +217,16 @@ public class LayoutPopupUI extends PositionAwareJFrame
         });
     }
     
-    /** Draws the page again after an edit, sized to it again only when its size changed: a size chosen stays. */
+    /**
+     * Draws the page again after an edit, sized to it again only when its size changed: a size chosen stays.  A page
+     * that draws as the one on screen keeps its grid (FR-216).
+     */
     public void refreshDiagram()
     {
         LayoutDiagram now = pageNow();
 
         this.goToLayoutPage(shownPlace(), now != null
-            && (now.getSx() != this.layout.getSx() || now.getSy() != this.layout.getSy()));
+            && (now.getSx() != this.layout.getSx() || now.getSy() != this.layout.getSy()), true);
     }
 
     /**
@@ -221,11 +242,11 @@ public class LayoutPopupUI extends PositionAwareJFrame
 
     /**
      * Draws the page again for the captions on it alone, keeping the window's size and place and saving nothing
-     * (OB-341).
+     * (OB-341); a page that draws as the one on screen keeps its grid.
      */
     void refreshCaptions()
     {
-        this.goToLayoutPage(shownPlace(), false);
+        this.goToLayoutPage(shownPlace(), false, true);
     }
     
     /**
@@ -234,7 +255,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
      */
     public void goToLayoutPage(int index)
     {
-        this.goToLayoutPage(index, true);
+        this.goToLayoutPage(index, true, false);
     }
 
     /**
@@ -252,7 +273,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
             return;
         }
 
-        this.goToLayoutPage(this.parent.getModel().getLayoutList().indexOf(page), true);
+        this.goToLayoutPage(this.parent.getModel().getLayoutList().indexOf(page), true, false);
     }
 
     /**
@@ -260,8 +281,10 @@ public class LayoutPopupUI extends PositionAwareJFrame
      *
      * @param index the page
      * @param fit whether to size the window to it, as `drawGrid` says
+     * @param keepTheSame whether a page that `drawsAs` the grid keeps it, held as the page shown (a page read again is
+     * redrawn), its squares registered again and its title set
      */
-    private void goToLayoutPage(int index, boolean fit)
+    private void goToLayoutPage(int index, boolean fit, boolean keepTheSame)
     {
         javax.swing.SwingUtilities.invokeLater( () -> 
         {
@@ -269,13 +292,24 @@ public class LayoutPopupUI extends PositionAwareJFrame
 
             if (index < this.parent.getModel().getLayoutList().size() && index >= 0)
             {
-                this.parent.getModel().logf("layout.ui.logPopupLayoutUpdate", page);
+                LayoutDiagram shown = this.parent.getModel().getLayout(
+                    this.parent.getModel().getLayoutList().get(index));
+                boolean kept = keepTheSame && drawsAs(shown);
+                this.layout = shown;
 
-                this.layout = this.parent.getModel().getLayout(
-                    this.parent.getModel().getLayoutList().get(index)
-                );
+                if (kept)
+                {
+                    this.grid.registerTilesAgain();
+                    refreshTitle();
+                }
+                else
+                {
+                    this.parent.getModel().logf("layout.ui.logPopupLayoutUpdate", page);
+                    drawGrid(fit);
+                    // Update auto layout station labels on the track diagram
+                    this.parent.updateVisiblePoints();
+                }
 
-                drawGrid(fit);
                 this.repaint();
             }
             else
