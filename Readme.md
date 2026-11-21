@@ -462,6 +462,7 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
+* v3.1.2
 * v3.1.1 [11/21/2026]
     - New Features
         - Java 21
