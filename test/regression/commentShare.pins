@@ -19,7 +19,7 @@ src/org/traincontrol/automationui/AutonomyRefreshCallback.java	588	0
 src/org/traincontrol/automationui/AutonomySession.java	275	58
 src/org/traincontrol/automationui/BuiltReach.java	309	0
 src/org/traincontrol/automationui/DiagramColours.java	745	0
-src/org/traincontrol/automationui/DiagramMonitor.java	379	3
+src/org/traincontrol/automationui/DiagramMonitor.java	373	3
 src/org/traincontrol/automationui/GraphReducer.java	405	16
 src/org/traincontrol/automationui/LayoutPageEdit.java	542	0
 src/org/traincontrol/automationui/SessionImport.java	-	5

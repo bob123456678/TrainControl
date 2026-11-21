@@ -265,11 +265,7 @@ public class DiagramMonitorDriver
             // was published is forgotten first: the wipe that turned this off may still be queued behind the click.
             DiagramMonitor current = monitor;
             Timer running = timer;
-            if (current != null)
-            {
-                current.invalidate();
-                current.markDirty();
-            }
+            if (current != null) current.invalidate();
             try
             {
                 if (running != null) running.schedule(aTick(), 0);

@@ -330,9 +330,11 @@ public class testAutonomyDiagramMonitor
     }
 
     /**
-     * invalidate() forgets the last published picture, so the next refresh() republishes even an unchanged one.
+     * invalidate() forgets the last published picture, so the next refresh() republishes even an unchanged one, and so
+     * does the timer's next tick when an earlier tick already took the dirty mark (OB-498).
      *
-     * MUTATION: make invalidate() a no-op.  A rebuilt diagram would stay blank until the next train moves.
+     * MUTATION: make invalidate() a no-op, or leave out its markDirty().  A wiped diagram would stay blank until the
+     * next train moves.
      */
     @Test
     public void testInvalidateForcesTheNextRefreshToRepublish() throws Exception
@@ -388,6 +390,15 @@ public class testAutonomyDiagramMonitor
         assertEquals(publishes[0], 2,
             "invalidate() should force the next refresh to republish, even though nothing about the "
             + "railway changed - to a freshly rebuilt view the same picture is news");
+
+        // The timer's path: a tick finds the picture unchanged and takes the mark, then the screen is wiped
+        monitor.markDirty();
+        monitor.refreshIfDirty();
+        monitor.invalidate();
+
+        assertTrue(monitor.refreshIfDirty(), "the tick after an invalidate did nothing: a tick before it had taken the"
+            + " dirty mark, so the wiped diagram stays blank until a train moves");
+        assertEquals(publishes[0], 3, "the tick after an invalidate did not republish the picture");
     }
 
     // The monitor actually running: a train on real track, and a picture published about it
