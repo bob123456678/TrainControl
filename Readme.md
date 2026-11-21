@@ -512,7 +512,7 @@ Tab icons provided by Freepik.
             - `Open Layout` and `Recent Layouts` refuse a folder whose layout lists no pages, and leave the current layout as it was.
             - In every translation, messages about autonomy use one word for it, and several translations read more naturally.
     - Notes
-        - A station set up with 3.1.0's `Terminus` or `Parking` preset keeps letting trains run through, with no white dot and no preset button lit, until you press `Terminus` or `Parking` again in `Station Settings`.
+        - A station set up with 3.1.0's `Terminus` or `Parking` preset keeps letting trains run through, with no white dot and no preset button shown as pressed, until you press `Terminus` or `Parking` again in `Station Settings`.
 * v3.1.0 [11/15/2026]
     - Central Station Protocol
         - New Features
@@ -588,7 +588,7 @@ Tab icons provided by Freepik.
         - Autonomy
             - The autonomy editor can no longer be made so short that `Save Changes` and `Cancel` are cut off.
         - Track Diagram
-            - The red arrows on a curved s88 sensor are drawn a little further out, so they stay visible.
+            - The red arrows on a curved S88 sensor are drawn a little further out, so they stay visible.
             - A switch and a signal that share an address change together, and on a CS3 with an MM2 and a DCC accessory at the same address, each square controls the right one.
         - Central Station
             - Locomotive pictures stored outside the CS3's standard folders now show, and syncing with a CS3 is faster.
