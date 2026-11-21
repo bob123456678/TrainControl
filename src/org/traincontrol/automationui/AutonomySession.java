@@ -5593,8 +5593,9 @@ public class AutonomySession
     {
         List<Object> key = new ArrayList<>();
 
-        // Only `rebuild` replaces the graph, and with it the reduction and the index
+        // Only `rebuild` replaces the graph and the reduction; point-property doors derive the index anew too
         key.add(new Same(graph));
+        key.add(new Same(stationIndex));
         key.add(store.snapshotSetup().toString());
         key.add(pagesStale);
         key.add(I18n.getLocale());

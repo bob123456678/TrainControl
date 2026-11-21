@@ -30,7 +30,7 @@ import support.Reflect;
  *
  * The findings are kept, across events, only while everything the check reads is as it was: a change in a later event
  * (the setup, a train's length, a label on the diagram, a train on the railway, stale pages, the language, what only a
- * rebuild reads) is answered for.  Each has a claim here, because a key missing one would hand back findings about a railway that has changed.
+ * rebuild reads, an index derived anew) is answered for.  Each has a claim here, because a key missing one would hand back findings about a railway that has changed.
  *
  * On the frozen copy of his railway, whose findings move with each change asked of here (see each precondition).
  *
@@ -606,6 +606,63 @@ public class testTheFindingsAreWorkedOutOncePerEvent
         {
             threeWay.setAccessory2(second);
 
+            session.restoreSetup(asFound);
+
+            inOneEvent(() ->
+            {
+                session.rebuild();
+
+                return null;
+            });
+        }
+    }
+
+    /**
+     * An index derived anew in a later event is checked: a turning mark written straight into the setup, checked
+     * against the old index, then a point-property door that changes nothing else derives the index, and the findings
+     * follow it.
+     *
+     * MUTATION: leave the station index out of what the check is said to read, and this fails.
+     */
+    @Test
+    public void testAnIndexDerivedAnewIsChecked() throws Exception
+    {
+        Map<TileKey, String> placed = session.trainsWhereTheyStand();
+
+        assertFalse(placed.isEmpty(), "precondition: the frozen setup places no train");
+
+        final TileKey square = placed.keySet().iterator().next();
+
+        final Object priority = session.getPointProperty(square, "priority");
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
+        {
+            inOneEvent(() -> session.check());
+
+            // Straight into the setup, as no door does: the index is not derived
+            inOneEvent(() -> session.getStore().getConfiguration(session.getStore().getActiveConfiguration())
+                .getJSONObject("points").getJSONObject(square.toString()).put(AutonomyBuilder.MUST_REVERSE, true));
+
+            List<List<AutonomyChecks.Finding>> got = acrossEvents(() ->
+            {
+                session.setPointProperty(square, "priority", priority);
+
+                return null;
+            });
+
+            // Off the event thread nothing is kept, so this is worked out afresh
+            List<AutonomyChecks.Finding> fresh = session.check();
+
+            assertEquals(said(got.get(1)), said(fresh), "the findings do not follow the index derived anew");
+
+            assertFalse(got.get(0).isEmpty(), "precondition: the frozen railway has no findings");
+
+            assertNotSame(got.get(1).get(0), got.get(0).get(0), "an index derived anew was not checked again");
+        }
+        finally
+        {
             session.restoreSetup(asFound);
 
             inOneEvent(() ->
