@@ -9,18 +9,18 @@ import org.traincontrol.automationui.TileAnnotation;
 import org.traincontrol.automationui.TileAnnotation.ToolMark;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.SettledQuestion;
+import org.traincontrol.gui.autonomy.DestinationTable;
+import org.traincontrol.gui.autonomy.DestinationTable.Status;
 import org.traincontrol.util.I18n;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
 
 /**
  * The autonomy editor's answer to Why Not Moving?: for the train on the clicked square, every station it might be
- * sent to and why each was refused (FR-080), composed on the WhyRenderer thread and handed back to be painted
+ * sent to, by autonomy or by hand, in a table (FR-221), composed on the WhyRenderer thread and handed back to be painted
  * (FR-136).  Reads the panel's fields through `editor`; the railway's monitor is taken by the Layout calls the answer
  * is made of, off the event thread.
  */
@@ -41,11 +41,10 @@ final class EditorWhy extends SettledQuestion
      * @param index the square-to-Point translation
      * @param setup the edge names the routes are drawn by, read on the event thread
      * @param tile the square that was clicked
-     * @param byHand true when Path Type is Manual: the reasons a hand-driven send meets (MT-434)
      * @return what to say and what to draw
      */
     AutonomyEditorPanel.WhyAnswer composeWhy(Layout layout,
-        org.traincontrol.automationui.StationIndex index, AutonomyEditorPanel.WhySetup setup, TileKey tile, boolean byHand)
+        org.traincontrol.automationui.StationIndex index, AutonomyEditorPanel.WhySetup setup, TileKey tile)
     {
         // Which train is standing here, asked of the layout rather than the setup, whose opinion of where trains are
         // decides what runs.
@@ -80,65 +79,27 @@ final class EditorWhy extends SettledQuestion
 
         marks.put(tile, ToolMark.PICKED);
 
-        // For the tier asked: by hand, only what stops a route of any kind.
-        String cannotStart = layout.explainCannotStart(standing, byHand);
+        // Both tiers at once (FR-221)
+        DestinationTable table = new DestinationTable(layout, standing);
 
-        if (cannotStart != null)
+        if (table.cannotStart != null)
         {
             return new AutonomyEditorPanel.WhyAnswer(I18n.f("autosetup.ui.whyCannotStart",
-                AutonomyEditorPanel.escape(standing.getName()), AutonomyEditorPanel.escape(cannotStart)) + unsavedWarning(), true, drawn,
-                marks);
+                AutonomyEditorPanel.escape(standing.getName()), AutonomyEditorPanel.escape(table.cannotStart))
+                + unsavedWarning(), true, drawn, marks);
         }
 
-        // The reasons and which autonomy would never choose, taken under one lock so a station cannot be printed under
-        // the wrong heading.
-        Layout.Destinations grouped = layout.explainDestinationsGrouped(standing, byHand);
-
-        Map<String, String> reasons = grouped.getReasons();
-
-        // Where the train could be sent by hand right now: a barred station's own reason is its bar, which says nothing
-        // of whether a route would take it there (an intermediate terminus, a length that does not fit).
-        Layout.Destinations byHandToo = byHand ? grouped : layout.explainDestinationsGrouped(standing, true);
-
-        Map<String, String> sendable = byHandToo.getReasons();
-
-        // Stations first, then berths, each alphabetical, grouped as `AutoLocomotiveStatus.whyNotReport` groups its
-        // window (FR-080); by page first (MT-429); names as a person reads them (MT-865).
+        // By page first, the train's own first (MT-429)
         final String currentPage = editor.page != null ? editor.page : tile.getPage();
 
-        final Map<String, String[]> sortKey = new HashMap<>();
+        // Each square's best answer: by square, not by the name shown, which two unnamed squares on one sensor share
+        Map<TileKey, Status> best = new LinkedHashMap<>();
 
-        java.util.Comparator<String> byPageThenName = (a, b) ->
+        for (String point : table.points())
         {
-            String[] x = sortKey.get(a);
-            String[] y = sortKey.get(b);
+            TileKey where = index.squareOf(point);
 
-            int byPage = x[0].compareTo(y[0]);
-
-            if (byPage != 0) return byPage;
-
-            int byName = org.traincontrol.util.Util.compareAsRead(x[1], y[1]);
-
-            return byName != 0 ? byName : a.compareTo(b);
-        };
-
-        Set<String> available = new java.util.TreeSet<>(byPageThenName);
-        Map<String, String> choosable = new TreeMap<>(byPageThenName);
-        Map<String, String> neverChosen = new TreeMap<>(byPageThenName);
-
-        // The route each colored square may be drawn by, per color: the router's own, to the first of its copies
-        Map<ToolMark, Map<TileKey, List<Edge>>> routeTo = new java.util.EnumMap<>(ToolMark.class);
-
-        Set<TileKey> outOfReach = new java.util.HashSet<>();
-
-        // Collapsed to stations, as the locomotive panel's tooltip does: the reasons are keyed by the running graph's
-        // Points and a square is several, so a derived-graph station would appear three times under names the user
-        // never chose.
-        for (Map.Entry<String, String> entry : reasons.entrySet())
-        {
-            TileKey where = index.squareOf(entry.getKey());
-
-            String station = where == null ? entry.getKey() : editor.describeTile(where);
+            String station = where == null ? point : editor.describeTile(where);
 
             // And its page, where that is not the current page: a name with no page is one somebody has to go and look
             // for, or two squares that read as one.
@@ -148,83 +109,69 @@ final class EditorWhy extends SettledQuestion
 
             if (elsewhere) station = I18n.f("autosetup.ui.whyStationOnPage", station, where.getPage());
 
-            // By square, not by the name shown, which two unnamed squares on one sensor share.  Purple only where it
-            // could be sent by hand; one it cannot be is gray like any other (OB-394).
-            if (where != null)
-            {
-                ToolMark mark = entry.getValue() == null
-                    ? ToolMark.CAN_GO
-                    : grouped.getBarred().contains(entry.getKey()) && sendable.containsKey(entry.getKey())
-                        && sendable.get(entry.getKey()) == null
-                        ? ToolMark.NEVER
-                        : ToolMark.NOT_NOW;
+            if (where != null) settle(best, where, table.statusOf(point));
 
-                markCopy(marks, outOfReach, where, mark, grouped.getBarred().contains(entry.getKey()));
-
-                // Green by autonomy's route, purple by the one a hand send would take
-                List<Edge> route = mark == ToolMark.CAN_GO
-                    ? grouped.getRoutes().get(entry.getKey())
-                    : mark == ToolMark.NEVER ? byHandToo.getRoutes().get(entry.getKey()) : null;
-
-                if (route != null)
-                {
-                    routeTo.computeIfAbsent(mark, m -> new HashMap<>()).putIfAbsent(where, route);
-                }
-            }
-
-            sortKey.put(station, new String[] {
-                where == null || where.getPage() == null ? "2" : elsewhere ? "1" + where.getPage() : "0", nameOnly });
-
-            // One line per station.  The first reason is the one that would have stopped it; the others are the same
-            // square's other arrival sides saying the same thing.
-            grouped.fileUnderStation(entry.getKey(), station, available, choosable, neverChosen);
+            table.file(point, station,
+                where == null || where.getPage() == null ? "2" : elsewhere ? "1" + where.getPage() : "0", nameOnly);
         }
 
-        finishMarks(marks, outOfReach);
+        // Drawn, so "where can it go" is read off the track: the route of a copy that gave its square's answer, green
+        // first, so track a purple route shares with a green one stays the green one's.
+        Map<TileKey, List<Edge>> routeTo = new HashMap<>();
 
-        // Drawn, so "where can it go" is read off the track rather than out of a list: green first, so track a purple
-        // route shares with a green one stays the green one's.
-        for (ToolMark color : new ToolMark[] {ToolMark.CAN_GO, ToolMark.NEVER})
+        for (String point : table.points())
         {
-            for (Map.Entry<TileKey, ToolMark> square : marks.entrySet())
-            {
-                Map<TileKey, List<Edge>> byColor = routeTo.get(color);
+            TileKey where = index.squareOf(point);
+            List<Edge> route = table.routeTo(point);
 
-                if (square.getValue() == color && byColor != null && byColor.get(square.getKey()) != null)
+            if (where != null && route != null && best.get(where) == table.statusOf(point)) routeTo.putIfAbsent(where, route);
+        }
+
+        for (Status color : new Status[] {Status.CAN_GO, Status.BY_HAND})
+        {
+            for (Map.Entry<TileKey, Status> square : best.entrySet())
+            {
+                if (square.getValue() == color && routeTo.containsKey(square.getKey()))
                 {
-                    drawRoute(drawn, byColor.get(square.getKey()), setup.edgesByName, square.getKey(),
-                        color == ToolMark.NEVER);
+                    drawRoute(drawn, routeTo.get(square.getKey()), setup.edgesByName, color == Status.BY_HAND);
                 }
             }
         }
+
+        for (Map.Entry<TileKey, Status> square : best.entrySet())
+        {
+            marks.putIfAbsent(square.getKey(), square.getValue() == Status.CAN_GO ? ToolMark.CAN_GO
+                : square.getValue() == Status.BY_HAND ? ToolMark.BY_HAND : ToolMark.NOT_NOW);
+        }
+
+        int available = 0;
+        boolean byHand = false;
+
+        for (DestinationTable.Row row : table.rows())
+        {
+            if (row.status == Status.CAN_GO) available++;
+
+            byHand |= row.status == Status.BY_HAND;
+        }
+
+        // A count only, the table names them (D175)
+        String name = AutonomyEditorPanel.escape(standing.getName());
+        String going = available == 0 ? I18n.f("autosetup.ui.whyReport", name, I18n.t("autosetup.ui.whyNowhere"), "")
+            : I18n.f("autosetup.ui.whyCanGo" + I18n.countForm(available), name, available);
 
         // "Nowhere to go", with nothing after it, is not an answer: "every station refused this train" cannot be told
         // from "there were no stations to refuse it", which need opposite things done.  So when nothing was considered,
         // say what the setup holds.
-        String going = available.isEmpty()
-            ? I18n.t("autosetup.ui.whyNowhere")
-            : I18n.f("autosetup.ui.whyCanGo", available.size(), AutonomyEditorPanel.escape(String.join(", ", available)));
-
-        StringBuilder blocked = new StringBuilder();
-
-        // On Manual, the stations it cannot be sent to: autonomy's "could choose" is not the question asked (MT-434).
-        whyGroup(blocked, I18n.f(byHand ? "autolayout.ui.whyHeaderByHand" : "autolayout.ui.whyHeaderCandidates",
-            choosable.size()), choosable);
-        whyGroup(blocked, I18n.f("autolayout.ui.whyHeaderBarred", neverChosen.size()), neverChosen);
-
-        String detail = blocked.toString();
-
-        if (available.isEmpty() && reasons.isEmpty())
-        {
-            detail = "<br>" + AutonomyEditorPanel.escape(I18n.f("autosetup.ui.whyNothingConsidered",
+        String detail = table.points().isEmpty()
+            ? "<br>" + AutonomyEditorPanel.escape(I18n.f("autosetup.ui.whyNothingConsidered",
                 countStations(layout), countDestinations(layout),
-                AutonomyEditorPanel.escape(describeBlock(layout.getLocomotiveLocation(standing)))));
-        }
+                AutonomyEditorPanel.escape(describeBlock(layout.getLocomotiveLocation(standing)))))
+            : "<br>" + table.html(Integer.MAX_VALUE);
 
         // The reason behind the reason: "No track route leads there", said once per station, is what a severed railway
-        // looks like (a switch or signal drawn without an accessory address cannot be routed over), so with nothing
-        // available and blocking findings, say that first.
-        if (available.isEmpty())
+        // looks like (a switch or signal drawn without an accessory address cannot be routed over), so with nowhere
+        // either tier can send it and blocking findings, say that first.
+        if (available == 0 && !byHand)
         {
             int blockingFindings = countBlockingFindings();
 
@@ -235,8 +182,7 @@ final class EditorWhy extends SettledQuestion
             }
         }
 
-        return new AutonomyEditorPanel.WhyAnswer(I18n.f("autosetup.ui.whyReport", AutonomyEditorPanel.escape(standing.getName()),
-            going, detail + unsavedWarning() + colours(marks.values())), true, drawn, marks);
+        return new AutonomyEditorPanel.WhyAnswer(going + detail + unsavedWarning(), true, drawn, marks);
     }
 
     /**
@@ -247,7 +193,7 @@ final class EditorWhy extends SettledQuestion
     private void drawRoute(
         Map<TileKey, List<TileAnnotation.Trace>> drawn,
         List<Edge> route,
-        Map<String, GraphReducer.ReducedEdge> edgesByName, TileKey to,
+        Map<String, GraphReducer.ReducedEdge> edgesByName,
         boolean purple)
     {
         List<GraphReducer.ReducedEdge> run = new ArrayList<>();
@@ -265,7 +211,7 @@ final class EditorWhy extends SettledQuestion
 
         Map<TileKey, List<TileAnnotation.Trace>> one = new LinkedHashMap<>();
 
-        editor.trace(one, run, run.get(0).getStart(), true, to, purple);
+        editor.trace(one, run, run.get(0).getStart(), true, purple);
 
         for (Map.Entry<TileKey, List<TileAnnotation.Trace>> square
             : one.entrySet())
@@ -335,44 +281,12 @@ final class EditorWhy extends SettledQuestion
             || (a.getTo() != null && (a.getTo() == b.getFrom() || a.getTo() == b.getTo()));
     }
 
-    /**
-     * Marks a square with the best of its copies' answers, as the answer files a station: can go, else not now, else
-     * never, in `ToolMark`'s order, where the train's own square's PICKED comes first and so keeps its outline.
-     */
-    private static void settle(Map<TileKey, ToolMark> marks, TileKey square, ToolMark mark)
+    /** Keeps the best answer of a square's copies, can go over by hand over not now, as the table files a station. */
+    static void settle(Map<TileKey, Status> best, TileKey square, Status status)
     {
-        ToolMark had = marks.get(square);
+        Status had = best.get(square);
 
-        if (had == null || mark.ordinal() < had.ordinal()) marks.put(square, mark);
-    }
-
-    /**
-     * One copy's mark on its square, green over gray over purple; a copy autonomy never chooses that a hand send cannot
-     * reach either is held back, so it does not gray a square another copy can be sent to (OB-394).
-     */
-    static void markCopy(Map<TileKey, ToolMark> marks, Set<TileKey> outOfReach, TileKey square,
-        ToolMark mark, boolean barred)
-    {
-        if (mark == ToolMark.NOT_NOW && barred) outOfReach.add(square);
-        else settle(marks, square, mark);
-    }
-
-    /** The held-back squares no copy said more of, gray. */
-    static void finishMarks(Map<TileKey, ToolMark> marks, Set<TileKey> outOfReach)
-    {
-        for (TileKey square : outOfReach) marks.putIfAbsent(square, ToolMark.NOT_NOW);
-    }
-
-    /** What the stations' colors mean, naming only the colors drawn, last and after an empty line (MT-865). */
-    private static String colours(java.util.Collection<ToolMark> drawn)
-    {
-        List<String> said = new ArrayList<>();
-
-        if (drawn.contains(ToolMark.CAN_GO)) said.add(I18n.t("autosetup.ui.whyColourGreen"));
-        if (drawn.contains(ToolMark.NOT_NOW)) said.add(I18n.t("autosetup.ui.whyColourGray"));
-        if (drawn.contains(ToolMark.NEVER)) said.add(I18n.t("autosetup.ui.whyColourPurple"));
-
-        return said.isEmpty() ? "" : "<br><br>" + AutonomyEditorPanel.escape(String.join("  ", said));
+        if (had == null || status.compareTo(had) < 0) best.put(square, status);
     }
 
     /**
@@ -423,26 +337,6 @@ final class EditorWhy extends SettledQuestion
         }
 
         return count;
-    }
-
-    /**
-     * One headed group of "station: reason" lines for the why answer, left out entirely when it is empty (an empty
-     * heading reads as a group that failed to load).  The headings are the locomotive panel window's own (FR-080).
-     *
-     * @param into the answer being built
-     * @param heading the group's heading, already translated
-     * @param lines station to reason, in the order to show them
-     */
-    private static void whyGroup(StringBuilder into, String heading, Map<String, String> lines)
-    {
-        if (lines.isEmpty()) return;
-
-        into.append("<br><b>").append(AutonomyEditorPanel.escape(heading)).append("</b>");
-
-        for (Map.Entry<String, String> line : lines.entrySet())
-        {
-            into.append("<br>").append(AutonomyEditorPanel.escape(line.getKey())).append(": ").append(AutonomyEditorPanel.escape(line.getValue()));
-        }
     }
 
     /**

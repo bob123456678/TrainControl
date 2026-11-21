@@ -116,6 +116,12 @@ public abstract class Locomotive
  
     // User-defined notes about this locomotive
     private String notes = "";
+
+    // The Central Station's name for this locomotive that a pressed Sync offered and the user turned down (FR-220)
+    private String declinedStationName;
+
+    // The one the Sync running now offered and did not apply, so it adds no copy under it; never saved
+    private String heldBackStationName;
     
     // Used to pause autonomous operation - not persisted.  Volatile, not under the monitor: a command can hold that
     // for a stalled network write, and windows read this every second.
@@ -1539,6 +1545,51 @@ public abstract class Locomotive
             LocomotiveNotes wrapper = new LocomotiveNotes(0, 0, "", notes);
             this.notes = wrapper.toJson().toString();
         }
+    }
+
+    /** The station's name for this locomotive the user turned down, or null; Sync does not offer it again. */
+    public String getDeclinedStationName()
+    {
+        return this.declinedStationName;
+    }
+
+    public void setDeclinedStationName(String name)
+    {
+        this.declinedStationName = name;
+    }
+
+    /** Marks the station's name the Sync running now offered for this locomotive and did not apply; null clears it. */
+    public void setHeldBackStationName(String name)
+    {
+        this.heldBackStationName = name;
+    }
+
+    /** Whether this locomotive keeps its name over the station's: turned down, or held back by the Sync running now. */
+    public boolean keepsItsNameOver(String stationName)
+    {
+        return stationName.equals(this.declinedStationName) || stationName.equals(this.heldBackStationName);
+    }
+
+    /**
+     * The member a station multi-unit names `s`, among `here`: the locomotive named `s`, else one that kept its name over
+     * `s`.  Only for the station's names: TrainControl's own links are names here, matched by name alone.
+     */
+    public static Locomotive stationMember(String s, List<? extends Locomotive> here)
+    {
+        Locomotive kept = null;
+        for (Locomotive l : here)
+        {
+            if (l.getName().equals(s)) return l;
+            if (kept == null && l.keepsItsNameOver(s)) kept = l;
+        }
+        return kept;
+    }
+
+    /** The key of a station multi-unit's `members` whose member among `here` is this locomotive, or null. */
+    public String stationMemberKeyIn(Map<String, Double> members, List<? extends Locomotive> here)
+    {
+        for (String key : members.keySet()) if (stationMember(key, here) == this) return key;
+        return null;
     }
 
     /**

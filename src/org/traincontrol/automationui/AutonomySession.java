@@ -1157,7 +1157,6 @@ public class AutonomySession
     /** What came back from a legacy autonomy.json, so the caller can say what happened. */
     public static class LegacyImport
     {
-
         /** Facings the import chose because the file stated none (or the square's own, no better evidence) (OB-304). */
         public int facingsInvented;
 
@@ -2250,6 +2249,17 @@ public class AutonomySession
 
             pausesTakenFromTheRailway.computeIfAbsent(configurationName, name -> new TreeMap<>())
                 .put(train.getName(), train.isAutonomyPaused());
+        }
+    }
+
+    /** A train's pause or going pressed alone (its card) over one already noted: Cancel keeps the last press (OB-346). */
+    public void notePressAlone(Locomotive train)
+    {
+        if (pausesTakenFromTheRailway == null || train == null || train.getName() == null) return;
+
+        for (Map<String, Boolean> pauses : pausesTakenFromTheRailway.values())
+        {
+            pauses.replace(train.getName(), train.isAutonomyPaused());
         }
     }
 
@@ -3892,9 +3902,9 @@ public class AutonomySession
 
             if (here == null || out.containsKey(here)) continue;
 
-            // Not stopped by a square out of service: this finding is an ERROR, and a closure is the operator's to make
+            // Not stopped by a square out of service: this finding is a WARNING, and a closure is the operator's to make
             // and undo.
-            if (!reach.stationsReachedFrom(copy, false).isEmpty()) continue;
+            if (reach.reachesAStation(copy)) continue;
 
             // Only where a sibling copy does get somewhere (`badCopies`).
             boolean healthySquare = false;
@@ -3903,7 +3913,7 @@ public class AutonomySession
             {
                 if (sibling.equals(copy) || !here.equals(byName.get(sibling))) continue;
 
-                if (reach.leaves(sibling) && !reach.stationsReachedFrom(sibling, false).isEmpty())
+                if (reach.leaves(sibling) && reach.reachesAStation(sibling))
                 {
                     healthySquare = true;
                     break;
@@ -5270,12 +5280,46 @@ public class AutonomySession
 
     /**
      * The editor's Test a Path from one square to another, or null where there is none: the search with the sets the
-     * build reads, starting on the copies a train stands on, so the path drawn agrees with the findings.
+     * build reads, starting on the copies a train stands on, past no other copy of either end and throwing no switch two
+     * ways, as the railway routes.  The findings' reach (`BuiltReach`) runs the same search over the build
+     * (`GraphReducer.searchBySettings`), so the two agree (`testTheFindingsAgreeWithTestAPathOnTheFrozenRailway`).
      */
     public List<GraphReducer.ReducedEdge> testPath(TileKey from, TileKey to)
     {
+        return testPath(from, to, startingArrivals());
+    }
+
+    /** The same, given `startingArrivals`, which builds the setup, so asked once for several searches. */
+    public List<GraphReducer.ReducedEdge> testPath(TileKey from, TileKey to, Map<TileKey, Set<Side>> arrivals)
+    {
         return reducer == null ? null : reducer.findPath(from, to, mayTurnTiles(), mandatoryTurnTiles(), barredArrivals(),
-            shutTiles(), stopOnlyTiles(), startingArrivals().get(from));
+            shutTiles(), stopOnlyTiles(), arrivals.get(from));
+    }
+
+    /**
+     * The same as autonomy would run it (FR-221): turning only where it stands, as a train that turned on arriving
+     * there, never on the way, nor to a station it leaves alone; null where only a hand send gets there.
+     */
+    public List<GraphReducer.ReducedEdge> testPathForAutonomy(TileKey from, TileKey to)
+    {
+        return testPathForAutonomy(from, to, startingArrivals());
+    }
+
+    /** The same, given `startingArrivals`. */
+    public List<GraphReducer.ReducedEdge> testPathForAutonomy(TileKey from, TileKey to, Map<TileKey, Set<Side>> arrivals)
+    {
+        if (reducer == null || manualOnlyStations().contains(to)) return null;
+
+        Set<TileKey> noTurn = new HashSet<>(mandatoryTurnTiles());
+
+        noTurn.remove(to);
+        noTurn.addAll(shutTiles());
+
+        Set<TileKey> turnAtTheStart = mayTurnTiles().contains(from) ? Collections.singleton(from)
+            : Collections.<TileKey>emptySet();
+
+        return reducer.findPath(from, to, turnAtTheStart, mandatoryTurnTiles(), barredArrivals(), noTurn,
+            stopOnlyTiles(), arrivals.get(from));
     }
 
     /**
@@ -5706,7 +5750,6 @@ public class AutonomySession
 
             if (!component.getLabel().trim().isEmpty()) covered.put(caption.getKey(), caption.getValue());
         }
-
 
         Set<TileKey> givenNoRoom = new LinkedHashSet<>();
 
@@ -6857,7 +6900,6 @@ public class AutonomySession
 
         return new ArrayList<>(out);
     }
-
 
     /**
      * The diagram tiles a standing train is lying across, for graying out.
@@ -8499,7 +8541,7 @@ public class AutonomySession
         return path >= 3;
     }
 
-    /** Sets a direction on every tile of a leader's run, in the leader's sense; returns how many tiles changed. */
+    /** Sets a direction on every tile of a square's run, in that square's sense; returns how many tiles changed. */
     public int setRunDirection(TileKey leader, RouteId routeId, Direction direction)
     {
         return sessionRuns.setRunDirection(leader, routeId, direction);
@@ -8648,7 +8690,8 @@ public class AutonomySession
                 isTurnAround(tile) && !isMustTurnAround(tile),
                 shut,
                 // which way a station's track runs out, for a terminus's flat end (FR-118)
-                store.isStation(tile) ? deadEndSide(tile) : null),
+                store.isStation(tile) ? deadEndSide(tile) : null,
+                isStopOnly(tile)),
             false, isCurveSquare(tile), false, null,
             // Restricted only: open both ways is the default and nearly every square
             arrows,
@@ -9555,5 +9598,4 @@ public class AutonomySession
 
         return repeats;
     }
-
 }

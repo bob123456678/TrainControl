@@ -20,6 +20,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
+import org.traincontrol.gui.widgets.HandPointer;
 
 /**
  * The accessory keyboard (FR-050): 16 range tabs over 128 keys, 16 across by 8 down.  A key shows its address over a
@@ -58,7 +59,7 @@ public class AccessoryKeyboard extends JPanel
     private static final Color DIVIDER = new Color(0xDDDDDD);
 
     /** Over a usable key's number, which a click throws the other way (MT-1009). */
-    private static final Cursor HAND = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
+    private static final Cursor HAND = HandPointer.cursor();
 
     /** What the window does with the keyboard's clicks. */
     public interface Listener

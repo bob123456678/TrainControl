@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import static org.testng.Assert.*;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -12,7 +14,7 @@ import org.testng.annotations.Test;
 /**
  * OB-124: every window in the application wears the TrainControl icon.  A window added next month is required to ask,
  * and fails here if it does not.  Read from the source rather than by opening windows, which needs a railway and a
- * display.
+ * display.  And every hand pointer in them is TrainControl's (FR-224).
  *
  * @author Adam
  */
@@ -178,6 +180,75 @@ public class testEveryWindowWearsTheIcon
             + "what made OB-124 invisible from the code");
     }
 
+    /**
+     * Every hand pointer is TrainControl's, `HandPointer.cursor()` (FR-224): Java's own hand is the jagged one on
+     * Java 8.  The GUI builder's code is not ours to edit; its windows set the hand again after `initComponents()`.
+     *
+     * MUTATION: setting `Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)` back in `AutoLocomotiveStatus` fails this.
+     */
+    @Test
+    public void testEveryHandPointerIsTheApplications() throws Exception
+    {
+        List<String> own = new ArrayList<>();
+        boolean sawTheHand = false;
+
+        for (File source : javaUnder(new File("src")))
+        {
+            if (source.getName().equals("HandPointer.java"))
+            {
+                sawTheHand = true;
+                continue;
+            }
+            String body = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
+
+            if (withoutGeneratedCode(body).contains("HAND_CURSOR")) own.add(source.getName());
+        }
+        assertTrue(sawTheHand, "HandPointer.java was not found under src/: this ran from the wrong directory");
+        assertTrue(own.isEmpty(), "these files set Java's own hand pointer, which is jagged on Java 8, instead of "
+            + "HandPointer.cursor(): " + own);
+    }
+
+    /**
+     * A hand the GUI builder sets, `name.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR))`, is set again
+     * outside the generated code of the same file as `name.setCursor(HandPointer.cursor())` (FR-224).
+     *
+     * MUTATION: take `linkLabel.setCursor(HandPointer.cursor())` out of `About`'s constructor, and this fails naming it.
+     */
+    @Test
+    public void testEveryHandTheFormSetsIsReplaced() throws Exception
+    {
+        Pattern formsHand = Pattern.compile(NOT_A_NAME + "((?:\\w+\\.)?)"
+            + Pattern.quote("setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR))"));
+        List<String> left = new ArrayList<>();
+        int hands = 0;
+
+        for (File source : javaUnder(new File("src")))
+        {
+            String body = new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
+            Matcher set = formsHand.matcher(generatedCode(body));
+
+            while (set.find())
+            {
+                hands++;
+                String ours = set.group(1) + "setCursor(HandPointer.cursor())";
+
+                if (!Pattern.compile(NOT_A_NAME + Pattern.quote(ours)).matcher(withoutGeneratedCode(body)).find())
+                {
+                    left.add(source.getName() + " needs " + ours);
+                }
+            }
+        }
+
+        // A floor, not a pin: About's two links are form hands today.
+        assertTrue(hands >= 1, "no form sets a hand pointer: the pattern has gone stale or this ran from the wrong "
+            + "directory");
+        assertTrue(left.isEmpty(), "these hands set by a form are never replaced by TrainControl's, so they show Java's "
+            + "own, jagged on Java 8: " + left);
+    }
+
+    /** So `name.setCursor` is not matched inside `othername.setCursor` or `x.name.setCursor`. */
+    private static final String NOT_A_NAME = "(?<![\\w.])";
+
     /** How far after a dialog is constructed its icon call may sit. */
     private static final int REACH = 900;
 
@@ -207,15 +278,16 @@ public class testEveryWindowWearsTheIcon
 
         while (true)
         {
-            int at = body.indexOf("GEN-BEGIN", from);
+            // The NetBeans markers, not the words: a javadoc that names GEN-BEGIN must not hide the rest of its file.
+            int at = body.indexOf("//GEN-BEGIN:", from);
 
             if (at < 0) break;
 
+            int end = body.indexOf("//GEN-END:", at);
+
+            if (end < 0) break;
+
             out.append(body, from, at);
-
-            int end = body.indexOf("GEN-END", at);
-
-            if (end < 0) return out.toString();
 
             from = end;
         }

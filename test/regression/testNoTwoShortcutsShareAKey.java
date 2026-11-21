@@ -98,9 +98,12 @@ public class testNoTwoShortcutsShareAKey
         throw new IllegalStateException(constant + " is no key KeyEvent names");
     }
 
-    /** `Held.CONTROL.on(KeyEvent.VK_X)` in the table, `controlPressed && keyCode == KeyEvent.VK_X` in the gesture. */
+    /**
+     * `Held.CONTROL.on(KeyEvent.VK_X)` or `Held.CONTROL_ONLY.on(...)` in the table, `controlPressed && keyCode ==
+     * KeyEvent.VK_X` in the gesture.
+     */
     private static final Pattern IN_THE_MAIN_WINDOW = Pattern.compile(
-        "(?:Held\\.CONTROL\\.on\\(|controlPressed\\s*&&\\s*keyCode\\s*==\\s*)KeyEvent\\.VK_([A-Z0-9_]+)");
+        "(?:Held\\.CONTROL(?:_ONLY)?\\.on\\(|controlPressed\\s*&&\\s*keyCode\\s*==\\s*)KeyEvent\\.VK_([A-Z0-9_]+)");
 
     /**
      * The keys one file binds twice on purpose, as `File.java#KEY`; each is a claim somebody has to defend.  A second
@@ -112,7 +115,8 @@ public class testNoTwoShortcutsShareAKey
         "TrainControlUI.java#X", "TrainControlUI.java#V", "TrainControlUI.java#DELETE",
 
         // `LayoutEditor.receiveKeyEvent` is a SECOND entry point, not a second branch: it has no caller today and
-        // returns at once in autonomy mode.
+        // returns at once in autonomy mode.  The handler's other Control+V is autonomy mode's Place (FR-200), asked only
+        // in that mode, above the track editor's paste.
         "LayoutEditor.java#V"));
 
     /**

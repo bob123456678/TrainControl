@@ -2,7 +2,6 @@ package org.traincontrol.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -52,6 +51,7 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.PopupListener;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.UiStyle;
@@ -191,7 +191,7 @@ final class LocomotiveFunctionsTab extends JPanel
             {
                 boolean over = playRowAt(e) >= 0;
 
-                table.setCursor(over ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
+                table.setCursor(over ? HandPointer.cursor() : null);
                 table.setToolTipText(over ? I18n.t("loc.ui.settingsSwitchFunction") : null);
             }
         });
@@ -354,8 +354,8 @@ final class LocomotiveFunctionsTab extends JPanel
 
                 try
                 {
-                    loaded = new ImageIcon(ui.getLocImage(loc.getFunctionIconUrl(which, active, true),
-                        TrainControlUI.BUTTON_ICON_WIDTH));
+                    loaded = ui.getLocIcon(loc.getFunctionIconUrl(which, active, true),
+                        TrainControlUI.BUTTON_ICON_WIDTH);
                 }
                 catch (Exception e)
                 {
@@ -545,7 +545,7 @@ final class LocomotiveFunctionsTab extends JPanel
         b.setDisabledIcon(RowIcons.revert(size, new java.awt.Color(175, 175, 175)));
         b.putClientProperty("JButton.buttonType", "toolBarButton");
         b.setFocusable(false);
-        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        b.setCursor(HandPointer.cursor());
         b.setToolTipText(I18n.t(tipKey));
         b.setName(name);
 
@@ -728,7 +728,7 @@ final class LocomotiveFunctionsTab extends JPanel
 
                 try
                 {
-                    loaded = new ImageIcon(ui.getLocImage(path, TrainControlUI.BUTTON_ICON_WIDTH));
+                    loaded = ui.getLocIcon(path, TrainControlUI.BUTTON_ICON_WIDTH);
                 }
                 catch (Exception ex)
                 {
@@ -828,7 +828,6 @@ final class LocomotiveFunctionsTab extends JPanel
 
         return url.substring(url.lastIndexOf('/') + 1);
     }
-
 
     /** Asks for one of the user's own images for a row; the table shows it at once and Save writes it. */
     void chooseOwnImage(Row r)

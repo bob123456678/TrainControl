@@ -25,6 +25,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.automationui.TileOverlay;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 
@@ -95,6 +96,14 @@ public final class LayoutLabel extends JLabel
     
     private Icon lastIcon;
     private boolean edit;
+    /** Volatile: set after the constructor has started a decode, which reads it on another thread. */
+    private volatile boolean sensorsFree;
+
+    /** Whether the picture ignores the device's state: in the editor, and in `sensorsAsFree`'s picture. */
+    private boolean ignoresState()
+    {
+        return edit || sensorsFree;
+    }
 
     /**
      * What autonomy says is happening on this square, or null; painted over the icon (the icon cache is shared by every
@@ -103,13 +112,18 @@ public final class LayoutLabel extends JLabel
      */
     private volatile TileOverlay autonomyOverlay;
 
-    /** Whether this square draws its trains, asked as it paints: the autonomy editor's Show Trains switch (FR-119). */
-    private java.util.function.BooleanSupplier trainsShown = () -> true;
+    /** Whether this square draws trains, asked in paint: the editor's Show Trains, else the overlay box (OB-496). */
+    private java.util.function.BooleanSupplier trainsShown = this::overlayShown;
 
     /** Has this square ask `shown` whether to draw the trains on it (FR-119). */
     public void setTrainsShown(java.util.function.BooleanSupplier shown)
     {
-        this.trainsShown = shown == null ? () -> true : shown;
+        this.trainsShown = shown == null ? this::overlayShown : shown;
+    }
+
+    private boolean overlayShown()
+    {
+        return tcUI == null || tcUI.autonomyOverlayToggle == null || tcUI.autonomyOverlayToggle.isOverlayShown();
     }
 
     // What the autonomy editor draws here - directions, lengths, selection.  Separate from the overlay
@@ -160,6 +174,17 @@ public final class LayoutLabel extends JLabel
         this(c, parent, size, tcUI, edit, null);
     }
 
+    /** A square as the track diagram draws it, but each device at rest and no change flashed: a picture (OB-485). */
+    public static LayoutLabel sensorsAsFree(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI)
+    {
+        LayoutLabel out = new LayoutLabel(c, parent, size, tcUI, false);
+
+        out.sensorsFree = true;
+        out.setImage(false);
+
+        return out;
+    }
+
     /** A square, given the editor's grid setting by the grid that makes it (null: ask it), asked once a build. */
     public LayoutLabel(LayoutDiagramComponent c, Container parent, int size, TrainControlUI tcUI, boolean edit,
         Boolean gridLines)
@@ -169,7 +194,7 @@ public final class LayoutLabel extends JLabel
         this.parent = parent;
         this.tcUI = tcUI;
         this.edit = edit;
-        
+
         this.setSize(size, size);
         this.setForeground(Color.white);
         
@@ -405,11 +430,12 @@ public final class LayoutLabel extends JLabel
                                         // green (red is what protection does); tested on the command, as a three-way's
                                         // `execSwitching` bypasses `Accessory.doSwitch()`.
                                         boolean protecting =
-                                            aboutToClearProtection(tcUI, c.getAccessory())
-                                            || aboutToClearProtection(tcUI, c.getAccessory2());
+                                            aboutToClearProtection(tcUI, component.getAccessory())
+                                            || aboutToClearProtection(tcUI, component.getAccessory2());
 
-                                        if (activeAccs.contains(c.getAccessory()) || 
-                                                (c.getAccessory2() != null && activeAccs.contains(c.getAccessory2()))
+                                        if (activeAccs.contains(component.getAccessory()) || 
+                                                (component.getAccessory2() != null
+                                                    && activeAccs.contains(component.getAccessory2()))
                                                 || protecting)
                                         {
                                             Object[] options = {
@@ -450,9 +476,9 @@ public final class LayoutLabel extends JLabel
                                     // (`activeAccs.contains(null)` is false); every route here is a MarklinRoute, the
                                     // only kind that knows the autonomy graph.
                                     final org.traincontrol.marklin.MarklinRoute onTile =
-                                        c.isRoute()
-                                            && c.getRoute() instanceof org.traincontrol.marklin.MarklinRoute
-                                        ? (org.traincontrol.marklin.MarklinRoute) c.getRoute() : null;
+                                        component.isRoute()
+                                            && component.getRoute() instanceof org.traincontrol.marklin.MarklinRoute
+                                        ? (org.traincontrol.marklin.MarklinRoute) component.getRoute() : null;
 
                                     lastClicked = System.currentTimeMillis();
 
@@ -534,8 +560,8 @@ public final class LayoutLabel extends JLabel
                                         // over an occupied platform).  Refused rather than re-asked, as asking would
                                         // hold the one switching thread; skipped for a click already accepted.
                                         if (!warnedAboutProtection
-                                            && (aboutToClearProtection(tcUI, c.getAccessory())
-                                                || aboutToClearProtection(tcUI, c.getAccessory2())))
+                                            && (aboutToClearProtection(tcUI, component.getAccessory())
+                                                || aboutToClearProtection(tcUI, component.getAccessory2())))
                                         {
                                             tcUI.getModel().logf("layout.warnProtectionArrived",
                                                 component.getAddress());
@@ -657,7 +683,7 @@ public final class LayoutLabel extends JLabel
         // A station gets the station items; every other square gets the menu without them, so a right-click anywhere
         // leads into the autonomy setup.
         final org.traincontrol.automationui.TileGraph.TileKey station =
-            tcUI.autonomyStationAt(autonomyPage, component.getX(), component.getY());
+            tcUI.diagramLocGestures.autonomyStationAt(autonomyPage, component.getX(), component.getY());
 
         // The square itself, which the setup menu acts on whether or not anything has been made of it yet.
         final org.traincontrol.automationui.TileGraph.TileKey here =
@@ -681,7 +707,7 @@ public final class LayoutLabel extends JLabel
         if (this.component != null && !this.component.isText())
         {
             final Map<String, Image> imageCache = TrainControlUI.getImageCache();
-            final String key = this.component.getImageKey(size, edit);
+            final String key = this.component.getImageKey(size, ignoresState());
 
             if (imageCache.get(key) == null)
             {
@@ -692,7 +718,7 @@ public final class LayoutLabel extends JLabel
 
                 // Then the (now cache-hit) Swing work on the EDT, failed decode or not: an uncounted tile would keep
                 // the diagram waiting forever.
-                decodeOnce(this.component, size, edit, this.tcUI).whenComplete((img, failed) ->
+                decodeOnce(this.component, size, ignoresState(), this.tcUI).whenComplete((img, failed) ->
                 {
                     try
                     {
@@ -727,7 +753,6 @@ public final class LayoutLabel extends JLabel
         // picture under the occupied key for the session.
         final String name = c.getImageName(size, edit);
         final String key = c.getImageKey(name, size);
-
         return DECODING.computeIfAbsent(key, k -> CompletableFuture.runAsync(() ->
         {
             try
@@ -735,8 +760,22 @@ public final class LayoutLabel extends JLabel
                 if (TrainControlUI.getImageCache().get(k) == null)
                 {
                     Image img = c.getImage(name, size);
-
                     if (img != null) TrainControlUI.getImageCache().putIfAbsent(k, img);
+
+                    // Then, apart, the copy a scaled screen draws (D191), so its first paint need not make it
+                    double scale = org.traincontrol.util.SharpIcon.screenScale(tcUI);
+                    int turn = c.getOrientation();
+                    if (scale > 1) tcUI.getTileImageLoader().execute(() ->
+                    {
+                        try
+                        {
+                            sharp(name, (int) Math.ceil(size * scale), turn);
+                        }
+                        catch (IOException ex)
+                        {
+                            tcUI.getModel().log(ex.getMessage());
+                        }
+                    });
                 }
             }
             catch (IOException ex)
@@ -749,6 +788,17 @@ public final class LayoutLabel extends JLabel
                 DECODING.remove(k);
             }
         }, tcUI.getTileImageLoader()));
+    }
+
+    /** A square's sharp copy `side` pixels across (D191), made once into the image cache. */
+    private static Image sharp(String name, int side, int turn) throws IOException
+    {
+        String key = name + "_" + turn + "_" + side + "_sharp";
+        Image made = TrainControlUI.getImageCache().get(key);
+        if (made == null) TrainControlUI.getImageCache().putIfAbsent(key,
+            made = LayoutDiagramComponent.toBufferedImage(LayoutDiagramComponent.getImage(name, side, turn)));
+
+        return made;
     }
 
     /**
@@ -821,7 +871,7 @@ public final class LayoutLabel extends JLabel
                 else
                 {
                     // One reading of the state names the key, the picture and what `updateImage` compares with
-                    final String shown = this.component.getImageName(size, edit);
+                    final String shown = this.component.getImageName(size, ignoresState());
 
                     try
                     {
@@ -849,19 +899,20 @@ public final class LayoutLabel extends JLabel
                         }
                         
                         boolean hadIcon = (this.getIcon() != null);
-                        lastIcon = ICONS.computeIfAbsent(img, ImageIcon::new);
+                        final int turn = this.component.getOrientation();
+                        lastIcon = ICONS.computeIfAbsent(img, i -> new org.traincontrol.util.SharpIcon(i,
+                            (w, h) -> sharp(shown, w, turn), true));
 
                         // A flash that is up is given up whenever the picture is replaced: its timer holds the icon it
                         // captured and would draw the tile as it was.
                         discardFlash();
-
                         this.setIcon(lastIcon);
 
                         // Neither mark is an icon (MT-309): the train line and the gray wash over blocked track are
                         // painted in `paintCoveredMark`, so a tile flashing yellow still shows both.
                         
                         // Temporarily highlight changes when they happen from a route/CS/keyboard command
-                        if (!edit && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
+                        if (!edit && !sensorsFree && (this.component.isSignal() || this.component.isSwitch()) && hadIcon && (System.currentTimeMillis() - lastClicked) > CLICK_TIMEOUT)
                         {
                             // The one before it is stopped first (OB-333): nulling the field would leave the old timer
                             // to `setIcon(lastIcon)` over a later highlight.
@@ -904,7 +955,7 @@ public final class LayoutLabel extends JLabel
                             //}
                             
                             // Change the cursor to indicate the component is clickable
-                            this.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+                            this.setCursor(HandPointer.cursor());
                         }
                     }
                     catch (IOException ex)
@@ -1115,9 +1166,6 @@ public final class LayoutLabel extends JLabel
         if (effective == null ? autonomyAnnotation == null
             : effective.equals(autonomyAnnotation)) return;
 
-        // And a station that spilled, which this may take away: its spill is on the squares around.
-        boolean spilled = spills(autonomyAnnotation);
-
         autonomyAnnotation = effective;
 
         // And the tiles around it where a train stands: the icon reaches past this tile.
@@ -1125,7 +1173,7 @@ public final class LayoutLabel extends JLabel
 
         TileOverlay train = autonomyOverlay;
 
-        if (around != null && (spilled || train != null && train.hasTrain()))
+        if (around != null && (train != null && train.hasTrain()))
         {
             around.repaint(getX() - getWidth(), getY() - getHeight(), 3 * getWidth(), 3 * getHeight());
         }
@@ -1142,9 +1190,9 @@ public final class LayoutLabel extends JLabel
     @Override
     protected void paintComponent(java.awt.Graphics g)
     {
-        // The square itself, faintly, where the railway refuses it (MT-278): the composite is set before
-        // `super.paintComponent` and undone after; everything autonomy draws on top is at full strength.
-        boolean refused = !edit && square != null && tcUI != null && tcUI.isTrackBlocked(square);
+        // The square itself, faintly, where the railway refuses it (MT-278), unless the overlay box is off: the
+        // composite is set before `super.paintComponent` and undone after; what autonomy draws on top is full strength.
+        boolean refused = !edit && square != null && tcUI != null && overlayShown() && tcUI.isTrackBlocked(square);
 
         org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
 
@@ -1194,6 +1242,15 @@ public final class LayoutLabel extends JLabel
             }
 
             paintCurvedSensorsArrowsWhole(g);
+        }
+        else if (annotation != null && annotation.isLeftEmpty() && flashTimer == null)
+        {
+            // No art (FR-197), but a flash still shows; the background still, where the label paints its own
+            if (isOpaque())
+            {
+                g.setColor(getBackground());
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
         }
         else if (annotation != null && annotation.isInGray() && flashTimer == null)
         {
@@ -1296,7 +1353,6 @@ public final class LayoutLabel extends JLabel
      * (`TailColour.SOFT`); the line itself is `tailColour()`.
      */
     public static final Color TRAIN_MARK = org.traincontrol.automationui.DiagramColours.TRAIN;
-
 
     /**
      * How solid a square is drawn while the railway refuses it (MT-278): like `TileAnnotation.IGNORED_ALPHA` (0.62) but
@@ -1510,7 +1566,6 @@ public final class LayoutLabel extends JLabel
 
         g.setStroke(new java.awt.BasicStroke(width, java.awt.BasicStroke.CAP_ROUND, java.awt.BasicStroke.JOIN_ROUND));
 
-        // Whichever color the diagram is set to draw - see `tailColour`
         g.setColor(overTheRun ? tailColour().overTheRun() : tailColour().colour());
 
         // One shape for all of the square's roads, drawn once: a see-through color drawn road by road lays itself twice
@@ -1519,11 +1574,8 @@ public final class LayoutLabel extends JLabel
 
         for (org.traincontrol.automationui.TilePorts.Route road : roads)
         {
-            int[] a = org.traincontrol.automationui.TileAnnotation.midpoint(
-                road.getA(), getWidth(), getHeight());
-
-            int[] b = org.traincontrol.automationui.TileAnnotation.midpoint(
-                road.getB(), getWidth(), getHeight());
+            int[] a = sideMidpoint(road.getA());
+            int[] b = sideMidpoint(road.getB());
 
             if (a == null || b == null) continue;
 
@@ -1652,11 +1704,8 @@ public final class LayoutLabel extends JLabel
 
         for (org.traincontrol.automationui.TilePorts.Route road : covered)
         {
-            int[] a = org.traincontrol.automationui.TileAnnotation.midpoint(
-                road.getA(), getWidth(), getHeight());
-
-            int[] b = org.traincontrol.automationui.TileAnnotation.midpoint(
-                road.getB(), getWidth(), getHeight());
+            int[] a = sideMidpoint(road.getA());
+            int[] b = sideMidpoint(road.getB());
 
             if (a == null || b == null) return null;
 
@@ -1666,6 +1715,12 @@ public final class LayoutLabel extends JLabel
         }
 
         return shape.isEmpty() ? null : shape;
+    }
+
+    /** Where a side meets this square's edge, by `TileAnnotation.midpoint`. */
+    private int[] sideMidpoint(org.traincontrol.automationui.TilePorts.Side side)
+    {
+        return org.traincontrol.automationui.TileAnnotation.midpoint(side, getWidth(), getHeight());
     }
 
     /** The roads of this square a standing train is lying across, as the sides they join. */
@@ -1785,117 +1840,6 @@ public final class LayoutLabel extends JLabel
     }
 
     /**
-     * What of this square's station icon spills onto the squares beside it, drawn by the diagram once every square is
-     * drawn (`TileAnnotation.paintSpill`); true if anything was drawn: a spill reaching what is being repainted.
-     */
-    public boolean paintStationSpill(java.awt.Graphics g)
-    {
-        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
-
-        if (!spills(annotation) || !isVisible()) return false;
-
-        java.awt.Rectangle clip = g.getClipBounds();
-
-        if (clip != null && !clip.intersects(spillReach())) return false;
-
-        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
-
-        try
-        {
-            g2.translate(getX(), getY());
-
-            annotation.paintSpill(g2, getWidth(), getHeight());
-        }
-        finally
-        {
-            g2.dispose();
-        }
-
-        return true;
-    }
-
-    /**
-     * This square's arrows back over a neighbor's spilled station (`TileAnnotation.paintArrowsAgain`), asked by the
-     * diagram once spills are drawn; only where another square's spill reaches this one.
-     */
-    void paintArrowsOverSpill(java.awt.Graphics g, java.util.Map<LayoutLabel, java.awt.Rectangle> spilt)
-    {
-        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
-
-        if (annotation == null || !isVisible()) return;
-
-        java.awt.Rectangle mine = getBounds();
-
-        java.awt.Rectangle clip = g.getClipBounds();
-
-        if (clip != null && !clip.intersects(mine)) return;
-
-        boolean under = false;
-
-        for (java.util.Map.Entry<LayoutLabel, java.awt.Rectangle> spill : spilt.entrySet())
-        {
-            if (spill.getKey() != this && spill.getValue().intersects(mine)) under = true;
-        }
-
-        if (!under) return;
-
-        java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create(getX(), getY(), getWidth(), getHeight());
-
-        try
-        {
-            annotation.paintArrowsAgain(g2, getWidth(), getHeight());
-        }
-        finally
-        {
-            g2.dispose();
-        }
-    }
-
-    /**
-     * And the squares around it where this square's station spills: the diagram paints neighbors only where asked, so
-     * repainting this alone would leave the old spill.
-     */
-    @Override
-    public void repaint(long tm, int x, int y, int width, int height)
-    {
-        java.awt.Container around = getParent();
-
-        if (around != null && spills(autonomyAnnotation))
-        {
-            java.awt.Rectangle reach = spillReach();
-
-            around.repaint(tm, reach.x, reach.y, reach.width, reach.height);
-
-            return;
-        }
-
-        super.repaint(tm, x, y, width, height);
-    }
-
-    /** What this square's spill covers, in the diagram's coordinates, or null - `TileAnnotation.spillShape`. */
-    java.awt.Shape spillShapeOnTheDiagram()
-    {
-        org.traincontrol.automationui.TileAnnotation annotation = autonomyAnnotation;
-
-        java.awt.Shape shape = annotation == null ? null : annotation.spillShape(getWidth(), getHeight());
-
-        return shape == null ? null
-            : java.awt.geom.AffineTransform.getTranslateInstance(getX(), getY()).createTransformedShape(shape);
-    }
-
-    /** Whether an annotation's station spills past its square (`TileAnnotation.spillsOverItsSquare`). */
-    private static boolean spills(org.traincontrol.automationui.TileAnnotation annotation)
-    {
-        return annotation != null && annotation.spillsOverItsSquare();
-    }
-
-    /** As far as a spill reaches, in the diagram's coordinates: half a square past each edge - a curve's icon less. */
-    java.awt.Rectangle spillReach()
-    {
-        return new java.awt.Rectangle(getX() - getWidth() / 2, getY() - getHeight() / 2, 2 * getWidth(), 2 * getHeight());
-    }
-
-    /**
      * The middle of the train's own road on this square, for its icon (MT-642), as x and y within it, or null where
      * nothing says.
      */
@@ -1920,7 +1864,6 @@ public final class LayoutLabel extends JLabel
         return annotation == null ? null : annotation.trackCentreOf(overlay.trainSides(), getWidth(), getHeight());
     }
 
-
     /**
      * Reads the state again once the grid has registered this square for its device's changes, where the picture went
      * up in the constructor: a change in between reached neither.
@@ -1939,7 +1882,7 @@ public final class LayoutLabel extends JLabel
         // not blocked.  Avoids spawning a raw thread per tile on every state change.
         if (this.component != null)
         {
-            if (!this.component.getImageName(size, edit).equals(this.imageName) || highlight)
+            if (!this.component.getImageName(size, ignoresState()).equals(this.imageName) || highlight)
             {
                 this.setImage(true);
             }
@@ -1984,6 +1927,12 @@ public final class LayoutLabel extends JLabel
     public LayoutDiagramComponent getComponent()
     {
         return component;
+    }
+
+    /** Draws the same square of a page read again from now on (FR-216): a click acts on its accessories and route. */
+    void bindTo(LayoutDiagramComponent now)
+    {
+        this.component = now;
     }
 
     /**

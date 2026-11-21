@@ -6,6 +6,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
+import org.traincontrol.gui.autonomy.DestinationTable;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinFeedback;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -44,25 +45,7 @@ public class testWhyStuck
     @Test
     public void testByHandAStationBeyondAHeadshuntIsSomewhereToGo() throws Exception
     {
-        Layout layout = new Layout(model);
-
-        layout.setDefaultLocSpeed(30);
-
-        String[] names = { "WSH_A", "WSH_R", "WSH_B" };
-
-        for (int i = 0; i < names.length; i++)
-        {
-            MarklinFeedback sensor = model.newFeedback(3100 + i, null);
-
-            model.setFeedbackState(sensor.getName(), false);
-
-            layout.createPoint(names[i], true, sensor.getName());
-        }
-
-        layout.getPoint("WSH_R").setReversing(true);
-
-        layout.createEdge("WSH_A", "WSH_R");
-        layout.createEdge("WSH_R", "WSH_B");
+        Layout layout = aHeadshunt(3100, "WSH_A", "WSH_R", "WSH_B");
 
         MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
 
@@ -93,6 +76,133 @@ public class testWhyStuck
 
             assertNull(byHand, "the right-click menu offers WSH_B and Why Not Moving? on Manual says it cannot be sent there:"
                 + " '" + byHand + "' - the headshunt is autonomy's rule, not a hand-driven send's");
+        }
+        finally
+        {
+            loc.setReversible(reversibleWas);
+            loc.setTrainLength(lengthWas == null ? 0 : lengthWas);
+        }
+    }
+
+    /** A -> R -> B, R a reversing square, nothing measured, on sensors of their own numbered from `sensors`. */
+    private static Layout aHeadshunt(int sensors, String... names) throws Exception
+    {
+        Layout layout = new Layout(model);
+
+        layout.setDefaultLocSpeed(30);
+
+        for (int i = 0; i < names.length; i++)
+        {
+            MarklinFeedback sensor = model.newFeedback(sensors + i, null);
+
+            model.setFeedbackState(sensor.getName(), false);
+
+            layout.createPoint(names[i], true, sensor.getName());
+        }
+
+        layout.getPoint(names[1]).setReversing(true);
+
+        layout.createEdge(names[0], names[1]);
+        layout.createEdge(names[1], names[2]);
+
+        return layout;
+    }
+
+    /**
+     * The table escapes a station's name, and autonomy's refusal to start a train wraps instead of running three hundred
+     * characters wide (FR-221): beyond a headshunt, "Q&A <Yard>" is a station for a hand send only.
+     *
+     * MUTATION: in `DestinationTable.html`, leave the station unescaped, or the refusal out of its cell, and this fails.
+     */
+    @Test
+    public void testTheTableEscapesANameAndWrapsTheRefusal() throws Exception
+    {
+        Layout layout = aHeadshunt(3200, "WTE_A", "WTE_R", "Q&A <Yard>");
+
+        // Not one autonomy may choose, so from WTE_A autonomy reaches no station, and says why at length
+        layout.getPoint("Q&A <Yard>").setAutoDestination(false);
+
+        DestinationTable table = answerAt(layout, "WTE_A", null);
+
+        assertNotNull(table.autonomyWillNotStart, "precondition: autonomy would start the train at WTE_A");
+
+        String html = table.html(12);
+
+        assertTrue(html.contains(">Q&amp;A &lt;Yard></td>"), "the station's name is not escaped: " + html);
+
+        // The rows' own width, read without whatever comes before their table
+        String rows = html.substring(html.lastIndexOf("<table", html.indexOf("<th")));
+
+        int whole = new javax.swing.JLabel("<html>" + html + "</html>").getPreferredSize().width;
+        int alone = new javax.swing.JLabel("<html>" + rows + "</html>").getPreferredSize().width;
+
+        assertTrue(whole <= Math.max(alone, 2 * org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.TOOLTIP_WIDTH),
+            "autonomy's refusal makes the answer " + whole + " pixels wide, where its table is " + alone + ": " + html);
+    }
+
+    /**
+     * A station only a hand send can go to says "Return Home only" where it is this train's home, as Return Home still
+     * sends it there (D177, Adam: "you can add a note of "return home only" if needed"), and only there.
+     *
+     * MUTATION: in `DestinationTable.reasonOf`, leave the note out, or add it to every by-hand row, and this fails.
+     */
+    @Test
+    public void testAByHandStationThatIsItsHomeSaysReturnHomeOnly() throws Exception
+    {
+        Layout layout = aHeadshunt(3300, "WRH_A", "WRH_R", "WRH_B");
+
+        String note = org.traincontrol.util.I18n.t("autolayout.ui.whyReturnHomeOnly");
+
+        String elsewhere = reasonAt(answerAt(layout, "WRH_A", null), "WRH_B", DestinationTable.Status.BY_HAND);
+
+        assertFalse(elsewhere.contains(note), "WRH_B is not this train's home, and says " + note + ": " + elsewhere);
+
+        String home = reasonAt(answerAt(layout, "WRH_A", "WRH_B"), "WRH_B", DestinationTable.Status.BY_HAND);
+
+        assertTrue(home.contains(note), "WRH_B is this train's home, so Return Home sends it there, and its reason does"
+            + " not say " + note + ": " + home);
+    }
+
+    /** One station's reason, after checking its answer. */
+    private static String reasonAt(DestinationTable table, String station, DestinationTable.Status status)
+    {
+        for (DestinationTable.Row row : table.rows())
+        {
+            if (!row.station.equals(station)) continue;
+
+            assertEquals(row.status, status, "precondition: " + station + " is not " + status + ": " + row.reason);
+
+            return row.reason;
+        }
+
+        throw new AssertionError("no row for " + station + " in " + table.html(99));
+    }
+
+    /**
+     * Both tiers' answer for the first locomotive standing at `start`, reversible and of no length, at home on `home`
+     * where that is not null, each copy filed under its own name.
+     */
+    private static DestinationTable answerAt(Layout layout, String start, String home) throws Exception
+    {
+        MarklinLocomotive loc = model.getLocByName(model.getLocList().get(0));
+
+        boolean reversibleWas = loc.isReversible();
+        Integer lengthWas = loc.getTrainLength();
+
+        try
+        {
+            loc.setReversible(true);
+            loc.setTrainLength(0);
+
+            assertTrue(layout.moveLocomotive(loc.getName(), start, false), "could not stand the train at " + start);
+
+            if (home != null) layout.setHomeLocomotive(home, loc.getName());
+
+            DestinationTable table = new DestinationTable(layout, loc);
+
+            for (String point : table.points()) table.file(point, point, "", point);
+
+            return table;
         }
         finally
         {

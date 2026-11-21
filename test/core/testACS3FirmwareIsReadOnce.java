@@ -65,49 +65,49 @@ public class testACS3FirmwareIsReadOnce
         assertNull(FirmwareVersion.parse(null), "no text");
     }
 
-    /** 2.6.1: the sync asks info once and reads the 2.6 list twice; the two actions add one read of it each. */
+    /** 2.6.1: the sync asks info once and reads the 2.6 list once (FR-207); the two actions add one read of it each. */
     @Test
     public void testA261SyncReadsTheFirmwareOnceAndTheActionsReuseIt() throws Exception
     {
-        assertEquals(afterEach("260", INFO_261), "1/2/0;1/3/0;1/4/0");
+        assertEquals(afterEach("260", INFO_261), "1/1/0;1/2/0;1/3/0");
     }
 
-    /** 2.5: no probe at all; both reads of the list are of the older one. */
+    /** 2.5: no probe at all; the one read of the list is of the older one. */
     @Test
     public void testA25SyncNeedsNoProbe() throws Exception
     {
-        assertEquals(afterEach("250", "{\"softwareVersion\":\"2.5.1 (Build 1)\"}"), "1/0/2;1/0/3;1/0/4");
+        assertEquals(afterEach("250", "{\"softwareVersion\":\"2.5.1 (Build 1)\"}"), "1/0/1;1/0/2;1/0/3");
     }
 
-    /** A station that does not answer info is probed once, as before; the actions reuse the probe's answer. */
+    /** A station that does not answer info is probed once, as before, and the sync reads the probe's list; the actions reuse its answer. */
     @Test
     public void testAStationWithNoInfoIsProbedOnce() throws Exception
     {
-        assertEquals(afterEach("260", null), "1/3/0;1/4/0;1/5/0");
-        assertEquals(afterEach("250", null), "1/1/2;1/1/3;1/1/4");
+        assertEquals(afterEach("260", null), "1/1/0;1/2/0;1/3/0");
+        assertEquals(afterEach("250", null), "1/1/1;1/1/2;1/1/3");
     }
 
     /** An info answer with no readable version is treated as no answer. */
     @Test
     public void testAnUnreadableVersionFallsBackToTheProbe() throws Exception
     {
-        assertEquals(afterEach("260", "{\"softwareVersion\":\"unknown\"}"), "1/3/0;1/4/0;1/5/0");
-        assertEquals(afterEach("260", "{\"name\":\"CS3\"}"), "1/3/0;1/4/0;1/5/0");
-        assertEquals(afterEach("260", "not json"), "1/3/0;1/4/0;1/5/0");
+        assertEquals(afterEach("260", "{\"softwareVersion\":\"unknown\"}"), "1/1/0;1/2/0;1/3/0");
+        assertEquals(afterEach("260", "{\"name\":\"CS3\"}"), "1/1/0;1/2/0;1/3/0");
+        assertEquals(afterEach("260", "not json"), "1/1/0;1/2/0;1/3/0");
     }
 
     /** Info says 2.5 and only the 2.6 list is there: the old probe decides, once, and the sync, the check and the download follow it. */
     @Test
     public void testAnInfoThatNamesAnEndpointTheStationLacksIsOverruledByTheProbe() throws Exception
     {
-        assertEquals(afterEach("260", "{\"softwareVersion\":\"2.5.1 (Build 1)\"}"), "1/3/1;1/4/1;1/5/1");
+        assertEquals(afterEach("260", "{\"softwareVersion\":\"2.5.1 (Build 1)\"}"), "1/1/1;1/2/1;1/3/1");
     }
 
-    /** Info says 2.6 and only the older list is there. */
+    /** Info says 2.6 and only the older list is there: the list not found is asked for again by the probe. */
     @Test
     public void testAnInfoThatNamesTheNewEndpointOnAnOlderStationIsOverruledToo() throws Exception
     {
-        assertEquals(afterEach("250", INFO_261), "1/2/2;1/2/3;1/2/4");
+        assertEquals(afterEach("250", INFO_261), "1/2/1;1/2/2;1/2/3");
     }
 
     /**

@@ -182,6 +182,7 @@ public class testArrowsKeepTheirMeaningInAnyDisplayOrder extends support.PageWin
             LayoutPopupUI made = new LayoutPopupUI(model.getLayout(page), 30, ui);
 
             made.render();
+            made.setVisible(true);
 
             // Kept by the window, as `showLayoutPopup` keeps it, so the window's refreshes reach it
             popups().add(made);

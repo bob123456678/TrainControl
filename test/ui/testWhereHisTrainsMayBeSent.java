@@ -231,11 +231,11 @@ public class testWhereHisTrainsMayBeSent
     }
 
     /**
-     * EN57-947, which cannot reverse, at BottomSecondary: Why not Moving? on Manual lists BottomMainC under the
-     * stations it cannot be sent to right now, saying a terminus is not allowed because it is not reversible, and the
-     * right-click list does not offer BottomMainC (MT-517).
+     * EN57-947, which cannot reverse, at BottomSecondary: Why not Moving? shows BottomMainC as a station it cannot go
+     * to right now, saying a terminus is not allowed because it is not reversible, and the right-click list does not
+     * offer BottomMainC (MT-517).
      *
-     * MUTATION: offer a terminus to a train that cannot reverse, or drop its reason from the Manual answer.
+     * MUTATION: offer a terminus to a train that cannot reverse, or drop its reason from the hand send's answer.
      */
     @Test
     public void testATerminusIsRefusedToATrainThatCannotReverse() throws Exception
@@ -269,31 +269,18 @@ public class testWhereHisTrainsMayBeSent
         // STEP 1.
         standOn(en57, secondary, null);
 
-        // STEP 2: Path Type Manual, Why Not Moving?, and a click on it.
-        String said = whyNotMoving(secondary, true);
+        // STEP 2: Why Not Moving?, and a click on it.
+        String said = whyNotMoving(secondary);
 
         String reason = I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", CANNOT_REVERSE);
 
-        String header = I18n.t("autolayout.ui.whyHeaderByHand");
+        // The table's row, read as text: the station, its answer, then its reason
+        java.util.regex.Matcher row = java.util.regex.Pattern.compile(java.util.regex.Pattern.quote("BottomMainC")
+            + "( \\(Page [^)]*\\))? " + java.util.regex.Pattern.quote(I18n.t("autolayout.ui.whyNotRightNow")) + " "
+            + java.util.regex.Pattern.quote(reason)).matcher(said);
 
-        header = header.substring(0, header.indexOf('(')).trim();
-
-        int under = said.indexOf(header);
-
-        assertTrue(under >= 0, "Why not Moving? on Manual has no \"" + header + "\" list (MT-517): " + said);
-
-        java.util.regex.Matcher line = java.util.regex.Pattern.compile(java.util.regex.Pattern.quote("BottomMainC")
-            + "[^:]*: " + java.util.regex.Pattern.quote(reason)).matcher(said);
-
-        assertTrue(line.find(under), "Why not Moving? on Manual does not list BottomMainC under \"" + header + "\" as a"
-            + " terminus " + CANNOT_REVERSE + " cannot reverse at (MT-517): " + said);
-
-        String barred = I18n.t("autolayout.ui.whyHeaderBarred");
-
-        int next = said.indexOf(barred.substring(0, barred.indexOf('(')).trim(), under);
-
-        assertTrue(next < 0 || line.start() < next, "BottomMainC's terminus reason is listed under another heading"
-            + " (MT-517): " + said);
+        assertTrue(row.find(), "Why not Moving? does not show BottomMainC as a station " + CANNOT_REVERSE + " cannot go"
+            + " to right now, a terminus it cannot reverse at (MT-517): " + said);
 
         // STEP 3.
         assertFalse(offered(secondary).contains("BottomMainC"), "the right-click menu offers BottomMainC to "
@@ -342,7 +329,7 @@ public class testWhereHisTrainsMayBeSent
             assertFalse(offered(tunnel).contains("BottomMainA"), "with a train standing on TunnelLeftPark, the right-click"
                 + " menu offers " + HIS_TRAIN + " BottomMainA through BottomMainAPre (MT-584): " + offered(tunnel));
 
-            String said = whyNotMoving(tunnel, false);
+            String said = whyNotMoving(tunnel);
 
             assertTrue(said.contains(blocked.replaceAll("\\s+", " ")), "Why not Moving? does not say \"" + blocked
                 + "\" (MT-584): " + said);
@@ -360,7 +347,7 @@ public class testWhereHisTrainsMayBeSent
             List<String> again = offered(tunnel);
 
             assertTrue(again.contains("BottomMainA"), "with TunnelLeftPark clear, BottomMainA is not offered again"
-                + " (MT-584): " + again + "; Why not Moving? says: " + whyNotMoving(tunnel, false));
+                + " (MT-584): " + again + "; Why not Moving? says: " + whyNotMoving(tunnel));
         }
         finally
         {
@@ -484,17 +471,8 @@ public class testWhereHisTrainsMayBeSent
 
         assertEquals(withTrains.size(), 3, "precondition: three trains could not be stood on " + page);
 
-        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, page, () -> { });
-
-        panel.setRunningLayoutSource(() -> model.getAutoLayout());
-        panel.setLayoutSource(() -> model.getAutoLayout());
-
-        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "whyButton");
-
-        final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
-
         // STEP 1.
-        SwingUtilities.invokeAndWait(why::doClick);
+        final AutonomyEditorPanel panel = whyPressedOn(page);
 
         List<String> wrong = new ArrayList<>();
 
@@ -537,21 +515,10 @@ public class testWhereHisTrainsMayBeSent
                 + " somewhere to click (MT-570 step 2)");
         }
 
-        String working = I18n.t("autolayout.ui.whyWorking");
+        String said = answerOf(panel);
 
-        String said = hintOf(panel);
-
-        for (long end = System.currentTimeMillis() + 30000; (said == null || said.contains(working))
-            && System.currentTimeMillis() < end; )
-        {
-            Thread.sleep(100);
-
-            Components.drain(1);
-
-            said = hintOf(panel);
-        }
-
-        assertTrue(said != null && !said.contains(working) && !said.equals(I18n.t("autosetup.ui.promptWhy").trim()),
+        assertTrue(said != null && !said.contains(I18n.t("autolayout.ui.whyWorking"))
+            && !said.equals(I18n.t("autosetup.ui.promptWhy").trim()),
             "after the click no answer was drawn (MT-570 step 2): " + said);
     }
 
@@ -983,31 +950,35 @@ public class testWhereHisTrainsMayBeSent
         return false;
     }
 
-    /** Presses Why not Moving? in the autonomy editor on this square's page - on Manual where asked - and clicks it. */
-    private static String whyNotMoving(TileKey square, boolean manual) throws Exception
+    /** Presses Why not Moving? in the autonomy editor on this square's page, and clicks it. */
+    private static String whyNotMoving(TileKey square) throws Exception
     {
-        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, square.getPage(), () -> { });
+        final AutonomyEditorPanel panel = whyPressedOn(square.getPage());
+
+        SwingUtilities.invokeAndWait(() -> panel.tileClicked(square, session.getGraph().getTiles().get(square), false));
+
+        return String.valueOf(answerOf(panel));
+    }
+
+    /** An autonomy editor on this page, reading the running railway, with Why not Moving? pressed. */
+    private static AutonomyEditorPanel whyPressedOn(String page) throws Exception
+    {
+        final AutonomyEditorPanel panel = new AutonomyEditorPanel(session, page, () -> { });
 
         panel.setRunningLayoutSource(() -> model.getAutoLayout());
         panel.setLayoutSource(() -> model.getAutoLayout());
 
-        if (manual)
-        {
-            java.lang.reflect.Field type = Reflect.field(AutonomyEditorPanel.class, "pathTypeManual");
-
-            final javax.swing.AbstractButton byHand = (javax.swing.AbstractButton) type.get(panel);
-
-            SwingUtilities.invokeAndWait(byHand::doClick);
-        }
-
-        java.lang.reflect.Field field = Reflect.field(AutonomyEditorPanel.class, "whyButton");
-
-        final javax.swing.AbstractButton why = (javax.swing.AbstractButton) field.get(panel);
+        final javax.swing.AbstractButton why = (javax.swing.AbstractButton) Reflect.field(AutonomyEditorPanel.class,
+            "whyButton").get(panel);
 
         SwingUtilities.invokeAndWait(why::doClick);
 
-        SwingUtilities.invokeAndWait(() -> panel.tileClicked(square, session.getGraph().getTiles().get(square), false));
+        return panel;
+    }
 
+    /** What the panel says once it is no longer working the answer out, waiting up to half a minute. */
+    private static String answerOf(AutonomyEditorPanel panel) throws Exception
+    {
         String working = I18n.t("autolayout.ui.whyWorking");
 
         String said = hintOf(panel);
@@ -1022,7 +993,7 @@ public class testWhereHisTrainsMayBeSent
             said = hintOf(panel);
         }
 
-        return String.valueOf(said);
+        return said;
     }
 
     // ---------------------------------------------------------------- the railway

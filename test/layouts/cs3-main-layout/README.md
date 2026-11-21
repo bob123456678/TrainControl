@@ -43,3 +43,4 @@ Serve it from a stand-in CS3, or copy it to a sandbox first. Never write to this
 ## Used by
 
 - `regression.testADownloadedCS3LayoutKeepsEachSquaresProtocol`
+- `regression.testALocalCopyLogsTheSquaresTheStationDisagreesWith`

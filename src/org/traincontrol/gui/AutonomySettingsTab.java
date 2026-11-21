@@ -28,7 +28,6 @@ final class AutonomySettingsTab
     {
         if (TrainControlUI.onAGreyedControl(evt)) return;
 
-
         SwingUtilities.invokeLater(() ->
             {
                 if (this.ui.getModel().hasAutoLayout())

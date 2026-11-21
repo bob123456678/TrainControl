@@ -42,10 +42,9 @@ import org.traincontrol.util.ImageUtil;
  */
 public class LocIconCropDialog extends JDialog
 {
-    // The application's look and feel, before this class can be instantiated: `JDialog`'s constructor creates the root
-    // pane from whatever look and feel is installed at that instant, so a cold-built window (a test's) got
-    // `MetalRootPaneUI` instead of FlatLaf's.  Headless-guarded because a static initializer that throws leaves the
-    // class unusable for the process.
+    // The application's look and feel, before this class can be instantiated: `JDialog`'s constructor builds the root
+    // pane from whatever look and feel is installed then.  Headless-guarded: a static initializer that throws leaves
+    // the class unusable for the process.
     static
     {
         if (!java.awt.GraphicsEnvironment.isHeadless()) TrainControlUI.installLookAndFeel();
@@ -55,15 +54,14 @@ public class LocIconCropDialog extends JDialog
     private static final double MAX_ZOOM = 32.0;
 
     /**
-     * How far OUT the zoom goes, as a fraction of the picture fitting the panel.  Adam: "now we can't zoom out beyond
-     * the image width to add white space. Add a 0.5x zoom allowance."  Half again leaves a white margin all the way
-     * round.
+     * How far OUT the zoom goes, as a fraction of the picture fitting the panel (Adam: "Add a 0.5x zoom allowance."),
+     * leaving a white margin all the way round.
      */
     private static final double MIN_ZOOM = 0.5;
 
     /**
-     * Margin, in pixels, between the crop window and the edge of the panel: the only place the surrounding picture
-     * shows, which is how the user knows which way to drag.
+     * Margin in pixels around the crop window: the only place the surrounding picture shows, so it tells which way to
+     * drag.
      */
     private static final int WINDOW_MARGIN = 44;
 
@@ -78,7 +76,6 @@ public class LocIconCropDialog extends JDialog
     {
         super(owner, title, ModalityType.APPLICATION_MODAL);
 
-
         // OB-124.  A dialog does not reliably inherit its owner's icon, so it is asked for.
         TrainControlUI.applyWindowIcon(this);
 
@@ -87,9 +84,8 @@ public class LocIconCropDialog extends JDialog
         JPanel content = new JPanel(new BorderLayout());
         content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Wrapped, because a JLabel reports the width its text needs on one line (1247 pixels here) and pack() would
-        // make the dialog that wide.  An explicit width in the HTML, not a pixel size on the label: the text differs
-        // per language.
+        // Wrapped, because a JLabel reports the width its text needs on one line and pack() would make the dialog that
+        // wide.  An explicit width in the HTML, as the text differs per language.
         JLabel instructions = new JLabel("<html><body style='width:420px'>"
             + I18n.t("loc.ui.cropInstructions") + "</body></html>");
         instructions.setBorder(BorderFactory.createEmptyBorder(0, 2, 8, 2));
@@ -97,16 +93,14 @@ public class LocIconCropDialog extends JDialog
 
         content.add(this.cropPanel, BorderLayout.CENTER);
 
-        // Zoom on its own row above the buttons.  Beside them it reads as a third button and gets
-        // clicked by somebody looking for OK.
+        // Zoom on its own row above the buttons: beside them it reads as a third button.
         JPanel controls = new JPanel(new BorderLayout());
         controls.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
         JPanel zoomRow = new JPanel(new BorderLayout(8, 0));
         zoomRow.add(UiStyle.label(I18n.t("loc.ui.cropZoom")), BorderLayout.WEST);
 
-        // Integer ticks over a continuous zoom: the slider's own resolution is the only quantization,
-        // and a thousand steps is finer than the pixel it moves the picture by.
+        // Integer ticks over a continuous zoom: a thousand steps is finer than the pixel it moves the picture by.
         final JSlider zoom = new JSlider(0, 1000, 0);
         zoom.setToolTipText(I18n.t("loc.ui.tooltip.cropZoom"));
         zoomRow.add(zoom, BorderLayout.CENTER);
@@ -133,8 +127,7 @@ public class LocIconCropDialog extends JDialog
 
         setContentPane(content);
 
-        // The slider drives the panel and the panel drives the slider back; the guard flag stops setValue's change
-        // event from looping.
+        // The slider drives the panel and the panel drives the slider back; the guard flag stops the loop.
         zoom.addChangeListener(event ->
         {
             if (this.cropPanel.isSyncingZoom()) return;
@@ -151,9 +144,8 @@ public class LocIconCropDialog extends JDialog
 
         reset.addActionListener(event ->
         {
-            // Just resetView: it restores the covering view and sets the slider under the syncingZoom guard.  A
-            // zoom.setValue(0) after it would fire the listener back at MIN_ZOOM and leave white down two sides of an
-            // icon nobody asked to change.
+            // Just resetView: it sets the slider under the syncingZoom guard; a zoom.setValue(0) after it would fire
+            // the listener back at MIN_ZOOM and leave white on two sides.
             this.cropPanel.resetView();
         });
 
@@ -184,8 +176,7 @@ public class LocIconCropDialog extends JDialog
 
         getRootPane().setDefaultButton(ok);
 
-        // Closing is a cancel (result is only assigned by OK); DISPOSE rather than the default HIDE, which would leave
-        // the native window behind.
+        // Closing is a cancel (result is only assigned by OK); DISPOSE, as HIDE would leave the native window behind.
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
         pack();
@@ -197,15 +188,14 @@ public class LocIconCropDialog extends JDialog
     }
 
     /**
-     * Shows the crop dialog and returns what the user chose.  Must be called on the event dispatch thread; it blocks
-     * there until the dialog closes.
+     * Shows the crop dialog and returns what the user chose.  Call on the event dispatch thread; it blocks until the
+     * dialog closes.
      *
      * @param parent the component the dialog should center on, may be null
      * @param source the picture to crop, must not be null
      * @param outWidth width of the icon to produce
      * @param outHeight height of the icon to produce
-     * @return the cropped icon, or null if the user canceled, which the caller must read as "leave everything as it
-     * was"
+     * @return the cropped icon, or null if the user canceled: the caller must leave everything as it was
      */
     public static BufferedImage crop(Component parent, BufferedImage source, int outWidth,
         int outHeight)
@@ -214,15 +204,13 @@ public class LocIconCropDialog extends JDialog
     }
 
     /**
-     * The same, opening on a remembered view and reporting back the one the user settled on (OB-125); canceling
-     * changes nothing.
+     * The same, opening on a remembered view and reporting back the one the user settled on (OB-125).
      *
      * @param parent the component to center on
      * @param source the picture to crop
      * @param outWidth width of the icon to produce
      * @param outHeight height of the icon to produce
-     * @param view five numbers to open on, and where the view used is written back; may be null, and is ignored on the
-     * way in when it does not describe a view
+     * @param view five numbers to open on, and where the view used is written back; may be null, ignored when unusable
      * @return the cropped icon, or null if the user canceled
      */
     public static BufferedImage crop(Component parent, BufferedImage source, int outWidth,
@@ -254,10 +242,9 @@ public class LocIconCropDialog extends JDialog
         void zoomChanged(double fraction);
     }
 
-    /**
-     * The picture, the crop window over it, and the mouse handling that moves one against the other.  Separable from
-     * the dialog: it can be painted into a BufferedImage with no display attached.
-     */
+        /**
+         * The picture, the crop window over it, and the mouse handling; paintable into a BufferedImage with no display.
+         */
     public static class CropPanel extends JPanel
     {
         private final BufferedImage source;
@@ -266,8 +253,8 @@ public class LocIconCropDialog extends JDialog
         private final int outHeight;
 
         /**
-         * The view is held as which point of the SOURCE picture is under the middle of the crop window, and how far in
-         * we are, not as a scale and offset in panel pixels, so resizing the panel does not make the crop drift.
+         * The view is held as which SOURCE point is under the middle of the crop window and the zoom, so resizing does
+         * not drift the crop.
          */
         private double centerX;
         private double centerY;
@@ -280,22 +267,18 @@ public class LocIconCropDialog extends JDialog
         /** Whether the opening zoom has been chosen yet - see {@link #startAtCover}. */
         private boolean viewStarted = false;
 
-        /**
-         * A view handed in to open on, waiting for the panel to have a size (OB-125): a view set on a zero-width panel
-         * clamps against nothing and is replaced by the opening view.  Taken up in {@link #startAtCover}.
-         */
+        /** A view to open on, waiting for the panel to have a size (OB-125); taken up in {@link #startAtCover}. */
         private double[] pendingView = null;
 
         /**
          * The shape of the crop window, as width over height: starts at the icon's own shape, and pulling an edge or
-         * corner changes it, the rest being filled with white by {@link #getCroppedImage}.  A ratio, so it means the
-         * same at any panel size.
+         * corner changes it, the rest being filled with white by {@link #getCroppedImage}.
          */
         private double frameAspect;
 
         /**
-         * How big the crop window is, as a fraction of the largest window of its shape that fits.  Pulling an edge
-         * inward makes this smaller; outward grows the shape instead.
+         * How big the crop window is, as a fraction of the largest window of its shape that fits; pulling an edge
+         * inward shrinks it.
          */
         private double frameSize = 1.0;
 
@@ -303,15 +286,14 @@ public class LocIconCropDialog extends JDialog
         private String dragEdge = null;
 
         /**
-         * How close to an edge counts as grabbing it, in panel pixels.  Generous, since a mis-grab that pans is cheaper
-         * to undo than one that reshapes the frame.
+         * How close to an edge counts as grabbing it, in panel pixels; generous, as a mis-grab that pans is cheaper to
+         * undo.
          */
         private static final int GRIP = 10;
 
         /**
-         * Half the side of the square in the middle that pans the picture.  Adam: "drag frame, but add a control in the
-         * middle to move it around, so the aspect change becomes deliberate."  Splitting by where you take hold keeps a
-         * drag near an edge unambiguous.
+         * Half the side of the middle square that pans the picture (Adam: "add a control in the middle to move it
+         * around").
          */
         private static final int PAN_GRIP = 26;
 
@@ -323,14 +305,14 @@ public class LocIconCropDialog extends JDialog
         private int dragFromY = 0;
 
         /**
-         * The whole surface, and what the crop is composed onto.  White, not a pale gray: it is the color the crop
-         * takes wherever the frame is not over the photograph, so the panel has to show the truth.
+         * The whole surface, and what the crop is composed onto: white, the color the crop takes wherever the frame is
+         * off the photograph.
          */
         private static final Color PAPER = Color.WHITE;
 
         /**
-         * What is outside the frame is faded, not darkened: it still shows what is discarded, and over the paper it is
-         * invisible, so a frame hanging off the picture leaves no black bars.
+         * What is outside the frame is faded, not darkened: it still shows what is discarded, and over the paper it
+         * leaves no bars.
          */
         private static final Color VEIL = new Color(255, 255, 255, 165);
         private static final Color CHECKER_LIGHT = new Color(228, 228, 232);
@@ -344,9 +326,9 @@ public class LocIconCropDialog extends JDialog
 
         /**
          * @param source the picture to crop, must not be null
-         * @param outWidth width of the icon that will be produced; only its RATIO to outHeight is used, as the crop
-         *        window's starting shape
-         * @param outHeight height of the icon that will be produced
+         * @param outWidth width of the icon to produce; only its RATIO to outHeight is used, as the starting window
+         * shape
+         * @param outHeight height of the icon to produce
          */
         public CropPanel(BufferedImage source, int outWidth, int outHeight)
         {
@@ -365,15 +347,15 @@ public class LocIconCropDialog extends JDialog
             // The only thing that says the picture can be dragged before the user tries it.
             setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
 
-            // Wide enough to show the whole crop window at a useful size without being taller than a
-            // laptop screen once the buttons and the instruction line are added underneath.
+            // Wide enough to show the whole crop window without being taller than a laptop screen with the buttons
+            // below.
             setPreferredSize(new Dimension(600, 420));
 
             addComponentListener(new java.awt.event.ComponentAdapter()
             {
                 /**
-                 * The crop window is derived from the panel size, so a resize can push it outside the picture and
-                 * nothing else re-checks that.
+                 * The crop window follows the panel size, so a resize can push it outside the picture; nothing else
+                 * re-checks.
                  */
                 @Override
                 public void componentResized(java.awt.event.ComponentEvent e)
@@ -387,8 +369,8 @@ public class LocIconCropDialog extends JDialog
             addMouseListener(new MouseAdapter()
             {
                 /**
-                 * Decided once, when the button goes down, and held for the whole drag: asking again would turn a
-                 * reshape into a pan.
+                 * Decided once, when the button goes down, and held for the whole drag, or a reshape would turn into a
+                 * pan.
                  */
                 @Override
                 public void mousePressed(MouseEvent e)
@@ -427,7 +409,7 @@ public class LocIconCropDialog extends JDialog
                     CropPanel.this.dragFromY = e.getY();
                 }
 
-                /** The cursor is the only thing that says an edge can be pulled before somebody tries. */
+                /** The cursor is what tells that an edge can be pulled. */
                 @Override
                 public void mouseMoved(MouseEvent e)
                 {
@@ -438,9 +420,8 @@ public class LocIconCropDialog extends JDialog
 
             addMouseWheelListener((MouseWheelEvent e) ->
             {
-                // One notch is a twentieth of the whole range.  Negative rotation is "away from the user", which every
-                // other program treats as zooming in.  The PRECISE rotation: a trackpad reports fractions of a notch,
-                // which getWheelRotation() rounds to zero, so a gentle scroll did not move the zoom.
+                // One notch is a twentieth of the range; negative rotation zooms in, as in every other program.  The
+                // PRECISE rotation: a trackpad reports fractions of a notch, which getWheelRotation() rounds to zero.
                 double notches = e.getPreciseWheelRotation();
 
                 if (notches == 0) notches = e.getWheelRotation();
@@ -487,18 +468,15 @@ public class LocIconCropDialog extends JDialog
             return this.syncingZoom;
         }
 
-        /**
-         * Marks a slider update as originating from the panel, so the slider's change listener does not send it back.
-         */
+        /** Marks a slider update as coming from the panel, so the slider's listener does not send it back. */
         public void setSyncingZoom(boolean syncing)
         {
             this.syncingZoom = syncing;
         }
 
         /**
-         * The crop window, in panel coordinates: centered, and shaped to {@link #frameAspect} (the icon's ratio until
-         * an edge has been dragged), `largestWindow` scaled down by {@link #frameSize}; never null and never empty.
-         * Recomputed on every use, because the panel is resizable.
+         * The crop window in panel coordinates: centered, shaped to {@link #frameAspect}, `largestWindow` scaled down
+         * by {@link #frameSize}; never null or empty.  Recomputed on every use, as the panel is resizable.
          */
         public Rectangle cropWindow()
         {
@@ -510,10 +488,7 @@ public class LocIconCropDialog extends JDialog
             return new Rectangle((getWidth() - width) / 2, (getHeight() - height) / 2, width, height);
         }
 
-        /**
-         * The largest window of the given shape (width over height) that fits inside the panel's margins, centered; a
-         * pull outward past the panel edge stops here.
-         */
+        /** The largest window of the given shape (width over height) that fits inside the panel's margins, centered. */
         private Rectangle largestWindow(double aspect)
         {
             int availableWidth = Math.max(1, getWidth() - 2 * WINDOW_MARGIN);
@@ -535,9 +510,9 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * Whether the crop window is still the shape the icon is drawn at.  At that shape the picture fills the icon
-         * exactly and nothing is added; otherwise it is fitted inside and the rest is white.  A tolerance, not
-         * equality, because the shape arrives through pixel arithmetic.
+         * Whether the crop window is still the shape the icon is drawn at: then the picture fills the icon exactly,
+         * otherwise it is fitted inside and the rest is white.  A tolerance, as the shape arrives through pixel
+         * arithmetic.
          */
         public boolean isIconShaped()
         {
@@ -545,8 +520,8 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * Which part of the crop window is under a point: "pan" for the control in the middle, otherwise the edges
-         * grabbed as a combination of N, S, E and W, or null for anywhere else.
+         * Which part of the crop window is under a point: "pan" for the middle, edges as a combination of N, S, E, W,
+         * else null.
          */
         private String grabAt(int x, int y)
         {
@@ -568,10 +543,7 @@ public class LocIconCropDialog extends JDialog
             return edge.isEmpty() ? null : edge;
         }
 
-        /**
-         * Reshapes the crop window because an edge was dragged to (x, y).  The window stays centered and changes
-         * symmetrically, so pulling the right edge moves the left one too.
-         */
+        /** Reshapes the crop window because an edge was dragged to (x, y), symmetrically about the center. */
         private void resizeTo(String edge, int x, int y)
         {
             Rectangle w = cropWindow();
@@ -584,8 +556,7 @@ public class LocIconCropDialog extends JDialog
             if (edge.contains("S")) height = 2 * (y - w.getCenterY());
             if (edge.contains("N")) height = 2 * (w.getCenterY() - y);
 
-            // A floor rather than a clamp to the panel: a window a few pixels across is not a crop, and zero would
-            // divide.
+            // A floor, not a clamp to the panel: a window a few pixels across is not a crop, and zero would divide.
             width = Math.max(2 * GRIP + 2 * PAN_GRIP, width);
             height = Math.max(2 * GRIP + 2 * PAN_GRIP, height);
 
@@ -602,25 +573,23 @@ public class LocIconCropDialog extends JDialog
             repaint();
         }
 
-        /**
-         * Opens on a view taken from a previous crop, rather than on the covering center one (OB-125).  Ignored, not
-         * rejected, when it does not describe a view.
-         */
+        /** Opens on a view taken from a previous crop (OB-125); ignored where it does not describe a view. */
         public void setView(double[] view)
         {
             if (!viewIsUsable(view)) return;
 
             this.pendingView = view.clone();
 
-            // So it is taken up the next time the panel is measured, whether or not an opening view was already chosen.
+            // Taken up the next time the panel is measured, whether or not an opening view was already chosen.
             this.viewStarted = false;
         }
 
         /**
          * The view as it stands, for storing against the crop about to be written.
          *
-         * @param out five numbers: where in the source picture the middle of the crop window sits (x, y), the zoom
-         *        fraction, and the shape and size of the window
+         * @param out five numbers: the source point under the middle of the window (x, y), the zoom fraction, the
+         * window's
+         *        shape and size
          */
         public void copyViewInto(double[] out)
         {
@@ -638,8 +607,8 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * Whether five numbers describe a view this panel could open on.  The center is deliberately not range-checked:
-         * a photograph edited since can make it fall outside, and `clampCenter` turns that into a nearby framing.
+         * Whether five numbers describe a view this panel could open on.  The center is not range-checked:
+         * `clampCenter` turns an out-of-range one into a nearby framing.
          */
         public static boolean viewIsUsable(double[] view)
         {
@@ -670,8 +639,8 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * The scale at which the whole picture fits inside the panel.  It depends on the panel and the picture alone,
-         * so reshaping the frame never rescales the photograph (Adam: "It should stay put unless zoomed.").
+         * The scale at which the whole picture fits inside the panel; reshaping the frame never rescales the
+         * photograph (Adam: "It should stay put unless zoomed.").
          */
         private double fitScale()
         {
@@ -682,41 +651,34 @@ public class LocIconCropDialog extends JDialog
                 (double) availableHeight / this.source.getHeight());
         }
 
-        /**
-         * The smallest the picture can be drawn - zoom 0, {@link #MIN_ZOOM} of fitting the panel.  A floor on how far
-         * OUT the zoom goes; what the crop takes beyond the photograph is white.
-         */
+        /** The smallest the picture can be drawn: zoom 0, {@link #MIN_ZOOM} of fitting the panel; the rest is white. */
         public double getMinScale()
         {
             return fitScale() * MIN_ZOOM;
         }
 
         /**
-         * How far in the zoom goes, as a multiple of the whole picture fitting the panel.  The slider is logarithmic
-         * (equal movements are equal ratios), spanning MIN_ZOOM to MAX_ZOOM.
+         * How far in the zoom goes, as a multiple of the picture fitting the panel; the slider is logarithmic, MIN_ZOOM
+         * to MAX_ZOOM.
          */
         public double getScale()
         {
-            // The opening position is settled here, not only on a resize or paint: a question asked before the panel
-            // was shown would otherwise get the zoomed-out view.  Recursion stops at `startAtCover`'s own guard (it
-            // calls `clampCenter`, which asks `getScale()`), which returns unless the view is still at its opening.
+            // The opening position is settled here, so a question asked before the panel was shown does not get the
+            // zoomed-out view.  Recursion stops at `startAtCover`'s own guard.
             startAtCover();
 
             return getMinScale() * Math.pow(MAX_ZOOM / MIN_ZOOM, this.zoomFraction);
         }
 
-        /**
-         * Puts the zoom where the picture just covers the crop window, once, when the panel first has a size.  Only
-         * the STARTING position depends on the frame; after it the photograph must not jump when the frame is nudged.
-         */
+        /** Puts the zoom where the picture just covers the crop window, once, when the panel first has a size. */
         private void startAtCover()
         {
             if (this.viewStarted || getWidth() <= 0) return;
 
             this.viewStarted = true;
 
-            // A remembered view instead of the covering crop (OB-125).  Shape and zoom first, then the center: clamping
-            // a center before them clamps it against the wrong rectangle.
+            // A remembered view instead of the covering crop (OB-125): shape and zoom first, then the center, which
+            // would otherwise clamp against the wrong rectangle.
             if (this.pendingView != null)
             {
                 double[] view = this.pendingView;
@@ -729,9 +691,8 @@ public class LocIconCropDialog extends JDialog
                 this.centerX = view[0];
                 this.centerY = view[1];
 
-                // The same rectangle of the photograph, where the view says how wide it was (OB-257): the zoom is
-                // worked out from that width against this panel, not taken as a fraction of a panel that may have had
-                // another shape
+                // The same rectangle of the photograph where the view says how wide it was (OB-257): the zoom is worked
+                // out from that width against this panel.
                 if (view.length >= 6 && view[5] > 0 && !Double.isInfinite(view[5]))
                 {
                     double floor = getMinScale();
@@ -745,8 +706,8 @@ public class LocIconCropDialog extends JDialog
                     }
                 }
 
-                // The photograph may not be the one this view was taken over; clamping makes that a slightly wrong
-                // framing, not a blank rectangle.
+                // The photograph may not be the one the view was taken over: clamping makes that a slightly wrong
+                // framing.
                 clampCenter();
 
                 if (this.zoomObserver != null) this.zoomObserver.zoomChanged(this.zoomFraction);
@@ -763,8 +724,7 @@ public class LocIconCropDialog extends JDialog
             double cover = Math.max((double) window.width / this.source.getWidth(),
                 (double) window.height / this.source.getHeight());
 
-            // Where the covering scale sits along the logarithmic slider, so a ratio of ratios.  Below zero would mean
-            // the picture already covers the window at the smallest scale offered, which the clamp below handles.
+            // Where the covering scale sits along the logarithmic slider; below zero the clamp below handles it.
             double fraction = Math.log(cover / floor) / Math.log(MAX_ZOOM / MIN_ZOOM);
 
             this.zoomFraction = Math.max(0.0, Math.min(1.0, fraction));
@@ -772,14 +732,11 @@ public class LocIconCropDialog extends JDialog
             if (this.zoomObserver != null) this.zoomObserver.zoomChanged(this.zoomFraction);
         }
 
-        /**
-         * Sets the zoom, clamping it into range and keeping the middle of the crop window over the same part of the
-         * picture: the only fixed point that behaves the same from the wheel, the slider or the reset button.
-         */
+        /** Sets the zoom, clamped, keeping the middle of the crop window over the same part of the picture. */
         public void setZoomFraction(double fraction)
         {
-            // The opening position is settled first, so what the caller asked for lands on top of it: a zoom set before
-            // anything read the panel would otherwise be replaced by the opening value the moment something did.
+            // The opening position is settled first, so a zoom set before anything read the panel is not replaced by
+            // it.
             startAtCover();
 
             this.zoomFraction = Math.max(0.0, Math.min(1.0, fraction));
@@ -792,14 +749,14 @@ public class LocIconCropDialog extends JDialog
         /** Returns the view to where it started: zoomed out, centered on the middle of the picture. */
         public void resetView()
         {
-            // Back to how the dialog opened, the picture covering the frame, not to zoom 0, which would leave white
-            // down two sides of an icon nobody asked to change.
+            // Back to how the dialog opened (the picture covering the frame), not zoom 0, which would leave white on
+            // two sides.
             this.viewStarted = false;
             this.zoomFraction = 0.0;
             this.centerX = this.source.getWidth() / 2.0;
             this.centerY = this.source.getHeight() / 2.0;
 
-            // The frame's shape too: it is the only way back to the icon's own shape without eyeballing it.
+            // The frame's shape too: the only way back to the icon's own shape without eyeballing it.
             resetFrame();
 
             startAtCover();
@@ -809,13 +766,12 @@ public class LocIconCropDialog extends JDialog
             repaint();
         }
 
-        /** Moves the picture under the crop window by a distance measured in panel pixels. */
+        /** Moves the picture under the crop window by a distance in panel pixels. */
         public void panBy(int dx, int dy)
         {
             double scale = getScale();
 
-            // Dividing by the scale makes the drag track the pointer: at 4x the picture moves a quarter as far in its
-            // own pixels.
+            // Dividing by the scale makes the drag track the pointer.
             this.centerX -= dx / scale;
             this.centerY -= dy / scale;
 
@@ -825,29 +781,27 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * Pulls the view back inside the picture, after every change.  Where the picture is smaller than the window in
-         * a dimension (rounding at the boundary), it is centered instead of clamped, so the failure is a centered crop.
+         * Pulls the view back inside the picture after every change; where the picture is smaller than the window in a
+         * dimension it is centered, so the failure is a centered crop.
          */
         private void clampCenter()
         {
-            // The picture may hang off the frame, so the frame need not be covered; what has to stay true is that some
-            // of the picture remains under it, or the dialog shows a blank rectangle with nothing saying which way the
-            // photograph went.
+            // The picture may hang off the frame, but some of it must stay under it, or the dialog shows a blank
+            // rectangle with no hint which way the photograph went.
             Rectangle window = cropWindow();
 
             double scale = getScale();
 
             if (scale <= 0) return;
 
-            // A margin rather than a single pixel: a sliver at the very edge of the frame is not enough to drag back
-            // by.
+            // A margin, not one pixel: a sliver at the edge of the frame is not enough to drag back by.
             double keep = Math.min(24.0, Math.min(window.width, window.height) / 3.0) / scale;
 
             double halfW = window.width / (2.0 * scale);
             double halfH = window.height / (2.0 * scale);
 
-            // The picture is drawn with `centerX` under the middle of the window, so requiring `keep` of overlap at
-            // each side gives:
+            // The picture is drawn with `centerX` under the middle of the window, so requiring `keep` of overlap each
+            // side:
             //
             //     centerX  >  keep - halfW              (the right edge stays inside the frame)
             //     centerX  <  srcW + halfW - keep       (the left edge does)
@@ -889,18 +843,15 @@ public class LocIconCropDialog extends JDialog
 
                 Rectangle picture = new Rectangle(drawX, drawY, drawWidth, drawHeight);
 
-                // The checkerboard only where the PICTURE is, and only inside the window: locomotive icons are often
-                // transparent PNGs, which must be distinguishable from a pale part of the photograph.  Not over the
-                // white, which is what a transparent pixel becomes out there.
+                // The checkerboard only where the PICTURE is, inside the window: transparent PNGs must be
+                // distinguishable from a pale photograph, and not over the white a transparent pixel becomes out there.
                 Rectangle transparent = window.intersection(picture);
 
                 if (!transparent.isEmpty()) paintCheckerboard(g2, transparent);
 
                 g2.drawImage(this.source, drawX, drawY, drawWidth, drawHeight, null);
 
-                // Everything outside the window faded rather than darkened: it still shows what is discarded, reads as
-                // washed out over the photograph, and does nothing over the paper (white over white), so there are no
-                // bars.
+                // Faded, not darkened: it still shows what is discarded and does nothing over the paper, so no bars.
                 g2.setColor(VEIL);
                 g2.fillRect(0, 0, getWidth(), window.y);
                 g2.fillRect(0, window.y + window.height, getWidth(),
@@ -920,8 +871,7 @@ public class LocIconCropDialog extends JDialog
                     g2.drawLine(window.x, y, window.x + window.width, y);
                 }
 
-                // Dark, and two pixels of it: the frame must never be ambiguous over the photograph, the faded
-                // photograph or white paper.
+                // Dark and two pixels: never ambiguous over the photograph, the faded photograph or white paper.
                 g2.setColor(FRAME);
                 g2.drawRect(window.x, window.y, window.width - 1, window.height - 1);
                 g2.drawRect(window.x + 1, window.y + 1, window.width - 3, window.height - 3);
@@ -938,7 +888,7 @@ public class LocIconCropDialog extends JDialog
 
         /**
          * The eight blocks on the frame's edges and corners that can be pulled; drawn because an invisible affordance
-         * is not one (the cursor only says so once the pointer is already there).
+         * is not one.
          */
         private void paintHandles(Graphics2D g2, Rectangle window)
         {
@@ -950,8 +900,8 @@ public class LocIconCropDialog extends JDialog
             int midX = window.x + window.width / 2;
             int midY = window.y + window.height / 2;
 
-            // Corners drawn as two short arms rather than a square: a square at the corner of a frame
-            // reads as a selection handle you can drag anywhere, and these only move two edges.
+            // Corners as two short arms: a square would read as a handle you can drag anywhere, and these move two
+            // edges.
             for (int cx : new int[] {window.x, window.x + window.width - arm})
             {
                 for (int cy : new int[] {window.y, window.y + window.height - thick}) g2.fillRect(cx, cy, arm, thick);
@@ -962,8 +912,7 @@ public class LocIconCropDialog extends JDialog
                 for (int cy : new int[] {window.y, window.y + window.height - arm}) g2.fillRect(cx, cy, thick, arm);
             }
 
-            // And one on the middle of each side, which is where somebody reaches to change only the
-            // width or only the height.
+            // And one on the middle of each side, to change only the width or only the height.
             g2.fillRect(midX - arm / 2, window.y, arm, thick);
             g2.fillRect(midX - arm / 2, window.y + window.height - thick, arm, thick);
             g2.fillRect(window.x, midY - arm / 2, thick, arm);
@@ -971,9 +920,8 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * The control in the middle that moves the picture.  Adam: "add a control in the middle to move it around, so
-         * the aspect change becomes deliberate."  Dragging elsewhere inside the frame still pans.  A four-way arrow,
-         * which needs no words in eight languages.
+         * The control in the middle that moves the picture (Adam: "add a control in the middle to move it around, so
+         * the aspect change becomes deliberate").  Dragging elsewhere inside the frame still pans.
          */
         private void paintPanGrip(Graphics2D g2, Rectangle window)
         {
@@ -985,7 +933,7 @@ public class LocIconCropDialog extends JDialog
             g2.setColor(GRIP_FILL);
             g2.fillRoundRect(cx - half, cy - half, half * 2, half * 2, 7, 7);
 
-            // An outline rather than a drop shadow: a border is what makes a white control visible on white.
+            // An outline, not a drop shadow: a border makes a white control visible on white.
             g2.setColor(FRAME);
             g2.drawRoundRect(cx - half, cy - half, half * 2, half * 2, 7, 7);
 
@@ -995,7 +943,7 @@ public class LocIconCropDialog extends JDialog
             g2.drawLine(cx - arm, cy, cx + arm, cy);
             g2.drawLine(cx, cy - arm, cx, cy + arm);
 
-            // Arrowheads, so it reads as "move" rather than as a target or a crosshair.
+            // Arrowheads, so it reads as "move" rather than as a target.
             g2.drawLine(cx - arm, cy, cx - arm + head, cy - head);
             g2.drawLine(cx - arm, cy, cx - arm + head, cy + head);
             g2.drawLine(cx + arm, cy, cx + arm - head, cy - head);
@@ -1007,9 +955,8 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * Whether a rectangle (in source coordinates) lies wholly within the picture: a crop that is entirely
-         * photograph can be handed straight out and keeps its transparency; one that reaches past the edge cannot,
-         * because that is white.
+         * Whether a rectangle (in source coordinates) lies wholly within the picture: such a crop is handed out as is
+         * and keeps its transparency; one that reaches past the edge cannot, because that is white.
          */
         private boolean wholelyInside(Rectangle region)
         {
@@ -1019,10 +966,9 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * What the frame actually covers, in the rectangle's own proportions: the photograph at its own resolution
-         * where the rectangle lies inside it, white where it reaches past the edge, **scaled down to at most the icon's
-         * size** on the way out.  Drawn rather than sub-imaged: getSubimage throws on a rectangle that is not wholly
-         * inside, and clipping it would quietly return a different crop.
+         * What the frame covers, in the rectangle's own proportions: the photograph at its own resolution, white past
+         * the edge, **scaled down to at most the icon's size**.  Drawn, not sub-imaged: getSubimage throws outside the
+         * picture.
          */
         private BufferedImage contentOf(Rectangle region)
         {
@@ -1032,11 +978,9 @@ public class LocIconCropDialog extends JDialog
                     this.source.getSubimage(region.x, region.y, region.width, region.height));
             }
 
-            // At the size the caller can use, not at the source's: at zoomFraction = 0 the rectangle is about twice the
-            // source in each direction, so its area is quadratic in the source (a 4032 x 3024 photograph asked for
-            // about 134 MB) and an OutOfMemoryError would leave OK doing nothing.  The shape is kept exactly, or the
-            // caller's fit into the icon would stretch the photograph.  The branch above needs no such bound: wholly
-            // inside, the rectangle is at most the source.
+            // At the size the caller can use, not at the source's: at zoomFraction = 0 the area is quadratic in the
+            // source (a 4032 x 3024 photograph asked for about 134 MB), and an OutOfMemoryError would leave OK doing
+            // nothing.  The shape is kept exactly, or the caller's fit would stretch the photograph.
             double shrink = Math.min(1.0, Math.min((double) this.outWidth / region.width,
                 (double) this.outHeight / region.height));
 
@@ -1054,9 +998,8 @@ public class LocIconCropDialog extends JDialog
                 g.setColor(Color.WHITE);
                 g.fillRect(0, 0, width, height);
 
-                // Offset so the photograph lands where the frame is standing over it; what falls outside is clipped by
-                // the image's bounds and leaves the white showing.  The offset is in the rectangle's own coordinates,
-                // so the scale goes on first and both it and the picture are shrunk by the same amount.
+                // Offset so the photograph lands where the frame stands over it; the outside is clipped, leaving the
+                // white.  The scale goes on first, so the offset and the picture shrink by the same amount.
                 g.scale(shrink, shrink);
 
                 g.drawImage(this.source, -region.x, -region.y, null);
@@ -1090,11 +1033,9 @@ public class LocIconCropDialog extends JDialog
         }
 
         /**
-         * Produces the icon the current view describes, a new image of exactly the requested icon size and never null,
-         * cut and then scaled once, never twice.  A rectangle wholly
-         * inside the picture is cut at its own resolution and resampled by `ImageUtil.getScaledImage`; an overhanging
-         * one is composed and resampled in the same step by `Graphics2D`, so the `getScaledImage` below it is an
-         * identity scale (`fit` is exactly 1).
+         * Produces the icon the current view describes, exactly the requested icon size and never null, cut and scaled
+         * once: a rectangle wholly inside the picture is cut at its own resolution and resampled by
+         * `ImageUtil.getScaledImage`; an overhanging one is composed and resampled by `Graphics2D` in one step.
          */
         public BufferedImage getCroppedImage()
         {
@@ -1102,17 +1043,14 @@ public class LocIconCropDialog extends JDialog
 
             BufferedImage cut = contentOf(region);
 
-            // Unchanged at the icon's own shape, deliberately: the common case keeps its transparency and gains no
-            // border, where padding everything onto white would flatten the transparent icons the Central Station
-            // itself supplies.
+            // Unchanged at the icon's own shape: the common case keeps its transparency and gains no border.
             if (isIconShaped() && wholelyInside(region))
             {
                 return ImageUtil.getScaledImage(cut, this.outWidth, this.outHeight);
             }
 
-            // The frame is a different shape from the icon, so the picture cannot fill it: fitted whole and centered
-            // with the remainder white (Adam: "if the user adjusts the aspect of the frame, fill the rest of the
-            // displayed icon with a white background"), not stretched.
+            // The frame is a different shape from the icon: the picture is fitted whole and centered with the remainder
+            // white (Adam: "fill the rest of the displayed icon with a white background"), not stretched.
             double fit = Math.min((double) this.outWidth / cut.getWidth(),
                 (double) this.outHeight / cut.getHeight());
 
@@ -1128,8 +1066,8 @@ public class LocIconCropDialog extends JDialog
 
             try
             {
-                // Painted rather than left transparent: the icon is drawn onto a colored button, so transparent padding
-                // would show the button through.
+                // Painted, not transparent: the icon is drawn onto a colored button that transparent padding would
+                // show.
                 g.setColor(Color.WHITE);
                 g.fillRect(0, 0, this.outWidth, this.outHeight);
 
@@ -1152,9 +1090,7 @@ public class LocIconCropDialog extends JDialog
 
         /**
          * The rectangle of the SOURCE picture the current view describes, in source pixels; it may overhang the picture
-         * and is never empty.  Separate from the cut so
-         * the clamp can be tested: a view that slid off the edge does not throw, it produces a SMALLER rectangle,
-         * stretched to the icon size, so the only symptom is a locomotive that looks slightly wrong.
+         * and is never empty.  Separate from the cut so the clamp can be tested.
          */
         public Rectangle sourceRect()
         {
@@ -1167,9 +1103,8 @@ public class LocIconCropDialog extends JDialog
             int width = (int) Math.round(window.width / scale);
             int height = (int) Math.round(window.height / scale);
 
-            // Not clamped into the picture: the frame may hang off the photograph and this rectangle is how far off;
-            // flattening it back inside would silently become a smaller crop stretched to the icon.  getCroppedImage
-            // checks before getSubimage, which throws on an outside rectangle, and composes instead.
+            // Not clamped into the picture: flattening it back inside would silently become a smaller crop stretched to
+            // the icon.  getCroppedImage checks before getSubimage (which throws outside) and composes instead.
             return new Rectangle(x, y, Math.max(1, width), Math.max(1, height));
         }
     }

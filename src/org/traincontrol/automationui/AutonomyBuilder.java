@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.traincontrol.base.Accessory.accessorySetting;
@@ -373,28 +374,18 @@ public class AutonomyBuilder
      */
     private String blockFor(TileKey tile, Node node, List<Node> nodes)
     {
-        LayoutDiagramComponent component = reducer.getGraph() == null ? null : reducer.getGraph().getTiles().get(tile);
+        String place = reducer.placeOf(tile, node.getArrival());
 
-        boolean neverMeet = node.getArrival() != null && component != null
-            && (component.getType() == LayoutDiagramComponent.componentType.DOUBLE_CURVE
-            || component.getType() == LayoutDiagramComponent.componentType.FEEDBACK_DOUBLE_CURVE
-            || component.getType() == LayoutDiagramComponent.componentType.OVERPASS);
-
-        if (!neverMeet) return nodes.size() > 1 ? tile.toString() : null;
-
-        java.util.SortedSet<TilePorts.Side> road = new TreeSet<>();
-
-        road.add(node.getArrival());
-        road.addAll(onwardFrom(tile, node.getArrival()));
+        if (place.equals(tile.toString())) return nodes.size() > 1 ? place : null;
 
         int copies = 0;
 
         for (Node other : nodes)
         {
-            if (other.getArrival() != null && road.contains(other.getArrival())) copies++;
+            if (other.getArrival() != null && place.equals(reducer.placeOf(tile, other.getArrival()))) copies++;
         }
 
-        return copies > 1 ? tile.toString() + "/" + road.first() : null;
+        return copies > 1 ? place : null;
     }
 
     /**
@@ -864,12 +855,10 @@ public class AutonomyBuilder
                     if (watching.length() > 0) json.put("blockedBy", watching);
                 }
 
-                // The signals thrown to red while this platform is claimed, on every copy because the copies are one
-                // platform, including a copy whose arrival side is barred (so not conditioned on `stops`): a bar stops
-                // autonomy routing a train in, not a person driving or placing one, and refreshOneSignal asks only the
-                // Points whose protecting signals hold the accessory.  Safe on a non-station: setProtectingSignals
-                // stores what it is given, unlike the terminus flag below.  One is a bare string, several an array
-                // (parseAuto).
+                // The signals thrown to red while this platform is claimed, on every copy, a barred one too (not on
+                // `stops`): a bar stops autonomy routing a train in, not a person driving or placing one, and
+                // refreshOneSignal asks only the Points holding the accessory.  Safe on a non-station, unlike the
+                // terminus flag below.  One is a bare string, several an array (parseAuto).
                 List<String> protecting = protectingSignals.get(point.getTile());
 
                 if (protecting != null && !protecting.isEmpty())
@@ -886,15 +875,10 @@ public class AutonomyBuilder
                     json.put("entrySignal", entry.size() == 1 ? (Object) entry.get(0) : new JSONArray(entry));
                 }
 
-                // COORDINATES ALWAYS, not only for the inspection copy: `arrivedFrom` is a compass side, which cannot
-                // be resolved to a piece of track without knowing where the neighbors lie.
-                //
-                // Roughly one tile per 60 units (the spacing the hand-written files use), each page stacked below the
-                // last, with split copies fanned out a little so they do not land on one another.
-                //
-                // Without a page list the stacking is dropped, not the coordinates: pages then overlap, which matters
-                // only when comparing points on DIFFERENT pages, and the only reader, `sideTowards`, asks about
-                // immediate neighbors.  A portal neighbor is the exception.
+                // Coordinates always, not only for the inspection copy: `arrivedFrom` is a compass side, resolved to
+                // track only by where the neighbors lie.  About one tile per 60 units, pages stacked, split copies
+                // fanned apart.  Without a page list pages overlap, which only a portal neighbor notices: `sideTowards`
+                // asks only immediate neighbors.
                 int page = coordinatePages == null ? 0
                     : Math.max(0, coordinatePages.indexOf(point.getTile().getPage()));
 
@@ -938,12 +922,11 @@ public class AutonomyBuilder
                     }
                 }
 
-                // A station turns around at a terminus, anything else at a reversing point: a terminus is a destination
-                // that reverses on arrival, a reversing point one autonomy never chooses to stop at.  Either the copy
-                // that exists to turn trains round, or, where the square was marked and nothing arrives at it by a side
-                // of the grid, the single Point it became (must, not may: the flag means every arriving train reverses,
-                // and on a may-turn square it would make a through station unroutable; where may cannot be expressed
-                // nothing is emitted, and the checks report that the marking means nothing here).
+                // A station turns at a terminus (a destination that reverses on arrival), anything else at a reversing
+                // point (one autonomy never stops at): the copy that turns trains, or, where the square was marked and
+                // nothing arrives by a side of the grid, the single Point it became: must, as every arriving train
+                // reverses (may would make a through station unroutable; where may cannot be expressed nothing is
+                // emitted, and the checks say the marking means nothing here).
                 if (node.reverse
                     || (mandatory.contains(point.getTile()) && splitSides(point.getTile()).isEmpty()))
                 {
@@ -981,29 +964,18 @@ public class AutonomyBuilder
 
         JSONArray edgeList = new JSONArray();
 
-        // Which emitted name pairs each reduced edge became, so a lock on one edge becomes a lock on every copy:
-        // over-locking rather than under, since all are still the same piece of track.
+        // Which emitted name pairs each reduced edge became, so a lock on one edge locks every copy.
         Map<ReducedEdge, List<String[]>> emitted = new LinkedHashMap<>();
 
         for (ReducedEdge edge : edges)
         {
             List<String[]> pairs = new ArrayList<>();
 
-            for (Node from : nodesFor(edge.getStart()))
+            eachCopyPair(edge, (from, to) -> pairs.add(new String[]
             {
-                if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival))) continue;
-
-                for (Node to : nodesFor(edge.getEnd()))
-                {
-                    if (!to.arrivesBy(edge.getEntrySide())) continue;
-
-                    pairs.add(new String[]
-                    {
-                        nodeName(names.get(edge.getStart()), from, taken),
-                        nodeName(names.get(edge.getEnd()), to, taken)
-                    });
-                }
-            }
+                nodeName(names.get(edge.getStart()), from, taken),
+                nodeName(names.get(edge.getEnd()), to, taken)
+            }));
 
             emitted.put(edge, pairs);
         }
@@ -1292,20 +1264,25 @@ public class AutonomyBuilder
 
             if (start == null || end == null) continue;
 
-            for (Node from : nodesFor(edge.getStart()))
-            {
-                if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival))) continue;
-
-                for (Node to : nodesFor(edge.getEnd()))
-                {
-                    if (!to.arrivesBy(edge.getEntrySide())) continue;
-
-                    out.put(nodeName(start, from, taken) + " -> " + nodeName(end, to, taken), edge);
-                }
-            }
+            eachCopyPair(edge,
+                (from, to) -> out.put(nodeName(start, from, taken) + " -> " + nodeName(end, to, taken), edge));
         }
 
         return out;
+    }
+
+    /** Each pair of copies the edge joins. */
+    private void eachCopyPair(ReducedEdge edge, BiConsumer<Node, Node> pair)
+    {
+        for (Node from : nodesFor(edge.getStart()))
+        {
+            if (!from.leavesBy(edge.getExitSide(), onwardFrom(edge.getStart(), from.arrival))) continue;
+
+            for (Node to : nodesFor(edge.getEnd()))
+            {
+                if (to.arrivesBy(edge.getEntrySide())) pair.accept(from, to);
+            }
+        }
     }
 
     /**

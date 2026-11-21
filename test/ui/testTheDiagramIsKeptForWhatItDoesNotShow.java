@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -29,6 +30,7 @@ import org.traincontrol.base.Route;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.LayoutPopupUI;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.autonomy.DiagramMonitorDriver;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
@@ -47,7 +49,8 @@ import support.WindowField;
  * on every caption, a page window's too; and a sync that reads the pages again, as Sync of one locomotive does from a
  * local folder, still redraws an edit made elsewhere (the owner's rule: renames and remote diagram changes must still
  * update).  A page window closes once its page is gone, follows its page through a rename, and keeps its size through
- * a page edit.  On a copy of the frozen railway, syncing with a stand-in station.
+ * a page edit, and is drawn again only when its page changed; Pop Up All does the windows' shared work once.  On a
+ * copy of the frozen railway, syncing with a stand-in station.
  */
 public class testTheDiagramIsKeptForWhatItDoesNotShow
 {
@@ -266,8 +269,9 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     }
 
     /**
-     * A page window's route square follows a route written anew as the main window's does: disarming a route made here,
-     * the window's square shows the new route running, without a redraw of the window.
+     * A page window's route square follows a route written anew as the main window's does, the window kept through an
+     * editor's Cancel (FR-216): disarming a route made here, the window's square shows the new route running, without a
+     * redraw of the window.
      *
      * MUTATION: leave the page windows out of the grids `TrainControlUI.redrawRouteSquaresOrRebuild` binds again, and
      * this fails.
@@ -279,16 +283,13 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         final MarklinRoute route = (MarklinRoute) square.getRoute();
         final boolean wasLocked = route.isLocked();
         final boolean wasEnabled = route.isEnabled();
-        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final LayoutPopupUI window = aKeptWindow();
 
         route.setLocked(false);
 
         try
         {
-            final LayoutLabel inWindow = Components.onTheEventThread(() ->
-                Components.find(window, LayoutLabel.class, each -> each.getComponent() == square));
-
-            assertNotNull(inWindow, "precondition: the page window does not draw the route square of " + PAGE);
+            final LayoutLabel inWindow = squareIn(window, square);
 
             disarm(route);
 
@@ -708,6 +709,730 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         }
     }
 
+    /**
+     * Pop Up All draws every page's window, then shows them in the list's order and does their shared work once
+     * (FR-216): one pass over the captions, one update of the window list and one drawing of the locomotive, for all
+     * five pages.
+     *
+     * MUTATION: in `TrainControlUI.showLayoutPopup`, leave out the `return` for a window already asked for, and each
+     * window does the shared work again.
+     */
+    @Test(timeOut = 180000)
+    public void testPopUpAllDoesTheSharedWorkOnce() throws Exception
+    {
+        final AtomicInteger asks = new AtomicInteger();
+        final AtomicInteger renders = new AtomicInteger();
+        final List<String> logged = java.util.Collections.synchronizedList(new ArrayList<>());
+        final java.util.logging.Handler tap = support.LogTap.messagesInto(logged);
+        final java.util.logging.Logger log = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+        final DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+        List<LayoutPopupUI> windows = new ArrayList<>();
+
+        Components.settle();
+
+        // The captions' pass (`updateVisiblePoints`) tells the driver once each time it runs, with a setup loaded
+        Reflect.set(TrainControlUI.class, ui, "diagramMonitorDriver", new DiagramMonitorDriver(ui,
+            ui.getDiagramTileRegistry())
+        {
+            @Override
+            public void recordedFacingsChanged()
+            {
+                asks.incrementAndGet();
+                driver.recordedFacingsChanged();
+            }
+        });
+
+        TrainControlUI.beforeARenderIsPosted = renders::incrementAndGet;
+        log.addHandler(tap);
+
+        try
+        {
+            windows = popUpAll();
+
+            Components.settle();
+
+            final String listed = I18n.f("layout.ui.infoCurrentlyActivePopups", "");
+            final long updates;
+
+            synchronized (logged)
+            {
+                updates = logged.stream().filter(line -> line.startsWith(listed)).count();
+            }
+
+            assertEquals(asks.get(), 1, "Pop Up All of " + windows.size() + " pages went over the captions "
+                + asks.get() + " times");
+            assertEquals(updates, 1L, "Pop Up All updated the list of page windows " + updates + " times: " + logged);
+            assertEquals(renders.get(), 1, "Pop Up All drew the locomotive " + renders.get() + " times");
+        }
+        finally
+        {
+            log.removeHandler(tap);
+            TrainControlUI.beforeARenderIsPosted = null;
+            Reflect.set(TrainControlUI.class, ui, "diagramMonitorDriver", driver);
+
+            closeAll(windows);
+        }
+    }
+
+    /**
+     * An edit to one page draws only that page's window again (FR-216): every other window keeps its grid and its
+     * title, its squares registered again so the trains and marks still reach them.
+     *
+     * MUTATION: in `LayoutGrid.keep`, leave out the registry's `register`, and a kept window's squares are
+     * registered nowhere.
+     */
+    @Test(timeOut = 180000)
+    public void testAnEditDrawsOnlyThatPagesWindowAgain() throws Exception
+    {
+        final List<LayoutPopupUI> windows = popUpAll();
+
+        try
+        {
+            final Map<LayoutPopupUI, Object> grids = gridsOf(windows);
+            final Map<LayoutPopupUI, String> titles = new HashMap<>();
+
+            for (LayoutPopupUI window : windows) titles.put(window, Components.onTheEventThread(window::getTitle));
+
+            outAndBackElsewhere(train -> editingComplete(), train ->
+            {
+                for (LayoutPopupUI window : windows)
+                {
+                    final String page = window.getLayoutTitle();
+
+                    if (PAGE.equals(page))
+                    {
+                        assertNotSame(gridOf(window), grids.get(window), "the window of the page edited was not drawn"
+                            + " again");
+                        assertFalse(drawsTheSquare(window, 4, 1), "the window of " + PAGE + " still draws the square"
+                            + " taken out of it");
+
+                        continue;
+                    }
+
+                    final org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) gridOf(window);
+
+                    assertSame(grid, grids.get(window), "the edit to " + PAGE + " drew " + page + "'s window again");
+                    assertTrue(Components.onTheEventThread(grid::tilesAreStillRegistered), page + "'s window kept"
+                        + " its grid but its squares are registered nowhere, so no train or mark reaches them");
+                    assertEquals(Components.onTheEventThread(window::getTitle), titles.get(window), page + "'s"
+                        + " window changed its title");
+                }
+            }, train -> { });
+        }
+        finally
+        {
+            closeAll(windows);
+        }
+    }
+
+    /**
+     * Show Addresses draws every page window again, with the addresses and then without (FR-216): the tick changes
+     * how every page looks.
+     *
+     * MUTATION: in `LayoutPopupUI.sameSquares`, compare the page's flag with that of the page the window holds rather
+     * than the one it was drawn with, and the windows keep their old look.
+     */
+    @Test(timeOut = 180000)
+    public void testShowAddressesDrawsEveryPageWindowAgain() throws Exception
+    {
+        final javax.swing.JCheckBoxMenuItem tick = WindowField.of(ui, "menuItemShowLayoutAddresses");
+        final boolean was = tick.isSelected();
+        final List<LayoutPopupUI> windows = popUpAll();
+
+        try
+        {
+            for (boolean on : new boolean[] {!was, was})
+            {
+                SwingUtilities.invokeAndWait(tick::doClick);
+
+                for (LayoutPopupUI window : windows)
+                {
+                    if (!hasAddresses(window.getLayoutTitle())) continue;
+
+                    assertTrue(Components.waitFor(() -> showsAddresses(window) == on, 20000), window.getLayoutTitle()
+                        + "'s window " + (on ? "shows no addresses after Show Addresses was ticked"
+                        : "still shows addresses after Show Addresses was unticked"));
+                }
+            }
+        }
+        finally
+        {
+            if (tick.isSelected() != was) SwingUtilities.invokeAndWait(tick::doClick);
+
+            closeAll(windows);
+        }
+    }
+
+    /**
+     * A page window drawn again at the same size by Show Addresses lays its squares out, on a page left out of autonomy
+     * too, where no caption pass follows the redraw: else every square lies at one place and the page shows blank.
+     *
+     * MUTATION: in `LayoutGrid`'s constructor, leave out `parent.revalidate()` after the swap, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testARedrawnPageWindowLaysOutItsSquares() throws Exception
+    {
+        final javax.swing.JCheckBoxMenuItem tick = WindowField.of(ui, "menuItemShowLayoutAddresses");
+        final boolean was = tick.isSelected();
+        final List<LayoutPopupUI> windows = popUpAll();
+
+        try
+        {
+            final List<LayoutPopupUI> leftOut = new ArrayList<>();
+
+            for (LayoutPopupUI window : windows)
+            {
+                if (ui.isPageExcludedFromAutonomy(window.getLayoutTitle()) && hasAddresses(window.getLayoutTitle()))
+                {
+                    leftOut.add(window);
+                }
+            }
+
+            assertFalse(leftOut.isEmpty(), "precondition: no page with addresses is left out of autonomy");
+
+            SwingUtilities.invokeAndWait(tick::doClick);
+
+            for (LayoutPopupUI window : leftOut)
+            {
+                assertTrue(Components.waitFor(() -> showsAddresses(window) != was, 20000), window.getLayoutTitle()
+                    + "'s window was not drawn again after Show Addresses");
+
+                final int[] laidOut = new int[2];
+
+                assertTrue(Components.waitFor(() ->
+                {
+                    final List<LayoutLabel> squares = Components.all(window, LayoutLabel.class, null);
+                    final java.util.Set<java.awt.Point> places = new java.util.HashSet<>();
+
+                    for (LayoutLabel square : squares) places.add(square.getLocation());
+
+                    laidOut[0] = squares.size();
+                    laidOut[1] = places.size();
+
+                    return laidOut[0] > 1 && laidOut[1] == laidOut[0];
+                }, 10000), window.getLayoutTitle() + "'s window drawn again lays its " + laidOut[0] + " squares at "
+                    + laidOut[1] + " places");
+            }
+        }
+        finally
+        {
+            if (tick.isSelected() != was) SwingUtilities.invokeAndWait(tick::doClick);
+
+            closeAll(windows);
+        }
+    }
+
+    /**
+     * A page renamed draws again its own window, under the new name, and each window whose arrows lead to it, which
+     * then name it (FR-216); a window whose page does not lead there keeps its grid.
+     *
+     * MUTATION: in `LayoutPopupUI.sameSquares`, leave out the linked page's name, and an arrow to the renamed page
+     * still names the old one.
+     */
+    @Test(timeOut = 180000)
+    public void testARenameDrawsTheWindowsThatLeadToThePageAgain() throws Exception
+    {
+        final String from = "2 - Bottom";
+        final String to = "2 - Bottom renamed";
+        final List<LayoutPopupUI> windows = popUpAll();
+
+        try
+        {
+            final Map<LayoutPopupUI, Object> grids = gridsOf(windows);
+            final Map<LayoutPopupUI, Boolean> leads = new HashMap<>();
+
+            for (LayoutPopupUI window : windows) leads.put(window, !arrowsIn(window, from).isEmpty());
+
+            assertTrue(leads.containsValue(true) && leads.containsValue(false), "precondition: no window, or every"
+                + " window, has an arrow to " + from + ": " + leads);
+
+            renamePage(from, to);
+
+            for (LayoutPopupUI window : windows)
+            {
+                final String page = window.getLayoutTitle();
+
+                if (to.equals(page)) continue;
+
+                if (leads.get(window))
+                {
+                    assertTrue(Components.waitFor(() -> !arrowsIn(window, to).isEmpty() && arrowsIn(window, from)
+                        .isEmpty(), 20000), page + "'s arrows still lead to " + from + " after it was renamed " + to);
+                }
+                else if (!from.equals(page))
+                {
+                    assertSame(gridOf(window), grids.get(window), "renaming " + from + " drew " + page + "'s window"
+                        + " again, though nothing leads there from it");
+                }
+            }
+
+            assertTrue(windows.stream().anyMatch(window -> to.equals(window.getLayoutTitle())), "no window shows "
+                + to + " after its page was renamed");
+        }
+        finally
+        {
+            if (model.getLayoutList().contains(to)) renamePage(to, from);
+
+            closeAll(windows);
+
+            showTheMainPage();
+        }
+    }
+
+    /**
+     * Moving a page leaves every page window on its own page with its grid, as no page changed (FR-216).
+     *
+     * MUTATION: in `LayoutPopupUI.refreshDiagram`, pass false for keeping a page that draws the same, and every window
+     * is drawn again.
+     */
+    @Test(timeOut = 180000)
+    public void testMovingAPageKeepsEveryPageWindow() throws Exception
+    {
+        final List<String> order = new ArrayList<>(model.getLayoutList());
+        final List<LayoutPopupUI> windows = popUpAll();
+
+        try
+        {
+            final Map<LayoutPopupUI, Object> grids = gridsOf(windows);
+            final Map<LayoutPopupUI, String> pages = new HashMap<>();
+
+            for (LayoutPopupUI window : windows) pages.put(window, window.getLayoutTitle());
+
+            movePage(PAGE, 1);
+
+            assertNotEquals(model.getLayoutList(), order, "precondition: the page did not move");
+
+            for (LayoutPopupUI window : windows)
+            {
+                assertEquals(window.getLayoutTitle(), pages.get(window), "a window left its page after a move");
+                assertSame(gridOf(window), grids.get(window), "moving " + PAGE + " drew " + pages.get(window)
+                    + "'s window again");
+            }
+        }
+        finally
+        {
+            if (!model.getLayoutList().equals(order)) movePage(PAGE, -1);
+
+            closeAll(windows);
+
+            showTheMainPage();
+        }
+    }
+
+    /**
+     * A page window kept through an editor's Cancel runs a route as the route editor's Save left it (FR-216): a click
+     * on its route square sends what a click on the main window's sends, not the commands the route had.
+     *
+     * MUTATION: in `LayoutGrid.keep`, leave every square on its old component (no `bindTo`, no counterpart check), and
+     * the click sends the route's old commands.
+     */
+    @Test(timeOut = 180000)
+    public void testAKeptWindowRunsARouteAsEdited() throws Exception
+    {
+        final LayoutDiagramComponent square = aRouteSquareWhere(route -> route.getRoute().size() > 1);
+        final MarklinRoute route = (MarklinRoute) square.getRoute();
+        final String name = route.getName();
+        final List<org.traincontrol.base.RouteCommand> commands = new ArrayList<>(route.getRoute());
+        final boolean wasLocked = route.isLocked();
+        final LayoutPopupUI window = aKeptWindow();
+
+        try
+        {
+            final int before = commandsOnAClick(labelOf(squareNow(square)));
+
+            route.setLocked(false);
+
+            // What the route editor's Save does
+            assertTrue(model.editRoute(name, name, new ArrayList<>(commands.subList(0, commands.size() - 1)),
+                route.getS88(), route.getTriggerType(), route.isEnabled(), route.getConditions()), "precondition: "
+                + name + " was not edited");
+
+            rebuildThePage();
+
+            final int edited = commandsOnAClick(labelOf(squareNow(square)));
+
+            assertNotEquals(edited, before, "precondition: the edit to " + name + " did not change what it sends");
+            assertEquals(commandsOnAClick(squareIn(window, square)), edited, "a click on the kept page window's square"
+                + " of " + name + " did not send the route as edited");
+        }
+        finally
+        {
+            final MarklinRoute now = (MarklinRoute) model.getRoute(name);
+
+            now.setLocked(false);
+            model.editRoute(name, name, commands, now.getS88(), now.getTriggerType(), now.isEnabled(),
+                now.getConditions());
+            ((MarklinRoute) model.getRoute(name)).setLocked(wasLocked);
+
+            SwingUtilities.invokeAndWait(window::dispose);
+
+            rebuildThePage();
+        }
+    }
+
+    /**
+     * A page window kept through an editor's Cancel lets go of a route renumbered, and then of one deleted (FR-216):
+     * its square names no route and a click on it sends nothing.
+     *
+     * MUTATION: in `LayoutGrid.keep`, leave every square on its old component (no `bindTo`, no counterpart check), and
+     * the square still runs the route.
+     */
+    @Test(timeOut = 180000)
+    public void testAKeptWindowLetsGoOfARouteRenumberedOrDeleted() throws Exception
+    {
+        final LayoutDiagramComponent square = aBoundRouteSquare();
+        final MarklinRoute route = (MarklinRoute) square.getRoute();
+        final String name = route.getName();
+        final int id = route.getId();
+        final boolean wasLocked = route.isLocked();
+        final LayoutPopupUI window = aKeptWindow();
+        int highest = 999;
+
+        for (String each : model.getRouteList()) highest = Math.max(highest, model.getRouteId(each));
+
+        final String free = Integer.toString(highest + 1);
+
+        route.setLocked(false);
+
+        try
+        {
+            try (Answering answering = Answering.start(message -> Answering.type(free)))
+            {
+                SwingUtilities.invokeAndWait(() -> ui.changeRouteId(name));
+            }
+
+            Settle.theDiagram(ui);
+
+            assertEquals(Integer.toString(route.getId()), free, "precondition: " + name + " was not renumbered");
+            assertNull(squareIn(window, square).getComponent().getRoute(), "the kept page window's square still holds"
+                + " " + name + " after it was renumbered");
+            assertEquals(commandsOnAClick(squareIn(window, square)), 0, "a click on the kept page window's square ran "
+                + name + " after it was renumbered");
+
+            model.changeRouteId(name, id);
+
+            try (Answering answering = Answering.start(message -> Answering.press(AskingWindows.YES)))
+            {
+                SwingUtilities.invokeAndWait(() -> ui.deleteRoute(name));
+            }
+
+            Settle.theDiagram(ui);
+
+            assertNull(model.getRoute(name), "precondition: " + name + " was not deleted");
+            assertNull(squareIn(window, square).getComponent().getRoute(), "the kept page window's square still holds"
+                + " " + name + " after it was deleted");
+            assertEquals(commandsOnAClick(squareIn(window, square)), 0, "a click on the kept page window's square ran "
+                + name + " after it was deleted");
+        }
+        finally
+        {
+            if (model.getRoute(name) == null)
+            {
+                model.newRoute(name, id, route.getRoute(), route.getS88(), route.getTriggerType(), route.isEnabled(),
+                    route.getConditions());
+            }
+            else if (model.getRouteId(name) != id)
+            {
+                model.changeRouteId(name, id);
+            }
+
+            ((MarklinRoute) model.getRoute(name)).setLocked(wasLocked);
+
+            SwingUtilities.invokeAndWait(window::dispose);
+
+            rebuildThePage();
+        }
+    }
+
+    /**
+     * A page window kept twice running still follows its devices (FR-216): its switch and signal squares are drawn
+     * again when their accessory switches, and a click on a sensor square flips the sensor and draws it again.
+     *
+     * MUTATION: in `LayoutGrid.keep`, drop `bindTo`, and the window is drawn again rather than kept.  Dropping
+     * `tieToItsDevices` there stays green: the devices outlive a read again and the kept squares stay on their lists.
+     */
+    @Test(timeOut = 180000)
+    public void testAKeptWindowsSquaresStillFollowTheirDevices() throws Exception
+    {
+        final LayoutPopupUI window = aKeptWindow();
+
+        try
+        {
+            final Object grid = gridOf(window);
+
+            // The second keep starts from squares already rebound once
+            editingComplete();
+            assertSame(gridOf(window), grid, "precondition: the second hand-over drew the page window again");
+
+            final LayoutLabel aSwitch = Components.onTheEventThread(() -> Components.find(window, LayoutLabel.class,
+                each -> each.getComponent() != null && each.getComponent().isSwitch()
+                && !each.getComponent().isThreeWay() && each.getComponent().getAccessory() != null));
+            final LayoutLabel aSignal = Components.onTheEventThread(() -> Components.find(window, LayoutLabel.class,
+                each -> each.getComponent() != null && each.getComponent().isSignal()
+                && each.getComponent().getAccessory() != null));
+            final LayoutLabel aSensor = Components.onTheEventThread(() -> Components.find(window, LayoutLabel.class,
+                each -> each.getComponent() != null && each.getComponent().isFeedback()
+                && each.getComponent().getFeedback() != null));
+
+            assertNotNull(aSwitch, "precondition: " + PAGE + " has no switch square");
+            assertNotNull(aSignal, "precondition: " + PAGE + " has no signal square");
+            assertNotNull(aSensor, "precondition: " + PAGE + " has no sensor square");
+
+            for (LayoutLabel square : new LayoutLabel[] {aSwitch, aSignal})
+            {
+                final LayoutDiagramComponent c = square.getComponent();
+                final org.traincontrol.marklin.MarklinAccessory device =
+                    (org.traincontrol.marklin.MarklinAccessory) c.getAccessory();
+
+                assertSame(c, model.getLayout(PAGE).getComponent(c.getX(), c.getY()), "the kept " + c.getType()
+                    + " square is not bound to the page as the model holds it now");
+
+                final int[] before = pixels(square);
+                final boolean was = device.isSwitched();
+
+                try
+                {
+                    model.setAccessoryState(device.getAddress() + 1, device.getDecoderType(), !was);
+
+                    assertTrue(Components.waitFor(() -> !Arrays.equals(before, pixels(square)), PICTURE_MS),
+                        "the kept window's " + c.getType() + " did not follow its accessory");
+                }
+                finally
+                {
+                    model.setAccessoryState(device.getAddress() + 1, device.getDecoderType(), was);
+                    Components.settle();
+                }
+            }
+
+            final org.traincontrol.marklin.MarklinFeedback sensor =
+                (org.traincontrol.marklin.MarklinFeedback) aSensor.getComponent().getFeedback();
+            final int[] before = pixels(aSensor);
+            final boolean was = sensor.isSet();
+
+            try
+            {
+                support.Mouse.click(aSensor);
+
+                assertTrue(Components.waitFor(() -> sensor.isSet() != was, PICTURE_MS), "a click on the kept window's"
+                    + " sensor square did not flip the sensor");
+                assertTrue(Components.waitFor(() -> !Arrays.equals(before, pixels(aSensor)), PICTURE_MS),
+                    "the kept window's sensor square did not follow its sensor");
+            }
+            finally
+            {
+                sensor.setState(was);
+                sensor.updateTiles();
+            }
+
+            assertTrue(Components.waitFor(() -> Arrays.equals(before, pixels(aSensor)), PICTURE_MS),
+                "the kept window's sensor square did not follow its sensor back");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
+    /** How long a square's picture may take to land after its device changes: it is drawn after the event. */
+    private static final long PICTURE_MS = 5000;
+
+    /** The square as it paints now. */
+    private static int[] pixels(final LayoutLabel l)
+    {
+        return Components.onTheEventThread(() -> support.Pixels.asPainted(l));
+    }
+
+    /**
+     * A page window that cannot be drawn costs only itself (FR-216): asked for together with two others, as Pop Up All
+     * asks, with its page gone by the time they are drawn, the other two still open, and a window asked for afterwards
+     * opens too.
+     *
+     * MUTATION: in `TrainControlUI.showLayoutPopup`, catch only an IllegalArgumentException from a window's drawing,
+     * and the batch stops at the one that fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAWindowThatCannotBeDrawnCostsOnlyItself() throws Exception
+    {
+        final java.lang.reflect.Method show = Reflect.method(TrainControlUI.class, "showLayoutPopup", String.class,
+            int.class);
+        final int size = aTileSize();
+        final java.util.Set<java.awt.Window> before =
+            new java.util.HashSet<>(Arrays.asList(java.awt.Window.getWindows()));
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    for (String page : new String[] {PAGE, "a page gone", RENAMED_FROM}) show.invoke(ui, page, size);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertTrue(Components.waitFor(() -> openedSince(before).size() == 2, 20000), "a window whose page was gone"
+                + " stopped the others asked for with it; open: " + openedSince(before));
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    show.invoke(ui, PAGE, size);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertTrue(Components.waitFor(() -> openedSince(before).size() == 3, 20000), "a window asked for after one"
+                + " that could not be drawn did not open");
+        }
+        finally
+        {
+            closeAll(openedSince(before));
+        }
+    }
+
+    /**
+     * A square turned on a page draws that page's window again (FR-216): the same squares stand in the same places, but
+     * the page reads differently.
+     *
+     * MUTATION: in `LayoutPopupUI.sameSquares`, leave out `sameText`, and the window keeps its old drawing.
+     */
+    @Test(timeOut = 180000)
+    public void testATurnedSquareDrawsItsWindowAgain() throws Exception
+    {
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+
+        try
+        {
+            final Object grid = gridOf(window);
+
+            editedElsewhere(square -> square.replaceFirst("( \\.typ=gerade)(\\r?\\n)", "$1$2 .drehung=1$2"),
+                train -> editingComplete(), train ->
+                {
+                    assertNotSame(gridOf(window), grid, "the page window kept its drawing of " + PAGE + " after a"
+                        + " square on it was turned");
+
+                    final LayoutLabel turned = Components.onTheEventThread(() -> Components.find(window,
+                        LayoutLabel.class, each -> each.getComponent() != null && each.getComponent().getX() == 4
+                        && each.getComponent().getY() == 1));
+
+                    assertEquals(turned.getComponent().getOrientation(), 1, "the page window does not draw the square"
+                        + " turned");
+                }, train -> { });
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
+    /**
+     * A station renamed on a page draws that page's window again (FR-216): the page reads the same, but its captions do
+     * not.
+     *
+     * MUTATION: in `LayoutPopupUI.sameSquares`, leave out `captionsAreAsBuilt`, and the window keeps its old captions.
+     */
+    @Test(timeOut = 180000)
+    public void testARenamedStationDrawsItsWindowAgain() throws Exception
+    {
+        // The setup now: a refresh earlier in the class replaces the one the class opened on
+        final AutonomySession now = ui.getAutonomySession();
+        TileKey station = null;
+
+        for (TileKey each : now.getLabelledStationTiles())
+        {
+            if (station == null && PAGE.equals(each.getPage()) && now.getLocomotiveNameAt(each) == null
+                && now.getStore().getPointName(each) != null) station = each;
+        }
+
+        assertNotNull(station, "precondition: " + PAGE + " has no named station with no train at it");
+
+        final TileKey renamed = station;
+        final String name = now.getStore().getPointName(renamed);
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+
+        try
+        {
+            final Object grid = gridOf(window);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                now.setPointName(renamed, name + " renamed");
+                ui.autonomySetupChanged();
+            });
+
+            assertTrue(Components.waitFor(() -> gridOf(window) != grid, 20000), "the page window kept its captions"
+                + " after the station " + name + " on " + PAGE + " was renamed");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                now.setPointName(renamed, name);
+                ui.autonomySetupChanged();
+            });
+
+            Settle.theDiagram(ui);
+
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
+    /**
+     * A page window keeps its addresses through the doors that read the pages again, an editor's Cancel and a sync, on
+     * a page the main window does not show; with Show Addresses unticked it shows none through them either.
+     *
+     * MUTATION: leave out `ensureShowLayoutPreference(true)` in `TrainControlUI.repaintLayout`, and the window loses
+     * its addresses at the editor's Cancel.
+     */
+    @Test(timeOut = 180000)
+    public void testAPageWindowKeepsItsAddressesThroughAReadAgain() throws Exception
+    {
+        final javax.swing.JCheckBoxMenuItem tick = WindowField.of(ui, "menuItemShowLayoutAddresses");
+        final boolean was = tick.isSelected();
+        final Locomotive train = model.getLocByName(model.getLocList().get(0));
+
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), "2 - Bottom");
+        Settle.theDiagram(ui);
+
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+
+        showTheMainPage();
+
+        try
+        {
+            for (boolean on : new boolean[] {true, false})
+            {
+                if (tick.isSelected() != on) SwingUtilities.invokeAndWait(tick::doClick);
+
+                assertTrue(Components.waitFor(() -> showsAddresses(window) == on, 20000), "precondition: the window"
+                    + " of 2 - Bottom does not follow Show Addresses " + (on ? "ticked" : "unticked"));
+
+                editingComplete();
+
+                assertEquals(showsAddresses(window), on, "the window of 2 - Bottom " + (on ? "lost" : "took")
+                    + " its addresses at an editor's Cancel, with Show Addresses " + (on ? "ticked" : "unticked"));
+
+                syncTheLocomotive(train);
+
+                assertEquals(showsAddresses(window), on, "the window of 2 - Bottom " + (on ? "lost" : "took")
+                    + " its addresses at a sync, with Show Addresses " + (on ? "ticked" : "unticked"));
+            }
+        }
+        finally
+        {
+            if (tick.isSelected() != was) SwingUtilities.invokeAndWait(tick::doClick);
+
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     // A page autonomy leaves out, so a rename does not put the setup at stake
@@ -747,6 +1472,197 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
         Settle.theDiagram(ui);
         Components.settle();
+    }
+
+    /** Presses the Layout tab's All button and waits for every page's window, which must open in the list's order. */
+    private static List<LayoutPopupUI> popUpAll() throws Exception
+    {
+        final List<LayoutPopupUI> opened = java.util.Collections.synchronizedList(new ArrayList<>());
+        final java.awt.event.AWTEventListener listener = event ->
+        {
+            if (event.getID() == java.awt.event.WindowEvent.WINDOW_OPENED && event.getSource() instanceof LayoutPopupUI)
+            {
+                opened.add((LayoutPopupUI) event.getSource());
+            }
+        };
+
+        java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(listener, java.awt.AWTEvent.WINDOW_EVENT_MASK);
+
+        try
+        {
+            Components.press(Components.named(ui, "popUpAllButton", javax.swing.JButton.class));
+
+            assertTrue(Components.waitFor(() -> opened.size() == model.getLayoutList().size(), 30000), "Pop Up All"
+                + " opened " + opened.size() + " windows for " + model.getLayoutList());
+
+            Components.settle();
+        }
+        finally
+        {
+            java.awt.Toolkit.getDefaultToolkit().removeAWTEventListener(listener);
+        }
+
+        final List<String> titles = new ArrayList<>();
+
+        for (LayoutPopupUI window : opened) titles.add(window.getLayoutTitle());
+
+        assertEquals(titles, model.getLayoutList(), "Pop Up All opened the windows in another order");
+
+        return new ArrayList<>(opened);
+    }
+
+    private static void closeAll(List<LayoutPopupUI> windows) throws Exception
+    {
+        for (LayoutPopupUI window : windows) SwingUtilities.invokeAndWait(window::dispose);
+    }
+
+    private static Map<LayoutPopupUI, Object> gridsOf(List<LayoutPopupUI> windows)
+    {
+        final Map<LayoutPopupUI, Object> grids = new HashMap<>();
+
+        for (LayoutPopupUI window : windows) grids.put(window, gridOf(window));
+
+        return grids;
+    }
+
+    /** The track editor's Save or Cancel: its hand-over reads every page again, waited out with the diagram. */
+    private static void editingComplete() throws Exception
+    {
+        final AtomicInteger underWay = (AtomicInteger) Reflect.get(TrainControlUI.class, ui, "refreshesUnderWay");
+
+        SwingUtilities.invokeAndWait(ui::layoutEditingCompleteFromTheEditor);
+
+        assertTrue(Components.waitFor(() -> underWay.get() == 0, 30000), "the pages were not read again");
+
+        Settle.theDiagram(ui);
+        Components.settle();
+    }
+
+    /** Moves a page through Move Page's own door and waits for the pages read again. */
+    private static void movePage(String page, int by) throws Exception
+    {
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), page);
+        Settle.theDiagram(ui);
+
+        final Object actions = Reflect.get(TrainControlUI.class, ui, "layoutFileActions");
+        final java.lang.reflect.Method move = Reflect.method(actions.getClass(), "movePage", int.class,
+            org.traincontrol.gui.layouteditor.LayoutEditor.class);
+        final AtomicInteger underWay = (AtomicInteger) Reflect.get(TrainControlUI.class, ui, "refreshesUnderWay");
+        final List<String> before = new ArrayList<>(model.getLayoutList());
+
+        try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    move.invoke(actions, by, null);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertTrue(Components.waitFor(() -> !model.getLayoutList().equals(before) && underWay.get() == 0, 30000),
+                "precondition: " + page + " did not move; asked: " + answering.asked());
+        }
+
+        Settle.theDiagram(ui);
+        Components.settle();
+    }
+
+    /** Whether the model's page has a square that shows its address when Show Addresses is ticked. */
+    private static boolean hasAddresses(String page)
+    {
+        return model.getLayout(page).getAll().stream().anyMatch(c -> !c.isText() && c.isClickable());
+    }
+
+    private static boolean showsAddresses(LayoutPopupUI window)
+    {
+        return !Components.all(window, org.traincontrol.gui.widgets.AddressLabel.class, null).isEmpty();
+    }
+
+    /** The arrows in a window that lead to this page. */
+    private static List<LayoutLabel> arrowsIn(LayoutPopupUI window, String page)
+    {
+        return Components.all(window, LayoutLabel.class, each -> each.getComponent() != null
+            && page.equals(each.getComponent().getLinkPageName()));
+    }
+
+    /** The page shown in its own window, kept through the track editor's hand-over (its Save or Cancel). */
+    private static LayoutPopupUI aKeptWindow() throws Exception
+    {
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        final Object grid = gridOf(window);
+
+        editingComplete();
+
+        assertSame(gridOf(window), grid, "precondition: the hand-over drew the page window again");
+
+        return window;
+    }
+
+    /** The label a page window draws where a square of its page is. */
+    private static LayoutLabel squareIn(LayoutPopupUI window, LayoutDiagramComponent square) throws Exception
+    {
+        final LayoutLabel found = Components.onTheEventThread(() -> Components.find(window, LayoutLabel.class, each ->
+            each.getComponent() != null && each.getComponent().getX() == square.getX()
+            && each.getComponent().getY() == square.getY()));
+
+        assertNotNull(found, "precondition: the page window draws nothing where " + square + " is");
+
+        return found;
+    }
+
+    /** How many accessory commands a click on a square sends, the power question answered Proceed. */
+    private static int commandsOnAClick(LayoutLabel square) throws Exception
+    {
+        final support.WireRecorder wire = support.WireRecorder.open();
+
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("layout.ui.optionProceed"))))
+        {
+            final int mark = wire.mark();
+            final long[] heard = {System.currentTimeMillis(), -1};
+
+            support.Mouse.click(square);
+
+            // Done once no accessory command has come for two seconds: a route sends its commands a beat apart
+            Components.waitFor(() ->
+            {
+                long now = wire.since(mark).stream().filter(line -> line.contains("Type: Accessory")).count();
+
+                if (now != heard[1])
+                {
+                    heard[1] = now;
+                    heard[0] = System.currentTimeMillis();
+                }
+
+                return System.currentTimeMillis() - heard[0] > 2000;
+            }, 20000);
+
+            return (int) heard[1];
+        }
+        finally
+        {
+            wire.close();
+        }
+    }
+
+    /** The page windows showing that were not open when `before` was taken. */
+    private static List<LayoutPopupUI> openedSince(java.util.Set<java.awt.Window> before)
+    {
+        final List<LayoutPopupUI> opened = new ArrayList<>();
+
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if (window instanceof LayoutPopupUI && window.isShowing() && !before.contains(window))
+            {
+                opened.add((LayoutPopupUI) window);
+            }
+        }
+
+        return opened;
     }
 
     private static Object gridOf(LayoutPopupUI window)
@@ -811,10 +1727,18 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     /** A route square on the page shown whose route the database has. */
     private static LayoutDiagramComponent aBoundRouteSquare() throws Exception
     {
+        return aRouteSquareWhere(route -> true);
+    }
+
+    /** A route square on the page shown whose route the database has and passes `which`. */
+    private static LayoutDiagramComponent aRouteSquareWhere(java.util.function.Predicate<MarklinRoute> which)
+        throws Exception
+    {
         LayoutDiagramComponent found = Components.onTheEventThread(() ->
         {
             for (LayoutLabel square : Components.all(shownPage(), LayoutLabel.class, each -> each.getComponent() != null
-                && each.getComponent().isRoute() && each.getComponent().getRoute() instanceof MarklinRoute))
+                && each.getComponent().isRoute() && each.getComponent().getRoute() instanceof MarklinRoute
+                && which.test((MarklinRoute) each.getComponent().getRoute())))
             {
                 return square.getComponent();
             }
@@ -822,7 +1746,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
             return null;
         });
 
-        assertNotNull(found, "precondition: no route square on " + PAGE + " has its route");
+        assertNotNull(found, "precondition: no route square on " + PAGE + " has its route, one that will do");
 
         return found;
     }
@@ -873,6 +1797,13 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     /** As {@link #outAndBackElsewhere(Check, Check)}, with `door` reading the pages again after the edit. */
     private static void outAndBackElsewhere(Check door, Check out, Check back) throws Exception
     {
+        editedElsewhere(square -> "", door, out, back);
+    }
+
+    /** As {@link #outAndBackElsewhere(Check, Check, Check)}, the plain track at 0x104 made what `edit` makes of it. */
+    private static void editedElsewhere(java.util.function.UnaryOperator<String> edit, Check door, Check out,
+        Check back) throws Exception
+    {
         final Path file = sandbox.getFolder().toPath().resolve("config/gleisbilder/" + PAGE + ".cs2");
         final byte[] asItWas = Files.readAllBytes(file);
         final String text = new String(asItWas, StandardCharsets.UTF_8);
@@ -885,7 +1816,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
         try
         {
-            Files.write(file, text.replace(square, "").getBytes(StandardCharsets.UTF_8));
+            Files.write(file, text.replace(square, edit.apply(square)).getBytes(StandardCharsets.UTF_8));
 
             door.check(train);
 

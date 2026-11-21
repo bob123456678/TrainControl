@@ -33,6 +33,7 @@ public class Util
 {
     /**
      * An empty JSONObject that keeps its keys in insertion order (the library's own map is unordered).
+     *
      * @return the object
      * @throws NoSuchFieldException if the library no longer has a "map" field
      * @throws IllegalAccessException if the field cannot be opened
@@ -90,8 +91,7 @@ public class Util
     public static final String UNREADABLE_BACKUP_PREFIX = "unreadable";
 
     /**
-     * Where cropped locomotive icons are written (FR-022): beside the application's data, never next to or over the
-     * user's own photo.
+     * Where cropped locomotive icons are written (FR-022): beside the application's data, never over the user's photo.
      */
     public static final String LOC_ICON_FOLDER = "tc_loc_icons";
 
@@ -106,7 +106,7 @@ public class Util
 
     /**
      * Where one of the application's data files is: the working directory, unless a test run named a folder of its own
-     * in `traincontrol.dataDir`, which keeps a running application's files out of the tests.
+     * in `traincontrol.dataDir`.
      *
      * @param name the file's name - `LocDB.data`, `UIState.data`, the backup folder
      * @return its path
@@ -122,8 +122,8 @@ public class Util
 
     /**
      * The preference node for a class's package: the user node, unless a test run named a node of its own in
-     * `traincontrol.preferences`.  That node starts empty, every setting at its default, so a run is the same on any
-     * machine and the user's settings never reach it; the real node is neither read nor written.
+     * `traincontrol.preferences`.  That node starts empty, so a run is the same on any machine and the user's settings
+     * never reach it.
      *
      * @param owner a class in the package
      * @return the node
@@ -136,10 +136,17 @@ public class Util
     /** {@link #preferencesFor(Class)} for a run of this name, null or blank for none. */
     public static java.util.prefs.Preferences preferencesFor(Class<?> owner, String run)
     {
-        if (run == null || run.trim().isEmpty()) return java.util.prefs.Preferences.userNodeForPackage(owner);
+        return preferencesFor(owner.getPackage().getName(), run);
+    }
 
-        return java.util.prefs.Preferences.userRoot().node(ISOLATED_PREFERENCES_ROOT + "/" + run.trim() + "/"
-            + owner.getPackage().getName().replace('.', '/'));
+    /** {@link #preferencesFor(Class, String)} for a package by name, for code that must not compile against it. */
+    public static java.util.prefs.Preferences preferencesFor(String packageName, String run)
+    {
+        String node = packageName.replace('.', '/');
+
+        if (run == null || run.trim().isEmpty()) return java.util.prefs.Preferences.userRoot().node("/" + node);
+
+        return java.util.prefs.Preferences.userRoot().node(ISOLATED_PREFERENCES_ROOT + "/" + run.trim() + "/" + node);
     }
 
     /**
@@ -160,9 +167,9 @@ public class Util
     }
 
     /**
-     * The name an unreadable data file is kept under, beside the backups, before a save writes over it:
-     * {@link #UNREADABLE_BACKUP_PREFIX}, the time to the second (colons and the space made safe for a file name), then the
-     * file's own name.
+     * The name an unreadable data file is kept under, beside the backups: {@link #UNREADABLE_BACKUP_PREFIX}, the time
+     * to the second (made safe for a file name), then the file's own name.
+     *
      * @param timeMillis the time the copy is made
      * @param fileName the data file's own name
      * @return the name to hand {@link #getBackupPath}
@@ -201,8 +208,8 @@ public class Util
 
     /**
      * Returns the file a cropped locomotive icon should be written to, creating {@link #LOC_ICON_FOLDER} if needed.
-     * Unlike getBackupPath there is no fall back to the working directory: an icon among the application's own data
-     * files would never be cleaned up.
+     * Unlike getBackupPath there is no fall back to the working directory: an icon among the data files would never be
+     * cleaned up.
      *
      * @param fileName the intended file name, already sanitized
      * @return the file to write to, or null if the folder could not be created
@@ -217,8 +224,8 @@ public class Util
     }
 
     /**
-     * Whether a URL points at a file this application wrote into {@link #LOC_ICON_FOLDER}: the one question that
-     * decides whether an icon file may be deleted.  Everything outside that folder is the user's own picture.
+     * Whether a URL points at a file this application wrote into {@link #LOC_ICON_FOLDER}: the question that decides
+     * whether an icon file may be deleted; everything outside it is the user's own picture.
      *
      * @param url the locomotive's local image URL, may be null
      * @return true only if the URL resolves to a file inside the icon folder
@@ -233,23 +240,21 @@ public class Util
 
             File dir = locIconFolder().getCanonicalFile();
 
-            // Canonical, and the parent rather than the path: a name that walks out of the folder ("..") cannot pass.
+            // Canonical, and the parent: a name that walks out of the folder ("..") cannot pass.
             File parent = file.getCanonicalFile().getParentFile();
 
             return parent != null && parent.equals(dir);
         }
         catch (URISyntaxException | IllegalArgumentException | IOException e)
         {
-            // Not a file URL, or unreadable: anything not positively ours is the user's, the safe answer for a delete
-            // gate.
+            // Not a file URL, or unreadable: anything not positively ours is the user's.
             return false;
         }
     }
 
     /**
-     * Removes a file, or a folder and everything under it.  A link (a symbolic link, or a junction on Windows) is
-     * removed itself, never what it points at, so no link can loop it.  It goes no more than 32 folders down, so
-     * a deeper tree is not removed whole.  Never throws: a caller tidying up must not fail over it.
+     * Removes a file, or a folder and everything under it.  A link (symbolic or junction) is removed itself, never what
+     * it points at; it goes no more than 32 folders down.  Never throws: a caller tidying up must not fail over it.
      *
      * @param file what to remove
      * @param depth how deep `file` is in the tree being removed; 0 for its root
@@ -282,10 +287,11 @@ public class Util
     }
 
     /**
-     * Whether a path is a symbolic link or a Windows junction, which `File.isDirectory` answers true for.
+     * Whether a path is a symbolic link or a Windows junction, which `File.isDirectory` answers true for; true too for
+     * a path whose kind cannot be read.
      *
      * @param file the path
-     * @return true for a link, and for a path whose kind cannot be read
+     * @return true for a link
      */
     public static boolean isLink(File file)
     {
@@ -317,8 +323,7 @@ public class Util
 
     /**
      * Opens the operating system's file manager on the folder a file is in (FR-019): the folder itself, not the file
-     * selected in it (OB-311), as Explorer's /select, falls back to Documents on a path it cannot resolve.  Never
-     * throws.
+     * selected in it (OB-311).  Never throws.
      *
      * @param file the file whose folder to open, or null to open the folder given
      * @param folder the folder to fall back to
@@ -348,8 +353,8 @@ public class Util
     }
 
     /**
-     * Writes a set of files and folders into one zip (FR-015): one archive, because the autonomy setup is keyed by page
-     * id, so the pieces mean nothing apart.  A source that does not exist is skipped, not an error.
+     * Writes a set of files and folders into one zip (FR-015), one archive because the autonomy setup is keyed by page
+     * id.  A source that does not exist is skipped, not an error.
      *
      * @param zip where to write
      * @param sources entry name inside the archive -> file or folder on disk
@@ -365,11 +370,11 @@ public class Util
 
         if (parent != null) parent.mkdirs();
 
-        // Each archive has a name of its own, so writeAtomically's sweep never meets a killed backup's staging file:
-        // the backup folder, ours alone, is swept of every one, the data files' backups included
+        // Each archive has a name of its own, so writeAtomically's sweep never meets a killed backup's staging file;
+        // the backup folder, ours alone, is swept of every one
         if (parent != null && BACKUP_FOLDER.equals(parent.getName())) sweepStaleStaging(parent, ".*");
 
-        // Staged, so a backup cut off part way (the program closed under it) leaves nothing under the archive's name
+        // Staged, so a backup cut off part way leaves nothing under the archive's name
         try
         {
             writeAtomically(zip, staged ->
@@ -413,7 +418,7 @@ public class Util
                 return;
             }
 
-            // Read before the entry is begun, so a file that will not read leaves no empty entry to be restored
+            // Read before the entry is begun, so a file that will not read leaves no empty entry
             byte[] content = java.nio.file.Files.readAllBytes(source.toPath());
 
             out.putNextEntry(new java.util.zip.ZipEntry(name));
@@ -422,15 +427,14 @@ public class Util
         }
         catch (IOException | RuntimeException e)
         {
-            // Named individually: a file held open by a sync client is the everyday case, and the user can act on it.
+            // Named individually: a file held open by a sync client is the everyday case.
             failed.add(name + ": " + e);
         }
     }
 
     /**
-     * Copies a folder and everything under it into the backup area, best effort per file: a backup that stops at the
-     * first unreadable file is a backup of nothing, and the names of what it could not take are more use than an
-     * exception.
+     * Copies a folder and everything under it into the backup area, best effort per file: the names of what it could
+     * not take are more use than an exception.
      *
      * @param source the folder to copy
      * @param intoName what to call it inside the backup folder
@@ -450,8 +454,8 @@ public class Util
     }
 
     /**
-     * The deepest a backup will go: a guard against a tree that is not a tree (junctions pointing at each other through
-     * paths that never repeat), whose recursion would overflow the stack on the backup thread.
+     * The deepest a backup goes: a guard against junctions pointing at each other, whose recursion would overflow the
+     * stack.
      */
     private static final int MAX_BACKUP_DEPTH = 64;
 
@@ -466,8 +470,8 @@ public class Util
                 return;
             }
 
-            // Followed once: isDirectory follows junctions and links, so one pointing up its own tree walks forever.
-            // The real path tells two names for one directory apart.
+            // Followed once: isDirectory follows junctions, so one pointing up its own tree walks forever; the real
+            // path tells two names for one directory apart.
             String real;
 
             try
@@ -508,7 +512,7 @@ public class Util
         }
         catch (IOException e)
         {
-            // The path, not the name: two same-named files in different folders must be told apart.
+            // The path, not the name: same-named files in different folders must be told apart.
             failed.add(source.getPath());
         }
     }
@@ -529,12 +533,10 @@ public class Util
     }
 
     /**
-     * Makes a page name safe to use as a local filename.  Page names are free text, and one with a path separator or a
-     * forbidden character could land the write outside the layouts folder or leave a half-written layout.
-     *
-     * Applied on both sides on purpose: the local read locates a page by the name in the index.  Here rather than on
-     * CS2File because LayoutDiagram, in base, must not reach into the Marklin package; CS2File.sanitizeFilename
-     * delegates here.  Only unusable characters are replaced, so existing local layouts load as before.
+     * Makes a page name safe to use as a local filename: a path separator or forbidden character could land the write
+     * outside the layouts folder.  Applied on both sides on purpose (the local read locates a page by the name in the
+     * index).  Here, not on CS2File, because LayoutDiagram in base must not reach into the Marklin package; only
+     * unusable characters are replaced, so existing local layouts load as before.
      *
      * @param name the page name
      * @return the name with anything unusable replaced by an underscore
@@ -551,10 +553,9 @@ public class Util
         new java.util.concurrent.atomic.AtomicBoolean();
 
     /**
-     * Writes a file without ever leaving the target truncated: a crash or failed write mid-way would silently lose the
-     * operator's work.  The content is staged in a sibling file and moved into place only once complete, as
-     * downloadFile does; a failed write deletes the staging file and leaves the previous contents.  REPLACE_EXISTING
-     * rather than ATOMIC_MOVE, which is not supported everywhere.
+     * Writes a file without ever leaving the target truncated: the content is staged in a sibling file and moved into
+     * place only once complete (REPLACE_EXISTING, as ATOMIC_MOVE is not supported everywhere); a failed write deletes
+     * the staging file and leaves the previous contents.
      *
      * @param target the file to end up with
      * @param body writes the content to the stream it is given; need not close it
@@ -565,7 +566,7 @@ public class Util
 
         sweepStaleStaging(folder, java.util.regex.Pattern.quote(target.getName()));
 
-        // A name of its own, so two writes of one file at once (the exit and a backup's first save) cannot share it
+        // A name of its own, so two writes of one file at once cannot share it
         File staging = File.createTempFile(target.getName() + ".tmp", PARTIAL_DOWNLOAD_SUFFIX, folder);
 
         stagingInProgress.add(staging);
@@ -579,9 +580,8 @@ public class Util
                 out.flush();
             }
 
-            // On disk before the move, or a power cut just after it can leave the target empty.  A handle of its own,
-            // as the body may close the stream.  A drive that refuses (a network share, a OneDrive placeholder) still
-            // gets the file: the force guards against a power cut, and must not stop every save.
+            // On disk before the move, or a power cut can leave the target empty.  A handle of its own, as the body may
+            // close the stream.  A drive that refuses (a network share, a OneDrive placeholder) still gets the file.
             try (java.nio.channels.FileChannel written = java.nio.channels.FileChannel.open(staging.toPath(),
                 java.nio.file.StandardOpenOption.WRITE))
             {
@@ -607,8 +607,8 @@ public class Util
             throw e;
         }
 
-        // The staging file goes either way: a failed move (a target held open on Windows) must not leave a
-        // `LocDB.data.part` beside a corrupt target.  Deleted, not kept as a recovery artifact: nothing reads it.
+        // The staging file goes either way, so a failed move (a target held open on Windows) leaves no `.part` beside a
+        // corrupt target; nothing reads it.
         try
         {
             Files.move(staging.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -621,8 +621,7 @@ public class Util
             }
             catch (RuntimeException cannotTidy)
             {
-                // Nothing: the move's failure is what the caller needs to hear about, not a failure to tidy up after
-                // it.
+                // Nothing: the move's failure is what the caller needs to hear about.
             }
 
             throw moveFailed;
@@ -640,8 +639,8 @@ public class Util
     private static final long STALE_STAGING_MS = 60_000;
 
     /**
-     * Deletes the staging files a killed write left, of the targets whose names match the pattern `target`: a minute
-     * old, and owned by no write under way.
+     * Deletes the staging files a killed write left for targets matching the pattern `target`: a minute old, owned by
+     * no write.
      */
     private static void sweepStaleStaging(File folder, String target)
     {
@@ -651,7 +650,7 @@ public class Util
 
         for (File one : left)
         {
-            // Litter, not data: one that will not delete is tried again at the next write
+            // Litter, not data: retried at the next write
             if (!stagingInProgress.contains(one) && System.currentTimeMillis() - one.lastModified() > STALE_STAGING_MS)
             {
                 one.delete();
@@ -683,7 +682,7 @@ public class Util
         connection.setConnectTimeout(DOWNLOAD_CONNECT_TIMEOUT_MS);
         connection.setReadTimeout(DOWNLOAD_READ_TIMEOUT_MS);
 
-        // GitHub answers 406 to a release download that does not accept a binary file, as Java's default header does not
+        // GitHub answers 406 to a release download that does not accept a binary file
         connection.setRequestProperty("Accept", "application/octet-stream");
 
         File partialFile = new File(saveOutputFile.getAbsolutePath() + PARTIAL_DOWNLOAD_SUFFIX);
@@ -731,8 +730,7 @@ public class Util
     
     /**
      * Parses the release version from getLatestReleaseInfo (i.e. TrainControl v2.3.0 -> 2.3.0), found by the number
-     * rather than by the letter: a name with no "v", or another "v" ("TrainControl Preview v3.0.0"), must not throw or
-     * hand back a piece of the name.  Release names are typed by hand at tag time.
+     * rather than by the letter: a name with no "v" or another "v" must not throw or return a piece of the name.
      *
      * @return the version, or null when the name carries no number
      */
@@ -740,9 +738,9 @@ public class Util
     {
         String name = gitHubReleaseInfo.getString("name");
 
-        // The number after the "v" first: matching the first number outright gives "2026" for "TrainControl 2026
-        // Edition v3.0.0".  The "v" must be the tag marker (a left boundary), and the longest anchored match wins, so
-        // "Marklin CS3 v2.6 compatibility - TrainControl v3.0.0" does not report 2.6.
+        // The number after the "v" first (the first number outright gives "2026" for "TrainControl 2026 Edition
+        // v3.0.0"); the "v" must be a left boundary and the longest anchored match wins, so "CS3 v2.6 compatibility -
+        // TrainControl v3.0.0" does not report 2.6.
         java.util.regex.Matcher tagged = java.util.regex.Pattern
             .compile("(?<![A-Za-z0-9])[vV]([0-9]+(?:[.][0-9]+)*)").matcher(name);
 
@@ -755,12 +753,11 @@ public class Util
 
         if (anchored != null) return anchored;
 
-        // No "v" at all: the longest version-shaped number wins, so a three-part version beats a stray year or build
-        // number.
+        // No "v" at all: the longest version-shaped number wins over a stray year or build number.
         java.util.regex.Matcher version =
             java.util.regex.Pattern.compile("[0-9]+(?:[.][0-9]+)*").matcher(name);
 
-        // Null rather than a guess: a name with no number has no version to report.
+        // Null rather than a guess.
         String best = null;
 
         while (version.find())
@@ -779,21 +776,13 @@ public class Util
         return gitHubReleaseInfo.getJSONArray("assets").getJSONObject(0).getString("browser_download_url");
     }
     
-    /**
-     * The size in bytes of the release download, so an update can tell a whole download from one cut short (FR-125).
-     *
-     * @return the size, or -1 when the release does not give one
-     */
+    /** The size in bytes of the release download, or -1 where the release gives none (FR-125). */
     public static long parseDownloadSize(JSONObject gitHubReleaseInfo)
     {
         return gitHubReleaseInfo.getJSONArray("assets").getJSONObject(0).optLong("size", -1);
     }
 
-    /**
-     * The release download's digest, `sha256:<hex>`, where the release gives one (FR-125).
-     *
-     * @return the digest, or null
-     */
+    /** The release download's digest, `sha256:<hex>`, or null where the release gives none (FR-125). */
     public static String parseDownloadDigest(JSONObject gitHubReleaseInfo)
     {
         String digest = gitHubReleaseInfo.getJSONArray("assets").getJSONObject(0).optString("digest", "");
@@ -856,8 +845,8 @@ public class Util
     }
 
     /**
-     * Names in the order a person reads them (MT-865): case aside, and a run of digits by its value, so ParkingTrack4
-     * comes before ParkingTrack10.  Names that read the same fall back to plain order, so only equal names tie.
+     * Names in the order a person reads them (MT-865): case aside, a run of digits by its value (ParkingTrack4 before
+     * ParkingTrack10); names that read the same fall back to plain order, so only equal names tie.
      *
      * @param a one name
      * @param b the other

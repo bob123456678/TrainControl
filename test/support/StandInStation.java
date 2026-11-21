@@ -34,6 +34,9 @@ public final class StandInStation implements AutoCloseable
 
     private final java.util.List<String> log = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
 
+    /** A path whose answers promise their whole length and stop part way, at a new length each time, as a dropped line. */
+    public volatile String cutOff;
+
     public StandInStation(BiFunction<String, Integer, byte[]> answer) throws IOException
     {
         this.server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -43,8 +46,21 @@ public final class StandInStation implements AutoCloseable
             String path = exchange.getRequestURI().getPath();
             String query = exchange.getRequestURI().getRawQuery();
             this.log.add(path + (query == null ? "" : "?" + query));
-            byte[] body = answer.apply(path, requests.computeIfAbsent(path, k -> new AtomicInteger()).incrementAndGet());
+            int n = requests.computeIfAbsent(path, k -> new AtomicInteger()).incrementAndGet();
+            byte[] body = answer.apply(path, n);
             int status = body == null ? 404 : 200;
+
+            if (body != null && body.length > 1 && path.equals(this.cutOff))
+            {
+                exchange.sendResponseHeaders(200, body.length);
+
+                // Not closed: the exception out of this handler drops the connection with the rest owed
+                OutputStream out = exchange.getResponseBody();
+                out.write(body, 0, body.length / (1 + n));
+                out.flush();
+
+                throw new IOException("the stand-in drops the connection part way");
+            }
 
             if (body == null)
             {
@@ -189,6 +205,25 @@ public final class StandInStation implements AutoCloseable
                 default: return path.startsWith("/config/") ? file("test/cs3_v261" + path) : null;
             }
         };
+    }
+
+    /**
+     * A CS3 serving a snapshot folder laid out as `test/layouts/cs3-main-layout` (each /app/api/ answer a file with a
+     * .json suffix), the 2.6.1 fixtures for what it lacks.  `change` gets each path and its answer and returns the answer
+     * to send (null for a 404), or throws to drop the connection.
+     */
+    public static StandInStation ofSnapshot(File snapshot, BiFunction<String, byte[], byte[]> change) throws IOException
+    {
+        String root = snapshot.getAbsolutePath();
+        BiFunction<String, Integer, byte[]> rest = cs3("260",
+            new String(file(root + "/app/api/info.json"), StandardCharsets.UTF_8));
+
+        return new StandInStation((path, n) ->
+        {
+            byte[] own = file(root + (path.startsWith("/app/api/") ? path + ".json" : path));
+
+            return change.apply(path, own != null ? own : rest.apply(path, n));
+        });
     }
 
     /**

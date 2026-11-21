@@ -110,7 +110,6 @@ public class AutonomyViewerPanel extends JPanel
 
     private final JLabel status = new JLabel();
 
-
     public AutonomyViewerPanel(AutonomySession session, TrainControlUI ui)
     {
         // Fallback for session(); every use asks the window for the current one.
@@ -619,7 +618,7 @@ public class AutonomyViewerPanel extends JPanel
     {
         // The same gate the JSON path applies before replacing the layout: confirm, then stop whatever
         // is moving.  Owned by the main window because stopping trains is its business, not a panel's.
-        if (!ui.prepareAutonomyReload())
+        if (!ui.autonomyLifecycle.prepareAutonomyReload())
         {
             refresh();
             return;
@@ -681,12 +680,12 @@ public class AutonomyViewerPanel extends JPanel
 
         if (captureRunningState && runningNow != null && runningNow.equals(name))
         {
-            ui.keepThePendingTurnsAcross(() -> loadPrepared(name, interactive, captureRunningState));
+            ui.runningLayoutSync.keepThePendingTurnsAcross(() -> loadPrepared(name, interactive, captureRunningState));
         }
         else
         {
             // ANOTHER CONFIGURATION: the turns the railway owes are the one running's, written into it before its fold
-            if (captureRunningState && runningNow != null) ui.writeTheTurnsOwed();
+            if (captureRunningState && runningNow != null) ui.diagramLocGestures.writeTheTurnsOwed();
 
             loadPrepared(name, interactive, captureRunningState);
         }
@@ -721,7 +720,7 @@ public class AutonomyViewerPanel extends JPanel
 
                 // AND ITS SETTINGS AS BUILT FOLLOW (OB-343): a build the load then declines leaves this railway running
                 session().captureFromLayout(folding.toJSON(folding.getLastPointsReached()),
-                    ui.getActiveDiagramConfiguration(), ui.settingsAsBuiltFor(folding));
+                    ui.getActiveDiagramConfiguration(), ui.runningLayoutSync.settingsAsBuiltFor(folding));
             }
             catch (Exception e)
             {
@@ -779,7 +778,7 @@ public class AutonomyViewerPanel extends JPanel
             ui.getModel().parseAuto(session().buildConfiguration());
 
             // ITS SETTINGS AS BUILT, for the folds to tell what the railway changed since
-            ui.noteTheRailwaysSettingsAsBuilt();
+            ui.runningLayoutSync.noteTheRailwaysSettingsAsBuilt();
 
             // THE RULE FOR EVERY PARSE: a setup that turns atomic routes off while track autonomy runs over has no
             // length comes up atomic, with the reason in the log.  This is the only door into `parseAuto` (OB-254).
@@ -1180,7 +1179,7 @@ public class AutonomyViewerPanel extends JPanel
 
         final List<String> lines = linesFor(leftOut);
 
-        ui.whenTheConnectingNoticeIsGone(() -> showLocomotivesLeftOutLines(configuration, lines));
+        ui.connectingNotice.whenTheConnectingNoticeIsGone(() -> showLocomotivesLeftOutLines(configuration, lines));
     }
 
     /** One line for each locomotive, in name order: its name, and what it lost where. */
@@ -1302,7 +1301,7 @@ public class AutonomyViewerPanel extends JPanel
                 try
                 {
                     session().captureFromLayout(ui.getModel().getAutoLayout().toJSON(), into,
-                        ui.settingsAsBuiltFor(ui.getModel().getAutoLayout()));
+                        ui.runningLayoutSync.settingsAsBuiltFor(ui.getModel().getAutoLayout()));
 
                     captured = true;
                 }
@@ -1484,7 +1483,7 @@ public class AutonomyViewerPanel extends JPanel
 
         // NOT WHILE A RUN HOLDS THE SETUP, as Import is not (MT-601), and before anything is asked: the export folds
         // the running railway into the setup first
-        if (ui.refuseUntilTheTrainsStop(ui)) return;
+        if (RunGates.refuseUntilTheTrainsStop(ui, ui)) return;
 
         String name = selected();
 
@@ -1965,5 +1964,4 @@ public class AutonomyViewerPanel extends JPanel
 
         return sorted;
     }
-
 }

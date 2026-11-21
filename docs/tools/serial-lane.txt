@@ -16,3 +16,4 @@ regression.testTheWindowTakesTheKeyboard     # asks which component has the keyb
 ui.testTheKeyboardDrag                       # reads the system clipboard back after a drag
 ui.testTheLengthPromptHasTheKeyboard         # brings its window to the front and asks for the keyboard focus, for all three walks
 ui.testTheEditorsFindingsCanBeFiltered       # reads and sets the system clipboard, and asks whether a box can take the keyboard
+ui.testTheLengthBoxAndTheKeyboard           # brings Station Settings to the front and asks which field has the keyboard

@@ -3,7 +3,6 @@ package org.traincontrol.gui;
 import java.awt.FlowLayout;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Insets;
 import javax.swing.AbstractButton;
@@ -15,6 +14,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import org.traincontrol.automationui.TileGraph;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.util.I18n;
 
 /**
@@ -77,8 +77,7 @@ public class AutonomyOverlayToggle extends JPanel
         // Toggling only stops the DRAWING, so switching back on shows the current state at once.
         show.setFocusable(false);
 
-        // Opaque and painting its own white: making the strip opaque was not enough, the box has to clear its own
-        // square.
+        // Opaque and painting its own white: an opaque strip alone was not enough.
         show.setOpaque(true);
         show.setBackground(Color.WHITE);
 
@@ -100,7 +99,7 @@ public class AutonomyOverlayToggle extends JPanel
         left_out.setFont(AutonomyBanner.MESSAGE_FONT);
         left_out.setForeground(EXCLUDED_TEXT);
         left_out.setVisible(false);
-        left_out.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        left_out.setCursor(HandPointer.cursor());
         left_out.setToolTipText(I18n.t("autosetup.ui.tooltipPageLeftOut"));
 
         left_out.addMouseListener(Listen.clicked(e ->
@@ -113,7 +112,7 @@ public class AutonomyOverlayToggle extends JPanel
 
         // The banner's own font: two sizes would read as two unrelated notices stacked by accident.
         findings.setFont(AutonomyBanner.MESSAGE_FONT);
-        findings.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        findings.setCursor(HandPointer.cursor());
         findings.setVisible(false);
         findings.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
 
@@ -149,11 +148,11 @@ public class AutonomyOverlayToggle extends JPanel
             if (source != null) source.doClick();
         });
 
-        // The banner's own insets, so the two bands read as one thing stacked (OB-149, OB-151), symmetric so the
-        // content stays centered.
-        setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        // The banner's own insets, so the two bands read as one thing stacked (OB-149, OB-151), but none on the right:
+        // the run button ends where the diagram does (OB-473).
+        setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 0));
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         right.setOpaque(false);
         right.add(run);
 
@@ -171,9 +170,7 @@ public class AutonomyOverlayToggle extends JPanel
         apply();
     }
 
-    /**
-     * Which of the two real buttons this strip is standing in for, if either.
-     */
+    /** Which real button this strip stands in for, if either. */
     public enum RunButton
     {
         /** Nothing to offer - no setup loaded, or this page is not part of it. */
@@ -559,5 +556,14 @@ public class AutonomyOverlayToggle extends JPanel
         // Monitoring only paints while trains move, so also switch the static layer (stations, restricted track), or
         // the checkbox does nothing before a run.
         ui.showStaticAutonomyLayer(show.isSelected());
+
+        // The trains' lines and the fade under them are drawn by their squares, which ask this box as they paint; a
+        // square with no autonomy mark is not redrawn by the layer above (OB-496).
+        java.util.Set<TileGraph.TileKey> held = new java.util.HashSet<>(ui.coveredTrack.keySet());
+        held.addAll(ui.blockedTrack.keySet());
+        for (TileGraph.TileKey square : held)
+        {
+            for (LayoutLabel label : ui.getDiagramTileRegistry().labelsFor(square)) label.repaint();
+        }
     }
 }

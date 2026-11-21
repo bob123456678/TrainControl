@@ -12,6 +12,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -79,13 +80,13 @@ public class testTheAutonomyEditorsTriageNotes
     // ------------------------------------------------------------------------------------------------ MT-889
 
     /**
-     * The filter's clear X sits inside the text field, shows only while there is text, and the row has air above it.
+     * The filter's clear X sits inside the text field and shows only while there is text.
      *
      * MUTATION: add the clear button to the row beside the field instead of giving it to the field as its trailing
-     * component, drop its `setVisible`, or take the top inset off the row's border, and this fails.
+     * component, or drop its `setVisible`, and this fails.
      */
     @Test(timeOut = 120000)
-    public void testTheFilterCrossIsInsideTheBoxAndThereIsAGapAbove() throws Exception
+    public void testTheFilterCrossIsInsideTheBox() throws Exception
     {
         JTextField field = Components.inside(panel.getFindingsBox(), JTextField.class);
         JButton cross = Components.inside(field, JButton.class);
@@ -99,10 +100,6 @@ public class testTheAutonomyEditorsTriageNotes
 
         layOut();
 
-        int gap = Components.onTheEventThread(() -> SwingUtilities.convertPoint(field, 0, 0, panel.getFindingsBox()).y);
-
-        assertTrue(gap >= LayoutEditor.HEADING_GAP, "the filter row has " + gap + " px above it");
-
         int right = Components.onTheEventThread(() -> SwingUtilities.convertPoint(cross, cross.getWidth(), 0, field).x);
 
         assertTrue(right <= field.getWidth(), "the X ends past the field's right end");
@@ -112,11 +109,175 @@ public class testTheAutonomyEditorsTriageNotes
         assertEquals(field.getText(), "", "the X did not clear the box");
     }
 
+    // ------------------------------------------------------------------------------------------------ FR-217
+
+    /** Whether the box paints anything its caption adds: its picture with the caption differs from one without. */
+    private static boolean showsACaption(JTextField field)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            Object caption = field.getClientProperty("JTextField.placeholderText");
+
+            java.awt.image.BufferedImage with = paint(field);
+
+            field.putClientProperty("JTextField.placeholderText", null);
+
+            java.awt.image.BufferedImage without = paint(field);
+
+            field.putClientProperty("JTextField.placeholderText", caption);
+
+            for (int y = 0; y < with.getHeight(); y++)
+            {
+                for (int x = 0; x < with.getWidth(); x++)
+                {
+                    if (with.getRGB(x, y) != without.getRGB(x, y)) return true;
+                }
+            }
+
+            return false;
+        });
+    }
+
+    private static java.awt.image.BufferedImage paint(JTextField field)
+    {
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(Math.max(1, field.getWidth()),
+            Math.max(1, field.getHeight()), java.awt.image.BufferedImage.TYPE_INT_RGB);
+
+        field.paint(image.getGraphics());
+
+        return image;
+    }
+
+    private java.util.List<String> shownRows()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            javax.swing.JList<?> list = (javax.swing.JList<?>) panel.getFindingsPanel().getViewport().getView();
+            java.util.List<String> rows = new java.util.ArrayList<>();
+
+            for (int i = 0; i < list.getModel().getSize(); i++) rows.add(String.valueOf(list.getModel().getElementAt(i)));
+
+            return rows;
+        });
+    }
+
+    /**
+     * An empty filter box shows "Filter" as a caption that is not its text, there is no Filter: label, and the list
+     * is unfiltered.
+     *
+     * MUTATION: put "Filter" into the box as its text, drop the placeholder property, or bring the label back, and
+     * this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAnEmptyFilterBoxShowsTheCaptionAndFiltersNothing() throws Exception
+    {
+        JTextField field = Components.inside(panel.getFindingsBox(), JTextField.class);
+
+        layOut();
+
+        assertEquals(Components.onTheEventThread(field::getText), "", "the box's text");
+        assertEquals(Components.onTheEventThread(() -> field.getClientProperty("JTextField.placeholderText")),
+            I18n.t("autosetup.ui.captionFilterFindings"), "the caption");
+        assertTrue(showsACaption(field), "the empty box paints no caption");
+        assertEquals(Components.onTheEventThread(() -> field.getAccessibleContext().getAccessibleName()),
+            I18n.t("autosetup.ui.captionFilterFindings"), "the box's accessible name");
+
+        assertNull(Components.inside(panel.getFindingsBox(), javax.swing.JLabel.class), "a Filter: label is still there");
+
+        assertTrue(shownRows().size() > 2, "precondition: the check found nothing to list");
+        assertEquals(panel.getFindingFilter(), "", "the text the filter reads");
+    }
+
+    /**
+     * Typing hides the caption and filters; emptying the box brings the caption and the whole list back.
+     *
+     * MUTATION: keep the caption over typed text, or take it away once the box has been typed in, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTypingHidesTheCaptionAndEmptyingBringsItBack() throws Exception
+    {
+        JTextField field = Components.inside(panel.getFindingsBox(), JTextField.class);
+
+        layOut();
+
+        java.util.List<String> all = shownRows();
+
+        Components.onTheEventThread(() -> { field.setText("zzzzqqq"); return null; });
+
+        assertFalse(showsACaption(field), "the caption is still painted over typed text");
+        assertEquals(panel.getFindingFilter(), "zzzzqqq", "the text read is not what was typed");
+        assertTrue(shownRows().size() < all.size(), "typing did not filter the list");
+
+        Components.onTheEventThread(() -> { field.setText(""); return null; });
+
+        assertTrue(showsACaption(field), "the caption did not come back when the box was emptied");
+        assertEquals(panel.getFindingFilter(), "", "the text read after emptying");
+        assertEquals(shownRows(), all, "emptying the box did not bring the whole list back");
+    }
+
+    /**
+     * The box sits under the list and over the warning bar, with the list's left and right edges.
+     *
+     * MUTATION: put the box back over the list, or give its row a side inset, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheFilterBoxIsBelowTheListAboveTheBarAndAlignedToTheList() throws Exception
+    {
+        JTextField field = Components.inside(panel.getFindingsBox(), JTextField.class);
+
+        layOut();
+
+        Component list = panel.getFindingsPanel();
+        Component bar = panel.getBanner();
+
+        assertTrue(top(field) >= top(list) + Components.onTheEventThread(list::getHeight),
+            "the box is not below the list");
+        assertTrue(top(field) + Components.onTheEventThread(field::getHeight) <= top(bar),
+            "the box is not above the warning bar");
+        assertEquals(left(field), left(list), "the box's left edge is not the list's");
+        assertEquals(left(field) + Components.onTheEventThread(field::getWidth),
+            left(list) + Components.onTheEventThread(list::getWidth), "the box's right edge is not the list's");
+    }
+
+    /**
+     * The filter box sits inside the Things to look at frame, with the list: the frame's titled border is on the panel
+     * that holds both, and the box lies within the frame's padding (MT-1034, Adam: "inside the \"things to look at\"
+     * frame").
+     *
+     * MUTATION: put the titled border back on the list's scroll pane, and the box is outside the frame.
+     */
+    @Test(timeOut = 120000)
+    public void testTheFilterBoxIsInsideTheThingsToLookAtFrame() throws Exception
+    {
+        JTextField field = Components.inside(panel.getFindingsBox(), JTextField.class);
+
+        layOut();
+
+        javax.swing.JComponent frame = panel.getFindingsBox();
+
+        assertTrue(Components.onTheEventThread(() -> frame.getBorder() instanceof javax.swing.border.TitledBorder),
+            "the frame holding the list does not carry the Things to look at title");
+        assertTrue(Components.onTheEventThread(() -> SwingUtilities.isDescendingFrom(panel.getFindingsPanel(), frame)),
+            "the list is not inside the frame");
+
+        java.awt.Rectangle inner = Components.onTheEventThread(() ->
+        {
+            java.awt.Insets in = frame.getInsets();
+
+            return new java.awt.Rectangle(in.left, in.top, frame.getWidth() - in.left - in.right,
+                frame.getHeight() - in.top - in.bottom);
+        });
+        java.awt.Rectangle box = Components.onTheEventThread(() ->
+            SwingUtilities.convertRectangle(field.getParent(), field.getBounds(), frame));
+
+        assertTrue(inner.contains(box), "the filter box " + box + " is not inside the frame's padding " + inner);
+    }
+
     // ------------------------------------------------------------------------------------------------ MT-890
 
     /**
      * A one-page list is eight rows tall by default, and a blue Station Tools heading with a heading's air above and
-     * below sits between Path Type's radios and Bulk Edit....
+     * below sits between Why not Moving? and Bulk Edit....
      *
      * MUTATION: set `LayoutEditor.SIDEBAR_ROWS_AT_LEAST` back to 6, drop the heading, or put it under the button, and
      * this fails.
@@ -143,63 +304,72 @@ public class testTheAutonomyEditorsTriageNotes
 
         int headingY = Components.onTheEventThread(() -> SwingUtilities.convertPoint(heading, 0, 0, panel).y);
         int bulkY = Components.onTheEventThread(() -> SwingUtilities.convertPoint(bulk, 0, 0, panel).y);
-        int manualBottom = Components.onTheEventThread(() ->
+        int whyBottom = Components.onTheEventThread(() ->
         {
-            Component manual = Components.withText(panel, I18n.t("autosetup.ui.pathTypeManual"));
+            Component why = Components.withText(panel, I18n.t("autosetup.ui.toolWhy"));
 
-            return manual == null ? 0 : SwingUtilities.convertPoint(manual, 0, manual.getHeight(), panel).y;
+            return why == null ? Integer.MAX_VALUE : SwingUtilities.convertPoint(why, 0, why.getHeight(), panel).y;
         });
 
         assertTrue(headingY < bulkY, "Station Tools is not above Bulk Edit...");
         assertTrue(headingY + heading.getHeight() <= bulkY, "Station Tools overlaps Bulk Edit...");
-        assertTrue(manualBottom <= headingY, "Station Tools is not under Path Type's radios");
+        assertTrue(whyBottom <= headingY, "Station Tools is not under Why not Moving?");
     }
 
     // ------------------------------------------------------------------------------------------------ OB-438
 
     /**
-     * The column is headed Debugging Tools in every language, Path Type is a black item label, and the radios share
-     * the left edge of the label and buttons around them.
+     * The column is headed Path Debugging in every language, Test a path and Why not Moving? stand in it with no radios
+     * under them (FR-221; D172's Auto Path and Manual Path are retired, their words gone from every language), and the
+     * buttons share the left edge of Bulk Edit... below.
      *
-     * MUTATION: put `autosetup.ui.titleCap` back to Autonomy Tools, make Path Type `UiStyle.heading`, or take the zero
-     * margin and border off the radios, and this fails.
+     * MUTATION: put `autosetup.ui.titleCap` back to Debugging Tools, or put a radio back under Why not Moving?, and
+     * this fails.
      */
     @Test(timeOut = 120000)
-    public void testDebuggingToolsAndPathTypeAreBlackAndAligned() throws Exception
+    public void testPathDebuggingHasNoPathTypeAndItsButtonsAreAligned() throws Exception
     {
-        assertEquals(I18n.t("autosetup.ui.titleCap"), "Debugging Tools");
+        assertEquals(I18n.t("autosetup.ui.titleCap"), "Path Debugging");
 
-        for (String language : new String[] {"da", "de", "es", "fr", "it", "nl", "pl"})
+        // Each language's heading before D172: none may come back.  Nor may the retired radios' words.
+        String[] old = {"da|Debug-v\u00e6rkt\u00f8jer", "de|Debugging-Werkzeuge", "es|Herramientas de depuraci\u00f3n",
+            "fr|Outils de d\u00e9bogage", "it|Strumenti di debug", "nl|Debughulpmiddelen", "pl|Narz\u0119dzia debugowania"};
+
+        for (String each : old)
         {
-            String title = java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages",
-                new java.util.Locale(language)).getString("autosetup.ui.titleCap");
+            String[] language = each.split("\\|");
 
-            assertFalse(title.toLowerCase().contains("autonom"), language + " still calls the column Autonomy Tools: " + title);
+            java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages",
+                new java.util.Locale(language[0]));
+
+            String now = bundle.getString("autosetup.ui.titleCap");
+
+            assertNotEquals(now, language[1], language[0] + " autosetup.ui.titleCap is still the old " + now);
+            assertFalse(now.toLowerCase().contains("autonom"), language[0] + " still calls the column Autonomy Tools: "
+                + now);
+
+            for (String retired : new String[] {"autosetup.ui.pathTypeAuto", "autosetup.ui.pathTypeManual",
+                "autosetup.ui.tooltipPathType"})
+            {
+                assertFalse(bundle.containsKey(retired), language[0] + " still has " + retired + " (FR-221)");
+            }
         }
 
         layOut();
 
-        JLabel pathType = Components.find(panel, JLabel.class, l -> I18n.t("autosetup.ui.labelPathType").equals(l.getText()));
-
-        assertNotNull(pathType, "no Path Type label");
-        assertEquals(pathType.getForeground(), java.awt.Color.BLACK, "Path Type is not black");
-        assertEquals(pathType.getFont(), UiStyle.LABEL_FONT, "Path Type is not bold-weight like the item labels");
-
-        int edge = left(pathType);
-
-        assertEquals(left(radio("autosetup.ui.pathTypeAuto")), edge, "Auto is not flush with Path Type");
-        assertEquals(left(radio("autosetup.ui.pathTypeManual")), edge, "Manual is not flush with Path Type");
-        assertEquals(left(StationDoors.part(panel, "autonomy.pickStations", Component.class)), edge,
-            "Bulk Edit... is not flush with the radios");
-
-        Component test = Components.withText(panel, I18n.t("autosetup.ui.toolTest"));
         Component why = Components.withText(panel, I18n.t("autosetup.ui.toolWhy"));
+        Component test = Components.withText(panel, I18n.t("autosetup.ui.toolTest"));
 
-        int radiosGap = top(radio("autosetup.ui.pathTypeManual"))
-            - (top(radio("autosetup.ui.pathTypeAuto")) + Components.onTheEventThread(() -> radio("autosetup.ui.pathTypeAuto").getHeight()));
-        int buttonsGap = top(why) - (top(test) + Components.onTheEventThread(test::getHeight));
+        assertNull(Components.find(panel, javax.swing.JRadioButton.class, null), "a radio is still in the column (FR-221)");
 
-        assertEquals(radiosGap, buttonsGap, "the radios are spaced differently from the buttons above them");
+        int edge = left(test);
+
+        assertEquals(left(why), edge, "Why not Moving? is not flush with Test a path");
+        assertEquals(left(StationDoors.part(panel, "autonomy.pickStations", Component.class)), edge,
+            "Bulk Edit... is not flush with Test a path");
+
+        assertTrue(top(why) - (top(test) + Components.onTheEventThread(test::getHeight)) < 10,
+            "something stands between Test a path and Why not Moving?");
     }
 
     // ------------------------------------------------------------------------------------------------ OB-437
@@ -243,8 +413,8 @@ public class testTheAutonomyEditorsTriageNotes
 
     /**
      * The guard rows are labeled Exit guard signal and Entry guard signal; a press anywhere in the window that takes no
-     * typing applies the Maximum train length and the "Only trains up to" line follows at once; a blank field with
-     * several stations picked writes nothing.
+     * typing applies the Maximum train length and the table's hover follows at once (FR-226); a blank field with several
+     * stations picked writes nothing.
      *
      * MUTATION: put the labels back to Exit guard and Entry guard, drop `StationSettingsWindow.pressAway`, or have a
      * blank several-stations field write 0, and this fails.
@@ -264,11 +434,15 @@ public class testTheAutonomyEditorsTriageNotes
             "the window has no Entry guard signal label");
 
         JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
-        JLabel line = StationDoors.part(window, "station.matrixAlso", JLabel.class);
+
+        // Asked again each time: the table is built again with each answer
+        java.util.function.Supplier<String> line = () -> Components.onTheEventThread(() ->
+            StationDoors.part(window, "station.cell.SENT_HERE.auto", javax.swing.JComponent.class).getToolTipText() + " / "
+            + StationDoors.part(window, "station.cell.SENT_HERE.hand", javax.swing.JComponent.class).getToolTipText());
 
         Components.onTheEventThread(() -> { field.setText("37"); return null; });
 
-        assertFalse(Components.onTheEventThread(line::getText).contains("37"), "typing alone updated the line");
+        assertFalse(line.get().contains("37"), "typing alone updated the hover");
 
         JLabel anywhere = Components.find(window.getContentPane(), JLabel.class,
             l -> I18n.t("autosetup.ui.stationMatrixHeading").equals(l.getText()));
@@ -278,8 +452,7 @@ public class testTheAutonomyEditorsTriageNotes
         StationDoors.current(window);
 
         assertEquals(((Number) session.getPointProperty(square, "maxTrainLength")).intValue(), 37, "the click away did not apply the length");
-        assertTrue(Components.onTheEventThread(line::getText).contains("37"),
-            "the Only trains up to line did not follow: " + Components.onTheEventThread(line::getText));
+        assertTrue(line.get().contains("37"), "the hover did not follow: " + line.get());
 
         StationDoors.close(window);
 
@@ -798,8 +971,8 @@ public class testTheAutonomyEditorsTriageNotes
     }
 
     /**
-     * The picture draws a way in only where the editor's arrivals view does: on every arrival side of a station, and
-     * none on a square that is no station.
+     * The picture draws a way in only where the track diagram does (OB-494): on every arrival side of a station barring
+     * one, TopR1ParkLong with its west barred here, and none on a square that is no station.
      *
      * MUTATION: put back `session.arrivalSides(showing)` as the test in `StationPicture.stationMarks`, and this fails.
      */
@@ -818,6 +991,13 @@ public class testTheAutonomyEditorsTriageNotes
 
         assertNotNull(plain, "precondition: no plain sensor with ways in on " + PAGE);
 
+        Components.onTheEventThread(() ->
+        {
+            session.setBarredArrivals(named("TopR1ParkLong"), java.util.EnumSet.of(org.traincontrol.automationui.TilePorts.Side.W));
+
+            return null;
+        });
+
         for (TileKey square : new TileKey[] {plain, named("TopR1ParkLong")})
         {
             StationSettingsWindow window = StationDoors.open(panel, square);
@@ -831,12 +1011,14 @@ public class testTheAutonomyEditorsTriageNotes
 
             java.util.Set<String> editors = new java.util.TreeSet<>();
 
-            for (org.traincontrol.automationui.TileAnnotation.Arrival arrival : Components.onTheEventThread(() -> session.arrivalMarks(square, true)))
+            for (org.traincontrol.automationui.TileAnnotation.Arrival arrival : Components.onTheEventThread(() -> session.arrivalMarks(square, false)))
             {
                 editors.add(arrival.getSide().name());
             }
 
-            assertEquals(drawn, editors, "the picture's ways in at " + square + " are not the editor's");
+            assertEquals(drawn, editors, "the picture's ways in at " + square + " are not the track diagram's");
+
+            if (square != plain) assertFalse(drawn.isEmpty(), "precondition: no way in drawn at " + square);
         }
     }
 
@@ -1080,11 +1262,11 @@ public class testTheAutonomyEditorsTriageNotes
     // ------------------------------------------------------------------------------------------------ MT-961
 
     /**
-     * The notices stand under the picture, the can't-leave warning first and then what a cell cannot say (Adam: "'only
-     * trains up to 4 long are sent here' plus other notices should be below the 'on the track diagram' area"):
-     * TopR1ParkLong made a plain station that takes trains up to 4 long.
+     * The notices stand under the picture (Adam: "'only trains up to 4 long are sent here' plus other notices should be
+     * below the 'on the track diagram' area"): TopR1ParkLong made a plain station that takes trains up to 4 long.  What
+     * a cell cannot say is its hover now (FR-226), so the can't-leave warning is the one notice.
      *
-     * MUTATION: put `also` back under the table in `StationMatrixPanel` rather than in `notices`, and this fails.
+     * MUTATION: put `problem` back under the table in `StationMatrixPanel` rather than in `notices`, and this fails.
      */
     @Test(timeOut = 180000)
     public void testTheNoticesStandUnderThePicture() throws Exception
@@ -1095,19 +1277,13 @@ public class testTheAutonomyEditorsTriageNotes
         StationDoors.typeAndEnter(window, "station.maxLength", "4");
         StationDoors.current(window);
 
-        assertTrue(StationDoors.said(window, "station.matrixAlso").contains(I18n.f("autosetup.ui.stationAlsoLength", 4)),
-            "precondition: the length is not said: " + StationDoors.said(window, "station.matrixAlso"));
-
         Component picture = StationDoors.part(window, "station.picture", Component.class);
         Component problem = StationDoors.part(window, "station.matrixProblem", Component.class);
-        Component also = StationDoors.part(window, "station.matrixAlso", Component.class);
 
         assertTrue(Components.onTheEventThread(problem::isVisible), "precondition: no can't-leave warning for a station");
 
         assertTrue(top(problem) >= top(picture) + Components.onTheEventThread(picture::getHeight),
             "the can't-leave warning is not under the picture");
-        assertTrue(top(also) >= top(problem) + Components.onTheEventThread(problem::getHeight),
-            "the length is not under the can't-leave warning, so not under the picture");
     }
 
     /**
@@ -1139,8 +1315,7 @@ public class testTheAutonomyEditorsTriageNotes
             StationDoors.current(window);
 
             assertEquals((int) Components.onTheEventThread(window::getHeight), height, "the window's height changed at " + step
-                + ", which shows: " + StationDoors.said(window, "station.matrixProblem") + " / "
-                + StationDoors.said(window, "station.matrixAlso"));
+                + ", which shows: " + StationDoors.said(window, "station.matrixProblem"));
 
             if (step.equals("station.preset.STATION"))
             {
@@ -1267,11 +1442,6 @@ public class testTheAutonomyEditorsTriageNotes
 
             return null;
         });
-    }
-
-    private Component radio(String key)
-    {
-        return Components.withText(panel, I18n.t(key));
     }
 
     private static int left(Component c)

@@ -40,6 +40,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private boolean customFunctions;
     private Map<Integer, String> localFunctionImageURLs;
     private String notes;
+    private String declinedStationName;
     private Map<String, Double> linkedLocomotives;
     private Map<String, Double> centralStationLinkedLocomotives;
  
@@ -140,6 +141,9 @@ public class MarklinSimpleComponent implements java.io.Serializable
     
     public MarklinSimpleComponent(MarklinLocomotive l)
     {
+        // The rename Sync was told No to (FR-220); null in a file saved before 3.1.1
+        this.declinedStationName = l.getDeclinedStationName();
+
         if (l.getDecoderType() == MarklinLocomotive.decoderType.MFX)
         {
             this.type = Type.LOC_MFX;
@@ -311,6 +315,12 @@ public class MarklinSimpleComponent implements java.io.Serializable
     public String getLocNotes()
     {
         return this.notes;
+    }
+
+    /** Null in a file saved before 3.1.1, as for a locomotive with no rename turned down. */
+    public String getDeclinedStationName()
+    {
+        return this.declinedStationName;
     }
     
     public String getLocalImageURL()

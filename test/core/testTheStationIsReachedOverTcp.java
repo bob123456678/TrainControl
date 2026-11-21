@@ -1570,6 +1570,42 @@ public class testTheStationIsReachedOverTcp
     }
 
     /**
+     * A train's speed 0 joins the Stop (OB-432): once a send has gone unanswered for a second it goes over UDP as well
+     * as on the connection; a nonzero speed, or a speed 0 before that second, goes on the connection only.
+     *
+     * MUTATION: in `NetworkProxy.isUrgentStop`, take out the speed 0 case.
+     */
+    @Test(timeOut = 30000)
+    public void testASpeedZeroOnAnUnansweredConnectionAlsoGoesOverUdp() throws Exception
+    {
+        try (DatagramSocket wire = udpWire())
+        {
+            connectedAndCarried();
+
+            byte[] stopTrain = speed(0), run = speed(50);
+            long unanswered = System.nanoTime();
+            this.proxy.sendMessage(new CS2Message(ping(1)));
+            this.proxy.sendMessage(new CS2Message(stopTrain));
+            assertEquals(nextOn(wire, 300), null, "a speed 0 went over UDP before a second without an answer");
+
+            // Past the second, well before the connection is given up
+            Components.waitFor(() -> System.nanoTime() - unanswered > 1200000000L, 2000);
+
+            this.proxy.sendMessage(new CS2Message(run));
+            assertEquals(nextOn(wire, 300), null, "a nonzero speed went over UDP");
+            this.proxy.sendMessage(new CS2Message(stopTrain));
+            assertTrue(Arrays.equals(nextOn(wire, 500), stopTrain), "the speed 0 did not go over UDP: "
+                + this.model.lines);
+            assertTrue(Components.waitFor(() -> this.station.received().stream().filter(f -> Arrays.equals(f.bytes,
+                stopTrain)).count() == 2, WAIT_MS), "the speeds 0 did not both go on the connection too");
+
+            // A speed query has no speed bytes, so the zeros after it are padding, not a speed 0
+            this.proxy.sendMessage(new CS2Message(CS2Message.CMD_LOCO_VELOCITY, new byte[] {0, 0, 0, 5}));
+            assertEquals(nextOn(wire, 300), null, "a speed query went over UDP");
+        }
+    }
+
+    /**
      * Commands given while the connection is replaced go over UDP at once, in order (a Go after a speed 0 does not
      * overtake it), and are not sent again on the new connection (FR-186).
      *

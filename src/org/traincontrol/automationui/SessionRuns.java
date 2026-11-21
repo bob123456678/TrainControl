@@ -93,7 +93,7 @@ final class SessionRuns
     /** The body of `AutonomySession.setRunDirection`. */
     int setRunDirection(TileKey leader, RouteId routeId, Direction direction)
     {
-        Run run = runs().get(leader);
+        Run run = owner.graph == null ? null : owner.graph.runOf(leader);
 
         // Not part of a run at all - a lone tile, or a point.  Set it and nothing else.
         if (run == null)

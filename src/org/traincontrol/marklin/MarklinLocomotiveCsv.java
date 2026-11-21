@@ -143,7 +143,7 @@ public final class MarklinLocomotiveCsv
     /** The text of a file's bytes: UTF-8 when it is, else what Excel saved in on this machine. */
     public static String decode(byte[] bytes)
     {
-        return decode(bytes, fallbackFor(Charset.defaultCharset()));
+        return decode(bytes, fallbackFor(org.traincontrol.util.Conversion.nativeCharset()));
     }
 
     /** What to read a file in after UTF-8 fails: the machine's own code page when it is a single-byte one, else Windows-1252. */
@@ -260,14 +260,21 @@ public final class MarklinLocomotiveCsv
             && MarklinLocomotive.validateNewAddress(row.type, row.address);
     }
 
-    /** The names a head drives: its own links and the Central Station's, either of which may be absent. */
-    private static Set<String> membersOf(Locomotive head)
+    /** The names here of what a head drives: its own links and the Central Station's, either of which may be absent. */
+    private static Set<String> membersOf(ViewListener model, Locomotive head)
     {
         Set<String> members = new HashSet<>();
 
         if (head.getLinkedLocomotiveNames() != null) members.addAll(head.getLinkedLocomotiveNames().keySet());
 
-        if (head.getModelMultiUnitLocomotiveNames() != null) members.addAll(head.getModelMultiUnitLocomotiveNames().keySet());
+        if (head.getModelMultiUnitLocomotiveNames() != null)
+        {
+            for (String s : head.getModelMultiUnitLocomotiveNames().keySet())
+            {
+                Locomotive member = Locomotive.stationMember(s, model.getLocomotives());
+                members.add(member == null ? s : member.getName());
+            }
+        }
 
         return members;
     }
@@ -282,7 +289,7 @@ public final class MarklinLocomotiveCsv
     {
         for (Locomotive head : model.getLocomotives())
         {
-            Set<String> members = membersOf(head);
+            Set<String> members = membersOf(model, head);
 
             if (members.isEmpty() || !(head == loc || members.contains(loc.getName()))) continue;
 
@@ -300,7 +307,7 @@ public final class MarklinLocomotiveCsv
             {
                 if (standing == loc || model.getAutoLayout().getLocomotiveLocation(standing) == null) continue;
 
-                Set<String> train = membersOf(standing);
+                Set<String> train = membersOf(model, standing);
 
                 train.add(standing.getName());
 

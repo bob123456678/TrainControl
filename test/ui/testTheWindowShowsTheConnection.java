@@ -19,7 +19,8 @@ import support.WindowField;
 
 /**
  * The main window shows the state of the connection to the Central Station: "(UDP)" after the latency once a CS3's TCP
- * connection has been given up for UDP, and the warning triangle on Power OFF while the station is not answering.
+ * connection has been given up for UDP, and the warning triangle in the lower right while the station is not answering, or
+ * red throughout a simulation.
  */
 public class testTheWindowShowsTheConnection
 {
@@ -27,6 +28,11 @@ public class testTheWindowShowsTheConnection
     private static MarklinControlStation model;
     private static TrainControlUI ui;
     private static NetworkProxy proxy;
+
+    /** The triangle as the window was built, in a simulation: its icon drawn, its tooltip, and whether it shows. */
+    private static java.awt.image.BufferedImage simulatedIcon;
+    private static String simulatedTip;
+    private static boolean simulatedShown;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -37,6 +43,55 @@ public class testTheWindowShowsTheConnection
         model = support.TestStation.simulatedWithWindowInDebug();
         ui = (TrainControlUI) model.getGUI();
         proxy = (NetworkProxy) Reflect.get(MarklinControlStation.class, model, "NetworkInterface");
+
+        JLabel triangle = WindowField.of(ui, "stationNotAnswering");
+
+        Components.onTheEventThread(() ->
+        {
+            simulatedIcon = new java.awt.image.BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+
+            java.awt.Graphics2D g = simulatedIcon.createGraphics();
+
+            triangle.getIcon().paintIcon(triangle, g, 0, 0);
+            g.dispose();
+
+            simulatedTip = triangle.getToolTipText();
+            simulatedShown = triangle.isVisible();
+            return null;
+        });
+
+        // The other claims are about a real station, which is not a simulation: the window asks the model which it is
+        Reflect.set(MarklinControlStation.class, model, "simulation", false);
+        answered();
+    }
+
+    /**
+     * In a simulation there is no Central Station to answer: the triangle shows from the start, red,
+     * and its tooltip says TrainControl is not connected (FR-228).
+     *
+     * MUTATION: drop `on |= simulated` from `TrainControlUI.warnOnStop`, or have `RowIcons.warning` fill amber whatever
+     * `red` asks, and this fails.
+     */
+    @Test
+    public void testASimulationShowsTheRedTriangleFromTheStart() throws Exception
+    {
+        assertTrue(simulatedShown, "no triangle in a simulation");
+        assertEquals(simulatedTip, org.traincontrol.util.I18n.t("ui.main.tooltip.simulation"),
+            "the triangle does not say TrainControl is simulating");
+
+        int red = 0, amber = 0, light = 0;
+
+        for (int argb : simulatedIcon.getRGB(0, 0, 16, 16, null, 0, 16))
+        {
+            if ((argb >>> 24) < 255) continue;
+
+            if (amber(argb)) amber++;
+            if (((argb >> 16) & 255) > 180 && ((argb >> 8) & 255) < 80 && (argb & 255) < 80) red++;
+            if (((argb >> 16) & 255) > 220 && ((argb >> 8) & 255) > 220 && (argb & 255) > 220) light++;
+        }
+
+        assertTrue(red > 40 && amber == 0, "the triangle is not red: " + red + " red and " + amber + " amber pixels");
+        assertTrue(light >= 4, "the triangle's mark does not read light on the red: " + light + " light pixels");
     }
 
     @AfterClass(alwaysRun = true)
@@ -109,7 +164,7 @@ public class testTheWindowShowsTheConnection
     }
 
     /**
-     * The warning triangle shows left of Power OFF, with a tooltip saying why, while the connection is being replaced,
+     * The warning triangle shows, with a tooltip saying why, while the connection is being replaced,
      * while a frame has gone unanswered over a second, and while the pings go unanswered; it is gone again once the
      * station answers, and the button has its text and size back.
      *
@@ -186,9 +241,8 @@ public class testTheWindowShowsTheConnection
     }
 
     /**
-     * The triangle beside Power OFF is drawn true at 1x: the mark is
-     * mirror-even about the triangle's middle, a row of amber parts its dot from the base, and the triangle stands
-     * centered on the button's text line.
+     * The triangle is drawn true at 1x: the mark is mirror-even about the triangle's middle, and a row of amber parts
+     * its dot from the base.
      *
      * MUTATION: take the `VALUE_STROKE_PURE` hint out of `RowIcons.warning`, or put the dot back on the base, and this
      * fails.
@@ -205,7 +259,7 @@ public class testTheWindowShowsTheConnection
         {
             Components.onTheEventThread(() ->
             {
-                java.awt.Container row = stop.getParent().getParent();
+                java.awt.Container row = ui.getContentPane();
 
                 java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(row.getWidth(), row.getHeight(),
                     java.awt.image.BufferedImage.TYPE_INT_RGB);
@@ -222,27 +276,11 @@ public class testTheWindowShowsTheConnection
                     shown.getHorizontalTextPosition(), new java.awt.Rectangle(shown.getSize()), icon, unused, 0);
 
                 icon = SwingUtilities.convertRectangle(shown, icon, row);
-                java.awt.Rectangle text = new java.awt.Rectangle(), none = new java.awt.Rectangle();
-                java.awt.Insets in = stop.getInsets();
-                java.awt.Rectangle view = new java.awt.Rectangle(in.left, in.top, stop.getWidth() - in.left - in.right,
-                    stop.getHeight() - in.top - in.bottom);
-
-                SwingUtilities.layoutCompoundLabel(stop, stop.getFontMetrics(stop.getFont()), stop.getText(), null,
-                    stop.getVerticalAlignment(), stop.getHorizontalAlignment(), stop.getVerticalTextPosition(),
-                    stop.getHorizontalTextPosition(), view, none, text, stop.getIconTextGap());
-
-                text = SwingUtilities.convertRectangle(stop, text, row);
 
                 int back = drawn.getRGB(icon.x, icon.y);
 
-                // The triangle: rows and columns where the icon's box differs from the button behind it by half or more
-                int[] box = inkBox(drawn, icon, rgb -> distance(rgb, back) > 128);
-
                 // The mark: near-black inside the triangle
                 int[] mark = inkBox(drawn, icon, rgb -> ((rgb >> 16) & 255) < 100 && ((rgb >> 8) & 255) < 100);
-
-                // The text's ink, caps top to baseline
-                int[] words = inkBox(drawn, text, rgb -> distance(rgb, back) > 128);
 
                 // The icon's middle: its outline's antialiasing need not fall evenly on the two sides at 1x
                 double middle = icon.x + (icon.width - 1) / 2.0;
@@ -266,12 +304,6 @@ public class testTheWindowShowsTheConnection
 
                 assertTrue(amber(drawn.getRGB(column, mark[3] + 1)), "the dot sits on the base, with no amber between");
 
-                double triangle = (box[1] + box[3]) / 2.0;
-                double line = (words[1] + words[3]) / 2.0;
-
-                assertEquals(triangle, line, 1.0, "the triangle (rows " + box[1] + ".." + box[3] + ") is not centered on"
-                    + " the text line (rows " + words[1] + ".." + words[3] + ")");
-
                 return null;
             });
         }
@@ -291,76 +323,168 @@ public class testTheWindowShowsTheConnection
         Components.onTheEventThread(() -> { ui.validate(); return null; });
     }
 
-    /** {left, right} of a part, in the coordinates of the row Power OFF stands in. */
-    private static int[] across(java.awt.Component part, java.awt.Component row)
+    /** The window's locomotive panel, which holds Power OFF and the function tabs. */
+    private static java.awt.Container panel()
+    {
+        return WindowField.of(ui, "LocFunctionsPanel");
+    }
+
+    /** Where every part of the panel but the triangle is, as one text, in the panel's coordinates. */
+    private static String others(boolean withTabs)
     {
         return Components.onTheEventThread(() ->
         {
-            java.awt.Rectangle at = SwingUtilities.convertRectangle(part.getParent(), part.getBounds(), row);
+            java.awt.Container panel = panel();
+            StringBuilder out = new StringBuilder("panel " + panel.getSize());
 
-            return new int[] {at.x, at.x + at.width};
+            for (String name : new String[] {"PowerOff", "OnButton", "CurrentKeyLabel", "ActiveLocLabel", "Backward",
+                "Forward", "SpeedSlider", "locIcon", "FunctionTabs"})
+            {
+                java.awt.Component c = WindowField.of(ui, name);
+
+                if (name.equals("FunctionTabs") && !withTabs) continue;
+
+                out.append("\n  ").append(name).append(' ').append(SwingUtilities.convertRectangle(c.getParent(),
+                    c.getBounds(), panel));
+            }
+
+            return out.toString();
         });
     }
 
+    /** Where Power OFF, Power ON and the two labels above the locomotive's rows are, in the panel's coordinates. */
+    private static String top()
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (String name : new String[] {"PowerOff", "OnButton", "CurrentKeyLabel", "ActiveLocLabel"})
+        {
+            java.awt.Component c = WindowField.of(ui, name);
+
+            out.append(name).append(' ').append(SwingUtilities.convertRectangle(c.getParent(), c.getBounds(), panel()))
+                .append(';');
+        }
+
+        return out.toString();
+    }
+
+    /** Makes `loc` (null for none) the active locomotive and lets the window draw it, then lays the window out. */
+    private static void show(org.traincontrol.base.Locomotive loc) throws Exception
+    {
+        Reflect.set(TrainControlUI.class, ui, "activeLoc", loc);
+        SwingUtilities.invokeAndWait(() -> ui.repaintLoc(true, null));
+
+        @SuppressWarnings("unchecked")
+        java.util.List<java.util.concurrent.Future<?>> futures = (java.util.List<java.util.concurrent.Future<?>>)
+            Reflect.get(TrainControlUI.class, ui, "locFutures");
+        assertTrue(Components.waitFor(() ->
+        {
+            synchronized (ui)
+            {
+                for (java.util.concurrent.Future<?> f : new java.util.ArrayList<>(futures)) if (!f.isDone()) return false;
+            }
+
+            return true;
+        }, 10000), "the window's render did not finish");
+
+        SwingUtilities.invokeAndWait(() -> { });
+        SwingUtilities.invokeAndWait(() -> { });
+        Components.onTheEventThread(() -> { ui.validate(); return null; });
+    }
+
     /**
-     * The triangle stands left of Power OFF, not in it (Adam: "put it to the left of the button, while ensuring the button
-     * rescales dynamically in width when the triangle is/isn't there"): shown, it takes its room from the button, so the
-     * two end where the button alone did and Power ON does not move; gone, the button has its whole width back.  Power
-     * OFF's text still fits the narrower button in every language.
+     * The triangle stands in the lower right of the locomotive panel, in the empty end of the function tabs' strip
+     * (Adam on MT-1073: "can it actually go in the lower-right of the app, where there is negative space from the
+     * function tabbed pane?"): right of the last tab and inside the panel, centered on the strip within a pixel, shown
+     * in a simulation with no locomotive too, where it stands exactly as with one. Nothing else moves with the triangle,
+     * and with no locomotive Power OFF, Power ON and the two labels above the rows stand as with one. Versus dev only
+     * the picture's empty label moves then (it holds no icon or text and draws nothing), since the rows hidden with
+     * no locomotive keep their room.
      *
-     * MUTATION: have `warnOnStop` set the triangle as Power OFF's icon again, or leave the shared panel's width to the
-     * triangle plus the button's own, and this fails.
+     * MUTATION: put the triangle in a panel with Power OFF again (the old `installNotAnsweringMark`), leave it out
+     * of the holder `installNotAnsweringMark` puts around the function tabs, or drop its `setHonorsVisibility` calls, and
+     * this fails.
      */
     @Test
-    public void testTheTriangleTakesItsRoomFromTheButton() throws Exception
+    public void testTheTriangleStandsInTheLowerRightPastTheFunctionTabs() throws Exception
     {
-        JButton stop = WindowField.of(ui, "PowerOff");
-        JButton on = WindowField.of(ui, "OnButton");
-        java.awt.Container row = Components.onTheEventThread(on::getParent);
+        JLabel triangle = WindowField.of(ui, "stationNotAnswering");
+        javax.swing.JTabbedPane tabs = WindowField.of(ui, "FunctionTabs");
+        org.traincontrol.marklin.MarklinLocomotive one = model.newMM2Locomotive("TriangleOne", 4001);
+        org.traincontrol.marklin.MarklinLocomotive two = model.newMFXLocomotive("TriangleTwo", 4002);
 
-        notAnswering(false);
-
-        int[] alone = across(stop, row);
-        int[] onAt = across(on, row);
+        java.awt.Rectangle[] first = new java.awt.Rectangle[1];
+        String[] firstTop = new String[1];
 
         try
         {
-            notAnswering(true);
-
-            assertNull(Components.onTheEventThread(stop::getIcon), "the triangle is still inside Power OFF");
-
-            JLabel triangle = WindowField.of(ui, "stationNotAnswering");
-
-            assertTrue(Components.onTheEventThread(triangle::isVisible), "no triangle while the station is not answering");
-
-            int[] mark = across(triangle, row);
-            int[] narrower = across(stop, row);
-
-            assertEquals(mark[0], alone[0], "the triangle does not start where Power OFF did");
-            assertTrue(mark[1] <= narrower[0], "the triangle is not left of Power OFF");
-            assertEquals(narrower[1], alone[1], "Power OFF's right edge moved");
-            assertEquals(across(on, row)[0], onAt[0], "Power ON moved");
-
-            for (String language : new String[] {"en", "da", "de", "es", "fr", "it", "nl", "pl"})
+            for (org.traincontrol.base.Locomotive loc : new org.traincontrol.base.Locomotive[] {one, null, two})
             {
-                String text = java.util.ResourceBundle.getBundle("org.traincontrol.resources.messages",
-                    new java.util.Locale(language)).getString("ui.main.powerOFF");
+                show(loc);
 
-                int needs = Components.onTheEventThread(() -> stop.getFontMetrics(stop.getFont()).stringWidth(text)
-                    + stop.getInsets().left + stop.getInsets().right);
+                String what = loc == null ? "no locomotive" : loc.getName();
+                boolean tabsShown = Components.onTheEventThread(tabs::isVisible);
 
-                assertTrue(needs <= narrower[1] - narrower[0], language + ": \"" + text + "\" needs " + needs + " and the"
-                    + " narrower Power OFF is " + (narrower[1] - narrower[0]));
+                assertEquals(tabsShown, loc != null, "precondition: tabs shown with " + what);
+
+                // In a simulation the triangle shows with no help from the connection
+                Reflect.set(MarklinControlStation.class, model, "simulation", true);
+                notAnswering(false);
+                assertTrue(Components.onTheEventThread(triangle::isVisible), what + ": no triangle in a simulation");
+
+                String without = others(tabsShown);
+
+                // And a station that is not answering shows it, too: nothing moves
+                Reflect.set(MarklinControlStation.class, model, "simulation", false);
+
+                try
+                {
+                    notAnswering(false);
+                    assertFalse(Components.onTheEventThread(triangle::isVisible), what + ": triangle while answering");
+                    assertEquals(others(tabsShown), without, what + ": a part moved when the triangle went");
+                    notAnswering(true);
+                    assertTrue(Components.onTheEventThread(triangle::isVisible), what + ": no triangle, not answering");
+                    assertEquals(others(tabsShown), without, what + ": a part moved when the triangle came");
+                }
+                finally
+                {
+                    Reflect.set(MarklinControlStation.class, model, "simulation", false);
+                    notAnswering(false);
+                }
+
+                Components.onTheEventThread(() ->
+                {
+                    java.awt.Container panel = panel();
+                    java.awt.Rectangle at = SwingUtilities.convertRectangle(triangle.getParent(), triangle.getBounds(), panel);
+                    java.awt.Rectangle strip = SwingUtilities.convertRectangle(tabs, tabs.getBoundsAt(tabs.getTabCount() - 1),
+                        panel);
+
+                    assertTrue(loc == null || tabs.getTabCount() == (loc == two ? 2 : 1), what + ": tabs: " + tabs.getTabCount());
+                    assertTrue(at.width > 0 && at.height > 0, what + ": the triangle has no size");
+                    assertTrue(new java.awt.Rectangle(panel.getSize()).contains(at), what + ": the triangle is outside the panel");
+                    assertTrue(at.x >= strip.x + strip.width, what + ": the triangle is not right of the last tab: " + at
+                        + " tab " + strip);
+                    assertTrue(at.x > panel.getWidth() / 2, what + ": the triangle is not on the right: " + at);
+                    if (first[0] == null) first[0] = at;
+
+                    JLabel icon = WindowField.of(ui, "locIcon");
+
+                    // The picture's label is empty with no locomotive: it draws nothing, and its tools need a locomotive
+                    assertTrue(loc != null || (icon.getIcon() == null && icon.getText().isEmpty() && !icon.isOpaque()),
+                        what + ": the picture's label draws something");
+                    assertEquals(top(), loc == null ? firstTop[0] : (firstTop[0] = top()), what + ": a part above moved");
+                    assertEquals(at, first[0], what + ": the triangle is not where it is with a locomotive");
+                    assertEquals(at.y + at.height / 2.0, strip.y + strip.height / 2.0, 1.0, what + ": not centered on the strip");
+                    return null;
+                });
             }
         }
         finally
         {
-            notAnswering(false);
+            show(null);
+            model.deleteLoc("TriangleOne");
+            model.deleteLoc("TriangleTwo");
         }
-
-        assertEquals(java.util.Arrays.toString(across(stop, row)), java.util.Arrays.toString(alone),
-            "Power OFF did not get its whole width back");
-        assertEquals(across(on, row)[0], onAt[0], "Power ON moved once the triangle went");
     }
 
     /** {left, top, right, bottom} of the pixels in `in` that pass; fails where none do. */

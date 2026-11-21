@@ -1,8 +1,10 @@
 package org.traincontrol.automation;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -25,16 +27,35 @@ public final class StandingRules
         SENT_HERE, SENT_THROUGH, SENT_FROM, TURNED_ROUND
     }
 
+    /** What keeps some trains out where a cell says Some trains (FR-226), each named by the setting it comes from. */
+    public enum Limit
+    {
+        /** Changing direction: only a train that can reverse. */
+        REVERSING,
+        /** Maximum train length. */
+        LENGTH,
+        /** Allowed trains: the whitelist or the blacklist. */
+        LIST
+    }
+
     /** One answer and the sentence that says why. */
     public static final class Cell
     {
         private final Answer answer;
-        private final String why;
+        private final String reason;
+        private final Map<Limit, String> limits;
 
         Cell(Answer answer, String why)
         {
+            this(answer, why, Collections.<Limit, String>emptyMap());
+        }
+
+        /** @param reason why, before the limits; null where the limits are all there is to say */
+        Cell(Answer answer, String reason, Map<Limit, String> limits)
+        {
             this.answer = answer;
-            this.why = why;
+            this.reason = reason;
+            this.limits = Collections.unmodifiableMap(new LinkedHashMap<>(limits));
         }
 
         public Answer getAnswer()
@@ -42,9 +63,28 @@ public final class StandingRules
             return answer;
         }
 
+        /** The reason, then each limit's sentence. */
         public String getWhy()
         {
-            return why;
+            List<String> sentences = new ArrayList<>();
+
+            if (reason != null) sentences.add(reason);
+
+            sentences.addAll(limits.values());
+
+            return String.join("  ", sentences);
+        }
+
+        /** Why, without the limits; null where the limits are all there is to say. */
+        public String getReason()
+        {
+            return reason;
+        }
+
+        /** Each limit that makes this Some trains, with its sentence, in `Limit`'s order; empty elsewhere. */
+        public Map<Limit, String> getLimits()
+        {
+            return limits;
         }
     }
 

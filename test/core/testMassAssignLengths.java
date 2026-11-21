@@ -171,7 +171,7 @@ public class testMassAssignLengths
 
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
-        page.addComponent(componentType.CUSTOM_PERM_LEFT, 3, 1, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CUSTOM_PERM_LEFT, 3, 1, 3, 0, 0);
         Diagrams.straight(page, 4, 1);
         Diagrams.feedback(page, 5, 1, 6, 12);
 
@@ -1245,12 +1245,12 @@ public class testMassAssignLengths
         return first;
     }
 
-    /** The Maximum train length field's text for this maximum: blank for any length. */
+    /** The Maximum train length field's text for this maximum: Any for any length (FR-234). */
     private static String shownAs(Object maximum)
     {
         int value = maximum instanceof Number ? ((Number) maximum).intValue() : 0;
 
-        return value == 0 ? "" : String.valueOf(value);
+        return value == 0 ? org.traincontrol.util.I18n.t("autosetup.ui.stationLengthAny") : String.valueOf(value);
     }
 
     /** The Maximum train length field of Station Settings, opened from the station's right-click menu on its page. */
@@ -1555,10 +1555,10 @@ public class testMassAssignLengths
 
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
-        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.ROUTE, 4, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SWITCH_LEFT, 3, 1, 3, 7, 7);
+        Diagrams.put(page, componentType.ROUTE, 4, 1, 0, 0, 0);
         Diagrams.feedback(page, 5, 1, 6, 12);
-        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 3, 0, 1, 7, 13);
 
         wire(page, 3, 1, 7);
 
@@ -1595,7 +1595,7 @@ public class testMassAssignLengths
 
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
-        page.addComponent(componentType.ROUTE, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.ROUTE, 3, 1, 0, 0, 0);
         Diagrams.straight(page, 4, 1);
         Diagrams.feedback(page, 5, 1, 6, 12);
 
@@ -1794,7 +1794,7 @@ public class testMassAssignLengths
 
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
-        page.addComponent(componentType.ROUTE, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.ROUTE, 3, 1, 0, 0, 0);
         Diagrams.straight(page, 4, 1);
         Diagrams.feedback(page, 5, 1, 6, 12);
 
@@ -1827,7 +1827,7 @@ public class testMassAssignLengths
 
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
-        page.addComponent(componentType.ROUTE, 3, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.ROUTE, 3, 1, 0, 0, 0);
         Diagrams.feedback(page, 4, 1, 6, 12);
         Diagrams.straight(page, 5, 1);
         Diagrams.feedback(page, 6, 1, 7, 13);
@@ -1896,11 +1896,11 @@ public class testMassAssignLengths
     {
         LayoutDiagram page = new LayoutDiagram("main", 6, 6, null, null);
 
-        page.addComponent(componentType.FEEDBACK, 2, 1, 1, 0, 21, 21, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 2, 1, 1, 21, 21);
         Diagrams.feedback(page, 1, 2, 22, 22);
-        page.addComponent(componentType.ROUTE, 2, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.ROUTE, 2, 2, 0, 0, 0);
         Diagrams.feedback(page, 3, 2, 23, 23);
-        page.addComponent(componentType.FEEDBACK, 2, 3, 1, 0, 24, 24, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 2, 3, 1, 24, 24);
 
         page.setPageId("1");
 
@@ -2574,7 +2574,7 @@ public class testMassAssignLengths
 
         Diagrams.feedback(page, 1, 2, 5, 11);
         Diagrams.straight(page, 2, 2);
-        page.addComponent(componentType.CROSSING, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CROSSING, 3, 2, 0, 0, 0);
         Diagrams.straight(page, 4, 2);
         Diagrams.feedback(page, 5, 2, 6, 12);
 
@@ -2607,14 +2607,14 @@ public class testMassAssignLengths
 
         Diagrams.feedback(page, 1, 2, 5, 11);
         Diagrams.straight(page, 2, 2);
-        page.addComponent(componentType.CROSSING, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CROSSING, 3, 2, 0, 0, 0);
         Diagrams.straight(page, 4, 2);
         Diagrams.feedback(page, 5, 2, 6, 12);
 
-        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 3, 0, 1, 7, 13);
         Diagrams.straight(page, 3, 1, 1);
         Diagrams.straight(page, 3, 3, 1);
-        page.addComponent(componentType.FEEDBACK, 3, 4, 1, 0, 8, 14, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 3, 4, 1, 8, 14);
 
         page.setPageId("1");
 
@@ -3312,7 +3312,7 @@ public class testMassAssignLengths
         page.addComponent(atThree, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
         Diagrams.row(page, 4, 1, "SSS");
         Diagrams.feedback(page, 7, 1, 6, 12);
-        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 3, 0, 1, 7, 13);
 
         if (atThree == componentType.SWITCH_LEFT) wire(page, 3, 1, 7);
 
@@ -3348,8 +3348,8 @@ public class testMassAssignLengths
 
         if (withTheSwitch)
         {
-            page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.CURVE, 3, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.put(page, componentType.SWITCH_LEFT, 3, 1, 3, 7, 7);
+            Diagrams.put(page, componentType.CURVE, 3, 0, 0, 0, 0);
         }
         else
         {
@@ -3360,13 +3360,13 @@ public class testMassAssignLengths
         }
 
         Diagrams.straight(page, 4, 1);
-        page.addComponent(componentType.CROSSING, 5, 1, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CROSSING, 5, 1, 0, 0, 0);
         Diagrams.straight(page, 6, 1);
         Diagrams.feedback(page, 7, 1, 6, 12);
 
         Diagrams.feedback(page, 4, 0, 7, 13);
-        page.addComponent(componentType.CURVE, 5, 0, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 5, 2, 1, 0, 9, 15, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CURVE, 5, 0, 3, 0, 0);
+        Diagrams.put(page, componentType.FEEDBACK, 5, 2, 1, 9, 15);
 
         if (withTheSwitch) wire(page, 3, 1, 7);
 
@@ -3390,10 +3390,10 @@ public class testMassAssignLengths
 
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
-        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SWITCH_LEFT, 3, 1, 3, 7, 7);
         Diagrams.row(page, 4, 1, "SSS");
         Diagrams.feedback(page, 7, 1, 6, 12);
-        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 3, 0, 1, 7, 13);
 
         wire(page, 3, 1, 7);
 
@@ -3542,10 +3542,10 @@ public class testMassAssignLengths
 
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
-        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SWITCH_LEFT, 3, 1, 3, 7, 7);
         Diagrams.straight(page, 4, 1);
         Diagrams.feedback(page, 5, 1, 6, 12);
-        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 3, 0, 1, 7, 13);
 
         wire(page, 3, 1, 7);
 
@@ -3565,10 +3565,10 @@ public class testMassAssignLengths
 
         Diagrams.feedback(page, 1, 1, 5, 11);
         Diagrams.straight(page, 2, 1);
-        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SWITCH_LEFT, 3, 1, 3, 7, 7);
         Diagrams.straight(page, 4, 1);
         Diagrams.feedback(page, 5, 1, 6, 12);
-        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 3, 0, 1, 7, 13);
 
         wire(page, 3, 1, 7);
 
@@ -3593,11 +3593,11 @@ public class testMassAssignLengths
         LayoutDiagram page = new LayoutDiagram("main", 9, 4, null, null);
 
         Diagrams.feedback(page, 1, 1, 5, 11);
-        page.addComponent(componentType.SWITCH_LEFT, 2, 1, 3, 0, 7, 7, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.SWITCH_LEFT, 3, 1, 3, 0, 8, 8, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.SWITCH_LEFT, 2, 1, 3, 7, 7);
+        Diagrams.put(page, componentType.SWITCH_LEFT, 3, 1, 3, 8, 8);
         Diagrams.feedback(page, 4, 1, 6, 12);
-        page.addComponent(componentType.FEEDBACK, 2, 0, 1, 0, 7, 13, accessoryDecoderType.MM2, null);
-        page.addComponent(componentType.FEEDBACK, 3, 0, 1, 0, 8, 14, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 2, 0, 1, 7, 13);
+        Diagrams.put(page, componentType.FEEDBACK, 3, 0, 1, 8, 14);
 
         wire(page, 2, 1, 7);
         wire(page, 3, 1, 8);
@@ -3820,19 +3820,19 @@ public class testMassAssignLengths
 
         Diagrams.feedback(page, 1, 2, 5, 11);
         Diagrams.straight(page, 2, 2);
-        page.addComponent(componentType.CROSSING, 3, 2, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CROSSING, 3, 2, 0, 0, 0);
         Diagrams.straight(page, 4, 2);
 
-        page.addComponent(componentType.CURVE, 5, 2, 2, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CURVE, 5, 2, 2, 0, 0);
         Diagrams.straight(page, 5, 1, 1);
-        page.addComponent(componentType.CURVE, 5, 0, 3, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CURVE, 5, 0, 3, 0, 0);
         Diagrams.straight(page, 4, 0);
-        page.addComponent(componentType.CURVE, 3, 0, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.CURVE, 3, 0, 0, 0, 0);
         Diagrams.straight(page, 3, 1, 1);
 
         // The second sensor sits directly below the crossing, so the crossing is the last intermediate square on the
         // leg: only then does the off-by-one (`i + 1 < leg.size() - 1`, dropping that square) differ from the rule.
-        page.addComponent(componentType.FEEDBACK, 3, 3, 1, 0, 6, 12, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.FEEDBACK, 3, 3, 1, 6, 12);
 
         page.setPageId("1");
 

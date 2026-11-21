@@ -374,7 +374,7 @@ public class testTheLogIsStampedAndExports
             }
 
             String[][] groups = {
-                {"ui.main.toolbar.syncDBWithCS", "ui.main.toolbar.changeIP"},
+                {"ui.main.toolbar.changeIP"},
                 {"ui.main.toolbar.backupData", "ui.main.toolbar.restoreData"},
                 {"ui.main.toolbar.exportLog"},
                 {"ui.main.toolbar.exit"}};

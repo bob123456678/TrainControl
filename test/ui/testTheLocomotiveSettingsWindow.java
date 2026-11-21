@@ -31,6 +31,7 @@ import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
 import org.traincontrol.gui.locomotive.RightClickSelectorMenu;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
@@ -301,7 +302,7 @@ public class testTheLocomotiveSettingsWindow
         SettingsWindow.type("notes.startYear", "1980");
         SettingsWindow.type("notes.railway", "LS New Railway");
 
-        SettingsWindow.press(SettingsWindow.cancel());
+        SettingsWindow.cancelDiscarding();
 
         assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT), "Cancel did not close the window");
         assertEquals(loc.getName(), NAME, "Cancel renamed the locomotive");
@@ -902,7 +903,7 @@ public class testTheLocomotiveSettingsWindow
                 assertTrue(Components.onTheEventThread(note::isFocusable), lang + ": the link cannot be reached by keyboard");
 
                 mouseOnTheNote(java.awt.event.MouseEvent.MOUSE_MOVED, true);
-                assertEquals((int) Components.onTheEventThread(() -> note.getCursor().getType()), java.awt.Cursor.HAND_CURSOR,
+                assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(note.getCursor())),
                     lang + ": no hand over the link");
 
                 mouseOnTheNote(java.awt.event.MouseEvent.MOUSE_MOVED, false);
@@ -1020,7 +1021,7 @@ public class testTheLocomotiveSettingsWindow
             return null;
         });
 
-        return Components.onTheEventThread(() -> note.getCursor().getType()) == java.awt.Cursor.HAND_CURSOR;
+        return Components.onTheEventThread(() -> HandPointer.isHand(note.getCursor()));
     }
 
     /**
@@ -1584,6 +1585,168 @@ public class testTheLocomotiveSettingsWindow
     }
 
     /**
+     * Cancel asks what to do with typing that is not saved, as the X does: Cancel on the question keeps the window and
+     * the typing, Discard closes and writes nothing, Save writes and closes; with nothing typed it just closes (MT-939).
+     *
+     * MUTATION: wire the Cancel button to `close()` rather than `closeAsking()`, and this fails.
+     */
+    @Test
+    public void testCancelAsksAboutTypingNotSaved() throws Exception
+    {
+        open(0);
+
+        assertTrue(cancelAnswering(2), "a window with nothing typed did not just close");
+
+        for (int answer = 2; answer >= 0; answer--)
+        {
+            if (SettingsWindow.showing() == null)
+            {
+                open(2);
+                typeArea("notes.text", "typed notes");
+            }
+
+            assertEquals(cancelAnswering(answer), answer < 2,
+                "answer " + answer + " to the question: the window stayed, or Cancel closed it without asking");
+
+            if (answer == 2)
+            {
+                assertEquals(Components.onTheEventThread(() -> SettingsWindow.part("notes.text", JTextArea.class).getText()),
+                    "typed notes", "Cancel on the question lost the typing");
+            }
+
+            if (answer == 1) assertEquals(loc.getStructuredNotes().getNotes(), "first notes", "Discard wrote the notes");
+        }
+
+        assertEquals(loc.getStructuredNotes().getNotes(), "typed notes", "Save on the question did not write the notes");
+    }
+
+    /**
+     * A window locked while its train moves, or while autonomy runs, closes at the X, Escape and Cancel without asking
+     * when nothing is typed: what the run does to the train is not typing (MT-939).
+     *
+     * MUTATION: have `closeAsking` ask whether or not the window is dirty, and this fails.
+     */
+    @Test
+    public void testALockedWindowWithNothingTypedClosesWithoutAsking() throws Exception
+    {
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+
+        try
+        {
+            for (int door = 0; door < 3; door++)
+            {
+                open(0);
+
+                SettingsWindow.power(ui, model, true);
+                loc.setSpeed(40);
+
+                assertTrue(Components.waitFor(() -> Components.onTheEventThread(
+                    SettingsWindow.part("settings.strip", JLabel.class)::isVisible), WAIT), "precondition: the window did not lock");
+
+                if (door < 2)
+                {
+                    assertTrue(closeBy(door == 0), "a locked window with nothing typed did not close at door " + door);
+                }
+                else
+                {
+                    assertTrue(cancelAnswering(2), "a locked window with nothing typed did not close at Cancel");
+                }
+
+                loc.setSpeed(0);
+                SettingsWindow.power(ui, model, false);
+            }
+
+            open(0);
+
+            model.getAutoLayout().setStagingInProgress(true);
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(
+                SettingsWindow.part("settings.strip", JLabel.class)::isVisible), WAIT), "precondition: autonomy did not lock the window");
+
+            assertTrue(cancelAnswering(2), "a window locked by autonomy with nothing typed did not close at Cancel");
+        }
+        finally
+        {
+            model.getAutoLayout().setStagingInProgress(false);
+            loc.setSpeed(0);
+            SettingsWindow.power(ui, model, false);
+        }
+    }
+
+    /**
+     * Typing made before the window locked is still asked about at Cancel: Save on the question is refused with the
+     * moving rule's sentence and keeps the window and the typing, writing nothing; Discard then closes (MT-939).
+     *
+     * MUTATION: have the Cancel button close without asking while the window is locked, and this fails.
+     */
+    @Test
+    public void testTypingFromBeforeTheLockIsAskedAboutAtCancel() throws Exception
+    {
+        open(0);
+        SettingsWindow.type("settings.name", "LS renamed");
+
+        try
+        {
+            SettingsWindow.power(ui, model, true);
+            loc.setSpeed(40);
+
+            assertTrue(Components.waitFor(() -> Components.onTheEventThread(
+                SettingsWindow.part("settings.strip", JLabel.class)::isVisible), WAIT), "precondition: the window did not lock");
+
+            assertEquals(SettingsWindow.asked(() -> cancelAnswering(0)), Arrays.asList(I18n.f("loc.ui.stopToEdit", NAME)),
+                "Save on the question was not refused for a moving train");
+            assertNotNull(SettingsWindow.showing(), "the refused Save closed the window");
+            assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "the refused Save lost the typing");
+            assertEquals(loc.getName(), NAME, "the refused Save wrote the typing");
+
+            assertTrue(cancelAnswering(1), "Discard did not close the locked window");
+            assertEquals(loc.getName(), NAME, "Discard wrote the typing");
+        }
+        finally
+        {
+            loc.setSpeed(0);
+            SettingsWindow.power(ui, model, false);
+        }
+    }
+
+    /**
+     * Add Locomotive into a window holding typing asks first, and so does opening a locomotive over Add's typing; Cancel
+     * keeps the typing where it was, Discard goes on and writes nothing (MT-939).
+     *
+     * MUTATION: skip `settleUnsaved` in `aimAtANewLocomotive`, and this fails.
+     */
+    @Test
+    public void testAddLocomotiveAndTheWindowItLeavesAskAboutTypingNotSaved() throws Exception
+    {
+        open(0);
+        SettingsWindow.type("settings.name", "LS renamed");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+
+        assertFalse(Components.onTheEventThread(ui::openAddLocomotive), "Cancel went on to Add Locomotive");
+        assertEquals(SettingsWindow.text("settings.name"), "LS renamed", "Cancel lost the typing");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+
+        assertTrue(Components.onTheEventThread(ui::openAddLocomotive), "Discard did not go on to Add Locomotive");
+        assertEquals(SettingsWindow.text("settings.name"), "", "Add Locomotive did not open blank");
+        assertEquals(loc.getName(), NAME, "Discard wrote the typing");
+
+        SettingsWindow.type("settings.name", "LS elsewhere");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 2;
+
+        assertFalse(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "Cancel went on to the other locomotive");
+        assertEquals(SettingsWindow.text("settings.name"), "LS elsewhere", "Cancel lost Add's typing");
+
+        LocomotiveSettingsFrame.unsavedAnswerForTest = 1;
+
+        assertTrue(SettingsWindow.open(ui, other, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null), "Discard did not go on");
+        assertEquals(SettingsWindow.text("settings.name"), OTHER);
+        assertNull(model.getLocByName("LS elsewhere"), "Discard made the locomotive typed in Add");
+    }
+
+    /**
      * A blank address is not a quiet close: Save keeps the window open with a message saying what is wrong and writes
      * nothing, and the X and Escape ask Save, Discard or Cancel; Discard closes with the address as it was (OB-439).
      *
@@ -2076,6 +2239,206 @@ public class testTheLocomotiveSettingsWindow
         assertNull(pillShows(null), "a picture that failed to load is named");
     }
 
+    /**
+     * The revert and crop marks belong to the picture on screen, as the pill does, at every door that swaps it: a
+     * window opening on a slow picture shows no marks over the empty frame, a new local picture brings its revert when
+     * it lands, and after a revert the local picture keeps its marks until the station's picture arrives (OB-482).
+     *
+     * MUTATION: set the marks' visibility in `refreshPicture` when the fetch starts rather than in `arrived`, and this
+     * fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheMarksWaitForThePictureTheySitOn() throws Exception
+    {
+        String station = I18n.t("loc.ui.settingsPictureFromStation");
+        String local = I18n.t("loc.ui.settingsPictureLocal");
+        java.util.Map<String, java.util.concurrent.CountDownLatch> held = heldPictures("a", "b", "c");
+
+        try (support.StandInStation slow = slowStation(held))
+        {
+            loc.setLocalImageURL(null);
+            loc.setImageURL(slowPicture(slow, "a"));
+            open(0);
+
+            JLabel picture = SettingsWindow.part("settings.picture", JLabel.class);
+            Component crop = SettingsWindow.part("settings.crop", Component.class);
+            Component revert = SettingsWindow.part("settings.revert", Component.class);
+            LocomotiveSettingsFrame window = SettingsWindow.showing();
+
+            Components.settle();
+            assertEquals(marks(crop, revert), "", "marks showed over a picture still on its way");
+
+            arrives(held, "a", station, crop, revert, "crop");
+
+            // A local picture slow to load, as the wrench sets one
+            javax.swing.Icon stations = Components.onTheEventThread(picture::getIcon);
+
+            loc.setLocalImageURL(slowPicture(slow, "b"));
+            look(window);
+
+            stillUp(picture, stations, marks(crop, revert), "crop", "the revert came before the local picture it clears");
+
+            arrives(held, "b", local, crop, revert, "crop revert");
+
+            // The revert, with the station's picture now slow: the local one keeps its marks until it is replaced
+            javax.swing.Icon own = Components.onTheEventThread(picture::getIcon);
+
+            loc.setImageURL(slowPicture(slow, "c"));
+            Mouse.click(revert);
+            assertTrue(Components.waitFor(() -> loc.getLocalImageURL() == null, WAIT), "the revert did not clear the icon");
+            look(window);
+
+            stillUp(picture, own, marks(crop, revert), "crop revert", "the marks changed before the station's picture arrived");
+
+            arrives(held, "c", station, crop, revert, "crop");
+        }
+        finally
+        {
+            held.values().forEach(java.util.concurrent.CountDownLatch::countDown);
+        }
+    }
+
+    /**
+     * The crop acts on the picture on screen: clicked after a revert while the station's picture is still on its way,
+     * it opens nothing, rather than a crop of a picture the window does not show yet (OB-482).
+     *
+     * MUTATION: drop the `waiting` check from `LocomotiveTab.mark`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheCropDoesNothingWhileItsPictureIsOnItsWay() throws Exception
+    {
+        String station = I18n.t("loc.ui.settingsPictureFromStation");
+        String local = I18n.t("loc.ui.settingsPictureLocal");
+        String cropTitle = I18n.t("loc.ui.cropTitle");
+        java.util.Map<String, java.util.concurrent.CountDownLatch> held = heldPictures("d");
+
+        try (support.StandInStation slow = slowStation(held))
+        {
+            loc.setImageURL(slowPicture(slow, "d"));
+            loc.setLocalImageURL(pngFile().toURI().toString());
+            open(0);
+            assertEquals(pillShows(local), local, "the local picture is not named");
+
+            Component crop = SettingsWindow.part("settings.crop", Component.class);
+
+            Mouse.click(SettingsWindow.part("settings.revert", Component.class));
+            assertTrue(Components.waitFor(() -> loc.getLocalImageURL() == null, WAIT), "the revert did not clear the icon");
+            look(SettingsWindow.showing());
+            assertTrue(Components.onTheEventThread(crop::isVisible), "precondition: no crop over the local picture");
+
+            Mouse.click(crop);
+
+            held.get("d").countDown();
+            assertEquals(pillShows(station), station, "the station's picture arrived without its pill");
+            assertFalse(Components.waitFor(() -> Components.onTheEventThread(() -> java.util.Arrays.stream(
+                java.awt.Window.getWindows()).anyMatch(w -> w instanceof java.awt.Dialog && w.isShowing()
+                && cropTitle.equals(((java.awt.Dialog) w).getTitle()))), 3000),
+                "the crop clicked before the station's picture arrived opened a crop of it");
+        }
+        finally
+        {
+            held.values().forEach(java.util.concurrent.CountDownLatch::countDown);
+
+            Components.onTheEventThread(() ->
+            {
+                for (java.awt.Window w : java.awt.Window.getWindows())
+                {
+                    if (w instanceof java.awt.Dialog && cropTitle.equals(((java.awt.Dialog) w).getTitle())) w.dispose();
+                }
+
+                return null;
+            });
+        }
+    }
+
+    /** One latch for each picture name, which holds that picture back until it is counted down. */
+    private static java.util.Map<String, java.util.concurrent.CountDownLatch> heldPictures(String... names)
+    {
+        java.util.Map<String, java.util.concurrent.CountDownLatch> held = new java.util.concurrent.ConcurrentHashMap<>();
+
+        for (String name : names) held.put(name, new java.util.concurrent.CountDownLatch(1));
+
+        return held;
+    }
+
+    /** A station whose pictures each wait for their latch in `held`, by the name `slowPicture` gave them. */
+    private static support.StandInStation slowStation(java.util.Map<String, java.util.concurrent.CountDownLatch> held)
+        throws Exception
+    {
+        java.io.ByteArrayOutputStream png = new java.io.ByteArrayOutputStream();
+
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(40, 20, java.awt.image.BufferedImage.TYPE_INT_RGB),
+            "png", png);
+
+        return new support.StandInStation((path, n) ->
+        {
+            String name = path.substring(path.lastIndexOf('-') + 1).replace(".png", "");
+            java.util.concurrent.CountDownLatch release = held.get(name);
+
+            try
+            {
+                if (release != null) release.await(2 * WAIT, java.util.concurrent.TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            return png.toByteArray();
+        });
+    }
+
+    /** A picture on the slow station, new to this run so no cache holds it. */
+    private static String slowPicture(support.StandInStation slow, String name)
+    {
+        return "http://" + slow.address() + "/OB-482-" + Long.toString(System.nanoTime(), 36) + "-" + name + ".png";
+    }
+
+    /** The window's own look at the locomotive, as its once-a-second watch takes it. */
+    private static void look(LocomotiveSettingsFrame window) throws Exception
+    {
+        javax.swing.Timer watch = watch(window);
+
+        Components.onTheEventThread(() ->
+        {
+            watch.getActionListeners()[0].actionPerformed(null);
+
+            return null;
+        });
+    }
+
+    /** Lets the named picture through, and asserts that its pill and these marks came with it. */
+    private static void arrives(java.util.Map<String, java.util.concurrent.CountDownLatch> held, String name, String pill,
+        Component crop, Component revert, String expected) throws Exception
+    {
+        held.get(name).countDown();
+
+        assertEquals(pillShows(pill), pill, "picture " + name + " arrived without its pill");
+        assertEquals(marks(crop, revert), expected, "picture " + name + " arrived without its marks");
+    }
+
+    /** While the next picture is on its way, the one before is still on screen with its marks. */
+    private static void stillUp(JLabel picture, javax.swing.Icon before, String marks, String expected, String message)
+    {
+        assertSame(Components.onTheEventThread(picture::getIcon), before, "precondition: the picture left before the next one came");
+        assertEquals(marks, expected, message);
+    }
+
+    /** Presses Cancel with this answer ready for the question, if it asks; true when the window closed. */
+    private static boolean cancelAnswering(int answer)
+    {
+        LocomotiveSettingsFrame.unsavedAnswerForTest = answer;
+        SettingsWindow.press(SettingsWindow.cancel());
+
+        return SettingsWindow.showing() == null;
+    }
+
+    /** Which of the picture's marks show: "crop", "revert", both or neither. */
+    private static String marks(Component crop, Component revert)
+    {
+        return Components.onTheEventThread(() -> ((crop.isVisible() ? "crop " : "") + (revert.isVisible() ? "revert" : "")).trim());
+    }
+
     /** Opens the window on Basic Settings, its watch stopped: what changes then, the action itself changed. */
     private static void openWithoutTheWatch() throws Exception
     {
@@ -2407,6 +2770,137 @@ public class testTheLocomotiveSettingsWindow
             assertTrue(Components.waitFor(() -> loc.getLinkedLocomotiveNames().containsKey(THIRD), WAIT),
                 "precondition: Save did not make " + THIRD + " a member");
             assertEquals(loc.getLinkedLocomotiveNames().get(OTHER), set, 1e-9, "Save changed the multiplier set at " + set);
+        }
+    }
+
+    /**
+     * A station multi-unit's read-only list shows a member whose rename was answered No as ticked, at the station's
+     * percent and reversed as the station has it.
+     *
+     * MUTATION: in `MultiUnitPanel.buildRow`, look the member up in the station's names by `loco.getName()` again.
+     */
+    @Test(timeOut = 120000)
+    public void testAStationMultiUnitShowsAMemberWhoseRenameWasAnsweredNo() throws Exception
+    {
+        final String head = "LS station head";
+        final String station = "LS station name";
+
+        model.newMFXLocomotive(head, 3410);
+        model.changeLocAddress(head, 3410, MarklinLocomotive.decoderType.MULTI_UNIT);
+
+        try
+        {
+            ((MarklinLocomotive) model.getLocByName(head)).setModelMultiUnitLocomotives(
+                java.util.Collections.singletonMap(station, -0.5));
+            other.setDeclinedStationName(station);
+
+            assertTrue(SettingsWindow.open(ui, model.getLocByName(head), LocomotiveSettingsFrame.Tab.MULTI_UNIT, null),
+                "the window did not open");
+
+            List<Boolean> shown = Components.onTheEventThread(() ->
+            {
+                javax.swing.JCheckBox member = Components.find(SettingsWindow.showing().getContentPane(),
+                    javax.swing.JCheckBox.class, b -> OTHER.equals(b.getToolTipText()));
+
+                List<javax.swing.JCheckBox> boxes = Components.all(member.getParent(), javax.swing.JCheckBox.class,
+                    b -> true);
+
+                return Arrays.asList(member.isSelected(), boxes.get(1).isSelected(),
+                    Components.find(member.getParent(), javax.swing.JSlider.class, s -> true).getValue() == 50);
+            });
+
+            assertEquals(shown, Arrays.asList(true, true, true), "the member opened ticked, reversed and at 50%: "
+                + shown);
+        }
+        finally
+        {
+            other.setDeclinedStationName(null);
+
+            fixture.quiet();
+
+            model.deleteLoc(head);
+        }
+    }
+
+    /**
+     * A head's own links are keyed by names here: a locomotive that declined a member's name at the station opens
+     * unticked, and a Save of another change on the tab does not link it.
+     *
+     * MUTATION: in `MultiUnitPanel`'s `keyOf`, let a head's own link match a name the row's locomotive kept its own
+     * over (`keepsItsNameOver`) as well as its name.
+     */
+    @Test(timeOut = 120000)
+    public void testAnEditableListDoesNotTickALocomotiveThatDeclinedAMembersName() throws Exception
+    {
+        assertEquals(loc.setLinkedLocomotives(java.util.Collections.singletonMap(OTHER, 0.5)), 1,
+            "precondition: the consist was not made");
+        model.newMFXLocomotive("LS elsewhere", 3404);
+
+        try
+        {
+            third.setDeclinedStationName(OTHER);
+            open(3);
+
+            boolean ticked = Components.onTheEventThread(() -> Components.find(SettingsWindow.showing().getContentPane(),
+                javax.swing.JCheckBox.class, b -> THIRD.equals(b.getToolTipText())).isSelected());
+
+            SettingsWindow.tickMember("LS elsewhere");
+            SettingsWindow.press(SettingsWindow.save());
+
+            assertTrue(Components.waitFor(() -> loc.getLinkedLocomotiveNames().containsKey("LS elsewhere"), WAIT),
+                "precondition: Save did not make LS elsewhere a member");
+            assertEquals(Arrays.asList(ticked, loc.getLinkedLocomotiveNames().containsKey(THIRD)), Arrays.asList(false, false),
+                "a locomotive that declined a member's name [opened ticked, was linked by Save]");
+        }
+        finally
+        {
+            third.setDeclinedStationName(null);
+        }
+    }
+
+    /**
+     * A station multi-unit's read-only list shows the locomotive that holds a member's name, not one that declined it,
+     * in either database order: the two trains swap roles.
+     *
+     * MUTATION: in `Locomotive.stationMember`, take the first locomotive in the list that holds or declined the name.
+     */
+    @Test(timeOut = 120000)
+    public void testAStationMultiUnitShowsTheHolderOfANameOverItsDecliner() throws Exception
+    {
+        final String head = "LS station head";
+
+        model.newMFXLocomotive(head, 3410);
+        model.changeLocAddress(head, 3410, MarklinLocomotive.decoderType.MULTI_UNIT);
+
+        try
+        {
+            for (MarklinLocomotive[] roles : new MarklinLocomotive[][] { { other, third }, { third, other } })
+            {
+                ((MarklinLocomotive) model.getLocByName(head)).setModelMultiUnitLocomotives(
+                    java.util.Collections.singletonMap(roles[0].getName(), 0.5));
+                roles[1].setDeclinedStationName(roles[0].getName());
+
+                assertTrue(SettingsWindow.open(ui, model.getLocByName(head), LocomotiveSettingsFrame.Tab.MULTI_UNIT, null),
+                    "the window did not open");
+
+                List<String> rows = Components.onTheEventThread(() -> Components.all(
+                    SettingsWindow.showing().getContentPane(), javax.swing.JCheckBox.class,
+                    b -> OTHER.equals(b.getToolTipText()) || THIRD.equals(b.getToolTipText())).stream()
+                    .map(b -> b.getToolTipText() + (b.isSelected() ? " ticked" : "")).collect(java.util.stream.Collectors.toList()));
+
+                assertEquals(rows, Arrays.asList(roles[0].getName() + " ticked"), roles[1].getName() + " declined "
+                    + roles[0].getName() + "'s name");
+
+                roles[1].setDeclinedStationName(null);
+                fixture.quiet();
+            }
+        }
+        finally
+        {
+            other.setDeclinedStationName(null);
+            third.setDeclinedStationName(null);
+            fixture.quiet();
+            model.deleteLoc(head);
         }
     }
 }

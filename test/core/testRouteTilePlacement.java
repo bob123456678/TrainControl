@@ -349,7 +349,7 @@ public class testRouteTilePlacement
     /** A route button, which carries no track of its own. */
     private static void button(LayoutDiagram page, int x, int y) throws Exception
     {
-        page.addComponent(componentType.ROUTE, x, y, 0, 0, 1, 1, accessoryDecoderType.MM2, null);
+        Diagrams.put(page, componentType.ROUTE, x, y, 0, 1, 1);
     }
 
     /** Whether building the graph over this page raises the given problem. */

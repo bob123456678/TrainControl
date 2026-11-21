@@ -52,9 +52,11 @@ public class testTheAutonomyEditorsBulkDoors
 
     /**
      * In the editor, Allow Every Path asks how many squares it will open, and a Yes opens them all: no square is left
-     * one-way or closed, the diagram's directions read both ways, and Save writes it.
+     * one-way or closed, the diagram's directions read both ways, the selection goes, the strip says how many were
+     * opened, and Save writes it.
      *
-     * MUTATION: drop `session.allowEveryPath()` from `allowEveryPath`, and the Yes opens nothing.
+     * MUTATION: drop `session.allowEveryPath()` from `allowEveryPath`, and the Yes opens nothing; drop
+     * `selection.clear()` from `squaresChangedInBulk`, and the selection stays.
      */
     @Test
     public void testAllowEveryPathAnsweredYesOpensEverySquare() throws Exception
@@ -69,6 +71,17 @@ public class testTheAutonomyEditorsBulkDoors
 
             int count = shut.size();
 
+            Object panel = editor.getAutonomyPanel();
+            Class<?> type = org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel.class;
+
+            @SuppressWarnings("unchecked")
+            java.util.Set<TileKey> selection =
+                (java.util.Set<TileKey>) Reflect.get(type, panel, "selection");
+
+            TileKey picked = shut.keySet().iterator().next();
+
+            Components.onTheEventThread(() -> selection.add(picked));
+
             List<String> asked = press(editorBulkItem(count), message -> yes());
 
             assertEquals(asked, Collections.singletonList(I18n.f("autolayout.ui.confirmAllowEveryPath" + I18n.countForm(count),
@@ -76,6 +89,15 @@ public class testTheAutonomyEditorsBulkDoors
 
             assertEquals(session.routesNotOpenBothWays().size(), 0, "squares are still one-way or closed after Yes: "
                 + session.routesNotOpenBothWays().keySet());
+
+            assertTrue(Components.onTheEventThread(() -> selection.isEmpty()),
+                "the selection outlived Allow Every Path");
+
+            Object banner = Reflect.get(type, panel, "messageBanner");
+
+            assertEquals(String.valueOf(Reflect.get(banner.getClass(), banner, "saying")),
+                I18n.f("autosetup.ui.infoEveryPathAllowed", count),
+                "the strip does not say how many squares were opened");
 
             for (Map.Entry<TileKey, List<RouteId>> square : shut.entrySet())
             {

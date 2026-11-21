@@ -321,6 +321,18 @@ public class testRouteEditorValidation
         return Reflect.get(owner.getClass(), owner, name);
     }
 
+    private static javax.swing.JTable commandsOf(org.traincontrol.gui.RouteEditorFrame frame)
+    {
+        try
+        {
+            return (javax.swing.JTable) support.Reflect.get(org.traincontrol.gui.RouteEditorFrame.class, frame, "commands");
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
     private static org.traincontrol.gui.RouteEditorFrame open() throws Exception
     {
         return open(null);
@@ -2137,6 +2149,222 @@ public class testRouteEditorValidation
     }
 
     /**
+     * OB-487: a new command starts with the address 0, so its address cell visibly has a value, and Save refuses 0 as
+     * an address (the refusal itself is testBuildingARouteByHand's).
+     *
+     * MUTATION: in `CommandTable.addRow`, start the row with "" instead of "0", and the new row's address is empty.
+     */
+    @Test
+    public void testANewCommandStartsAtAddressZero() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(frame::addCommandRowForTest);
+
+            int added = frame.commandRowCountForTest() - 1;
+
+            assertEquals(frame.commandRowForTest(added).getTarget(), "0", "a new command's address");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-487: on an unselected switch row, the Number cell (which a switch does not use) reads --- in the disabled gray
+     * on the fill of the cell beside it, and can be read.
+     *
+     * MUTATION: in `greyWhatCannotBeEdited`, drop the `unused` test, and the cell is empty and muted.
+     */
+    @Test
+    public void testAnUnusedCellSaysSoInGray() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(frame::addCommandRowForTest);
+
+            final java.awt.Component[] seen = new java.awt.Component[2];
+            final java.awt.Color[] ink = new java.awt.Color[4];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                javax.swing.JTable table = commandsOf(frame);
+                int row = table.getRowCount() - 1;
+
+                table.clearSelection();
+                seen[0] = frame.commandCellForTest(row, 3);
+                ink[0] = seen[0].getForeground();
+                ink[1] = seen[0].getBackground();
+                seen[1] = frame.commandCellForTest(row, 4);
+                ink[2] = seen[1].getForeground();
+                ink[3] = seen[1].getBackground();
+            });
+
+            assertEquals(((javax.swing.JLabel) seen[1]).getText(), "---", "the unused Number cell");
+
+            java.awt.Color gray = javax.swing.UIManager.getColor("Label.disabledForeground");
+
+            assertEquals(ink[2], gray == null ? java.awt.Color.GRAY : gray, "the unused cell is not in the disabled gray");
+            assertEquals(ink[3], ink[1], "the unused cell's fill differs from the Address cell's");
+            assertTrue(support.Contrast.between(ink[2], ink[3]) >= 3.0, "the unused cell's text " + ink[2] + " on "
+                + ink[3] + " cannot be read");
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-487: on a selected switch row, as painted, the Number cell's --- keeps the row's own selection fill and is
+     * dimmer than the Address text beside it, yet at least 3:1 on the fill, under the focused and the unfocused
+     * selection colors.
+     *
+     * MUTATION: in `greyWhatCannotBeEdited`, put the `mutedSelection` fill back on an unused cell and the fill differs;
+     * drop `out.setEnabled(true)` and the disabled label paints #808080, 1.94:1 on the focused blue.
+     */
+    @Test
+    public void testAnUnusedCellOnASelectedRowIsDimmedAsPainted() throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.addCommandRowForTest();
+                frame.pack();
+                frame.setVisible(true);
+            });
+
+            final java.awt.Color[][] pairs = {{new java.awt.Color(0x2675BF), java.awt.Color.WHITE},
+                {new java.awt.Color(0xD3D3D3), java.awt.Color.BLACK}};
+
+            for (java.awt.Color[] pair : pairs)
+            {
+                final double[] seen = new double[2];
+                final java.awt.Color[] fills = new java.awt.Color[2];
+
+                javax.swing.SwingUtilities.invokeAndWait(() ->
+                {
+                    javax.swing.JTable table = commandsOf(frame);
+                    int row = table.getRowCount() - 1;
+
+                    table.setSelectionBackground(pair[0]);
+                    table.setSelectionForeground(pair[1]);
+                    table.setRowSelectionInterval(row, row);
+
+                    java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(table.getWidth(),
+                        table.getHeight(), java.awt.image.BufferedImage.TYPE_INT_RGB);
+                    java.awt.Graphics2D g = image.createGraphics();
+
+                    table.paint(g);
+                    g.dispose();
+
+                    for (int column = 3; column <= 4; column++)
+                    {
+                        java.awt.Rectangle cell = table.getCellRect(row, column, false);
+                        java.awt.Color fill = new java.awt.Color(image.getRGB(cell.x + cell.width - 3, cell.y + 2));
+                        double best = 1;
+
+                        for (int x = cell.x + 1; x < cell.x + cell.width - 1; x++)
+                        {
+                            for (int y = cell.y + 1; y < cell.y + cell.height - 1; y++)
+                            {
+                                best = Math.max(best, support.Contrast.between(new java.awt.Color(image.getRGB(x, y)), fill));
+                            }
+                        }
+
+                        fills[column - 3] = fill;
+                        seen[column - 3] = best;
+                    }
+                });
+
+                assertEquals(fills[0], pair[0], "the Address cell is not painted in the selection fill");
+                assertEquals(fills[1], pair[0], "the unused cell is not painted in the row's selection fill");
+                assertTrue(seen[1] >= 3.0, "the --- is " + seen[1] + ":1 on the selection " + pair[0]);
+                assertTrue(seen[1] < seen[0], "the --- is not dimmer than the row's text: " + seen[1] + " against "
+                    + seen[0]);
+            }
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-487: a double-click on a cell holding the starting 0 selects it, so typing 12 gives 12 and not 012.
+     *
+     * MUTATION: in `HandledTable.editCellAt`, drop the `"0".equals(field.getText())` test, and the cell holds 012.
+     */
+    @Test
+    public void testADoubleClickOnTheStartingZeroSelectsIt() throws Exception
+    {
+        assertEquals(typedOverTheStartingZero(
+            table -> new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_CLICKED, 0, 0, 5, 5, 2, false)),
+            "12", "the address after typing 12 into a double-clicked 0");
+    }
+
+    /** A new command's address after an edit begun by `start` and typed over with 12. */
+    private static String typedOverTheStartingZero(
+        java.util.function.Function<javax.swing.JTable, java.awt.event.InputEvent> start) throws Exception
+    {
+        needsADisplay();
+
+        final org.traincontrol.gui.RouteEditorFrame frame = open();
+
+        try
+        {
+            final String[] result = new String[1];
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                frame.addCommandRowForTest();
+
+                javax.swing.JTable table = commandsOf(frame);
+                int row = table.getRowCount() - 1;
+
+                table.editCellAt(row, 3, start.apply(table));
+                ((javax.swing.text.JTextComponent) table.getEditorComponent()).replaceSelection("12");
+                table.getCellEditor().stopCellEditing();
+
+                result[0] = frame.commandRowForTest(row).getTarget();
+            });
+
+            return result[0];
+        }
+        finally
+        {
+            close(frame);
+        }
+    }
+
+    /**
+     * OB-487: typing into a new row's address replaces the starting 0, so 12 gives 12 and not 012.
+     *
+     * MUTATION: move `editCellAt` back to `ConditionTable`, and the cell holds 012.
+     */
+    @Test
+    public void testTypingAnAddressReplacesTheStartingZero() throws Exception
+    {
+        assertEquals(typedOverTheStartingZero(
+            table -> new java.awt.event.KeyEvent(table, java.awt.event.KeyEvent.KEY_PRESSED, 0, 0,
+                java.awt.event.KeyEvent.VK_1, '1')), "12", "the address after typing 12 over the starting 0");
+    }
+
+    /**
      * OB-367: a command's setting dropdown offers the words in the user's language and still holds the stored words.
      *
      * MUTATION: in `chooseSetting`, drop the `setRenderer` call, and the dropdown offers "straight" and "turn".
@@ -2623,17 +2851,17 @@ public class testRouteEditorValidation
     }
 
     /**
-     * OB-396: a condition's gray Protocol cell stops inside its group's outline at every depth, and nothing is painted
-     * between the innermost outline and the table's right edge.
+     * OB-396: on a locked route, where the cells are still the 242 gray, a condition's gray Protocol cell stops inside its
+     * group's outline at every depth, and nothing is painted between the innermost outline and the table's right edge.
      *
      * MUTATION: in `ConditionTable.prepareRenderer`, drop the matte border, and the gray runs out past the outline.
      */
     @Test
-    public void testTheGrayStaysInsideTheOutline() throws Exception
+    public void testTheGrayOfALockedRouteStaysInsideTheOutline() throws Exception
     {
         needsADisplay();
 
-        final org.traincontrol.gui.RouteEditorFrame frame = open();
+        final org.traincontrol.gui.RouteEditorFrame frame = open(lockedWithOneCommand());
 
         try
         {
@@ -2699,6 +2927,22 @@ public class testRouteEditorValidation
         }
     }
 
+    /** A locked route with one command: its cells are all the gray of what cannot be changed. */
+    private static org.traincontrol.base.Route lockedWithOneCommand()
+    {
+        java.util.List<org.traincontrol.base.RouteCommand> commands = new java.util.ArrayList<>();
+
+        commands.add(org.traincontrol.base.RouteCommand.RouteCommandAccessory(80,
+            org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true));
+
+        org.traincontrol.marklin.MarklinRoute route = new org.traincontrol.marklin.MarklinRoute(null, "Imported", 4242,
+            commands, 0, org.traincontrol.base.Route.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+
+        route.setLocked(true);
+
+        return route;
+    }
+
     /**
      * OB-396: a selected condition is painted in the selection's colors from Kind to Protocol only, never on its
      * handle or trash, and a caption line in the selection is never painted as selected.
@@ -2715,7 +2959,14 @@ public class testRouteEditorValidation
 
         try
         {
-            showRows(frame, fromLevels(" 0:21 0AND 1:22 1OR 1:23"));
+            java.util.List<org.traincontrol.base.ConditionOutline.Row> outline = fromLevels(" 0:21 0AND 1:22 1OR 1:23");
+
+            // The condition under test is a switch, which has a Protocol; the last one is a sensor, which has none
+            outline.set(2, org.traincontrol.base.ConditionOutline.Row.condition(1,
+                org.traincontrol.base.RouteCommand.RouteCommandAccessory(22,
+                    org.traincontrol.base.Accessory.accessoryDecoderType.MM2, true)));
+
+            showRows(frame, outline);
 
             final javax.swing.JTable table = conditionTable(frame);
             final int line = screen(table, 2);
@@ -2743,6 +2994,19 @@ public class testRouteEditorValidation
 
             assertEquals(painted, "-- S- S- S- S- -- --", "each column of the selected condition and of the caption"
                 + " above it: S where painted as selected, from the handle to the copy mark");
+
+            // A sensor has no Protocol: that cell reads --- on the selection fill, dimmed (OB-487)
+            final int sensor = screen(table, 4);
+
+            final String sensorRow = support.Components.onTheEventThread(() ->
+            {
+                table.setRowSelectionInterval(sensor, sensor);
+
+                return table.prepareRenderer(table.getCellRenderer(sensor, 4), sensor, 4).getBackground()
+                    .equals(table.getSelectionBackground()) ? "S" : "-";
+            });
+
+            assertEquals(sensorRow, "S", "a sensor condition's unused Protocol cell is not painted as selected");
         }
         finally
         {
@@ -3662,7 +3926,7 @@ public class testRouteEditorValidation
 
             support.Mouse.choose(item(menu, "route.ui.menuAddCommand"));
 
-            assertEquals(targets(frame), " 11 12 13 _", "Add Command adds one at the end");
+            assertEquals(targets(frame), " 11 12 13 0", "Add Command adds one at the end");
 
             String first = offered(rightClickCell(table, 0, NOTHING_TO_EDIT));
 
@@ -3679,13 +3943,13 @@ public class testRouteEditorValidation
             support.Mouse.choose(item(menu, "ui.delete"));
             rightClickAndChoose(table, 1, "route.ui.menuInsertCommandAbove");
 
-            assertEquals(state(frame, table), " 11 _ 12 13 [1]", "Delete takes the command right-clicked; Insert"
+            assertEquals(state(frame, table), " 11 0 12 13 [1]", "Delete takes the command right-clicked; Insert"
                 + " Command Above puts a new command above 12, selected");
 
             rightClickAndChoose(table, 2, "route.ui.menuInsertCommandBelow");
             clickCondition(table, 1, NOTHING_TO_EDIT, java.awt.event.InputEvent.CTRL_DOWN_MASK);
 
-            assertEquals(state(frame, table), " 11 _ 12 _ 13 [1, 3]", "Insert Command Below puts a new command under"
+            assertEquals(state(frame, table), " 11 0 12 0 13 [1, 3]", "Insert Command Below puts a new command under"
                 + " 12, selected");
 
             rightClickAndChoose(table, 3, "ui.delete");
@@ -4089,7 +4353,7 @@ public class testRouteEditorValidation
 
             for (int more = 0; more < 3; more++) pressOnTheCommands(frame, "route.ui.menuAddCommand");
 
-            assertEquals(targets(frame), " 11 12 _ _ _", "Add Command adds a command at the end");
+            assertEquals(targets(frame), " 11 12 0 0 0", "Add Command adds a command at the end");
             assertEquals(support.Components.onTheEventThread(footOf(frame, table, add))[0], two[0],
                 "Add Command moved when three commands were added");
             assertTrue(frame.offersToAddCommands(), "the commands no longer offer Add Command");

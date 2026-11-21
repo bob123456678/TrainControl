@@ -7,7 +7,6 @@ import org.testng.annotations.Test;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
-import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 import support.Components;
 import support.Looks;
@@ -31,11 +30,10 @@ public class testTheAutonomyEditorWearsTheStandard
     }
 
     /**
-     * Test a path, Why not Moving, Pick Stations, Save and Cancel are Bold 12, and the "Path Type" label is
-     * black, as only section headings are blue (OB-438).
+     * Test a path, Why not Moving, Pick Stations, Save and Cancel are Bold 12 (OB-438).
      *
-     * MUTATION: set `AutonomyEditorPanel.FONT_BUTTON` back to Bold 11, drop the `UiStyle.button` calls on the editor's
-     * Save and Cancel, or make Path Type a blue heading again, and this fails.
+     * MUTATION: set `AutonomyEditorPanel.FONT_BUTTON` back to Bold 11, or drop the `UiStyle.button` calls on the editor's
+     * Save and Cancel, and this fails.
      */
     @Test(timeOut = 120000)
     public void testTheEditorsButtonsAndHeadingsWearTheStandard() throws Exception
@@ -45,8 +43,6 @@ public class testTheAutonomyEditorWearsTheStandard
         try
         {
             Looks.assertButtonsAreBold12(editor.getContentPane(), "the autonomy editor");
-            Looks.assertLabel(editor.getContentPane(), I18n.t("autosetup.ui.labelPathType"), UiStyle.TEXT,
-                "the autonomy editor");
         }
         finally
         {

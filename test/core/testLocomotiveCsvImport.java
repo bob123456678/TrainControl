@@ -981,8 +981,8 @@ public class testLocomotiveCsvImport
 
     /**
      * The export's columns and the saved form of a locomotive are as they were, apart from the LastRun column Adam asked
-     * for: the header the importer reads, the saved record's version and fields (a change there is a change to
-     * LocDB.data), and an imported locomotive saves and loads like any other.
+     * for and the saved field of a rename turned down (D171): the header the importer reads, the saved record's version
+     * and fields (a change there is a change to LocDB.data), and an imported locomotive saves and loads like any other.
      *
      * MUTATION: add a column to the export or a field to MarklinSimpleComponent, and this fails.
      */
@@ -1000,7 +1000,7 @@ public class testLocomotiveCsvImport
         for (ObjectStreamField f : saved.getFields()) fields.add(f.getName());
 
         assertEquals(new TreeSet<>(fields), new TreeSet<>(Arrays.asList("address", "arrivalFunction", "centralStationLinkedLocomotives",
-            "conditions", "customFunctions", "departureFunction", "functionTriggerTypes", "functionTypes", "functions",
+            "conditions", "customFunctions", "declinedStationName", "departureFunction", "functionTriggerTypes", "functionTypes", "functions",
             "historicalOperatingTimeNew", "linkedLocomotives", "localFunctionImageURLs", "localImageURL", "name", "notes",
             "numActuations", "preferredFunctions", "preferredSpeed", "accessoryDecoderType", "reversible", "route",
             "routeEnabled", "s88", "s88TriggerType", "state", "trainLength", "type")), "the saved record's fields changed");
@@ -1029,5 +1029,147 @@ public class testLocomotiveCsvImport
         assertEquals(back.getPreferredSpeed(), 20);
         assertEquals(back.getHistoricalOperatingTime().values().stream().mapToLong(Long::longValue).sum(), 7200000L);
         assertTrue(back.getLocNotes().contains("LNER"));
+    }
+
+    /** A multi-unit of the station whose member kept its own name here: the member is "named" by the station's name. */
+    private static MarklinLocomotive[] aHeadWhoseMemberKeptItsName(String tag, int address) throws Exception
+    {
+        String station = tag + " station name";
+
+        MarklinLocomotive head = make(tag + " head", decoderType.MM2, address);
+        MarklinLocomotive member = make(tag + " member", decoderType.MM2, address + 1);
+        MarklinLocomotive other = make(tag + " other", decoderType.MM2, address + 2);
+
+        model.changeLocAddress(head.getName(), address, decoderType.MULTI_UNIT);
+
+        Map<String, Double> names = new HashMap<>();
+
+        names.put(station, 0.5);
+        names.put(other.getName(), 1.0);
+
+        head.setModelMultiUnitLocomotives(names);
+        member.setDeclinedStationName(station);
+
+        return new MarklinLocomotive[] { head, member, other };
+    }
+
+    /**
+     * A member of a station multi-unit whose rename was answered No still counts as moving with its head, and the
+     * import keeps its address.
+     *
+     * MUTATION: in `LocomotiveSettings.hasSpeed`, look the member up in the head's names by `l.getName()` again.
+     */
+    @Test(timeOut = 60000)
+    public void testAMemberWhoseRenameWasAnsweredNoIsMovingWithItsStationHead() throws Exception
+    {
+        MarklinLocomotive[] rig = aHeadWhoseMemberKeptItsName("SMU1", 60);
+        MarklinLocomotive head = rig[0];
+        MarklinLocomotive member = rig[1];
+
+        try
+        {
+            head.setSpeed(1);
+            head.waitForSpeedAtOrAbove(1);
+
+            assertTrue(org.traincontrol.gui.LocomotiveSettings.hasSpeed(model, member),
+                "Locomotive Settings does not see the member as moving with its head");
+        }
+        finally
+        {
+            head.setSpeed(0);
+            head.waitForSpeedBelow(1);
+        }
+    }
+
+    /**
+     * The same member is a member to the import: given the address of the head's other member, it keeps its own.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.membersOf`, keep the station's names as they are instead of the names here.
+     */
+    @Test
+    public void testAMemberWhoseRenameWasAnsweredNoKeepsItsAddressInTheImport() throws Exception
+    {
+        MarklinLocomotive[] rig = aHeadWhoseMemberKeptItsName("SMU2", 70);
+        MarklinLocomotive member = rig[1];
+        MarklinLocomotive other = rig[2];
+
+        MarklinLocomotiveCsv.Result result = importText(OLD + member.getName() + ",,MM2," + other.getAddress()
+            + ",0,0:00:00,0,0,,\n");
+
+        assertEquals(result.kept.size(), 1, "the address change that breaks a consist is not counted");
+        assertEquals(result.kept.get(0).why, MarklinLocomotiveCsv.Keep.CONSIST);
+        assertEquals(member.getAddress(), 71, "a member was given the address of another of its station's members");
+    }
+
+    /**
+     * A station multi-unit's member is the locomotive that holds its name here, not one that declined that name, in
+     * either database order (the two swap roles): the member list, the moving guard and the import all pick the holder.
+     *
+     * MUTATION: in `Locomotive.stationMember`, take the first locomotive in the list that holds or declined the name.
+     */
+    @Test(timeOut = 60000)
+    public void testANameHeldHereBeatsTheSameNameDeclined() throws Exception
+    {
+        MarklinLocomotive head = make("SMU3 head", decoderType.MM2, 74);
+        MarklinLocomotive[] pair = { make("SMU3 one", decoderType.MM2, 75), make("SMU3 two", decoderType.MM2, 76) };
+        MarklinLocomotive mate = make("SMU3 mate", decoderType.MM2, 77);
+        List<String> wrong = new ArrayList<>();
+
+        model.changeLocAddress(head.getName(), 74, decoderType.MULTI_UNIT);
+
+        for (int i = 0; i < 2; i++)
+        {
+            MarklinLocomotive holder = pair[i];
+            MarklinLocomotive decliner = pair[1 - i];
+            int at = holder.getAddress();
+            String order = holder.getName() + " holds the name " + decliner.getName() + " declined: ";
+            Map<String, Double> names = new HashMap<>();
+
+            names.put(holder.getName(), 0.5);
+            names.put(mate.getName(), 1.0);
+            head.setModelMultiUnitLocomotives(names);
+            decliner.setDeclinedStationName(holder.getName());
+
+            try
+            {
+                List<Locomotive> members = head.getModelMultiUnitLocomotives();
+
+                if (!members.contains(holder) || members.contains(decliner))
+                {
+                    wrong.add(order + "the members " + members.stream().map(Locomotive::getName)
+                        .collect(java.util.stream.Collectors.toList()));
+                }
+
+                head.setSpeed(1);
+                head.waitForSpeedAtOrAbove(1);
+
+                List<Boolean> moving = Arrays.asList(org.traincontrol.gui.LocomotiveSettings.hasSpeed(model, holder),
+                    org.traincontrol.gui.LocomotiveSettings.hasSpeed(model, decliner));
+
+                if (!moving.equals(Arrays.asList(true, false))) wrong.add(order + "moving with the head " + moving);
+
+                head.setSpeed(0);
+                head.waitForSpeedBelow(1);
+
+                MarklinLocomotiveCsv.Result result = importText(OLD + holder.getName() + ",,MM2," + mate.getAddress()
+                    + ",0,0:00:00,0,0,,\n");
+
+                if (result.kept.size() != 1 || result.kept.get(0).why != MarklinLocomotiveCsv.Keep.CONSIST
+                    || holder.getAddress() != at)
+                {
+                    wrong.add(order + "the import did not keep the holder off its mate's address, at " + holder.getAddress());
+                }
+            }
+            finally
+            {
+                head.setSpeed(0);
+                head.waitForSpeedBelow(1);
+                decliner.setDeclinedStationName(null);
+
+                if (holder.getAddress() != at) model.changeLocAddress(holder.getName(), at, decoderType.MM2);
+            }
+        }
+
+        assertTrue(wrong.isEmpty(), "a declined name was taken over the same name held here: " + wrong);
     }
 }

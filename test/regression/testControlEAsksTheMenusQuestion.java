@@ -1,18 +1,16 @@
 package regression;
 
-import java.util.Arrays;
 import java.util.Map;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
-import support.Trees;
-import static support.Diagrams.aPageWithARunAndALabel;
+import support.MenuPage;
+import static support.MenuPage.itemNames;
 
 /**
  * Control+E has to act on the square the right-click menu would act on, and only where it offers to (FR-066): the
@@ -26,17 +24,11 @@ public class testControlEAsksTheMenusQuestion
     @Test
     public void testTheKeyMeasuresTheSquareTheMenuWouldMeasure() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-e-run").toFile();
-
-        try
+        // The run is what makes the label's page one the session knows: the text branch is fenced on
+        // `pageOf(tile) != null`.
+        try (MenuPage fixture = new MenuPage("tc-ctrl-e-run"))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            // The run is what makes the label's page one the session knows: the text branch is fenced on
-            // `pageOf(tile) != null`.
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
+            AutonomySession session = fixture.session;
 
             Map<TileKey, TileKey> leaders = session.runLeaders();
 
@@ -74,10 +66,6 @@ public class testControlEAsksTheMenusQuestion
                 "the fixture's follower at " + follower + " leads its own run, so the two doors"
                 + " cannot disagree here and the claim above would pass unchanged");
         }
-        finally
-        {
-            Trees.delete(folder);
-        }
     }
 
     /**
@@ -91,15 +79,9 @@ public class testControlEAsksTheMenusQuestion
     @Test
     public void testTheTwoDoorsAgreeAboutEverySquareOnThePage() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-e-page").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-ctrl-e-page"))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
+            AutonomySession session = fixture.session;
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -148,10 +130,6 @@ public class testControlEAsksTheMenusQuestion
                 "every square on this page offers a length, so the comparison above is between two"
                 + " predicates that both answer true everywhere - and the label at 3,3 should not");
         }
-        finally
-        {
-            Trees.delete(folder);
-        }
     }
 
     /**
@@ -163,15 +141,9 @@ public class testControlEAsksTheMenusQuestion
     @Test
     public void testTheKeyRefusesTheTwoSquaresTheMenuOffersNoLengthFor() throws Exception
     {
-        needsADisplay();
-
-        java.io.File folder = java.nio.file.Files.createTempDirectory("tc-ctrl-e-content").toFile();
-
-        try
+        try (MenuPage fixture = new MenuPage("tc-ctrl-e-content"))
         {
-            AutonomySession session = new AutonomySession(folder);
-
-            session.open(Arrays.asList(aPageWithARunAndALabel("main")));
+            AutonomySession session = fixture.session;
 
             AutonomyEditorPanel panel = new AutonomyEditorPanel(session, "main", () -> { });
 
@@ -204,36 +176,6 @@ public class testControlEAsksTheMenusQuestion
             assertTrue(panel.offersALength(track),
                 "the track at " + track + " still offers no length once its page is back in service,"
                 + " so the refusal above was not the exclusion");
-        }
-        finally
-        {
-            Trees.delete(folder);
-        }
-    }
-
-    /** The labels of every item on a menu, submenus included. */
-    private static java.util.List<String> itemNames(javax.swing.JPopupMenu menu)
-    {
-        java.util.List<String> out = new java.util.ArrayList<>();
-
-        for (java.awt.Component each : menu.getComponents())
-        {
-            if (each instanceof javax.swing.JMenuItem)
-            {
-                out.add(((javax.swing.JMenuItem) each).getText());
-            }
-        }
-
-        return out;
-    }
-
-    /** `AutonomyEditorPanel` builds real Swing components, so this needs a display. */
-    private static void needsADisplay()
-    {
-        if (java.awt.GraphicsEnvironment.isHeadless())
-        {
-            throw new SkipException("AutonomyEditorPanel builds real Swing components - this needs a"
-                + " display");
         }
     }
 }

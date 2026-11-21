@@ -49,19 +49,9 @@ public class testCutWithNothingHovered
         model = frozen.model;
         ui = frozen.ui;
 
-        page = model.getLayout(PAGE);
+        page = frozen.pageOrFail(PAGE);
 
-        if (page == null) throw new AssertionError("no page " + PAGE);
-
-        final LayoutEditor[] built = new LayoutEditor[1];
-
-        SwingUtilities.invokeAndWait(() ->
-        {
-            built[0] = new LayoutEditor(page, 30, ui, 0);
-            built[0].render();
-        });
-
-        editor = built[0];
+        editor = frozen.render(page, false);
     }
 
     @AfterClass(alwaysRun = true)

@@ -30,6 +30,8 @@ import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.locomotive.LocomotiveSelector;
 import org.traincontrol.gui.locomotive.LocomotiveSelectorItem;
+import org.traincontrol.gui.widgets.About;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
@@ -537,199 +539,6 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
         }
     }
 
-    /**
-     * Check for Renamed Locomotives, renaming onto a name another locomotive holds, asks once, in the delete door's own
-     * question led by the rename it is for: it counts the routes that lose their commands and starts on No, and No
-     * keeps both locomotives and the route's command.  The CS3 fixture names MM2 76 as the held name.
-     *
-     * MUTATION: in `checkForRenameMenuItemActionPerformed`, put back the rename's own question for a held name and the
-     * deletion without a question of its own (`deleteLocAlreadyAsked`), and this fails.
-     */
-    @Test(timeOut = 180000)
-    public void testARenameOntoAHeldNameAsksTheDeleteQuestionOnce() throws Exception
-    {
-        final String held = "SBB RE 4_4 II";
-        final String old = "D137 old";
-        final String route = "D137 route";
-        final String no = String.valueOf(TrainControlUI.YES_NO_OPTS[1]);
-
-        final support.CS3TestServer server = new support.CS3TestServer(
-            getClass().getResource("/CS3_loks.json").toURI().toString(),
-            getClass().getResource("/CS3_loks_v260.json").toURI().toString(),
-            getClass().getResource("/CS3_mags.json").toURI().toString(),
-            getClass().getResource("/CS3_automatics.json").toURI().toString(),
-            getClass().getResource("/CS3_automatics_v260.json").toURI().toString());
-
-        final Object parserWas = Reflect.get(MarklinControlStation.class, model, "fileParser");
-        final Object cs3Was = Reflect.get(MarklinControlStation.class, model, "isCS3");
-        final boolean connectedWas = model.getNetworkCommState();
-
-        server.startServer(260);
-
-        try
-        {
-            model.newMM2Locomotive(old, 76);
-            model.newMM2Locomotive(held, 76);
-
-            List<RouteCommand> commands = new ArrayList<>(Collections.singletonList(
-                RouteCommand.RouteCommandFunction(held, 1, true)));
-
-            model.newRoute(route, commands, 0, MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
-
-            Reflect.set(MarklinControlStation.class, model, "fileParser",
-                new org.traincontrol.marklin.file.CS2File("localhost:" + server.getPort(), model));
-            Reflect.set(MarklinControlStation.class, model, "isCS3", true);
-
-            // The door asks only with a station connected; the stand-in serves its lists
-            model.setNetworkCommState(true);
-
-            try (Answering answering = Answering.start(message -> Answering.press(no)))
-            {
-                JMenuItem check = (JMenuItem) Components.withText(ui, I18n.t("ui.main.toolbar.checkForRenamedLocs"));
-
-                assertNotNull(check, "the window has no Check for Renamed Locomotives");
-
-                javax.swing.SwingUtilities.invokeAndWait(check::doClick);
-
-                assertTrue(Components.waitFor(() -> about(answering, old).size() == 1, PATIENCE_MS),
-                    "renaming " + old + " onto " + held + " was not asked about: " + answering.asked());
-
-                Components.settle();
-
-                List<Answering.Question> asked = about(answering, old);
-
-                assertEquals(asked.size(), 1, "renaming onto a held name asked more than once: " + answering.asked());
-
-                assertTrue(asked.get(0).message.contains(I18n.f("ui.confirmDeleteFromDatabaseWithRoutesOne", held, 1)),
-                    "the question does not count the route that loses its command: " + asked.get(0).message);
-
-                assertTrue(asked.get(0).message.contains(I18n.f("loc.ui.confirmRenameOntoLocomotive", old, held)),
-                    "the question does not say the rename it deletes for: " + asked.get(0).message);
-
-                assertEquals(asked.get(0).startsOn, no, "the question does not start on No");
-
-                AskingWindows.awaitAnswered();
-            }
-
-            assertNotNull(model.getLocByName(old), "No took away " + old);
-            assertNotNull(model.getLocByName(held), "No deleted " + held);
-
-            assertTrue(model.getRoute(route).commandsDrive(held), "No took the route's command for " + held);
-        }
-        finally
-        {
-            Reflect.set(MarklinControlStation.class, model, "fileParser", parserWas);
-            Reflect.set(MarklinControlStation.class, model, "isCS3", cs3Was);
-            model.setNetworkCommState(connectedWas);
-
-            server.stopServer();
-
-            model.deleteRoute(route);
-            model.deleteLoc(old);
-            model.deleteLoc(held);
-        }
-    }
-
-    /**
-     * Check for Renamed Locomotives reads the station behind the busy sign, off the event thread: while a slow station
-     * holds back its locomotive list the window still answers, and the result is shown once the list arrives (OB-475).
-     * The list is empty, so nothing is proposed and no sync follows.
-     *
-     * MUTATION: in `checkForRenameMenuItemActionPerformed`, call `model.getRenameProposals()` directly instead of
-     * through `BusyDialog.run`, and this fails.
-     */
-    @Test(timeOut = 180000)
-    public void testTheRenameCheckLeavesTheWindowFreeWhileTheStationIsSlow() throws Exception
-    {
-        final java.util.concurrent.CountDownLatch asked = new java.util.concurrent.CountDownLatch(1);
-        final java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
-        final java.util.function.BiFunction<String, Integer, byte[]> cs3 =
-            support.StandInStation.cs3("260", "{\"softwareVersion\":\"2.6.1 (Build 3)\"}");
-
-        final Object parserWas = Reflect.get(MarklinControlStation.class, model, "fileParser");
-        final Object cs3Was = Reflect.get(MarklinControlStation.class, model, "isCS3");
-        final boolean connectedWas = model.getNetworkCommState();
-
-        try (support.StandInStation station = new support.StandInStation((path, n) ->
-        {
-            if (!"/app/api/locos".equals(path)) return cs3.apply(path, n);
-
-            asked.countDown();
-
-            try
-            {
-                release.await(PATIENCE_MS, java.util.concurrent.TimeUnit.MILLISECONDS);
-            }
-            catch (InterruptedException stop)
-            {
-                Thread.currentThread().interrupt();
-            }
-
-            return "[]".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        });
-            Answering answering = Answering.start(message -> null))
-        {
-            Reflect.set(MarklinControlStation.class, model, "fileParser",
-                new org.traincontrol.marklin.file.CS2File(station.address(), model));
-            Reflect.set(MarklinControlStation.class, model, "isCS3", true);
-            model.setNetworkCommState(true);
-
-            JMenuItem check = (JMenuItem) Components.withText(ui, I18n.t("ui.main.toolbar.checkForRenamedLocs"));
-
-            javax.swing.SwingUtilities.invokeAndWait(check::doClick);
-
-            assertTrue(asked.await(PATIENCE_MS, java.util.concurrent.TimeUnit.MILLISECONDS),
-                "the check did not ask the station for its locomotives");
-
-            final java.util.concurrent.CountDownLatch ran = new java.util.concurrent.CountDownLatch(1);
-            final boolean[] busy = new boolean[1];
-
-            javax.swing.SwingUtilities.invokeLater(() ->
-            {
-                for (Window w : Window.getWindows())
-                {
-                    busy[0] |= w instanceof org.traincontrol.gui.widgets.BusyDialog && w.isShowing();
-                }
-
-                ran.countDown();
-            });
-
-            boolean free = ran.await(3, java.util.concurrent.TimeUnit.SECONDS);
-
-            release.countDown();
-
-            assertTrue(free, "the window froze while the check waited on the station");
-            assertTrue(busy[0], "no busy sign showed while the check waited on the station");
-
-            assertTrue(answering.awaitAsked(1, PATIENCE_MS), "the check showed no result once the list arrived");
-            assertEquals(answering.asked().get(0), I18n.t("loc.ui.infoNoLocomotivesToRename"),
-                "the check's result is not that nothing needs renaming");
-
-            AskingWindows.awaitAnswered();
-        }
-        finally
-        {
-            release.countDown();
-
-            Reflect.set(MarklinControlStation.class, model, "fileParser", parserWas);
-            Reflect.set(MarklinControlStation.class, model, "isCS3", cs3Was);
-            model.setNetworkCommState(connectedWas);
-        }
-    }
-
-    /** The questions asked so far that name this locomotive. */
-    private static List<Answering.Question> about(Answering answering, String name)
-    {
-        List<Answering.Question> named = new ArrayList<>();
-
-        for (Answering.Question question : answering.questions())
-        {
-            if (question.message != null && question.message.contains(name)) named.add(question);
-        }
-
-        return named;
-    }
-
     /** A route that drives the first locomotive, running long enough for every door to be tried. */
     private static void aRouteDrivesIt() throws Exception
     {
@@ -770,7 +579,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         assertSaveSays(window, said);
 
-        SettingsWindow.press(SettingsWindow.cancel());
+        SettingsWindow.cancelDiscarding();
 
         for (Window pressed : new Window[] {page, ui})
         {
@@ -780,7 +589,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
             assertSaveSays(fromTheKey, said);
 
-            SettingsWindow.press(SettingsWindow.cancel());
+            SettingsWindow.cancelDiscarding();
         }
 
         assertEquals(one.getName(), ONE, "a refused rename renamed it");
@@ -974,7 +783,7 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
 
         assertSaveSays(opened, said);
 
-        SettingsWindow.press(SettingsWindow.cancel());
+        SettingsWindow.cancelDiscarding();
     }
 
     /**
@@ -1097,5 +906,33 @@ public class testTheLocomotiveDoorsAskOverTheirWindow
             assertSaidBy(key(page, KeyEvent.VK_A), page, said);
             assertSaidBy(key(ui, KeyEvent.VK_A), ui, said);
         });
+    }
+
+    /**
+     * The database's tiles and About's links show TrainControl's hand (FR-224), though their GUI-builder code sets
+     * Java's own, jagged on Java 8: the constructors set it again.
+     *
+     * MUTATION: dropping the `setCursor(HandPointer.cursor())` lines from `LocomotiveSelectorItem`'s or `About`'s
+     * constructor fails this on Java 8.
+     */
+    @Test
+    public void testTheTilesAndAboutsLinksShowTheApplicationsHand() throws Exception
+    {
+        LocomotiveSelectorItem item = tile(ONE);
+        Component picture = (Component) Reflect.get(LocomotiveSelectorItem.class, item, "locIcon");
+        About about = Components.onTheEventThread(About::new);
+
+        assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(item.getCursor())),
+            "a tile does not show the hand");
+        assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(picture.getCursor())),
+            "a tile's picture does not show the hand");
+
+        for (String link : new String[] {"linkLabel", "linkLabel1"})
+        {
+            Component c = (Component) Reflect.get(About.class, about, link);
+
+            assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(c.getCursor())),
+                "About's " + link + " does not show the hand");
+        }
     }
 }

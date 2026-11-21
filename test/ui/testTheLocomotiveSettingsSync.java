@@ -16,6 +16,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import support.Components;
@@ -546,7 +547,7 @@ public class testTheLocomotiveSettingsSync extends support.SettingsClass
             java.awt.Component c = SettingsWindow.part(name, java.awt.Component.class);
 
             assertNotNull(c, "no " + name);
-            assertEquals((int) Components.onTheEventThread(() -> c.getCursor().getType()), java.awt.Cursor.HAND_CURSOR,
+            assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(c.getCursor())),
                 name + " does not show the hand cursor");
         }
 

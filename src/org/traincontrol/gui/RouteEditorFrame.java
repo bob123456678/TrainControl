@@ -58,6 +58,7 @@ import javax.swing.JTextField;
 import javax.swing.JViewport;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
@@ -72,6 +73,7 @@ import org.traincontrol.base.RouteCommand;
 import org.traincontrol.base.Route;
 import org.traincontrol.base.ThreeWaySwitch;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.DetailsArea;
 import org.traincontrol.util.I18n;
@@ -145,7 +147,6 @@ public class RouteEditorFrame extends JFrame
     {
         return this.locked;
     }
-
 
     /**
      * Whether this window will let the route be changed.  Asked before a mark is drawn and again before it acts:
@@ -589,6 +590,10 @@ public class RouteEditorFrame extends JFrame
         getRootPane().registerKeyboardAction(e -> closeIfThrowingNothingAway(),
             KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
             JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+        // Control+Enter is Save (FR-200)
+        getRootPane().registerKeyboardAction(e -> saveButton.doClick(0), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,
+            java.awt.event.InputEvent.CTRL_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         return content;
     }
@@ -1286,7 +1291,7 @@ public class RouteEditorFrame extends JFrame
         }
         catch (NumberFormatException e)
         {
-            // A row with nothing in its address column yet, which is every row the moment it is added
+            // A row with nothing in its address column yet
             return unchanged;
         }
     }
@@ -2001,7 +2006,7 @@ public class RouteEditorFrame extends JFrame
                     && !"".equals(String.valueOf(table.getValueAt(row, column)))
                     && isAmong(column, marked);
 
-                table.setCursor(Cursor.getPredefinedCursor(live ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
+                table.setCursor(live ? HandPointer.cursor() : Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
             }
         });
     }
@@ -2036,6 +2041,39 @@ public class RouteEditorFrame extends JFrame
         return false;
     }
 
+    /** The ink blended toward its fill as far as keeps it 3:1 on it, so it reads as dimmed beside the row's text. */
+    static Color dimmed(Color ink, Color fill)
+    {
+        // Contrast by an approximate gamma: 3.2 here keeps the app's selection colors above 3 by the standard's
+        java.util.function.ToDoubleFunction<Color> glow = c -> 0.2126 * Math.pow(c.getRed() / 255.0, 2.2)
+            + 0.7152 * Math.pow(c.getGreen() / 255.0, 2.2) + 0.0722 * Math.pow(c.getBlue() / 255.0, 2.2);
+        for (int toward = 60; toward > 0; toward -= 10)
+        {
+            Color out = new Color((ink.getRed() * (100 - toward) + fill.getRed() * toward) / 100,
+                (ink.getGreen() * (100 - toward) + fill.getGreen() * toward) / 100,
+                (ink.getBlue() * (100 - toward) + fill.getBlue() * toward) / 100);
+            double one = glow.applyAsDouble(out), two = glow.applyAsDouble(fill);
+            if ((Math.max(one, two) + 0.05) / (Math.min(one, two) + 0.05) >= 3.2) return out;
+        }
+        return ink;
+    }
+
+    /**
+     * The selection fill of a cell that cannot be edited: a dark selection lightened halfway to white, a light one
+     * darkened by 36 levels, so dark gray text reads on it and it differs from the selection and the unusable wash.
+     */
+    static Color mutedSelection(Color selection)
+    {
+        if (selection.getRed() + selection.getGreen() + selection.getBlue() < 3 * 128)
+        {
+            return new Color((selection.getRed() + 255) / 2, (selection.getGreen() + 255) / 2,
+                (selection.getBlue() + 255) / 2);
+        }
+
+        return new Color(Math.max(0, selection.getRed() - 36), Math.max(0, selection.getGreen() - 36),
+            Math.max(0, selection.getBlue() - 36));
+    }
+
     /**
      * A cell with no wash on it (OB-121).  A renderer hands back one recycled component, which may already have been
      * painted gray for the cell before; a selected row is left as super made it.
@@ -2049,6 +2087,7 @@ public class RouteEditorFrame extends JFrame
         {
             ((JComponent) out).setOpaque(true);
             out.setBackground(which.getBackground());
+            out.setForeground(which.getForeground());
         }
 
         return out;
@@ -2080,15 +2119,17 @@ public class RouteEditorFrame extends JFrame
                 Object shown = which instanceof ConditionTable
                     ? ((ConditionTable) which).shownAs(row, column, value) : value;
 
+                // A cell this kind of row has no use for says so: gray, on the row's own fill (selected or not)
+                boolean unused = which instanceof HandledTable && "".equals(shown)
+                    && ((HandledTable) which).notUsed(row, column);
+                if (unused) shown = "---";
                 // OB-367: the setting is stored as the English word and shown in the user's language
                 int settingColumn = which instanceof ConditionTable ? ConditionTable.SETTING : CommandTable.SETTING;
 
                 if (column == settingColumn && shown instanceof String) shown = settingLabel((String) shown);
-
                 Component out = was.getTableCellRendererComponent(which, shown, selected, focused, row, column);
-
                 boolean editable = which.getModel().isCellEditable(row, column);
-
+                if (unused) out.setEnabled(true);
                 // A group's caption line is left alone: it is the outline's, not a condition with nothing to fill in.
                 if (which instanceof ConditionTable && ((ConditionTable) which).isCaptionLine(row))
                 {
@@ -2110,16 +2151,31 @@ public class RouteEditorFrame extends JFrame
                     ((JComponent) out).setToolTipText(refused != null ? refused : explained);
                 }
 
-                if (!selected)
+                // A highlighted row still tells a cell that cannot be edited from one that can (OB-487)
+                boolean greyed = !editable && !(which instanceof CommandTable && column == POSITION)
+                    && out instanceof JComponent;
+
+                if (selected)
+                {
+                    if (unused) out.setForeground(dimmed(out.getForeground(), out.getBackground()));
+                    else if (greyed)
+                    {
+                        ((JComponent) out).setOpaque(true);
+                        out.setBackground(mutedSelection(which.getSelectionBackground()));
+                        out.setForeground(Color.DARK_GRAY);
+                    }
+                }
+                else
                 {
                     out.setForeground(refused != null && editable ? WRONG
-                        : editable ? which.getForeground() : Color.GRAY);
+                        : editable ? which.getForeground()
+                        : unused ? UIManager.getColor("Label.disabledForeground") : Color.GRAY);
 
                     // A background, not only gray text: most of these cells are empty, and gray text in an empty cell
                     // shows nothing.  Not the position column, which is the row's number.
                     boolean position = which instanceof CommandTable && column == POSITION;
 
-                    if (!editable && !position && out instanceof JComponent)
+                    if (!editable && !position && !unused && out instanceof JComponent)
                     {
                         ((JComponent) out).setOpaque(true);
                         out.setBackground(UNUSABLE);
@@ -2442,7 +2498,6 @@ public class RouteEditorFrame extends JFrame
         // Automatic with no sensor can never fire: the sensor is what fires it.
         if (enabledBox.isSelected() && s88 == 0) wrong.add(I18n.t("route.ui.frameAutomaticNeedsSensor"));
 
-
         if (commands.rows.isEmpty()) wrong.add(I18n.t("route.ui.frameNeedsACommand"));
 
         for (int at = 0; at < commands.rows.size(); at++)
@@ -2569,7 +2624,7 @@ public class RouteEditorFrame extends JFrame
 
     /**
      * What is wrong with one row, if anything: a row that cannot be built (the row refuses itself), or one that builds
-     * and names something that does not exist (a locomotive nobody owns, an address no decoder can carry).
+     * and names something that does not exist (a locomotive nobody owns, an address that cannot be assigned to a decoder).
      */
     private List<String> problemsWith(CommandRow row)
     {
@@ -2683,7 +2738,7 @@ public class RouteEditorFrame extends JFrame
         return wrong;
     }
 
-    /** Adds a complaint when an address is not one the decoder can carry (MM2 and DCC have different ranges). */
+    /** Adds a complaint when an address cannot be assigned to a decoder (MM2 and DCC have different ranges). */
     private void addressProblem(List<String> wrong, String target,
         Accessory.accessoryDecoderType protocol)
     {
@@ -2971,18 +3026,10 @@ public class RouteEditorFrame extends JFrame
                         return;
                     }
 
-                    // And it keeps the name the other party gave it, unless the operator typed in the name field (a
-                    // rename they asked for).
+                    // And it keeps the name the other party gave it, unless the operator typed a new one.
                     String saveAs = nameToSaveAs(name, nowCalled);
 
-                    if (JOptionPane.showOptionDialog(this,
-                        I18n.f("route.ui.confirmRouteRenamed", originalName, nowCalled),
-                        I18n.t("route.ui.titleRouteMoved"),
-                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                        TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0)
-                    {
-                        return;
-                    }
+                    if (!confirmedMove(I18n.f("route.ui.confirmRouteRenamed", originalName, nowCalled), 1)) return;
 
                     if (!parent.getModel().editRoute(nowCalled, saveAs, built, s88, trigger,
                         enabledBox.isSelected(), expression))
@@ -2994,14 +3041,7 @@ public class RouteEditorFrame extends JFrame
                 else if ("gone".equals(moved))
                 {
                     // Added back rather than lost: originalName is final, so editRoute would return false.
-                    if (JOptionPane.showOptionDialog(this,
-                        I18n.f("route.ui.confirmRouteGoneSaveAsNew", originalName),
-                        I18n.t("route.ui.titleRouteMoved"),
-                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                        TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[0]) != 0)
-                    {
-                        return;
-                    }
+                    if (!confirmedMove(I18n.f("route.ui.confirmRouteGoneSaveAsNew", originalName), 0)) return;
 
                     if (!parent.getModel().newRoute(name, built, s88, trigger, enabledBox.isSelected(), expression))
                     {
@@ -3011,14 +3051,8 @@ public class RouteEditorFrame extends JFrame
                 }
                 else
                 {
-                    if ("changed".equals(moved) && JOptionPane.showOptionDialog(this,
-                        I18n.f("route.ui.confirmRouteChangedUnderneath", originalName),
-                        I18n.t("route.ui.titleRouteMoved"),
-                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                        TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != 0)
-                    {
-                        return;
-                    }
+                    if ("changed".equals(moved)
+                        && !confirmedMove(I18n.f("route.ui.confirmRouteChangedUnderneath", originalName), 1)) return;
 
                     if (!parent.getModel().editRoute(originalName, name, built, s88, trigger,
                         enabledBox.isSelected(), expression))
@@ -3029,15 +3063,14 @@ public class RouteEditorFrame extends JFrame
                 }
             }
 
-            // A finished edit puts every play button back (FR-043): a spinner still turning is a claim about a route
-            // that has changed.
+            // A finished edit puts every play button back (FR-043).
             parent.resetRouteSpinners();
 
             parent.refreshRouteList();
             parent.repaintLayout();
 
             // No diagram edit to complete: a tile follows its route by number (rebindRouteTiles), and
-            // layoutEditingComplete would reset autonomy and re-read every page.  A route is no page of the diagram.
+            // layoutEditingComplete would reset autonomy and re-read every page.
 
             // A sync only when the route is NEW and its id could collide with one the station issued (OB-155); read
             // back from the database, because newRoute picks the id.
@@ -3054,6 +3087,14 @@ public class RouteEditorFrame extends JFrame
         {
             JOptionPane.showMessageDialog(this, String.valueOf(e.getMessage()));
         }
+    }
+
+    /** A route-moved question, true on Yes; `preselected` is the button Enter takes. */
+    private boolean confirmedMove(String question, int preselected)
+    {
+        return JOptionPane.showOptionDialog(this, question, I18n.t("route.ui.titleRouteMoved"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[preselected]) == 0;
     }
 
     /**
@@ -3275,8 +3316,36 @@ public class RouteEditorFrame extends JFrame
         /** The line of a press that kept a selection of several for a drag; -1 once the pointer moves off. */
         private int held = -1;
 
+        /**
+         * An address edit begun by a key replaces the cell's text, as a spreadsheet does, so 7 gives 7 (FR-151), and so
+         * does one on the starting 0 (OB-487); a double-click on other text keeps it, to change part of it.
+         */
+        @Override
+        public boolean editCellAt(int line, int column, java.util.EventObject e)
+        {
+            boolean editing = super.editCellAt(line, column, e);
+
+            int address = this instanceof CommandTable ? CommandTable.TARGET : ConditionTable.TARGET;
+
+            if (editing && column == address && getEditorComponent() instanceof JTextComponent)
+            {
+                JTextComponent field = (JTextComponent) getEditorComponent();
+
+                if (e instanceof KeyEvent || "0".equals(field.getText())) field.selectAll();
+            }
+
+            return editing;
+        }
+
         /** @return whether the rows may be changed */
         abstract boolean handlesWork();
+
+        /** @return whether a cell of a row that can be changed has no use for its kind, so it reads as --- in gray */
+        boolean notUsed(int line, int column)
+        {
+            return handlesWork() && rowOf(line) >= 0 && column != HANDLE && !isMark(column)
+                && !getModel().isCellEditable(line, column);
+        }
 
         /** @return the row a table line shows, or -1 for a line that shows none */
         abstract int rowOf(int line);
@@ -3835,7 +3904,7 @@ public class RouteEditorFrame extends JFrame
 
                 if (became)
                 {
-                    target = "";
+                    target = CommandRow.hasProtocol(kind) ? "0" : "";
                     protocol = null;
                     delay = CommandRow.defaultDelayFor(kind);
                 }
@@ -4055,6 +4124,12 @@ public class RouteEditorFrame extends JFrame
         }
 
         @Override
+        boolean notUsed(int line, int column)
+        {
+            return super.notUsed(line, column) && rows.get(line).isEditable();
+        }
+
+        @Override
         int rowOf(int line)
         {
             return line >= 0 && line < rows.size() ? line : -1;
@@ -4174,7 +4249,7 @@ public class RouteEditorFrame extends JFrame
 
             int at = by < 0 ? row : row + 1;
 
-            rows.add(at, Entry.of(new CommandRow(CommandRow.Kind.ACCESSORY, "", "straight")));
+            rows.add(at, Entry.of(new CommandRow(CommandRow.Kind.ACCESSORY, "0", "straight")));
             fireTableDataChanged();
 
             setRowSelectionInterval(at, at);
@@ -4226,7 +4301,7 @@ public class RouteEditorFrame extends JFrame
 
         void addRow()
         {
-            rows.add(Entry.of(new CommandRow(CommandRow.Kind.ACCESSORY, "", "straight")));
+            rows.add(Entry.of(new CommandRow(CommandRow.Kind.ACCESSORY, "0", "straight")));
             fireTableDataChanged();
         }
 
@@ -4271,8 +4346,10 @@ public class RouteEditorFrame extends JFrame
 
                 CommandRow row = entry.getRow();
 
+                // An address of 0 is how a new row starts (OB-487), so it counts as not filled in
                 boolean named = !CommandRow.hasTarget(row.getKind())
-                    || (row.getTarget() != null && !row.getTarget().trim().isEmpty());
+                    || (row.getTarget() != null && !row.getTarget().trim().isEmpty()
+                    && !(CommandRow.hasProtocol(row.getKind()) && "0".equals(row.getTarget().trim())));
 
                 if (!named) continue;
 
@@ -5192,7 +5269,7 @@ public class RouteEditorFrame extends JFrame
         @Override
         Cursor cursorAt(Point point)
         {
-            return captionUnder(point) >= 0 ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : super.cursorAt(point);
+            return captionUnder(point) >= 0 ? HandPointer.cursor() : super.cursorAt(point);
         }
 
         @Override
@@ -5568,24 +5645,6 @@ public class RouteEditorFrame extends JFrame
         {
             changeSelection(line, TARGET, false, false);
             requestFocusInWindow();
-        }
-
-        /**
-         * An address edit begun by a key replaces the cell's text, as a spreadsheet does, so 7 gives 7 (FR-151); one
-         * begun by a double-click keeps the text, to change part of it.
-         */
-        @Override
-        public boolean editCellAt(int line, int column, java.util.EventObject e)
-        {
-            boolean editing = super.editCellAt(line, column, e);
-
-            if (editing && column == TARGET && e instanceof KeyEvent
-                && getEditorComponent() instanceof JTextComponent)
-            {
-                ((JTextComponent) getEditorComponent()).selectAll();
-            }
-
-            return editing;
         }
 
         /**

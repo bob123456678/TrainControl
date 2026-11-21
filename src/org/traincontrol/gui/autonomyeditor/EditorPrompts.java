@@ -58,7 +58,7 @@ final class EditorPrompts
     {
         try
         {
-            int value = Integer.parseInt(entered.trim());
+            int value = Integer.parseInt(("maxTrainLength".equals(key) ? lengthTyped(entered) : entered).trim());
 
             // Refused before it is written, rather than by the layer that loads it.
             String refused = AutonomyEditorPanel.whyNotThisNumber(key, value);
@@ -78,6 +78,23 @@ final class EditorPrompts
         editor.setupChanged();
 
         return null;
+    }
+
+    /** The word a maximum train length of 0, no limit, shows as (FR-234). */
+    static final String ANY = "autosetup.ui.stationLengthAny";
+
+    static String lengthShown(int length)
+    {
+        return length == 0 ? I18n.t(ANY) : String.valueOf(length);
+    }
+
+    /** A typed length as a number reads it: Any, in any case and in English too, or a blank is 0. */
+    static String lengthTyped(String typed)
+    {
+        String word = typed.trim();
+
+        return word.isEmpty() || word.equalsIgnoreCase(I18n.t(ANY)) || word.equalsIgnoreCase(I18n.root(ANY))
+            ? "0" : typed;
     }
 
     /**

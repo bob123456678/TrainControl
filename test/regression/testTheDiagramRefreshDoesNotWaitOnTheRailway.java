@@ -245,7 +245,9 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         {
             try
             {
-                Reflect.method(TrainControlUI.class, "refreshReturnHomeButton").invoke(ui);
+                Object home = Reflect.get(TrainControlUI.class, ui, "returnHomeController");
+
+                Reflect.method(home.getClass(), "refreshReturnHomeButton").invoke(home);
             }
             catch (Exception failed)
             {
@@ -561,9 +563,10 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * The why answer lists the stations autonomy could choose first and the ones it never will after, each by page and
-     * then by name with the train's own page first, and names the page of a station on another one (FR-080; MT-429).
-     * The grouping is the railway's (`explainDestinationsGrouped`) and the names are the session's (`describeTile`).
+     * The why answer's table lists the stations by their answer, can go now, by hand only, not right now (FR-221), and
+     * within each the stations autonomy could choose before the ones it never will, each by page and then by name with
+     * the train's own page first, naming the page of a station on another one (FR-080; MT-429).  Which autonomy could
+     * choose is the railway's (`explainDestinationsGrouped`) and the names are the session's (`describeTile`).
      */
     @Test
     public void testTheWhyAnswerListsStationsThenBerthsWithTheirPages() throws Exception
@@ -581,96 +584,72 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         org.traincontrol.automation.Layout.Destinations grouped = layout.explainDestinationsGrouped(train);
 
-        // Each refused station as the answer should show it, and whether it belongs with the choosable ones (any copy).
-        java.util.Map<String, Boolean> expected = new java.util.LinkedHashMap<>();
-
-        // Each shown name's place in the order: its page (the train's own first), then the session's name for the
-        // square.
+        // Each station as the answer should show it: whether autonomy never chooses any copy of it, and its place in the
+        // order, its page (the train's own first), then the session's name for the square.
+        java.util.Map<String, Boolean> berth = new java.util.HashMap<>();
         java.util.Map<String, String[]> rank = new java.util.HashMap<>();
 
         String elsewhere = null;
 
-        // A station it can go to by any copy is in neither list.
-        java.util.Set<String> canGo = new java.util.HashSet<>();
-
-        for (java.util.Map.Entry<String, String> entry : grouped.getReasons().entrySet())
+        for (String point : grouped.getReasons().keySet())
         {
-            if (entry.getValue() == null) canGo.add(shownAs(entry.getKey(), occupied));
-        }
+            String shown = shownAs(point, occupied).replace("&", "&amp;").replace("<", "&lt;");
 
-        for (java.util.Map.Entry<String, String> entry : grouped.getReasons().entrySet())
-        {
-            if (entry.getValue() == null || canGo.contains(shownAs(entry.getKey(), occupied))) continue;
+            berth.merge(shown, grouped.getBarred().contains(point), Boolean::logicalAnd);
 
-            String shown = shownAs(entry.getKey(), occupied);
+            org.traincontrol.automationui.TileGraph.TileKey square = session.getStationIndex().squareOf(point);
 
-            boolean couldChoose = !grouped.getBarred().contains(entry.getKey());
-
-            expected.put(shown, Boolean.TRUE.equals(expected.get(shown)) || couldChoose);
-
-            org.traincontrol.automationui.TileGraph.TileKey square =
-                session.getStationIndex().squareOf(entry.getKey());
-
-            rank.put(shown.replace("&", "&amp;").replace("<", "&lt;"), new String[] {
+            rank.put(shown, new String[] {
                 square == null ? "2" : square.getPage().equals(occupied.getPage()) ? "0" : "1" + square.getPage(),
                 square == null ? shown : session.describeTile(square) });
 
-            if (elsewhere == null && square != null && !square.getPage().equals(occupied.getPage()))
-            {
-                elsewhere = shown;
-            }
+            if (elsewhere == null && square != null && !square.getPage().equals(occupied.getPage())) elsewhere = shown;
         }
 
-        assertTrue(expected.containsValue(true) && expected.containsValue(false),
-            "precondition: " + train.getName() + " needs refused stations of both kinds for the order to"
-            + " mean anything, and has " + expected);
+        assertTrue(berth.containsValue(true) && berth.containsValue(false), "precondition: " + train.getName()
+            + " needs stations and berths for the order to mean anything, and has " + berth);
 
-        assertNotNull(elsewhere, "precondition: none of the stations refused to " + train.getName()
+        assertNotNull(elsewhere, "precondition: none of the stations reported to " + train.getName()
             + " is on a page other than " + occupied.getPage() + ", so a page could never be shown");
-
-        java.util.List<String> candidates = section(said, "autolayout.ui.whyHeaderCandidates");
-        java.util.List<String> never = section(said, "autolayout.ui.whyHeaderBarred");
-
-        assertFalse(candidates.isEmpty(),
-            "the answer has no group of stations autonomy could choose - the stations and the berths are"
-            + " mixed in one list. Adam, FR-080: 'show all stations first, then show berths'. It says: " + said);
-
-        assertFalse(never.isEmpty(),
-            "the answer has no group of stations autonomy will never choose. It says: " + said);
-
-        assertTrue(said.indexOf(heading("autolayout.ui.whyHeaderCandidates"))
-            < said.indexOf(heading("autolayout.ui.whyHeaderBarred")),
-            "the berths are listed before the stations autonomy could choose. It says: " + said);
-
-        assertEquals(candidates, inPageOrder(candidates, rank),
-            "the stations autonomy could choose are not by page and then by name, with the train's page first."
-            + "  Adam, MT-429: 'by page then station name, rather than station name only, with the current page"
-            + " being first'");
-
-        assertEquals(never, inPageOrder(never, rank),
-            "the stations autonomy will never choose are not by page and then by name, with the train's page first");
 
         assertTrue(org.traincontrol.util.I18n.t("autosetup.ui.whyStationOnPage").contains("(Page "),
             "the page is not written with a capital P. Adam, MT-429: 'capitalize Page'");
 
-        for (java.util.Map.Entry<String, Boolean> station : expected.entrySet())
-        {
-            String name = station.getKey().replace("&", "&amp;").replace("<", "&lt;");
+        final java.util.List<String> answers = java.util.Arrays.asList(org.traincontrol.util.I18n.t(
+            "autolayout.ui.whyCanGoNow"), org.traincontrol.util.I18n.t("autolayout.ui.whyByHandOnly"),
+            org.traincontrol.util.I18n.t("autolayout.ui.whyNotRightNow"));
 
-            assertTrue((station.getValue() ? candidates : never).contains(name),
-                station.getKey() + " should be listed with the stations autonomy "
-                + (station.getValue() ? "could choose" : "will never choose") + ", by that name - a station"
-                + " on another page carries its page, as " + elsewhere + " should.  Could choose: " + candidates
-                + ".  Never: " + never);
+        final java.util.Map<String, Integer> answerOf = new java.util.HashMap<>();
+
+        java.util.List<String> shown = new java.util.ArrayList<>();
+
+        for (String[] row : support.DestinationRows.of(said))
+        {
+            shown.add(row[0]);
+            answerOf.put(row[0], answers.indexOf(row[1]));
         }
 
-        for (String reachable : canGo)
-        {
-            String name = reachable.replace("&", "&amp;").replace("<", "&lt;");
+        assertEquals(new java.util.TreeSet<>(shown), new java.util.TreeSet<>(berth.keySet()), "the table does not name"
+            + " every station once, by that name - a station on another page carries its page, as " + elsewhere
+            + " should: " + said);
 
-            assertFalse(candidates.contains(name) || never.contains(name), reachable + " can be gone to by one copy"
-                + " and is listed as a station it cannot go to.  Could choose: " + candidates + ".  Never: " + never);
-        }
+        java.util.List<String> ordered = new java.util.ArrayList<>(shown);
+
+        java.util.Collections.sort(ordered, (a, b) ->
+        {
+            int by = Integer.compare(answerOf.get(a), answerOf.get(b));
+
+            if (by == 0) by = Boolean.compare(berth.get(a), berth.get(b));
+
+            if (by == 0) by = rank.get(a)[0].compareTo(rank.get(b)[0]);
+            if (by == 0) by = org.traincontrol.util.Util.compareAsRead(rank.get(a)[1], rank.get(b)[1]);
+
+            return by != 0 ? by : a.compareTo(b);
+        });
+
+        assertEquals(shown, ordered, "the table is not by answer, then stations before berths (Adam, FR-080: 'show all"
+            + " stations first, then show berths'), then by page and name with the train's page first (Adam, MT-429:"
+            + " 'by page then station name, rather than station name only, with the current page being first')");
     }
 
     /** The locomotive standing on a square, whichever of its Points holds it. */
@@ -702,45 +681,6 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
             ? org.traincontrol.util.I18n.f("autosetup.ui.whyStationOnPage", name, square.getPage()) : name;
     }
 
-    /** A heading's words up to its count, as the answer writes them, for finding it there. */
-    private static String heading(String key)
-    {
-        String template = org.traincontrol.util.I18n.t(key);
-
-        int count = template.indexOf("{0}");
-
-        return (count < 0 ? template : template.substring(0, count)).replace("&", "&amp;").replace("<", "&lt;");
-    }
-
-    /** The station names under one heading of the answer, in the order shown; empty when there is no such heading. */
-    private static java.util.List<String> section(String said, String key)
-    {
-        java.util.List<String> out = new java.util.ArrayList<>();
-
-        boolean inside = false;
-
-        for (String line : said.split("<br>"))
-        {
-            if (line.startsWith("<b>"))
-            {
-                inside = line.contains(heading(key));
-                continue;
-            }
-
-            int colon = line.indexOf(": ");
-
-            if (!inside || colon < 0)
-            {
-                inside = inside && colon >= 0;
-                continue;
-            }
-
-            out.add(line.substring(0, colon));
-        }
-
-        return out;
-    }
-
     /** A Why panel that has answered for the train on a square. */
     private static org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel answered(
         final org.traincontrol.automationui.TileGraph.TileKey occupied) throws Exception
@@ -770,29 +710,6 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         return panel;
     }
 
-    /** A copy in the order MT-429 asks for: page (the train's own first, then by name), then station name. */
-    private static java.util.List<String> inPageOrder(java.util.List<String> names,
-        final java.util.Map<String, String[]> rank)
-    {
-        java.util.List<String> copy = new java.util.ArrayList<>(names);
-
-        java.util.Collections.sort(copy, (a, b) ->
-        {
-            String[] x = rank.containsKey(a) ? rank.get(a) : new String[] { "3", a };
-            String[] y = rank.containsKey(b) ? rank.get(b) : new String[] { "3", b };
-
-            int byPage = x[0].compareTo(y[0]);
-
-            if (byPage != 0) return byPage;
-
-            int byName = org.traincontrol.util.Util.compareAsRead(x[1], y[1]);
-
-            return byName != 0 ? byName : a.compareTo(b);
-        });
-
-        return copy;
-    }
-
     /**
      * Station names sort as a person reads them (MT-865): ParkingTrack4 before ParkingTrack10, as the sample layout's
      * parking tracks are named, and case aside.
@@ -816,14 +733,14 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
     }
 
     /**
-     * The why answer names every station the train can go to, not the first four, and ends with what its colors mean,
-     * after an empty line (MT-865).
+     * The why answer counts every station the train can go to, not the first four (MT-865), as a count only (D175, Adam:
+     * "A count only"), and its table says each of them can go now, in the green it is marked in (FR-221).
      *
-     * MUTATION: put back the cap of four in the "can go to" list (`String.join(", ", available)` limited to four
-     * names), and this fails on the fifth station; put `colours(...)` back before `detail`, and it fails on the order.
+     * MUTATION: in `EditorWhy.composeWhy`, count every row rather than the ones that can go now, and this fails on the
+     * count; give `DestinationTable.Status.CAN_GO` another color, and it fails on the color.
      */
     @Test
-    public void testTheWhyAnswerNamesEveryStationAndEndsWithItsColors() throws Exception
+    public void testTheWhyAnswerNamesEveryStationAndItsTableColorsThem() throws Exception
     {
         squareWithATrainOnIt();
 
@@ -874,24 +791,22 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         String first = said.split("<br>")[0];
 
+        String count = org.traincontrol.util.I18n.f("autosetup.ui.whyCanGo"
+            + org.traincontrol.util.I18n.countForm(canGo.size()), train.getName(), canGo.size());
+
+        assertTrue(first.contains(count), "the answer's first line does not say " + train.getName() + " can go to "
+            + canGo.size() + " stations: " + first);
+
+        java.util.List<String> green = support.DestinationRows.answering(said, "autolayout.ui.whyCanGoNow");
+
         for (String station : canGo)
         {
-            assertTrue(first.contains(station.replace("&", "&amp;").replace("<", "&lt;")), station + " is a station "
-                + train.getName() + " can go to, and the answer's first line leaves it out: " + first);
+            assertTrue(green.contains(station.replace("&", "&amp;").replace("<", "&lt;")), station + " is a station "
+                + train.getName() + " can go to, and the table does not say it can go now: " + said);
         }
 
-        String legend = org.traincontrol.util.I18n.t("autosetup.ui.whyColourGreen");
-
-        int at = said.indexOf(legend);
-
-        assertTrue(at > 0, "the answer does not say what green means: " + said);
-
-        String before = said.substring(0, at);
-
-        assertTrue(before.endsWith("<br><br>"), "the color legend is not after an empty line: " + said);
-
-        assertFalse(said.substring(at).contains("<br>"), "a line comes after the color legend, which should end the"
-            + " answer: " + said);
+        assertTrue(said.contains("<font color=#22963c>" + org.traincontrol.util.I18n.t("autolayout.ui.whyCanGoNow")),
+            "the table's can go now is not in the green of the marks: " + said);
     }
 
     /**

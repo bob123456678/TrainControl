@@ -25,6 +25,8 @@ public class CS2Message extends CANMessage
     private Integer length;
     // Data payload
     private byte[] data;
+    // For a CS3's sensor frame: heard during a pass of queries, and during a confirmation that holds routes (OB-490)
+    private boolean heardAsking, heardConfirming;
 
     // CAN message length
     public static final int MESSAGE_LENGTH = 13;
@@ -244,6 +246,25 @@ public class CS2Message extends CANMessage
     }
 
     /* Public methods */
+    /** Notes the passes under way as the proxy heard this frame, before it is handed on. */
+    void heardDuring(boolean asking, boolean confirming)
+    {
+        this.heardAsking = asking;
+        this.heardConfirming = confirming;
+    }
+
+    /** Whether this frame was heard while a pass of sensor queries to a CS3, a sync's included, was under way. */
+    public boolean heardAsking()
+    {
+        return this.heardAsking;
+    }
+
+    /** Whether this frame was heard during a CS3's confirmation after a connect or reconnect (D133). */
+    public boolean heardConfirming()
+    {
+        return this.heardConfirming;
+    }
+
     /**
      * Equivalence checker
      */

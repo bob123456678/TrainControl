@@ -118,7 +118,6 @@ public final class CS2File
         }
         catch (UnsupportedEncodingException ex)
         {
-            
             this.logMessage(I18n.f(
                 "error.urlEncoding",
                 ex.getMessage()
@@ -219,7 +218,8 @@ public final class CS2File
     /**
      * Whether a folder opens as a layout, read as the sync reads it: its index, and a page that reads.  A door asks
      * before it switches, as a folder whose every page fails sends the sync back to the station's layout; one unreadable
-     * page costs that page only (OB-408).
+     * page costs that page only (OB-408).  An index that names no page does not open: no layout of the program's own
+     * has none, as the last page cannot be deleted.
      */
     public static boolean opensAsALayout(File folder)
     {
@@ -231,7 +231,8 @@ public final class CS2File
 
         try
         {
-            return !reader.readNoPage(reader.parseLayout(reader.layoutAccessories()));
+            List<LayoutDiagram> parsed = reader.parseLayout(reader.layoutAccessories());
+            return !parsed.isEmpty() && !reader.readNoPage(parsed);
         }
         catch (Exception unreadable)
         {
@@ -242,7 +243,8 @@ public final class CS2File
     /**
      * Whether the last parseLayout read no page although the index named some.  Neither an exception nor an empty list
      * says so, as a page that will not read comes back as a blank stand-in, and an index this parser does not
-     * understand yields no pages and no failures.  An index that names no page is the empty layout it is.
+     * understand yields no pages and no failures.  False for an index that names no page: the sync reads it as the empty
+     * layout it is, but `opensAsALayout` refuses it, as no layout of the program's own has none.
      */
     public boolean readNoPage(List<LayoutDiagram> parsed)
     {
@@ -480,6 +482,52 @@ public final class CS2File
      */
     public static BufferedReader fetchURL(String url) throws Exception
     {
+        return new BufferedReader(new java.io.StringReader(fetchText(url)));
+    }
+
+    // The files the running sync has read whole, by URL, kept for the sync's own thread only (FR-207)
+    private final Map<String, String> readThisSync = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private volatile Thread syncing;
+
+    /**
+     * From now until endSync, a file the calling thread asks for again through fetchOnce is the copy it read whole, not
+     * a new fetch.  Other threads, and every caller outside a sync, fetch as before: the parser outlives its sync.
+     */
+    public void startSync()
+    {
+        this.readThisSync.clear();
+        this.syncing = Thread.currentThread();
+    }
+
+    /** Ends startSync: every fetch after this goes to the station. */
+    public void endSync()
+    {
+        this.syncing = null;
+        this.readThisSync.clear();
+    }
+
+    /**
+     * fetchURL, once per sync for the syncing thread; a fetch that fails is never kept, so asking again fetches again.
+     * Not private: SpotBugs' throws-clause check does not see a private callee's `throws Exception`.
+     */
+    BufferedReader fetchOnce(String url) throws Exception
+    {
+        if (Thread.currentThread() != this.syncing) return fetchURL(url);
+
+        String text = this.readThisSync.get(url);
+
+        if (text == null)
+        {
+            text = fetchText(url);
+            this.readThisSync.put(url, text);
+        }
+
+        return new BufferedReader(new java.io.StringReader(text));
+    }
+
+    private static String fetchText(String url) throws Exception
+    {
         final Body first = readBody(url);
         Body last = first;
 
@@ -500,7 +548,7 @@ public final class CS2File
                 String.valueOf(last.bytes.length), String.valueOf(last.promised)));
         }
 
-        return new BufferedReader(new java.io.StringReader(decode(last.bytes, url)));
+        return decode(last.bytes, url);
     }
 
     /** A file that ended short of the length promised; the message is for the log, the sync tells the user plainly. */
@@ -571,6 +619,18 @@ public final class CS2File
         connection.setReadTimeout(READ_TIMEOUT_MS);
 
         return connection;
+    }
+
+    /**
+     * The picture at `url`, a station's or a local file, or null when no reader knows its format.  A station that
+     * stops answering throws once the timeouts run out, as an unreadable picture does (OB-492).
+     */
+    public static java.awt.image.BufferedImage readPicture(String url) throws IOException
+    {
+        try (InputStream in = openWithTimeouts(url).getInputStream())
+        {
+            return javax.imageio.ImageIO.read(in);
+        }
     }
 
     /** UTF-8 when the bytes are valid UTF-8, otherwise ISO-8859-1: names come out right whichever a station sends. */
@@ -777,7 +837,7 @@ public final class CS2File
     /** Helper to detect CS3 404 errors */
     public boolean isNotFoundError(String url)
     {
-        try (BufferedReader in = fetchURL(url))
+        try (BufferedReader in = fetchOnce(url))
         {
             Object json = new JSONTokener(in).nextValue();
 
@@ -790,7 +850,6 @@ public final class CS2File
 
             // Arrays are always valid (never an error object)
             return false;
-
         }
         catch (FileNotFoundException e)
         {
@@ -821,7 +880,7 @@ public final class CS2File
     {
         try
         {
-            return fetchURL(getCS3LocDBUrl(is260 ? 260 : 250));
+            return fetchOnce(getCS3LocDBUrl(is260 ? 260 : 250));
         }
         catch (FileNotFoundException notThere)
         {
@@ -830,7 +889,7 @@ public final class CS2File
 
             if (probed == is260) throw notThere;
 
-            return fetchURL(getCS3LocDBUrl(probed ? 260 : 250));
+            return fetchOnce(getCS3LocDBUrl(probed ? 260 : 250));
         }
     }
 
@@ -879,6 +938,7 @@ public final class CS2File
 
         for (int attempt = 0; attempt < 2 && body.trim().isEmpty(); attempt++)
         {
+            // Not fetchOnce: the second attempt must ask the station again
             try (BufferedReader in = fetchURL(getCS3MagDBUrl() + "/state"))
             {
                 body = in.lines().collect(Collectors.joining("\n"));
@@ -911,7 +971,7 @@ public final class CS2File
 
         if (mags == null)
         {
-            try (BufferedReader in = fetchURL(getCS3MagDBUrl()))
+            try (BufferedReader in = fetchOnce(getCS3MagDBUrl()))
             {
                 mags = readList(in, null);
             }
@@ -1002,7 +1062,7 @@ public final class CS2File
     {
         // All three in one try-with-resources, so an exception after the first is opened leaks none of them.
         try (BufferedReader routeBR = fetchURL(getCS3RouteDBUrl());
-             BufferedReader magBR   = fetchURL(getCS3MagDBUrl());
+             BufferedReader magBR   = fetchOnce(getCS3MagDBUrl());
              BufferedReader locBR   = openCS3Locos(is260))
         {
             // The routes are the list itself from firmware 2.6, and under "automatics" before; either is read
@@ -2624,7 +2684,7 @@ public final class CS2File
     
     public List<MarklinAccessory> getMagList(boolean local) throws Exception
     {
-        return parseMags(parseFile(fetchURL(getMagURL(local))));
+        return parseMags(parseFile(fetchOnce(getMagURL(local))));
     }
     
     /**
@@ -2700,7 +2760,6 @@ public final class CS2File
             // renumber the rest (autonomy keys on page id).
             try
             {
- 
                 String url = getLayoutURL(name);
             
                 if (control != null && control.isDebug())
@@ -2760,7 +2819,6 @@ public final class CS2File
     private LayoutDiagram parsePage(String name, String url, String pageId, List<Map<String, String>> l,
         List<MarklinAccessory> accDB, Map<Integer, String> twoProtocols) throws Exception
     {
-
         Map<Integer, MarklinAccessory> addressMap = accDB.stream()
             .collect(Collectors.toMap(
                     MarklinAccessory::getAddress, 
@@ -3005,21 +3063,23 @@ public final class CS2File
     }
 
     /**
-     * Gives each tile at an address with two protocols the protocol of the article this page's CS3 plan puts there; a
-     * tile it cannot tell keeps the first article's, warned once per page.  A local copy is never checked (OB-402).
+     * The article the station's CS3 plan of this page puts on each tile it can tell, of tiles at addresses with two
+     * protocols.
      */
-    private void resolveTwoProtocolTiles(LayoutDiagram page, List<LayoutDiagramComponent> tiles,
-        Map<Integer, String> twoProtocols, List<MarklinAccessory> accDB)
+    private Map<LayoutDiagramComponent, MarklinAccessory> plannedArticles(LayoutDiagram page,
+        List<LayoutDiagramComponent> tiles, Map<Integer, String> twoProtocols, List<MarklinAccessory> accDB)
     {
-        boolean fromStation = getDefaultLayoutDataLoc().equals(this.layoutDataLoc);
-        CS3TrackPlan.Page plan = fromStation ? trackPlan().page(page.getName()) : null;
+        CS3TrackPlan.Page plan = trackPlan().page(page.getName());
+        Map<LayoutDiagramComponent, MarklinAccessory> out = new HashMap<>();
+
+        if (plan == null) return out;
 
         // The grid's place on the page, voted by the articles of the addresses with one protocol
         Map<String, List<Point>> voters = new HashMap<>();
 
         for (MarklinAccessory a : accDB)
         {
-            if (plan != null && plan.isGrid() && !twoProtocols.containsKey(a.getAddress()))
+            if (plan.isGrid() && !twoProtocols.containsKey(a.getAddress()))
             {
                 voters.merge(a.getName(), page.getAll().stream()
                     .filter(t -> t.isAccessory() && t.getAddress() == a.getAddress())
@@ -3028,16 +3088,12 @@ public final class CS2File
             }
         }
 
-        Point offset = plan == null ? null : plan.gridOffset(voters);
-
-        // The squares of each address that could not be told, and the protocol its untold tiles keep
-        Map<Integer, List<String>> untold = new java.util.TreeMap<>();
-        Map<Integer, Accessory.accessoryDecoderType> kept = new HashMap<>();
+        Point offset = plan.gridOffset(voters);
 
         for (LayoutDiagramComponent c : tiles)
         {
             List<MarklinAccessory> onPage = accDB.stream()
-                .filter(a -> a.getAddress() == c.getAddress() && plan != null && plan.holds(a.getName()))
+                .filter(a -> a.getAddress() == c.getAddress() && plan.holds(a.getName()))
                 .collect(Collectors.toList());
 
             if (onPage.stream().map(MarklinAccessory::getDecoderType).distinct().count() > 1 && offset != null)
@@ -3047,7 +3103,33 @@ public final class CS2File
 
             if (!onPage.isEmpty() && onPage.stream().map(MarklinAccessory::getDecoderType).distinct().count() == 1)
             {
-                c.setProtocol(onPage.get(0).getDecoderType());
+                out.put(c, onPage.get(0));
+            }
+        }
+
+        return out;
+    }
+
+    /**
+     * Gives each tile at an address with two protocols the protocol of the article this page's CS3 plan puts there; a
+     * tile it cannot tell keeps the first article's, warned once per page.  A local copy is never checked (OB-402).
+     */
+    private void resolveTwoProtocolTiles(LayoutDiagram page, List<LayoutDiagramComponent> tiles,
+        Map<Integer, String> twoProtocols, List<MarklinAccessory> accDB)
+    {
+        boolean fromStation = getDefaultLayoutDataLoc().equals(this.layoutDataLoc);
+        Map<LayoutDiagramComponent, MarklinAccessory> told = fromStation ? plannedArticles(page, tiles, twoProtocols, accDB)
+            : new HashMap<>();
+
+        // The squares of each address that could not be told, and the protocol its untold tiles keep
+        Map<Integer, List<String>> untold = new java.util.TreeMap<>();
+        Map<Integer, Accessory.accessoryDecoderType> kept = new HashMap<>();
+
+        for (LayoutDiagramComponent c : tiles)
+        {
+            if (told.containsKey(c))
+            {
+                c.setProtocol(told.get(c).getDecoderType());
             }
             else
             {
@@ -3063,6 +3145,50 @@ public final class CS2File
             logMessage(I18n.f(fromStation ? "layout.cs3TwoProtocolsUnresolved" : "layout.cs3TwoProtocolsNotChecked",
                 twoProtocols.get(e.getKey()), e.getKey(), page.getName(), String.join(" ", e.getValue()),
                 kept.get(e.getKey())));
+        }
+    }
+
+    /**
+     * Logs each accessory square of these pages whose protocol the station's accessory list does not have at its
+     * address, though it has that address.  On a CS3, a square at an address with two protocols that the station's plan
+     * of its page gives the other one is logged as a hint.  Never changes a square (FR-219).
+     */
+    public void logSquaresTheStationDisagreesWith(List<LayoutDiagram> pages) throws Exception
+    {
+        List<MarklinAccessory> station = getMagList(false);
+        Map<Integer, String> twoProtocols = control.isCS3() ? addressesWithTwoProtocols(station) : new HashMap<>();
+
+        for (LayoutDiagram page : pages)
+        {
+            List<LayoutDiagramComponent> paired = new ArrayList<>();
+
+            for (LayoutDiagramComponent c : page.getAll())
+            {
+                if (!c.isAccessory() || c.getAddress() <= 0) continue;
+
+                List<String> has = station.stream().filter(a -> a.getAddress() == c.getAddress())
+                    .map(a -> a.getDecoderType().toString()).distinct().sorted().collect(Collectors.toList());
+
+                if (!has.isEmpty() && !has.contains(c.getProtocol().toString()))
+                {
+                    logMessage(I18n.f("layout.squareProtocolNotOnStation", page.getName(), c.getX() + "," + c.getY(),
+                        c.getAddress(), c.getProtocol(), String.join(", ", has)));
+                }
+                else if (twoProtocols.containsKey(c.getAddress())) paired.add(c);
+            }
+
+            if (paired.isEmpty()) continue;
+
+            Map<LayoutDiagramComponent, MarklinAccessory> told = plannedArticles(page, paired, twoProtocols, station);
+
+            for (LayoutDiagramComponent c : paired)
+            {
+                if (told.containsKey(c) && told.get(c).getDecoderType() != c.getProtocol())
+                {
+                    logMessage(I18n.f("layout.squareProtocolNotOnStationsPlan", page.getName(), c.getX() + "," + c.getY(),
+                        c.getAddress(), c.getProtocol(), told.get(c).getName(), told.get(c).getDecoderType()));
+                }
+            }
         }
     }
 

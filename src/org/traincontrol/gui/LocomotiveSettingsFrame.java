@@ -50,6 +50,7 @@ import javax.swing.text.View;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.Locomotive.decoderType;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.TabIcons;
 import org.traincontrol.gui.widgets.UiStyle;
@@ -216,7 +217,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         closeShared.setName("settings.sharedClose");
         closeShared.setToolTipText(I18n.t("autosetup.ui.stationClose"));
         closeShared.setFocusable(false);
-        closeShared.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        closeShared.setCursor(HandPointer.cursor());
         closeShared.setForeground(STRIP_TEXT);
         closeShared.putClientProperty("JButton.buttonType", "toolBarButton");
         closeShared.addActionListener(e -> showShared(false));
@@ -230,7 +231,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         tabs.putClientProperty("JTabbedPane.tabWidthMode", "preferred");
 
         save.addActionListener(e -> save());
-        cancel.addActionListener(e -> close());
+        cancel.addActionListener(e -> closeAsking());
 
         // Save, then Cancel, at the bottom right, spaced as the route editor's are
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
@@ -254,9 +255,11 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
         setContentPane(content);
 
-        // Escape is Cancel
+        // Escape is Cancel, Control+Enter is Save (FR-200)
         getRootPane().registerKeyboardAction(e -> closeAsking(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
             JComponent.WHEN_IN_FOCUSED_WINDOW);
+        getRootPane().registerKeyboardAction(e -> save.doClick(0), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,
+            java.awt.event.InputEvent.CTRL_DOWN_MASK), JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         setAlwaysOnTop(main.isAlwaysOnTop());
     }
@@ -570,7 +573,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         save.setEnabled(adding || isDirty() && !blocked);
     }
 
-    /** The X and Escape: closes, asking first what to do with typing that is not saved. */
+    /** The X, Escape and Cancel: closes, asking first what to do with typing that is not saved (MT-939). */
     void closeAsking()
     {
         if (isDirty() && !settleUnsaved()) return;
@@ -731,7 +734,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             return false;
         }
 
-        if (identity && main.refuseWhileARouteDrivesIt(this, loc.getName())) return false;
+        if (identity && RunGates.refuseWhileARouteDrivesIt(main, this, loc.getName())) return false;
 
         if (members && main.locomotiveActions.refuseMultiUnitEdit(this, loc, multiUnitTab.chosen().keySet())) return false;
 
@@ -889,6 +892,9 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         private final int loadedSpeed = adding ? 0 : loc.getPreferredSpeed();
         private String shownPicture = "";
 
+        /** The picture on screen, which the pill and the marks belong to; shownPicture is the one asked for. */
+        private String onScreen = "";
+
         LocomotiveTab()
         {
             super(new GridBagLayout());
@@ -1000,9 +1006,13 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             mark(crop, noted(I18n.t("loc.ui.tooltip.recrop")), e -> main.recropLocIcon(loc, LocomotiveSettingsFrame.this));
             mark(revert, noted(I18n.t("loc.ui.menuClearLocalLocomotiveIcon")), e -> main.clearLocIcon(loc));
 
+            // They come with the first picture
+            crop.setVisible(false);
+            revert.setVisible(false);
+
             trash.setToolTipText(I18n.t("loc.ui.menuDeleteFromDatabase"));
             trash.setFocusable(false);
-            trash.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            trash.setCursor(HandPointer.cursor());
             trash.setBorderPainted(false);
             trash.setContentAreaFilled(false);
             trash.addActionListener(e -> delete());
@@ -1196,10 +1206,13 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         private void mark(JLabel mark, String tip, Consumer<MouseEvent> doThis)
         {
             mark.setToolTipText(tip);
-            mark.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            mark.setCursor(HandPointer.cursor());
             mark.addMouseListener(Listen.released(e ->
             {
-                if (!mark.isVisible() || !moveAllowed()) return;
+                // The crop and the revert act on the picture on screen, never on one still on its way (OB-482)
+                boolean waiting = mark != wrench && !Objects.equals(onScreen, shownPicture);
+
+                if (!mark.isVisible() || waiting || !moveAllowed()) return;
 
                 doThis.accept(e);
             }));
@@ -1256,8 +1269,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             sameAddress.setIcon(also.isEmpty() ? null : RowIcons.warning(16));
             sameAddress.setToolTipText(also.isEmpty() ? null : org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel
                 .wrapped(I18n.f("loc.ui.settingsAlsoUsedBy", String.join(", ", also))));
-            sameAddress.setCursor(Cursor.getPredefinedCursor(
-                also.isEmpty() ? Cursor.DEFAULT_CURSOR : Cursor.HAND_CURSOR));
+            sameAddress.setCursor(also.isEmpty()
+                ? Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR) : HandPointer.cursor());
 
             setSharers(also);
         }
@@ -1373,7 +1386,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             revert.setEnabled(!m);
         }
 
-        /** Shows the locomotive's picture and the marks that fit it. */
+        /** Shows the locomotive's picture, and the pill and the marks that fit it once it is on screen. */
         void refreshPicture()
         {
             String url = loc.getImageURL();
@@ -1383,19 +1396,22 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
             {
                 shownPicture = url;
 
+                // The pill and the marks belong to the picture on screen, so they change with it
+                final boolean crops = TrainControlUI.offersACrop(loc);
+                final boolean reverts = loc.getLocalImageURL() != null;
+
                 if (url == null || url.isEmpty())
                 {
                     // The application's stand-in, as the locomotive buttons and the database show it (FR-054)
-                    picture.setIcon(new ImageIcon(
-                        org.traincontrol.gui.locomotive.LocomotivePlaceholder.image(PICTURE_WIDTH - 2)));
-                    source.setText(null);
+                    picture.setIcon(org.traincontrol.gui.locomotive.LocomotivePlaceholder.icon(PICTURE_WIDTH - 2));
+                    arrived(url, null, crops, reverts);
                 }
                 else
                 {
                     // A fetch may be over the network: loaded off the event thread, and a result for a locomotive the
-                    // window has since left is ignored.  The pill names the picture on screen, so it changes with it.
+                    // window has since left is ignored
                     final Locomotive target = loc;
-                    final String from = I18n.t(loc.getLocalImageURL() != null ? "loc.ui.settingsPictureLocal"
+                    final String from = I18n.t(reverts ? "loc.ui.settingsPictureLocal"
                         : "loc.ui.settingsPictureFromStation");
 
                     main.getImageLoader().execute(() ->
@@ -1404,7 +1420,7 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
 
                         try
                         {
-                            loaded = new ImageIcon(main.getLocImageMaxHeight(url, PICTURE_WIDTH - 2, PICTURE_HEIGHT - 2));
+                            loaded = main.getLocIcon(url, PICTURE_WIDTH - 2, PICTURE_HEIGHT - 2);
                         }
                         catch (Exception e)
                         {
@@ -1419,15 +1435,21 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                             if (loc == target && url.equals(shownPicture))
                             {
                                 picture.setIcon(shown);
-                                source.setText(shown == null ? null : from);
+                                arrived(url, shown == null ? null : from, crops, reverts);
                             }
                         });
                     });
                 }
             }
+        }
 
-            crop.setVisible(TrainControlUI.offersACrop(loc));
-            revert.setVisible(loc.getLocalImageURL() != null);
+        /** The picture asked for is on screen: its pill and its marks come with it (OB-482). */
+        private void arrived(String url, String pill, boolean crops, boolean reverts)
+        {
+            onScreen = url;
+            source.setText(pill);
+            crop.setVisible(crops);
+            revert.setVisible(reverts);
         }
     }
 
@@ -1577,8 +1599,8 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
                 @Override
                 public void mouseMoved(MouseEvent e)
                 {
-                    note.setCursor(Cursor.getPredefinedCursor(onLink.test(e.getPoint())
-                        ? Cursor.HAND_CURSOR : Cursor.TEXT_CURSOR));
+                    note.setCursor(onLink.test(e.getPoint())
+                        ? HandPointer.cursor() : Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
                 }
             });
             note.addMouseListener(Listen.released(e ->

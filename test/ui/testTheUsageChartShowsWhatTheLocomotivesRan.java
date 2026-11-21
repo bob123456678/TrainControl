@@ -334,11 +334,20 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
 
     // ---- the picture ----
 
+    /** The chart as painted with the pointer away: a real mouse over the window would shade a bar's whole column. */
     private static BufferedImage picture(UsageChart chart)
+    {
+        return picture(chart, false);
+    }
+
+    /** The chart as painted, with the pointer where the last move left it if `pointerStays`. */
+    private static BufferedImage picture(UsageChart chart, boolean pointerStays)
     {
         return Components.onTheEventThread(() ->
         {
             UsageChartPanel p = panel(chart);
+
+            if (!pointerStays) p.dispatchEvent(new MouseEvent(p, MouseEvent.MOUSE_EXITED, System.currentTimeMillis(), 0, -1, -1, 0, false));
 
             BufferedImage image = new BufferedImage(p.getWidth(), p.getHeight(), BufferedImage.TYPE_INT_ARGB);
 
@@ -729,7 +738,7 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
 
         move(p, MouseEvent.MOUSE_MOVED, x, top);
 
-        BufferedImage hovered = picture(chart);
+        BufferedImage hovered = picture(chart, true);
 
         assertTrue(distance(hovered.getRGB(x, y), accent) > 12, "the bar under the pointer is drawn as the others");
         assertTrue(distance(hovered.getRGB(beside.x + beside.width / 2, beside.y + beside.height - 3), accent) <= 12,
@@ -1251,6 +1260,7 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
      * the locale's decimal sign; past an hour the axis keeps whole-hour steps and draws nothing at half an hour.
      *
      * MUTATION: in `UsageChartPanel.tickStep`, return `axisStep` always, and the short scale has no half-hour line.
+     * The pointer is parked on the first bar first (OB-489): a mouse over the window must not read as gridlines.
      */
     @Test(timeOut = 120000)
     public void testAShortScaleHasAHalfHourGridline() throws Exception
@@ -1275,6 +1285,7 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
                 "the labels of the short scale");
 
             Rectangle plot = Components.onTheEventThread(p::plot);
+            move(p, MouseEvent.MOUSE_MOVED, plot.x + 1, plot.y + 5);
             List<Integer> lines = gridRows(picture(chart), plot, background);
 
             assertEquals(lines.size(), 3, "the short scale has " + lines + " as gridlines");
@@ -1295,6 +1306,7 @@ public class testTheUsageChartShowsWhatTheLocomotivesRan
             "the labels of an hour and a minute");
 
         Rectangle plot = Components.onTheEventThread(p::plot);
+        move(panel(chart), MouseEvent.MOUSE_MOVED, plot.x + 1, plot.y + 5);
         BufferedImage picture = picture(chart);
 
         assertEquals(gridRows(picture, plot, background).size(), 3, "the scale of an hour and a minute");

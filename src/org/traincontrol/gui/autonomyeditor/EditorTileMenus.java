@@ -9,6 +9,7 @@ import org.traincontrol.automationui.TileGraph.RouteId;
 import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.gui.TailCrossedPrompt;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.util.I18n;
 import org.traincontrol.automation.Layout;
 import org.traincontrol.automation.Point;
@@ -160,12 +161,9 @@ final class EditorTileMenus
 
         JPopupMenu menu = new JPopupMenu();
 
-        boolean isPoint = editor.session.getReducer() != null
-            && editor.session.getReducer().getPoints().containsKey(target);
-
         editor.title(menu, editor.menuHeading(target, component));
 
-        if (isPoint)
+        if (isPoint(target))
         {
             final boolean isStation = editor.session.getStore().isStation(target);
             final String standing = editor.locomotiveAt(target);
@@ -209,11 +207,7 @@ final class EditorTileMenus
 
                 if (placeSelected != null) menu.add(placeSelected);
 
-                if (standing != null)
-                {
-                    menu.add(editor.item(I18n.f("layout.ui.menuRemoveLocomotive", standing),
-                        () -> editor.removeLocomotive(target)));
-                }
+                if (standing != null) menu.add(removeItem(target, standing));
 
                 // Beside Place <selected> Here, it says it is for any other, as on the track diagram
                 if (train != null && placesOne && placeSelected != null)
@@ -314,7 +308,6 @@ final class EditorTileMenus
 
                 connections.add(all);
             }
-
         }
 
         // No "Make a One-Way Run from Here" item (OB-006): everything else on this menu names ONE square and acts on it,
@@ -323,7 +316,7 @@ final class EditorTileMenus
 
         // Only when there is something under the heading: everything here sits inside canCarryDirection(target), false for
         // a portal, so a link or tunnel would get a grayed heading alone (OB-032).  A sensor's is in its window.
-        if (!isPoint && editor.hasItemsBesidesTitle(connections)) menu.add(connections);
+        if (!isPoint(target) && editor.hasItemsBesidesTitle(connections)) menu.add(connections);
 
         // A link's own settings, on the menu ITSELF rather than inside the departures submenu.  A link is a jump to
         // another page, not track with directions, and the three things anybody does to one (use it or not, pair it,
@@ -399,7 +392,6 @@ final class EditorTileMenus
             menu.add(lengthItem);
         }
 
-
         // A station name can go on almost any square, not only a text square: the label is drawn beside the tile.
         // Allowed on curves and dead ends (OB-042, OB-044); refused only on clickable elements (switches, signals),
         // where a caption would put text over a control.  The CLICKED square, not the run leader: a name belongs where
@@ -464,7 +456,50 @@ final class EditorTileMenus
 
         final String name = selected.getName();
 
-        return editor.item(I18n.f("layout.ui.menuPlaceLocomotive", name), () -> editor.placeLocomotive(target, name));
+        JMenuItem item = editor.item(I18n.f("layout.ui.menuPlaceLocomotive", name),
+            () -> editor.placeLocomotive(target, name));
+
+        TrainControlUI.showShortcut(item, LayoutEditor.PASTE_KEY);
+
+        return item;
+    }
+
+    /** Remove {0}, for the train standing on the square. */
+    private JMenuItem removeItem(final TileKey target, String standing)
+    {
+        JMenuItem item = editor.item(I18n.f("layout.ui.menuRemoveLocomotive", standing),
+            () -> editor.removeLocomotive(target));
+
+        TrainControlUI.showShortcut(item, LayoutEditor.DELETE_KEY);
+
+        return item;
+    }
+
+    /**
+     * Control+V or Delete over a square (FR-200): a click on the Place {selected} or Remove item its menu offers, so the
+     * key acts only where the item would; while a run holds the setup it says so on the strip instead.
+     */
+    void clickByKey(TileKey tile, boolean place)
+    {
+        final TileKey target = editor.leaderOf(tile);
+
+        if (editor.menuOnly || editor.isIgnored(tile) || editor.heldByARun() || !isPoint(target)) return;
+
+        String standing = editor.locomotiveAt(target);
+
+        JMenuItem item = place ? placeSelectedItem(target, trainStanding(target))
+            : standing == null ? null : removeItem(target, standing);
+
+        if (item == null) return;
+
+        editor.menuTarget = target;
+
+        item.doClick(0);
+    }
+
+    private boolean isPoint(TileKey target)
+    {
+        return editor.session.getReducer() != null && editor.session.getReducer().getPoints().containsKey(target);
     }
 
     /** Change Train at Bramley..., or Place a Locomotive Here... on an empty station; null on an empty non-station. */

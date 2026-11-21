@@ -15,6 +15,9 @@ public class About extends javax.swing.JPanel
     public About()
     {
         initComponents();
+        // The form sets Java's own hand; this one replaces it (FR-224).
+        linkLabel.setCursor(HandPointer.cursor());
+        linkLabel1.setCursor(HandPointer.cursor());
         
         versionLabel.setText(versionLabel.getText().replace("{0}", MarklinControlStation.RAW_VERSION));
     }
@@ -109,7 +112,6 @@ public class About extends javax.swing.JPanel
             Desktop.getDesktop().browse(new URI("https://buymeacoffee.com/traincontrol"));
         } catch (IOException | URISyntaxException e1) { }
     }//GEN-LAST:event_linkLabel1MouseClicked
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;

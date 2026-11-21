@@ -49,19 +49,11 @@ public class testADownloadedCS3LayoutKeepsEachSquaresProtocol
         sandbox = support.LayoutSandbox.open(support.Scenario.folderFor("cs3-main-layout"));
         model = support.TestStation.simulated();
 
-        String snapshot = sandbox.getFolder().getAbsolutePath();
-        java.util.function.BiFunction<String, Integer, byte[]> rest = StandInStation.cs3("260",
-            new String(StandInStation.file(snapshot + "/app/api/info.json"), java.nio.charset.StandardCharsets.UTF_8));
-
-        station = new StandInStation((path, n) ->
+        station = StandInStation.ofSnapshot(sandbox.getFolder(), (path, answer) ->
         {
-            byte[] own = StandInStation.file(snapshot + (path.startsWith("/app/api/") ? path + ".json" : path));
-
-            if (swapped && "/app/api/gbs".equals(path)) own = withW14AndW15Swapped(own);
-
             if (planFails && "/app/api/gbs".equals(path)) throw new IllegalStateException("the plan does not arrive");
 
-            return own != null ? own : rest.apply(path, n);
+            return swapped && "/app/api/gbs".equals(path) ? withW14AndW15Swapped(answer) : answer;
         });
 
         addressWas = support.TestStationAddress.get();

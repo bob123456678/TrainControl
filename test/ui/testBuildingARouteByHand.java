@@ -231,8 +231,8 @@ public class testBuildingARouteByHand
         final int exitSwitch = switchAt(model(), 40);
         final int sidingSwitch = switchAt(model(), exitSwitch + 1);
 
-        final String unaddressed = I18n.f("route.ui.frameRowNumberIsWrong", "1", I18n.f("route.errorNotA", "",
-            I18n.t("route.wordAddress")));
+        final String unaddressed = I18n.f("route.ui.frameRowNumberIsWrong", "1", I18n.f("route.ui.frameNotAnAddress",
+            "0 (" + org.traincontrol.base.Accessory.DEFAULT_IMPLICIT_PROTOCOL + ")"));
         final String noSensor = I18n.t("route.ui.frameAutomaticNeedsSensor");
 
         final RouteEditorFrame frame = addRoute(SIDING);

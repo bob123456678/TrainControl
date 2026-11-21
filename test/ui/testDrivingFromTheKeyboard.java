@@ -27,6 +27,7 @@ import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.AccessoryKeyboard;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinAccessory;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -1002,9 +1003,9 @@ public class testDrivingFromTheKeyboard
             {
                 javax.swing.SwingUtilities.invokeAndWait(() -> keys.setKey(key, false, usable));
 
-                int shows = Components.onTheEventThread(() -> keys.number(key).getCursor().getType());
+                boolean shows = Components.onTheEventThread(() -> HandPointer.isHand(keys.number(key).getCursor()));
 
-                assertEquals(shows == java.awt.Cursor.HAND_CURSOR, usable, "the number of a " + (usable ? "usable" : "gray")
+                assertEquals(shows, usable, "the number of a " + (usable ? "usable" : "gray")
                     + " key shows the " + (usable ? "plain pointer" : "hand"));
             }
         }

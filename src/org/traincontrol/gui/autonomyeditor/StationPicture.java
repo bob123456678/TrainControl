@@ -46,7 +46,7 @@ import org.traincontrol.util.I18n;
 /**
  * The station and the track squares its track meets, as the track diagram draws them at 60 pixels (FR-111): the station
  * with a red arrow only at a side May depart shuts, and its ways in to stop, from `Layout.standingRulesAt`; the next
- * squares with only their own arrows, over gray art.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
+ * squares with the arrows in effect on them.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
  */
 final class StationPicture extends JPanel
 {
@@ -255,29 +255,28 @@ final class StationPicture extends JPanel
 
         nextMarks.clear();
 
-        List<TileKey> squares = new ArrayList<>();
-
-        for (Side side : next.keySet()) squares.add(tile.beside(side));
-
-        Map<TileKey, TileAnnotation> theirs = session.staticAnnotations(squares, true, true);
-
         for (Side side : next.keySet())
         {
-            TileAnnotation their = theirs.get(tile.beside(side));
+            TileKey beside = tile.beside(side);
 
-            if (their == null) continue;
-
-            // Only the arrows of the track that meets the station
+            // In effect on the track that meets the station: the diagram draws a run's on its first square (MT-1061)
             List<TileAnnotation.Mark> kept = new ArrayList<>();
 
-            for (TileAnnotation.Mark road : their.getMarks())
+            // A run pointing opposite ways is closed, as its first square draws it (OB-361)
+            boolean shut = session.getGraph().runsPointingOppositeWays().values().stream()
+                .anyMatch(run -> run.getTiles().contains(beside));
+
+            for (TileAnnotation.Mark road : session.directionMarks(beside))
             {
-                if (road.getA() == side.opposite() || road.getB() == side.opposite()) kept.add(road);
+                if (road.getA() != side.opposite() && road.getB() != side.opposite()) continue;
+
+                kept.add(shut ? new TileAnnotation.Mark(road.getA(), road.getB(), Direction.NONE) : road);
             }
 
-            if (!kept.isEmpty())
+            if (!kept.isEmpty() && !session.isDisabledLink(beside))
             {
-                nextMarks.put(side, new TileAnnotation(kept, -1, false, null, false, their.isCurved()).withAllowedDirections());
+                nextMarks.put(side, new TileAnnotation(kept, -1, false, null, false, session.isCurveSquare(beside), false, null,
+                    true).withAllowedDirections());
             }
         }
 
@@ -312,14 +311,14 @@ final class StationPicture extends JPanel
         return false;
     }
 
-    /** A square of the diagram, as a picture: the pointer over it is the picture's. */
+    /** A square of the diagram, as a picture, a sensor as free (OB-485): the pointer over it is the picture's. */
     private LayoutLabel label(TileKey at, TrainControlUI main)
     {
         LayoutDiagramComponent art = session.getGraph() == null ? null : session.getGraph().getTiles().get(at);
 
         if (art == null || main == null) return null;
 
-        LayoutLabel out = new LayoutLabel(art, block, SQUARE, main, false);
+        LayoutLabel out = LayoutLabel.sensorsAsFree(art, block, SQUARE, main);
 
         this.art.add(out);
 
@@ -376,7 +375,7 @@ final class StationPicture extends JPanel
         return out;
     }
 
-    /** A station side's way in, beside the side's axis by its edge, where the editor's arrivals view draws one. */
+    /** A station side's way in, beside the side's axis by its edge, where the track diagram draws one (OB-494). */
     private void wayIn(List<Mark> out, Rectangle at, Side side)
     {
         Side other = otherEnd(side);
@@ -386,7 +385,7 @@ final class StationPicture extends JPanel
         // None on a square that is no station (OB-441)
         boolean wayIn = false;
 
-        for (TileAnnotation.Arrival arrival : session.arrivalMarks(showing, true)) wayIn |= arrival.getSide() == side;
+        for (TileAnnotation.Arrival arrival : session.arrivalMarks(showing, false)) wayIn |= arrival.getSide() == side;
 
         if (!wayIn) return;
 
@@ -541,7 +540,7 @@ final class StationPicture extends JPanel
             edge[1] - (edge[1] - from[1]) / length * SQUARE);
     }
 
-    /** The squares, the next ones in gray, and the marks over them. */
+    /** The squares and the marks over them: a signal in gray, so its lamps are not taken for arrows; nothing faded (D190). */
     private final class Block extends JPanel
     {
         Block()
@@ -630,19 +629,16 @@ final class StationPicture extends JPanel
                 {
                     Rectangle at = cell(each.getKey());
 
-                    // Without color, so a signal's lamps are not read as the station's arrows.
-                    org.traincontrol.util.ImageUtil.inGray(g2, at, each.getValue()::paint);
+                    Graphics2D over = (Graphics2D) g2.create(at.x, at.y, at.width, at.height);
+
+                    if (!each.getValue().getComponent().isSignal()) each.getValue().paint(over);
+                    else org.traincontrol.util.ImageUtil.inGray(over, new Rectangle(at.getSize()), each.getValue()::paint);
 
                     TileAnnotation their = nextMarks.get(each.getKey());
 
-                    if (their != null)
-                    {
-                        Graphics2D over = (Graphics2D) g2.create(at.x, at.y, at.width, at.height);
+                    if (their != null) their.paint(over, at.width, at.height);
 
-                        their.paint(over, at.width, at.height);
-
-                        over.dispose();
-                    }
+                    over.dispose();
                 }
 
                 Rectangle middle = cell(null);

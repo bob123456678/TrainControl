@@ -913,9 +913,10 @@ public class testTheActiveTickPausesATrain
     /** The window's record of how the railway was built, for the railway given. */
     private static org.json.JSONObject recordOf(Layout railway) throws Exception
     {
-        Method record = Reflect.method(TrainControlUI.class, "settingsAsBuiltFor", Object.class);
+        Object sync = Reflect.get(TrainControlUI.class, ui, "runningLayoutSync");
+        Method record = Reflect.method(sync.getClass(), "settingsAsBuiltFor", Object.class);
 
-        return (org.json.JSONObject) record.invoke(ui, railway);
+        return (org.json.JSONObject) record.invoke(sync, railway);
     }
 
     /**
@@ -1691,6 +1692,92 @@ public class testTheActiveTickPausesATrain
 
             assertEquals(session.getPausedLocomotives().size(), 0, "the setup came out of Cancel with "
                 + session.getPausedLocomotives());
+        });
+    }
+
+    /**
+     * A card's pause, Activate All Trains, then the card's pause and going again, then Cancel: the train goes, as the
+     * card's last press left it, in the train, the setup and the file.
+     *
+     * MUTATION: leave `notePressAlone` out of `pauseTrainAlone`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheEditorsCancelKeepsACardsLastPressAfterActivateAllTrains() throws Exception
+    {
+        overTheEditor(false, editor ->
+        {
+            Locomotive card = model.getLocByName(CARD_TRAIN);
+
+            pressTheCardsButton(card, true);
+
+            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuActivateAllTrains", 1));
+
+            pressTheCardsButton(card, true);
+
+            pressTheCardsButton(card, false);
+        }, testTheActiveTickPausesATrain::closeTheEditor, card ->
+        {
+            assertPausedEverywhere(card, false, "after the card's pause, Activate All Trains, the card's pause and going,"
+                + " and the editor's Cancel (OB-346)");
+
+            assertFalse(pausedInTheSavedSetup().contains(CARD_TRAIN), "the saved setup holds the pause the card took back: "
+                + pausedInTheSavedSetup());
+        });
+    }
+
+    /**
+     * A card's pause, Activate All Trains and his train's tick, then Save on the program's way out, whose exit another
+     * window then refuses so the editor stays: the crash note now holds what was saved.  Then Cancel: the card's train
+     * goes and his stays paused, as saved, and the file keeps it so.
+     *
+     * MUTATION: have `saveBeforeLeaving` retake the snapshot and the railway's picture and clear the pause record only,
+     * not `takeTheUndoPoint`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheEditorsCancelAfterASaveOnARefusedExitGoesBackToWhatWasSaved() throws Exception
+    {
+        overTheEditor(false, editor ->
+        {
+            pressTheCardsButton(model.getLocByName(CARD_TRAIN), true);
+
+            clickTheEditorsTickAndSettle(editor, I18n.f("autosetup.ui.menuActivateAllTrains", 1));
+
+            // An edit the Save keeps, so the crash note as the editor opened differs from the one after the Save
+            clickTheEditorsTickAndSettle(editor, I18n.f("autolayout.ui.menuLocomotiveActive", HIS_TRAIN));
+
+            assertTrue(train.isAutonomyPaused(), "precondition: the tick did not pause " + HIS_TRAIN);
+
+            // The exit's first question, answered Save (`EditorWindows`); a later window's Cancel refuses the exit.
+            final boolean[] mayExit = {false};
+
+            try (support.Answering answering = support.Answering.start(
+                message -> support.Answering.press(I18n.t("layout.ui.switchSave"))))
+            {
+                SwingUtilities.invokeAndWait(() -> mayExit[0]
+                    = ((org.traincontrol.gui.layouteditor.LayoutEditor) editor).maySettleBeforeExit());
+
+                assertTrue(answering.awaitAsked(1, 10000), "precondition: the exit did not ask about the tool");
+            }
+
+            assertTrue(mayExit[0], "precondition: Save did not let the exit go ahead");
+
+            assertTrue(editor.isDisplayable(), "precondition: the exit's Save closed the editor");
+
+            assertFalse(pausedInTheSavedSetup().contains(CARD_TRAIN), "precondition: Save did not keep the tool: "
+                + pausedInTheSavedSetup());
+
+            org.json.JSONObject note = session.getStore().unfinishedEdit();
+
+            assertTrue(note != null && note.similar(session.snapshotSetup()), "the crash note after the Save is not what"
+                + " was saved, so a restart after a crash would undo the Save");
+        }, testTheActiveTickPausesATrain::closeTheEditor, card ->
+        {
+            assertPausedEverywhere(card, false, "after a Save on a refused exit and the editor's Cancel (OB-346)");
+
+            assertTrue(train.isAutonomyPaused(), "Cancel undid his train's tick, which the Save kept");
+
+            assertFalse(pausedInTheSavedSetup().contains(CARD_TRAIN), "Cancel wrote the card's older pause over what was"
+                + " saved: " + pausedInTheSavedSetup());
         });
     }
 

@@ -19,18 +19,16 @@ import org.traincontrol.util.I18n;
  * 'arrived from' to be the opposite of their facing on normal stations, and if the station is a terminus, there is only
  * one forced option."**
  *
- * Autonomy writes this itself as a train arrives; a train put down by hand has no arrival, so it is worked out, and
- * only one of three cases is a question:
+ * A train put down by hand has no arrival (autonomy writes it as a train arrives), so it is worked out, and only one
+ * of three cases is a question:
  *
- * - **A terminus** has one way in, so there is nothing to ask.
- * - **An ordinary station** is answered by the heading: the tail is on the side the train is not pointing at, one of
- *   the square's OWN sides (see `arrivedFrom`).
- * - **A may-reverse station** is where that assumption stops holding: a train there is as likely to have backed in as
- *   driven in, and the two put its tail on opposite sides.  Guessing would block one switch while leaving the one it
- *   fouls open, reporting a protection that is not there.
+ * - **A terminus** has one way in: nothing to ask.
+ * - **An ordinary station** is answered by the heading: the tail is on the side the train is not pointing at (see
+ *   `arrivedFrom`).
+ * - **A may-reverse station** is where that stops holding: a train there may have backed in or driven in, so guessing
+ *   could report a protection that is not there.
  *
- * The sides offered are the ones the railway actually has: a question about a compass point with no track teaches the
- * operator that the setting does nothing.
+ * The sides offered are the ones the railway actually has.
  */
 public class ArrivalSidePrompt
 {
@@ -42,14 +40,12 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * The answer the next arrival-side question gets, for a test that drives a real paste (MT-394).  A may-reverse
-     * square puts this question before the facing one.  Null, the default, means the dialog is shown.
+     * The answer the next arrival-side question gets, for a test driving a real paste (MT-394); null shows the dialog.
      */
     private static volatile String answeredByATest;
 
     /**
-     * Makes every arrival-side question answer this side without showing a dialog, until reset with null.  For tests
-     * only.
+     * Makes every arrival-side question answer this side without a dialog, until reset with null.  For tests only.
      *
      * @param side "N", "E", "S" or "W", or null to put the dialog back
      */
@@ -62,7 +58,7 @@ public class ArrivalSidePrompt
     private static volatile String askedAboutByATest;
 
     /**
-     * What the last arrival-side question answered by a test named the square as.  For tests only.
+     * What the last test-answered question named the square as.  For tests only.
      *
      * @return the square's name as asked, or null when nothing has been asked
      */
@@ -72,9 +68,8 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * What the arrival-side question calls the square: its name, not the copy's.  A split square's Points carry a
-     * heading ("BottomMainB (eastbound)") and this question is ABOUT direction, so the copy's name put an arbitrary
-     * answer in it.  The facing question after it names the square the same way (`TrainControlUI`'s paste door).
+     * What the arrival-side question calls the square: its name, not the copy's, since a split square's Points carry a
+     * heading and this question is ABOUT direction.
      */
     static String squareNameFor(Point at)
     {
@@ -82,10 +77,8 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * The side a hand-placed train should be recorded as having arrived from, asking if it must.
-     *
-     * This door asks in a dialog of its own, right for a menu item that places a train with none.  The rule is
-     * `suggestedFor` and the question is `ask`; this dispatches to both rather than spelling the rule twice.
+     * The side a hand-placed train should be recorded as having arrived from, asking if it must.  The rule is
+     * `suggestedFor` and the question is `ask`.
      *
      * @param layout the running layout, which knows where the neighbors are
      * @param at the point the train is being put down on
@@ -99,8 +92,7 @@ public class ArrivalSidePrompt
         Component parent,
         List<TilePorts.Side> arrivalSides)
     {
-        // AND THE QUESTION, on the squares where the assumption does not hold, asked through `wouldAsk`: the paste door
-        // reads that same predicate to tell a dismissal from the other two nulls, so they agree by construction.
+        // AND THE QUESTION, where the assumption does not hold, through `wouldAsk`, which the paste door also reads.
         if (wouldAsk(layout, at, mayReverse, arrivalSides))
         {
             return ask(parent, at, choicesFor(layout, at, arrivalSides));
@@ -110,16 +102,9 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * What the rule alone says, with nobody asked: the whole of `forPlacement` except the dialog, and the half a form
-     * can use as a visible starting value.
-     *
-     * - **A terminus** has one way in: `sides` holds one entry and it is the answer.  A square with no track answers
-     * null.
-     * - **An ordinary station** is answered by the heading (it faces the way it will leave, so it came from behind),
-     * out of the sides this square actually has.
-     * - **A may-reverse station** answers NULL, because turning around is what those squares are for.  `forPlacement`
-     * sends it to the operator; a form can pass `mayReverse` false to get the assumption as a visible starting
-     * value.
+     * What the rule alone says, with nobody asked: `forPlacement` without the dialog, and a form's visible starting
+     * value.  A terminus answers its one side (a square with no track, null); an ordinary station answers by the
+     * heading out of the sides it has; a may-reverse station answers NULL (pass `mayReverse` false for the assumption).
      */
     public static String suggestedFor(Layout layout, Point at, String facing, boolean mayReverse,
         List<TilePorts.Side> arrivalSides)
@@ -132,20 +117,17 @@ public class ArrivalSidePrompt
 
         if (sides.size() == 1) return sides.get(0);
 
-        // THE SQUARES WHERE THE ASSUMPTION DOES NOT HOLD are not this method's to answer.
+        // The squares where the assumption does not hold are not answered here.
         if (mayReverse) return null;
 
         // THE ASSUMPTION, on a station where it holds: a train faces the way it will leave, so it came
-        // from behind.  Answered out of THE SIDES THIS SQUARE ACTUALLY HAS rather than off the
-        // compass - see `arrivedFrom` for why those are not the same question on a curve.
+        // out of THE SIDES THIS SQUARE ACTUALLY HAS (see `arrivedFrom`), not the compass.
         return arrivedFrom(sides, facing);
     }
 
     /**
-     * The sides a placement here may be recorded as having come from: the BUILD'S SIDES when the caller has them (every
-     * caller in the application), else `Layout.entrySideOf` for hand-built test Layouts.  One place, because the
-     * dialog's buttons, the combo's entries and `wouldAsk` all read this list and would drift if assembled separately.
-     * Never null, in a stable order.
+     * The sides a placement here may be recorded as having come from: the BUILD'S SIDES when the caller has them, else
+     * `Layout.entrySideOf`.  One list for the buttons, the combo and `wouldAsk`.  Never null, in a stable order.
      */
     public static List<String> choicesFor(Layout layout, Point at,
         List<TilePorts.Side> arrivalSides)
@@ -157,14 +139,12 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * Behind a train that drove in forwards, named in the vocabulary the tail walk compares against.  The sides are
-     * given and the facing chooses between them, not the other way about (OB-182).  A null arrival side claims least,
-     * which is also what a dismissed dialog answers.
+     * Behind a train that drove in forwards, in the vocabulary the tail walk compares against (OB-182).  A null arrival
+     * side claims least.
      */
     private static String arrivedFrom(List<String> sides, String facing)
     {
-        // A facing nobody has set is no evidence at all, and blocking track on it would be a guess
-        // wearing a measurement's clothes.
+        // A facing nobody has set is no evidence; blocking track on it would be a guess.
         if (facing == null || sides == null) return null;
 
         String front = facing.toUpperCase();
@@ -192,22 +172,20 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * Whether a placement here would actually put a question to the operator.  `forPlacement` returns null in three
-     * situations and only one is "the operator said no", so the paste door asks this, the exact condition under which
-     * `forPlacement` reaches `ask`, rather than inferring it from a null.
+     * Whether a placement here would put a question to the operator: the exact condition under which `forPlacement`
+     * reaches `ask`, since its null can also mean "no" or "nothing to ask".
      */
     public static boolean wouldAsk(Layout layout, Point at, boolean mayReverse,
         List<TilePorts.Side> arrivalSides)
     {
         if (!mayReverse) return false;
 
-        // THE SAME LIST the paste door reads from `forPlacement` (via `choicesFor`), so the two cannot come apart.
+        // THE SAME LIST the paste door reads (via `choicesFor`).
         return choicesFor(layout, at, arrivalSides).size() > 1;
     }
 
     /**
-     * Puts the question to the operator through `FacingPrompt.askAmong`.  A dismissed dialog answers null, the answer
-     * that claims least: a tail nobody has placed blocks no track.
+     * Puts the question through `FacingPrompt.askAmong`.  A dismissed dialog answers null, which blocks no track.
      * @return the chosen side, or null when dismissed
      */
     private static String ask(Component parent, Point at, List<String> sides)
@@ -228,10 +206,7 @@ public class ArrivalSidePrompt
             I18n.t("autolayout.ui.askArrivalSideTitle"), sides, ArrivalSidePrompt::labelFor, 0);
     }
 
-    /**
-     * What one side is called where an operator reads it, for the dialog's buttons and Station Settings' Train tab, so a side is
-     * worded the same wherever it is offered.
-     */
+    /** What one side is called where an operator reads it (dialog buttons, Station Settings' Train tab). */
     public static String labelFor(String side)
     {
         return I18n.t(keyFor(side));
@@ -240,9 +215,7 @@ public class ArrivalSidePrompt
     /**
      * The message key naming one side, written out so the bundle check can see it.
      *
-     * WHOLE KEYS, not a prefix plus a letter: the bundle check reads the source for the keys it must find, and a
-     * concatenated one reads as "autolayout.ui.side", which is in no bundle.
-     *
+     * WHOLE KEYS, not a prefix plus a letter: the bundle check reads the source for them.
      * @param side "N", "S", "E" or "W"
      * @return the key, or the north one for anything unrecognized
      */
@@ -269,9 +242,8 @@ public class ArrivalSidePrompt
      * Both directions, because a tail is not directional - the train lies across that rail whether the
      * graph runs traffic into this point along it or out.
      *
-     * **Through `Layout.entrySideOf`, the ONE definition.**  `sideTowards` named where the neighboring POINT lies,
-     * which on a curve is a side the metal does not leave by; `entrySideOf` is the build's answer where an edge carries
-     * one and that geometry otherwise.
+     * **Through `Layout.entrySideOf`, the ONE definition**: where an edge carries a side it is the build's, else
+     * geometry.
      *
      * @param layout the layout
      * @param at the point
@@ -292,10 +264,8 @@ public class ArrivalSidePrompt
     }
 
     /**
-     * The sides track actually reaches this square by, as the BUILD has them.  The geometric form above answers with
-     * the compass direction of the neighboring POINT, the far end of a reduced edge that may turn corners (a rail
-     * leaving north and curving east gives "E" while the metal leaves by "N"); the builder already knows the answer
-     * (`arrivalSides` to `StationIndex` to `AutonomyBuilder.arrivalSidesOf`).
+     * The sides track reaches this square by, as the BUILD has them (`AutonomyBuilder.arrivalSidesOf`); the geometric
+     * form above names the neighboring POINT's direction, wrong on a curve.
      */
     public static List<String> sidesOf(List<TilePorts.Side> sides)
     {

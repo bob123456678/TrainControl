@@ -317,10 +317,10 @@ public class testARouteDrivenLocomotiveIsNotEdited
     @Test
     public void testTheNameProposalAsksItFirst() throws Exception
     {
-        String source = SourceOf.declaration("private void checkForRenameMenuItemActionPerformed(");
+        String source = SourceOf.declaration("private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)");
 
-        int current = source.indexOf("if (refuseWhileARouteDrivesIt(this, currentName)) continue;");
-        int proposed = source.indexOf("if (refuseWhileARouteDrivesIt(this, newName)) continue;");
+        int current = source.indexOf("if (RunGates.refuseWhileARouteDrivesIt(this, c, currentName)) continue;");
+        int proposed = source.indexOf("if (RunGates.refuseWhileARouteDrivesIt(this, c, newName)) continue;");
 
         assertTrue(current > 0 && proposed > 0, "the Central Station's name proposal does not ask about both names"
             + " (CS3-B1, SVB-C2)");

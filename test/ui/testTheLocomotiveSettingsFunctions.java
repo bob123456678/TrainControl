@@ -385,7 +385,7 @@ public class testTheLocomotiveSettingsFunctions
 
         assertNull(loc.getLocalFunctionImageURL(F), "the image was written before Save");
 
-        SettingsWindow.press(SettingsWindow.cancel());
+        SettingsWindow.cancelDiscarding();
 
         assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT));
         assertNull(loc.getLocalFunctionImageURL(F), "Cancel wrote the image");
@@ -601,7 +601,7 @@ public class testTheLocomotiveSettingsFunctions
         assertFalse(loc.isFunctionPulse(F), "the behavior was written before Save");
         assertFalse(loc.isCustomFunctions(), "the locomotive was marked customized before Save");
 
-        SettingsWindow.press(SettingsWindow.cancel());
+        SettingsWindow.cancelDiscarding();
 
         assertTrue(Components.waitFor(() -> SettingsWindow.showing() == null, WAIT));
         assertEquals(loc.getFunctionType(F), was, "Cancel wrote the icon");

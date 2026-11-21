@@ -115,7 +115,6 @@ public class LayoutPageEdit
         boolean duplicate, boolean blank, AutonomySession session, ViewListener log,
         java.util.Collection<String> keepAbsent) throws Exception
     {
-
         // Where it sits keeps the file in the order the user sees.  The autonomy setup is keyed by page ID on disk,
         // so ids that shift would reattach the whole setup to the wrong pages (MT-135).
         int renamedAt = rename ? layoutList.indexOf(currentLayout) : -1;

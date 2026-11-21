@@ -24,6 +24,9 @@ import sys
 
 CENSUS_TEST = "testSwitchingToACentralStationLayout.java"
 WINDOW_BUILT = re.compile(r"new\s+(?:org\.traincontrol\.gui\.)?TrainControlUI\s*\(")
+# The support helpers that build a window behind their own sandbox: the census counts their callers too.
+WINDOW_HELPER_CALLED = re.compile(r"FrozenEditor\s*\.\s*(?:window|open)\s*\(|SandboxedWindow\s*\.\s*build\s*\(|"
+                                  r"AskingWindows\s*\.\s*openRailway\s*\(")
 SANDBOX_OPENED = re.compile(r"LayoutSandbox\.open\s*\(")
 
 
@@ -88,6 +91,11 @@ def plan_build_xml(root, simple):
     return (path, new), "build.xml: add %s after the last one" % line
 
 
+def builds_a_window(code):
+    """Whether a class counts in the census: it builds a window itself or through one of the helpers."""
+    return bool(WINDOW_BUILT.search(code) or WINDOW_HELPER_CALLED.search(code))
+
+
 def plan_census(root, qualified, source):
     path = None
     for p in java_files(root):
@@ -99,7 +107,7 @@ def plan_census(root, qualified, source):
     for p in java_files(root):
         if os.path.basename(p) == "LayoutSandbox.java":
             continue
-        if WINDOW_BUILT.search(code_only(read(p))):
+        if builds_a_window(code_only(read(p))):
             count += 1
     text = read(path)
     pin = re.search(r"assertEquals\(checked, (\d+),(\s*)checked \+ \" test classes were found to build a window, "
@@ -108,7 +116,7 @@ def plan_census(root, qualified, source):
         return None, "census: could not find the pinned count in %s; recount by hand (%d now)" % (CENSUS_TEST, count)
     if int(pin.group(1)) == count:
         return None, "census: already %d" % count
-    builds = bool(WINDOW_BUILT.search(code_only(source)))
+    builds = builds_a_window(code_only(source))
     fixed = text[:pin.start(1)] + str(count) + text[pin.end(1):pin.start(3)] + str(count) + text[pin.end(3):]
     what = "census: window count %s -> %d in %s%s" % (pin.group(1), count, CENSUS_TEST, "" if builds else
                                                       " (this class builds no window; the count moved for another)")

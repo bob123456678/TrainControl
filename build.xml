@@ -364,6 +364,7 @@
         <!-- Added 2026-09-11: Adam - the menu font differed between test windows and the production
              app, because a window built cold installed no look and feel at all. -->
         <test-one-class class="testEveryWindowWearsTheApplicationsLook"/>
+        <test-one-class class="testMenusAreNoSmallerThanTheWindowsText"/>
 
         <!-- Added 2026-09-11: TWV-C5 - two of that round's fixes shipped with no test. -->
         <test-one-class class="testAFeedbackChangeIsAnnounced"/>
@@ -725,6 +726,21 @@
         <test-one-class class="testTheLogTabScrollsSideways"/>
         <test-one-class class="testReturnHomeGivesTheSamePlanEveryTime"/>
         <test-one-class class="testTheMenusInTheTitleBarAlwaysShow"/>
+        <test-one-class class="testATimetableAtRunTime"/>
+        <test-one-class class="testASyncKeepsARoutesArming"/>
+        <test-one-class class="testACS3SyncAsksForEachFileOnce"/>
+        <test-one-class class="testAStalledCutOrHandDrivenTrain"/>
+        <test-one-class class="testALocalCopyLogsTheSquaresTheStationDisagreesWith"/>
+        <test-one-class class="testTheSyncAsksAboutRenamedLocomotives"/>
+        <test-one-class class="testASilentStationPictureGivesUp"/>
+        <test-one-class class="testTheHandPointerIsDrawnSmooth"/>
+        <test-one-class class="testANewerJavaKeepsWhatJava8Had"/>
+        <test-one-class class="testTheLengthBoxAndTheKeyboard"/>
+        <test-one-class class="testBlankLinesStayLean"/>
+        <test-one-class class="testTheOverlayBoxDuringARun"/>
+        <test-one-class class="testPicturesAreSharpOnAScaledScreen"/>
+        <test-one-class class="testTheAutoTabKeepsItsCards"/>
+        <test-one-class class="testShowAddressesWithAnEditorOpen"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
@@ -749,6 +765,8 @@
             <zipgroupfileset dir="resources" includes="flatlaf-3.7.2.jar,json-20260814.jar"/>
             <manifest>
                 <attribute name="Main-Class" value="${main.class}"/>
+                <!-- The file chooser's Look In list on Java 9 and later (FR-236); Java 8 ignores it. -->
+                <attribute name="Add-Exports" value="java.desktop/sun.awt.shell"/>
             </manifest>
         </jar>
         <zip destfile="${store.jar}">

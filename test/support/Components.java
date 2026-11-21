@@ -206,6 +206,39 @@ public final class Components
         return true;
     }
 
+    /**
+     * What the busy signs on screen say, asked of the event thread now; null when it does not answer within `millis`,
+     * so a claim can tell slow work held off the event thread from work that froze the window.
+     */
+    public static List<String> busySignsIfAnswering(long millis)
+    {
+        final List<String> says = new ArrayList<>();
+        final java.util.concurrent.CountDownLatch ran = new java.util.concurrent.CountDownLatch(1);
+
+        SwingUtilities.invokeLater(() ->
+        {
+            for (java.awt.Window w : java.awt.Window.getWindows())
+            {
+                if (!(w instanceof org.traincontrol.gui.widgets.BusyDialog) || !w.isShowing()) continue;
+
+                for (javax.swing.JLabel label : all(w, javax.swing.JLabel.class, null)) says.add(label.getText());
+            }
+
+            ran.countDown();
+        });
+
+        try
+        {
+            return ran.await(millis, java.util.concurrent.TimeUnit.MILLISECONDS) ? says : null;
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+
+            return null;
+        }
+    }
+
     /** Waits until no live thread has this name, so work a click handed to a background thread has finished. */
     public static boolean waitForThreadsNamed(String name, long millis)
     {

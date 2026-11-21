@@ -39,6 +39,7 @@ import org.traincontrol.gui.autonomyeditor.StationPreset;
 import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.locomotive.SegmentedControl;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.PillButton;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -951,6 +952,323 @@ public class testStationSettingsWindow
     }
 
     /**
+     * The length box shows Any for 0, no limit, whether the station has none, 0 is typed or the down arrow reaches it
+     * (FR-234).
+     *
+     * MUTATION: have `EditorPrompts.lengthShown` show 0 as a blank, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testNoLimitShowsAnyHoweverItIsReached() throws Exception
+    {
+        TileKey square = aStation();
+        String any = I18n.t("autosetup.ui.stationLengthAny");
+        StationSettingsWindow window = openAtALength(square, null);
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), any, "a station with no limit does not show Any");
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "0");
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), any, "a typed 0 does not show Any");
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "1");
+        lengthArrow(window, false);
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), any, "the down arrow to 0 does not show Any");
+
+        StationDoors.close(window);
+
+        assertEquals(lengthOf(square), 0, "Any, stepped to, was not stored as no limit");
+    }
+
+    /**
+     * Any typed in any case, or a cleared box, stores 0, no limit (FR-234).
+     *
+     * MUTATION: have `EditorPrompts.lengthTyped` take only a blank as 0, and "aNY" is refused as not a number.
+     */
+    @Test(timeOut = 120000)
+    public void testAnyInAnyCaseOrABlankStoresNoLimit() throws Exception
+    {
+        TileKey square = aStation();
+        StationSettingsWindow window = openAtALength(square, 30);
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "aNY");
+
+        assertFalse(visible(window, "station.maxLengthProblem"), "Any typed in another case was refused");
+        assertEquals(lengthOf(square), 0, "Any typed in another case did not store no limit");
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "30");
+
+        assertEquals(lengthOf(square), 30, "precondition: 30 was not stored");
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "");
+
+        assertEquals(lengthOf(square), 0, "a cleared box did not store no limit");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * The arrows step what the box shows, one a click and never under Any, and apply as typing does, on Enter or leaving:
+     * a run of clicks is one change, not one each (FR-234).
+     *
+     * MUTATION: drop the arrows from the exception in `StationSettingsWindow.pressAway`, and each click after the first
+     * writes the length as it presses, before Enter or leaving.
+     */
+    @Test(timeOut = 120000)
+    public void testTheArrowsStepAndApplyAsTypingDoes() throws Exception
+    {
+        TileKey square = aStation();
+        StationSettingsWindow window = openAtALength(square, 120);
+        JTextField field = StationDoors.part(window, "station.maxLength", JTextField.class);
+
+        lengthArrow(window, true);
+        lengthArrow(window, true);
+
+        assertEquals(lengthOf(square), 120, "a click on an arrow wrote the length before Enter or leaving");
+        assertEquals(StationDoors.text(window, "station.maxLength"), "122", "two clicks on the up arrow did not step twice");
+
+        Components.onTheEventThread(() -> { field.postActionEvent(); return null; });
+        StationDoors.current(window);
+
+        assertEquals(lengthOf(square), 122, "Enter did not apply what the arrows stepped to");
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "1");
+        lengthArrow(window, false);
+        lengthArrow(window, false);
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), I18n.t("autosetup.ui.stationLengthAny"),
+            "the down arrow went under Any");
+
+        StationDoors.close(window);
+
+        assertEquals(lengthOf(square), 0, "Close did not apply what the arrows stepped to");
+    }
+
+    /**
+     * Stations picked together whose lengths differ show a blank with the triangle, and nothing is written until the box
+     * is changed: not by Enter on the blank, a press away, nor an arrow's click alone; the change then goes to each.  An
+     * arrow either way steps the blank to Any, so a stray press never proposes 1 (FR-234).
+     *
+     * MUTATION: drop the unchanged check at the top of `StationSettingsWindow.commit`, and Enter on the blank writes.
+     */
+    @Test(timeOut = 120000)
+    public void testLengthsThatDifferWriteNothingUntilChanged() throws Exception
+    {
+        TileKey first = aStation();
+        TileKey second = aSecondStation(first);
+
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(first, "maxTrainLength", 11);
+            session.setPointProperty(second, "maxTrainLength", 12);
+
+            return null;
+        });
+
+        StationDoors.press(panel, "autonomy.pickStations");
+
+        for (TileKey each : Arrays.asList(first, second))
+        {
+            Components.onTheEventThread(() -> { panel.tileClicked(each, session.getGraph().getTiles().get(each), false); return null; });
+        }
+
+        StationSettingsWindow window = StationDoors.showing(StationSettingsWindow.class);
+
+        assertNotNull(window, "picking two stations opened no window");
+
+        StationDoors.current(window);
+
+        assertTrue(StationDoors.live(window, "station.maxLengthArrows"), "precondition: the length box is grayed");
+        assertEquals(StationDoors.text(window, "station.maxLength"), "", "lengths that differ show a value");
+        assertTrue(visible(window, "station.maxLengthMixed"), "lengths that differ do not say so");
+
+        String before = setup();
+
+        StationDoors.typeAndEnter(window, "station.maxLength", "");
+        support.Mouse.press(StationDoors.part(window, "station.several", javax.swing.JLabel.class),
+            java.awt.event.MouseEvent.BUTTON1);
+        StationDoors.current(window);
+
+        assertEquals(setup(), before, "Enter on the blank, or a press away from it, wrote to the stations");
+
+        lengthArrow(window, true);
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), I18n.t("autosetup.ui.stationLengthAny"),
+            "the up arrow from the blank did not step to Any");
+        assertEquals(setup(), before, "a click on an arrow wrote before the box was left");
+
+        StationDoors.close(window);
+
+        assertEquals(lengthOf(first), 0, "the change did not go to the first station");
+        assertEquals(lengthOf(second), 0, "the change did not go to the second station");
+    }
+
+    /**
+     * The up arrow stops at the largest length a number can hold, rather than turning it negative (FR-234).
+     *
+     * MUTATION: have `StationSettingsWindow.lengthStep` add in int, and the step wraps past the largest length to Any.
+     */
+    @Test(timeOut = 120000)
+    public void testTheUpArrowStopsAtTheLargestLength() throws Exception
+    {
+        String largest = String.valueOf(Integer.MAX_VALUE);
+        StationSettingsWindow window = openAtALength(aStation(), Integer.MAX_VALUE);
+
+        lengthArrow(window, true);
+
+        assertEquals(StationDoors.text(window, "station.maxLength"), largest, "the up arrow went past the largest length");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * The English Any is taken whatever language the window is in, as well as the language's own word (FR-234).
+     *
+     * MUTATION: have `EditorPrompts.lengthTyped` take only `I18n.t(ANY)`, and "any" is refused in German.
+     */
+    @Test(timeOut = 120000)
+    public void testTheEnglishAnyIsTakenInEveryLanguage() throws Exception
+    {
+        java.util.Locale was = I18n.getLocale();
+        TileKey square = aStation();
+
+        try
+        {
+            I18n.setLocale(java.util.Locale.GERMAN);
+
+            StationSettingsWindow window = openAtALength(square, 30);
+
+            assertEquals(StationDoors.text(window, "station.maxLength"), "30", "precondition: the length is not shown");
+
+            StationDoors.typeAndEnter(window, "station.maxLength", "any");
+
+            assertFalse(visible(window, "station.maxLengthProblem"), "the English Any was refused in German");
+            assertEquals(lengthOf(square), 0, "the English Any did not store no limit in German");
+
+            StationDoors.close(window);
+        }
+        finally
+        {
+            I18n.setLocale(was);
+        }
+    }
+
+    /**
+     * On a station with no limit, a cleared box, 0 or Any writes nothing: each means the limit it already has.  Opened
+     * from the track diagram, where every write is saved at once, so a write shows as a file written (FR-234).
+     *
+     * MUTATION: have `StationSettingsWindow.commit` compare the length's text rather than the number it means, and
+     * the setup file is written.
+     */
+    @Test(timeOut = 120000)
+    public void testNoLimitRetypedWritesNothing() throws Exception
+    {
+        closeTheEditor();
+
+        TileKey square = aStation();
+
+        try
+        {
+            Components.onTheEventThread(() ->
+            {
+                session.setPointProperty(square, "maxTrainLength", null);
+
+                return session.saveQuietly();
+            });
+
+            StationSettingsWindow window = openedFromTheDiagramsMenu(square);
+            Map<String, Long> files = filesWritten();
+
+            for (String typed : new String[] {"", "0", "any"})
+            {
+                StationDoors.typeAndEnter(window, "station.maxLength", typed);
+                StationDoors.current(window);
+
+                assertEquals(filesWritten(), files, "\"" + typed + "\" on a station with no limit wrote the setup");
+            }
+
+            StationDoors.close(window);
+        }
+        finally
+        {
+            frozen.putBack();
+
+            Components.onTheEventThread(() -> session.saveQuietly());
+        }
+    }
+
+    /**
+     * The length box lines up with the Name box above it, as Adam asked for its "correct inset": the same left edge,
+     * the same height, and its number as far in from that edge as the name (FR-234, OB-442).
+     *
+     * MUTATION: take the left inset off the length field's border in `StationSettingsWindow.lengthArrows`, and this
+     * fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheLengthBoxHasTheNamesInset() throws Exception
+    {
+        StationSettingsWindow window = openAtALength(aStation(), 120);
+        JTextField name = StationDoors.part(window, "station.name", JTextField.class);
+        JTextField length = StationDoors.part(window, "station.maxLength", JTextField.class);
+        javax.swing.JSpinner box = StationDoors.part(window, "station.maxLengthArrows", javax.swing.JSpinner.class);
+
+        int[] got = Components.onTheEventThread(() ->
+        {
+            try
+            {
+                name.setCaretPosition(0);
+                length.setCaretPosition(0);
+
+                return new int[] {
+                    javax.swing.SwingUtilities.convertPoint(name, 0, 0, window).x,
+                    javax.swing.SwingUtilities.convertPoint(box, 0, 0, window).x,
+                    name.getHeight(), box.getHeight(),
+                    javax.swing.SwingUtilities.convertPoint(name, name.modelToView(0).x, 0, window).x,
+                    javax.swing.SwingUtilities.convertPoint(length, length.modelToView(0).x, 0, window).x};
+            }
+            catch (javax.swing.text.BadLocationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        assertEquals(got[1], got[0], "the length box's left edge is not the name box's");
+        assertEquals(got[3], got[2], "the length box is not as tall as the name box");
+        assertTrue(got[4] > got[0], "precondition: the name's text starts at its box's edge");
+        assertEquals(got[5] - got[1], got[4] - got[0], "the length's number is not as far in as the name's text");
+
+        StationDoors.close(window);
+    }
+
+    /** Station Settings of this station, its maximum train length set first; null for no limit. */
+    private StationSettingsWindow openAtALength(TileKey square, Integer length) throws Exception
+    {
+        Components.onTheEventThread(() -> { session.setPointProperty(square, "maxTrainLength", length); return null; });
+
+        return StationDoors.open(panel, square);
+    }
+
+    /** Clicks the length box's up or down arrow. */
+    private static void lengthArrow(StationSettingsWindow window, boolean up)
+    {
+        javax.swing.JSpinner arrows = StationDoors.part(window, "station.maxLengthArrows", javax.swing.JSpinner.class);
+
+        support.Mouse.click(StationDoors.part(arrows, up ? "Spinner.nextButton" : "Spinner.previousButton",
+            javax.swing.JButton.class));
+    }
+
+    /** A station's maximum train length, 0 for no limit. */
+    private static int lengthOf(TileKey square)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            Object stored = session.getPointProperty(square, "maxTrainLength");
+
+            return stored instanceof Number ? ((Number) stored).intValue() : 0;
+        });
+    }
+
+    /**
      * A name another station has is refused beside the field and says it is taken (OB-376), with what was typed still
      * there to fix; fixing it clears the reason.
      *
@@ -1517,9 +1835,9 @@ public class testStationSettingsWindow
             assertEquals(window.litPresetForTest(), preset, "the settings of " + preset + " do not light it");
         }
 
-        // No row has Must with Full Autonomy off
+        // No row has stop only with May
         StationDoors.press(window, "station.preset.PARKING");
-        StationDoors.press(window, "station.turnMust");
+        StationDoors.press(window, "station.turnMay");
         StationDoors.current(window);
 
         assertNull(window.litPresetForTest(), "a button lit though nothing matches");
@@ -1561,7 +1879,389 @@ public class testStationSettingsWindow
         assertEquals(window.litPresetForTest(), StationPreset.OFF, "a station unticked by hand does not light Off");
     }
 
+    /**
+     * Terminus and Parking make a station trains must stop at, Station, Reversing and Off one they run through (Adam,
+     * MT-1017: "the "may pass through" should be default for a station"), and each lights once pressed; an old station,
+     * which trains run through, is left as it is by being looked at, and lights Station.  Saved and read back, a
+     * station trains must stop at stays one.
+     *
+     * MUTATION: have PARKING leave "Trains can pass through" ticked, or put back `matching`'s early return for a station
+     * trains cannot pass through, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheStopPresetsMakeAStationTrainsMustStopAt() throws Exception
+    {
+        TileKey square = aStation();
+
+        assertFalse(Components.onTheEventThread(() -> session.isStopOnly(square)), "precondition: a stop-only station");
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.current(window);
+
+        assertFalse(Components.onTheEventThread(() -> session.isStopOnly(square)), "looking at an old station changed it");
+        assertEquals(window.litPresetForTest(), StationPreset.STATION, "an old station does not light Station");
+
+        for (StationPreset preset : StationPreset.values())
+        {
+            StationDoors.press(window, "station.preset." + preset.name());
+            StationDoors.current(window);
+
+            boolean stopOnly = preset == StationPreset.TERMINUS || preset == StationPreset.PARKING;
+
+            assertEquals((boolean) Components.onTheEventThread(() -> session.isStopOnly(square)), stopOnly,
+                preset + " left the wrong answer to whether trains must stop");
+            assertEquals(StationDoors.on(window, "station.runsThrough"), !stopOnly,
+                preset + " left Trains can pass through " + (stopOnly ? "ticked" : "unticked"));
+            assertEquals(window.litPresetForTest(), preset, preset + " does not light once pressed");
+        }
+
+        // Saved and read back, a station trains must stop at stays one
+        try
+        {
+            StationDoors.press(window, "station.preset.PARKING");
+            StationDoors.current(window);
+            StationDoors.close(window);
+
+            AutonomySession saved = frozen.saveAndReadBack(editor);
+
+            assertTrue(saved.isStopOnly(square), "Save did not keep the Parking preset's Trains can pass through");
+
+            StationSettingsWindow again = StationDoors.open(panel, square);
+
+            assertEquals(again.litPresetForTest(), StationPreset.PARKING, "Parking does not light when opened again");
+
+            StationDoors.close(again);
+        }
+        finally
+        {
+            frozen.putBack();
+
+            Components.onTheEventThread(() -> session.saveQuietly());
+        }
+    }
+
+    /**
+     * Parking is a Terminus that full autonomy never chooses (FR-235): pressing it ticks Every train must turn around and
+     * unticks May choose this station, and the window reads it back as Parking, not Terminus.
+     *
+     * MUTATION: put PARKING's `must` back to false in `StationPreset`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testParkingIsATerminusFullAutonomyNeverChooses() throws Exception
+    {
+        TileKey square = aStation();
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.press(window, "station.preset.PARKING");
+        StationDoors.current(window);
+
+        assertTrue(Components.onTheEventThread(() -> session.isMustTurnAround(square)),
+            "Parking did not make every train turn around");
+        assertFalse(Components.onTheEventThread(() -> session.isAutoDestination(square)),
+            "Parking left full autonomy able to choose the station");
+        assertTrue(StationDoors.on(window, "station.turnMust"), "Parking did not tick Must in the window");
+        assertEquals(window.litPresetForTest(), StationPreset.PARKING, "Parking does not light once pressed");
+
+        StationDoors.press(window, "station.preset.TERMINUS");
+        StationDoors.current(window);
+
+        assertEquals(window.litPresetForTest(), StationPreset.TERMINUS, "Terminus does not light once pressed");
+    }
+
+    /**
+     * A station trains must stop at wears a white dot in its icon wherever it is drawn: the track diagram, the editor and
+     * Station Settings' picture (MT-1017, Adam: "white dot if they have to stop, no dot if they behave as today").  It
+     * comes with unticking Trains can pass through or pressing Parking, goes with ticking it again or pressing Station,
+     * and the editor's Cancel takes it off the track diagram.
+     *
+     * MUTATION: build the editor's badge (`badgeFor`) without `isStopOnly`, or leave `stopOnly` out of `Badge.equals`,
+     * and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testTheDotShowsWhereverTheStationIsDrawn() throws Exception
+    {
+        // No train standing on it, whose mark covers the icon; on a straight, where the icon is in the middle
+        TileKey square = Components.onTheEventThread(() ->
+        {
+            for (TileKey each : session.getReducer().getPoints().keySet())
+            {
+                org.traincontrol.automationui.TilePorts.Route road = session.stationRoad(each);
+
+                if (PAGE.equals(each.getPage()) && session.getStore().isStation(each) && !session.isTurnAround(each)
+                    && session.getStore().getPointName(each) != null && session.isAutoDestination(each)
+                    && !session.placementsAutonomyWillWrite().containsKey(each)
+                    && !session.homesToPlace().containsKey(each) && road != null && road.getA().opposite() == road.getB())
+                {
+                    return each;
+                }
+            }
+
+            throw new AssertionError("precondition: no plain station on a straight without a train on " + PAGE);
+        });
+
+        assertFalse(Components.onTheEventThread(() -> session.isStopOnly(square)), "precondition: a stop-only station");
+
+        org.traincontrol.gui.LayoutLabel onTheDiagram = Components.onTheEventThread(() ->
+        {
+            org.traincontrol.gui.LayoutLabel label = new org.traincontrol.gui.LayoutLabel(
+                session.getGraph().getTiles().get(square), new javax.swing.JPanel(), 30, ui, false);
+
+            label.setSquare(square);
+            label.setSize(30, 30);
+
+            ui.getDiagramTileRegistry().register(square, label);
+            ui.showStaticAutonomyLayer(true);
+
+            return label;
+        });
+
+        try
+        {
+            StationSettingsWindow window = StationDoors.open(panel, square);
+
+            StationDoors.current(window);
+
+            dotsAre(false, "an old station", window, onTheDiagram, square);
+
+            StationDoors.press(window, "station.runsThrough");
+            StationDoors.current(window);
+
+            dotsAre(true, "Trains can pass through unticked", window, onTheDiagram, square);
+
+            StationDoors.press(window, "station.runsThrough");
+            StationDoors.current(window);
+
+            dotsAre(false, "Trains can pass through ticked again", window, onTheDiagram, square);
+
+            StationDoors.press(window, "station.preset.PARKING");
+            StationDoors.current(window);
+
+            dotsAre(true, "the Parking preset", window, onTheDiagram, square);
+
+            StationDoors.press(window, "station.preset.STATION");
+            StationDoors.current(window);
+
+            dotsAre(false, "the Station preset", window, onTheDiagram, square);
+
+            StationDoors.press(window, "station.preset.PARKING");
+            StationDoors.current(window);
+
+            AbstractButton cancel = Components.withText(editor, I18n.t("ui.cancel"));
+
+            assertNotNull(cancel, "precondition: the editor has no Cancel");
+
+            StationDoors.pressAndAnswer(cancel, message -> Answering.pressAt(0));
+
+            editor = null;
+
+            Components.settle();
+
+            assertFalse(PURE_WHITE.test(atTheIcon(onTheDiagram)), "the track diagram keeps the dot after Cancel");
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { ui.getDiagramTileRegistry().reset(); return null; });
+        }
+    }
+
+    private static final java.util.function.IntPredicate PURE_WHITE =
+        rgb -> ((rgb >> 16) & 0xFF) >= 245 && ((rgb >> 8) & 0xFF) >= 245 && (rgb & 0xFF) >= 245;
+
+    /** The stations' blue, as the classic filled icon has it. */
+    private static final java.util.function.IntPredicate STATION_BLUE =
+        rgb -> (rgb & 0xFF) > 150 && ((rgb >> 16) & 0xFF) < 90 && ((rgb >> 8) & 0xFF) < 90;
+
+    /** The middle of the station's icon in each of the three places: white where the dot is, the icon's blue elsewhere. */
+    private void dotsAre(boolean dot, String what, StationSettingsWindow window,
+        org.traincontrol.gui.LayoutLabel onTheDiagram, TileKey square) throws Exception
+    {
+        // Asked each time: an edit builds the editor's grid again
+        org.traincontrol.gui.LayoutLabel inTheEditor = squareOn(square);
+
+        org.traincontrol.gui.LayoutLabel inThePicture = (org.traincontrol.gui.LayoutLabel) Reflect.get(
+            Class.forName("org.traincontrol.gui.autonomyeditor.StationPicture"),
+            Reflect.get(StationSettingsWindow.class, window, "picture"), "square");
+
+        assertNotNull(inThePicture, "precondition: the picture draws no station square");
+
+        String[] places = {"the track diagram", "the editor", "Station Settings' picture"};
+        org.traincontrol.gui.LayoutLabel[] labels = {onTheDiagram, inTheEditor, inThePicture};
+
+        for (int i = 0; i < labels.length; i++)
+        {
+            int rgb = atTheIcon(labels[i]);
+
+            assertTrue((dot ? PURE_WHITE : STATION_BLUE).test(rgb), what + ": the middle of the icon on " + places[i]
+                + " is " + new Color(rgb) + ", " + (dot ? "not the white dot" : "not the icon's blue, so a dot is drawn"));
+        }
+    }
+
+    /** The color a square paints at the middle of its station's icon. */
+    private static int atTheIcon(org.traincontrol.gui.LayoutLabel label) throws Exception
+    {
+        return Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automationui.TileAnnotation annotation = worn(label);
+
+            assertNotNull(annotation, "precondition: the square wears no annotation");
+
+            BufferedImage image = new BufferedImage(label.getWidth(), label.getHeight(), BufferedImage.TYPE_INT_RGB);
+
+            java.awt.Graphics2D g = image.createGraphics();
+
+            g.setColor(Color.WHITE);
+            g.fillRect(0, 0, image.getWidth(), image.getHeight());
+
+            label.paint(g);
+
+            g.dispose();
+
+            int[] centre = annotation.trackCentre(label.getWidth(), label.getHeight());
+
+            return image.getRGB(centre[0], centre[1]);
+        });
+    }
+
+    private static org.traincontrol.automationui.TileAnnotation worn(org.traincontrol.gui.LayoutLabel label)
+    {
+        try
+        {
+            return (org.traincontrol.automationui.TileAnnotation) Reflect.get(org.traincontrol.gui.LayoutLabel.class, label,
+                "autonomyAnnotation");
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new AssertionError(e);
+        }
+    }
+
     // ------------------------------------------------------------------------------------------------------------ matrix
+
+    /**
+     * Hovering Some trains names each condition that decides which trains, by the setting it comes from (Adam, FR-226:
+     * "hovering "some trains" should give an explanation of what the conditions are"): Maximum train length and Allowed
+     * trains on a station, and Changing direction too on a terminus, which only a train that can reverse may use.
+     *
+     * MUTATION: give a Some trains cell the plain tooltip again in `StationMatrixPanel.cell`, or have `limited` return a
+     * Some trains cell without the length and the list, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testHoveringSomeTrainsNamesEachCondition() throws Exception
+    {
+        TileKey square = aStation();
+
+        String train = upTo30AndOneTrain(square);
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        for (StationPreset preset : new StationPreset[] {StationPreset.STATION, StationPreset.TERMINUS})
+        {
+            StationDoors.press(window, "station.preset." + preset.name(), message -> Answering.pressAt(0));
+            StationDoors.current(window);
+
+            List<String> hovers = someTrainsHovers(window);
+
+            assertFalse(hovers.isEmpty(), preset + ": no cell says Some trains");
+
+            String all = String.join(" / ", hovers);
+
+            String length = I18n.f("autosetup.ui.stationCellSide", "<b>" + I18n.t("autosetup.ui.stationMaxLength") + "</b>",
+                I18n.f("autolayout.rules.limitLength", 30));
+            String list = I18n.f("autosetup.ui.stationCellSide", "<b>" + I18n.t("autosetup.ui.stationWhich") + "</b>",
+                I18n.f("autolayout.rules.limitWhitelist", train));
+
+            assertTrue(all.contains(I18n.t("autosetup.ui.stationSomeTrains")), preset + ": the hover does not say a train"
+                + " must meet each condition: " + all);
+            assertTrue(all.contains(length), preset + ": the hover does not name Maximum train length: " + all);
+            assertTrue(all.contains(list), preset + ": the hover does not name Allowed trains: " + all);
+
+            assertEquals(all.contains("<b>" + I18n.t("autosetup.ui.stationTurning") + "</b>"),
+                preset == StationPreset.TERMINUS, preset + ": the hover " + (preset == StationPreset.TERMINUS
+                    ? "does not name" : "names") + " Changing direction: " + all);
+        }
+    }
+
+    /**
+     * The notice under the picture is only for an error (Adam, FR-226: "This replaces the inline text unless there is
+     * an error"): a station limited by its length and its list says nothing there, while Must with two sides open
+     * still says why.
+     *
+     * MUTATION: put the line of what a cell cannot say back under the picture, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheNoticeUnderThePictureIsOnlyForAnError() throws Exception
+    {
+        TileKey square = aStationWithTwoWaysIn();
+
+        String train = upTo30AndOneTrain(square);
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.current(window);
+
+        assertFalse(someTrainsHovers(window).isEmpty(), "precondition: no cell says Some trains");
+        assertEquals(noticesShown(window), Arrays.asList(), "the notices under the picture say something with no error");
+
+        StationDoors.press(window, "station.turnMust");
+        StationDoors.current(window);
+
+        assertTrue(visible(window, "station.matrixProblem"), "precondition: Must with two sides open is no error");
+        assertEquals(noticesShown(window).size(), 1, "the error is not the one notice: " + noticesShown(window));
+    }
+
+    /** Limits a station to trains up to 30 long and a whitelist of one train, whose name it gives. */
+    private static String upTo30AndOneTrain(TileKey square)
+    {
+        String train = model.getLocList().get(0);
+
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(square, "maxTrainLength", 30);
+            session.setWhichTrains(square, WhichTrains.WHITELIST, Arrays.asList(train));
+
+            return null;
+        });
+
+        return train;
+    }
+
+    /** The hover of every cell of the table that says Some trains, for any side. */
+    private static List<String> someTrainsHovers(StationSettingsWindow window)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            List<String> out = new java.util.ArrayList<>();
+
+            for (StandingRules.Row row : StandingRules.Row.values())
+            {
+                for (String tier : new String[] {"auto", "hand"})
+                {
+                    if (!window.drawnForTest(row, tier).containsValue(StandingRules.Answer.SOME)) continue;
+
+                    out.add(Components.named(window, "station.cell." + row + "." + tier, JComponent.class).getToolTipText());
+                }
+            }
+
+            return out;
+        });
+    }
+
+    /** What the lines under the picture show. */
+    private static List<String> noticesShown(StationSettingsWindow window)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            List<String> out = new java.util.ArrayList<>();
+
+            for (java.awt.Component each : Components.named(window, "station.notices", JComponent.class).getComponents())
+            {
+                if (each.isVisible() && each instanceof javax.swing.JLabel) out.add(((javax.swing.JLabel) each).getText());
+            }
+
+            return out;
+        });
+    }
 
     /**
      * The matrix follows the settings: untick Full Autonomy and automatic runs no longer choose the square.
@@ -2292,9 +2992,13 @@ public class testStationSettingsWindow
     public void testUndoPutsMayDepartBack() throws Exception
     {
         TileKey square = aStationWhereMayDepart();
-        RouteId road = onlyRoad(square);
 
-        // The undo point every edit of the track diagram takes first
+        StationDoors.close(departChosenThenUndone(square, onlyRoad(square)));
+    }
+
+    /** May depart set toward A after the undo point every track diagram edit takes first, then undone; still open. */
+    private StationSettingsWindow departChosenThenUndone(TileKey square, RouteId road) throws Exception
+    {
         java.lang.reflect.Method snapshot = Reflect.method(LayoutEditor.class, "snapshotLayout");
 
         Components.onTheEventThread(() -> snapshot.invoke(editor));
@@ -2306,8 +3010,28 @@ public class testStationSettingsWindow
         Components.onTheEventThread(() -> { editor.undo(); return null; });
         Components.settle();
 
-        assertEquals(wayOf(square, road), Direction.BOTH,
-            "the undo did not put May depart back");
+        assertEquals(wayOf(square, road), Direction.BOTH, "the undo did not put May depart back");
+
+        return window;
+    }
+
+    /**
+     * And the editor's redo brings the edit back: the page's setup as it was before the undo, not as the undo left it.
+     *
+     * MUTATION: swap the arguments of redo's `swapCaptions` in LayoutEditorUndo, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testRedoBringsMayDepartBack() throws Exception
+    {
+        TileKey square = aStationWhereMayDepart();
+        RouteId road = onlyRoad(square);
+
+        StationSettingsWindow window = departChosenThenUndone(square, road);
+
+        Components.onTheEventThread(() -> { editor.redo(); return null; });
+        Components.settle();
+
+        assertEquals(wayOf(square, road), Direction.TOWARD_A, "the redo did not bring the May depart choice back");
 
         StationDoors.close(window);
     }
@@ -2746,8 +3470,6 @@ public class testStationSettingsWindow
 
         JComponent block = StationDoors.part(window, "station.picture.ways", JComponent.class);
 
-        assertTrue(visible(window, "station.matrixAlso"), "precondition: no line under the picture");
-
         int[] one = whiteAround(window, block);
 
         assertEquals(one[0], 10, "the white above a one-row picture");
@@ -2757,10 +3479,10 @@ public class testStationSettingsWindow
         {
             java.awt.Component table = Components.named(window, "station.matrix", JComponent.class);
             java.awt.Component picture = Components.named(window, "station.picture", JComponent.class);
-            JComponent also = Components.named(window, "station.matrixAlso", JComponent.class);
+            JComponent notices = Components.named(window, "station.notices", JComponent.class);
 
             int underTable = picture.getLocationOnScreen().y - table.getLocationOnScreen().y - table.getHeight();
-            int underPicture = also.getLocationOnScreen().y + also.getInsets().top - block.getLocationOnScreen().y
+            int underPicture = notices.getLocationOnScreen().y + notices.getInsets().top - block.getLocationOnScreen().y
                 - block.getHeight();
 
             assertEquals(underPicture, underTable, "the line under the picture is not as far below it as the picture is "
@@ -2884,9 +3606,10 @@ public class testStationSettingsWindow
             if (UiStyle.BLUE.equals(each.getForeground())) blue.add(each.getText());
         }
 
+        // The Advanced heading as it reads without its * (FR-226)
         for (AbstractButton each : Components.all(window, AbstractButton.class, null))
         {
-            if (UiStyle.BLUE.equals(each.getForeground())) blue.add(each.getText());
+            if (UiStyle.BLUE.equals(each.getForeground())) blue.add(each.getText().replace(" *", ""));
         }
 
         assertEquals(blue, new java.util.TreeSet<>(Arrays.asList(I18n.t("autosetup.ui.stationSectionStop"),
@@ -3257,7 +3980,7 @@ public class testStationSettingsWindow
 
             assertFalse(terminus.equals(plain), "a terminus is drawn as a station");
 
-            StationDoors.press(window, "station.runsThrough");
+            // Terminus leaves Trains can pass through off (MT-1017)
             StationDoors.press(window, "station.stops");
             StationDoors.current(window);
 
@@ -3279,7 +4002,8 @@ public class testStationSettingsWindow
     /**
      * The picture draws no green arrow on the station's square (Adam: "make sure that station popup also doesn't show
      * the red/green arrows on the station track", OB-472), and a red one only at a side May depart shuts:
-     * TopMainR1 keeps its way in from the south, and one way toward its side A draws red at its side B alone.
+     * TopMainR1, allowing its one way in, wears none (OB-494), and one way toward its side A draws red at its side B
+     * alone.
      *
      * MUTATION: have `StationPicture.show` give the station no marks, and this fails.
      */
@@ -3290,7 +4014,7 @@ public class testStationSettingsWindow
 
         StationSettingsWindow window = StationDoors.open(panel, square);
 
-        assertWays(window, set("S"));
+        assertWays(window, set());
         assertEquals(sidesDrawnIn(window, CLOSED_RED), set(), "a station leaving both ways wears a red arrow");
 
         StationDoors.close(window);
@@ -3309,8 +4033,8 @@ public class testStationSettingsWindow
     }
 
     /**
-     * TopR1ParkLong's track runs on to its east side and stops there: the picture draws a way in at the west, and no
-     * mark at the east.
+     * TopR1ParkLong's track runs on to its east side and stops there: with its way in from the west barred, so the ways
+     * are drawn (OB-494), the picture draws that way in at the west and no mark at the east.
      *
      * MUTATION: have `StationPicture.wayIn` draw a way in at every side the station's track meets, and this fails.
      */
@@ -3330,9 +4054,16 @@ public class testStationSettingsWindow
             return false;
         }), "precondition: the station's track reaches its east side");
 
+        Components.onTheEventThread(() ->
+        {
+            session.setBarredArrivals(square, java.util.EnumSet.of(org.traincontrol.automationui.TilePorts.Side.W));
+
+            return null;
+        });
+
         StationSettingsWindow window = StationDoors.open(panel, square);
 
-        assertWays(window, set("W"));
+        assertEquals(waysInDrawn(window), set("W"), "the ways in");
 
         for (int mark : new int[] {CLOSED_RED, ARRIVAL_YELLOW})
         {
@@ -3346,13 +4077,16 @@ public class testStationSettingsWindow
 
     /**
      * Every station on the frozen railway, on every page: the ways in drawn open are the sides where Sent Here or Turned
-     * Round of `Layout.standingRulesAt` is not No.
+     * Round of `Layout.standingRulesAt` is not No.  One side of each station with two is barred first, so its ways are
+     * drawn (OB-494); a station with one way in bars none and wears none.
      *
      * MUTATION: have `StationPicture.wayIn` draw every way in open, and this fails.
      */
     @Test(timeOut = 600000)
     public void testTheWaysAgreeWithWhatIsAllowed() throws Exception
     {
+        barOneSideOfEach();
+
         assertNotNull(model.getAutoLayoutIfLoaded(), "precondition: the frozen setup is built");
 
         List<String> differ = new java.util.ArrayList<>();
@@ -3396,6 +4130,8 @@ public class testStationSettingsWindow
                             }
                         }
                     }
+
+                    if (Components.onTheEventThread(() -> session.getBarredArrivals(square).isEmpty())) in.clear();
 
                     Set<String> drawnIn = Components.onTheEventThread(window::pictureWaysInForTest);
 
@@ -3448,13 +4184,85 @@ public class testStationSettingsWindow
     }
 
     /**
-     * Only arrows carry color: the square east of BottomMainA is a signal whose art has a red lamp, and the picture draws
-     * that square with no red in it.
+     * Nothing in the picture but a signal is grayed (MT-1037), and nothing is faded (Adam: "Grey color is fine, just
+     * don't fade anything out."): no next square wears the yellow flash of a change, and each that is no signal is
+     * drawn as it draws itself, without the arrows' wash, apart from under the picture's marks.  The frozen railway's track
+     * has no color, so graying it would draw the same pixels; the station's own color is checked by the next claim.
      *
-     * MUTATION: have `StationPicture` paint the next squares without `inGray`, and this fails.
+     * MUTATION: give the next squares' arrows the wash, or drop `!sensorsFree` from `LayoutLabel`'s accessory highlight,
+     * and this fails.
      */
     @Test(timeOut = 120000)
-    public void testANeighborsSignalIsDrawnWithoutColor() throws Exception
+    public void testTheNextSquaresAreDrawnInTheirOwnColors() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        Components.onTheEventThread(() ->
+        {
+            Map<String, java.awt.Shape> marks = window.pictureMarksForTest();
+            java.awt.image.BufferedImage picture = drawnOn(block);
+            java.awt.geom.Area marked = marked(marks);
+
+            int squares = 0, accessories = 0;
+
+            // The art lives in the first child, out of the pointer's way
+            for (java.awt.Component each : ((java.awt.Container) block.getComponent(0)).getComponents())
+            {
+                if (each.getBounds().equals(marks.get("SQUARE"))) continue;
+
+                java.awt.Rectangle at = each.getBounds();
+                org.traincontrol.base.LayoutDiagramComponent art = ((org.traincontrol.gui.LayoutLabel) each).getComponent();
+
+                assertFalse(((org.traincontrol.gui.LayoutLabel) each).isAccessoryHighlightOutstanding(), "the picture's"
+                    + " next square at " + at.x + "," + at.y + " wears the yellow wash of a change");
+
+                if (art.isSignal() || art.isSwitch()) accessories++;
+
+                // A signal's pixels are the next claim's
+                if (art.isSignal()) continue;
+
+                java.awt.image.BufferedImage own = ownArt(each, block.getBackground());
+
+                squares++;
+
+                for (int y = 0; y < at.height; y++)
+                {
+                    for (int x = 0; x < at.width; x++)
+                    {
+                        java.awt.Point p = new java.awt.Point(at.x + x, at.y + y);
+
+                        if (marked.contains(p)) continue;
+
+                        assertEquals(new java.awt.Color(picture.getRGB(p.x, p.y)), new java.awt.Color(own.getRGB(x, y)),
+                            "the picture's next square at " + at.x + "," + at.y + " is not drawn as it draws itself, at "
+                            + x + "," + y);
+                    }
+                }
+            }
+
+            assertTrue(squares > 0, "precondition: the picture draws no next square that is no signal");
+            assertTrue(accessories > 0, "precondition: the picture draws no signal or switch beside the station");
+
+            return null;
+        });
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * A signal beside the station is drawn without color, as the editor draws its signals, so its green lamp is not
+     * read as the station's arrows; at full strength, not faded (Adam: "Grey color is fine, just don't fade anything
+     * out."): each of its pixels is its own art's brightness.  The station keeps its own color.
+     *
+     * MUTATION: paint the next squares as they draw themselves, with no `ImageUtil.inGray`, or with an alpha composite,
+     * and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testANeighborsSignalIsDrawnInGrayNotFaded() throws Exception
     {
         TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
 
@@ -3466,31 +4274,216 @@ public class testStationSettingsWindow
 
         javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
 
-        int[] red = Components.onTheEventThread(() ->
+        Components.onTheEventThread(() ->
         {
-            java.awt.Rectangle east = (java.awt.Rectangle) window.pictureMarksForTest().get("SQUARE.E");
+            Map<String, java.awt.Shape> marks = window.pictureMarksForTest();
+            java.awt.image.BufferedImage picture = drawnOn(block);
+            java.awt.geom.Area marked = marked(marks);
 
-            assertNotNull(east, "the picture has no square east of the station");
+            java.awt.Rectangle at = marks.get("SQUARE.E").getBounds();
+            java.awt.image.BufferedImage own = null;
 
-            java.awt.Component signal = null;
-
-            // The art lives in the first child, out of the pointer's way
             for (java.awt.Component each : ((java.awt.Container) block.getComponent(0)).getComponents())
             {
-                if (each.getBounds().equals(east)) signal = each;
+                if (each.getBounds().equals(at)) own = ownArt(each, block.getBackground());
             }
 
-            assertNotNull(signal, "no square of the picture is the signal");
+            assertNotNull(own, "precondition: the picture draws no signal east of the station");
 
-            return new int[] {pixels(drawnOn((javax.swing.JComponent) signal), new java.awt.Rectangle(signal.getSize()), RED),
-                pixels(drawnOn(block), east, RED)};
+            assertTrue(pixels(own, new java.awt.Rectangle(at.getSize()), COLORED) > 0, "precondition: the signal's own art"
+                + " has no color");
+
+            assertTrue(pixels(picture, marks.get("SQUARE").getBounds(), COLORED) > 0, "the station is drawn without color");
+
+            int compared = 0;
+
+            for (int y = 0; y < at.height; y++)
+            {
+                for (int x = 0; x < at.width; x++)
+                {
+                    if (marked.contains(at.x + x, at.y + y)) continue;
+
+                    int drawn = picture.getRGB(at.x + x, at.y + y) & 0xffffff;
+                    int mine = own.getRGB(x, y);
+                    int light = ((mine >> 16 & 0xff) * 299 + (mine >> 8 & 0xff) * 587 + (mine & 0xff) * 114) / 1000;
+
+                    compared++;
+
+                    assertEquals(Integer.toHexString(drawn), Integer.toHexString(light * 0x010101), "the picture's signal at "
+                        + x + "," + y + " is not its own art in gray at full strength");
+                }
+            }
+
+            assertTrue(compared > at.width * at.height / 2, "precondition: only " + compared + " of the signal's pixels"
+                + " lie clear of the marks");
+
+            return null;
         });
 
-        assertTrue(red[0] > 0, "precondition: the signal's own art has no red");
+        StationDoors.close(window);
+    }
 
-        assertEquals(red[1], 0, "red pixels on the signal's square in the picture");
+    /** Pixels with color in them: a lamp's red or green, the station's blue. */
+    private static final java.util.function.IntPredicate COLORED = rgb -> Math.max(rgb >> 16 & 0xff,
+        Math.max(rgb >> 8 & 0xff, rgb & 0xff)) - Math.min(rgb >> 16 & 0xff, Math.min(rgb >> 8 & 0xff, rgb & 0xff)) > 60;
+
+    /** Where the picture's ways in and the next squares' arrows are drawn, with a margin: the rest is the squares' art. */
+    private static java.awt.geom.Area marked(Map<String, java.awt.Shape> marks)
+    {
+        java.awt.geom.Area out = new java.awt.geom.Area();
+
+        for (Map.Entry<String, java.awt.Shape> mark : marks.entrySet())
+        {
+            if (!mark.getKey().startsWith("IN.") && !mark.getKey().startsWith("NEXT.")) continue;
+
+            out.add(new java.awt.geom.Area(mark.getValue()));
+            out.add(new java.awt.geom.Area(new java.awt.BasicStroke(12).createStrokedShape(mark.getValue())));
+        }
+
+        return out;
+    }
+
+    /** A square of the picture as it draws itself, on this background. */
+    private static java.awt.image.BufferedImage ownArt(java.awt.Component square, Color background)
+    {
+        java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(square.getWidth(), square.getHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+        java.awt.Graphics2D g = out.createGraphics();
+
+        g.setColor(background);
+        g.fillRect(0, 0, out.getWidth(), out.getHeight());
+        square.paint(g);
+        g.dispose();
+
+        return out;
+    }
+
+    /**
+     * A signal beside the station is drawn at rest, whatever it shows on the railway, as a sensor is (OB-485): the
+     * picture shows the setup, and its squares hear of no change after it is built.
+     *
+     * MUTATION: have `LayoutLabel.ignoresState` leave a picture's signals and switches live again, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testANeighborsSignalIsDrawnAtRestWhateverItShows() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
+
+        org.traincontrol.base.Accessory signal = Components.onTheEventThread(() -> session.getGraph().getTiles()
+            .get(square.beside(org.traincontrol.automationui.TilePorts.Side.E)).getAccessory());
+
+        assertNotNull(signal, "precondition: the square east of the station is no signal");
+
+        boolean was = signal.isSwitched();
+
+        try
+        {
+            signal.setSwitched(false);
+
+            java.awt.image.BufferedImage one = pictureOf(square);
+
+            signal.setSwitched(true);
+
+            java.awt.image.BufferedImage other = pictureOf(square);
+
+            assertEquals(difference(one, other, 0), 0, "pixels of the picture that differ with the signal switched");
+        }
+        finally
+        {
+            signal.setSwitched(was);
+        }
+    }
+
+    /**
+     * The picture shows the setup, not the railway (OB-485): a station whose sensor is occupied is drawn exactly as it
+     * is while free, while the main window's and the autonomy editor's tiles for that square still show it occupied.
+     *
+     * MUTATION: have `StationPicture.label` make its squares with `new LayoutLabel(art, block, SQUARE, main, false)`,
+     * and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAnOccupiedSensorIsDrawnFreeInThePicture() throws Exception
+    {
+        TileKey square = aStation();
+
+        org.traincontrol.base.LayoutDiagramComponent art = Components.onTheEventThread(() -> session.getGraph().getTiles().get(square));
+
+        org.traincontrol.base.Feedback sensor = art.getFeedback();
+
+        assertNotNull(sensor, "precondition: the station's square has no sensor");
+
+        // The main window's own tile, registered for the sensor's changes as its grid registers it
+        org.traincontrol.gui.LayoutLabel onTheDiagram = Components.onTheEventThread(() ->
+        {
+            javax.swing.JPanel shown = new javax.swing.JPanel();
+
+            shown.setVisible(true);
+
+            org.traincontrol.gui.LayoutLabel label = new org.traincontrol.gui.LayoutLabel(art, shown, 30, ui, false);
+
+            sensor.addTile(label);
+
+            return label;
+        });
+
+        org.traincontrol.gui.LayoutLabel inTheEditor = Components.onTheEventThread(() -> Components.find(editor,
+            org.traincontrol.gui.LayoutLabel.class, each -> each.getComponent() == art));
+
+        assertNotNull(inTheEditor, "precondition: the editor draws no tile for the station");
+
+        boolean was = sensor.isSet();
+
+        try
+        {
+            sensor.setState(false);
+            Components.drain(3);
+
+            java.awt.image.BufferedImage free = pictureOf(square);
+            Object diagramFree = drawnIcon(onTheDiagram);
+            Object editorFree = drawnIcon(inTheEditor);
+
+            sensor.setState(true);
+            Components.drain(3);
+
+            java.awt.image.BufferedImage occupied = pictureOf(square);
+
+            assertFalse(drawnIcon(onTheDiagram) == diagramFree, "the main diagram's tile no longer shows the sensor occupied");
+
+            assertFalse(drawnIcon(inTheEditor) == editorFree, "the autonomy editor's tile no longer shows the sensor occupied");
+
+            assertEquals(occupied.getWidth() + "x" + occupied.getHeight(), free.getWidth() + "x" + free.getHeight(),
+                "the picture's size");
+
+            assertEquals(difference(free, occupied, 0), 0, "pixels of the picture that differ with the station's sensor"
+                + " occupied");
+        }
+        finally
+        {
+            sensor.setState(was);
+            Components.drain(3);
+        }
+    }
+
+    /** The picture's block as Station Settings draws it, opened on this square and closed again. */
+    private java.awt.image.BufferedImage pictureOf(TileKey square) throws Exception
+    {
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        StationDoors.current(window);
+
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        java.awt.image.BufferedImage out = Components.onTheEventThread(() -> drawnOn(block));
 
         StationDoors.close(window);
+
+        return out;
+    }
+
+    private static Object drawnIcon(org.traincontrol.gui.LayoutLabel label)
+    {
+        return Components.onTheEventThread(() -> label.getIcon() instanceof javax.swing.ImageIcon
+            ? ((javax.swing.ImageIcon) label.getIcon()).getImage() : label.getIcon());
     }
 
     /**
@@ -3523,8 +4516,8 @@ public class testStationSettingsWindow
         // Some trains rather than Yes, as BottomMainA has a Maximum train length (OB-440)
         assertEquals(Components.onTheEventThread(() -> window.drawnForTest(StandingRules.Row.SENT_HERE, "hand")).get("E"),
             StandingRules.Answer.SOME, "the table did not follow the way in");
-        assertTrue(Components.onTheEventThread(window::pictureWaysInForTest).contains("E"),
-            "the picture did not follow the way in");
+        // Every side allowed now, so no way in is drawn, as on the track diagram (OB-494)
+        assertEquals(waysInDrawn(window), set(), "the picture did not follow the way in");
 
         // The square to the west, its arrow at its own west side
         clickOn(window, "NEXT.W.W");
@@ -3550,6 +4543,530 @@ public class testStationSettingsWindow
     }
 
     /**
+     * A next square that follows its run wears the run's way, though the track diagram draws that arrow on the run's
+     * first square alone (MT-1061, Adam: "I would like to see the effective, computed arrows from he nearest tile with
+     * arrows"): each of its arms open as trains may leave by it.
+     *
+     * MUTATION: have `StationPicture.show` take the next squares' marks from `staticAnnotations` again, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testANextSquareWearsItsRunsWayFromItsFirstSquare() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+
+        runAwayFrom(found[1], sideBetween(found[0], found[1]).opposite());
+
+        assertNull(Components.onTheEventThread(() -> session.staticAnnotations(java.util.Collections.singleton(found[1]), true,
+            true).get(found[1])), "precondition: the diagram draws an arrow on the square that follows its run");
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+
+        assertEquals(nextSquareState(window, found[1]), armsInForce(found[1]), "the picture does not wear the run's way");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * A click on such an inherited arrow sets the whole run, as the right-click menu does on any of its squares: its
+     * tooltip reads true, the arm flips, the picture follows, and the run's first square draws the new way.  The run
+     * starts one way away from the station, as a click that only narrowed it would pass with the square set alone.
+     *
+     * MUTATION: have `SessionRuns.setRunDirection` look the run up by its first square only again, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAClickOnAnInheritedArrowSetsTheRun() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+        String arm = "NEIGHBOR." + side.opposite() + " " + found[1] + ":";
+
+        runAwayFrom(found[1], side.opposite());
+
+        TileKey leader = Components.onTheEventThread(() -> session.runLeaders().get(found[1]));
+        RouteId road = onlyRoad(leader);
+        Direction was = Components.onTheEventThread(() -> session.directionAsDrawn(leader, road));
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+
+        assertTrue(nextSquareState(window, found[1]).contains(arm + false), "precondition: the arrow at the station is not drawn shut");
+
+        opensTheShutArrowAtTheStation(window, found);
+        assertEquals(nextSquareState(window, found[1]), armsInForce(found[1]), "the picture and the square disagree");
+        assertNotEquals(Components.onTheEventThread(() -> session.directionAsDrawn(leader, road)), was,
+            "the run's first square still draws the old way: the click set the square alone");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * From an open run, a click on either arm of a following square shuts that arm on the whole run: the square leaves
+     * by the other, the picture agrees, and the run's first square is no longer open both ways, with no opposite-ways
+     * warning.
+     *
+     * MUTATION: have `nextSquare` open the arm clicked instead of shutting it, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testNarrowingAnOpenRunFromAFollowingSquareSetsItTheWayClicked() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+        org.traincontrol.automationui.TilePorts.Side near = side.opposite();
+        org.traincontrol.automationui.TilePorts.Side far = Components.onTheEventThread(() ->
+            session.getRoutes(found[1]).values().iterator().next().other(near));
+
+        TileKey leader = Components.onTheEventThread(() -> session.runLeaders().get(found[1]));
+        RouteId road = onlyRoad(leader);
+
+        for (org.traincontrol.automationui.TilePorts.Side clicked : new org.traincontrol.automationui.TilePorts.Side[] {near, far})
+        {
+            Components.onTheEventThread(() -> session.setRunDirection(leader, road, Direction.BOTH));
+
+            StationSettingsWindow window = StationDoors.open(panel, found[0]);
+
+            assertEquals(armsInForce(found[1]), set("NEIGHBOR." + near + " " + found[1] + ":true",
+                "NEIGHBOR." + far + " " + found[1] + ":true"), "precondition: open both ways");
+
+            routedClick(window, "NEXT." + side + "." + clicked, null);
+            StationDoors.current(window);
+
+            org.traincontrol.automationui.TilePorts.Side other = clicked == near ? far : near;
+
+            assertEquals(armsInForce(found[1]), set("NEIGHBOR." + clicked + " " + found[1] + ":false",
+                "NEIGHBOR." + other + " " + found[1] + ":true"), "the following square is not set the way clicked (" + clicked
+                + ")");
+            assertEquals(nextSquareState(window, found[1]), armsInForce(found[1]), "the picture and the square disagree");
+            assertNotEquals(Components.onTheEventThread(() -> session.directionAsDrawn(leader, road)), Direction.BOTH,
+                "the run's first square is still open both ways after " + clicked);
+            assertFalse(pointsOppositeWays(), "the run points opposite ways after " + clicked);
+
+            StationDoors.close(window);
+        }
+    }
+
+    /**
+     * A run pointing opposite ways, as a file or an older version can leave it, is drawn closed at its first square, so
+     * a following square beside the station is shown closed too, and its tooltip says so; a click opens the arm clicked
+     * on the whole run, and the warning goes.
+     *
+     * MUTATION: have `StationPicture.show` draw a following square by its own stored way, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testARunPointingOppositeWaysIsShownClosed() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+
+        opposeTheRun(found, true);
+
+        assertTrue(pointsOppositeWays(), "precondition: the run does not point opposite ways");
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+
+        assertEquals(nextSquareState(window, found[1]), set("NEIGHBOR." + side.opposite() + " " + found[1] + ":false",
+            "NEIGHBOR." + side + " " + found[1] + ":false"),
+            "the picture does not show the run closed, as the diagram draws it");
+
+        opensTheShutArrowAtTheStation(window, found);
+        assertFalse(pointsOppositeWays(), "the run still points opposite ways after the click");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * A run pointing opposite ways is drawn closed on both arms of a square beside the station, though that square's own
+     * stored way leaves the station.  A click on the shut arm toward the station opens that arm alone: the far arm,
+     * which the picture showed shut, stays shut.
+     *
+     * MUTATION: have `nextSquare` start from the square's stored arms on a run drawn closed, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAClickOnAShutArmOfAnOppositeWaysRunOpensThatArmAlone() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+
+        opposeTheRun(found, false);
+
+        assertTrue(pointsOppositeWays(), "precondition: the run does not point opposite ways");
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+
+        opensTheShutArrowAtTheStation(window, found);
+        assertTrue(nextSquareState(window, found[1]).contains("NEIGHBOR." + side + " " + found[1] + ":false"),
+            "the click opened the far arm too, which the picture showed shut: " + nextSquareState(window, found[1]));
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * The moment a run starts, before the window has read it, a hover on a following square's arrow already says nothing
+     * can be changed.
+     *
+     * MUTATION: have `pictureClick` read the window's cached hold again, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testThePictureKnowsARunHasStartedAtOnce() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        Components.settle();
+
+        try
+        {
+            String tip = Components.onTheEventThread(() ->
+            {
+                staging.set(ui, true);
+
+                double[] middle = middleOf(window.pictureMarksForTest().get("NEXT." + side + "." + side.opposite()));
+
+                return block.getToolTipText(new java.awt.event.MouseEvent(block, java.awt.event.MouseEvent.MOUSE_MOVED, 0, 0,
+                    (int) Math.round(middle[0]), (int) Math.round(middle[1]), 0, false));
+            });
+
+            assertTrue(tip.contains(I18n.t(org.traincontrol.gui.RunGates.NO_EDITS_WHILE_RUNNING)),
+                "the tooltip offers the edit as a run starts: " + tip);
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { staging.set(ui, false); return null; });
+
+            StationDoors.close(window);
+        }
+    }
+
+    /**
+     * A click on a following square's arrow in the turn a run begins, before the window has read it, changes neither
+     * the run's way nor the setup (MT-1068).
+     *
+     * MUTATION: have `pictureClick` press whatever `whyHeld` says and `actAlone` run its door without `refused()`, and
+     * this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAClickOnAFollowingSquaresArrowAsARunBeginsChangesNothing() throws Exception
+    {
+        TileKey[] found = aStationBesideAFollowingSquare();
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+        TileKey leader = Components.onTheEventThread(() -> session.runLeaders().get(found[1]));
+        RouteId road = onlyRoad(leader);
+
+        Components.onTheEventThread(() -> session.setRunDirection(leader, road, Direction.BOTH));
+
+        final java.lang.reflect.Field staging = Reflect.field(TrainControlUI.class, "stagingFlowActive");
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+        Components.settle();
+
+        Set<String> before = armsInForce(found[1]);
+        String setupBefore = setup();
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            // Pressed, released and clicked in the one event-thread turn the run starts in
+            Components.onTheEventThread(() ->
+            {
+                staging.set(ui, true);
+
+                double[] middle = middleOf(window.pictureMarksForTest().get("NEXT." + side + "." + side.opposite()));
+                java.awt.Point at = javax.swing.SwingUtilities.convertPoint(block, (int) Math.round(middle[0]),
+                    (int) Math.round(middle[1]), window);
+
+                click(window, at);
+
+                return null;
+            });
+
+            Components.settle();
+
+            assertEquals(armsInForce(found[1]), before, "a click as a run began changed the run's direction");
+            assertEquals(setup(), setupBefore, "a click as a run began changed the setup");
+        }
+        finally
+        {
+            Components.onTheEventThread(() -> { staging.set(ui, false); return null; });
+
+            StationDoors.close(window);
+        }
+    }
+
+    /** Sets the square beside the station one way, toward the station or away, and its run's first square the other. */
+    private static void opposeTheRun(TileKey[] found, boolean towardStation)
+    {
+        TileKey leader = Components.onTheEventThread(() -> session.runLeaders().get(found[1]));
+        RouteId road = onlyRoad(leader);
+        org.traincontrol.automationui.TilePorts.Side near = sideBetween(found[0], found[1]).opposite();
+
+        for (Direction first : new Direction[] {Direction.TOWARD_A, Direction.TOWARD_B})
+        {
+            Components.onTheEventThread(() ->
+            {
+                session.setRunDirection(leader, road, Direction.BOTH);
+
+                boolean aIsNear = session.getRoutes(found[1]).values().iterator().next().getA() == near;
+
+                session.setDirection(found[1], onlyRoad(found[1]), aIsNear == towardStation ? Direction.TOWARD_A : Direction.TOWARD_B);
+                session.setDirection(leader, road, first);
+
+                return null;
+            });
+
+            if (pointsOppositeWays()) return;
+        }
+    }
+
+    /** Clicks a following square's arrow at the station, drawn shut: its tooltip says so, and the click opens it. */
+    private static void opensTheShutArrowAtTheStation(StationSettingsWindow window, TileKey[] found) throws Exception
+    {
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+
+        String[] hover = new String[3];
+
+        routedClick(window, "NEXT." + side + "." + side.opposite(), hover);
+        StationDoors.current(window);
+
+        assertTrue(hover[2].contains(I18n.f("autosetup.ui.stationPicMeansNextShut", "")), "the tooltip does not say the"
+            + " arrow is shut: " + hover[2]);
+        assertTrue(nextSquareState(window, found[1]).contains("NEIGHBOR." + side.opposite() + " " + found[1] + ":true"),
+            "the click did not open the arm clicked: " + nextSquareState(window, found[1]));
+    }
+
+    private static boolean pointsOppositeWays()
+    {
+        return Components.onTheEventThread(() -> session.check().stream().anyMatch(finding ->
+            org.traincontrol.automationui.AutonomyChecks.RUN_POINTS_OPPOSITE_WAYS.equals(finding.getMessageKey())));
+    }
+
+    /** A station on the page with a square that follows its run beside it, their tracks meeting: {station, square}. */
+    private static TileKey[] aStationBesideAFollowingSquare()
+    {
+        return Components.onTheEventThread(() ->
+        {
+            for (TileKey each : session.getReducer().getPoints().keySet())
+            {
+                if (!PAGE.equals(each.getPage()) || !session.getStore().isStation(each)) continue;
+
+                for (org.traincontrol.automationui.TilePorts.Side side : org.traincontrol.automationui.TilePorts.Side.values())
+                {
+                    TileKey beside = each.beside(side);
+
+                    if (session.followsItsRun(beside) && touches(each, side) && touches(beside, side.opposite()))
+                    {
+                        return new TileKey[] {each, beside};
+                    }
+                }
+            }
+
+            throw new AssertionError("precondition: no station on " + PAGE + " beside a square that follows its run");
+        });
+    }
+
+    private static boolean touches(TileKey square, org.traincontrol.automationui.TilePorts.Side side)
+    {
+        return session.getRoutes(square).values().stream().anyMatch(road -> road.getA() == side || road.getB() == side);
+    }
+
+    private static org.traincontrol.automationui.TilePorts.Side sideBetween(TileKey station, TileKey square)
+    {
+        for (org.traincontrol.automationui.TilePorts.Side side : org.traincontrol.automationui.TilePorts.Side.values())
+        {
+            if (station.beside(side).equals(square)) return side;
+        }
+
+        throw new AssertionError(square + " is not beside " + station);
+    }
+
+    /** Sets a square's run one way through its first square, the way that shuts the square's arm at `arm`. */
+    private static void runAwayFrom(TileKey square, org.traincontrol.automationui.TilePorts.Side arm)
+    {
+        Components.onTheEventThread(() ->
+        {
+            TileKey leader = session.runLeaders().get(square);
+
+            for (Direction way : new Direction[] {Direction.TOWARD_A, Direction.TOWARD_B})
+            {
+                session.setRunDirection(leader, session.getRoutes(leader).keySet().iterator().next(), way);
+
+                if (armsInForce(square).contains("NEIGHBOR." + arm + " " + square + ":false")
+                    && armsInForce(square).contains("NEIGHBOR." + arm.opposite() + " " + square + ":true")) return null;
+            }
+
+            throw new AssertionError("precondition: the run of " + square + " cannot be set one way away from " + arm);
+        });
+    }
+
+    /** The picture's marks on one next square, as `pictureStateForTest` words them. */
+    private static Set<String> nextSquareState(StationSettingsWindow window, TileKey square)
+    {
+        Set<String> out = new java.util.TreeSet<>();
+
+        for (String each : Components.onTheEventThread(window::pictureStateForTest))
+        {
+            if (each.startsWith("NEIGHBOR.") && each.contains(" " + square + ":")) out.add(each);
+        }
+
+        return out;
+    }
+
+    /** Each arm of a square with whether trains may leave by it, as Station Settings' click asks, in the same words. */
+    private static Set<String> armsInForce(TileKey square)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            Set<String> out = new java.util.TreeSet<>();
+
+            Map<RouteId, org.traincontrol.automationui.TilePorts.Route> routes = session.getRoutes(square);
+            List<org.traincontrol.automationui.TilePorts.Side> arms = org.traincontrol.automationui.TileGraph.armsOf(
+                routes.values());
+
+            int mask = session.getGraph().armMask(square, routes, arms);
+
+            for (int i = 0; i < arms.size(); i++) out.add("NEIGHBOR." + arms.get(i) + " " + square + ":" + ((mask & 1 << i) != 0));
+
+            return out;
+        });
+    }
+
+    /**
+     * The picture draws the ways in by the track diagram's rule (OB-494): at BottomMainA, with arrivals from the east
+     * barred, a way in at each of its two sides; with May Arrive From East ticked, so every side is allowed, none, as
+     * the diagram then draws none; unticked again, both back.
+     *
+     * MUTATION: have `StationPicture.wayIn` ask `arrivalMarks` for every arrival side however few are barred, and this
+     * fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAStationAllowingEverySideWearsNoWaysIn() throws Exception
+    {
+        TileKey square = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "BottomMainA"));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        assertFalse(StationDoors.on(window, "station.arrive.E"), "precondition: arrivals from the east are closed");
+        assertEquals(waysInDrawn(window), set("E", "W"), "with the east barred, the picture's ways in");
+
+        StationDoors.press(window, "station.arrive.E");
+        StationDoors.current(window);
+
+        assertTrue(Components.onTheEventThread(() -> session.getBarredArrivals(square).isEmpty()),
+            "precondition: the setup still bars a side");
+        assertEquals(Components.onTheEventThread(() -> session.staticAnnotations(java.util.Collections.singleton(square),
+            true, true).get(square).getArrivals()), java.util.Collections.emptyList(),
+            "precondition: the track diagram draws an arrival mark on a station allowing every side");
+        assertEquals(waysInDrawn(window), set(), "a station allowing every side wears ways in - Adam: \"No arrows should"
+            + " be shown if all is allowed.\"");
+
+        StationDoors.press(window, "station.arrive.E");
+        StationDoors.current(window);
+
+        assertEquals(waysInDrawn(window), set("E", "W"), "barred again, the picture's ways in");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * The Advanced heading wears a * while a setting under it is not its default, and says so when hovered (FR-226;
+     * Adam: "If any advanced settings are set, add a * next to it so the users know to look there."): a plain station's
+     * reads Advanced; a priority or a speed typed, Blacklist pressed, or a square made to stop it from another door each
+     * star it as it is set, and each put back clears it.
+     *
+     * MUTATION: leave the speed out of `altered` in `StationSettingsWindow.fill`, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAdvancedWearsAStarWhileASettingUnderItIsSet() throws Exception
+    {
+        // A station with nothing under Advanced set: no priority, speed, list in force or Unavailable while
+        TileKey square = stationsOn(PAGE).stream().filter(each -> Components.onTheEventThread(() ->
+            session.getPointProperty(each, "priority") == null && session.getPointProperty(each, "speedMultiplier") == null
+            && session.getWhichTrains(each) == WhichTrains.ALL && session.getStore().getBlockingPoints(each).isEmpty()))
+            .findFirst().orElseThrow(() -> new AssertionError("precondition: every station has a setting under Advanced"));
+        TileKey other = stationsOn(PAGE).stream().filter(each -> !each.equals(square)).findFirst().get();
+        String train = model.getLocList().get(0);
+
+        Components.onTheEventThread(() ->
+        {
+            // A list on file, so Blacklist sets it without asking for one
+            session.setTrainList(square, java.util.Collections.singletonList(train));
+
+            return null;
+        });
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
+
+        assertAdvanced(window, false, "a plain station");
+
+        StationDoors.typeAndEnter(window, "station.priority", "4");
+        assertAdvanced(window, true, "a priority typed");
+        StationDoors.typeAndEnter(window, "station.priority", "0");
+        assertAdvanced(window, false, "the priority put back");
+
+        StationDoors.typeAndEnter(window, "station.speed", "80");
+        assertAdvanced(window, true, "a speed typed");
+        StationDoors.typeAndEnter(window, "station.speed", "100");
+        assertAdvanced(window, false, "the speed put back");
+
+        StationDoors.press(window, "station.whichBlack");
+        StationDoors.current(window);
+        assertAdvanced(window, true, "Blacklist pressed");
+        StationDoors.press(window, "station.whichAll");
+        StationDoors.current(window);
+        assertAdvanced(window, false, "All trains pressed again");
+
+        for (List<TileKey> blockers : java.util.Arrays.asList(java.util.Collections.singletonList(other),
+            java.util.Collections.<TileKey>emptyList()))
+        {
+            Components.onTheEventThread(() ->
+            {
+                session.getStore().setBlockingPoints(square, blockers);
+                panel.refresh();
+
+                return null;
+            });
+
+            Components.settle();
+            StationDoors.current(window);
+            assertAdvanced(window, !blockers.isEmpty(), "Unavailable while set to " + blockers);
+        }
+
+        StationDoors.close(window);
+    }
+
+    /** The Advanced heading reads Advanced with a * and its tooltip, or plain with none. */
+    private static void assertAdvanced(StationSettingsWindow window, boolean starred, String what) throws Exception
+    {
+        AbstractButton heading = StationDoors.part(window, "station.advanced", AbstractButton.class);
+        String plain = I18n.t("autosetup.ui.stationSectionAdvanced");
+
+        assertEquals(Components.onTheEventThread(heading::getText), starred ? plain + " *" : plain, what + ": the heading");
+        assertEquals(Components.onTheEventThread(heading::getToolTipText), starred
+            ? AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.stationAdvancedSet")) : null, what + ": the heading's tooltip");
+    }
+
+    /** The sides the picture draws a station's way in at, open or shut. */
+    private static Set<String> waysInDrawn(StationSettingsWindow window) throws Exception
+    {
+        Set<String> sides = new java.util.TreeSet<>();
+
+        for (String mark : Components.onTheEventThread(window::pictureStateForTest))
+        {
+            if (mark.startsWith("IN.")) sides.add(mark.substring(3, 4));
+        }
+
+        return sides;
+    }
+
+    /**
      * On every station of the page each side's way in stands beside that side's axis, pointing in, off the axis and the
      * station's art (Adam: "the yellow/grey egress arrows should be offset from the station"); inside the station's
      * square and clear of every next square.  A curve keeps its ways in each plainly nearer its own side (Adam: "I7 put
@@ -3569,6 +5086,17 @@ public class testStationSettingsWindow
 
         for (TileKey square : stations)
         {
+            // One side barred, so every way in is drawn (OB-494)
+            Components.onTheEventThread(() ->
+            {
+                if (!session.arrivalSides(square).isEmpty())
+                {
+                    session.setBarredArrivals(square, java.util.EnumSet.of(session.arrivalSides(square).get(0)));
+                }
+
+                return null;
+            });
+
             StationSettingsWindow window = StationDoors.open(panel, square);
 
             Map<String, java.awt.Shape> marks = Components.onTheEventThread(window::pictureMarksForTest);
@@ -3690,6 +5218,9 @@ public class testStationSettingsWindow
     @Test(timeOut = 600000)
     public void testARoutedClickPressesEveryMarkAndHoverShowsItsTip() throws Exception
     {
+        // So every station with two ways in wears them (OB-494)
+        barOneSideOfEach();
+
         List<String> wrong = new java.util.ArrayList<>();
         int[] done = {0, 0, 0};
 
@@ -3706,6 +5237,9 @@ public class testStationSettingsWindow
 
             for (String key : keys)
             {
+                // A press that leaves every side allowed takes the ways in away (OB-494)
+                if (!Components.onTheEventThread(() -> window.pictureMarksForTest().containsKey(key))) continue;
+
                 Set<String> before = Components.onTheEventThread(window::pictureStateForTest);
                 String setupBefore = setup();
 
@@ -4130,16 +5664,49 @@ public class testStationSettingsWindow
             window.dispatchEvent(new java.awt.event.MouseEvent(window, java.awt.event.MouseEvent.MOUSE_MOVED,
                 System.currentTimeMillis(), 0, at.x, at.y, 0, false, java.awt.event.MouseEvent.NOBUTTON));
 
-            for (int id : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
-                java.awt.event.MouseEvent.MOUSE_CLICKED})
-            {
-                window.dispatchEvent(new java.awt.event.MouseEvent(window, id, System.currentTimeMillis(),
-                    id == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0, at.x, at.y, 1,
-                    false, java.awt.event.MouseEvent.BUTTON1));
-            }
+            click(window, at);
 
             return null;
         });
+    }
+
+    /** A left button pressed, released and clicked at `at` in `window`, on the event thread. */
+    private static void click(java.awt.Window window, java.awt.Point at)
+    {
+        for (int id : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
+            java.awt.event.MouseEvent.MOUSE_CLICKED})
+        {
+            window.dispatchEvent(new java.awt.event.MouseEvent(window, id, System.currentTimeMillis(),
+                id == java.awt.event.MouseEvent.MOUSE_PRESSED ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0,
+                at.x, at.y, 1, false, java.awt.event.MouseEvent.BUTTON1));
+        }
+    }
+
+    /** Bars the first way in of every station with two or more, on every page, and rebuilds the railway from that. */
+    private static void barOneSideOfEach()
+    {
+        Components.onTheEventThread(() ->
+        {
+            for (TileKey each : new java.util.ArrayList<>(session.getReducer().getPoints().keySet()))
+            {
+                List<org.traincontrol.automationui.TilePorts.Side> sides = session.arrivalSides(each);
+
+                if (session.getStore().isStation(each) && sides.size() > 1)
+                {
+                    session.setBarredArrivals(each, java.util.EnumSet.of(sides.get(0)));
+                }
+            }
+
+            Set<String> trains = new LinkedHashSet<>(session.placementsAutonomyWillWrite().values());
+
+            trains.addAll(session.homesToPlace().values());
+
+            ui.rebuildRunningLayoutFromSetup(false, trains);
+
+            return null;
+        });
+
+        Components.settle();
     }
 
     /** Whether any road of the station is a curve: its two arms are not opposite sides. */
@@ -4405,11 +5972,11 @@ public class testStationSettingsWindow
         PillButton lit = StationDoors.part(window, "station.preset.OFF", PillButton.class);
         PillButton unlit = StationDoors.part(window, "station.preset.STATION", PillButton.class);
 
-        assertEquals(toolkitCursor(lit).getType(), java.awt.Cursor.HAND_CURSOR, "no hand cursor on an enabled pill");
+        assertTrue(HandPointer.isHand(toolkitCursor(lit)), "no hand cursor on an enabled pill");
 
         // A pill nobody has enabled or disabled: the constructor alone sets the hand
-        assertEquals(toolkitCursor(Components.onTheEventThread(() -> new PillButton("fresh"))).getType(),
-            java.awt.Cursor.HAND_CURSOR, "a new pill has no hand cursor");
+        assertTrue(HandPointer.isHand(toolkitCursor(Components.onTheEventThread(() -> new PillButton("fresh")))),
+            "a new pill has no hand cursor");
 
         Components.onTheEventThread(() -> { lit.setEnabled(false); unlit.setEnabled(false); return null; });
 
@@ -4620,12 +6187,17 @@ public class testStationSettingsWindow
     private static void setByHand(StationSettingsWindow window, StationPreset preset) throws Exception
     {
         boolean stops = preset != StationPreset.OFF;
+        boolean through = preset == StationPreset.STATION || preset == StationPreset.REVERSING_POINT
+            || preset == StationPreset.OFF;
 
+        // Ticks before unticks: both boxes off at once is out of service
         if (stops && !StationDoors.on(window, "station.stops")) StationDoors.press(window, "station.stops");
 
-        if (!StationDoors.on(window, "station.runsThrough")) StationDoors.press(window, "station.runsThrough");
+        if (through && !StationDoors.on(window, "station.runsThrough")) StationDoors.press(window, "station.runsThrough");
 
         if (!stops && StationDoors.on(window, "station.stops")) StationDoors.press(window, "station.stops");
+
+        if (!through && StationDoors.on(window, "station.runsThrough")) StationDoors.press(window, "station.runsThrough");
 
         boolean wantsAuto = preset == StationPreset.STATION || preset == StationPreset.TERMINUS;
 
@@ -4634,7 +6206,7 @@ public class testStationSettingsWindow
             StationDoors.press(window, "station.fullAutonomy");
         }
 
-        String turn = preset == StationPreset.TERMINUS ? "station.turnMust"
+        String turn = preset == StationPreset.TERMINUS || preset == StationPreset.PARKING ? "station.turnMust"
             : preset == StationPreset.REVERSING_POINT ? "station.turnMay" : "station.turnNever";
 
         if (!StationDoors.on(window, turn)) StationDoors.press(window, turn);

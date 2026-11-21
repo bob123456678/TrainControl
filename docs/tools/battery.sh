@@ -424,7 +424,8 @@ MSYS_NO_PATHCONV=1 reg.exe delete "HKCU\\Software\\JavaSoft\\Prefs\\traincontrol
 
 for DATA in LocDB.data UIState.data
 do
-    if [ -f "$DATA" ]; then cp "$DATA" "$ISOLATED/"; fi
+    if [ -f "$DATA" ]; then cp "$DATA" "$ISOLATED/"
+    elif [ "$DATA" = LocDB.data ]; then echo "warning: no LocDB.data here, so the run starts with no locomotives (docs/tools/env.sh sets one up)" >&2; fi
 done
 
 JAVA_FLAGS="$JAVA_FLAGS -Dtraincontrol.dataDir=$(cygpath -ws "$ISOLATED") -Dtraincontrol.preferences=$RUN_ID"

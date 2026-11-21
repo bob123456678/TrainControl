@@ -124,8 +124,8 @@ public class testACS3SyncTakesTheStationsPositions
      * The saved state, answered at once: every two-position accessory takes it, and no actuation is counted.  The
      * accessory list is read once, by the routes, and not again for the positions.
      *
-     * MUTATION: fetch `/app/api/mags` again in `parseAccessoryStatesCS3` (start from null, not `cs3Mags`), and it is
-     * asked twice.
+     * MUTATION: fetch `/app/api/mags` again in `parseAccessoryStatesCS3` with `fetchURL` (start from null, not
+     * `cs3Mags`), and it is asked twice.
      */
     @Test
     public void testTheStationsPositionsAreTaken() throws Exception

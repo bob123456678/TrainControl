@@ -9,6 +9,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -24,6 +25,7 @@ import javax.swing.JPanel;
 import org.traincontrol.automation.StandingRules;
 import org.traincontrol.automation.StandingRules.Answer;
 import org.traincontrol.automation.StandingRules.Cell;
+import org.traincontrol.automation.StandingRules.Limit;
 import org.traincontrol.automation.StandingRules.Row;
 import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.gui.InfoMark;
@@ -43,7 +45,6 @@ final class StationMatrixPanel extends JPanel
 
     private final JPanel table = new JPanel(new GridBagLayout());
     private final JLabel problem = new JLabel();
-    private final JLabel also = new JLabel();
 
     /** A cell as drawn, for a test to compare with the real doors: row, tier and answer per side. */
     private final Map<String, Map<String, Answer>> drawn = new LinkedHashMap<>();
@@ -71,22 +72,16 @@ final class StationMatrixPanel extends JPanel
 
         problem.setName("station.matrixProblem");
         problem.setForeground(new Color(170, 0, 0));
-        // The gap between the two lines, so the first stands as far under the picture as the picture under the table
+        problem.setFont(CELL_FONT);
+        problem.setVisible(false);
+        problem.setAlignmentX(LEFT_ALIGNMENT);
+        // The gap under it, so it stands as far under the picture as the picture under the table
         problem.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
-
-        also.setName("station.matrixAlso");
 
         notices.setName("station.notices");
         notices.setLayout(new BoxLayout(notices, BoxLayout.Y_AXIS));
         notices.setOpaque(false);
-
-        for (JLabel line : new JLabel[] {problem, also})
-        {
-            line.setFont(CELL_FONT);
-            line.setVisible(false);
-            line.setAlignmentX(LEFT_ALIGNMENT);
-            notices.add(line);
-        }
+        notices.add(problem);
 
         add(table, BorderLayout.CENTER);
 
@@ -94,8 +89,8 @@ final class StationMatrixPanel extends JPanel
     }
 
     /**
-     * Why the setup stops this square, then what a cell cannot say: for the window to show under the picture, in room
-     * kept for four lines so the window keeps its height as they come and go (MT-919, MT-961).
+     * Why the setup stops this square, only an error (FR-226): for the window to show under the picture, in room kept for
+     * four lines so the window keeps its height as it comes and goes (MT-919, MT-961).
      */
     JComponent notices()
     {
@@ -205,9 +200,8 @@ final class StationMatrixPanel extends JPanel
      * @param rules what the railway answered, or null with `error` to say
      * @param error why every cell reads No, or null
      * @param stuck why a train here could not leave again, said in red where `error` is not (OB-441); or null
-     * @param alsoLine what a cell cannot say: the length, the list, what must be free; or null
      */
-    void show(StandingRules rules, String error, String stuck, String alsoLine)
+    void show(StandingRules rules, String error, String stuck)
     {
         table.removeAll();
         drawn.clear();
@@ -232,9 +226,6 @@ final class StationMatrixPanel extends JPanel
 
         problem.setText(said == null ? "" : wrapAt(said));
         problem.setVisible(said != null);
-
-        also.setText(alsoLine == null ? "" : wrapAt(alsoLine));
-        also.setVisible(alsoLine != null);
 
         revalidate();
         repaint();
@@ -305,12 +296,13 @@ final class StationMatrixPanel extends JPanel
 
         Set<Answer> different = new LinkedHashSet<>();
 
-        List<String> why = new ArrayList<>();
+        Set<String> sentences = new LinkedHashSet<>();
 
         for (Map.Entry<String, Cell> each : cells.entrySet())
         {
             different.add(each.getValue().getAnswer());
             answers.put(each.getKey(), each.getValue().getAnswer());
+            sentences.add(each.getValue().getWhy());
         }
 
         if (different.size() == 1)
@@ -318,13 +310,6 @@ final class StationMatrixPanel extends JPanel
             Answer answer = different.iterator().next();
 
             out.add(line(answer, verdict(answer)));
-
-            Set<String> sentences = new LinkedHashSet<>();
-
-            for (Cell each : cells.values()) sentences.add(each.getWhy());
-
-            if (sentences.size() == 1) why.addAll(sentences);
-            else for (Map.Entry<String, Cell> each : cells.entrySet()) why.add(sideSentence(sideKey, each));
         }
         else
         {
@@ -335,16 +320,80 @@ final class StationMatrixPanel extends JPanel
                 {
                     out.add(line(each.getValue().getAnswer(), I18n.f(sideKey, sideName(each.getKey()))));
                 }
-
-                why.add(sideSentence(sideKey, each));
             }
         }
 
-        out.setToolTipText(AutonomyEditorPanel.wrapped(title + ": " + String.join("  ", why)));
+        // One sentence where every side says the same, else a sentence per side
+        boolean bySide = different.size() > 1 || sentences.size() > 1;
+
+        out.setToolTipText(different.contains(Answer.SOME) ? conditions(title, cells, sideKey, bySide)
+            : AutonomyEditorPanel.wrapped(title + ": " + String.join("  ", bySide ? sideSentences(sideKey, cells) : sentences)));
 
         tipOnChildren(out);
 
         return out;
+    }
+
+    private static List<String> sideSentences(String sideKey, Map<String, Cell> cells)
+    {
+        List<String> out = new ArrayList<>();
+
+        for (Map.Entry<String, Cell> each : cells.entrySet()) out.add(sideSentence(sideKey, each));
+
+        return out;
+    }
+
+    /** The setting each limit comes from, as Station Settings labels it. */
+    private static final Map<Limit, String> LIMIT_LABELS = new EnumMap<>(Limit.class);
+
+    static
+    {
+        LIMIT_LABELS.put(Limit.REVERSING, "autosetup.ui.stationTurning");
+        LIMIT_LABELS.put(Limit.LENGTH, "autosetup.ui.stationMaxLength");
+        LIMIT_LABELS.put(Limit.LIST, "autosetup.ui.stationWhich");
+    }
+
+    /**
+     * A hover over Some trains (FR-226): why, then each condition that decides which trains, by the setting it comes
+     * from.  The same for a cell of plain answers alongside.
+     */
+    private static String conditions(String title, Map<String, Cell> cells, String sideKey, boolean bySide)
+    {
+        StringBuilder html = new StringBuilder("<html><body style='width: 300px'><b>")
+            .append(AutonomyEditorPanel.escape(title)).append("</b>");
+
+        for (Map.Entry<String, Cell> each : cells.entrySet())
+        {
+            Cell cell = each.getValue();
+
+            StringBuilder said = new StringBuilder();
+
+            if (cell.getLimits().isEmpty() || cell.getAnswer() != Answer.SOME)
+            {
+                said.append(AutonomyEditorPanel.escape(cell.getWhy()));
+            }
+            else
+            {
+                if (cell.getReason() != null) said.append(AutonomyEditorPanel.escape(cell.getReason())).append(' ');
+
+                said.append(AutonomyEditorPanel.escape(I18n.t("autosetup.ui.stationSomeTrains")));
+
+                for (Map.Entry<Limit, String> limit : cell.getLimits().entrySet())
+                {
+                    said.append("<br>&bull; ").append(I18n.f("autosetup.ui.stationCellSide",
+                        "<b>" + AutonomyEditorPanel.escape(I18n.t(LIMIT_LABELS.get(limit.getKey()))) + "</b>",
+                        AutonomyEditorPanel.escape(limit.getValue())));
+                }
+            }
+
+            html.append("<br>").append(!bySide || each.getKey().isEmpty() ? said : I18n.f("autosetup.ui.stationCellSide",
+                "<b>" + AutonomyEditorPanel.escape(I18n.f(sideKey, sideName(each.getKey()))) + "</b>", said.toString()));
+
+            // Every side says the same: once
+            if (!bySide) break;
+        }
+
+        return html.append("</body></html>").toString();
     }
 
     private static String sideSentence(String sideKey, Map.Entry<String, Cell> each)

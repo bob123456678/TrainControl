@@ -182,7 +182,6 @@ public class Layout
         }
     }
 
-
     /**
      * Priority per unit of track (BALANCED_PRIORITY), larger being better.  Divides by at least 1, so a route measured
      * 0 ties here with one measured 1, where SHORTEST_LENGTH prefers the 0.
@@ -418,6 +417,9 @@ public class Layout
      */
     private final Map<Locomotive, Set<Edge>> releasedEarly;
     private final Map<Locomotive, String> locomotivePendingS88;
+
+    /** The point each running train last turned at part way, for a failure that stops it there (OB-493). */
+    private final Map<Locomotive, Point> turnedPartWay = new ConcurrentHashMap<>();
 
     /**
      * The pending-s88 monitor, not the layout's: a train blocked in updatePendingS88 behind configureAndLockPath
@@ -800,6 +802,7 @@ public class Layout
 
         this.runPolicies.remove(l);
         this.locomotiveMilestones.remove(l);
+        this.turnedPartWay.remove(l);
         this.clearedEdges.remove(l);
         this.releasedEarly.remove(l);
 
@@ -914,7 +917,6 @@ public class Layout
             if (p.getCurrentLocomotive() != null) this.claimHome(p.getCurrentLocomotive(), p);
         }
     }
-
 
     /**
      * Assigns a station to a locomotive by name, or clears it when the name is blank; throws if either does not exist.
@@ -2787,7 +2789,6 @@ public class Layout
         }
     }
    
-    
     /**
      * Renames a point
      * @throws Exception 
@@ -4194,7 +4195,6 @@ public class Layout
 
         return behind >= length;
     }
-
 
     /**
      * Whether nothing on this path is measured (Edge.isMeasured), so such a path holds its edges, the safe direction.
@@ -6044,9 +6044,16 @@ public class Layout
                 // executeTimetable's retry loop.  Membership, read before the removal, means the lock phase succeeded.
                 final boolean hadItsPath;
 
+                // Where the train really stands (whereTheTrainIs's rule), read before its milestones go, and whether it
+                // turned there.
+                final Point reached;
+                final boolean turnedThere;
+
                 synchronized (this.activeLocomotives)
                 {
                     hadItsPath = this.activeLocomotives.containsKey(loc);
+                    reached = this.lastMilestone(loc);
+                    turnedThere = this.turnedPartWay.remove(loc) == reached && reached != null;
 
                     this.activeLocomotives.remove(loc);
                     this.locomotiveMilestones.remove(loc);
@@ -6079,7 +6086,29 @@ public class Layout
                 synchronized (this.activeLocomotives)
                 {
                     // Only a path this locomotive actually got: configureAndLockPath recovers a lock-phase failure.
-                    if (hadItsPath) this.unlockPath(path, loc);
+                    // In the railway's monitor, so no path can reserve `reached` between the unlock and the placement.
+                    if (hadItsPath) synchronized (this)
+                    {
+                        // The side and road the running walk claims track by, read before the unlock clears the start.
+                        Map.Entry<String, List<Edge>> tail = reached == null ? null
+                            : this.standingTrains.tailOfTheRun(path, reached);
+
+                        this.unlockPath(path, loc);
+
+                        // Recorded where it last reached, not at the destination its path reserved (OB-493).
+                        if (reached != null && reached.getCurrentLocomotive() == null)
+                        {
+                            reached.setLocomotive(loc).setArrivedAlong(tail.getValue());
+                            reached.setArrivedFrom(tail.getKey());
+
+                            // A turn there stands it on the copy it now faces, as at a destination (MT-368).
+                            if (turnedThere && loc.getName() != null)
+                            {
+                                this.reversedOnArrival.put(loc.getName(), reached.getName());
+                                standOnTheCopyItFacesAfterTheTurn(reached, loc);
+                            }
+                        }
+                    }
 
                     this.clearedEdges.remove(loc);
                     this.releasedEarly.remove(loc);
@@ -6087,7 +6116,6 @@ public class Layout
 
                 // A route condition waiting on this sensor would wait forever; updatePendingS88 notifies any waiter.
                 updatePendingS88(loc, null);
-
 
                 this.control.log(e);
 
@@ -6262,7 +6290,6 @@ public class Layout
             }
         }
         
-                    
         if (loc.hasCallback(CB_ROUTE_START))
         {
             loc.getCallback(CB_ROUTE_START).accept(loc);
@@ -6392,6 +6419,8 @@ public class Layout
 
                     loc.switchDirection()
                     .delay(this.getMinDelay(), this.getMaxDelay()); // a more realistic appearance
+
+                    this.turnedPartWay.put(loc, current);
 
                     // At this point's own speed, not the journey's, keeping the square's multiplier.
                     int resume = Math.min((int) Math.ceil(
@@ -6534,7 +6563,6 @@ public class Layout
                     
                     this.updatePendingS88(loc, current.getS88());
                     
-
                     // With an advisory - see the intermediate points above
                     loc.waitForOccupiedFeedback(current.getS88(),
                         Locomotive.FEEDBACK_DURATION_THRESHOLD, Locomotive.FEEDBACK_ADVISORY_MS, this.retiredRailway);
@@ -6691,6 +6719,7 @@ public class Layout
 
             this.activeLocomotives.remove(loc);
             this.locomotiveMilestones.remove(loc);
+            this.turnedPartWay.remove(loc);
             this.clearedEdges.remove(loc);
             this.releasedEarly.remove(loc);
 

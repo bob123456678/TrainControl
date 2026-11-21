@@ -86,7 +86,7 @@ import static org.traincontrol.util.Util.escapeCsv;
 public class MarklinControlStation implements ViewListener, ModelListener
 {
     // Version number
-    public static final String RAW_VERSION = "3.1.0";
+    public static final String RAW_VERSION = "3.1.1";
 
     /**
      * Whether this is a build on the way to a release; true puts the build ID in the log and the window title.
@@ -270,7 +270,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private String lastMessage;
     
     // Is this a CS3?
-    private boolean isCS3 = false;
+    private volatile boolean isCS3 = false;
 
     // The accessory UIDs this sync's pages show as both a switch and a signal (syncLayouts); see wireComponents (OB-405)
     private Set<Integer> mixedAddresses = Collections.emptySet();
@@ -1657,9 +1657,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
         this.lastSyncError = null;
         this.lastSyncPartial = false;
 
-        // Read remote config files
-        this.fileParser = new CS2File(cs2Address(), this);
-             
+        // Read remote config files, each one once for the whole sync (FR-207)
+        final CS2File parser = new CS2File(cs2Address(), this);
+        this.fileParser = parser;
+        parser.startSync();
+
+        try
+        {
+            return this.syncThroughTheNewParser();
+        }
+        finally
+        {
+            parser.endSync();
+        }
+    }
+
+    /** The body of syncWithCS2, with `fileParser` just made and in its sync. */
+    private int syncThroughTheNewParser()
+    {
         this.logf("log.csDBSyncStarting");
 
         int num = 0;
@@ -1781,7 +1796,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         // Show message that we did not sync a loc with a duplicate name
                         this.logf("loc.importSkippedDuplicateName", l.getName());
                     }
-                    else
+                    else if (!nameTurnedDown(l))
                     {
                         this.logf("loc.addedFromCentralStation",
                             l.getDecoderTypeLabel(),
@@ -1908,11 +1923,40 @@ public class MarklinControlStation implements ViewListener, ModelListener
             if (this.on) this.NetworkInterface.syncSensors();
         }
 
+        // A local copy's squares checked against the station, logged only (FR-219).  A failed check is silent and the
+        // sync still succeeds, though a stalled plan read on a CS3 can add its timeout (up to 15 s) to it.
+        if (!this.fileParser.isFromStation())
+        {
+            try
+            {
+                this.fileParser.logSquaresTheStationDisagreesWith(this.getLayoutList().stream().map(this::getLayout)
+                    .filter(Objects::nonNull).collect(Collectors.toList()));
+            }
+            catch (Exception e)
+            {
+                if (this.debug) this.log(e);
+            }
+        }
+
         this.logf("loc.syncCompleted");
         
         return num;
     }
     
+    /**
+     * Whether a locomotive here at l's address turned down l's name, or was offered it by the Sync running now and kept
+     * its own, so the sync adds no copy under it (FR-220).
+     */
+    private boolean nameTurnedDown(MarklinLocomotive l)
+    {
+        for (MarklinLocomotive held : this.locDB.getItems())
+        {
+            if (held.getIntUID() == l.getIntUID() && held.keepsItsNameOver(l.getName())) return true;
+        }
+
+        return false;
+    }
+
     /**
      * Takes one route the Central Station describes into this database: added where new, replaced where its definition
      * changed, and locked either way - except that a route running now is left for the next sync.  One step of
@@ -1926,6 +1970,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Set only where this step deletes the same route to re-read it; a route arriving for
         // the first time was never in the selection and must not be put into it.
         boolean wasActivated = false;
+        boolean wasArmed = false;
 
         // Other existing route with same name but different ID
         if (this.routeDB.hasName(r.getName()) && r.getId() != this.routeDB.getByName(r.getName()).getId())
@@ -1969,6 +2014,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // changed - so the operator's autonomy selection survives it.
                 wasActivated = this.isRouteActivatedByAutonomy(r.getId());
 
+                // And its arming, kept even while it has no sensor to watch, so a sync that brings one back arms it
+                // again (OB-433)
+                wasArmed = this.routeDB.getById(r.getId()).isEnabled();
+
                 this.deleteRoute(this.routeDB.getById(r.getId()).getName());
             }
         }
@@ -1983,6 +2032,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 this.restoreRouteActivation(r.getId(), wasActivated);
 
                 this.logf("route.added", r.getName());
+
+                // Armed as Enable Auto Execution arms it, the old route's watch retired by the delete: an ordinary armed
+                // route, which no state a confirmation puts right fires (D133)
+                if (wasArmed)
+                {
+                    r.enable();
+                    r.executeAutoRoute();
+                    this.logf(r.hasS88() ? "route.syncKeptArmed" : "route.syncKeptArmedNoSensor", r.getName());
+                }
 
                 added = true;
             }
@@ -2516,7 +2574,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
             //}
         }
           
-                
         return locs;
     }
     
@@ -2950,8 +3007,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             });
         }
-        // Only worry about the message if it's a response
-        else if (message.isLocCommand() && message.getResponse())
+        // Only worry about the message if it's a response; a train's emergency stop is addressed to it too
+        else if (message.isLocCommand() && message.getResponse()
+            || message.isSysCommand() && message.getSubCommand() == CS2Message.CMD_SYSSUB_TRAINSTOP)
         {            
             this.locMessageProcessor.submit(() ->
             {
@@ -3452,6 +3510,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             newLoc.setCustomFunctions(c.getCustomFunctions());
             newLoc.setLocalFunctionImageURLs(c.getLocalFunctionImageURLs());
             newLoc.setNotes(c.getLocNotes());
+            newLoc.setDeclinedStationName(c.getDeclinedStationName());
             newLoc.preSetLinkedLocomotives(c.getLinkedLocomotives()); // we need to call setLinkedLocomotives() once all locs are loaded
             newLoc.setModelMultiUnitLocomotives(c.getCentralStationLinkedLocomotives());
             
@@ -3535,7 +3594,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
         if (newDecoderType == MarklinLocomotive.decoderType.MULTI_UNIT && l.hasLinkedLocomotives())
         {
-            
             throw new Exception(I18n.f("loc.changeToMultiUnitNotAllowed"));       
         }
         

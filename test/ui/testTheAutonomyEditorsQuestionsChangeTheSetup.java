@@ -146,7 +146,8 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
     }
 
     /**
-     * Clear All Home Locomotives, answered Yes: no square has a home, saved; the trains stay where they stand.
+     * Clear All Home Locomotives, answered Yes: no square has a home, the strip says how many were cleared, saved; the
+     * trains stay where they stand.
      *
      * MUTATION: have the Yes skip `session.clearEveryHome()`, and this fails.
      */
@@ -164,6 +165,11 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
 
         assertEquals(asked.get(0), I18n.t("autolayout.ui.confirmClearAllHomeLocomotives"), "the question is not the one"
             + " about clearing the homes");
+
+        Object banner = support.Reflect.get(AutonomyEditorPanel.class, panel(), "messageBanner");
+
+        assertEquals(String.valueOf(support.Reflect.get(banner.getClass(), banner, "saying")),
+            I18n.f("autosetup.ui.infoHomesCleared", homed), "the strip does not say how many homes were cleared");
 
         AutonomySession saved = saveAndReadBack();
 
@@ -455,6 +461,223 @@ public class testTheAutonomyEditorsQuestionsChangeTheSetup
         assertNull(saved.getLocomotiveNameAt(square), "after Remove and Save, " + train + " still stands on the square");
 
         assertEquals(saved.placementsAutonomyWillWrite(), others, "Remove moved other trains");
+    }
+
+    // ---------------------------------------------------------------- the keys (FR-200)
+
+    /**
+     * Delete over a square takes its train off as Remove does; Control+Delete, the main window's database delete, takes
+     * nothing off here.
+     *
+     * MUTATION: drop `is(evt, DELETE_KEY)` from the FR-200 branch of `LayoutEditor.formKeyPressed`, and the train stays.
+     */
+    @Test
+    public void testDeleteTakesTheTrainOffTheSquareUnderThePointer() throws Exception
+    {
+        TileKey square = aStationWithATrain();
+
+        String train = panel().locomotiveAt(square);
+
+        assertEquals(keyOver(square, java.awt.event.KeyEvent.VK_DELETE, java.awt.event.InputEvent.CTRL_DOWN_MASK),
+            new ArrayList<String>(), "Control+Delete asked something");
+
+        assertEquals(panel().locomotiveAt(square), train, "Control+Delete took " + train + " off the square");
+
+        keyOver(square, java.awt.event.KeyEvent.VK_DELETE, 0);
+
+        assertNull(panel().locomotiveAt(square), "Delete left " + train + " on the square under the pointer");
+    }
+
+    /**
+     * Control+V over an empty station moves the main window's selected locomotive there, as Place {0} does.
+     *
+     * MUTATION: drop `is(evt, PASTE_KEY)` from the FR-200 branch of `LayoutEditor.formKeyPressed`, and nothing is placed.
+     */
+    @Test
+    public void testControlVPlacesTheSelectedLocomotiveOnTheSquareUnderThePointer() throws Exception
+    {
+        TileKey square = null;
+
+        for (TileKey tile : session.getStore().getNamedTiles())
+        {
+            if (square == null && PAGE.equals(tile.getPage()) && session.getStore().isStation(tile)
+                && panel().locomotiveAt(tile) == null && model.getLayout(PAGE).getComponent(tile.getX(), tile.getY()) != null)
+            {
+                square = tile;
+            }
+        }
+
+        assertNotNull(square, "precondition: no empty station on " + PAGE);
+
+        // One standing at another station, so it moves: the claims after this one expect the trains the setup has
+        String train = session.getLocomotiveNameAt(aStationWithATrain());
+
+        select(train);
+
+        keyOver(square, java.awt.event.KeyEvent.VK_V, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+
+        assertEquals(panel().locomotiveAt(square), train, "Control+V did not put the selected locomotive on the square");
+    }
+
+    /**
+     * Delete while a run holds the setup takes nothing off and asks nothing, saying why on the editor's strip: a held key
+     * repeats.
+     *
+     * MUTATION: drop `editor.heldByARun()` from `EditorTileMenus.clickByKey`, and Remove's own refusal is a dialog.
+     */
+    @Test
+    public void testDeleteWaitsForARun() throws Exception
+    {
+        TileKey square = aStationWithATrain();
+
+        String train = panel().locomotiveAt(square);
+
+        org.traincontrol.automation.Layout railway = model.getAutoLayout();
+
+        railway.setStagingInProgress(true);
+
+        try
+        {
+            assertEquals(keyOver(square, java.awt.event.KeyEvent.VK_DELETE, 0), new ArrayList<String>(),
+                "Delete during a run asked something");
+
+            Object banner = support.Reflect.get(AutonomyEditorPanel.class, panel(), "messageBanner");
+
+            assertEquals(String.valueOf(support.Reflect.get(banner.getClass(), banner, "saying")),
+                I18n.t(org.traincontrol.gui.RunGates.NO_EDITS_WHILE_RUNNING), "Delete during a run did not say why");
+        }
+        finally
+        {
+            railway.setStagingInProgress(false);
+        }
+
+        assertEquals(panel().locomotiveAt(square), train, "Delete during a run took " + train + " off");
+    }
+
+    /**
+     * Delete once the pointer has left the squares takes nothing off the square it last outlined: the key is about the
+     * square under the pointer.
+     *
+     * MUTATION: drop `this.pointerOnGrid` from the FR-200 branch of `LayoutEditor.formKeyPressed`, and the train comes
+     * off.
+     */
+    @Test
+    public void testDeleteWithThePointerOffTheSquaresTakesNothingOff() throws Exception
+    {
+        TileKey square = aStationWithATrain();
+
+        String train = panel().locomotiveAt(square);
+
+        keyOver(square, java.awt.event.KeyEvent.VK_DELETE, 0, true);
+
+        assertEquals(panel().locomotiveAt(square), train, "Delete with the pointer off the squares took " + train + " off");
+    }
+
+    /**
+     * Control+Enter is Save: the editor closes, and the change is in the setup read back from disk.
+     *
+     * MUTATION: drop the Control+Enter branch from `LayoutEditor.formKeyPressed`, and nothing is written.
+     */
+    @Test
+    public void testControlEnterSaves() throws Exception
+    {
+        TileKey square = aStationWithATrain();
+
+        pressAndAnswer(tileItem(square, I18n.f("layout.ui.menuRemoveLocomotive", panel().locomotiveAt(square))),
+            message -> null);
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            support.Keys.press(editor, java.awt.event.KeyEvent.VK_ENTER, java.awt.event.InputEvent.CTRL_DOWN_MASK);
+        }
+
+        assertTrue(Components.waitFor(() -> !editor.isDisplayable(), 10000), "Control+Enter did not save and close");
+
+        AutonomySession saved = new AutonomySession(frozen.sandbox.getFolder());
+
+        saved.open(support.LayoutSandbox.wiredPages(model));
+
+        assertNull(saved.getLocomotiveNameAt(square), "Control+Enter did not write the change");
+    }
+
+    /**
+     * Place {0} and Remove {0} show the keys that do them over a square.
+     *
+     * MUTATION: drop the `showShortcut` from `EditorTileMenus.removeItem`.
+     */
+    @Test
+    public void testPlaceAndRemoveShowTheirKeys() throws Exception
+    {
+        TileKey square = aStationWithATrain();
+
+        AbstractButton remove = tileItem(square, I18n.f("layout.ui.menuRemoveLocomotive", panel().locomotiveAt(square)));
+
+        assertEquals(((javax.swing.JMenuItem) remove).getAccelerator(), LayoutEditor.DELETE_KEY, "Remove does not show Delete");
+
+        String other = null;
+
+        for (String each : model.getLocList()) if (other == null && !each.equals(panel().locomotiveAt(square))) other = each;
+
+        select(other);
+
+        AbstractButton place = tileItem(square, I18n.f("layout.ui.menuPlaceLocomotive", other));
+
+        assertEquals(((javax.swing.JMenuItem) place).getAccelerator(), LayoutEditor.PASTE_KEY, "Place does not show Control+V");
+    }
+
+    /**
+     * Makes the main window's selected locomotive this one.  Set, never toggled: `mapLocToCurrentButton` takes a train
+     * off a button that already holds it.
+     */
+    private static void select(final String name)
+    {
+        Components.onTheEventThread(() ->
+        {
+            if (frozen.ui.getActiveLoc() == null || !name.equals(frozen.ui.getActiveLoc().getName()))
+            {
+                frozen.ui.mapLocToCurrentButton(name);
+            }
+
+            return null;
+        });
+
+        assertTrue(Components.waitFor(() -> frozen.ui.getActiveLoc() != null
+            && name.equals(frozen.ui.getActiveLoc().getName()), 10000), "precondition: " + name + " is not selected");
+    }
+
+    /** Puts the pointer on a square and presses a key on the editor in the same step, and gives what it asked. */
+    private List<String> keyOver(TileKey square, int key, int modifiers) throws Exception
+    {
+        return keyOver(square, key, modifiers, false);
+    }
+
+    /** The same, the pointer first leaving the squares for the panel beside them when `left`. */
+    private List<String> keyOver(TileKey square, int key, int modifiers, boolean left) throws Exception
+    {
+        final org.traincontrol.gui.LayoutLabel label = ((org.traincontrol.gui.LayoutGrid) support.Reflect.get(
+            LayoutEditor.class, editor, "grid")).getValueAt(square.getX(), square.getY());
+
+        try (Answering answering = Answering.start(message -> null))
+        {
+            Components.onTheEventThread(() ->
+            {
+                editor.receiveMoveEvent(new java.awt.event.MouseEvent(label, java.awt.event.MouseEvent.MOUSE_MOVED,
+                    System.currentTimeMillis(), 0, 1, 1, 0, false), label);
+
+                if (left) editor.receiveExitEvent(new java.awt.event.MouseEvent(label,
+                    java.awt.event.MouseEvent.MOUSE_EXITED, System.currentTimeMillis(), 0, -5000, -5000, 0, false), label);
+
+                editor.dispatchEvent(new java.awt.event.KeyEvent(editor, java.awt.event.KeyEvent.KEY_PRESSED,
+                    System.currentTimeMillis(), modifiers, key, java.awt.event.KeyEvent.CHAR_UNDEFINED));
+
+                return null;
+            });
+
+            // The handler runs in a posted task of its own
+            Components.settle();
+
+            return answering.asked();
+        }
     }
 
     // ---------------------------------------------------------------- the station's protecting signals

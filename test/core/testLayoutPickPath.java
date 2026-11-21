@@ -192,6 +192,46 @@ public class testLayoutPickPath
     }
 
     /**
+     * A destination whose sensor is lit is skipped, even though it outranks the alternative and no train is recorded
+     * there (FR-210): Adam, "it shouldn't be possible to start a route if the destination is occupied."
+     *
+     * MUTATION: in `Layout.isPathClear`, skip the `errorFeedbackNotClear` check for the path's last edge, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testADestinationWhoseSensorIsLitIsSkippedDespitePriority() throws Exception
+    {
+        Locomotive loc = dummyLoc();
+        Layout layout = twoDestinations(loc, 1, 5);
+
+        // HIGH on a sensor of its own, so lighting it lights nothing else
+        MarklinFeedback sensor = model.newFeedback(47210, null);
+
+        model.setFeedbackState(sensor.getName(), false);
+
+        layout.getPoint("HIGH").setS88(47210);
+
+        String highSensor = layout.getPoint("HIGH").getS88();
+
+        assertEquals(destinationOf(layout.pickPath(loc)), "HIGH", "control: HIGH is chosen while its sensor is "
+            + "clear");
+
+        model.setFeedbackState(highSensor, true);
+
+        try
+        {
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                assertEquals(destinationOf(layout.pickPath(loc)), "LOW",
+                    "attempt " + attempt + ": HIGH's sensor is lit, so autonomy must send the train to LOW");
+            }
+        }
+        finally
+        {
+            model.setFeedbackState(highSensor, false);
+        }
+    }
+
+    /**
      * An inactive destination is skipped, even though it outranks the alternative.
      */
     @Test(timeOut = 60000)

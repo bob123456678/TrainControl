@@ -1,5 +1,6 @@
 package ui;
 
+import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -438,6 +439,56 @@ public class testSeveralStationsAtOnce
     }
 
     /**
+     * On a scaled screen the grayed triangle is the triangle drawn at the screen's pixels and grayed as Swing grays a
+     * picture, not the 16-pixel gray picture stretched; at scale 1 it is that picture.  Painted through a scaled
+     * Graphics2D, so no scaled screen is needed.
+     *
+     * MUTATION: in `StationSettingsWindow.mixedLabel`, set a plain `ImageIcon` of `grayed(triangle, 16, 16)`.
+     */
+    @Test(timeOut = 120000)
+    public void testAGrayedTriangleIsDrawnAtTheScreensPixels() throws Exception
+    {
+        StationSettingsWindow window = pickDiffering("maxTrainLength");
+        javax.swing.JLabel triangle = StationDoors.part(window, "station.maxLengthMixed", javax.swing.JLabel.class);
+
+        for (double scale : new double[] {1, 1.25, 2})
+        {
+            int[] gray = on(() -> pixelsOf(triangle.getDisabledIcon(), scale, false));
+            int[] expected = on(() -> pixelsOf(triangle.getIcon(), scale, true));
+            int differ = 0;
+
+            for (int i = 0; i < Math.min(gray.length, expected.length); i++) if (gray[i] != expected[i]) differ++;
+
+            assertEquals(gray.length, expected.length, "the grayed triangle at " + scale + " is another size");
+            assertEquals(differ, 0, "the grayed triangle at " + scale + " is not the triangle drawn at that scale, grayed");
+        }
+    }
+
+    /** The icon's pixels painted at `scale` onto a clear picture, and then grayed as Swing grays a picture if asked. */
+    private static int[] pixelsOf(javax.swing.Icon icon, double scale, boolean grayAfter)
+    {
+        int width = (int) Math.round(icon.getIconWidth() * scale), height = (int) Math.round(icon.getIconHeight() * scale);
+        BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = out.createGraphics();
+
+        g.scale(scale, scale);
+        icon.paintIcon(null, g, 0, 0);
+        g.dispose();
+
+        if (grayAfter)
+        {
+            java.awt.Image gray = new javax.swing.ImageIcon(javax.swing.GrayFilter.createDisabledImage(out)).getImage();
+
+            out = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+            g = out.createGraphics();
+            g.drawImage(gray, 0, 0, null);
+            g.dispose();
+        }
+
+        return out.getRGB(0, 0, width, height, null, 0, width);
+    }
+
+    /**
      * A field the stations disagree on is blank beside a warning triangle, and nothing is written to it unless the user
      * changes it; a change to another field leaves it as each station has it.
      *
@@ -497,6 +548,54 @@ public class testSeveralStationsAtOnce
             assertEquals(Components.onTheEventThread(() -> session.isAutoDestination(each)), chosen.get(each),
                 "a change of priority wrote May choose this station, which they differ on");
         }
+    }
+
+    /**
+     * For several stations the Advanced heading wears a * while a setting under it is set on any of them (FR-226): none
+     * set, plain; one station's priority set from another door, so they differ, starred; 0 typed for all, plain again.
+     *
+     * MUTATION: have `altered` in `StationSettingsWindow.fill` take a priority they differ on (`rank` null) for the
+     * default, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAdvancedWearsAStarWhereTheyDifferUnderIt() throws Exception
+    {
+        List<TileKey> two = stations(2);
+
+        Components.onTheEventThread(() ->
+        {
+            for (TileKey each : two) session.setPointProperty(each, "priority", null);
+
+            return null;
+        });
+
+        StationSettingsWindow window = pick(two);
+
+        AbstractButton heading = StationDoors.part(window, "station.advanced", AbstractButton.class);
+        String plain = I18n.t("autosetup.ui.stationSectionAdvanced");
+
+        assertEquals(on(heading::getText), plain, "precondition: the heading of two stations with nothing under Advanced");
+
+        Components.onTheEventThread(() ->
+        {
+            session.setPointProperty(two.get(1), "priority", 3);
+            panel.refresh();
+
+            return null;
+        });
+
+        Components.settle();
+        StationDoors.current(window);
+
+        assertEquals(on(heading::getText), plain + " *", "the heading where their priorities differ");
+
+        Components.onTheEventThread(() -> { window.openAdvancedForTest(); return null; });
+
+        StationDoors.typeAndEnter(window, "station.priority", "0");
+
+        assertEquals(on(heading::getText), plain, "the heading once 0 is typed for both");
+
+        StationDoors.close(window);
     }
 
     /**

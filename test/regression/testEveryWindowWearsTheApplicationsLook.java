@@ -78,8 +78,7 @@ public class testEveryWindowWearsTheApplicationsLook
                 + "controls measure the wrong thing");
 
             // AND THE MENU FONT MOVED, the symptom of the report: asserted too, since the look and feel could be
-            // installed without its fonts reaching the menus.  Not "menus are bigger than labels": `MENU_FONT_STEP` is
-            // 0.
+            // installed without its fonts reaching the menus.
             java.awt.Font menusNow = javax.swing.UIManager.getFont("MenuBar.font");
 
             assertTrue(menusNow != null, "the installed look and feel has no menu font at all");
@@ -99,10 +98,13 @@ public class testEveryWindowWearsTheApplicationsLook
             try
             {
                 java.lang.reflect.Method states =
-                    Reflect.method(org.traincontrol.gui.TrainControlUI.class, "uiScaleFor", int.class);
+                    Reflect.method(org.traincontrol.gui.TrainControlUI.class, "uiScaleFor", int.class, boolean.class,
+                        boolean.class);
 
                 expected = Double.parseDouble((String) states.invoke(null,
-                    java.awt.Toolkit.getDefaultToolkit().getScreenResolution()));
+                    java.awt.Toolkit.getDefaultToolkit().getScreenResolution(),
+                    com.formdev.flatlaf.util.UIScale.isSystemScalingEnabled(),
+                    com.formdev.flatlaf.util.SystemInfo.isWindows));
             }
             catch (ReflectiveOperationException e)
             {

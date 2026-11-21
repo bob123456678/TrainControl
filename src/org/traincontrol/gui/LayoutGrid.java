@@ -25,6 +25,7 @@ import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.widgets.AddressLabel;
 import org.traincontrol.gui.widgets.AxisRuler;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.LoadingSpinner;
 import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.util.I18n;
@@ -528,69 +529,6 @@ public class LayoutGrid
             {
                 super.paintChildren(g);
 
-                // A station on a curve spills onto the squares beside it, drawn under the captions, trains and
-                // addresses.
-                java.util.Map<LayoutLabel, java.awt.Rectangle> spilt = new java.util.LinkedHashMap<>();
-
-                for (java.awt.Component child : getComponents())
-                {
-                    if (child instanceof LayoutLabel && ((LayoutLabel) child).paintStationSpill(g))
-                    {
-                        spilt.put((LayoutLabel) child, ((LayoutLabel) child).spillReach());
-                    }
-                }
-
-                // The arrows of the squares a spill reached go back over it.
-                if (!spilt.isEmpty())
-                {
-                    // Only where the spill was drawn: arrows over the whole square would come out in front of a
-                    // caption.
-                    java.awt.geom.Area spilled = new java.awt.geom.Area();
-
-                    for (LayoutLabel label : spilt.keySet())
-                    {
-                        java.awt.Shape shape = label.spillShapeOnTheDiagram();
-
-                        if (shape != null) spilled.add(new java.awt.geom.Area(shape));
-                    }
-
-                    java.awt.Graphics2D under = (java.awt.Graphics2D) g.create();
-
-                    try
-                    {
-                        under.clip(spilled);
-
-                        for (java.awt.Component child : getComponents())
-                        {
-                            if (child instanceof LayoutLabel) ((LayoutLabel) child).paintArrowsOverSpill(under, spilt);
-                        }
-
-                        java.awt.Rectangle reach = spilled.getBounds();
-
-                        for (java.awt.Component child : getComponents())
-                        {
-                            if (child instanceof StationCaption && child.isVisible() && child.getBounds().intersects(reach))
-                            {
-                                java.awt.Graphics over = under.create(child.getX(), child.getY(), child.getWidth(),
-                                    child.getHeight());
-
-                                try
-                                {
-                                    child.paint(over);
-                                }
-                                finally
-                                {
-                                    over.dispose();
-                                }
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        under.dispose();
-                    }
-                }
-
                 for (java.awt.Component child : getComponents())
                 {
                     if (child instanceof LayoutLabel) ((LayoutLabel) child).paintTrainOverCaptions(g);
@@ -616,7 +554,6 @@ public class LayoutGrid
                         }
                     }
                 }
-
             }
 
             /**
@@ -827,7 +764,7 @@ public class LayoutGrid
                         layout.getName(), x + offsetX, y + offsetY);
 
                 final org.traincontrol.automationui.TileGraph.TileKey captioned =
-                    hidesCaptions ? null : (ui == null ? null : ui.autonomyCaptionAt(square));
+                    hidesCaptions ? null : (ui == null ? null : ui.stationCaptions.autonomyCaptionAt(square));
 
                 captionsAsBuilt.put(square, captioned);
 
@@ -886,7 +823,7 @@ public class LayoutGrid
                     final String own = c == null || c.getLabel() == null ? "" : c.getLabel();
 
                     final String captionName = captioned == null
-                        ? null : ui.autonomyStationNameAt(captioned);
+                        ? null : ui.stationCaptions.autonomyStationNameAt(captioned);
 
                     if (captioned != null) captionNamesAsBuilt.put(captioned, captionName);
 
@@ -951,7 +888,7 @@ public class LayoutGrid
                                     // By square: a square where trains may turn is several Points, none called what the
                                     // diagram says.
                                     org.traincontrol.automation.Point standing =
-                                        ui.getAutonomyPointForTile(station);
+                                        ui.stationCaptions.getAutonomyPointForTile(station);
 
                                     if (standing != null)
                                     {
@@ -984,7 +921,7 @@ public class LayoutGrid
                                 && ((LayoutEditor) master).getAutonomyPanel() != null
                                 && ((LayoutEditor) master).getAutonomyPanel().isShowingHomeLocomotives();
 
-                            String home = homes ? ui.autonomyHomeAt(captioned) : null;
+                            String home = homes ? ui.stationCaptions.autonomyHomeAt(captioned) : null;
 
                             if (home != null)
                             {
@@ -992,7 +929,7 @@ public class LayoutGrid
 
                                 // Away is the dark fill, and `StationCaption.onPill` picks the readable foreground for
                                 // it.
-                                String standing = ui.autonomyLocomotiveAt(captioned);
+                                String standing = ui.stationCaptions.autonomyLocomotiveAt(captioned);
 
                                 boolean athome = home.equals(standing);
 
@@ -1024,7 +961,7 @@ public class LayoutGrid
                             // What the setup puts on this square, which is what the editor is about (there may be no
                             // run).
                             {
-                            String placed = ui.autonomyCaptionTextAt(captioned);
+                            String placed = ui.stationCaptions.autonomyCaptionTextAt(captioned);
 
                             if (placed != null)
                             {
@@ -1064,7 +1001,6 @@ public class LayoutGrid
                             if (autonomyEditor) labelColour = new Color(150, 150, 150);
                         }
                     }
-
 
                     text.setForeground(labelColour);
                     text.setBackground(Color.WHITE);
@@ -1150,7 +1086,7 @@ public class LayoutGrid
                         }
 
                         // Show the correct cursor
-                        if (c.isClickable() && !inEditor) text.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                        if (c.isClickable() && !inEditor) text.setCursor(HandPointer.cursor());
                     }
                     else
                     {
@@ -1196,7 +1132,7 @@ public class LayoutGrid
                     
                     if (!inEditor)
                     {
-                        text.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                        text.setCursor(HandPointer.cursor());
                     }
                    
                     text.addMouseListener(new MouseAdapter()
@@ -1291,7 +1227,6 @@ public class LayoutGrid
                 // Register the tile with autonomy, if it is watching.
                 if (c != null && ui != null)
                 {
-
                     if (ui.getDiagramTileRegistry() != null)
                     {
                         org.traincontrol.automationui.TileGraph.TileKey tile =
@@ -1306,27 +1241,7 @@ public class LayoutGrid
                 // Set references for each tile accessory
                 if (c != null)
                 {
-                    // If popup is true, LayoutLabel.isParentVisible will be used to clean up stale label references
-                    if ((c.isSwitch() || c.isSignal()) && c.getAccessory() != null)
-                    {
-                        c.getAccessory().addTile(grid[x][y]);
-                    }
-                    
-                    if (c.isFeedback() && c.getFeedback() != null)
-                    {
-                        c.getFeedback().addTile(grid[x][y]);
-                    }
-                    
-                    if (c.isThreeWay() && c.getAccessory2() != null)
-                    {
-                        c.getAccessory2().addTile(grid[x][y]); 
-                    }          
-                    
-                    if (c.isRoute() && c.getRoute() != null)
-                    {
-                        c.getRoute().addTile(grid[x][y]);
-                    }
-
+                    tieToItsDevices(c, grid[x][y]);
                     grid[x][y].readAgainOnceRegistered();
                 }
             }
@@ -1338,6 +1253,9 @@ public class LayoutGrid
             parent.removeAll();
 
             parent.add(container);
+            // Laid out now: a redraw that keeps the panel's size gets no other layout pass, and every square lies at 0,0
+            parent.revalidate();
+            parent.repaint();
 
             swapped = true;
 
@@ -1426,11 +1344,11 @@ public class LayoutGrid
         for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey,
             org.traincontrol.automationui.TileGraph.TileKey> cell : captionsAsBuilt.entrySet())
         {
-            org.traincontrol.automationui.TileGraph.TileKey now = hides ? null : window.autonomyCaptionAt(cell.getKey());
+            org.traincontrol.automationui.TileGraph.TileKey now = hides ? null : window.stationCaptions.autonomyCaptionAt(cell.getKey());
 
             if (!java.util.Objects.equals(now, cell.getValue())) return false;
 
-            if (now != null && !java.util.Objects.equals(window.autonomyStationNameAt(now), captionNamesAsBuilt.get(now)))
+            if (now != null && !java.util.Objects.equals(window.stationCaptions.autonomyStationNameAt(now), captionNamesAsBuilt.get(now)))
             {
                 return false;
             }
@@ -1457,6 +1375,48 @@ public class LayoutGrid
             if (here == null || !here.contains(tile.getValue())) return false;
         }
 
+        return true;
+    }
+
+    /** Puts the square on the tiles its accessories, sensor and route redraw when they change. */
+    private static void tieToItsDevices(LayoutDiagramComponent c, LayoutLabel square)
+    {
+        // If popup is true, LayoutLabel.isParentVisible will be used to clean up stale label references
+        if ((c.isSwitch() || c.isSignal()) && c.getAccessory() != null) c.getAccessory().addTile(square);
+        if (c.isFeedback() && c.getFeedback() != null) c.getFeedback().addTile(square);
+        if (c.isThreeWay() && c.getAccessory2() != null) c.getAccessory2().addTile(square);
+        if (c.isRoute() && c.getRoute() != null) c.getRoute().addTile(square);
+    }
+
+    /**
+     * Keeps this grid for a page read again that draws the same (FR-216), every square bound as a new grid's would be to
+     * its counterpart in `same`; false, changing nothing, where one has none.
+     */
+    public boolean keep(java.util.Map<LayoutDiagramComponent, LayoutDiagramComponent> same)
+    {
+        DiagramTileRegistry registry = window == null ? null : window.getDiagramTileRegistry();
+        List<LayoutLabel> squares = new ArrayList<>();
+        for (LayoutLabel[] column : grid) for (LayoutLabel square : column)
+        {
+            if (square != null && square.getComponent() != null) squares.add(square);
+        }
+
+        if (registry == null || !squares.stream().allMatch(each -> same.containsKey(each.getComponent()))) return false;
+        for (LayoutLabel square : squares)
+        {
+            square.bindTo(same.get(square.getComponent()));
+            tieToItsDevices(square.getComponent(), square);
+            square.updateImage(false);
+        }
+
+        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, LayoutLabel> tile
+            : tilesAsRegistered.entrySet())
+        {
+            tile.getValue().setAutonomyOverlay(null);
+            tile.getValue().setAutonomyAnnotation(null);
+            registry.register(tile.getKey(), tile.getValue());
+        }
+        rebindRouteSquares();
         return true;
     }
 

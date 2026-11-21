@@ -195,8 +195,8 @@ public class testTheRefusalsAreAskedAtTheDoors
             "the same, at OK, for a dialog that was open when a run began (RSA-A1)"},
         {"private void syncFullLocStateMenuItemActionPerformed(", AUTONOMY,
             "a full sync rewrites the locomotive database under a running railway"},
-        {"private void checkForRenameMenuItemActionPerformed(", AUTONOMY,
-            "Check for Renamed Locomotives renames locomotives in the database a run is driving"},
+        {"private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)", AUTONOMY,
+            "the renames a sync asks about rename locomotives in the database a run is driving"},
         {"private void deleteLayoutMenuItemActionPerformed(", SETUP + "|" + EDITOR,
             "deleting a page the running railway or an open editor is using"},
         {"    private boolean refusedAsAPageEdit(", SETUP + "|" + EDITOR,
@@ -387,9 +387,9 @@ public class testTheRefusalsAreAskedAtTheDoors
         // Over the whole program's code.
         String source = SourceOf.allCode();
 
-        // One of each occurrence is the declaration of the method itself; `refuseWhileAutonomyRunning` has two more,
-        // the window's delegator handing to `RunGates`' declaration.
-        int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 3 + occurrences(source, GATE) - 1;
+        // One of each occurrence is the declaration of the method itself (`refuseWhileAutonomyRunning`'s is `RunGates`';
+        // the doors call it there, with no delegator on the window).
+        int asked = occurrences(source, EDITOR) - 1 + occurrences(source, AUTONOMY) - 1 + occurrences(source, GATE) - 1;
 
         // Counted inside the declared doors, not from the list's own arithmetic: two errors can cancel in a total,
         // while reading the bodies names a door that does not ask and counts one that asks twice as two.

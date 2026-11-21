@@ -4,6 +4,7 @@ import java.awt.Frame;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.util.Arrays;
 import java.util.List;
 import javax.swing.AbstractButton;
 import javax.swing.JCheckBox;
@@ -22,16 +23,21 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.layouteditor.LayoutEditorAddressPopup;
+import org.traincontrol.gui.LayoutGrid;
 import org.traincontrol.gui.LayoutLabel;
+import org.traincontrol.gui.LayoutPopupUI;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.file.CS2File;
 import org.traincontrol.util.I18n;
 import support.Answering;
+import support.AskingWindows;
 import support.Components;
 import support.Display;
 import support.Mouse;
+import support.Reflect;
+import support.Settle;
 import support.Teardown;
 
 /**
@@ -104,17 +110,7 @@ public class testTheTrackEditorByHand
             return null;
         });
 
-        final LayoutEditor left = editorOpen();
-
-        if (left != null)
-        {
-            try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
-            {
-                Components.press(Components.withText(left, I18n.t("ui.cancel")));
-
-                Components.waitFor(() -> !left.isDisplayable(), 10000);
-            }
-        }
+        AskingWindows.cancelTheEditor(editorOpen());
 
         Components.waitFor(this::editButtonIsBack, 30000);
     }
@@ -145,6 +141,87 @@ public class testTheTrackEditorByHand
 
         assertEquals(saved().getComponent(SWITCH_X, SWITCH_Y).getOrientation(), (was + 1) % turns,
             "the turn was not in the page file after Save");
+    }
+
+    /**
+     * A page window open on the page the editor edits draws the edit after Save as a new window of the page does: the
+     * turnout turned with Control+R and a straight put on an empty square, both done to the page object the window
+     * holds (FR-216).
+     *
+     * MUTATION: in `LayoutPopupUI.sameSquares`, compare `page` with `this.layout` (`TrainControlUI.sameText`) instead
+     * of `drawnText`, and the window keeps its old drawing.
+     */
+    @Test(timeOut = 200000)
+    public void testAPageWindowOnThePageShowsTheEditAfterSave() throws Exception
+    {
+        final int addX = 2, addY = 2;
+
+        int was = saved().getComponent(SWITCH_X, SWITCH_Y).getOrientation();
+
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+        LayoutPopupUI fresh = null;
+
+        try
+        {
+            Components.settle();
+
+            final LayoutEditor editor = open();
+
+            assertNull(editor.getMarklinLayout().getComponent(addX, addY), "the square for the straight is not empty");
+
+            Mouse.enter(square(editor, SWITCH_X, SWITCH_Y));
+            key(editor, KeyEvent.VK_R, true);
+            assertNotEquals(editor.getMarklinLayout().getComponent(SWITCH_X, SWITCH_Y).getOrientation(), was,
+                "Control+R did not turn the turnout");
+
+            Mouse.click(Components.find(editor, LayoutLabel.class, label -> editor.getGridX(label) == -1
+                && label.getComponent() != null
+                && label.getComponent().getType() == LayoutDiagramComponent.componentType.STRAIGHT));
+            Mouse.click(square(editor, addX, addY));
+            assertNotNull(editor.getMarklinLayout().getComponent(addX, addY), "the straight was not put down");
+
+            save(editor);
+            Settle.theDiagram(ui);
+            Components.settle();
+            Components.drain(10);
+
+            // A new window of the page, as a restart would draw it
+            fresh = AskingWindows.openThePage(ui);
+            Components.settle();
+
+            for (int[] at : new int[][] {{SWITCH_X, SWITCH_Y}, {addX, addY}})
+            {
+                int[] drawn = picture(fresh, fresh, at[0], at[1]);
+
+                assertNotNull(drawn, "a new window of the page has no square at " + at[0] + "," + at[1]);
+                assertTrue(Arrays.equals(picture(window, fresh, at[0], at[1]), drawn),
+                    "the page window open during the edit draws " + at[0] + "," + at[1] + " as before the edit, while"
+                    + " a new window of the page draws the edit");
+            }
+        }
+        finally
+        {
+            AskingWindows.closeThePage(fresh);
+            AskingWindows.closeThePage(window);
+        }
+    }
+
+    /** The picture `window` draws on the cell where `reference` draws the square at x,y; null where it has none. */
+    private static int[] picture(final LayoutPopupUI window, final LayoutPopupUI reference, final int x, final int y)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            LayoutLabel there = Components.find(reference, LayoutLabel.class, each -> each.getComponent() != null
+                && each.getComponent().getX() == x && each.getComponent().getY() == y);
+
+            if (there == null) return null;
+
+            int[] cell = ((LayoutGrid) Reflect.get(LayoutPopupUI.class, reference, "grid")).getCoordinates(there);
+            LayoutGrid grid = (LayoutGrid) Reflect.get(LayoutPopupUI.class, window, "grid");
+            LayoutLabel l = grid.getValueAt(cell[0], cell[1]);
+
+            return l == null || l.getWidth() <= 0 || l.getHeight() <= 0 ? null : support.Pixels.asPainted(l);
+        });
     }
 
     /**

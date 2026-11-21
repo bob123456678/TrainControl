@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JCheckBox;
@@ -61,12 +62,16 @@ final class MultiUnitPanel extends JPanel
         List<Locomotive> allLocomotives = new ArrayList<>(
             !readOnly ? ui.getModel().getLocomotives() : l.getModelMultiUnitLocomotives());
         Map<String, Double> currentLinkedLocos = !readOnly ? l.getLinkedLocomotiveNames() : l.getModelMultiUnitLocomotiveNames();
+        List<Locomotive> here = ui.getModel().getLocomotives();
+        // The station's map is keyed by the station's names, the head's own links by names here
+        Function<Locomotive, String> keyOf = loco -> readOnly ? loco.stationMemberKeyIn(currentLinkedLocos, here)
+            : currentLinkedLocos.containsKey(loco.getName()) ? loco.getName() : null;
 
         // Sort allLocomotives to prioritize currentLinkedLocos and then alphabetically by name
         Collections.sort(allLocomotives, (a, b) ->
         {
-            boolean aLinked = currentLinkedLocos.containsKey(a.getName());
-            boolean bLinked = currentLinkedLocos.containsKey(b.getName());
+            boolean aLinked = keyOf.apply(a) != null;
+            boolean bLinked = keyOf.apply(b) != null;
 
             if (aLinked && !bLinked) return -1;
             else if (!aLinked && bLinked) return 1;
@@ -116,7 +121,7 @@ final class MultiUnitPanel extends JPanel
             if (readOnly || // show all the CS MU's locomotives for informational purposes
                 l.canBeLinkedTo(loco, false) || l.isLinkedTo(loco))
             {
-                rowPanels.add(buildRow(loco, currentLinkedLocos));
+                rowPanels.add(buildRow(loco, keyOf.apply(loco), currentLinkedLocos));
             }
         }
 
@@ -198,7 +203,8 @@ final class MultiUnitPanel extends JPanel
         }
     }
 
-    private JPanel buildRow(Locomotive loco, Map<String, Double> currentLinkedLocos)
+    /** @param key the key of `currentLinkedLocos` this row's locomotive is under, or null */
+    private JPanel buildRow(Locomotive loco, String key, Map<String, Double> currentLinkedLocos)
     {
         JPanel rowPanel = new JPanel(new GridBagLayout());
 
@@ -206,12 +212,12 @@ final class MultiUnitPanel extends JPanel
 
         JCheckBox checkBox = new JCheckBox(loco.getName().length() > TrainControlUI.MAX_MU_SELECTOR_LOC_NAME_LENGTH
             ? loco.getName().substring(0, TrainControlUI.MAX_MU_SELECTOR_LOC_NAME_LENGTH) + "..."
-            : loco.getName(), currentLinkedLocos.containsKey(loco.getName()));
+            : loco.getName(), key != null);
 
         checkBox.setToolTipText(loco.getName());
         checkBox.setFocusable(false);
 
-        double multiplierValue = currentLinkedLocos.getOrDefault(loco.getName(), 1.0);
+        double multiplierValue = key == null ? 1.0 : currentLinkedLocos.get(key);
         boolean isReversed = multiplierValue < 0;
 
         // Rounded: 0.57 * 100 is 56.99..., which a cast would show, and the next Save write, as 56

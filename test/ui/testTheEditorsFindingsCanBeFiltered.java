@@ -37,6 +37,7 @@ public class testTheEditorsFindingsCanBeFiltered
     private static TrainControlUI ui;
     private static AutonomySession session;
     private static LayoutDiagram page;
+    private static support.LayoutSandbox sandbox;
 
     private static final String PAGE = "1 - Main";
     private static final String OTHER_PAGE = "2 - Bottom";
@@ -46,7 +47,7 @@ public class testTheEditorsFindingsCanBeFiltered
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the autonomy editor needs a display");
 
-        held.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
+        sandbox = held.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
 
         model = support.TestStation.simulatedInDebug();
 
@@ -527,6 +528,77 @@ public class testTheEditorsFindingsCanBeFiltered
         }
     }
 
+    /**
+     * Control+Enter typed into the filter saves the editor once (FR-200) and closes it; plain Enter only gives the
+     * keyboard back.  The save is seen by what only Save does: closing saves the setup too, but a Save that fails keeps
+     * the editor open and says why.
+     *
+     * MUTATION: in `LayoutEditor.saveButtonActionPerformed`, close the autonomy editor without `autonomyPanel.save()`;
+     * the editor closes over the failed save.  Or drop the hand-up of Control+Enter in the filter's Enter branch; the
+     * editor stays open.
+     */
+    @Test
+    public void testControlEnterInTheBoxSaves() throws Exception
+    {
+        LayoutEditor editor = anEditor();
+
+        try
+        {
+            final javax.swing.JTextField box = box(editor);
+
+            SwingUtilities.invokeAndWait(() -> box.dispatchEvent(new java.awt.event.MouseEvent(box,
+                java.awt.event.MouseEvent.MOUSE_PRESSED, System.currentTimeMillis(), 0, 2, 2, 1, false)));
+            type(editor, "ab");
+
+            SwingUtilities.invokeAndWait(() -> box.dispatchEvent(new java.awt.event.KeyEvent(box,
+                java.awt.event.KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0, java.awt.event.KeyEvent.VK_ENTER,
+                (char) 10)));
+            Components.settle();
+
+            assertTrue(editor.isDisplayable(), "plain Enter must not save");
+            assertFalse(box.isFocusable(), "plain Enter gives the keyboard back");
+
+            // Open allows writing but not replacing; a lock on top of it stops the write as well
+            java.io.File setup = new java.io.File(sandbox.getFolder(), "config/autonomy/setup.json");
+
+            assertTrue(setup.isFile(), "precondition: no setup file");
+
+            try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(0));
+                java.io.RandomAccessFile holding = new java.io.RandomAccessFile(setup, "rw");
+                java.nio.channels.FileLock lock = holding.getChannel().lock())
+            {
+                SwingUtilities.invokeLater(() -> controlEnter(box));
+
+                assertTrue(answering.awaitAsked(1, 8000), "a Save that failed said nothing");
+
+                Components.settle();
+
+                assertTrue(editor.isDisplayable(), "Control+Enter closed the editor without saving the setup");
+            }
+
+            SwingUtilities.invokeAndWait(() -> controlEnter(box));
+            Components.settle();
+
+            assertFalse(editor.isDisplayable(), "Control+Enter in the box saves and closes the editor");
+            assertFalse(box.isFocusable(), "Control+Enter gives the keyboard back");
+        }
+        finally
+        {
+            close(editor);
+        }
+    }
+
+    /** Clicks into the filter box and types Control+Enter there, on the event thread. */
+    private static void controlEnter(javax.swing.JTextField box)
+    {
+        box.dispatchEvent(new java.awt.event.MouseEvent(box, java.awt.event.MouseEvent.MOUSE_PRESSED,
+            System.currentTimeMillis(), 0, 2, 2, 1, false));
+        box.dispatchEvent(new java.awt.event.KeyEvent(box, java.awt.event.KeyEvent.KEY_PRESSED,
+            System.currentTimeMillis(), java.awt.event.InputEvent.CTRL_MASK, java.awt.event.KeyEvent.VK_ENTER, (char) 10));
+    }
+
+    
+
     // ---- helpers
 
     private static LayoutEditor anEditor() throws Exception
@@ -684,7 +756,7 @@ public class testTheEditorsFindingsCanBeFiltered
 
     private static javax.swing.JButton theCross(LayoutEditor editor)
     {
-        return support.Components.inside(editor.getAutonomyPanel().getFindingsBox(), javax.swing.JButton.class);
+        return support.Components.inside(box(editor), javax.swing.JButton.class);
     }
 
     /** Typing: the text set in the box, as the document sees it. */

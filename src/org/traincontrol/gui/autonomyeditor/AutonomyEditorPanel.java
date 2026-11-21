@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
@@ -53,7 +54,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
-import javax.swing.JRadioButton;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -319,6 +319,8 @@ public class AutonomyEditorPanel extends JPanel
 
     private static final String PREF_TRAINS = "autonomyEditorTrains";
 
+    private static final String PREF_IGNORED = "autonomyEditorIgnoredSquares";
+
     /**
      * What the captions say, as one choice, not three switches that could contradict (FR-061, OB-174).  Adam:
      * *"Station Names should be default, with the setting remembered between open."*
@@ -351,6 +353,9 @@ public class AutonomyEditorPanel extends JPanel
 
     /** Shows the diagram's text, or hides it (FR-133); station captions are the dropdown's. */
     private final JCheckBox showText = new JCheckBox(I18n.t("layout.ui.textLabels"), false);
+
+    /** Draws the squares autonomy ignores grayed out, or leaves them empty (FR-197). */
+    private final JCheckBox showIgnored = new JCheckBox(I18n.t("autosetup.ui.btnShowIgnored"), true);
 
     /** The squares it highlights, worked out once per refresh; null until asked. */
     private Set<TileKey> unmeasuredSquares = null;
@@ -398,7 +403,6 @@ public class AutonomyEditorPanel extends JPanel
         I18n.t("autosetup.ui.captionsNone")
     });
 
-
     // Built here, mounted by the window across the bottom of the diagram
     private JScrollPane findingsPanel;
     private JPanel findingsBox;
@@ -419,21 +423,12 @@ public class AutonomyEditorPanel extends JPanel
     // The first end of a path test
     private TileKey testFrom;
 
-    /** The last path test's squares, so switching Path Type redraws it (MT-399); cleared with the route. */
+    /** The last path test's squares, which stay marked while its answer shows (OB-395); gone with the route. */
     private TileKey lastTestFrom;
     private TileKey lastTestTo;
 
-    /** The last Why Not Moving? square, so switching Path Type asks again (MT-434). */
+    /** The last Why Not Moving? square, whose answer the marks show. */
     private TileKey lastWhyTile;
-
-    /**
-     * Which tier the routing check answers for, and the label that names the pair; Auto by default.
-     */
-    private JLabel pathTypeLabel;
-
-    private JRadioButton pathTypeAuto;
-
-    private JRadioButton pathTypeManual;
 
     /** The one-way run tool, a button and not a menu item (OB-006). */
     private JToggleButton oneWayButton;
@@ -668,42 +663,6 @@ public class AutonomyEditorPanel extends JPanel
         // No heading: the editor prints one.  Stacked, as two buttons in a row would set the column's width.
         testButton = toolButton(Tool.TEST, I18n.t("autosetup.ui.toolTest"));
 
-        // Which tier the check answers for (Adam: **"Radio button Auto or Manual dictates what is in scope for the
-        // routing check."**): only which stations a train may be sent to differs.
-        // An item label: black, as only section headings are blue (OB-438)
-        pathTypeLabel = UiStyle.label(I18n.t("autosetup.ui.labelPathType"));
-
-        pathTypeAuto = new JRadioButton(I18n.t("autosetup.ui.pathTypeAuto"), true);
-        pathTypeManual = new JRadioButton(I18n.t("autosetup.ui.pathTypeManual"), false);
-
-        ButtonGroup pathType = new ButtonGroup();
-        pathType.add(pathTypeAuto);
-        pathType.add(pathTypeManual);
-
-        // On the label and both radios, so either half shows it.
-        String pathTypeTip = wrapped(I18n.t("autosetup.ui.tooltipPathType"));
-
-        pathTypeLabel.setToolTipText(pathTypeTip);
-        pathTypeAuto.setToolTipText(pathTypeTip);
-        pathTypeManual.setToolTipText(pathTypeTip);
-
-        // Flush with the buttons and label above and below, so the column's left edge is one line (OB-438)
-        for (JRadioButton radio : new JRadioButton[] {pathTypeAuto, pathTypeManual})
-        {
-            radio.setFont(FONT_CONTROL);
-            radio.setMargin(new Insets(0, 0, 0, 0));
-            radio.setBorder(BorderFactory.createEmptyBorder());
-        }
-
-        // The air a heading has above and below it, as Station Tools has
-        pathTypeLabel.setBorder(BorderFactory.createEmptyBorder(
-            LayoutEditor.HEADING_GAP + 6, 0,
-            LayoutEditor.HEADING_GAP, 0));
-
-        // The route on screen follows the tier (MT-399)
-        pathTypeAuto.addActionListener(e -> retestForTheNewTier());
-        pathTypeManual.addActionListener(e -> retestForTheNewTier());
-
         whyButton = toolButton(Tool.WHY, I18n.t("autosetup.ui.toolWhy"));
         whyButton.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipWhy")));
 
@@ -717,7 +676,6 @@ public class AutonomyEditorPanel extends JPanel
         nameAll = new JButton(I18n.t("autosetup.ui.btnNameEverything"));
         nameAll.addActionListener(e -> nameEverything());
         button(nameAll);
-
 
         // Leaving the page out, from the page itself; ticked, it grays at once and waits for Save.
         excludePage = new JCheckBox(I18n.t("autosetup.ui.btnExcludeThisPage"));
@@ -736,11 +694,6 @@ public class AutonomyEditorPanel extends JPanel
         panel.add(first);
 
         panel.add(row(whyButton));
-
-        // Below Why Not Moving?, on its own row (OB-217), to keep the column narrow.
-        panel.add(row(pathTypeLabel));
-        panel.add(row(pathTypeAuto));
-        panel.add(row(pathTypeManual));
 
         // A section of its own, headed as the Visible Elements column's headings are (MT-890)
         JLabel stationTools = UiStyle.heading(I18n.t("autosetup.ui.headingStationTools"));
@@ -764,6 +717,8 @@ public class AutonomyEditorPanel extends JPanel
         showUnmeasured.setSelected(VIEW_PREFS.getBoolean(PREF_UNMEASURED, false));
 
         showTrains.setSelected(VIEW_PREFS.getBoolean(PREF_TRAINS, true));
+
+        showIgnored.setSelected(VIEW_PREFS.getBoolean(PREF_IGNORED, true));
 
         // One remembered setting, which the two boxes follow (FR-061); the older preferences could contradict it.
         int rememberedMode = VIEW_PREFS.getInt(PREF_CAPTION_MODE, CAPTIONS_STATIONS);
@@ -809,6 +764,9 @@ public class AutonomyEditorPanel extends JPanel
         showText.setFocusable(false);
         showText.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowTextLabels")));
 
+        showIgnored.setFocusable(false);
+        showIgnored.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipShowIgnored")));
+
         directions.setFocusable(false);
 
         directions.addActionListener(e ->
@@ -817,17 +775,9 @@ public class AutonomyEditorPanel extends JPanel
             refresh();
         });
 
-        showLengths.addActionListener(e ->
-        {
-            VIEW_PREFS.putBoolean(PREF_LENGTHS, showLengths.isSelected());
-            refresh();
-        });
-
-        showUnmeasured.addActionListener(e ->
-        {
-            VIEW_PREFS.putBoolean(PREF_UNMEASURED, showUnmeasured.isSelected());
-            refresh();
-        });
+        remembers(showLengths, PREF_LENGTHS);
+        remembers(showUnmeasured, PREF_UNMEASURED);
+        remembers(showIgnored, PREF_IGNORED);
 
         // Redrawn, and the whole window, as train icons come from the railway, which may hold trains the setup lacks.
         showTrains.addActionListener(e ->
@@ -1100,7 +1050,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Puts every tool and its button down (OB-119): a button left looking armed sends the next click to `cycle()`,
      * which edits.  Says whether anything was down (FR-065), as Escape otherwise closes the editor.
-     * @return whether anything was armed, and is not any more
      */
     public boolean putToolsDown()
     {
@@ -1122,7 +1071,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * Whether a click on a drawn train is a click on its station: while Test a Path, Why Not Moving? or Bulk Edit...
      * waits for one (OB-354).
-     * @return true where the train's square is the answer
      */
     public boolean takesATrainForItsStation()
     {
@@ -1186,13 +1134,7 @@ public class AutonomyEditorPanel extends JPanel
 
         JScrollPane scroll = new JScrollPane(findings);
 
-        javax.swing.border.TitledBorder titled =
-            BorderFactory.createTitledBorder(I18n.t("autosetup.ui.colWarnings"));
-
-        titled.setTitleFont(AutonomyViewerPanel.FONT_GROUP);
-        titled.setTitleColor(new Color(0, 0, 155));
-
-        scroll.setBorder(titled);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.setPreferredSize(new Dimension(width - 20, 160));
 
         return scroll;
@@ -1211,23 +1153,19 @@ public class AutonomyEditorPanel extends JPanel
     /** The square of the finding last clicked, or null. */
     private TileKey chosenFinding;
 
-    /**
-     * The filter box with its clear button, over the list (FR-073).  It narrows the list as typed and never selects a
-     * row, so it neither jumps nor copies.
-     */
+    /** The framed list with the filter box under it (FR-073, FR-217); the box narrows the list, never selects. */
     private JPanel buildFindingsBox(JScrollPane list)
     {
-        JPanel box = new JPanel(new BorderLayout(4, 0));
+        JPanel box = new JPanel(new BorderLayout());
 
         box.setOpaque(false);
-        // Air above, as under a heading, so the box does not touch the diagram over it (MT-889)
-        box.setBorder(BorderFactory.createEmptyBorder(LayoutEditor.HEADING_GAP, 4, 2, 4));
-
-        JLabel label = UiStyle.label(I18n.t("autosetup.ui.labelFilterFindings"));
-
-        label.setFocusable(false);
+        // Edge to edge with the list over it, and a little air between it and the list and the banner (FR-217)
+        box.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
         findingFilter.setFont(FONT_CONTROL);
+        // Painted by the look and feel while the box is empty, never part of its text
+        findingFilter.putClientProperty("JTextField.placeholderText", I18n.t("autosetup.ui.captionFilterFindings"));
+        findingFilter.getAccessibleContext().setAccessibleName(I18n.t("autosetup.ui.captionFilterFindings"));
         findingFilter.setToolTipText(wrapped(I18n.t("autosetup.ui.tooltipFilterFindings")));
 
         // Inside the field's right end, as a search field has it, and shown while there is text to clear
@@ -1250,14 +1188,20 @@ public class AutonomyEditorPanel extends JPanel
             showFindings();
         };
 
-        box.add(label, BorderLayout.WEST);
         box.add(findingFilter, BorderLayout.CENTER);
 
         JPanel whole = new JPanel(new BorderLayout());
 
         whole.setOpaque(false);
-        whole.add(box, BorderLayout.NORTH);
+
+        javax.swing.border.TitledBorder titled =
+            BorderFactory.createTitledBorder(I18n.t("autosetup.ui.colWarnings"));
+
+        titled.setTitleFont(AutonomyViewerPanel.FONT_GROUP);
+        titled.setTitleColor(new Color(0, 0, 155));
+        whole.setBorder(titled);
         whole.add(list, BorderLayout.CENTER);
+        whole.add(box, BorderLayout.SOUTH);
 
         return whole;
     }
@@ -1331,6 +1275,13 @@ public class AutonomyEditorPanel extends JPanel
                     {
                         letGo();
                         e.consume();
+                        // Control+Enter is Save (FR-200) and the editor hears it on its frame, so hand it up.
+                        java.awt.Window frame = SwingUtilities.getWindowAncestor(FilterField.this);
+                        if (e.isControlDown() && frame != null)
+                        {
+                            frame.dispatchEvent(new KeyEvent(frame, e.getID(), e.getWhen(), e.getModifiers(),
+                                e.getKeyCode(), e.getKeyChar()));
+                        }
                     }
                 }
             });
@@ -1358,7 +1309,6 @@ public class AutonomyEditorPanel extends JPanel
             super.removeNotify();
         }
     }
-
 
     /**
      * Everything that can be set on a tile, on one menu built like LayoutEditorRightclickMenu's, items in the graph
@@ -1449,10 +1399,7 @@ public class AutonomyEditorPanel extends JPanel
         if (menuTarget != null && onReveal != null) onReveal.accept(menuTarget);
     }
 
-    /**
-     * Flashes the square this one is joined to, when it is on this page (FR-056); silent with no partner, another page,
-     * or not a link.
-     */
+    /** Flashes the square this one is joined to, when it is on this page (FR-056). */
     void highlightPartnerOf(TileKey tile)
     {
         if (tile == null || onReveal == null || menuOnly) return;
@@ -1570,68 +1517,38 @@ public class AutonomyEditorPanel extends JPanel
         int placed = session == null ? 0 : session.placementsAutonomyWillWrite().size();
         int homed = session == null ? 0 : session.tilesWithAHome().size();
 
-        JMenuItem clearLocs = item(I18n.f("autolayout.ui.menuClearLocomotives", placed), () -> clearAllPlacements());
-
-        clearLocs.setEnabled(placed > 0);
-
         // The dialog's sentence in short (OB-194, FR-112), from the same builder.
-        clearLocs.setToolTipText(wrapped(placed > 0
-            ? clearLocomotivesTip()
-            : I18n.t("autosetup.ui.infoNoLocomotivesToClear")));
+        JMenuItem clearLocs = bulkItem("autolayout.ui.menuClearLocomotives", placed, () -> clearAllPlacements(),
+            () -> clearLocomotivesTip(), "autosetup.ui.infoNoLocomotivesToClear");
 
-        JMenuItem clearHomesItem = item(
-            I18n.f("autolayout.ui.menuClearAllHomeLocomotives", homed), () -> clearAllHomes());
+        JMenuItem clearHomesItem = bulkItem("autolayout.ui.menuClearAllHomeLocomotives", homed, () -> clearAllHomes(),
+            () -> I18n.t("autosetup.ui.tipClearAllHomeLocomotives"), "autosetup.ui.infoNoHomesToClear");
 
-        clearHomesItem.setEnabled(homed > 0);
-        clearHomesItem.setToolTipText(wrapped(homed > 0
-            ? I18n.t("autosetup.ui.tipClearAllHomeLocomotives")
-            : I18n.t("autosetup.ui.infoNoHomesToClear")));
-
-        // Clear All Track Lengths (FR-069), built like the two above
+        // Clear All Track Lengths (FR-069)
         int measured = session == null ? 0 : session.tilesWithALength().size();
 
-        JMenuItem clearLengths = item(
-            I18n.f("autolayout.ui.menuClearAllTrackLengths", measured),
-            () -> clearAllTileLengths());
+        JMenuItem clearLengths = bulkItem("autolayout.ui.menuClearAllTrackLengths", measured,
+            () -> clearAllTileLengths(), () -> bulkClearCounted("autosetup.ui.tipClearAllTrackLengths", measured),
+            "autosetup.ui.infoNoTrackLengthsToClear");
 
-        clearLengths.setEnabled(measured > 0);
-        clearLengths.setToolTipText(wrapped(measured > 0
-            ? bulkClearCounted("autosetup.ui.tipClearAllTrackLengths", measured)
-            : I18n.t("autosetup.ui.infoNoTrackLengthsToClear")));
-
-        // Clear All Max Train Lengths, built like the clears above
         int limited = session == null ? 0 : session.tilesWithAMaxTrainLength().size();
 
-        JMenuItem clearMaxima = item(
-            I18n.f("autolayout.ui.menuClearAllMaxTrainLengths", limited), () -> clearAllMaxTrainLengths());
+        JMenuItem clearMaxima = bulkItem("autolayout.ui.menuClearAllMaxTrainLengths", limited,
+            () -> clearAllMaxTrainLengths(), () -> bulkClearCounted("autosetup.ui.tipClearAllMaxTrainLengths", limited),
+            "autosetup.ui.infoNoMaxTrainLengthsToClear");
 
-        clearMaxima.setEnabled(limited > 0);
-        clearMaxima.setToolTipText(wrapped(limited > 0
-            ? bulkClearCounted("autosetup.ui.tipClearAllMaxTrainLengths", limited)
-            : I18n.t("autosetup.ui.infoNoMaxTrainLengthsToClear")));
-
-        // Allow Every Path (FR-108), built like the clears above
+        // Allow Every Path (FR-108)
         int oneWay = session == null ? 0 : session.routesNotOpenBothWays().size();
 
-        JMenuItem allowAll = item(I18n.f("autolayout.ui.menuAllowEveryPath", oneWay), () -> allowEveryPath());
+        JMenuItem allowAll = bulkItem("autolayout.ui.menuAllowEveryPath", oneWay, () -> allowEveryPath(),
+            () -> bulkClearCounted("autosetup.ui.tipAllowEveryPath", oneWay), "autosetup.ui.infoNothingOneWay");
 
-        allowAll.setEnabled(oneWay > 0);
-        allowAll.setToolTipText(wrapped(oneWay > 0
-            ? bulkClearCounted("autosetup.ui.tipAllowEveryPath", oneWay)
-            : I18n.t("autosetup.ui.infoNothingOneWay")));
-
-        // Home Every Train Where It Stands (FR-075): it adds, so its confirmation says what it overwrites.  Counted off
-        // `trainsWhereTheyStand`, as the door is.
+        // Home Every Train Where It Stands (FR-075), counted off `trainsWhereTheyStand`, as the door is.
         int standing = session == null ? 0 : session.trainsWhereTheyStand().size();
 
-        JMenuItem homeHere = item(
-            I18n.f("autolayout.ui.menuHomeEveryTrainWhereItStands", standing),
-            () -> homeEveryPlacedTrain());
-
-        homeHere.setEnabled(standing > 0);
-        homeHere.setToolTipText(wrapped(standing > 0
-            ? I18n.f("autosetup.ui.tipHomeEveryTrainWhereItStands", standing)
-            : I18n.t("autosetup.ui.infoNoLocomotivesToHome")));
+        JMenuItem homeHere = bulkItem("autolayout.ui.menuHomeEveryTrainWhereItStands", standing,
+            () -> homeEveryPlacedTrain(), () -> I18n.f("autosetup.ui.tipHomeEveryTrainWhereItStands", standing),
+            "autosetup.ui.infoNoLocomotivesToHome");
 
         // Place All at Their Homes (FR-115), counted off `homesToPlace`, as the door is.
         int homes = session == null ? 0 : session.homesToPlace().size();
@@ -1654,24 +1571,15 @@ public class AutonomyEditorPanel extends JPanel
         int pausedTrains = pausedTrains().size();
         int goingTrains = goingTrainsStanding().size();
 
-        JMenuItem activateAll = item(
-            I18n.f("autosetup.ui.menuActivateAllTrains", pausedTrains), () -> setEveryTrainActive(true));
+        JMenuItem activateAll = bulkItem("autosetup.ui.menuActivateAllTrains", pausedTrains,
+            () -> setEveryTrainActive(true), () -> I18n.f("autosetup.ui.tipActivateAllTrains", pausedTrains),
+            "autosetup.ui.infoNoTrainsToActivate");
 
-        activateAll.setEnabled(pausedTrains > 0);
-        activateAll.setToolTipText(wrapped(pausedTrains > 0
-            ? I18n.f("autosetup.ui.tipActivateAllTrains", pausedTrains)
-            : I18n.t("autosetup.ui.infoNoTrainsToActivate")));
+        JMenuItem deactivateAll = bulkItem("autosetup.ui.menuDeactivateAllTrains", goingTrains,
+            () -> setEveryTrainActive(false), () -> I18n.f("autosetup.ui.tipDeactivateAllTrains", goingTrains),
+            "autosetup.ui.infoNoTrainsToDeactivate");
 
-        JMenuItem deactivateAll = item(
-            I18n.f("autosetup.ui.menuDeactivateAllTrains", goingTrains), () -> setEveryTrainActive(false));
-
-        deactivateAll.setEnabled(goingTrains > 0);
-        deactivateAll.setToolTipText(wrapped(goingTrains > 0
-            ? I18n.f("autosetup.ui.tipDeactivateAllTrains", goingTrains)
-            : I18n.t("autosetup.ui.infoNoTrainsToDeactivate")));
-
-        // Grouped by what they are for: the map's paths and names, the lengths, where the trains stand, and whether they
-        // run.  A group the page leaves out has no divider of its own.
+        // Grouped by what they are for; a group the page leaves out has no divider of its own.
         addGroups(bulk,
             new JMenuItem[] {oneWayRun, nameEverythingItem, allowAll},
             new JMenuItem[] {massAssign, massAssignMaximum, massAssignTrains, clearLengths, clearMaxima},
@@ -1679,6 +1587,17 @@ public class AutonomyEditorPanel extends JPanel
             new JMenuItem[] {activateAll, deactivateAll});
 
         return bulk;
+    }
+
+    /** A bulk action's counted item, grayed with `noneKey` for its tip at 0. */
+    private JMenuItem bulkItem(String labelKey, int count, Runnable action, Supplier<String> tip, String noneKey)
+    {
+        JMenuItem made = item(I18n.f(labelKey, count), action);
+
+        made.setEnabled(count > 0);
+        made.setToolTipText(wrapped(count > 0 ? tip.get() : I18n.t(noneKey)));
+
+        return made;
     }
 
     /** Adds each group's items, with a divider between one group and the next that has any. */
@@ -1838,27 +1757,11 @@ public class AutonomyEditorPanel extends JPanel
         // Counted off the set the door walks, excluded pages skipped
         List<TileKey> placed = new ArrayList<>(session.trainsWhereTheyStand().keySet());
 
-        if (placed.isEmpty())
-        {
-            say(hint, I18n.t("autosetup.ui.infoNoLocomotivesToHome"));
+        if (!confirmedBulk(placed.size(), "autosetup.ui.infoNoLocomotivesToHome",
+            count -> I18n.f("autolayout.ui.confirmHomeEveryTrainWhereItStands", count),
+            "autolayout.ui.menuHomeEveryTrainWhereItStands")) return;
 
-            return;
-        }
-
-        if (JOptionPane.showOptionDialog(owner(),
-            I18n.f("autolayout.ui.confirmHomeEveryTrainWhereItStands", placed.size()),
-            I18n.f("autolayout.ui.menuHomeEveryTrainWhereItStands", placed.size()),
-            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
-            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
-        {
-            return;
-        }
-
-        int assigned = session.homeEveryPlacedTrain();
-
-        say(hint, I18n.f("autosetup.ui.infoTrainsHomed", assigned));
-
-        refresh();
+        homesChangedInBulk(session.homeEveryPlacedTrain(), "autosetup.ui.infoTrainsHomed");
 
         // And the running layout, or Return Home offers the arrangement just replaced (as `clearAllHomes`).
         setupChanged();
@@ -2132,7 +2035,6 @@ public class AutonomyEditorPanel extends JPanel
     /**
      * A tooltip wrapped only where too wide for one line; "Control+A" stays plain text (FR-112).
      * @param text the tooltip, or null
-     * @return the tooltip, wrapped if it needs to be
      */
     public static String wrappedIfLong(String text)
     {
@@ -2164,12 +2066,11 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /** The width a tooltip wraps at, in pixels. */
-    private static final int TOOLTIP_WIDTH = 320;
+    public static final int TOOLTIP_WIDTH = 320;
 
     /**
      * TOOLTIP_WIDTH in measuring pixels: a CSS width is drawn at the screen's resolution, so 320 is 400 at 120 dpi
      * (OB-358).
-     * @return the wrapping width, in pixels
      */
     private static int wrappingWidth()
     {
@@ -2239,10 +2140,7 @@ public class AutonomyEditorPanel extends JPanel
         return menuItem;
     }
 
-    /**
-     * Whether a station's name may be written on this square: anything but a switch or signal, whose click does
-     * something (OB-042, OB-044).
-     */
+    /** Whether a station's name may go on this square: not a switch or signal, whose click acts (OB-042, OB-044). */
     boolean mayCarryACaption(LayoutDiagramComponent component)
     {
         if (component == null) return true;
@@ -2251,10 +2149,7 @@ public class AutonomyEditorPanel extends JPanel
         return !component.isSwitch() && !component.isSignal();
     }
 
-    /**
-     * Whether a dragged station label may land here (FR-035): asked while dragging and on release, so green is what is
-     * accepted.
-     */
+    /** Whether a dragged station label may land here (FR-035), asked while dragging and on release. */
     public boolean canDropCaption(TileKey from, TileKey to, LayoutDiagramComponent onTarget)
     {
         return refuseCaptionDrop(from, to, onTarget) == null;
@@ -2432,7 +2327,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (given != null) return given;
 
-        // No is the default: Yes takes a name off the diagram.  0 is Yes.
+        // No is the default: Yes takes a name off the diagram.
         return JOptionPane.showOptionDialog(owner(), question,
             I18n.t("autosetup.ui.titleStationLabel"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null,
             TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == 0;
@@ -2446,8 +2341,7 @@ public class AutonomyEditorPanel extends JPanel
 
         if (!standing.isEmpty() && session.getCaptionTarget(tile) == null)
         {
-            // showOptionDialog for TrainControl's button text (showConfirmDialog's follow the JVM locale); 0 is the
-            // first
+            // showOptionDialog for TrainControl's button text
             int answer = JOptionPane.showOptionDialog(owner(),
                 I18n.f("autosetup.ui.confirmReplaceText", standing),
                 I18n.t("autosetup.ui.titleStationLabel"),
@@ -2710,12 +2604,12 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Sets the four settings a preset names (FR-176), through the doors the window's own controls use.
+     * Sets the settings a preset names (FR-176), through the doors the window's own controls use.
      * @return false where the operator canceled a new station's name, and nothing changed
      */
     boolean applyPreset(TileKey tile, StationPreset preset)
     {
-        if (!setUsage(tile, preset.stops, true)) return false;
+        if (!setUsage(tile, preset.stops, preset.runsThrough)) return false;
 
         if (preset.fullAutonomy != null) session.setAutoDestination(tile, preset.fullAutonomy);
 
@@ -3020,7 +2914,6 @@ public class AutonomyEditorPanel extends JPanel
 
     /**
      * How many things must be fixed, in words agreeing with the number.
-     * @param errors how many
      * @return the line under the findings
      */
     public static String blockingCountText(int errors)
@@ -3218,7 +3111,6 @@ public class AutonomyEditorPanel extends JPanel
     {
         return prompts.applyNumber(tile, key, entered, unset);
     }
-
 
     /** A stored number for a point, or the value meaning "not set". */
     int number(TileKey tile, String key, int fallback)
@@ -3894,6 +3786,12 @@ public class AutonomyEditorPanel extends JPanel
         return out;
     }
 
+    /** Control+V places the main window's selected locomotive on the square, Delete removes its train (FR-200). */
+    public void placeOrRemoveByKey(TileKey tile, boolean place)
+    {
+        tileMenus.clickByKey(tile, place);
+    }
+
     /** Takes the trains leaving a square off it (`trainsLeaving`). */
     void removeLocomotive(TileKey tile)
     {
@@ -4315,7 +4213,6 @@ public class AutonomyEditorPanel extends JPanel
     /** Asks for a square's name and writes it (MT-257); others go through `promptNameFor`. */
     void promptName(TileKey tile)
     {
-
         String current = session.getStore().getPointName(tile);
 
         String name = JOptionPane.showInputDialog(owner(),
@@ -5573,9 +5470,6 @@ public class AutonomyEditorPanel extends JPanel
 
         final WhySetup setup = whySetup;
 
-        // The tier (MT-434), read here, and the square remembered so Path Type can ask again.
-        final boolean byHand = pathTypeAuto != null && !pathTypeAuto.isSelected();
-
         lastWhyTile = tile;
 
         // Said now, as the answer lands a beat later.
@@ -5588,7 +5482,7 @@ public class AutonomyEditorPanel extends JPanel
 
         try
         {
-            WhyRenderer.execute(() -> workOutWhy(asked, layout, index, setup, tile, byHand));
+            WhyRenderer.execute(() -> workOutWhy(asked, layout, index, setup, tile));
         }
         catch (RuntimeException refused)
         {
@@ -5605,7 +5499,7 @@ public class AutonomyEditorPanel extends JPanel
      * thread.
      */
     private void workOutWhy(long asked, Layout layout,
-        StationIndex index, WhySetup setup, TileKey tile, boolean byHand)
+        StationIndex index, WhySetup setup, TileKey tile)
     {
         try
         {
@@ -5613,7 +5507,7 @@ public class AutonomyEditorPanel extends JPanel
 
             try
             {
-                answer = composeWhy(layout, index, setup, tile, byHand);
+                answer = composeWhy(layout, index, setup, tile);
             }
             catch (RuntimeException failed)
             {
@@ -5632,9 +5526,9 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     private WhyAnswer composeWhy(Layout layout,
-        StationIndex index, WhySetup setup, TileKey tile, boolean byHand)
+        StationIndex index, WhySetup setup, TileKey tile)
     {
-        return whyAnswers.composeWhy(layout, index, setup, tile, byHand);
+        return whyAnswers.composeWhy(layout, index, setup, tile);
     }
 
     /** Paints the worker's answer, on the event thread; only the latest ask's answer (`asked`) paints. */
@@ -5778,75 +5672,47 @@ public class AutonomyEditorPanel extends JPanel
             return;
         }
 
-        List<GraphReducer.ReducedEdge> there = session.testPath(testFrom, tile);
-        List<GraphReducer.ReducedEdge> back = session.testPath(tile, testFrom);
+        // Autonomy's route each way, else one only a hand send can take, drawn purple (FR-221)
+        Map<TileKey, Set<org.traincontrol.automationui.TilePorts.Side>> arrivals = session.startingArrivals();
+
+        List<GraphReducer.ReducedEdge> there = session.testPathForAutonomy(testFrom, tile, arrivals);
+        List<GraphReducer.ReducedEdge> back = session.testPathForAutonomy(tile, testFrom, arrivals);
+
+        boolean thereByHand = there == null && (there = session.testPath(testFrom, tile, arrivals)) != null;
+        boolean backByHand = back == null && (back = session.testPath(tile, testFrom, arrivals)) != null;
 
         traces.clear();
 
-        // Each direction its own line, colored by where it ends.
-        trace(traces, there, testFrom, true, tile);
-        trace(traces, back, tile, false, testFrom);
+        trace(traces, there, testFrom, true, thereByHand);
+        trace(traces, back, tile, false, backByHand);
 
-        // And whether the radio's tier would send a train there: a shut square binds every tier, said on both; a
-        // manual-only one is said on Auto alone.  As well as the route, which is passable.
-        String tierNote = "";
+        // A shut square binds every tier; a purple leg says why autonomy would not take it.
+        Set<String> notes = new LinkedHashSet<>();
 
-        if (session != null && session.shutTiles().contains(tile))
-        {
-            tierNote = "<br>" + escape(I18n.f("autosetup.ui.testSquareIsOutOfService",
-                describeTile(tile)));
-        }
-        else if (pathTypeAuto != null && pathTypeAuto.isSelected() && session != null
-            && session.manualOnlyStations().contains(tile))
-        {
-            tierNote = "<br>" + escape(I18n.f("autosetup.ui.testNotAnAutoDestination",
-                describeTile(tile)));
-        }
+        if (session.shutTiles().contains(tile)) notes.add(I18n.f("autosetup.ui.testSquareIsOutOfService", describeTile(tile)));
+
+        if (thereByHand || backByHand) notes.add(I18n.t("autosetup.ui.testColorLegend"));
+
+        // On every known railway a purple leg ends at a station left alone (D184).
+        Set<TileKey> leftAlone = session.manualOnlyStations();
+
+        if (thereByHand && leftAlone.contains(tile)) notes.add(I18n.f("autosetup.ui.testNotAnAutoDestination", describeTile(tile)));
+        if (backByHand && leftAlone.contains(testFrom)) notes.add(I18n.f("autosetup.ui.testNotAnAutoDestination", describeTile(testFrom)));
+
+        StringBuilder said = new StringBuilder();
+
+        for (String note : notes) said.append("<br>").append(escape(note));
 
         // Named: the sensors it calls at say where it went.
         answer(I18n.f("autosetup.ui.testBothWays",
             escape(describeTile(testFrom)), escape(describeTile(tile)),
-            leg(there), escape(via(there)), leg(back), legColor(tile, true), legColor(testFrom, false)) + tierNote,
+            leg(there), escape(via(there)), leg(back), legColor(thereByHand, true), legColor(backByHand, false)) + said,
             true);
 
         lastTestFrom = testFrom;
         lastTestTo = tile;
 
         testFrom = null;
-    }
-
-    /**
-     * Reruns the last path test for the radio's tier (MT-399), only while the test tool is armed and nothing half-made.
-     */
-    private void retestForTheNewTier()
-    {
-        // And the why answer (MT-434), through the click's door.
-        if (tool == Tool.WHY && lastWhyTile != null)
-        {
-            try
-            {
-                applyWhy(lastWhyTile, componentAt(lastWhyTile));
-            }
-            catch (RuntimeException e)
-            {
-                JOptionPane.showMessageDialog(owner(), String.valueOf(e.getMessage()));
-            }
-
-            refresh();
-
-            return;
-        }
-
-        if (tool != Tool.TEST || testFrom != null || lastTestFrom == null || lastTestTo == null) return;
-
-        TileKey from = lastTestFrom;
-        TileKey to = lastTestTo;
-
-        testFrom = from;
-
-        applyTest(to, componentAt(to));
-
-        refresh();
     }
 
     static String escape(String text)
@@ -5860,42 +5726,21 @@ public class AutonomyEditorPanel extends JPanel
             : I18n.f("autosetup.ui.testLegReachable", run.size());
     }
 
+    /** The color a tested leg is drawn in, as `trace` draws it: purple where only a hand send takes it. */
+    private String legColor(boolean byHand, boolean forward)
+    {
+        return I18n.t(byHand ? "autosetup.ui.testColorPurple"
+            : forward ? "autosetup.ui.testColorYellow" : "autosetup.ui.testColorAmber");
+    }
+
     /**
-     * Lays one leg of a tested route onto the squares it crosses, into a given map: a worker builds its own and the
-     * event thread installs it.  `to` is the square the leg ENDS at, which decides whether it is drawn as manual-only.
+     * Lays one leg of a route onto the squares it crosses, into a given map: a worker builds its own and the event thread
+     * installs it.  `manualOnly` draws it purple, as a route only a hand send takes.
      */
     void trace(Map<TileKey,
         List<TileAnnotation.Trace>> into,
         List<GraphReducer.ReducedEdge> run,
-        TileKey from, boolean forward, TileKey to)
-    {
-        // Asked once for the whole leg, as a color on its last square alone could be off the page.
-        // `manualOnlyStations`, not `stationsAutonomyWillNotChoose`: a shut square is no manual-only point.
-        trace(into, run, from, forward, to, endsManualOnly(to));
-    }
-
-    /** Whether a tested leg ending here is drawn purple; its words ask this too (OB-398). */
-    private boolean endsManualOnly(TileKey to)
-    {
-        return to != null && session != null && session.manualOnlyStations().contains(to);
-    }
-
-    /**
-     * The color a tested leg is drawn in, as `trace` picks it: purple where it ends at a station only a person may
-     * send a train to, else yellow there and amber back.
-     */
-    private String legColor(TileKey to, boolean forward)
-    {
-        if (endsManualOnly(to)) return I18n.t("autosetup.ui.testColorPurple");
-
-        return I18n.t(forward ? "autosetup.ui.testColorYellow" : "autosetup.ui.testColorAmber");
-    }
-
-    /** The same, in the color asked for: Why not Moving? knows which stations autonomy will never choose this train. */
-    void trace(Map<TileKey,
-        List<TileAnnotation.Trace>> into,
-        List<GraphReducer.ReducedEdge> run,
-        TileKey from, boolean forward, TileKey to, boolean manualOnly)
+        TileKey from, boolean forward, boolean manualOnly)
     {
         if (run == null) return;
 
@@ -6106,9 +5951,10 @@ public class AutonomyEditorPanel extends JPanel
             badgeFor(tile), shaded, isCurved(tile), isPairedPortal(tile),
             traces.get(tile), directionsView() == 1,
             ignored ? null
-                : session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS))
-            // FR-118's white icons, in the editor only, where arrows are drawn over them.
-            .inTheEditor();
+                : session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS));
+
+        // Unticked, a square autonomy ignores is left empty; picking a signal still grays the rest (FR-197).
+        if (shaded && !showIgnored.isSelected() && isIgnored(tile)) annotation.leftEmpty();
 
         // None where a crossing's squares meet (OB-322)
         session.withoutTheCrossingsMiddle(tile, annotation);
@@ -6302,7 +6148,8 @@ public class AutonomyEditorPanel extends JPanel
             turns && !session.isMustTurnAround(tile),
             Boolean.FALSE.equals(session.getPointProperty(tile, "active")),
             // which way a station's track runs out, for the terminus's flat end (FR-118)
-            station ? session.deadEndSide(tile) : null);
+            station ? session.deadEndSide(tile) : null,
+            session.isStopOnly(tile));
     }
 
     /**
@@ -6521,11 +6368,6 @@ public class AutonomyEditorPanel extends JPanel
         if (testButton != null) testButton.setEnabled(!ignored);
         if (whyButton != null) whyButton.setEnabled(!ignored);
 
-        // And the path type (FR-105: "also disable/grey out the auto/manual radio buttons")
-        if (pathTypeLabel != null) pathTypeLabel.setEnabled(!ignored);
-        if (pathTypeAuto != null) pathTypeAuto.setEnabled(!ignored);
-        if (pathTypeManual != null) pathTypeManual.setEnabled(!ignored);
-
         // And One-Way Run (OB-235), put down here if armed, not through cancelPendingGesture, which refreshes.
         if (oneWayButton != null)
         {
@@ -6591,7 +6433,6 @@ public class AutonomyEditorPanel extends JPanel
             nameAll.setToolTipText(unnamed > 0
                 ? null : wrapped(I18n.t("autosetup.ui.hintNothingToName")));
         }
-
 
         if (errors > 0)
         {
@@ -6766,7 +6607,6 @@ public class AutonomyEditorPanel extends JPanel
 
         if (excluded)
         {
-            // showOptionDialog for TrainControl's button text; 0 is the first option.
             int answer = JOptionPane.showOptionDialog(owner(),
                 I18n.f("autosetup.ui.confirmExcludePage", page),
                 I18n.t("autosetup.ui.btnExcludeThisPage"),
@@ -7083,32 +6923,16 @@ public class AutonomyEditorPanel extends JPanel
         return massAssignment.nameForPrompt(tile);
     }
 
-    /** Opens every one-way and closed piece of track both ways, after a warning, as the clears are (FR-108). */
+    /** Opens every one-way and closed piece of track both ways, after a warning (FR-108). */
     private void allowEveryPath()
     {
         int shut = session.routesNotOpenBothWays().size();
 
-        if (shut == 0)
-        {
-            say(hint, I18n.t("autosetup.ui.infoNothingOneWay"));
+        if (!confirmedBulk(shut, "autosetup.ui.infoNothingOneWay",
+            count -> bulkClearCounted("autolayout.ui.confirmAllowEveryPath", count),
+            "autolayout.ui.menuAllowEveryPath")) return;
 
-            return;
-        }
-
-        if (JOptionPane.showOptionDialog(owner(),
-            bulkClearCounted("autolayout.ui.confirmAllowEveryPath", shut),
-            I18n.f("autolayout.ui.menuAllowEveryPath", shut),
-            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
-            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
-        {
-            return;
-        }
-
-        int opened = session.allowEveryPath();
-
-        selection.clear();
-
-        say(hint, I18n.f("autosetup.ui.infoEveryPathAllowed", opened));
+        squaresChangedInBulk(session.allowEveryPath(), "autosetup.ui.infoEveryPathAllowed");
 
         // Directions build the running railway
         setupChanged();
@@ -7122,54 +6946,32 @@ public class AutonomyEditorPanel extends JPanel
     {
         List<TileKey> measured = session.tilesWithALength();
 
-        if (measured.isEmpty())
-        {
-            say(hint, I18n.t("autosetup.ui.infoNoTrackLengthsToClear"));
+        if (!confirmedBulk(measured.size(), "autosetup.ui.infoNoTrackLengthsToClear",
+            count -> bulkClearCounted("autolayout.ui.confirmClearAllTrackLengths", count),
+            "autolayout.ui.menuClearAllTrackLengths")) return;
 
-            return;
-        }
-
-        // What Cancel does depends on the surface, as `clearLocomotivesWarning` chooses.
-        if (JOptionPane.showOptionDialog(owner(),
-            bulkClearCounted("autolayout.ui.confirmClearAllTrackLengths", measured.size()),
-            I18n.f("autolayout.ui.menuClearAllTrackLengths", measured.size()),
-            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
-            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
-        {
-            return;
-        }
-
-        int cleared = session.clearEveryTileLength();
-
-        selection.clear();
-
-        say(hint, I18n.f("autosetup.ui.infoTrackLengthsCleared", cleared));
+        squaresChangedInBulk(session.clearEveryTileLength(), "autosetup.ui.infoTrackLengthsCleared");
 
         // The room rule asks the running layout.
         setupChanged();
     }
 
-    /** Takes the maximum train length off every station, after asking, as `clearAllHomes` does. */
+    /** Clears the selection and says how many squares changed. */
+    private void squaresChangedInBulk(int changed, String doneKey)
+    {
+        selection.clear();
+
+        say(hint, I18n.f(doneKey, changed));
+    }
+
+    /** Takes the maximum train length off every station, after asking. */
     private void clearAllMaxTrainLengths()
     {
         List<TileKey> limited = session.tilesWithAMaxTrainLength();
 
-        if (limited.isEmpty())
-        {
-            say(hint, I18n.t("autosetup.ui.infoNoMaxTrainLengthsToClear"));
-
-            return;
-        }
-
-        // The track-length clear's two sentences.
-        if (JOptionPane.showOptionDialog(owner(),
-            bulkClearCounted("autolayout.ui.confirmClearAllMaxTrainLengths", limited.size()),
-            I18n.f("autolayout.ui.menuClearAllMaxTrainLengths", limited.size()),
-            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
-            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
-        {
-            return;
-        }
+        if (!confirmedBulk(limited.size(), "autosetup.ui.infoNoMaxTrainLengthsToClear",
+            count -> bulkClearCounted("autolayout.ui.confirmClearAllMaxTrainLengths", count),
+            "autolayout.ui.menuClearAllMaxTrainLengths")) return;
 
         int cleared = session.clearEveryMaxTrainLength();
 
@@ -7187,31 +6989,36 @@ public class AutonomyEditorPanel extends JPanel
     {
         List<TileKey> homed = session.tilesWithAHome();
 
-        // Nothing to do, in the hint line; the guard behind the graying (OB-057).
-        if (homed.isEmpty())
-        {
-            say(hint, I18n.t("autosetup.ui.infoNoHomesToClear"));
-            return;
-        }
+        if (!confirmedBulk(homed.size(), "autosetup.ui.infoNoHomesToClear",
+            count -> I18n.t("autolayout.ui.confirmClearAllHomeLocomotives"),
+            "autolayout.ui.menuClearAllHomeLocomotives")) return;
 
-        if (JOptionPane.showOptionDialog(owner(),
-            I18n.t("autolayout.ui.confirmClearAllHomeLocomotives"),
-            I18n.f("autolayout.ui.menuClearAllHomeLocomotives", homed.size()),
-            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
-            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
-        {
-            return;
-        }
-
-        // The session's bulk door, one re-derivation.
-        int cleared = session.clearEveryHome();
-
-        say(hint, I18n.f("autosetup.ui.infoHomesCleared", cleared));
-
-        refresh();
+        homesChangedInBulk(session.clearEveryHome(), "autosetup.ui.infoHomesCleared");
 
         // MT-246 in bulk: else Return Home sends trains to cleared homes.
         setupChanged();
+    }
+
+    /** Says how many homes changed, and redraws. */
+    private void homesChangedInBulk(int changed, String doneKey)
+    {
+        say(hint, I18n.f(doneKey, changed));
+
+        refresh();
+    }
+
+    /** `noneKey` in the hint at 0 (OB-057), else the bulk warning; true on Yes. */
+    private boolean confirmedBulk(int count, String noneKey, IntFunction<String> question, String titleKey)
+    {
+        if (count == 0)
+        {
+            say(hint, I18n.t(noneKey));
+            return false;
+        }
+
+        return JOptionPane.showOptionDialog(owner(), question.apply(count), I18n.f(titleKey, count),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
+            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) == JOptionPane.YES_OPTION;
     }
 
     /**
@@ -7290,20 +7097,8 @@ public class AutonomyEditorPanel extends JPanel
         // The set `clearEveryPlacement` walks, excluded pages skipped.
         List<TileKey> placed = new ArrayList<>(session.placementsAutonomyWillWrite().keySet());
 
-        if (placed.isEmpty())
-        {
-            say(hint, I18n.t("autosetup.ui.infoNoLocomotivesToClear"));
-            return;
-        }
-
-        if (JOptionPane.showOptionDialog(owner(),
-            clearLocomotivesWarning(),
-            I18n.f("autolayout.ui.menuClearLocomotives", placed.size()),
-            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null,
-            TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[1]) != JOptionPane.YES_OPTION)
-        {
-            return;
-        }
+        if (!confirmedBulk(placed.size(), "autosetup.ui.infoNoLocomotivesToClear",
+            count -> clearLocomotivesWarning(), "autolayout.ui.menuClearLocomotives")) return;
 
         // The session's bulk door; the names read first, so the rebuild knows whose placements went.
         List<String> lifted = placedLocomotives();
@@ -7349,6 +7144,22 @@ public class AutonomyEditorPanel extends JPanel
     public JCheckBox getShowTextLabels()
     {
         return control(showText);
+    }
+
+    /** A display box whose tick is remembered and redraws the diagram. */
+    private void remembers(JCheckBox box, String pref)
+    {
+        box.addActionListener(e ->
+        {
+            VIEW_PREFS.putBoolean(pref, box.isSelected());
+            refresh();
+        });
+    }
+
+    /** @return the Grayed-out Icons box, for the window to mount under Text Labels (FR-197) */
+    public JCheckBox getShowIgnored()
+    {
+        return control(showIgnored);
     }
 
     /** @return the Exclude Page box, for the window to mount under its Page Settings heading, below the mode buttons */

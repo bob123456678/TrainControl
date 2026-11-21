@@ -10,7 +10,6 @@ import static org.traincontrol.base.Accessory.accessorySetting.STRAIGHT;
 import static org.traincontrol.base.Accessory.accessorySetting.TURN;
 import org.traincontrol.marklin.MarklinControlStation;
 
-
 /**
  * An example of how to set up and execute automatic layout control
  * @author Adam

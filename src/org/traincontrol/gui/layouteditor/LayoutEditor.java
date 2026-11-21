@@ -84,6 +84,7 @@ import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.RunGates;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.AutonomyBanner;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.StationCaption;
@@ -431,7 +432,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
         this.autonomySessionForTheNote = live;
 
-        if (live != null) live.beginEditSession();
+        // A note that cannot be renewed is stale, so it goes; said only when it could neither go nor be made harmless
+        if (live != null && !live.beginEditSession() && live.getStore().hasUnfinishedEditNote()
+            && live.getStore().forgetTheNote() == AutonomyCompanionStore.Note.STALE)
+        {
+            parent.getModel().logf("autosetup.log.noteRenewalFailed");
+        }
 
         pictureTheRailway(live);
     }
@@ -736,6 +742,7 @@ public class LayoutEditor extends PositionAwareJFrame
     public LayoutEditor(LayoutDiagram l, int size, TrainControlUI ui, int pageIndex)
     {
         initComponents();
+        TrainControlUI.applyWindowIcon(this);
 
         // Bold 12 like every other button; the designer drew these at 11.
         UiStyle.button(saveButton);
@@ -929,7 +936,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 newLabel.setHorizontalTextPosition(JLabel.CENTER);
             }
             
-            newLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            newLabel.setCursor(HandPointer.cursor());
             
             newLabel.setBorder(BorderFactory.createLineBorder(COMPONENT_BORDER_DEFAULT_COLOR, NEW_COMPONENT_BORDER_WIDTH));
             
@@ -994,7 +1001,7 @@ public class LayoutEditor extends PositionAwareJFrame
         boolean turns = autonomyPanel != null && x >= 0 && y >= 0 && autonomyPanel.clickChangesDirections(
             new TileGraph.TileKey(this.layout.getName(), x, y));
 
-        label.setCursor(turns ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
+        label.setCursor(turns ? HandPointer.cursor() : null);
 
         // The line only until a square has been clicked (MT-697); the hand stays
         String says = turns && !squareClicked ? I18n.t("autosetup.ui.tooltipClickToChangeDirections") : null;
@@ -1053,6 +1060,7 @@ public class LayoutEditor extends PositionAwareJFrame
 
             // Kept where a shortcut can find it (MT-258): `lastHoveredX/Y` hold -1,-1 and a null label here.
             autonomyHover = label;
+            this.pointerOnGrid = true;
 
             // The square's name and the click hand (FR-112); set outside the invokeLater, as a tooltip is read when the
             // pointer settles.
@@ -1128,7 +1136,7 @@ public class LayoutEditor extends PositionAwareJFrame
                 }
                 else if (this.hasToolFlag() && !this.selectMode)
                 {
-                    label.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                    label.setCursor(HandPointer.cursor());
                 }
                 else
                 {
@@ -1796,8 +1804,7 @@ public class LayoutEditor extends PositionAwareJFrame
             // width is measured from it.
             this.jLabel1.setText(I18n.t("autosetup.ui.titleCap"));
 
-            // The lengths toggle under Addresses: GroupLayout can replace a component, so Addresses is swapped for a
-            // column holding both.
+            // The lengths toggle under Addresses, swapped for a column holding both.
             if (formPane.getLayout() instanceof GroupLayout)
             {
                 JPanel visibility = new JPanel();
@@ -1834,26 +1841,21 @@ public class LayoutEditor extends PositionAwareJFrame
                 autonomyPanel.getShowTextLabels().setAlignmentX(Component.LEFT_ALIGNMENT);
                 visibility.add(autonomyPanel.getShowTextLabels());
 
-                // What the captions say, as one choice (FR-061), in jLabel1's heading style.
-                JLabel captionsLabel = new JLabel(I18n.t("autosetup.ui.captionsHeading"));
-                captionsLabel.setFont(this.jLabel1.getFont());
-                captionsLabel.setForeground(this.jLabel1.getForeground());
-                captionsLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-                captionsLabel.setBorder(BorderFactory.createEmptyBorder(HEADING_GAP + 6, 0, HEADING_GAP, 0));
+                // And the squares autonomy ignores (FR-197)
+                visibility.add(Box.createVerticalStrut(CHECKBOX_GAP));
 
-                visibility.add(captionsLabel);
+                autonomyPanel.getShowIgnored().setAlignmentX(Component.LEFT_ALIGNMENT);
+                visibility.add(autonomyPanel.getShowIgnored());
+
+                // What the captions say, as one choice (FR-061)
+                visibility.add(sideHeading("autosetup.ui.captionsHeading"));
 
                 JComboBox<String> captionChoice = autonomyPanel.getCaptionChoice();
                 captionChoice.setAlignmentX(Component.LEFT_ALIGNMENT);
 
                 visibility.add(captionChoice);
-                JLabel directionsLabel = new JLabel(I18n.t("autosetup.ui.labelDirections"));
-                directionsLabel.setFont(this.jLabel1.getFont());
-                directionsLabel.setForeground(this.jLabel1.getForeground());
-                directionsLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-                // The form's air under a heading (HEADING_GAP)
-                directionsLabel.setBorder(BorderFactory.createEmptyBorder(HEADING_GAP + 6, 0, HEADING_GAP, 0));
 
+                JLabel directionsLabel = sideHeading("autosetup.ui.labelDirections");
                 visibility.add(directionsLabel);
 
                 JComboBox<String> choice = autonomyPanel.getShowDirections();
@@ -1990,6 +1992,18 @@ public class LayoutEditor extends PositionAwareJFrame
         refreshFindPointItem();
     }
 
+    /** A side-column heading, in jLabel1's style with the form's air under it. */
+    private JLabel sideHeading(String key)
+    {
+        JLabel heading = new JLabel(I18n.t(key));
+        heading.setFont(this.jLabel1.getFont());
+        heading.setForeground(this.jLabel1.getForeground());
+        heading.setAlignmentX(Component.LEFT_ALIGNMENT);
+        heading.setBorder(BorderFactory.createEmptyBorder(HEADING_GAP + 6, 0, HEADING_GAP, 0));
+
+        return heading;
+    }
+
     /**
      * Closes an autonomy-mode editor and puts the shared diagram back: render() set edit mode on the LayoutDiagram the
      * main window paints too, and the window's always-on-top state.
@@ -2077,7 +2091,6 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         squareClicked = true;
     }
-
 
     private LayoutLabel lastRevealed;
 
@@ -2621,7 +2634,6 @@ public class LayoutEditor extends PositionAwareJFrame
         return this.groupClipboard != null && !this.groupClipboard.isEmpty();
     }
 
-
     /**
      * Pastes a copied group with its top left corner at a square, as ONE undoable step.
      *
@@ -3079,14 +3091,14 @@ public class LayoutEditor extends PositionAwareJFrame
     }
 
     /**
-     * The pointer left a square of the track editor: onto another, whose hover answers, or off the squares altogether,
+     * The pointer left a square: onto another, whose hover answers, or off the squares altogether,
      * which the margin does not always see.
      * @param e the exit, in the square's coordinates
      * @param label the square left
      */
     public void receiveExitEvent(MouseEvent e, LayoutLabel label)
     {
-        if (isAutonomyMode() || this.grid == null || label == null || getX(label) < 0) return;
+        if (this.grid == null || label == null || getX(label) < 0) return;
 
         JPanel squares = this.grid.getContainer();
 
@@ -3098,6 +3110,8 @@ public class LayoutEditor extends PositionAwareJFrame
         // Onto a square (or something over one) and in view
         if (squares.contains(to) && squares.getVisibleRect().contains(to) && aSquareAt(squares, to)) return;
 
+        // In autonomy mode too, as the margin does: Place and Remove's keys then wait for the squares (FR-200), while
+        // the hovered square stays for Control+H, S and E
         pointerOffTheSquares();
     }
 
@@ -3500,8 +3514,6 @@ public class LayoutEditor extends PositionAwareJFrame
         this.reshapeOps.growEdges();
     }
 
-
-
     /**
      * Shrinks the diagram by one, undoing exactly what growEdges adds.
      *
@@ -3638,7 +3650,6 @@ public class LayoutEditor extends PositionAwareJFrame
         }
     }
     
-
     /** Tells the setup every square of this page has gone, in one call (`forgetBuiltOver` says why). */
     private void forgetWholePage()
     {
@@ -4209,8 +4220,6 @@ public class LayoutEditor extends PositionAwareJFrame
             }
         }
 
-
-
         return true;
     }
 
@@ -4473,16 +4482,13 @@ public class LayoutEditor extends PositionAwareJFrame
         {
             if (parent.refuseWhileARunHoldsTheSetup(this)) return false;
 
-            // And the undo point taken again, or a close before the switch would ask straight after a save
+            // And the undo point taken again, both halves, or a Cancel after an exit refused later would put back what the
+            // railway changed before the save (OB-346)
             if (isAutonomyMode())
             {
                 if (!autonomyPanel.save()) return false;
 
-                AutonomySession saved = parent.getAutonomySession();
-
-                this.autonomyAsOpened = saved == null ? null : saved.snapshotSetup();
-
-                pictureTheRailway(saved);
+                takeTheUndoPoint(parent.getAutonomySession());
 
                 return true;
             }
@@ -5491,6 +5497,26 @@ public class LayoutEditor extends PositionAwareJFrame
             if (evt.getKeyCode() == KeyEvent.VK_ESCAPE)
             {
                 escapePressed();
+
+                return;
+            }
+
+            // Control+Enter is Save in both modes (FR-200).
+            if (evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_ENTER)
+            {
+                if (!switching && !changingPage) saveButton.doClick(0);
+
+                return;
+            }
+
+            // Control+V places the main window's selected locomotive on the square under the pointer and Delete takes
+            // its train off (FR-200), but never Control+Delete, the main window's database delete.  Above the guard,
+            // whose Control+V is the track editor's paste.  Only with the pointer on the squares.
+            if (isAutonomyMode() && (is(evt, PASTE_KEY) || is(evt, DELETE_KEY) && !evt.isControlDown()))
+            {
+                boolean place = is(evt, PASTE_KEY);
+
+                if (this.pointerOnGrid) onTheHoveredSquare(over -> autonomyPanel.placeOrRemoveByKey(over, place));
 
                 return;
             }

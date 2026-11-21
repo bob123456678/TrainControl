@@ -52,16 +52,9 @@ public class testEscapeClosesTheEditor
         model = frozen.model;
         ui = frozen.ui;
 
-        session = ui.getAutonomySession();
+        session = frozen.sessionOrFail("no autonomy configuration, so there is no autonomy mode to open");
 
-        if (session == null || session.getStore().getActiveConfiguration() == null)
-        {
-            throw new AssertionError("no autonomy configuration, so there is no autonomy mode to open");
-        }
-
-        page = model.getLayout(PAGE);
-
-        if (page == null) throw new AssertionError("no page " + PAGE);
+        page = frozen.pageOrFail(PAGE);
     }
 
     @AfterClass(alwaysRun = true)

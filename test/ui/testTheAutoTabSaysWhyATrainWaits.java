@@ -4,7 +4,6 @@ import java.awt.Cursor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import javax.swing.JButton;
@@ -12,7 +11,6 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
-import javax.swing.text.StyleConstants;
 import static org.testng.Assert.*;
 import org.testng.SkipException;
 import org.testng.annotations.Test;
@@ -23,6 +21,7 @@ import org.traincontrol.automationui.TileGraph.TileKey;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomy.AutoLocomotiveStatus;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.I18n;
 import support.Answering;
@@ -37,9 +36,9 @@ import support.Settle;
  * it opens the whole list in a window (FR-017).  Each claim stands trains on the single-switch railway in a sandbox,
  * refreshes the tab as the window does, and reads the card, its tooltip and the window the click opens.
  *
- * The tab asks what a hand-driven send meets while autonomy is not running, so the reasons on show in standby are the
- * stations'.  Autonomy's own refusals (paused, switched-off start) reach a card only when it has not been redrawn
- * since the run began.
+ * The answer is a table of stations, each saying whether the train can go there now, by hand only or not right now,
+ * and why (FR-221), as the editor's Why not Moving? says it.  Autonomy's own refusals to start it (paused,
+ * switched-off start) reach a card only when it has not been redrawn since the run began.
  */
 public class testTheAutoTabSaysWhyATrainWaits
 {
@@ -63,11 +62,11 @@ public class testTheAutoTabSaysWhyATrainWaits
 
     /**
      * A non-reversible train on a platform whose only way out is blocked has no available path: the card says so with
-     * the (i) mark and a hand cursor, and hovering the line lists, per station, the reason a hand-driven send meets
-     * there (the occupant, the terminus it could not leave).
+     * the (i) mark and a hand cursor, and hovering the line gives the table of stations, each once, none it can go to
+     * right now, with the reason a hand-driven send meets there (the occupant, the terminus it could not leave).
      *
-     * MUTATION: in `fileByStation`, file each reason under the Point's own name (`point` for its `stationName`), and the
-     * square's two copies are listed apart, as "Approach (eastbound)" and "Approach (westbound)".
+     * MUTATION: in `destinationTable`, file each copy under its Point's own name (`point` for its `stationName`), and
+     * the square's two copies are listed apart, as "Approach (eastbound)" and "Approach (westbound)".
      */
     @Test
     public void testHoveringTheLineListsEachStationsReason() throws Exception
@@ -82,22 +81,26 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             Mouse.enter(line);
 
-            assertEquals(line.getCursor().getType(), Cursor.HAND_CURSOR, "the pointer does not invite a click");
+            assertTrue(HandPointer.isHand(line.getCursor()), "the pointer does not invite a click");
 
-            assertEquals(entriesOf(tooltipAfterHover(line)), Arrays.asList(
-                "Approach: " + I18n.f("autolayout.why.occupied", BLOCKER),
-                "BranchPlatform: " + I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", MOVER),
-                "WestEnd: " + I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", MOVER)),
-                "the tooltip does not give each station once, with the reason it cannot be reached");
+            String tip = tooltipAfterHover(line);
+
+            assertTrue(tip != null && tip.startsWith("<html>") && tip.endsWith("</html>"), "the tooltip is not a table: "
+                + tip);
+
+            assertRows(tip, new String[][] {
+                {"Approach", I18n.f("autolayout.why.occupied", BLOCKER)},
+                {"BranchPlatform", I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", MOVER)},
+                {"WestEnd", I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc", MOVER)}});
         });
     }
 
     /**
-     * The click opens a window titled for the train, saying where it stands and listing every station that cannot be
-     * reached, in name order, each with its own reason: switched off, not accepting this train, occupied.
+     * The click opens a window titled for the train, saying where it stands and then the table of every station, in
+     * name order, none it can go to right now, each with its own reason: not accepting this train, occupied, switched
+     * off.
      *
-     * MUTATION: in `whyNotReport`, choose the heading by `layout.isAutoRunning()` the wrong way round
-     * (`byHand ? "whyHeaderCandidates" : "whyHeaderByHand"`), and the heading is autonomy's.
+     * MUTATION: in `whyNotReport`, return before the table, and this fails.
      */
     @Test
     public void testClickingTheLineOpensTheWholeList() throws Exception
@@ -119,23 +122,30 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             assertEquals(window[0], I18n.f("autolayout.ui.whyTitle", MOVER), "the window is not titled for the train");
 
-            assertEquals(window[1],
-                I18n.f("autolayout.ui.whyStanding", MOVER, "MainPlatform") + "\n"
-                + "\n"
-                + I18n.f("autolayout.ui.whyHeaderByHand", 3) + "\n"
-                + "    Approach - " + I18n.f("autolayout.why.excluded", MOVER) + "\n"
-                + "    BranchPlatform - " + I18n.f("autolayout.why.occupied", BLOCKER) + "\n"
-                + "    WestEnd - " + I18n.t("autolayout.why.inactive"),
-                "the window does not say where the train stands, then list each station with its own reason");
+            assertTrue(window[1].startsWith(I18n.f("autolayout.ui.whyStanding", MOVER, "MainPlatform")), "the window does"
+                + " not first say where the train stands: " + window[1]);
+
+            String[][] expected = {
+                {"Approach", I18n.f("autolayout.why.excluded", MOVER)},
+                {"BranchPlatform", I18n.f("autolayout.why.occupied", BLOCKER)},
+                {"WestEnd", I18n.t("autolayout.why.inactive")}};
+
+            for (String[] row : expected)
+            {
+                assertTrue(window[1].contains(row[0]) && window[1].contains(row[1]), "the window does not show " + row[0]
+                    + " and its reason: " + window[1]);
+            }
+
+            assertRows((String) said(card, "whyNotReport"), expected);
         });
     }
 
     /**
-     * A station the train can be sent to by one copy is in neither the window nor the tooltip, though its other copy is
-     * refused.
+     * A station the train can be sent to by one copy is shown as one it can go to, in the window and the tooltip,
+     * though its other copy is refused.
      *
-     * MUTATION: in `fileByStation`, skip the Points with no reason (`if (destinations.getReasons().get(point) == null)
-     * continue;`), and Approach is listed with its other copy's reason.
+     * MUTATION: in `DestinationTable.file`, let the last copy filed stand whatever its answer, and Approach is shown
+     * with its refused copy's.
      */
     @Test
     public void testAStationItCanBeSentToIsNotListed() throws Exception
@@ -159,11 +169,16 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             assertTrue(window.contains("BranchPlatform"), "precondition: the window lists no refused station: " + window);
 
-            assertFalse(window.contains("Approach"),
-                "the window lists Approach as a station it cannot be sent to, and it can: " + window);
+            for (String said : new String[] {window, tooltip})
+            {
+                java.util.List<String> refused = support.DestinationRows.answering(said, "autolayout.ui.whyNotRightNow");
 
-            assertFalse(tooltip != null && tooltip.contains("Approach"),
-                "the tooltip lists Approach as a station it cannot be sent to, and it can: " + tooltip);
+                assertTrue(support.DestinationRows.of(said).stream().anyMatch(row -> row[0].equals("Approach")),
+                    "Approach is not shown at all: " + said);
+
+                assertFalse(refused.contains("Approach"), "Approach is shown as a station it cannot be sent to, and it"
+                    + " can: " + said);
+            }
         });
     }
 
@@ -282,14 +297,13 @@ public class testTheAutoTabSaysWhyATrainWaits
     }
 
     /**
-     * In the window the line saying where the train stands and the heading are bold and the station lines are not, so
-     * the two read apart.  A heading is told by position, not by its words, which the other languages translate.
+     * The window shows the answer as a table (FR-221): its column headings, and each station's answer and reason on the
+     * station's own line, to its right, with none of the table's mark-up showing.
      *
-     * MUTATION: in `write`, take a line to be a heading when it IS indented (`line.startsWith("    ")`), and the
-     * station lines turn bold and the headings plain.
+     * MUTATION: in `showWhyNot`, drop `area.setContentType("text/html")`, and the mark-up shows as text.
      */
     @Test
-    public void testTheHeadingsAreBoldAndTheStationLinesAreNot() throws Exception
+    public void testTheWindowShowsATableOfStations() throws Exception
     {
         onTheRailway("single-switch", () ->
         {
@@ -297,36 +311,33 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             AutoLocomotiveStatus card = refreshedUntilNoPaths(mover);
 
-            List<String> bold = new ArrayList<>();
-            List<String> plain = new ArrayList<>();
+            final java.awt.Rectangle[] at = new java.awt.Rectangle[3];
 
-            clickAndRead(secondLine(card), pane ->
+            String[] window = clickAndRead(secondLine(card), pane ->
             {
-                javax.swing.text.StyledDocument doc = pane.getStyledDocument();
+                String text = pane.getDocument().getText(0, pane.getDocument().getLength());
+                int station = text.indexOf("BranchPlatform");
 
-                String text = doc.getText(0, doc.getLength());
-
-                int from = 0;
-
-                for (String line : text.split("\n", -1))
-                {
-                    if (!line.isEmpty())
-                    {
-                        boolean isBold = StyleConstants.isBold(doc.getCharacterElement(from).getAttributes());
-
-                        (isBold ? bold : plain).add(line);
-                    }
-
-                    from += line.length() + 1;
-                }
+                at[0] = pane.modelToView(station);
+                at[1] = pane.modelToView(text.indexOf(I18n.t("autolayout.ui.whyNotRightNow"), station));
+                at[2] = pane.modelToView(text.indexOf(I18n.f("autolayout.errorTerminusNotAllowedForNonReversibleLoc",
+                    MOVER), station));
             });
 
-            assertEquals(bold, Arrays.asList(I18n.f("autolayout.ui.whyStanding", MOVER, "MainPlatform"),
-                I18n.f("autolayout.ui.whyHeaderByHand", 3)), "the bold lines are not the two headings");
+            assertFalse(window[1].contains("<t"), "the window shows the table's mark-up: " + window[1]);
 
-            assertEquals(plain.size(), 3, "the station lines are not plain: " + plain);
+            for (String heading : new String[] {"autolayout.ui.whyColumnStation", "autolayout.ui.whyColumnStatus",
+                "autolayout.ui.whyColumnReason"})
+            {
+                assertTrue(window[1].contains(I18n.t(heading)), "the window's table has no " + heading + " column: "
+                    + window[1]);
+            }
 
-            for (String line : plain) assertTrue(line.startsWith("    "), "a plain line is not a station's: " + line);
+            assertTrue(Math.abs(at[1].y - at[0].y) <= 3 && Math.abs(at[2].y - at[0].y) <= 3, "BranchPlatform's answer"
+                + " and reason are not on its line: " + Arrays.toString(at));
+
+            assertTrue(at[0].x < at[1].x && at[1].x < at[2].x, "BranchPlatform, its answer and its reason are not in"
+                + " columns: " + Arrays.toString(at));
         });
     }
 
@@ -460,10 +471,11 @@ public class testTheAutoTabSaysWhyATrainWaits
     }
 
     /**
-     * A card that was not redrawn when autonomy started explains autonomy's refusal, not the standby list: a paused train
-     * is "paused", on its own, wrapped for a tooltip.
+     * A card that was not redrawn when autonomy started says autonomy's refusal over its table: a paused train is
+     * "paused", and no station is one it can go to now.
      *
-     * MUTATION: in `whyNotToolTip`, skip the `explainCannotStart` answer, and the tooltip lists the stations instead.
+     * MUTATION: in `DestinationTable.html`, leave out autonomy's refusal to start, or return right after it with no
+     * rows, and this fails.
      */
     @Test
     public void testACardNotRedrawnSinceStartSaysThePauseInTheTooltip() throws Exception
@@ -478,9 +490,14 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             assertTrue(tip.startsWith("<html"), "the reason is not wrapped as a tooltip: " + tip);
 
-            assertTrue(tip.contains(I18n.t("autolayout.why.paused")), "the tooltip does not say the train is paused: " + tip);
+            assertTrue(tip.contains(I18n.f("autolayout.ui.whyAutonomyWillNotStart", I18n.t("autolayout.why.paused"))),
+                "the tooltip does not say autonomy will not start the train, as it is paused: " + tip);
 
-            assertFalse(tip.contains("Approach"), "the tooltip lists stations beside the pause: " + tip);
+            // Rows first: with no table at all, "no station can go now" would hold for nothing.
+            assertFalse(support.DestinationRows.of(tip).isEmpty(), "the tooltip has no destination rows: " + tip);
+
+            assertTrue(support.DestinationRows.answering(tip, "autolayout.ui.whyCanGoNow").isEmpty(), "the tooltip"
+                + " says a paused train can go somewhere now: " + tip);
         });
     }
 
@@ -501,19 +518,20 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             String[] window = clickAndRead(line);
 
-            assertEquals(window[1],
-                I18n.f("autolayout.ui.whyStanding", MOVER, "MainPlatform") + "\n"
-                + "\n"
-                + I18n.f("autolayout.why.startInactive", "MainPlatform"),
-                "the window does not say why autonomy will not start the train, and only that");
+            assertTrue(window[1].startsWith(I18n.f("autolayout.ui.whyStanding", MOVER, "MainPlatform"))
+                && window[1].endsWith(I18n.f("autolayout.why.startInactive", "MainPlatform")),
+                "the window does not say why autonomy will not start the train: " + window[1]);
+
+            assertFalse(window[1].contains(I18n.t("autolayout.ui.whyColumnStation")), "a table follows the reason the"
+                + " train cannot start: " + window[1]);
         });
     }
 
     /**
      * On a big railway the tooltip stops at twelve stations and says there are more, while the window lists them all:
-     * every station but the one the train stands on is switched off, and the window's count matches its lines.
+     * every station but the one the train stands on is switched off.
      *
-     * MUTATION: let the tooltip show thirteen (`shown == 13`), and it lists one more than the twelve.
+     * MUTATION: let the tooltip show thirteen (`table.html(13)`), and it lists one more than the twelve.
      */
     @Test
     public void testATallListIsCutShortInTheTooltipAndWholeInTheWindow() throws Exception
@@ -528,23 +546,25 @@ public class testTheAutoTabSaysWhyATrainWaits
 
             assertNotNull(tip, "hovering a train with no station to go to gave nothing");
 
-            assertTrue(tip.endsWith("<br>...</html>"), "the tooltip does not say there are more stations: " + tip);
+            assertTrue(tip.endsWith("<tr><td colspan=3>...</td></tr></table></html>"), "the tooltip does not say there are"
+                + " more stations: " + tip);
 
-            assertEquals(tip.split("<br>").length, 13, "the tooltip does not stop at twelve stations: " + tip);
+            assertEquals(support.DestinationRows.of(tip).size(), 12, "the tooltip does not stop at twelve stations: "
+                + tip);
+
+            AutoLocomotiveStatus card = refreshedUntilNoPaths(mover);
+
+            java.util.List<String[]> all = support.DestinationRows.of((String) said(card, "whyNotReport"));
+
+            assertTrue(all.size() > 12, "precondition: the frozen railway has no thirteenth station to cut: " + all.size());
 
             String shown = clickAndRead(line)[1];
 
-            List<String> stations = new ArrayList<>();
-
-            for (String each : shown.split("\n"))
+            for (String[] row : all)
             {
-                if (each.startsWith("    ")) stations.add(each);
+                assertTrue(shown.contains(row[0].replace("&amp;", "&").replace("&lt;", "<")), "the window leaves out "
+                    + row[0] + ": " + shown);
             }
-
-            assertTrue(stations.size() > 12, "precondition: the frozen railway has no thirteenth station to cut: " + stations);
-
-            assertTrue(shown.contains(I18n.f("autolayout.ui.whyHeaderByHand", stations.size())), "the window's count is not its"
-                + " " + stations.size() + " lines: " + shown);
         });
     }
 
@@ -590,19 +610,29 @@ public class testTheAutoTabSaysWhyATrainWaits
         return line.getToolTipText();
     }
 
-    /** The tooltip's lines, sorted, without the markup. */
-    private static List<String> entriesOf(String tooltip)
+    /** The answer's table holds these stations, in this order, none it can go to now, each with its reason first. */
+    private static void assertRows(String said, String[][] expected)
     {
-        assertNotNull(tooltip, "hovering gave no tooltip");
+        java.util.List<String[]> rows = support.DestinationRows.of(said);
 
-        assertTrue(tooltip.startsWith("<html>") && tooltip.endsWith("</html>"), "the tooltip is not a list: " + tooltip);
+        List<String> names = new ArrayList<>();
 
-        List<String> out = new ArrayList<>(Arrays.asList(
-            tooltip.substring("<html>".length(), tooltip.length() - "</html>".length()).split("<br>")));
+        for (String[] row : rows) names.add(row[0]);
 
-        Collections.sort(out);
+        List<String> wanted = new ArrayList<>();
 
-        return out;
+        for (String[] row : expected) wanted.add(row[0]);
+
+        assertEquals(names, wanted, "the table does not give each station once, in name order: " + said);
+
+        for (int i = 0; i < expected.length; i++)
+        {
+            assertEquals(rows.get(i)[1], I18n.t("autolayout.ui.whyNotRightNow"), expected[i][0] + " is not one it cannot"
+                + " go to right now: " + said);
+
+            assertTrue(rows.get(i)[2].startsWith(expected[i][1].replace("&", "&amp;").replace("<", "&lt;")), expected[i][0]
+                + " does not give its reason, " + expected[i][1] + ": " + said);
+        }
     }
 
     private interface Reading
@@ -636,13 +666,15 @@ public class testTheAutoTabSaysWhyATrainWaits
 
                 if (pane == null) continue;
 
-                Components.waitFor(() -> !pane.getText().trim().isEmpty(), PATIENCE_MS);
+                // The document's text, not `getText`, which is the HTML round an empty body
+                Components.waitFor(() -> Components.onTheEventThread(() -> !pane.getDocument()
+                    .getText(0, pane.getDocument().getLength()).trim().isEmpty()), PATIENCE_MS);
 
                 try
                 {
                     shown[0] = ((JDialog) window).getTitle();
                     shown[1] = Components.onTheEventThread(() -> pane.getDocument().getText(0, pane.getDocument().getLength()))
-                        .replaceAll("\n+$", "");
+                        .trim();
 
                     Components.onTheEventThread(() ->
                     {

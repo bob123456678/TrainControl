@@ -943,12 +943,12 @@ public class testTheArrowsTellTheWholeStory
 
             page.setPageId("1");
 
-            page.addComponent(componentType.SWITCH_THREE, 3, 3, 0, 0, 1, 1, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.SWITCH_CROSSING, 9, 3, 0, 0, 3, 3, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.CUSTOM_PERM_LEFT, 3, 9, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.CUSTOM_PERM_THREEWAY, 9, 9, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.CROSSING, 15, 3, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
-            page.addComponent(componentType.DOUBLE_CURVE, 15, 9, 0, 0, 0, 0, accessoryDecoderType.MM2, null);
+            Diagrams.put(page, componentType.SWITCH_THREE, 3, 3, 0, 1, 1);
+            Diagrams.put(page, componentType.SWITCH_CROSSING, 9, 3, 0, 3, 3);
+            Diagrams.put(page, componentType.CUSTOM_PERM_LEFT, 3, 9, 0, 0, 0);
+            Diagrams.put(page, componentType.CUSTOM_PERM_THREEWAY, 9, 9, 0, 0, 0);
+            Diagrams.put(page, componentType.CROSSING, 15, 3, 0, 0, 0);
+            Diagrams.put(page, componentType.DOUBLE_CURVE, 15, 9, 0, 0, 0);
 
             int sensor = 10;
 

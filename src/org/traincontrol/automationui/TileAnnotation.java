@@ -12,7 +12,6 @@ import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -105,7 +104,6 @@ public class TileAnnotation
     /** The red the diagram writes accessory addresses in, so one color means small numbers over track art. */
     private static final Color LENGTH = Color.RED;
 
-
     /** Selected for a bulk edit: a border, not a fill, so the track stays readable while forty tiles are picked. */
     private static final Color SELECTED = new Color(255, 140, 0);
 
@@ -145,6 +143,9 @@ public class TileAnnotation
         /** The side whose track runs out before another sensor (FR-118), or null; a station there is a terminus. */
         private final Side deadEnd;
 
+        /** A station trains must stop at, none running through (MT-1017): a dot at the icon's center. */
+        private final boolean stopOnly;
+
         public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
             boolean named)
         {
@@ -172,6 +173,13 @@ public class TileAnnotation
         public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
             boolean named, Side a, Side b, boolean optional, boolean shut, Side deadEnd)
         {
+            this(station, terminus, reversing, parking, named, a, b, optional, shut, deadEnd, false);
+        }
+
+        public Badge(boolean station, boolean terminus, boolean reversing, boolean parking,
+            boolean named, Side a, Side b, boolean optional, boolean shut, Side deadEnd, boolean stopOnly)
+        {
+            this.stopOnly = stopOnly;
             this.deadEnd = deadEnd;
             this.shut = shut;
             this.optional = optional;
@@ -237,6 +245,11 @@ public class TileAnnotation
             return named;
         }
 
+        public boolean isStopOnly()
+        {
+            return stopOnly;
+        }
+
         @Override
         public boolean equals(Object o)
         {
@@ -248,7 +261,7 @@ public class TileAnnotation
             return station == other.station && terminus == other.terminus
                 && optional == other.optional
                 && reversing == other.reversing && parking == other.parking && named == other.named
-                && shut == other.shut
+                && shut == other.shut && stopOnly == other.stopOnly
                 && a == other.a && b == other.b && deadEnd == other.deadEnd;
         }
 
@@ -256,7 +269,8 @@ public class TileAnnotation
         public int hashCode()
         {
             return (station ? 1 : 0) + (terminus ? 2 : 0) + (reversing ? 4 : 0)
-                + (parking ? 8 : 0) + (named ? 16 : 0) + (optional ? 32 : 0) + (shut ? 64 : 0);
+                + (parking ? 8 : 0) + (named ? 16 : 0) + (optional ? 32 : 0) + (shut ? 64 : 0)
+                + (stopOnly ? 128 : 0);
         }
 
         @Override
@@ -267,6 +281,7 @@ public class TileAnnotation
             return (station ? (parking ? "parking" : "station") : "point")
                 + (terminus ? (optional ? " may turn" : " terminus") : "")
                 + (reversing ? " reversing" : "")
+                + (stopOnly ? " stop-only" : "")
                 + (named ? "" : " (unnamed)");
         }
     }
@@ -470,20 +485,6 @@ public class TileAnnotation
         this.ignored = ignored;
     }
 
-    /**
-     * Whether this is drawn in the autonomy EDITOR rather than on a diagram.  Only FR-118's icons
-     * (`StationIcons.SHAPES`) turn on it: there every point's icon is white with its color round it, as the arrows over
-     * it are what the editor is read for.  Set rather than passed: it describes the SURFACE, not the square.
-     */
-    public TileAnnotation inTheEditor()
-    {
-        this.editing = true;
-
-        return this;
-    }
-
-    private boolean editing = false;
-
     /** Also draws the green allowed-direction arrows, with no wash (FR-110: Display Allowed Directions). */
     public TileAnnotation withAllowedDirections()
     {
@@ -512,6 +513,20 @@ public class TileAnnotation
     }
 
     private boolean stationless = false;
+
+    /** Leaves an ignored square empty: neither its art nor the graying is drawn (FR-197). */
+    public TileAnnotation leftEmpty()
+    {
+        this.empty = true;
+        return this;
+    }
+
+    private volatile boolean empty = false;
+
+    public boolean isLeftEmpty()
+    {
+        return empty;
+    }
 
     /** Has the square's own art drawn without color, as the editor draws its signals and lamps. */
     public TileAnnotation inGray()
@@ -592,8 +607,8 @@ public class TileAnnotation
         /** The train cannot be sent here right now. */
         NOT_NOW,
 
-        /** Autonomy will never choose this station for the train. */
-        NEVER,
+        /** Only a train sent by hand can go here now (FR-221). */
+        BY_HAND,
 
         /** Picked to be set with others in Station Settings (FR-052), in a color no other mark uses. */
         TOGETHER,
@@ -701,7 +716,7 @@ public class TileAnnotation
             case CLICKABLE: return SELECTED;
             case PICKED: return MARK_BLUE;
             case CAN_GO: return MARK_GREEN;
-            case NEVER: return TRACE_MANUAL;
+            case BY_HAND: return TRACE_MANUAL;
             case TOGETHER: return MARK_TEAL;
             case PICKABLE: return PICKABLE_GRAY;
             default: return MARK_GRAY;
@@ -754,7 +769,6 @@ public class TileAnnotation
         for (int at = -height; at < width; at += 5) g.drawLine(at, 0, at + height, height);
     }
 
-
     public Badge getBadge()
     {
         return badge;
@@ -781,8 +795,6 @@ public class TileAnnotation
      */
     public boolean isBlank()
     {
-        // `editing` is deliberately NOT here, unlike in equals and hashCode: on its own it paints nothing (it only
-        // says what color a badge is), so an annotation carrying it and nothing else is still blank.
         return marks.isEmpty() && length < 0 && !selected && badge == null && !ignored && !stationless
             && traces.isEmpty() && arrivals.isEmpty() && !occupied && !unmeasured && toolMark == null && !gray;
     }
@@ -832,7 +844,7 @@ public class TileAnnotation
             // would invite a click.
             if (ignored)
             {
-                paintGreyedOut(g, width, height);
+                if (!empty) paintGreyedOut(g, width, height);
 
                 // The tested route still shows over the graying: it answers the user's question.
                 if (!traces.isEmpty())
@@ -1244,8 +1256,8 @@ public class TileAnnotation
 
         for (Trace trace : traces)
         {
-            int[] a = trace.from == null ? centre : midpoint(trace.from, width, height);
-            int[] b = trace.to == null ? centre : midpoint(trace.to, width, height);
+            int[] a = endOf(trace.from, centre, width, height);
+            int[] b = endOf(trace.to, centre, width, height);
 
             if (a == null || b == null) continue;
 
@@ -1283,14 +1295,20 @@ public class TileAnnotation
 
         for (Trace trace : traces)
         {
-            int[] a = trace.from == null ? centre : midpoint(trace.from, width, height);
-            int[] b = trace.to == null ? centre : midpoint(trace.to, width, height);
+            int[] a = endOf(trace.from, centre, width, height);
+            int[] b = endOf(trace.to, centre, width, height);
 
             if (a == null || b == null) continue;
 
             // Into the half the train heads for, along the segment's own chord.
             chevron(g, a, b, span);
         }
+    }
+
+    /** Where a trace ends on a side: its midpoint, or `centre` for a trace with no side to leave by. */
+    private static int[] endOf(Side side, int[] centre, int width, int height)
+    {
+        return side == null ? centre : midpoint(side, width, height);
     }
 
     /** A single arrowhead on the line, pointing from one point towards another.  Shared with the running overlay. */
@@ -1558,33 +1576,6 @@ public class TileAnnotation
         }
     }
 
-    /** Which icons stations are drawn with. */
-    public enum StationIcons
-    {
-        /** Circles, diamonds and squares (the grid in `paintBadge`): big for a station, small for a plain sensor. */
-        CLASSIC,
-
-        /**
-         * FR-118's blocks and hexagons (`paintStation`), spilling onto the squares beside a bend; white in the editor.
-         */
-        SHAPES
-    }
-
-    /** The icons stations are drawn with, one setting. */
-    private static volatile StationIcons stationIcons = StationIcons.CLASSIC;
-
-    /** Asked in ONE place, as `LayoutLabel.tailStyle` is: every square follows on its next paint. */
-    public static StationIcons stationIcons()
-    {
-        return stationIcons;
-    }
-
-    /** Chooses the icons stations are drawn with from now on; null for the default. */
-    public static void setStationIcons(StationIcons icons)
-    {
-        stationIcons = icons == null ? StationIcons.CLASSIC : icons;
-    }
-
     /** The box a classic-icon mark is drawn in: 14 pixels at 30 for a station, 10 for a plain sensor. */
     static int classicBox(int tile, boolean station)
     {
@@ -1604,21 +1595,10 @@ public class TileAnnotation
             return;
         }
 
-        // A station takes FR-118's icons while they are the ones drawn.
-        if (badge.isStation() && stationIcons() == StationIcons.SHAPES)
-        {
-            paintStation(g, width, height, colour);
+        int size = Math.round(iconShare * classicBox(Math.min(width, height), badge.isStation()));
 
-            return;
-        }
-
-        boolean classic = stationIcons() == StationIcons.CLASSIC;
-
-        int size = Math.round(iconShare * (classic ? classicBox(Math.min(width, height), badge.isStation())
-            : Math.max(badge.isStation() ? 11 : 8, Math.min(width, height) / (badge.isStation() ? 2 : 3))));
-
-        // A station whose track runs out is a terminus (FR-118), with the classic icons.
-        boolean deadEnd = classic && badge.isStation() && badge.getDeadEnd() != null;
+        // A station whose track runs out is a terminus (FR-118).
+        boolean deadEnd = badge.isStation() && badge.getDeadEnd() != null;
 
         boolean turns = deadEnd || badge.isTerminus() || badge.isReversing();
         boolean mayTurn = turns && !deadEnd && badge.isOptional();
@@ -1632,16 +1612,13 @@ public class TileAnnotation
             size -= badge.isStation() ? 2 : 1;
         }
 
-        // A plain sensor's turn mark is bigger, over its contact, with FR-118's icons only.
-        if (!classic && turns) size = Math.round(Math.min(width, height) * (mayTurn ? 0.53f : 0.4f));
-
         int[] on = trackCentre(width, height);
 
         int x = on[0] - size / 2;
         int y = on[1] - size / 2;
 
         // A classic station's diamond on a bend sits on its rails; `paintBadge` cuts the miters off at the square.
-        boolean onTheBend = classic && badge.isStation() && mayTurn && trackBends();
+        boolean onTheBend = badge.isStation() && mayTurn && trackBends();
 
         if (onTheBend)
         {
@@ -1671,15 +1648,13 @@ public class TileAnnotation
 
         g.setStroke(new BasicStroke(badge.isStation() ? 2f : 1.5f));
 
-        // Filled when named, hollow when not; white with its color round it in the editor.
-        boolean white = editing && !classic;
-
-        Color fill = badge.isNamed() && !white ? colour : Color.WHITE;
-        Color line = badge.isNamed() && !white ? Color.WHITE : colour;
+        // Filled when named, hollow when not.
+        Color fill = badge.isNamed() ? colour : Color.WHITE;
+        Color line = badge.isNamed() ? Color.WHITE : colour;
 
         // The shape says what turning means, the size whether it is a station.  The contact is covered under a
-        // station's mark, as under FR-118's icons.
-        if (classic ? badge.isStation() : turns) coverTheContact(g, width, height);
+        // station's mark.
+        if (badge.isStation()) coverTheContact(g, width, height);
 
         if (turns && mayTurn)
         {
@@ -1710,6 +1685,43 @@ public class TileAnnotation
             g.setColor(line);
             g.drawOval(x, y, size, size);
         }
+
+        if (badge.isStation() && badge.isStopOnly()) stopDot(g, x, y, size, line);
+    }
+
+    /**
+     * The stop-only station's dot (MT-1017), a third of the icon's box and never under 3 pixels, in the outline's color,
+     * centered on that outline as drawn.
+     */
+    private static void stopDot(Graphics2D g, int x, int y, int size, Color line)
+    {
+        double across = Math.max(3, size / 3.0);
+        AffineTransform t = g.getTransform();
+        Graphics2D d = (Graphics2D) g.create();
+
+        try
+        {
+            ImageUtil.smooth(d);
+            d.setColor(line);
+            d.fill(new Ellipse2D.Double(drawnMiddle(g, x, size, t.getScaleX(), t.getTranslateX()) - across / 2,
+                drawnMiddle(g, y, size, t.getScaleY(), t.getTranslateY()) - across / 2, across, across));
+        }
+        finally
+        {
+            d.dispose();
+        }
+    }
+
+    /** An outline's middle on one axis: the default stroke control moves each end to the middle of its screen pixel. */
+    private static double drawnMiddle(Graphics2D g, int at, int size, double scale, double shift)
+    {
+        if (RenderingHints.VALUE_STROKE_PURE.equals(g.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL)))
+        {
+            return at + size / 2.0;
+        }
+
+        double ends = Math.floor(at * scale + shift) + Math.floor((at + size) * scale + shift);
+        return ((ends + 1) / 2 - shift) / scale;
     }
 
     /** The sensor's contact covered under a plain sensor's turn mark, kept inside the square. */
@@ -1740,240 +1752,7 @@ public class TileAnnotation
         }
     }
 
-    /** How tall a station's icon is across its track (FR-118), no taller than its contact. */
-    private static final float ICON_SHARE = 0.43f;
-
-    /** How many times as long as it is tall a station's icon is, before the pixels taken off it. */
-    private static final float ICON_LENGTH_RATIO = 1.9f;
-
-    /** From this tile size up the larger proportions are used: the 60 pixel tile, against the 30. */
-    private static final int LARGE_TILE = 60;
-
-    /** The icon outline's stroke on a large tile and on a small one. */
-    private static final float ICON_STROKE_LARGE = 2f;
-    private static final float ICON_STROKE_SMALL = 1.5f;
-
-    /** On a small tile a terminus's point is this share of its height long; on a large one, half. */
-    private static final double TERMINUS_POINT_SMALL = 0.66;
-
-    /**
-     * A station's icon (FR-118): a rounded block; the hexagon where trains may turn; two terminus shapes back to back
-     * where they must; a flat-ended terminus where its track runs out.  What falls outside spills onto the neighbors.
-     */
-    private void paintStation(Graphics2D g, int width, int height, Color colour)
-    {
-        int tile = Math.min(width, height);
-
-        int h = Math.max(7, Math.round(tile * ICON_SHARE * iconShare));
-
-        boolean large = tile >= LARGE_TILE;
-
-        boolean bends = trackBends();
-
-        int[] centre = trackCentre(width, height);
-
-        int[] a = midpoint(badge.getA(), width, height), b = midpoint(badge.getB(), width, height);
-
-        boolean known = a != null && b != null && badge.getA() != badge.getB();
-
-        double angle = known ? Math.atan2(b[1] - a[1], b[0] - a[0]) : 0;
-
-        Side deadEnd = known && (badge.getDeadEnd() == badge.getA() || badge.getDeadEnd() == badge.getB())
-            ? badge.getDeadEnd() : null;
-
-        if (deadEnd != null && deadEnd == badge.getB()) angle += Math.PI;
-
-        // White with its color round it in the editor: the arrows over the icon are what it is read for.
-        Color fill = badge.isNamed() && !editing ? colour : Color.WHITE;
-        Color line = badge.isNamed() && !editing ? Color.WHITE : colour;
-
-        boolean turns = badge.isTerminus() || badge.isReversing();
-
-        float stroke = large ? ICON_STROKE_LARGE : ICON_STROKE_SMALL;
-
-        int turning = Math.round(h * ICON_LENGTH_RATIO) - (large ? 2 : 1), terminus = Math.round(h * ICON_LENGTH_RATIO) - 1;
-
-        Shape outline = !turns && deadEnd == null ? blockShape(h)
-            : deadEnd != null ? hexagon(terminus, h, true, large ? h / 2.0 : h * TERMINUS_POINT_SMALL)
-            : badge.isOptional() ? hexagon(turning, h, false, h / 2.0)
-            : mustTurnShape(h, turning, large);
-
-        Shape stroked = new BasicStroke(stroke).createStrokedShape(outline);
-
-        Rectangle2D needs = AffineTransform.getRotateInstance(angle).createTransformedShape(stroked).getBounds2D();
-
-        double scale = 1;
-
-        // On a bend, full size on its rails and spilling onto the squares beside it (MT-710).
-        boolean spills = known && bends;
-
-        // Elsewhere moved toward the middle until wholly inside, made smaller only if still too big.
-        double[] at = spills ? new double[] {centre[0], centre[1], scale}
-            : fitInside(needs, scale, centre[0], centre[1], width, height);
-
-        scale = at[2];
-
-        badgeDrawnAt = new int[] {(int) Math.round(at[0]), (int) Math.round(at[1])};
-
-        // What it covers, for the diagram's redraw of what lies over a spill; built once per size (a stall otherwise).
-        if (spills && (spillFor == null || spillFor[0] != width || spillFor[1] != height))
-        {
-            AffineTransform placed = AffineTransform.getTranslateInstance(at[0], at[1]);
-
-            placed.rotate(angle);
-            placed.scale(scale, scale);
-
-            Shape body = placed.createTransformedShape(outline);
-
-            Area region = new Area(body);
-
-            region.add(new Area(new BasicStroke((float) (stroke * scale) + 2f).createStrokedShape(body)));
-            region.subtract(new Area(new Rectangle(0, 0, width, height)));
-
-            spillRegion = region;
-            spillFor = new int[] {width, height};
-        }
-
-        // The contact covered on a bend too, once (not again with the spill).
-        if (spills && !spilling)
-        {
-            Graphics2D c = (Graphics2D) g.create();
-
-            try
-            {
-                c.clipRect(0, 0, width, height);
-                ImageUtil.smooth(c);
-                c.translate(centre[0], centre[1]);
-                c.rotate(angle);
-
-                cover(c, tile);
-            }
-            finally
-            {
-                c.dispose();
-            }
-        }
-
-        Graphics2D s = (Graphics2D) g.create();
-
-        try
-        {
-            // A spill is cut at the square's edges so no pixel is drawn twice.
-            if (spills) s.clip(spilling ? outside(width, height) : new Rectangle(0, 0, width, height));
-
-            // Pure, as the page drew them: stroke control would let the must-turn's outlines meet across the gap.
-            ImageUtil.smooth(s);
-            s.translate(at[0], at[1]);
-            s.rotate(angle);
-
-            if (known && !bends) cover(s, tile);
-
-            s.scale(scale, scale);
-            s.setStroke(new BasicStroke(stroke));
-
-            if (deadEnd != null)
-            {
-                body(s, outline, fill, line);
-
-                bar(s, -terminus / 2.0 + h * 0.3, h * 0.62, Math.max(2, Math.round(tile / 12f)), line);
-            }
-            else if (turns && badge.isOptional())
-            {
-                body(s, outline, fill, line);
-            }
-            else if (turns)
-            {
-                mustTurn(s, tile, h, turning, fill, line);
-            }
-            else
-            {
-                body(s, outline, fill, line);
-            }
-        }
-        finally
-        {
-            s.dispose();
-        }
-    }
-
-    /** Whether the station icon reaches past the square: only FR-118's icons, on a curve on the diagram. */
-    public boolean spillsOverItsSquare()
-    {
-        // Not a square the editor shades; classic marks stay inside their square.
-        return stationIcons() == StationIcons.SHAPES && badge != null && badge.isStation() && !badge.isImpassable() && !ignored && badge.getA() != null
-            && badge.getB() != null && badge.getA() != badge.getB() && trackBends();
-    }
-
-    /**
-     * What of the icon falls outside the square, drawn over its neighbors; the graphics are at this square's origin.
-     */
-    public void paintSpill(Graphics2D g, int width, int height)
-    {
-        if (!spillsOverItsSquare()) return;
-
-        Graphics2D s = (Graphics2D) g.create();
-
-        try
-        {
-            spilling = true;
-
-            paintBadge(s, width, height);
-        }
-        finally
-        {
-            spilling = false;
-
-            s.dispose();
-        }
-    }
-
-    /** Whether `paintSpill` is drawing - the station's part outside its square, without the contact's cover. */
-    private boolean spilling;
-
-    /** What the station's icon covers outside its square, as `paintStation` built it for the size in `spillFor`. */
-    private Shape spillRegion;
-
-    /** The width and height `spillRegion` was built for, or null before the icon is first drawn. */
-    private int[] spillFor;
-
-    /** The spill's cover, in this square's coordinates, or null; the diagram redraws what lies over it. */
-    public Shape spillShape(int width, int height)
-    {
-        int[] built = spillFor;
-
-        if (built == null || built[0] != width || built[1] != height || !spillsOverItsSquare()) return null;
-
-        return spillRegion;
-    }
-
-    /** This square's arrows and barred arrivals again over a neighbor's spilled station; clipped to the square. */
-    public void paintArrowsAgain(Graphics2D g, int width, int height)
-    {
-        if (ignored) return;
-
-        Graphics2D a = (Graphics2D) g.create();
-
-        try
-        {
-            ImageUtil.antialias(a);
-            a.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
-
-            paintArrows(a, width, height);
-
-            paintArrivals(a, width, height);
-
-            // AND ITS OUTLINES, which its own paint draws over everything on it: the spill broke them
-            if (toolMark == ToolMark.CLICKABLE) paintToolBorder(a, width, height);
-
-            paintOutlines(a, width, height);
-        }
-        finally
-        {
-            a.dispose();
-        }
-    }
-
-    /** The sensor's contact covered under a station's icon on straight track (FR-118); drawn at the icon's center. */
+    /** The sensor's contact covered under a station's icon on straight track; drawn at the icon's center. */
     private static void cover(Graphics2D g, int tile)
     {
         int m = Math.round(tile * 0.2f + 2);
@@ -1983,158 +1762,6 @@ public class TileAnnotation
 
         g.setColor(Color.BLACK);
         g.fill(new Rectangle2D.Double(-m, -tile * 4 / 30.0, 2 * m, tile * 8 / 30.0));
-    }
-
-    /** A station's block: half as long again as it is tall, its corners rounded (D's, on the station icon page). */
-    private static void block(Graphics2D g, int h, Color fill, Color line)
-    {
-        body(g, blockShape(h), fill, line);
-    }
-
-    /** The block's shape, about the origin along x. */
-    private static Shape blockShape(int h)
-    {
-        int w = Math.round(h * 1.5f);
-
-        double r = Math.max(2, h * 0.22);
-
-        return new java.awt.geom.RoundRectangle2D.Double(-w / 2.0, -h / 2.0, w, h, 2 * r, 2 * r);
-    }
-
-    /** Around a square to a square's depth, but not the square: where its spill is drawn. */
-    private static Shape outside(int width, int height)
-    {
-        Area around = new Area(new Rectangle(-width, -height, 3 * width, 3 * height));
-
-        around.subtract(new Area(new Rectangle(0, 0, width, height)));
-
-        return around;
-    }
-
-    /**
-     * Where an icon goes to be wholly inside its square (MT-710): the asked place, else the first fit, else smaller.
-     */
-    private static double[] fitInside(Rectangle2D needs, double scale, double x, double y, int width,
-        int height)
-    {
-        double mx = width / 2.0, my = height / 2.0;
-
-        for (int step = 0; step <= 20; step++)
-        {
-            double t = step / 20.0, cx = x + t * (mx - x), cy = y + t * (my - y);
-
-            if (cx + scale * needs.getMinX() >= 0.5 && cx + scale * needs.getMaxX() <= width - 0.5
-                && cy + scale * needs.getMinY() >= 0.5 && cy + scale * needs.getMaxY() <= height - 0.5)
-            {
-                return new double[] {cx, cy, scale};
-            }
-        }
-
-        double across = Math.max(-needs.getMinX(), needs.getMaxX()), down = Math.max(-needs.getMinY(), needs.getMaxY());
-
-        return new double[] {mx, my, Math.min(scale, Math.min((mx - 0.5) / across, (my - 0.5) / down))};
-    }
-
-    /** The must-turn pair's outline about the origin along x: two terminus shapes back to back across a 4-pixel gap. */
-    private static Shape mustTurnShape(int h, int total, boolean large)
-    {
-        int gap = 4, half = (total - gap) / 2;
-
-        Path2D.Double out = new Path2D.Double();
-
-        for (int dir : new int[] {-1, 1})
-        {
-            AffineTransform t = AffineTransform.getTranslateInstance(dir * (gap / 2.0 + half / 2.0), 0);
-
-            if (dir < 0) t.scale(-1, 1);
-
-            out.append(t.createTransformedShape(hexagon(half, h, true, large ? h * 0.4 : h * 0.5)), false);
-        }
-
-        return out;
-    }
-
-    /** Two terminus shapes back to back across a 4-pixel gap the track shows through, `total` long (MT-710). */
-    private static void mustTurn(Graphics2D g, int tile, int h, int total, Color fill, Color line)
-    {
-        boolean large = tile >= LARGE_TILE;
-
-        int gap = 4;
-
-        int half = (total - gap) / 2;
-
-        for (int dir : new int[] {-1, 1})
-        {
-            Graphics2D p = (Graphics2D) g.create();
-
-            try
-            {
-                p.translate(dir * (gap / 2.0 + half / 2.0), 0);
-
-                if (dir < 0) p.scale(-1, 1);
-
-                body(p, hexagon(half, h, true, large ? h * 0.4 : h * 0.5), fill, line);
-
-                if (large) bar(p, -half / 2.0 + Math.max(2, h * 0.22), h * 0.6, Math.max(2, Math.round(tile / 12f)), line);
-            }
-            finally
-            {
-                p.dispose();
-            }
-
-            if (!large)
-            {
-                // in the half's flat part, before its point begins
-                int at = gap / 2 + Math.round(tile / 15f), tall = Math.round(tile * 8 / 30f);
-
-                g.setColor(line);
-                g.fill(new Rectangle2D.Double(dir > 0 ? at : -at - 1, -tall / 2.0, 1, tall));
-            }
-        }
-    }
-
-    /** A hexagon about the origin along x: pointed at both ends, or flat at the left (a terminus's buffer end). */
-    private static Path2D hexagon(double w, double h, boolean flatLeft, double point)
-    {
-        Path2D.Double p = new Path2D.Double();
-
-        if (flatLeft)
-        {
-            p.moveTo(-w / 2, -h / 2);
-            p.lineTo(w / 2 - point, -h / 2);
-            p.lineTo(w / 2, 0);
-            p.lineTo(w / 2 - point, h / 2);
-            p.lineTo(-w / 2, h / 2);
-        }
-        else
-        {
-            p.moveTo(-w / 2, 0);
-            p.lineTo(-w / 2 + point, -h / 2);
-            p.lineTo(w / 2 - point, -h / 2);
-            p.lineTo(w / 2, 0);
-            p.lineTo(w / 2 - point, h / 2);
-            p.lineTo(-w / 2 + point, h / 2);
-        }
-
-        p.closePath();
-
-        return p;
-    }
-
-    /** A shape filled, then outlined in the stroke already set. */
-    private static void body(Graphics2D g, Shape shape, Color fill, Color line)
-    {
-        g.setColor(fill);
-        g.fill(shape);
-        g.setColor(line);
-        g.draw(shape);
-    }
-
-    /** A bar across the track at x, `tall` high and `wide` across, its left edge on a whole pixel of the shape's frame. */
-    private static void bar(Graphics2D g, double x, double tall, int wide, Color colour)
-    {
-        g.setColor(colour);
-        g.fill(new Rectangle2D.Double(Math.round(x - wide / 2.0), -tall / 2, wide, tall));
     }
 
     /**
@@ -2148,14 +1775,11 @@ public class TileAnnotation
 
         int[] on = trackCentre(width, height);
 
-        boolean shapes = stationIcons() == StationIcons.SHAPES;
+        double across = iconShare * (classicBox(tile, badge.isStation()) + (badge.isStation() ? 0 : Math.round(tile / 15f)));
 
-        double across = iconShare * (shapes ? Math.round(tile * 0.47f)
-            : classicBox(tile, badge.isStation()) + (badge.isStation() ? 0 : Math.round(tile / 15f)));
+        boolean filled = badge.isStation();
 
-        boolean filled = !shapes && badge.isStation();
-
-        boolean small = !shapes && across < 16;
+        boolean small = across < 16;
 
         float least = small ? 1.5f : 2f;
 
@@ -2196,15 +1820,19 @@ public class TileAnnotation
     /** Whether the track turns a corner: its two sides are not opposite (N, E, S and W are declared in order). */
     private boolean trackBends()
     {
-        Side sideA = badge != null && badge.getA() != null ? badge.getA()
-            : marks.isEmpty() ? null : marks.get(0).getA();
+        Side[] sides = trackSides();
 
-        Side sideB = badge != null && badge.getB() != null ? badge.getB()
-            : marks.isEmpty() ? null : marks.get(0).getB();
+        if (sides[0] == null || sides[1] == null || sides[0] == sides[1]) return false;
 
-        if (sideA == null || sideB == null || sideA == sideB) return false;
+        return Math.abs(sides[0].ordinal() - sides[1].ordinal()) != 2;
+    }
 
-        return Math.abs(sideA.ordinal() - sideB.ordinal()) != 2;
+    /** This tile's own two track sides: the badge's own route where it has one, otherwise the first route drawn. */
+    private Side[] trackSides()
+    {
+        return new Side[] {
+            badge != null && badge.getA() != null ? badge.getA() : marks.isEmpty() ? null : marks.get(0).getA(),
+            badge != null && badge.getB() != null ? badge.getB() : marks.isEmpty() ? null : marks.get(0).getB()};
     }
 
     /** Where paintBadge last drew, or null; only the train mark reads it, to sit ON the badge. */
@@ -2213,17 +1841,12 @@ public class TileAnnotation
     /** The midpoint of this tile's own two track sides.  Public: the run line, badges and train must agree (OB-026). */
     public int[] trackCentre(int width, int height)
     {
-        // the badge's own route where it has one, otherwise the first route drawn, otherwise center
-        Side sideA = badge != null && badge.getA() != null ? badge.getA()
-            : marks.isEmpty() ? null : marks.get(0).getA();
+        Side[] sides = trackSides();
 
-        Side sideB = badge != null && badge.getB() != null ? badge.getB()
-            : marks.isEmpty() ? null : marks.get(0).getB();
+        if (sides[0] == null || sides[1] == null) return new int[] {width / 2, height / 2};
 
-        if (sideA == null || sideB == null) return new int[] {width / 2, height / 2};
-
-        int[] a = midpoint(sideA, width, height);
-        int[] b = midpoint(sideB, width, height);
+        int[] a = midpoint(sides[0], width, height);
+        int[] b = midpoint(sides[1], width, height);
 
         if (a == null || b == null) return new int[] {width / 2, height / 2};
 
@@ -2304,17 +1927,19 @@ public class TileAnnotation
         return EnumSet.of(a, b);
     }
 
+    /** Corners at the middles of the box's sides, halves included, so an odd size is no lopsided (MT-1040). */
     private void diamond(Graphics2D g, int x, int y, int size, Color fill, Color line)
     {
-        int half = size / 2;
-
-        int[] xs = {x + half, x + size, x + half, x};
-        int[] ys = {y, y + half, y + size, y + half};
-
+        Path2D.Double shape = new Path2D.Double();
+        shape.moveTo(x + size / 2.0, y);
+        shape.lineTo(x + size, y + size / 2.0);
+        shape.lineTo(x + size / 2.0, y + size);
+        shape.lineTo(x, y + size / 2.0);
+        shape.closePath();
         g.setColor(fill);
-        g.fillPolygon(xs, ys, 4);
+        g.fill(shape);
         g.setColor(line);
-        g.drawPolygon(xs, ys, 4);
+        g.draw(shape);
     }
 
     private void paintLength(Graphics2D g, int width, int height)
@@ -2372,17 +1997,15 @@ public class TileAnnotation
 
         TileAnnotation other = (TileAnnotation) o;
 
-        // `editing` is in here because it changes the PICTURE (whether a named point's icon is filled with its color or
-        // white) and equals is what LayoutLabel asks to decide whether a redraw is needed.
         return length == other.length && selected == other.selected
             && (badge == null ? other.badge == null : badge.equals(other.badge))
             && ignored == other.ignored && stationless == other.stationless && curved == other.curved
             && portal == other.portal
             && traces.equals(other.traces) && blockedOnly == other.blockedOnly
-            && occupied == other.occupied && editing == other.editing && unmeasured == other.unmeasured
+            && occupied == other.occupied && unmeasured == other.unmeasured
             && toolMark == other.toolMark && gray == other.gray
             && allowedToo == other.allowedToo && allowedOnly == other.allowedOnly && bareSide == other.bareSide
-            && marks.equals(other.marks) && arrivals.equals(other.arrivals);
+            && marks.equals(other.marks) && arrivals.equals(other.arrivals) && empty == other.empty;
     }
 
     @Override
@@ -2392,9 +2015,10 @@ public class TileAnnotation
             + (selected ? 1 : 0) + (badge == null ? 0 : badge.hashCode() * 4)
             + (ignored ? 16 : 0) + (curved ? 64 : 0) + (portal ? 256 : 0) + (occupied ? 1024 : 0)
             + traces.hashCode() * 3
-            + (blockedOnly ? 512 : 0) + (editing ? 2048 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0) + (allowedOnly ? 16384 : 0)
+            + (blockedOnly ? 512 : 0) + (unmeasured ? 4096 : 0) + (allowedToo ? 8192 : 0) + (allowedOnly ? 16384 : 0)
             + (bareSide == null ? 0 : (bareSide.ordinal() + 1) * 32768) + (stationless ? 131072 : 0)
-            + arrivals.hashCode() * 7 + (toolMark == null ? 0 : (toolMark.ordinal() + 1) * 262144) + (gray ? 8 : 0);
+            + arrivals.hashCode() * 7 + (toolMark == null ? 0 : (toolMark.ordinal() + 1) * 262144) + (gray ? 8 : 0)
+            + (empty ? 32 : 0);
     }
 
     @Override
@@ -2403,7 +2027,7 @@ public class TileAnnotation
         return marks + (length >= 0 ? " len=" + length : "") + (selected ? " selected" : "")
             + (badge == null ? "" : " " + badge)
             + (arrivals.isEmpty() ? "" : " " + arrivals)
-            + (ignored ? " ignored" : "") + (stationless ? " no station" : "")
+            + (ignored ? " ignored" : "") + (empty ? " empty" : "") + (stationless ? " no station" : "")
             + (toolMark == null ? "" : " " + toolMark);
     }
 }

@@ -29,26 +29,6 @@ import static org.traincontrol.marklin.MarklinControlStation.init;
 public class testDiagramLooksRight
 {
 
-    /**
-     * The icons each claim draws: FR-118's for a claim marked `@DrawsFR118Icons`, the classic ones for every other.
-     *
-     * @param claim the claim about to run
-     */
-    @org.testng.annotations.BeforeMethod(alwaysRun = true)
-    public void theIconsItDraws(java.lang.reflect.Method claim)
-    {
-        org.traincontrol.automationui.TileAnnotation.setStationIcons(claim.isAnnotationPresent(support.DrawsFR118Icons.class)
-            ? org.traincontrol.automationui.TileAnnotation.StationIcons.SHAPES
-            : org.traincontrol.automationui.TileAnnotation.StationIcons.CLASSIC);
-    }
-
-    /** And the classic icons again after it, whatever it set. */
-    @org.testng.annotations.AfterMethod(alwaysRun = true)
-    public void theClassicIconsAgain()
-    {
-        org.traincontrol.automationui.TileAnnotation.setStationIcons(null);
-    }
-
     private static MarklinControlStation model;
     private static TrainControlUI ui;
 
@@ -3008,7 +2988,7 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The curve and switch tiles are the mirror images their shapes say they are, at both sizes: a curve between south
+     * The curve and switch tiles are the mirror images their shapes say they are, at every size: a curve between south
      * and east mirrors across the diagonal, a left switch is a right switch turned over.  A pixel more than a shade out
      * (12 of 255) on either side is counted (icons come from `docs/tools/tile-icons.py`).
      *
@@ -3028,11 +3008,12 @@ public class testDiagramLooksRight
             {"crossswitch_active", "H"}, {"crossswitch_active", "T"},
             {"custom_scissors", "TB"}, {"custom_scissors_active", "TB"}, {"custom_perm_scissors", "TB"},
             {"custom_perm_left", "custom_perm_right"}, {"custom_perm_y", "LR"}, {"custom_perm_threeway", "LR"},
-            {"s88", "LR"}, {"s88", "TB"}, {"s88_active", "LR"}, {"s88_active", "TB"}, {"end", "LR"}};
+            {"s88", "LR"}, {"s88", "TB"}, {"s88_active", "LR"}, {"s88_active", "TB"}, {"end", "LR"},
+            {"decouple", "LR"}, {"turntable", "LR"}, {"turntable", "TB"}};
 
         java.util.List<String> off = new java.util.ArrayList<>();
 
-        for (int size : new int[] {30, 60})
+        for (int size : new int[] {30, 60, 120})
         {
             for (String[] check : checks)
             {
@@ -3076,7 +3057,7 @@ public class testDiagramLooksRight
     /** A tile's icon, as the diagram loads it. */
     private static BufferedImage icon(int size, String name) throws Exception
     {
-        java.net.URL at = TrainControlUI.class.getResource("/org/traincontrol/gui/resources/icons" + size + "/" + name + ".gif");
+        java.net.URL at = TrainControlUI.class.getResource("/org/traincontrol/gui/resources/icons" + size + "/" + name + (size == 120 ? ".png" : ".gif"));
 
         assertNotNull(at, "no icon " + name + " at " + size);
 
@@ -3923,493 +3904,11 @@ public class testDiagramLooksRight
             + " address on the page (RSA60-C1)");
     }
 
-    /**
-     * A station on a curve spills onto the squares beside it on the diagram itself: drawn once every square is drawn,
-     * over squares that paint their own white.  Nine squares of 30 pixels in the diagram's own container, a station on
-     * an E-S curve in the middle: its blue reaches the squares to its right and below, which were painted after it.
-     *
-     * MUTATION: take the spill pass out of `LayoutGrid.newDiagramContainer`, and this fails.
-     */
-    @Test
-    @support.DrawsFR118Icons
-    public void testAStationOnACurveSpillsOntoTheSquaresBesideIt()
-    {
-        Display.needed("rendering a diagram needs a display");
-
-        final int size = 30;
-
-        javax.swing.JPanel grid = aWhiteDiagramContainer(size * 3);
-
-        org.traincontrol.gui.LayoutLabel station = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
-
-        station.setBounds(size, size, size, size);
-        station.setAutonomyAnnotation(aCurvedStation());
-
-        grid.add(station);
-
-        for (int i = 0; i < 9; i++)
-        {
-            if (i == 4) continue;
-
-            org.traincontrol.gui.LayoutLabel beside = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
-
-            beside.setOpaque(true);
-            beside.setBackground(java.awt.Color.WHITE);
-            beside.setBounds((i % 3) * size, (i / 3) * size, size, size);
-
-            grid.add(beside, 0);
-        }
-
-        BufferedImage shot = paintedOn(java.awt.Color.WHITE, grid, size * 3, size * 3);
-
-        int inside = 0, beside = 0;
-
-        for (int x = 0; x < size * 3; x++)
-        {
-            for (int y = 0; y < size * 3; y++)
-            {
-                int rgb = shot.getRGB(x, y);
-
-                if ((rgb & 0xFF) > 150 && ((rgb >> 16) & 0xFF) < 90 && ((rgb >> 8) & 0xFF) < 90)
-                {
-                    if (x >= size && x < 2 * size && y >= size && y < 2 * size) inside++;
-                    else beside++;
-                }
-            }
-        }
-
-        assertTrue(inside > 0, "precondition: the station's square drew no blue");
-
-        assertTrue(beside > 0, "a station on a curve drew nothing on the squares beside it - its icon is cut off at its"
-            + " square's edges, where Adam asked: \"make the stations spill over onto adjacent tiles\"");
-    }
-
-    /**
-     * A station that spills repaints what it spills onto: when its square is repainted, or its icon taken away, the
-     * diagram is asked to repaint the squares around it too, or the old spill would stay there.  Asked of Swing's
-     * repaint queue.
-     *
-     * MUTATION: repaint only the square itself again, and this fails.
-     */
-    @Test
-    @support.DrawsFR118Icons
-    public void testAStationThatSpillsRepaintsWhatItSpillsOnto() throws Exception
-    {
-        final int size = 30;
-
-        final java.util.List<java.awt.Rectangle> asked = new java.util.ArrayList<>();
-
-        final java.util.List<java.awt.Rectangle> onRepaint = new java.util.ArrayList<>(), onRemoval = new java.util.ArrayList<>();
-
-        final javax.swing.JPanel grid = org.traincontrol.gui.LayoutGrid.newDiagramContainer();
-
-        javax.swing.SwingUtilities.invokeAndWait(() ->
-        {
-            javax.swing.RepaintManager was = javax.swing.RepaintManager.currentManager(grid);
-
-            javax.swing.RepaintManager.setCurrentManager(new javax.swing.RepaintManager()
-            {
-                @Override
-                public void addDirtyRegion(javax.swing.JComponent c, int x, int y, int w, int h)
-                {
-                    if (c == grid) asked.add(new java.awt.Rectangle(x, y, w, h));
-                }
-            });
-
-            try
-            {
-                grid.setLayout(null);
-                grid.setSize(size * 3, size * 3);
-
-                org.traincontrol.gui.LayoutLabel station =
-                    new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
-
-                station.setBounds(size, size, size, size);
-
-                grid.add(station);
-
-                station.setAutonomyAnnotation(aCurvedStation());
-
-                asked.clear();
-
-                station.repaint();
-
-                onRepaint.addAll(asked);
-
-                asked.clear();
-
-                station.setAutonomyAnnotation(null);
-
-                onRemoval.addAll(asked);
-            }
-            finally
-            {
-                javax.swing.RepaintManager.setCurrentManager(was);
-            }
-        });
-
-        java.awt.Rectangle around = new java.awt.Rectangle(size / 2, size / 2, size * 2, size * 2);
-
-        assertTrue(onRepaint.stream().anyMatch(r -> r.contains(around)), "a station that spills was repainted alone - what"
-            + " it drew on the squares beside it was not asked to be redrawn: " + onRepaint);
-
-        assertTrue(onRemoval.stream().anyMatch(r -> r.contains(around)), "a station that spilled was taken away and only"
-            + " its own square repainted - its spill stays on the squares beside it: " + onRemoval);
-    }
-
-    /**
-     * A caption over the square a curve's station spills onto stays in front of the spill (OB-117), and the arrows
-     * redrawn over the spill go no further than it: none of the station's blue or the arrows' red or green shows on a
-     * square under an opaque yellow caption.
-     *
-     * MUTATION: draw the spill over the captions again, or the arrows again over the whole square.
-     */
-    @Test
-    @support.DrawsFR118Icons
-    public void testASpillIsDrawnUnderTheCaptionsOverIt()
-    {
-        Display.needed("rendering a diagram needs a display");
-
-        final int size = 30;
-
-        javax.swing.JPanel grid = aWhiteDiagramContainer(size * 3);
-
-        org.traincontrol.gui.LayoutLabel middle = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
-
-        middle.setBounds(size, size, size, size);
-        middle.setAutonomyAnnotation(aCurvedStation());
-
-        org.traincontrol.gui.LayoutLabel right = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
-
-        right.setOpaque(true);
-        right.setBackground(java.awt.Color.WHITE);
-        right.setBounds(2 * size, size, size, size);
-        right.setAutonomyAnnotation(new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
-            new org.traincontrol.automationui.TileAnnotation.Mark(org.traincontrol.automationui.TilePorts.Side.W,
-                org.traincontrol.automationui.TilePorts.Side.E, org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)),
-            -1, false, null, false, false, false, null, true, null));
-
-        org.traincontrol.gui.widgets.StationCaption caption = new org.traincontrol.gui.widgets.StationCaption();
-
-        caption.setOpaque(true);
-        caption.setBackground(new java.awt.Color(255, 220, 0));
-        caption.setBounds(2 * size, size, size, size);
-
-        // in the order the diagram builds them: a caption in front of every tile
-        grid.add(caption);
-        grid.add(right);
-        grid.add(middle);
-
-        int[] covered = blueAndArrowsBeside(grid, size);
-
-        int blue = covered[0], arrows = covered[1];
-
-        assertEquals(blue, 0, "the curve's station spilled over the caption on the square beside it - " + blue + " pixels of"
-            + " its blue in front of the caption, where on its own square it is behind one (RSA61-C2)");
-
-        assertEquals(arrows, 0, "the arrows drawn again over the spill were drawn over the caption on their square - "
-            + arrows + " pixels of red and green in front of it (RSA61-C2)");
-
-        // THE CONTROL: the same square with the caption taken off shows both, so the zeros above counted colors the
-        // square is painted in
-        grid.remove(caption);
-
-        int[] open = blueAndArrowsBeside(grid, size);
-
-        assertTrue(open[0] > 0, "precondition: none of the station's blue is seen on the square beside it with no caption"
-            + " over it, so the count of zero above says nothing about the caption");
-
-        assertTrue(open[1] > 0, "precondition: none of the arrows' red or green is seen on the square with no caption over"
-            + " it, so the count of zero above says nothing about the caption (the arrows are not the colours this looks for)");
-    }
-
-    /**
-     * The grid painted over white, and on the middle row's right-hand square the pixels that are the station's blue and
-     * the pixels that are the one-way arrows' red or green.
-     *
-     * @return the blue pixels, then the arrow pixels
-     */
-    private static int[] blueAndArrowsBeside(javax.swing.JPanel grid, int size)
-    {
-        BufferedImage shot = paintedOn(java.awt.Color.WHITE, grid, size * 3, size * 3);
-
-        // THE ARROWS' COLORS ARE THE PROGRAM'S OWN, so a color changed there is followed and not left uncounted
-        java.awt.Color oneWay = (java.awt.Color) support.ProgramConstants.get(
-            org.traincontrol.automationui.TileAnnotation.class, "ONE_WAY");
-        java.awt.Color closedWay = (java.awt.Color) support.ProgramConstants.get(
-            org.traincontrol.automationui.TileAnnotation.class, "CLOSED");
-
-        int blue = 0, arrows = 0;
-
-        for (int x = 2 * size; x < 3 * size; x++)
-        {
-            for (int y = size; y < 2 * size; y++)
-            {
-                int rgb = shot.getRGB(x, y), r = (rgb >> 16) & 0xFF, gr = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
-
-                if (b > 150 && r < 90 && gr < 90) blue++;
-
-                if (near(r, gr, b, closedWay, 30, 40, 40) || near(r, gr, b, oneWay, 30, 30, 30)) arrows++;
-            }
-        }
-
-        return new int[] {blue, arrows};
-    }
-
     /** Whether a pixel is within these margins of a color, channel by channel. */
     private static boolean near(int r, int g, int b, java.awt.Color colour, int marginR, int marginG, int marginB)
     {
         return Math.abs(r - colour.getRed()) < marginR && Math.abs(g - colour.getGreen()) < marginG
             && Math.abs(b - colour.getBlue()) < marginB;
-    }
-
-    /**
-     * The whole of every kind of station's spill is under the captions at both sizes, not only the icon's OUTLINE: at
-     * 60 pixels the body of a block or terminus would otherwise show in front of a caption.
-     *
-     * MUTATION: make the region the icon's outline alone again.
-     */
-    @Test
-    @support.DrawsFR118Icons
-    public void testEveryKindOfSpillIsUnderTheCaptionsAtBothSizes()
-    {
-        Display.needed("rendering a diagram needs a display");
-
-        java.util.List<String> wrong = new java.util.ArrayList<>();
-
-        for (int size : new int[] {30, 60})
-        {
-            for (org.traincontrol.automationui.TileAnnotation station : curvedStationsOfEveryKind())
-            {
-                int blue = spilledInFrontOfCaptions(size, station);
-
-                if (blue > 0) wrong.add(station + " at " + size + " pixels: " + blue + " pixels of its blue");
-            }
-        }
-
-        assertTrue(wrong.isEmpty(), "a curve's station spilled in front of the captions on the squares beside it, where on"
-            + " its own square it is behind one (RSA62-C1):\n  " + String.join("\n  ", wrong));
-    }
-
-    /**
-     * A station's spill region is built once for a size, and quickly: building it on every paint, as an `Area` of the
-     * icon's stroked outline, stalls the window.  A named block on an N-E curve is asked twice and answers the same
-     * region, built in well under a frame.
-     *
-     * MUTATION: build the region afresh on every call, and this fails.
-     */
-    @Test
-    @support.DrawsFR118Icons
-    public void testASpillsRegionIsBuiltOnceAndQuickly()
-    {
-        org.traincontrol.automationui.TilePorts.Side n = org.traincontrol.automationui.TilePorts.Side.N;
-        org.traincontrol.automationui.TilePorts.Side e = org.traincontrol.automationui.TilePorts.Side.E;
-
-        for (int size : new int[] {30, 60})
-        {
-            org.traincontrol.automationui.TileAnnotation station = new org.traincontrol.automationui.TileAnnotation(
-                java.util.Arrays.asList(new org.traincontrol.automationui.TileAnnotation.Mark(n, e, null)), -1, false,
-                new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, n, e, false, false,
-                    null), false, true, false, null, true, null);
-
-            BufferedImage shot = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);
-
-            java.awt.Graphics2D g = shot.createGraphics();
-
-            try
-            {
-                station.paint(g, size, size);
-            }
-            finally
-            {
-                g.dispose();
-            }
-
-            long began = System.nanoTime();
-
-            java.awt.Shape first = station.spillShape(size, size);
-
-            long took = (System.nanoTime() - began) / 1_000_000;
-
-            assertNotNull(first, "precondition: a named block on an N-E curve at " + size + " pixels spills nothing");
-
-            assertSame(station.spillShape(size, size), first, "a station's spill region at " + size + " pixels is built"
-                + " again each time it is asked - on every paint of the diagram (RSA62-B1)");
-
-            assertTrue(took < 100, "a station's spill region at " + size + " pixels took " + took + " ms to build - Adam's"
-                + " window stalls while it does (RSA62-B1)");
-        }
-    }
-
-    /**
-     * The pixels of this station's blue on the squares to the right of and below the middle one, each under an opaque
-     * caption, in the diagram's own container with the station on an E-S curve in the middle.
-     */
-    private static int spilledInFrontOfCaptions(int size, org.traincontrol.automationui.TileAnnotation station)
-    {
-        javax.swing.JPanel grid = aWhiteDiagramContainer(size * 3);
-
-        java.awt.Rectangle[] covered = {new java.awt.Rectangle(2 * size, size, size, size),
-            new java.awt.Rectangle(size, 2 * size, size, size)};
-
-        // in the order the diagram builds them: a caption in front of every tile
-        for (java.awt.Rectangle square : covered)
-        {
-            org.traincontrol.gui.widgets.StationCaption caption = new org.traincontrol.gui.widgets.StationCaption();
-
-            caption.setOpaque(true);
-            caption.setBackground(new java.awt.Color(255, 220, 0));
-            caption.setBounds(square);
-
-            grid.add(caption);
-        }
-
-        for (java.awt.Rectangle square : covered)
-        {
-            org.traincontrol.gui.LayoutLabel beside = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
-
-            beside.setOpaque(true);
-            beside.setBackground(java.awt.Color.WHITE);
-            beside.setBounds(square);
-
-            grid.add(beside);
-        }
-
-        org.traincontrol.gui.LayoutLabel middle = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
-
-        middle.setBounds(size, size, size, size);
-        middle.setAutonomyAnnotation(station);
-
-        grid.add(middle);
-
-        BufferedImage shot = paintedOn(java.awt.Color.WHITE, grid, size * 3, size * 3);
-
-        int blue = 0;
-
-        for (java.awt.Rectangle square : covered)
-        {
-            for (int x = square.x; x < square.x + square.width; x++)
-            {
-                for (int y = square.y; y < square.y + square.height; y++)
-                {
-                    int rgb = shot.getRGB(x, y), r = (rgb >> 16) & 0xFF, gr = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
-
-                    if (b > 150 && r < 90 && gr < 90) blue++;
-                }
-            }
-        }
-
-        return blue;
-    }
-
-    /**
-     * A curve's station spills onto the squares beside it where their arrows are, and those arrows must stay visible:
-     * the arrows of a square a spill reaches are drawn back over it.  At 30 and 60 pixels that square's arrows have all
-     * their pixels with the station as without.
-     *
-     * MUTATION: take the arrows' pass over the spill out of `LayoutGrid.newDiagramContainer`.
-     */
-    @Test
-    @support.DrawsFR118Icons
-    public void testANeighboursArrowsAreDrawnOverASpill()
-    {
-        Display.needed("rendering a diagram needs a display");
-
-        for (int size : new int[] {30, 60})
-        {
-            for (boolean below : new boolean[] {false, true})
-            {
-                int alone = arrowsBesideACurvedStation(size, below, null);
-
-                assertTrue(alone > 0, "precondition: the square " + (below ? "below" : "beside") + " the station drew no"
-                    + " arrows at " + size + " pixels");
-
-                for (org.traincontrol.automationui.TileAnnotation station : curvedStationsOfEveryKind())
-                {
-                    int beside = arrowsBesideACurvedStation(size, below, station);
-
-                    assertTrue(beside >= alone * 0.95, "the curve's " + station + " spilled over the arrows of the square "
-                        + (below ? "below" : "beside") + " it at " + size + " pixels: " + beside + " of their " + alone
-                        + " pixels showing - Adam: \"make sure that the optional ingress/egress arrows remain visible,"
-                        + " especially on curves\"");
-                }
-            }
-        }
-    }
-
-    /** A named station on an E-S curve of every kind: plain, may turn, must turn, a terminus each way. */
-    private static java.util.List<org.traincontrol.automationui.TileAnnotation> curvedStationsOfEveryKind()
-    {
-        org.traincontrol.automationui.TilePorts.Side e = org.traincontrol.automationui.TilePorts.Side.E;
-        org.traincontrol.automationui.TilePorts.Side s = org.traincontrol.automationui.TilePorts.Side.S;
-
-        java.util.List<org.traincontrol.automationui.TileAnnotation> kinds = new java.util.ArrayList<>();
-
-        for (org.traincontrol.automationui.TileAnnotation.Badge badge : new org.traincontrol.automationui.TileAnnotation.Badge[] {
-            new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, e, s, false, false, null),
-            new org.traincontrol.automationui.TileAnnotation.Badge(true, true, false, false, true, e, s, true, false, null),
-            new org.traincontrol.automationui.TileAnnotation.Badge(true, true, false, false, true, e, s, false, false, null),
-            new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, e, s, false, false, e),
-            new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, e, s, false, false, s)})
-        {
-            kinds.add(new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
-                new org.traincontrol.automationui.TileAnnotation.Mark(e, s, null)), -1, false, badge, false, false, false,
-                null, true, null));
-        }
-
-        return kinds;
-    }
-
-    /**
-     * The red and green pixels of the arrows on the square to the right of the middle one - or below it, a road from N to
-     * S - in the diagram's own container, with a station on an E-S curve in the middle, or none.
-     */
-    private static int arrowsBesideACurvedStation(int size, boolean below,
-        org.traincontrol.automationui.TileAnnotation station)
-    {
-
-        javax.swing.JPanel grid = aWhiteDiagramContainer(size * 3);
-
-        org.traincontrol.gui.LayoutLabel middle = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
-
-        middle.setBounds(size, size, size, size);
-
-        if (station != null) middle.setAutonomyAnnotation(station);
-
-        grid.add(middle);
-
-        org.traincontrol.gui.LayoutLabel right = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
-
-        right.setOpaque(true);
-        right.setBackground(java.awt.Color.WHITE);
-        right.setBounds(below ? size : 2 * size, below ? 2 * size : size, size, size);
-        right.setAutonomyAnnotation(new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
-            new org.traincontrol.automationui.TileAnnotation.Mark(
-                below ? org.traincontrol.automationui.TilePorts.Side.N : org.traincontrol.automationui.TilePorts.Side.W,
-                below ? org.traincontrol.automationui.TilePorts.Side.S : org.traincontrol.automationui.TilePorts.Side.E,
-                org.traincontrol.automationui.TileGraph.Direction.TOWARD_B)),
-            -1, false, null, false, false, false, null, true, null));
-
-        // painted after the station, as a later square on the page is
-        grid.add(right, 0);
-
-        BufferedImage shot = paintedOn(java.awt.Color.WHITE, grid, size * 3, size * 3);
-
-        int n = 0;
-
-        for (int x = right.getX(); x < right.getX() + size; x++)
-        {
-            for (int y = right.getY(); y < right.getY() + size; y++)
-            {
-                int rgb = shot.getRGB(x, y), r = (rgb >> 16) & 0xFF, gr = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
-
-                // the arrows' own red and green, solid
-                if ((Math.abs(r - 200) < 30 && gr < 40 && b < 40) || (Math.abs(r - 70) < 30 && Math.abs(gr - 205) < 30
-                    && Math.abs(b - 90) < 30)) n++;
-            }
-        }
-
-        return n;
     }
 
     /**
@@ -4460,77 +3959,6 @@ public class testDiagramLooksRight
             assertTrue(widest < text.getWidth() / 2, "the halo at " + size + " pixels ran " + widest + " pixels across in"
                 + " one row - a box behind the writing rather than a halo round its letters");
         }
-    }
-
-    /**
-     * The outline of a square a curve station's spill reaches is drawn over the spill, as its arrows are, or the
-     * selection outline would be broken where the station reached it.  Nine squares, a station on an E-S curve in the
-     * middle, the square to its right selected: all of its outline's orange with the station as without.
-     *
-     * MUTATION: leave the outline out of what is drawn again over a spill, and this fails.
-     */
-    @Test
-    @support.DrawsFR118Icons
-    public void testANeighboursOutlineIsDrawnOverASpill()
-    {
-        Display.needed("rendering a diagram needs a display");
-
-        for (int size : new int[] {30, 60})
-        {
-            int alone = outlineBesideACurvedStation(size, null);
-
-            assertTrue(alone > 0, "precondition: the selected square drew no outline at " + size + " pixels");
-
-            for (org.traincontrol.automationui.TileAnnotation station : curvedStationsOfEveryKind())
-            {
-                int beside = outlineBesideACurvedStation(size, station);
-
-                assertEquals(beside, alone, "the curve's " + station + " spilled over the outline of the selected square"
-                    + " beside it at " + size + " pixels (RSA63-C4)");
-            }
-        }
-    }
-
-    /** The orange of a selection outline on the square to the right of the middle one, a station on its curve or none. */
-    private static int outlineBesideACurvedStation(int size, org.traincontrol.automationui.TileAnnotation station)
-    {
-        javax.swing.JPanel grid = aWhiteDiagramContainer(size * 3);
-
-        org.traincontrol.gui.LayoutLabel middle = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
-
-        middle.setBounds(size, size, size, size);
-
-        if (station != null) middle.setAutonomyAnnotation(station);
-
-        grid.add(middle);
-
-        org.traincontrol.gui.LayoutLabel right = new org.traincontrol.gui.LayoutLabel(null, null, size, null, false);
-
-        right.setOpaque(true);
-        right.setBackground(java.awt.Color.WHITE);
-        right.setBounds(2 * size, size, size, size);
-        right.setAutonomyAnnotation(new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
-            new org.traincontrol.automationui.TileAnnotation.Mark(org.traincontrol.automationui.TilePorts.Side.W,
-                org.traincontrol.automationui.TilePorts.Side.E, org.traincontrol.automationui.TileGraph.Direction.BOTH)),
-            -1, true, null, false, false, false, null, true, null));
-
-        grid.add(right);
-
-        BufferedImage shot = paintedOn(java.awt.Color.WHITE, grid, size * 3, size * 3);
-
-        int orange = 0;
-
-        for (int x = 2 * size; x < 3 * size; x++)
-        {
-            for (int y = size; y < 2 * size; y++)
-            {
-                int rgb = shot.getRGB(x, y), r = (rgb >> 16) & 0xFF, gr = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
-
-                if (r > 230 && Math.abs(gr - 140) < 30 && b < 40) orange++;
-            }
-        }
-
-        return orange;
     }
 
     /**
@@ -5327,18 +4755,6 @@ public class testDiagramLooksRight
             + " \"Give regular text labels on the track diagram (.text) the same halo as address labels\"");
     }
 
-    /** A named station on an E-S curve, as the diagram builds one. */
-    private static org.traincontrol.automationui.TileAnnotation aCurvedStation()
-    {
-        org.traincontrol.automationui.TilePorts.Side e = org.traincontrol.automationui.TilePorts.Side.E;
-        org.traincontrol.automationui.TilePorts.Side s = org.traincontrol.automationui.TilePorts.Side.S;
-
-        return new org.traincontrol.automationui.TileAnnotation(java.util.Arrays.asList(
-            new org.traincontrol.automationui.TileAnnotation.Mark(e, s, null)), -1, false,
-            new org.traincontrol.automationui.TileAnnotation.Badge(true, false, false, false, true, e, s, false, false, null),
-            false, false, false, null, true, null);
-    }
-
     /**
      * The tunnel portal's wall is near white, #EEEEEE, one pixel wider each side at 30 and two at 60, and the arch is
      * still the track's width, 8 and 16 (FR-134).  Read below the arch's curve, row 12 at 30, row 25 at 60.
@@ -5388,11 +4804,46 @@ public class testDiagramLooksRight
     }
 
     /**
-     * The link and the two signal tiles meet the straight beside them with no seam: the band's rows where the track
-     * comes in are the straight's own, at both sizes (FR-135), since an edge row of another shade on a signal would be
-     * a lighter stripe between two straights.
+     * The turntable's bridge carries the straight's own dash: down its middle column, every row between the edges of
+     * the straight's band is the straight's, so the gray is as high as on every other track (Adam, MT-1071: "make the
+     * gray inside the middle track the same thickness (height) as other gray").
      *
-     * MUTATION: put the old Large signal back, or draw the link's shaft pure black to its edge, and this fails.
+     * MUTATION: draw the bridge's dash 2.8 units high again, as D192 first did, and this fails.
+     */
+    @Test
+    public void testTheTurntablesDashIsAsHighAsTheStraights() throws Exception
+    {
+        for (int size : new int[] {30, 60, 120})
+        {
+            BufferedImage straight = icon(size, "straight"), turntable = icon(size, "turntable");
+
+            java.util.List<Integer> band = new java.util.ArrayList<>();
+
+            for (int y = 0; y < size; y++) if ((straight.getRGB(0, y) & 0xFFFFFF) != 0xFFFFFF) band.add(y);
+
+            assertTrue(band.size() > 4, "precondition: the straight at " + size + " has no band at its west edge");
+
+            // the band's gray edge, a row at 30 and 60 and two at 120, is the bridge's black on the turntable
+            int edge = 0;
+
+            while (straight.getRGB(0, band.get(edge)) == straight.getRGB(0, band.get(0))) edge++;
+
+            for (int y = band.get(edge); y <= band.get(band.size() - 1 - edge); y++)
+            {
+                assertEquals(String.format("%06X", turntable.getRGB(size / 2, y) & 0xFFFFFF), String.format("%06X",
+                    straight.getRGB(size / 2, y) & 0xFFFFFF), "the turntable's dash at " + size
+                    + " is not the straight's at row " + y + " (MT-1071)");
+            }
+        }
+    }
+
+    /**
+     * The link, the two signal tiles, the uncoupler and the turntable's four straight tracks meet the straight beside
+     * them with no seam: the band's rows where the track comes in are the straight's own, at both sizes (FR-135, D192),
+     * since an edge row of another shade would be a stripe between two straights.
+     *
+     * MUTATION: put the old Large signal back, or draw the link's shaft, the uncoupler's band or the turntable's tracks
+     * pure black to the edge, and this fails.
      */
     @Test
     public void testTheLinkAndTheSignalsMeetTheStraightWithNoSeam() throws Exception
@@ -5407,13 +4858,26 @@ public class testDiagramLooksRight
 
             assertFalse(band.isEmpty(), "precondition: the straight at " + size + " has no band at its west edge");
 
-            BufferedImage link = icon(size, "link");
+            BufferedImage link = icon(size, "link"), turntable = icon(size, "turntable");
+            BufferedImage uncoupler = icon(size, "decouple");
 
             for (int y : band)
             {
-                assertEquals(String.format("%06X", link.getRGB(0, y) & 0xFFFFFF), String.format("%06X",
-                    straight.getRGB(0, y) & 0xFFFFFF), "the link at " + size + " meets the track with a seam at row " + y
-                    + ": its shaft is not the straight's band there (FR-135)");
+                String want = String.format("%06X", straight.getRGB(0, y) & 0xFFFFFF);
+                assertEquals(String.format("%06X", link.getRGB(0, y) & 0xFFFFFF), want, "the link at " + size
+                    + " meets the track with a seam at row " + y + ": its shaft is not the straight's band there (FR-135)");
+
+                for (int[] at : new int[][] {{0, y}, {size - 1, y}, {y, 0}, {y, size - 1}})
+                {
+                    assertEquals(String.format("%06X", turntable.getRGB(at[0], at[1]) & 0xFFFFFF), want, "the turntable at "
+                        + size + " meets a straight with a seam at " + at[0] + "," + at[1] + " (D192)");
+                }
+
+                for (int x : new int[] {0, size - 1})
+                {
+                    assertEquals(String.format("%06X", uncoupler.getRGB(x, y) & 0xFFFFFF), want, "the uncoupler at "
+                        + size + " meets a straight with a seam at " + x + "," + y);
+                }
             }
 
             int top = band.get(0), bottom = band.get(band.size() - 1);
