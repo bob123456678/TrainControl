@@ -2,7 +2,7 @@
 
 [![Latest release](https://img.shields.io/github/v/release/bob123456678/TrainControl?label=latest%20release&color=success)](https://github.com/bob123456678/TrainControl/releases/latest)
 [![License: GPL v3](https://img.shields.io/badge/license-GPL%20v3-blue)](https://www.gnu.org/licenses/gpl-3.0)
-![Java 8](https://img.shields.io/badge/Java-8-orange)
+![Java 8 or 21](https://img.shields.io/badge/Java-8%20%7C%2021-orange)
 
 **Free, open-source software for controlling and fully automating your Märklin (Marklin), Trix, or DCC model railroad from your computer.**  Runs on Windows, macOS, and Linux.
 
@@ -35,7 +35,7 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 
 *Autonomy on your track diagram.*  Since 3.0.0 you set up automation right on the track diagram, with no files to write: name your stations, click the track to show which way trains may run, and drag each train to the station where it stands.  See [Full Autonomy](#full-autonomy) and [the autonomy guide](Automation.md) to get started, and the [Changelog](#changelog) for everything else in 3.1.0.
 
-*3.1.1* adds keyboard shortcuts to start, stop and send trains home, sharper pictures on scaled Windows displays with Java 21, faster page windows, and many fixes: see the [Changelog](#changelog).
+*3.1.1* is the first version to support Java 21: on a Windows display set above 100%, the whole window is drawn at the size Windows asks for, with sharp text, pictures and track diagram ([Requirements](#requirements)).  It also adds keyboard shortcuts to start, stop and send trains home, and many fixes: see the [Changelog](#changelog).
 
 **Why TrainControl?**
 
@@ -464,6 +464,10 @@ Tab icons provided by Freepik.
 
 * v3.1.1 [11/21/2026]
     - New Features
+        - Java 21
+            - TrainControl supports Java 21 for the first time.  On a Windows display set above 100% (for example 125% or 150%), the whole window is drawn at the size Windows asks for instead of being scaled twice, with sharp text.  TrainControl is still built for Java 8, which keeps working as before.
+            - At those scales the track diagram, the tab icons, locomotive pictures, function icons, the (i) marks and the icon in each window's title bar are drawn sharp at the larger size instead of stretched, grayed-out pictures included; the Large track diagram uses new, finer square pictures.
+            - On Java 21 and any other Java newer than 8, the file chooser's `Look In` list works, and settings are kept when the folder path has a non-English letter.
         - Autonomy
             - `Test a path` and `Why not Moving?` give one answer for both automatic and by-hand sends: a path only a hand send can take is purple, and the destinations are listed in a table.  The `Path Type` choice is gone.
             - The autonomy editor's list of things to look at now agrees with `Test a path` about which stations can be reached.
@@ -483,7 +487,6 @@ Tab icons provided by Freepik.
             - To scroll the Log tab sideways, hold Shift and turn the mouse wheel.
             - `Pop Up All Layout Pages` opens its windows about twice as fast, and after you save or cancel in the track editor only the page windows whose page changed are drawn again.  The `Auto` tab no longer rebuilds its list of locomotives when nothing about them changed.
             - In simulation, a red triangle stands in the lower right of the main window, past the function tabs, from the start, as a reminder that TrainControl is not connected to a Central Station.  The yellow triangle that shows while a Central Station is not answering moved to the same place, so `Power OFF` no longer changes width.
-            - On Java 21, with Windows display scaling above 100%, the track diagram, the tab icons, locomotive pictures, function icons, the (i) marks and the icon in each window's title bar are drawn sharp at the larger size instead of stretched, grayed-out pictures included; the Large track diagram uses new, finer square pictures.
     - Bug Fixes
         - Central Station Protocol
             - A train's stop (speed 0) is no longer lost when a CS3 stops answering.
@@ -502,7 +505,6 @@ Tab icons provided by Freepik.
             - `Cancel` in `Locomotive Settings` asks `Save`, `Discard` or `Cancel` before throwing away what you typed, and the revert and crop marks change together with the picture.
         - Interface
             - The `Start Autonomous Operation` button ends at the track diagram's right edge.
-            - On Java 21 and other Java newer than 8, a scaled Windows display is no longer scaled twice, the file chooser's `Look In` list works, and settings are kept when the folder path has a non-English letter.
             - At 100% display scaling, menus are no longer smaller than the rest of the window's text.
             - The uncoupler square on the track diagram is symmetric and meets the track beside it without a seam, and the turntable square is redrawn, with eight tracks leading out of it.
             - A new route item starts at address 0, and in a route you can edit, a cell its row has no use for shows `---`.
