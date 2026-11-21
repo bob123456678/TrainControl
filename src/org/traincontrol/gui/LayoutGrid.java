@@ -1253,6 +1253,9 @@ public class LayoutGrid
             parent.removeAll();
 
             parent.add(container);
+            // Laid out now: a redraw that keeps the panel's size gets no other layout pass, and every square lies at 0,0
+            parent.revalidate();
+            parent.repaint();
 
             swapped = true;
 

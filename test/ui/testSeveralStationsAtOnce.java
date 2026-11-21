@@ -1,5 +1,6 @@
 package ui;
 
+import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -435,6 +436,56 @@ public class testSeveralStationsAtOnce
             assertTrue(((p >> 16) & 0xff) == ((p >> 8) & 0xff) && ((p >> 8) & 0xff) == (p & 0xff),
                 "the triangle is drawn in color in a grayed row: #" + Integer.toHexString(p));
         }
+    }
+
+    /**
+     * On a scaled screen the grayed triangle is the triangle drawn at the screen's pixels and grayed as Swing grays a
+     * picture, not the 16-pixel gray picture stretched; at scale 1 it is that picture.  Painted through a scaled
+     * Graphics2D, so no scaled screen is needed.
+     *
+     * MUTATION: in `StationSettingsWindow.mixedLabel`, set a plain `ImageIcon` of `grayed(triangle, 16, 16)`.
+     */
+    @Test(timeOut = 120000)
+    public void testAGrayedTriangleIsDrawnAtTheScreensPixels() throws Exception
+    {
+        StationSettingsWindow window = pickDiffering("maxTrainLength");
+        javax.swing.JLabel triangle = StationDoors.part(window, "station.maxLengthMixed", javax.swing.JLabel.class);
+
+        for (double scale : new double[] {1, 1.25, 2})
+        {
+            int[] gray = on(() -> pixelsOf(triangle.getDisabledIcon(), scale, false));
+            int[] expected = on(() -> pixelsOf(triangle.getIcon(), scale, true));
+            int differ = 0;
+
+            for (int i = 0; i < Math.min(gray.length, expected.length); i++) if (gray[i] != expected[i]) differ++;
+
+            assertEquals(gray.length, expected.length, "the grayed triangle at " + scale + " is another size");
+            assertEquals(differ, 0, "the grayed triangle at " + scale + " is not the triangle drawn at that scale, grayed");
+        }
+    }
+
+    /** The icon's pixels painted at `scale` onto a clear picture, and then grayed as Swing grays a picture if asked. */
+    private static int[] pixelsOf(javax.swing.Icon icon, double scale, boolean grayAfter)
+    {
+        int width = (int) Math.round(icon.getIconWidth() * scale), height = (int) Math.round(icon.getIconHeight() * scale);
+        BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = out.createGraphics();
+
+        g.scale(scale, scale);
+        icon.paintIcon(null, g, 0, 0);
+        g.dispose();
+
+        if (grayAfter)
+        {
+            java.awt.Image gray = new javax.swing.ImageIcon(javax.swing.GrayFilter.createDisabledImage(out)).getImage();
+
+            out = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+            g = out.createGraphics();
+            g.drawImage(gray, 0, 0, null);
+            g.dispose();
+        }
+
+        return out.getRGB(0, 0, width, height, null, 0, width);
     }
 
     /**
