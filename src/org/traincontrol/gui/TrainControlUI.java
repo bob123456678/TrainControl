@@ -16392,17 +16392,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            List<LayoutPopupUI> built = new ArrayList<>();
+            List<Map.Entry<String, Integer>> asked;
             synchronized (this.popupsAsked)
             {
-                for (Map.Entry<String, Integer> page : this.popupsAsked)
-                {
-                    built.add(new LayoutPopupUI(this.model.getLayout(page.getKey()), page.getValue(), this));
-                }
+                asked = new ArrayList<>(this.popupsAsked);
                 this.popupsAsked.clear();
             }
 
-            for (LayoutPopupUI popup : built) popup.render();
+            // Each on its own: a window that cannot be drawn costs only itself, and is thrown once the others are up
+            List<LayoutPopupUI> built = new ArrayList<>();
+            RuntimeException failed = null;
+            for (Map.Entry<String, Integer> page : asked)
+            {
+                LayoutPopupUI popup = null;
+                try
+                {
+                    popup = new LayoutPopupUI(this.model.getLayout(page.getKey()), page.getValue(), this);
+                    popup.render();
+                    built.add(popup);
+                }
+                catch (RuntimeException notDrawn)
+                {
+                    if (popup != null) popup.dispose();
+                    failed = notDrawn;
+                }
+            }
 
             // Update auto layout station labels on the track diagram, then show the windows that have them
             updateVisiblePoints();
@@ -16410,6 +16424,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             popups.addAll(built);
             updatePopups(false);
             repaintLoc();
+            if (failed != null) throw failed;
         });
     }
     

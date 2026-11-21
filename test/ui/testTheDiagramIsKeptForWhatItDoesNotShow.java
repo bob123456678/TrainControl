@@ -1085,6 +1085,61 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         }
     }
 
+    /**
+     * A page window that cannot be drawn costs only itself (FR-216): asked for together with two others, as Pop Up All
+     * asks, with its page gone by the time they are drawn, the other two still open, and a window asked for afterwards
+     * opens too.
+     *
+     * MUTATION: in `TrainControlUI.showLayoutPopup`, catch only an IllegalArgumentException from a window's drawing,
+     * and the batch stops at the one that fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAWindowThatCannotBeDrawnCostsOnlyItself() throws Exception
+    {
+        final java.lang.reflect.Method show = Reflect.method(TrainControlUI.class, "showLayoutPopup", String.class,
+            int.class);
+        final int size = aTileSize();
+        final java.util.Set<java.awt.Window> before =
+            new java.util.HashSet<>(Arrays.asList(java.awt.Window.getWindows()));
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    for (String page : new String[] {PAGE, "a page gone", RENAMED_FROM}) show.invoke(ui, page, size);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertTrue(Components.waitFor(() -> openedSince(before).size() == 2, 20000), "a window whose page was gone"
+                + " stopped the others asked for with it; open: " + openedSince(before));
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    show.invoke(ui, PAGE, size);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            assertTrue(Components.waitFor(() -> openedSince(before).size() == 3, 20000), "a window asked for after one"
+                + " that could not be drawn did not open");
+        }
+        finally
+        {
+            closeAll(openedSince(before));
+        }
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     // A page autonomy leaves out, so a rename does not put the setup at stake
@@ -1299,6 +1354,22 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         {
             wire.close();
         }
+    }
+
+    /** The page windows showing that were not open when `before` was taken. */
+    private static List<LayoutPopupUI> openedSince(java.util.Set<java.awt.Window> before)
+    {
+        final List<LayoutPopupUI> opened = new ArrayList<>();
+
+        for (java.awt.Window window : java.awt.Window.getWindows())
+        {
+            if (window instanceof LayoutPopupUI && window.isShowing() && !before.contains(window))
+            {
+                opened.add((LayoutPopupUI) window);
+            }
+        }
+
+        return opened;
     }
 
     private static Object gridOf(LayoutPopupUI window)
