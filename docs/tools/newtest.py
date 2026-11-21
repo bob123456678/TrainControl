@@ -102,11 +102,6 @@ def plan_build_xml(root, simple):
     return (path, new), "build.xml: add %s after the last one" % line
 
 
-def builds_a_window(code):
-    """Whether a class counts in the census: it builds a window itself or through one of the helpers."""
-    return bool(WINDOW_BUILT.search(code) or WINDOW_HELPER_CALLED.search(code))
-
-
 def plan_census(root, qualified, source):
     path = None
     for p in java_files(root):
