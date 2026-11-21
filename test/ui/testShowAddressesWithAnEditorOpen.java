@@ -81,16 +81,7 @@ public class testShowAddressesWithAnEditorOpen
     @AfterMethod(alwaysRun = true)
     public void putItBack() throws Exception
     {
-        final LayoutEditor left = editorOpen();
-
-        if (left != null)
-        {
-            try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
-            {
-                Components.press(Components.withText(left, I18n.t("ui.cancel")));
-                Components.waitFor(() -> !left.isDisplayable(), 10000);
-            }
-        }
+        AskingWindows.cancelTheEditor(editorOpen());
 
         Components.waitFor(() -> editButton().isEnabled(), 30000);
         Components.onTheEventThread(() ->

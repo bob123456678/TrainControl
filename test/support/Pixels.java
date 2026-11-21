@@ -132,4 +132,16 @@ public final class Pixels
 
         return shot[0];
     }
+
+    /** A component's pixels as it paints now at its own size; on the event thread. */
+    public static int[] asPainted(Component c)
+    {
+        BufferedImage image = new BufferedImage(c.getWidth(), c.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = image.createGraphics();
+
+        c.paint(g);
+        g.dispose();
+
+        return image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
+    }
 }

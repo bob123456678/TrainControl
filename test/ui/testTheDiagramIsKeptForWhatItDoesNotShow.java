@@ -1180,17 +1180,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     /** The square as it paints now. */
     private static int[] pixels(final LayoutLabel l)
     {
-        return Components.onTheEventThread(() ->
-        {
-            java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(l.getWidth(), l.getHeight(),
-                java.awt.image.BufferedImage.TYPE_INT_ARGB);
-            java.awt.Graphics2D g = image.createGraphics();
-
-            l.paint(g);
-            g.dispose();
-
-            return image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
-        });
+        return Components.onTheEventThread(() -> support.Pixels.asPainted(l));
     }
 
     /**

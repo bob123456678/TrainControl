@@ -18343,7 +18343,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         LayoutEditor editor = spareTheEditorsPage ? this.editorWindows.anEditorWindow() : null;
         LayoutDiagram editing = editor == null ? null : editor.getMarklinLayout();
-
         for (String layoutName : this.model.getLayoutList())
         {
             LayoutDiagram page = this.model.getLayout(layoutName);

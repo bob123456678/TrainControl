@@ -4,7 +4,6 @@ import java.awt.Frame;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.List;
 import javax.swing.AbstractButton;
@@ -111,17 +110,7 @@ public class testTheTrackEditorByHand
             return null;
         });
 
-        final LayoutEditor left = editorOpen();
-
-        if (left != null)
-        {
-            try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))))
-            {
-                Components.press(Components.withText(left, I18n.t("ui.cancel")));
-
-                Components.waitFor(() -> !left.isDisplayable(), 10000);
-            }
-        }
+        AskingWindows.cancelTheEditor(editorOpen());
 
         Components.waitFor(this::editButtonIsBack, 30000);
     }
@@ -202,7 +191,10 @@ public class testTheTrackEditorByHand
 
             for (int[] at : new int[][] {{SWITCH_X, SWITCH_Y}, {addX, addY}})
             {
-                assertTrue(Arrays.equals(picture(window, fresh, at[0], at[1]), picture(fresh, fresh, at[0], at[1])),
+                int[] drawn = picture(fresh, fresh, at[0], at[1]);
+
+                assertNotNull(drawn, "a new window of the page has no square at " + at[0] + "," + at[1]);
+                assertTrue(Arrays.equals(picture(window, fresh, at[0], at[1]), drawn),
                     "the page window open during the edit draws " + at[0] + "," + at[1] + " as before the edit, while"
                     + " a new window of the page draws the edit");
             }
@@ -228,15 +220,7 @@ public class testTheTrackEditorByHand
             LayoutGrid grid = (LayoutGrid) Reflect.get(LayoutPopupUI.class, window, "grid");
             LayoutLabel l = grid.getValueAt(cell[0], cell[1]);
 
-            if (l == null || l.getWidth() <= 0 || l.getHeight() <= 0) return null;
-
-            BufferedImage image = new BufferedImage(l.getWidth(), l.getHeight(), BufferedImage.TYPE_INT_ARGB);
-            java.awt.Graphics2D g = image.createGraphics();
-
-            l.paint(g);
-            g.dispose();
-
-            return image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
+            return l == null || l.getWidth() <= 0 || l.getHeight() <= 0 ? null : support.Pixels.asPainted(l);
         });
     }
 
