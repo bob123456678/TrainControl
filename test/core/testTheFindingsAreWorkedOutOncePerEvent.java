@@ -25,12 +25,12 @@ import org.traincontrol.base.LayoutDiagramComponent;
 import support.Reflect;
 
 /**
- * The setup check is worked out once per event, and the configuration build works out its names once.
+ * The setup check is worked out once until something it reads changes (OB-459), and the configuration build works out
+ * its names once.
  *
- * The findings are kept for the rest of the event that asked, and only while everything the check reads is as it was:
- * a new event always checks afresh, and a change inside the event (the setup, a train's length, a label on the
- * diagram, a train on the railway) is answered for.  Each has a claim here, because the check reads each from
- * somewhere other than the setup, and a key missing one would hand back findings about a railway that has changed.
+ * The findings are kept, across events, only while everything the check reads is as it was: a change in a later event
+ * (the setup, a train's length, a label on the diagram, a train on the railway, stale pages, the language, what only a
+ * rebuild reads, an index derived anew) is answered for.  Each has a claim here, because a key missing one would hand back findings about a railway that has changed.
  *
  * On the frozen copy of his railway, whose findings move with each change asked of here (see each precondition).
  *
@@ -103,6 +103,20 @@ public class testTheFindingsAreWorkedOutOncePerEvent
         if (failed[0] != null) throw failed[0];
 
         return got.get(0);
+    }
+
+    /** The findings in one event, then in a later one, after this change made in an event of its own. */
+    private static List<List<AutonomyChecks.Finding>> acrossEvents(Callable<?> change) throws Exception
+    {
+        List<List<AutonomyChecks.Finding>> out = new ArrayList<>();
+
+        out.add(inOneEvent(() -> session.check()));
+
+        inOneEvent(change);
+
+        out.add(inOneEvent(() -> session.check()));
+
+        return out;
     }
 
     /** What a list of findings says, finding by finding, for comparing two lists by content. */
@@ -211,33 +225,31 @@ public class testTheFindingsAreWorkedOutOncePerEvent
     }
 
     /**
-     * A new event checks afresh: nothing kept outlives the event that asked.
+     * A later event with nothing changed is handed the findings already worked out: one editor edit asks over many
+     * events, from the editor's panel and the main window's strip.
      *
-     * MUTATION: keep the findings across events, and this fails.
+     * MUTATION: check afresh in every new event, and this fails.
      */
     @Test
-    public void testEachEventChecksAfresh() throws Exception
+    public void testALaterEventWithNothingChangedKeepsTheFindings() throws Exception
     {
-        List<AutonomyChecks.Finding> first = inOneEvent(() -> session.check());
+        List<List<AutonomyChecks.Finding>> got = acrossEvents(() -> null);
 
-        List<AutonomyChecks.Finding> second = inOneEvent(() -> session.check());
+        assertFalse(got.get(0).isEmpty(), "precondition: the frozen railway has no findings");
 
-        assertFalse(first.isEmpty(), "precondition: the frozen railway has no findings");
-
-        assertNotSame(second.get(0), first.get(0), "a second event was handed the first event's findings");
-
-        assertEquals(said(second), said(first), "precondition: nothing changed between the events, yet the findings did");
+        assertSame(got.get(1).get(0), got.get(0).get(0), "a later event with nothing changed worked the findings out"
+            + " again");
     }
 
     /**
-     * A change to the setup inside the event is checked: a caption drawn on a square that has a label of its own, by
+     * A change to the setup in a later event is checked: a caption drawn on a square that has a label of its own, by
      * the setup's own write, which re-derives nothing, is said to be covered.  The setup alone, since a train taken off
      * it would change where the trains stand as well.
      *
      * MUTATION: leave the setup out of what the check is said to read, and this fails.
      */
     @Test
-    public void testASetupChangeInTheEventIsChecked() throws Exception
+    public void testASetupChangeIsChecked() throws Exception
     {
         Map<TileKey, TileKey> captions = session.getStore().getCaptions();
 
@@ -268,22 +280,16 @@ public class testTheFindingsAreWorkedOutOncePerEvent
 
         try
         {
-            List<List<AutonomyChecks.Finding>> got = inOneEvent(() ->
+            List<List<AutonomyChecks.Finding>> got = acrossEvents(() ->
             {
-                List<List<AutonomyChecks.Finding>> out = new ArrayList<>();
-
-                out.add(session.check());
-
                 session.getStore().setCaption(on, station);
 
-                out.add(session.check());
-
-                return out;
+                return null;
             });
 
             assertEquals(countOf(got.get(1), AutonomyChecks.CAPTION_COVERED),
                 countOf(got.get(0), AutonomyChecks.CAPTION_COVERED) + 1, "a caption drawn on " + on + ", a labelled"
-                + " square, in the same event is not said to be covered");
+                + " square, is not said to be covered");
         }
         finally
         {
@@ -292,12 +298,12 @@ public class testTheFindingsAreWorkedOutOncePerEvent
     }
 
     /**
-     * A train's length set inside the event is checked: the warning that it has none goes.
+     * A train's length set in a later event is checked: the warning that it has none goes.
      *
      * MUTATION: leave the lengths out of what the check is said to read, and this fails.
      */
     @Test
-    public void testALengthChangeInTheEventIsChecked() throws Exception
+    public void testALengthChangeIsChecked() throws Exception
     {
         final int[] length = {0};
 
@@ -305,24 +311,13 @@ public class testTheFindingsAreWorkedOutOncePerEvent
         {
             session.setTrainLengthSource(name -> length[0]);
 
-            List<List<AutonomyChecks.Finding>> got = inOneEvent(() ->
-            {
-                List<List<AutonomyChecks.Finding>> out = new ArrayList<>();
-
-                out.add(session.check());
-
-                length[0] = 100;
-
-                out.add(session.check());
-
-                return out;
-            });
+            List<List<AutonomyChecks.Finding>> got = acrossEvents(() -> length[0] = 100);
 
             assertTrue(countOf(got.get(0), "autosetup.ui.checkNoTrainLength") > 0,
                 "precondition: no placed train is without a length, so setting one changes nothing");
 
-            assertEquals(countOf(got.get(1), "autosetup.ui.checkNoTrainLength"), 0, "the trains given a length in the same"
-                + " event are still said to have none");
+            assertEquals(countOf(got.get(1), "autosetup.ui.checkNoTrainLength"), 0, "the trains given a length are still"
+                + " said to have none");
         }
         finally
         {
@@ -331,13 +326,13 @@ public class testTheFindingsAreWorkedOutOncePerEvent
     }
 
     /**
-     * A label written on the diagram inside the event is checked: a caption's own square given a label of its own is
+     * A label written on the diagram in a later event is checked: a caption's own square given a label of its own is
      * covered, and said so.
      *
      * MUTATION: leave the diagram's squares out of what the check is said to read, and this fails.
      */
     @Test
-    public void testALabelChangeInTheEventIsChecked() throws Exception
+    public void testALabelChangeIsChecked() throws Exception
     {
         LayoutDiagramComponent square = null;
 
@@ -361,22 +356,16 @@ public class testTheFindingsAreWorkedOutOncePerEvent
 
         try
         {
-            List<List<AutonomyChecks.Finding>> got = inOneEvent(() ->
+            List<List<AutonomyChecks.Finding>> got = acrossEvents(() ->
             {
-                List<List<AutonomyChecks.Finding>> out = new ArrayList<>();
-
-                out.add(session.check());
-
                 labelled.setLabel("Covered");
 
-                out.add(session.check());
-
-                return out;
+                return null;
             });
 
             assertEquals(countOf(got.get(1), AutonomyChecks.CAPTION_COVERED),
-                countOf(got.get(0), AutonomyChecks.CAPTION_COVERED) + 1, "a caption's square labelled in the same event"
-                + " is not said to be covered");
+                countOf(got.get(0), AutonomyChecks.CAPTION_COVERED) + 1, "a caption's square labelled is not said to be"
+                + " covered");
         }
         finally
         {
@@ -385,13 +374,13 @@ public class testTheFindingsAreWorkedOutOncePerEvent
     }
 
     /**
-     * A train moved on the running railway inside the event is checked: a train of no length moved from one station to
+     * A train moved on the running railway in a later event is checked: a train of no length moved from one station to
      * another is warned about where it now stands.
      *
      * MUTATION: leave the railway's trains out of what the check is said to read, and this fails.
      */
     @Test
-    public void testATrainMovedInTheEventIsChecked() throws Exception
+    public void testATrainMovedIsChecked() throws Exception
     {
         final Layout running = scenario.build();
 
@@ -415,32 +404,273 @@ public class testTheFindingsAreWorkedOutOncePerEvent
             assertTrue(running.moveLocomotive(train, free.get(0), false), "precondition: " + train + " could not be put on "
                 + free.get(0));
 
-            List<List<AutonomyChecks.Finding>> got = inOneEvent(() ->
-            {
-                List<List<AutonomyChecks.Finding>> out = new ArrayList<>();
+            final boolean[] moved = new boolean[1];
 
-                out.add(session.check());
+            List<List<AutonomyChecks.Finding>> got = acrossEvents(() -> moved[0] = running.moveLocomotive(train,
+                free.get(1), false));
 
-                if (!running.moveLocomotive(train, free.get(1), false)) return null;
+            assertTrue(moved[0], "precondition: " + train + " could not be moved to " + free.get(1));
 
-                out.add(session.check());
-
-                return out;
-            });
-
-            assertNotNull(got, "precondition: " + train + " could not be moved to " + free.get(1));
-
-            List<AutonomyChecks.Finding> fresh = inOneEvent(() -> session.check());
+            // Off the event thread nothing is kept, so this is worked out afresh
+            List<AutonomyChecks.Finding> fresh = session.check();
 
             assertNotEquals(said(fresh), said(got.get(0)), "precondition: moving a train of no length from " + free.get(0)
                 + " to " + free.get(1) + " changed none of the findings");
 
-            assertEquals(said(got.get(1)), said(fresh), "a train moved from " + free.get(0) + " to " + free.get(1) + " in"
-                + " the same event was not checked: the findings are those from before");
+            assertEquals(said(got.get(1)), said(fresh), "a train moved from " + free.get(0) + " to " + free.get(1) + " was"
+                + " not checked: the findings are those from before");
         }
         finally
         {
             putBackTheSources();
+        }
+    }
+
+    /**
+     * Pages marked stale (a page renamed or deleted) are checked again: until `open`, a caption on a page these objects
+     * do not know counts as drawn.
+     *
+     * MUTATION: leave `pagesStale` out of what the check is said to read, and this fails.
+     */
+    @Test
+    public void testPagesMarkedStaleAreCheckedAgain() throws Exception
+    {
+        try
+        {
+            List<List<AutonomyChecks.Finding>> got = acrossEvents(() ->
+            {
+                session.markPagesStale();
+
+                return null;
+            });
+
+            assertFalse(got.get(0).isEmpty(), "precondition: the frozen railway has no findings");
+
+            assertNotSame(got.get(1).get(0), got.get(0).get(0), "pages marked stale were not checked again");
+        }
+        finally
+        {
+            Reflect.set(AutonomySession.class, session, "pagesStale", false);
+        }
+    }
+
+    /**
+     * A change of language is checked: some findings are worked out in words, so they are said in the new language.
+     *
+     * MUTATION: leave the language out of what the check is said to read, and this fails.
+     */
+    @Test
+    public void testALanguageChangeIsChecked() throws Exception
+    {
+        java.util.Locale was = org.traincontrol.util.I18n.getLocale();
+
+        java.util.Locale other = java.util.Locale.GERMAN.equals(was) ? java.util.Locale.FRENCH : java.util.Locale.GERMAN;
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
+        {
+            // The pages left out repeat sensors of "1 - Main": brought in, each repeat is a finding whose subject is words
+            for (String page : new ArrayList<>(session.getStore().getExcludedPages()))
+            {
+                session.getStore().setPageExcluded(page, false);
+            }
+
+            List<List<AutonomyChecks.Finding>> got = acrossEvents(() ->
+            {
+                org.traincontrol.util.I18n.setLocale(other);
+
+                return null;
+            });
+
+            // Off the event thread nothing is kept, so this is worked out afresh
+            List<AutonomyChecks.Finding> fresh = session.check();
+
+            assertNotEquals(said(fresh), said(got.get(0)), "precondition: no finding is worked out in words, so the"
+                + " language changes none");
+
+            assertEquals(said(got.get(1)), said(fresh), "after a change of language the findings are said in the old one");
+        }
+        finally
+        {
+            org.traincontrol.util.I18n.setLocale(was);
+
+            session.restoreSetup(asFound);
+        }
+    }
+
+    /**
+     * The length of a train the setup places where a railway train now stands is checked again: whether the railway
+     * models any length asks every placed train's.
+     *
+     * MUTATION: key only the lengths of the trains where they stand, and this fails.
+     */
+    @Test
+    public void testAHiddenPlacedTrainsLengthIsCheckedAgain() throws Exception
+    {
+        Map<TileKey, String> placed = session.trainsWhereTheyStand();
+
+        assertFalse(placed.isEmpty(), "precondition: the frozen setup places no train");
+
+        final String hidden = placed.values().iterator().next();
+
+        String stranger = null;
+
+        for (String loc : scenario.getModel().getLocList())
+        {
+            if (stranger == null && !placed.containsValue(loc)) stranger = loc;
+        }
+
+        assertNotNull(stranger, "precondition: every locomotive is placed, so none can stand in for " + hidden);
+
+        final Layout running = scenario.build();
+
+        org.traincontrol.automation.Point at = null;
+
+        for (org.traincontrol.automation.Point p : running.getPoints())
+        {
+            if (p.getCurrentLocomotive() != null && hidden.equals(p.getCurrentLocomotive().getName())) at = p;
+        }
+
+        assertNotNull(at, "precondition: the railway built from the setup does not have " + hidden);
+
+        at.setLocomotive(scenario.getModel().getLocByName(stranger));
+
+        final int[] length = {0};
+
+        try
+        {
+            session.setTrainLengthSource(name -> hidden.equals(name) ? length[0] : 0);
+
+            session.setRunningLayoutSource(() -> running);
+
+            assertFalse(session.trainsWhereTheyStand().containsValue(hidden), "precondition: " + hidden + " still stands"
+                + " somewhere, so its length is keyed where it stands");
+
+            List<List<AutonomyChecks.Finding>> got = acrossEvents(() -> length[0] = 100);
+
+            assertFalse(got.get(0).isEmpty(), "precondition: the frozen railway has no findings");
+
+            assertNotSame(got.get(1).get(0), got.get(0).get(0), "the length of " + hidden + ", placed under " + stranger
+                + ", was not checked again");
+        }
+        finally
+        {
+            putBackTheSources();
+        }
+    }
+
+    /**
+     * A change only the rebuilt graph carries is checked: a three-way switch's second accessory, read at the rebuild and
+     * in neither the setup nor the squares the key writes, taken off and rebuilt is an error that it has no address.
+     *
+     * MUTATION: leave the graph out of what the check is said to read, and this fails.
+     */
+    @Test
+    public void testAChangeOnlyTheRebuildReadsIsChecked() throws Exception
+    {
+        LayoutDiagramComponent found = null;
+
+        for (LayoutDiagram page : scenario.getPages())
+        {
+            for (LayoutDiagramComponent c : page.getAll())
+            {
+                if (found == null && c.isThreeWay() && c.getAccessory() != null && c.getAccessory2() != null) found = c;
+            }
+        }
+
+        assertNotNull(found, "precondition: the frozen railway has no three-way switch with both accessories");
+
+        final LayoutDiagramComponent threeWay = found;
+
+        final org.traincontrol.base.Accessory second = threeWay.getAccessory2();
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
+        {
+            List<List<AutonomyChecks.Finding>> got = acrossEvents(() ->
+            {
+                threeWay.setAccessory2(null);
+
+                session.rebuild();
+
+                return null;
+            });
+
+            assertTrue(countOf(got.get(1), org.traincontrol.automationui.TileGraph.ERROR_NO_ADDRESS)
+                > countOf(got.get(0), org.traincontrol.automationui.TileGraph.ERROR_NO_ADDRESS), "a three-way switch"
+                + " left with one accessory and rebuilt is not said to have no address");
+        }
+        finally
+        {
+            threeWay.setAccessory2(second);
+
+            session.restoreSetup(asFound);
+
+            inOneEvent(() ->
+            {
+                session.rebuild();
+
+                return null;
+            });
+        }
+    }
+
+    /**
+     * An index derived anew in a later event is checked: a turning mark written straight into the setup, checked
+     * against the old index, then a point-property door that changes nothing else derives the index, and the findings
+     * follow it.
+     *
+     * MUTATION: leave the station index out of what the check is said to read, and this fails.
+     */
+    @Test
+    public void testAnIndexDerivedAnewIsChecked() throws Exception
+    {
+        Map<TileKey, String> placed = session.trainsWhereTheyStand();
+
+        assertFalse(placed.isEmpty(), "precondition: the frozen setup places no train");
+
+        final TileKey square = placed.keySet().iterator().next();
+
+        final Object priority = session.getPointProperty(square, "priority");
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
+        {
+            inOneEvent(() -> session.check());
+
+            // Straight into the setup, as no door does: the index is not derived
+            inOneEvent(() -> session.getStore().getConfiguration(session.getStore().getActiveConfiguration())
+                .getJSONObject("points").getJSONObject(square.toString()).put(AutonomyBuilder.MUST_REVERSE, true));
+
+            List<List<AutonomyChecks.Finding>> got = acrossEvents(() ->
+            {
+                session.setPointProperty(square, "priority", priority);
+
+                return null;
+            });
+
+            // Off the event thread nothing is kept, so this is worked out afresh
+            List<AutonomyChecks.Finding> fresh = session.check();
+
+            assertEquals(said(got.get(1)), said(fresh), "the findings do not follow the index derived anew");
+
+            assertFalse(got.get(0).isEmpty(), "precondition: the frozen railway has no findings");
+
+            assertNotSame(got.get(1).get(0), got.get(0).get(0), "an index derived anew was not checked again");
+        }
+        finally
+        {
+            session.restoreSetup(asFound);
+
+            inOneEvent(() ->
+            {
+                session.rebuild();
+
+                return null;
+            });
         }
     }
 }
