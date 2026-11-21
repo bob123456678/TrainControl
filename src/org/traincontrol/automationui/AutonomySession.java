@@ -5582,31 +5582,24 @@ public class AutonomySession
         return new LinkedHashSet<>(tilesWithAHome());
     }
 
-    /**
-     * What the check read when the kept findings were worked out: they are kept, across events, until anything
-     * `whatTheCheckReads` covers changes (OB-459); off the event thread nothing is kept.
-     */
+    /** What the check read for the kept findings, kept across events until it changes (OB-459). */
     private List<Object> findingsKey;
 
     /** The kept findings; copied out, so each caller's list is its own. */
     private List<AutonomyChecks.Finding> findingsKept;
 
-    /**
-     * Everything check() and its callees read that can change, as a key equal only while all of it is as it was: the
-     * graph, setup snapshot, stale pages, language, railway and trains, the length of every train on it or placed, every
-     * page and square.  A new input to the check belongs here too.
-     */
+    /** Everything check() and its callees read that can change; a new input to the check belongs here too. */
     private List<Object> whatTheCheckReads()
     {
         List<Object> key = new ArrayList<>();
 
-        // By identity: only `rebuild` replaces it, and with it the reduction, the index and `stationless`
+        // Only `rebuild` replaces the graph, and with it the reduction and the index
         key.add(new Same(graph));
         key.add(store.snapshotSetup().toString());
         key.add(pagesStale);
         key.add(I18n.getLocale());
 
-        // The check reads the running railway only through `railwayTrains`: rebuilt with the same trains, nothing changed
+        // The railway is read only through `railwayTrains`
         StringBuilder trains = new StringBuilder();
         Map<String, Object[]> railway = railwayTrains();
 
