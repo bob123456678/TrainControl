@@ -14,3 +14,6 @@ release	review	prefix	A	B	C	note
 3.1.1	fix review (Opus)	FXO1-3	0	2	6	converged in round 3
 3.1.1	fix review (Fable)	FXF1-3	0	3	15	converged in round 3
 3.1.1	upgrade path	FRU2	0	0	3	rerun after the first stalled; C2 the release checklist (pre-release flag, changelog date)
+3.1.1	final validation, docs and languages (Fable)	F311G	0	1	7	B1 my changelog wording; C1 D195 finished in six languages; recheck 0 A 0 B 4 C, converged
+3.1.1	final validation, behavior (Fable)	F311U	0	3	7	B1 B2 regressions from D198 B and D200; B3 opened by B2's first fix; converged in round 3
+3.1.1	final validation, drawing and windows (Fable)	F311M	0	3	4	B1 = F311U-B2; B2 in 3.1.0 too; B3 Java 21 grayed triangle; recheck converged
