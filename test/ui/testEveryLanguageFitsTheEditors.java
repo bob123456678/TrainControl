@@ -99,7 +99,8 @@ public class testEveryLanguageFitsTheEditors
 
     /**
      * The page's own window at the Layout tab's Small size fits in every language.  Built as `showLayoutPopup` builds
-     * it: the Small button looks its size up by its English name, which a language changed after start-up misses.
+     * it (drawn, its captions written, then shown): the Small button looks its size up by its English name, which a
+     * language changed after start-up misses.
      */
     @Test(timeOut = 240000)
     public void testThePageWindowFitsInEveryLanguage() throws Exception
@@ -114,6 +115,8 @@ public class testEveryLanguageFitsTheEditors
                 LayoutPopupUI built = new LayoutPopupUI(railway.model.getLayout(PAGE), small, railway.ui);
 
                 built.render();
+                railway.ui.updateVisiblePoints();
+                built.setVisible(true);
 
                 return built;
             }, 0, AskingWindows::closeThePage)));
