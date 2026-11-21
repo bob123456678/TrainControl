@@ -4,11 +4,9 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.Locomotive;
 
-import java.awt.AWTEvent;
 import java.awt.EventQueue;
 import java.io.File;
 import java.io.IOException;
-import java.lang.ref.WeakReference;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -5585,20 +5583,18 @@ public class AutonomySession
     }
 
     /**
-     * The last check's findings, kept for the rest of the event that asked (one click asked twenty times) while nothing
-     * `whatTheCheckReads` covers changes; off the event thread nothing is kept.
+     * What the check read when the kept findings were worked out: they are kept, across events, until anything
+     * `whatTheCheckReads` covers changes (OB-459); off the event thread nothing is kept.
      */
-    private WeakReference<AWTEvent> findingsEvent;
-
-    /** What the check read when the kept findings were worked out. */
     private List<Object> findingsKey;
 
     /** The kept findings; copied out, so each caller's list is its own. */
     private List<AutonomyChecks.Finding> findingsKept;
 
     /**
-     * Everything check() reads that can change, as a key equal only while all of it is as it was: graph, reduction,
-     * index, setup snapshot, railway and trains, placed lengths, every square.
+     * Everything check() and its callees read that can change, as a key equal only while all of it is as it was: graph
+     * (and what each rebuild derives with it), reduction, index, setup snapshot, stale pages, language, railway and
+     * trains, the length of every train on it or placed, every square.  A new input to the check belongs here too.
      */
     private List<Object> whatTheCheckReads()
     {
@@ -5608,22 +5604,30 @@ public class AutonomySession
         key.add(new Same(reducer));
         key.add(new Same(stationIndex));
         key.add(store.snapshotSetup().toString());
+        key.add(pagesStale);
+        key.add(I18n.getLocale());
 
-        Layout running = runningLayout == null ? null : runningLayout.get();
-
-        key.add(new Same(running));
-
+        // The check reads the running railway only through `railwayTrains`: rebuilt with the same trains, nothing changed
         StringBuilder trains = new StringBuilder();
+        Map<String, Object[]> railway = railwayTrains();
 
-        for (Map.Entry<String, Object[]> train : railwayTrains().entrySet())
+        for (Map.Entry<String, Object[]> train : railway.entrySet())
         {
             trains.append(train.getKey()).append(Arrays.deepToString(train.getValue())).append('\n');
         }
 
-        for (Map.Entry<TileKey, String> standing : trainsWhereTheyStand().entrySet())
+        // Placed trains a railway train hides still count for `modelsAnyLength`
+        Set<String> named = new LinkedHashSet<>(railway.keySet());
+
+        named.addAll(placedLocomotives().values());
+
+        named.remove(null);
+
+        key.add(trainLengths == null);
+
+        for (String train : trainLengths == null ? Collections.<String>emptySet() : named)
         {
-            trains.append(standing.getKey()).append(' ').append(standing.getValue()).append('=')
-                .append(trainLengths == null ? null : trainLengths.apply(standing.getValue())).append('\n');
+            trains.append(train).append('=').append(trainLengths.apply(train)).append('\n');
         }
 
         key.add(trains.toString());
@@ -5674,19 +5678,14 @@ public class AutonomySession
     /** Everything wrong or worth knowing about the setup as it stands. */
     public List<AutonomyChecks.Finding> check()
     {
-        AWTEvent event = EventQueue.isDispatchThread() ? EventQueue.getCurrentEvent() : null;
-
-        if (event == null || graph == null || reducer == null) return checkAfresh();
+        if (!EventQueue.isDispatchThread() || graph == null || reducer == null) return checkAfresh();
 
         List<Object> key = whatTheCheckReads();
 
-        if (findingsEvent == null || findingsEvent.get() != event || !key.equals(findingsKey))
+        if (!key.equals(findingsKey))
         {
-            List<AutonomyChecks.Finding> found = checkAfresh();
-
-            findingsEvent = new WeakReference<>(event);
+            findingsKept = checkAfresh();
             findingsKey = key;
-            findingsKept = found;
         }
 
         return new ArrayList<>(findingsKept);
