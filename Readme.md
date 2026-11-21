@@ -485,8 +485,7 @@ Tab icons provided by Freepik.
         - Interface
             - Ctrl+Enter saves in the editors, `Locomotive Settings` and the route editor, and is `Done Editing` in `Station Settings`.
             - On Java 8, the pointer over links and buttons is a smooth, bold hand.
-            - To scroll the Log tab sideways, hold Shift and turn the mouse wheel.
-            - `Pop Up All Layout Pages` opens its windows about twice as fast, and after you save or cancel in the track editor only the page windows whose page changed are drawn again.  The `Auto` tab no longer rebuilds its list of locomotives when nothing about them changed.
+            - The Layout tab's `All` button opens its windows about twice as fast, and after you save or cancel in the track editor only the page windows whose page changed are drawn again.  The `Auto` tab no longer rebuilds its list of locomotives when nothing about them changed.
             - In simulation, a red triangle stands in the lower right of the main window, past the function tabs, from the start, as a reminder that TrainControl is not connected to a Central Station.  The yellow triangle that shows while a Central Station is not answering moved to the same place, so `Power OFF` no longer changes width.
     - Bug Fixes
         - Autonomy
@@ -494,7 +493,7 @@ Tab icons provided by Freepik.
             - A train whose journey fails partway is recorded where it stopped, and its destination is freed.
             - On a station that allows trains from every side, `Station Settings` no longer shows arrival arrows.
             - `Station Settings` steps aside while you pick a train's tail on the diagram.
-            - The station picture in `Station Settings` no longer shows which s88 squares are occupied, and nothing in it is faded.
+            - The station picture in `Station Settings` no longer shows which S88 squares are occupied, and nothing in it is faded.
             - The `Autonomy Controls` box above the track diagram also hides the trains' orange lines, and ticking it again shows the trains at once.
             - The picture in `Station Settings` shows which way trains may run on the track beside the station, even where the track diagram draws that arrow further along, and clicking it sets that whole stretch of track.
             - The `Start Autonomous Operation` button ends at the track diagram's right edge.
@@ -512,6 +511,8 @@ Tab icons provided by Freepik.
             - Page windows keep their addresses after you edit the layout while `Show Addresses` is ticked.
             - `Open Layout` and `Recent Layouts` refuse a folder whose layout lists no pages, and leave the current layout as it was.
             - In every translation, messages about autonomy use one word for it, and several translations read more naturally.
+    - Notes
+        - A station set up with 3.1.0's `Terminus` or `Parking` preset keeps letting trains run through, with no white dot and no preset button shown as pressed, until you press `Terminus` or `Parking` again in `Station Settings`.
 * v3.1.0 [11/15/2026]
     - Central Station Protocol
         - New Features
@@ -587,7 +588,7 @@ Tab icons provided by Freepik.
         - Autonomy
             - The autonomy editor can no longer be made so short that `Save Changes` and `Cancel` are cut off.
         - Track Diagram
-            - The red arrows on a curved s88 sensor are drawn a little further out, so they stay visible.
+            - The red arrows on a curved S88 sensor are drawn a little further out, so they stay visible.
             - A switch and a signal that share an address change together, and on a CS3 with an MM2 and a DCC accessory at the same address, each square controls the right one.
         - Central Station
             - Locomotive pictures stored outside the CS3's standard folders now show, and syncing with a CS3 is faster.
