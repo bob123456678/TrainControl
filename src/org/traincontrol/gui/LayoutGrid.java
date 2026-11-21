@@ -1241,27 +1241,7 @@ public class LayoutGrid
                 // Set references for each tile accessory
                 if (c != null)
                 {
-                    // If popup is true, LayoutLabel.isParentVisible will be used to clean up stale label references
-                    if ((c.isSwitch() || c.isSignal()) && c.getAccessory() != null)
-                    {
-                        c.getAccessory().addTile(grid[x][y]);
-                    }
-                    
-                    if (c.isFeedback() && c.getFeedback() != null)
-                    {
-                        c.getFeedback().addTile(grid[x][y]);
-                    }
-                    
-                    if (c.isThreeWay() && c.getAccessory2() != null)
-                    {
-                        c.getAccessory2().addTile(grid[x][y]); 
-                    }          
-                    
-                    if (c.isRoute() && c.getRoute() != null)
-                    {
-                        c.getRoute().addTile(grid[x][y]);
-                    }
-
+                    tieToItsDevices(c, grid[x][y]);
                     grid[x][y].readAgainOnceRegistered();
                 }
             }
@@ -1392,6 +1372,48 @@ public class LayoutGrid
             if (here == null || !here.contains(tile.getValue())) return false;
         }
 
+        return true;
+    }
+
+    /** Puts the square on the tiles its accessories, sensor and route redraw when they change. */
+    private static void tieToItsDevices(LayoutDiagramComponent c, LayoutLabel square)
+    {
+        // If popup is true, LayoutLabel.isParentVisible will be used to clean up stale label references
+        if ((c.isSwitch() || c.isSignal()) && c.getAccessory() != null) c.getAccessory().addTile(square);
+        if (c.isFeedback() && c.getFeedback() != null) c.getFeedback().addTile(square);
+        if (c.isThreeWay() && c.getAccessory2() != null) c.getAccessory2().addTile(square);
+        if (c.isRoute() && c.getRoute() != null) c.getRoute().addTile(square);
+    }
+
+    /**
+     * Keeps this grid for a page read again that draws the same (FR-216), every square bound as a new grid's would be to
+     * its counterpart in `same`; false, changing nothing, where one has none.
+     */
+    public boolean keep(java.util.Map<LayoutDiagramComponent, LayoutDiagramComponent> same)
+    {
+        DiagramTileRegistry registry = window == null ? null : window.getDiagramTileRegistry();
+        List<LayoutLabel> squares = new ArrayList<>();
+        for (LayoutLabel[] column : grid) for (LayoutLabel square : column)
+        {
+            if (square != null && square.getComponent() != null) squares.add(square);
+        }
+
+        if (registry == null || !squares.stream().allMatch(each -> same.containsKey(each.getComponent()))) return false;
+        for (LayoutLabel square : squares)
+        {
+            square.bindTo(same.get(square.getComponent()));
+            tieToItsDevices(square.getComponent(), square);
+            square.updateImage(false);
+        }
+
+        for (java.util.Map.Entry<org.traincontrol.automationui.TileGraph.TileKey, LayoutLabel> tile
+            : tilesAsRegistered.entrySet())
+        {
+            tile.getValue().setAutonomyOverlay(null);
+            tile.getValue().setAutonomyAnnotation(null);
+            registry.register(tile.getKey(), tile.getValue());
+        }
+        rebindRouteSquares();
         return true;
     }
 

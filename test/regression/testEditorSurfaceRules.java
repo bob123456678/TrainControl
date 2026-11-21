@@ -591,8 +591,8 @@ public class testEditorSurfaceRules
         // BOTH LIMBS, and the aspect: grepping the whole file for the method name would pass with either call deleted,
         // and clicking a protecting signal to RED, the protective act, must not raise the warning the route door
         // deliberately does not.
-        assertTrue(label.contains("aboutToClearProtection(tcUI, c.getAccessory())")
-                && label.contains("aboutToClearProtection(tcUI, c.getAccessory2())"),
+        assertTrue(label.contains("aboutToClearProtection(tcUI, component.getAccessory())")
+                && label.contains("aboutToClearProtection(tcUI, component.getAccessory2())"),
             "the diagram's accessory tile does not ask about BOTH accessories of the tile, so a "
             + "three-way's second drive can be switched with no warning");
 

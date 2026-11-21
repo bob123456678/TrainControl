@@ -15557,36 +15557,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
     
-    /**
-     * Updates the list of popups, and optionally refreshes the diagrams
-     */
+    /** Forgets the page windows closed and, when asked, draws the others again where their page changed (FR-216). */
     private void updatePopups(boolean doRefresh)
     {
-        ListIterator<LayoutPopupUI> iter = this.popups.listIterator();
-        while(iter.hasNext())
-        {
-            LayoutPopupUI currentPopup = iter.next();
-            
-            if (currentPopup.isVisible())
-            {
-                if (doRefresh)
-                {
-                    currentPopup.refreshDiagram();
-                }
-            }
-            else
-            {
-                iter.remove();
-            }
-        }
-        
-        if (this.model.isDebug())
-        {
-            this.model.logf(
-                "layout.ui.infoCurrentlyActivePopups",
-                this.popups.size()
-            );
-        }
+        this.popups.removeIf(popup -> !popup.isVisible());
+        if (doRefresh) for (LayoutPopupUI popup : this.popups) popup.refreshDiagram();
+        if (this.model.isDebug()) this.model.logf("layout.ui.infoCurrentlyActivePopups", this.popups.size());
     }
     
     private void EditFunction(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_EditFunction
@@ -16402,16 +16378,53 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         openLayoutEditor(null, null, null);
     }//GEN-LAST:event_editLayoutButtonActionPerformed
 
+    // The page windows asked for and not built yet, as page and tile size
+    private final List<Map.Entry<String, Integer>> popupsAsked = new ArrayList<>();
+
+    /** Opens a page window; those asked for together are drawn, then shown, their shared work done once (FR-216). */
     private void showLayoutPopup(String layoutName, int size)
     {
+        synchronized (this.popupsAsked)
+        {
+            this.popupsAsked.add(new java.util.AbstractMap.SimpleImmutableEntry<>(layoutName, size));
+            if (this.popupsAsked.size() > 1) return;
+        }
+
         javax.swing.SwingUtilities.invokeLater(() ->
         {
-            LayoutPopupUI popup = new LayoutPopupUI(this.model.getLayout(layoutName), size, this);
+            List<Map.Entry<String, Integer>> asked;
+            synchronized (this.popupsAsked)
+            {
+                asked = new ArrayList<>(this.popupsAsked);
+                this.popupsAsked.clear();
+            }
 
-            popup.render();
-            popups.add(popup);
+            // Each on its own: a window that cannot be drawn costs only itself, and is thrown once the others are up
+            List<LayoutPopupUI> built = new ArrayList<>();
+            RuntimeException failed = null;
+            for (Map.Entry<String, Integer> page : asked)
+            {
+                LayoutPopupUI popup = null;
+                try
+                {
+                    popup = new LayoutPopupUI(this.model.getLayout(page.getKey()), page.getValue(), this);
+                    popup.render();
+                    built.add(popup);
+                }
+                catch (RuntimeException notDrawn)
+                {
+                    if (popup != null) popup.dispose();
+                    failed = notDrawn;
+                }
+            }
+
+            // Update auto layout station labels on the track diagram, then show the windows that have them
+            updateVisiblePoints();
+            for (LayoutPopupUI popup : built) popup.setVisible(true);
+            popups.addAll(built);
             updatePopups(false);
             repaintLoc();
+            if (failed != null) throw failed;
         });
     }
     
@@ -18323,14 +18336,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.menuItemShowLayoutAddresses.isSelected();
     }
     
-    /**
-     * Tells each layout to display address labels
-     */
+    /** Gives every page Show Addresses: a page read again comes with it off. */
     private void ensureShowLayoutPreference()
     {
         for (String layoutName : this.model.getLayoutList())
         {
-            this.model.getLayout(layoutName).setShowAddress(this.menuItemShowLayoutAddresses.isSelected());
+            LayoutDiagram page = this.model.getLayout(layoutName);
+            if (page != null) page.setShowAddress(getShowLayoutAddresses());
         }
     }
     
@@ -21353,7 +21365,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Whether two pages save to the same text; false where either will not export. */
-    private static boolean sameText(LayoutDiagram a, LayoutDiagram b)
+    static boolean sameText(LayoutDiagram a, LayoutDiagram b)
     {
         try
         {
@@ -21449,6 +21461,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // left the OLD page's square remembered, and Control+X cut a locomotive from a platform on a page nobody was
         // looking at.
         setHoveredDiagramTile(null, -1, -1);
+        // Before a page window compares its page with what it drew, after any door that read the pages again
+        ensureShowLayoutPreference();
 
         // repaintPathLabel must not run from inside the submission below: it would queue behind LayoutGridRenderer (one
         // thread), whose rebuild is the slow part of a CS sync, leaving the menu item enabled that long (OB-094).
