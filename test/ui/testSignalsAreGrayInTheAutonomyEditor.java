@@ -567,6 +567,9 @@ public class testSignalsAreGrayInTheAutonomyEditor
         g.setColor(java.awt.Color.WHITE);
         g.fillRect(0, 0, 30, 30);
 
+        // In the tile's font, as the tile paints them, or a length's digits land on other pixels
+        g.setFont(tile.getFont());
+
         if (annotation != null) ((org.traincontrol.automationui.TileAnnotation) annotation).paint(g, 30, 30);
 
         g.dispose();

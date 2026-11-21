@@ -37,12 +37,14 @@ import support.WindowField;
 public class testShowAddressesWithAnEditorOpen
 {
     private static final String PAGE = "1 - Main";
+    private static final String LENGTHS_PREF = "autonomyEditorLengths";
     private static final String OTHER_PAGE = "2 - Bottom";
 
     private static support.LayoutSandbox sandbox;
     private static MarklinControlStation model;
     private static TrainControlUI ui;
     private static boolean lastEditorWasAutonomy;
+    private static boolean lengthsWereShown;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -53,6 +55,7 @@ public class testShowAddressesWithAnEditorOpen
         model = opened.model;
         ui = opened.ui;
         lastEditorWasAutonomy = TrainControlUI.getPrefs().getBoolean(TrainControlUI.LAST_EDITOR_AUTONOMY_PREF, false);
+        lengthsWereShown = TrainControlUI.getPrefs().getBoolean(LENGTHS_PREF, false);
         Components.settle();
     }
 
@@ -62,6 +65,8 @@ public class testShowAddressesWithAnEditorOpen
         try
         {
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.LAST_EDITOR_AUTONOMY_PREF, lastEditorWasAutonomy);
+            // Show Lengths too, which a claim ticks: the next class in the run reads it
+            TrainControlUI.getPrefs().putBoolean(LENGTHS_PREF, lengthsWereShown);
         }
         finally
         {
