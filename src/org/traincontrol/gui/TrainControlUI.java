@@ -5572,7 +5572,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.loadWindowBounds();
         
         // Ensure the preference is properly set across the layouts
-        this.ensureShowLayoutPreference(); 
+        this.ensureShowLayoutPreference(false);
         
         // Ensure the locomotive pane is updated
         this.repaintLoc(true, null);
@@ -18336,13 +18336,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.menuItemShowLayoutAddresses.isSelected();
     }
     
-    /** Gives every page Show Addresses: a page read again comes with it off. */
-    private void ensureShowLayoutPreference()
+    /**
+     * Gives every page Show Addresses; `spareTheEditorsPage` (before a redraw only) leaves an open editor's page alone.
+     */
+    private void ensureShowLayoutPreference(boolean spareTheEditorsPage)
     {
+        LayoutEditor editor = spareTheEditorsPage ? this.editorWindows.anEditorWindow() : null;
+        LayoutDiagram editing = editor == null ? null : editor.getMarklinLayout();
         for (String layoutName : this.model.getLayoutList())
         {
             LayoutDiagram page = this.model.getLayout(layoutName);
-            if (page != null) page.setShowAddress(getShowLayoutAddresses());
+            if (page != null && page != editing) page.setShowAddress(getShowLayoutAddresses());
         }
     }
     
@@ -18351,7 +18355,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 
         if (!this.model.getLayoutList().isEmpty())
         {      
-            this.ensureShowLayoutPreference();
+            this.ensureShowLayoutPreference(false);
             
             // Repaint diagrams
             javax.swing.SwingUtilities.invokeLater(() ->
@@ -21367,13 +21371,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Whether two pages save to the same text; false where either will not export. */
     static boolean sameText(LayoutDiagram a, LayoutDiagram b)
     {
+        String text = textOf(a);
+        return text != null && text.equals(textOf(b));
+    }
+
+    /** The page as its file would read, or null where it cannot be written. */
+    static String textOf(LayoutDiagram page)
+    {
         try
         {
-            return a.exportToCS2TextFormat().equals(b.exportToCS2TextFormat());
+            return page.exportToCS2TextFormat();
         }
         catch (Exception e)
         {
-            return false;
+            return null;
         }
     }
 
@@ -21462,7 +21473,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // looking at.
         setHoveredDiagramTile(null, -1, -1);
         // Before a page window compares its page with what it drew, after any door that read the pages again
-        ensureShowLayoutPreference();
+        ensureShowLayoutPreference(true);
 
         // repaintPathLabel must not run from inside the submission below: it would queue behind LayoutGridRenderer (one
         // thread), whose rebuild is the slow part of a CS sync, leaving the menu item enabled that long (OB-094).

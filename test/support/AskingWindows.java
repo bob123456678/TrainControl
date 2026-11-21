@@ -535,4 +535,16 @@ public final class AskingWindows
 
         Components.settle();
     }
+
+    /** Cancels an editor left open, answering yes to discarding its edits; nothing for null. */
+    public static void cancelTheEditor(final org.traincontrol.gui.layouteditor.LayoutEditor left) throws Exception
+    {
+        if (left == null) return;
+
+        try (Answering answering = Answering.start(message -> Answering.press(org.traincontrol.util.I18n.t("ui.yes"))))
+        {
+            Components.press(Components.withText(left, org.traincontrol.util.I18n.t("ui.cancel")));
+            Components.waitFor(() -> !left.isDisplayable(), 10000);
+        }
+    }
 }

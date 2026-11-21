@@ -1086,6 +1086,104 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     }
 
     /**
+     * A page window kept twice running still follows its devices (FR-216): its switch and signal squares are drawn
+     * again when their accessory switches, and a click on a sensor square flips the sensor and draws it again.
+     *
+     * MUTATION: in `LayoutGrid.keep`, drop `bindTo`, and the window is drawn again rather than kept.  Dropping
+     * `tieToItsDevices` there stays green: the devices outlive a read again and the kept squares stay on their lists.
+     */
+    @Test(timeOut = 180000)
+    public void testAKeptWindowsSquaresStillFollowTheirDevices() throws Exception
+    {
+        final LayoutPopupUI window = aKeptWindow();
+
+        try
+        {
+            final Object grid = gridOf(window);
+
+            // The second keep starts from squares already rebound once
+            editingComplete();
+            assertSame(gridOf(window), grid, "precondition: the second hand-over drew the page window again");
+
+            final LayoutLabel aSwitch = Components.onTheEventThread(() -> Components.find(window, LayoutLabel.class,
+                each -> each.getComponent() != null && each.getComponent().isSwitch()
+                && !each.getComponent().isThreeWay() && each.getComponent().getAccessory() != null));
+            final LayoutLabel aSignal = Components.onTheEventThread(() -> Components.find(window, LayoutLabel.class,
+                each -> each.getComponent() != null && each.getComponent().isSignal()
+                && each.getComponent().getAccessory() != null));
+            final LayoutLabel aSensor = Components.onTheEventThread(() -> Components.find(window, LayoutLabel.class,
+                each -> each.getComponent() != null && each.getComponent().isFeedback()
+                && each.getComponent().getFeedback() != null));
+
+            assertNotNull(aSwitch, "precondition: " + PAGE + " has no switch square");
+            assertNotNull(aSignal, "precondition: " + PAGE + " has no signal square");
+            assertNotNull(aSensor, "precondition: " + PAGE + " has no sensor square");
+
+            for (LayoutLabel square : new LayoutLabel[] {aSwitch, aSignal})
+            {
+                final LayoutDiagramComponent c = square.getComponent();
+                final org.traincontrol.marklin.MarklinAccessory device =
+                    (org.traincontrol.marklin.MarklinAccessory) c.getAccessory();
+
+                assertSame(c, model.getLayout(PAGE).getComponent(c.getX(), c.getY()), "the kept " + c.getType()
+                    + " square is not bound to the page as the model holds it now");
+
+                final int[] before = pixels(square);
+                final boolean was = device.isSwitched();
+
+                try
+                {
+                    model.setAccessoryState(device.getAddress() + 1, device.getDecoderType(), !was);
+
+                    assertTrue(Components.waitFor(() -> !Arrays.equals(before, pixels(square)), PICTURE_MS),
+                        "the kept window's " + c.getType() + " did not follow its accessory");
+                }
+                finally
+                {
+                    model.setAccessoryState(device.getAddress() + 1, device.getDecoderType(), was);
+                    Components.settle();
+                }
+            }
+
+            final org.traincontrol.marklin.MarklinFeedback sensor =
+                (org.traincontrol.marklin.MarklinFeedback) aSensor.getComponent().getFeedback();
+            final int[] before = pixels(aSensor);
+            final boolean was = sensor.isSet();
+
+            try
+            {
+                support.Mouse.click(aSensor);
+
+                assertTrue(Components.waitFor(() -> sensor.isSet() != was, PICTURE_MS), "a click on the kept window's"
+                    + " sensor square did not flip the sensor");
+                assertTrue(Components.waitFor(() -> !Arrays.equals(before, pixels(aSensor)), PICTURE_MS),
+                    "the kept window's sensor square did not follow its sensor");
+            }
+            finally
+            {
+                sensor.setState(was);
+                sensor.updateTiles();
+            }
+
+            assertTrue(Components.waitFor(() -> Arrays.equals(before, pixels(aSensor)), PICTURE_MS),
+                "the kept window's sensor square did not follow its sensor back");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
+    /** How long a square's picture may take to land after its device changes: it is drawn after the event. */
+    private static final long PICTURE_MS = 5000;
+
+    /** The square as it paints now. */
+    private static int[] pixels(final LayoutLabel l)
+    {
+        return Components.onTheEventThread(() -> support.Pixels.asPainted(l));
+    }
+
+    /**
      * A page window that cannot be drawn costs only itself (FR-216): asked for together with two others, as Pop Up All
      * asks, with its page gone by the time they are drawn, the other two still open, and a window asked for afterwards
      * opens too.
@@ -1231,8 +1329,8 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
      * A page window keeps its addresses through the doors that read the pages again, an editor's Cancel and a sync, on
      * a page the main window does not show; with Show Addresses unticked it shows none through them either.
      *
-     * MUTATION: leave out `ensureShowLayoutPreference()` in `TrainControlUI.repaintLayout`, and the window loses its
-     * addresses at the editor's Cancel.
+     * MUTATION: leave out `ensureShowLayoutPreference(true)` in `TrainControlUI.repaintLayout`, and the window loses
+     * its addresses at the editor's Cancel.
      */
     @Test(timeOut = 180000)
     public void testAPageWindowKeepsItsAddressesThroughAReadAgain() throws Exception
