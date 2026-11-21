@@ -805,7 +805,7 @@ public final class StationSettingsWindow extends StationWindowBase
 
     /**
      * The warning triangle beside a control the squares picked disagree on; its tooltip says what that means.  It grays
-     * with its row, drawn gray here as Swing grays only an ImageIcon.
+     * with its row, drawn gray here as Swing grays only an ImageIcon, and at the screen's pixels on a scaled screen.
      */
     private static JLabel mixedLabel(String partName)
     {
@@ -813,19 +813,26 @@ public final class StationSettingsWindow extends StationWindowBase
 
         JLabel out = styled(new JLabel(triangle), partName, REGULAR);
 
-        BufferedImage drawn = new BufferedImage(triangle.getIconWidth(),
-            triangle.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
-        java.awt.Graphics2D g = drawn.createGraphics();
-
-        triangle.paintIcon(null, g, 0, 0);
-        g.dispose();
-
-        out.setDisabledIcon(new javax.swing.ImageIcon(javax.swing.GrayFilter.createDisabledImage(drawn)));
+        out.setDisabledIcon(new org.traincontrol.util.SharpIcon(grayed(triangle, 16, 16),
+            (w, h) -> grayed(triangle, w, h)));
         out.setToolTipText(mixedTip());
         out.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 0));
         out.setVisible(false);
 
         return out;
+    }
+
+    /** `icon` drawn `width` by `height` pixels and grayed as Swing grays a picture. */
+    private static java.awt.Image grayed(javax.swing.Icon icon, int width, int height)
+    {
+        BufferedImage drawn = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = drawn.createGraphics();
+
+        g.scale(width / (double) icon.getIconWidth(), height / (double) icon.getIconHeight());
+        icon.paintIcon(null, g, 0, 0);
+        g.dispose();
+
+        return new javax.swing.ImageIcon(javax.swing.GrayFilter.createDisabledImage(drawn)).getImage();
     }
 
     private static JPanel leftAligned(JComponent part)
