@@ -864,6 +864,65 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     }
 
     /**
+     * A page window drawn again at the same size by Show Addresses lays its squares out, on a page left out of autonomy
+     * too, where no caption pass follows the redraw: else every square lies at one place and the page shows blank.
+     *
+     * MUTATION: in `LayoutGrid`'s constructor, leave out `parent.revalidate()` after the swap, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testARedrawnPageWindowLaysOutItsSquares() throws Exception
+    {
+        final javax.swing.JCheckBoxMenuItem tick = WindowField.of(ui, "menuItemShowLayoutAddresses");
+        final boolean was = tick.isSelected();
+        final List<LayoutPopupUI> windows = popUpAll();
+
+        try
+        {
+            final List<LayoutPopupUI> leftOut = new ArrayList<>();
+
+            for (LayoutPopupUI window : windows)
+            {
+                if (ui.isPageExcludedFromAutonomy(window.getLayoutTitle()) && hasAddresses(window.getLayoutTitle()))
+                {
+                    leftOut.add(window);
+                }
+            }
+
+            assertFalse(leftOut.isEmpty(), "precondition: no page with addresses is left out of autonomy");
+
+            SwingUtilities.invokeAndWait(tick::doClick);
+
+            for (LayoutPopupUI window : leftOut)
+            {
+                assertTrue(Components.waitFor(() -> showsAddresses(window) != was, 20000), window.getLayoutTitle()
+                    + "'s window was not drawn again after Show Addresses");
+
+                final int[] laidOut = new int[2];
+
+                assertTrue(Components.waitFor(() ->
+                {
+                    final List<LayoutLabel> squares = Components.all(window, LayoutLabel.class, null);
+                    final java.util.Set<java.awt.Point> places = new java.util.HashSet<>();
+
+                    for (LayoutLabel square : squares) places.add(square.getLocation());
+
+                    laidOut[0] = squares.size();
+                    laidOut[1] = places.size();
+
+                    return laidOut[0] > 1 && laidOut[1] == laidOut[0];
+                }, 10000), window.getLayoutTitle() + "'s window drawn again lays its " + laidOut[0] + " squares at "
+                    + laidOut[1] + " places");
+            }
+        }
+        finally
+        {
+            if (tick.isSelected() != was) SwingUtilities.invokeAndWait(tick::doClick);
+
+            closeAll(windows);
+        }
+    }
+
+    /**
      * A page renamed draws again its own window, under the new name, and each window whose arrows lead to it, which
      * then name it (FR-216); a window whose page does not lead there keeps its grid.
      *
