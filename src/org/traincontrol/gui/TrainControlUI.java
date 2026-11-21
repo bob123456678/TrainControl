@@ -18336,14 +18336,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.menuItemShowLayoutAddresses.isSelected();
     }
     
-    /**
-     * Tells each layout to display address labels
-     */
+    /** Gives every page Show Addresses: a page read again comes with it off. */
     private void ensureShowLayoutPreference()
     {
         for (String layoutName : this.model.getLayoutList())
         {
-            this.model.getLayout(layoutName).setShowAddress(this.menuItemShowLayoutAddresses.isSelected());
+            LayoutDiagram page = this.model.getLayout(layoutName);
+            if (page != null) page.setShowAddress(getShowLayoutAddresses());
         }
     }
     
@@ -21462,6 +21461,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // left the OLD page's square remembered, and Control+X cut a locomotive from a platform on a page nobody was
         // looking at.
         setHoveredDiagramTile(null, -1, -1);
+        // Before a page window compares its page with what it drew, after any door that read the pages again
+        ensureShowLayoutPreference();
 
         // repaintPathLabel must not run from inside the submission below: it would queue behind LayoutGridRenderer (one
         // thread), whose rebuild is the slow part of a CS sync, leaving the menu item enabled that long (OB-094).

@@ -1227,6 +1227,55 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         }
     }
 
+    /**
+     * A page window keeps its addresses through the doors that read the pages again, an editor's Cancel and a sync, on
+     * a page the main window does not show; with Show Addresses unticked it shows none through them either.
+     *
+     * MUTATION: leave out `ensureShowLayoutPreference()` in `TrainControlUI.repaintLayout`, and the window loses its
+     * addresses at the editor's Cancel.
+     */
+    @Test(timeOut = 180000)
+    public void testAPageWindowKeepsItsAddressesThroughAReadAgain() throws Exception
+    {
+        final javax.swing.JCheckBoxMenuItem tick = WindowField.of(ui, "menuItemShowLayoutAddresses");
+        final boolean was = tick.isSelected();
+        final Locomotive train = model.getLocByName(model.getLocList().get(0));
+
+        Components.select((JComboBox<?>) WindowField.of(ui, "LayoutList"), "2 - Bottom");
+        Settle.theDiagram(ui);
+
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+
+        showTheMainPage();
+
+        try
+        {
+            for (boolean on : new boolean[] {true, false})
+            {
+                if (tick.isSelected() != on) SwingUtilities.invokeAndWait(tick::doClick);
+
+                assertTrue(Components.waitFor(() -> showsAddresses(window) == on, 20000), "precondition: the window"
+                    + " of 2 - Bottom does not follow Show Addresses " + (on ? "ticked" : "unticked"));
+
+                editingComplete();
+
+                assertEquals(showsAddresses(window), on, "the window of 2 - Bottom " + (on ? "lost" : "took")
+                    + " its addresses at an editor's Cancel, with Show Addresses " + (on ? "ticked" : "unticked"));
+
+                syncTheLocomotive(train);
+
+                assertEquals(showsAddresses(window), on, "the window of 2 - Bottom " + (on ? "lost" : "took")
+                    + " its addresses at a sync, with Show Addresses " + (on ? "ticked" : "unticked"));
+            }
+        }
+        finally
+        {
+            if (tick.isSelected() != was) SwingUtilities.invokeAndWait(tick::doClick);
+
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     // A page autonomy leaves out, so a rename does not put the setup at stake
