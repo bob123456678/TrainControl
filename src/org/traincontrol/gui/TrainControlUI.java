@@ -18336,13 +18336,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.menuItemShowLayoutAddresses.isSelected();
     }
     
-    /** Gives every page Show Addresses: a page read again comes with it off. */
+    /**
+     * Gives every page Show Addresses: a page read again comes with it off.  An open editor's page keeps its own box's
+     * answer (and the autonomy editor's lengths) until it closes.
+     */
     private void ensureShowLayoutPreference()
     {
+        LayoutEditor editor = this.editorWindows.anEditorWindow();
+        LayoutDiagram editing = editor == null ? null : editor.getMarklinLayout();
+
         for (String layoutName : this.model.getLayoutList())
         {
             LayoutDiagram page = this.model.getLayout(layoutName);
-            if (page != null) page.setShowAddress(getShowLayoutAddresses());
+            if (page != null && page != editing) page.setShowAddress(getShowLayoutAddresses());
         }
     }
     
@@ -21367,13 +21373,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Whether two pages save to the same text; false where either will not export. */
     static boolean sameText(LayoutDiagram a, LayoutDiagram b)
     {
+        String text = textOf(a);
+        return text != null && text.equals(textOf(b));
+    }
+
+    /** The page as its file would read, or null where it cannot be written. */
+    static String textOf(LayoutDiagram page)
+    {
         try
         {
-            return a.exportToCS2TextFormat().equals(b.exportToCS2TextFormat());
+            return page.exportToCS2TextFormat();
         }
         catch (Exception e)
         {
-            return false;
+            return null;
         }
     }
 

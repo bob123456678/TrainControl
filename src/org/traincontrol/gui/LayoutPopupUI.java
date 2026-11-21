@@ -42,9 +42,11 @@ public class LayoutPopupUI extends PositionAwareJFrame
         this.layout = l;
     }
 
-    // The grid on screen now, so that the next one can tell it to stop, and whether it was drawn with the addresses
+    // The grid on screen now, so that the next one can tell it to stop, and whether it was drawn with the addresses and
+    // the page's text then: the track editor turns and moves the page object itself, so it no longer says what was drawn
     private LayoutGrid grid;
     private boolean drawnWithAddresses;
+    private String drawnText;
     
     /**
      * Draws the page into the window.
@@ -70,6 +72,7 @@ public class LayoutPopupUI extends PositionAwareJFrame
         
         this.grid = grid;
         this.drawnWithAddresses = this.layout.getShowAddress();
+        this.drawnText = TrainControlUI.textOf(this.layout);
 
         // Half a square at a time on both axes, as the main window's diagram (MT-726, MT-727)
         LayoutGrid.scrollHalfASquareAtATime(this.jScrollPane1, size);
@@ -101,7 +104,8 @@ public class LayoutPopupUI extends PositionAwareJFrame
     private Map<LayoutDiagramComponent, LayoutDiagramComponent> sameSquares(LayoutDiagram page)
     {
         if (this.grid == null || page == null || !page.getName().equals(this.layout.getName())
-            || page.getShowAddress() != this.drawnWithAddresses || !TrainControlUI.sameText(page, this.layout)
+            || page.getShowAddress() != this.drawnWithAddresses || this.drawnText == null
+            || !this.drawnText.equals(TrainControlUI.textOf(page))
             || !this.grid.captionsAreAsBuilt()) return null;
 
         List<LayoutDiagramComponent> was = this.layout.getAll(), now = page.getAll();
