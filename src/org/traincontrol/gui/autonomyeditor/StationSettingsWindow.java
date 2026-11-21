@@ -831,7 +831,6 @@ public final class StationSettingsWindow extends StationWindowBase
         g.scale(width / (double) icon.getIconWidth(), height / (double) icon.getIconHeight());
         icon.paintIcon(null, g, 0, 0);
         g.dispose();
-
         return new javax.swing.ImageIcon(javax.swing.GrayFilter.createDisabledImage(drawn)).getImage();
     }
 
