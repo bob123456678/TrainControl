@@ -29,8 +29,8 @@ import support.Reflect;
  * its names once.
  *
  * The findings are kept, across events, only while everything the check reads is as it was: a change in a later event
- * (the setup, a train's length, a label on the diagram, a train on the railway, stale pages, the language) is answered
- * for.  Each has a claim here, because a key missing one would hand back findings about a railway that has changed.
+ * (the setup, a train's length, a label on the diagram, a train on the railway, stale pages, the language, what only a
+ * rebuild reads) is answered for.  Each has a claim here, because a key missing one would hand back findings about a railway that has changed.
  *
  * On the frozen copy of his railway, whose findings move with each change asked of here (see each precondition).
  *
@@ -444,6 +444,8 @@ public class testTheFindingsAreWorkedOutOncePerEvent
                 return null;
             });
 
+            assertFalse(got.get(0).isEmpty(), "precondition: the frozen railway has no findings");
+
             assertNotSame(got.get(1).get(0), got.get(0).get(0), "pages marked stale were not checked again");
         }
         finally
@@ -453,20 +455,27 @@ public class testTheFindingsAreWorkedOutOncePerEvent
     }
 
     /**
-     * A change of language is checked again: a trapped arrival's sides and a repeated sensor's subject are worked out
-     * in words.
+     * A change of language is checked: some findings are worked out in words, so they are said in the new language.
      *
      * MUTATION: leave the language out of what the check is said to read, and this fails.
      */
     @Test
-    public void testALanguageChangeIsCheckedAgain() throws Exception
+    public void testALanguageChangeIsChecked() throws Exception
     {
         java.util.Locale was = org.traincontrol.util.I18n.getLocale();
 
         java.util.Locale other = java.util.Locale.GERMAN.equals(was) ? java.util.Locale.FRENCH : java.util.Locale.GERMAN;
 
+        org.json.JSONObject asFound = session.snapshotSetup();
+
         try
         {
+            // The pages left out repeat sensors of "1 - Main": brought in, each repeat is a finding whose subject is words
+            for (String page : new ArrayList<>(session.getStore().getExcludedPages()))
+            {
+                session.getStore().setPageExcluded(page, false);
+            }
+
             List<List<AutonomyChecks.Finding>> got = acrossEvents(() ->
             {
                 org.traincontrol.util.I18n.setLocale(other);
@@ -474,11 +483,19 @@ public class testTheFindingsAreWorkedOutOncePerEvent
                 return null;
             });
 
-            assertNotSame(got.get(1).get(0), got.get(0).get(0), "a change of language was not checked again");
+            // Off the event thread nothing is kept, so this is worked out afresh
+            List<AutonomyChecks.Finding> fresh = session.check();
+
+            assertNotEquals(said(fresh), said(got.get(0)), "precondition: no finding is worked out in words, so the"
+                + " language changes none");
+
+            assertEquals(said(got.get(1)), said(fresh), "after a change of language the findings are said in the old one");
         }
         finally
         {
             org.traincontrol.util.I18n.setLocale(was);
+
+            session.restoreSetup(asFound);
         }
     }
 
@@ -532,12 +549,71 @@ public class testTheFindingsAreWorkedOutOncePerEvent
 
             List<List<AutonomyChecks.Finding>> got = acrossEvents(() -> length[0] = 100);
 
+            assertFalse(got.get(0).isEmpty(), "precondition: the frozen railway has no findings");
+
             assertNotSame(got.get(1).get(0), got.get(0).get(0), "the length of " + hidden + ", placed under " + stranger
                 + ", was not checked again");
         }
         finally
         {
             putBackTheSources();
+        }
+    }
+
+    /**
+     * A change only the rebuilt graph carries is checked: a three-way switch's second accessory, read at the rebuild and
+     * in neither the setup nor the squares the key writes, taken off and rebuilt is an error that it has no address.
+     *
+     * MUTATION: leave the graph out of what the check is said to read, and this fails.
+     */
+    @Test
+    public void testAChangeOnlyTheRebuildReadsIsChecked() throws Exception
+    {
+        LayoutDiagramComponent found = null;
+
+        for (LayoutDiagram page : scenario.getPages())
+        {
+            for (LayoutDiagramComponent c : page.getAll())
+            {
+                if (found == null && c.isThreeWay() && c.getAccessory() != null && c.getAccessory2() != null) found = c;
+            }
+        }
+
+        assertNotNull(found, "precondition: the frozen railway has no three-way switch with both accessories");
+
+        final LayoutDiagramComponent threeWay = found;
+
+        final org.traincontrol.base.Accessory second = threeWay.getAccessory2();
+
+        org.json.JSONObject asFound = session.snapshotSetup();
+
+        try
+        {
+            List<List<AutonomyChecks.Finding>> got = acrossEvents(() ->
+            {
+                threeWay.setAccessory2(null);
+
+                session.rebuild();
+
+                return null;
+            });
+
+            assertTrue(countOf(got.get(1), org.traincontrol.automationui.TileGraph.ERROR_NO_ADDRESS)
+                > countOf(got.get(0), org.traincontrol.automationui.TileGraph.ERROR_NO_ADDRESS), "a three-way switch"
+                + " left with one accessory and rebuilt is not said to have no address");
+        }
+        finally
+        {
+            threeWay.setAccessory2(second);
+
+            session.restoreSetup(asFound);
+
+            inOneEvent(() ->
+            {
+                session.rebuild();
+
+                return null;
+            });
         }
     }
 }

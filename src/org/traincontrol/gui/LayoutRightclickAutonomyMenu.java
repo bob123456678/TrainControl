@@ -321,7 +321,7 @@ final class LayoutRightclickAutonomyMenu extends JPopupMenu
             TrainControlUI.showShortcut(menuItem, "start autonomous operation");
 
             // Grayed when it could not start (OB-050): canStartAutonomy asks the predicate the guard asks.  Asked once:
-            // AutonomySession.check() is not cached and walks every point on the event thread.
+            // each answer reads the whole setup and railway on the event thread.
             boolean canStart = ui.canStartAutonomy();
 
             // Both sentences from one reading: Start's tooltip and the Return Home item's.

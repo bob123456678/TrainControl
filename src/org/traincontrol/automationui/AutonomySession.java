@@ -5592,17 +5592,16 @@ public class AutonomySession
     private List<AutonomyChecks.Finding> findingsKept;
 
     /**
-     * Everything check() and its callees read that can change, as a key equal only while all of it is as it was: graph
-     * (and what each rebuild derives with it), reduction, index, setup snapshot, stale pages, language, railway and
-     * trains, the length of every train on it or placed, every square.  A new input to the check belongs here too.
+     * Everything check() and its callees read that can change, as a key equal only while all of it is as it was: the
+     * graph, setup snapshot, stale pages, language, railway and trains, the length of every train on it or placed, every
+     * page and square.  A new input to the check belongs here too.
      */
     private List<Object> whatTheCheckReads()
     {
         List<Object> key = new ArrayList<>();
 
+        // By identity: only `rebuild` replaces it, and with it the reduction, the index and `stationless`
         key.add(new Same(graph));
-        key.add(new Same(reducer));
-        key.add(new Same(stationIndex));
         key.add(store.snapshotSetup().toString());
         key.add(pagesStale);
         key.add(I18n.getLocale());
@@ -5623,8 +5622,6 @@ public class AutonomySession
 
         named.remove(null);
 
-        key.add(trainLengths == null);
-
         for (String train : trainLengths == null ? Collections.<String>emptySet() : named)
         {
             trains.append(train).append('=').append(trainLengths.apply(train)).append('\n');
@@ -5636,7 +5633,7 @@ public class AutonomySession
 
         for (LayoutDiagram page : pages)
         {
-            key.add(new Same(page));
+            squares.append(page.getName()).append('\n');
 
             for (LayoutDiagramComponent square : page.getAll())
             {
