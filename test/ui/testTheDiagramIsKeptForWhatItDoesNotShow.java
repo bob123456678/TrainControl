@@ -1140,6 +1140,91 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
         }
     }
 
+    /**
+     * A square turned on a page draws that page's window again (FR-216): the same squares stand in the same places, but
+     * the page reads differently.
+     *
+     * MUTATION: in `LayoutPopupUI.sameSquares`, leave out `sameText`, and the window keeps its old drawing.
+     */
+    @Test(timeOut = 180000)
+    public void testATurnedSquareDrawsItsWindowAgain() throws Exception
+    {
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+
+        try
+        {
+            final Object grid = gridOf(window);
+
+            editedElsewhere(square -> square.replaceFirst("( \\.typ=gerade)(\\r?\\n)", "$1$2 .drehung=1$2"),
+                train -> editingComplete(), train ->
+                {
+                    assertNotSame(gridOf(window), grid, "the page window kept its drawing of " + PAGE + " after a"
+                        + " square on it was turned");
+
+                    final LayoutLabel turned = Components.onTheEventThread(() -> Components.find(window,
+                        LayoutLabel.class, each -> each.getComponent() != null && each.getComponent().getX() == 4
+                        && each.getComponent().getY() == 1));
+
+                    assertEquals(turned.getComponent().getOrientation(), 1, "the page window does not draw the square"
+                        + " turned");
+                }, train -> { });
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
+    /**
+     * A station renamed on a page draws that page's window again (FR-216): the page reads the same, but its captions do
+     * not.
+     *
+     * MUTATION: in `LayoutPopupUI.sameSquares`, leave out `captionsAreAsBuilt`, and the window keeps its old captions.
+     */
+    @Test(timeOut = 180000)
+    public void testARenamedStationDrawsItsWindowAgain() throws Exception
+    {
+        TileKey station = null;
+
+        for (TileKey each : session.getLabelledStationTiles())
+        {
+            if (station == null && PAGE.equals(each.getPage()) && session.getLocomotiveNameAt(each) == null
+                && session.getStore().getPointName(each) != null) station = each;
+        }
+
+        assertNotNull(station, "precondition: " + PAGE + " has no named station with no train at it");
+
+        final TileKey renamed = station;
+        final String name = session.getStore().getPointName(renamed);
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+
+        try
+        {
+            final Object grid = gridOf(window);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPointName(renamed, name + " renamed");
+                ui.autonomySetupChanged();
+            });
+
+            assertTrue(Components.waitFor(() -> gridOf(window) != grid, 20000), "the page window kept its captions"
+                + " after the station " + name + " on " + PAGE + " was renamed");
+        }
+        finally
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                session.setPointName(renamed, name);
+                ui.autonomySetupChanged();
+            });
+
+            Settle.theDiagram(ui);
+
+            SwingUtilities.invokeAndWait(window::dispose);
+        }
+    }
+
     // ---------------------------------------------------------------- the fixture
 
     // A page autonomy leaves out, so a rename does not put the setup at stake
@@ -1504,6 +1589,13 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     /** As {@link #outAndBackElsewhere(Check, Check)}, with `door` reading the pages again after the edit. */
     private static void outAndBackElsewhere(Check door, Check out, Check back) throws Exception
     {
+        editedElsewhere(square -> "", door, out, back);
+    }
+
+    /** As {@link #outAndBackElsewhere(Check, Check, Check)}, the plain track at 0x104 made what `edit` makes of it. */
+    private static void editedElsewhere(java.util.function.UnaryOperator<String> edit, Check door, Check out,
+        Check back) throws Exception
+    {
         final Path file = sandbox.getFolder().toPath().resolve("config/gleisbilder/" + PAGE + ".cs2");
         final byte[] asItWas = Files.readAllBytes(file);
         final String text = new String(asItWas, StandardCharsets.UTF_8);
@@ -1516,7 +1608,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
         try
         {
-            Files.write(file, text.replace(square, "").getBytes(StandardCharsets.UTF_8));
+            Files.write(file, text.replace(square, edit.apply(square)).getBytes(StandardCharsets.UTF_8));
 
             door.check(train);
 
