@@ -744,6 +744,7 @@
         <test-one-class class="testTheOverlayBoxDuringARun"/>
         <test-one-class class="testPicturesAreSharpOnAScaledScreen"/>
         <test-one-class class="testTheAutoTabKeepsItsCards"/>
+        <test-one-class class="testShowAddressesWithAnEditorOpen"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>
