@@ -41,7 +41,7 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
 {
     private final Locomotive locomotive;
     private List<List<Edge>> paths;
-    private final Layout layout;
+    private Layout layout;
     private final ViewListener control;
     private final TrainControlUI parent;
     
@@ -179,6 +179,27 @@ public final class AutoLocomotiveStatus extends javax.swing.JPanel
     public Locomotive getLocomotive()
     {
         return this.locomotive;
+    }
+
+    public Layout getRunningLayout()
+    {
+        return this.layout;
+    }
+
+    /** A search's answer, dropped when this card has gone to another running layout since the search began. */
+    public void updateState(Locomotive someLoc, List<List<Edge>> found, boolean haveFound, Layout searchedOn)
+    {
+        if (searchedOn == this.layout) updateState(someLoc, found, haveFound);
+    }
+
+    /** Shows the train on this running layout as a new card would (OB-460); the caller's search fills the routes. */
+    public void showOn(Layout running)
+    {
+        this.layout = running;
+        this.haveGatheredTimetableStart = false;
+        this.locName.setText(locomotive.getName());
+        this.availablePathScroll.getViewport().setViewPosition(new java.awt.Point());
+        updateState(locomotive, null, true);
     }
 
     /**

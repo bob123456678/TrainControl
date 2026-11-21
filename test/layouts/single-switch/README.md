@@ -79,3 +79,4 @@ It also produces something else the suite has never had by hand: **a split squar
 - `ui.testTheWindowShowsTheConnection`
 - `ui.testTheLogTabScrollsSideways`
 - `core.testATimetableAtRunTime`
+- `ui.testTheAutoTabKeepsItsCards`
