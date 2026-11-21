@@ -2,7 +2,7 @@
 
 [![Latest release](https://img.shields.io/github/v/release/bob123456678/TrainControl?label=latest%20release&color=success)](https://github.com/bob123456678/TrainControl/releases/latest)
 [![License: GPL v3](https://img.shields.io/badge/license-GPL%20v3-blue)](https://www.gnu.org/licenses/gpl-3.0)
-![Java 8](https://img.shields.io/badge/Java-8-orange)
+![Java 8 or 21](https://img.shields.io/badge/Java-8%20%7C%2021-orange)
 
 **Free, open-source software for controlling and fully automating your Märklin (Marklin), Trix, or DCC model railroad from your computer.**  Runs on Windows, macOS, and Linux.
 
@@ -14,7 +14,7 @@ Available in 🇬🇧 English · 🇩🇪 Deutsch · 🇩🇰 Dansk · 🇵🇱 
 
 TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  It is designed for model railways with many locomotives, where the standard Marklin UI makes common tasks (such as quickly switching between locomotives or triggering functions) overly tedious.  It is a complete replacement for the CS2/CS3 when operating your layout, with the Central Station serving solely as the track interface and MFX locomotive database.  If your existing controller is taking the fun out of running your trains, consider trying TrainControl!
 
-**What's new in 3.1.0**
+**What's new in 3.1**
 
 *Station Settings.*  Everything about a station is now in one window: right-click a station on the track diagram and choose `Station Settings...`.
 
@@ -34,6 +34,8 @@ TrainControl connects to a Central Station 2, 3, or 3 Plus over your network.  I
 * `Autonomy` has what autonomy needs to know about it, such as how long the train is and whether it can change direction.
 
 *Autonomy on your track diagram.*  Since 3.0.0 you set up automation right on the track diagram, with no files to write: name your stations, click the track to show which way trains may run, and drag each train to the station where it stands.  See [Full Autonomy](#full-autonomy) and [the autonomy guide](Automation.md) to get started, and the [Changelog](#changelog) for everything else in 3.1.0.
+
+*3.1.1* is the first version to support Java 21: on a Windows display set above 100%, the whole window is drawn at the size Windows asks for, with sharp text, pictures and track diagram ([Requirements](#requirements)).  It also brings autonomy improvements and fixes: Ctrl+G, Ctrl+Q and Ctrl+H start, stop and send trains home; `Test a path` and `Why not Moving?` give one answer for automatic and by-hand sends; a white dot marks stations trains must stop at; and a train whose journey fails partway is now recorded where it stopped.  See the [Changelog](#changelog) for everything else.
 
 **Why TrainControl?**
 
@@ -460,9 +462,14 @@ Tab icons provided by Freepik.
 
 ## Changelog
 
-* v3.1.1
+* v3.1.1 [11/21/2026]
     - New Features
+        - Java 21
+            - TrainControl supports Java 21 for the first time.  On a Windows display set above 100% (for example 125% or 150%), the whole window is drawn at the size Windows asks for instead of being scaled twice, with sharp text.  TrainControl is still built for Java 8, which keeps working as before.
+            - At those scales the track diagram, the tab icons, locomotive pictures, function icons, the (i) marks and the icon in each window's title bar are drawn sharp at the larger size instead of stretched, grayed-out pictures included; the Large track diagram uses new, finer square pictures.
+            - On Java 21 and any other Java newer than 8, the file chooser's `Look In` list works, and settings are kept when the folder path has a non-English letter.
         - Autonomy
+            - Ctrl+G starts autonomous operation, Ctrl+Q gracefully stops it, and Ctrl+H sends every locomotive home after asking first.  When Ctrl+G or Ctrl+H cannot run because the track power is off or the setup is not ready, a message says why.  In the autonomy editor, Ctrl+V places the selected locomotive on a station and Delete takes its train off.
             - `Test a path` and `Why not Moving?` give one answer for both automatic and by-hand sends: a path only a hand send can take is purple, and the destinations are listed in a table.  The `Path Type` choice is gone.
             - The autonomy editor's list of things to look at now agrees with `Test a path` about which stations can be reached.
             - The `Station` preset lets trains run through, and a small white dot on the track diagram, in the autonomy editor and in `Station Settings` marks a station trains must stop at (a station whose `Trains can pass through` box is unticked).  The `Terminus` and `Parking` presets untick `Trains can pass through`, and `Parking` is a terminus full autonomy never chooses.
@@ -476,17 +483,12 @@ Tab icons provided by Freepik.
         - Central Station Protocol
             - After a sync from a local copy, the log lists each accessory square whose protocol the Central Station does not have at that address.
         - Interface
-            - Ctrl+G starts autonomous operation, Ctrl+Q gracefully stops it, and Ctrl+H sends every locomotive home after asking first.  When Ctrl+G or Ctrl+H cannot run because the track power is off or the setup is not ready, a message says why.  In the autonomy editor, Ctrl+V places the selected locomotive on a station and Delete takes its train off.  Ctrl+Enter saves in the editors, `Locomotive Settings` and the route editor, and is `Done Editing` in `Station Settings`.
+            - Ctrl+Enter saves in the editors, `Locomotive Settings` and the route editor, and is `Done Editing` in `Station Settings`.
             - On Java 8, the pointer over links and buttons is a smooth, bold hand.
             - To scroll the Log tab sideways, hold Shift and turn the mouse wheel.
-            - In simulation, a red triangle stands in the lower right of the main window, past the function tabs, from the start, as a reminder that TrainControl is not connected to a Central Station.
-            - On Java 21, with Windows display scaling above 100%, the track diagram, the tab icons, locomotive pictures and function icons are drawn sharp at the larger size instead of stretched; the Large track diagram uses new, finer square pictures.
+            - `Pop Up All Layout Pages` opens its windows about twice as fast, and after you save or cancel in the track editor only the page windows whose page changed are drawn again.  The `Auto` tab no longer rebuilds its list of locomotives when nothing about them changed.
+            - In simulation, a red triangle stands in the lower right of the main window, past the function tabs, from the start, as a reminder that TrainControl is not connected to a Central Station.  The yellow triangle that shows while a Central Station is not answering moved to the same place, so `Power OFF` no longer changes width.
     - Bug Fixes
-        - Central Station Protocol
-            - A train's stop (speed 0) is no longer lost when a CS3 stops answering.
-            - A route that syncing replaces stays armed, and an armed S88 route no longer fires on a late sensor answer just after a sync.
-            - A sync downloads each Central Station file once, and a station picture that never arrives gives up instead of hanging.
-            - A stop sent from a CS3 for a single locomotive now shows that locomotive stopped in TrainControl.
         - Autonomy
             - In the autonomy editor, `Cancel` keeps the last pause or go you pressed on a train while the editor was open, even after `Activate All Trains`.
             - A train whose journey fails partway is recorded where it stopped, and its destination is freed.
@@ -495,14 +497,21 @@ Tab icons provided by Freepik.
             - The station picture in `Station Settings` no longer shows which s88 squares are occupied, and nothing in it is faded.
             - The `Autonomy Controls` box above the track diagram also hides the trains' orange lines, and ticking it again shows the trains at once.
             - The picture in `Station Settings` shows which way trains may run on the track beside the station, even where the track diagram draws that arrow further along, and clicking it sets that whole stretch of track.
+            - The `Start Autonomous Operation` button ends at the track diagram's right edge.
+        - Central Station Protocol
+            - A train's stop (speed 0) is no longer lost when a CS3 stops answering.
+            - A route that syncing replaces stays armed, and an armed S88 route no longer fires on a late sensor answer just after a sync.
+            - A sync downloads each Central Station file once, and a station picture that never arrives gives up instead of hanging.
+            - A stop sent from a CS3 for a single locomotive now shows that locomotive stopped in TrainControl.
         - Locomotive Control
             - `Cancel` in `Locomotive Settings` asks `Save`, `Discard` or `Cancel` before throwing away what you typed, and the revert and crop marks change together with the picture.
         - Interface
-            - The `Start Autonomous Operation` button ends at the track diagram's right edge.
-            - On Java 21 and other Java newer than 8, a scaled Windows display is no longer scaled twice, the file chooser's `Look In` list works, and settings are kept when the folder path has a non-English letter.
             - At 100% display scaling, menus are no longer smaller than the rest of the window's text.
             - The uncoupler square on the track diagram is symmetric and meets the track beside it without a seam, and the turntable square is redrawn, with eight tracks leading out of it.
             - A new route item starts at address 0, and in a route you can edit, a cell its row has no use for shows `---`.
+            - Page windows keep their addresses after you edit the layout while `Show Addresses` is ticked.
+            - `Open Layout` and `Recent Layouts` refuse a folder whose layout lists no pages, and leave the current layout as it was.
+            - In every translation, messages about autonomy use one word for it, and several translations read more naturally.
 * v3.1.0 [11/15/2026]
     - Central Station Protocol
         - New Features
