@@ -23,11 +23,22 @@ import re
 import sys
 
 CENSUS_TEST = "testSwitchingToACentralStationLayout.java"
-WINDOW_BUILT = re.compile(r"new\s+(?:org\.traincontrol\.gui\.)?TrainControlUI\s*\(")
-# The support helpers that build a window behind their own sandbox: the census counts their callers too.
-WINDOW_HELPER_CALLED = re.compile(r"FrozenEditor\s*\.\s*(?:window|open)\s*\(|SandboxedWindow\s*\.\s*build\s*\(|"
-                                  r"AskingWindows\s*\.\s*openRailway\s*\(")
 SANDBOX_OPENED = re.compile(r"LayoutSandbox\.open\s*\(")
+
+
+JAVA_STRING = r'"((?:[^"\\]|\\.)*)"'
+
+
+def census_patterns(test_source):
+    """WINDOW_BUILT and WINDOW_HELPER_CALLED read out of the census test itself, so the two cannot drift."""
+    found = []
+    for name in ("WINDOW_BUILT", "WINDOW_HELPER_CALLED"):
+        m = re.search(name + r"\s*=\s*(?:java\.util\.regex\.)?Pattern\s*\.\s*compile\(((?:\s*%s\s*\+?)+)\)" % JAVA_STRING,
+                      test_source)
+        if m is None:
+            raise SystemExit("%s: no %s pattern found; the tool and the test would disagree" % (CENSUS_TEST, name))
+        found.append(re.compile("".join(re.findall(JAVA_STRING, m.group(1))).replace("\\\\", "\\")))
+    return found
 
 
 def read(path):
@@ -91,11 +102,6 @@ def plan_build_xml(root, simple):
     return (path, new), "build.xml: add %s after the last one" % line
 
 
-def builds_a_window(code):
-    """Whether a class counts in the census: it builds a window itself or through one of the helpers."""
-    return bool(WINDOW_BUILT.search(code) or WINDOW_HELPER_CALLED.search(code))
-
-
 def plan_census(root, qualified, source):
     path = None
     for p in java_files(root):
@@ -103,6 +109,11 @@ def plan_census(root, qualified, source):
             path = p
     if path is None:
         return None, "census: %s not found, nothing to check" % CENSUS_TEST
+    patterns = census_patterns(read(path))
+
+    def builds_a_window(code):
+        return any(pat.search(code) for pat in patterns)
+
     count = 0
     for p in java_files(root):
         if os.path.basename(p) == "LayoutSandbox.java":
