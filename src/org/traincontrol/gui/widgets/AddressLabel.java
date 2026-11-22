@@ -117,14 +117,15 @@ public class AddressLabel extends JLabel
         {
             ImageUtil.smooth(g2);
 
+            // Set out as getPreferredSize measured: a scaled screen's metrics are wider and cut the last digit (OB-503).
             Font font = getFont();
-            FontMetrics fm = g2.getFontMetrics(font);
+            FontMetrics fm = getFontMetrics(font);
 
             int pad = pad();
 
             for (int i = 0; i < lines.length; i++)
             {
-                TextLayout layout = new TextLayout(lines[i], font, g2.getFontRenderContext());
+                TextLayout layout = new TextLayout(lines[i], font, fm.getFontRenderContext());
 
                 Shape letters = layout.getOutline(AffineTransform.getTranslateInstance(pad,
                     pad + fm.getAscent() + i * fm.getHeight()));

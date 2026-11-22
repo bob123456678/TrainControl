@@ -607,6 +607,81 @@ public class testPicturesAreSharpOnAScaledScreen
             "at 1.25 it is not the gray of the art made " + size + " pixels across");
     }
 
+    /**
+     * An address at 125% to 200% is painted inside its label, last digit and halo too: set out in the metrics its size
+     * was measured in, not the scaled screen's wider ones, which Swing's clip cut off (OB-503).
+     *
+     * MUTATION: in `AddressLabel.paintComponent`, build the `TextLayout` with `g2.getFontRenderContext()` again.
+     */
+    @Test
+    public void testAnAddressIsPaintedInsideItsLabel() throws Exception
+    {
+        for (int size : new int[] {10, 13})
+        {
+            for (String[] lines : new String[][] {{"1030"}, {"1008"}, {"2013"}, {"203"}, {"1030", "dcc"}})
+            {
+                for (double scale : new double[] {1.25, 1.5, 1.75, 2})
+                {
+                    AtomicReference<String> outside = new AtomicReference<>();
+
+                    SwingUtilities.invokeAndWait(() ->
+                    {
+                        org.traincontrol.gui.widgets.AddressLabel address =
+                            new org.traincontrol.gui.widgets.AddressLabel();
+
+                        // As LayoutGrid makes one, in a third of a 30 or 40 pixel square
+                        address.setFont(new java.awt.Font("Segoe UI", java.awt.Font.PLAIN, size));
+                        address.setForeground(java.awt.Color.RED);
+                        address.setLines(lines);
+                        address.setSize(address.getPreferredSize());
+                        outside.set(paintedOutside(address, scale));
+                    });
+
+                    assertNull(outside.get(), String.join("/", lines) + " in size " + size + " at " + scale
+                        + " is painted outside its label, where Swing cuts it off");
+                }
+            }
+        }
+    }
+
+    /** Where `c`, painted unclipped at `scale`, reaches past its bounds' pixels, or null where it does not. */
+    private static String paintedOutside(javax.swing.JComponent c, double scale)
+    {
+        int margin = 20;
+        BufferedImage out = new BufferedImage((int) Math.ceil(c.getWidth() * scale) + 2 * margin,
+            (int) Math.ceil(c.getHeight() * scale) + 2 * margin, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = out.createGraphics();
+
+        g.translate(margin, margin);
+        g.scale(scale, scale);
+
+        try
+        {
+            support.Reflect.method(javax.swing.JComponent.class, "paintComponent", java.awt.Graphics.class).invoke(c, g);
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new AssertionError(e);
+        }
+        finally
+        {
+            g.dispose();
+        }
+
+        for (int y = 0; y < out.getHeight(); y++)
+        {
+            for (int x = 0; x < out.getWidth(); x++)
+            {
+                boolean inside = x >= margin && y >= margin && x < out.getWidth() - margin
+                    && y < out.getHeight() - margin;
+
+                if (!inside && out.getRGB(x, y) >>> 24 != 0) return "a pixel at " + (x - margin) + "," + (y - margin);
+            }
+        }
+
+        return null;
+    }
+
     private static boolean isWhite(BufferedImage image, int x, int y)
     {
         return (image.getRGB(x, y) & 0xffffffff) == 0xffffffff;
