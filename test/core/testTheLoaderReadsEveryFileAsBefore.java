@@ -26,7 +26,8 @@ import org.traincontrol.marklin.MarklinControlStation;
  *
  * MUTATION: read "maxLatency" before "preArrivalSpeedReduction" in readSettings, and the case with both wrong gives the
  * other reason; or make ConfigurationFile.count answer 0 for an absent key, and an absent trainLength clears the
- * train's.
+ * train's; or write `speed > 0 && speed <= 100` in placeLocomotive as `speed < 100`, and the loc speed 100 and 0
+ * cases differ.
  */
 public class testTheLoaderReadsEveryFileAsBefore
 {
@@ -155,7 +156,8 @@ public class testTheLoaderReadsEveryFileAsBefore
         Collections.addAll(v, point("loc", "x"), point("loc", nul), new Variant("loc name absent",
             o -> loc(o).remove("name")), onLoc("name", 5), onLoc("name", "FJ none"), onLoc("trainLength", -1),
             onLoc("trainLength", "x"), new Variant("loc trainLength absent", o -> loc(o).remove("trainLength")),
-            onLoc("reversible", "x"), onLoc("speed", "x"), onLoc("speed", 500),
+            onLoc("reversible", "x"), onLoc("speed", "x"), onLoc("speed", 500), onLoc("speed", 101), onLoc("speed", 100),
+            onLoc("speed", 1), onLoc("speed", 0), onLoc("speed", -1),
             new Variant("loc speed absent", o -> loc(o).remove("speed")), onLoc("departureFunc", "x"),
             onLoc("arrivalFunc", "x"), new Variant("loc twice", o -> pt(o, 1).getJSONObject("loc").put("name", ONE)),
             new Variant("loc off a station", o -> pt(o, 2).put("loc", pt(o, 1).remove("loc"))));

@@ -1,6 +1,7 @@
 package core;
 
 import org.json.JSONObject;
+import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
 import org.traincontrol.util.Conversion;
 import org.traincontrol.base.Locomotive;
@@ -307,6 +308,57 @@ public class testInvalidInput
         assertRejected("maxLocInactiveSeconds", config(POINT_A, "", ", 'maxLocInactiveSeconds': 'a while'"));
         assertRejected("preArrivalSpeedReduction", config(POINT_A, "", ", 'preArrivalSpeedReduction': 'half'"));
         assertRejected("atomicRoutes not a boolean", config(POINT_A, "", ", 'atomicRoutes': 'sometimes'"));
+    }
+
+    /**
+     * OB-505: a lock edge that is not an object refuses the file with the lock-edge message, as other bad lock edges
+     * do, rather than throwing out of fromJSON.
+     *
+     * MUTATION: catch only JSONException in readLockEdges, and fromJSON throws a ClassCastException.
+     */
+    @Test
+    public void testANonObjectLockEdgeRefusesTheFile()
+    {
+        Layout layout = Layout.fromJSON(config(POINT_A + ", " + POINT_B,
+            "{'start': 'IN A', 'end': 'IN B', 'lockedges': [5]}", ""), model);
+
+        assertFalse(layout.isValid(), "the file was accepted with a lock edge that is a number");
+        assertTrue(layout.getInvalidReason().contains(I18n.f("autolayout.errorLockEdgeGeneric", "").trim()),
+            "the lock-edge message was expected: " + layout.getInvalidReason());
+    }
+
+    /**
+     * OB-505: an edge command with an unknown state is refused and not kept, so the refused layout can still be written.
+     *
+     * MUTATION: store the command whatever its state read as, and toJSON throws a NullPointerException.
+     */
+    @Test
+    public void testACommandWithAnUnknownStateIsNotKept() throws Exception
+    {
+        clearAccessoryAddress(ACC_IN_CONFIG_ADDRESS);
+
+        Layout layout = Layout.fromJSON(config(POINT_A + ", " + POINT_B, "{'start': 'IN A', 'end': 'IN B', 'commands':"
+            + " [{'acc': '" + ACC_IN_CONFIG + "', 'state': 'sideways'}]}", ""), model);
+
+        assertFalse(layout.isValid(), "the unknown state was accepted");
+        assertNotNull(layout.toJSON(), "the refused layout could not be written");
+    }
+
+    /**
+     * OB-505: a maxActiveTrains that is not a number is refused as not a number; a negative one still loads, as it
+     * always has (the setter ignores it).
+     *
+     * MUTATION: read maxActiveTrains with the "must not be negative" message again, and the reason is that one.
+     */
+    @Test
+    public void testAMaxActiveTrainsThatIsNotANumberSaysSo()
+    {
+        Layout layout = Layout.fromJSON(config(POINT_A, "", ", 'maxActiveTrains': 'many'"), model);
+
+        assertFalse(layout.isValid(), "'many' was accepted");
+        assertEquals(layout.getInvalidReason(), I18n.f("autolayout.errorMaxActiveTrainsNotANumber"));
+        assertTrue(Layout.fromJSON(config(POINT_A, "", ", 'maxActiveTrains': -1"), model).isValid(),
+            "a negative maxActiveTrains is ignored, not refused");
     }
 
     /**
