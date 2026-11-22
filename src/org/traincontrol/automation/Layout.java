@@ -2237,11 +2237,7 @@ public class Layout
         return isPathClear(path, loc, logFailures, false, false, new OnePass(loc));
     }
 
-    /**
-     * What isPathClear asks of the railway beyond the route, for one train, each part taken once at its first use: the
-     * other trains' tails, the train's own body and each rail's copies the other way.  pickPath judges every candidate
-     * of a pass with one (FR-203); every other caller takes a fresh one per route.  Confined to the thread that made it.
-     */
+    /** The tails, own body and reversed rails isPathClear reads, taken at first use; one per pickPath pass (FR-203). */
     private final class OnePass
     {
         private final Locomotive loc;
