@@ -267,8 +267,8 @@ public class testTheRouteListShowsWhatRuns
      * triangle (FR-164).  Read as the renderer paints the cell; the power is turned off and on by the station's report,
      * as a Central Station's GO and STOP arrive.
      *
-     * MUTATION: in `CustomTableRenderer.paintComponent`, change `if (routeListEditsRoutes())` to `if (false)`, and the
-     * wrench is never painted.
+     * MUTATION: in `CustomTableRenderer.paintComponent`, change `if (routeListPanel.routeListEditsRoutes())` to
+     * `if (false)`, and the wrench is never painted.
      */
     @Test
     public void testTheButtonIsAWrenchWithThePowerOffAndATriangleWithItOn() throws Exception
@@ -706,6 +706,121 @@ public class testTheRouteListShowsWhatRuns
 
         // Until the next click in the table, which clears it
         clickTheRoute(other, false, java.awt.event.MouseEvent.MOUSE_PRESSED, false);
+    }
+
+    /**
+     * Find Route scrolls the route it found into view when the list is scrolled away from it, and the pointer arriving
+     * on the highlight dismisses it (FR-044, MT-218).
+     *
+     * MUTATION: drop `scrollRectToVisible` from `RouteListPanel.showRouteInTheList`, or `foundRoute = null` from
+     * `RouteListPanel.clearFoundRoute`, and this fails.
+     */
+    @Test
+    public void testFindRouteScrollsToTheRouteAndThePointerDismissesIt() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "findable quokka", 246);
+        final JTable table = routeTable();
+
+        // Scrolled to the far end from the route, then another tab in front
+        Components.select(table);
+        Components.settle();
+        final Rectangle before = cellOf(route);
+        final boolean routeIsLow = before.y > table.getHeight() / 2;
+        SwingUtilities.invokeAndWait(() -> table.scrollRectToVisible(routeIsLow ? new Rectangle(0, 0, 1, 1)
+            : new Rectangle(0, table.getHeight() - 1, 1, 1)));
+        Components.settle();
+
+        assertFalse(Components.onTheEventThread(() -> table.getVisibleRect().intersects(before)), "precondition: the"
+            + " route list shows every route at once, so there is nothing to scroll to");
+
+        SwingUtilities.invokeAndWait(() -> ((javax.swing.JTabbedPane) SwingUtilities.getAncestorOfClass(
+            javax.swing.JTabbedPane.class, table)).setSelectedIndex(0));
+
+        final javax.swing.AbstractButton find = support.Components.withText(ui,
+            org.traincontrol.util.I18n.t("route.ui.menuFindRoute"));
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.type("QUOKKA")))
+        {
+            SwingUtilities.invokeLater(find::doClick);
+
+            assertTrue(answering.awaitAsked(1, 10000), "Find Route asked nothing");
+            assertTrue(until(table::isShowing, 5000), "Find Route did not bring the route list forward");
+
+            Components.settle();
+        }
+
+        assertTrue(until(() -> Components.onTheEventThread(() ->
+        {
+            Rectangle cell = cellOf(route);
+
+            return cell != null && table.getVisibleRect().contains(cell);
+        }), 5000), "Find Route left the route it found scrolled out of view");
+
+        final Color found = backgroundOf(route);
+
+        // The pointer arrives on the highlighted cell
+        SwingUtilities.invokeAndWait(() ->
+        {
+            Rectangle cell = cellOf(route);
+
+            table.dispatchEvent(new java.awt.event.MouseEvent(table, java.awt.event.MouseEvent.MOUSE_MOVED,
+                System.currentTimeMillis(), 0, cell.x + 6, (int) cell.getCenterY(), 0, false));
+        });
+
+        assertTrue(until(() -> !backgroundOf(route).equals(found), 5000), "the pointer arrived on the route Find Route"
+            + " highlighted and the highlight stayed");
+    }
+
+    /**
+     * Resetting the spinners puts every running route's play button back and forgets when each was marked: a database
+     * sync, an import and a completed route edit reset them (FR-043).
+     *
+     * MUTATION: drop `routesExecuting.clear()` or `startedRunningAt.clear()` from `RouteListPanel.resetRouteSpinners`,
+     * and this fails.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testResettingTheSpinnersPutsEveryPlayButtonBack() throws Exception
+    {
+        final String first = aQuickRoute(PREFIX + "spun one", 246);
+        final String second = aQuickRoute(PREFIX + "spun two", 247);
+
+        final Color atRest = backgroundOf(first);
+        final Color secondAtRest = backgroundOf(second);
+
+        final java.util.Set<String> running = (java.util.Set<String>) Reflect.get(TrainControlUI.class, ui,
+            "routesExecuting");
+        final java.util.Map<String, Long> since = (java.util.Map<String, Long>) Reflect.get(TrainControlUI.class, ui,
+            "startedRunningAt");
+
+        try
+        {
+            // Marked as the play button marks them, and held: neither route really runs
+            for (String name : new String[] {first, second})
+            {
+                running.add(name);
+                since.put(name, System.currentTimeMillis());
+            }
+
+            refresh();
+
+            assertNotEquals(backgroundOf(first), atRest, "precondition: a running route's cell is not gray");
+
+            SwingUtilities.invokeAndWait(ui::resetRouteSpinners);
+
+            refresh();
+
+            assertEquals(backgroundOf(first), atRest, "a reset left the first route's play button gray");
+            assertEquals(backgroundOf(second), secondAtRest, "a reset left the second route's play button gray");
+            assertTrue(since.isEmpty(), "a reset kept when routes were marked: " + since);
+        }
+        finally
+        {
+            running.remove(first);
+            running.remove(second);
+            since.remove(first);
+            since.remove(second);
+        }
     }
 
     /**

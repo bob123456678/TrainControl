@@ -606,8 +606,8 @@ public class testAPageWindowsSquaresAskOverIt
      * A page that closes between the question being asked for and its being put gives way to the main window: the event
      * thread is held until the asking thread waits on it, and the window goes in between.
      *
-     * MUTATION: `over == null ? this : over` for the window in `askAboutRouteConflict`, and it hangs off a window that is
-     * not there.
+     * MUTATION: `over == null ? this.ui : over` for the window in `RouteListPanel.askAboutRouteConflict`, and it hangs
+     * off a window that is not there.
      */
     @Test
     public void testAPageGoneAsTheConflictIsPutGivesWayToTheMainWindow() throws Exception

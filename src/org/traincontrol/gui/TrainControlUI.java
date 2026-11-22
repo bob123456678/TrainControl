@@ -14517,56 +14517,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         REFUSED
     }
 
-    /** `known` is the accessory and reason key when the caller already has them; null to ask the route itself. */
     public RouteConflict askAboutRouteConflict(org.traincontrol.marklin.MarklinRoute route,
         java.awt.Component over, String[] known)
     {
-        if (route == null) return RouteConflict.REFUSED;
-
-        String[] why = known != null ? known : route.conflictingAccessoryAndReason();
-
-        String conflict = why == null ? null : why[0];
-
-        // No conflict any more is its own answer (autonomy releases accessories from its own threads, so it can clear
-        // after the caller's check): false would silently do nothing, true would run the route with every conflict
-        // check off.
-        if (conflict == null) return RouteConflict.NOTHING_TO_CONFIRM;
-
-        Object[] options = { I18n.t("ui.ok"), I18n.t("ui.cancel") };
-
-        final int[] choice = {JOptionPane.CLOSED_OPTION};
-
-        // The reason the route gave: `heldReason` tells a turnout on a locked path from a signal protecting a platform
-        // with a train PARKED at it, and the dialog must not ask about a moving train in both cases.
-        String reason = why == null ? null : why[1];
-
-        // A platform only RESERVED is asked about as that: a locked path holds its destination for a train still on its
-        // way.
-        String question = "route.refusedSignalProtectingOccupiedPlatform".equals(reason)
-            ? "layout.ui.confirmRouteProtectingSignal"
-            : "route.refusedSignalProtectingReservedPlatform".equals(reason)
-                ? "layout.ui.confirmRouteProtectingReservedSignal" : "layout.ui.confirmRouteActiveRoute";
-
-        Runnable ask = () -> choice[0] = JOptionPane.showOptionDialog(
-            over == null || !over.isShowing() ? this : over,
-            I18n.f(question, route.getName(), conflict),
-            I18n.t("layout.ui.dialogPleaseConfirm"),
-            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-
-        try
-        {
-            if (javax.swing.SwingUtilities.isEventDispatchThread()) ask.run();
-            else javax.swing.SwingUtilities.invokeAndWait(ask);
-        }
-        catch (InterruptedException | java.lang.reflect.InvocationTargetException couldNotAsk)
-        {
-            this.model.log(couldNotAsk);
-
-            return RouteConflict.REFUSED;
-        }
-
-        // Only an explicit OK; Escape and the close box mean no.
-        return choice[0] == 0 ? RouteConflict.OVERRIDE : RouteConflict.REFUSED;
+        return this.routeListPanel.askAboutRouteConflict(route, over, known);
     }
 
     public void executeRoute(String route)
@@ -15295,46 +15249,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.routeListPanel.BulkEnableOrDisable(enable);
     }
 
-    /** Sets automatic execution for each route whose name contains `search` ("*" for all), past the prompt (MT-467). */
     public void enableOrDisableMatching(String search, boolean enable)
     {
-        new Thread(()->
-        {
-            // Whether the station has heard of any of them (OB-155): one sync per batch, none when every route was
-            // allocated here.
-            boolean anyOnTheStation = false;
-
-            LayoutDiagram before = shownDiagram();
-
-            for (String routeName : this.model.getRouteList())
-            {
-                Route r = this.model.getRoute(routeName);
-
-                // The list is a copy but the lookup is not, and a sync's re-read of a station route briefly removes an
-                // id: a name from a list may not be a route.
-                if (r == null) continue;
-
-                if (r.hasS88() || r.isEnabled())
-                {
-                    if (r.getName().contains(search) || "*".equals(search))
-                    {
-                         // Read before the write, which replaces the route object; the lock, not the id, says whether
-                         // the station carried it.
-                         if (r.isLocked()) anyOnTheStation = true;
-
-                         // The same write enableOrDisableRoute uses, so the two cannot drift; the guards around it stay
-                         // separate because this loop syncs once per batch, not once per route.
-                         writeRouteEnabledState(r, enable);
-                    }
-                }
-            }
-
-            if (anyOnTheStation) this.syncAfterAnEdit();
-
-            redrawRouteSquaresOrRebuild(before);
-
-            refreshRouteList();
-        }).start();
+        this.routeListPanel.enableOrDisableMatching(search, enable);
     }
 
     public void enableOrDisableRoute(String routeName, boolean enable)
@@ -15360,7 +15277,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 final boolean stationCarriedIt = r.isLocked();
                 final LayoutDiagram before = shownDiagram();
 
-                writeRouteEnabledState(r, enable);
+                this.routeListPanel.writeRouteEnabledState(r, enable);
 
                 if (stationCarriedIt) this.syncAfterAnEdit();
 
@@ -15376,13 +15293,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 ));
             }
         }).start();
-    }
-
-    /** The one route-enabled write both callers make, so it cannot drift; guards and syncs stay with the callers. */
-    private void writeRouteEnabledState(Route r, boolean enable)
-    {
-        this.model.editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable,
-                r.getConditions());
     }
 
     public void resetFocus()
@@ -17824,11 +17734,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Route under = getRouteAtCursor(evt);
 
         // The pointer arriving on the Find Route highlight dismisses it (MT-218).
-        if (under != null && under.getName().equals(foundRoute)) clearFoundRoute();
+        if (under != null && under.getName().equals(foundRoute)) this.routeListPanel.clearFoundRoute();
 
         // The wrench is pressable whatever is running (FR-164): the editor opens regardless
         boolean pressable = this.routeListPanel.isOverTheRoutePlayButton(evt)
-            && under != null && (routeListEditsRoutes() || !routesExecuting.contains(under.getName()));
+            && under != null
+            && (this.routeListPanel.routeListEditsRoutes() || !routesExecuting.contains(under.getName()));
 
         RouteList.setCursor(pressable
             ? HandPointer.cursor() : java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.DEFAULT_CURSOR));
@@ -20113,7 +20024,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** When each running route was marked, so the debug line can say how long it lasted. */
-    private final java.util.Map<String, Long> startedRunningAt =
+    final java.util.Map<String, Long> startedRunningAt =
         new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
@@ -20123,75 +20034,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final int ROUTE_PLAY_SIZE = 13;
     private static final int ROUTE_PLAY_STRIP = 30;
 
-    /** Marks a route as running (`route` is its name) and starts the animation. */
-    void routeStarted(String route)
-    {
-        if (route == null) return;
-
-        routesExecuting.add(route);
-
-        startedRunningAt.put(route, System.currentTimeMillis());
-
-        // Said in debug: "nothing happens visually" cannot be told from "too quick to see" without a measurement.
-        if (this.model != null && this.model.isDebug()) this.model.log("Route " + route + " marked as running");
-
-        // A rebuild rather than a repaint (MT-217): refreshRouteList replaces the table's model, so every cell redraws.
-        javax.swing.SwingUtilities.invokeLater(() -> refreshRouteList());
-    }
-
-    /**
-     * The route's button comes back once the gray has been on screen long enough, not when the route ends (that is
-     * `View.routeFinished`).
-     */
-    void releaseTheRoutePlayButton(String route)
-    {
-        if (route == null) return;
-
-        // The later of the route's end and the gray having been on screen long enough.  A floor rather than a fixed
-        // hold, which would be wrong if execution ever became synchronous; today `execRoute` returns at once, so the
-        // floor is nearly the whole wait.
-        Long since = startedRunningAt.get(route);
-
-        long showFor = since == null ? 0
-            : ROUTE_MINIMUM_VISIBLE_MS - (System.currentTimeMillis() - since);
-
-        if (showFor > 0)
-        {
-            javax.swing.SwingUtilities.invokeLater(() ->
-            {
-                javax.swing.Timer rest = new javax.swing.Timer((int) showFor,
-                    e -> clearRunningRoute(route));
-
-                rest.setRepeats(false);
-                rest.start();
-            });
-
-            return;
-        }
-
-        clearRunningRoute(route);
-    }
-
     /**
      * How long a pressed play button stays gray at least, in milliseconds: long enough to register as a state, short
      * enough not to gate firing several routes in a row.
      */
-    private static final int ROUTE_MINIMUM_VISIBLE_MS = 600;
-
-    private void clearRunningRoute(String route)
-    {
-        routesExecuting.remove(route);
-
-        Long began = startedRunningAt.remove(route);
-
-        if (this.model != null && this.model.isDebug())
-        {
-            this.model.log("Route " + route + " no longer running"
-                + (began == null ? "" : " after " + (System.currentTimeMillis() - began) + "ms"));
-        }
-
-        javax.swing.SwingUtilities.invokeLater(() -> refreshRouteList());
-    }
+    static final int ROUTE_MINIMUM_VISIBLE_MS = 600;
 
     /**
      * Puts every play button back; called by a database sync, an import and a completed route edit, not by
@@ -20200,8 +20047,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void resetRouteSpinners()
     {
-        routesExecuting.clear();
-        startedRunningAt.clear();
+        this.routeListPanel.resetRouteSpinners();
     }
 
     /**
@@ -20212,15 +20058,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         return new java.awt.Rectangle(cell.x + cell.width - ROUTE_PLAY_STRIP, cell.y,
             ROUTE_PLAY_STRIP, cell.height);
-    }
-
-    /**
-     * Whether the route list opens a route's editor rather than running it: the power is off (FR-140, FR-164).  The
-     * click and the wrench the renderer draws ask this one method.
-     */
-    boolean routeListEditsRoutes()
-    {
-        return this.model != null && !this.model.getPowerState();
     }
 
     /**
@@ -20239,7 +20076,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      * The route Find Route last landed on, highlighted until something else happens (FR-044).  A name rather than a
      * cell, because the table is rebuilt and re-sorted constantly.
      */
-    private String foundRoute;
+    String foundRoute;
 
     /**
      * Background of the route Find Route landed on: pale yellow, not selection blue, which would invite the next click
@@ -20297,47 +20134,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return found;
     }
 
-    /** Brings the route list up, scrolls to a route (`name`, as the model spells it) and highlights it. */
-    void showRouteInTheList(String name)
-    {
-        foundRoute = name;
-
-        // Found by identity, not by index: the designer's ordering is not a contract.
-        int routesAt = this.KeyboardTab.indexOfComponent(this.RoutePanel);
-
-        if (routesAt >= 0) this.KeyboardTab.setSelectedIndex(routesAt);
-
-        for (int row = 0; row < this.RouteList.getRowCount(); row++)
-        {
-            for (int column = 0; column < this.RouteList.getColumnCount(); column++)
-            {
-                Object at = this.RouteList.getValueAt(row, column);
-
-                if (!(at instanceof Route) || !name.equals(((Route) at).getName())) continue;
-
-                this.RouteList.scrollRectToVisible(this.RouteList.getCellRect(row, column, true));
-
-                this.RouteList.repaint();
-
-                return;
-            }
-        }
-
-        // In the model but not in the table (mid-rebuild, or filtered out): the highlight is set, so the next repaint
-        // shows it.
-        this.RouteList.repaint();
-    }
-
-    /** Forgets the found route, so the highlight does not outlive the question it answered. */
-    void clearFoundRoute()
-    {
-        if (foundRoute == null) return;
-
-        foundRoute = null;
-
-        this.RouteList.repaint();
-    }
-
     public class CustomTableRenderer extends DefaultTableCellRenderer
     {
         // Support hover events
@@ -20389,7 +20185,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // false, not one to be caught happening, which matters for a route finishing in under a second.
                 boolean running = routesExecuting.contains(paintingRoute);
 
-                if (routeListEditsRoutes())
+                if (routeListPanel.routeListEditsRoutes())
                 {
                     // The same spot, for the same click's other meaning (FR-164)
                     org.traincontrol.gui.widgets.RowIcons.wrench(box.width, new java.awt.Color(110, 110, 110))
