@@ -1588,7 +1588,7 @@ public class testTheStationIsReachedOverTcp
             this.proxy.sendMessage(new CS2Message(stopTrain));
             assertEquals(nextOn(wire, 300), null, "a speed 0 went over UDP before a second without an answer");
 
-            // Past the second, well before the connection is given up
+            // Past the second, well before the connection is given up; a 1.2 s timed wait the sleep pins cannot see
             Components.waitFor(() -> System.nanoTime() - unanswered > 1200000000L, 2000);
 
             this.proxy.sendMessage(new CS2Message(run));
