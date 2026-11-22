@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -13,6 +15,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.util.I18n;
 import support.Answering;
+import support.Components;
 import support.Reflect;
 import support.Settle;
 import support.StandInStation;
@@ -103,7 +106,13 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
 
         AtomicBoolean inFlight = (AtomicBoolean) Reflect.field(TrainControlUI.class, "syncInFlight").get(ui);
 
-        return Settle.until(() -> !inFlight.get(), 60000);
+        if (!Settle.until(() -> !inFlight.get(), 60000)) return false;
+
+        // The flag clears inside the event that ran the sync: the rest of that event, then what it posted (the start-up's
+        // diagram refresh, which says "no track diagram" if a claim's sync has the layouts cleared when it runs)
+        Components.drain(2);
+
+        return true;
     }
 
     /** The last lines the model logged, for a failure's message. */
@@ -240,16 +249,20 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
 
             try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
             {
+                // Waited for by `after`: the sync starts only once a worker has read the station's addresses
+                CountDownLatch first = new CountDownLatch(1);
+                CountDownLatch second = new CountDownLatch(1);
+
                 // Everything read: nothing to say
-                ui.syncLocomotiveFrom(loc, window, null);
-                assertTrue(syncEnded(ui), "the first sync did not end; log " + logTail(rig));
+                ui.syncLocomotiveFrom(loc, window, first::countDown);
+                assertTrue(first.await(60, TimeUnit.SECONDS), "the first sync did not end; log " + logTail(rig));
                 assertFalse(answering.awaitAsked(1, 3000), "a sync that read everything said: " + answering.asked());
 
                 replaced.put("/app/api/automatics", "<html>not json</html>".getBytes(StandardCharsets.UTF_8));
-                ui.syncLocomotiveFrom(loc, window, null);
+                ui.syncLocomotiveFrom(loc, window, second::countDown);
+                assertTrue(second.await(60, TimeUnit.SECONDS), "the second sync did not end; log " + logTail(rig));
                 assertTrue(answering.awaitAsked(1, 60000), "a sync that read part said nothing on the window; log "
                     + logTail(rig));
-                assertTrue(syncEnded(ui), "the second sync did not end; log " + logTail(rig));
                 assertEquals(answering.asked().get(0), I18n.f("ui.infoSyncCompletePartial", "0"));
                 assertSame(answering.questions().get(0).owner, window, "not on the window that asked");
             }

@@ -186,19 +186,6 @@ public class testDownloadingTheStationsLayout
         }
     }
 
-    /** What the door asked, less the stand-in's warning that no CAN messages arrive, which simulation raises. */
-    private static List<String> theDoorsQuestions(Answering answering)
-    {
-        List<String> out = new ArrayList<>();
-
-        for (String message : answering.asked())
-        {
-            if (!message.startsWith(I18n.t("ui.warningNoCanMessages").split("\\{")[0])) out.add(message);
-        }
-
-        return out;
-    }
-
     /** The Autonomy menu's items as the user opens it. */
     private List<String> autonomyMenu() throws Exception
     {
@@ -258,7 +245,7 @@ public class testDownloadingTheStationsLayout
             assertFalse(autonomyMenu().contains(needsALocalLayout),
                 "after the download the Autonomy menu still says autonomy needs a layout on this computer: "
                 + autonomyMenu());
-            assertTrue(theDoorsQuestions(answering).size() == 2, "the download asked more than its two notices: "
+            assertTrue(answering.asked().size() == 2, "the download asked more than its two notices: "
                 + answering.asked());
         }
     }

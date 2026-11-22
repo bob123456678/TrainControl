@@ -67,6 +67,10 @@ public final class StationRig implements AutoCloseable
             if (atStartUp) TestStationAddress.set(standIn.address());
 
             started = window ? TestStation.simulatedWithWindow() : TestStation.simulated();
+
+            // A message counted, so no window warns 15 s on that the station is silent: that modal warning, posted into
+            // a later claim, holds the sync whose spinner it opened over until someone answers it (OB-508)
+            Reflect.field(MarklinControlStation.class, "numMessagesProcessed").setInt(started, 1);
         }
         catch (Exception | Error e)
         {
