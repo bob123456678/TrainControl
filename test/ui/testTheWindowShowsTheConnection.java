@@ -475,6 +475,16 @@ public class testTheWindowShowsTheConnection
         }
     }
 
+    /** Three answers, a different log line after each, as the model drops a line repeating the one before it. */
+    private static void answerThrice() throws Exception
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            answered();
+            model.log("after " + i);
+        }
+    }
+
     /**
      * The serial number is logged once a connection, not on every answer, and again after a reconnect (FR-248).
      *
@@ -497,35 +507,37 @@ public class testTheWindowShowsTheConnection
         try
         {
             model.setNetworkCommState(true);
-            for (int i = 0; i < 3; i++)
-            {
-                answered();
-                model.log("between " + i);
-            }
+            answerThrice();
 
-            assertEquals(log.stream().filter(line::equals).count(), 1L, "three answers, one connection: " + log);
+            assertEquals(log.stream().filter(l -> l.contains("99999")).count(), 1L, "three answers, one connection: " + log);
 
             disconnect();
             model.setNetworkCommState(true);
-            for (int i = 0; i < 3; i++)
-            {
-                answered();
-                model.log("between " + i);
-            }
+            answerThrice();
 
-            assertEquals(log.stream().filter(line::equals).count(), 2L, "a reconnect logs it again: " + log);
+            assertEquals(log.stream().filter(l -> l.contains("99999")).count(), 2L, "a reconnect logs it again: " + log);
+
+            // A serial from the ping reply: every line that carries it, one
+            Reflect.set(MarklinControlStation.class, model, "stationSerial", null);
+            pingReply(0x43, 0x53, 0x38, 0x12);
+            assertTrue(Components.waitFor(() -> uid() != 0, 10000), "precondition: the reply was recorded");
+            answerThrice();
+
+            assertEquals(log.stream().filter(l -> l.contains("777")).count(), 1L, "the ping reply's serial: " + log);
         }
         finally
         {
             logger.removeHandler(tap);
             Reflect.set(MarklinControlStation.class, model, "stationSerial", null);
+            Reflect.set(MarklinControlStation.class, model, "UID", 0);
+            Reflect.set(MarklinControlStation.class, model, "serialNumber", 0);
             disconnect();
         }
     }
 
     /**
-     * With no serial number from a file, the one the station's ping reply gives (UID 0x4353835E from device type 0x0000
-     * is 10415) is the station's, and logged; a file's comes first; a type 0x0000 reply from a UID that is not a Central
+     * With no serial number from a file, the one the station's ping reply gives (UID 0x43533812 from device type 0x0000
+     * is 777) is the station's, and logged; a file's comes first; a type 0x0000 reply from a UID that is not a Central
      * Station's (a booster, or a CS3, whose track processor's UID starts 0x6373) gives none (FR-242, FR-248).
      *
      * MUTATION: drop `(this.UID >>> 16) == 0x4353` from `MarklinControlStation.getStationSerial`, and this fails.
@@ -539,8 +551,8 @@ public class testTheWindowShowsTheConnection
         {
             Object[][] cases = {{new int[] {0x47, 0x42, 0x00, 0x2a}, false, null, null},
                 {new int[] {0x63, 0x73, 0x04, 0xd2}, true, null, null},
-                {new int[] {0x43, 0x53, 0x83, 0x5e}, false, "999", "999"},
-                {new int[] {0x43, 0x53, 0x83, 0x5e}, false, null, "10415"}};
+                {new int[] {0x43, 0x53, 0x38, 0x12}, false, "999", "999"},
+                {new int[] {0x43, 0x53, 0x38, 0x12}, false, null, "777"}};
 
             for (Object[] c : cases)
             {
