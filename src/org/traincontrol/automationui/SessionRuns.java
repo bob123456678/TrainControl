@@ -105,7 +105,6 @@ final class SessionRuns
             owner.setDirection(leader, routeId, direction);
             return 1;
         }
-
         Map<TileKey, Map<RouteId, Direction>> further = alongTheLine
             ? alongTheLine(leader, routeId, direction) : Collections.<TileKey, Map<RouteId, Direction>>emptyMap();
         further.forEach(owner::recordSquare);
@@ -118,11 +117,8 @@ final class SessionRuns
         }
 
         Route route = owner.graph.getRoutes(leader).get(routeId);
-
         if (route == null) return 0;
-
         Side toward = direction == Direction.TOWARD_A ? route.getA() : route.getB();
-
         Landing landing = owner.graph.landing(leader, toward);
 
         // Which way along the run the user pointed.
@@ -130,14 +126,10 @@ final class SessionRuns
             || !run.getTiles().isEmpty() && landing.getTile().equals(nextAfter(run, leader));
 
         int changed = owner.recordAlongTheRun(run, towardEnd).size() + further.size();
-
         return owner.directionsTouched() ? changed : 0;
     }
 
-    /**
-     * What a run's new direction carries on to past the run (MT-1068), each road to set by square: only a way the run
-     * did not allow, past plain sensors and through switches entered by a branch, while the track ahead forbids it.
-     */
+    /** What a run's new direction carries on to past the run, each road by square: ways it newly allows (MT-1068). */
     Map<TileKey, Map<RouteId, Direction>> alongTheLine(TileKey clicked, RouteId routeId, Direction direction)
     {
         Map<TileKey, Map<RouteId, Direction>> out = new LinkedHashMap<>();
@@ -170,8 +162,7 @@ final class SessionRuns
     }
 
     /**
-     * Walks on from a run's end, adding to `plan` each run or switch road that forbids a way `need` names (out, back),
-     * set as `out` and `back` say, to a station, a split, a crossing, the track's end, a square seen, or one that lets.
+     * Walks on from a run's end, adding to `plan` each road that forbids a way `need` names (out, back), set to allow.
      */
     private void carryOn(Landing at, Set<TileKey> seen, boolean[] need, boolean out, boolean back,
         Map<TileKey, Map<RouteId, Direction>> plan)

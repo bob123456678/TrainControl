@@ -5144,8 +5144,7 @@ public class AutonomyEditorPanel extends JPanel
 
         Direction next = after(session.directionAsDrawn(target, only.getKey()));
 
-        if (!agreedAlongTheLine(target, only.getKey(), next)) return;
-        int changed = session.setRunDirection(target, only.getKey(), next, true);
+        int changed = session.setRunDirection(target, only.getKey(), next);
 
         // The tile changed can be the head of a long run, so it is flashed too.
         if (!target.equals(tile) && onReveal != null) onReveal.accept(target);
@@ -6102,21 +6101,22 @@ public class AutonomyEditorPanel extends JPanel
         {
             if (refusedWhileRunning()) return;
 
-            setRunDirection(tile, routeId, direction);
+            setRunDirection(tile, routeId, direction, false);
         });
 
         return item;
     }
 
-    /** Sets which way trains may run over a square, on the run it belongs to. */
-    void setRunDirection(TileKey tile, RouteId routeId, Direction direction)
+    /**
+     * Sets which way trains may run over a square's run; `offer` first asks whether to carry it on down the line (D194).
+     */
+    void setRunDirection(TileKey tile, RouteId routeId, Direction direction, boolean offer)
     {
+        Boolean along = offer ? alongTheLine(tile, routeId, direction) : Boolean.FALSE;
+        if (along == null) return;
         // Set on the run, not the tile: a run has one direction.
-        if (!agreedAlongTheLine(tile, routeId, direction)) return;
-        int set = session.setRunDirection(tile, routeId, direction, true);
-
+        int set = session.setRunDirection(tile, routeId, direction, along);
         if (set == 0) say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
-
         refresh();
 
         // Here, beside the write, through the light door (MT-334).
@@ -6124,31 +6124,28 @@ public class AutonomyEditorPanel extends JPanel
     }
 
     /**
-     * Whether a run's direction may be set carried on along the line (MT-1068): where that changes squares past the
-     * run, a notice asks first with every square to change lit, and No changes nothing.
+     * Whether to carry a run's direction on along the line: false when nothing past it changes, else asked; null Cancel.
      */
-    private boolean agreedAlongTheLine(TileKey tile, RouteId routeId, Direction direction)
+    private Boolean alongTheLine(TileKey tile, RouteId routeId, Direction direction)
     {
         Set<TileKey> further = session.alongTheLine(tile, routeId, direction).keySet();
-        if (!further.isEmpty())
+        if (further.isEmpty()) return false;
+        Set<TileKey> lit = new LinkedHashSet<>(session.getGraph().runOf(tile).getTiles());
+        lit.addAll(further);
+        light(lit, true);
+        try
         {
-            Set<TileKey> lit = new LinkedHashSet<>(session.getGraph().runOf(tile).getTiles());
-            lit.addAll(further);
-            light(lit, true);
-            try
-            {
-                String asked = I18n.f("autosetup.ui.alongTheLine" + I18n.countForm(further.size()), further.size());
-                if (JOptionPane.showOptionDialog(owner(), asked, I18n.t("autosetup.ui.titleAlongTheLine"),
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE, null, TrainControlUI.YES_NO_OPTS, TrainControlUI.YES_NO_OPTS[0])
-                    != JOptionPane.YES_OPTION) return false;
-            }
-            finally
-            {
-                light(lit, false);
-            }
+            Object[] answers = {I18n.t("autosetup.ui.buttonCarryOn"), I18n.t("autosetup.ui.buttonThisRunAlone"),
+                I18n.t("ui.cancel")};
+            int answer = JOptionPane.showOptionDialog(owner(), I18n.t("autosetup.ui.alongTheLine"),
+                I18n.t("autosetup.ui.titleAlongTheLine"), JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE, null, answers, answers[0]);
+            return answer == 0 ? Boolean.TRUE : answer == 1 ? Boolean.FALSE : null;
         }
-        return true;
+        finally
+        {
+            light(lit, false);
+        }
     }
 
     /** Lights squares where this surface draws, or puts them out: outlined in the editor, yellow on the track diagram. */

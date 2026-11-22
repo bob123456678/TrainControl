@@ -4602,10 +4602,11 @@ public class testStationSettingsWindow
     /**
      * Opened from the track diagram, a click that lets trains leave the station along its next square carries on past
      * the plain sensor at that run's end as the session's rule does (MT-1068), after a notice owned by Station
-     * Settings, with every square past the run held lit on the track diagram while it asks and put out after.
+     * Settings, with every square past the run held lit on the track diagram while it asks and put out after; Carry
+     * On sets them (D194).
      *
-     * MUTATION: have `AutonomyEditorPanel.light` leave the track diagram's squares unlit, or have `nextSquare` call
-     * `session.setRunDirection` itself, and this fails.
+     * MUTATION: have `AutonomyEditorPanel.light` leave the track diagram's squares unlit, or have `nextSquare` pass
+     * `offer` false, and this fails.
      */
     @Test(timeOut = 180000)
     public void testAClickOnANextSquareCarriesOnAlongTheLine() throws Exception
@@ -4641,7 +4642,8 @@ public class testStationSettingsWindow
         StationSettingsWindow window = openedFromTheDiagramsMenu(found[0]);
         Set<TileKey> lit = new LinkedHashSet<>();
 
-        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.yes"))).looking(dialog ->
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("autosetup.ui.buttonCarryOn")))
+            .looking(dialog ->
         {
             for (TileKey each : further)
             {

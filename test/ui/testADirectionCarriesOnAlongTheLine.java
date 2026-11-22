@@ -10,6 +10,7 @@ import java.util.TreeMap;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
@@ -24,17 +25,21 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
+import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
 import support.Diagrams;
 import support.MenuPage;
+import support.Mouse;
+import support.StationDoors;
 
 /**
  * A run's direction set so trains may go a way they could not carries on along the line (MT-1068, Adam: "if it's
  * through of a non-splitting switch, flip that as well.  make sure all affected tiles are highlighted.  and when locking
  * down again, it needs only be the adjacent tile."): past plain sensors and through switches entered by a branch, to a
- * station, a split, or track that already lets trains go that way, after a notice that asks with every square lit.
+ * station, a split, or track that already lets trains go that way.  Only Station Settings' picture offers it, in a
+ * notice that asks with every square lit (D194).
  *
  * Each claim draws a line of its own along row 1 of a page: S a station, P a plain sensor, - a straight, &gt; or &lt; a
  * switch whose toe points east or west.  A claim's line starts with every run one way west.
@@ -147,127 +152,131 @@ public class testADirectionCarriesOnAlongTheLine
     }
 
     /**
-     * A setting that only takes ways away, both ways to one way or anything to closed, changes the run clicked alone,
-     * with no notice, though the run past it points the other way.
+     * A setting that only takes ways away, both ways to one way or anything to closed, carries on to nothing, though
+     * the run past it points the other way.
      *
      * MUTATION: have `SessionRuns.alongTheLine` carry every way the new setting allows, not only those the old did not,
      * and this fails.
      */
-    @Test(timeOut = 120000)
-    public void testLockingDownChangesTheClickedRunAloneWithNoNotice() throws Exception
+    @Test(timeOut = 60000)
+    public void testLockingDownCarriesOnToNothing() throws Exception
     {
         try (MenuPage page = line("tc-along-lock", "S--P--S"))
         {
             AutonomySession session = page.session;
-
-            AutonomyEditorPanel panel = panelOn(session);
-
             session.setRunDirection(at(5), roadOf(session, 5), toward(session, 5, Side.E));
             session.setRunDirection(at(2), roadOf(session, 2), Direction.BOTH);
 
-            List<String> asked = menuPick(panel, 2, I18n.f("autosetup.ui.menuRouteToward", "W"), null).asked();
+            Map<TileKey, Map<RouteId, Direction>> oneWay = session.alongTheLine(at(2), roadOf(session, 2),
+                toward(session, 2, Side.W));
+            Map<TileKey, Map<RouteId, Direction>> closed = session.alongTheLine(at(2), roadOf(session, 2),
+                Direction.NONE);
 
-            assertEquals(ways(session), "2:W 3:W 5:E 6:E", "both ways to one way did not change the run clicked alone");
-
-            asked.addAll(menuPick(panel, 2, I18n.t("autosetup.ui.menuRouteNone"), null).asked());
-
-            assertEquals(ways(session), "2: 3: 5:E 6:E", "closing did not change the run clicked alone");
-            assertTrue(asked.isEmpty(), "locking down asked: " + asked);
+            assertTrue(oneWay.isEmpty(), "both ways to one way carries on to " + oneWay);
+            assertTrue(closed.isEmpty(), "closing carries on to " + closed);
         }
     }
 
     /**
-     * The notice says how many squares further along would change while every square to change, the run clicked too,
-     * is outlined; No changes nothing and takes the outline away; Yes changes all of it in one step, which putting the
-     * setup back as it was before the click (as Cancel does) undoes whole.
+     * Station Settings' picture asks, from Station Settings, when opening the next square's arrow would change squares
+     * past its run: the notice offers Carry On, This Run Alone and Cancel, and outlines every square to
+     * change while it asks; Cancel changes nothing and takes the outline away; Carry On changes all of it (D194).
      *
-     * MUTATION: have `AutonomyEditorPanel.agreedAlongTheLine` light only the squares past the run, and this fails.
+     * MUTATION: have `AutonomyEditorPanel.alongTheLine` light only the squares past the run, and this fails.
      */
     @Test(timeOut = 120000)
-    public void testTheNoticeCountsAndLightsWhatChangesAndNoChangesNothing() throws Exception
+    public void testThePictureAsksWithEverySquareLitAndCancelChangesNothing() throws Exception
     {
         try (MenuPage page = line("tc-along-notice", "S--P--S--P"))
         {
             AutonomySession session = page.session;
-
             AutonomyEditorPanel panel = panelOn(session);
-
+            StationSettingsWindow window = StationDoors.open(panel, at(1));
             String before = ways(session);
-            org.json.JSONObject asBefore = session.snapshotSetup();
-
             Set<TileKey> lit = new LinkedHashSet<>();
 
-            Answering no = menuPick(panel, 2, I18n.f("autosetup.ui.menuRouteToward", "E"), dialog ->
+            try
             {
-                for (int x = 1; x <= 10; x++)
+                Answering.Question asked = openTheWayEast(window, dialog ->
                 {
-                    if (panel.isOutlined(at(x))) lit.add(at(x));
-                }
-            }, I18n.t("ui.no"));
+                    for (int x = 1; x <= 10; x++) if (panel.isOutlined(at(x))) lit.add(at(x));
+                }, I18n.t("ui.cancel")).questions().get(0);
 
-            assertEquals(no.asked(), Arrays.asList(I18n.f("autosetup.ui.alongTheLine", 2)),
-                "the notice did not say that two squares further along would change");
-            assertEquals(lit, squares(2, 3, 5, 6), "the squares to change were not every one outlined while it asked");
-            assertEquals(ways(session), before, "No changed something");
-            assertFalse(Components.onTheEventThread(() -> panel.isOutlined(at(5))), "the outline outlived the notice");
+                assertEquals(asked.message, I18n.t("autosetup.ui.alongTheLine"), "the notice's words");
+                assertEquals(asked.buttons, Arrays.asList(I18n.t("autosetup.ui.buttonCarryOn"),
+                    I18n.t("autosetup.ui.buttonThisRunAlone"), I18n.t("ui.cancel")), "the notice's answers");
+                assertSame(asked.owner, window, "the notice is not owned by Station Settings");
+                assertEquals(lit, squares(2, 3, 5, 6), "the squares to change were not all outlined while it asked");
+                assertEquals(ways(session), before, "Cancel changed something");
+                assertFalse(Components.onTheEventThread(() -> panel.isOutlined(at(5))), "the outline outlived it");
 
-            menuPick(panel, 2, I18n.f("autosetup.ui.menuRouteToward", "E"), null, I18n.t("ui.yes"));
+                openTheWayEast(window, null, I18n.t("autosetup.ui.buttonCarryOn"));
 
-            assertEquals(ways(session), "2:E 3:E 5:E 6:E 8:W 9:W", "Yes did not change the run and the line past it");
-
-            Components.onTheEventThread(() -> { session.restoreSetup(asBefore); return null; });
-
-            assertEquals(ways(session), before, "putting the setup back as it was before the click left some of it");
+                assertEquals(ways(session), "2:EW 3:EW 5:EW 6:EW 8:W 9:W", "Carry On did not change the run and"
+                    + " the line past it");
+            }
+            finally
+            {
+                StationDoors.close(window);
+            }
         }
     }
 
     /**
-     * The run's right-click menu and the editor's click on it each give the line what the session's one rule gives it,
-     * after the notice.  Station Settings' picture is claimed in `testStationSettingsWindow`, which has the main window.
+     * This Run Alone sets the run the picture's arrow is on and nothing past it (D194).
      *
-     * MUTATION: have `AutonomyEditorPanel.cycle` call `session.setRunDirection` without `alongTheLine`, and this fails.
+     * MUTATION: have `AutonomyEditorPanel.alongTheLine` answer This Run Alone as Carry On, and this fails.
      */
-    @Test(timeOut = 180000)
-    public void testEveryDoorCarriesTheSameRule() throws Exception
+    @Test(timeOut = 120000)
+    public void testThisRunAloneChangesTheRunAlone() throws Exception
     {
-        try (MenuPage page = line("tc-along-doors", "S--P--S"))
+        try (MenuPage page = line("tc-along-alone", "S--P--S--P"))
         {
             AutonomySession session = page.session;
-
-            AutonomyEditorPanel panel = panelOn(session);
-
-            org.json.JSONObject start = session.snapshotSetup();
-
-            Route road = session.getRoutes(at(2)).get(roadOf(session, 2));
-            Side a = road.getA();
-            Side b = road.getB();
-
-            // The rule, through the session: the run turned toward B
-            startFrom(session, start, a);
-            session.setRunDirection(at(2), roadOf(session, 2), Direction.TOWARD_B, true);
-
-            String wanted = ways(session);
-
-            assertTrue(wanted.contains("5:" + b), "precondition: the rule changed nothing past the run: " + wanted);
-
-            startFrom(session, start, a);
-            menuPick(panel, 2, I18n.f("autosetup.ui.menuRouteToward", String.valueOf(b)), null, I18n.t("ui.yes"));
-            assertEquals(ways(session), wanted, "the right-click menu set otherwise than the rule");
-
-            startFrom(session, start, a);
-            Answering clicked = answering(null, I18n.t("ui.yes"));
+            StationSettingsWindow window = StationDoors.open(panelOn(session), at(1));
 
             try
             {
-                Components.onTheEventThread(() -> { panel.tileClicked(at(2), null, false); return null; });
+                assertEquals(openTheWayEast(window, null, I18n.t("autosetup.ui.buttonThisRunAlone")).asked().size(), 1,
+                    "the picture did not ask");
+                assertEquals(ways(session), "2:EW 3:EW 5:W 6:W 8:W 9:W", "This Run Alone changed more than the run");
             }
             finally
             {
-                clicked.close();
+                StationDoors.close(window);
+            }
+        }
+    }
+
+    /**
+     * On the diagram a click or a menu pick changes its own run alone, with no notice, where the picture would offer to
+     * carry on (D194 B; OB-361's click is pinned in `testTheSampleLayoutSaysOnlyWhatTrainsCanDo`).
+     *
+     * MUTATION: have `AutonomyEditorPanel.directionItem` call `setRunDirection` with `offer` true, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testTheDiagramsClickAndMenuChangeTheirRunAlone() throws Exception
+    {
+        try (MenuPage page = line("tc-along-doors", "S--P--S--P"))
+        {
+            AutonomySession session = page.session;
+            AutonomyEditorPanel panel = panelOn(session);
+
+            List<String> asked = menuPick(panel, 2, I18n.f("autosetup.ui.menuRouteToward", "E"), null).asked();
+
+            assertEquals(ways(session), "2:E 3:E 5:W 6:W 8:W 9:W", "the menu changed more than its run");
+
+            // From closed a click opens both ways
+            session.setRunDirection(at(2), roadOf(session, 2), Direction.NONE);
+
+            try (Answering clicked = answering(null, null))
+            {
+                Components.onTheEventThread(() -> { panel.tileClicked(at(2), null, false); return null; });
+                asked.addAll(clicked.asked());
             }
 
-            assertEquals(clicked.asked().size(), 1, "the editor's click did not ask");
-            assertEquals(ways(session), wanted, "the editor's click set otherwise than the rule");
+            assertEquals(ways(session), "2:EW 3:EW 5:W 6:W 8:W 9:W", "the click changed more than its run");
+            assertTrue(asked.isEmpty(), "a door on the diagram asked: " + asked);
         }
     }
 
@@ -301,7 +310,10 @@ public class testADirectionCarriesOnAlongTheLine
             if (squares.charAt(i) == 'S') session.setStation(at(i + 1), true);
         }
 
-        startFrom(session, null, Side.W);
+        for (TileKey leader : new ArrayList<>(session.runs().keySet()))
+        {
+            session.setRunDirection(leader, roadOf(session, leader), toward(session, leader, Side.W));
+        }
 
         return made;
     }
@@ -317,34 +329,21 @@ public class testADirectionCarriesOnAlongTheLine
         throw new AssertionError("no switch has its toe at " + toe);
     }
 
-    /** Puts the setup back to `start` (none: as it is) and sets every run on row 1 one way toward `way`. */
-    private static void startFrom(AutonomySession session, org.json.JSONObject start, Side way)
-    {
-        Components.onTheEventThread(() ->
-        {
-            if (start != null) session.restoreSetup(start);
-
-            for (TileKey leader : new ArrayList<>(session.runs().keySet()))
-            {
-                session.setRunDirection(leader, roadOf(session, leader), toward(session, leader, way));
-            }
-
-            return null;
-        });
-    }
-
     /** A ring of track with a plain sensor in the middle of its top and its bottom, and no station. */
     private static LayoutDiagram aLoop() throws Exception
     {
         LayoutDiagram page = new LayoutDiagram("main", 5, 5, null, null);
 
-        Diagrams.put(page, componentType.CURVE, 1, 1, 0, 0, 0);
         Diagrams.feedback(page, 2, 1, 61, 61);
-        Diagrams.put(page, componentType.CURVE, 3, 1, 3, 0, 0);
-        Diagrams.straight(page, 3, 2, 1);
-        Diagrams.put(page, componentType.CURVE, 3, 3, 2, 0, 0);
         Diagrams.feedback(page, 2, 3, 62, 62);
-        Diagrams.put(page, componentType.CURVE, 1, 3, 1, 0, 0);
+
+        // The corners, clockwise from the top left: x, y, orientation
+        for (int[] corner : new int[][] {{1, 1, 0}, {3, 1, 3}, {3, 3, 2}, {1, 3, 1}})
+        {
+            Diagrams.put(page, componentType.CURVE, corner[0], corner[1], corner[2], 0, 0);
+        }
+
+        Diagrams.straight(page, 3, 2, 1);
         Diagrams.straight(page, 1, 2, 1);
 
         page.setPageId("1");
@@ -398,6 +397,29 @@ public class testADirectionCarriesOnAlongTheLine
 
         return look == null ? answering : answering.looking(look);
     }
+
+    /** Clicks the picture's arrow on the far side of the square east of the station, answering with `button`. */
+    private static Answering openTheWayEast(StationSettingsWindow window,
+        java.util.function.Consumer<javax.swing.JDialog> look, String button) throws Exception
+    {
+        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+        java.awt.Rectangle arrow = Components.onTheEventThread(() -> window.pictureMarksForTest().get(EAST)
+            .getBounds());
+        java.awt.Point middle = new java.awt.Point((int) arrow.getCenterX(), (int) arrow.getCenterY());
+
+        assertEquals(Components.onTheEventThread(() -> window.pictureMarkAtForTest(middle)), EAST,
+            "precondition: the middle of the arrow is not on it");
+
+        try (Answering answering = answering(look, button))
+        {
+            Mouse.clickAt(block, middle);
+            StationDoors.current(window);
+
+            return answering;
+        }
+    }
+
+    private static final String EAST = "NEXT.E.E";
 
     // ------------------------------------------------------------------------------------------------------ the reads
 

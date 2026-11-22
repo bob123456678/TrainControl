@@ -464,6 +464,8 @@ Tab icons provided by Freepik.
 
 * v3.1.2
     - New Features
+        - Autonomy
+            - In `Station Settings`, clicking the arrow of the track beside the station so trains can go a new way now offers to set the track further along the line as well, up to the next station, so trains can keep going.  Every square that would change is highlighted while it asks, and `This Run Alone` changes only the track you clicked.
         - Interface
             - While a Central Station answers, the lower right of the main window shows how quickly it answers, for example `12 ms`: green, then yellow past 100 ms and orange past 300 ms.  Hover over it to see the station and the connection.  The line right of `Primary Keyboard Controls` now names the Central Station instead, with its firmware and serial number when the station gives them.
 * v3.1.1 [11/21/2026]
