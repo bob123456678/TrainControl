@@ -831,12 +831,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
         else if (!feedbackAddresses.isEmpty())
         {
-            // A sensor a route waits on or asks about is kept, drawn or not: a route's monitor waits on the record
-            Set<Integer> routesUse = sensorsTheRoutesUse();
+            // A sensor a route or an autonomy point watches is kept, drawn or not: their waits read the record
+            Set<Integer> inUse = sensorsInUse();
 
             for (Integer feedbackId : this.feedbackDB.getItemIds())
             {
-                if (!feedbackAddresses.contains(feedbackId) && !routesUse.contains(feedbackId))
+                if (!feedbackAddresses.contains(feedbackId) && !inUse.contains(feedbackId))
                 {
                     MarklinFeedback fb = this.feedbackDB.getById(feedbackId);
                     this.logf("layout.pruningFeedbackMissingLayout", fb.getName());
@@ -846,8 +846,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
     }
     
-    /** The sensors the routes trigger on or name in a condition. */
-    private Set<Integer> sensorsTheRoutesUse()
+    /** The sensors the routes trigger on or name in a condition, and the loaded autonomy's points watch. */
+    private Set<Integer> sensorsInUse()
     {
         Set<Integer> used = new HashSet<>();
 
@@ -863,6 +863,16 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
         }
 
+        // Never getAutoLayout(), which creates one.  An API edit racing the copy keeps nothing extra, as before.
+        Layout auto = this.getAutoLayoutIfLoaded();
+        try
+        {
+            if (auto != null) for (org.traincontrol.automation.Point p : new ArrayList<>(auto.getPoints()))
+            {
+                if (p.hasS88()) used.add(Integer.valueOf(p.getS88()));
+            }
+        }
+        catch (java.util.ConcurrentModificationException raced) { }
         return used;
     }
 
