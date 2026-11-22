@@ -43,14 +43,18 @@ public class testACurvedSensorShowsItsArrowsBesideAParkedTrain
     /** Small, Medium (drawn from the Large art) and Large. */
     private static final int[] SIZES = {30, 46, 60};
 
+    /** Screen scales, from none to 200%: the halo is drawn in the screen's own pixels (OB-507). */
+    private static final double[] SCALES = {1, 1.25, 1.5, 1.75, 2};
+
     /**
-     * On a curve and a double curve, at every orientation, facing either way, at every size, and Medium and Large at
-     * 125%: every solid red pixel of the arrows is drawn as it is with no train there, at 125% from the sharp art
+     * On a curve and a double curve, at every orientation, facing either way, at every size and screen scale:
+     * every solid red pixel of the arrows is drawn as it is with no train there, at a scaled screen from the sharp art
      * (FR-243).
      *
      * MUTATION: drop `paintCurvedSensorsArrowsWhole` from `LayoutLabel.paintComponent`, or set `CURVE_ARROWS_OUT` in
      * `docs/tools/tile-icons.py` back to 0 and redraw the icons, and this fails; so does drawing
-     * `redOf(((ImageIcon) icon).getImage())` in `paintCurvedSensorsArrowsWhole` again.
+     * `redOf(((ImageIcon) icon).getImage())` in `paintCurvedSensorsArrowsWhole` again, or dropping the scaled screen's
+     * pull-in of the halo in `TileOverlay.paintTrain` (Small fails at 125% and up).
      */
     @Test
     public void testTheArrowsShowInFullBesideTheTrain() throws Exception
@@ -64,13 +68,10 @@ public class testACurvedSensorShowsItsArrowsBesideAParkedTrain
         {
             for (int orientation = 0; orientation < 4; orientation++)
             {
-                for (int run = 0; run < 2 * SIZES.length; run++)
+                for (int run = 0; run < SCALES.length * SIZES.length; run++)
                 {
-                    int size = SIZES[run / 2];
-                    double scale = run % 2 == 0 ? 1 : 1.25;
-
-                    // Not Small at 125%: the halo there reaches an arrow's tip by a pixel, the spacing and not the art
-                    if (scale > 1 && size == SIZES[0]) continue;
+                    int size = SIZES[run / SCALES.length];
+                    double scale = SCALES[run % SCALES.length];
 
                     BufferedImage bare = drawn(type, orientation, size, false, true, scale);
 
