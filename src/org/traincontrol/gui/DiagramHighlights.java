@@ -89,15 +89,7 @@ final class DiagramHighlights
         return lit;
     }
 
-    /** Lights the accessory squares whose decoder these commands reach (address to protocols); returns how many. */
-    int highlightAccessories(
-        Map<Integer, Set<Accessory.accessoryDecoderType>> byAddress,
-        Color wash, int holdMs)
-    {
-        return highlightAccessories(byAddress, wash, holdMs, null);
-    }
-
-    /** The same, leaving out the squares `notThese` (or null) reaches, so a three-way is lit once (OB-286). */
+    /** Lights the accessory squares these commands reach and `notThese` (or null) doesn't (OB-286); returns a count. */
     int highlightAccessories(
         Map<Integer, Set<Accessory.accessoryDecoderType>> byAddress,
         Color wash, int holdMs,

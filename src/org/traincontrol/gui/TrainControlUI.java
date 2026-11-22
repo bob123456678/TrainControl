@@ -4356,7 +4356,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     public int highlightAccessories(Map<Integer, Set<Accessory.accessoryDecoderType>> byAddress, Color wash, int holdMs)
     {
-        return this.diagramHighlights.highlightAccessories(byAddress, wash, holdMs);
+        return highlightAccessories(byAddress, wash, holdMs, null);
     }
 
     public int highlightAccessories(Map<Integer, Set<Accessory.accessoryDecoderType>> byAddress, Color wash, int holdMs,
