@@ -478,6 +478,8 @@ public class testTheWindowShowsTheConnection
     /**
      * The serial number is logged once a connection, not on every answer, and again after a reconnect (FR-248).
      *
+     * The model drops a line repeating the one before it, so other lines stand between the answers.
+     *
      * MUTATION: drop the `serialLogged` test in `TrainControlUI.nameTheStation` (log on every answer), or drop the
      * log call, and this fails.
      */
@@ -495,14 +497,22 @@ public class testTheWindowShowsTheConnection
         try
         {
             model.setNetworkCommState(true);
-            for (int i = 0; i < 3; i++) answered();
+            for (int i = 0; i < 3; i++)
+            {
+                answered();
+                model.log("between " + i);
+            }
+
             assertEquals(log.stream().filter(line::equals).count(), 1L, "three answers, one connection: " + log);
 
             disconnect();
-            // The model drops a line repeating the one before it
-            model.log("between");
             model.setNetworkCommState(true);
-            for (int i = 0; i < 3; i++) answered();
+            for (int i = 0; i < 3; i++)
+            {
+                answered();
+                model.log("between " + i);
+            }
+
             assertEquals(log.stream().filter(line::equals).count(), 2L, "a reconnect logs it again: " + log);
         }
         finally
