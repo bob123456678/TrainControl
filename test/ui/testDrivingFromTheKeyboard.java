@@ -987,7 +987,7 @@ public class testDrivingFromTheKeyboard
      * A usable key's number, red half and green half show the hand pointer, as a click on them acts; a gray key shows
      * the plain one on all three (MT-1009, OB-502).
      *
-     * MUTATION: drop the halves' `setCursor` from `AccessoryKeyboard.setKey`, and a usable key's halves show no hand.
+     * MUTATION: drop the halves' `setCursor` from `AccessoryKeyboard.setKey`, and a gray key's halves keep the hand.
      */
     @Test
     public void testTheNumberShowsTheHandWhereAClickActs() throws Exception
