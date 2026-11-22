@@ -2204,8 +2204,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public String getStationSerial()
     {
-        // The station's own ping reply first: every CS2 and CS3 sends it on connecting
-        return this.serialNumber > 0 ? String.valueOf(this.serialNumber) : this.stationSerial;
+        // The ping reply first, if its UID is a Central Station's ("CS"): a booster answers as device type 0 too
+        int serial = this.serialNumber;
+        return serial > 0 && (this.UID >>> 16) == 0x4353 ? String.valueOf(serial) : this.stationSerial;
     }
 
     // What the station says of itself, for the window's station line: null where it does not say (FR-242)

@@ -5842,6 +5842,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         model.sendPing(false);
     }
 
+    // The leading dotted number of what a station says its firmware is, after any "v"
+    private static final java.util.regex.Pattern VERSION = java.util.regex.Pattern.compile("^v?(\\d+(?:\\.\\d+)*)");
     // The latest latency answered, null before the first answer
     private Double lastLatency;
     /** Lower right, past the function tabs: the latency pill (FR-242), else the triangles of FR-192 and FR-228. */
@@ -5976,11 +5978,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         String protocol = model.isSimulation() ? null : model.getProtocol();
         String serial = model.getStationSerial();
-        java.util.regex.Matcher version = java.util.regex.Pattern.compile("^\\d+(\\.\\d+)*")
-            .matcher(model.getStationFirmware() != null ? model.getStationFirmware() : "");
+        String firmware = model.getStationFirmware();
+        java.util.regex.Matcher version = VERSION.matcher(firmware != null ? firmware : "");
         String line = model.isSimulation() ? I18n.t("ui.main.stationSimulation")
             : protocol == null ? I18n.t("ui.labelNotConnectedToCentralStation")
-            : I18n.f("ui.main.station", model.isCS3() ? "3" : "2", version.find() ? " v" + version.group() : "",
+            : I18n.f("ui.main.station", model.isCS3() ? "3" : "2", version.find() ? " v" + version.group(1) : "",
                 serial != null ? " #" + serial : "", protocol);
         latencyLabel.setText(line);
         latencyLabel.setForeground(protocol != null ? Color.BLACK : Color.RED);

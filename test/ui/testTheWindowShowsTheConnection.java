@@ -423,6 +423,7 @@ public class testTheWindowShowsTheConnection
         {
             Object[][] cases = {{false, "4.2.13", "10415", "Central Station 2 v4.2.13 #10415 (UDP)"},
                 {false, null, "10415", "Central Station 2 #10415 (UDP)"},
+                {false, "v4.2", null, "Central Station 2 v4.2 (UDP)"},
                 {true, "2.6.1 (Build 3)", null, "Central Station 3 v2.6.1 (UDP)"},
                 {true, null, null, "Central Station 3 (UDP)"}};
 
@@ -445,9 +446,11 @@ public class testTheWindowShowsTheConnection
 
     /**
      * The serial number the station's ping reply gives (UID 0x4353835E from device type 0x0000 is 10415) reaches the
-     * line, ahead of one a file gave (FR-242).
+     * line, ahead of one a file gave; a type 0x0000 reply from a UID that is not a Central Station's (a booster) does
+     * not, and the file's shows (FR-242).
      *
-     * MUTATION: answer only the files' serial number in `MarklinControlStation.getStationSerial`, and this fails.
+     * MUTATION: answer only the files' serial number in `MarklinControlStation.getStationSerial`, or drop its
+     * `(this.UID >>> 16) == 0x4353`, and this fails.
      */
     @Test(timeOut = 60000)
     public void testThePingRepliesSerialNumberReachesTheLine() throws Exception
@@ -457,10 +460,13 @@ public class testTheWindowShowsTheConnection
 
         try
         {
-            model.receiveMessage(new org.traincontrol.marklin.udp.CS2Message(
-                org.traincontrol.marklin.udp.CS2Message.CAN_CMD_PING, 0, true,
-                new byte[] {0x43, 0x53, (byte) 0x83, 0x5e, 0x04, 0x02, 0x00, 0x00}));
+            pingReply(0x47, 0x42, 0x00, 0x2a);
+            assertTrue(Components.waitFor(() -> uid() != 0, 10000), "precondition: the booster's reply was recorded");
+            assertEquals(latency(), "Central Station 2 #999 (UDP)", "a booster's ping reply reached the line");
 
+            Reflect.set(MarklinControlStation.class, model, "UID", 0);
+            Reflect.set(MarklinControlStation.class, model, "serialNumber", 0);
+            pingReply(0x43, 0x53, 0x83, 0x5e);
             assertTrue(Components.waitFor(() -> "10415".equals(model.getStationSerial()), 10000),
                 "the ping reply's serial number was not taken: " + model.getStationSerial());
             assertEquals(latency(), "Central Station 2 #10415 (UDP)");
@@ -471,6 +477,25 @@ public class testTheWindowShowsTheConnection
             Reflect.set(MarklinControlStation.class, model, "serialNumber", 0);
             Reflect.set(MarklinControlStation.class, model, "stationSerial", null);
             disconnect();
+        }
+    }
+
+    /** A ping reply of device type 0x0000 from the UID of these four bytes, as the station sends it. */
+    private static void pingReply(int... uid)
+    {
+        model.receiveMessage(new org.traincontrol.marklin.udp.CS2Message(org.traincontrol.marklin.udp.CS2Message.CAN_CMD_PING,
+            0, true, new byte[] {(byte) uid[0], (byte) uid[1], (byte) uid[2], (byte) uid[3], 0x04, 0x02, 0x00, 0x00}));
+    }
+
+    private static int uid()
+    {
+        try
+        {
+            return (Integer) Reflect.get(MarklinControlStation.class, model, "UID");
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException(e);
         }
     }
 
