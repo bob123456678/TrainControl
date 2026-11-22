@@ -13,13 +13,17 @@ import static org.testng.Assert.*;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.traincontrol.automationui.TileOverlay;
+import org.traincontrol.automationui.TilePorts;
 import org.traincontrol.base.Accessory;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.LayoutDiagramComponent;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.layouteditor.LayoutEditor;
 import org.traincontrol.gui.locomotive.LocomotivePlaceholder;
+import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.util.ImageUtil;
 import support.Display;
@@ -661,6 +665,202 @@ public class testPicturesAreSharpOnAScaledScreen
     }
 
     /**
+     * What the layout editor carries at 200% is drawn at the screen's pixels, not its 1x picture stretched (FR-243): a
+     * group of squares is the squares as the diagram draws them, pixel for pixel; a station's caption and a train's
+     * name have detail finer than their 1x pixels.
+     *
+     * MUTATION: in `SharpIcon.painted`, return `new SharpIcon(painting(width, height, 1, paint), (w, h) -> null)`.
+     */
+    @Test
+    public void testWhatTheEditorCarriesIsDrawnAtTheScreensPixels() throws Exception
+    {
+        org.traincontrol.base.LayoutDiagram page = model.getLayout(model.getLayoutList().get(0));
+        AtomicReference<LayoutEditor> editor = new AtomicReference<>();
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                editor.set(new LayoutEditor(page, 30, ui, 0));
+                editor.get().render();
+            });
+
+            // `render` builds the grid in an invokeLater
+            support.Components.drain(5);
+
+            org.traincontrol.gui.LayoutGrid grid = (org.traincontrol.gui.LayoutGrid) support.Reflect.get(
+                LayoutEditor.class, editor.get(), "grid");
+            int[] first = null;
+
+            for (int x = 0; first == null && x < 200; x++)
+            {
+                for (int y = 0; first == null && y < 200; y++)
+                {
+                    LayoutLabel square = grid.getValueAt(x, y);
+
+                    if (square != null && square.getComponent() != null && !square.getComponent().isText())
+                    {
+                        first = new int[] {x, y};
+                    }
+                }
+            }
+
+            int[] at = first;
+
+            assertNotNull(at, "precondition: the first page has no squares");
+            SwingUtilities.invokeAndWait(() ->
+                editor.get().getSelection().addRectangle(at[0], at[1], at[0] + 2, at[1] + 1));
+            assertTrue(support.Components.waitFor(() -> grid.getValueAt(at[0], at[1]).getIcon() instanceof ImageIcon,
+                10000), "precondition: the first square never got its picture");
+
+            Icon group = (Icon) support.Reflect.method(LayoutEditor.class, "selectionPreview").invoke(editor.get());
+            BufferedImage expected = new BufferedImage(180, 120, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = expected.createGraphics();
+
+            g.scale(2, 2);
+
+            for (int x = 0; x < 3; x++)
+            {
+                for (int y = 0; y < 2; y++)
+                {
+                    LayoutLabel square = grid.getValueAt(at[0] + x, at[1] + y);
+
+                    if (square != null && square.getIcon() != null)
+                    {
+                        square.getIcon().paintIcon(square, g, 30 * x, 30 * y);
+                    }
+                }
+            }
+
+            g.dispose();
+
+            assertEquals(differing(painted(group, 2), expected), 0, "the group carried at 200% is not its squares");
+
+            StationCaption caption = new StationCaption();
+
+            caption.setPill(true);
+            caption.setFont(new java.awt.Font(StationCaption.LABEL_FONT, java.awt.Font.PLAIN, 13));
+            caption.setForeground(java.awt.Color.WHITE);
+            caption.setText("Ostbahnhof");
+            caption.setTileGeometry(60, 0, 0, StationCaption.captionOffset(60, caption.lineHeight()));
+            caption.setSize(caption.getPreferredSize());
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    support.Reflect.method(org.traincontrol.gui.LayoutGrid.class, "pickUp", StationCaption.class,
+                        javax.swing.JLabel.class, java.awt.Point.class, LayoutEditor.class)
+                        .invoke(null, caption, caption, new java.awt.Point(5, 5), editor.get());
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new AssertionError(e);
+                }
+            });
+
+            Object drag = support.Reflect.get(LayoutEditor.class, editor.get(), "trainDrag");
+            Object name = support.Reflect.method(drag.getClass(), "picture", String.class).invoke(drag, "Re 460");
+
+            assertTrue(finer(((javax.swing.JLabel) support.Reflect.get(LayoutEditor.class, editor.get(),
+                "captionGhost")).getIcon()) > 0, "the caption carried at 200% is its 1x picture stretched");
+            assertTrue(finer(name instanceof Icon ? (Icon) name : new ImageIcon((Image) name)) > 0,
+                "the train's name carried at 200% is its 1x picture stretched");
+        }
+        finally
+        {
+            if (editor.get() != null) SwingUtilities.invokeAndWait(() -> editor.get().dispose());
+        }
+    }
+
+    /**
+     * A running train's locomotive at 200% is its 64-pixel art shrunk smoothly: no pixel more than 64 levels from the
+     * same drawing made 8 times finer and averaged, where nearest-neighbor shrinking is 96 and more off (FR-243).
+     *
+     * MUTATION: in `TileOverlay.paintTrain`, drop the bilinear hint for a scaled screen.
+     */
+    @Test
+    public void testTheRunningTrainIsSmoothOnAScaledScreen()
+    {
+        TileOverlay train = new TileOverlay(TileOverlay.State.ACTIVE, true, true, java.util.Collections.singletonList(
+            new TileOverlay.Segment(TilePorts.Side.W, TilePorts.Side.E, TileOverlay.State.ACTIVE)));
+        BufferedImage drawn = trainAt(train, 2), fine = trainAt(train, 16);
+        int worst = 0;
+
+        for (int y = 0; y < drawn.getHeight(); y++)
+        {
+            for (int x = 0; x < drawn.getWidth(); x++)
+            {
+                for (int shift = 0; shift <= 16; shift += 8)
+                {
+                    int sum = 0;
+
+                    for (int i = 0; i < 64; i++) sum += (fine.getRGB(8 * x + i % 8, 8 * y + i / 8) >> shift) & 0xff;
+                    worst = Math.max(worst, Math.abs(((drawn.getRGB(x, y) >> shift) & 0xff) - sum / 64));
+                }
+            }
+        }
+
+        assertTrue(worst <= 64, "the locomotive at 200% is " + worst + " levels off its smooth drawing");
+    }
+
+    /**
+     * At 125% a drawn picture whose right and bottom edges are clear (a tab icon, a function icon, the placeholder
+     * locomotive) is one picture wherever it lies, as the (i) mark is (OB-501): not 37 pixels here and 38 there, which
+     * changes its lines (FR-243).
+     *
+     * MUTATION: in `SharpIcon(Image, Art)`, set `fit` to COVER again.
+     */
+    @Test
+    public void testADrawnPictureIsOnePictureAnywhere() throws Exception
+    {
+        java.net.URL function = TrainControlUI.class.getResource("resources/functions/FktIcon_a_ge_01.png");
+        Icon[] icons = {TrainControlUI.TAB_ICON_CONTROL, LocomotivePlaceholder.icon(142), new org.traincontrol.util
+            .SharpIcon(ui.getLocImage(function.toString(), TrainControlUI.BUTTON_ICON_WIDTH),
+                javax.imageio.ImageIO.read(function))};
+
+        for (Icon icon : icons)
+        {
+            int w = (int) (icon.getIconWidth() * 1.25), h = (int) (icon.getIconHeight() * 1.25);
+            BufferedImage at0 = paintedAt(icon, 1.25, 0).getSubimage(0, 0, w, h);
+
+            for (int x = 1; x < 4; x++)
+            {
+                assertEquals(differing(paintedAt(icon, 1.25, x).getSubimage((int) Math.ceil(1.25 * x - 0.5), 0, w, h),
+                    at0), 0, icon.getIconWidth() + "-pixel " + icon + " at 125% differs at x " + x);
+            }
+        }
+    }
+
+    /**
+     * A picture that reaches its right and bottom edges, as a photograph does, still fills every pixel it covers at
+     * 125%: drawn one size anywhere it would leave a pale line there.
+     *
+     * MUTATION: in `SharpIcon(Image, Art)`, set `fit` to WHOLE always.
+     */
+    @Test
+    public void testAPhotographStillFillsItsPixels()
+    {
+        BufferedImage photo = new BufferedImage(198, 75, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = photo.createGraphics();
+
+        g.setPaint(new java.awt.GradientPaint(0, 0, java.awt.Color.DARK_GRAY, 198, 75, java.awt.Color.BLUE));
+        g.fillRect(0, 0, 198, 75);
+        g.dispose();
+
+        Icon icon = new org.traincontrol.util.SharpIcon(photo.getScaledInstance(66, 25, Image.SCALE_SMOOTH), photo);
+
+        for (int x = 0; x < 4; x++)
+        {
+            BufferedImage drawn = paintedAt(icon, 1.25, x);
+            int right = (int) Math.ceil(1.25 * (x + 66) - 0.5) - 1, bottom = (int) Math.ceil(1.25 * 25 - 0.5) - 1;
+
+            assertTrue(drawn.getRGB(right, bottom / 2) >>> 24 == 255 && drawn.getRGB(right - 5, bottom) >>> 24 == 255,
+                "at x " + x + " the photograph at 125% leaves its last column or row bare");
+        }
+    }
+
+    /**
      * An address at 125% to 200% is painted inside its label, last digit and halo too: set out in the metrics its size
      * was measured in, not the scaled screen's wider ones, which Swing's clip cut off (OB-503).
      *
@@ -695,6 +895,56 @@ public class testPicturesAreSharpOnAScaledScreen
                 }
             }
         }
+    }
+
+    /** The icon painted at `scale` at `x` onto a clear picture reaching past it. */
+    private static BufferedImage paintedAt(Icon icon, double scale, int x)
+    {
+        BufferedImage out = new BufferedImage((int) Math.ceil((icon.getIconWidth() + x) * scale) + 1,
+            (int) Math.ceil(icon.getIconHeight() * scale) + 1, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = out.createGraphics();
+
+        g.scale(scale, scale);
+        icon.paintIcon(null, g, x, 0);
+        g.dispose();
+
+        return out;
+    }
+
+    /** How many 2 x 2 blocks of the icon painted at 200% are not one color: none where its 1x picture is stretched. */
+    private static int finer(Icon icon)
+    {
+        BufferedImage at2 = painted(icon, 2);
+        int finer = 0;
+
+        for (int y = 0; y + 1 < at2.getHeight(); y += 2)
+        {
+            for (int x = 0; x + 1 < at2.getWidth(); x += 2)
+            {
+                int p = at2.getRGB(x, y);
+
+                if (p != at2.getRGB(x + 1, y) || p != at2.getRGB(x, y + 1) || p != at2.getRGB(x + 1, y + 1)) finer++;
+            }
+        }
+
+        return finer;
+    }
+
+    /** A train running east on a 30-pixel square, painted at `scale` over light gray. */
+    private static BufferedImage trainAt(TileOverlay train, double scale)
+    {
+        int side = (int) (60 * scale);
+        BufferedImage out = new BufferedImage(side, side, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = out.createGraphics();
+
+        g.setColor(new java.awt.Color(235, 235, 235));
+        g.fillRect(0, 0, side, side);
+        g.scale(scale, scale);
+        g.translate(15, 15);
+        train.paintTrain(g, 30, 30, null);
+        g.dispose();
+
+        return out;
     }
 
     /** Where `c`, painted unclipped at `scale`, reaches past its bounds' pixels, or null where it does not. */

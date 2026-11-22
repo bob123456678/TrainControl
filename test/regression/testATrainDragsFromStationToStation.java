@@ -534,7 +534,8 @@ public class testATrainDragsFromStationToStation
 
         // A name carried, as the first drag event lifts it
         onTheEventThread(() -> editor.showCaptionGhost(
-            new java.awt.image.BufferedImage(10, 10, java.awt.image.BufferedImage.TYPE_INT_ARGB), 0, 0));
+            new javax.swing.ImageIcon(new java.awt.image.BufferedImage(10, 10, java.awt.image.BufferedImage.TYPE_INT_ARGB)),
+            0, 0));
 
         assertNotNull(ghost(), "precondition: no name is being carried");
 
