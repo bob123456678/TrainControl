@@ -89,6 +89,7 @@ import org.traincontrol.gui.widgets.PositionAwareJFrame;
 import org.traincontrol.gui.widgets.RowIcons;
 import org.traincontrol.gui.widgets.StationCaption;
 import org.traincontrol.util.I18n;
+import org.traincontrol.util.SharpIcon;
 import org.json.JSONObject;
 import org.traincontrol.automationui.AutonomyCompanionStore;
 import org.traincontrol.automationui.AutonomySession;
@@ -1331,16 +1332,10 @@ public class LayoutEditor extends PositionAwareJFrame
             if (!(c instanceof StationCaption) || ((StationCaption) c).getText().isEmpty() || c.getX() != label.getX()
                 || c.getY() >= label.getY() + label.getHeight() || c.getY() + c.getHeight() <= label.getY()) continue;
 
-            BufferedImage shot = new BufferedImage(Math.max(1, c.getWidth()), Math.max(1, c.getHeight()),
-                BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g = shot.createGraphics();
-
-            c.paint(g);
-            g.dispose();
-
             java.awt.Point grab = SwingUtilities.convertPoint(label, pressed, c);
 
-            showCaptionGhost(shot, grab.x, grab.y);
+            showCaptionGhost(SharpIcon.painted(this, Math.max(1, c.getWidth()), Math.max(1, c.getHeight()), c::paint),
+                grab.x, grab.y);
             moveCaptionGhost(SwingUtilities.convertPoint(label, pressed, getLayeredPane()));
 
             return true;
@@ -1388,14 +1383,12 @@ public class LayoutEditor extends PositionAwareJFrame
 
         int cell = Math.max(4, (int) Math.round(size * scale));
 
-        BufferedImage picture = new BufferedImage(
-            Math.max(1, across * cell), Math.max(1, down * cell),
-            BufferedImage.TYPE_INT_ARGB);
-
-        Graphics2D g = picture.createGraphics();
-
-        try
+        // Each square through an image at its place's size in the picture's pixels: an icon paints at its own size
+        return SharpIcon.painted(this, Math.max(1, across * cell), Math.max(1, down * cell), g ->
         {
+            double s = g.getTransform().getScaleX();
+
+            g.setTransform(new java.awt.geom.AffineTransform());
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
             for (TileSelection.At at : this.selection.all())
@@ -1404,19 +1397,19 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 if (from == null || from.getIcon() == null) continue;
 
-                int x = (at.getX() - bounds[0]) * cell;
-                int y = (at.getY() - bounds[1]) * cell;
-
-                // Through an image: an ImageIcon paints at its own size and would spill over
+                int x = (int) Math.round((at.getX() - bounds[0]) * cell * s);
+                int y = (int) Math.round((at.getY() - bounds[1]) * cell * s);
+                int w = (int) Math.round((at.getX() - bounds[0] + 1) * cell * s) - x;
+                int h = (int) Math.round((at.getY() - bounds[1] + 1) * cell * s) - y;
                 BufferedImage one = new BufferedImage(
-                    Math.max(1, from.getIcon().getIconWidth()),
-                    Math.max(1, from.getIcon().getIconHeight()),
+                    Math.max(1, (int) Math.round(from.getIcon().getIconWidth() * w / (double) cell)),
+                    Math.max(1, (int) Math.round(from.getIcon().getIconHeight() * h / (double) cell)),
                     BufferedImage.TYPE_INT_ARGB);
-
                 Graphics2D oneG = one.createGraphics();
 
                 try
                 {
+                    oneG.scale(w / (double) cell, h / (double) cell);
                     from.getIcon().paintIcon(from, oneG, 0, 0);
                 }
                 finally
@@ -1424,15 +1417,9 @@ public class LayoutEditor extends PositionAwareJFrame
                     oneG.dispose();
                 }
 
-                g.drawImage(one, x, y, cell, cell, null);
+                g.drawImage(one, x, y, w, h, null);
             }
-        }
-        finally
-        {
-            g.dispose();
-        }
-
-        return new ImageIcon(picture);
+        });
     }
 
     /** The longest side a dragged group is drawn at, in pixels, so it does not hide the diagram. */
@@ -3253,13 +3240,13 @@ public class LayoutEditor extends PositionAwareJFrame
      * @param grabX where in that picture the pointer took hold
      * @param grabY likewise
      */
-    public void showCaptionGhost(java.awt.Image shot, int grabX, int grabY)
+    public void showCaptionGhost(Icon shot, int grabX, int grabY)
     {
         hideCaptionGhost();
 
         if (shot == null) return;
 
-        this.captionGhost = new JLabel(new ImageIcon(shot));
+        this.captionGhost = new JLabel(shot);
         this.captionGhost.setSize(this.captionGhost.getPreferredSize());
         this.captionGrab = new java.awt.Point(grabX, grabY);
 

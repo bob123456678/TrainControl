@@ -5,7 +5,7 @@
 src/TrainControl.java	432	1
 src/org/traincontrol/automation/Edge.java	390	4
 src/org/traincontrol/automation/HomeStaging.java	367	25
-src/org/traincontrol/automation/Layout.java	327	72
+src/org/traincontrol/automation/Layout.java	327	71
 src/org/traincontrol/automation/LayoutExplanations.java	402	4
 src/org/traincontrol/automation/LayoutStandingRules.java	-	5
 src/org/traincontrol/automation/Point.java	427	10

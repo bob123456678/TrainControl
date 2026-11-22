@@ -464,6 +464,98 @@ public class testSeveralStationsAtOnce
         }
     }
 
+    /**
+     * Every (i) mark in Station Settings is one picture at 100% and at 125%, wherever the window lays it out: each
+     * mark painted where it lies in the window, cut to the pixels it draws, matches the others (OB-501).  The marks
+     * lie at every quarter pixel at 125%, so a mark drawn at the pixels it happens to cover differs in size and stem.
+     *
+     * MUTATION: in `SharpIcon.paintIcon`, size a `WHOLE` icon's art as `COVER` does, by the pixels it covers.
+     */
+    @Test(timeOut = 120000)
+    public void testEveryInfoMarkIsOnePicture() throws Exception
+    {
+        StationSettingsWindow window = pick(stations(1));
+        List<javax.swing.JLabel> marks = Components.all(window, javax.swing.JLabel.class,
+            l -> l.getIcon() == org.traincontrol.gui.InfoMark.icon() && l.isShowing());
+
+        assertTrue(marks.size() >= 4, "precondition: Station Settings shows " + marks.size() + " (i) marks");
+
+        for (double scale : new double[] {1, 1.25})
+        {
+            Map<List<Integer>, List<String>> pictures = new LinkedHashMap<>();
+
+            for (javax.swing.JLabel mark : marks)
+            {
+                java.awt.Point at = on(() -> javax.swing.SwingUtilities.convertPoint(mark, 0, 0, window));
+
+                for (int shift = 0; shift < 4; shift++)
+                {
+                    int x = at.x + shift, y = at.y + shift;
+
+                    pictures.computeIfAbsent(on(() -> markPainted(mark, x, y, scale)), unused -> new ArrayList<>())
+                        .add("(" + x + "," + y + ")");
+                }
+            }
+
+            assertEquals(pictures.size(), 1, "the (i) marks at " + scale + " are " + pictures.size()
+                + " pictures; width, height and the marks drawing each: " + describe(pictures));
+        }
+    }
+
+    /** `mark` painted as at (x, y) of its window at `scale`: its drawn pixels' width, height, then each pixel. */
+    private static List<Integer> markPainted(javax.swing.JLabel mark, int x, int y, double scale)
+    {
+        int dx = (int) Math.floor(scale * x), dy = (int) Math.floor(scale * y);
+        BufferedImage image = new BufferedImage((int) Math.ceil(scale * mark.getWidth()) + 2,
+            (int) Math.ceil(scale * mark.getHeight()) + 2, BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = image.createGraphics();
+
+        // Device pixel 0 is the window's pixel floor(scale * x), so the mark keeps its quarter-pixel offset
+        g.translate(-dx, -dy);
+        g.scale(scale, scale);
+        g.translate(x, y);
+        g.clipRect(0, 0, mark.getWidth(), mark.getHeight());
+        mark.paint(g);
+        g.dispose();
+
+        int left = image.getWidth(), top = image.getHeight(), right = -1, bottom = -1;
+
+        for (int px = 0; px < image.getWidth(); px++)
+        {
+            for (int py = 0; py < image.getHeight(); py++)
+            {
+                if ((image.getRGB(px, py) >>> 24) == 0) continue;
+
+                left = Math.min(left, px);
+                top = Math.min(top, py);
+                right = Math.max(right, px);
+                bottom = Math.max(bottom, py);
+            }
+        }
+
+        List<Integer> out = new ArrayList<>(Arrays.asList(right - left + 1, bottom - top + 1));
+
+        for (int py = top; py <= bottom; py++)
+        {
+            for (int px = left; px <= right; px++) out.add(image.getRGB(px, py));
+        }
+
+        return out;
+    }
+
+    private static String describe(Map<List<Integer>, List<String>> pictures)
+    {
+        StringBuilder out = new StringBuilder();
+
+        for (Map.Entry<List<Integer>, List<String>> each : pictures.entrySet())
+        {
+            out.append("\n  ").append(each.getKey().get(0)).append("x").append(each.getKey().get(1)).append(": ")
+                .append(each.getValue());
+        }
+
+        return out.toString();
+    }
+
     /** The icon's pixels painted at `scale` onto a clear picture, and then grayed as Swing grays a picture if asked. */
     private static int[] pixelsOf(javax.swing.Icon icon, double scale, boolean grayAfter)
     {

@@ -901,7 +901,7 @@ public final class LayoutLabel extends JLabel
                         boolean hadIcon = (this.getIcon() != null);
                         final int turn = this.component.getOrientation();
                         lastIcon = ICONS.computeIfAbsent(img, i -> new org.traincontrol.util.SharpIcon(i,
-                            (w, h) -> sharp(shown, w, turn), true));
+                            (w, h) -> sharp(shown, w, turn), org.traincontrol.util.SharpIcon.Fit.TILE));
 
                         // A flash that is up is given up whenever the picture is replaced: its timer holds the icon it
                         // captured and would draw the tile as it was.
@@ -1374,17 +1374,17 @@ public final class LayoutLabel extends JLabel
 
         if (!(icon instanceof ImageIcon)) return;
 
-        java.awt.image.BufferedImage arrows = ARROWS.computeIfAbsent(((ImageIcon) icon).getImage(),
-            LayoutLabel::redOf);
+        // Made from each sharp copy too (FR-243); kept here, as each copy holds the icon it came from
+        if (arrowsOf != icon) arrows = org.traincontrol.util.SharpIcon.map((ImageIcon) icon, LayoutLabel::redOf);
+        arrowsOf = icon;
 
         java.awt.Insets in = getInsets();
 
-        g.drawImage(arrows, in.left, in.top, null);
+        arrows.paintIcon(this, g, in.left, in.top);
     }
 
-    /** The red each tile picture has, worked out once: an active sensor's art draws only its arrows in red. */
-    private static final Map<Image, java.awt.image.BufferedImage> ARROWS =
-        java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+    /** The red the icon `arrowsOf` has: an active sensor's art draws only its arrows in red. */
+    private Icon arrowsOf, arrows;
 
     /** The picture's red, with the soft edge it fades into white by, and nothing else. */
     private static java.awt.image.BufferedImage redOf(Image picture)
