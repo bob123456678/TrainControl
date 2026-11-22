@@ -111,8 +111,7 @@ public interface ViewListener
     public boolean getFeedbackState(String name);
     public boolean setFeedbackState(String name, boolean state); // for simulation purposes
     public boolean isCS3();
-
-    /** The station's firmware and serial number as it states them, null where it does not (FR-242). */
+    /** As the station states them, else null (FR-242). */
     public String getStationFirmware();
     public String getStationSerial();
     public String getCS3AppUrl();

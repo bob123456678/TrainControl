@@ -152,13 +152,10 @@ public class testTheWindowShowsTheConnection
         }
     }
 
-    /** The corner mark after an answer in `ms`, laid out: its text, tooltip, width and the color inside its left end. */
-    private static Object[] pill(double ms) throws Exception
+    /** The corner mark laid out: {text (null when hidden), tooltip, width, color inside its left end, preferred width}. */
+    private static Object[] mark()
     {
         JLabel mark = WindowField.of(ui, "connectionMark");
-
-        ui.updateLatency(ms);
-        SwingUtilities.invokeAndWait(() -> { });
 
         return Components.onTheEventThread(() ->
         {
@@ -173,33 +170,46 @@ public class testTheWindowShowsTheConnection
 
             int inside = mark.isVisible() && mark.getWidth() > 4 ? drawn.getRGB(3, mark.getHeight() / 2) : 0;
 
-            return new Object[] {mark.isVisible() ? mark.getText() : null, mark.getToolTipText(), mark.getWidth(), inside,
-                mark.getPreferredSize().width};
+            return new Object[] {mark.isVisible() ? mark.getText() : null, mark.getToolTipText(), mark.getWidth(),
+                color(inside), mark.getPreferredSize().width};
         });
     }
 
-    private static boolean green(int argb)
+    /** The corner mark after an answer in `ms`. */
+    private static Object[] pill(double ms) throws Exception
     {
-        int r = (argb >> 16) & 255, g = (argb >> 8) & 255, b = argb & 255;
-        return (argb >>> 24) == 255 && g > r + 60 && g > b + 60;
+        ui.updateLatency(ms);
+        SwingUtilities.invokeAndWait(() -> { });
+
+        return mark();
     }
 
-    private static boolean yellow(int argb)
+    /** "green", "yellow", "orange" or "gray" for an opaque pixel of the pill's colors, else its hex. */
+    private static String color(int argb)
     {
         int r = (argb >> 16) & 255, g = (argb >> 8) & 255, b = argb & 255;
-        return (argb >>> 24) == 255 && r > 200 && g > 170 && b < 100;
+
+        if ((argb >>> 24) < 255) return Integer.toHexString(argb);
+        if (g > r + 60 && g > b + 60) return "green";
+        if (r > 200 && g > 170 && b < 100) return "yellow";
+        if (r > 200 && g > 90 && g < 160 && b < 80) return "orange";
+
+        return Math.abs(r - g) < 12 && Math.abs(g - b) < 12 && r > 170 && r < 235 ? "gray" : Integer.toHexString(argb);
     }
 
-    private static boolean orange(int argb)
+    /** Ends a claim that connected: no station, and the window told so. */
+    private static void disconnect() throws Exception
     {
-        int r = (argb >> 16) & 255, g = (argb >> 8) & 255, b = argb & 255;
-        return (argb >>> 24) == 255 && r > 200 && g > 90 && g < 160 && b < 80;
+        model.setNetworkCommState(false);
+        answered();
     }
 
-    private static boolean gray(int argb)
+    /** Whether the corner shows a triangle and no text. */
+    private static boolean triangleAlone()
     {
-        int r = (argb >> 16) & 255, g = (argb >> 8) & 255, b = argb & 255;
-        return (argb >>> 24) == 255 && Math.abs(r - g) < 12 && Math.abs(g - b) < 12 && r > 170 && r < 235;
+        JLabel mark = WindowField.of(ui, "connectionMark");
+
+        return Components.onTheEventThread(() -> mark.isVisible() && mark.getIcon() != null && mark.getText() == null);
     }
 
     /**
@@ -221,17 +231,14 @@ public class testTheWindowShowsTheConnection
             for (Object[] c : cases)
             {
                 Object[] shown = pill((Double) c[0]);
-                int inside = (Integer) shown[3];
-                boolean right = "green".equals(c[2]) ? green(inside) : "yellow".equals(c[2]) ? yellow(inside) : orange(inside);
 
                 assertEquals(shown[0], c[1], "the pill's text at " + c[0] + " ms");
-                assertTrue(right, "the pill is not " + c[2] + " at " + c[0] + " ms: " + Integer.toHexString(inside));
+                assertEquals(shown[3], c[2], "the pill's color at " + c[0] + " ms");
             }
         }
         finally
         {
-            model.setNetworkCommState(false);
-            answered();
+            disconnect();
         }
     }
 
@@ -243,59 +250,33 @@ public class testTheWindowShowsTheConnection
     @Test
     public void testThePillIsGrayUntilTheFirstAnswer() throws Exception
     {
-        JLabel mark = WindowField.of(ui, "connectionMark");
-
         model.setNetworkCommState(true);
 
         try
         {
             Reflect.set(TrainControlUI.class, ui, "lastLatency", null);
-            SwingUtilities.invokeAndWait(() -> invokeMark(false));
-            Object[] shown = Components.onTheEventThread(() -> new Object[] {mark.isVisible(), mark.getText(),
-                mark.getToolTipText()});
-
-            assertEquals(shown[0], true, "no pill while connecting");
-            assertEquals(shown[1], "...", "the pill's text while connecting");
-            assertEquals(shown[2], org.traincontrol.util.I18n.t("ui.main.tooltip.connecting"), "the tooltip while connecting");
-
-            // The color is read off a pill laid out: an answer of 12 ms, then the gray state again
-            pill(12);
-            SwingUtilities.invokeAndWait(() -> { });
-            Reflect.set(TrainControlUI.class, ui, "lastLatency", null);
-            SwingUtilities.invokeAndWait(() -> invokeMark(false));
-
-            int inside = Components.onTheEventThread(() ->
+            SwingUtilities.invokeAndWait(() ->
             {
-                ui.validate();
-
-                java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(mark.getWidth(), mark.getHeight(),
-                    java.awt.image.BufferedImage.TYPE_INT_ARGB);
-                java.awt.Graphics2D g = drawn.createGraphics();
-
-                mark.paint(g);
-                g.dispose();
-                return drawn.getRGB(3, mark.getHeight() / 2);
+                try
+                {
+                    Reflect.method(TrainControlUI.class, "markTheConnection", boolean.class).invoke(ui, false);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
             });
 
-            assertTrue(gray(inside), "the pill is not gray while connecting: " + Integer.toHexString(inside));
-            assertTrue(green((Integer) pill(12)[3]), "the first answer did not color the pill");
+            Object[] shown = mark();
+
+            assertEquals(shown[0], "...", "the pill's text while connecting");
+            assertEquals(shown[1], org.traincontrol.util.I18n.t("ui.main.tooltip.connecting"), "the tooltip while connecting");
+            assertEquals(shown[3], "gray", "the pill's color while connecting");
+            assertEquals(pill(12)[3], "green", "the first answer did not color the pill");
         }
         finally
         {
-            model.setNetworkCommState(false);
-            answered();
-        }
-    }
-
-    private static void invokeMark(boolean notAnswering)
-    {
-        try
-        {
-            Reflect.method(TrainControlUI.class, "markTheConnection", boolean.class).invoke(ui, notAnswering);
-        }
-        catch (ReflectiveOperationException e)
-        {
-            throw new IllegalStateException(e);
+            disconnect();
         }
     }
 
@@ -308,8 +289,6 @@ public class testTheWindowShowsTheConnection
     @Test
     public void testTheTrianglesTakeThePillsPlace() throws Exception
     {
-        JLabel mark = WindowField.of(ui, "connectionMark");
-
         model.setNetworkCommState(true);
 
         try
@@ -317,25 +296,22 @@ public class testTheWindowShowsTheConnection
             assertEquals(pill(12)[0], "12 ms", "precondition: the pill shows");
 
             notAnswering(true);
-            assertTrue(Components.onTheEventThread(() -> mark.isVisible() && mark.getIcon() != null && mark.getText() == null),
-                "not answering: no triangle alone");
-            assertEquals(mark.getToolTipText(), org.traincontrol.util.I18n.t("ui.main.tooltip.stationNotAnswering"));
+            assertTrue(triangleAlone(), "not answering: no triangle alone");
+            assertEquals(mark()[1], org.traincontrol.util.I18n.t("ui.main.tooltip.stationNotAnswering"));
 
             notAnswering(false);
             assertEquals(pill(12)[0], "12 ms", "the pill did not come back with the answer");
 
             Reflect.set(MarklinControlStation.class, model, "simulation", true);
             answered();
-            assertTrue(Components.onTheEventThread(() -> mark.isVisible() && mark.getIcon() != null && mark.getText() == null),
-                "simulation: no triangle alone");
-            assertEquals(mark.getToolTipText(), org.traincontrol.util.I18n.t("ui.main.tooltip.simulation"));
+            assertTrue(triangleAlone(), "simulation: no triangle alone");
+            assertEquals(mark()[1], org.traincontrol.util.I18n.t("ui.main.tooltip.simulation"));
         }
         finally
         {
             Reflect.set(MarklinControlStation.class, model, "simulation", false);
             notAnswering(false);
-            model.setNetworkCommState(false);
-            answered();
+            disconnect();
         }
     }
 
@@ -356,7 +332,7 @@ public class testTheWindowShowsTheConnection
         {
             java.util.Set<String> widths = new java.util.TreeSet<>();
 
-            for (double ms : new double[] {12, 180, 420, 999, 1500}) widths.add(pill(ms)[2] + "/" + pill(ms)[4]);
+            for (double ms : new double[] {12, 180, 420, 999, 1500}) widths.add(pill(ms)[2] + "/" + mark()[4]);
 
             int text = Components.onTheEventThread(() -> mark.getFontMetrics(mark.getFont()).stringWidth("999 ms"));
 
@@ -366,15 +342,16 @@ public class testTheWindowShowsTheConnection
 
             assertEquals(pill(12)[1], org.traincontrol.util.I18n.f("ui.main.tooltip.connection", "2", "UDP", "12"));
             Reflect.set(MarklinControlStation.class, model, "isCS3", true);
-            assertEquals(pill(12)[1], org.traincontrol.util.I18n.f("ui.main.tooltip.connection", "3", "UDP", "12"));
-            assertTrue(((String) pill(12)[1]).contains("3") && ((String) pill(12)[1]).contains("UDP")
-                && ((String) pill(12)[1]).contains("12 ms"), "the tooltip: " + pill(12)[1]);
+
+            String tip = (String) pill(12)[1];
+
+            assertEquals(tip, org.traincontrol.util.I18n.f("ui.main.tooltip.connection", "3", "UDP", "12"));
+            assertTrue(tip.contains("3") && tip.contains("UDP") && tip.contains("12 ms"), "the tooltip: " + tip);
         }
         finally
         {
             Reflect.set(MarklinControlStation.class, model, "isCS3", false);
-            model.setNetworkCommState(false);
-            answered();
+            disconnect();
         }
     }
 
@@ -420,8 +397,7 @@ public class testTheWindowShowsTheConnection
         }
         finally
         {
-            model.setNetworkCommState(false);
-            answered();
+            disconnect();
             Components.onTheEventThread(() -> { ui.setSize(was); ui.validate(); return null; });
             show(null);
             model.deleteLoc("PillTwo");
@@ -458,19 +434,19 @@ public class testTheWindowShowsTheConnection
             Reflect.set(MarklinControlStation.class, model, "stationFirmware", "2.6.1 (Build 3)");
             Reflect.set(MarklinControlStation.class, model, "stationSerial", null);
 
-            assertEquals(latency(), org.traincontrol.util.I18n.f("ui.main.stationFirmware",
-                org.traincontrol.util.I18n.f("ui.main.station", "3", "UDP"), "2.6.1 (Build 3)"), "a CS3's line, no serial");
+            String three = org.traincontrol.util.I18n.f("ui.main.station", "3", "UDP");
+
+            assertEquals(latency(), org.traincontrol.util.I18n.f("ui.main.stationFirmware", three, "2.6.1 (Build 3)"),
+                "a CS3's line, no serial");
 
             Reflect.set(MarklinControlStation.class, model, "stationFirmware", null);
-            assertEquals(latency(), org.traincontrol.util.I18n.f("ui.main.station", "3", "UDP"), "a CS3 that says nothing");
+            assertEquals(latency(), three, "a CS3 that says nothing");
         }
         finally
         {
             Reflect.set(MarklinControlStation.class, model, "isCS3", false);
             Reflect.set(MarklinControlStation.class, model, "stationFirmware", null);
-            Reflect.set(MarklinControlStation.class, model, "stationSerial", null);
-            model.setNetworkCommState(false);
-            answered();
+            disconnect();
         }
     }
 

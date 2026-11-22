@@ -1703,7 +1703,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
             try
             {
                 String device = CS2File.fetchText(CS2File.getDeviceInfoURL(cs2Address()));
-
                 this.isCS3 = device.contains("Central Station 3");
                 this.stationFirmware = CS2File.deviceField(device, "guivers");
                 this.stationSerial = CS2File.deviceField(device, "sernum");
@@ -2195,9 +2194,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return this.isCS3;
     }
 
-    // What the station says of itself, for the window's station line: null where it does not say (FR-242)
-    private volatile String stationFirmware, stationSerial;
-
     @Override
     public String getStationFirmware()
     {
@@ -2210,6 +2206,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return this.stationSerial;
     }
 
+    // What the station says of itself, for the window's station line: null where it does not say (FR-242)
+    private volatile String stationFirmware, stationSerial;
     private volatile String firmwareLogged;
 
     /**
@@ -2219,9 +2217,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public void logTheFirmware(String said, String serial)
     {
         this.stationFirmware = said;
-
         if (serial != null) this.stationSerial = serial;
-
         if (said.equals(this.firmwareLogged)) return;
 
         this.firmwareLogged = said;

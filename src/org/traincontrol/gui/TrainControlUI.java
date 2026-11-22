@@ -5343,7 +5343,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         HandScrollListener scrollListener = new HandScrollListener(InnerLayoutPanel);
         LayoutArea.getViewport().addMouseMotionListener(scrollListener);
         LayoutArea.getViewport().addMouseListener(scrollListener);
-             
         nameTheStation();
         this.latencyLabel.setToolTipText(null);
 
@@ -5839,23 +5838,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
 
         if (lost) checkAutoLayoutLatency(PING_INTERVAL);
-
         model.sendPing(false);
     }
 
-    /** What the corner pill shows past 999 ms; the tooltip has the figure. */
-    private static final String PAST_A_SECOND = ">1 s";
-
-    /** The latest latency answered, null before the first answer. */
+    // The latest latency answered, null before the first answer
     private Double lastLatency;
+    /** Lower right, past the function tabs: the latency pill (FR-242), else the triangles of FR-192 and FR-228. */
+    private final JLabel connectionMark = new ConnectionPill();
 
-    /**
-     * Lower right, past the function tabs: while a station answers, a pill with the latest latency, colored by
-     * PING_ORANGE and PING_RED and gray before the first answer (FR-242); a yellow triangle while the station is not
-     * answering (FR-192), red in simulation (FR-228).  The pill keeps one width whatever it shows.
-     */
-    private final JLabel connectionMark = new JLabel()
+    /** A label that, with no icon, paints a pill behind its text, one width for every latency it can show (FR-242). */
+    private static final class ConnectionPill extends JLabel
     {
+        /** What the pill shows past 999 ms; the tooltip has the figure. */
+        static final String PAST_A_SECOND = ">1 s";
+
         @Override
         protected void paintComponent(java.awt.Graphics g)
         {
@@ -5864,7 +5860,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 java.awt.Graphics2D pill = (java.awt.Graphics2D) g.create();
                 float round = getHeight() - 1f;
                 java.awt.Shape edge = new java.awt.geom.RoundRectangle2D.Float(0.5f, 0.5f, getWidth() - 1f, round, round, round);
-
                 pill.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
                 pill.setColor(getBackground());
                 pill.fill(edge);
@@ -5872,7 +5867,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 pill.draw(edge);
                 pill.dispose();
             }
-
             super.paintComponent(g);
         }
 
@@ -5883,16 +5877,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
             java.awt.FontMetrics metrics = getFontMetrics(getFont());
             char digit = '0';
-
             for (char c = '1'; c <= '9'; c++) if (metrics.charWidth(c) > metrics.charWidth(digit)) digit = c;
-
             int widest = Math.max(metrics.stringWidth(new String(new char[] {digit, digit, digit}) + " ms"),
                 metrics.stringWidth(PAST_A_SECOND));
-
             return new Dimension(widest + com.formdev.flatlaf.util.UIScale.scale(12),
                 Math.max(com.formdev.flatlaf.util.UIScale.scale(16), metrics.getHeight()));
         }
-    };
+    }
 
     /**
      * The function tabs stand in a panel that also holds the corner mark over the empty end of their strip. The panel
@@ -5960,7 +5951,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         String protocol = model != null ? model.getProtocol() : null;
         Long ms = lastLatency == null ? null : Math.round(lastLatency);
         boolean triangle = simulated || notAnswering;
-
         String tip = simulated ? I18n.t("ui.main.tooltip.simulation")
             : notAnswering ? I18n.t("ui.main.tooltip.stationNotAnswering")
             : protocol == null ? null
@@ -5971,7 +5961,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (java.util.Objects.equals(tip, connectionMark.getToolTipText()) && connectionMark.isVisible() == (tip != null)) return;
 
         connectionMark.setIcon(triangle ? RowIcons.warning(16, simulated) : null);
-        connectionMark.setText(triangle ? null : ms == null ? "..." : ms > 999 ? PAST_A_SECOND : ms + " ms");
+        connectionMark.setText(triangle ? null : ms == null ? "..." : ms > 999 ? ConnectionPill.PAST_A_SECOND : ms + " ms");
         connectionMark.setBackground(ms == null ? new Color(215, 215, 215) : ms <= PING_ORANGE ? new Color(40, 160, 70)
             : ms <= PING_RED ? new Color(245, 200, 40) : new Color(240, 130, 30));
         connectionMark.setForeground(ms == null ? new Color(80, 80, 80) : ms <= PING_ORANGE ? Color.WHITE : new Color(50, 30, 0));
@@ -5988,14 +5978,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             : protocol == null ? I18n.t("ui.labelNotConnectedToCentralStation")
             : I18n.f("ui.main.station", model.isCS3() ? "3" : "2", protocol);
 
-        if (protocol != null && model.getStationFirmware() != null)
+        if (protocol != null)
         {
-            line = I18n.f("ui.main.stationFirmware", line, model.getStationFirmware());
-        }
-
-        if (protocol != null && model.getStationSerial() != null)
-        {
-            line = I18n.f("ui.main.stationSerial", line, model.getStationSerial());
+            if (model.getStationFirmware() != null) line = I18n.f("ui.main.stationFirmware", line, model.getStationFirmware());
+            if (model.getStationSerial() != null) line = I18n.f("ui.main.stationSerial", line, model.getStationSerial());
         }
 
         latencyLabel.setText(line);
@@ -6014,7 +6000,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 nameTheStation();
                 markTheConnection(this.model.isConnectionNotAnswering());
             });
-
             this.checkAutoLayoutLatency(latency);
         }        
     }
