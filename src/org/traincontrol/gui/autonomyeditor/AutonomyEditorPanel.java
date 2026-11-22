@@ -6153,14 +6153,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         if (menuOnly && parentWindow() != null)
         {
-            for (TileKey square : squares)
-            {
-                for (org.traincontrol.gui.LayoutLabel label : parentWindow().getDiagramTileRegistry().labelsFor(square))
-                {
-                    if (on) label.flashHighlight(org.traincontrol.util.ImageUtil.HIGHLIGHT, Integer.MAX_VALUE);
-                    else label.endFlash();
-                }
-            }
+            org.traincontrol.gui.DiagramHighlights.hold(parentWindow(), squares, on);
             return;
         }
         noticeOutline.clear();
