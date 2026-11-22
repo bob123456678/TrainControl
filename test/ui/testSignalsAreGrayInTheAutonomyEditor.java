@@ -424,6 +424,56 @@ public class testSignalsAreGrayInTheAutonomyEditor
         }
     }
 
+    /**
+     * A page left out of autonomy draws its squares gray in the autonomy editor whether Grayed-out Icons is ticked or
+     * not: emptied, the page shows a blank grid and the user cannot see the page to put it back (OB-500).
+     *
+     * MUTATION: drop the excluded-page test from the left-empty condition in `AutonomyEditorPanel.annotationFor`, or
+     * leave a left-out page's squares out of `shaded` there, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAPageLeftOutOfAutonomyStaysDrawn() throws Exception
+    {
+        try
+        {
+            Components.onTheEventThread(() -> { frozen.session.setPageExcluded(PAGE, true); return null; });
+
+            for (boolean ticked : new boolean[] {true, false})
+            {
+                withGrayedOutIcons(ticked, PAGE, editor ->
+                {
+                    // Text squares have no picture to wait for
+                    List<LayoutLabel> squares = Components.all(editor, LayoutLabel.class,
+                        l -> l.getComponent() != null && !l.getComponent().isText());
+                    BufferedImage empty = emptySquare(editor);
+
+                    assertFalse(squares.isEmpty(), "precondition: no squares on " + PAGE);
+
+                    for (LayoutLabel square : squares)
+                    {
+                        String at = square.getComponent().getX() + "," + square.getComponent().getY();
+
+                        same(squares, square.getComponent());
+                        assertTrue(Pixels.differing(Pixels.paint(square, 30), empty) > 0, (ticked ? "ticked" : "unticked")
+                            + ", the square at " + at + " of a page left out of autonomy is left empty");
+                        assertEquals(coloredArt(square), 0, "the square at " + at + " of a page left out is not gray");
+
+                        // Shaded, the flag that paints the graying: full-strength art also passes the pixel checks
+                        org.traincontrol.automationui.TileAnnotation annotation = (org.traincontrol.automationui.TileAnnotation)
+                            Reflect.get(LayoutLabel.class, square, "autonomyAnnotation");
+
+                        assertTrue(annotation != null && annotation.isIgnored() && !annotation.isLeftEmpty(),
+                            (ticked ? "ticked" : "unticked") + ", the square at " + at + " of a page left out is not shaded");
+                    }
+                });
+            }
+        }
+        finally
+        {
+            frozen.putBack();
+        }
+    }
+
     /** What a claim does on the editor it is given. */
     private interface OnTheEditor
     {

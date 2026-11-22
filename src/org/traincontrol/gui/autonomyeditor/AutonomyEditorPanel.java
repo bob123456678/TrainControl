@@ -5953,8 +5953,10 @@ public class AutonomyEditorPanel extends JPanel
             ignored ? null
                 : session.arrivalMarks(tile, directionsView() == VIEW_ARRIVALS));
 
-        // Unticked, a square autonomy ignores is left empty; picking a signal still grays the rest (FR-197).
-        if (shaded && !showIgnored.isSelected() && isIgnored(tile)) annotation.leftEmpty();
+        // Unticked, a square autonomy ignores is left empty; picking a signal still grays the rest (FR-197).  A page left
+        // out of autonomy stays drawn, so the user sees the page to put back (OB-500).
+        if (shaded && !showIgnored.isSelected() && isIgnored(tile)
+            && !session.getStore().getExcludedPages().contains(tile.getPage())) annotation.leftEmpty();
 
         // None where a crossing's squares meet (OB-322)
         session.withoutTheCrossingsMiddle(tile, annotation);
