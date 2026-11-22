@@ -322,23 +322,22 @@ public class testTheLoaderReadsEveryFileAsBefore
     @Test
     public void testEveryFileLoadsAsBefore() throws Exception
     {
-        String[] want = new String(Files.readAllBytes(new File(GOLDEN).toPath()), StandardCharsets.UTF_8)
-            .replace("\r", "").split("\n");
-        String[] got = dump().split("\n");
+        List<String> want = Files.readAllLines(new File(GOLDEN).toPath(), StandardCharsets.UTF_8);
+        List<String> got = java.util.Arrays.asList(dump().split("\n"));
+        int same = 0;
 
-        for (int i = 0; i < Math.min(want.length, got.length); i++)
-        {
-            assertEquals(got[i], want[i], "line " + (i + 1) + " of " + GOLDEN);
-        }
+        while (same < Math.min(want.size(), got.size()) && want.get(same).equals(got.get(same))) same++;
 
-        assertEquals(got.length, want.length, "lines in " + GOLDEN);
-        assertTrue(want.length > 1000, "the golden covers the inputs: " + want.length + " lines");
+        assertTrue(same == want.size() && same == got.size(), "line " + (same + 1) + " of " + GOLDEN + " differs: now "
+            + (same < got.size() ? got.get(same) : "(the end)")
+            + "\n  was " + (same < want.size() ? want.get(same) : "(the end)"));
+        assertTrue(want.size() > 1000, "the golden covers the inputs: " + want.size() + " lines");
     }
 
-    /** Writes the golden: run on the code before the change. */
+    /** Writes the golden to the file named: run on the code before the change. */
     public static void main(String[] args) throws Exception
     {
-        Files.write(new File(args.length > 0 ? args[0] : GOLDEN).toPath(), dump().getBytes(StandardCharsets.UTF_8));
+        Files.write(new File(args[0]).toPath(), dump().getBytes(StandardCharsets.UTF_8));
         System.exit(0);
     }
 }
