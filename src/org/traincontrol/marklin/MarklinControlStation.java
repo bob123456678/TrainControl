@@ -507,7 +507,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Applies every saved multi-unit list.  A locomotive another list names is a member and is applied last, so its own
      * list is the one refused when both exist, whatever the names' order.
      */
-    public void linkSavedConsists()
+    public final void linkSavedConsists()
     {
         Set<String> named = new HashSet<>();
 
