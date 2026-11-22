@@ -3194,13 +3194,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         new byte[]{message.getData()[6], message.getData()[7]}
                     );
 
-                    // 0x0000 means this is the central station
+                    // 0x0000 means this is the central station; the first such reply's UID gates getStationSerial, and the
+                    // window logs that serial once
                     if (payload == 0)
                     {
                         this.UID = message.extractUID();
                         this.serialNumber = (message.extractUID() - 0x43533200) / 2;
-
-                        this.logf("network.connectedCentralStation", this.serialNumber);
                     }
                 }
             });
