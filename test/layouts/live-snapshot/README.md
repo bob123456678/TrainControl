@@ -184,3 +184,4 @@ not fix it. Name the square.
 - `ui.testReturnHomeGivesTheSamePlanEveryTime`
 - `regression.testTheOverlayBoxDuringARun`
 - `ui.testShowAddressesWithAnEditorOpen`
+- `core.testTheLoaderReadsEveryFileAsBefore`
