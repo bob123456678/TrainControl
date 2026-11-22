@@ -761,8 +761,11 @@ public class TileOverlay
                     if (along != null) turnAlong(g, along);
                     else turnToTravel(g);
 
-                    int out = haloOut(picture, side);
-                    int whole = side + 2 * out;
+                    // On a scaled screen the halo is drawn as many device pixels closer as the scale, rounded: its soft
+                    // bilinear edge and the icon's rounding would else cover the tip of a curved sensor's arrow (OB-507)
+                    double out = haloOut(picture, side) - (wasAt.getScaleX() > 1 ? Math.round(wasAt.getScaleX()) / wasAt.getScaleX() : 0);
+                    double whole = side + 2 * out;
+                    int half = -side / 2;
 
                     // HALO AND ICON AS ONE PICTURE, AT 90 PER CENT (FR-130): drawn separately through the alpha, the
                     // icon would lie over the halo's white.  Made in the screen's own pixels, already turned: turned
@@ -770,7 +773,7 @@ public class TileOverlay
                     AffineTransform turned = g.getTransform();
 
                     Rectangle box = turned.createTransformedShape(
-                        new Rectangle(-side / 2 - out, -side / 2 - out, whole, whole)).getBounds();
+                        new java.awt.geom.Rectangle2D.Double(half - out, half - out, whole, whole)).getBounds();
 
                     BufferedImage locomotive = new BufferedImage(box.width, box.height, BufferedImage.TYPE_INT_ARGB);
 
@@ -786,7 +789,10 @@ public class TileOverlay
 
                         lg.translate(-box.x, -box.y);
                         lg.transform(turned);
-                        lg.drawImage(haloOf(picture), -side / 2 - out, -side / 2 - out, whole, whole, null);
+                        BufferedImage ring = haloOf(picture);
+
+                        lg.drawImage(ring, new AffineTransform(whole / ring.getWidth(), 0, 0, whole / ring.getHeight(),
+                            half - out, half - out), null);
                         lg.drawImage(picture, -side / 2, -side / 2, side, side, null);
                     }
                     finally
