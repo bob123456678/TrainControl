@@ -2,6 +2,7 @@ package org.traincontrol.base;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The outcome of a "check for renamed locomotives" scan: what can be applied, and whether anything was declined.
@@ -15,11 +16,19 @@ public class RenameProposals
 {
     private final List<String[]> proposals;
     private final int refused;
+    private final Map<String, Integer> addresses;
 
-    public RenameProposals(List<String[]> proposals, int refused)
+    public RenameProposals(List<String[]> proposals, int refused, Map<String, Integer> addresses)
     {
         this.proposals = proposals;
         this.refused = refused;
+        this.addresses = new java.util.LinkedHashMap<>(addresses);
+    }
+
+    /** By name, each locomotive the station has at another address, with that address (FR-246). */
+    public Map<String, Integer> getAddresses()
+    {
+        return Collections.unmodifiableMap(this.addresses);
     }
 
     /**

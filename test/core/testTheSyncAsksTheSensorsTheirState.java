@@ -869,8 +869,8 @@ public class testTheSyncAsksTheSensorsTheirState
         for (String added : ADDED_SINCE_308) assertTrue(now.contains(' ' + added + ' '), "not in the file: " + added);
     }
 
-    /** Object fields the saved file gained after 3.0.8; 3.0.8 skips them.  FR-220 (D171): a declined station name. */
-    private static final String[] ADDED_SINCE_308 = {"declinedStationNameL"};
+    /** Object fields the saved file gained after 3.0.8; 3.0.8 skips them: a declined station name and address. */
+    private static final String[] ADDED_SINCE_308 = {"declinedStationNameL", "declinedStationAddressL"};
 
     /** MarklinSimpleComponent's serialized shape in 3.0.8: its serialVersionUID, then each field's name and type code. */
     private static final String SHAPE_308 =

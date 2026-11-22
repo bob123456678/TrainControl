@@ -122,6 +122,9 @@ public abstract class Locomotive
 
     // The one the Sync running now offered and did not apply, so it adds no copy under it; never saved
     private String heldBackStationName;
+    // The station's address the user kept against, saved; the one this Sync was told to use, never saved (FR-246)
+    private Integer declinedStationAddress;
+    private Integer takenStationAddress;
     
     // Used to pause autonomous operation - not persisted.  Volatile, not under the monitor: a command can hold that
     // for a stalled network write, and windows read this every second.
@@ -1568,6 +1571,27 @@ public abstract class Locomotive
     public boolean keepsItsNameOver(String stationName)
     {
         return stationName.equals(this.declinedStationName) || stationName.equals(this.heldBackStationName);
+    }
+
+    /** The station's address kept against, or null; Sync does not offer it again. */
+    public Integer getDeclinedStationAddress()
+    {
+        return this.declinedStationAddress;
+    }
+
+    public void setDeclinedStationAddress(Integer address)
+    {
+        this.declinedStationAddress = address;
+    }
+
+    public void setTakenStationAddress(Integer address)
+    {
+        this.takenStationAddress = address;
+    }
+
+    public boolean takesStationAddress(int address)
+    {
+        return Integer.valueOf(address).equals(this.takenStationAddress);
     }
 
     /**
