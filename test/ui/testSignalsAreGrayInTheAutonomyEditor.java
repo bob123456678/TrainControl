@@ -428,8 +428,8 @@ public class testSignalsAreGrayInTheAutonomyEditor
      * A page left out of autonomy draws its squares gray in the autonomy editor whether Grayed-out Icons is ticked or
      * not: emptied, the page shows a blank grid and the user cannot see the page to put it back (OB-500).
      *
-     * MUTATION: drop the excluded-page test from the left-empty condition in `AutonomyEditorPanel.annotationFor`, and
-     * this fails.
+     * MUTATION: drop the excluded-page test from the left-empty condition in `AutonomyEditorPanel.annotationFor`, or
+     * leave a left-out page's squares out of `shaded` there, and this fails.
      */
     @Test(timeOut = 180000)
     public void testAPageLeftOutOfAutonomyStaysDrawn() throws Exception
@@ -457,6 +457,13 @@ public class testSignalsAreGrayInTheAutonomyEditor
                         assertTrue(Pixels.differing(Pixels.paint(square, 30), empty) > 0, (ticked ? "ticked" : "unticked")
                             + ", the square at " + at + " of a page left out of autonomy is left empty");
                         assertEquals(coloredArt(square), 0, "the square at " + at + " of a page left out is not gray");
+
+                        // Shaded, the flag that paints the graying: full-strength art also passes the pixel checks
+                        org.traincontrol.automationui.TileAnnotation annotation = (org.traincontrol.automationui.TileAnnotation)
+                            Reflect.get(LayoutLabel.class, square, "autonomyAnnotation");
+
+                        assertTrue(annotation != null && annotation.isIgnored() && !annotation.isLeftEmpty(),
+                            (ticked ? "ticked" : "unticked") + ", the square at " + at + " of a page left out is not shaded");
                     }
                 });
             }
