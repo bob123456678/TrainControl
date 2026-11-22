@@ -779,6 +779,11 @@ public class TileOverlay
                     try
                     {
                         lg.setRenderingHints(g.getRenderingHints());
+
+                        // A scaled screen shrinks the 64-pixel art bilinear, nearest-neighbor is ragged (FR-243)
+                        if (wasAt.getScaleX() > 1) lg.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                            RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
                         lg.translate(-box.x, -box.y);
                         lg.transform(turned);
                         lg.drawImage(haloOf(picture), -side / 2 - out, -side / 2 - out, whole, whole, null);
