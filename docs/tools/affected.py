@@ -18,6 +18,7 @@ root.  A test class is listed when it
 --guards prints only the bookkeeping and pairing classes, plus the classes that read the source of a method a changed
 file declares, and testEveryTestIsInTheBattery when serial-lane.txt or a test using its words changed: the guard set,
 which runs at every merge, small fix or not; docs/tools/gates.sh runs it with the other merge gates.
+The slow SOAK classes come last, after a "soak" heading on stderr (stdout stays one class per line).
 -v says on stderr why each class is there.  It over-includes for a change to a class most tests name (Layout, Util): the
 list is then long, and that is the honest answer.  The full battery stays the orchestrator's.
 """
@@ -28,7 +29,7 @@ import sys
 
 KNOWN_OUT = {"core.testAutoDetect"}
 
-# Slow whole-railway runs (FTS1-12, a release-only tier): listed last, under a "soak" heading, so the fast classes run first.
+# Slow whole-railway runs (FR-212, a release-only tier): listed last, under a "soak" heading, so fast classes run first.
 SOAK = ["core.testSetupDumpComparesBuilds", "core.testAutonomySimulationSanity", "core.testReturnHomeOnRealLayout",
         "core.testTimetableOnDerivedGraph", "core.testTrainsComeHomeFromAPinnedArrangement",
         "core.testTrainsComeHomeToTheirPlatforms"]
