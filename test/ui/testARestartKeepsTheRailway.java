@@ -84,6 +84,8 @@ public class testARestartKeepsTheRailway
         CHECKED_ELSEWHERE.put("route", routes);
         CHECKED_ELSEWHERE.put("historicalOperatingTimeNew", "testTheRunningTimeCountedBeforeTheCloseIsKept");
         CHECKED_ELSEWHERE.put("declinedStationName", "testTheSyncAsksAboutRenamedLocomotives.testANoSurvivesARestart");
+        CHECKED_ELSEWHERE.put("declinedStationAddress",
+            "testTheSyncAsksAboutRenamedLocomotives.testAKeptAddressIsNotAskedAgainUntilTheStationsAddressChanges");
     }
 
     /** The saved form of each locomotive `addTheFullLocomotives` made, taken just before the close. */

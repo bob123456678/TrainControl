@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
@@ -18,6 +19,7 @@ import org.testng.annotations.Test;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
+import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import support.Answering;
@@ -42,6 +44,9 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
     /** The fixture's name for the MM2 locomotive at address 10. */
     private static final String STATION_NAME = "BR 10 001";
+
+    /** The fixture's MM2 locomotive at address 3. */
+    private static final String AT_3 = "BR 103 137-6";
 
     /**
      * A pressed sync that finds a locomotive held here under another name asks once whether to rename it, Yes renames
@@ -396,18 +401,20 @@ public class testTheSyncAsksAboutRenamedLocomotives
     /** The fixture, with the station's name for the locomotive at address 10 as `name` holds it now. */
     private static BiFunction<String, Integer, byte[]> renaming(AtomicReference<String> name)
     {
+        return rewriting(list -> list.replace("\"" + STATION_NAME + "\"", "\"" + name.get() + "\""));
+    }
+
+    /** The fixture, with its locomotive list rewritten by `locos` each time it is asked for. */
+    private static BiFunction<String, Integer, byte[]> rewriting(java.util.function.UnaryOperator<String> locos)
+    {
         final BiFunction<String, Integer, byte[]> cs3 = StandInStation.cs3("260", INFO);
 
         return (path, n) ->
         {
             byte[] body = cs3.apply(path, n);
 
-            if (!"/app/api/locos".equals(path) || body == null) return body;
-
-            String quoted = "\"" + STATION_NAME + "\"";
-
-            return new String(body, StandardCharsets.UTF_8).replace(quoted, "\"" + name.get() + "\"")
-                .getBytes(StandardCharsets.UTF_8);
+            return !"/app/api/locos".equals(path) || body == null ? body
+                : locos.apply(new String(body, StandardCharsets.UTF_8)).getBytes(StandardCharsets.UTF_8);
         };
     }
 
@@ -890,6 +897,198 @@ public class testTheSyncAsksAboutRenamedLocomotives
             assertEquals(about(answeringNo(rig, ui, old), old).size(), 1, "the No was kept after the station stopped"
                 + " offering the name");
         });
+    }
+
+    /**
+     * A pressed Sync asks once about a locomotive held here at another address than the station's, Keep first, and
+     * "Use address" gives it the station's (FR-246).
+     *
+     * MUTATION: in `MarklinControlStation.getRenameProposals`, put nothing in `addresses`, and nothing is asked.
+     */
+    @Test(timeOut = 180000)
+    public void testAPressedSyncAsksAboutAnotherAddressAndUsesItWhenTold() throws Exception
+    {
+        String use = I18n.f("loc.ui.optionUseAddress", 10);
+        String asks = I18n.f("loc.ui.askStationAddress", STATION_NAME, 10, 70);
+
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            movedHere(rig);
+
+            askedOnce(about(pressing(rig, ui, use), STATION_NAME), asks, I18n.t("loc.ui.optionKeep"), use);
+
+            assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 10, "Use address did not give it the"
+                + " station's address");
+            assertEquals(rig.model.getLocList().stream().filter(STATION_NAME::equals).count(), 1L,
+                "the sync added a copy under the station's name");
+        });
+    }
+
+    /**
+     * Keep leaves the address and is not asked again, across a restart, until the station's address for the
+     * locomotive changes, which is asked about (FR-246).
+     *
+     * MUTATION: in `TrainControlUI.askAboutAddress`, leave out `setDeclinedStationAddress`, or in
+     * `MarklinControlStation.newLocomotive(MarklinSimpleComponent)` leave out `setDeclinedStationAddress`.
+     */
+    @Test(timeOut = 300000)
+    public void testAKeptAddressIsNotAskedAgainUntilTheStationsAddressChanges() throws Exception
+    {
+        final java.io.File root = Files.createTempDirectory("tc-sync-address").toFile();
+        final AtomicInteger at = new AtomicInteger(10);
+        final BiFunction<String, Integer, byte[]> cs3 = addressing(at);
+        final String keep = I18n.t("loc.ui.optionKeep");
+
+        inAWindow(root, cs3, (rig, ui) ->
+        {
+            movedHere(rig);
+
+            assertEquals(about(pressing(rig, ui, keep), STATION_NAME).size(), 1, "precondition: the address was not"
+                + " asked about");
+            assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 70, "Keep gave it the station's address");
+            assertTrue(rig.takeLog().contains(I18n.f("loc.addressKept", STATION_NAME, 10, 70)), "the sync did not log"
+                + " the address kept");
+
+            assertNull(rig.model.saveState(false), "the saved data was not written");
+        });
+
+        inAWindow(root, cs3, (rig, ui) ->
+        {
+            assertEquals(about(pressing(rig, ui, keep), STATION_NAME).size(), 0, "a kept address was asked again");
+
+            at.set(12);
+
+            askedOnce(about(pressing(rig, ui, keep), STATION_NAME), I18n.f("loc.ui.askStationAddress", STATION_NAME, 12,
+                70), keep, I18n.f("loc.ui.optionUseAddress", 12));
+            assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 70, "Keep gave it the station's address");
+        });
+    }
+
+    /**
+     * A locomotive held here at 10 that the station has at 3, while it calls the one at 10 another name, is one
+     * question with three answers, Keep first, each doing only what it says: Rename leaves the station's locomotive at
+     * 3 to be added, Use address 3 frees 10 for the station's locomotive there in the same sync, Keep changes nothing
+     * and is not asked again (FR-246).
+     *
+     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, ask the rename alone (drop the
+     * `askAboutAddress` branch), and the address is a second question.
+     */
+    @Test(timeOut = 360000)
+    public void testARenamedAndReAddressedLocomotiveIsOneQuestion() throws Exception
+    {
+        final String asks = I18n.f("loc.ui.askStationAddressOrName", AT_3, 3, 10, STATION_NAME);
+        final String keep = I18n.t("loc.ui.optionKeep");
+        final String rename = I18n.f("loc.ui.optionRenameTo", STATION_NAME);
+        final String use = I18n.f("loc.ui.optionUseAddress", 3);
+
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            renamedAndMovedHere(rig);
+
+            askedOnce(about(pressing(rig, ui, rename), AT_3), asks, keep, rename, use);
+
+            assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 10, "Rename did not rename it");
+            assertEquals(rig.model.getLocByName(AT_3).getAddress(), 3, "the station's locomotive at 3 was not added");
+
+            rig.model.deleteLoc(AT_3);
+            rig.model.renameLoc(STATION_NAME, AT_3);
+            renamedAndMovedHere(rig);
+
+            assertEquals(about(pressing(rig, ui, use), AT_3).size(), 1, "precondition: Use address was not asked");
+            assertEquals(rig.model.getLocByName(AT_3).getAddress(), 3, "Use address did not move it");
+            assertNotNull(rig.model.getLocByName(STATION_NAME), "the sync did not add the station's locomotive at the"
+                + " address it left");
+
+            renamedAndMovedHere(rig);
+
+            assertEquals(about(pressing(rig, ui, keep), AT_3).size(), 1, "precondition: Keep was not asked");
+            assertEquals(rig.model.getLocByName(AT_3).getAddress(), 10, "Keep moved it");
+            assertNull(rig.model.getLocByName(STATION_NAME), "Keep renamed it or the sync added a copy");
+            assertEquals(about(pressing(rig, ui, keep), AT_3).size(), 0, "Keep was asked again");
+        });
+    }
+
+    /**
+     * A sync nobody pressed changes no address: the owed sync of an edit and the model's own sync, as at start-up or
+     * a reconnect, leave a locomotive held here at another address as it is, and log it (FR-246).
+     *
+     * MUTATION: in `MarklinControlStation.adoptCentralStationAddress`, leave out the `takesStationAddress` check.
+     */
+    @Test(timeOut = 180000)
+    public void testASyncNobodyPressedChangesNoAddress() throws Exception
+    {
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            movedHere(rig);
+            owedSync(rig, ui);
+
+            assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 70, "the owed sync of an edit gave it the"
+                + " station's address");
+            assertTrue(rig.takeLog().contains(I18n.f("loc.addressDiffersAtStation", STATION_NAME, 10, 70)),
+                "the owed sync did not log the station's other address");
+
+            assertTrue(rig.model.syncWithCS2() >= 0, "precondition: the model's own sync failed");
+            assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 70, "the model's own sync gave it the"
+                + " station's address");
+        });
+    }
+
+    /** BR 10 001 held here at address 70, the station's at 10, as though its address was changed here since. */
+    private static void movedHere(StationRig rig) throws Exception
+    {
+        if (rig.model.getLocByName(STATION_NAME) == null) rig.model.newMM2Locomotive(STATION_NAME, 70);
+        else rig.model.changeLocAddress(STATION_NAME, 70, MarklinLocomotive.decoderType.MM2);
+
+        rig.takeLog();
+    }
+
+    /** {@link #AT_3} held here at 10 and no BR 10 001 here, as though renamed and re-addressed at the station since. */
+    private static void renamedAndMovedHere(StationRig rig) throws Exception
+    {
+        if (rig.model.getLocByName(STATION_NAME) != null) rig.model.deleteLoc(STATION_NAME);
+
+        if (rig.model.getLocByName(AT_3) == null) rig.model.newMM2Locomotive(AT_3, 10);
+        else rig.model.changeLocAddress(AT_3, 10, MarklinLocomotive.decoderType.MM2);
+
+        rig.takeLog();
+    }
+
+    /** The fixture, with BR 10 001 at the station at the address `address` holds now. */
+    private static BiFunction<String, Integer, byte[]> addressing(AtomicInteger address)
+    {
+        return rewriting(list ->
+        {
+            org.json.JSONArray all = new org.json.JSONArray(list);
+
+            for (int i = 0; i < all.length(); i++)
+            {
+                org.json.JSONObject l = all.getJSONObject(i);
+
+                // An MM2 locomotive's uid is its address
+                if (STATION_NAME.equals(l.optString("name")))
+                {
+                    l.put("address", address.get()).put("uid", "0x" + Integer.toHexString(address.get()));
+                }
+            }
+
+            return all.toString();
+        });
+    }
+
+    /** The one question asked is `message` with these buttons, and starts on the first. */
+    private static void askedOnce(List<Answering.Question> asked, String message, String... buttons)
+    {
+        assertEquals(asked.size(), 1, "not asked once: " + asked.size());
+        assertEquals(asked.get(0).message, message);
+        assertEquals(asked.get(0).buttons, Arrays.asList(buttons));
+        assertEquals(asked.get(0).startsOn, buttons[0], "the question does not start on " + buttons[0]);
+    }
+
+    /** Presses Sync pressing `button` on each question naming a locomotive of these claims, OK on the rest. */
+    private static List<Answering.Question> pressing(StationRig rig, TrainControlUI ui, String button) throws Exception
+    {
+        return pressSync(rig, ui, m -> m != null && (m.contains(STATION_NAME) || m.contains(AT_3))
+            ? Answering.press(button) : Answering.pressAt(0), testTheSyncAsksAboutRenamedLocomotives::saidDone);
     }
 
     private interface Claim

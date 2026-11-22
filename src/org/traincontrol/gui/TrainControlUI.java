@@ -14663,7 +14663,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 finally
                 {
                     // The offers this sync held back, and no other sync's, are offered again by the next
-                    for (Locomotive each : heldBack) each.setHeldBackStationName(null);
+                    for (Locomotive each : heldBack)
+                    {
+                        each.setHeldBackStationName(null);
+                        each.setTakenStationAddress(null);
+                    }
                 }
 
                 final Integer r = syncResult;
@@ -14734,13 +14738,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * Asks over c about each rename the station suggests, No first, and renames those answered Yes; each one's outcome
      * goes to the log, as do the refused ones (they name their remedy).  A No is kept on the locomotive and not asked
-     * again until the station offers it another name (D171).
+     * again until the station offers it another name (D171).  Each held here at another address than the station's is
+     * asked about too, in the same question as its rename, and kept or taken the same way (FR-246).
      */
     private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)
     {
         List<Locomotive> heldBack = new ArrayList<>();
 
         java.util.Set<String> offered = new java.util.HashSet<>();
+
+        Map<String, Integer> addresses = new LinkedHashMap<>(proposals.getAddresses());
 
         for (String[] pair : proposals.getProposals()) offered.add(pair[0]);
 
@@ -14750,6 +14757,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             Locomotive each = model.getLocByName(name);
 
             if (!offered.contains(name) && each != null) each.setDeclinedStationName(null);
+
+            // And an address kept is not asked again
+            if (each != null && !java.util.Objects.equals(addresses.get(name), each.getDeclinedStationAddress()))
+                each.setDeclinedStationAddress(null);
+            else addresses.remove(name);
         }
 
         if (proposals.getProposals().isEmpty() && !proposals.hasRefusals())
@@ -14758,7 +14770,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         // A run may have begun since Sync was pressed
-        boolean refused = !proposals.getProposals().isEmpty() && RunGates.refuseWhileAutonomyRunning(this, c);
+        boolean refused = !(proposals.getProposals().isEmpty() && addresses.isEmpty())
+            && RunGates.refuseWhileAutonomyRunning(this, c);
 
         for (String[] pair : proposals.getProposals())
         {
@@ -14778,15 +14791,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 if (refused) continue;
 
+                Integer address = addresses.remove(currentName);
+
                 // A name another locomotive holds is asked about once, below, in the delete door's question, which
                 // counts the routes that lose commands and starts on No
-                int answer = model.getLocByName(newName) != null ? JOptionPane.YES_OPTION
+                int answer = address != null ? askAboutAddress(c, l, address, newName)
+                    : model.getLocByName(newName) != null ? JOptionPane.YES_OPTION
                     : JOptionPane.showOptionDialog(c, I18n.f("loc.ui.confirmRenameLocomotive", currentName, newName),
                     I18n.t("loc.ui.dialogConfirmRename"), JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE, null,
                     YES_NO_OPTS, YES_NO_OPTS[1]);
 
+                // Told to use the station's address instead, the name is neither renamed nor kept
+                if (answer == JOptionPane.CANCEL_OPTION) outcome = null;
+
                 // Closed unanswered, it keeps nothing and is asked again
-                outcome = answer == JOptionPane.NO_OPTION ? keptAfterNo(l, newName) : "loc.renameClosed";
+                else outcome = answer == JOptionPane.NO_OPTION ? keptAfterNo(l, newName) : "loc.renameClosed";
 
                 if (answer != JOptionPane.YES_OPTION) continue;
 
@@ -14844,7 +14863,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 // Every offer's outcome, as the pressed Sync's account of the check (D171); one not applied gets no
                 // copy under the station's name from this sync
-                this.model.logf(outcome, currentName, newName);
+                if (outcome != null) this.model.logf(outcome, currentName, newName);
 
                 if (!"loc.renameApplied".equals(outcome))
                 {
@@ -14854,7 +14873,41 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
         }
 
+        // The rest held at another address, asked alone; one an answer above moved or removed is left
+        for (Map.Entry<String, Integer> each : addresses.entrySet())
+        {
+            Locomotive l = model.getLocByName(each.getKey());
+
+            if (!refused && l != null && l.getAddress() != each.getValue()
+                && askAboutAddress(c, l, each.getValue(), null) == JOptionPane.CANCEL_OPTION) heldBack.add(l);
+        }
+
         return heldBack;
+    }
+
+    /**
+     * Asks over c whether l keeps its address or takes the station's, or with newName takes that name instead, Keep
+     * first, and marks l so; the rename is the caller's.  YES_OPTION to rename, NO_OPTION to keep, CANCEL_OPTION to
+     * take the station's address, CLOSED_OPTION unanswered.
+     */
+    private static int askAboutAddress(Component c, Locomotive l, int address, String newName)
+    {
+        String keep = I18n.t("loc.ui.optionKeep"), use = I18n.f("loc.ui.optionUseAddress", address);
+        Object[] options = newName == null ? new Object[] {keep, use}
+            : new Object[] {keep, I18n.f("loc.ui.optionRenameTo", newName), use};
+
+        int answer = JOptionPane.showOptionDialog(c, newName == null
+            ? I18n.f("loc.ui.askStationAddress", l.getName(), address, l.getAddress())
+            : I18n.f("loc.ui.askStationAddressOrName", l.getName(), address, l.getAddress(), newName),
+            I18n.t("loc.ui.dialogStationAddress"), JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options,
+            keep);
+
+        if (answer == 0) l.setDeclinedStationAddress(address);
+
+        if (answer == options.length - 1) l.setTakenStationAddress(address);
+
+        return answer == options.length - 1 ? JOptionPane.CANCEL_OPTION : answer == 0 ? JOptionPane.NO_OPTION
+            : answer < 0 ? JOptionPane.CLOSED_OPTION : JOptionPane.YES_OPTION;
     }
 
     /** A rename answered No, kept on the locomotive so the same offer is not asked again; its log line's key. */
