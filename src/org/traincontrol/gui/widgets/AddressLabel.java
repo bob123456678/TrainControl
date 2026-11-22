@@ -24,8 +24,7 @@ import org.traincontrol.util.ImageUtil;
  */
 public class AddressLabel extends JLabel
 {
-    /** The white of the halo, nearly opaque, so the letters part from whatever is under them - the diagram's own writing's
-     *  too (`StationCaption.setHalo`). */
+    /** The halo's white, nearly opaque; the diagram's own writing uses it too (`StationCaption.setHalo`). */
     static final Color HALO = new Color(255, 255, 255, 235);
 
     /** The lines drawn, top to bottom. */
@@ -117,7 +116,7 @@ public class AddressLabel extends JLabel
         {
             ImageUtil.smooth(g2);
 
-            // Set out as getPreferredSize measured: a scaled screen's metrics are wider and cut the last digit (OB-503).
+            // The metrics getPreferredSize measures in: a scaled screen's run wider and cut the last digit (OB-503).
             Font font = getFont();
             FontMetrics fm = getFontMetrics(font);
 
@@ -130,8 +129,7 @@ public class AddressLabel extends JLabel
                 Shape letters = layout.getOutline(AffineTransform.getTranslateInstance(pad,
                     pad + fm.getAscent() + i * fm.getHeight()));
 
-                // THE HALO FIRST, the letters over it: a round-joined stroke round each outline, so it follows the
-                // letters' shapes rather than boxing them
+                // The halo first, the letters over it: a round-joined stroke follows their shapes, not a box
                 g2.setColor(HALO);
                 g2.setStroke(new BasicStroke(haloWidth(), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g2.draw(letters);
