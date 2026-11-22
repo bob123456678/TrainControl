@@ -65,6 +65,55 @@ public class testACS3FirmwareIsReadOnce
         assertNull(FirmwareVersion.parse(null), "no text");
     }
 
+    /**
+     * A device file (geraet.vrs) gives the firmware and serial number where it states them: a CS2's `.guivers` without
+     * its "GUI:" label and `.sernum`, CRLF lines too; a field missing, blank or 0 is none (FR-242).
+     *
+     * MUTATION: keep the "GUI:" label in `CS2File.deviceField`, or take a serial number of 0, and this fails.
+     */
+    @Test
+    public void testTheDeviceFileSaysTheFirmwareAndSerialNumber()
+    {
+        String cs2 = "[geraet]\nversion\n .minor=1\ngeraet\n .sernum=12345\n .hardvers=HW:03.04\n .gfpvers=GFP:3.85\n"
+            + " .guivers=GUI:4.2.13\n .articleno=60215\n .produzent=Maerklin\n .produkt=Central Station 2\n";
+        String cs3 = new String(StandInStation.CS3_DEVICE, java.nio.charset.StandardCharsets.UTF_8);
+
+        assertEquals(CS2File.deviceField(cs2, "guivers"), "4.2.13", "a CS2's firmware");
+        assertEquals(CS2File.deviceField(cs2, "sernum"), "12345", "a CS2's serial number");
+        assertEquals(CS2File.deviceField(cs2.replace("\n", "\r\n"), "guivers"), "4.2.13", "CRLF lines");
+        assertEquals(CS2File.deviceField(cs3, "produkt"), "Central Station 3 plus", "a CS3's product");
+        assertNull(CS2File.deviceField(cs3, "guivers"), "a CS3 file with no firmware");
+        assertNull(CS2File.deviceField(cs3, "sernum"), "a CS3 file with no serial number");
+        assertNull(CS2File.deviceField("geraet\n .sernum=0\n .guivers=\n", "sernum"), "a serial number of 0");
+        assertNull(CS2File.deviceField("geraet\n .sernum=0\n .guivers=\n", "guivers"), "a blank firmware");
+        assertNull(CS2File.deviceField("", "sernum"), "an empty file");
+    }
+
+    /**
+     * A CS3 sync keeps the firmware and serial number its info gives, for the window's station line; a serial number
+     * of 0 is left out (FR-242).
+     *
+     * MUTATION: drop the serial number from `logTheFirmware`'s call in cs3Firmware, and this fails.
+     */
+    @Test
+    public void testACS3SyncKeepsItsInfosFirmwareAndSerialNumber() throws Exception
+    {
+        String info = "{\"softwareVersion\":\"2.6.1 (Build 3)\",\"serialNumber\":\"60226123\"}";
+
+        try (StationRig rig = new StationRig(folder(), StandInStation.cs3("260", info)))
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0, "the sync fails: " + rig.model.getLastSyncError());
+            assertEquals(rig.model.getStationFirmware(), "2.6.1 (Build 3)");
+            assertEquals(rig.model.getStationSerial(), "60226123");
+        }
+
+        try (StationRig rig = new StationRig(folder(), StandInStation.cs3("260", info.replace("60226123", "0"))))
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0, "the sync fails: " + rig.model.getLastSyncError());
+            assertNull(rig.model.getStationSerial(), "a serial number of 0 was kept");
+        }
+    }
+
     /** 2.6.1: the sync asks info once and reads the 2.6 list once (FR-207); the two actions add one read of it each. */
     @Test
     public void testA261SyncReadsTheFirmwareOnceAndTheActionsReuseIt() throws Exception

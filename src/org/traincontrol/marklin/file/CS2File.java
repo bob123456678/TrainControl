@@ -447,31 +447,21 @@ public final class CS2File
         return "http://" + ipAddress + "/config/geraet.vrs";
     }
     
-    /** Check if this is a CS3 by looking at the info file */
-    public static boolean isCS3(String deviceInfoUrl) throws Exception
+    /**
+     * A field of a station's device file (geraet.vrs), from its ` .key=value` line: the value without a leading label
+     * such as "GUI:", or null where the line is missing, blank or 0 (FR-242).
+     */
+    public static String deviceField(String deviceFile, String key)
     {
-        // try-with-resources: the early return below used to leak the reader, and its HTTP connection
-        try (BufferedReader content = fetchURL(deviceInfoUrl))
-        {
-            while (true)
-            {
-                String line = content.readLine();
+        java.util.regex.Matcher line = Pattern.compile("^\\s*\\." + Pattern.quote(key) + "=(.*)$", Pattern.MULTILINE)
+            .matcher(deviceFile);
+        return known(line.find() ? line.group(1).trim().replaceFirst("^[A-Za-z]+:", "") : null);
+    }
 
-                if (line == null)
-                {
-                    break;
-                }
-                else
-                {
-                    if (line.contains("Central Station 3"))
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
+    /** What a station says of itself, trimmed; null for nothing, blank or 0. */
+    private static String known(String said)
+    {
+        return said == null || said.trim().isEmpty() || "0".equals(said.trim()) ? null : said.trim();
     }
     
     /**
@@ -526,7 +516,7 @@ public final class CS2File
         return new BufferedReader(new java.io.StringReader(text));
     }
 
-    private static String fetchText(String url) throws Exception
+    public static String fetchText(String url) throws Exception
     {
         final Body first = readBody(url);
         Body last = first;
@@ -1026,11 +1016,13 @@ public final class CS2File
 
         if (found == null)
         {
-            String said = null;
+            String said = null, serial = null;
 
             try (BufferedReader in = fetchURL(getCS3InfoUrl()))
             {
-                said = parseJSONObject(in).optString("softwareVersion", null);
+                JSONObject info = parseJSONObject(in);
+                said = info.optString("softwareVersion", null);
+                serial = known(info.optString("serialNumber", null));
                 found = FirmwareVersion.parse(said);
             }
             catch (Exception unreadable)
@@ -1038,7 +1030,7 @@ public final class CS2File
                 found = null;
             }
 
-            if (found != null && this.control != null) this.control.logTheFirmware(said.trim());
+            if (found != null && this.control != null) this.control.logTheFirmware(said.trim(), serial);
 
             if (found == null) found = new FirmwareVersion(2, isNotFoundError(getCS3LocDBUrl(260)) ? 5 : 6, 0);
 

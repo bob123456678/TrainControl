@@ -44,7 +44,8 @@ public class testACS3SyncProbesTheFirmwareOnce
         switch (path)
         {
             case "/config/geraet.vrs": return cs3 ? StandInStation.CS3_DEVICE
-                : "[geraet]\ngeraet\n .produkt=Central Station 2\n".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                : "[geraet]\ngeraet\n .sernum=12345\n .guivers=GUI:4.2.13\n .produkt=Central Station 2\n"
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
             case "/app/api/locos": return "260".equals(kind) ? StandInStation.file("test/CS3_loks_v260.json") : null;
             case "/app/api/loks": return "250".equals(kind) ? StandInStation.file("test/CS3_loks.json") : null;
             case "/app/api/mags": return cs3 ? StandInStation.file("test/CS3_mags.json") : null;
@@ -93,6 +94,24 @@ public class testACS3SyncProbesTheFirmwareOnce
 
         assertEquals(station.requests("/app/api/locos"), 1, "one probe; all requests: " + station.asked());
         assertEquals(station.requests("/app/api/loks"), 1, "both imports; all requests: " + station.asked());
+    }
+
+    /**
+     * A sync keeps the firmware and serial number the device file states, and forgets them for a station whose file
+     * states none (FR-242).
+     *
+     * MUTATION: leave the device file's fields unread in `MarklinControlStation`'s sync, and this fails.
+     */
+    @Test
+    public void testASyncKeepsWhatTheDeviceFileSays() throws Exception
+    {
+        sync("cs2");
+        assertEquals(model.getStationFirmware(), "4.2.13", "a CS2's firmware");
+        assertEquals(model.getStationSerial(), "12345", "a CS2's serial number");
+
+        sync("260");
+        assertNull(model.getStationFirmware(), "a station that states no firmware kept the last one's");
+        assertNull(model.getStationSerial(), "a station that states no serial number kept the last one's");
     }
 
     /** A CS2 never reaches the CS3 interface (green before and after: the CS2 path is not changed). */

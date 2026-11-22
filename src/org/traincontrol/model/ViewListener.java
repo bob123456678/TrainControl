@@ -111,6 +111,10 @@ public interface ViewListener
     public boolean getFeedbackState(String name);
     public boolean setFeedbackState(String name, boolean state); // for simulation purposes
     public boolean isCS3();
+
+    /** The station's firmware and serial number as it states them, null where it does not (FR-242). */
+    public String getStationFirmware();
+    public String getStationSerial();
     public String getCS3AppUrl();
     public boolean newRoute(String name, List<RouteCommand> route, int s88, Route.s88Triggers s88Trigger, boolean routeEnabled, NodeExpression conditions);
     public boolean editRoute(String name, String newName, List<RouteCommand> route, int s88, Route.s88Triggers s88Trigger, boolean routeEnabled, NodeExpression conditions);

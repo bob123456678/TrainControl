@@ -879,7 +879,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         installCurrentKeyRow();
 
-        installNotAnsweringMark();
+        installConnectionMark();
 
         installShowPageNumbersMenuItem();
 
@@ -5344,9 +5344,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         LayoutArea.getViewport().addMouseMotionListener(scrollListener);
         LayoutArea.getViewport().addMouseListener(scrollListener);
              
-        this.latencyLabel.setText(
-            I18n.t("ui.labelNotConnectedToCentralStation")
-        );
+        nameTheStation();
+        this.latencyLabel.setToolTipText(null);
 
         // Start with true to ensure keyboard events register properly
         // If we don't do this, initializing the UI from the EDT will cause issues
@@ -5497,7 +5496,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         
         if (this.model != null && this.checkForUpdates.isSelected()) checkForUpdate(false);
                 
-        warnOnStop(false);
+        markTheConnection(false);
 
         // Monitor latency
         if (this.model != null && model.getNetworkCommState() && PING_INTERVAL > 0)
@@ -5820,8 +5819,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
     
     /**
-     * The ping timer's watch: pings unanswered past PING_INTERVAL show as a lost connection, and the warning triangle
-     * shows left of Power OFF while they go unanswered or the station is not answering on TCP.
+     * The ping timer's watch: pings unanswered past PING_INTERVAL show as a lost connection, and the corner mark is the
+     * warning triangle while they go unanswered or the station is not answering on TCP.
      */
     private void watchTheConnection()
     {
@@ -5836,7 +5835,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 latencyLabel.setForeground(Color.red);
             }
 
-            warnOnStop(notAnswering);
+            markTheConnection(notAnswering);
         });
 
         if (lost) checkAutoLayoutLatency(PING_INTERVAL);
@@ -5844,14 +5843,62 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         model.sendPing(false);
     }
 
-    /** Lower right, past the function tabs: a yellow triangle while the station is not answering (FR-192), red in simulation (FR-228) */
-    private final JLabel stationNotAnswering = new JLabel();
+    /** What the corner pill shows past 999 ms; the tooltip has the figure. */
+    private static final String PAST_A_SECOND = ">1 s";
+
+    /** The latest latency answered, null before the first answer. */
+    private Double lastLatency;
 
     /**
-     * The function tabs stand in a panel that also holds the triangle over the empty end of their strip. The panel
-     * stays shown with no locomotive, when the tabs are hidden, so the warning does; it sizes as the tabs do.
+     * Lower right, past the function tabs: while a station answers, a pill with the latest latency, colored by
+     * PING_ORANGE and PING_RED and gray before the first answer (FR-242); a yellow triangle while the station is not
+     * answering (FR-192), red in simulation (FR-228).  The pill keeps one width whatever it shows.
      */
-    private void installNotAnsweringMark()
+    private final JLabel connectionMark = new JLabel()
+    {
+        @Override
+        protected void paintComponent(java.awt.Graphics g)
+        {
+            if (getIcon() == null)
+            {
+                java.awt.Graphics2D pill = (java.awt.Graphics2D) g.create();
+                float round = getHeight() - 1f;
+                java.awt.Shape edge = new java.awt.geom.RoundRectangle2D.Float(0.5f, 0.5f, getWidth() - 1f, round, round, round);
+
+                pill.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                pill.setColor(getBackground());
+                pill.fill(edge);
+                pill.setColor(getBackground().darker());
+                pill.draw(edge);
+                pill.dispose();
+            }
+
+            super.paintComponent(g);
+        }
+
+        @Override
+        public Dimension getPreferredSize()
+        {
+            if (getIcon() != null) return super.getPreferredSize();
+
+            java.awt.FontMetrics metrics = getFontMetrics(getFont());
+            char digit = '0';
+
+            for (char c = '1'; c <= '9'; c++) if (metrics.charWidth(c) > metrics.charWidth(digit)) digit = c;
+
+            int widest = Math.max(metrics.stringWidth(new String(new char[] {digit, digit, digit}) + " ms"),
+                metrics.stringWidth(PAST_A_SECOND));
+
+            return new Dimension(widest + com.formdev.flatlaf.util.UIScale.scale(12),
+                Math.max(com.formdev.flatlaf.util.UIScale.scale(16), metrics.getHeight()));
+        }
+    };
+
+    /**
+     * The function tabs stand in a panel that also holds the corner mark over the empty end of their strip. The panel
+     * stays shown with no locomotive, when the tabs are hidden, so the mark does; it sizes as the tabs do.
+     */
+    private void installConnectionMark()
     {
         JPanel holder = new JPanel(null)
         {
@@ -5885,8 +5932,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 FunctionTabs.setBounds(0, 0, getWidth(), getHeight());
                 FunctionTabs.validate();
                 Rectangle strip = FunctionTabs.getBoundsAt(FunctionTabs.getTabCount() - 1);
-                Dimension size = stationNotAnswering.getPreferredSize();
-                stationNotAnswering.setBounds(Math.max(getWidth() - 4 - size.width, strip.x + strip.width + 4),
+                Dimension size = connectionMark.getPreferredSize();
+                connectionMark.setBounds(Math.max(getWidth() - 4 - size.width, strip.x + strip.width + 4),
                     strip.y + (strip.height - size.height) / 2, size.width, size.height);
             }
         };
@@ -5898,53 +5945,76 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The rows hidden with no locomotive keep their room, so the tabs and the triangle stay where they are with one
         for (Component row : new Component[] {Backward, Forward, SpeedSlider}) layout.setHonorsVisibility(row, false);
 
-        holder.add(stationNotAnswering);
+        connectionMark.setFont(connectionMark.getFont().deriveFont(Font.BOLD, connectionMark.getFont().getSize2D() - 1));
+        connectionMark.setHorizontalAlignment(JLabel.CENTER);
+        holder.add(connectionMark);
         holder.add(FunctionTabs);
 
-        warnOnStop(false);
+        markTheConnection(false);
     }
 
-    private void warnOnStop(boolean on)
+    /** The corner mark for the connection as it stands, `notAnswering` as the watch or the latest answer found it. */
+    private void markTheConnection(boolean notAnswering)
     {
         boolean simulated = model != null && model.isSimulation();
-        String why = I18n.t(simulated ? "ui.main.tooltip.simulation" : "ui.main.tooltip.stationNotAnswering");
+        String protocol = model != null ? model.getProtocol() : null;
+        Long ms = lastLatency == null ? null : Math.round(lastLatency);
+        boolean triangle = simulated || notAnswering;
 
-        on |= simulated;
+        String tip = simulated ? I18n.t("ui.main.tooltip.simulation")
+            : notAnswering ? I18n.t("ui.main.tooltip.stationNotAnswering")
+            : protocol == null ? null
+            : ms == null ? I18n.t("ui.main.tooltip.connecting")
+            : I18n.f("ui.main.tooltip.connection", model.isCS3() ? "3" : "2", protocol, String.valueOf(ms));
 
-        if (stationNotAnswering.isVisible() == on && why.equals(stationNotAnswering.getToolTipText())) return;
+        // The tooltip names everything the mark shows
+        if (java.util.Objects.equals(tip, connectionMark.getToolTipText()) && connectionMark.isVisible() == (tip != null)) return;
 
-        stationNotAnswering.setIcon(RowIcons.warning(16, simulated));
-        stationNotAnswering.setToolTipText(why);
-        stationNotAnswering.setVisible(on);
-        stationNotAnswering.getParent().revalidate();
+        connectionMark.setIcon(triangle ? RowIcons.warning(16, simulated) : null);
+        connectionMark.setText(triangle ? null : ms == null ? "..." : ms > 999 ? PAST_A_SECOND : ms + " ms");
+        connectionMark.setBackground(ms == null ? new Color(215, 215, 215) : ms <= PING_ORANGE ? new Color(40, 160, 70)
+            : ms <= PING_RED ? new Color(245, 200, 40) : new Color(240, 130, 30));
+        connectionMark.setForeground(ms == null ? new Color(80, 80, 80) : ms <= PING_ORANGE ? Color.WHITE : new Color(50, 30, 0));
+        connectionMark.setToolTipText(tip);
+        connectionMark.setVisible(tip != null);
+        connectionMark.getParent().revalidate();
     }
 
-    /**
-     * Updates the latency value, with the protocol in use after it, and the not-answering triangle (`warnOnStop`).
-     */
+    /** The keyboard tab's line names the station, with its firmware and serial number where it says them (FR-242). */
+    private void nameTheStation()
+    {
+        String protocol = model.isSimulation() ? null : model.getProtocol();
+        String line = model.isSimulation() ? I18n.t("ui.main.stationSimulation")
+            : protocol == null ? I18n.t("ui.labelNotConnectedToCentralStation")
+            : I18n.f("ui.main.station", model.isCS3() ? "3" : "2", protocol);
+
+        if (protocol != null && model.getStationFirmware() != null)
+        {
+            line = I18n.f("ui.main.stationFirmware", line, model.getStationFirmware());
+        }
+
+        if (protocol != null && model.getStationSerial() != null)
+        {
+            line = I18n.f("ui.main.stationSerial", line, model.getStationSerial());
+        }
+
+        latencyLabel.setText(line);
+        latencyLabel.setForeground(protocol != null ? Color.BLACK : Color.RED);
+    }
+
+    /** Shows the latest answer: the station line on the keyboard tab and the corner mark (FR-242). */
     @Override
     public void updateLatency(double latency)
-    { 
+    {
         if (PING_INTERVAL > 0)
         {
             SwingUtilities.invokeLater(() ->
             {
-                String protocol = this.model.getProtocol();
-
-                this.latencyLabel.setText(
-                    I18n.f(
-                        protocol != null ? "ui.labelNetworkLatencyOver" : "ui.labelNetworkLatency",
-                        (this.model.isCS3() ? "3" : "2"),
-                        String.format("%.0f", latency),
-                        protocol
-                    )
-                );
-
-                this.latencyLabel.setForeground(latency > PING_ORANGE ? (latency > PING_RED ? Color.RED : Color.MAGENTA) : Color.BLACK);
-
-                warnOnStop(this.model.isConnectionNotAnswering());
+                this.lastLatency = latency;
+                nameTheStation();
+                markTheConnection(this.model.isConnectionNotAnswering());
             });
-            
+
             this.checkAutoLayoutLatency(latency);
         }        
     }
