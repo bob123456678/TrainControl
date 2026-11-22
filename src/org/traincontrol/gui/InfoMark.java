@@ -47,7 +47,8 @@ public final class InfoMark
             }
 
             out.setRGB(0, 0, read.getWidth(), read.getHeight(), pixels, 0, read.getWidth());
-            return new org.traincontrol.util.SharpIcon(out, InfoMark::art);
+            return new org.traincontrol.util.SharpIcon(out, InfoMark::art,
+                org.traincontrol.util.SharpIcon.Fit.WHOLE);
         }
         catch (java.io.IOException | RuntimeException ex)
         {
