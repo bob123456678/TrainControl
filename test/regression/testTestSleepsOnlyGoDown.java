@@ -29,6 +29,9 @@ public class testTestSleepsOnlyGoDown
     /** The milliseconds those sleeps and the quiet waits over 1,000 ms add up to, as far as they are plain numbers. */
     private static final long SLEEP_MS_ALLOWED = 152182;
 
+    /** The sleeps and quiet waits with no plain number, which the sum cannot see: a swap to a constant lands here. */
+    private static final long UNSUMMED_ALLOWED = 36;
+
     // Built from pieces so this file does not count itself
     private static final Pattern SLEEP = Pattern.compile("Thread" + "\\.sleep\\(|TimeUnit\\.[A-Z]+\\.sleep\\("
         + "|(?<![\\w.])(?:NANO|MICRO|MILLI)?SECONDS\\.sleep\\(|(?<![\\w.])(?:MINUTES|HOURS)\\.sleep\\(");
@@ -78,6 +81,13 @@ public class testTestSleepsOnlyGoDown
 
         assertEquals(seconds[1], SLEEP_MS_ALLOWED, covered + ", fewer than the " + SLEEP_MS_ALLOWED
             + " recorded.  Lower SLEEP_MS_ALLOWED to " + seconds[1] + " so the improvement is kept.");
+
+        assertTrue(seconds[3] <= UNSUMMED_ALLOWED, covered + ", up from " + UNSUMMED_ALLOWED
+            + ".  A wait whose time is a constant or an expression hides it from the sum; use a plain number or wait for"
+            + " the thing itself.");
+
+        assertEquals(seconds[3], UNSUMMED_ALLOWED, covered + ", fewer than the " + UNSUMMED_ALLOWED
+            + " recorded.  Lower UNSUMMED_ALLOWED to " + seconds[3] + " so the improvement is kept.");
     }
 
     /** The summing reads a source as the pin means it: plain numbers added, comments and other arguments not. */

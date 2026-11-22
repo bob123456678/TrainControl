@@ -28,6 +28,11 @@ import sys
 
 KNOWN_OUT = {"core.testAutoDetect"}
 
+# Slow whole-railway runs (FTS1-12, a release-only tier): listed last, under a "soak" heading, so the fast classes run first.
+SOAK = ["core.testSetupDumpComparesBuilds", "core.testAutonomySimulationSanity", "core.testReturnHomeOnRealLayout",
+        "core.testTimetableOnDerivedGraph", "core.testTrainsComeHomeFromAPinnedArrangement",
+        "core.testTrainsComeHomeToTheirPlatforms"]
+
 # CLAUDE.md: a changed file or folder (a path ending, matched whole) calls for these classes (by simple name) whether or
 # not they name it.
 PAIRINGS = [
@@ -227,7 +232,11 @@ def main(argv):
                 if n in by_simple:
                     add(by_simple[n], "CLAUDE.md pairs it with %s" % file, True)
 
-    for q in sorted(guarded if guards else why):
+    chosen = sorted(guarded if guards else why)
+    soak = [c for c in chosen if c in SOAK]
+    for q in [c for c in chosen if c not in SOAK] + soak:
+        if soak and q == soak[0]:
+            print("soak", file=sys.stderr)  # stderr, so stdout stays one class per line for TC_CLASSES
         print(q)
         if verbose:
             print("%s: %s" % (q, "; ".join(why[q][:3])), file=sys.stderr)
