@@ -465,7 +465,7 @@ Tab icons provided by Freepik.
 * v3.1.2
     - New Features
         - Interface
-            - While a Central Station answers, the lower right of the main window shows how quickly it answers, for example `12 ms`: green, then yellow past 100 ms and orange past 300 ms.  Hover over it to see the station and the connection.  The line right of `Primary Keyboard Controls` now names the Central Station instead, with its firmware and serial number when the station gives them.
+            - While a Central Station answers, the lower right of the main window shows how quickly it answers, for example `12 ms`: in soft green, then yellow past 100 ms and red past 300 ms.  Hover over it to see the station and the connection.  The line right of `Primary Keyboard Controls` now names the Central Station instead, with its firmware when the station gives it, and the log shows its serial number once.
 * v3.1.1 [11/21/2026]
     - New Features
         - Java 21
