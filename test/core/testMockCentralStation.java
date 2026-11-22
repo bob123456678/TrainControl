@@ -101,6 +101,18 @@ public class testMockCentralStation
 
         model = org.traincontrol.marklin.MarklinControlStation.init(null, true, false, false, true);
         model.stop();
+
+        // This database is the user's: one of its locomotives at a served decoder address under another name holds the
+        // served one back as a pending rename (FR-249), so those are taken out for the claims about the station's file
+        for (MarklinLocomotive served : mockStation().parseLocomotives())
+        {
+            for (String name : model.getLocList())
+            {
+                MarklinLocomotive here = model.getLocByName(name);
+
+                if (here != null && here.getIntUID() == served.getIntUID() && !name.equals(served.getName())) model.deleteLoc(name);
+            }
+        }
     }
 
     @AfterClass(alwaysRun = true)
