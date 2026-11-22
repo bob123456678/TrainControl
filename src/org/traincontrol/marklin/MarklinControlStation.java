@@ -1345,7 +1345,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             List<MarklinLocomotive> matches = byAddress.get(l.getIntUID());
             if (matches == null) continue;
-
             // Checked after the match lookup so a Central Station duplicate with no local counterpart
             // stays silent - there is nothing to propose for it either way
             if (parsedCountByAddress.get(l.getIntUID()) > 1)

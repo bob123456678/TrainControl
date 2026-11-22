@@ -34,9 +34,8 @@ public class RenameProposals
         /** The station's name for it and the station's address of its decoder type, each null where they agree. */
         public final String stationName;
         public final Integer stationAddress;
-        /** Why Apply may not rename it, or change its address, now; null where it may. */
-        public final String whyNoRename;
-        public final String whyNoAddress;
+        private final String whyNoRename;
+        private final String whyNoAddress;
         /** The other locomotive here under stationName, which the rename would delete; else null. */
         public final Locomotive nameHolder;
         // Decoder type and address, as MarklinLocomotive.getIntUID, now and at stationAddress
@@ -54,6 +53,12 @@ public class RenameProposals
             this.nameHolder = nameHolder;
             this.uid = uid;
             this.stationUid = stationUid;
+        }
+
+        /** Why Apply may not rename it (`rename`), or change its address, now; null where it may. */
+        public String whyNot(boolean rename)
+        {
+            return rename ? this.whyNoRename : this.whyNoAddress;
         }
 
         public boolean isNameKept()

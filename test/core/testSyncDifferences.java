@@ -176,7 +176,7 @@ public class testSyncDifferences
             Row row = d.getRow(x);
 
             assertEquals(d.getRows(), Collections.singletonList(row), "not one row");
-            assertEquals(Arrays.asList(row.stationName, row.stationAddress, row.whyNoRename, row.whyNoAddress),
+            assertEquals(Arrays.asList(row.stationName, row.stationAddress, row.whyNot(true), row.whyNot(false)),
                 Arrays.asList("SD Y", 7, null, null));
             assertEquals(d.getUnsettledCount(), 1);
 
@@ -234,9 +234,9 @@ public class testSyncDifferences
             assertEquals(d.getRows().stream().map(r -> r.loco.getName()).collect(Collectors.toList()),
                 Arrays.asList("SD B", "SD C", "SD D", "SD A"), "the rows or their order");
             assertEquals(d.getUnsettledCount(), 3, "the count");
-            assertEquals(row(rig, d, "SD C").whyNoRename, I18n.f("loc.renameCycleRefused", "SD C", "SD D"),
+            assertEquals(row(rig, d, "SD C").whyNot(true), I18n.f("loc.renameCycleRefused", "SD C", "SD D"),
                 "a swap's row does not say to rename one by hand");
-            assertNull(row(rig, d, "SD B").whyNoRename);
+            assertNull(row(rig, d, "SD B").whyNot(true));
 
             list.set("[]");
             d = rig.model.getRenameProposals();
@@ -308,8 +308,8 @@ public class testSyncDifferences
         {
             RenameProposals d = synced(rig, "SD X", 51, "SD W", 52);
 
-            assertEquals(row(rig, d, "SD X").whyNoRename, I18n.f("loc.renameNameListedTwice", "SD X", "SD Y"));
-            assertEquals(row(rig, d, "SD W").whyNoRename, I18n.f("loc.renameNameListedTwice", "SD W", "SD Y"));
+            assertEquals(row(rig, d, "SD X").whyNot(true), I18n.f("loc.renameNameListedTwice", "SD X", "SD Y"));
+            assertEquals(row(rig, d, "SD W").whyNot(true), I18n.f("loc.renameNameListedTwice", "SD W", "SD Y"));
             assertNull(rig.model.getLocByName("SD Y"), "the sync added the name");
             assertTrue(rig.model.getLocomotivesToRenameFromImport().isEmpty(), "a rename onto the name listed twice was"
                 + " offered");
@@ -354,7 +354,7 @@ public class testSyncDifferences
             assertTrue(rig.model.wasLastSyncPartial(), "precondition: the read was not partial");
             assertNull(rig.model.getLocByName("SD S"), "the partial sync added a pending rename's copy");
             assertTrue(rig.takeLog().contains(pending(rig, "SD S", "SD R")), "the partial sync did not log the hold-back");
-            assertEquals(row(rig, d, "SD P").whyNoRename, I18n.f("loc.renameAfterPartialRead", "SD P", "SD Q"));
+            assertEquals(row(rig, d, "SD P").whyNot(true), I18n.f("loc.renameAfterPartialRead", "SD P", "SD Q"));
             assertEquals(d.getProposals().stream().map(p -> p[0] + ">" + p[1]).collect(Collectors.toList()),
                 Collections.singletonList("SD R>SD S"), "the renames offered");
         }
@@ -380,9 +380,9 @@ public class testSyncDifferences
                 m.setSpeed(40);
                 RenameProposals d = rig.model.getRenameProposals();
 
-                assertEquals(d.getRow(x).whyNoRename, I18n.f("loc.syncLeftMoving", "SD X"));
-                assertEquals(d.getRow(m).whyNoAddress, I18n.f("loc.syncLeftMoving", "SD M"));
-                assertEquals(row(rig, d, "SD U").whyNoRename, I18n.t("loc.ui.errorLocomotiveNameUnusable"));
+                assertEquals(d.getRow(x).whyNot(true), I18n.f("loc.syncLeftMoving", "SD X"));
+                assertEquals(d.getRow(m).whyNot(false), I18n.f("loc.syncLeftMoving", "SD M"));
+                assertEquals(row(rig, d, "SD U").whyNot(true), I18n.t("loc.ui.errorLocomotiveNameUnusable"));
             }
             finally
             {

@@ -126,7 +126,7 @@ public abstract class Locomotive
     private Integer declinedStationAddress;
     private Integer takenStationAddress;
     // Told to Ignore what the station differs on, saved (FR-249)
-    private boolean syncIgnored;
+    private volatile boolean syncIgnored;
     
     // Used to pause autonomous operation - not persisted.  Volatile, not under the monitor: a command can hold that
     // for a stalled network write, and windows read this every second.
