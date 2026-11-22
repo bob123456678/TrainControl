@@ -25,7 +25,8 @@ import org.traincontrol.marklin.MarklinControlStation;
  * `test/baseline/fromjson_golden.txt`, was written by `main` below run on dev at 577b37883.
  *
  * MUTATION: read "maxLatency" before "preArrivalSpeedReduction" in readSettings, and the case with both wrong gives the
- * other reason; or make ConfigurationFile.count answer 0 for an absent key, and an absent trainLength clears the train's.
+ * other reason; or make ConfigurationFile.count answer 0 for an absent key, and an absent trainLength clears the
+ * train's.
  */
 public class testTheLoaderReadsEveryFileAsBefore
 {
@@ -45,7 +46,8 @@ public class testTheLoaderReadsEveryFileAsBefore
     /** Every key fromJSON reads, valid; each variant breaks it. */
     private static final String EVERY_KEY = ("{'minDelay': 1, 'maxDelay': 2, 'defaultLocSpeed': 40,"
         + " 'preArrivalSpeedReduction': 0.4, 'maxLatency': 300, 'maxActiveTrains': 2, 'maxLocInactiveSeconds': 60,"
-        + " 'turnOffFunctionsOnArrival': true, 'turnOnFunctionsOnDeparture': false, 'pathPreference': 'SHORTEST_LENGTH',"
+        + " 'turnOffFunctionsOnArrival': true, 'turnOnFunctionsOnDeparture': false,"
+        + " 'pathPreference': 'SHORTEST_LENGTH',"
         + " 'simulate': false, 'atomicRoutes': false, 'pausedLocomotives': ['FJ two', 7], 'timetable': [{'bogus': 1}],"
         + " 'timetableSequential': true, 'activateRoutes': true, 'activateRouteIDs': [3, 1],"
         + " 'points': [{'name': 'FJ A', 'station': true, 's88': 9001, 'x': 1, 'y': 2, 'block': 'b1', 'square': 's1',"
@@ -213,7 +215,8 @@ public class testTheLoaderReadsEveryFileAsBefore
 
         Collections.sort(run);
 
-        out.add("valid=" + layout.isValid() + " reason=" + String.valueOf(layout.getInvalidReason()).replace("\n", " | "));
+        out.add("valid=" + layout.isValid() + " reason="
+            + String.valueOf(layout.getInvalidReason()).replace("\n", " | "));
         out.add("run=" + run);
 
         for (String line : said) out.add("said: " + line.replace("\n", " / "));

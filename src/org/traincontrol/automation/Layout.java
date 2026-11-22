@@ -8373,21 +8373,19 @@ public class Layout
         private JSONArray edges;
         private Integer defaultLocSpeed;
 
-        // What each point is held back by, by NAME, until every point exists: a restriction may name a point further
-        // down the file.
+        // Each point's restrictions by name, until every point exists.
         private final java.util.Map<String, List<String>> blockersByPoint = new java.util.LinkedHashMap<>();
 
-        // And the arrival sides, applied after the locomotives are placed: setLocomotive drops the side on every
-        // change.
+        // Arrival sides, applied after the trains are placed: setLocomotive drops the side.
         private final java.util.Map<String, String> arrivalSideByPoint = new java.util.LinkedHashMap<>();
 
         // And the roads, held back likewise.
         private final java.util.Map<String, Object> arrivalRoadByPoint = new java.util.LinkedHashMap<>();
 
-        // Trains placed on a copy that is no station, warned about once every copy is read.
+        // Trains placed off a station, warned about once every copy is read.
         private final List<String[]> placedOffAStation = new ArrayList<>();
 
-        // ONE LINE PER STATION (OB-362): the copies of a square all carry its maximum; say it once, by the place.
+        // One log line per station and maximum (OB-362).
         private final Set<String> maximumsSaid = new HashSet<>();
 
         ConfigurationFile(Layout layout, ViewListener control, JSONObject o)
@@ -8489,7 +8487,7 @@ public class Layout
                 layout.setMinDelay(minDelay);
                 layout.setTurnOffFunctionsOnArrival(o.has("turnOffFunctionsOnArrival") && o.getBoolean("turnOffFunctionsOnArrival"));
 
-                // The routing logic, if this configuration carries one; a file without it keeps the model's default.
+                // Absent, the model's default routing stays.
                 if (o.has("pathPreference"))
                 {
                     try
@@ -8498,8 +8496,7 @@ public class Layout
                     }
                     catch (IllegalArgumentException | JSONException e)
                     {
-                        // Written by a version with a choice this one lacks: the default is a working setting, so neither
-                        // refuse the railway nor add a message to eight bundles.
+                        // A newer version's choice keeps the default, rather than refusing the railway.
                     }
                 }
             
@@ -8556,8 +8553,7 @@ public class Layout
                 );
             }
 
-            // Which trains are paused (FR-117), every train told yes or no: the pause lives on the locomotive, which
-            // outlives this railway.
+            // Every train told whether it is paused (FR-117): the pause lives on the locomotive.
             java.util.Set<String> pausedNames = new java.util.HashSet<>();
 
             JSONArray pausedList = o.optJSONArray(PAUSED_LOCOMOTIVES);
@@ -8600,7 +8596,7 @@ public class Layout
         void readPoints()
         {
             points.forEach(pnt -> readPoint((JSONObject) pnt));
-            // Not for a barred copy of a station, where a turned train can stand; warned here, once every copy is read.
+            // Not for a barred copy of a station, where a turned train can stand.
             for (String[] placed : placedOffAStation)
             {
                 Point on = layout.getPoint(placed[1]);
@@ -8642,22 +8638,22 @@ public class Layout
             
             try 
             {
-                // optBoolean, not getBoolean: a missing "station" must default like every other optional field.
+                // A missing "station" defaults like every other optional field.
                 layout.createPoint(point.getString("name"), point.optBoolean("station", false), s88);
 
-                // Which piece of track this Point is part of, when the generator said so; absent, the Point stands alone.
+                // The piece of track this Point is part of; absent, it stands alone.
                 if (point.has("block"))
                 {
                     layout.getPoint(point.getString("name")).setBlock(point.optString("block", null));
                 }
 
-                // And which square of the diagram it is a copy of: what a rebuild carries a train by.
+                // The square it is a copy of, which a rebuild carries a train by.
                 if (point.has("square"))
                 {
                     layout.getPoint(point.getString("name")).setSquare(point.optString("square", null));
                 }
 
-                // The signals thrown to red while this platform is claimed: a bare string or an array, both read.
+                // Signals thrown to red while this platform is claimed.
                 if (point.has("protectingSignal"))
                 {
                     layout.getPoint(point.getString("name")).setProtectingSignals(oneOrMany(point, "protectingSignal"));
@@ -8669,8 +8665,7 @@ public class Layout
                     layout.getPoint(point.getString("name")).setEntrySignals(oneOrMany(point, "entrySignal"));
                 }
 
-                // Where the tail is, which facing cannot answer once a train has turned; applied after the trains are
-                // placed.
+                // Where the tail is, applied after the trains are placed.
                 if (point.has("arrivedFrom"))
                 {
                     arrivalSideByPoint.put(point.getString("name"),
@@ -8684,14 +8679,13 @@ public class Layout
 
                 if (point.has("blockedBy"))
                 {
-                    // Points whose occupancy makes this station unavailable to autonomy (FR-001), resolved after the
-                    // loop; an unknown name is logged and dropped.
+                    // Points whose occupancy blocks this station (FR-001), resolved after the loop.
                     blockersByPoint.put(point.getString("name"), oneOrMany(point, "blockedBy"));
                 }
 
                 if (point.has("home"))
                 {
-                    // The only place a home can dangle, since a file holds a name: reported and dropped, not refused.
+                    // An unknown home is reported and dropped, not refused.
                     String named = point.optString("home", null);
 
                     if (named != null && !named.trim().isEmpty())
@@ -8741,8 +8735,7 @@ public class Layout
                         {
                             String locName = (String) loc;
 
-                            // Named in the log when dropped, or the operator believes the exclusion is in force
-                            // (OB-349).
+                            // Named in the log when dropped (OB-349).
                             Locomotive excluded = control.getLocByName(locName);
 
                             if (excluded != null) excludedLocs.add(excluded);
@@ -8835,8 +8828,7 @@ public class Layout
                                 l.setTrainLength(length);
                                 control.logf("autolayout.infoSetTrainLength", length, loc);
                             }
-                            // Absent means not stated: an absent trainLength keeps the live length (MT-233); write 0 to
-                            // clear it.
+                            // Absent keeps the live length (MT-233); 0 clears it.
 
                             Boolean reversible = typed(locInfo, "reversible", Boolean.class,
                                 "autolayout.errorLocomotiveReversibleInvalid", loc);
@@ -8846,11 +8838,9 @@ public class Layout
                             {
                                 control.logf("autolayout.infoLocomotiveFlaggedReversible", loc);
                             }
-                            // Absent means not stated, as above; read as false, a reversible EMU would be refused a
-                            // terminus.
+                            // Absent keeps the live flag: read as false, a reversible EMU would be refused a terminus.
 
-                            // Only warn if this is not a station, after the loop, once the square's other copies are
-                            // read.
+                            // Warned after the loop, once the square's other copies are read.
                             if (!point.optBoolean("station", false))
                             {
                                 placedOffAStation.add(new String[] {loc, point.getString("name")});
@@ -8861,14 +8851,12 @@ public class Layout
 
                             Point placeOn = layout.getPoint(point.getString("name"));
 
-                            // And with anything already on the same square, or a file would reinstate two trains on one
-                            // track on every load.
+                            // And with anything on the same square, or every load reinstates two trains on one track.
                             layout.clearBlockExcept(placeOn);
 
                             placeOn.setLocomotive(l);
                             
-                            // Not reset: a placement carries only a name, so a departure function set in the locomotive
-                            // window survives.
+                            // Not reset: a function set in the locomotive window survives.
 
                             read(locInfo, "speed", JSONObject::getInt, speed ->
                             {
@@ -8957,16 +8945,14 @@ public class Layout
                             String accessory = command.getString("acc");
                             if (null == control.getAccessoryByName(accessory))
                             {
-                                // This call ADDS the accessory, not merely checks it: failing, the edge can never be
-                                // actuated, so it is fatal.
+                                // This ADDS the accessory: failing, the edge can never be actuated, so it is fatal.
                                 try
                                 {
                                     Edge.validateConfigCommand(accessory, Accessory.accessorySetting.GREEN.toString(), control);
                                 }
                                 catch (Exception e)
                                 {
-                                    // Unchecked because this runs inside a forEach consumer.  The outer
-                                    // catch turns it back into a readable invalidation message.
+                                    // Unchecked inside forEach; the outer catch makes it the message.
                                     throw new RuntimeException(
                                         I18n.f("autolayout.errorEdgeAccessoryCouldNotBeAdded", accessory, e.getMessage())
                                     );
@@ -9015,15 +9001,13 @@ public class Layout
                     });                    
                 }            
                 
-                // The room after the last switch, where the builder recorded one; read on its own, as an older file may
-                // lack it.
+                // The room after the last switch; an older file may lack it.
                 if (edge.has("roomAtTheEnd") && edge.get("roomAtTheEnd") instanceof Integer)
                 {
                     e.setRoomAtTheEnd(edge.getInt("roomAtTheEnd"));
                 }
 
-                // The side the track comes in by, as the builder split the square (OB-182); missing, readers use the
-                // geometry.
+                // The side the track comes in by (OB-182); missing, readers use the geometry.
                 if (edge.has("entrySide") && edge.get("entrySide") instanceof String)
                 {
                     e.setEntrySide(edge.getString("entrySide"));
@@ -9043,8 +9027,7 @@ public class Layout
 
                     JSONArray places = edge.getJSONArray("places");
 
-                    // All of them or none: read positionally, so a skipped entry would shift every position; a bad one
-                    // falls back to the whole edge.
+                    // All or none, as they are read by position: a bad one falls back to the whole edge.
                     boolean whole = true;
 
                     for (int at = 0; at < places.length(); at++)
@@ -9143,8 +9126,7 @@ public class Layout
             
                 for (Object tt : timetable)
                 {
-                    // Each entry on its own: a stale one (renamed or deleted locomotive or station) must not discard the
-                    // whole timetable.
+                    // Each entry on its own: a stale one must not discard the whole timetable.
                     try
                     {
                         timetableList.add(TimetablePath.fromJSON(tt.toString(), control, layout));
@@ -9214,7 +9196,7 @@ public class Layout
 
             for (String s : locomotives)
             {
-                // Skip names that no longer resolve (deleted or renamed): a null would NPE in checkForSlowerLoc.
+                // A name that no longer resolves is skipped: a null would NPE in checkForSlowerLoc.
                 Locomotive loc = control.getLocByName(s);
 
                 if (loc != null)
@@ -9230,8 +9212,7 @@ public class Layout
 
             layout.setLocomotivesToRun(locsToRun);
 
-            // The FR-001 restrictions, now that every point exists.  A name matching no point is dropped and logged, not
-            // refused.
+            // The FR-001 restrictions; a name matching no point is logged and dropped, not refused.
             for (java.util.Map.Entry<String, List<String>> entry : blockersByPoint.entrySet())
             {
                 Point held = layout.getPoint(entry.getKey());
@@ -9256,8 +9237,7 @@ public class Layout
                 held.setBlockedBy(watching);
             }
 
-            // The arrival sides, now that every train stands where the file says: the file has the last word.  A name
-            // matching no point is dropped silently; its tail went with it.
+            // The arrival sides, now every train stands where the file says; an unknown name is dropped silently.
             for (java.util.Map.Entry<String, String> entry : arrivalSideByPoint.entrySet())
             {
                 Point landed = layout.getPoint(entry.getKey());
@@ -9277,7 +9257,7 @@ public class Layout
                 }
             }
 
-            // Only now: until every point exists an honored assignment cannot be told from one whose locomotive is unread.
+            // Only now can an honored home be told from one whose locomotive is unread.
             layout.rebuildHomeStations();
         }
     }
