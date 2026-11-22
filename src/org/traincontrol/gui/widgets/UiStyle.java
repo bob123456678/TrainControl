@@ -19,6 +19,8 @@ public final class UiStyle
     /** Segoe UI Bold 12: every button. */
     public static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 12);
 
+    public static final Font TEXT_FONT = new Font("Segoe UI", Font.PLAIN, 14);
+
     private UiStyle()
     {
     }

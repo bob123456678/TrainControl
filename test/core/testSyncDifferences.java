@@ -402,6 +402,30 @@ public class testSyncDifferences
         }
     }
 
+    /**
+     * Set all to Apply picks only what needs no human pick, judged on all its picks together: a free address, a free
+     * rename; not a collision (with a locomotive here or between two picks), a deleting rename, a grayed Apply, a
+     * row differing in both, or an ignored row (E80, E81).
+     *
+     * MUTATION: in `RenameProposals.applicable`, leave out the `collisions` or the `deletes` pass, or `asksName() !=
+     * asksAddress()`.
+     */
+    @Test(timeOut = 120000)
+    public void testSetAllApplySkipsWhatNeedsAHumanPick() throws Exception
+    {
+        try (StationRig rig = rig(station("SD A", 62, "SD T", 65, "SD C2", 66, "SD Held", 67, "SD E, 1", 68,
+            "SD O", 69, "SD Both", 70, "SD I2", 71, "SD P", 74, "SD Q", 74)))
+        {
+            here(rig, "SD I", 71);
+            rig.model.getLocByName("SD I").setSyncIgnored(true);
+            RenameProposals d = synced(rig, "SD A", 61, "SD T", 64, "SD H", 65, "SD C", 66, "SD D", 67,
+                "SD Held", 67, "SD E", 68, "SD Both", 69, "SD P", 72, "SD Q", 73);
+
+            assertEquals(d.applicable(d.getRows()).stream().map(r -> r.loco.getName()).sorted()
+                .collect(Collectors.toList()), Arrays.asList("SD A", "SD C"), "what Set all applies");
+        }
+    }
+
     /** The row of the locomotive here by this name, which must differ. */
     private static Row row(StationRig rig, RenameProposals d, String name)
     {

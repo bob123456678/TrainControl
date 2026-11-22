@@ -1314,15 +1314,23 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public RenameProposals getRenameProposals() throws Exception
     {
+        return getRenameProposals(true);
+    }
+
+    /** The same, logging the refusals only when `log` is set. */
+    @Override
+    public RenameProposals getRenameProposals(boolean log) throws Exception
+    {
         int unreadable = this.fileParser.getUnreadableRecords();
         List<MarklinLocomotive> parsedLocs = this.isCS3 ? fileParser.parseLocomotivesCS3() : fileParser.parseLocomotives();
-        return differences(parsedLocs, this.fileParser.getUnreadableRecords() > unreadable, true);
+        return differences(parsedLocs, this.fileParser.getUnreadableRecords() > unreadable, log);
     }
 
     /** What the station's locomotives as read differ on here: the one rule every sync door asks (FR-249). */
     private RenameProposals differences(List<MarklinLocomotive> parsedLocs, boolean partial, boolean log)
     {
         Map<MarklinLocomotive, String[]> renameCandidates = new java.util.LinkedHashMap<>();
+        Map<MarklinLocomotive, MarklinLocomotive> stationOf = new HashMap<>();
         Map<String, Integer> addresses = new java.util.LinkedHashMap<>();
         Map<MarklinLocomotive, MarklinLocomotive> addressedAt = new HashMap<>();
         int refused = 0;
@@ -1376,6 +1384,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 if (dropped != null)
                 {
                     renameCandidates.put(dropped, new String[] {dropped.getName(), l.getName()});
+                    stationOf.put(dropped, l);
                     continue;
                 }
                 if (log) this.logf("loc.renameAmbiguousDuplicateAddress", l.getName(), matches.size());
@@ -1387,6 +1396,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             if (!matches.get(0).getName().equals(l.getName()))
             {
                 renameCandidates.put(matches.get(0), new String[] {matches.get(0).getName(), l.getName()});
+                stationOf.put(matches.get(0), l);
             }
         }
 
@@ -1419,7 +1429,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 : driving != null ? I18n.f("loc.ui.errorLocomotiveDrivenByARunningRoute", to, driving.getName())
                 : !RouteCommand.isNameUsable(to) ? I18n.t("loc.ui.errorLocomotiveNameUnusable") : null;
             rows.add(new RenameProposals.Row(here, to, at == null ? null : at.getAddress(), whyNoRename,
-                at == null ? null : now, to == null ? null : this.locDB.getByName(to), here.getIntUID(),
+                at == null ? null : now, to == null ? null : this.locDB.getByName(to), stationOf.get(here), here.getIntUID(),
                 at == null ? here.getIntUID() : at.getIntUID()));
         }
         return new RenameProposals(ordered, refused, addresses, rows, held);
@@ -1859,13 +1869,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                     }
                     else if (!nameTurnedDown(l))
                     {
-                        this.logf("loc.addedFromCentralStation",
-                            l.getDecoderTypeLabel(),
-                            l.getName(),
-                            l.getAddress(),
-                            Conversion.intToHex(l.getIntUID()));
-
-                        newLocomotive(l.getName(), l.getAddress(), l.getDecoderType(), l.getFunctionTypes(), l.getFunctionTriggerTypes());
+                        addStationLocomotive(l);
                         num++;
                     }
                 }
@@ -2001,6 +2005,18 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return num;
     }
     
+    /** Adds the station's locomotive here, with its function types, unless its name is taken; the one added, or null. */
+    @Override
+    public Locomotive addStationLocomotive(Locomotive station)
+    {
+        MarklinLocomotive l = (MarklinLocomotive) station;
+        if (this.locDB.hasName(l.getName())) return null;
+        this.logf("loc.addedFromCentralStation", l.getDecoderTypeLabel(), l.getName(), l.getAddress(),
+            Conversion.intToHex(l.getIntUID()));
+        return newLocomotive(l.getName(), l.getAddress(), l.getDecoderType(), l.getFunctionTypes(),
+            l.getFunctionTriggerTypes());
+    }
+
     /**
      * Whether a locomotive here at l's address turned down l's name, or was offered it by the Sync running now and kept
      * its own, so the sync adds no copy under it (FR-220).

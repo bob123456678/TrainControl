@@ -38,12 +38,14 @@ public class RenameProposals
         private final String whyNoAddress;
         /** The other locomotive here under stationName, which the rename would delete; else null. */
         public final Locomotive nameHolder;
+        /** The station's locomotive under stationName, which Keep Both adds; else null. */
+        public final Locomotive station;
         // Decoder type and address, as MarklinLocomotive.getIntUID, now and at stationAddress
         final int uid;
         final int stationUid;
 
         public Row(Locomotive loco, String stationName, Integer stationAddress, String whyNoRename, String whyNoAddress,
-            Locomotive nameHolder, int uid, int stationUid)
+            Locomotive nameHolder, Locomotive station, int uid, int stationUid)
         {
             this.loco = loco;
             this.stationName = stationName;
@@ -51,6 +53,7 @@ public class RenameProposals
             this.whyNoRename = whyNoRename;
             this.whyNoAddress = whyNoAddress;
             this.nameHolder = nameHolder;
+            this.station = station;
             this.uid = uid;
             this.stationUid = stationUid;
         }
@@ -66,11 +69,26 @@ public class RenameProposals
             return this.stationName != null && this.stationName.equals(this.loco.getDeclinedStationName());
         }
 
+        public boolean isAddressKept()
+        {
+            return this.stationAddress != null && this.stationAddress.equals(this.loco.getDeclinedStationAddress());
+        }
+
         /** Whether nothing is left to answer: ignored, or each difference kept. */
         public boolean isSettled()
         {
-            return this.loco.isSyncIgnored() || (this.stationName == null || isNameKept())
-                && (this.stationAddress == null || this.stationAddress.equals(this.loco.getDeclinedStationAddress()));
+            return this.loco.isSyncIgnored() || !asksName() && !asksAddress();
+        }
+
+        /** Whether the table asks about the name: it differs and is not kept, or the locomotive is ignored. */
+        public boolean asksName()
+        {
+            return this.stationName != null && (this.loco.isSyncIgnored() || !isNameKept());
+        }
+
+        public boolean asksAddress()
+        {
+            return this.stationAddress != null && (this.loco.isSyncIgnored() || !isAddressKept());
         }
     }
 
@@ -147,6 +165,27 @@ public class RenameProposals
         }
         Set<Row> out = new HashSet<>();
         for (Row r : addressed) if (end.get(r.stationUid) > 1) out.add(r);
+        return out;
+    }
+
+    /**
+     * Of these rows, those Set all may Apply: not ignored, one difference asked, Apply allowed, and neither colliding
+     * nor deleting once all of them are applied together.
+     */
+    public Set<Row> applicable(Collection<Row> rows)
+    {
+        List<Row> names = new ArrayList<>(), moves = new ArrayList<>();
+        for (Row r : rows)
+        {
+            if (!r.loco.isSyncIgnored() && r.asksName() != r.asksAddress() && r.whyNot(r.asksName()) == null)
+                (r.asksName() ? names : moves).add(r);
+        }
+        // Each one left out can change what the rest collide with or delete
+        while (moves.removeAll(collisions(moves)) | names.removeIf(r -> deletes(r, names) != null))
+        {
+        }
+        Set<Row> out = new HashSet<>(names);
+        out.addAll(moves);
         return out;
     }
 

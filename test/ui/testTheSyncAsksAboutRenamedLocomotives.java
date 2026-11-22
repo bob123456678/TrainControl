@@ -27,6 +27,7 @@ import support.AskingWindows;
 import support.Components;
 import support.SettingsWindow;
 import support.Settle;
+import support.SyncTable;
 import support.StandInStation;
 import support.StationRig;
 import static ui.testTheSyncSaysWhenPartOfTheDataWasNotRead.syncEnded;
@@ -50,18 +51,16 @@ public class testTheSyncAsksAboutRenamedLocomotives
     private static final String AT_3 = "BR 103 137-6";
 
     /**
-     * A pressed sync that finds a locomotive held here under another name asks once whether to rename it, Yes renames
-     * it, the sync adds no copy under the station's name, and no second sync follows (the device file is read once per
-     * sync).
+     * A pressed sync that finds a locomotive held here under another name shows it once in the table, whose Apply says
+     * the rename; Apply renames it, the sync adds no copy under the station's name, and no second sync follows (the
+     * device file is read once per sync).
      *
-     * MUTATION: in `TrainControlUI.doSync`, leave out `askAboutRenames(c)`, and nothing is asked.
+     * MUTATION: in `TrainControlUI.askAndApply`, return `new int[0]` before the table, and nothing is asked.
      */
     @Test(timeOut = 180000)
     public void testASyncThatFindsARenameAsksOnceAndRenames() throws Exception
     {
         final String old = "FR-220 old name";
-        final String rename = I18n.f("loc.ui.confirmRenameLocomotive", old, STATION_NAME);
-        final String yes = String.valueOf(TrainControlUI.YES_NO_OPTS[0]);
 
         inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
         {
@@ -71,15 +70,15 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
             int syncs = rig.station.requests("/config/geraet.vrs");
 
-            List<String> asked = new ArrayList<>();
+            pressSync(rig, ui, SyncTable.answer(old, "RENAME"), m -> Answering.pressAt(0),
+                testTheSyncAsksAboutRenamedLocomotives::saidDone);
 
-            for (Answering.Question q : pressSync(rig, ui, m -> rename.equals(m) ? Answering.press(yes)
-                : Answering.pressAt(0), answering -> answering.asked().contains(rename))) asked.add(q.message);
+            assertEquals(rowsFor(old).size(), 1, "the rename was not in one table: " + tables.size());
+            assertEquals(Components.onTheEventThread(() -> rowsFor(old).get(0).in(old, "RENAME",
+                javax.swing.AbstractButton.class).getText()), I18n.f("sync.ui.rename", old, STATION_NAME),
+                "Apply does not say the rename");
 
-            assertEquals(Collections.frequency(asked, rename), 1, "the rename was asked about other than once: "
-                + asked);
-
-            assertNotNull(rig.model.getLocByName(STATION_NAME), "Yes did not rename " + old + " to " + STATION_NAME);
+            assertNotNull(rig.model.getLocByName(STATION_NAME), "Apply did not rename " + old + " to " + STATION_NAME);
             assertNull(rig.model.getLocByName(old), old + " is still there beside the renamed locomotive");
 
             assertEquals(rig.model.getLocList().stream().filter(STATION_NAME::equals).count(), 1L,
@@ -90,13 +89,12 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
-     * Renaming onto a name another locomotive holds asks once, in the delete door's own question led by the rename it
-     * is for: it counts the routes that lose their commands and starts on No, and No keeps both locomotives and the
-     * route's command.
+     * Renaming onto a name another locomotive holds says in its row what it deletes, and Apply asks once, in the delete
+     * door's own question led by the rename it is for: it counts the routes that lose their commands and starts on No,
+     * and No keeps both locomotives and the route's command.
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, put back the rename's own question for
-     * a held name and the deletion without a question of its own (`deleteLocAlreadyAsked`), or keep nothing after the
-     * delete question's No.
+     * MUTATION: in `TrainControlUI.renamed`, delete without the question (`deleteLocAlreadyAsked`), or keep nothing
+     * after the delete question's No.
      */
     @Test(timeOut = 180000)
     public void testARenameOntoAHeldNameAsksTheDeleteQuestionOnce() throws Exception
@@ -118,8 +116,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
             List<Answering.Question> asked = new ArrayList<>();
 
-            pressSync(rig, ui, m -> m != null && m.contains(old) ? Answering.press(no) : Answering.pressAt(0),
-                answering ->
+            pressSync(rig, ui, SyncTable.answer(old, "RENAME"), m -> m != null && m.contains(old) ? Answering.press(no)
+                : Answering.pressAt(0), answering ->
                 {
                     asked.clear();
 
@@ -132,6 +130,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
                 });
 
             assertEquals(asked.size(), 1, "renaming onto a held name asked other than once: " + asked.size());
+            assertEquals(Components.onTheEventThread(() -> rowsFor(old).get(0).in(old, "deletes", javax.swing.JLabel.class)
+                .getText()), I18n.f("sync.ui.deletes", STATION_NAME), "the row does not say what the rename deletes");
 
             assertTrue(asked.get(0).message.contains(I18n.f("ui.confirmDeleteFromDatabaseWithRoutesOne",
                 STATION_NAME, 1)), "the question does not count the route that loses its command: "
@@ -158,8 +158,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * Locomotive Database window, while a slow station holds back its locomotive list the window still answers, with
      * the busy sign up over the window that asked, and once the list arrives the sync goes on and ends.
      *
-     * MUTATION: in `TrainControlUI.doSync`, call `askAboutRenames(c)` on the event thread, just before the worker starts,
-     * instead of inside it; or, in `askAboutRenames(Component)`, show the busy sign over `this`.
+     * MUTATION: in `TrainControlUI.doSync`, call `pressedSync(c, answered)` on the event thread, just before the worker
+     * starts, instead of inside it; or, in `readBehindTheSpinner`, show the busy sign over `this`.
      */
     @Test(timeOut = 180000)
     public void testTheRenameReadLeavesTheWindowFreeWhileTheStationIsSlow() throws Exception
@@ -180,7 +180,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
             holding.set(true);
 
-            try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
+            try (Answering answering = Answering.start(m -> Answering.pressAt(0));
+                SyncTable table = SyncTable.answering(SyncTable.answer()))
             {
                 SwingUtilities.invokeLater(() -> ui.doSync(database));
 
@@ -216,7 +217,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * A rename read the station answers with something unreadable is logged and takes its busy sign down, and the sync
      * goes on and ends: a sign left up is a modal window nothing closes.
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component)`, take out the `finally` that closes the busy sign.
+     * MUTATION: in `TrainControlUI.readBehindTheSpinner`, take out the `finally` that closes the busy sign.
      */
     @Test(timeOut = 180000)
     public void testAFailedRenameReadTakesItsBusySignDown() throws Exception
@@ -230,7 +231,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
             rig.model.setNetworkCommState(true);
             failing.set(true);
 
-            try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
+            try (Answering answering = Answering.start(m -> Answering.pressAt(0));
+                SyncTable table = SyncTable.answering(SyncTable.answer()))
             {
                 SwingUtilities.invokeLater(() -> ui.doSync(ui));
 
@@ -238,6 +240,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
                     + " read failed: " + answering.asked());
 
                 assertFalse(failing.get(), "precondition: the rename read was not answered unreadably");
+                assertTrue(table.shown().isEmpty(), "a table opened after the rename read failed");
 
                 assertTrue(Components.waitFor(() -> new ArrayList<>().equals(Components.busySignsIfAnswering(3000)),
                     30000), "a busy sign stayed up after the rename read failed");
@@ -247,10 +250,10 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
     /**
      * Only a pressed Sync asks: the sync an edit owes, run as an editor closes, leaves a locomotive renamed at the
-     * station as it is, logs and asks nothing about it, and reads the station's locomotives once, for itself
-     * (D171).
+     * station as it is, adds no copy, opens no table, logs only that it held the station's locomotive back, and reads
+     * the station's locomotives once, for itself (D171, FR-249).
      *
-     * MUTATION: in `TrainControlUI.doSync`, ask on every sync (`askAboutRenames(c != null ? c : this)`).
+     * MUTATION: in `TrainControlUI.doSync`, ask on every sync (`pressedSync(c != null ? c : this, answered)`).
      */
     @Test(timeOut = 180000)
     public void testAnOwedSyncAsksNothingAboutRenames() throws Exception
@@ -269,12 +272,18 @@ public class testTheSyncAsksAboutRenamedLocomotives
             rig.takeLog();
 
             try (Answering answering = Answering.start(m -> m != null && m.contains(old) ? Answering.press(no)
-                : Answering.pressAt(0)))
+                : Answering.pressAt(0)); SyncTable table = SyncTable.answering(SyncTable.answer()))
             {
                 owedSync(rig, ui);
 
-                assertEquals(renameLines(rig, old, STATION_NAME), new ArrayList<String>(), "the owed sync logged the"
+                List<String> log = rig.takeLog();
+                org.traincontrol.base.Locomotive here = rig.model.getLocByName(old);
+                assertEquals(Collections.frequency(log, I18n.f("loc.renamePendingNotAdded", STATION_NAME, old,
+                    here.getDecoderTypeLabel(), here.getAddress())), 1, "the owed sync did not log the hold-back once");
+                assertEquals(renameLines(log, old, STATION_NAME), new ArrayList<String>(), "the owed sync logged the"
                     + " rename check");
+                assertTrue(table.shown().isEmpty(), "the owed sync opened the table");
+                assertNull(rig.model.getLocByName(STATION_NAME), "the owed sync added a copy");
 
                 assertFalse(answering.asked().stream().anyMatch(m -> m.contains(old)), "the owed sync asked about the"
                     + " rename: " + answering.asked());
@@ -288,13 +297,12 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
-     * A pressed Sync's rename question starts on No (D171); No keeps the name, adds no copy under the station's, and is
-     * logged.  The same offer is then not asked again, only logged as answered before, until the station gives the
-     * locomotive another name, which is asked about.
+     * A pressed Sync's row starts on Ask Again; Keep As Is keeps the name, adds no copy under the station's, and is
+     * logged.  The same name is then not shown again, only logged as answered before, until the station gives the
+     * locomotive another name, which is shown.
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, start the question on Yes
-     * (`YES_NO_OPTS[0]`), or leave out the `getDeclinedStationName` check, or its `loc.renameKept` log line; in
-     * `MarklinControlStation.syncThroughTheNewParser`, leave out `!nameTurnedDown(l)`.
+     * MUTATION: in `RenameProposals.Row.asksName`, leave out `!isNameKept()`; or in `TrainControlUI.apply`, leave out the
+     * `loc.renameKeptAsAnswered` line; in `MarklinControlStation.syncThroughTheNewParser`, leave out `!nameTurnedDown(l)`.
      */
     @Test(timeOut = 240000)
     public void testANoIsKeptUntilTheStationOffersAnotherName() throws Exception
@@ -307,35 +315,35 @@ public class testTheSyncAsksAboutRenamedLocomotives
         {
             renamedHere(rig, old);
 
-            List<Answering.Question> asked = about(answeringNo(rig, ui, old), old);
+            List<SyncTable.Shown> asked = answering(rig, ui, old, "KEEP");
 
             assertEquals(asked.size(), 1, "the rename was not asked once");
-            assertEquals(asked.get(0).startsOn, String.valueOf(TrainControlUI.YES_NO_OPTS[1]), "the rename question"
-                + " does not start on No");
+            assertEquals(asked.get(0).startsOn.get(old), "ASK", "the row does not start on Ask Again");
 
-            assertNotNull(rig.model.getLocByName(old), "No renamed " + old);
-            assertNull(rig.model.getLocByName(STATION_NAME), "the sync added a copy under the name turned down");
+            assertNotNull(rig.model.getLocByName(old), "Keep renamed " + old);
+            assertNull(rig.model.getLocByName(STATION_NAME), "the sync added a copy under the name kept against");
 
             assertEquals(renameLines(rig, old, STATION_NAME), Collections.singletonList(I18n.f("loc.renameKept", old,
-                STATION_NAME)), "the pressed sync did not log the No");
+                STATION_NAME)), "the pressed sync did not log the Keep");
 
-            assertEquals(about(answeringNo(rig, ui, old), old).size(), 0, "a No was asked again for the same name");
+            assertEquals(answering(rig, ui, old, "KEEP").size(), 0, "a Keep was asked again for the same name");
 
             assertEquals(renameLines(rig, old, STATION_NAME), Collections.singletonList(I18n.f(
-                "loc.renameKeptAsAnswered", old, STATION_NAME)), "the pressed sync did not log the No kept");
+                "loc.renameKeptAsAnswered", old, STATION_NAME)), "the pressed sync did not log the Keep kept");
 
             stationName.set(renamed);
 
-            asked = about(answeringNo(rig, ui, old), old);
+            List<SyncTable.Shown> again = answering(rig, ui, old, "KEEP");
 
-            assertEquals(asked.size(), 1, "the station's new name was not asked about");
-            assertTrue(asked.get(0).message.contains(renamed), "the question is not about the new name: "
-                + asked.get(0).message);
+            assertEquals(again.size(), 1, "the station's new name was not asked about");
+            assertEquals(Components.onTheEventThread(() -> again.get(0).in(old, "RENAME",
+                javax.swing.AbstractButton.class).getText()), I18n.f("sync.ui.rename", old, renamed),
+                "the row is not about the new name");
         });
     }
 
     /**
-     * A No outlasts a restart: saved with the locomotive, it is not asked again by the restarted program's Sync, which
+     * A Keep outlasts a restart: saved with the locomotive, it is not asked again by the restarted program's Sync, which
      * logs it as answered before.
      *
      * MUTATION: in `MarklinControlStation.newLocomotive(MarklinSimpleComponent)`, leave out
@@ -352,7 +360,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
         {
             renamedHere(rig, old);
 
-            assertEquals(about(answeringNo(rig, ui, old), old).size(), 1, "precondition: the rename was not asked");
+            assertEquals(answering(rig, ui, old, "KEEP").size(), 1, "precondition: the rename was not asked");
 
             assertNull(rig.model.saveState(false), "the saved data was not written");
         });
@@ -363,7 +371,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
             rig.takeLog();
 
-            assertEquals(about(answeringNo(rig, ui, old), old).size(), 0, "the restarted program asked the No again");
+            assertEquals(answering(rig, ui, old, "KEEP").size(), 0, "the restarted program asked the Keep again");
 
             assertEquals(renameLines(rig, old, STATION_NAME), Collections.singletonList(I18n.f(
                 "loc.renameKeptAsAnswered", old, STATION_NAME)), "the restarted program did not log the No kept");
@@ -445,65 +453,72 @@ public class testTheSyncAsksAboutRenamedLocomotives
         rig.takeLog();
     }
 
-    /** Presses Sync answering No about `old` and OK to the rest, until the sync says it is done. */
-    private static List<Answering.Question> answeringNo(StationRig rig, TrainControlUI ui, String old) throws Exception
+    /**
+     * Presses Sync answering `old`'s row `answer` and OK to the rest, until the sync says it is done; the tables that
+     * had a row for it.
+     */
+    private static List<SyncTable.Shown> answering(StationRig rig, TrainControlUI ui, String old, String answer)
+        throws Exception
     {
-        String no = String.valueOf(TrainControlUI.YES_NO_OPTS[1]);
-
-        return pressSync(rig, ui, m -> m != null && m.contains(old) ? Answering.press(no) : Answering.pressAt(0),
+        pressSync(rig, ui, SyncTable.answer(old, answer), m -> Answering.pressAt(0),
             testTheSyncAsksAboutRenamedLocomotives::saidDone);
+        return rowsFor(old);
     }
 
-    /** The questions that name this locomotive. */
-    private static List<Answering.Question> about(List<Answering.Question> questions, String name)
+    /** The tables the last pressSync showed that had a row for this locomotive. */
+    private static List<SyncTable.Shown> rowsFor(String name)
     {
-        List<Answering.Question> named = new ArrayList<>();
-
-        for (Answering.Question q : questions) if (q.message != null && q.message.contains(name)) named.add(q);
-
-        return named;
+        List<SyncTable.Shown> with = new ArrayList<>();
+        for (SyncTable.Shown s : tables) if (s.rows.contains(name)) with.add(s);
+        return with;
     }
 
     /** The rename check's own lines about this offer, and its "nothing to rename", logged since the last take. */
     private static List<String> renameLines(StationRig rig, String old, String station)
     {
-        List<String> lines = new ArrayList<>(rig.takeLog());
+        return renameLines(rig.takeLog(), old, station);
+    }
+
+    /** The same, of these log lines. */
+    private static List<String> renameLines(List<String> log, String old, String station)
+    {
+        List<String> lines = new ArrayList<>(log);
 
         lines.retainAll(Arrays.asList(I18n.f("loc.renameApplied", old, station), I18n.f("loc.renameKept", old, station),
             I18n.f("loc.renameKeptAsAnswered", old, station), I18n.f("loc.renameNotApplied", old, station),
-            I18n.f("loc.renameClosed", old, station), I18n.t("loc.ui.infoNoLocomotivesToRename")));
+            I18n.f("loc.renameClosed", old, station), I18n.t("loc.ui.infoNoLocomotivesToRename"),
+            I18n.f("loc.syncLeftToAsk", old), I18n.f("loc.syncRowChanged", old)));
 
         return lines;
     }
 
-    /** Nothing renamed, kept as a No or copied under the station's name for this offer; its one log line is `key`. */
+    /** Nothing renamed, kept or copied under the station's name for this offer; its one log line is `key`. */
     private static void notRenamed(StationRig rig, String old, String station, String key)
     {
         assertNotNull(rig.model.getLocByName(old), old + " was renamed to " + station);
-        assertNull(rig.model.getLocByName(old).getDeclinedStationName(), "the offer of " + station + " was kept as a"
-            + " No");
+        assertNull(rig.model.getLocByName(old).getDeclinedStationName(), "the offer of " + station + " was kept");
         assertNull(rig.model.getLocByName(station), "the sync added a copy under " + station);
         assertEquals(renameLines(rig, old, station), Collections.singletonList(I18n.f(key, old, station)), "the offer"
             + " was not logged as " + key);
     }
 
-    /** Whether the sync has said it is complete. */
+    /** Whether the sync has said it is complete, with or without the table's account after. */
     private static boolean saidDone(Answering answering)
     {
         Pattern done = Pattern.compile(Pattern.quote(I18n.t("ui.infoSyncCompleteItemsAdded")).replace("{0}",
             "\\E\\d+\\Q"));
 
-        return answering.asked().stream().anyMatch(m -> done.matcher(m).matches());
+        return answering.asked().stream().anyMatch(m -> done.matcher(m).lookingAt());
     }
 
     /**
      * A delete the program refuses is not the user's No: while the locomotive holding the station's name is moving with
-     * the power on, the rename onto it is refused without a question, logged as not renamed and kept nowhere, and once
-     * it stops the next Sync asks the delete question.
+     * the power on, Apply's rename onto it is refused without a question, logged as not renamed and kept nowhere, and
+     * once it stops the next Sync's Apply asks the delete question.
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, keep a No whenever the holder is still
-     * there (drop the `answered == JOptionPane.NO_OPTION` test); or, in `LocomotiveActions.deleteLoc`, leave out the
-     * `answered` reset, and an earlier No to another delete is kept.
+     * MUTATION: in `TrainControlUI.renamed`, keep a Keep whenever the holder is still there (drop the
+     * `answer == JOptionPane.NO_OPTION` test); or, in `LocomotiveActions.deleteLoc`, leave out the `answered` reset, and
+     * an earlier No to another delete is kept.
      */
     @Test(timeOut = 240000)
     public void testARefusedDeleteIsNotANo() throws Exception
@@ -537,15 +552,18 @@ public class testTheSyncAsksAboutRenamedLocomotives
             holder.setSpeed(40);
             rig.takeLog();
 
-            pressSync(rig, ui, m -> Answering.pressAt(0), testTheSyncAsksAboutRenamedLocomotives::saidDone);
+            pressSync(rig, ui, SyncTable.answer(old, "RENAME"), m -> Answering.pressAt(0),
+                testTheSyncAsksAboutRenamedLocomotives::saidDone);
 
-            assertNull(rig.model.getLocByName(old).getDeclinedStationName(), "the refused delete was kept as a No");
+            assertNull(rig.model.getLocByName(old).getDeclinedStationName(), "the refused delete was kept");
             assertEquals(renameLines(rig, old, STATION_NAME), Collections.singletonList(I18n.f("loc.renameNotApplied",
                 old, STATION_NAME)), "the refused delete was not logged as not renamed");
 
             holder.setSpeed(0);
 
-            List<Answering.Question> asked = about(answeringNo(rig, ui, old), old);
+            List<Answering.Question> asked = pressSync(rig, ui, SyncTable.answer(old, "RENAME"), m -> m != null
+                && m.contains(old) ? Answering.press(String.valueOf(TrainControlUI.YES_NO_OPTS[1])) : Answering.pressAt(0),
+                testTheSyncAsksAboutRenamedLocomotives::saidDone);
 
             assertTrue(asked.stream().anyMatch(q -> q.message.startsWith(onto)), "the delete question was not asked"
                 + " once the locomotive had stopped");
@@ -553,10 +571,10 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
-     * Closing the rename question without an answer renames nothing and keeps nothing: it is logged as closed, the sync
-     * adds no copy under the station's name, and the next Sync asks the rename question again.
+     * A row left on Ask Again renames nothing and keeps nothing: it is logged as left to ask, the sync adds no copy
+     * under the station's name, and the next Sync shows the row again.
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, keep a No for any answer but Yes; or in
+     * MUTATION: in `TrainControlUI.apply`, treat Ask Again as Keep; or in
      * `MarklinControlStation.syncThroughTheNewParser`, leave out `setHeldBackStationName`.
      */
     @Test(timeOut = 240000)
@@ -568,24 +586,15 @@ public class testTheSyncAsksAboutRenamedLocomotives
         {
             renamedHere(rig, old);
 
-            // No such button: the question is closed as its close box closes it
-            List<Answering.Question> asked = about(pressSync(rig, ui, m -> m != null && m.contains(old)
-                ? Answering.pressAt(99) : Answering.pressAt(0), testTheSyncAsksAboutRenamedLocomotives::saidDone), old);
+            assertEquals(answering(rig, ui, old, "ASK").size(), 1, "precondition: the rename was not asked");
 
-            assertEquals(asked.size(), 1, "precondition: the rename was not asked");
+            assertNotNull(rig.model.getLocByName(old), "Ask Again renamed " + old);
+            assertNull(rig.model.getLocByName(old).getDeclinedStationName(), "Ask Again was kept");
+            assertEquals(renameLines(rig, old, STATION_NAME), Collections.singletonList(I18n.f("loc.syncLeftToAsk",
+                old)), "Ask Again was not logged");
+            assertNull(rig.model.getLocByName(STATION_NAME), "Ask Again added a copy under the station's name");
 
-            assertNotNull(rig.model.getLocByName(old), "closing the question renamed " + old);
-            assertNull(rig.model.getLocByName(old).getDeclinedStationName(), "closing the question was kept as a No");
-            assertEquals(renameLines(rig, old, STATION_NAME), Collections.singletonList(I18n.f("loc.renameClosed",
-                old, STATION_NAME)), "closing the question was not logged as closed");
-            assertNull(rig.model.getLocByName(STATION_NAME), "closing the question added a copy under the station's"
-                + " name");
-
-            List<Answering.Question> next = about(answeringNo(rig, ui, old), old);
-
-            assertEquals(next.size(), 1, "the next Sync did not ask again");
-            assertEquals(next.get(0).message, I18n.f("loc.ui.confirmRenameLocomotive", old, STATION_NAME),
-                "the next Sync did not ask the rename question");
+            assertEquals(answering(rig, ui, old, "ASK").size(), 1, "the next Sync did not ask again");
         });
     }
 
@@ -604,10 +613,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
         {
             renamedHere(rig, old);
 
-            assertEquals(about(pressSync(rig, ui, m -> m != null && m.contains(old) ? Answering.pressAt(99)
-                : Answering.pressAt(0), testTheSyncAsksAboutRenamedLocomotives::saidDone), old).size(), 1,
-                "precondition: the rename was not asked");
-            assertNull(rig.model.getLocByName(STATION_NAME), "precondition: closing the question added a copy");
+            assertEquals(answering(rig, ui, old, "ASK").size(), 1, "precondition: the rename was not asked");
+            assertNull(rig.model.getLocByName(STATION_NAME), "precondition: Ask Again added a copy");
 
             rig.takeLog();
 
@@ -626,11 +633,12 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
-     * Questions that end in a throw partway leave nothing held back but by rule: here the second offer's locomotive is
-     * renamed away while the first is asked, and the sync an edit owes next still adds no copy of the first offer, a
-     * rename still pending (FR-249).
+     * A row whose locomotive is renamed away while the table is open is left, with a log line, and nothing is held back
+     * but by rule: the sync an edit owes next still adds no copy of the other row's station locomotive, a rename still
+     * pending (FR-249).
      *
-     * MUTATION: in `MarklinControlStation.syncThroughTheNewParser`, leave out `setHeldBackStationName`.
+     * MUTATION: in `TrainControlUI.apply`, leave out the `getLocByName(name) != r.loco` check, and the rename of the
+     * locomotive gone throws; or in `MarklinControlStation.syncThroughTheNewParser`, leave out `setHeldBackStationName`.
      */
     @Test(timeOut = 240000)
     public void testQuestionsThatThrowPartwayHoldNothingBackAfter() throws Exception
@@ -643,22 +651,19 @@ public class testTheSyncAsksAboutRenamedLocomotives
         {
             renamedHere(rig, gone);
 
-            // MM2 address 16, which the station lists before BR 10 001, so it is asked first
+            // MM2 address 16, which the station lists before BR 10 001
             if (rig.model.getLocByName(firstAtTheStation) == null) rig.model.newMM2Locomotive(first, 16);
             else rig.model.renameLoc(firstAtTheStation, first);
 
-            List<Answering.Question> asked = pressSync(rig, ui, m ->
-            {
-                if (m == null || !m.contains(first)) return Answering.pressAt(0);
+            pressSync(rig, ui, SyncTable.answer(gone, "RENAME"), s -> rig.model.renameLoc(gone, gone + " away"),
+                m -> Answering.pressAt(0), testTheSyncAsksAboutRenamedLocomotives::saidDone);
 
-                rig.model.renameLoc(gone, gone + " away");
-
-                return Answering.pressAt(99);
-            }, testTheSyncAsksAboutRenamedLocomotives::saidDone);
-
-            assertEquals(about(asked, first).size(), 1, "precondition: the first offer was not asked");
-            assertNull(rig.model.getLocByName(gone), "precondition: the second offer's locomotive is still there");
-            assertNull(rig.model.getLocByName(firstAtTheStation), "precondition: closing the question added a copy");
+            assertEquals(rowsFor(first).size(), 1, "precondition: the first row was not shown");
+            assertNull(rig.model.getLocByName(gone), "precondition: the second row's locomotive is still there");
+            assertNull(rig.model.getLocByName(firstAtTheStation), "precondition: Ask Again added a copy");
+            assertTrue(rig.takeLog().contains(I18n.f("loc.syncRowChanged", gone)), "the row whose locomotive changed"
+                + " was not logged as left");
+            assertNull(rig.model.getLocByName(STATION_NAME), "the row whose locomotive changed was renamed");
 
             try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
             {
@@ -672,8 +677,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
-     * A Central Station multi-unit still lists a member whose rename was answered No: the station names the member by
-     * the name turned down, which is the locomotive here that kept its own.
+     * A Central Station multi-unit still lists a member whose rename was answered Keep As Is: the station names the
+     * member by the name kept against, which is the locomotive here that kept its own.
      *
      * MUTATION: in `MarklinLocomotive.getModelMultiUnitLocomotives`, look each member up by its name alone again.
      */
@@ -698,8 +703,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
             rig.model.renameLoc(member, old);
 
-            assertEquals(about(answeringNo(rig, ui, old), old).size(), 1, "precondition: the rename was not asked");
-            assertNull(rig.model.getLocByName(member), "precondition: the sync added a copy under the name turned down");
+            assertEquals(answering(rig, ui, old, "KEEP").size(), 1, "precondition: the rename was not asked");
+            assertNull(rig.model.getLocByName(member), "precondition: the sync added a copy under the name kept against");
 
             assertEquals(rig.model.getLocByName(head).getModelMultiUnitLocomotives(), Collections.singletonList(
                 rig.model.getLocByName(old)), "the multi-unit does not list the member that kept its own name");
@@ -707,10 +712,9 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
-     * Closing the delete question a rename onto a held name asks is logged as closed, and keeps nothing.
+     * Closing the delete question Apply's rename onto a held name asks is logged as closed, and keeps nothing.
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, leave out the `loc.renameClosed`
-     * outcome of the delete question.
+     * MUTATION: in `TrainControlUI.renamed`, leave out the `loc.renameClosed` outcome of the delete question.
      */
     @Test(timeOut = 180000)
     public void testAClosedDeleteQuestionIsLoggedAsClosed() throws Exception
@@ -725,27 +729,27 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
             rig.takeLog();
 
-            pressSync(rig, ui, m -> m != null && m.contains(old) ? Answering.pressAt(99) : Answering.pressAt(0),
-                testTheSyncAsksAboutRenamedLocomotives::saidDone);
+            pressSync(rig, ui, SyncTable.answer(old, "RENAME"), m -> m != null && m.contains(old) ? Answering.pressAt(99)
+                : Answering.pressAt(0), testTheSyncAsksAboutRenamedLocomotives::saidDone);
 
-            assertNull(rig.model.getLocByName(old).getDeclinedStationName(), "closing the delete question kept a No");
+            assertNull(rig.model.getLocByName(old).getDeclinedStationName(), "closing the delete question kept it");
             assertEquals(renameLines(rig, old, STATION_NAME), Collections.singletonList(I18n.f("loc.renameClosed", old,
                 STATION_NAME)), "closing the delete question was not logged as closed");
         });
     }
 
     /**
-     * A rename answered Yes but refused after, here for a station name with a comma no route condition could hold, is
-     * logged as not renamed, and the sync adds no copy under that name: the next Sync offers the rename again.
+     * A rename to a station name with a comma, which no route condition could hold, is grayed in its row with the
+     * reason, so the row stays on Ask Again; the sync adds no copy under that name, and the next Sync offers it again.
      *
-     * MUTATION: in `MarklinControlStation.syncThroughTheNewParser`, leave out `setHeldBackStationName`.
+     * MUTATION: in `MarklinControlStation.differences`, leave out the `isNameUsable` reason; or in
+     * `MarklinControlStation.syncThroughTheNewParser`, leave out `setHeldBackStationName`.
      */
     @Test(timeOut = 240000)
     public void testARenameRefusedAfterYesAddsNoCopy() throws Exception
     {
         final String old = "FR-220 unusable";
         final String unusable = "BR 10, 001";
-        final String yes = String.valueOf(TrainControlUI.YES_NO_OPTS[0]);
         final AtomicReference<String> stationName = new AtomicReference<>(STATION_NAME);
 
         inAWindow(renaming(stationName), (rig, ui) ->
@@ -753,111 +757,106 @@ public class testTheSyncAsksAboutRenamedLocomotives
             renamedHere(rig, old);
             stationName.set(unusable);
 
-            assertEquals(about(pressSync(rig, ui, m -> m != null && m.contains(old) ? Answering.press(yes)
-                : Answering.pressAt(0), testTheSyncAsksAboutRenamedLocomotives::saidDone), old).size(), 1,
-                "precondition: the rename was not asked");
+            assertEquals(answering(rig, ui, old, "RENAME").size(), 1, "precondition: the rename was not asked");
+            javax.swing.AbstractButton apply = rowsFor(old).get(0).in(old, "RENAME", javax.swing.AbstractButton.class);
+            assertFalse(Components.onTheEventThread(apply::isEnabled), "Apply was not grayed");
+            assertEquals(Components.onTheEventThread(apply::getToolTipText),
+                I18n.t("loc.ui.errorLocomotiveNameUnusable"), "the grayed Apply does not say why");
 
-            notRenamed(rig, old, unusable, "loc.renameNotApplied");
+            notRenamed(rig, old, unusable, "loc.syncLeftToAsk");
         });
     }
 
     /**
-     * A run that begins after Sync is pressed and before the question stops the rename: it is not asked, the refusal is
-     * said, nothing is renamed, kept or copied, and it is logged as not renamed.
+     * A run that begins while the table is open stops Apply's rename: the refusal is said once, nothing is renamed,
+     * kept or copied, and it is logged as not renamed.
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, leave out `if (refused) continue;`.
+     * MUTATION: in `TrainControlUI.apply`, leave out `RunGates.refuseWhileAutonomyRunning`.
      */
     @Test(timeOut = 240000)
     public void testARunBegunMeanwhileStopsTheRename() throws Exception
     {
         final String old = "FR-220 run";
-        final CountDownLatch asked = new CountDownLatch(1);
-        final CountDownLatch release = new CountDownLatch(1);
-        final AtomicBoolean holding = new AtomicBoolean();
-        inAWindow(holdingTheRenameRead(asked, release, holding), (rig, ui) ->
+
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
         {
             renamedHere(rig, old);
 
-            rig.model.setNetworkCommState(true);
-            holding.set(true);
-
             org.traincontrol.automation.Layout railway = new org.traincontrol.automation.Layout(rig.model);
+            List<Answering.Question> asked;
 
-            try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
+            try
             {
-                SwingUtilities.invokeLater(() -> ui.doSync(ui));
-
-                assertTrue(asked.await(60, TimeUnit.SECONDS), "the sync did not read the station's locomotives");
-
-                // The run begins while the rename read waits on the station
-                support.Reflect.set(MarklinControlStation.class, rig.model, "autoLayout", railway);
-                railway.setStagingInProgress(true);
-                release.countDown();
-
-                assertTrue(Components.waitFor(() -> saidDone(answering), 60000), "the sync did not end: "
-                    + answering.asked());
-                assertTrue(syncEnded(ui), "a sync never ended");
-
-                assertFalse(answering.asked().contains(I18n.f("loc.ui.confirmRenameLocomotive", old, STATION_NAME)),
-                    "the rename was asked while a run was going");
-                assertTrue(answering.asked().contains(I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")),
-                    "the run's refusal was not said: " + answering.asked());
+                // The run begins while the table is open
+                asked = pressSync(rig, ui, SyncTable.answer(old, "RENAME"), s ->
+                {
+                    try
+                    {
+                        support.Reflect.set(MarklinControlStation.class, rig.model, "autoLayout", railway);
+                    }
+                    catch (ReflectiveOperationException e)
+                    {
+                        throw new IllegalStateException(e);
+                    }
+                    railway.setStagingInProgress(true);
+                }, m -> Answering.pressAt(0), testTheSyncAsksAboutRenamedLocomotives::saidDone);
             }
             finally
             {
-                release.countDown();
                 railway.setStagingInProgress(false);
                 support.Reflect.set(MarklinControlStation.class, rig.model, "autoLayout", null);
             }
+
+            assertEquals(rowsFor(old).size(), 1, "precondition: the rename was not in the table");
+            assertEquals(asked.stream().filter(q -> I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")
+                .equals(q.message)).count(), 1L, "the run's refusal was not said once");
 
             notRenamed(rig, old, STATION_NAME, "loc.renameNotApplied");
         });
     }
 
     /**
-     * Yes to a new name forgets the No kept for the old one and is logged as renamed: when the station later gives the
-     * locomotive the name turned down before, that is asked about again.
+     * Apply to a new name forgets the Keep for the old one and is logged as renamed: when the station later gives the
+     * locomotive the name kept against before, that is asked about again.
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, leave out
-     * `l.setDeclinedStationName(null)` after the rename, or log `loc.renameNotApplied` in place of `loc.renameApplied`.
+     * MUTATION: in `TrainControlUI.renamed`, leave out `l.setDeclinedStationName(null)` after the rename, or return
+     * `loc.renameNotApplied` in place of `loc.renameApplied`.
      */
     @Test(timeOut = 240000)
     public void testAYesForgetsTheNo() throws Exception
     {
         final String old = "FR-220 yes";
         final String renamed = STATION_NAME + " B";
-        final String yes = String.valueOf(TrainControlUI.YES_NO_OPTS[0]);
         final AtomicReference<String> stationName = new AtomicReference<>(STATION_NAME);
 
         inAWindow(renaming(stationName), (rig, ui) ->
         {
             renamedHere(rig, old);
 
-            assertEquals(about(answeringNo(rig, ui, old), old).size(), 1, "precondition: the rename was not asked");
+            assertEquals(answering(rig, ui, old, "KEEP").size(), 1, "precondition: the rename was not asked");
 
             rig.takeLog();
             stationName.set(renamed);
 
-            pressSync(rig, ui, m -> m != null && m.contains(old) ? Answering.press(yes) : Answering.pressAt(0),
-                testTheSyncAsksAboutRenamedLocomotives::saidDone);
+            answering(rig, ui, old, "RENAME");
 
-            assertNotNull(rig.model.getLocByName(renamed), "Yes did not rename " + old + " to " + renamed);
+            assertNotNull(rig.model.getLocByName(renamed), "Apply did not rename " + old + " to " + renamed);
             assertEquals(renameLines(rig, old, renamed), Collections.singletonList(I18n.f("loc.renameApplied", old,
                 renamed)), "the rename was not logged as renamed");
 
             stationName.set(STATION_NAME);
 
-            assertEquals(about(answeringNo(rig, ui, renamed), renamed).size(), 1, "the name turned down before was not"
-                + " asked about again after a Yes");
+            assertEquals(answering(rig, ui, renamed, "KEEP").size(), 1, "the name kept against before was not asked"
+                + " about again after Apply");
         });
     }
 
     /**
-     * A No is forgotten once the station no longer offers the name: the station giving the locomotive its name here
-     * logs "No locomotives to rename", and when it then offers the name turned down again, that is asked again.
+     * A Keep is forgotten once the station no longer offers the name: the station giving the locomotive its name here
+     * logs "No locomotives to rename", and when it then offers the name kept against again, that is asked again.
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, keep the No of a locomotive the
-     * station no longer offers a name for (empty the forgetting loop), or leave out the "nothing to rename" line.
+     * MUTATION: in `TrainControlUI.apply`, keep the Keep of a locomotive the station no longer offers a name for (leave
+     * out its `setDeclinedStationName(null)`), or in `askAndApply` leave out the "nothing to rename" line.
      */
     @Test(timeOut = 240000)
     public void testANoIsForgottenWhenTheStationStopsOffering() throws Exception
@@ -886,42 +885,43 @@ public class testTheSyncAsksAboutRenamedLocomotives
         {
             renamedHere(rig, old);
 
-            assertEquals(about(answeringNo(rig, ui, old), old).size(), 1, "precondition: the rename was not asked");
+            assertEquals(answering(rig, ui, old, "KEEP").size(), 1, "precondition: the rename was not asked");
 
             rig.takeLog();
             stationName.set(old);
 
-            assertEquals(about(answeringNo(rig, ui, old), old).size(), 0, "a name the station has was asked about");
+            assertEquals(answering(rig, ui, old, "KEEP").size(), 0, "a name the station has was asked about");
             assertEquals(renameLines(rig, old, STATION_NAME), Collections.singletonList(I18n.t(
                 "loc.ui.infoNoLocomotivesToRename")), "nothing to rename was not logged");
 
             stationName.set(STATION_NAME);
 
-            assertEquals(about(answeringNo(rig, ui, old), old).size(), 1, "the No was kept after the station stopped"
+            assertEquals(answering(rig, ui, old, "KEEP").size(), 1, "the Keep was kept after the station stopped"
                 + " offering the name");
         });
     }
 
     /**
-     * A pressed Sync asks once about a locomotive held here at another address than the station's, Keep first, and
-     * "Use address" gives it the station's (FR-246).
+     * A pressed Sync shows a locomotive held here at another address than the station's in one row, on Ask Again, whose
+     * Apply says the change, and Apply gives it the station's address (FR-246).
      *
-     * MUTATION: in `MarklinControlStation.getRenameProposals`, put nothing in `addresses`, and nothing is asked.
+     * MUTATION: in `MarklinControlStation.differences`, put nothing in `addressedAt`, and nothing is asked.
      */
     @Test(timeOut = 180000)
     public void testAPressedSyncAsksAboutAnotherAddressAndUsesItWhenTold() throws Exception
     {
-        String use = I18n.f("loc.ui.optionUseAddress", 10);
-        String asks = I18n.f("loc.ui.askStationAddress", STATION_NAME, 10, 70);
-
         inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
         {
             movedHere(rig);
 
-            askedOnce(about(pressing(rig, ui, use), STATION_NAME), asks, I18n.t("loc.ui.optionKeep"), use);
+            List<SyncTable.Shown> shown = pressing(rig, ui, "ADDRESS");
+            assertEquals(shown.size(), 1, "the address was not asked once");
+            assertEquals(shown.get(0).startsOn.get(STATION_NAME), "ASK", "the row does not start on Ask Again");
+            assertEquals(Components.onTheEventThread(() -> shown.get(0).in(STATION_NAME, "ADDRESS",
+                javax.swing.AbstractButton.class).getText()), I18n.f("sync.ui.changeAddress", STATION_NAME, 10));
 
-            assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 10, "Use address did not give it the"
-                + " station's address");
+            assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 10, "Apply did not give it the station's"
+                + " address");
             assertEquals(rig.model.getLocList().stream().filter(STATION_NAME::equals).count(), 1L,
                 "the sync added a copy under the station's name");
         });
@@ -931,7 +931,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * Keep leaves the address and is not asked again, across a restart, until the station's address for the
      * locomotive changes, which is asked about (FR-246).
      *
-     * MUTATION: in `TrainControlUI.askAboutAddress`, leave out `setDeclinedStationAddress`, or in
+     * MUTATION: in `TrainControlUI.apply`, leave out Keep's `setDeclinedStationAddress`, or in
      * `MarklinControlStation.newLocomotive(MarklinSimpleComponent)` leave out `setDeclinedStationAddress`.
      */
     @Test(timeOut = 300000)
@@ -940,14 +940,13 @@ public class testTheSyncAsksAboutRenamedLocomotives
         final java.io.File root = Files.createTempDirectory("tc-sync-address").toFile();
         final AtomicInteger at = new AtomicInteger(10);
         final BiFunction<String, Integer, byte[]> cs3 = addressing(at);
-        final String keep = I18n.t("loc.ui.optionKeep");
+        final String keep = "KEEP";
 
         inAWindow(root, cs3, (rig, ui) ->
         {
             movedHere(rig);
 
-            assertEquals(about(pressing(rig, ui, keep), STATION_NAME).size(), 1, "precondition: the address was not"
-                + " asked about");
+            assertEquals(pressing(rig, ui, keep).size(), 1, "precondition: the address was not asked about");
             assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 70, "Keep gave it the station's address");
             assertTrue(rig.takeLog().contains(I18n.f("loc.addressKept", STATION_NAME, 10, 70)), "the sync did not log"
                 + " the address kept");
@@ -957,57 +956,58 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
         inAWindow(root, cs3, (rig, ui) ->
         {
-            assertEquals(about(pressing(rig, ui, keep), STATION_NAME).size(), 0, "a kept address was asked again");
+            assertEquals(pressing(rig, ui, keep).size(), 0, "a kept address was asked again");
 
             at.set(12);
 
-            askedOnce(about(pressing(rig, ui, keep), STATION_NAME), I18n.f("loc.ui.askStationAddress", STATION_NAME, 12,
-                70), keep, I18n.f("loc.ui.optionUseAddress", 12));
+            List<SyncTable.Shown> shown = pressing(rig, ui, keep);
+            assertEquals(shown.size(), 1, "the station's new address was not asked about");
+            assertEquals(Components.onTheEventThread(() -> shown.get(0).in(STATION_NAME, "ADDRESS",
+                javax.swing.AbstractButton.class).getText()), I18n.f("sync.ui.changeAddress", STATION_NAME, 12));
             assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 70, "Keep gave it the station's address");
         });
     }
 
     /**
-     * A locomotive held here at 10 that the station has at 3, while it calls the one at 10 another name, is one
-     * question with three answers, Keep first, each doing only what it says: Rename leaves the station's locomotive at
-     * 3 to be added, Use address 3 frees 10 for the station's locomotive there in the same sync, Keep changes nothing
-     * and is not asked again (FR-246).
+     * A locomotive held here at 10 that the station has at 3, while it calls the one at 10 another name, is one row with
+     * two Apply choices, each doing only what it says: the rename leaves the station's locomotive at 3 to be added, the
+     * address 3 frees 10 for the station's locomotive there in the same sync, Keep changes nothing and is not asked
+     * again (FR-246).
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, drop the `askAboutAddress` branch of
-     * the rename's question, and the plain rename is asked.
+     * MUTATION: in `SyncDifferencesWindow.addRow`, leave out the address choice when the row also asks the name.
      */
     @Test(timeOut = 360000)
     public void testARenamedAndReAddressedLocomotiveIsOneQuestion() throws Exception
     {
-        final String asks = I18n.f("loc.ui.askStationAddressOrName", AT_3, 3, 10, STATION_NAME);
-        final String keep = I18n.t("loc.ui.optionKeep");
-        final String rename = I18n.f("loc.ui.optionRenameTo", STATION_NAME);
-        final String use = I18n.f("loc.ui.optionUseAddress", 3);
-
         inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
         {
             renamedAndMovedHere(rig);
 
-            askedOnce(about(pressing(rig, ui, rename), AT_3), asks, keep, rename, use);
+            List<SyncTable.Shown> shown = pressing(rig, ui, "RENAME");
+            assertEquals(shown.size(), 1, "not one table");
+            assertEquals(Components.onTheEventThread(() -> Arrays.asList(shown.get(0).in(AT_3, "RENAME",
+                javax.swing.AbstractButton.class).getText(), shown.get(0).in(AT_3, "ADDRESS",
+                javax.swing.AbstractButton.class).getText())), Arrays.asList(I18n.f("sync.ui.rename", AT_3, STATION_NAME),
+                I18n.f("sync.ui.changeAddress", AT_3, 3)), "the row does not offer both changes");
 
-            assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 10, "Rename did not rename it");
+            assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 10, "the rename did not rename it");
             assertEquals(rig.model.getLocByName(AT_3).getAddress(), 3, "the station's locomotive at 3 was not added");
 
             rig.model.deleteLoc(AT_3);
             rig.model.renameLoc(STATION_NAME, AT_3);
             renamedAndMovedHere(rig);
 
-            assertEquals(about(pressing(rig, ui, use), AT_3).size(), 1, "precondition: Use address was not asked");
-            assertEquals(rig.model.getLocByName(AT_3).getAddress(), 3, "Use address did not move it");
+            assertEquals(pressing(rig, ui, "ADDRESS").size(), 1, "precondition: the address was not asked");
+            assertEquals(rig.model.getLocByName(AT_3).getAddress(), 3, "the address did not move it");
             assertNotNull(rig.model.getLocByName(STATION_NAME), "the sync did not add the station's locomotive at the"
                 + " address it left");
 
             renamedAndMovedHere(rig);
 
-            assertEquals(about(pressing(rig, ui, keep), AT_3).size(), 1, "precondition: Keep was not asked");
+            assertEquals(pressing(rig, ui, "KEEP").size(), 1, "precondition: Keep was not asked");
             assertEquals(rig.model.getLocByName(AT_3).getAddress(), 10, "Keep moved it");
             assertNull(rig.model.getLocByName(STATION_NAME), "Keep renamed it or the sync added a copy");
-            assertEquals(about(pressing(rig, ui, keep), AT_3).size(), 0, "Keep was asked again");
+            assertEquals(pressing(rig, ui, "KEEP").size(), 0, "Keep was asked again");
         });
     }
 
@@ -1204,11 +1204,14 @@ public class testTheSyncAsksAboutRenamedLocomotives
         return asked.get(0);
     }
 
-    /** Presses Sync pressing `button` on each question naming a locomotive of these claims, OK on the rest. */
-    private static List<Answering.Question> pressing(StationRig rig, TrainControlUI ui, String button) throws Exception
+    /** Presses Sync answering the rows of the locomotives of these claims so, OK to the rest; the tables with them. */
+    private static List<SyncTable.Shown> pressing(StationRig rig, TrainControlUI ui, String answer) throws Exception
     {
-        return pressSync(rig, ui, m -> m != null && (m.contains(STATION_NAME) || m.contains(AT_3))
-            ? Answering.press(button) : Answering.pressAt(0), testTheSyncAsksAboutRenamedLocomotives::saidDone);
+        pressSync(rig, ui, SyncTable.answer(STATION_NAME, answer, AT_3, answer), m -> Answering.pressAt(0),
+            testTheSyncAsksAboutRenamedLocomotives::saidDone);
+        List<SyncTable.Shown> with = rowsFor(STATION_NAME);
+        with.addAll(rowsFor(AT_3));
+        return with;
     }
 
     private interface Claim
@@ -1243,17 +1246,28 @@ public class testTheSyncAsksAboutRenamedLocomotives
         }
     }
 
-    /**
-     * Presses Sync with a station connected (renames are asked about only then) and answers by `rule` until `seen`
-     * holds, then waits for every sync to end and gives back what was asked, the questions counted after the wait.
-     */
-    private static List<Answering.Question> pressSync(StationRig rig, TrainControlUI ui,
+    /** The tables the last pressSync showed. */
+    private static List<SyncTable.Shown> tables = new ArrayList<>();
+
+    private static List<Answering.Question> pressSync(StationRig rig, TrainControlUI ui, java.util.Map<String, String> table,
         java.util.function.Function<String, Answering.Answer> rule,
+        java.util.function.Predicate<Answering> seen) throws Exception
+    {
+        return pressSync(rig, ui, table, null, rule, seen);
+    }
+
+    /**
+     * Presses Sync with a station connected (the table opens only then), answers the table as `table` says after
+     * `look`, and the questions by `rule` until `seen` holds, then waits for every sync to end and gives back what was
+     * asked, the questions counted after the wait; the tables shown go in `tables`.
+     */
+    private static List<Answering.Question> pressSync(StationRig rig, TrainControlUI ui, java.util.Map<String, String> table,
+        java.util.function.Consumer<SyncTable.Shown> look, java.util.function.Function<String, Answering.Answer> rule,
         java.util.function.Predicate<Answering> seen) throws Exception
     {
         rig.model.setNetworkCommState(true);
 
-        try (Answering answering = Answering.start(rule))
+        try (Answering answering = Answering.start(rule); SyncTable answers = SyncTable.answering(table, look))
         {
             SwingUtilities.invokeLater(() -> ui.doSync(ui));
 
@@ -1268,6 +1282,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
             assertTrue(Settle.until(() -> seen.test(answering), 1000), "what was asked is gone");
 
+            tables = answers.shown();
             return new ArrayList<>(answering.questions());
         }
     }

@@ -280,6 +280,10 @@ public interface ViewListener
      * @throws java.lang.Exception
      */
     public RenameProposals getRenameProposals() throws Exception;
+    public RenameProposals getRenameProposals(boolean log) throws Exception;
+
+    /** Adds the Central Station's locomotive here beside any at its address (FR-249); null when its name is taken. */
+    public Locomotive addStationLocomotive(Locomotive station);
     public String exportLocsToCSV();
 
     /**
