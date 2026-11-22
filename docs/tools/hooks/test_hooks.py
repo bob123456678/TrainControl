@@ -21,13 +21,56 @@ def answer(tool, ti, cwd=R):
 
 
 def guard(tool, ti, cwd=R):
-    """deny, ask, note (no decision, a message for Adam and Claude) or pass."""
+    """deny, recycle (a deny that sends the delete to recycle.py), ask, note (no decision, a message for Adam and
+    Claude) or pass."""
     out = answer(tool, ti, cwd)
-    return (out.get('hookSpecificOutput') or {}).get('permissionDecision') or ('note' if out else 'pass')
+    hso = out.get('hookSpecificOutput') or {}
+    if hso.get('permissionDecision') == 'deny' and 'recycle.py' in (hso.get('permissionDecisionReason') or ''):
+        return 'recycle'
+    return hso.get('permissionDecision') or ('note' if out else 'pass')
+
+
+# Deletes outside the scratch folders that the guard sends to recycle.py in place of a prompt: plain deletes of literal
+# paths, or of relative ones from a folder the call surely runs in.  Listed here, the cases' 'ask' reads 'recycle'.
+RECYCLED = {
+    'rm -rf C:/elsewhere/build', 'rm -rf build', 'rm -f /c/Users/x/a.txt', 'rmdir /c/x/y', 'unlink C:/x/a',
+    'rm -rf $TEMP/../x', 'rm -rf ~/x', 'rm -rf $HOME/x', 'S=/c/x; rm -rf "$S/y"', 'bash -c "rm -rf /c/x"',
+    'cd ~ && rm -rf x', 'env -C /c/x rm -rf y', 'cmd //c "rd /s /q C:\\x"',
+    'cd /tmp/tcg-x && cd ..\\..\\.. && rm -rf y, from scratch', 'cd; rm -rf x, from scratch',
+    'rm -rf ../../x, from scratch', '&& chain: cd C:/x && rm y', '&& chain: (cd /tmp/tcg-x) && rm y',
+    '&& chain: cd /tmp && cd .. && rm -rf x', '&& chain: cd /tmp/tcg-x && rm -rf ../../y',
+    '&& chain: cd C:/x && rm -rf /tmp/tcg-ok && rm -rf y', 'PowerShell: Remove-Item -Recurse -Force C:\\x\\y',
+    'PowerShell: ri C:\\x', 'PowerShell: del C:\\x\\a.txt', 'PowerShell: erase C:\\x\\a.txt', 'PowerShell: rd C:\\x',
+    'PowerShell: rmdir C:\\x', 'PowerShell: rm -r -fo C:\\x', "PowerShell: Remove-Item -LiteralPath 'C:\\x' -Recurse",
+    'PowerShell: Remove-Item -Path:C:\\x', 'PowerShell: Remove-Item $env:USERPROFILE\\x',
+    "PowerShell: $S = 'C:\\x'; Remove-Item -Recurse $S", 'PowerShell: Remove-Item a.txt -ErrorAction SilentlyContinue',
+    'PowerShell: Remove-Item "$env:TEMP\\a",C:\\x', 'PowerShell: cmd /c del /f /q C:\\x\\a.txt',
+    'PowerShell: cmd /c "rd /s /q %USERPROFILE%\\x"', 'PowerShell: powershell -Command "Remove-Item C:\\x"',
+    'keywords: for d in build dist; do rm -rf "$d"; done', 'keywords: if [ -d C:/x ]; then rm -rf C:/x; fi',
+    'keywords: if true; then rm -rf C:/x; else echo no; fi', 'keywords: if [ -e X ]; then echo; else rm -rf C:/x; fi',
+    'keywords: until true; do rm -rf C:/x; done', 'keywords: if false; then :; elif true; then rm -rf C:/x; fi',
+    'keywords: for d in /tmp/tcg-a C:/x; do rm -rf "$d"; done', 'C1: cd C:/x || exit 1; rm -rf y',
+    'C1: (cd /tmp/tcg-wt || exit 1); rm -rf b', 'C1: rm -rf "${NOPE:-C:/x}/y"', 'C1: T=$(mktemp -d -p C:/x); rm -rf "$T"',
+    'C1: T=$(mktemp C:/x/fooXXXX); rm "$T"', 'C2: rm -rf C:/elsewhere/.claude',
+    'C2: rm -rf C:/elsewhere/.claude/worktrees-old/x', 'C2: rm -rf C:/elsewhere/.claude/worktrees',
+    'C2: rm -rf C:/elsewhere/.claude/worktrees/', 'C2: rm -rf C:/elsewhere/.claude/worktrees/../x',
+    'C2: rm -rf C:/elsewhere/claude/worktrees/x', 'C1: sixty cds after cd || exit, judged in time',
+    'trust less: bash -c "rm -rf build"; cd X; ls', 'trust less: eval "rm -rf build"; cd X',
+    'trust less: bash -c "cd X"; bash -c "rm -rf build"', 'trust less: bash -c "cd X"; rm -rf build',
+    'trust less: `cd X`; rm -rf build', 'trust less: v=$(cd X); rm -rf build', 'trust less: pushd -n X; rm -rf build',
+    'trust less: PowerShell powershell -Command "Remove-Item build -Recurse"; Set-Location X',
+    'loops: nested, one value outside', 'PowerShell loops and sums: $S = $env:USERPROFILE + "\\x"; Remove-Item $S',
+    'PowerShell loops and sums: $d = Join-Path C:\\ "x"; Remove-Item $d', 'default: ${PROGRAMDATA:-/tmp}',
+    'share: git -C //tcg-nohost/share commit -m x; rm -rf C:/x',
+    'share: git -C //tcg-nohost/share push; git -C //tcg-nohost2/s merge x; rm -rf C:/x'}
+USED = set()
 
 
 def check(name, got, want):
     global misses
+    if want == 'ask' and name in RECYCLED:
+        want = 'recycle'
+        USED.add(name)
     ok = got == want
     misses += not ok
     print('%-4s %-44s %s%s' % ('ok' if ok else 'MISS', name, got, '' if ok else '  (wanted ' + want + ')'))
@@ -327,6 +370,38 @@ check('the message names the path', 'yes' if 'C:\\x' in (why or '') and 'outside
 why = (answer('Bash', {'command': 'rm ' + R + '/LocDB.data'}).get('hookSpecificOutput') or {}).get(
     'permissionDecisionReason')
 check('rm LocDB.data asks about the live state', 'yes' if 'LocDB' in (why or '') else why, 'yes')
+check('rm LocDB.data is not recycled', sh('rm ' + R + '/LocDB.data'), 'ask')
+
+# recycle.py: a plain delete of literal paths outside scratch is refused with the command that recycles them, unless
+# recycle.py would refuse them (a drive root, the home or temp folder or one above, a share, a whole checkout, a size
+# past its limit) or the delete is not a plain one; those still ask
+sys.path.insert(0, HERE)
+import recycle
+why = (answer('Bash', {'command': 'rm -rf C:/x C:/y/z'}, OUT).get('hookSpecificOutput') or {}).get(
+    'permissionDecisionReason') or ''
+check('recycle: the message gives the command', 'yes' if 'recycle.py" "C:/x" "C:/y/z"' in why and
+      'outside the scratch folders' in why else why, 'yes')
+for cmd in ['rm -rf C:/', 'rm -rf /c/', 'rm -rf ~', 'rm -rf $HOME', 'rm -rf C:/Users', 'rm -rf ' + R, 'rm -rf /usr/bin',
+            'Remove-Item HKCU:\\Software\\x', 'shred -u C:/x/a', 'Clear-Content C:\\x\\log.txt', "rm -rf C:/x/*.log",
+            "find C:/x -name '*.class' -delete", 'ls | xargs rm -f', 'rm -rf "$FOO/x"', 'cd /tmp/tcg-x; rm -rf build',
+            'git worktree remove C:/elsewhere/wt', 'git clean -fd ../other', 'rm -rf C:/x; git push origin master']:
+    check('recycle: still asks: ' + cmd, ps(cmd, cwd=OUT) if cmd[:1] in 'RC' and ' ' in cmd and '\\' in cmd
+          else sh(cmd, cwd=OUT), 'ask')
+check('recycle: refuses a drive root', bool(recycle.refusal(['C:/'])), True)
+check('recycle: refuses the home folder and one above', bool(recycle.refusal([os.path.expanduser('~')])) and
+      bool(recycle.refusal([os.path.dirname(os.path.expanduser('~'))])), True)
+check('recycle: refuses the temp folder', bool(recycle.refusal([TEMP])), True)
+check('recycle: refuses a share', bool(recycle.refusal(['//host/share/x'])), True)
+check('recycle: refuses a whole checkout', bool(recycle.refusal([R])), True)
+check('recycle: takes a file in a checkout', recycle.refusal([R + '/docs/tools/hooks/README.md']), None)
+check('recycle: takes a path that is not there', recycle.refusal(['C:/elsewhere/build']), None)
+big = tempfile.mkdtemp()
+try:
+    with open(os.path.join(big, 'a.bin'), 'wb') as f:
+        f.truncate(recycle.LIMIT + 1)
+    check('recycle: refuses past its size limit', bool(recycle.refusal([big])), True)
+finally:
+    shutil.rmtree(big, ignore_errors=True)
 
 # Moving master in this repository asks, by any spelling the guard reads
 for cmd in ['git branch -f master release', 'git branch --force master release', 'git branch -D master',
@@ -687,6 +762,8 @@ for name, path, text, want in [
         check('pre-commit: ' + name, 'refused' if got else 'allowed', 'refused' if want else 'allowed')
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
+
+check('recycle: every RECYCLED case ran', ', '.join(sorted(RECYCLED - USED)) or 'all', 'all')
 
 print('%d missed' % misses)
 sys.exit(1 if misses else 0)
