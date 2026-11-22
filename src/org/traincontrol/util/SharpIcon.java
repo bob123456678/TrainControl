@@ -37,8 +37,7 @@ public class SharpIcon extends ImageIcon implements com.formdev.flatlaf.FlatLaf.
     {
         super(picture);
         this.art = art;
-        this.fit = getIconWidth() > 0 && getIconHeight() > 0
-            && clearEdges(ImageUtil.toTransparentBufferedImage(getImage())) ? Fit.WHOLE : Fit.COVER;
+        this.fit = clearEdges(new ImageIcon(picture).getImage()) ? Fit.WHOLE : Fit.COVER;
     }
 
     public SharpIcon(Image picture, Art art, Fit fit)
@@ -92,10 +91,14 @@ public class SharpIcon extends ImageIcon implements com.formdev.flatlaf.FlatLaf.
         return out;
     }
 
-    /** No more than a quarter solid along the right column and bottom row. */
-    private static boolean clearEdges(BufferedImage picture)
+    /** No more than a quarter solid along the right column and bottom row; false for a picture that did not load. */
+    private static boolean clearEdges(Image loaded)
     {
-        int w = picture.getWidth(), h = picture.getHeight(), most = 0;
+        int w = loaded.getWidth(null), h = loaded.getHeight(null), most = 0;
+
+        if (w <= 0 || h <= 0) return false;
+
+        BufferedImage picture = ImageUtil.toTransparentBufferedImage(loaded);
 
         for (int x = 0; x < w; x++) most = Math.max(most, picture.getRGB(x, h - 1) >>> 24);
         for (int y = 0; y < h; y++) most = Math.max(most, picture.getRGB(w - 1, y) >>> 24);
