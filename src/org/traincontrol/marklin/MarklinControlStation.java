@@ -1327,9 +1327,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         for (MarklinLocomotive existingLoc : this.locDB.getItems())
         {
-            // Consist heads are never proposed for renaming
-            if (existingLoc.hasLinkedLocomotives()) continue;
-
             if (!byAddress.containsKey(existingLoc.getIntUID()))
             {
                 byAddress.put(existingLoc.getIntUID(), new ArrayList<>());
@@ -1351,8 +1348,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         for (MarklinLocomotive l : parsedLocs)
         {
             MarklinLocomotive elsewhere = addressedElsewhere(l);
-            // Consist heads are not asked about, as they are not renamed
-            if (elsewhere != null && !elsewhere.hasLinkedLocomotives()) addresses.put(l.getName(), l.getAddress());
+            if (elsewhere != null) addresses.put(l.getName(), l.getAddress());
             List<MarklinLocomotive> matches = byAddress.get(l.getIntUID());
             if (matches == null) continue;
 

@@ -67,7 +67,7 @@ public class testImportRename
 
     /** Everything these tests create.  Cleared before each one - see clearTestLocomotives. */
     private static final String[] TEST_LOCS = {
-        "IR mismatch", CS_NAME, "IR head", "IR member", "IR dupe one", "IR dupe two",
+        "IR mismatch", CS_NAME, "IR head", "IR member", "IR reverse", "IR dupe one", "IR dupe two",
         "IR cs dupe", "IR chain tail", CS_TEN, CS_TWENTYONE, "IR unknown", "IR old" };
 
     @BeforeClass
@@ -415,29 +415,78 @@ public class testImportRename
     }
 
     /**
-     * A locomotive that heads a multi-unit is never proposed, however its name differs.
+     * A locomotive that heads a multi-unit is proposed like any other, and applying the proposal keeps its members.
      *
-     * The rule is one clause of a compound condition in the middle of the method
-     * (`&& !existingLoc.hasLinkedLocomotives()`), with no comment, and renaming a consist head is
-     * exactly the operation that would be most disruptive to get wrong.
+     * MUTATION: restore the consist-head skip in `getRenameProposals` and the proposal is gone.
      */
     @Test
-    public void testConsistHeadIsNeverProposed() throws Exception
+    public void testConsistHeadIsProposed() throws Exception
     {
         MarklinLocomotive head = installAtReferenceAddress("IR head");
         MarklinLocomotive member = model.newMM2Locomotive("IR member", CS_ADDRESS - 1);
+        MarklinLocomotive reverse = model.newMM2Locomotive("IR reverse", CS_ADDRESS - 2);
 
-        Map<String, Double> links = new HashMap<>();
-        links.put(member.getName(), 1.0);
+        try
+        {
+            Map<String, Double> links = new HashMap<>();
+            links.put(member.getName(), 1.0);
+            links.put(reverse.getName(), -0.5);
 
-        head.preSetLinkedLocomotives(links);
-        head.setLinkedLocomotives();
+            head.preSetLinkedLocomotives(links);
+            head.setLinkedLocomotives();
 
-        assertTrue(head.hasLinkedLocomotives(), "precondition: the head really is a multi-unit");
+            assertTrue(head.hasLinkedLocomotives(), "precondition: the head really is a multi-unit");
 
-        assertNull(renameTargetFor("IR head"),
-            "a locomotive heading a multi-unit is skipped, even though its name differs from the "
-            + "Central Station's");
+            assertEquals(renameTargetFor("IR head"), CS_NAME,
+                "a locomotive heading a multi-unit is offered the Central Station's name like any other");
+
+            assertTrue(model.renameLoc("IR head", CS_NAME), "applying the proposal");
+
+            assertSame(model.getLocByName(CS_NAME), head, "the head carries the station's name");
+            assertNull(model.getLocByName("IR head"), "and no longer the old one");
+            assertEquals(head.getLinkedLocomotiveNames(), links, "its members, multipliers and directions are kept");
+            assertTrue(head.isLinkedTo(member) && head.isLinkedTo(reverse), "and still recognized as linked");
+            assertNull(renameTargetFor("IR head"), "nothing is left to propose");
+        }
+        finally
+        {
+            model.deleteLoc("IR member");
+            model.deleteLoc("IR reverse");
+        }
+    }
+
+    /**
+     * A consist head carrying the station's name at another address is asked about its address, and taking the
+     * station's address keeps its members and multipliers.
+     *
+     * MUTATION: restore `!elsewhere.hasLinkedLocomotives()` on the `addresses.put` line and the offer is gone.
+     */
+    @Test
+    public void testConsistHeadIsAskedAboutItsAddress() throws Exception
+    {
+        MarklinLocomotive head = model.newMM2Locomotive(CS_NAME, CS_ADDRESS + 1);
+        MarklinLocomotive member = model.newMM2Locomotive("IR member", CS_ADDRESS - 1);
+
+        try
+        {
+            Map<String, Double> links = new HashMap<>();
+            links.put(member.getName(), -0.5);
+
+            head.preSetLinkedLocomotives(links);
+            head.setLinkedLocomotives();
+
+            assertEquals(model.getRenameProposals().getAddresses().get(CS_NAME), Integer.valueOf(CS_ADDRESS),
+                "the head is offered the station's address like any locomotive");
+
+            model.changeLocAddress(CS_NAME, CS_ADDRESS, head.getDecoderType());
+
+            assertEquals(head.getLinkedLocomotiveNames(), links, "taking the address keeps members and multipliers");
+            assertSame(model.getLocByName(CS_NAME), head, "and the head is still found by its name");
+        }
+        finally
+        {
+            model.deleteLoc("IR member");
+        }
     }
 
     /**
