@@ -122,7 +122,7 @@ public abstract class Locomotive
 
     // The one the Sync running now offered and did not apply, so it adds no copy under it; never saved
     private String heldBackStationName;
-    // The station's address the user kept against, and the one this Sync was told to use, never saved (FR-246)
+    // The station's address the user kept against, saved; the one this Sync was told to use, never saved (FR-246)
     private Integer declinedStationAddress;
     private Integer takenStationAddress;
     

@@ -6343,9 +6343,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (l != null)
         {
             SwingUtilities.invokeLater(() -> {
+                // A pressed Sync asks about this locomotive's address at the station first, as the main Sync does
+                if (asked != null) askAboutItsAddress(asked, l);
                 LayoutDiagram before = shownDiagram();
+                int synced;
 
-                int synced = this.syncWithCS2();
+                try
+                {
+                    synced = this.syncWithCS2();
+                }
+                finally
+                {
+                    // The answer is for this sync alone
+                    l.setTakenStationAddress(null);
+                }
                 this.model.syncLocomotive(l.getName());
                 repaintLoc(true, null);
                 redrawRouteSquaresOrRebuild(before);
@@ -14898,6 +14909,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         if (answer == options.length - 1) l.setTakenStationAddress(address);
         return answer == options.length - 1 ? JOptionPane.CANCEL_OPTION : answer == 0 ? JOptionPane.NO_OPTION
             : answer < 0 ? JOptionPane.CLOSED_OPTION : JOptionPane.YES_OPTION;
+    }
+
+    /** Asks over c about l alone, as {@link #askAboutRenames(Component, RenameProposals)} does (FR-246). */
+    private void askAboutItsAddress(Component c, Locomotive l)
+    {
+        if (!this.model.getNetworkCommState()) return;
+        try
+        {
+            Integer at = this.model.getRenameProposals().getAddresses().get(l.getName());
+            // A kept address is not asked again; one the station no longer has is forgotten
+            if (java.util.Objects.equals(at, l.getDeclinedStationAddress())) return;
+            l.setDeclinedStationAddress(null);
+            if (at != null) askAboutAddress(c, l, at, null);
+        }
+        catch (Exception e)
+        {
+            this.model.log(e);
+        }
     }
 
     /** A rename answered No, kept on the locomotive so the same offer is not asked again; its log line's key. */

@@ -25,6 +25,7 @@ import org.traincontrol.util.I18n;
 import support.Answering;
 import support.AskingWindows;
 import support.Components;
+import support.SettingsWindow;
 import support.Settle;
 import support.StandInStation;
 import support.StationRig;
@@ -1030,6 +1031,52 @@ public class testTheSyncAsksAboutRenamedLocomotives
             assertTrue(rig.model.syncWithCS2() >= 0, "precondition: the model's own sync failed");
             assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 70, "the model's own sync gave it the"
                 + " station's address");
+        });
+    }
+
+    /**
+     * Locomotive Settings' Sync asks the same about its own locomotive, over that window, Keep first, and Use address
+     * gives it the station's for this sync alone; nothing else is asked (FR-246).
+     *
+     * MUTATION: in `TrainControlUI.syncLocomotiveFrom`, leave out `askAboutItsAddress`, and nothing is asked; or its
+     * `setTakenStationAddress(null)`, and the sync's answer outlives it.
+     */
+    @Test(timeOut = 180000)
+    public void testLocomotiveSettingsSyncAsksAboutItsAddress() throws Exception
+    {
+        final String use = I18n.f("loc.ui.optionUseAddress", 10);
+
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            movedHere(rig);
+            rig.model.setNetworkCommState(true);
+
+            final org.traincontrol.base.Locomotive loc = rig.model.getLocByName(STATION_NAME);
+            final CountDownLatch synced = new CountDownLatch(1);
+
+            assertTrue(SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+                "precondition: Locomotive Settings did not open");
+
+            try (Answering answering = Answering.start(m -> m != null && m.contains(STATION_NAME)
+                ? Answering.press(use) : Answering.pressAt(0)))
+            {
+                SwingUtilities.invokeLater(() -> ui.syncLocomotiveFrom(loc, SettingsWindow.showing(), synced::countDown));
+
+                assertTrue(synced.await(60, TimeUnit.SECONDS), "the sync never ended");
+                AskingWindows.awaitAnswered();
+
+                askedOnce(answering.questions(), I18n.f("loc.ui.askStationAddress", STATION_NAME, 10, 70),
+                    I18n.t("loc.ui.optionKeep"), use);
+                assertTrue(answering.questions().get(0).owner instanceof org.traincontrol.gui.LocomotiveSettingsFrame,
+                    "not asked over Locomotive Settings");
+            }
+            finally
+            {
+                SettingsWindow.closeIfOpen();
+            }
+
+            assertEquals(loc.getAddress(), 10, "Use address did not give it the station's address");
+            assertFalse(loc.takesStationAddress(10), "the answer outlived its sync");
         });
     }
 

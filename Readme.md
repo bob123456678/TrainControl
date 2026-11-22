@@ -465,7 +465,7 @@ Tab icons provided by Freepik.
 * v3.1.2
     - New Features
         - Locomotive Control
-            - When the Central Station has a locomotive at another address than TrainControl, `Sync Database w/ Central Station` asks whether to keep this computer's address or use the station's, in the same question as a rename.  A kept address is not asked about again until the station's changes, and the automatic syncs at start-up and on reconnecting no longer change an address.
+            - When the Central Station has a locomotive at another address than TrainControl, `Sync Database w/ Central Station` asks whether to keep this computer's address or use the station's, in the same question as a rename, and the `Sync` button in Locomotive Settings asks the same about its own locomotive.  A kept address is not asked about again until the station's changes, and the automatic syncs at start-up and on reconnecting no longer change an address.
         - Interface
             - While a Central Station answers, the lower right of the main window shows how quickly it answers, for example `12 ms`: green, then yellow past 100 ms and orange past 300 ms.  Hover over it to see the station and the connection.  The line right of `Primary Keyboard Controls` now names the Central Station instead, with its firmware and serial number when the station gives them.
 * v3.1.1 [11/21/2026]
