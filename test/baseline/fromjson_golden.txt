@@ -704,12 +704,12 @@ said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] n
 said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
 json=6eff94baa6041977
 == maxLatency=-5 + maxActiveTrains=x
-valid=false reason=Auto layout error: invalid value for maxActiveTrains (must not be negative)
+valid=false reason=Auto layout error: invalid value for maxActiveTrains (must be an integer)
 run=[]
-said: Auto layout error: invalid value for maxActiveTrains (must not be negative)
+said: Auto layout error: invalid value for maxActiveTrains (must be an integer)
 json=de3b3190d54c456f
 == maxActiveTrains=x
-valid=false reason=Auto layout error: invalid value for maxActiveTrains (must not be negative)
+valid=false reason=Auto layout error: invalid value for maxActiveTrains (must be an integer)
 run=[]
 json=d104261a12e9c549
 == maxActiveTrains=x + maxActiveTrains=-1
@@ -2867,7 +2867,7 @@ said: Flagged as reversible: FJ one
 said: Auto layout error: Invalid action in edge FJ A->FJ B ({"acc":"Switch 250","state":"sideways"})
 said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
 said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
-toJSON threw java.lang.NullPointerException
+json=a3424761ec880918
 == edge commands=[{"acc":"Switch 250","state":"sideways"}]
 valid=false reason=Auto layout error: Invalid action in edge FJ A->FJ B ({"acc":"Switch 250","state":"sideways"})
 run=[FJ one, FJ two]
@@ -2882,7 +2882,7 @@ said: Flagged as reversible: FJ one
 said: Auto layout error: Invalid action in edge FJ A->FJ B ({"acc":"Switch 250","state":"sideways"})
 said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
 said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
-toJSON threw java.lang.NullPointerException
+json=a3424761ec880918
 == edge commands=[{"acc":"Switch 250","state":"sideways"}] + edge commands=[{"acc":"Switch 99999","state":"turn"}]
 valid=true reason=null
 run=[FJ one, FJ two]
@@ -3295,14 +3295,50 @@ said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] n
 said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
 json=f7faf7844e795114
 == edge lockedges=[{"end":"FJ A"}] + edge lockedges=[5]
-THREW java.lang.ClassCastException: java.lang.Integer cannot be cast to org.json.JSONObject
-said: Auto layout: set maximum of 2 concurrently active trains | Auto layout: trains will yield to other trains inactive longer than 60 seconds | Paused locomotives: FJ two | Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route. | Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed. | Set max train length of 50 for FJ A | Set train length of 40 for FJ one | Flagged as reversible: FJ one
+valid=false reason=Auto layout error: Lock edge error - {"lengthsAsked":true,"places":[{"at":"t1","answered":true,"length":10,"toMeasure":"t1 piece"},{"at":"t2"}],"lockedges":[5],"entrySide":"north","roomAtTheEnd":5,"start":"FJ A","length":30,"end":"FJ B","commands":[{"acc":"Switch 250","state":"turn"}]}
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: Auto layout error: Lock edge error - {"lengthsAsked":true,"places":[{"at":"t1","answered":true,"length":10,"toMeasure":"t1 piece"},{"at":"t2"}],"lockedges":[5],"entrySide":"north","roomAtTheEnd":5,"start":"FJ A","length":30,"end":"FJ B","commands":[{"acc":"Switch 250","state":"turn"}]}
+said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=f7faf7844e795114
 == edge lockedges=[5]
-THREW java.lang.ClassCastException: java.lang.Integer cannot be cast to org.json.JSONObject
-said: Auto layout: set maximum of 2 concurrently active trains | Auto layout: trains will yield to other trains inactive longer than 60 seconds | Paused locomotives: FJ two | Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route. | Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed. | Set max train length of 50 for FJ A | Set train length of 40 for FJ one | Flagged as reversible: FJ one
+valid=false reason=Auto layout error: Lock edge error - {"lengthsAsked":true,"places":[{"at":"t1","answered":true,"length":10,"toMeasure":"t1 piece"},{"at":"t2"}],"lockedges":[5],"entrySide":"north","roomAtTheEnd":5,"start":"FJ A","length":30,"end":"FJ B","commands":[{"acc":"Switch 250","state":"turn"}]}
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: Auto layout error: Lock edge error - {"lengthsAsked":true,"places":[{"at":"t1","answered":true,"length":10,"toMeasure":"t1 piece"},{"at":"t2"}],"lockedges":[5],"entrySide":"north","roomAtTheEnd":5,"start":"FJ A","length":30,"end":"FJ B","commands":[{"acc":"Switch 250","state":"turn"}]}
+said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=f7faf7844e795114
 == edge lockedges=[5] + timetable=x
-THREW java.lang.ClassCastException: java.lang.Integer cannot be cast to org.json.JSONObject
-said: Auto layout: set maximum of 2 concurrently active trains | Auto layout: trains will yield to other trains inactive longer than 60 seconds | Paused locomotives: FJ two | Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route. | Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed. | Set max train length of 50 for FJ A | Set train length of 40 for FJ one | Flagged as reversible: FJ one
+valid=false reason=Auto layout error: Lock edge error - {"lengthsAsked":true,"places":[{"at":"t1","answered":true,"length":10,"toMeasure":"t1 piece"},{"at":"t2"}],"lockedges":[5],"entrySide":"north","roomAtTheEnd":5,"start":"FJ A","length":30,"end":"FJ B","commands":[{"acc":"Switch 250","state":"turn"}]}
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: Auto layout error: Lock edge error - {"lengthsAsked":true,"places":[{"at":"t1","answered":true,"length":10,"toMeasure":"t1 piece"},{"at":"t2"}],"lockedges":[5],"entrySide":"north","roomAtTheEnd":5,"start":"FJ A","length":30,"end":"FJ B","commands":[{"acc":"Switch 250","state":"turn"}]}
+said: Auto layout timetable warning: JSONObject["timetable"] is not a JSONArray (class java.lang.String : x).
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=66112caf071d4cd7
 == timetable=x
 valid=true reason=null
 run=[FJ one, FJ two]

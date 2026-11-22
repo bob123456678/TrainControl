@@ -8513,7 +8513,7 @@ public class Layout
                 {
                     layout.setMaxActiveTrains(most);
                     if (most > 0) control.logf("autolayout.infoSetMaxActiveTrains", most);
-                }, I18n.f("autolayout.errorMaxActiveTrainsInvalid"))
+                }, I18n.f("autolayout.errorMaxActiveTrainsNotANumber"))
                 || !read(o, "maxLocInactiveSeconds", JSONObject::getInt, seconds ->
                 {
                     layout.setMaxLocInactiveSeconds(seconds);
@@ -8982,10 +8982,11 @@ public class Layout
                     commands.forEach((cmd) -> 
                     {
                         JSONObject command = (JSONObject) cmd;
-                        String action = command.getString("state");
+                        accessorySetting setting = Accessory.stringToAccessorySetting(command.getString("state"));
                         String acc = command.getString("acc");
 
-                        e.addConfigCommand(acc, Accessory.stringToAccessorySetting(action));
+                        // A state that did not parse was refused above; storing it would leave a null setting.
+                        if (setting != null) e.addConfigCommand(acc, setting);
                     });                    
                 }            
                 
@@ -9096,7 +9097,7 @@ public class Layout
                     });
                 }
             } 
-            catch (JSONException ex)
+            catch (JSONException | ClassCastException ex)
             {
                 layout.invalidate(
                     I18n.f("autolayout.errorLockEdgeGeneric", edge.toString())
