@@ -150,6 +150,59 @@ public class testPicturesAreSharpOnAScaledScreen
         }
     }
 
+    /**
+     * A diagram caption (text with a halo) is as wide as its text lays out at any common scale and text smoothing, so
+     * Swing, which measures in the scaled Graphics' metrics, never shortens it to "Yard 1..." (OB-504).
+     *
+     * MUTATION: in `StationCaption.getPreferredSize`, drop the `was.width +=` line for a caption that is not a pill.
+     */
+    @Test
+    public void testACaptionIsNeverShortenedOnAScaledScreen()
+    {
+        String[][] fonts = {{"Segoe UI Symbol", "10"}, {"Dialog", "11"}, {"Segoe UI", "10"}, {"Dialog", "12"}};
+        Object[] smoothing = {java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON,
+            java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_OFF, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB};
+        StringBuilder shortened = new StringBuilder();
+
+        for (String[] font : fonts)
+        {
+            for (String text : new String[] {"Yard 1030", "West Yard", "Yard 1", "Station 12", "Platform 4B", "Hbf"})
+            {
+                org.traincontrol.gui.widgets.StationCaption caption = new org.traincontrol.gui.widgets.StationCaption();
+
+                caption.setHalo(true);
+                caption.setFont(new java.awt.Font(font[0], java.awt.Font.PLAIN, Integer.parseInt(font[1])));
+                caption.setText(text);
+                caption.setSize(caption.getPreferredSize());
+
+                for (double scale : new double[] {1, 1.25, 1.5, 1.75, 2, 2.25})
+                {
+                    for (Object how : smoothing)
+                    {
+                        Graphics2D g = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB).createGraphics();
+
+                        g.scale(scale, scale);
+                        g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, how);
+
+                        java.awt.Insets in = caption.getInsets();
+                        String shown = javax.swing.SwingUtilities.layoutCompoundLabel(caption,
+                            g.getFontMetrics(caption.getFont()), text, null, 0, 0, 0, 11,
+                            new java.awt.Rectangle(in.left, in.top, caption.getWidth() - in.left - in.right,
+                                caption.getHeight() - in.top - in.bottom),
+                            new java.awt.Rectangle(), new java.awt.Rectangle(), 0);
+
+                        if (!text.equals(shown)) shortened.append(' ').append(font[0]).append(font[1]).append(" '")
+                            .append(text).append("' at ").append(scale).append(" as '").append(shown).append("'");
+
+                        g.dispose();
+                    }
+                }
+            }
+        }
+
+        assertEquals(shortened.toString(), "", "captions shortened by Swing:");
+    }
+
     /** Four of `square` in a row, or a column if `down`, on white at `scale`, each clipped as Swing paints a square. */
     private static BufferedImage run(Icon square, boolean down, double scale)
     {
