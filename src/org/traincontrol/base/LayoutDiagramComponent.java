@@ -1324,7 +1324,7 @@ public class LayoutDiagramComponent
      * decoders, at its address and the next (`layout.switchThreeWayAddr` prints both), and only the first is the
      * logical address.  An address is one per protocol (an MM2 turnout 5 and a DCC turnout 5 are two decoders); a null
      * protocol, on either side, is the implicit one.  The address half only: whether this tile is an accessory at all
-     * is the caller's question (`TrainControlUI.answersTo`).
+     * is the caller's question (`DiagramHighlights.answersTo`).
      *
      * @param address the logical address the command names
      * @param protocol the protocol it is sent in
