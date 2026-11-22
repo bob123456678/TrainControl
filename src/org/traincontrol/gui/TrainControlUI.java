@@ -14747,7 +14747,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Questions that end in a throw hand back no list, and the offers they held back are let go all the same
             heldBack.addAll(this.model.getLocomotives());
         }
-
         return heldBack;
     }
 
@@ -14831,7 +14830,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
                 // Told to use the station's address instead, the name is neither renamed nor kept
                 if (answer == JOptionPane.CANCEL_OPTION) outcome = null;
-
                 // Closed unanswered, it keeps nothing and is asked again
                 else outcome = answer == JOptionPane.NO_OPTION ? keptAfterNo(l, newName) : "loc.renameClosed";
 
@@ -14908,7 +14906,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (!refused && l != null && l.getAddress() != each.getValue()
                 && askAboutAddress(c, l, each.getValue(), null) == JOptionPane.CANCEL_OPTION) heldBack.add(l);
         }
-
         return heldBack;
     }
 
@@ -14925,7 +14922,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             : I18n.f("loc.ui.askStationAddressOrName", l.getName(), address, l.getAddress(), newName),
             I18n.t("loc.ui.dialogStationAddress"), JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options,
             keep);
-
         if (answer == 0) l.setDeclinedStationAddress(address);
         if (answer == options.length - 1) l.setTakenStationAddress(address);
         return answer == options.length - 1 ? JOptionPane.CANCEL_OPTION : answer == 0 ? JOptionPane.NO_OPTION

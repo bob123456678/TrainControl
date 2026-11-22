@@ -1354,7 +1354,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // Consist heads are not asked about, as they are not renamed
             if (elsewhere != null && !elsewhere.hasLinkedLocomotives()) addresses.put(l.getName(), l.getAddress());
             List<MarklinLocomotive> matches = byAddress.get(l.getIntUID());
-
             if (matches == null) continue;
 
             // Checked after the match lookup so a Central Station duplicate with no local counterpart
