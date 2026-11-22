@@ -489,6 +489,7 @@ Tab icons provided by Freepik.
             - In simulation, a red triangle stands in the lower right of the main window, past the function tabs, from the start, as a reminder that TrainControl is not connected to a Central Station.  The yellow triangle that shows while a Central Station is not answering moved to the same place, so `Power OFF` no longer changes width.
     - Bug Fixes
         - Autonomy
+            - In the autonomy editor, a page left out of autonomy is drawn in gray when `Grayed-out Icons` is unticked, instead of as an empty grid.
             - In the autonomy editor, `Cancel` keeps the last pause or go you pressed on a train while the editor was open, even after `Activate All Trains`.
             - A train whose journey fails partway is recorded where it stopped, and its destination is freed.
             - On a station that allows trains from every side, `Station Settings` no longer shows arrival arrows.
