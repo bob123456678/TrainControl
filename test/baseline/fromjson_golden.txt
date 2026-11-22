@@ -2344,7 +2344,7 @@ said: Flagged as reversible: FJ one
 said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
 said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
 json=632612a4466a9ba9
-== loc speed=500 + loc speed absent
+== loc speed=500 + loc speed=101
 valid=true reason=null
 run=[FJ one, FJ two]
 said: Auto layout: set maximum of 2 concurrently active trains
@@ -2358,6 +2358,146 @@ said: Flagged as reversible: FJ one
 said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
 said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
 json=632612a4466a9ba9
+== loc speed=101
+valid=true reason=null
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=632612a4466a9ba9
+== loc speed=101 + loc speed=100
+valid=true reason=null
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=2a9a5b85ec9bb6b4
+== loc speed=100
+valid=true reason=null
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=2a9a5b85ec9bb6b4
+== loc speed=100 + loc speed=1
+valid=true reason=null
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=4ee28856e6cbeab8
+== loc speed=1
+valid=true reason=null
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=4ee28856e6cbeab8
+== loc speed=1 + loc speed=0
+valid=true reason=null
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=4ee28856e6cbeab8
+== loc speed=0
+valid=true reason=null
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=4ee28856e6cbeab8
+== loc speed=0 + loc speed=-1
+valid=true reason=null
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=4ee28856e6cbeab8
+== loc speed=-1
+valid=true reason=null
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=4ee28856e6cbeab8
+== loc speed=-1 + loc speed absent
+valid=true reason=null
+run=[FJ one, FJ two]
+said: Auto layout: set maximum of 2 concurrently active trains
+said: Auto layout: trains will yield to other trains inactive longer than 60 seconds
+said: Paused locomotives: FJ two
+said: Auto layout notice: disabled atomic routes. Edges will be unlocked as trains pass them instead of at the end of the route.
+said: Locomotive FJ none is excluded from a station but is not in the database.  The exclusion has been removed.
+said: Set max train length of 50 for FJ A
+said: Set train length of 40 for FJ one
+said: Flagged as reversible: FJ one
+said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
+said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
+json=4ee28856e6cbeab8
 == loc speed absent
 valid=true reason=null
 run=[FJ one, FJ two]
@@ -2371,7 +2511,7 @@ said: Set train length of 40 for FJ one
 said: Flagged as reversible: FJ one
 said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
 said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
-json=632612a4466a9ba9
+json=4ee28856e6cbeab8
 == loc speed absent + loc departureFunc=x
 valid=false reason=Auto layout error: Error in departureFunc value for FJ one, must be integer
 run=[FJ one, FJ two]
@@ -2386,7 +2526,7 @@ said: Flagged as reversible: FJ one
 said: Auto layout error: Error in departureFunc value for FJ one, must be integer
 said: A timetable entry could not be loaded and was skipped: JSONObject["loc"] not found.
 said: The restriction on FJ A names FJ none, which is not a point on this layout.  It has been dropped.
-json=632612a4466a9ba9
+json=4ee28856e6cbeab8
 == loc departureFunc=x
 valid=false reason=Auto layout error: Error in departureFunc value for FJ one, must be integer
 run=[FJ one, FJ two]
