@@ -14720,10 +14720,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * The Sync pressed over c: holding the running flag from the read until the sync ends, it asks in one table what to do
-     * about everything the station differs on before anything changes, applies the answers, then syncs (FR-249).  As
-     * syncWithCS2, counting Keep Both's additions, or SYNC_REFUSED when the table was canceled; `answered` gets the
-     * answers' account for the finishing message.  Off the event thread.
+     * The pressed Sync (FR-249): read, table, answers and sync under one hold of the flag; SYNC_REFUSED when canceled.
      */
     private int pressedSync(Component c, StringBuilder answered)
     {
@@ -14743,7 +14740,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             int synced = RunGates.refuseALinkOrSyncWhileEditorOpen(this, null) ? SYNC_REFUSED : syncHolding();
             if (n.length == 0 || synced < 0) return synced;
-
             int moved = (int) taken.stream().filter(r -> r.loco.getAddress() == r.stationAddress).count();
             answered.append("\n\n").append(I18n.f("ui.infoSyncAnswers", n[1], moved, n[2], n[3],
                 n[4] + taken.size() - moved));
@@ -14759,9 +14755,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Reads behind the spinner what the station differs on, asks over c in the table, and applies the answers, each row
-     * told to take the station's address put in `taken`: the counts as `apply`'s, empty with no table, null when it was
-     * canceled.  Off the event thread.
+     * Reads, asks over c and applies, re-addressed rows into `taken`: apply's counts, none with no table, null if canceled.
      */
     private int[] askAndApply(Component c, List<RenameProposals.Row> taken)
     {
@@ -14781,7 +14775,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (a == null) return null;
             if (asked.getProposals().isEmpty() && !asked.hasRefusals())
                 this.model.logf("loc.ui.infoNoLocomotivesToRename");
-
             // Read again once anything was answered, so a row the station changed meanwhile is left; unread, the
             // locomotives alone are checked
             RenameProposals now = asked;
@@ -14826,10 +14819,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Applies the table's answers over c: renames first, in the order that frees each name, then Keep Both's additions,
-     * Keep, Ignore, and the addresses to take, which the sync applies.  A row whose locomotive is no longer the one by
-     * its name in `names`, or whose station value differs in `now` from `asked`, is left.  Each row's outcome is logged (D171).  The counts: added, renamed, kept, ignored,
-     * still to answer.
+     * Applies the answers over c, renames first, and leaves a row changed since asked; the counts pressedSync reads.
      */
     private int[] apply(Component c, RenameProposals asked, RenameProposals now,
         Map<RenameProposals.Row, SyncDifferencesWindow.Answer> answers, Map<Locomotive, String> names,
@@ -14848,7 +14838,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             if (r == null || !java.util.Objects.equals(r.stationAddress, l.getDeclinedStationAddress()))
                 l.setDeclinedStationAddress(null);
         }
-
         // A run begun since the read refuses every rename, said once
         boolean running = answers.containsValue(SyncDifferencesWindow.Answer.RENAME)
             && RunGates.refuseWhileAutonomyRunning(this, c);
@@ -14858,7 +14847,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         rows.sort(java.util.Comparator.comparingInt(r -> answers.get(r) == SyncDifferencesWindow.Answer.RENAME
             ? order.indexOf(names.get(r.loco)) : answers.get(r) == SyncDifferencesWindow.Answer.BOTH ? order.size()
             : order.size() + 1));
-
         int[] n = new int[5];
         for (RenameProposals.Row r : rows)
         {
@@ -14908,17 +14896,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return n;
     }
 
-    /**
-     * Renames r's locomotive to the station's name, through the delete question over c, No first, for a name held here;
-     * the outcome's log key.
-     */
+    /** Renames r's locomotive to the station's name, through the delete question for a name held here; the log key. */
     private String renamed(Component c, RenameProposals.Row r)
     {
         String currentName = r.loco.getName(), newName = r.stationName;
         Locomotive l = r.loco;
         if (model.getLocByName(newName) != null) this.locomotiveActions.deleteLocBecause(
             I18n.f("loc.ui.confirmRenameOntoLocomotive", currentName, newName), newName, c);
-
         if (model.getLocByName(newName) != null)
         {
             // Only a No to the delete question is kept, never a refusal the user could not answer
@@ -14926,25 +14910,20 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             return answer == JOptionPane.NO_OPTION ? keptAfterNo(l, newName)
                 : answer == JOptionPane.CLOSED_OPTION ? "loc.renameClosed" : "loc.renameNotApplied";
         }
-
         model.renameLoc(currentName, newName);
         l.setDeclinedStationName(null);
-
         clearCopyTarget();
         repaintLoc(true, null);
         repaintMappings(null, false);
         this.refreshRouteList();
         selector.refreshLocSelectorList();
-
         if (this.model.hasAutoLayout())
         {
             this.model.getAutoLayout().sanitizeMultiUnits(l);
             this.model.getAutoLayout().refreshUI();
-
             // And the station labels, as the rename dialog does (OB-081)
             this.updateVisiblePoints();
             this.repaintAutoLocList(false);
-
             this.repaintTimetable();
         }
         return "loc.renameApplied";

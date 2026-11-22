@@ -52,8 +52,7 @@ public class testTheSyncDifferencesWindow
     @Test(timeOut = 180000)
     public void testARowNamesTheLocomotiveAndWhatTheStationHas() throws Exception
     {
-        AtomicReference<String> list = new AtomicReference<>("[]");
-        inAWindow(list, (rig, ui) ->
+        inAWindow((rig, ui, list) ->
         {
             here(rig, "SW Shunter", 20, "SW Uri", 21, "SW Both", 23, "SW Ignored", 25, "SW Head", 26,
                 "SW Member", 27);
@@ -98,8 +97,7 @@ public class testTheSyncDifferencesWindow
     @Test(timeOut = 180000)
     public void testSetAllPicksOnlyWhatNeedsNoHumanPickAndTheMarksFollow() throws Exception
     {
-        AtomicReference<String> list = new AtomicReference<>("[]");
-        inAWindow(list, (rig, ui) ->
+        inAWindow((rig, ui, list) ->
         {
             here(rig, "SW A", 30, "SW B", 31, "SW T", 33, "SW Holder", 34, "SW C", 35, "SW D", 36, "SW Held", 36,
                 "SW E", 37, "SW Both", 38, "SW I", 39, "SW F", 41);
@@ -109,7 +107,7 @@ public class testTheSyncDifferencesWindow
                 "SW Other", 38, "SW Both", 40, "SW I2", 39, "SW F", 42));
 
             List<String> problems = new ArrayList<>();
-            pressSync(rig, ui, SyncTable.canceling(t ->
+            assertNotNull(pressSync(rig, ui, SyncTable.canceling(t ->
             {
                 check(problems, visible(t, "SW A", "collision"), true, "A's triangle with B unmoved");
                 check(problems, t.in("SW D", "deletes", JLabel.class).getText(), I18n.f("sync.ui.deletes", "SW Held"),
@@ -122,16 +120,15 @@ public class testTheSyncDifferencesWindow
                 check(problems, visible(t, "SW A", "collision"), false, "A's triangle with B moved");
                 t.in("SW B", "KEEP", AbstractButton.class).doClick();
                 check(problems, visible(t, "SW A", "collision"), true, "A's triangle once B is kept");
-                Components.withText(t.dialog, I18n.t("sync.ui.keep")).doClick();
-                check(problems, selected(t), rowsOn("KEEP", "KEEP", "KEEP", "KEEP", "KEEP", "KEEP", "KEEP", "KEEP",
-                    "KEEP"), "Set all to Keep As Is");
-                Components.withText(t.dialog, I18n.t("sync.ui.keepBoth")).doClick();
-                check(problems, selected(t), rowsOn("KEEP", "KEEP", "BOTH", "BOTH", "KEEP", "BOTH", "KEEP", "KEEP",
-                    "KEEP"), "Set all to Keep Both");
-                Components.withText(t.dialog, I18n.t("sync.ui.askAgain")).doClick();
-                check(problems, selected(t), rowsOn("ASK", "ASK", "ASK", "ASK", "ASK", "ASK", "ASK", "ASK", "ASK"),
-                    "Set all to Ask Again");
-            }), null);
+                // Each Set all in turn, over the one before: Keep Both only where a row offers it
+                for (String[] each : new String[][] {{"sync.ui.keep", "KEEP KEEP KEEP KEEP KEEP KEEP KEEP KEEP KEEP"},
+                    {"sync.ui.keepBoth", "KEEP KEEP BOTH BOTH KEEP BOTH KEEP KEEP KEEP"},
+                    {"sync.ui.askAgain", "ASK ASK ASK ASK ASK ASK ASK ASK ASK"}})
+                {
+                    Components.withText(t.dialog, I18n.t(each[0])).doClick();
+                    check(problems, selected(t), rowsOn(each[1].split(" ")), "Set all to " + each[0]);
+                }
+            }), null), "the table did not open");
 
             assertTrue(problems.isEmpty(), problems.toString());
         });
@@ -146,8 +143,7 @@ public class testTheSyncDifferencesWindow
     @Test(timeOut = 180000)
     public void testCancelOrClosingStopsTheWholeSync() throws Exception
     {
-        AtomicReference<String> list = new AtomicReference<>("[]");
-        inAWindow(list, (rig, ui) ->
+        inAWindow((rig, ui, list) ->
         {
             here(rig, "SW X", 50, "SW K", 51);
             rig.model.getLocByName("SW K").setDeclinedStationName("SW Gone");
@@ -191,8 +187,7 @@ public class testTheSyncDifferencesWindow
     @Test(timeOut = 240000)
     public void testTheAnswersAreAppliedAndCounted() throws Exception
     {
-        AtomicReference<String> list = new AtomicReference<>("[]");
-        inAWindow(list, (rig, ui) ->
+        inAWindow((rig, ui, list) ->
         {
             here(rig, "SW Keep", 60, "SW Ign", 61, "SW Both", 62, "SW Ren", 63, "SW Wait", 64, "SW Move", 65);
             list.set(station("SW Keep2", 60, "SW Ign2", 61, "SW Both2", 62, "SW Ren2", 63, "SW Wait2", 64,
@@ -235,8 +230,7 @@ public class testTheSyncDifferencesWindow
     @Test(timeOut = 180000)
     public void testSyncsWaitForTheOpenTable() throws Exception
     {
-        AtomicReference<String> list = new AtomicReference<>("[]");
-        inAWindow(list, (rig, ui) ->
+        inAWindow((rig, ui, list) ->
         {
             here(rig, "SW Wait", 70);
             list.set(station("SW Wait2", 70));
@@ -280,8 +274,7 @@ public class testTheSyncDifferencesWindow
     @Test(timeOut = 180000)
     public void testARowThatChangedMeanwhileIsLeft() throws Exception
     {
-        AtomicReference<String> list = new AtomicReference<>("[]");
-        inAWindow(list, (rig, ui) ->
+        inAWindow((rig, ui, list) ->
         {
             here(rig, "SW Del", 71, "SW Ren", 72, "SW Move", 73);
             list.set(station("SW Del2", 71, "SW Ren2", 72, "SW Move", 74));
@@ -311,9 +304,8 @@ public class testTheSyncDifferencesWindow
     @Test(timeOut = 180000)
     public void testALostStationAfterTheTableKeepsTheAnswersAndOffersRetry() throws Exception
     {
-        AtomicReference<String> list = new AtomicReference<>("[]");
         AtomicBoolean down = new AtomicBoolean();
-        inAWindow(list, down, (rig, ui) ->
+        inAWindow(down, (rig, ui, list) ->
         {
             here(rig, "SW Lost", 76, "SW LostRen", 77);
             list.set(station("SW Lost2", 76, "SW LostRen2", 77));
@@ -432,20 +424,22 @@ public class testTheSyncDifferencesWindow
 
     private interface Claim
     {
-        void run(StationRig rig, TrainControlUI ui) throws Exception;
+        /** @param list the station's locomotive list as it is when asked, empty at start-up */
+        void run(StationRig rig, TrainControlUI ui, AtomicReference<String> list) throws Exception;
     }
 
-    private static void inAWindow(AtomicReference<String> list, Claim claim) throws Exception
+    private static void inAWindow(Claim claim) throws Exception
     {
-        inAWindow(list, new AtomicBoolean(), claim);
+        inAWindow(new AtomicBoolean(), claim);
     }
 
     /**
-     * The claim in the real window against a stand-in whose locomotive list is `list` as it is when asked, and that
-     * drops every connection while `down` is set, once the window's start-up sync has ended.
+     * The claim in the real window against a stand-in that drops every connection while `down` is set, once the
+     * window's start-up sync has ended.
      */
-    private static void inAWindow(AtomicReference<String> list, AtomicBoolean down, Claim claim) throws Exception
+    private static void inAWindow(AtomicBoolean down, Claim claim) throws Exception
     {
+        AtomicReference<String> list = new AtomicReference<>("[]");
         BiFunction<String, Integer, byte[]> cs3 = StandInStation.cs3("71", null);
         try (StationRig rig = new StationRig(Files.createTempDirectory("tc-sync-window").toFile(), (path, n) ->
         {
@@ -457,7 +451,7 @@ public class testTheSyncDifferencesWindow
             try
             {
                 assertTrue(syncEnded(ui), "precondition: the window's start-up sync never ended");
-                claim.run(rig, ui);
+                claim.run(rig, ui, list);
             }
             finally
             {

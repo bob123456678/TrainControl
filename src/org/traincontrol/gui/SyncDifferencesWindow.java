@@ -50,19 +50,16 @@ public final class SyncDifferencesWindow extends JDialog
     {
         super(owner, I18n.t("sync.ui.title"), ModalityType.APPLICATION_MODAL);
         this.proposals = proposals;
-
         ChoiceTable table = new ChoiceTable(I18n.t("sync.ui.locomotive"), I18n.t("sync.ui.stationHas"),
             I18n.t("sync.ui.keep"), I18n.t("sync.ui.apply"), I18n.t("sync.ui.keepBoth"), I18n.t("sync.ui.ignore"),
             I18n.t("sync.ui.askAgain"));
         for (Row r : rows) table.addRow(addRow(r));
         refresh();
-
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         top.setOpaque(false);
         top.add(UiStyle.heading(rows.size() == 1 ? I18n.t("sync.ui.headingOne")
             : I18n.f("sync.ui.heading", rows.size())));
         top.add(InfoMark.label(I18n.t("sync.ui.info")));
-
         JPanel setAll = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         setAll.setOpaque(false);
         setAll.add(UiStyle.blackLabel(I18n.t("sync.ui.setAll")));
@@ -71,7 +68,6 @@ public final class SyncDifferencesWindow extends JDialog
             : r.asksName() ? Answer.RENAME : Answer.ADDRESS));
         setAll.add(setAllTo("sync.ui.keepBoth", r -> Answer.BOTH));
         setAll.add(setAllTo("sync.ui.askAgain", r -> Answer.ASK));
-
         JButton cancel = UiStyle.button(new JButton(I18n.t("ui.cancel")));
         JButton go = UiStyle.button(new JButton(I18n.t("sync.ui.continue")));
         cancel.addActionListener(e -> dispose());
@@ -84,12 +80,10 @@ public final class SyncDifferencesWindow extends JDialog
         buttons.setOpaque(false);
         buttons.add(cancel);
         buttons.add(go);
-
         JPanel bottom = new JPanel(new BorderLayout());
         bottom.setOpaque(false);
         bottom.add(setAll, BorderLayout.WEST);
         bottom.add(buttons, BorderLayout.EAST);
-
         JPanel content = new JPanel(new BorderLayout(0, 10));
         content.setBackground(Color.WHITE);
         content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
@@ -97,7 +91,6 @@ public final class SyncDifferencesWindow extends JDialog
         content.add(table, BorderLayout.CENTER);
         content.add(bottom, BorderLayout.SOUTH);
         setContentPane(content);
-
         // Closing is Cancel; Enter continues, which changes nothing until a row is answered
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         getRootPane().setDefaultButton(go);
@@ -116,11 +109,9 @@ public final class SyncDifferencesWindow extends JDialog
         List<Row> rows = new ArrayList<>();
         for (Row r : proposals.getRows()) if (r.asksName() || r.asksAddress()) rows.add(r);
         if (rows.isEmpty()) return new LinkedHashMap<>();
-
         SyncDifferencesWindow w = new SyncDifferencesWindow(owner, proposals, rows);
         w.setVisible(true);
         if (!w.continued) return null;
-
         Map<Row, Answer> answers = new LinkedHashMap<>();
         for (Map.Entry<Row, Map<Answer, JRadioButton>> each : w.choices.entrySet())
         {
@@ -138,7 +129,6 @@ public final class SyncDifferencesWindow extends JDialog
         ButtonGroup group = new ButtonGroup();
         Map<Answer, JRadioButton> radios = new EnumMap<>(Answer.class);
         JPanel has = column(), apply = column();
-
         if (r.asksName())
         {
             has.add(kindAndValue("sync.ui.name", r.stationName));
@@ -167,7 +157,6 @@ public final class SyncDifferencesWindow extends JDialog
         radios.get(l.isSyncIgnored() ? Answer.IGNORE : Answer.ASK).setSelected(true);
         for (JRadioButton b : radios.values()) b.addItemListener(e -> refresh());
         this.choices.put(r, radios);
-
         JLabel loco = new JLabel(name + (l.hasLinkedLocomotives() ? " +" + l.getLinkedLocomotives().size() : ""));
         loco.setFont(UiStyle.TEXT_FONT);
         JLabel at = new JLabel(l.getDecoderTypeLabel() + " " + l.getAddress());

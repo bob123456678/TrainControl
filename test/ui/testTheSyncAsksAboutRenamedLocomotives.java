@@ -74,8 +74,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
                 testTheSyncAsksAboutRenamedLocomotives::saidDone);
 
             assertEquals(rowsFor(old).size(), 1, "the rename was not in one table: " + tables.size());
-            assertEquals(Components.onTheEventThread(() -> rowsFor(old).get(0).in(old, "RENAME",
-                javax.swing.AbstractButton.class).getText()), I18n.f("sync.ui.rename", old, STATION_NAME),
+            assertEquals(text(rowsFor(old).get(0), old, "RENAME"), I18n.f("sync.ui.rename", old, STATION_NAME),
                 "Apply does not say the rename");
 
             assertNotNull(rig.model.getLocByName(STATION_NAME), "Apply did not rename " + old + " to " + STATION_NAME);
@@ -313,12 +312,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
         inAWindow(renaming(stationName), (rig, ui) ->
         {
-            renamedHere(rig, old);
-
-            List<SyncTable.Shown> asked = answering(rig, ui, old, "KEEP");
-
-            assertEquals(asked.size(), 1, "the rename was not asked once");
-            assertEquals(asked.get(0).startsOn.get(old), "ASK", "the row does not start on Ask Again");
+            assertEquals(keptOnce(rig, ui, old).startsOn.get(old), "ASK", "the row does not start on Ask Again");
 
             assertNotNull(rig.model.getLocByName(old), "Keep renamed " + old);
             assertNull(rig.model.getLocByName(STATION_NAME), "the sync added a copy under the name kept against");
@@ -336,8 +330,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
             List<SyncTable.Shown> again = answering(rig, ui, old, "KEEP");
 
             assertEquals(again.size(), 1, "the station's new name was not asked about");
-            assertEquals(Components.onTheEventThread(() -> again.get(0).in(old, "RENAME",
-                javax.swing.AbstractButton.class).getText()), I18n.f("sync.ui.rename", old, renamed),
+            assertEquals(text(again.get(0), old, "RENAME"), I18n.f("sync.ui.rename", old, renamed),
                 "the row is not about the new name");
         });
     }
@@ -358,9 +351,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
         inAWindow(root, cs3, (rig, ui) ->
         {
-            renamedHere(rig, old);
-
-            assertEquals(answering(rig, ui, old, "KEEP").size(), 1, "precondition: the rename was not asked");
+            keptOnce(rig, ui, old);
 
             assertNull(rig.model.saveState(false), "the saved data was not written");
         });
@@ -463,6 +454,35 @@ public class testTheSyncAsksAboutRenamedLocomotives
         pressSync(rig, ui, SyncTable.answer(old, answer), m -> Answering.pressAt(0),
             testTheSyncAsksAboutRenamedLocomotives::saidDone);
         return rowsFor(old);
+    }
+
+    /** `old` held here as renamed at the station, kept as it is in one table: that table. */
+    private static SyncTable.Shown keptOnce(StationRig rig, TrainControlUI ui, String old) throws Exception
+    {
+        renamedHere(rig, old);
+        List<SyncTable.Shown> asked = answering(rig, ui, old, "KEEP");
+        assertEquals(asked.size(), 1, "precondition: the rename was not asked once");
+        return asked.get(0);
+    }
+
+    /** `old` held here as renamed at the station, left on Ask Again in one table, with no copy added. */
+    private static void leftToAsk(StationRig rig, TrainControlUI ui, String old) throws Exception
+    {
+        renamedHere(rig, old);
+        assertEquals(answering(rig, ui, old, "ASK").size(), 1, "precondition: the rename was not asked");
+        assertNull(rig.model.getLocByName(STATION_NAME), "Ask Again added a copy under the station's name");
+    }
+
+    /** A row's two Apply choices' texts in a table shown. */
+    private static List<String> applies(SyncTable.Shown s, String row) throws Exception
+    {
+        return Arrays.asList(text(s, row, "RENAME"), text(s, row, "ADDRESS"));
+    }
+
+    /** An answer's text in a table shown. */
+    private static String text(SyncTable.Shown s, String row, String answer) throws Exception
+    {
+        return Components.onTheEventThread(() -> s.in(row, answer, javax.swing.AbstractButton.class).getText());
     }
 
     /** The tables the last pressSync showed that had a row for this locomotive. */
@@ -584,16 +604,12 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
         inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
         {
-            renamedHere(rig, old);
-
-            assertEquals(answering(rig, ui, old, "ASK").size(), 1, "precondition: the rename was not asked");
+            leftToAsk(rig, ui, old);
 
             assertNotNull(rig.model.getLocByName(old), "Ask Again renamed " + old);
             assertNull(rig.model.getLocByName(old).getDeclinedStationName(), "Ask Again was kept");
             assertEquals(renameLines(rig, old, STATION_NAME), Collections.singletonList(I18n.f("loc.syncLeftToAsk",
                 old)), "Ask Again was not logged");
-            assertNull(rig.model.getLocByName(STATION_NAME), "Ask Again added a copy under the station's name");
-
             assertEquals(answering(rig, ui, old, "ASK").size(), 1, "the next Sync did not ask again");
         });
     }
@@ -611,10 +627,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
         inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
         {
-            renamedHere(rig, old);
-
-            assertEquals(answering(rig, ui, old, "ASK").size(), 1, "precondition: the rename was not asked");
-            assertNull(rig.model.getLocByName(STATION_NAME), "precondition: Ask Again added a copy");
+            leftToAsk(rig, ui, old);
 
             rig.takeLog();
 
@@ -825,15 +838,13 @@ public class testTheSyncAsksAboutRenamedLocomotives
     @Test(timeOut = 240000)
     public void testAYesForgetsTheNo() throws Exception
     {
+        final AtomicReference<String> stationName = new AtomicReference<>(STATION_NAME);
         final String old = "FR-220 yes";
         final String renamed = STATION_NAME + " B";
-        final AtomicReference<String> stationName = new AtomicReference<>(STATION_NAME);
 
         inAWindow(renaming(stationName), (rig, ui) ->
         {
-            renamedHere(rig, old);
-
-            assertEquals(answering(rig, ui, old, "KEEP").size(), 1, "precondition: the rename was not asked");
+            keptOnce(rig, ui, old);
 
             rig.takeLog();
             stationName.set(renamed);
@@ -883,9 +894,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
             return one.toString().getBytes(StandardCharsets.UTF_8);
         }, (rig, ui) ->
         {
-            renamedHere(rig, old);
-
-            assertEquals(answering(rig, ui, old, "KEEP").size(), 1, "precondition: the rename was not asked");
+            keptOnce(rig, ui, old);
 
             rig.takeLog();
             stationName.set(old);
@@ -914,11 +923,9 @@ public class testTheSyncAsksAboutRenamedLocomotives
         {
             movedHere(rig);
 
-            List<SyncTable.Shown> shown = pressing(rig, ui, "ADDRESS");
-            assertEquals(shown.size(), 1, "the address was not asked once");
-            assertEquals(shown.get(0).startsOn.get(STATION_NAME), "ASK", "the row does not start on Ask Again");
-            assertEquals(Components.onTheEventThread(() -> shown.get(0).in(STATION_NAME, "ADDRESS",
-                javax.swing.AbstractButton.class).getText()), I18n.f("sync.ui.changeAddress", STATION_NAME, 10));
+            SyncTable.Shown shown = pressedOnce(rig, ui, "ADDRESS");
+            assertEquals(shown.startsOn.get(STATION_NAME), "ASK", "the row does not start on Ask Again");
+            assertEquals(text(shown, STATION_NAME, "ADDRESS"), I18n.f("sync.ui.changeAddress", STATION_NAME, 10));
 
             assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 10, "Apply did not give it the station's"
                 + " address");
@@ -960,10 +967,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
             at.set(12);
 
-            List<SyncTable.Shown> shown = pressing(rig, ui, keep);
-            assertEquals(shown.size(), 1, "the station's new address was not asked about");
-            assertEquals(Components.onTheEventThread(() -> shown.get(0).in(STATION_NAME, "ADDRESS",
-                javax.swing.AbstractButton.class).getText()), I18n.f("sync.ui.changeAddress", STATION_NAME, 12));
+            assertEquals(text(pressedOnce(rig, ui, keep), STATION_NAME, "ADDRESS"), I18n.f("sync.ui.changeAddress",
+                STATION_NAME, 12));
             assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 70, "Keep gave it the station's address");
         });
     }
@@ -983,12 +988,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
         {
             renamedAndMovedHere(rig);
 
-            List<SyncTable.Shown> shown = pressing(rig, ui, "RENAME");
-            assertEquals(shown.size(), 1, "not one table");
-            assertEquals(Components.onTheEventThread(() -> Arrays.asList(shown.get(0).in(AT_3, "RENAME",
-                javax.swing.AbstractButton.class).getText(), shown.get(0).in(AT_3, "ADDRESS",
-                javax.swing.AbstractButton.class).getText())), Arrays.asList(I18n.f("sync.ui.rename", AT_3, STATION_NAME),
-                I18n.f("sync.ui.changeAddress", AT_3, 3)), "the row does not offer both changes");
+            assertEquals(applies(pressedOnce(rig, ui, "RENAME"), AT_3), Arrays.asList(I18n.f("sync.ui.rename", AT_3,
+                STATION_NAME), I18n.f("sync.ui.changeAddress", AT_3, 3)), "the row does not offer both changes");
 
             assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 10, "the rename did not rename it");
             assertEquals(rig.model.getLocByName(AT_3).getAddress(), 3, "the station's locomotive at 3 was not added");
@@ -1202,6 +1203,14 @@ public class testTheSyncAsksAboutRenamedLocomotives
         assertEquals(asked.get(0).buttons, Arrays.asList(buttons));
         assertEquals(asked.get(0).startsOn, buttons[0], "the question does not start on " + buttons[0]);
         return asked.get(0);
+    }
+
+    /** As `pressing`, where exactly one table must have shown them. */
+    private static SyncTable.Shown pressedOnce(StationRig rig, TrainControlUI ui, String answer) throws Exception
+    {
+        List<SyncTable.Shown> shown = pressing(rig, ui, answer);
+        assertEquals(shown.size(), 1, "not asked in one table");
+        return shown.get(0);
     }
 
     /** Presses Sync answering the rows of the locomotives of these claims so, OK to the rest; the tables with them. */

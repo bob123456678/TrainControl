@@ -29,7 +29,6 @@ public final class ChoiceTable extends JScrollPane
         JComponent[] labels = new JComponent[heads.length];
         for (int i = 0; i < heads.length; i++) labels[i] = UiStyle.blackLabel(heads[i]);
         addRow(labels);
-
         setViewportView(this.grid);
         setBorder(BorderFactory.createLineBorder(new Color(204, 204, 204)));
         getVerticalScrollBar().setUnitIncrement(16);
