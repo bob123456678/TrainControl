@@ -467,7 +467,7 @@ public class testPicturesAreSharpOnAScaledScreen
 
         for (double scale : new double[] {1.25, 2})
         {
-            int size = (int) Math.ceil(14 * scale - 0.5);
+            int size = (int) (14 * scale);
             BufferedImage drawn = painted(org.traincontrol.gui.InfoMark.icon(), scale).getSubimage(0, 0, size, size);
 
             assertEquals(differing(drawn, onClear((Image) art.invoke(null, size, size))), 0,

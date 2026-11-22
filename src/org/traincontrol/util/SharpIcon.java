@@ -23,21 +23,23 @@ public class SharpIcon extends ImageIcon implements com.formdev.flatlaf.FlatLaf.
         Image at(int width, int height) throws java.io.IOException;
     }
 
+    /** COVER fills the pixels covered; TILE (a square, cut to meet) and WHOLE (a mark) are one art anywhere (OB-501) */
+    public enum Fit { COVER, TILE, WHOLE }
+
     private final Art art;
-    private final boolean tile;
+    private final Fit fit;
     private final Map<Dimension, Image> made = new java.util.concurrent.ConcurrentHashMap<>();
 
     public SharpIcon(Image picture, Art art)
     {
-        this(picture, art, false);
+        this(picture, art, Fit.COVER);
     }
 
-    /** A `tile`, a diagram square, draws the same art wherever it lies, cut at its far sides: a run's edges line up */
-    public SharpIcon(Image picture, Art art, boolean tile)
+    public SharpIcon(Image picture, Art art, Fit fit)
     {
         super(picture);
         this.art = art;
-        this.tile = tile;
+        this.fit = fit;
     }
 
     /**
@@ -73,7 +75,7 @@ public class SharpIcon extends ImageIcon implements com.formdev.flatlaf.FlatLaf.
         Image picture = change.apply(icon.getImage());
         SharpIcon from = icon instanceof SharpIcon ? (SharpIcon) icon : null;
         return from == null ? new ImageIcon(picture)
-            : new SharpIcon(picture, (w, h) -> change.apply(from.at(w, h)), from.tile);
+            : new SharpIcon(picture, (w, h) -> change.apply(from.at(w, h)), from.fit);
     }
 
     /**
@@ -103,6 +105,11 @@ public class SharpIcon extends ImageIcon implements com.formdev.flatlaf.FlatLaf.
         });
     }
 
+    private int size(int covered, double exact)
+    {
+        return fit == Fit.COVER ? covered : (int) (fit == Fit.TILE ? Math.ceil(exact) : exact);
+    }
+
     @Override
     public void paintIcon(Component c, Graphics g, int x, int y)
     {
@@ -113,8 +120,8 @@ public class SharpIcon extends ImageIcon implements com.formdev.flatlaf.FlatLaf.
         int width = (int) Math.ceil(t.getScaleX() * (x + getIconWidth()) + t.getTranslateX() - 0.5) - left;
         int height = (int) Math.ceil(t.getScaleY() * (y + getIconHeight()) + t.getTranslateY() - 0.5) - top;
         Image sharp = t.getScaleX() > 1 && t.getScaleY() > 1 && t.getShearX() == 0 && t.getShearY() == 0
-            && width > 0 && height > 0 ? at(tile ? (int) Math.ceil(t.getScaleX() * getIconWidth()) : width,
-                tile ? (int) Math.ceil(t.getScaleY() * getIconHeight()) : height) : null;
+            && width > 0 && height > 0 ? at(size(width, t.getScaleX() * getIconWidth()),
+                size(height, t.getScaleY() * getIconHeight())) : null;
         if (sharp == null)
         {
             super.paintIcon(c, g, x, y);
