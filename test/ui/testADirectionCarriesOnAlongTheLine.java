@@ -10,7 +10,6 @@ import java.util.TreeMap;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.AutonomySession;
@@ -25,21 +24,18 @@ import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.LayoutDiagramComponent.componentType;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
-import org.traincontrol.gui.autonomyeditor.StationSettingsWindow;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.Components;
 import support.Diagrams;
 import support.MenuPage;
-import support.Mouse;
-import support.StationDoors;
 
 /**
  * A run's direction set so trains may go a way they could not carries on along the line (MT-1068, Adam: "if it's
  * through of a non-splitting switch, flip that as well.  make sure all affected tiles are highlighted.  and when locking
  * down again, it needs only be the adjacent tile."): past plain sensors and through switches entered by a branch, to a
- * station, a split, or track that already lets trains go that way.  Only Station Settings' picture offers it, in a
- * notice that asks with every square lit (D194).
+ * station, a split, or track that already lets trains go that way.  Only Station Settings' picture offers it (D194),
+ * claimed in `testStationSettingsWindow`, which has the main window the picture draws from.
  *
  * Each claim draws a line of its own along row 1 of a page: S a station, P a plain sensor, - a straight, &gt; or &lt; a
  * switch whose toe points east or west.  A claim's line starts with every run one way west.
@@ -174,77 +170,6 @@ public class testADirectionCarriesOnAlongTheLine
 
             assertTrue(oneWay.isEmpty(), "both ways to one way carries on to " + oneWay);
             assertTrue(closed.isEmpty(), "closing carries on to " + closed);
-        }
-    }
-
-    /**
-     * Station Settings' picture asks, from Station Settings, when opening the next square's arrow would change squares
-     * past its run: the notice offers Carry On, This Run Alone and Cancel, and outlines every square to
-     * change while it asks; Cancel changes nothing and takes the outline away; Carry On changes all of it (D194).
-     *
-     * MUTATION: have `AutonomyEditorPanel.alongTheLine` light only the squares past the run, and this fails.
-     */
-    @Test(timeOut = 120000)
-    public void testThePictureAsksWithEverySquareLitAndCancelChangesNothing() throws Exception
-    {
-        try (MenuPage page = line("tc-along-notice", "S--P--S--P"))
-        {
-            AutonomySession session = page.session;
-            AutonomyEditorPanel panel = panelOn(session);
-            StationSettingsWindow window = StationDoors.open(panel, at(1));
-            String before = ways(session);
-            Set<TileKey> lit = new LinkedHashSet<>();
-
-            try
-            {
-                Answering.Question asked = openTheWayEast(window, dialog ->
-                {
-                    for (int x = 1; x <= 10; x++) if (panel.isOutlined(at(x))) lit.add(at(x));
-                }, I18n.t("ui.cancel")).questions().get(0);
-
-                assertEquals(asked.message, I18n.t("autosetup.ui.alongTheLine"), "the notice's words");
-                assertEquals(asked.buttons, Arrays.asList(I18n.t("autosetup.ui.buttonCarryOn"),
-                    I18n.t("autosetup.ui.buttonThisRunAlone"), I18n.t("ui.cancel")), "the notice's answers");
-                assertSame(asked.owner, window, "the notice is not owned by Station Settings");
-                assertEquals(lit, squares(2, 3, 5, 6), "the squares to change were not all outlined while it asked");
-                assertEquals(ways(session), before, "Cancel changed something");
-                assertFalse(Components.onTheEventThread(() -> panel.isOutlined(at(5))), "the outline outlived it");
-
-                openTheWayEast(window, null, I18n.t("autosetup.ui.buttonCarryOn"));
-
-                assertEquals(ways(session), "2:EW 3:EW 5:EW 6:EW 8:W 9:W", "Carry On did not change the run and"
-                    + " the line past it");
-            }
-            finally
-            {
-                StationDoors.close(window);
-            }
-        }
-    }
-
-    /**
-     * This Run Alone sets the run the picture's arrow is on and nothing past it (D194).
-     *
-     * MUTATION: have `AutonomyEditorPanel.alongTheLine` answer This Run Alone as Carry On, and this fails.
-     */
-    @Test(timeOut = 120000)
-    public void testThisRunAloneChangesTheRunAlone() throws Exception
-    {
-        try (MenuPage page = line("tc-along-alone", "S--P--S--P"))
-        {
-            AutonomySession session = page.session;
-            StationSettingsWindow window = StationDoors.open(panelOn(session), at(1));
-
-            try
-            {
-                assertEquals(openTheWayEast(window, null, I18n.t("autosetup.ui.buttonThisRunAlone")).asked().size(), 1,
-                    "the picture did not ask");
-                assertEquals(ways(session), "2:EW 3:EW 5:W 6:W 8:W 9:W", "This Run Alone changed more than the run");
-            }
-            finally
-            {
-                StationDoors.close(window);
-            }
         }
     }
 
@@ -397,29 +322,6 @@ public class testADirectionCarriesOnAlongTheLine
 
         return look == null ? answering : answering.looking(look);
     }
-
-    /** Clicks the picture's arrow on the far side of the square east of the station, answering with `button`. */
-    private static Answering openTheWayEast(StationSettingsWindow window,
-        java.util.function.Consumer<javax.swing.JDialog> look, String button) throws Exception
-    {
-        javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
-        java.awt.Rectangle arrow = Components.onTheEventThread(() -> window.pictureMarksForTest().get(EAST)
-            .getBounds());
-        java.awt.Point middle = new java.awt.Point((int) arrow.getCenterX(), (int) arrow.getCenterY());
-
-        assertEquals(Components.onTheEventThread(() -> window.pictureMarkAtForTest(middle)), EAST,
-            "precondition: the middle of the arrow is not on it");
-
-        try (Answering answering = answering(look, button))
-        {
-            Mouse.clickAt(block, middle);
-            StationDoors.current(window);
-
-            return answering;
-        }
-    }
-
-    private static final String EAST = "NEXT.E.E";
 
     // ------------------------------------------------------------------------------------------------------ the reads
 
