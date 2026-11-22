@@ -91,8 +91,9 @@ Not: `// OB-271 (2026-09-14): Adam reported ... Round 112 found ...; RSA61-B2 wi
   `--class <testClass>`, `--uses <ProductionClass>`) prints `test/<path>:<first>-<last>  Class.method  ids` for each
   matching @Test method; read that range (and the ranges of the helpers it calls, which `--class` lists), never a whole
   test class to find one claim.
-- Grep first, then read the range you need (about 120 lines); never read a giant file whole.  Pipe long output
-  through `head`.
+- **Find source the same way.**  `py -3 docs/tools/outline.py <Class> [word]` lists each method with its line range
+  (generated GUI code as one line); grep only for what an outline cannot name.  Then read the range you need (about
+  120 lines); never read a giant file whole.  Pipe long output through `head`.
 - Send every grep and range you can already name in one step (several tool calls, or one command), not one per step.
 - Edit with the Edit tool; a script, write with the Write tool (heredocs eat backslashes); never `sed -i` a Java file.
 - A worktree you were given is clean and on the right commit: start work, don't re-check it.
