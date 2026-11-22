@@ -33,9 +33,9 @@ import support.MenuPage;
 /**
  * A run's direction set so trains may go a way they could not carries on along the line (MT-1068, Adam: "if it's
  * through of a non-splitting switch, flip that as well.  make sure all affected tiles are highlighted.  and when locking
- * down again, it needs only be the adjacent tile."): past plain sensors and through switches entered by a branch, to a
- * station, a split, or track that already lets trains go that way.  Only Station Settings' picture offers it (D194),
- * claimed in `testStationSettingsWindow`, which has the main window the picture draws from.
+ * down again, it needs only be the adjacent tile."): past plain sensors, through switches entered by a branch and
+ * through track that already lets trains go that way, to a station or a split.  Only Station Settings' picture offers
+ * it (D194), claimed in `testStationSettingsWindow`, which has the main window the picture draws from.
  *
  * Each claim draws a line of its own along row 1 of a page: S a station, P a plain sensor, - a straight, &gt; or &lt; a
  * switch whose toe points east or west.  A claim's line starts with every run one way west.
@@ -59,10 +59,8 @@ public class testADirectionCarriesOnAlongTheLine
             assertEquals(session.alongTheLine(at(2), roadOf(session, 2), toward(session, 2, Side.E)).keySet(),
                 squares(5, 6), "the reversal does not carry on over the next run alone");
 
-            session.setRunDirection(at(2), roadOf(session, 2), toward(session, 2, Side.E), true);
-
-            assertEquals(ways(session), "2:E 3:E 5:E 6:E 8:W 9:W", "the line past the plain sensor was not reversed, or"
-                + " the reversal went on past the station");
+            assertEquals(east(session, 2), "2:E 3:E 5:E 6:E 8:W 9:W", "the line past the plain sensor was not"
+                + " reversed, or the reversal went on past the station");
         }
     }
 
@@ -82,10 +80,8 @@ public class testADirectionCarriesOnAlongTheLine
 
             assertFalse(ways(session).contains("5:E"), "precondition: the switch already lets trains east");
 
-            session.setRunDirection(at(2), roadOf(session, 2), toward(session, 2, Side.E), true);
-
-            assertEquals(ways(session), "2:E 4:E 5:E 6:E", "the line was not carried through the switch entered by a"
-                + " branch");
+            assertEquals(east(session, 2), "2:E 4:E 5:E 6:E", "the line was not carried through the switch entered by"
+                + " a branch");
         }
 
         try (MenuPage page = line("tc-along-facing", "S-P-<-S"))
@@ -101,21 +97,20 @@ public class testADirectionCarriesOnAlongTheLine
 
             assertEquals(ways(session), "2:W 4:W 5:W 6:W", "precondition: the line does not start one way west");
 
-            session.setRunDirection(at(2), roadOf(session, 2), toward(session, 2, Side.E), true);
-
-            assertEquals(ways(session), "2:E 4:E 5:W 6:W", "the walk did not stop at the switch where the line splits");
+            assertEquals(east(session, 2), "2:E 4:E 5:W 6:W", "the walk did not stop at the switch where the line"
+                + " splits");
         }
     }
 
     /**
-     * The walk stops at a run that already lets trains go the new way, and on a loop it stops before a square it has
-     * been on, having set the rest of the loop once.
+     * The walk goes on through a run that already lets trains go the new way, leaving it as it is, and on a loop it
+     * stops before a square it has been on, having set the rest of the loop once.
      *
-     * MUTATION: have `carryOn` go on past a run that lets the way, and the first half fails; drop the `seen` test from
-     * its loop, and the second never ends.
+     * MUTATION: have `carryOn` stop at a run that lets the way, and the first half fails; drop the `seen` test from its
+     * loop, and the second never ends.
      */
     @Test(timeOut = 60000)
-    public void testItStopsAtARunThatAlreadyAllowsTheWayAndOnALoop() throws Exception
+    public void testItGoesOnThroughARunThatAlreadyAllowsTheWayAndStopsOnALoop() throws Exception
     {
         try (MenuPage page = line("tc-along-open", "S-P-P-S"))
         {
@@ -123,9 +118,8 @@ public class testADirectionCarriesOnAlongTheLine
 
             session.setRunDirection(at(4), roadOf(session, 4), Direction.BOTH);
 
-            session.setRunDirection(at(2), roadOf(session, 2), toward(session, 2, Side.E), true);
-
-            assertEquals(ways(session), "2:E 4:EW 6:W", "the walk went past a run that already lets trains east");
+            assertEquals(east(session, 2), "2:E 4:EW 6:E", "the walk did not go on past a run that already lets trains"
+                + " east, or changed it");
         }
 
         try (MenuPage page = new MenuPage("tc-along-loop", aLoop()))
@@ -205,6 +199,28 @@ public class testADirectionCarriesOnAlongTheLine
         }
     }
 
+    /**
+     * Through a switch entered by a branch that already lets trains go the new way, the walk goes on to the run beyond
+     * it and leaves the switch as it is (the validator's probe of FR-244).
+     *
+     * MUTATION: have `carryOn` stop at a switch that lets the way, and the run beyond it stays one way west and this
+     * fails.
+     */
+    @Test(timeOut = 60000)
+    public void testItGoesOnThroughAJoiningSwitchThatAlreadyAllowsTheWay() throws Exception
+    {
+        try (MenuPage page = line("tc-along-open-switch", "S-<-P--S"))
+        {
+            AutonomySession session = page.session;
+
+            assertEquals(ways(session), "2:W 3:E 4:W 6:W 7:W", "precondition: the switch does not let trains east"
+                + " alone, or the runs are not one way west");
+
+            assertEquals(east(session, 6), "2:E 3:E 4:E 6:E 7:E", "the run beyond the switch that already lets trains"
+                + " east was not carried, or the switch was changed");
+        }
+    }
+
     // ------------------------------------------------------------------------------------------------------- the rigs
 
     /** A session over one page with `squares` along row 1 from x = 1, stations made, every run one way west. */
@@ -241,6 +257,13 @@ public class testADirectionCarriesOnAlongTheLine
         }
 
         return made;
+    }
+
+    /** Points the run at `x` east, carrying on along the line: which ways row 1 then lets, as `ways` says. */
+    private static String east(AutonomySession session, int x)
+    {
+        session.setRunDirection(at(x), roadOf(session, x), toward(session, x, Side.E), true);
+        return ways(session);
     }
 
     /** The orientation of a switch along row 1 whose toe is on this side. */

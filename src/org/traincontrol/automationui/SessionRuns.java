@@ -161,9 +161,7 @@ final class SessionRuns
         return out;
     }
 
-    /**
-     * Walks on from a run's end, adding to `plan` each road that forbids a way `need` names (out, back), set to allow.
-     */
+    /** Walks from a run's end to a station or a split, setting in `plan` each road forbidding a way `need` names. */
     private void carryOn(Landing at, Set<TileKey> seen, boolean[] need, boolean out, boolean back,
         Map<TileKey, Map<RouteId, Direction>> plan)
     {
@@ -196,9 +194,9 @@ final class SessionRuns
                 next = owner.graph.landing(tile, toe);
             }
             else return;
-            if (piece.contains(null) || piece.stream().allMatch(step -> step.lets(need))) return;
-            // Only a switch's blades can refuse a direction, and a switch is a piece of one road
-            for (Step step : piece)
+            if (piece.contains(null)) return;
+            // Track that already lets the way is passed as it is; only a switch's blades can refuse a direction
+            for (Step step : piece.stream().allMatch(s -> s.lets(need)) ? Collections.<Step>emptyList() : piece)
             {
                 if (!TileGraph.directionIsPossible(step.direction(out, back), step.road)) return;
                 plan.computeIfAbsent(step.tile, k -> new LinkedHashMap<>()).put(step.roadId, step.direction(out, back));
