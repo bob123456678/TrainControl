@@ -71,8 +71,8 @@ public class testTheWindowShowsTheConnection
      * In a simulation there is no Central Station to answer: the triangle shows from the start, red,
      * and its tooltip says TrainControl is not connected (FR-228).
      *
-     * MUTATION: drop `on |= simulated` from `TrainControlUI.markTheConnection`, or have `RowIcons.warning` fill amber whatever
-     * `red` asks, and this fails.
+     * MUTATION: drop `simulated ||` from `triangle` in `TrainControlUI.markTheConnection`, or have `RowIcons.warning`
+     * fill amber whatever `red` asks, and this fails.
      */
     @Test
     public void testASimulationShowsTheRedTriangleFromTheStart() throws Exception
@@ -319,7 +319,7 @@ public class testTheWindowShowsTheConnection
      * The pill keeps one width whatever it shows, wide enough for "999 ms"; its tooltip names the station, the protocol
      * and the latency (FR-242).
      *
-     * MUTATION: size the pill to its text (drop `getPreferredSize` from `TrainControlUI.connectionMark`), and this fails.
+     * MUTATION: size the pill to its text (drop `TrainControlUI.ConnectionPill.getPreferredSize`), and this fails.
      */
     @Test
     public void testThePillKeepsItsWidthAndNamesTheStation() throws Exception
@@ -359,7 +359,7 @@ public class testTheWindowShowsTheConnection
      * At the main window's narrowest, with a locomotive's two function tabs, the pill fits right of the last tab and
      * inside the panel (FR-242).
      *
-     * MUTATION: leave the pill out of `TrainControlUI.markTheConnection` (keep the old hidden mark), and this fails.
+     * MUTATION: pad the pill by `UIScale.scale(200)` in `TrainControlUI.ConnectionPill.getPreferredSize`, and this fails.
      */
     @Test
     public void testThePillFitsBesideTheTabsAtTheNarrowestWindow() throws Exception
@@ -405,8 +405,9 @@ public class testTheWindowShowsTheConnection
     }
 
     /**
-     * The keyboard tab's line names the station in words: a CS2 with the firmware and serial number its device file
-     * gives, a CS3 with what it gives, "not connected" with no station, and "Simulation" in a simulation (FR-242).
+     * The keyboard tab's line names the station as "Central Station 2 v4.2.13 #10415 (UDP)", leaving out a part not
+     * known with its space; v is the leading dotted number of what the station says; "not connected" with no station,
+     * and "Simulation" in a simulation (FR-242).
      *
      * MUTATION: leave the serial number out of `TrainControlUI.nameTheStation`, and this fails.
      */
@@ -420,32 +421,55 @@ public class testTheWindowShowsTheConnection
 
         try
         {
-            Reflect.set(MarklinControlStation.class, model, "stationFirmware", "4.2.13");
-            Reflect.set(MarklinControlStation.class, model, "stationSerial", "12345");
+            Object[][] cases = {{false, "4.2.13", "10415", "Central Station 2 v4.2.13 #10415 (UDP)"},
+                {false, null, "10415", "Central Station 2 #10415 (UDP)"},
+                {true, "2.6.1 (Build 3)", null, "Central Station 3 v2.6.1 (UDP)"},
+                {true, null, null, "Central Station 3 (UDP)"}};
 
-            String two = org.traincontrol.util.I18n.f("ui.main.station", "2", "UDP");
-
-            assertEquals(latency(), org.traincontrol.util.I18n.f("ui.main.stationSerial",
-                org.traincontrol.util.I18n.f("ui.main.stationFirmware", two, "4.2.13"), "12345"), "a CS2's line");
-            assertTrue(latency().contains("4.2.13") && latency().contains("12345") && !latency().contains(" ms"),
-                "a CS2's line: " + latency());
-
-            Reflect.set(MarklinControlStation.class, model, "isCS3", true);
-            Reflect.set(MarklinControlStation.class, model, "stationFirmware", "2.6.1 (Build 3)");
-            Reflect.set(MarklinControlStation.class, model, "stationSerial", null);
-
-            String three = org.traincontrol.util.I18n.f("ui.main.station", "3", "UDP");
-
-            assertEquals(latency(), org.traincontrol.util.I18n.f("ui.main.stationFirmware", three, "2.6.1 (Build 3)"),
-                "a CS3's line, no serial");
-
-            Reflect.set(MarklinControlStation.class, model, "stationFirmware", null);
-            assertEquals(latency(), three, "a CS3 that says nothing");
+            for (Object[] c : cases)
+            {
+                Reflect.set(MarklinControlStation.class, model, "isCS3", c[0]);
+                Reflect.set(MarklinControlStation.class, model, "stationFirmware", c[1]);
+                Reflect.set(MarklinControlStation.class, model, "stationSerial", c[2]);
+                assertEquals(latency(), c[3], "the line for " + java.util.Arrays.toString(c));
+            }
         }
         finally
         {
             Reflect.set(MarklinControlStation.class, model, "isCS3", false);
             Reflect.set(MarklinControlStation.class, model, "stationFirmware", null);
+            Reflect.set(MarklinControlStation.class, model, "stationSerial", null);
+            disconnect();
+        }
+    }
+
+    /**
+     * The serial number the station's ping reply gives (UID 0x4353835E from device type 0x0000 is 10415) reaches the
+     * line, ahead of one a file gave (FR-242).
+     *
+     * MUTATION: answer only the files' serial number in `MarklinControlStation.getStationSerial`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testThePingRepliesSerialNumberReachesTheLine() throws Exception
+    {
+        model.setNetworkCommState(true);
+        Reflect.set(MarklinControlStation.class, model, "stationSerial", "999");
+
+        try
+        {
+            model.receiveMessage(new org.traincontrol.marklin.udp.CS2Message(
+                org.traincontrol.marklin.udp.CS2Message.CAN_CMD_PING, 0, true,
+                new byte[] {0x43, 0x53, (byte) 0x83, 0x5e, 0x04, 0x02, 0x00, 0x00}));
+
+            assertTrue(Components.waitFor(() -> "10415".equals(model.getStationSerial()), 10000),
+                "the ping reply's serial number was not taken: " + model.getStationSerial());
+            assertEquals(latency(), "Central Station 2 #10415 (UDP)");
+        }
+        finally
+        {
+            Reflect.set(MarklinControlStation.class, model, "UID", 0);
+            Reflect.set(MarklinControlStation.class, model, "serialNumber", 0);
+            Reflect.set(MarklinControlStation.class, model, "stationSerial", null);
             disconnect();
         }
     }

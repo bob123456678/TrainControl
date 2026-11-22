@@ -5832,6 +5832,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             {
                 latencyLabel.setText(I18n.t("ui.labelLostNetworkConnection"));
                 latencyLabel.setForeground(Color.red);
+                lastLatency = null;
             }
 
             markTheConnection(notAnswering);
@@ -5962,7 +5963,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         connectionMark.setIcon(triangle ? RowIcons.warning(16, simulated) : null);
         connectionMark.setText(triangle ? null : ms == null ? "..." : ms > 999 ? ConnectionPill.PAST_A_SECOND : ms + " ms");
-        connectionMark.setBackground(ms == null ? new Color(215, 215, 215) : ms <= PING_ORANGE ? new Color(40, 160, 70)
+        connectionMark.setBackground(ms == null ? new Color(215, 215, 215) : ms <= PING_ORANGE ? new Color(30, 130, 60)
             : ms <= PING_RED ? new Color(245, 200, 40) : new Color(240, 130, 30));
         connectionMark.setForeground(ms == null ? new Color(80, 80, 80) : ms <= PING_ORANGE ? Color.WHITE : new Color(50, 30, 0));
         connectionMark.setToolTipText(tip);
@@ -5970,20 +5971,17 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         connectionMark.getParent().revalidate();
     }
 
-    /** The keyboard tab's line names the station, with its firmware and serial number where it says them (FR-242). */
+    /** The keyboard tab's line: "Central Station 2 v4.2.13 #10415 (UDP)", leaving out a part not known (FR-242). */
     private void nameTheStation()
     {
         String protocol = model.isSimulation() ? null : model.getProtocol();
+        String serial = model.getStationSerial();
+        java.util.regex.Matcher version = java.util.regex.Pattern.compile("^\\d+(\\.\\d+)*")
+            .matcher(model.getStationFirmware() != null ? model.getStationFirmware() : "");
         String line = model.isSimulation() ? I18n.t("ui.main.stationSimulation")
             : protocol == null ? I18n.t("ui.labelNotConnectedToCentralStation")
-            : I18n.f("ui.main.station", model.isCS3() ? "3" : "2", protocol);
-
-        if (protocol != null)
-        {
-            if (model.getStationFirmware() != null) line = I18n.f("ui.main.stationFirmware", line, model.getStationFirmware());
-            if (model.getStationSerial() != null) line = I18n.f("ui.main.stationSerial", line, model.getStationSerial());
-        }
-
+            : I18n.f("ui.main.station", model.isCS3() ? "3" : "2", version.find() ? " v" + version.group() : "",
+                serial != null ? " #" + serial : "", protocol);
         latencyLabel.setText(line);
         latencyLabel.setForeground(protocol != null ? Color.BLACK : Color.RED);
     }

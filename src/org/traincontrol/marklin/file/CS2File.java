@@ -447,6 +447,14 @@ public final class CS2File
         return "http://" + ipAddress + "/config/geraet.vrs";
     }
     
+    /** What a CS3's device file (geraet.vrs) says that a CS2's does not. */
+    public static final String CS3_PRODUCT = "Central Station 3";
+    /** Check if this is a CS3 by looking at the info file */
+    public static boolean isCS3(String deviceInfoUrl) throws Exception
+    {
+        return fetchText(deviceInfoUrl).contains(CS3_PRODUCT);
+    }
+
     /**
      * A field of a station's device file (geraet.vrs), from its ` .key=value` line: the value without a leading label
      * such as "GUI:", or null where the line is missing, blank or 0 (FR-242).

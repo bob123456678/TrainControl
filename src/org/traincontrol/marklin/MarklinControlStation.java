@@ -264,7 +264,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
     // Unique ID of the central station (0 for all stations)
     private int UID = 0;
-    private int serialNumber;
+    private volatile int serialNumber;
     
     // Last message output
     private String lastMessage;
@@ -1703,7 +1703,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             try
             {
                 String device = CS2File.fetchText(CS2File.getDeviceInfoURL(cs2Address()));
-                this.isCS3 = device.contains("Central Station 3");
+                this.isCS3 = device.contains(CS2File.CS3_PRODUCT);
+                // A CS2 is not known to state its firmware anywhere published: .guivers is our best guess (FR-242)
                 this.stationFirmware = CS2File.deviceField(device, "guivers");
                 this.stationSerial = CS2File.deviceField(device, "sernum");
                 this.typeLearned = true;
@@ -2203,7 +2204,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public String getStationSerial()
     {
-        return this.stationSerial;
+        // The station's own ping reply first: every CS2 and CS3 sends it on connecting
+        return this.serialNumber > 0 ? String.valueOf(this.serialNumber) : this.stationSerial;
     }
 
     // What the station says of itself, for the window's station line: null where it does not say (FR-242)
@@ -2214,6 +2216,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
      * Keeps what a CS3's info says over its device file's word, and logs its firmware as it reports it, once a session,
      * and again only if it changes (MT-895).
      */
+    public void logTheFirmware(String said)
+    {
+        logTheFirmware(said, null);
+    }
+
+    /** The same, with the serial number the CS3's info gives, null for none. */
     public void logTheFirmware(String said, String serial)
     {
         this.stationFirmware = said;
