@@ -3329,15 +3329,11 @@ public class Layout
             return false;
         }
 
-        // In pure simulation mode the accessories are not really actuated, so there is nothing to
-        // validate - skip the guard entirely (see setSimulate: sim requires debug + no connection).
-        // Also skip when the user has disabled path integrity validation.
+        // Pure simulation actuates nothing (see setSimulate), so there is nothing to validate.
         if (this.simulate || !PATH_INTEGRITY_VALIDATION) return true;
 
-        // Verify the accessories actually reached their commanded state (this wait does not hold the
-        // Layout monitor).  If not, stop the locomotive and release its locks (returning false so
-        // executePath does not run it); power is left on and autonomy re-attempts the path organically on
-        // its next cycle, so no explicit retry is needed here.
+        // The wait does not hold the Layout monitor.  On failure the locomotive stops and its locks go; power stays on
+        // and autonomy retries on its next cycle.
         if (!this.validatePathActuation(path, stops, power, replacements))
         {
             // A Stop, power change or replaced connection ended the wait: the train goes back unrun, nothing counted.
@@ -3483,11 +3479,9 @@ public class Layout
             this.control.log(e);
         }
 
-        // Stop this locomotive so it cannot move onto the unset path.
         loc.setSpeed(0);
 
-        // Release only the locks configureAndLockPath just took: mark the edges unoccupied and clear the
-        // per-edge end-point assignments, but leave the loco at its start point (it never departed).
+        // Release only the locks configureAndLockPath just took; the loco stays at its start (it never departed).
         synchronized (this)
         {
             for (Edge e : path)
@@ -3507,12 +3501,9 @@ public class Layout
 
         String accList = String.join(", ", misconfigured);
 
-        // Always log every failure to the console.
         control.logf("autolayout.errorPathMisconfigured", loc.getName(), accList);
 
-        // Only raise a UI popup once failures cross the threshold, and at most once per Layout instance -
-        // after that, the console log above is considered sufficient, so we do not keep interrupting the
-        // user with popups for the rest of this session.
+        // A popup only once failures cross the threshold, and at most once per Layout; the log suffices after.
         boolean alert;
 
         synchronized (this)
@@ -4575,9 +4566,7 @@ public class Layout
             }
             else if (reason == null)
             {
-                // Past the filter, so the question becomes whether any route is clear.  Every
-                // alternative is tried, exactly as pickPath does, because the first one being blocked
-                // says nothing about the second.
+                // Every alternative is tried, as pickPath does: the first being blocked says nothing about the second.
                 List<List<Edge>> accepted = routes == null ? null : new LinkedList<>();
 
                 reason = firstClearOrWhyNot(loc, start, end, byHand, accepted);
@@ -7843,8 +7832,7 @@ public class Layout
         this.timetable.clear();
         this.timetable.addAll(lst);
 
-        // Overlapping execution is the normal behavior; only a staging plan opts out, and it does so
-        // after calling this
+        // Overlapping is the norm; only a staging plan opts out, after calling this
         this.timetableSequential = false;
 
         // And nothing is on loan: this is the timetable, or the one a plan hands back.
@@ -7986,8 +7974,7 @@ public class Layout
         {
             TimetablePath entry = new TimetablePath(move.getLocomotive(), move.getPath(), 0);
 
-            // No delay: every entry should start as soon as the one before it has, and be held back
-            // only by the path actually being occupied
+            // No delay: held back only by the path being occupied
             entry.setSecondsToNext(0);
 
             entry.setReturnHome(true);
@@ -8004,7 +7991,6 @@ public class Layout
         // overlapping, two could contend for an edge the planner never considered.
         this.timetableSequential = true;
 
-        // And so is this
         this.timetableOnLoan = owners;
 
         this.control.logf("autolayout.infoReturnToHomeLoaded", staged.size());
@@ -8350,7 +8336,6 @@ public class Layout
         }
                
         ConfigurationFile file = new ConfigurationFile(layout, control, o);
-        // In the file's order: the first failure is the first reason.
         if (file.readSettings())
         {
             file.readPoints();
@@ -8379,7 +8364,7 @@ public class Layout
         // Arrival sides, applied after the trains are placed: setLocomotive drops the side.
         private final java.util.Map<String, String> arrivalSideByPoint = new java.util.LinkedHashMap<>();
 
-        // And the roads, held back likewise.
+        // The roads, likewise.
         private final java.util.Map<String, Object> arrivalRoadByPoint = new java.util.LinkedHashMap<>();
 
         // Trains placed off a station, warned about once every copy is read.
