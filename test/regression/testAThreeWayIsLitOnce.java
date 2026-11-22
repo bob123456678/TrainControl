@@ -27,7 +27,8 @@ import support.Reflect;
  * Highlight on Diagram lights a three-way once, as commanded, where a route commands one of its decoders and checks the
  * other (OB-286): a square both commanded and checked is drawn as commanded, the stronger statement.
  *
- * MUTATION: light the checked accessories without leaving out the squares already commanded, and this fails.
+ * MUTATION: have `DiagramHighlights.highlightAccessories` light the checked accessories without leaving out the
+ * squares already commanded, and this fails.
  *
  * @author Adam
  */

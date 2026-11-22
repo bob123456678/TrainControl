@@ -28,8 +28,8 @@ import support.Teardown;
  * accessory address 1, so "accessory 10" is an address nothing on the page answers to as an accessory and one that an
  * s88 answers to.
  *
- * MUTATION: drop the `answersTo` test from the loop in `highlightAddresses` and the first claim goes red - the s88
- * lights for an accessory address.
+ * MUTATION: drop the `answersTo` test from the loop in `DiagramHighlights.highlightAddresses` and the first claim
+ * goes red - the s88 lights for an accessory address.
  *
  * @author Adam
  */
@@ -194,7 +194,8 @@ public class testTheRouteHighlightAsksWhatATileIs
      * And the window asks the decoder: the scenario's MM2 turnout is not lit for a DCC command (the door Highlight on
      * Diagram uses).
      *
-     * MUTATION: have `highlightAccessories` pass the addresses on without their protocols and this fails.
+     * MUTATION: have `DiagramHighlights.highlightAccessories` pass the addresses on without their protocols and this
+     * fails.
      */
     @Test
     public void testTheHighlightAsksTheDecoder() throws Exception

@@ -86,7 +86,7 @@ src/org/traincontrol/gui/SettledQuestion.java	495	0
 src/org/traincontrol/gui/StationCaptions.java	319	7
 src/org/traincontrol/gui/TailCrossedPrompt.java	359	11
 src/org/traincontrol/gui/TimetableTab.java	271	2
-src/org/traincontrol/gui/TrainControlUI.java	-	111
+src/org/traincontrol/gui/TrainControlUI.java	-	110
 src/org/traincontrol/gui/autonomy/ArrivalSidePrompt.java	524	4
 src/org/traincontrol/gui/autonomy/AutoLocomotiveStatus.java	364	12
 src/org/traincontrol/gui/autonomy/AutonomyBanner.java	401	9
