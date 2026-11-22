@@ -122,9 +122,7 @@ public abstract class Locomotive
 
     // The one the Sync running now offered and did not apply, so it adds no copy under it; never saved
     private String heldBackStationName;
-
-    // The station's address for it that a pressed Sync offered and the user kept against, and the one the Sync running
-    // now was told to use, never saved: only that one changes the address (FR-246)
+    // The station's address the user kept against, and the one this Sync was told to use, never saved (FR-246)
     private Integer declinedStationAddress;
     private Integer takenStationAddress;
     
@@ -1575,7 +1573,7 @@ public abstract class Locomotive
         return stationName.equals(this.declinedStationName) || stationName.equals(this.heldBackStationName);
     }
 
-    /** The station's address for this locomotive the user kept its own against, or null; Sync does not offer it again. */
+    /** The station's address kept against, or null; Sync does not offer it again. */
     public Integer getDeclinedStationAddress()
     {
         return this.declinedStationAddress;
@@ -1586,13 +1584,11 @@ public abstract class Locomotive
         this.declinedStationAddress = address;
     }
 
-    /** Marks the station's address the Sync running now was told to use for this locomotive; null clears it. */
     public void setTakenStationAddress(Integer address)
     {
         this.takenStationAddress = address;
     }
 
-    /** Whether the Sync running now was told to give this locomotive the station's address. */
     public boolean takesStationAddress(int address)
     {
         return Integer.valueOf(address).equals(this.takenStationAddress);

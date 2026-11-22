@@ -22,7 +22,7 @@ public class RenameProposals
     {
         this.proposals = proposals;
         this.refused = refused;
-        this.addresses = addresses;
+        this.addresses = new java.util.LinkedHashMap<>(addresses);
     }
 
     /** By name, each locomotive the station has at another address, with that address (FR-246). */

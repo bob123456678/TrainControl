@@ -14744,9 +14744,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)
     {
         List<Locomotive> heldBack = new ArrayList<>();
-
         java.util.Set<String> offered = new java.util.HashSet<>();
-
         Map<String, Integer> addresses = new LinkedHashMap<>(proposals.getAddresses());
 
         for (String[] pair : proposals.getProposals()) offered.add(pair[0]);
@@ -14757,7 +14755,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             Locomotive each = model.getLocByName(name);
 
             if (!offered.contains(name) && each != null) each.setDeclinedStationName(null);
-
             // And an address kept is not asked again
             if (each != null && !java.util.Objects.equals(addresses.get(name), each.getDeclinedStationAddress()))
                 each.setDeclinedStationAddress(null);
@@ -14792,7 +14789,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (refused) continue;
 
                 Integer address = addresses.remove(currentName);
-
                 // A name another locomotive holds is asked about once, below, in the delete door's question, which
                 // counts the routes that lose commands and starts on No
                 int answer = address != null ? askAboutAddress(c, l, address, newName)
@@ -14877,7 +14873,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         for (Map.Entry<String, Integer> each : addresses.entrySet())
         {
             Locomotive l = model.getLocByName(each.getKey());
-
             if (!refused && l != null && l.getAddress() != each.getValue()
                 && askAboutAddress(c, l, each.getValue(), null) == JOptionPane.CANCEL_OPTION) heldBack.add(l);
         }
@@ -14886,16 +14881,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /**
-     * Asks over c whether l keeps its address or takes the station's, or with newName takes that name instead, Keep
-     * first, and marks l so; the rename is the caller's.  YES_OPTION to rename, NO_OPTION to keep, CANCEL_OPTION to
-     * take the station's address, CLOSED_OPTION unanswered.
+     * Asks over c: Keep (first), Use the station's address, or with newName Rename; marks l, answers as JOptionPane's.
      */
     private static int askAboutAddress(Component c, Locomotive l, int address, String newName)
     {
         String keep = I18n.t("loc.ui.optionKeep"), use = I18n.f("loc.ui.optionUseAddress", address);
         Object[] options = newName == null ? new Object[] {keep, use}
             : new Object[] {keep, I18n.f("loc.ui.optionRenameTo", newName), use};
-
         int answer = JOptionPane.showOptionDialog(c, newName == null
             ? I18n.f("loc.ui.askStationAddress", l.getName(), address, l.getAddress())
             : I18n.f("loc.ui.askStationAddressOrName", l.getName(), address, l.getAddress(), newName),
@@ -14903,9 +14895,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             keep);
 
         if (answer == 0) l.setDeclinedStationAddress(address);
-
         if (answer == options.length - 1) l.setTakenStationAddress(address);
-
         return answer == options.length - 1 ? JOptionPane.CANCEL_OPTION : answer == 0 ? JOptionPane.NO_OPTION
             : answer < 0 ? JOptionPane.CLOSED_OPTION : JOptionPane.YES_OPTION;
     }

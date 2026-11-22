@@ -1332,10 +1332,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         for (MarklinLocomotive l : parsedLocs)
         {
             MarklinLocomotive elsewhere = addressedElsewhere(l);
-
             // Consist heads are not asked about, as they are not renamed
             if (elsewhere != null && !elsewhere.hasLinkedLocomotives()) addresses.put(l.getName(), l.getAddress());
-
             List<MarklinLocomotive> matches = byAddress.get(l.getIntUID());
 
             if (matches == null) continue;
@@ -1797,7 +1795,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
                          
             // Addresses first, so a locomotive moved off an address frees it for the station's locomotive there
             for (MarklinLocomotive l : parsedLocs) this.adoptCentralStationAddress(l, sweptAfterTheSync);
-
             for (MarklinLocomotive l : parsedLocs)
             {
                 // Add new locomotives
@@ -2077,7 +2074,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public void adoptCentralStationAddress(MarklinLocomotive l, List<MarklinLocomotive> sweptAfterTheSync)
     {
         MarklinLocomotive here = addressedElsewhere(l);
-
         if (here != null)
         {
             // Only a pressed Sync's answer takes it, so an address set here is not put back unasked (FR-246)
@@ -2100,8 +2096,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 String oldAddr = this.getLocAddress(l.getName());
                 here.setAddress(l.getAddress(), l.getDecoderType());
-
-                // Update DB entry
                 this.locDB.delete(l.getName());
                 this.locDB.add(here, here.getName(), here.getUID());
 
@@ -2109,11 +2103,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 // the success path only, and until it runs every echo for this locomotive resolves to nothing.
                 this.rebuildLocIdCache();
 
-                this.logf("loc.addressUpdated",
-                    here.getName(),
-                    oldAddr,
-                    this.getLocAddress(here.getName()));
-
+                this.logf("loc.addressUpdated", here.getName(), oldAddr, this.getLocAddress(here.getName()));
                 sweptAfterTheSync.add(here);
 
                 // The same repair changeLocAddress performs, for the same reason
@@ -2134,7 +2124,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     private MarklinLocomotive addressedElsewhere(MarklinLocomotive l)
     {
         MarklinLocomotive here = this.locDB.getByName(l.getName());
-
         return here != null && here.getAddress() != l.getAddress() && here.getDecoderType() == l.getDecoderType()
             ? here : null;
     }
