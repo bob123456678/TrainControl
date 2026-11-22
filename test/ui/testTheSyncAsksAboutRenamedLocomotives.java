@@ -1065,9 +1065,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
                 assertTrue(synced.await(60, TimeUnit.SECONDS), "the sync never ended");
                 AskingWindows.awaitAnswered();
 
-                askedOnce(answering.questions(), I18n.f("loc.ui.askStationAddress", STATION_NAME, 10, 70),
-                    I18n.t("loc.ui.optionKeep"), use);
-                assertTrue(answering.questions().get(0).owner instanceof org.traincontrol.gui.LocomotiveSettingsFrame,
+                assertTrue(askedOnce(answering.questions(), I18n.f("loc.ui.askStationAddress", STATION_NAME, 10, 70),
+                    I18n.t("loc.ui.optionKeep"), use).owner instanceof org.traincontrol.gui.LocomotiveSettingsFrame,
                     "not asked over Locomotive Settings");
             }
             finally
@@ -1193,13 +1192,20 @@ public class testTheSyncAsksAboutRenamedLocomotives
         });
     }
 
-    /** The one question asked is `message` with these buttons, and starts on the first. */
-    private static void askedOnce(List<Answering.Question> asked, String message, String... buttons)
+    /**
+     * The one question asked is `message` with these buttons, and starts on the first.  An earlier claim's window warns
+     * that no CAN messages arrive 15 s after it opens, which can land in this claim, so that warning is not counted.
+     */
+    private static Answering.Question askedOnce(List<Answering.Question> all, String message, String... buttons)
     {
+        String noCan = I18n.t("ui.warningNoCanMessages").split("\\{")[0];
+        List<Answering.Question> asked = new ArrayList<>(all);
+        asked.removeIf(q -> q.message != null && q.message.startsWith(noCan));
         assertEquals(asked.size(), 1, "not asked once: " + asked.size());
         assertEquals(asked.get(0).message, message);
         assertEquals(asked.get(0).buttons, Arrays.asList(buttons));
         assertEquals(asked.get(0).startsOn, buttons[0], "the question does not start on " + buttons[0]);
+        return asked.get(0);
     }
 
     /** Presses Sync pressing `button` on each question naming a locomotive of these claims, OK on the rest. */
