@@ -264,7 +264,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         
     // Unique ID of the central station (0 for all stations)
     private int UID = 0;
-    private int serialNumber;
+    private volatile int serialNumber;
     
     // Last message output
     private String lastMessage;
@@ -1702,7 +1702,10 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
             try
             {
-                this.isCS3 = CS2File.isCS3(CS2File.getDeviceInfoURL(cs2Address()));
+                String device = CS2File.fetchText(CS2File.getDeviceInfoURL(cs2Address()));
+                this.isCS3 = device.contains(CS2File.CS3_PRODUCT);
+                this.stationFirmware = null;
+                this.stationSerial = CS2File.deviceSerial(device);
                 this.typeLearned = true;
                 this.logf("log.csTypeDetectionResult", (this.isCS3 ? "CS3" : "CS2"));
             }
@@ -2191,11 +2194,40 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return this.isCS3;
     }
 
+    @Override
+    public String getStationFirmware()
+    {
+        return this.stationFirmware;
+    }
+
+    @Override
+    public String getStationSerial()
+    {
+        // Else the ping reply's, if its UID is a Central Station's ("CS"): a booster answers as device type 0 too
+        String stated = this.stationSerial;
+        int serial = this.serialNumber;
+        return stated == null && serial > 0 && (this.UID >>> 16) == 0x4353 ? String.valueOf(serial) : stated;
+    }
+
+    // For the window's station line: a CS3's firmware from its info, the serial number from the device file, else a
+    // CS3's info; null where unknown (FR-242)
+    private volatile String stationFirmware, stationSerial;
     private volatile String firmwareLogged;
 
-    /** Logs the CS3's firmware as it reports it, once a session, and again only if it changes (MT-895). */
+    /**
+     * Keeps the CS3's firmware as its info states it, and logs it, once a session, and again only if it changes
+     * (MT-895).
+     */
     public void logTheFirmware(String said)
     {
+        logTheFirmware(said, null);
+    }
+
+    /** The same, with the serial number the CS3's info gives (null for none) for a device file that gave none. */
+    public void logTheFirmware(String said, String serial)
+    {
+        this.stationFirmware = said;
+        if (this.stationSerial == null) this.stationSerial = serial;
         if (said.equals(this.firmwareLogged)) return;
 
         this.firmwareLogged = said;

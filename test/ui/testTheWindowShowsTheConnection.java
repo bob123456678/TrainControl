@@ -18,9 +18,9 @@ import support.TcpStation;
 import support.WindowField;
 
 /**
- * The main window shows the state of the connection to the Central Station: "(UDP)" after the latency once a CS3's TCP
- * connection has been given up for UDP, and the warning triangle in the lower right while the station is not answering, or
- * red throughout a simulation.
+ * The main window shows the state of the connection to the Central Station: the keyboard tab's line names the station
+ * and "(UDP)" once a CS3's TCP connection has been given up for UDP; in the lower right a pill with the latency while it
+ * answers, the warning triangle while it is not answering, or red throughout a simulation.
  */
 public class testTheWindowShowsTheConnection
 {
@@ -33,6 +33,7 @@ public class testTheWindowShowsTheConnection
     private static java.awt.image.BufferedImage simulatedIcon;
     private static String simulatedTip;
     private static boolean simulatedShown;
+    private static String simulatedLine;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -44,7 +45,7 @@ public class testTheWindowShowsTheConnection
         ui = (TrainControlUI) model.getGUI();
         proxy = (NetworkProxy) Reflect.get(MarklinControlStation.class, model, "NetworkInterface");
 
-        JLabel triangle = WindowField.of(ui, "stationNotAnswering");
+        JLabel triangle = WindowField.of(ui, "connectionMark");
 
         Components.onTheEventThread(() ->
         {
@@ -57,6 +58,7 @@ public class testTheWindowShowsTheConnection
 
             simulatedTip = triangle.getToolTipText();
             simulatedShown = triangle.isVisible();
+            simulatedLine = ((JLabel) WindowField.of(ui, "latencyLabel")).getText();
             return null;
         });
 
@@ -69,8 +71,8 @@ public class testTheWindowShowsTheConnection
      * In a simulation there is no Central Station to answer: the triangle shows from the start, red,
      * and its tooltip says TrainControl is not connected (FR-228).
      *
-     * MUTATION: drop `on |= simulated` from `TrainControlUI.warnOnStop`, or have `RowIcons.warning` fill amber whatever
-     * `red` asks, and this fails.
+     * MUTATION: drop `simulated ||` from `triangle` in `TrainControlUI.markTheConnection`, or have `RowIcons.warning`
+     * fill amber whatever `red` asks, and this fails.
      */
     @Test
     public void testASimulationShowsTheRedTriangleFromTheStart() throws Exception
@@ -117,10 +119,10 @@ public class testTheWindowShowsTheConnection
     }
 
     /**
-     * The latency names the protocol in use: TCP while a CS3 is on TCP, UDP once that connection is given up, and UDP
-     * for a CS2, which uses nothing else; none in a simulation with no station.
+     * The station line names the protocol in use: TCP while a CS3 is on TCP, UDP once that connection is given up, and
+     * UDP for a CS2, which uses nothing else; none in a simulation with no station.
      *
-     * MUTATION: name UDP in `TrainControlUI.updateLatency` whatever the model's transport is, and this fails.
+     * MUTATION: name UDP in `TrainControlUI.nameTheStation` whatever the model's transport is, and this fails.
      */
     @Test(timeOut = 60000)
     public void testTheLatencyNamesTheProtocolInUse() throws Exception
@@ -150,6 +152,357 @@ public class testTheWindowShowsTheConnection
         }
     }
 
+    /** The corner mark laid out: {text (null when hidden), tooltip, width, color inside its left end, preferred width}. */
+    private static Object[] mark()
+    {
+        JLabel mark = WindowField.of(ui, "connectionMark");
+
+        return Components.onTheEventThread(() ->
+        {
+            ui.validate();
+
+            java.awt.image.BufferedImage drawn = new java.awt.image.BufferedImage(Math.max(1, mark.getWidth()),
+                Math.max(1, mark.getHeight()), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.awt.Graphics2D g = drawn.createGraphics();
+
+            mark.paint(g);
+            g.dispose();
+
+            int inside = mark.isVisible() && mark.getWidth() > 4 ? drawn.getRGB(3, mark.getHeight() / 2) : 0;
+
+            return new Object[] {mark.isVisible() ? mark.getText() : null, mark.getToolTipText(), mark.getWidth(),
+                color(inside), mark.getPreferredSize().width};
+        });
+    }
+
+    /** The corner mark after an answer in `ms`. */
+    private static Object[] pill(double ms) throws Exception
+    {
+        ui.updateLatency(ms);
+        SwingUtilities.invokeAndWait(() -> { });
+
+        return mark();
+    }
+
+    /** "green", "yellow", "orange" or "gray" for an opaque pixel of the pill's colors, else its hex. */
+    private static String color(int argb)
+    {
+        int r = (argb >> 16) & 255, g = (argb >> 8) & 255, b = argb & 255;
+
+        if ((argb >>> 24) < 255) return Integer.toHexString(argb);
+        if (g > r + 60 && g > b + 60) return "green";
+        if (r > 200 && g > 170 && b < 100) return "yellow";
+        if (r > 200 && g > 90 && g < 160 && b < 80) return "orange";
+
+        return Math.abs(r - g) < 12 && Math.abs(g - b) < 12 && r > 170 && r < 235 ? "gray" : Integer.toHexString(argb);
+    }
+
+    /** Ends a claim that connected: no station, and the window told so. */
+    private static void disconnect() throws Exception
+    {
+        model.setNetworkCommState(false);
+        answered();
+    }
+
+    /** Whether the corner shows a triangle and no text. */
+    private static boolean triangleAlone()
+    {
+        JLabel mark = WindowField.of(ui, "connectionMark");
+
+        return Components.onTheEventThread(() -> mark.isVisible() && mark.getIcon() != null && mark.getText() == null);
+    }
+
+    /**
+     * While a station answers, the corner shows a pill with the latest latency: green to PING_ORANGE (100 ms), yellow to
+     * PING_RED (300 ms), orange past it, and ">1 s" past 999 ms (FR-242).
+     *
+     * MUTATION: color the pill green whatever the latency in `TrainControlUI.markTheConnection`, and this fails.
+     */
+    @Test
+    public void testThePillShowsTheLatencyInItsBracketsColor() throws Exception
+    {
+        model.setNetworkCommState(true);
+
+        try
+        {
+            Object[][] cases = {{12.0, "12 ms", "green"}, {100.0, "100 ms", "green"}, {180.0, "180 ms", "yellow"},
+                {300.0, "300 ms", "yellow"}, {420.0, "420 ms", "orange"}, {1500.0, ">1 s", "orange"}};
+
+            for (Object[] c : cases)
+            {
+                Object[] shown = pill((Double) c[0]);
+
+                assertEquals(shown[0], c[1], "the pill's text at " + c[0] + " ms");
+                assertEquals(shown[3], c[2], "the pill's color at " + c[0] + " ms");
+            }
+        }
+        finally
+        {
+            disconnect();
+        }
+    }
+
+    /**
+     * Before the station's first answer the pill is gray with "...", and says it is waiting; the first answer colors it.
+     *
+     * MUTATION: show the pill only once `lastLatency` is known in `TrainControlUI.markTheConnection`, and this fails.
+     */
+    @Test
+    public void testThePillIsGrayUntilTheFirstAnswer() throws Exception
+    {
+        model.setNetworkCommState(true);
+
+        try
+        {
+            Reflect.set(TrainControlUI.class, ui, "lastLatency", null);
+            SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    Reflect.method(TrainControlUI.class, "markTheConnection", boolean.class).invoke(ui, false);
+                }
+                catch (ReflectiveOperationException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+
+            Object[] shown = mark();
+
+            assertEquals(shown[0], "...", "the pill's text while connecting");
+            assertEquals(shown[1], org.traincontrol.util.I18n.t("ui.main.tooltip.connecting"), "the tooltip while connecting");
+            assertEquals(shown[3], "gray", "the pill's color while connecting");
+            assertEquals(pill(12)[3], "green", "the first answer did not color the pill");
+        }
+        finally
+        {
+            disconnect();
+        }
+    }
+
+    /**
+     * A station that stops answering while connected shows the yellow triangle in the pill's place, with no text, and
+     * the pill comes back with the next answer; a simulation shows the red triangle (FR-192, FR-228).
+     *
+     * MUTATION: let the pill stand while the station is not answering in `TrainControlUI.markTheConnection`, and this fails.
+     */
+    @Test
+    public void testTheTrianglesTakeThePillsPlace() throws Exception
+    {
+        model.setNetworkCommState(true);
+
+        try
+        {
+            assertEquals(pill(12)[0], "12 ms", "precondition: the pill shows");
+
+            notAnswering(true);
+            assertTrue(triangleAlone(), "not answering: no triangle alone");
+            assertEquals(mark()[1], org.traincontrol.util.I18n.t("ui.main.tooltip.stationNotAnswering"));
+
+            notAnswering(false);
+            assertEquals(pill(12)[0], "12 ms", "the pill did not come back with the answer");
+
+            Reflect.set(MarklinControlStation.class, model, "simulation", true);
+            answered();
+            assertTrue(triangleAlone(), "simulation: no triangle alone");
+            assertEquals(mark()[1], org.traincontrol.util.I18n.t("ui.main.tooltip.simulation"));
+        }
+        finally
+        {
+            Reflect.set(MarklinControlStation.class, model, "simulation", false);
+            notAnswering(false);
+            disconnect();
+        }
+    }
+
+    /**
+     * The pill keeps one width whatever it shows, wide enough for "999 ms"; its tooltip names the station, the protocol
+     * and the latency (FR-242).
+     *
+     * MUTATION: size the pill to its text (drop `TrainControlUI.ConnectionPill.getPreferredSize`), and this fails.
+     */
+    @Test
+    public void testThePillKeepsItsWidthAndNamesTheStation() throws Exception
+    {
+        JLabel mark = WindowField.of(ui, "connectionMark");
+
+        model.setNetworkCommState(true);
+
+        try
+        {
+            java.util.Set<String> widths = new java.util.TreeSet<>();
+
+            for (double ms : new double[] {12, 180, 420, 999, 1500}) widths.add(pill(ms)[2] + "/" + mark()[4]);
+
+            int text = Components.onTheEventThread(() -> mark.getFontMetrics(mark.getFont()).stringWidth("999 ms"));
+
+            assertEquals(widths.size(), 1, "the pill changed width: " + widths);
+            assertTrue((Integer) pill(999)[2] > text, "the pill is narrower than 999 ms: " + widths + ", text " + text);
+            System.out.println("FR-242 pill width/preferred at this scale: " + widths + ", height " + mark.getHeight());
+
+            assertEquals(pill(12)[1], org.traincontrol.util.I18n.f("ui.main.tooltip.connection", "2", "UDP", "12"));
+            Reflect.set(MarklinControlStation.class, model, "isCS3", true);
+
+            String tip = (String) pill(12)[1];
+
+            assertEquals(tip, org.traincontrol.util.I18n.f("ui.main.tooltip.connection", "3", "UDP", "12"));
+            assertTrue(tip.contains("3") && tip.contains("UDP") && tip.contains("12 ms"), "the tooltip: " + tip);
+        }
+        finally
+        {
+            Reflect.set(MarklinControlStation.class, model, "isCS3", false);
+            disconnect();
+        }
+    }
+
+    /**
+     * At the main window's narrowest, with a locomotive's two function tabs, the pill fits right of the last tab and
+     * inside the panel (FR-242).
+     *
+     * MUTATION: pad the pill by `UIScale.scale(200)` in `TrainControlUI.ConnectionPill.getPreferredSize`, and this fails.
+     */
+    @Test
+    public void testThePillFitsBesideTheTabsAtTheNarrowestWindow() throws Exception
+    {
+        JLabel mark = WindowField.of(ui, "connectionMark");
+        javax.swing.JTabbedPane tabs = WindowField.of(ui, "FunctionTabs");
+        org.traincontrol.marklin.MarklinLocomotive two = model.newMFXLocomotive("PillTwo", 4003);
+        Dimension was = Components.onTheEventThread(ui::getSize);
+
+        model.setNetworkCommState(true);
+
+        try
+        {
+            show(two);
+            Components.onTheEventThread(() -> { ui.setSize(ui.getMinimumSize()); ui.validate(); return null; });
+            pill(999);
+
+            Components.onTheEventThread(() ->
+            {
+                java.awt.Container panel = panel();
+                java.awt.Rectangle at = SwingUtilities.convertRectangle(mark.getParent(), mark.getBounds(), panel);
+                java.awt.Rectangle strip = SwingUtilities.convertRectangle(tabs, tabs.getBoundsAt(tabs.getTabCount() - 1),
+                    panel);
+
+                System.out.println("FR-242 at the narrowest window " + ui.getSize() + ": panel " + panel.getWidth()
+                    + ", last tab ends at " + (strip.x + strip.width) + ", room " + (panel.getWidth() - strip.x - strip.width)
+                    + ", pill " + at);
+
+                assertEquals(tabs.getTabCount(), 2, "precondition: two tabs");
+                assertTrue(mark.isVisible() && "999 ms".equals(mark.getText()), "no pill: " + mark.getText());
+                assertTrue(at.x >= strip.x + strip.width, "the pill overlaps the last tab: " + at + " tab " + strip);
+                assertTrue(new java.awt.Rectangle(panel.getSize()).contains(at), "the pill is outside the panel: " + at);
+                return null;
+            });
+        }
+        finally
+        {
+            disconnect();
+            Components.onTheEventThread(() -> { ui.setSize(was); ui.validate(); return null; });
+            show(null);
+            model.deleteLoc("PillTwo");
+        }
+    }
+
+    /**
+     * The keyboard tab's line names the station as "Central Station 3 v2.6.1 #1234 (TCP)", leaving out a part not
+     * known with its space; v is the leading dotted number of what a CS3 says; "not connected" with no station, and
+     * "Simulation" in a simulation (FR-242).
+     *
+     * MUTATION: leave the serial number out of `TrainControlUI.nameTheStation`, and this fails.
+     */
+    @Test
+    public void testTheLineNamesTheStation() throws Exception
+    {
+        assertEquals(simulatedLine, org.traincontrol.util.I18n.t("ui.main.stationSimulation"), "the line in a simulation");
+        assertEquals(latency(), org.traincontrol.util.I18n.t("ui.labelNotConnectedToCentralStation"), "the line unconnected");
+
+        model.setNetworkCommState(true);
+
+        try
+        {
+            Object[][] cases = {{false, null, "10415", "Central Station 2 #10415 (UDP)"},
+                {true, "2.6.1 (Build 3)", "1234", "Central Station 3 v2.6.1 #1234 (UDP)"},
+                {true, "v2.6", null, "Central Station 3 v2.6 (UDP)"},
+                {true, null, null, "Central Station 3 (UDP)"}};
+
+            for (Object[] c : cases)
+            {
+                Reflect.set(MarklinControlStation.class, model, "isCS3", c[0]);
+                Reflect.set(MarklinControlStation.class, model, "stationFirmware", c[1]);
+                Reflect.set(MarklinControlStation.class, model, "stationSerial", c[2]);
+                assertEquals(latency(), c[3], "the line for " + java.util.Arrays.toString(c));
+            }
+        }
+        finally
+        {
+            Reflect.set(MarklinControlStation.class, model, "isCS3", false);
+            Reflect.set(MarklinControlStation.class, model, "stationFirmware", null);
+            Reflect.set(MarklinControlStation.class, model, "stationSerial", null);
+            disconnect();
+        }
+    }
+
+    /**
+     * With no serial number from a file, the one the station's ping reply gives (UID 0x4353835E from device type 0x0000
+     * is 10415) reaches the line; a file's comes first; a type 0x0000 reply from a UID that is not a Central Station's
+     * (a booster, or a CS3, whose track processor's UID starts 0x6373) gives none (FR-242).
+     *
+     * MUTATION: drop `(this.UID >>> 16) == 0x4353` from `MarklinControlStation.getStationSerial`, and this fails.
+     */
+    @Test(timeOut = 60000)
+    public void testThePingRepliesSerialNumberReachesTheLine() throws Exception
+    {
+        model.setNetworkCommState(true);
+
+        try
+        {
+            Object[][] cases = {{new int[] {0x47, 0x42, 0x00, 0x2a}, false, null, "Central Station 2 (UDP)"},
+                {new int[] {0x63, 0x73, 0x04, 0xd2}, true, null, "Central Station 3 (UDP)"},
+                {new int[] {0x43, 0x53, 0x83, 0x5e}, false, "999", "Central Station 2 #999 (UDP)"},
+                {new int[] {0x43, 0x53, 0x83, 0x5e}, false, null, "Central Station 2 #10415 (UDP)"}};
+
+            for (Object[] c : cases)
+            {
+                Reflect.set(MarklinControlStation.class, model, "UID", 0);
+                Reflect.set(MarklinControlStation.class, model, "serialNumber", 0);
+                Reflect.set(MarklinControlStation.class, model, "isCS3", c[1]);
+                Reflect.set(MarklinControlStation.class, model, "stationSerial", c[2]);
+                pingReply((int[]) c[0]);
+                assertTrue(Components.waitFor(() -> uid() != 0, 10000), "precondition: the reply was recorded");
+                assertEquals(latency(), c[3], "the line after a ping reply from "
+                    + java.util.Arrays.toString((int[]) c[0]) + ", file serial " + c[2]);
+            }
+        }
+        finally
+        {
+            Reflect.set(MarklinControlStation.class, model, "isCS3", false);
+            Reflect.set(MarklinControlStation.class, model, "UID", 0);
+            Reflect.set(MarklinControlStation.class, model, "serialNumber", 0);
+            Reflect.set(MarklinControlStation.class, model, "stationSerial", null);
+            disconnect();
+        }
+    }
+
+    /** A ping reply of device type 0x0000 from the UID of these four bytes, as the station sends it. */
+    private static void pingReply(int... uid)
+    {
+        model.receiveMessage(new org.traincontrol.marklin.udp.CS2Message(org.traincontrol.marklin.udp.CS2Message.CAN_CMD_PING,
+            0, true, new byte[] {(byte) uid[0], (byte) uid[1], (byte) uid[2], (byte) uid[3], 0x04, 0x02, 0x00, 0x00}));
+    }
+
+    private static int uid()
+    {
+        try
+        {
+            return (Integer) Reflect.get(MarklinControlStation.class, model, "UID");
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
     /** Whether the proxy has no TCP connection and is replacing none. */
     private static boolean tcpGivenUp()
     {
@@ -168,13 +521,13 @@ public class testTheWindowShowsTheConnection
      * while a frame has gone unanswered over a second, and while the pings go unanswered; it is gone again once the
      * station answers, and the button has its text and size back.
      *
-     * MUTATION: never show the triangle in `TrainControlUI.warnOnStop`, and this fails.
+     * MUTATION: never show the triangle in `TrainControlUI.markTheConnection`, and this fails.
      */
     @Test
     public void testStopWearsTheTriangleWhileTheStationIsNotAnswering() throws Exception
     {
         JButton stop = WindowField.of(ui, "PowerOff");
-        JLabel triangle = WindowField.of(ui, "stationNotAnswering");
+        JLabel triangle = WindowField.of(ui, "connectionMark");
         String text = Components.onTheEventThread(stop::getText);
         Dimension size = Components.onTheEventThread(stop::getSize);
 
@@ -251,7 +604,7 @@ public class testTheWindowShowsTheConnection
     public void testTheTrianglesMarkIsCenteredAndSitsOnTheTextLine() throws Exception
     {
         JButton stop = WindowField.of(ui, "PowerOff");
-        JLabel shown = WindowField.of(ui, "stationNotAnswering");
+        JLabel shown = WindowField.of(ui, "connectionMark");
 
         notAnswering(true);
 
@@ -401,14 +754,14 @@ public class testTheWindowShowsTheConnection
      * the picture's empty label moves then (it holds no icon or text and draws nothing), since the rows hidden with
      * no locomotive keep their room.
      *
-     * MUTATION: put the triangle in a panel with Power OFF again (the old `installNotAnsweringMark`), leave it out
-     * of the holder `installNotAnsweringMark` puts around the function tabs, or drop its `setHonorsVisibility` calls, and
+     * MUTATION: put the triangle in a panel with Power OFF again, leave it out
+     * of the holder `installConnectionMark` puts around the function tabs, or drop its `setHonorsVisibility` calls, and
      * this fails.
      */
     @Test
     public void testTheTriangleStandsInTheLowerRightPastTheFunctionTabs() throws Exception
     {
-        JLabel triangle = WindowField.of(ui, "stationNotAnswering");
+        JLabel triangle = WindowField.of(ui, "connectionMark");
         javax.swing.JTabbedPane tabs = WindowField.of(ui, "FunctionTabs");
         org.traincontrol.marklin.MarklinLocomotive one = model.newMM2Locomotive("TriangleOne", 4001);
         org.traincontrol.marklin.MarklinLocomotive two = model.newMFXLocomotive("TriangleTwo", 4002);
