@@ -8318,15 +8318,15 @@ public class Layout
     }
 
     /** A setter, which may refuse its value by throwing. */
-    private interface Setter<T>
+    private interface Setter<T, E extends Exception>
     {
-        void set(T value) throws Exception;
+        void set(T value) throws E;
     }
 
     /** A point's setter, likewise. */
-    private interface PointSetter<T>
+    private interface PointSetter<T, E extends Exception>
     {
-        void set(Point at, T value) throws Exception;
+        void set(Point at, T value) throws E;
     }
 
     /**
@@ -8393,11 +8393,14 @@ public class Layout
             this.layout = layout;
             this.control = control;
             this.o = o;
+            this.points = null;
+            this.edges = null;
+            this.defaultLocSpeed = null;
         }
 
         /** An optional value; where `get` cannot read it or `set` refuses it, invalidates the layout: false. */
         private <T> boolean read(JSONObject json, String key, java.util.function.BiFunction<JSONObject, String, T> get,
-            Setter<T> set, String invalid)
+            Setter<T, ?> set, String invalid)
         {
             if (!json.has(key)) return true;
 
@@ -8436,7 +8439,7 @@ public class Layout
 
         /** One optional setting of a point, `typed`; a setter that throws invalidates the layout with the failure. */
         private <T> void readSetting(JSONObject point, String key, Class<T> type, String invalidKey,
-            PointSetter<T> set)
+            PointSetter<T, ?> set)
         {
             T value = typed(point, key, type, invalidKey, point.toString());
             if (value == null) return;

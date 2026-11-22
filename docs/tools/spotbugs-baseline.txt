@@ -16,7 +16,7 @@ AT_NONATOMIC_OPERATIONS_ON_SHARED_VARIABLE	org.traincontrol.marklin.file.CS2File
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automation.Edge	setLength	length	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automation.Edge	setPiecesToMeasure	knowsPiecesToMeasure	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automation.Edge	setRoomAtTheEnd	roomAtTheEnd	1
-AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automation.Layout	fromJSON	timetableSequential	1
+AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automation.Layout	access	timetableSequential	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automation.Layout	loadReturnToHomeTimetable	timetableSequential	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automation.Layout	setActivateRoutes	activateRoutes	1
 AT_STALE_THREAD_WRITE_OF_PRIMITIVE	org.traincontrol.automation.Layout	setDefaultLocSpeed	defaultLocSpeed	1
@@ -226,7 +226,7 @@ DM_DEFAULT_ENCODING	org.traincontrol.marklin.MarklinControlStation	init		1
 DM_EXIT	org.traincontrol.gui.widgets.RestoreAction	closeWithoutSaving		1
 DM_EXIT	org.traincontrol.marklin.MarklinControlStation	init		1
 DM_INVALID_MIN_MAX	org.traincontrol.gui.layouteditor.LayoutEditor	scrollable		1
-DM_STRING_TOSTRING	org.traincontrol.automation.Layout	lambda$fromJSON		1
+DM_STRING_TOSTRING	org.traincontrol.automation.Layout$ConfigurationFile	placeLocomotive		1
 DP_DO_INSIDE_DO_PRIVILEGED	org.traincontrol.util.Util	orderedJSON		1
 EI_EXPOSE_REP	org.traincontrol.automation.Edge	getConfigCommands	configCommands	1
 EI_EXPOSE_REP	org.traincontrol.automation.Edge	getEnd	end	1
@@ -540,11 +540,10 @@ RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.marklin.MarklinControl
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.marklin.MarklinControlStation	parseAuto		1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.marklin.MarklinControlStation	parseAuto	autoLayout	1
 RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE	org.traincontrol.marklin.MarklinRoute	heldReason		1
-RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE	org.traincontrol.automation.Layout	lambda$fromJSON		1
+RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE	org.traincontrol.automation.Layout$ConfigurationFile	readPoint		1
 RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE	org.traincontrol.gui.layouteditor.LayoutEditor	editAddress	layout	1
 RC_REF_COMPARISON_BAD_PRACTICE_BOOLEAN	org.traincontrol.gui.TrainControlUI$KeyShortcuts$Row	stroke	alt	1
 RC_REF_COMPARISON_BAD_PRACTICE_BOOLEAN	org.traincontrol.gui.TrainControlUI$KeyShortcuts$Row	stroke	control	1
-REC_CATCH_EXCEPTION	org.traincontrol.automation.Layout	fromJSON		1
 REC_CATCH_EXCEPTION	org.traincontrol.base.RouteCommand	parseLine		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.AutonomyLifecycle	getAutonomySession		1
 REC_CATCH_EXCEPTION	org.traincontrol.gui.AutonomyViewerPanel	importLegacyGraph		1
@@ -809,7 +808,7 @@ THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.model.ViewListener	
 THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION	org.traincontrol.model.ViewListener	getRenameProposals		1
 THROWS_METHOD_THROWS_RUNTIMEEXCEPTION	org.traincontrol.automation.Layout	configureAndLockPath		1
 THROWS_METHOD_THROWS_RUNTIMEEXCEPTION	org.traincontrol.automation.Layout	executePath		1
-THROWS_METHOD_THROWS_RUNTIMEEXCEPTION	org.traincontrol.automation.Layout	lambda$null		1
+THROWS_METHOD_THROWS_RUNTIMEEXCEPTION	org.traincontrol.automation.Layout$ConfigurationFile	lambda$readEdge		1
 THROWS_METHOD_THROWS_RUNTIMEEXCEPTION	org.traincontrol.automationui.AutonomyCompanionStore	importBundle		1
 THROWS_METHOD_THROWS_RUNTIMEEXCEPTION	org.traincontrol.automationui.AutonomyCompanionStore	load		1
 THROWS_METHOD_THROWS_RUNTIMEEXCEPTION	org.traincontrol.automationui.AutonomyCompanionStore	restoreSetup		1
