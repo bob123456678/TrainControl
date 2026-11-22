@@ -127,13 +127,6 @@ public class RenameProposals
         return Collections.unmodifiableList(this.rows);
     }
 
-    /** The row of this locomotive, or null when it does not differ. */
-    public Row getRow(Locomotive l)
-    {
-        for (Row r : this.rows) if (r.loco == l) return r;
-        return null;
-    }
-
     /** How many locomotives differ with something left to answer. */
     public int getUnsettledCount()
     {

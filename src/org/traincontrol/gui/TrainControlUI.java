@@ -14670,13 +14670,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // re-enabling pass below.  Reported as -1, the failure code this method already tells the user about;
                 // the log has the reason.
                 Integer syncResult;
-                List<Locomotive> heldBack = Collections.emptyList();
+                List<Locomotive> taken = Collections.emptyList();
 
                 try
                 {
                     // A pressed sync first asks about locomotives renamed at the station, so the sync reads them under
                     // their new names and needs no second pass (FR-220)
-                    if (c != null) heldBack = askAboutRenames(c);
+                    if (c != null) taken = askAboutRenames(c);
 
                     syncResult = c == null ? this.runTheOwedSync() : this.syncWithCS2();
                 }
@@ -14689,7 +14689,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 finally
                 {
                     // A station's address this Sync was told to use is for this sync alone
-                    for (Locomotive each : heldBack) each.setTakenStationAddress(null);
+                    for (Locomotive each : taken) each.setTakenStationAddress(null);
                 }
 
                 final Integer r = syncResult;
@@ -14727,23 +14727,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private List<Locomotive> askAboutRenames(Component c)
     {
-        List<Locomotive> heldBack = new ArrayList<>();
+        List<Locomotive> taken = new ArrayList<>();
 
-        if (!this.model.getNetworkCommState()) return heldBack;
+        if (!this.model.getNetworkCommState()) return taken;
 
         try
         {
             RenameProposals proposals = readBehindTheSpinner(c);
 
-            SwingUtilities.invokeAndWait(() -> heldBack.addAll(askAboutRenames(c, proposals)));
+            SwingUtilities.invokeAndWait(() -> taken.addAll(askAboutRenames(c, proposals)));
         }
         catch (Exception e)
         {
             this.model.log(e);
             // Questions that end in a throw hand back no list, and the addresses they took are let go all the same
-            heldBack.addAll(this.model.getLocomotives());
+            taken.addAll(this.model.getLocomotives());
         }
-        return heldBack;
+        return taken;
     }
 
     /** The station's rename proposals, read behind the spinner over the window that asked, c's.  Off the event thread. */
@@ -14770,7 +14770,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)
     {
-        List<Locomotive> heldBack = new ArrayList<>();
+        List<Locomotive> taken = new ArrayList<>();
         java.util.Set<String> offered = new java.util.HashSet<>();
         Map<String, Integer> addresses = new LinkedHashMap<>(proposals.getAddresses());
 
@@ -14886,7 +14886,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Every offer's outcome, as the pressed Sync's account of the check (D171); one with none was told to
                 // use the station's address.  One not applied gets no copy: the sync holds back pending renames (FR-249).
                 if (outcome != null) this.model.logf(outcome, currentName, newName);
-                else heldBack.add(l);
+                else taken.add(l);
             }
         }
 
@@ -14895,9 +14895,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             Locomotive l = model.getLocByName(each.getKey());
             if (!refused && l != null && l.getAddress() != each.getValue()
-                && askAboutAddress(c, l, each.getValue(), null) == JOptionPane.CANCEL_OPTION) heldBack.add(l);
+                && askAboutAddress(c, l, each.getValue(), null) == JOptionPane.CANCEL_OPTION) taken.add(l);
         }
-        return heldBack;
+        return taken;
     }
 
     /**

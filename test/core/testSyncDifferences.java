@@ -173,7 +173,7 @@ public class testSyncDifferences
             assertTrue(log.contains(pending(rig, "SD Y", "SD X")), "the hold-back was not logged: " + log);
             assertTrue(log.contains(I18n.f("loc.addressDiffersAtStation", "SD X", 7, 5)), "no address line: " + log);
 
-            Row row = d.getRow(x);
+            Row row = row(rig, d, "SD X");
 
             assertEquals(d.getRows(), Collections.singletonList(row), "not one row");
             assertEquals(Arrays.asList(row.stationName, row.stationAddress, row.whyNot(true), row.whyNot(false)),
@@ -191,17 +191,20 @@ public class testSyncDifferences
     }
 
     /**
-     * A Central Station multi-unit naming a member whose rename is pending lists the locomotive here.
+     * A Central Station multi-unit naming a member whose rename is pending lists the locomotive here, also after a sync
+     * whose locomotive list did not read: a partial read can set the mark but never clear it.
      *
-     * MUTATION: in `Locomotive.keepsItsNameOver`, leave out `heldBackStationName`.
+     * MUTATION: in `Locomotive.keepsItsNameOver`, leave out `heldBackStationName`; or in
+     * `MarklinControlStation.syncThroughTheNewParser`, clear the marks after a partial read too.
      */
     @Test(timeOut = 120000)
     public void testAStationMultiUnitFindsAMemberWhoseRenameIsPending() throws Exception
     {
         String unit = "{\"name\":\"SD MU\",\"internname\":\"SD MU\",\"uid\":\"0x2c01\",\"dectyp\":\"mm2_prg\","
             + "\"traktion\":{\"0\":{\"lokname\":\"SD Y\"}},\"funktionen\":" + FUNCTION + "}";
+        AtomicReference<String> list = station("SD Y", 10, unit);
 
-        try (StationRig rig = rig(station("SD Y", 10, unit)))
+        try (StationRig rig = rig(list))
         {
             synced(rig, "SD X", 10);
 
@@ -209,6 +212,13 @@ public class testSyncDifferences
             assertNotNull(rig.model.getLocByName("SD MU"), "precondition: the multi-unit was not added");
             assertEquals(rig.model.getLocByName("SD MU").getModelMultiUnitLocomotives(), Collections.singletonList(
                 rig.model.getLocByName("SD X")), "the multi-unit does not list the member whose rename is pending");
+
+            list.set("{}");
+            sync(rig);
+
+            assertTrue(rig.model.wasLastSyncPartial(), "precondition: the locomotive list read");
+            assertEquals(rig.model.getLocByName("SD MU").getModelMultiUnitLocomotives(), Collections.singletonList(
+                rig.model.getLocByName("SD X")), "a sync whose list did not read dropped the member whose rename is pending");
         }
     }
 
@@ -380,8 +390,8 @@ public class testSyncDifferences
                 m.setSpeed(40);
                 RenameProposals d = rig.model.getRenameProposals();
 
-                assertEquals(d.getRow(x).whyNot(true), I18n.f("loc.syncLeftMoving", "SD X"));
-                assertEquals(d.getRow(m).whyNot(false), I18n.f("loc.syncLeftMoving", "SD M"));
+                assertEquals(row(rig, d, "SD X").whyNot(true), I18n.f("loc.syncLeftMoving", "SD X"));
+                assertEquals(row(rig, d, "SD M").whyNot(false), I18n.f("loc.syncLeftMoving", "SD M"));
                 assertEquals(row(rig, d, "SD U").whyNot(true), I18n.t("loc.ui.errorLocomotiveNameUnusable"));
             }
             finally
@@ -395,7 +405,8 @@ public class testSyncDifferences
     /** The row of the locomotive here by this name, which must differ. */
     private static Row row(StationRig rig, RenameProposals d, String name)
     {
-        Row r = d.getRow(rig.model.getLocByName(name));
+        Locomotive l = rig.model.getLocByName(name);
+        Row r = d.getRows().stream().filter(each -> each.loco == l).findFirst().orElse(null);
         assertNotNull(r, "no row for " + name);
         return r;
     }

@@ -121,7 +121,7 @@ public abstract class Locomotive
     private String declinedStationName;
 
     // The station's name for it when the last sync found it renamed there, so no copy is added under it; never saved
-    private String heldBackStationName;
+    private volatile String heldBackStationName;
     // The station's address the user kept against, saved; the one this Sync was told to use, never saved (FR-246)
     private Integer declinedStationAddress;
     private Integer takenStationAddress;
