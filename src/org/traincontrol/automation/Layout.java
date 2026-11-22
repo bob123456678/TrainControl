@@ -2234,14 +2234,90 @@ public class Layout
      */
     public boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures)
     {
-        return isPathClear(path, loc, logFailures, false, false);
+        return isPathClear(path, loc, logFailures, false, false, new OnePass(loc));
+    }
+
+    /** The tails, own body and reversed rails isPathClear reads, taken at first use; one per pickPath pass (FR-203). */
+    private final class OnePass
+    {
+        private final Locomotive loc;
+        private Map<Edge, Locomotive> coveredTrack;
+        private final Map<String, Locomotive> coveredPlaces = new LinkedHashMap<>();
+        private final Map<Edge, List<Edge>> railsBack = new java.util.IdentityHashMap<>();
+        private final Map<Point, Map<String, Integer>> bodies = new java.util.IdentityHashMap<>();
+
+        OnePass(Locomotive loc)
+        {
+            this.loc = loc;
+        }
+
+        /** The track behind every standing train but this one; coveredPlaces is filled by the same walk. */
+        Map<Edge, Locomotive> coveredTrack()
+        {
+            if (coveredTrack == null)
+            {
+                coveredTrack = new LinkedHashMap<>();
+
+                // Every train but this one: the maps keep one train per place, and this train's own claim could hide
+                // another's.
+                walkStandingTrains(coveredTrack, coveredPlaces, other -> !other.equals(loc));
+            }
+
+            return coveredTrack;
+        }
+
+        /** The same rail the other way (OB-269): every other edge between the same two squares reversed, in map order. */
+        List<Edge> railsBack(Edge e)
+        {
+            return railsBack.computeIfAbsent(e, key ->
+            {
+                List<Edge> back = new ArrayList<>();
+
+                for (Edge other : edges.values())
+                {
+                    if (other != e && other.getStart() != null && other.getEnd() != null
+                        && other.getStart().isSamePlaceAs(e.getEnd()) && other.getEnd().isSamePlaceAs(e.getStart()))
+                    {
+                        back.add(other);
+                    }
+                }
+
+                return back;
+            });
+        }
+
+        /** See Layout.whyItWouldMeetItsOwnTail(List, Locomotive); the body is walked once per start. */
+        String whyItWouldMeetItsOwnTail(List<Edge> path)
+        {
+            if (path == null || path.isEmpty() || loc == null || loc.getTrainLength() == null
+                || loc.getTrainLength() <= 0)
+            {
+                return null;
+            }
+
+            return Layout.whyItWouldMeetItsOwnTail(path, loc, bodies.computeIfAbsent(path.get(0).getStart(), start ->
+            {
+                // Where it stands: the route's first square, on whichever copy of it holds the train.
+                for (Point standing : points.values())
+                {
+                    if (start == null || !loc.equals(standing.getCurrentLocomotive())) continue;
+
+                    if (standing != start && !standing.isSamePlaceAs(start)) continue;
+
+                    return bodyOfATrainAt(standing, loc, null);
+                }
+
+                return new LinkedHashMap<>();
+            }));
+        }
     }
 
     /**
      * The same, saying whether a person would send it by hand, which the cap on trains out does not refuse, and whether
      * it is asked as a leg of Return Home, which a stop-only station lets through (FR-111).
      */
-    private boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures, boolean byHand, boolean goingHome)
+    private boolean isPathClear(List<Edge> path, Locomotive loc, boolean logFailures, boolean byHand, boolean goingHome,
+        OnePass pass)
     {
         if (!byHand && !this.sentByHand.contains(loc)
             && this.maxActiveTrains > 0 && this.isAutoRunning() && trainsUnderway() >= this.maxActiveTrains)
@@ -2345,16 +2421,8 @@ public class Layout
 
             // And the same rail the other way (OB-269): its two directions are two Edges deriveLocks does not lock
             // against each other.
-            for (Edge sameRailBack : this.edges.values())
+            for (Edge sameRailBack : pass.railsBack(e))
             {
-                if (sameRailBack == e) continue;
-
-                if (sameRailBack.getStart() == null || sameRailBack.getEnd() == null) continue;
-
-                if (!sameRailBack.getStart().isSamePlaceAs(e.getEnd())) continue;
-
-                if (!sameRailBack.getEnd().isSamePlaceAs(e.getStart())) continue;
-
                 if (!sameRailBack.isRunOver(loc)) continue;
 
                 // A train never blocks itself (behaviour/tail.md 5c): Return Home holds the rail its earlier legs took.
@@ -2397,12 +2465,9 @@ public class Layout
         // the room counted is the stretch after the last switch (roomAtTheEnd).
         //
         // And nothing runs over track a standing train lies across, which point occupancy cannot see.
-        Map<Edge, Locomotive> coveredTrack = new LinkedHashMap<>();
+        Map<Edge, Locomotive> coveredTrack = pass.coveredTrack();
 
-        Map<String, Locomotive> coveredPlaces = new LinkedHashMap<>();
-
-        // Every train but this one: the maps keep one train per place, and this train's own claim could hide another's.
-        walkStandingTrains(coveredTrack, coveredPlaces, other -> !other.equals(loc));
+        Map<String, Locomotive> coveredPlaces = pass.coveredPlaces;
 
         for (Edge e : path)
         {
@@ -2473,7 +2538,7 @@ public class Layout
         }
 
         // And not round a loop into its own tail (OB-294): the checks above pass a train's own tail.
-        String ownTail = whyItWouldMeetItsOwnTail(path, loc);
+        String ownTail = pass.whyItWouldMeetItsOwnTail(path);
 
         if (ownTail != null)
         {
@@ -4062,6 +4127,7 @@ public class Layout
             {
                 // The best route so far within one band of station priority: priority still wins between bands.
                 List<Edge> best = null;
+                OnePass pass = new OnePass(loc);
                 int bestCost = Integer.MAX_VALUE;
                 Integer band = null;
 
@@ -4096,7 +4162,7 @@ public class Layout
                                 path = this.bfs(start, end, seenPaths);
 
                                 if (path != null && !this.reversesAlongTheWay(path)
-                                        && this.isPathClear(path, loc, false))
+                                        && this.isPathClear(path, loc, false, false, false, pass))
                                 {
                                     // Random rules take whatever works, at once; ranked rules enumerate alternatives.
                                     if (this.pathPreference == PathPreference.RANDOM
@@ -4687,7 +4753,7 @@ public class Layout
                 }
 
                 // lastError is static, written by every train's pickPath, so the decision comes from the return value.
-                if (this.isPathClear(path, loc, false, byHand, false))
+                if (this.isPathClear(path, loc, false, byHand, false, new OnePass(loc)))
                 {
                     if (accepted != null) accepted.add(byHand ? path : rankedFrom(path, loc, start, end, seenPaths));
 
@@ -4868,7 +4934,7 @@ public class Layout
                 {
                     // The same block rule as above - a copy of an occupied square is occupied.
                     routesFrom(start, goingHome, end -> end.getBlockLocomotive() == null,
-                        path -> this.isPathClear(path, loc, false, false, goingHome), path ->
+                        path -> this.isPathClear(path, loc, false, false, goingHome, new OnePass(loc)), path ->
                         {
                             // Only return unique starts and ends
                             if (uniqueDest)
@@ -7461,28 +7527,7 @@ public class Layout
      */
     public String whyItWouldMeetItsOwnTail(List<Edge> path, Locomotive loc)
     {
-        if (path == null || path.isEmpty() || loc == null || loc.getTrainLength() == null || loc.getTrainLength() <= 0)
-        {
-            return null;
-        }
-
-        Point start = path.get(0).getStart();
-
-        Map<String, Integer> reach = new LinkedHashMap<>();
-
-        // Where it stands: the route's first square, on whichever copy of it holds the train.
-        for (Point standing : this.points.values())
-        {
-            if (start == null || !loc.equals(standing.getCurrentLocomotive())) continue;
-
-            if (standing != start && !standing.isSamePlaceAs(start)) continue;
-
-            reach = bodyOfATrainAt(standing, loc, null);
-
-            break;
-        }
-
-        return whyItWouldMeetItsOwnTail(path, loc, reach);
+        return new OnePass(loc).whyItWouldMeetItsOwnTail(path);
     }
 
     /**
