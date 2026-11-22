@@ -1792,7 +1792,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 parsedLocs = fileParser.parseLocomotives();
             }
-                         
             // Addresses first, so a locomotive moved off an address frees it for the station's locomotive there
             for (MarklinLocomotive l : parsedLocs) this.adoptCentralStationAddress(l, sweptAfterTheSync);
             for (MarklinLocomotive l : parsedLocs)
@@ -1802,8 +1801,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     if (this.locDB.hasName(l.getName()))
                     {
-                        // Show message that we did not sync a loc with a duplicate name
-                        this.logf("loc.importSkippedDuplicateName", l.getName());
+                        // A duplicate name is skipped; the same locomotive at another address was logged above
+                        if (addressedElsewhere(l) == null) this.logf("loc.importSkippedDuplicateName", l.getName());
                     }
                     else if (!nameTurnedDown(l))
                     {
