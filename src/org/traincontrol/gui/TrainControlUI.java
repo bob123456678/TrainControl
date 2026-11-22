@@ -14688,12 +14688,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
                 finally
                 {
-                    // The offers this sync held back, and no other sync's, are offered again by the next
-                    for (Locomotive each : heldBack)
-                    {
-                        each.setHeldBackStationName(null);
-                        each.setTakenStationAddress(null);
-                    }
+                    // A station's address this Sync was told to use is for this sync alone
+                    for (Locomotive each : heldBack) each.setTakenStationAddress(null);
                 }
 
                 final Integer r = syncResult;
@@ -14726,8 +14722,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Reads, behind the spinner, the station's names for locomotives held here under another name at the same address,
-     * then asks about them over c on the event thread and returns once they are answered, with the locomotives whose
-     * offer it held back.  Off the event thread.
+     * then asks about them over c on the event thread and returns once they are answered, with the locomotives told to
+     * take the station's address.  Off the event thread.
      */
     private List<Locomotive> askAboutRenames(Component c)
     {
@@ -14744,7 +14740,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         catch (Exception e)
         {
             this.model.log(e);
-            // Questions that end in a throw hand back no list, and the offers they held back are let go all the same
+            // Questions that end in a throw hand back no list, and the addresses they took are let go all the same
             heldBack.addAll(this.model.getLocomotives());
         }
         return heldBack;
@@ -14887,15 +14883,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             }
             finally
             {
-                // Every offer's outcome, as the pressed Sync's account of the check (D171); one not applied gets no
-                // copy under the station's name from this sync
+                // Every offer's outcome, as the pressed Sync's account of the check (D171); one with none was told to
+                // use the station's address.  One not applied gets no copy: the sync holds back pending renames (FR-249).
                 if (outcome != null) this.model.logf(outcome, currentName, newName);
-
-                if (!"loc.renameApplied".equals(outcome))
-                {
-                    l.setHeldBackStationName(newName);
-                    heldBack.add(l);
-                }
+                else heldBack.add(l);
             }
         }
 

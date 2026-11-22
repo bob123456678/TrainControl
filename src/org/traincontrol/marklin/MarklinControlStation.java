@@ -1297,58 +1297,52 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * The rename check proper: the applicable proposals, and how much was declined.
-     *
-     * The count matters to the caller because an empty proposal list is ambiguous - either nothing
-     * needs renaming, or everything that did was refused - and those want different messages.
+     * The rename check proper: the station's locomotives read now, and what they differ on here (FR-249).
      *
      * @throws java.lang.Exception
      */
     @Override
     public RenameProposals getRenameProposals() throws Exception
     {
+        int unreadable = this.fileParser.getUnreadableRecords();
+        List<MarklinLocomotive> parsedLocs = this.isCS3 ? fileParser.parseLocomotivesCS3() : fileParser.parseLocomotives();
+        return differences(parsedLocs, this.fileParser.getUnreadableRecords() > unreadable, true);
+    }
+
+    /** What the station's locomotives as read differ on here: the one rule every sync door asks (FR-249). */
+    private RenameProposals differences(List<MarklinLocomotive> parsedLocs, boolean partial, boolean log)
+    {
         List<String[]> renameCandidates = new ArrayList<>();
         Map<String, Integer> addresses = new java.util.LinkedHashMap<>();
+        Map<String, MarklinLocomotive> addressedAt = new HashMap<>();
         int refused = 0;
-        List<MarklinLocomotive> parsedLocs;
-
-        // Parse locomotives based on CS version
-        if (this.isCS3)
-        {
-            parsedLocs = fileParser.parseLocomotivesCS3();
-        }
-        else
-        {
-            parsedLocs = fileParser.parseLocomotives();
-        }
-
         // Indexed once, not rebuilt for every parsed locomotive.
         Map<Integer, List<MarklinLocomotive>> byAddress = new HashMap<>();
-
+        Map<Integer, Integer> held = new HashMap<>();
         for (MarklinLocomotive existingLoc : this.locDB.getItems())
         {
-            if (!byAddress.containsKey(existingLoc.getIntUID()))
-            {
-                byAddress.put(existingLoc.getIntUID(), new ArrayList<>());
-            }
-
-            byAddress.get(existingLoc.getIntUID()).add(existingLoc);
+            byAddress.computeIfAbsent(existingLoc.getIntUID(), k -> new ArrayList<>()).add(existingLoc);
+            held.merge(existingLoc.getIntUID(), 1, Integer::sum);
         }
 
         // The same ambiguity exists on the Central Station side: two parsed locomotives at one address both match the
         // single local locomotive, so the list would get two proposals with one source.
         Map<Integer, Integer> parsedCountByAddress = new HashMap<>();
-
-        for (MarklinLocomotive l : parsedLocs) parsedCountByAddress.merge(l.getIntUID(), 1, Integer::sum);
-
-        Set<String> stationNames = new HashSet<>();
-
-        for (MarklinLocomotive l : parsedLocs) stationNames.add(l.getName());
+        Map<String, Integer> stationNames = new HashMap<>();
+        for (MarklinLocomotive l : parsedLocs)
+        {
+            parsedCountByAddress.merge(l.getIntUID(), 1, Integer::sum);
+            stationNames.merge(l.getName(), 1, Integer::sum);
+        }
 
         for (MarklinLocomotive l : parsedLocs)
         {
-            MarklinLocomotive elsewhere = addressedElsewhere(l);
-            if (elsewhere != null) addresses.put(l.getName(), l.getAddress());
+            // A name the station lists twice is offered no address: either may be this one
+            if (addressedElsewhere(l) != null && stationNames.get(l.getName()) == 1)
+            {
+                addresses.put(l.getName(), l.getAddress());
+                addressedAt.put(l.getName(), l);
+            }
             List<MarklinLocomotive> matches = byAddress.get(l.getIntUID());
             if (matches == null) continue;
 
@@ -1356,7 +1350,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // stays silent - there is nothing to propose for it either way
             if (parsedCountByAddress.get(l.getIntUID()) > 1)
             {
-                this.logf("loc.renameAmbiguousCentralStationDuplicate", l.getName(), parsedCountByAddress.get(l.getIntUID()));
+                if (log) this.logf("loc.renameAmbiguousCentralStationDuplicate", l.getName(), parsedCountByAddress.get(l.getIntUID()));
                 refused++;
                 continue;
             }
@@ -1368,34 +1362,58 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 // Except a pair whose other name the station no longer has: renamed at the station, or renamed here
                 // and given back its station name by the sync.  The station's name wins; the other is renamed onto it.
-                MarklinLocomotive dropped = renamedAwayFrom(l.getName(), matches, stationNames);
-
+                MarklinLocomotive dropped = renamedAwayFrom(l.getName(), matches, stationNames.keySet());
                 if (dropped != null)
                 {
                     renameCandidates.add(new String[] {dropped.getName(), l.getName()});
                     continue;
                 }
-
-                this.logf("loc.renameAmbiguousDuplicateAddress", l.getName(), matches.size());
+                if (log) this.logf("loc.renameAmbiguousDuplicateAddress", l.getName(), matches.size());
                 refused++;
                 continue;
             }
 
-            MarklinLocomotive existingLoc = matches.get(0);
-
             // If the name has changed, add to rename list
-            if (!existingLoc.getName().equals(l.getName()))
+            if (!matches.get(0).getName().equals(l.getName()))
             {
-                renameCandidates.add(new String[] {existingLoc.getName(), l.getName()});
+                renameCandidates.add(new String[] {matches.get(0).getName(), l.getName()});
             }
         }
 
-        List<String[]> ordered = orderRenameProposals(renameCandidates);
-
+        // Not offered: a name the station lists twice, which a second rename would delete the first onto, and after a
+        // partial read one that deletes, as the name held may be the station's in a record that would not read
+        Map<String, String> whyNot = new HashMap<>();
+        List<String[]> offered = new ArrayList<>();
+        for (String[] p : renameCandidates)
+        {
+            String key = stationNames.get(p[1]) > 1 ? "loc.renameNameListedTwice"
+                : partial && this.locDB.hasName(p[1]) ? "loc.renameAfterPartialRead" : null;
+            if (key == null) offered.add(p);
+            else whyNot.put(p[0], I18n.f(key, p[0], p[1]));
+        }
+        List<String[]> ordered = orderRenameProposals(offered);
         // Whatever ordering dropped was a cycle
-        refused += renameCandidates.size() - ordered.size();
-
-        return new RenameProposals(ordered, refused, addresses);
+        for (String[] p : offered) if (!ordered.contains(p)) whyNot.put(p[0], I18n.f("loc.renameCycleRefused", p[0], p[1]));
+        refused += whyNot.size();
+        if (log) for (String why : whyNot.values()) this.log(why);
+        Map<String, String> renames = new HashMap<>();
+        for (String[] p : renameCandidates) renames.put(p[0], p[1]);
+        Set<String> differing = new HashSet<>(renames.keySet());
+        differing.addAll(addresses.keySet());
+        List<RenameProposals.Row> rows = new ArrayList<>();
+        for (String name : differing)
+        {
+            MarklinLocomotive here = this.locDB.getByName(name), at = addressedAt.get(name);
+            String to = renames.get(name), now = whyLeftAsItIs(here);
+            MarklinRoute driving = to == null ? null : this.runningRouteDriving(to);
+            String whyNoRename = to == null ? null : whyNot.containsKey(name) ? whyNot.get(name) : now != null ? now
+                : driving != null ? I18n.f("loc.ui.errorLocomotiveDrivenByARunningRoute", to, driving.getName())
+                : !RouteCommand.isNameUsable(to) ? I18n.t("loc.ui.errorLocomotiveNameUnusable") : null;
+            rows.add(new RenameProposals.Row(here, to, at == null ? null : at.getAddress(), whyNoRename,
+                at == null ? null : now, to == null ? null : this.locDB.getByName(to), here.getIntUID(),
+                at == null ? here.getIntUID() : at.getIntUID()));
+        }
+        return new RenameProposals(ordered, refused, addresses, rows, held);
     }
 
     /** Of two locomotives at one address, one named `stationName`: the other, when the station has no such name. */
@@ -1416,7 +1434,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     }
 
     /**
-     * Orders rename proposals so each one is applied only once its target name is free, and drops any that form a
+     * Orders rename proposals so each one is applied only once its target name is free, and leaves out any that form a
      * cycle.
      *
      * The consumer applies entries one at a time, deleting whatever already holds a target name, so order matters:
@@ -1451,9 +1469,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             }
         }
-
-        // Nothing could be emitted, so every target left is still some other entry's source: a cycle
-        for (String[] proposal : remaining) this.logf("loc.renameCycleRefused", proposal[0], proposal[1]);
 
         return ordered;
     }
@@ -1808,6 +1823,21 @@ public class MarklinControlStation implements ViewListener, ModelListener
             }
             // Addresses first, so a locomotive moved off an address frees it for the station's locomotive there
             for (MarklinLocomotive l : parsedLocs) this.adoptCentralStationAddress(l, sweptAfterTheSync);
+
+            // A station locomotive at the address of one here under another name is not added beside it, and the one
+            // here stands for it as a multi-unit member, until a pressed Sync answers (FR-249)
+            RenameProposals differences = differences(parsedLocs, this.lastSyncPartial, false);
+            for (MarklinLocomotive here : this.locDB.getItems())
+            {
+                RenameProposals.Row row = differences.getRow(here);
+                here.setHeldBackStationName(row == null ? null : row.stationName);
+                if (row != null && row.stationName != null && !this.locDB.hasName(row.stationName) && !row.isNameKept()
+                    && !here.isSyncIgnored())
+                {
+                    this.logf("loc.renamePendingNotAdded", row.stationName, here.getName(), here.getDecoderTypeLabel(),
+                        here.getAddress());
+                }
+            }
             for (MarklinLocomotive l : parsedLocs)
             {
                 // Add new locomotives
@@ -2095,13 +2125,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 this.logf(Integer.valueOf(l.getAddress()).equals(here.getDeclinedStationAddress()) ? "loc.addressKept"
                     : "loc.addressDiffersAtStation", l.getName(), l.getAddress(), here.getAddress());
             }
-            // Deferred while anything is running (OB-287): setAddress changes which decoder this locomotive commands,
-            // so applying it mid-run sends every later command to a different engine while the graph tracks this one;
-            // a sync is triggered from a dozen places, so the check belongs here.  AND WHILE A ROUTE DRIVES IT: a route
-            // sends commands by name with delays between, so an adopted address would send the rest elsewhere.  And
-            // while it has a speed, as at Locomotive Settings: Stop would command the new address, the train the old.
-            else if (this.isAutonomyRunning() || this.runningRouteDriving(l.getName()) != null
-                || LocomotiveSettings.hasSpeed(this, here))
+            // Deferred while anything runs; a sync is triggered from a dozen places, so the check belongs here
+            else if (whyLeftAsItIs(here) != null)
             {
                 this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
             }
@@ -2131,6 +2156,15 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             }
         }
+    }
+
+    /** Why a sync may not rename or re-address it now, or null: running, route-driven or moving (OB-287). */
+    private String whyLeftAsItIs(MarklinLocomotive here)
+    {
+        MarklinRoute driving = this.runningRouteDriving(here.getName());
+        return this.isAutonomyRunning() ? I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")
+            : driving != null ? I18n.f("loc.ui.errorLocomotiveDrivenByARunningRoute", here.getName(), driving.getName())
+            : LocomotiveSettings.hasSpeed(this, here) ? I18n.f("loc.syncLeftMoving", here.getName()) : null;
     }
 
     /** The locomotive here by l's name, when it has l's decoder type at another address; else null. */
@@ -3565,6 +3599,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             newLoc.setNotes(c.getLocNotes());
             newLoc.setDeclinedStationName(c.getDeclinedStationName());
             newLoc.setDeclinedStationAddress(c.getDeclinedStationAddress());
+            newLoc.setSyncIgnored(c.isSyncIgnored());
             newLoc.preSetLinkedLocomotives(c.getLinkedLocomotives()); // we need to call setLinkedLocomotives() once all locs are loaded
             newLoc.setModelMultiUnitLocomotives(c.getCentralStationLinkedLocomotives());
             

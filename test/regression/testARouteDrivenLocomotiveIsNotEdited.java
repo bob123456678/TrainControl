@@ -339,8 +339,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
      * commands by NAME with delays between them, so a sync landing part-way along would send the rest to a different
      * decoder.  The sync's address step is asked directly, since the whole sync needs a station on the network.
      *
-     * MUTATION: drop `|| this.runningRouteDriving(l.getName()) != null` from `adoptCentralStationAddress`, and this
-     * fails.
+     * MUTATION: drop the `runningRouteDriving` clause from `MarklinControlStation.whyLeftAsItIs`, and this fails.
      */
     @Test
     public void testASyncDoesNotReAddressALocomotiveARouteDrives() throws Exception

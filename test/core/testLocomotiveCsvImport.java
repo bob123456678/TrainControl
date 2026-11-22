@@ -981,7 +981,7 @@ public class testLocomotiveCsvImport
 
     /**
      * The export's columns and the saved form of a locomotive are as they were, apart from the LastRun column Adam asked
-     * for and the saved field of a rename turned down (D171): the header the importer reads, the saved record's version
+     * for and the saved fields of a Sync answer (D171, FR-249): the header the importer reads, the saved record's version
      * and fields (a change there is a change to LocDB.data), and an imported locomotive saves and loads like any other.
      *
      * MUTATION: add a column to the export or a field to MarklinSimpleComponent, and this fails.
@@ -1003,7 +1003,7 @@ public class testLocomotiveCsvImport
             "conditions", "customFunctions", "declinedStationAddress", "declinedStationName", "departureFunction", "functionTriggerTypes", "functionTypes", "functions",
             "historicalOperatingTimeNew", "linkedLocomotives", "localFunctionImageURLs", "localImageURL", "name", "notes",
             "numActuations", "preferredFunctions", "preferredSpeed", "accessoryDecoderType", "reversible", "route",
-            "routeEnabled", "s88", "s88TriggerType", "state", "trainLength", "type")), "the saved record's fields changed");
+            "routeEnabled", "s88", "s88TriggerType", "state", "syncIgnored", "trainLength", "type")), "the saved record's fields changed");
 
         String name = "FR049 saved";
         made.add(name);

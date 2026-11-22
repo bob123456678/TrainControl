@@ -556,8 +556,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * Closing the rename question without an answer renames nothing and keeps nothing: it is logged as closed, the sync
      * adds no copy under the station's name, and the next Sync asks the rename question again.
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, keep a No for any answer but Yes, or
-     * leave out `setHeldBackStationName` in the `finally`.
+     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, keep a No for any answer but Yes; or in
+     * `MarklinControlStation.syncThroughTheNewParser`, leave out `setHeldBackStationName`.
      */
     @Test(timeOut = 240000)
     public void testAClosedQuestionKeepsNothing() throws Exception
@@ -590,13 +590,13 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
-     * A closed rename question holds its offer back from its own sync alone: the sync an edit owes next treats the
-     * offer as one never asked about, and adds the station's locomotive under the station's name.
+     * A rename left unanswered gets no copy under the station's name from any sync until it is answered: the sync an
+     * edit owes next holds the station's locomotive back as a pending rename, and says so in the log (FR-249).
      *
-     * MUTATION: in `TrainControlUI.doSync`, leave out the `finally` that clears each held-back offer, and this fails.
+     * MUTATION: in `MarklinControlStation.syncThroughTheNewParser`, leave out `setHeldBackStationName`, and this fails.
      */
     @Test(timeOut = 240000)
-    public void testAClosedQuestionHoldsItsOfferBackFromItsOwnSyncAlone() throws Exception
+    public void testAskAgainAddsNoCopyUntilAnswered() throws Exception
     {
         final String old = "FR-220 closed, then owed";
 
@@ -609,24 +609,28 @@ public class testTheSyncAsksAboutRenamedLocomotives
                 "precondition: the rename was not asked");
             assertNull(rig.model.getLocByName(STATION_NAME), "precondition: closing the question added a copy");
 
+            rig.takeLog();
+
             try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
             {
                 owedSync(rig, ui);
             }
 
-            assertNotNull(rig.model.getLocByName(STATION_NAME), "the owed sync still held back the offer the closed"
-                + " question's sync held back");
-            assertNotNull(rig.model.getLocByName(old), "the owed sync renamed " + old);
+            org.traincontrol.base.Locomotive here = rig.model.getLocByName(old);
+
+            assertNull(rig.model.getLocByName(STATION_NAME), "the owed sync added a copy of the rename still unanswered");
+            assertNotNull(here, "the owed sync renamed " + old);
+            assertTrue(rig.takeLog().contains(I18n.f("loc.renamePendingNotAdded", STATION_NAME, old,
+                here.getDecoderTypeLabel(), here.getAddress())), "the owed sync did not log the rename it held back");
         });
     }
 
     /**
-     * Questions that end in a throw partway still hold their offers back from their own sync alone: here the second
-     * offer's locomotive is renamed away while the first is asked, and the sync an edit owes next adds the first
-     * offer's locomotive under the station's name.
+     * Questions that end in a throw partway leave nothing held back but by rule: here the second offer's locomotive is
+     * renamed away while the first is asked, and the sync an edit owes next still adds no copy of the first offer, a
+     * rename still pending (FR-249).
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component)`, leave out the catch's `addAll` of every locomotive, and
-     * the first offer stays held back for the session.
+     * MUTATION: in `MarklinControlStation.syncThroughTheNewParser`, leave out `setHeldBackStationName`.
      */
     @Test(timeOut = 240000)
     public void testQuestionsThatThrowPartwayHoldNothingBackAfter() throws Exception
@@ -656,15 +660,14 @@ public class testTheSyncAsksAboutRenamedLocomotives
             assertNull(rig.model.getLocByName(gone), "precondition: the second offer's locomotive is still there");
             assertNull(rig.model.getLocByName(firstAtTheStation), "precondition: closing the question added a copy");
 
-            assertFalse(rig.model.getLocByName(first).keepsItsNameOver(firstAtTheStation), "the offer is still held back"
-                + " after the sync");
-
             try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
             {
                 owedSync(rig, ui);
             }
 
-            assertNotNull(rig.model.getLocByName(firstAtTheStation), "the owed sync still held back the offer");
+            assertNull(rig.model.getLocByName(firstAtTheStation), "the owed sync added a copy of the rename still"
+                + " pending");
+            assertNotNull(rig.model.getLocByName(first), "the owed sync renamed " + first);
         });
     }
 
@@ -735,8 +738,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * A rename answered Yes but refused after, here for a station name with a comma no route condition could hold, is
      * logged as not renamed, and the sync adds no copy under that name: the next Sync offers the rename again.
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, leave out `setHeldBackStationName`
-     * in the `finally`.
+     * MUTATION: in `MarklinControlStation.syncThroughTheNewParser`, leave out `setHeldBackStationName`.
      */
     @Test(timeOut = 240000)
     public void testARenameRefusedAfterYesAddsNoCopy() throws Exception

@@ -518,7 +518,7 @@ public class testImportRename
 
     /**
      * Two locomotives at one address, one under the Central Station's name and one under a name the station no longer
-     * has: the station renamed it (and the sync added the new name beside it), or it was renamed here (and the sync
+     * has: the station renamed it (and a sync before 3.1.2 added the new name beside it), or it was renamed here (and the sync
      * gave back the station's name).  The station's name wins: the other is proposed for renaming onto it, the tool's
      * rename deleting the holder.  Where both names are the station's, the pair stays ambiguous.
      *

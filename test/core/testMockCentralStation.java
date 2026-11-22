@@ -512,7 +512,7 @@ public class testMockCentralStation
      * at the old address while Stop here commands the new one.  Once it stands, the next sync takes the address.
      * Served BR 85 006 Gl. is at address 5; the database has it at 70.
      *
-     * MUTATION: drop the `LocomotiveSettings.hasSpeed` clause from `adoptCentralStationAddress`'s deferral.
+     * MUTATION: drop the `LocomotiveSettings.hasSpeed` clause from `MarklinControlStation.whyLeftAsItIs`.
      */
     @Test
     public void testASyncDoesNotReAddressALocomotiveWithASpeed() throws Exception
