@@ -6340,16 +6340,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     public void syncLocomotiveFrom(Locomotive l, Component asked, Runnable after)
     {
-        if (l != null)
+        if (l == null) return;
+        new Thread(() ->
         {
+            // A pressed Sync asks about this locomotive's address at the station first, as the main Sync does: read off
+            // the event thread behind the spinner, asked on it
+            Map<String, Integer> addresses = asked != null ? stationAddresses(asked) : null;
             SwingUtilities.invokeLater(() -> {
-                // A pressed Sync asks about this locomotive's address at the station first, as the main Sync does
-                if (asked != null) askAboutItsAddress(asked, l);
                 LayoutDiagram before = shownDiagram();
                 int synced;
 
                 try
                 {
+                    askAboutItsAddress(asked, l, addresses);
                     synced = this.syncWithCS2();
                 }
                 finally
@@ -6365,13 +6368,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Not while the other sync is still writing: the window would show half of it as the answer
                 if (after != null && synced != SYNC_ALREADY_RUNNING) after.run();
 
-                if (asked != null)
-                {
-                    if (!saidTheSyncDidNotRun(asked, synced, () -> syncLocomotiveFrom(l, asked, after)))
-                        saidTheSyncWasPartial(asked, synced);
-                }
+                if (asked != null && !saidTheSyncDidNotRun(asked, synced, () -> syncLocomotiveFrom(l, asked, after)))
+                    saidTheSyncWasPartial(asked, synced);
             });
-        }   
+        }).start();
     }
         
     /**
@@ -14720,15 +14720,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         if (!this.model.getNetworkCommState()) return heldBack;
 
-        // Over the window that asked, such as the Locomotive Database's
-        BusyDialog.Closer busy = BusyDialog.showUntilClosed(c instanceof Window ? (Window) c
-            : SwingUtilities.getWindowAncestor(c), I18n.t("ui.busySyncingWithCS"));
-
         try
         {
-            RenameProposals proposals = this.model.getRenameProposals();
-
-            busy.close();
+            RenameProposals proposals = readBehindTheSpinner(c);
 
             SwingUtilities.invokeAndWait(() -> heldBack.addAll(askAboutRenames(c, proposals)));
         }
@@ -14738,12 +14732,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             // Questions that end in a throw hand back no list, and the offers they held back are let go all the same
             heldBack.addAll(this.model.getLocomotives());
         }
-        finally
-        {
-            busy.close();
-        }
 
         return heldBack;
+    }
+
+    /** The station's rename proposals, read behind the spinner over the window that asked, c's.  Off the event thread. */
+    private RenameProposals readBehindTheSpinner(Component c) throws Exception
+    {
+        BusyDialog.Closer busy = BusyDialog.showUntilClosed(c instanceof Window ? (Window) c
+            : SwingUtilities.getWindowAncestor(c), I18n.t("ui.busySyncingWithCS"));
+        try
+        {
+            return this.model.getRenameProposals();
+        }
+        finally
+        {
+            // Posted before the questions, so it is down before they come up
+            busy.close();
+        }
     }
 
     /**
@@ -14911,22 +14917,30 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             : answer < 0 ? JOptionPane.CLOSED_OPTION : JOptionPane.YES_OPTION;
     }
 
-    /** Asks over c about l alone, as {@link #askAboutRenames(Component, RenameProposals)} does (FR-246). */
-    private void askAboutItsAddress(Component c, Locomotive l)
+    /** The station's addresses by name, read over c as `readBehindTheSpinner`; null when not connected or not read. */
+    private Map<String, Integer> stationAddresses(Component c)
     {
-        if (!this.model.getNetworkCommState()) return;
+        if (!this.model.getNetworkCommState()) return null;
         try
         {
-            Integer at = this.model.getRenameProposals().getAddresses().get(l.getName());
-            // A kept address is not asked again; one the station no longer has is forgotten
-            if (java.util.Objects.equals(at, l.getDeclinedStationAddress())) return;
-            l.setDeclinedStationAddress(null);
-            if (at != null) askAboutAddress(c, l, at, null);
+            return readBehindTheSpinner(c).getAddresses();
         }
         catch (Exception e)
         {
             this.model.log(e);
+            return null;
         }
+    }
+
+    /** Asks over c about l alone, as {@link #askAboutRenames(Component, RenameProposals)} does (FR-246). */
+    private static void askAboutItsAddress(Component c, Locomotive l, Map<String, Integer> addresses)
+    {
+        if (addresses == null) return;
+        Integer at = addresses.get(l.getName());
+        // A kept address is not asked again; one the station no longer has is forgotten
+        if (java.util.Objects.equals(at, l.getDeclinedStationAddress())) return;
+        l.setDeclinedStationAddress(null);
+        if (at != null) askAboutAddress(c, l, at, null);
     }
 
     /** A rename answered No, kept on the locomotive so the same offer is not asked again; its log line's key. */

@@ -1080,6 +1080,77 @@ public class testTheSyncAsksAboutRenamedLocomotives
         });
     }
 
+    /**
+     * Locomotive Settings' Sync reads the station's addresses off the event thread: while the station holds back its
+     * locomotive list (up to 5 s), the program still answers, and the question still comes (FR-246).
+     *
+     * MUTATION: in `TrainControlUI.syncLocomotiveFrom`, call `stationAddresses` inside the `invokeLater`, and the event
+     * thread waits out the station.
+     */
+    @Test(timeOut = 180000)
+    public void testLocomotiveSettingsSyncLeavesTheProgramAnsweringWhileTheStationIsSlow() throws Exception
+    {
+        final AtomicBoolean slow = new AtomicBoolean(false);
+        final CountDownLatch listing = new CountDownLatch(1), measured = new CountDownLatch(1);
+        final BiFunction<String, Integer, byte[]> station = StandInStation.cs3("260", INFO);
+
+        inAWindow((path, n) ->
+        {
+            if (slow.get() && path.startsWith("/app/api/lo"))
+            {
+                listing.countDown();
+
+                try
+                {
+                    measured.await(5, TimeUnit.SECONDS);
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            return station.apply(path, n);
+        }, (rig, ui) ->
+        {
+            movedHere(rig);
+            rig.model.setNetworkCommState(true);
+
+            final org.traincontrol.base.Locomotive loc = rig.model.getLocByName(STATION_NAME);
+            final CountDownLatch synced = new CountDownLatch(1);
+            long blocked;
+
+            assertTrue(SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+                "precondition: Locomotive Settings did not open");
+
+            try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
+            {
+                slow.set(true);
+                SwingUtilities.invokeLater(() -> ui.syncLocomotiveFrom(loc, SettingsWindow.showing(), synced::countDown));
+                assertTrue(listing.await(30, TimeUnit.SECONDS), "precondition: the station was not asked for its list");
+
+                long start = System.nanoTime();
+                SwingUtilities.invokeAndWait(() -> { });
+                blocked = (System.nanoTime() - start) / 1000000;
+                measured.countDown();
+
+                assertTrue(synced.await(90, TimeUnit.SECONDS), "the sync never ended");
+                AskingWindows.awaitAnswered();
+
+                askedOnce(answering.questions(), I18n.f("loc.ui.askStationAddress", STATION_NAME, 10, 70),
+                    I18n.t("loc.ui.optionKeep"), I18n.f("loc.ui.optionUseAddress", 10));
+            }
+            finally
+            {
+                slow.set(false);
+                measured.countDown();
+                SettingsWindow.closeIfOpen();
+            }
+
+            assertTrue(blocked < 1500, "the event thread waited " + blocked + " ms for the station");
+        });
+    }
+
     /** BR 10 001 held here at address 70, the station's at 10, as though its address was changed here since. */
     private static void movedHere(StationRig rig) throws Exception
     {
