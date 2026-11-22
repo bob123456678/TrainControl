@@ -1066,6 +1066,12 @@ public class MarklinLocomotive extends Locomotive
         this.preLinkedLocomotives = locList;
     }
     
+    /** The names this locomotive's saved list names, before the model has linked them. */
+    java.util.Set<String> savedMemberNames()
+    {
+        return this.preLinkedLocomotives == null ? java.util.Collections.<String>emptySet() : this.preLinkedLocomotives.keySet();
+    }
+
     /**
      * Stages a list and applies it in one call, so no second thread can be staging at the same time:
      * `preSetLinkedLocomotives` writes an instance field that `setLinkedLocomotives` reads, and `syncWithCS2` and the
@@ -1113,6 +1119,15 @@ public class MarklinLocomotive extends Locomotive
             return -1;
         }
         
+        // A member of another multi-unit cannot head one (no nesting)
+        Locomotive head = preLinkedLocomotives.isEmpty() ? null : network.isLocLinkedToOthers(this);
+
+        if (head != null)
+        {
+            this.network.logf("loc.errorLinkIsMember", this.getName(), head.getName());
+            preLinkedLocomotives = java.util.Collections.emptyMap();
+        }
+
         for (Map.Entry<String, Double> entry : preLinkedLocomotives.entrySet())
         {
             String locoName = entry.getKey();

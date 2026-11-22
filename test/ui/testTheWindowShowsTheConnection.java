@@ -184,15 +184,15 @@ public class testTheWindowShowsTheConnection
         return mark();
     }
 
-    /** "green", "yellow", "orange" or "gray" for an opaque pixel of the pill's colors, else its hex. */
+    /** "green", "yellow", "red" or "gray" for an opaque pixel of the pill's fills, else its hex. */
     private static String color(int argb)
     {
         int r = (argb >> 16) & 255, g = (argb >> 8) & 255, b = argb & 255;
 
         if ((argb >>> 24) < 255) return Integer.toHexString(argb);
-        if (g > r + 60 && g > b + 60) return "green";
-        if (r > 200 && g > 170 && b < 100) return "yellow";
-        if (r > 200 && g > 90 && g < 160 && b < 80) return "orange";
+        if (r == 204 && g == 255 && b == 204) return "green";
+        if (r == 255 && g == 255 && b == 128) return "yellow";
+        if (r == 255 && g == 204 && b == 204) return "red";
 
         return Math.abs(r - g) < 12 && Math.abs(g - b) < 12 && r > 170 && r < 235 ? "gray" : Integer.toHexString(argb);
     }
@@ -214,7 +214,7 @@ public class testTheWindowShowsTheConnection
 
     /**
      * While a station answers, the corner shows a pill with the latest latency: green to PING_ORANGE (100 ms), yellow to
-     * PING_RED (300 ms), orange past it, and ">1 s" past 999 ms (FR-242).
+     * PING_RED (300 ms), red past it, and ">1 s" past 999 ms (FR-242, FR-248).
      *
      * MUTATION: color the pill green whatever the latency in `TrainControlUI.markTheConnection`, and this fails.
      */
@@ -226,7 +226,7 @@ public class testTheWindowShowsTheConnection
         try
         {
             Object[][] cases = {{12.0, "12 ms", "green"}, {100.0, "100 ms", "green"}, {180.0, "180 ms", "yellow"},
-                {300.0, "300 ms", "yellow"}, {420.0, "420 ms", "orange"}, {1500.0, ">1 s", "orange"}};
+                {300.0, "300 ms", "yellow"}, {420.0, "420 ms", "red"}, {1500.0, ">1 s", "red"}};
 
             for (Object[] c : cases)
             {
@@ -234,6 +234,38 @@ public class testTheWindowShowsTheConnection
 
                 assertEquals(shown[0], c[1], "the pill's text at " + c[0] + " ms");
                 assertEquals(shown[3], c[2], "the pill's color at " + c[0] + " ms");
+            }
+        }
+        finally
+        {
+            disconnect();
+        }
+    }
+
+    /**
+     * The pill's fill and text by band, in a plain font: the Go button's green, the tile highlight's yellow and the Stop
+     * button's red, each with a dark text of its hue; gray while waiting (FR-248).
+     *
+     * MUTATION: derive `Font.BOLD` in `TrainControlUI.installConnectionMark`, or change one text color in
+     * `TrainControlUI.PILL_YELLOW`, and this fails.
+     */
+    @Test
+    public void testThePillsBandsHaveTheirFillAndTextAndAPlainFont() throws Exception
+    {
+        JLabel mark = WindowField.of(ui, "connectionMark");
+        model.setNetworkCommState(true);
+
+        try
+        {
+            Object[][] bands = {{12.0, new java.awt.Color(204, 255, 204), new java.awt.Color(46, 90, 46)},
+                {180.0, new java.awt.Color(255, 255, 128), new java.awt.Color(90, 90, 30)},
+                {420.0, new java.awt.Color(255, 204, 204), new java.awt.Color(106, 46, 46)}};
+
+            for (Object[] b : bands)
+            {
+                pill((Double) b[0]);
+                assertEquals(Components.onTheEventThread(() -> new Object[] {mark.getBackground(), mark.getForeground(),
+                    mark.getFont().isPlain()}), new Object[] {b[1], b[2], true}, "fill, text and font at " + b[0] + " ms");
             }
         }
         finally
@@ -405,11 +437,11 @@ public class testTheWindowShowsTheConnection
     }
 
     /**
-     * The keyboard tab's line names the station as "Central Station 3 v2.6.1 #1234 (TCP)", leaving out a part not
-     * known with its space; v is the leading dotted number of what a CS3 says; "not connected" with no station, and
-     * "Simulation" in a simulation (FR-242).
+     * The keyboard tab's line names the station as "Central Station 3 v2.6.1 (TCP)", with no serial number (it goes to
+     * the log), leaving out a part not known with its space; v is the leading dotted number of what a CS3 says; "not
+     * connected" with no station, and "Simulation" in a simulation (FR-242, FR-248).
      *
-     * MUTATION: leave the serial number out of `TrainControlUI.nameTheStation`, and this fails.
+     * MUTATION: put the serial number back into the line in `TrainControlUI.nameTheStation`, and this fails.
      */
     @Test
     public void testTheLineNamesTheStation() throws Exception
@@ -421,8 +453,8 @@ public class testTheWindowShowsTheConnection
 
         try
         {
-            Object[][] cases = {{false, null, "10415", "Central Station 2 #10415 (UDP)"},
-                {true, "2.6.1 (Build 3)", "1234", "Central Station 3 v2.6.1 #1234 (UDP)"},
+            Object[][] cases = {{false, null, "99999", "Central Station 2 (UDP)"},
+                {true, "2.6.1 (Build 3)", "1234", "Central Station 3 v2.6.1 (UDP)"},
                 {true, "v2.6", null, "Central Station 3 v2.6 (UDP)"},
                 {true, null, null, "Central Station 3 (UDP)"}};
 
@@ -443,10 +475,70 @@ public class testTheWindowShowsTheConnection
         }
     }
 
+    /** Three answers, a different log line after each, as the model drops a line repeating the one before it. */
+    private static void answerThrice() throws Exception
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            answered();
+            model.log("after " + i);
+        }
+    }
+
     /**
-     * With no serial number from a file, the one the station's ping reply gives (UID 0x4353835E from device type 0x0000
-     * is 10415) reaches the line; a file's comes first; a type 0x0000 reply from a UID that is not a Central Station's
-     * (a booster, or a CS3, whose track processor's UID starts 0x6373) gives none (FR-242).
+     * The serial number is logged once a connection, not on every answer, and again after a reconnect (FR-248).
+     *
+     * The model drops a line repeating the one before it, so other lines stand between the answers.
+     *
+     * MUTATION: drop the `serialLogged` test in `TrainControlUI.nameTheStation` (log on every answer), or drop the
+     * log call, and this fails.
+     */
+    @Test
+    public void testTheSerialNumberIsLoggedOncePerConnection() throws Exception
+    {
+        java.util.List<String> log = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+        java.util.logging.Logger logger = java.util.logging.Logger.getLogger(MarklinControlStation.class.getName());
+        java.util.logging.Handler tap = support.LogTap.messagesInto(log);
+        String line = org.traincontrol.util.I18n.f("log.stationSerial", "99999");
+
+        logger.addHandler(tap);
+        Reflect.set(MarklinControlStation.class, model, "stationSerial", "99999");
+
+        try
+        {
+            model.setNetworkCommState(true);
+            answerThrice();
+
+            assertEquals(log.stream().filter(l -> l.contains("99999")).count(), 1L, "three answers, one connection: " + log);
+
+            disconnect();
+            model.setNetworkCommState(true);
+            answerThrice();
+
+            assertEquals(log.stream().filter(l -> l.contains("99999")).count(), 2L, "a reconnect logs it again: " + log);
+
+            // A serial from the ping reply: every line that carries it, one
+            Reflect.set(MarklinControlStation.class, model, "stationSerial", null);
+            pingReply(0x43, 0x53, 0x38, 0x12);
+            assertTrue(Components.waitFor(() -> uid() != 0, 10000), "precondition: the reply was recorded");
+            answerThrice();
+
+            assertEquals(log.stream().filter(l -> l.contains("777")).count(), 1L, "the ping reply's serial: " + log);
+        }
+        finally
+        {
+            logger.removeHandler(tap);
+            Reflect.set(MarklinControlStation.class, model, "stationSerial", null);
+            Reflect.set(MarklinControlStation.class, model, "UID", 0);
+            Reflect.set(MarklinControlStation.class, model, "serialNumber", 0);
+            disconnect();
+        }
+    }
+
+    /**
+     * With no serial number from a file, the one the station's ping reply gives (UID 0x43533812 from device type 0x0000
+     * is 777) is the station's, and logged; a file's comes first; a type 0x0000 reply from a UID that is not a Central
+     * Station's (a booster, or a CS3, whose track processor's UID starts 0x6373) gives none (FR-242, FR-248).
      *
      * MUTATION: drop `(this.UID >>> 16) == 0x4353` from `MarklinControlStation.getStationSerial`, and this fails.
      */
@@ -457,10 +549,10 @@ public class testTheWindowShowsTheConnection
 
         try
         {
-            Object[][] cases = {{new int[] {0x47, 0x42, 0x00, 0x2a}, false, null, "Central Station 2 (UDP)"},
-                {new int[] {0x63, 0x73, 0x04, 0xd2}, true, null, "Central Station 3 (UDP)"},
-                {new int[] {0x43, 0x53, 0x83, 0x5e}, false, "999", "Central Station 2 #999 (UDP)"},
-                {new int[] {0x43, 0x53, 0x83, 0x5e}, false, null, "Central Station 2 #10415 (UDP)"}};
+            Object[][] cases = {{new int[] {0x47, 0x42, 0x00, 0x2a}, false, null, null},
+                {new int[] {0x63, 0x73, 0x04, 0xd2}, true, null, null},
+                {new int[] {0x43, 0x53, 0x38, 0x12}, false, "999", "999"},
+                {new int[] {0x43, 0x53, 0x38, 0x12}, false, null, "777"}};
 
             for (Object[] c : cases)
             {
@@ -470,7 +562,7 @@ public class testTheWindowShowsTheConnection
                 Reflect.set(MarklinControlStation.class, model, "stationSerial", c[2]);
                 pingReply((int[]) c[0]);
                 assertTrue(Components.waitFor(() -> uid() != 0, 10000), "precondition: the reply was recorded");
-                assertEquals(latency(), c[3], "the line after a ping reply from "
+                assertEquals(model.getStationSerial(), c[3], "the serial after a ping reply from "
                     + java.util.Arrays.toString((int[]) c[0]) + ", file serial " + c[2]);
             }
         }

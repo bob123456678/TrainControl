@@ -6168,7 +6168,7 @@ public class AutonomySession
      * Records directions wanted on one square's roads as its arms can hold them, without re-deriving (OB-351): every
      * door comes through here, so none stores a road closed where the arrow shows it open.
      */
-    private void recordSquare(TileKey tile, Map<RouteId, Direction> wanted)
+    void recordSquare(TileKey tile, Map<RouteId, Direction> wanted)
     {
         Map<RouteId, Route> routes = graph.getRoutes(tile);
 
@@ -8534,7 +8534,19 @@ public class AutonomySession
     /** Sets a direction on every tile of a square's run, in that square's sense; returns how many tiles changed. */
     public int setRunDirection(TileKey leader, RouteId routeId, Direction direction)
     {
-        return sessionRuns.setRunDirection(leader, routeId, direction);
+        return setRunDirection(leader, routeId, direction, false);
+    }
+
+    /** The same, carried on along the line past the run where `alongTheLine` says (MT-1068). */
+    public int setRunDirection(TileKey leader, RouteId routeId, Direction direction, boolean alongTheLine)
+    {
+        return sessionRuns.setRunDirection(leader, routeId, direction, alongTheLine);
+    }
+
+    /** What setting a run's direction carries on to past the run, each road by square; empty for none (MT-1068). */
+    public Map<TileKey, Map<RouteId, Direction>> alongTheLine(TileKey tile, RouteId routeId, Direction direction)
+    {
+        return sessionRuns.alongTheLine(tile, routeId, direction);
     }
 
     /** Whether a square follows its run (not its first square), and so draws no arrows of its own (OB-321, OB-361). */

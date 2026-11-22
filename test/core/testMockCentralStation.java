@@ -554,7 +554,10 @@ public class testMockCentralStation
     /** A locomotive `test/lokomotive.cs2` serves at address 5. */
     private static final String SERVED = "BR 85 006 Gl.";
 
-    /** Puts {@link #SERVED} at address 70, made if missing, and gives back what puts it as it was. */
+    /**
+     * Puts {@link #SERVED} at address 70, made if missing, told to take the station's address as a pressed Sync's answer
+     * does (FR-246), and gives back what puts it as it was.
+     */
     private static Runnable theServedLocomotiveAt70() throws Exception
     {
         MarklinLocomotive loc = model.getLocByName(SERVED);
@@ -566,10 +569,13 @@ public class testMockCentralStation
         if (made) model.newMM2Locomotive(SERVED, 70);
         else model.changeLocAddress(SERVED, 70, MarklinLocomotive.decoderType.MM2);
 
+        model.getLocByName(SERVED).setTakenStationAddress(5);
+
         return () ->
         {
             try
             {
+                model.getLocByName(SERVED).setTakenStationAddress(null);
                 if (made) model.deleteLoc(SERVED);
                 else model.changeLocAddress(SERVED, addressWas, typeWas);
             }

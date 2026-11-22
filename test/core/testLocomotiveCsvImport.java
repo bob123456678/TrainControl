@@ -1000,7 +1000,7 @@ public class testLocomotiveCsvImport
         for (ObjectStreamField f : saved.getFields()) fields.add(f.getName());
 
         assertEquals(new TreeSet<>(fields), new TreeSet<>(Arrays.asList("address", "arrivalFunction", "centralStationLinkedLocomotives",
-            "conditions", "customFunctions", "declinedStationName", "departureFunction", "functionTriggerTypes", "functionTypes", "functions",
+            "conditions", "customFunctions", "declinedStationAddress", "declinedStationName", "departureFunction", "functionTriggerTypes", "functionTypes", "functions",
             "historicalOperatingTimeNew", "linkedLocomotives", "localFunctionImageURLs", "localImageURL", "name", "notes",
             "numActuations", "preferredFunctions", "preferredSpeed", "accessoryDecoderType", "reversible", "route",
             "routeEnabled", "s88", "s88TriggerType", "state", "trainLength", "type")), "the saved record's fields changed");

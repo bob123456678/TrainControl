@@ -500,8 +500,27 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.logf("log.csNotConnected");
         } 
         
-        // Resolve linked locomotives now that we have loaded everything
+        this.linkSavedConsists();
+    }
+
+    /**
+     * Applies every saved multi-unit list.  A locomotive another list names is a member and is applied last, so its own
+     * list is the one refused when both exist, whatever the names' order.
+     */
+    public final void linkSavedConsists()
+    {
+        Set<String> named = new HashSet<>();
+
         for (Locomotive l : this.getLocomotives())
+        {
+            if (l instanceof MarklinLocomotive) named.addAll(((MarklinLocomotive) l).savedMemberNames());
+        }
+
+        List<Locomotive> order = new ArrayList<>(this.getLocomotives());
+
+        order.sort(Comparator.comparing((Locomotive l) -> named.contains(l.getName())).thenComparing(Locomotive::getName));
+
+        for (Locomotive l : order)
         {
             l.setLinkedLocomotives();
         }
@@ -1289,6 +1308,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     public RenameProposals getRenameProposals() throws Exception
     {
         List<String[]> renameCandidates = new ArrayList<>();
+        Map<String, Integer> addresses = new java.util.LinkedHashMap<>();
         int refused = 0;
         List<MarklinLocomotive> parsedLocs;
 
@@ -1307,9 +1327,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         for (MarklinLocomotive existingLoc : this.locDB.getItems())
         {
-            // Consist heads are never proposed for renaming
-            if (existingLoc.hasLinkedLocomotives()) continue;
-
             if (!byAddress.containsKey(existingLoc.getIntUID()))
             {
                 byAddress.put(existingLoc.getIntUID(), new ArrayList<>());
@@ -1330,8 +1347,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
         for (MarklinLocomotive l : parsedLocs)
         {
+            MarklinLocomotive elsewhere = addressedElsewhere(l);
+            if (elsewhere != null) addresses.put(l.getName(), l.getAddress());
             List<MarklinLocomotive> matches = byAddress.get(l.getIntUID());
-
             if (matches == null) continue;
 
             // Checked after the match lookup so a Central Station duplicate with no local counterpart
@@ -1377,7 +1395,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         // Whatever ordering dropped was a cycle
         refused += renameCandidates.size() - ordered.size();
 
-        return new RenameProposals(ordered, refused);
+        return new RenameProposals(ordered, refused, addresses);
     }
 
     /** Of two locomotives at one address, one named `stationName`: the other, when the station has no such name. */
@@ -1788,7 +1806,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 parsedLocs = fileParser.parseLocomotives();
             }
-                         
+            // Addresses first, so a locomotive moved off an address frees it for the station's locomotive there
+            for (MarklinLocomotive l : parsedLocs) this.adoptCentralStationAddress(l, sweptAfterTheSync);
             for (MarklinLocomotive l : parsedLocs)
             {
                 // Add new locomotives
@@ -1796,8 +1815,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 {
                     if (this.locDB.hasName(l.getName()))
                     {
-                        // Show message that we did not sync a loc with a duplicate name
-                        this.logf("loc.importSkippedDuplicateName", l.getName());
+                        // A duplicate name is skipped; the same locomotive at another address was logged above
+                        if (addressedElsewhere(l) == null) this.logf("loc.importSkippedDuplicateName", l.getName());
                     }
                     else if (!nameTurnedDown(l))
                     {
@@ -1811,9 +1830,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         num++;
                     }
                 }
-                
-                // We already have this locomotive, with the same decoder type, but different address.  Update the address and UID in database
-                this.adoptCentralStationAddress(l, sweptAfterTheSync);
                 
                 // Update function types if they have changed
                 if (this.locDB.hasId(l.getUID()) &&
@@ -2061,7 +2077,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /**
      * Gives a locomotive this database already has the address the Central Station reports for it: nothing happens
-     * unless a locomotive of that name, with the same decoder type, is at a different address.  One step of
+     * unless a locomotive of that name, with the same decoder type, is at a different address, and the pressed Sync was
+     * told to use the station's (else that is logged).  One step of
      * `syncWithCS2`'s locomotive pass, a method of its own so the decision can be asked without a station.
      *
      * @param l the locomotive as the Central Station describes it
@@ -2069,41 +2086,38 @@ public class MarklinControlStation implements ViewListener, ModelListener
      */
     public void adoptCentralStationAddress(MarklinLocomotive l, List<MarklinLocomotive> sweptAfterTheSync)
     {
-        if (this.locDB.getByName(l.getName()) != null
-            && this.locDB.getByName(l.getName()).getAddress() != l.getAddress()
-            && this.locDB.getByName(l.getName()).getDecoderType() == l.getDecoderType()
-        )
+        MarklinLocomotive here = addressedElsewhere(l);
+        if (here != null)
         {
+            // Only a pressed Sync's answer takes it, so an address set here is not put back unasked (FR-246)
+            if (!here.takesStationAddress(l.getAddress()))
+            {
+                this.logf(Integer.valueOf(l.getAddress()).equals(here.getDeclinedStationAddress()) ? "loc.addressKept"
+                    : "loc.addressDiffersAtStation", l.getName(), l.getAddress(), here.getAddress());
+            }
             // Deferred while anything is running (OB-287): setAddress changes which decoder this locomotive commands,
             // so applying it mid-run sends every later command to a different engine while the graph tracks this one;
             // a sync is triggered from a dozen places, so the check belongs here.  AND WHILE A ROUTE DRIVES IT: a route
             // sends commands by name with delays between, so an adopted address would send the rest elsewhere.  And
             // while it has a speed, as at Locomotive Settings: Stop would command the new address, the train the old.
-            if (this.isAutonomyRunning() || this.runningRouteDriving(l.getName()) != null
-                || LocomotiveSettings.hasSpeed(this, this.locDB.getByName(l.getName())))
+            else if (this.isAutonomyRunning() || this.runningRouteDriving(l.getName()) != null
+                || LocomotiveSettings.hasSpeed(this, here))
             {
                 this.logf("loc.addressUpdateDeferredWhileRunning", l.getName());
             }
             else
             {
                 String oldAddr = this.getLocAddress(l.getName());
-                this.locDB.getByName(l.getName()).setAddress(l.getAddress(), l.getDecoderType());
-
-                // Update DB entry
-                MarklinLocomotive existingLoc = this.locDB.getByName(l.getName());
+                here.setAddress(l.getAddress(), l.getDecoderType());
                 this.locDB.delete(l.getName());
-                this.locDB.add(existingLoc, existingLoc.getName(), existingLoc.getUID());
+                this.locDB.add(here, here.getName(), here.getUID());
 
                 // AND THE CACHE FOLLOWS THE NEW UID AT ONCE.  The rebuild at the end of the sync is on
                 // the success path only, and until it runs every echo for this locomotive resolves to nothing.
                 this.rebuildLocIdCache();
 
-                this.logf("loc.addressUpdated",
-                    existingLoc.getName(),
-                    oldAddr,
-                    this.getLocAddress(existingLoc.getName()));
-
-                sweptAfterTheSync.add(existingLoc);
+                this.logf("loc.addressUpdated", here.getName(), oldAddr, this.getLocAddress(here.getName()));
+                sweptAfterTheSync.add(here);
 
                 // The same repair changeLocAddress performs, for the same reason
                 for (Locomotive other : getLocomotives())
@@ -2117,6 +2131,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 }
             }
         }
+    }
+
+    /** The locomotive here by l's name, when it has l's decoder type at another address; else null. */
+    private MarklinLocomotive addressedElsewhere(MarklinLocomotive l)
+    {
+        MarklinLocomotive here = this.locDB.getByName(l.getName());
+        return here != null && here.getAddress() != l.getAddress() && here.getDecoderType() == l.getDecoderType()
+            ? here : null;
     }
 
     /**
@@ -3175,13 +3197,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         new byte[]{message.getData()[6], message.getData()[7]}
                     );
 
-                    // 0x0000 means this is the central station
+                    // 0x0000 means this is the central station; the first such reply's UID gates getStationSerial, and the
+                    // window logs that serial once
                     if (payload == 0)
                     {
                         this.UID = message.extractUID();
                         this.serialNumber = (message.extractUID() - 0x43533200) / 2;
-
-                        this.logf("network.connectedCentralStation", this.serialNumber);
                     }
                 }
             });
@@ -3543,6 +3564,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             newLoc.setLocalFunctionImageURLs(c.getLocalFunctionImageURLs());
             newLoc.setNotes(c.getLocNotes());
             newLoc.setDeclinedStationName(c.getDeclinedStationName());
+            newLoc.setDeclinedStationAddress(c.getDeclinedStationAddress());
             newLoc.preSetLinkedLocomotives(c.getLinkedLocomotives()); // we need to call setLinkedLocomotives() once all locs are loaded
             newLoc.setModelMultiUnitLocomotives(c.getCentralStationLinkedLocomotives());
             

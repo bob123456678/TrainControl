@@ -746,6 +746,7 @@
         <test-one-class class="testTheAutoTabKeepsItsCards"/>
         <test-one-class class="testShowAddressesWithAnEditorOpen"/>
         <test-one-class class="testTheLoaderReadsEveryFileAsBefore"/>
+        <test-one-class class="testADirectionCarriesOnAlongTheLine"/>
         <test-one-class class="testEveryCandidateRouteIsJudgedAsBefore"/>
     </target>
     <target name="package-for-store" depends="jar">

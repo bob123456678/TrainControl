@@ -386,6 +386,9 @@ public class testARouteDrivenLocomotiveIsNotEdited
             org.traincontrol.marklin.MarklinLocomotive fromTheStation = new org.traincontrol.marklin.MarklinLocomotive(
                 model, 67, org.traincontrol.marklin.MarklinLocomotive.decoderType.MM2, SYNCED);
 
+            // As a pressed Sync told to use the station's address marks it (FR-246)
+            model.getLocByName(SYNCED).setTakenStationAddress(67);
+
             model.adoptCentralStationAddress(fromTheStation,
                 new ArrayList<org.traincontrol.marklin.MarklinLocomotive>());
 

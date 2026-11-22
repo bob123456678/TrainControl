@@ -228,7 +228,7 @@ public class LayoutGrid
         handle.addMouseMotionListener(gesture);
     }
 
-    /** Photographs the caption cropped to its pill and hands it to the window to carry, held where grabbed (FR-035). */
+    /** The caption, cropped to its pill, given to the window to carry where grabbed (FR-035). */
     private static void pickUp(StationCaption caption, javax.swing.JLabel handle,
         java.awt.Point at, LayoutEditor editor)
     {
@@ -236,24 +236,12 @@ public class LayoutGrid
 
         if (pill == null || pill.width <= 0 || pill.height <= 0) return;
 
-        java.awt.image.BufferedImage shot = new java.awt.image.BufferedImage(
-            pill.width, pill.height, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-
-        java.awt.Graphics2D g = shot.createGraphics();
-
-        try
+        javax.swing.Icon shot = org.traincontrol.util.SharpIcon.painted(editor, pill.width, pill.height, g ->
         {
-            g.setComposite(java.awt.AlphaComposite.getInstance(
-                java.awt.AlphaComposite.SRC_OVER, 0.8f));
-
+            g.setComposite(java.awt.AlphaComposite.getInstance(java.awt.AlphaComposite.SRC_OVER, 0.8f));
             g.translate(-pill.x, -pill.y);
-
             caption.paint(g);
-        }
-        finally
-        {
-            g.dispose();
-        }
+        });
 
         java.awt.Point grab = handle == caption
             ? new java.awt.Point(at.x - pill.x, at.y - pill.y)
@@ -301,13 +289,13 @@ public class LayoutGrid
         return null;
     }
 
-    /** The square under a mouse event, or null off the diagram, for a train dragged over the diagram (FR-160). */
+    /** The square under a mouse event, or null off the diagram (FR-160). */
     public static LayoutLabel squareUnder(Container container, java.awt.Component from, MouseEvent e)
     {
         return tileUnder(container, from, e);
     }
 
-    /** How far the mouse moves before a press on a caption counts as a drag rather than a click. */
+    /** How far a press on a caption moves before it is a drag, not a click. */
     public static final int DRAG_SLOP = 4;
 
     /**
