@@ -24,8 +24,8 @@ import org.traincontrol.marklin.MarklinControlStation;
  * load logged, and a digest of the Layout's `toJSON` (and of a second load of that).  The golden,
  * `test/baseline/fromjson_golden.txt`, was written by `main` below run on dev at 577b37883.
  *
- * MUTATION: read "maxLatency" before "preArrivalSpeedReduction" in fromJSON, and the case with both wrong gives the
- * other reason; or default an absent "maxTrainLength" to 1, and every digest differs.
+ * MUTATION: read "maxLatency" before "preArrivalSpeedReduction" in readSettings, and the case with both wrong gives the
+ * other reason; or make ConfigurationFile.count answer 0 for an absent key, and an absent trainLength clears the train's.
  */
 public class testTheLoaderReadsEveryFileAsBefore
 {
