@@ -889,7 +889,43 @@ public class testTheEditorSaysWhatItsToolsDo
     /** One of the panel's private one-square describers, as its sentences use them. */
     private static String privately(AutonomyEditorPanel panel, String method, TileKey tile) throws Exception
     {
-        return (String) Reflect.method(AutonomyEditorPanel.class, method, TileKey.class).invoke(panel, tile);
+        return (String) asked(panel, method, tile);
+    }
+
+    private static Object asked(AutonomyEditorPanel panel, String method, TileKey tile)
+    {
+        try
+        {
+            return Reflect.method(AutonomyEditorPanel.class, method, TileKey.class).invoke(panel, tile);
+        }
+        catch (ReflectiveOperationException cannot)
+        {
+            throw new IllegalStateException(cannot);
+        }
+    }
+
+    /**
+     * Everything the tile menus read off a square for a tooltip, and nothing of where it is (FR-209): what is drawn
+     * there, whether autonomy ignores it, the point's station-ness and train, the roads and arms it has, its caption
+     * and link.  The page's counts the bulk tools carry are the page's, so the caller adds the page.
+     */
+    private static String kindOf(AutonomyEditorPanel panel, AutonomySession railway, TileKey tile)
+    {
+        org.traincontrol.base.LayoutDiagramComponent c =
+            (org.traincontrol.base.LayoutDiagramComponent) asked(panel, "componentAt", tile);
+        boolean live = !(Boolean) asked(panel, "isIgnored", tile) && c != null && !c.isText();
+        boolean point = railway.getReducer() != null && railway.getReducer().getPoints().containsKey(tile);
+        boolean standing = panel.locomotiveAt(tile) != null;
+        TileKey caption = railway.getCaptionTarget(tile);
+
+        return (c == null ? "-" : c.getType() + "." + c.isText() + c.isLink() + c.isSwitch() + c.isSignal()
+            + (c.getLabel() == null || c.getLabel().trim().isEmpty())) + "|" + live + point
+            + railway.getStore().isStation(tile) + standing + railway.isInTheDrawnArea(tile)
+            + (caption == null ? "-" : String.valueOf(caption.equals(tile)))
+            + (railway.getStore().getPortalPartner(tile) != null) + "|"
+            + (live ? railway.canCarryDirection(tile) + "," + railway.getRoutes(tile).size() + ","
+                + railway.getGraph().sharesAnArm(tile) : "") + "|"
+            + (standing ? String.valueOf(railway.facingChoices(tile).size()) : "");
     }
 
     /**
@@ -925,12 +961,37 @@ public class testTheEditorSaysWhatItsToolsDo
 
             final java.util.List<String> tooLong = new java.util.ArrayList<>();
             final int[] seen = {0};
+            final java.util.List<TileKey> kinds = new java.util.ArrayList<>();
+            // ONE SQUARE PER KIND (FR-209): a menu's tooltips are read off the facts `kindOf` lists and the page's counts, never
+            // off where the square is, so a square whose kind and page are seen is not built again.
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                AutonomyEditorPanel own = new AutonomyEditorPanel(railway, null, () -> { });
+                java.util.Set<String> met = new java.util.HashSet<>();
+
+                for (LayoutDiagram page : pages)
+                {
+                    for (int x = 0; x < page.getSx(); x++)
+                    {
+                        for (int y = 0; y < page.getSy(); y++)
+                        {
+                            TileKey tile = new TileKey(page.getName(), x, y);
+
+                            if (met.add(page.getName() + "|" + kindOf(own, railway, tile) + "/"
+                                + kindOf(own, railway, (TileKey) asked(own, "leaderOf", tile)))) kinds.add(tile);
+                        }
+                    }
+                }
+            });
+
+            assertTrue(kinds.size() > 100, "precondition: the frozen railway has only " + kinds.size() + " kinds of square");
 
             for (String language : new String[] {"en", "de", "fr", "nl", "it", "es", "da", "pl"})
             {
                 I18n.setLocale(new java.util.Locale(language));
 
                 final int limit = "en".equals(language) ? 100 : 130;
+                final String lang = language;
 
                 javax.swing.SwingUtilities.invokeAndWait(() ->
                 {
@@ -939,32 +1000,23 @@ public class testTheEditorSaysWhatItsToolsDo
 
                     java.util.Set<String> tips = new java.util.LinkedHashSet<>();
 
-                    for (LayoutDiagram page : pages)
+                    for (TileKey tile : kinds)
                     {
-                        AutonomyEditorPanel own = new AutonomyEditorPanel(railway, page.getName(), () -> { });
+                        AutonomyEditorPanel own = new AutonomyEditorPanel(railway, tile.getPage(), () -> { });
 
-                        for (int x = 0; x < page.getSx(); x++)
+                        for (AutonomyEditorPanel panel : new AutonomyEditorPanel[] {own, diagrams})
                         {
-                            for (int y = 0; y < page.getSy(); y++)
-                            {
-                                TileKey tile = new TileKey(page.getName(), x, y);
+                            tipsIn(panel.buildTileMenu(tile, null), tips);
+                            javax.swing.JPopupMenu facing = new javax.swing.JPopupMenu();
 
-                                for (AutonomyEditorPanel panel : new AutonomyEditorPanel[] {own, diagrams})
-                                {
-                                    tipsIn(panel.buildTileMenu(tile, null), tips);
-                                    javax.swing.JPopupMenu facing = new javax.swing.JPopupMenu();
+                            panel.addFacingItems(facing, tile);
 
-                                    panel.addFacingItems(facing, tile);
-
-                                    tipsIn(facing, tips);
-                                    tipsIn(panel.buildArrivedFromMenu(tile), tips);
-                                }
-                            }
+                            tipsIn(facing, tips);
+                            tipsIn(panel.buildArrivedFromMenu(tile), tips);
                         }
                     }
 
                     seen[0] += tips.size();
-
                     for (String tip : tips)
                     {
                         String said = plain(tip);
@@ -974,7 +1026,6 @@ public class testTheEditorSaysWhatItsToolsDo
                     }
                 });
             }
-
             assertTrue(seen[0] > 8 * 20, "precondition: the menus over the frozen railway carried only " + seen[0]
                 + " tooltips in eight languages, so the walk did not reach them");
 

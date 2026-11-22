@@ -745,6 +745,8 @@
         <test-one-class class="testPicturesAreSharpOnAScaledScreen"/>
         <test-one-class class="testTheAutoTabKeepsItsCards"/>
         <test-one-class class="testShowAddressesWithAnEditorOpen"/>
+        <test-one-class class="testTheLoaderReadsEveryFileAsBefore"/>
+        <test-one-class class="testADirectionCarriesOnAlongTheLine"/>
     </target>
     <target name="package-for-store" depends="jar">
         <property name="store.jar.name" value="TrainControl"/>

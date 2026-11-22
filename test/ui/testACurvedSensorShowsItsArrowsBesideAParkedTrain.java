@@ -43,12 +43,18 @@ public class testACurvedSensorShowsItsArrowsBesideAParkedTrain
     /** Small, Medium (drawn from the Large art) and Large. */
     private static final int[] SIZES = {30, 46, 60};
 
+    /** Screen scales, from none to 200%: the halo is drawn in the screen's own pixels (OB-507). */
+    private static final double[] SCALES = {1, 1.25, 1.5, 1.75, 2};
+
     /**
-     * On a curve and a double curve, at every orientation, facing either way, at every size: every solid red pixel of
-     * the arrows is drawn as it is with no train there.
+     * On a curve and a double curve, at every orientation, facing either way, at every size and screen scale:
+     * every solid red pixel of the arrows is drawn as it is with no train there, at a scaled screen from the sharp art
+     * (FR-243).
      *
      * MUTATION: drop `paintCurvedSensorsArrowsWhole` from `LayoutLabel.paintComponent`, or set `CURVE_ARROWS_OUT` in
-     * `docs/tools/tile-icons.py` back to 0 and redraw the icons, and this fails.
+     * `docs/tools/tile-icons.py` back to 0 and redraw the icons, and this fails; so does drawing
+     * `redOf(((ImageIcon) icon).getImage())` in `paintCurvedSensorsArrowsWhole` again, or dropping the scaled screen's
+     * pull-in of the halo in `TileOverlay.paintTrain` (Small fails at 125% and up).
      */
     @Test
     public void testTheArrowsShowInFullBesideTheTrain() throws Exception
@@ -62,19 +68,22 @@ public class testACurvedSensorShowsItsArrowsBesideAParkedTrain
         {
             for (int orientation = 0; orientation < 4; orientation++)
             {
-                for (int size : SIZES)
+                for (int run = 0; run < SCALES.length * SIZES.length; run++)
                 {
-                    BufferedImage bare = drawn(type, orientation, size, false, true);
+                    int size = SIZES[run / SCALES.length];
+                    double scale = SCALES[run % SCALES.length];
+
+                    BufferedImage bare = drawn(type, orientation, size, false, true, scale);
 
                     for (boolean facingA : new boolean[] {true, false})
                     {
-                        BufferedImage parked = drawn(type, orientation, size, true, facingA);
+                        BufferedImage parked = drawn(type, orientation, size, true, facingA, scale);
 
                         int arrows = 0, lost = 0, changed = 0;
 
-                        for (int y = size; y < 2 * size; y++)
+                        for (int y = (int) (size * scale); y < (int) (2 * size * scale); y++)
                         {
-                            for (int x = size; x < 2 * size; x++)
+                            for (int x = (int) (size * scale); x < (int) (2 * size * scale); x++)
                             {
                                 if (bare.getRGB(x, y) != parked.getRGB(x, y)) changed++;
 
@@ -86,8 +95,8 @@ public class testACurvedSensorShowsItsArrowsBesideAParkedTrain
                             }
                         }
 
-                        String what = type + " at orientation " + orientation + ", " + size + " pixels, the train facing "
-                            + (facingA ? "one way" : "the other");
+                        String what = type + " at orientation " + orientation + ", " + size + " pixels at " + scale
+                            + ", the train facing " + (facingA ? "one way" : "the other");
 
                         assertTrue(arrows > 0, "precondition: the active " + what + " draws no red arrows");
                         assertTrue(changed > size * size / 10, "precondition: no train was drawn on the " + what);
@@ -118,8 +127,8 @@ public class testACurvedSensorShowsItsArrowsBesideAParkedTrain
         {
             for (int size : SIZES)
             {
-                BufferedImage bare = drawn(componentType.FEEDBACK, orientation, size, false, true);
-                BufferedImage parked = drawn(componentType.FEEDBACK, orientation, size, true, true);
+                BufferedImage bare = drawn(componentType.FEEDBACK, orientation, size, false, true, 1);
+                BufferedImage parked = drawn(componentType.FEEDBACK, orientation, size, true, true, 1);
 
                 int arrows = 0, faded = 0;
 
@@ -173,8 +182,8 @@ public class testACurvedSensorShowsItsArrowsBesideAParkedTrain
      * painted; with the train, parked on its contact road, facing that road's first side or its second, its square
      * blocked (OB-280: on a double curve, that road only) and covered with the square behind.
      */
-    private static BufferedImage drawn(componentType type, int orientation, int size, boolean train, boolean facingA)
-        throws Exception
+    private static BufferedImage drawn(componentType type, int orientation, int size, boolean train, boolean facingA,
+        double scale) throws Exception
     {
         final BufferedImage[] shot = new BufferedImage[1];
         final JPanel[] grid = new JPanel[1];
@@ -197,14 +206,17 @@ public class testACurvedSensorShowsItsArrowsBesideAParkedTrain
         // the tiles take their pictures in an invokeLater: let those run, then paint
         SwingUtilities.invokeAndWait(() ->
         {
-            shot[0] = new BufferedImage(3 * size, 3 * size, BufferedImage.TYPE_INT_RGB);
+            int side = (int) Math.ceil(3 * size * scale);
+
+            shot[0] = new BufferedImage(side, side, BufferedImage.TYPE_INT_RGB);
 
             java.awt.Graphics2D g = shot[0].createGraphics();
 
             try
             {
                 g.setColor(Color.WHITE);
-                g.fillRect(0, 0, 3 * size, 3 * size);
+                g.fillRect(0, 0, side, side);
+                g.scale(scale, scale);
 
                 grid[0].doLayout();
                 grid[0].paint(g);

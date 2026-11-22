@@ -500,8 +500,27 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.logf("log.csNotConnected");
         } 
         
-        // Resolve linked locomotives now that we have loaded everything
+        this.linkSavedConsists();
+    }
+
+    /**
+     * Applies every saved multi-unit list.  A locomotive another list names is a member and is applied last, so its own
+     * list is the one refused when both exist, whatever the names' order.
+     */
+    public final void linkSavedConsists()
+    {
+        Set<String> named = new HashSet<>();
+
         for (Locomotive l : this.getLocomotives())
+        {
+            if (l instanceof MarklinLocomotive) named.addAll(((MarklinLocomotive) l).savedMemberNames());
+        }
+
+        List<Locomotive> order = new ArrayList<>(this.getLocomotives());
+
+        order.sort(Comparator.comparing((Locomotive l) -> named.contains(l.getName())).thenComparing(Locomotive::getName));
+
+        for (Locomotive l : order)
         {
             l.setLinkedLocomotives();
         }
@@ -3183,13 +3202,12 @@ public class MarklinControlStation implements ViewListener, ModelListener
                         new byte[]{message.getData()[6], message.getData()[7]}
                     );
 
-                    // 0x0000 means this is the central station
+                    // 0x0000 means this is the central station; the first such reply's UID gates getStationSerial, and the
+                    // window logs that serial once
                     if (payload == 0)
                     {
                         this.UID = message.extractUID();
                         this.serialNumber = (message.extractUID() - 0x43533200) / 2;
-
-                        this.logf("network.connectedCentralStation", this.serialNumber);
                     }
                 }
             });

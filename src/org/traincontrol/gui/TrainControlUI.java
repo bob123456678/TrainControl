@@ -5739,6 +5739,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     private static final java.util.regex.Pattern VERSION = java.util.regex.Pattern.compile("^v?(\\d+(?:\\.\\d+)*)");
     // The latest latency answered, null before the first answer
     private Double lastLatency;
+    // The pill's {fill, text} by band: gray while waiting, then the Go button's green, the tile highlight's yellow and the
+    // Stop button's red (FR-248)
+    private static final Color[] PILL_GRAY = {new Color(215, 215, 215), new Color(80, 80, 80)},
+        PILL_GREEN = {new Color(204, 255, 204), new Color(46, 90, 46)},
+        PILL_YELLOW = {new Color(255, 255, 128), new Color(90, 90, 30)},
+        PILL_RED = {new Color(255, 204, 204), new Color(106, 46, 46)};
+    // The serial number last logged, null until a station that gives one is connected
+    private String serialLogged;
     /** Lower right, past the function tabs: the latency pill (FR-242), else the triangles of FR-192 and FR-228. */
     private final JLabel connectionMark = new ConnectionPill();
 
@@ -5832,7 +5840,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The rows hidden with no locomotive keep their room, so the tabs and the triangle stay where they are with one
         for (Component row : new Component[] {Backward, Forward, SpeedSlider}) layout.setHonorsVisibility(row, false);
 
-        connectionMark.setFont(connectionMark.getFont().deriveFont(Font.BOLD, connectionMark.getFont().getSize2D() - 1));
+        connectionMark.setFont(connectionMark.getFont().deriveFont(Font.PLAIN, connectionMark.getFont().getSize2D() - 1));
         connectionMark.setHorizontalAlignment(JLabel.CENTER);
         holder.add(connectionMark);
         holder.add(FunctionTabs);
@@ -5858,25 +5866,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
         connectionMark.setIcon(triangle ? RowIcons.warning(16, simulated) : null);
         connectionMark.setText(triangle ? null : ms == null ? "..." : ms > 999 ? ConnectionPill.PAST_A_SECOND : ms + " ms");
-        connectionMark.setBackground(ms == null ? new Color(215, 215, 215) : ms <= PING_ORANGE ? new Color(30, 130, 60)
-            : ms <= PING_RED ? new Color(245, 200, 40) : new Color(240, 130, 30));
-        connectionMark.setForeground(ms == null ? new Color(80, 80, 80) : ms <= PING_ORANGE ? Color.WHITE : new Color(50, 30, 0));
+        Color[] band = ms == null ? PILL_GRAY : ms <= PING_ORANGE ? PILL_GREEN : ms <= PING_RED ? PILL_YELLOW : PILL_RED;
+        connectionMark.setBackground(band[0]);
+        connectionMark.setForeground(band[1]);
         connectionMark.setToolTipText(tip);
         connectionMark.setVisible(tip != null);
         connectionMark.getParent().revalidate();
     }
 
-    /** The keyboard tab's line: "Central Station 2 v4.2.13 #10415 (UDP)", leaving out a part not known (FR-242). */
+    /** The keyboard tab's line: "Central Station 2 v4.2.13 (UDP)", leaving out a part not known; the serial number goes to the log once (FR-242). */
     private void nameTheStation()
     {
         String protocol = model.isSimulation() ? null : model.getProtocol();
         String serial = model.getStationSerial();
+        if (protocol == null) serialLogged = null;
+        else if (serial != null && !serial.equals(serialLogged))
+        {
+            serialLogged = serial;
+            model.logf("log.stationSerial", serial);
+        }
+
         String firmware = model.getStationFirmware();
         java.util.regex.Matcher version = VERSION.matcher(firmware != null ? firmware : "");
         String line = model.isSimulation() ? I18n.t("ui.main.stationSimulation")
             : protocol == null ? I18n.t("ui.labelNotConnectedToCentralStation")
             : I18n.f("ui.main.station", model.isCS3() ? "3" : "2", version.find() ? " v" + version.group(1) : "",
-                serial != null ? " #" + serial : "", protocol);
+                protocol);
         latencyLabel.setText(line);
         latencyLabel.setForeground(protocol != null ? Color.BLACK : Color.RED);
     }
