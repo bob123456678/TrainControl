@@ -228,7 +228,7 @@ public class testLayoutFolderRobustness
      * route's monitor waits on the sensor's record, and a sensor re-created by its next frame is created already
      * occupied, so a "clear, then occupied" route would miss that arrival.  A sensor no route uses still goes.
      *
-     * MUTATION: drop `&& !routesUse.contains(feedbackId)` from the prune in `MarklinControlStation.syncLayouts`.
+     * MUTATION: drop `&& !inUse.contains(feedbackId)` from the prune in `MarklinControlStation.syncLayouts`.
      */
     @Test
     public void testASensorARouteUsesSurvivesThePrune() throws Exception
@@ -266,6 +266,56 @@ public class testLayoutFolderRobustness
             {
                 model.deleteRoute(route);
 
+                model.stop();
+            }
+        }
+        finally
+        {
+            Trees.delete(folder);
+        }
+    }
+
+    /**
+     * A sensor that only a loaded autonomy file's point names survives a complete read that draws it on no page, as a
+     * route's does: loading the file created it, and pruning it leaves the point watching a sensor that reads clear.
+     *
+     * MUTATION: drop the autonomy's sensors from the set the prune in `MarklinControlStation.syncLayouts` keeps.
+     */
+    @Test
+    public void testASensorTheAutonomyNamesSurvivesThePrune() throws Exception
+    {
+        File folder = onePageThatReads();
+
+        try
+        {
+            MarklinControlStation model = support.TestStation.simulated();
+
+            try
+            {
+                model.newFeedback(8, null);
+
+                // 8851 is on no page, in no route and not yet known: the file's load creates it
+                assertFalse(model.isFeedbackSet("8851"), "precondition: the database already knows sensor 8851");
+
+                model.parseAuto("{\"points\": [{\"name\": \"Prune A\", \"station\": true, \"s88\": 5},"
+                    + " {\"name\": \"Prune B\", \"station\": true, \"s88\": 8851}],"
+                    + "\"edges\": [{\"start\": \"Prune A\", \"end\": \"Prune B\"},"
+                    + " {\"start\": \"Prune B\", \"end\": \"Prune A\"}],"
+                    + "\"minDelay\": 0, \"maxDelay\": 0, \"defaultLocSpeed\": 30}");
+
+                assertTrue(model.getAutoLayout().isValid() && model.isFeedbackSet("8851"),
+                    "precondition: the autonomy file did not load with its sensor");
+
+                syncFrom(model, folder);
+
+                assertTrue(model.isFeedbackSet("8851"), "the sensor only the autonomy names was deleted because no page"
+                    + " draws it, so its point reads clear while a train stands there");
+
+                assertFalse(model.isFeedbackSet("8"), "a sensor on no page, in no route and no autonomy point survived"
+                    + " a complete read");
+            }
+            finally
+            {
                 model.stop();
             }
         }
