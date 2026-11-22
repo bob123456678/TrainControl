@@ -970,8 +970,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * 3 to be added, Use address 3 frees 10 for the station's locomotive there in the same sync, Keep changes nothing
      * and is not asked again (FR-246).
      *
-     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, ask the rename alone (drop the
-     * `askAboutAddress` branch), and the address is a second question.
+     * MUTATION: in `TrainControlUI.askAboutRenames(Component, RenameProposals)`, drop the `askAboutAddress` branch of
+     * the rename's question, and the plain rename is asked.
      */
     @Test(timeOut = 360000)
     public void testARenamedAndReAddressedLocomotiveIsOneQuestion() throws Exception
