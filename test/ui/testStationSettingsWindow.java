@@ -4600,6 +4600,179 @@ public class testStationSettingsWindow
     }
 
     /**
+     * Opened from the track diagram, a click that lets trains leave the station along its next square carries on past
+     * the plain sensor at that run's end as the session's rule does (MT-1068), after a notice owned by Station
+     * Settings, with every square past the run held lit on the track diagram while it asks and put out after; Carry
+     * On sets them (D194).
+     *
+     * MUTATION: have `AutonomyEditorPanel.light` leave the track diagram's squares unlit, or have `nextSquare` pass
+     * `offer` false, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAClickOnANextSquareCarriesOnAlongTheLine() throws Exception
+    {
+        closeTheEditor();
+
+        TileKey[] found = aLineThatCarriesOn();
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+        org.json.JSONObject start = Components.onTheEventThread(() -> session.snapshotSetup());
+        Set<TileKey> further = Components.onTheEventThread(() ->
+            session.alongTheLine(found[1], onlyRoad(found[1]), Direction.BOTH).keySet());
+
+        assertTrue(further.contains(found[2]), "precondition: opening the run carries on to nothing past the sensor");
+
+        Map<TileKey, Set<String>> wanted = new LinkedHashMap<>();
+
+        Components.onTheEventThread(() -> session.setRunDirection(found[1], onlyRoad(found[1]), Direction.BOTH, true));
+        for (TileKey each : further) wanted.put(each, armsInForce(each));
+        Components.onTheEventThread(() -> session.restoreSetup(start));
+
+        StationSettingsWindow window = openedFromTheDiagramsMenu(found[0]);
+        Set<TileKey> lit = new LinkedHashSet<>();
+
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("autosetup.ui.buttonCarryOn")))
+            .looking(dialog ->
+        {
+            for (TileKey each : further)
+            {
+                if (ui.getDiagramTileRegistry().labelsFor(each).stream().anyMatch(label -> label.isFlashOutstanding()))
+                {
+                    lit.add(each);
+                }
+            }
+        }))
+        {
+            clickOn(window, "NEXT." + side + "." + side);
+            StationDoors.current(window);
+
+            assertEquals(answering.questions().size(), 1, "the click did not ask about the squares past the run");
+            assertSame(answering.questions().get(0).owner, window, "the notice is not owned by Station Settings");
+        }
+
+        assertEquals(lit, further, "the squares past the run were not lit on the track diagram while it asked");
+        assertFalse(Components.onTheEventThread(() -> ui.getDiagramTileRegistry().labelsFor(found[2]).stream()
+            .anyMatch(label -> label.isFlashOutstanding())), "the track diagram stayed lit after the notice");
+
+        for (TileKey each : further)
+        {
+            assertEquals(armsInForce(each), wanted.get(each), each + " was set otherwise than the rule");
+        }
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * In the autonomy editor the picture's notice outlines the run and every square past it to change, and offers Carry
+     * On, This Run Alone and Cancel: Cancel changes nothing, and This Run Alone sets the run and nothing past it (D194).
+     *
+     * MUTATION: have `AutonomyEditorPanel.alongTheLine` answer This Run Alone as Carry On, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testThePicturesNoticeOffersThisRunAloneAndCancel() throws Exception
+    {
+        TileKey[] found = aLineThatCarriesOn();
+        org.traincontrol.automationui.TilePorts.Side side = sideBetween(found[0], found[1]);
+        Set<TileKey> run = Components.onTheEventThread(() ->
+            new LinkedHashSet<>(session.getGraph().runOf(found[1]).getTiles()));
+        Set<TileKey> lit = new LinkedHashSet<>(run);
+        lit.addAll(Components.onTheEventThread(() ->
+            session.alongTheLine(found[1], onlyRoad(found[1]), Direction.BOTH).keySet()));
+        Map<TileKey, Set<String>> before = new LinkedHashMap<>();
+        for (TileKey each : lit) before.put(each, armsInForce(each));
+
+        StationSettingsWindow window = StationDoors.open(panel, found[0]);
+        Set<TileKey> outlined = new LinkedHashSet<>();
+        List<Answering.Question> asked = new java.util.ArrayList<>();
+
+        for (String answer : new String[] {I18n.t("ui.cancel"), I18n.t("autosetup.ui.buttonThisRunAlone")})
+        {
+            try (Answering answering = Answering.start(message -> Answering.press(answer)).looking(dialog ->
+            {
+                for (TileKey each : lit) if (panel.isOutlined(each)) outlined.add(each);
+            }))
+            {
+                clickOn(window, "NEXT." + side + "." + side);
+                StationDoors.current(window);
+                asked.addAll(answering.questions());
+            }
+
+            for (TileKey each : lit)
+            {
+                boolean set = answer.equals(I18n.t("autosetup.ui.buttonThisRunAlone")) && run.contains(each);
+                assertEquals(!armsInForce(each).equals(before.get(each)), set, each + " changed or not after " + answer);
+            }
+        }
+
+        assertEquals(asked.size(), 2, "the picture did not ask each time");
+        assertEquals(asked.get(0).message, I18n.t("autosetup.ui.alongTheLine"), "the notice's words");
+        assertEquals(asked.get(0).buttons, Arrays.asList(I18n.t("autosetup.ui.buttonCarryOn"),
+            I18n.t("autosetup.ui.buttonThisRunAlone"), I18n.t("ui.cancel")), "the notice's answers");
+        assertEquals(outlined, lit, "the squares to change were not all outlined in the editor while it asked");
+        assertFalse(Components.onTheEventThread(() -> panel.isOutlined(found[2])), "the outline outlived the notice");
+
+        StationDoors.close(window);
+    }
+
+    /**
+     * A station with a following square whose run ends, away from the station, at a sensor that is no station with a
+     * run past it, both runs set one way toward the station: {station, square, the square past the sensor, the sensor}.
+     */
+    private static TileKey[] aLineThatCarriesOn()
+    {
+        TileKey[] found = Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automationui.TileGraph graph = session.getGraph();
+
+            for (TileKey each : session.getReducer().getPoints().keySet())
+            {
+                if (!PAGE.equals(each.getPage()) || !session.getStore().isStation(each)) continue;
+
+                for (org.traincontrol.automationui.TilePorts.Side side : SIDES)
+                {
+                    org.traincontrol.automationui.TileGraph.Run run = graph.runOf(each.beside(side));
+
+                    if (run == null || !touches(each, side) || !touches(each.beside(side), side.opposite())) continue;
+
+                    TileKey far = each.equals(run.getStart()) ? run.getEnd()
+                        : each.equals(run.getEnd()) ? run.getStart() : null;
+
+                    if (far == null || far.equals(each) || session.getStore().isStation(far)
+                        || !graph.getTiles().get(far).isFeedback()) continue;
+
+                    for (org.traincontrol.automationui.TilePorts.Side out : SIDES)
+                    {
+                        TileKey past = far.beside(out);
+
+                        if (graph.runOf(past) != null && graph.runOf(past) != run && touches(far, out)
+                            && touches(past, out.opposite()))
+                        {
+                            return new TileKey[] {each, each.beside(side), past, far};
+                        }
+                    }
+                }
+            }
+
+            throw new AssertionError("precondition: no station on " + PAGE + " whose next run ends at a plain sensor with"
+                + " a run past it");
+        });
+
+        runAwayFrom(found[1], sideBetween(found[0], found[1]));
+        Components.onTheEventThread(() ->
+        {
+            org.traincontrol.automationui.TilePorts.Route theirs = session.getRoutes(found[2]).get(onlyRoad(found[2]));
+            boolean aIsTheSensor = theirs.getA() == session.getGraph().sideTowardNeighbour(found[2], found[3]);
+
+            return session.setRunDirection(found[2], onlyRoad(found[2]),
+                aIsTheSensor ? Direction.TOWARD_A : Direction.TOWARD_B);
+        });
+
+        return found;
+    }
+
+    private static final org.traincontrol.automationui.TilePorts.Side[] SIDES =
+        org.traincontrol.automationui.TilePorts.Side.values();
+
+    /**
      * From an open run, a click on either arm of a following square shuts that arm on the whole run: the square leaves
      * by the other, the picture agrees, and the run's first square is no longer open both ways, with no opposite-ways
      * warning.

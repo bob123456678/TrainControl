@@ -1583,7 +1583,7 @@ public final class StationSettingsWindow extends StationWindowBase
             }
 
             final JComboBox<String> choice = same ? departChoices.get(entry.getKey())
-                : new Choice(at -> actAlone(() -> editor.setRunDirection(tile, entry.getKey(), answers.get(at))),
+                : new Choice(at -> actAlone(() -> editor.setRunDirection(tile, entry.getKey(), answers.get(at), false)),
                     labels.toArray(new String[0]));
 
             choice.setName("station.depart." + y);
@@ -1804,14 +1804,10 @@ public final class StationSettingsWindow extends StationWindowBase
     private String[] nextSquare(StationPicture.Mark mark, boolean press)
     {
         final TileKey square = mark.square;
-
         String name = editor.describeTile(square);
-
         Map<RouteId, TilePorts.Route> routes = editor.session.getRoutes(square);
         List<TilePorts.Side> arms = AutonomyEditorPanel.armsOf(routes);
-
         int at = arms.indexOf(mark.side);
-
         if (!editor.session.canCarryDirection(square) || at < 0) return said(null, I18n.f("autosetup.ui.stationPicNextCannot", name));
 
         // As the picture shows it: a run pointing opposite ways is drawn closed, whatever the square stores
@@ -1823,13 +1819,12 @@ public final class StationSettingsWindow extends StationWindowBase
         {
             final Map.Entry<RouteId, TilePorts.Route> only = routes.entrySet().iterator().next();
             final Direction wanted = TileGraph.answerFor(only.getValue(), arms, open ? mask & ~(1 << at) : mask | 1 << at);
-
             if (!TileGraph.directionIsPossible(wanted, only.getValue()))
             {
                 return said(null, I18n.f("autosetup.ui.stationPicNextCannot", name));
             }
 
-            if (press) actAlone(() -> editor.setRunDirection(square, only.getKey(), wanted));
+            if (press) actAlone(() -> editor.setRunDirection(square, only.getKey(), wanted, true));
         }
         else if (press)
         {

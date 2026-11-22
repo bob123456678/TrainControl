@@ -6101,24 +6101,64 @@ public class AutonomyEditorPanel extends JPanel
         {
             if (refusedWhileRunning()) return;
 
-            setRunDirection(tile, routeId, direction);
+            setRunDirection(tile, routeId, direction, false);
         });
 
         return item;
     }
 
-    /** Sets which way trains may run over a square, on the run it belongs to. */
-    void setRunDirection(TileKey tile, RouteId routeId, Direction direction)
+    /**
+     * Sets which way trains may run over a square's run; `offer` first asks whether to carry it on down the line (D194).
+     */
+    void setRunDirection(TileKey tile, RouteId routeId, Direction direction, boolean offer)
     {
+        Boolean along = offer ? alongTheLine(tile, routeId, direction) : Boolean.FALSE;
+        if (along == null) return;
         // Set on the run, not the tile: a run has one direction.
-        int set = session.setRunDirection(tile, routeId, direction);
-
+        int set = session.setRunDirection(tile, routeId, direction, along);
         if (set == 0) say(hint, I18n.t("autosetup.ui.oneWayNoPath"));
-
         refresh();
 
         // Here, beside the write, through the light door (MT-334).
         annotationsChanged();
+    }
+
+    /**
+     * Whether to carry a run's direction on along the line: false when nothing past it changes, else asked; null Cancel.
+     */
+    private Boolean alongTheLine(TileKey tile, RouteId routeId, Direction direction)
+    {
+        Set<TileKey> further = session.alongTheLine(tile, routeId, direction).keySet();
+        if (further.isEmpty()) return false;
+        Set<TileKey> lit = new LinkedHashSet<>(session.getGraph().runOf(tile).getTiles());
+        lit.addAll(further);
+        light(lit, true);
+        try
+        {
+            Object[] answers = {I18n.t("autosetup.ui.buttonCarryOn"), I18n.t("autosetup.ui.buttonThisRunAlone"),
+                I18n.t("ui.cancel")};
+            int answer = JOptionPane.showOptionDialog(owner(), I18n.t("autosetup.ui.alongTheLine"),
+                I18n.t("autosetup.ui.titleAlongTheLine"), JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.QUESTION_MESSAGE, null, answers, answers[0]);
+            return answer == 0 ? Boolean.TRUE : answer == 1 ? Boolean.FALSE : null;
+        }
+        finally
+        {
+            light(lit, false);
+        }
+    }
+
+    /** Lights squares where this surface draws, or puts them out: outlined in the editor, yellow on the track diagram. */
+    private void light(Set<TileKey> squares, boolean on)
+    {
+        if (menuOnly && parentWindow() != null)
+        {
+            org.traincontrol.gui.DiagramHighlights.hold(parentWindow(), squares, on);
+            return;
+        }
+        noticeOutline.clear();
+        if (on) noticeOutline.addAll(squares);
+        redrawTheMarks();
     }
 
     /** What this sensor has been designated as, or null when it is not a station. */

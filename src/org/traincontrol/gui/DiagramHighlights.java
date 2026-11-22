@@ -1,6 +1,7 @@
 package org.traincontrol.gui;
 
 import java.awt.Color;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -13,13 +14,29 @@ import org.traincontrol.gui.TrainControlUI.AddressedAs;
 /**
  * The route editor's "Highlight on Diagram" (MT-462): flashes the squares, on any page, that a route's addresses name.
  */
-final class DiagramHighlights
+public final class DiagramHighlights
 {
+    /** Long enough for anyone to find the squares; the question ends the highlight itself once it is answered. */
+    private static final int HOLD_MS = 30 * 60 * 1000;
+
     private final TrainControlUI ui;
 
     DiagramHighlights(TrainControlUI ui)
     {
         this.ui = ui;
+    }
+
+    /** Holds squares lit on the track diagram while a question about them is up, or puts them out. */
+    public static void hold(TrainControlUI ui, Collection<TileGraph.TileKey> squares, boolean on)
+    {
+        for (TileGraph.TileKey square : squares)
+        {
+            for (LayoutLabel label : ui.getDiagramTileRegistry().labelsFor(square))
+            {
+                if (on) label.flashHighlight(org.traincontrol.util.ImageUtil.HIGHLIGHT, HOLD_MS);
+                else label.endFlash();
+            }
+        }
     }
 
     /** Whether a tile is what an address of this kind names; a lamp answers to an accessory address (`isSignal()`). */
