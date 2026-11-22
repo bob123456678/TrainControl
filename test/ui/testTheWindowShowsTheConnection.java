@@ -405,9 +405,9 @@ public class testTheWindowShowsTheConnection
     }
 
     /**
-     * The keyboard tab's line names the station as "Central Station 2 v4.2.13 #10415 (UDP)", leaving out a part not
-     * known with its space; v is the leading dotted number of what the station says; "not connected" with no station,
-     * and "Simulation" in a simulation (FR-242).
+     * The keyboard tab's line names the station as "Central Station 3 v2.6.1 #1234 (TCP)", leaving out a part not
+     * known with its space; v is the leading dotted number of what a CS3 says; "not connected" with no station, and
+     * "Simulation" in a simulation (FR-242).
      *
      * MUTATION: leave the serial number out of `TrainControlUI.nameTheStation`, and this fails.
      */
@@ -421,10 +421,9 @@ public class testTheWindowShowsTheConnection
 
         try
         {
-            Object[][] cases = {{false, "4.2.13", "10415", "Central Station 2 v4.2.13 #10415 (UDP)"},
-                {false, null, "10415", "Central Station 2 #10415 (UDP)"},
-                {false, "v4.2", null, "Central Station 2 v4.2 (UDP)"},
-                {true, "2.6.1 (Build 3)", null, "Central Station 3 v2.6.1 (UDP)"},
+            Object[][] cases = {{false, null, "10415", "Central Station 2 #10415 (UDP)"},
+                {true, "2.6.1 (Build 3)", "1234", "Central Station 3 v2.6.1 #1234 (UDP)"},
+                {true, "v2.6", null, "Central Station 3 v2.6 (UDP)"},
                 {true, null, null, "Central Station 3 (UDP)"}};
 
             for (Object[] c : cases)
@@ -445,34 +444,39 @@ public class testTheWindowShowsTheConnection
     }
 
     /**
-     * The serial number the station's ping reply gives (UID 0x4353835E from device type 0x0000 is 10415) reaches the
-     * line, ahead of one a file gave; a type 0x0000 reply from a UID that is not a Central Station's (a booster) does
-     * not, and the file's shows (FR-242).
+     * With no serial number from a file, the one the station's ping reply gives (UID 0x4353835E from device type 0x0000
+     * is 10415) reaches the line; a file's comes first; a type 0x0000 reply from a UID that is not a Central Station's
+     * (a booster, or a CS3, whose track processor's UID starts 0x6373) gives none (FR-242).
      *
-     * MUTATION: answer only the files' serial number in `MarklinControlStation.getStationSerial`, or drop its
-     * `(this.UID >>> 16) == 0x4353`, and this fails.
+     * MUTATION: drop `(this.UID >>> 16) == 0x4353` from `MarklinControlStation.getStationSerial`, and this fails.
      */
     @Test(timeOut = 60000)
     public void testThePingRepliesSerialNumberReachesTheLine() throws Exception
     {
         model.setNetworkCommState(true);
-        Reflect.set(MarklinControlStation.class, model, "stationSerial", "999");
 
         try
         {
-            pingReply(0x47, 0x42, 0x00, 0x2a);
-            assertTrue(Components.waitFor(() -> uid() != 0, 10000), "precondition: the booster's reply was recorded");
-            assertEquals(latency(), "Central Station 2 #999 (UDP)", "a booster's ping reply reached the line");
+            Object[][] cases = {{new int[] {0x47, 0x42, 0x00, 0x2a}, false, null, "Central Station 2 (UDP)"},
+                {new int[] {0x63, 0x73, 0x04, 0xd2}, true, null, "Central Station 3 (UDP)"},
+                {new int[] {0x43, 0x53, 0x83, 0x5e}, false, "999", "Central Station 2 #999 (UDP)"},
+                {new int[] {0x43, 0x53, 0x83, 0x5e}, false, null, "Central Station 2 #10415 (UDP)"}};
 
-            Reflect.set(MarklinControlStation.class, model, "UID", 0);
-            Reflect.set(MarklinControlStation.class, model, "serialNumber", 0);
-            pingReply(0x43, 0x53, 0x83, 0x5e);
-            assertTrue(Components.waitFor(() -> "10415".equals(model.getStationSerial()), 10000),
-                "the ping reply's serial number was not taken: " + model.getStationSerial());
-            assertEquals(latency(), "Central Station 2 #10415 (UDP)");
+            for (Object[] c : cases)
+            {
+                Reflect.set(MarklinControlStation.class, model, "UID", 0);
+                Reflect.set(MarklinControlStation.class, model, "serialNumber", 0);
+                Reflect.set(MarklinControlStation.class, model, "isCS3", c[1]);
+                Reflect.set(MarklinControlStation.class, model, "stationSerial", c[2]);
+                pingReply((int[]) c[0]);
+                assertTrue(Components.waitFor(() -> uid() != 0, 10000), "precondition: the reply was recorded");
+                assertEquals(latency(), c[3], "the line after a ping reply from "
+                    + java.util.Arrays.toString((int[]) c[0]) + ", file serial " + c[2]);
+            }
         }
         finally
         {
+            Reflect.set(MarklinControlStation.class, model, "isCS3", false);
             Reflect.set(MarklinControlStation.class, model, "UID", 0);
             Reflect.set(MarklinControlStation.class, model, "serialNumber", 0);
             Reflect.set(MarklinControlStation.class, model, "stationSerial", null);

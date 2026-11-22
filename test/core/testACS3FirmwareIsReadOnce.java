@@ -66,32 +66,43 @@ public class testACS3FirmwareIsReadOnce
     }
 
     /**
-     * A device file (geraet.vrs) gives the firmware and serial number where it states them: a CS2's `.guivers` without
-     * its "GUI:" label and `.sernum`, CRLF lines too; a field missing, blank or 0 is none (FR-242).
+     * A device file (geraet.vrs) states the serial number on its `.sernum` line, a CS2's and a real CS3 plus's alike,
+     * CRLF lines too; only the CS3's names a CS3; a serial number missing, blank or 0 is none (FR-242).
      *
-     * MUTATION: keep the "GUI:" label in `CS2File.deviceField`, or take a serial number of 0, and this fails.
+     * MUTATION: take a serial number of 0 in `CS2File.known`, and this fails.
      */
     @Test
-    public void testTheDeviceFileSaysTheFirmwareAndSerialNumber()
+    public void testTheDeviceFileSaysTheSerialNumber()
     {
-        String cs2 = "[geraet]\nversion\n .minor=1\ngeraet\n .sernum=12345\n .hardvers=HW:03.04\n .gfpvers=GFP:3.85\n"
-            + " .guivers=GUI:4.2.13\n .articleno=60215\n .produzent=Maerklin\n .produkt=Central Station 2\n";
+        String cs2 = "[geraet]\nversion\n .minor=1\ngeraet\n .sernum=4321\n .gfpuid=1a2b3c4d\n .guiuid=1a2b3c4e\n"
+            + " .hardvers=HW:2.0\n";
         String cs3 = new String(StandInStation.CS3_DEVICE, java.nio.charset.StandardCharsets.UTF_8);
 
-        assertEquals(CS2File.deviceField(cs2, "guivers"), "4.2.13", "a CS2's firmware");
-        assertEquals(CS2File.deviceField(cs2, "sernum"), "12345", "a CS2's serial number");
-        assertEquals(CS2File.deviceField(cs2.replace("\n", "\r\n"), "guivers"), "4.2.13", "CRLF lines");
-        assertEquals(CS2File.deviceField(cs3, "produkt"), "Central Station 3 plus", "a CS3's product");
-        assertNull(CS2File.deviceField(cs3, "guivers"), "a CS3 file with no firmware");
-        assertNull(CS2File.deviceField(cs3, "sernum"), "a CS3 file with no serial number");
-        assertNull(CS2File.deviceField("geraet\n .sernum=0\n .guivers=\n", "sernum"), "a serial number of 0");
-        assertNull(CS2File.deviceField("geraet\n .sernum=0\n .guivers=\n", "guivers"), "a blank firmware");
-        assertNull(CS2File.deviceField("", "sernum"), "an empty file");
+        assertEquals(CS2File.deviceSerial(cs2), "4321", "a CS2's serial number");
+        assertEquals(CS2File.deviceSerial(cs2.replace("\n", "\r\n")), "4321", "CRLF lines");
+        assertEquals(CS2File.deviceSerial(cs3), "1234", "a CS3's serial number");
+        assertTrue(cs3.contains(CS2File.CS3_PRODUCT) && !cs2.contains(CS2File.CS3_PRODUCT), "the CS3 check");
+        assertNull(CS2File.deviceSerial("geraet\n .sernum=0\n"), "a serial number of 0");
+        assertNull(CS2File.deviceSerial("geraet\n .sernum=\n"), "a blank serial number");
+        assertNull(CS2File.deviceSerial(""), "an empty file");
+    }
+
+    /** The firmware and serial number a CS3 sync keeps, its device file `device` and its info `info`. */
+    private static String afterSync(byte[] device, String info) throws Exception
+    {
+        java.util.function.BiFunction<String, Integer, byte[]> cs3 = StandInStation.cs3("260", info);
+
+        try (StationRig rig = new StationRig(folder(),
+            (path, n) -> path.endsWith("geraet.vrs") ? device : cs3.apply(path, n)))
+        {
+            assertTrue(rig.model.syncWithCS2() >= 0, "the sync fails: " + rig.model.getLastSyncError());
+            return rig.model.getStationFirmware() + " " + rig.model.getStationSerial();
+        }
     }
 
     /**
-     * A CS3 sync keeps the firmware and serial number its info gives, for the window's station line; a serial number
-     * of 0 is left out (FR-242).
+     * A CS3 sync keeps the firmware its info gives, and the serial number its device file gives, else its info's; an
+     * info serial number of 0 is none (FR-242).
      *
      * MUTATION: drop the serial number from `logTheFirmware`'s call in cs3Firmware, and this fails.
      */
@@ -99,19 +110,13 @@ public class testACS3FirmwareIsReadOnce
     public void testACS3SyncKeepsItsInfosFirmwareAndSerialNumber() throws Exception
     {
         String info = "{\"softwareVersion\":\"2.6.1 (Build 3)\",\"serialNumber\":\"60226123\"}";
+        byte[] noSerial =
+            "[geraet]\ngeraet\n .produkt=Central Station 3 plus\n".getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
-        try (StationRig rig = new StationRig(folder(), StandInStation.cs3("260", info)))
-        {
-            assertTrue(rig.model.syncWithCS2() >= 0, "the sync fails: " + rig.model.getLastSyncError());
-            assertEquals(rig.model.getStationFirmware(), "2.6.1 (Build 3)");
-            assertEquals(rig.model.getStationSerial(), "60226123");
-        }
-
-        try (StationRig rig = new StationRig(folder(), StandInStation.cs3("260", info.replace("60226123", "0"))))
-        {
-            assertTrue(rig.model.syncWithCS2() >= 0, "the sync fails: " + rig.model.getLastSyncError());
-            assertNull(rig.model.getStationSerial(), "a serial number of 0 was kept");
-        }
+        assertEquals(afterSync(StandInStation.CS3_DEVICE, info), "2.6.1 (Build 3) 1234",
+            "the device file's serial first");
+        assertEquals(afterSync(noSerial, info), "2.6.1 (Build 3) 60226123", "the info's with none in the file");
+        assertEquals(afterSync(noSerial, info.replace("60226123", "0")), "2.6.1 (Build 3) null", "an info serial of 0");
     }
 
     /** 2.6.1: the sync asks info once and reads the 2.6 list once (FR-207); the two actions add one read of it each. */

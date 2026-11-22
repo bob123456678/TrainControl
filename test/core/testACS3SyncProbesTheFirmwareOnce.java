@@ -44,8 +44,8 @@ public class testACS3SyncProbesTheFirmwareOnce
         switch (path)
         {
             case "/config/geraet.vrs": return cs3 ? StandInStation.CS3_DEVICE
-                : "[geraet]\ngeraet\n .sernum=12345\n .guivers=GUI:4.2.13\n .produkt=Central Station 2\n"
-                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                : ("[geraet]\nversion\n .minor=1\ngeraet\n .sernum=12345\n .gfpuid=1a2b3c4d\n .guiuid=1a2b3c4e\n"
+                + " .hardvers=HW:2.0\n").getBytes(java.nio.charset.StandardCharsets.UTF_8);
             case "/app/api/locos": return "260".equals(kind) ? StandInStation.file("test/CS3_loks_v260.json") : null;
             case "/app/api/loks": return "250".equals(kind) ? StandInStation.file("test/CS3_loks.json") : null;
             case "/app/api/mags": return cs3 ? StandInStation.file("test/CS3_mags.json") : null;
@@ -97,8 +97,7 @@ public class testACS3SyncProbesTheFirmwareOnce
     }
 
     /**
-     * A sync keeps the firmware and serial number the device file states, and forgets them for a station whose file
-     * states none (FR-242).
+     * A sync keeps the serial number the device file states, a CS2's and a CS3's, and no firmware for a CS2 (FR-242).
      *
      * MUTATION: leave the device file's fields unread in `MarklinControlStation`'s sync, and this fails.
      */
@@ -106,12 +105,12 @@ public class testACS3SyncProbesTheFirmwareOnce
     public void testASyncKeepsWhatTheDeviceFileSays() throws Exception
     {
         sync("cs2");
-        assertEquals(model.getStationFirmware(), "4.2.13", "a CS2's firmware");
+        assertNull(model.getStationFirmware(), "a CS2's firmware");
         assertEquals(model.getStationSerial(), "12345", "a CS2's serial number");
 
         sync("260");
-        assertNull(model.getStationFirmware(), "a station that states no firmware kept the last one's");
-        assertNull(model.getStationSerial(), "a station that states no serial number kept the last one's");
+        assertNull(model.getStationFirmware(), "a CS3 whose info is not there");
+        assertEquals(model.getStationSerial(), "1234", "a CS3's serial number");
     }
 
     /** A CS2 never reaches the CS3 interface (green before and after: the CS2 path is not changed). */

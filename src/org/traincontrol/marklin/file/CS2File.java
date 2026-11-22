@@ -455,15 +455,11 @@ public final class CS2File
         return fetchText(deviceInfoUrl).contains(CS3_PRODUCT);
     }
 
-    /**
-     * A field of a station's device file (geraet.vrs), from its ` .key=value` line: the value without a leading label
-     * such as "GUI:", or null where the line is missing, blank or 0 (FR-242).
-     */
-    public static String deviceField(String deviceFile, String key)
+    /** The serial number a CS2's or CS3's device file (geraet.vrs) states on its ` .sernum=` line, or null (FR-242). */
+    public static String deviceSerial(String deviceFile)
     {
-        java.util.regex.Matcher line = Pattern.compile("^\\s*\\." + Pattern.quote(key) + "=(.*)$", Pattern.MULTILINE)
-            .matcher(deviceFile);
-        return known(line.find() ? line.group(1).trim().replaceFirst("^[A-Za-z]+:", "") : null);
+        java.util.regex.Matcher line = Pattern.compile("^\\s*\\.sernum=(.*)$", Pattern.MULTILINE).matcher(deviceFile);
+        return known(line.find() ? line.group(1) : null);
     }
 
     /** What a station says of itself, trimmed; null for nothing, blank or 0. */
