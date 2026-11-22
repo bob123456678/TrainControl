@@ -500,8 +500,27 @@ public class MarklinControlStation implements ViewListener, ModelListener
             this.logf("log.csNotConnected");
         } 
         
-        // Resolve linked locomotives now that we have loaded everything
+        this.linkSavedConsists();
+    }
+
+    /**
+     * Applies every saved multi-unit list.  A locomotive another list names is a member and is applied last, so its own
+     * list is the one refused when both exist, whatever the names' order.
+     */
+    public void linkSavedConsists()
+    {
+        Set<String> named = new HashSet<>();
+
         for (Locomotive l : this.getLocomotives())
+        {
+            if (l instanceof MarklinLocomotive) named.addAll(((MarklinLocomotive) l).savedMemberNames());
+        }
+
+        List<Locomotive> order = new ArrayList<>(this.getLocomotives());
+
+        order.sort(Comparator.comparing((Locomotive l) -> named.contains(l.getName())).thenComparing(Locomotive::getName));
+
+        for (Locomotive l : order)
         {
             l.setLinkedLocomotives();
         }

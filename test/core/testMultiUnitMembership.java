@@ -716,4 +716,63 @@ public class testMultiUnitMembership
             deleteAll("MU head G", "MU member G1", "MU member G1 renamed");
         }
     }
+
+    /**
+     * A locomotive that is a member of a multi-unit cannot head one (the no-nesting rule, from the member's side).
+     *
+     * MUTATION: drop the `isLocLinkedToOthers` refusal in `MarklinLocomotive.applyLinkedLocomotives` and the member keeps its list.
+     */
+    @Test
+    public void testAMemberCannotBecomeAHead()
+    {
+        MarklinLocomotive head = model.newDCCLocomotive("MU head N", 81);
+        MarklinLocomotive member = model.newDCCLocomotive("MU member N", 82);
+        MarklinLocomotive other = model.newDCCLocomotive("MU other N", 83);
+
+        try
+        {
+            link(head, member);
+            link(member, other);
+
+            assertFalse(member.hasLinkedLocomotives(), "a member was given a multi-unit of its own");
+            assertTrue(head.isLinkedTo(member), "and the head lost the member");
+        }
+        finally
+        {
+            deleteAll("MU head N", "MU member N", "MU other N");
+        }
+    }
+
+    /**
+     * Saved lists that nest (A names B, B names C) give one result whatever the names' order: the outer head keeps the
+     * member, the member's own list is refused.  Two namings, so a pass in name order cannot satisfy both.
+     *
+     * MUTATION: make `linkSavedConsists` apply in `getLocomotives()` order and one of the two namings loses the member.
+     */
+    @Test
+    public void testSavedNestedListsGiveTheSameResultInEitherNameOrder()
+    {
+        String[][] orders = { { "MU a outer", "MU z inner", "MU m leaf" }, { "MU z outer", "MU a inner", "MU m leaf" } };
+
+        for (String[] names : orders)
+        {
+            MarklinLocomotive outer = model.newDCCLocomotive(names[0], 84);
+            MarklinLocomotive inner = model.newDCCLocomotive(names[1], 85);
+            MarklinLocomotive leaf = model.newDCCLocomotive(names[2], 86);
+
+            try
+            {
+                outer.preSetLinkedLocomotives(new HashMap<>(java.util.Collections.singletonMap(inner.getName(), 1.0)));
+                inner.preSetLinkedLocomotives(new HashMap<>(java.util.Collections.singletonMap(leaf.getName(), 1.0)));
+                model.linkSavedConsists();
+
+                assertTrue(outer.isLinkedTo(inner), "the outer head lost its member, names " + java.util.Arrays.toString(names));
+                assertFalse(inner.hasLinkedLocomotives(), "the member kept its own list, names " + java.util.Arrays.toString(names));
+            }
+            finally
+            {
+                deleteAll(names);
+            }
+        }
+    }
 }
