@@ -1363,7 +1363,7 @@ public class RouteEditorFrame extends JFrame
     /** Says how the two halves of this window fit together. */
     private void showHelp()
     {
-        JOptionPane.showMessageDialog(this, I18n.t("route.ui.frameHelp"),
+        JOptionPane.showMessageDialog(this, DetailsArea.scrolling(I18n.t("route.ui.frameHelp"), 20),
             I18n.t("ui.help"), JOptionPane.INFORMATION_MESSAGE);
     }
 

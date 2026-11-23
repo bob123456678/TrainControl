@@ -769,6 +769,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         FlatLightLaf.setup();
+        UIManager.put("OptionPaneUI", org.traincontrol.gui.widgets.WrappingOptionPaneUI.class.getName());
         //FlatIntelliJLaf.setup();
 
         // Also as a UI default: a re-installed look and feel consults this key, not the system properties above.
@@ -19758,19 +19759,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         });
     }
 
-    /** An error with its answers on owner's window, wrapped for a long reason; whether the first answer was chosen. */
+    /** An error with its answers on owner's window; whether the first answer was chosen. */
     private boolean choseFirst(Component owner, String message, String title, Object[] options, boolean onTop)
     {
         JOptionPane pane = new JOptionPane(message, JOptionPane.ERROR_MESSAGE, JOptionPane.DEFAULT_OPTION, null, options,
-            options[0])
-        {
-            @Override
-            public int getMaxCharactersPerLineCount()
-            {
-                return 70;
-            }
-        };
-
+            options[0]);
         JDialog dialog = pane.createDialog(owner, title);
 
         applyWindowIcon(dialog);

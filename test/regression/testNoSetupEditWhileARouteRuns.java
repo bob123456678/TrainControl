@@ -906,7 +906,7 @@ public class testNoSetupEditWhileARouteRuns
 
             Map<String, Object[]> doors = new java.util.LinkedHashMap<>();
 
-            for (String door : new String[] {"duplicate", "rename", "initialize", "delete"})
+            for (String door : new String[] {"newConfiguration", "saveAs", "rename", "initialize", "delete"})
             {
                 doors.put("Autonomy: " + door, new Object[] {refusal, (Runnable) () -> call(panel, door)});
             }
@@ -986,7 +986,7 @@ public class testNoSetupEditWhileARouteRuns
             }
 
             // AT REST, the doors that only ask first ask - answered No or Cancel by the answering thread
-            for (String name : new String[] {"Autonomy: duplicate", "Autonomy: rename", "Layout: "
+            for (String name : new String[] {"Autonomy: saveAs", "Autonomy: rename", "Layout: "
                 + I18n.t("ui.main.toolbar.deleteCurrentPage")})
             {
                 int from = answering.count();
