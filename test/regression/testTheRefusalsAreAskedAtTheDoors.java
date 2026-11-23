@@ -153,7 +153,7 @@ public class testTheRefusalsAreAskedAtTheDoors
             "an import writes the setup's shared half under an open editor"},
         {"    public void exportConfiguration()", EDITOR,
             "an export folds the running railway into the setup first"},
-        {"    public void duplicate()", EDITOR,
+        {"    private void copyConfiguration(", EDITOR,
             "a new configuration is written into the setup an open editor holds"},
         {"    public void rename()", EDITOR,
             "renaming the running configuration leaves the editor's Cancel restoring a name the window no longer runs"},

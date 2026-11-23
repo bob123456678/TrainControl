@@ -114,7 +114,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
         onItsOwnWindow(ui ->
         {
             List<String> list = Arrays.asList(t("autosetup.ui.menuNewConfiguration"),
-                t("autosetup.ui.menuRenameConfiguration"), t("autosetup.ui.menuDeleteConfiguration"), DIVIDER,
+                t("autosetup.ui.menuSaveAsConfiguration"), t("autosetup.ui.menuRenameConfiguration"), t("autosetup.ui.menuDeleteConfiguration"), DIVIDER,
                 t("autosetup.ui.btnImportConfiguration"), t("autosetup.ui.btnExportConfiguration"), DIVIDER,
                 t("autosetup.ui.menuUnloadAutonomy"), t("autosetup.ui.menuDeleteSetup"));
 
@@ -159,6 +159,10 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
                         t("autosetup.ui.menuNewConfiguration") + " | " + t("autosetup.ui.promptConfigurationName")
                             + " | "), said + "New Configuration... does not ask for the copy's name: " + doors.seen);
 
+                    assertTrue(doors.click(manageItem(ui, where, "autosetup.ui.menuSaveAsConfiguration")).startsWith(
+                        t("autosetup.ui.menuSaveAsConfiguration") + " | " + t("autosetup.ui.promptConfigurationName")
+                            + " | "), said + "Save As... does not ask for the copy name: " + doors.seen);
+
                     assertTrue(doors.click(manageItem(ui, where, "autosetup.ui.menuRenameConfiguration"))
                         .endsWith(" | " + t("autosetup.ui.promptConfigurationName") + " | " + loaded), said
                         + "Rename... does not ask for a new name for " + loaded + ": " + doors.seen);
@@ -189,6 +193,14 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
 
                     assertTrue(Components.waitFor(() -> ui.getActiveDiagramConfiguration() == null, 30000),
                         said + "Stop Using Autonomy did not unload " + loaded);
+
+                    // WITH NONE LOADED, Save As is grayed and says why
+                    JMenuItem saveAs = manageItem(ui, where, "autosetup.ui.menuSaveAsConfiguration");
+
+                    assertFalse(saveAs.isEnabled(), said + "Save As... is enabled with no configuration loaded");
+
+                    assertTrue(String.valueOf(saveAs.getToolTipText()).contains(t("autosetup.ui.tooltipNeedsLoaded")),
+                        said + "Save As... does not say a configuration must be loaded first");
 
                     SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().load(loaded, false));
 
@@ -259,7 +271,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
             // BEFORE the change, with the debug export a debug window shows
             List<String> before = new ArrayList<>(Arrays.asList("autosetup.ui.btnImportConfiguration",
                 "autosetup.ui.btnExportConfiguration", "autosetup.ui.menuNewConfiguration",
-                "autosetup.ui.menuRenameConfiguration", "autosetup.ui.menuDeleteConfiguration",
+                "autosetup.ui.menuSaveAsConfiguration", "autosetup.ui.menuRenameConfiguration", "autosetup.ui.menuDeleteConfiguration",
                 "autosetup.ui.menuUnloadAutonomy", "autosetup.ui.menuDeleteSetup", "autosetup.ui.menuGlobalSettings",
                 "autosetup.ui.menuExportRawGraph"));
 
@@ -296,7 +308,8 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
             List<String> expected = new ArrayList<>();
 
             // BEFORE the change, with the debug export
-            for (String key : new String[] {"autosetup.ui.menuNewConfiguration", "autosetup.ui.menuRenameConfiguration",
+            for (String key : new String[] {"autosetup.ui.menuNewConfiguration", "autosetup.ui.menuSaveAsConfiguration",
+                "autosetup.ui.menuRenameConfiguration",
                 "autosetup.ui.menuDeleteConfiguration", "autosetup.ui.btnImportConfiguration",
                 "autosetup.ui.btnExportConfiguration", "autosetup.ui.menuExportRawGraph"}) expected.add(t(key));
 
@@ -519,7 +532,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
 
             try (Doors doors = new Doors())
             {
-                for (String key : new String[] {"autosetup.ui.menuNewConfiguration",
+                for (String key : new String[] {"autosetup.ui.menuNewConfiguration", "autosetup.ui.menuSaveAsConfiguration",
                     "autosetup.ui.menuRenameConfiguration", "autosetup.ui.menuDeleteConfiguration",
                     "autosetup.ui.btnImportConfiguration", "autosetup.ui.btnExportConfiguration",
                     "autosetup.ui.menuUnloadAutonomy", "autosetup.ui.menuDeleteSetup"})
