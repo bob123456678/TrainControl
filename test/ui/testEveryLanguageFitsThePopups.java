@@ -40,6 +40,9 @@ public class testEveryLanguageFitsThePopups
     /** The widest line of a popup's text at 100%: `WrappingOptionPaneUI.CAP`, held here so the claim runs on old code. */
     private static final int CAP = 480;
 
+    /** An 80-character Windows path with no spaces, wider than the cap on one line. */
+    private static final String PATH = "C:\\Users\\Wilhelmina\\Documents\\TrainControl\\Modellbahn-Wohnzimmer\\MOBA-26-WM.json";
+
     private static LanguageFit.Railway railway;
     private static File files;
 
@@ -97,9 +100,8 @@ public class testEveryLanguageFitsThePopups
     @Test(timeOut = 60000)
     public void testALongMessageWrapsAtTheCap()
     {
-        String path = "C:\\Users\\Wilhelmina\\Documents\\TrainControl\\Modellbahn-Wohnzimmer\\MOBA-26-WM.json";
         String text = "Backup saved to the folder you chose, but some of the files could not be copied. Check that "
-            + "nothing else has them open, and try again. The file that failed was " + path + "\nNothing else was changed.";
+            + "nothing else has them open, and try again. The file that failed was " + PATH + "\nNothing else was changed.";
         String html = "<html>" + text.replace("\n", " ") + "</html>";
 
         Components.onTheEventThread(() ->
@@ -108,8 +110,8 @@ public class testEveryLanguageFitsThePopups
             java.awt.Insets insets = pane.getInsets();
             int cap = com.formdev.flatlaf.util.UIScale.scale(CAP);
 
-            assertEquals(path.length(), 80, "precondition: the path is not 80 characters");
-            assertTrue(pane.getFontMetrics(javax.swing.UIManager.getFont("Label.font")).stringWidth(path) > cap,
+            assertEquals(PATH.length(), 80, "precondition: the path is not 80 characters");
+            assertTrue(pane.getFontMetrics(javax.swing.UIManager.getFont("Label.font")).stringWidth(PATH) > cap,
                 "precondition: the path alone fits within the cap, so it proves nothing about breaking one");
 
             assertTrue(pane.getPreferredSize().width <= cap + insets.left + insets.right, "the popup is "
@@ -147,7 +149,7 @@ public class testEveryLanguageFitsThePopups
      * The popups 3.1.0 added or changed, and those the menus open, fit in every language: the failed sync with Retry
      * and Close, About, the update question, the backup question, the restore refusal, the CSV nothing-to-import
      * message, the editor-open refusals, Clear All's question and the Cancel question that names the trains going back.
-     * No line of their text is wider than the cap (FR-254).
+     * No line of their text, a failed sync's exception text and path included, is wider than the cap (FR-254).
      *
      * MUTATION: put a label of fixed preferred width 20 pixels into `About`'s form, and this fails in every language.
      */
@@ -180,6 +182,10 @@ public class testEveryLanguageFitsThePopups
 
             found.addAll(popup("popup-sync-failed", language, m -> Answering.pressAt(1), null,
                 later(() -> syncRetry.invoke(railway.ui, railway.ui, null, (Runnable) () -> { })), null));
+            found.addAll(popup("popup-sync-failed-exception", language, m -> Answering.pressAt(1), null,
+                later(() -> syncRetry.invoke(railway.ui, railway.ui, "java.io.FileNotFoundException: " + PATH
+                    + " (The process cannot access the file because it is being used by another process)",
+                    (Runnable) () -> { })), null));
             found.addAll(popup("popup-about", language, m -> null, null, () ->
             {
                 Components.press((javax.swing.AbstractButton) Reflect.get(TrainControlUI.class, railway.ui, "aboutMenuItem"));
