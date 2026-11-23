@@ -2,6 +2,7 @@ package regression;
 
 import java.awt.Component;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import javax.swing.SwingUtilities;
@@ -3183,11 +3184,11 @@ public class testNoSetupEditDuringARun
     }
 
     /**
-     * New Configuration answered No copies the configuration without its trains or its timetable, and everything else
-     * as it is - each station's rules, the settings - and the one copied keeps its trains (Adam: "One door: do it").
-     * Through the real question.
+     * New Configuration copies the configuration without its trains or its timetable, and everything else as it is -
+     * each station's rules, the settings - and the one copied keeps its trains.  It asks only for the name.  Save As
+     * keeps the trains' places and the timetable.
      *
-     * MUTATION: copy the trains whatever the answer, and this fails.
+     * MUTATION: copy the trains in New Configuration, or drop them in Save As, and this fails.
      */
     @Test
     public void testANewConfigurationCanStartWithoutItsTrains() throws Exception
@@ -3210,28 +3211,47 @@ public class testNoSetupEditDuringARun
 
             assertFalse(placedIn(original).isEmpty(), "precondition: no train is placed in " + running);
 
-            // NEW CONFIGURATION, its question answered No
+            // NEW CONFIGURATION: the name, and nothing else asked
             final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
 
-            answeringWith(asked, going, "R34 no trains");
+            final java.util.concurrent.atomic.AtomicReference<String> typed = new java.util.concurrent.atomic.AtomicReference<>(
+                "R34 no trains");
 
-            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().duplicate());
+            answeringWith(asked, going, typed);
+
+            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().newConfiguration());
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
-            assertTrue(asked.contains(I18n.f("autosetup.ui.promptCopyTrainsAndTimetable", running)), "New Configuration"
-                + " did not ask whether the trains and the timetable come too: " + asked);
+            assertEquals(asked, Arrays.asList(I18n.t("autosetup.ui.promptConfigurationName")), "New Configuration asked"
+                + " more than the name: " + asked);
 
             assertTrue(session.getStore().getConfigurationNames().contains("R34 no trains"), "precondition: no copy was"
                 + " made: " + asked);
 
             org.json.JSONObject copy = session.getStore().getConfiguration("R34 no trains");
 
-            assertTrue(placedIn(copy).isEmpty(), "the copy answered No still has trains placed: " + placedIn(copy));
+            assertTrue(placedIn(copy).isEmpty(), "New Configuration still has trains placed: " + placedIn(copy));
 
             org.json.JSONObject globals = copy.optJSONObject("globals");
 
-            assertTrue(globals == null || !globals.has("timetable"), "the copy answered No still has the timetable");
+            assertTrue(globals == null || !globals.has("timetable"), "New Configuration still has the timetable");
+
+            // A PAUSED LOCOMOTIVE names a locomotive, so the blank copy must not carry it either
+            org.json.JSONObject live = session.getStore().getConfiguration(running);
+
+            if (live.optJSONObject("globals") == null) live.put("globals", new org.json.JSONObject());
+
+            live.getJSONObject("globals").put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES,
+                new org.json.JSONArray(Arrays.asList("R34 paused")));
+
+            session.getStore().createConfiguration("R34 blank", running, false);
+
+            assertFalse(session.getStore().getConfiguration("R34 blank").getJSONObject("globals")
+                .has(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES), "New Configuration still names paused"
+                + " locomotives");
+
+            live.getJSONObject("globals").remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
 
             // EVERYTHING ELSE AS IT WAS
             org.json.JSONObject points = original.optJSONObject("points");
@@ -3254,6 +3274,24 @@ public class testNoSetupEditDuringARun
 
             assertEquals(placedIn(session.getStore().getConfiguration(running)), placedIn(original), "copying "
                 + running + " without its trains took them off " + running);
+
+            // SAVE AS: the same trains and timetable, and again only the name asked
+            asked.clear();
+
+            typed.set("R34 as");
+
+            saveAsAndSettle(ui);
+
+            assertEquals(asked, Arrays.asList(I18n.t("autosetup.ui.promptConfigurationName")), "Save As asked more than"
+                + " the name: " + asked);
+
+            org.json.JSONObject saved = session.getStore().getConfiguration("R34 as");
+
+            assertEquals(placedIn(saved), placedIn(original), "Save As did not keep the trains' places");
+
+            assertEquals(String.valueOf(saved.optJSONObject("globals") == null ? null
+                : saved.optJSONObject("globals").opt("timetable")), String.valueOf(original.optJSONObject("globals") == null
+                ? null : original.optJSONObject("globals").opt("timetable")), "Save As did not keep the timetable");
         }, ui ->
         {
             going.set(false);
@@ -3339,12 +3377,8 @@ public class testNoSetupEditDuringARun
 
             answeringWith(asked, going, "RSA10 copy");
 
-            // WITH THE TRAINS: this claim is about where they are copied from, not about the question
-            org.traincontrol.gui.AutonomyViewerPanel.answerCopyTrainsForTests(javax.swing.JOptionPane.YES_OPTION);
-
-            SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().duplicate());
-
-            for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+            // WITH THE TRAINS: this claim is about where they are copied from
+            saveAsAndSettle(ui);
 
             assertTrue(session.getStore().getConfigurationNames().contains("RSA10 copy"), "precondition: no copy was"
                 + " made: " + asked);
@@ -3363,8 +3397,6 @@ public class testNoSetupEditDuringARun
         }, ui ->
         {
             going.set(false);
-
-            org.traincontrol.gui.AutonomyViewerPanel.answerCopyTrainsForTests(null);
         });
     }
 
@@ -3372,8 +3404,26 @@ public class testNoSetupEditDuringARun
      * Answers every question until `going` is lowered: an input with this value, anything else with No - and the words
      * of each into `asked`.
      */
+    private static void saveAsAndSettle(TrainControlUI ui) throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> ui.getAutonomyViewerPanel().saveAs());
+
+        for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** The button a two-button question gets (0 Yes, 1 No), and what happens right after it is answered. */
+    private static volatile int confirmIndex = 1;
+
+    private static volatile Runnable afterConfirm;
+
     private static void answeringWith(final List<String> asked, final java.util.concurrent.atomic.AtomicBoolean going,
         final String input)
+    {
+        answeringWith(asked, going, new java.util.concurrent.atomic.AtomicReference<>(input));
+    }
+
+    private static void answeringWith(final List<String> asked, final java.util.concurrent.atomic.AtomicBoolean going,
+        final java.util.concurrent.atomic.AtomicReference<String> input)
     {
         Thread answering = new Thread(() ->
         {
@@ -3393,23 +3443,114 @@ public class testNoSetupEditDuringARun
                     {
                         if (pane.getWantsInput())
                         {
-                            pane.setInputValue(input);
+                            pane.setInputValue(input.get());
                             pane.setValue(Integer.valueOf(javax.swing.JOptionPane.OK_OPTION));
                         }
                         else
                         {
                             Object[] options = pane.getOptions();
 
-                            pane.setValue(options != null && options.length > 1 ? options[1]
+                            pane.setValue(options != null && options.length > 1 ? options[confirmIndex]
                                 : Integer.valueOf(javax.swing.JOptionPane.NO_OPTION));
+
+                            if (afterConfirm != null) afterConfirm.run();
                         }
                     });
                 }
             });
-        }, "answering with " + input);
+        }, "answering with " + input.get());
 
         answering.setDaemon(true);
         answering.start();
+    }
+
+    /**
+     * Save As onto another configuration's name warns, naming it; No leaves it as it was and asks for a name again, Yes
+     * replaces it with a copy of the current one and changes nothing else, and the current name is not offered as an
+     * overwrite.
+     *
+     * MUTATION: replace without asking, or offer the current name for overwrite, and this fails.
+     */
+    @Test
+    public void testSaveAsReplacesAnotherConfigurationOnlyWhenConfirmed() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        final java.util.concurrent.atomic.AtomicBoolean going = new java.util.concurrent.atomic.AtomicBoolean(true);
+
+        onItsOwnWindow("live-snapshot", ui ->
+        {
+            final AutonomySession session = ui.getAutonomySession();
+
+            final String running = ui.getActiveDiagramConfiguration();
+
+            org.json.JSONObject original = new org.json.JSONObject(session.getStore().getConfiguration(running).toString());
+
+            // A SPARE WITHOUT TRAINS
+            session.getStore().createConfiguration("R34 old", running, false);
+
+            org.json.JSONObject spare = new org.json.JSONObject(session.getStore().getConfiguration("R34 old").toString());
+
+            assertTrue(placedIn(spare).isEmpty(), "precondition: the spare has trains");
+
+            final String prompt = I18n.t("autosetup.ui.promptConfigurationName");
+            final String warning = I18n.f("autosetup.ui.confirmReplaceConfiguration", "R34 old");
+
+            final List<String> asked = Collections.synchronizedList(new ArrayList<String>());
+
+            final java.util.concurrent.atomic.AtomicReference<String> typed = new java.util.concurrent.atomic.AtomicReference<>(
+                "R34 old");
+
+            answeringWith(asked, going, typed);
+
+            // NO: the warning, then the name asked again; the spare is as it was
+            confirmIndex = 1;
+            afterConfirm = () -> typed.set("R34 elsewhere");
+
+            saveAsAndSettle(ui);
+
+            assertEquals(asked, Arrays.asList(prompt, warning, prompt), "Save As onto a saved name did not warn and ask"
+                + " again: " + asked);
+
+            assertTrue(new org.json.JSONObject(session.getStore().getConfiguration("R34 old").toString()).similar(spare),
+                "No changed the configuration it was asked about");
+
+            assertTrue(session.getStore().getConfigurationNames().contains("R34 elsewhere"), "the new name was not saved");
+
+            // YES: replaced by a copy of the current one, the current one unchanged
+            asked.clear();
+            typed.set("R34 old");
+            confirmIndex = 0;
+            afterConfirm = null;
+
+            saveAsAndSettle(ui);
+
+            assertEquals(asked, Arrays.asList(prompt, warning), "Save As onto a saved name did not warn: " + asked);
+
+            assertEquals(placedIn(session.getStore().getConfiguration("R34 old")), placedIn(original), "Yes did not"
+                + " replace the configuration with a copy of the current one");
+
+            assertEquals(placedIn(session.getStore().getConfiguration(running)), placedIn(original),
+                "replacing changed the current configuration");
+
+            // THE CURRENT NAME is refused, not offered as an overwrite
+            asked.clear();
+            typed.set(running);
+
+            saveAsAndSettle(ui);
+
+            assertFalse(asked.contains(I18n.f("autosetup.ui.confirmReplaceConfiguration", running)), "the current name"
+                + " was offered as an overwrite: " + asked);
+
+            assertEquals(placedIn(session.getStore().getConfiguration(running)), placedIn(original),
+                "Save As onto its own name changed the configuration");
+        }, ui ->
+        {
+            going.set(false);
+
+            confirmIndex = 1;
+            afterConfirm = null;
+        });
     }
 
     /**

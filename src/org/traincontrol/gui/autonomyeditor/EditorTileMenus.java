@@ -759,8 +759,11 @@ final class EditorTileMenus
 
         if (standing == null) return null;
 
-        Layout showing = editor.runningLayout == null ? null : editor.runningLayout.get();
+        // One way out: the train can only leave that way, so it is ticked, as the caption and icon point (OB-510)
+        final TilePorts.Side only = editor.session.getStationIndex().onlyWayOutAt(target);
+        if (only != null) return new FacingFacts(standing, java.util.Collections.singletonList(only), only);
 
+        Layout showing = editor.runningLayout == null ? null : editor.runningLayout.get();
         final List<TilePorts.Side> facings = new ArrayList<>(editor.session.facingChoices(target));
 
         // WHAT THE RAILWAY SAYS, and only then what the file says (OB-181): the station label reads which COPY of the square the

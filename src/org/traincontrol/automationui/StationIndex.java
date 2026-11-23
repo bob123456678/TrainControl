@@ -33,6 +33,7 @@ public final class StationIndex
     private final Map<TileKey, List<String>> pointsBySquare;
     private final Map<String, Side> facingByPoint;
     private final Map<TileKey, List<Side>> arrivalsBySquare;
+    private final Map<TileKey, Side> onlyWayOutBySquare = new LinkedHashMap<>();
 
     /**
      * @param builder configured exactly as the one that generated the running configuration, or null for the empty
@@ -76,6 +77,11 @@ public final class StationIndex
         for (Map.Entry<TileKey, List<String>> entry : grouped.entrySet())
         {
             entry.setValue(Collections.unmodifiableList(entry.getValue()));
+
+            if (entry.getValue().size() == 1 && !facingByPoint.containsKey(entry.getValue().get(0)))
+            {
+                onlyWayOutBySquare.put(entry.getKey(), builder.onlyWayOutFacing(entry.getKey()));
+            }
         }
 
         pointsBySquare = Collections.unmodifiableMap(grouped);
@@ -248,6 +254,15 @@ public final class StationIndex
         }
 
         return out;
+    }
+
+    /**
+     * Which way a train on a square of one copy that records no facing points: its only way out, or null.  The icon and
+     * the caption both read this, so they agree (OB-510).
+     */
+    public Side onlyWayOutAt(TileKey square)
+    {
+        return onlyWayOutBySquare.get(square);
     }
 
     /**

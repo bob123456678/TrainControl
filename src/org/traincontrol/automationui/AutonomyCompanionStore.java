@@ -1894,6 +1894,14 @@ public class AutonomyCompanionStore
         if (activeConfiguration == null) activeConfiguration = name;
     }
 
+    /** Replaces the saved configuration of this name with a full copy of another, in one step. */
+    public void replaceConfiguration(String name, String copyFrom)
+    {
+        JSONObject copy = new JSONObject(configurations.get(copyFrom).toString());
+        copy.put("name", name);
+        configurations.put(name, copy);
+    }
+
     /**
      * Takes every train and the timetable out of a configuration, in place, including entries an older build set aside.
      */
@@ -1918,7 +1926,11 @@ public class AutonomyCompanionStore
 
         JSONObject globals = configuration.optJSONObject("globals");
 
-        if (globals != null) globals.remove("timetable");
+        if (globals != null)
+        {
+            globals.remove("timetable");
+            globals.remove(Layout.PAUSED_LOCOMOTIVES);
+        }
 
         configuration.remove(ENTRIES_SET_ASIDE);
     }

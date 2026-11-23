@@ -422,16 +422,24 @@ public class AutonomyMenu extends JMenu
 
         String needsLoaded = AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNeedsLoaded"));
 
-        // One door to a new configuration (Adam: "One door: do it"): a copy of the one chosen, asking whether where the
-        // trains stand and the timetable come too.  Add a Configuration is offered only before there is one.
+        // New starts blank (no locomotives, no timetable); Save As duplicates the one in use.  Add a Configuration is
+        // offered only before there is one.
         JMenuItem copy = item(I18n.t("autosetup.ui.menuNewConfiguration"), () ->
         {
-            actions.duplicate();
+            actions.newConfiguration();
 
             ui.autonomyMenuActed();
         });
 
         copy.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipNewConfiguration")));
+
+        JMenuItem saveAs = item(I18n.t("autosetup.ui.menuSaveAsConfiguration"), () ->
+        {
+            actions.saveAs();
+            ui.autonomyMenuActed();
+        });
+
+        saveAs.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.tooltipSaveAsConfiguration")));
 
         JMenuItem rename = item(I18n.t("autosetup.ui.menuRenameConfiguration"), () ->
         {
@@ -458,7 +466,7 @@ public class AutonomyMenu extends JMenu
 
         JMenuItem exportItem = item(I18n.t("autosetup.ui.btnExportConfiguration"), () -> actions.exportConfiguration());
 
-        for (JMenuItem each : new JMenuItem[] {copy, rename, exportItem})
+        for (JMenuItem each : new JMenuItem[] {saveAs, rename, exportItem})
         {
             each.setEnabled(loaded);
 
@@ -483,7 +491,7 @@ public class AutonomyMenu extends JMenu
 
         forget.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintDeleteSetup")));
 
-        for (Component part : new Component[] {copy, rename, deleteOne,
+        for (Component part : new Component[] {copy, new JPopupMenu.Separator(), saveAs, rename, deleteOne,
             new JPopupMenu.Separator(), importItem, exportItem, new JPopupMenu.Separator(),
             unload, forget})
         {
