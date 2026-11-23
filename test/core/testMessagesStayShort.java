@@ -71,10 +71,10 @@ public class testMessagesStayShort
         "tooltip: 4",
         "banner: 1",
         "exception: 0",
-        "popup: 1",
+        "popup: 0",
         "finding: 35",
         "why: 6",
-        "other: 11",
+        "other: 8",
     };
 
     private static final Set<String> EXEMPT = new HashSet<>(Arrays.asList("route.ui.frameHelp", "ui.aboutText"));
