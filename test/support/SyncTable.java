@@ -24,7 +24,8 @@ import org.traincontrol.util.I18n;
  * Answers the manual Sync's table (FR-249) as the user would: each one that opens while this is open, it picks each named
  * locomotive's answer ("KEEP", "RENAME", "ADDRESS", "BOTH", "IGNORE" or "ASK"), then presses Continue Sync, or Cancel
  * when told to, and keeps what each table showed.  Found by its title and its list (the closing message shares the title) and its controls' names, so a claim compiles
- * before the window exists.  Close it in a finally, or with try-with-resources.
+ * before the window exists.  Close it in a finally, or with try-with-resources: closing fails the claim when a look
+ * threw.
  */
 public final class SyncTable implements AutoCloseable
 {
@@ -64,6 +65,8 @@ public final class SyncTable implements AutoCloseable
 
     private final List<Shown> shown = Collections.synchronizedList(new ArrayList<>());
     private final AWTEventListener watching;
+    /** What a look threw, which `close` rethrows. */
+    private volatile Throwable threw;
 
     private SyncTable(Map<String, String> answers, boolean cancel, Consumer<Shown> look)
     {
@@ -115,9 +118,9 @@ public final class SyncTable implements AutoCloseable
         {
             if (look != null) look.accept(s);
         }
-        catch (RuntimeException e)
+        catch (RuntimeException | Error e)
         {
-            e.printStackTrace();
+            this.threw = e;
         }
         finally
         {
@@ -145,5 +148,6 @@ public final class SyncTable implements AutoCloseable
     public void close()
     {
         Toolkit.getDefaultToolkit().removeAWTEventListener(this.watching);
+        if (this.threw != null) throw new AssertionError("a look at the Sync table threw", this.threw);
     }
 }

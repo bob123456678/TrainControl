@@ -923,7 +923,6 @@ public class testTheSyncDifferencesWindow
     public void testARowThatDiffersTwoWaysIsLeftToFixByHand() throws Exception
     {
         List<String> problems = new ArrayList<>(), said = new ArrayList<>();
-        AtomicBoolean looked = new AtomicBoolean();
         inAWindow((rig, ui, list) ->
         {
             here(rig, "SW A", 20, "SW B", 21, "SW X", 23, "SW Shunter", 27);
@@ -955,7 +954,6 @@ public class testTheSyncDifferencesWindow
                 check(problems, names.size(), 2, "Name labels' columns " + names);
                 check(problems, at(t, Components.find(t.dialog, JLabel.class, l -> I18n.t("sync.ui.byHand").equals(
                     l.getText()))).x, java.util.Collections.max(names), "the by-hand text under the station's Name");
-                looked.set(true);
             }), said), "the table did not open");
             List<String> log = rig.takeLog();
             for (String[] each : rows)
@@ -973,7 +971,6 @@ public class testTheSyncDifferencesWindow
                 1) + "\n" + I18n.f("ui.infoSyncByHand", 3)), "the closing message");
         });
         assertTrue(problems.isEmpty(), problems.toString());
-        assertTrue(looked.get(), "the look stopped short");
     }
 
     /**
