@@ -146,7 +146,7 @@ public final class ChoiceTable extends JScrollPane
             int top = this.firsts.get(i).getY() - PAD;
             int below = i + 1 < this.firsts.size() ? this.firsts.get(i + 1).getY() - PAD : this.grid.getHeight();
             g.setColor(step(10));
-            if (i % 2 == 1) g.fillRect(0, top, wide, below - top);
+            if (i % 2 != 0) g.fillRect(0, top, wide, below - top);
             g.setColor(step(31));
             if (i > 0) g.drawLine(0, top, wide, top);
         }
