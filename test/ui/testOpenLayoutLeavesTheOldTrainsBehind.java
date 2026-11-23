@@ -141,7 +141,7 @@ public class testOpenLayoutLeavesTheOldTrainsBehind
      * The setup of the railway that was open is no longer the window's: none of its configurations is loaded over the
      * other railway's pages.
      *
-     * MUTATION: in `TrainControlUI.initializeTrackDiagram`, take out `this.resetAutonomySession();`.
+     * MUTATION: in `TrainControlUI.initializeTrackDiagram`, take out `this.autonomyLifecycle.resetAutonomySession();`.
      */
     @Test
     public void testTheOldRailwaysSetupIsNoLongerLoaded()

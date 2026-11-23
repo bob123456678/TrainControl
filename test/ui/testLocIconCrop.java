@@ -97,7 +97,7 @@ public class testLocIconCrop
 
                 assertTrue(note.exists(), "the note was not written at all");
 
-                ui.deleteLocIcon(url);
+                ui.locIconActions().deleteLocIconFile(url);
 
                 assertFalse(note.exists(),
                     "the crop was deleted and its note was left behind - a file in the application's own "
@@ -323,7 +323,7 @@ public class testLocIconCrop
             }
             finally
             {
-                ui.deleteLocIcon(ours.toPath().toUri().toString());
+                ui.locIconActions().deleteLocIconFile(ours.toPath().toUri().toString());
 
             }
         }
@@ -818,7 +818,7 @@ public class testLocIconCrop
         }
         finally
         {
-            if (crop != null && ui != null) ui.deleteLocIcon(crop);
+            if (crop != null && ui != null) ui.locIconActions().deleteLocIconFile(crop);
 
             if (kept != null) kept.delete();
 

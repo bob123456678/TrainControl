@@ -165,7 +165,7 @@ public class testRecroppingALocomotiveIcon
 
         for (String crop : crops())
         {
-            if (!before.contains(crop)) ui.deleteLocIcon(new File(crop).toURI().toString());
+            if (!before.contains(crop)) ui.locIconActions().deleteLocIconFile(new File(crop).toURI().toString());
         }
 
         loc.setLocalImageURL(null);

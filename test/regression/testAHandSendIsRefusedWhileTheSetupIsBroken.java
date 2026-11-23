@@ -583,7 +583,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             final org.traincontrol.automation.Point[] standing = new org.traincontrol.automation.Point[1];
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> standing[0] = ui[0].getAutonomyPointForTile(station[0]));
+            javax.swing.SwingUtilities.invokeAndWait(() -> standing[0] = ui[0].stationCaptions().getAutonomyPointForTile(station[0]));
 
             final Object options = gather.invoke(null, ui[0], standing[0]);
 

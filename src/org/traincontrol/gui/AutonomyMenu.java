@@ -405,7 +405,7 @@ public class AutonomyMenu extends JMenu
 
             if (session.getStore().getExcludedPages().contains(name)) continue;
 
-            edit.add(item(name, () -> ui.openAutonomyEditorOnPage(name)));
+            edit.add(item(name, () -> ui.editorWindows.openAutonomyEditorOnPage(name)));
         }
 
         return edit;

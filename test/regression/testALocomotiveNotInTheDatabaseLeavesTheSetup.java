@@ -139,8 +139,8 @@ public class testALocomotiveNotInTheDatabaseLeavesTheSetup
 
             assertFalse(offered.toString().contains(GONE),"the right-click menu at " + STANDS + " still offers " + offered
                 + " (OB-349)");
-            assertNull(ui[0].autonomyCaptionTextAt(STANDS), "the editor's caption at " + STANDS + " still names a train");
-            assertNull(ui[0].autonomyHomeAt(STANDS), "the home caption at " + STANDS + " still names " + GONE);
+            assertNull(ui[0].stationCaptions().autonomyCaptionTextAt(STANDS), "the editor's caption at " + STANDS + " still names a train");
+            assertNull(ui[0].stationCaptions().autonomyHomeAt(STANDS), "the home caption at " + STANDS + " still names " + GONE);
             assertFalse(session.tilesWithALocomotive().contains(STANDS), "the setup's placements still include " + STANDS);
             assertFalse(session.placementsAutonomyWillWrite().containsValue(GONE), "a build would still place " + GONE);
 

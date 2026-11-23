@@ -20,7 +20,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 /** The autonomy session's life, and the menu, strip and Auto tabs mounted around it. */
-final class AutonomyLifecycle
+public final class AutonomyLifecycle
 {
     private final TrainControlUI ui;
 
@@ -33,7 +33,7 @@ final class AutonomyLifecycle
      * Puts the autonomy menu in the bar, once, in the slot of the placeholder in the form (OB-202), so the bar has an
      * Autonomy menu from the first frame; the fallback keeps it beside Layouts if the placeholder is taken out.
      */
-    void mountAutonomyMenu()
+    public void mountAutonomyMenu()
     {
         if (ui.autonomyMenu == null)
         {
@@ -380,7 +380,7 @@ final class AutonomyLifecycle
     }
 
     /** Drops the setup so the next request reads it again; called when the layout changes underneath it. */
-    void resetAutonomySession()
+    public void resetAutonomySession()
     {
         // Save BEFORE forgetting: with activeDiagramConfiguration nulled the exit-path capture (gated on it) skips
         // everything, and a re-download would drop every placement, home and setting made since the last save.

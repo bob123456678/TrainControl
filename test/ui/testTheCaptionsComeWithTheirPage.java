@@ -172,9 +172,9 @@ public class testTheCaptionsComeWithTheirPage
         Layout railway = model.getAutoLayout();
 
         final TileKey from = aTrainStandingAlone();
-        final Locomotive train = ui.getAutonomyOccupantsForTile(from).get(0).getCurrentLocomotive();
+        final Locomotive train = ui.stationCaptions().getAutonomyOccupantsForTile(from).get(0).getCurrentLocomotive();
 
-        final String fromPoint = ui.getAutonomyPointForTile(from).getName();
+        final String fromPoint = ui.stationCaptions().getAutonomyPointForTile(from).getName();
         final String saidFrom = captionText(from);
 
         TileKey to = null;
@@ -182,9 +182,9 @@ public class testTheCaptionsComeWithTheirPage
 
         for (TileKey square : captionedSquaresShown())
         {
-            Point empty = ui.getAutonomyPointForTile(square);
+            Point empty = ui.stationCaptions().getAutonomyPointForTile(square);
 
-            if (empty == null || !ui.getAutonomyOccupantsForTile(square).isEmpty()) continue;
+            if (empty == null || !ui.stationCaptions().getAutonomyOccupantsForTile(square).isEmpty()) continue;
 
             saidTo = captionText(square);
 
@@ -236,7 +236,7 @@ public class testTheCaptionsComeWithTheirPage
     public void testARenamedLocomotiveIsRenamedOnItsCaption() throws Exception
     {
         final TileKey at = aTrainStandingAlone();
-        final Locomotive train = ui.getAutonomyOccupantsForTile(at).get(0).getCurrentLocomotive();
+        final Locomotive train = ui.stationCaptions().getAutonomyOccupantsForTile(at).get(0).getCurrentLocomotive();
 
         final String name = train.getName();
         final String said = captionText(at);
@@ -412,7 +412,7 @@ public class testTheCaptionsComeWithTheirPage
     {
         for (TileKey square : captionedSquaresShown())
         {
-            if (ui.getAutonomyOccupantsForTile(square).size() == 1 && session.getStore().getPointName(square) != null)
+            if (ui.stationCaptions().getAutonomyOccupantsForTile(square).size() == 1 && session.getStore().getPointName(square) != null)
             {
                 return square;
             }

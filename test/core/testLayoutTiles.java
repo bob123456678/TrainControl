@@ -584,7 +584,7 @@ public class testLayoutTiles
     @Test
     public void testTheExitAsksEveryOpenWindow() throws Exception
     {
-        assertFalse(ui.routeEditorHasUnsavedWork(), "precondition: something is already holding unsaved work");
+        assertFalse(ui.editorWindows().routeEditorHasUnsavedWork(), "precondition: something is already holding unsaved work");
 
         assertTrue(ui.everyOpenWindowMaySettle(), "precondition: the exit is already blocked by something else");
 
@@ -612,7 +612,7 @@ public class testLayoutTiles
             SwingUtilities.invokeAndWait(() -> editor.appendCommand("Switch 90,turn"));
 
             assertTrue(editor.hasUnsavedWork(), "a command typed into the route editor is not counted as unsaved work");
-            assertTrue(ui.routeEditorHasUnsavedWork(), "the exit cannot see that the route editor has unsaved work");
+            assertTrue(ui.editorWindows().routeEditorHasUnsavedWork(), "the exit cannot see that the route editor has unsaved work");
 
             RouteEditorFrame.discardAnswerForTest = Boolean.FALSE;
 

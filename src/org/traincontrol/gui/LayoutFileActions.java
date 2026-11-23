@@ -39,7 +39,7 @@ import org.traincontrol.util.Util;
  *
  * Not the locomotive mapping pages (copy, paste and clear), which stay on the window.
  */
-final class LayoutFileActions
+public final class LayoutFileActions
 {
     private final TrainControlUI ui;
 
@@ -412,7 +412,7 @@ final class LayoutFileActions
      * Moves the selected page one place up or down the page list and saves at once (FR-175).  Silent at either end,
      * where the editor grays the arrow.  `by` is -1 for up, 1 for down.
      */
-    void movePage(final int by, final LayoutEditor from)
+    public void movePage(final int by, final LayoutEditor from)
     {
         final String page = String.valueOf(this.ui.layoutList().getSelectedItem());
 
@@ -448,7 +448,7 @@ final class LayoutFileActions
     }
 
     /** Writes the pages in name order once (FR-175); nothing is written when they already are. */
-    void sortPagesByName(final LayoutEditor from)
+    public void sortPagesByName(final LayoutEditor from)
     {
         if (sorted(this.ui.getModel().getLayoutList()) == null) return;
 

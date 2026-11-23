@@ -933,7 +933,7 @@ public class testTheTailIsPickedOnTheDiagram
             {
                 javax.swing.SwingUtilities.invokeAndWait(() ->
                 {
-                    ui.resetAutonomySession();
+                    ui.autonomyLifecycle().resetAutonomySession();
                     ui.getAutonomyViewerPanel().load(active, false);
                 });
 
@@ -1442,7 +1442,7 @@ public class testTheTailIsPickedOnTheDiagram
             String roadBefore = ui.getAutonomySession().getArrivedAlong(tunnel);
 
             // THE EDITOR, OPENED WHILE THE QUESTION WAITS.
-            javax.swing.SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
+            javax.swing.SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(tunnel.getPage()));
 
             for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
             {
@@ -1587,7 +1587,7 @@ public class testTheTailIsPickedOnTheDiagram
         {
             try
             {
-                ui.setHoveredDiagramTile(from.getPage(), from.getX(), from.getY());
+                ui.diagramLocGestures().setHoveredDiagramTile(from.getPage(), from.getX(), from.getY());
 
                 cut[0] = door.invoke(ui, java.awt.event.KeyEvent.VK_X, true);
             }
@@ -1613,7 +1613,7 @@ public class testTheTailIsPickedOnTheDiagram
         {
             try
             {
-                ui.setHoveredDiagramTile(tunnel.getPage(), tunnel.getX(), tunnel.getY());
+                ui.diagramLocGestures().setHoveredDiagramTile(tunnel.getPage(), tunnel.getX(), tunnel.getY());
 
                 door.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
             }
@@ -1653,7 +1653,7 @@ public class testTheTailIsPickedOnTheDiagram
 
         final Point[] standing = new Point[1];
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(square));
+        javax.swing.SwingUtilities.invokeAndWait(() -> standing[0] = ui.stationCaptions().getAutonomyPointForTile(square));
 
         final Object options = gather.invoke(null, ui, standing[0]);
 

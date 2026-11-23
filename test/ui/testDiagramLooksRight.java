@@ -775,7 +775,7 @@ public class testDiagramLooksRight
 
         page.addComponent(label, 0, 0);
 
-        assertNull(ui.autonomyCaptionAt(new org.traincontrol.automationui.TileGraph.TileKey(page.getName(), 0, 0)),
+        assertNull(ui.stationCaptions().autonomyCaptionAt(new org.traincontrol.automationui.TileGraph.TileKey(page.getName(), 0, 0)),
             "the square has an autonomy caption, so this is not the case the claim is about");
 
         java.awt.Container box = laidOut(page, 30);

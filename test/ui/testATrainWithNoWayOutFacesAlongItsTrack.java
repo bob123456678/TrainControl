@@ -272,7 +272,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             SwingUtilities.invokeAndWait(() ->
             {
-                caption[0] = ui.autonomyCaptionTextAt(tunnel);
+                caption[0] = ui.stationCaptions().autonomyCaptionTextAt(tunnel);
                 editor[0].getAutonomyPanel().addFacingItems(menu, tunnel);
             });
 
@@ -540,7 +540,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             {
                 try
                 {
-                    ui.setHoveredDiagramTile(PLATFORM.getPage(), PLATFORM.getX(), PLATFORM.getY());
+                    ui.diagramLocGestures().setHoveredDiagramTile(PLATFORM.getPage(), PLATFORM.getX(), PLATFORM.getY());
 
                     handled[0] = door.invoke(ui, java.awt.event.KeyEvent.VK_V, true);
                 }

@@ -222,7 +222,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
         {
-            if (!page.equals(square.getPage()) || ui.autonomyCaptionAt(square) != null) continue;
+            if (!page.equals(square.getPage()) || ui.stationCaptions().autonomyCaptionAt(square) != null) continue;
 
             java.util.Map<org.traincontrol.automationui.TileGraph.RouteId, ?> roads = session.getGraph().getRoutes(square);
 
@@ -261,7 +261,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
         {
-            org.traincontrol.automationui.TileGraph.TileKey captioned = page.equals(square.getPage()) ? ui.autonomyCaptionAt(square) : null;
+            org.traincontrol.automationui.TileGraph.TileKey captioned = page.equals(square.getPage()) ? ui.stationCaptions().autonomyCaptionAt(square) : null;
 
             if (captioned != null && session.getStore().getPointName(captioned) != null)
             {
@@ -587,7 +587,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
         {
-            org.traincontrol.automationui.TileGraph.TileKey captioned = ui.autonomyCaptionAt(square);
+            org.traincontrol.automationui.TileGraph.TileKey captioned = ui.stationCaptions().autonomyCaptionAt(square);
 
             if (captioned != null && session.getStore().getPointName(captioned) != null)
             {
@@ -1228,7 +1228,7 @@ public class testAPendingTurnSurvivesTheRebuild
         {
             if (!shownPage.equals(square.getPage()) || ui.getLayoutStations(square).isEmpty()) continue;
 
-            java.util.List<org.traincontrol.automation.Point> standing = ui.getAutonomyOccupantsForTile(square);
+            java.util.List<org.traincontrol.automation.Point> standing = ui.stationCaptions().getAutonomyOccupantsForTile(square);
 
             if (!standing.isEmpty() && session.getStore().getPointName(square) != null)
             {
@@ -1423,7 +1423,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
         for (org.traincontrol.automationui.TileGraph.TileKey square : session.getGraph().getTiles().keySet())
         {
-            if (!page.equals(square.getPage()) || ui.autonomyCaptionAt(square) != null) continue;
+            if (!page.equals(square.getPage()) || ui.stationCaptions().autonomyCaptionAt(square) != null) continue;
 
             java.util.Map<org.traincontrol.automationui.TileGraph.RouteId, ?> roads = session.getGraph().getRoutes(square);
 

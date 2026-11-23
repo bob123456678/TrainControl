@@ -498,7 +498,7 @@ public class testATimetableEntryKeepsItsSquaresThroughRenames
 
     private static void openTheEditor() throws Exception
     {
-        SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(PAGE));
+        SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(PAGE));
 
         support.Components.waitFor(() ->
         {

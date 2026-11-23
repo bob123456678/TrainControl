@@ -2435,7 +2435,7 @@ public class testTheEditorNamesItsShortcuts
         // THE MAIN WINDOW AS AFTER EVERY EDITOR HAS CLOSED: other claims of this class build editors of their own and put
         // them away with a bare dispose, which does not give Edit back - and a door asked while Edit is gray answers with a
         // dialog that waits on the screen
-        SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+        SwingUtilities.invokeAndWait(() -> ui.editorWindows().setEditLayoutEnabled(true));
 
         // Every window this claim opens, put away in the finally
         List<LayoutEditor> opened = new ArrayList<>();
@@ -2578,7 +2578,7 @@ public class testTheEditorNamesItsShortcuts
             settleTheEditor();
 
             // Edit as every editor closed leaves it, whatever stopped this claim part way
-            SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+            SwingUtilities.invokeAndWait(() -> ui.editorWindows().setEditLayoutEnabled(true));
 
             // THE CLASS'S EDITOR BACK, as setUpClass built it
             editor = anAutonomyEditor();
@@ -2609,7 +2609,7 @@ public class testTheEditorNamesItsShortcuts
         final LayoutEditor first = editor;
 
         SwingUtilities.invokeAndWait(() -> first.dispose());
-        SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+        SwingUtilities.invokeAndWait(() -> ui.editorWindows().setEditLayoutEnabled(true));
 
         LayoutEditor a = null;
 
@@ -2682,7 +2682,7 @@ public class testTheEditorNamesItsShortcuts
 
             SwingUtilities.invokeAndWait(() -> ui.setAlwaysOnTop(onTopWas));
 
-            SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+            SwingUtilities.invokeAndWait(() -> ui.editorWindows().setEditLayoutEnabled(true));
 
             editor = anAutonomyEditor();
 

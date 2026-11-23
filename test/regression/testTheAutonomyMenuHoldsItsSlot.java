@@ -101,7 +101,7 @@ public class testTheAutonomyMenuHoldsItsSlot
 
         assertTrue(before[1] >= 0, "no Autonomy menu to begin with, so this measures nothing");
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> ui.mountAutonomyMenu());
+        javax.swing.SwingUtilities.invokeAndWait(() -> ui.autonomyLifecycle().mountAutonomyMenu());
 
         final int[] after = new int[2];
 

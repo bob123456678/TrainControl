@@ -348,7 +348,7 @@ public class testTheActiveTickPausesATrain
 
         final Point[] standing = new Point[1];
 
-        SwingUtilities.invokeAndWait(() -> standing[0] = ui.getAutonomyPointForTile(square));
+        SwingUtilities.invokeAndWait(() -> standing[0] = ui.stationCaptions().getAutonomyPointForTile(square));
 
         final Object options = gather.invoke(null, ui, standing[0]);
 
@@ -779,7 +779,7 @@ public class testTheActiveTickPausesATrain
     {
         java.awt.Window editor = null;
 
-        SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(mainB.getPage()));
+        SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(mainB.getPage()));
 
         for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
         {

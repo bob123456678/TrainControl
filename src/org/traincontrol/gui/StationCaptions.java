@@ -19,7 +19,7 @@ import org.traincontrol.gui.widgets.StationCaption;
  * What the track diagram's station captions say: the station, train and home a square shows, asked of the setup, and
  * the words and colors a running Point writes onto its labels.  The labels themselves stay registered on the window.
  */
-final class StationCaptions
+public final class StationCaptions
 {
     private final TrainControlUI ui;
 
@@ -32,7 +32,7 @@ final class StationCaptions
      * The station whose caption is drawn on a square, asked of the setup rather than read off the label; null when
      * none.
      */
-    TileGraph.TileKey autonomyCaptionAt(
+    public TileGraph.TileKey autonomyCaptionAt(
         TileGraph.TileKey where)
     {
         AutonomySession session = this.ui.getAutonomySession();
@@ -62,7 +62,7 @@ final class StationCaptions
     }
 
     /** Which locomotive LIVES at a square, not which is standing on it (MT-261); null with no home or no setup. */
-    String autonomyHomeAt(TileGraph.TileKey station)
+    public String autonomyHomeAt(TileGraph.TileKey station)
     {
         AutonomySession session = this.ui.getAutonomySession();
 
@@ -78,7 +78,7 @@ final class StationCaptions
      * The caption for a square the setup puts a locomotive on, bracketed and cut to length.  The facing comes from the
      * square, as in the editor there may be no run.  Null when the setup puts none there.
      */
-    String autonomyCaptionTextAt(TileGraph.TileKey station)
+    public String autonomyCaptionTextAt(TileGraph.TileKey station)
     {
         String name = autonomyLocomotiveAt(station);
 
@@ -100,7 +100,7 @@ final class StationCaptions
      * The running Point on a square, preferring one with a train on it (a square is several Points, only one holds the
      * locomotive).  By square, not caption text, which fails for a renamed or split station.  Null if nothing is there.
      */
-    Point getAutonomyPointForTile(
+    public Point getAutonomyPointForTile(
         TileGraph.TileKey station)
     {
         // Asked once, not built: asking whether there is a railway and then for it builds an empty one where Unload
@@ -118,7 +118,7 @@ final class StationCaptions
      * Every locomotive on a square, in copy order (two trains can share a platform from opposite ends); empty when
      * none.
      */
-    List<Point> getAutonomyOccupantsForTile(
+    public List<Point> getAutonomyOccupantsForTile(
         TileGraph.TileKey station)
     {
         Layout shown = this.ui.getModel().getAutoLayoutIfLoaded();

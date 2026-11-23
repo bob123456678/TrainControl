@@ -401,7 +401,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
     public void testARenamedLocomotiveIsRenamedOnEveryCaptionThroughASync() throws Exception
     {
         final TileKey at = aTrainStandingAlone();
-        final Locomotive train = ui.getAutonomyOccupantsForTile(at).get(0).getCurrentLocomotive();
+        final Locomotive train = ui.stationCaptions().getAutonomyOccupantsForTile(at).get(0).getCurrentLocomotive();
         final String name = train.getName();
         final String renamed = "Zq" + name.substring(2);
 
@@ -2223,7 +2223,7 @@ public class testTheDiagramIsKeptForWhatItDoesNotShow
 
         for (TileKey square : session.getGraph().getTiles().keySet())
         {
-            if (ui.getAutonomyOccupantsForTile(square).size() != 1 || session.getStore().getPointName(square) == null)
+            if (ui.stationCaptions().getAutonomyOccupantsForTile(square).size() != 1 || session.getStore().getPointName(square) == null)
             {
                 continue;
             }
