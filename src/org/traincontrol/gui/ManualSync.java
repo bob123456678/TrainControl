@@ -82,7 +82,7 @@ public final class ManualSync
     /** An import that changed an existing locomotive's address marks the menu until the next sync works it out. */
     static void imported(TrainControlUI ui, MarklinLocomotiveCsv.Result result)
     {
-        if (result.readdressed.isEmpty()) return;
+        if (result.readdressed.isEmpty() && result.renamed.isEmpty()) return;
         ui.getModel().setUnsettledCount(-1);
         ui.greyWhatARunRefuses();
     }
