@@ -3,7 +3,6 @@ package org.traincontrol.gui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
-import java.awt.GridLayout;
 import java.awt.Window;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
@@ -12,6 +11,7 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -40,19 +40,28 @@ public final class SyncDifferencesWindow extends JDialog
     /** A row's answer; RENAME and ADDRESS are its two Apply choices. */
     public enum Answer { KEEP, RENAME, ADDRESS, BOTH, IGNORE, ASK }
 
-    private final RenameProposals proposals;
-    private final Map<Row, Map<Answer, JRadioButton>> choices = new LinkedHashMap<>();
-    private final Map<Row, JLabel> triangles = new LinkedHashMap<>();
-    private final Map<Row, JLabel> deleting = new LinkedHashMap<>();
+    /** A grayed Apply's text: darker than a disabled control's, so it stays readable. */
+    private static final Color GRAYED = new Color(110, 110, 110);
+    /** "Deletes X" after a rename: a consequence to read before choosing it. */
+    private static final Color DELETES = new Color(160, 0, 0);
+
+    private final transient RenameProposals proposals;
+    private final transient Map<Row, Map<Answer, JRadioButton>> choices = new LinkedHashMap<>();
+    private final transient Map<Row, JLabel> triangles = new LinkedHashMap<>();
+    private final transient Map<Row, JLabel> deleting = new LinkedHashMap<>();
     private boolean continued;
 
     private SyncDifferencesWindow(Window owner, RenameProposals proposals, List<Row> rows)
     {
         super(owner, I18n.t("sync.ui.title"), ModalityType.APPLICATION_MODAL);
         this.proposals = proposals;
-        ChoiceTable table = new ChoiceTable(I18n.t("sync.ui.locomotive"), I18n.t("sync.ui.stationHas"),
-            I18n.t("sync.ui.keep"), I18n.t("sync.ui.apply"), I18n.t("sync.ui.keepBoth"), I18n.t("sync.ui.ignore"),
-            I18n.t("sync.ui.askAgain"));
+        // Each answer's heading sets every row it can to it, as a row's own pick would; Ignore is never set so
+        ChoiceTable table = new ChoiceTable(UiStyle.blackLabel(I18n.t("sync.ui.locomotive")),
+            UiStyle.blackLabel(I18n.t("sync.ui.stationHas")), setAllTo("sync.ui.keep", r -> Answer.KEEP),
+            setAllTo("sync.ui.apply", r -> !proposals.applicable(this.choices.keySet()).contains(r) ? null
+                : r.asksName() ? Answer.RENAME : Answer.ADDRESS),
+            setAllTo("sync.ui.keepBoth", r -> Answer.BOTH), UiStyle.blackLabel(I18n.t("sync.ui.ignore")),
+            setAllTo("sync.ui.askAgain", r -> Answer.ASK));
         for (Row r : rows) table.addRow(addRow(r));
         refresh();
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
@@ -60,14 +69,6 @@ public final class SyncDifferencesWindow extends JDialog
         top.add(UiStyle.heading(rows.size() == 1 ? I18n.t("sync.ui.headingOne")
             : I18n.f("sync.ui.heading", rows.size())));
         top.add(InfoMark.label(I18n.t("sync.ui.info")));
-        JPanel setAll = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        setAll.setOpaque(false);
-        setAll.add(UiStyle.blackLabel(I18n.t("sync.ui.setAll")));
-        setAll.add(setAllTo("sync.ui.keep", r -> Answer.KEEP));
-        setAll.add(setAllTo("sync.ui.apply", r -> !proposals.applicable(this.choices.keySet()).contains(r) ? null
-            : r.asksName() ? Answer.RENAME : Answer.ADDRESS));
-        setAll.add(setAllTo("sync.ui.keepBoth", r -> Answer.BOTH));
-        setAll.add(setAllTo("sync.ui.askAgain", r -> Answer.ASK));
         JButton cancel = UiStyle.button(new JButton(I18n.t("ui.cancel")));
         JButton go = UiStyle.button(new JButton(I18n.t("sync.ui.continue")));
         cancel.addActionListener(e -> dispose());
@@ -80,16 +81,12 @@ public final class SyncDifferencesWindow extends JDialog
         buttons.setOpaque(false);
         buttons.add(cancel);
         buttons.add(go);
-        JPanel bottom = new JPanel(new BorderLayout());
-        bottom.setOpaque(false);
-        bottom.add(setAll, BorderLayout.WEST);
-        bottom.add(buttons, BorderLayout.EAST);
         JPanel content = new JPanel(new BorderLayout(0, 10));
         content.setBackground(Color.WHITE);
         content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
         content.add(top, BorderLayout.NORTH);
         content.add(table, BorderLayout.CENTER);
-        content.add(bottom, BorderLayout.SOUTH);
+        content.add(buttons, BorderLayout.SOUTH);
         setContentPane(content);
         // Closing is Cancel; Enter continues, which changes nothing until a row is answered
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -128,25 +125,24 @@ public final class SyncDifferencesWindow extends JDialog
         String name = l.getName();
         ButtonGroup group = new ButtonGroup();
         Map<Answer, JRadioButton> radios = new EnumMap<>(Answer.class);
-        JPanel has = column(), apply = column();
+        List<JComponent> has = new ArrayList<>(), apply = new ArrayList<>();
         if (r.asksName())
         {
             has.add(kindAndValue("sync.ui.name", r.stationName));
-            apply.add(applyChoice(r, radios, group, Answer.RENAME, I18n.f("sync.ui.rename", name, r.stationName),
-                r.whyNot(true)));
             JLabel deletes = mark(name + ":deletes", null);
+            deletes.setForeground(DELETES);
+            deletes.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 0));
             this.deleting.put(r, deletes);
-            apply.add(deletes);
+            apply.add(applyChoice(r, radios, group, Answer.RENAME, I18n.f("sync.ui.rename", name, r.stationName),
+                r.whyNot(true), deletes));
         }
         if (r.asksAddress())
         {
             has.add(kindAndValue("sync.ui.address", r.stationAddress.toString()));
-            apply.add(applyChoice(r, radios, group, Answer.ADDRESS, I18n.f("sync.ui.changeAddress", name,
-                r.stationAddress), r.whyNot(false)));
             JLabel triangle = mark(name + ":collision", RowIcons.warning(16));
-            triangle.setToolTipText(I18n.f("sync.ui.collision", r.stationAddress));
             this.triangles.put(r, triangle);
-            apply.add(triangle);
+            apply.add(applyChoice(r, radios, group, Answer.ADDRESS, I18n.f("sync.ui.changeAddress", name,
+                r.stationAddress), r.whyNot(false), triangle));
         }
         for (Answer a : new Answer[] {Answer.KEEP, Answer.BOTH, Answer.IGNORE, Answer.ASK})
         {
@@ -157,27 +153,29 @@ public final class SyncDifferencesWindow extends JDialog
         radios.get(l.isSyncIgnored() ? Answer.IGNORE : Answer.ASK).setSelected(true);
         for (JRadioButton b : radios.values()) b.addItemListener(e -> refresh());
         this.choices.put(r, radios);
-        JLabel loco = new JLabel(name + (l.hasLinkedLocomotives() ? " +" + l.getLinkedLocomotives().size() : ""));
-        loco.setFont(UiStyle.TEXT_FONT);
-        JLabel at = new JLabel(l.getDecoderTypeLabel() + " " + l.getAddress());
-        at.setFont(UiStyle.TEXT_FONT);
+        JLabel at = text(l.getDecoderTypeLabel() + " " + l.getAddress());
         at.setForeground(Color.GRAY);
-        JPanel who = column();
-        who.add(loco);
-        who.add(at);
-        return new JComponent[] {who, has, radios.get(Answer.KEEP), apply, radios.get(Answer.BOTH),
-            radios.get(Answer.IGNORE), radios.get(Answer.ASK)};
+        return new JComponent[] {ChoiceTable.lines(ChoiceTable.line(text(name + (l.hasLinkedLocomotives() ? " +"
+            + l.getLinkedLocomotives().size() : ""))), ChoiceTable.line(at)),
+            ChoiceTable.lines(has.toArray(new JComponent[0])), radios.get(Answer.KEEP),
+            ChoiceTable.lines(apply.toArray(new JComponent[0])), radios.get(Answer.BOTH), radios.get(Answer.IGNORE),
+            radios.get(Answer.ASK)};
     }
 
-    private static JRadioButton applyChoice(Row r, Map<Answer, JRadioButton> radios, ButtonGroup group, Answer a,
-        String text, String whyNot)
+    /** One Apply choice on its line, its mark after it; grayed, its text stays readable and says why on hover. */
+    private static JComponent applyChoice(Row r, Map<Answer, JRadioButton> radios, ButtonGroup group, Answer a,
+        String text, String whyNot, JLabel mark)
     {
-        JRadioButton b = named(ChoiceTable.choice(group, text), r.loco.getName(), a);
-        // Grayed with its reason; asked again next Sync
-        b.setEnabled(whyNot == null);
-        b.setToolTipText(whyNot);
+        JRadioButton b = named(ChoiceTable.choice(group, whyNot == null ? text : ""), r.loco.getName(), a);
         radios.put(a, b);
-        return b;
+        if (whyNot == null) return ChoiceTable.line(b, mark);
+        // Asked again next Sync
+        b.setEnabled(false);
+        b.setToolTipText(whyNot);
+        JLabel said = text(text);
+        said.setForeground(GRAYED);
+        said.setToolTipText(whyNot);
+        return ChoiceTable.line(b, said, mark);
     }
 
     private static JRadioButton named(JRadioButton b, String name, Answer a)
@@ -186,41 +184,34 @@ public final class SyncDifferencesWindow extends JDialog
         return b;
     }
 
+    private static JLabel text(String text)
+    {
+        JLabel t = new JLabel(text);
+        t.setFont(UiStyle.TEXT_FONT);
+        return t;
+    }
+
     private static JLabel mark(String name, javax.swing.Icon icon)
     {
-        JLabel m = new JLabel(icon);
+        JLabel m = text(null);
+        m.setIcon(icon);
         m.setName(name);
-        m.setFont(UiStyle.TEXT_FONT);
         m.setVisible(false);
         return m;
     }
 
-    private static JPanel column()
+    /** "Name:" or "Address:" as a gray label, and the station's value as plain text, on one line. */
+    private static JComponent kindAndValue(String kind, String value)
     {
-        JPanel p = new JPanel(new GridLayout(0, 1));
-        p.setOpaque(false);
-        return p;
-    }
-
-    /** "Name:" or "Address:" as a gray label, and the station's value as plain text. */
-    private static JPanel kindAndValue(String kind, String value)
-    {
-        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        p.setOpaque(false);
         JLabel k = UiStyle.blackLabel(I18n.t(kind));
         k.setForeground(Color.GRAY);
-        JLabel v = new JLabel(value);
-        v.setFont(UiStyle.TEXT_FONT);
-        p.add(k);
-        p.add(v);
-        return p;
+        return ChoiceTable.line(k, text(value));
     }
 
-    /** A Set all button: each row not ignored takes the answer `to` gives it, where it has that choice enabled. */
-    private JButton setAllTo(String key, java.util.function.Function<Row, Answer> to)
+    /** An answer's heading: each row not ignored takes the answer `to` gives it, where it has that choice enabled. */
+    private JButton setAllTo(String key, Function<Row, Answer> to)
     {
-        JButton b = UiStyle.button(new JButton(I18n.t(key)));
-        b.addActionListener(e ->
+        return ChoiceTable.link(I18n.t(key), I18n.f("sync.ui.setAllTip", I18n.t(key)), () ->
         {
             Map<Row, Answer> picks = new LinkedHashMap<>();
             for (Row r : this.choices.keySet()) if (!r.loco.isSyncIgnored()) picks.put(r, to.apply(r));
@@ -230,15 +221,20 @@ public final class SyncDifferencesWindow extends JDialog
                 if (c != null && c.isEnabled()) c.setSelected(true);
             }
         });
-        return b;
     }
 
-    /** The marks, judged on every Apply chosen now with the row's own: the triangle and what a rename deletes. */
+    /** The marks, judged with every Apply chosen now: the triangle, naming who else has that address, and Deletes. */
     private void refresh()
     {
         List<Row> moved = chosen(Answer.ADDRESS::equals), renamed = chosen(Answer.RENAME::equals);
         for (Map.Entry<Row, JLabel> t : this.triangles.entrySet())
-            t.getValue().setVisible(this.proposals.collisions(with(moved, t.getKey())).contains(t.getKey()));
+        {
+            List<String> others = new ArrayList<>();
+            for (Locomotive o : this.proposals.sharing(t.getKey(), with(moved, t.getKey()))) others.add(o.getName());
+            t.getValue().setVisible(!others.isEmpty());
+            t.getValue().setToolTipText(I18n.f("sync.ui.collision", t.getKey().stationAddress,
+                String.join(", ", others)));
+        }
         for (Map.Entry<Row, JLabel> d : this.deleting.entrySet())
         {
             Locomotive gone = this.proposals.deletes(d.getKey(), with(renamed, d.getKey()));

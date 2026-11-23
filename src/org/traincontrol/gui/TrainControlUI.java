@@ -14658,9 +14658,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             // Dropped, not left to fire at a later editor close
             syncOwed.set(false);
-
             this.log(I18n.t("ui.infoOwedSyncLeftWhileRunning"));
-
             return;
         }
 
@@ -14671,7 +14669,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             setLocomotiveWorkInFlight(true);
 
             final LayoutDiagram before = shownDiagram();
-            
             new Thread(() ->
             {
                 // The menus come back even when the sync does not: an uncaught RuntimeException would skip the
@@ -14679,7 +14676,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // the log has the reason.
                 Integer syncResult;
                 final StringBuilder answered = new StringBuilder();
-
                 try
                 {
                     syncResult = c == null ? this.runTheOwedSync() : this.pressedSync(c, answered);
@@ -14687,7 +14683,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 catch (RuntimeException e)
                 {
                     this.model.log(e);
-
                     syncResult = -1;
                 }
 
@@ -14712,7 +14707,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 {
                     final String done = I18n.f(this.model.wasLastSyncPartial() ? "ui.infoSyncCompletePartial"
                         : "ui.infoSyncCompleteItemsAdded", r.toString()) + answered;
-
                     javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, done));
                 }
             }).start();
@@ -14739,6 +14733,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 return SYNC_REFUSED;
             }
             int synced = RunGates.refuseALinkOrSyncWhileEditorOpen(this, null) ? SYNC_REFUSED : syncHolding();
+            final LocomotiveSettingsFrame open = this.locomotiveSettings;
+            if (open != null) SwingUtilities.invokeLater(open::followTheSync);
             if (n.length == 0 || synced < 0) return synced;
             int moved = (int) taken.stream().filter(r -> r.loco.getAddress() == r.stationAddress).count();
             answered.append("\n\n").append(I18n.f("ui.infoSyncAnswers", n[1], moved, n[2], n[3],
@@ -14777,19 +14773,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.model.logf("loc.ui.infoNoLocomotivesToRename");
             // Read again once anything was answered, so a row the station changed meanwhile is left; unread, the
             // locomotives alone are checked
-            RenameProposals now = asked;
-            if (a.values().stream().anyMatch(x -> x != SyncDifferencesWindow.Answer.ASK))
-            {
-                try
-                {
-                    now = readBehindTheSpinner(c, false);
-                }
-                catch (Exception e)
-                {
-                    this.model.log(e);
-                }
-            }
-            RenameProposals current = now;
+            RenameProposals again = a.values().stream().anyMatch(x -> x != SyncDifferencesWindow.Answer.ASK)
+                ? readBehindTheSpinner(c, false) : null;
+            RenameProposals current = again != null ? again : asked;
             List<int[]> n = new ArrayList<>();
             SwingUtilities.invokeAndWait(() -> n.add(apply(c, asked, current, a, names, taken)));
             return a.isEmpty() ? new int[0] : n.get(0);
@@ -14802,14 +14788,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /** The station's rename proposals, read behind the spinner over the window that asked, c's.  Off the event thread. */
+    /** The station's rename proposals, read behind the spinner over c's window; quietly, null if unread, unless `log`. */
     private RenameProposals readBehindTheSpinner(Component c, boolean log) throws Exception
     {
         BusyDialog.Closer busy = BusyDialog.showUntilClosed(c instanceof Window ? (Window) c
             : SwingUtilities.getWindowAncestor(c), I18n.t("ui.busySyncingWithCS"));
         try
         {
-            return this.model.getRenameProposals(log);
+            return log ? this.model.getRenameProposals() : this.model.getRenameProposalsQuietly();
         }
         finally
         {

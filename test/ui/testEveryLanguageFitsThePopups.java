@@ -3,9 +3,12 @@ package ui;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
+import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
@@ -13,8 +16,12 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.base.Locomotive;
+import org.traincontrol.base.RenameProposals;
+import org.traincontrol.gui.SyncDifferencesWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.AskingWindows;
@@ -25,6 +32,7 @@ import support.Mouse;
 import support.Reflect;
 import support.SettingsWindow;
 import support.StationDoors;
+import support.SyncTable;
 
 /**
  * `testEveryLanguageFits` for the program's popups and right-click menus, on the frozen railway.  Each popup is shown by
@@ -192,6 +200,53 @@ public class testEveryLanguageFitsThePopups
 
         assertTrue(unnamed.isEmpty(), "the Cancel question named no train, so the question that names them was not "
             + "measured: " + unnamed);
+    }
+
+    /**
+     * The manual Sync's table and its longer finishing message fit in every language: the linked headings, a row
+     * differing in both whose grayed rename deletes another locomotive and whose address collides, and the counts the
+     * message adds (FR-249).
+     *
+     * MUTATION: in `ChoiceTable.link`, fix a heading's preferred size at 20 by 20 pixels, and this fails in every language.
+     */
+    @Test(timeOut = 300000)
+    public void testTheSyncTableAndItsMessageFitInEveryLanguage() throws Exception
+    {
+        MarklinLocomotive asked = new MarklinLocomotive(railway.model, 23, Locomotive.decoderType.MM2, "BR 218");
+        MarklinLocomotive holder = new MarklinLocomotive(railway.model, 24, Locomotive.decoderType.MM2, "BR 218 007");
+        Map<Integer, List<MarklinLocomotive>> held = new HashMap<>();
+        held.put(asked.getIntUID(), Collections.singletonList(asked));
+        held.put(holder.getIntUID(), Collections.singletonList(holder));
+
+        LanguageFit.assertNothingClipped("sync table", LanguageFit.everyLanguage(language ->
+        {
+            List<String> found = Collections.synchronizedList(new ArrayList<>());
+            RenameProposals.Row row = new RenameProposals.Row(asked, holder.getName(), holder.getAddress(),
+                I18n.f("loc.renameNameListedTwice", asked.getName(), holder.getName()), null, holder, null,
+                asked.getIntUID(), holder.getIntUID());
+            RenameProposals proposals = new RenameProposals(new ArrayList<>(), 0, new HashMap<>(),
+                Collections.singletonList(row), held);
+
+            try (SyncTable table = SyncTable.canceling(t ->
+            {
+                int[] seen = {0};
+                for (String each : LanguageFit.measurePopup(LEDGER, "popup-sync-table", language, t.dialog, seen))
+                    found.add("popup-sync-table: " + each);
+            }))
+            {
+                SwingUtilities.invokeLater(() -> SyncDifferencesWindow.ask(railway.ui, proposals));
+                assertTrue(Components.waitFor(() -> !table.shown().isEmpty(), 15000), "the Sync table showed nothing in "
+                    + language);
+                Components.settle();
+            }
+            found.addAll(popup("popup-sync-done", language, m -> null, null, later(() ->
+            {
+                JOptionPane.showMessageDialog(railway.ui, I18n.f("ui.infoSyncCompleteItemsAdded", 12) + "\n\n"
+                    + I18n.f("ui.infoSyncAnswers", 3, 2, 4, 1, 5));
+                return null;
+            }), null));
+            return found;
+        }));
     }
 
     /**

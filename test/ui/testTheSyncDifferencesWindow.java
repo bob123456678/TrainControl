@@ -1,5 +1,9 @@
 package ui;
 
+import java.awt.Component;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -13,7 +17,10 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import javax.swing.AbstractButton;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -22,11 +29,18 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.annotations.Test;
 import org.traincontrol.base.Locomotive;
+import org.traincontrol.base.RenameProposals;
+import org.traincontrol.gui.LocomotiveSettingsFrame;
+import org.traincontrol.gui.SyncDifferencesWindow;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.ChoiceTable;
+import org.traincontrol.gui.widgets.HandPointer;
+import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.AskingWindows;
 import support.Components;
+import support.SettingsWindow;
 import support.StandInStation;
 import support.StationRig;
 import support.SyncTable;
@@ -87,9 +101,10 @@ public class testTheSyncDifferencesWindow
     }
 
     /**
-     * Set all to Apply picks only what needs no human pick: not a grayed, triangle or deleting Apply, not a row differing
-     * in both, never an ignored row; Keep As Is and Ask Again override every other row.  The triangle follows the other
-     * rows' choices (E34, E37, E45, E79, E80, E82).
+     * Set all, an answer's heading clicked, to Apply picks only what needs no human pick: not a grayed, triangle or
+     * deleting Apply, not a row differing in both, never an ignored row; Keep As Is and Ask Again override every other
+     * row.  The headings are links the keyboard reaches, Enter pressing them.  The triangle follows the other rows'
+     * choices and names who else would answer that decoder (E34, E37, E45, E79, E80, E82).
      *
      * MUTATION: in `SyncDifferencesWindow`, Set all to Apply every row with an enabled Apply (drop `applicable`); or in
      * `refresh`, judge the triangle on the row alone.
@@ -110,9 +125,15 @@ public class testTheSyncDifferencesWindow
             assertNotNull(pressSync(rig, ui, SyncTable.canceling(t ->
             {
                 check(problems, visible(t, "SW A", "collision"), true, "A's triangle with B unmoved");
+                check(problems, t.in("SW A", "collision", JLabel.class).getToolTipText(), I18n.f("sync.ui.collision", 31,
+                    "SW B"), "A's triangle names B");
+                AbstractButton apply = Components.withText(t.dialog, I18n.t("sync.ui.apply"));
+                check(problems, Arrays.asList(SwingUtilities.getAncestorOfClass(ChoiceTable.class, apply) != null,
+                    HandPointer.isHand(apply.getCursor()), apply.isFocusable(), apply.getToolTipText()), Arrays.asList(
+                    true, true, true, I18n.f("sync.ui.setAllTip", I18n.t("sync.ui.apply"))), "Apply's heading a link");
                 check(problems, t.in("SW D", "deletes", JLabel.class).getText(), I18n.f("sync.ui.deletes", "SW Held"),
                     "D's deleting mark");
-                Components.withText(t.dialog, I18n.t("sync.ui.apply")).doClick();
+                apply.doClick();
                 check(problems, selected(t), rowsOn("ASK", "ASK", "ASK", "RENAME", "ASK", "ASK", "ADDRESS", "ASK", "ASK"),
                     "Set all to Apply");
                 check(problems, visible(t, "SW T", "collision"), true, "T's triangle");
@@ -125,7 +146,10 @@ public class testTheSyncDifferencesWindow
                     {"sync.ui.keepBoth", "KEEP KEEP BOTH BOTH KEEP BOTH KEEP KEEP KEEP"},
                     {"sync.ui.askAgain", "ASK ASK ASK ASK ASK ASK ASK ASK ASK"}})
                 {
-                    Components.withText(t.dialog, I18n.t(each[0])).doClick();
+                    // Enter on the heading, as the keyboard would
+                    AbstractButton head = Components.withText(t.dialog, I18n.t(each[0]));
+                    head.getActionMap().get(head.getInputMap().get(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0)))
+                        .actionPerformed(new ActionEvent(head, ActionEvent.ACTION_PERFORMED, null));
                     check(problems, selected(t), rowsOn(each[1].split(" ")), "Set all to " + each[0]);
                 }
             }), null), "the table did not open");
@@ -334,6 +358,129 @@ public class testTheSyncDifferencesWindow
         });
     }
 
+    /**
+     * The table hangs off the window that asked while it stands, and off the main window once that is gone, never off a
+     * closed one (E96).
+     *
+     * MUTATION: in `TrainControlUI.askAndApply`, open the table over `asking` whether or not it is showing.
+     */
+    @Test(timeOut = 180000)
+    public void testATableForAClosedWindowHangsOffTheMainWindow() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            here(rig, "SW Gone", 52);
+            list.set(station("SW Gone2", 52));
+            JDialog[] asking = new JDialog[1];
+            SwingUtilities.invokeAndWait(() ->
+            {
+                asking[0] = new JDialog(ui, "asking");
+                asking[0].setVisible(true);
+            });
+            try
+            {
+                SyncTable.Shown open = pressSync(rig, ui, asking[0], SyncTable.canceling(null), null);
+                assertNotNull(open, "the table did not open");
+                assertTrue(open.dialog.getOwner() == asking[0], "the table does not hang off the window that asked");
+                SwingUtilities.invokeAndWait(asking[0]::dispose);
+                SyncTable.Shown gone = pressSync(rig, ui, asking[0], SyncTable.canceling(null), null);
+                assertNotNull(gone, "the table did not open for a closed window");
+                assertTrue(gone.dialog.getOwner() == ui, "the table for a closed window hangs off " + gone.dialog.getOwner());
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(asking[0]::dispose);
+            }
+        });
+    }
+
+    /**
+     * An open Locomotive Settings window follows an Apply on its locomotive, so its Save cannot write the old address
+     * back; one holding typing is left as typed, as the Sync does not ask about it (E66).
+     *
+     * MUTATION: in `TrainControlUI.pressedSync`, leave out the `followTheSync` call.
+     */
+    @Test(timeOut = 240000)
+    public void testAnOpenSettingsWindowFollowsAnAppliedAddress() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            here(rig, "SW Open", 53, "SW Typed", 55);
+            list.set(station("SW Open", 54, "SW Typed2", 55));
+            try
+            {
+                assertTrue(SettingsWindow.open(ui, rig.model.getLocByName("SW Open"), LocomotiveSettingsFrame.Tab.LOCOMOTIVE,
+                    null), "precondition: Locomotive Settings did not open");
+                SettingsWindow.awaited();
+                assertNotNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW Open", "ADDRESS")), null),
+                    "the table did not open");
+                assertEquals(rig.model.getLocByName("SW Open").getAddress(), 54, "precondition: the address was not applied");
+                assertTrue(Components.waitFor(() -> "54".equals(SettingsWindow.text("settings.address")), 10000),
+                    "the open window still shows " + SettingsWindow.text("settings.address"));
+
+                assertTrue(SettingsWindow.open(ui, rig.model.getLocByName("SW Typed"), LocomotiveSettingsFrame.Tab.LOCOMOTIVE,
+                    null), "precondition: Locomotive Settings did not open");
+                SettingsWindow.awaited();
+                SettingsWindow.type("settings.name", "SW Mine");
+                assertNotNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW Typed", "RENAME")), null),
+                    "the table did not open");
+                assertNotNull(rig.model.getLocByName("SW Typed2"), "precondition: the rename was not applied");
+                Components.settle();
+                assertEquals(SettingsWindow.text("settings.name"), "SW Mine", "the typing was thrown away");
+            }
+            finally
+            {
+                SettingsWindow.cancelDiscarding();
+            }
+        });
+    }
+
+    /**
+     * A thousand rows open in a bounded time inside the screen: the list scrolls, and the buttons stay in view (E129).
+     *
+     * MUTATION: in `ChoiceTable`, leave out `getPreferredSize`, and the window grows past the screen.
+     */
+    @Test(timeOut = 180000)
+    public void testAThousandRowsScrollInsideTheScreen() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            List<RenameProposals.Row> rows = new ArrayList<>();
+            for (int i = 1; i <= 1000; i++)
+            {
+                MarklinLocomotive l = new MarklinLocomotive(rig.model, i, Locomotive.decoderType.DCC, "SW " + i);
+                rows.add(new RenameProposals.Row(l, "SW Station " + i, null, null, null, null, null, l.getIntUID(),
+                    l.getIntUID()));
+            }
+            RenameProposals many = new RenameProposals(new ArrayList<>(), 0, new java.util.HashMap<>(), rows,
+                new java.util.HashMap<Integer, List<MarklinLocomotive>>());
+            List<String> problems = new ArrayList<>();
+            long started = System.nanoTime();
+            AtomicReference<Long> opened = new AtomicReference<>();
+            try (SyncTable table = SyncTable.canceling(t ->
+            {
+                opened.set(System.nanoTime() - started);
+                Rectangle screen = t.dialog.getGraphicsConfiguration().getBounds();
+                JScrollPane scrolling = Components.find(t.dialog, ChoiceTable.class, c -> true);
+                check(problems, screen.contains(t.dialog.getBounds()), true, "window inside the screen");
+                check(problems, scrolling.getVerticalScrollBar().isVisible(), true, "the list scrolls");
+                for (Component c : new Component[] {Components.withText(t.dialog, I18n.t("sync.ui.continue")),
+                    Components.withText(t.dialog, I18n.t("ui.cancel"))})
+                {
+                    check(problems, new Rectangle(t.dialog.getContentPane().getSize()).contains(SwingUtilities
+                        .convertRectangle(c.getParent(), c.getBounds(), t.dialog.getContentPane())), true, "buttons in view");
+                }
+            }))
+            {
+                SwingUtilities.invokeLater(() -> SyncDifferencesWindow.ask(ui, many));
+                assertTrue(Components.waitFor(() -> !table.shown().isEmpty(), 60000), "the table did not open");
+                Components.settle();
+            }
+            assertTrue(opened.get() < 20_000_000_000L, "a thousand rows took " + opened.get() / 1_000_000 + " ms to open");
+            assertTrue(problems.isEmpty(), problems.toString());
+        });
+    }
+
     private static void check(List<String> problems, Object got, Object expected, String what)
     {
         if (!java.util.Objects.equals(got, expected)) problems.add(what + ": " + got + " not " + expected);
@@ -405,11 +552,18 @@ public class testTheSyncDifferencesWindow
     private static SyncTable.Shown pressSync(StationRig rig, TrainControlUI ui, SyncTable table, List<String> said)
         throws Exception
     {
+        return pressSync(rig, ui, ui, table, said);
+    }
+
+    /** The same, pressed in `asking`. */
+    private static SyncTable.Shown pressSync(StationRig rig, TrainControlUI ui, Component asking, SyncTable table,
+        List<String> said) throws Exception
+    {
         rig.model.setNetworkCommState(true);
         int syncs = rig.station.requests("/app/api/locos");
         try (Answering answering = Answering.start(m -> Answering.pressAt(0)); SyncTable t = table)
         {
-            SwingUtilities.invokeLater(() -> ui.doSync(ui));
+            SwingUtilities.invokeLater(() -> ui.doSync(asking));
             assertTrue(Components.waitFor(() -> rig.station.requests("/app/api/locos") > syncs, 60000),
                 "the Sync never read the station");
             assertTrue(syncEnded(ui), "a sync never ended");

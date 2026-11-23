@@ -25,7 +25,7 @@ public class RenameProposals
     private final int refused;
     private final Map<String, Integer> addresses;
     private final List<Row> rows;
-    private final Map<Integer, Integer> held;
+    private final Map<Integer, List<Locomotive>> held = new HashMap<>();
 
     /** One locomotive here the station differs from: by name at its decoder address, by address under its name, or both. */
     public static final class Row
@@ -92,15 +92,15 @@ public class RenameProposals
         }
     }
 
-    /** @param held how many locomotives here are at each decoder address (as getIntUID) */
+    /** @param held the locomotives here at each decoder address (as getIntUID) */
     public RenameProposals(List<String[]> proposals, int refused, Map<String, Integer> addresses, List<Row> rows,
-        Map<Integer, Integer> held)
+        Map<Integer, ? extends List<? extends Locomotive>> held)
     {
         this.proposals = proposals;
         this.refused = refused;
         this.addresses = new java.util.LinkedHashMap<>(addresses);
         this.rows = new ArrayList<>(rows);
-        this.held = new HashMap<>(held);
+        held.forEach((uid, here) -> this.held.put(uid, new ArrayList<>(here)));
         this.rows.sort(Comparator.comparing((Row r) -> r.loco.isSyncIgnored()).thenComparing(r -> r.loco.getName(),
             String.CASE_INSENSITIVE_ORDER));
     }
@@ -157,14 +157,21 @@ public class RenameProposals
      */
     public Set<Row> collisions(Collection<Row> addressed)
     {
-        Map<Integer, Integer> end = new HashMap<>(this.held);
-        for (Row r : addressed)
-        {
-            end.merge(r.uid, -1, Integer::sum);
-            end.merge(r.stationUid, 1, Integer::sum);
-        }
         Set<Row> out = new HashSet<>();
-        for (Row r : addressed) if (end.get(r.stationUid) > 1) out.add(r);
+        for (Row r : addressed) if (!sharing(r, addressed).isEmpty()) out.add(r);
+        return out;
+    }
+
+    /** The other locomotives here at r's station address once every row addressed has taken the station's. */
+    public List<Locomotive> sharing(Row r, Collection<Row> addressed)
+    {
+        List<Locomotive> out = new ArrayList<>(this.held.getOrDefault(r.stationUid, Collections.emptyList()));
+        for (Row o : addressed)
+        {
+            if (o.uid == r.stationUid) out.remove(o.loco);
+            if (o.stationUid == r.stationUid) out.add(o.loco);
+        }
+        out.remove(r.loco);
         return out;
     }
 
@@ -181,9 +188,13 @@ public class RenameProposals
                 (r.asksName() ? names : moves).add(r);
         }
         // Each one left out can change what the rest collide with or delete
-        while (moves.removeAll(collisions(moves)) | names.removeIf(r -> deletes(r, names) != null))
+        boolean dropped;
+        do
         {
+            boolean moved = moves.removeAll(collisions(moves));
+            dropped = names.removeIf(r -> deletes(r, names) != null) || moved;
         }
+        while (dropped);
         Set<Row> out = new HashSet<>(names);
         out.addAll(moves);
         return out;

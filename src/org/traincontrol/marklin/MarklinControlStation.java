@@ -1314,16 +1314,27 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public RenameProposals getRenameProposals() throws Exception
     {
-        return getRenameProposals(true);
-    }
-
-    /** The same, logging the refusals only when `log` is set. */
-    @Override
-    public RenameProposals getRenameProposals(boolean log) throws Exception
-    {
         int unreadable = this.fileParser.getUnreadableRecords();
         List<MarklinLocomotive> parsedLocs = this.isCS3 ? fileParser.parseLocomotivesCS3() : fileParser.parseLocomotives();
-        return differences(parsedLocs, this.fileParser.getUnreadableRecords() > unreadable, log);
+        return differences(parsedLocs, this.fileParser.getUnreadableRecords() > unreadable, true);
+    }
+
+    /** The same read without its log lines, for a second look within one Sync; null, logged, when it fails. */
+    @Override
+    public RenameProposals getRenameProposalsQuietly()
+    {
+        int unreadable = this.fileParser.getUnreadableRecords();
+        try
+        {
+            // The parse runs before the second count is taken
+            return differences(this.isCS3 ? fileParser.parseLocomotivesCS3() : fileParser.parseLocomotives(),
+                this.fileParser.getUnreadableRecords() > unreadable, false);
+        }
+        catch (Exception e)
+        {
+            this.log(e);
+            return null;
+        }
     }
 
     /** What the station's locomotives as read differ on here: the one rule every sync door asks (FR-249). */
@@ -1336,12 +1347,8 @@ public class MarklinControlStation implements ViewListener, ModelListener
         int refused = 0;
         // Indexed once, not rebuilt for every parsed locomotive.
         Map<Integer, List<MarklinLocomotive>> byAddress = new HashMap<>();
-        Map<Integer, Integer> held = new HashMap<>();
         for (MarklinLocomotive existingLoc : this.locDB.getItems())
-        {
             byAddress.computeIfAbsent(existingLoc.getIntUID(), k -> new ArrayList<>()).add(existingLoc);
-            held.merge(existingLoc.getIntUID(), 1, Integer::sum);
-        }
 
         // The same ambiguity exists on the Central Station side: two parsed locomotives at one address both match the
         // single local locomotive, so the list would get two proposals with one source.
@@ -1432,7 +1439,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 at == null ? null : now, to == null ? null : this.locDB.getByName(to), stationOf.get(here), here.getIntUID(),
                 at == null ? here.getIntUID() : at.getIntUID()));
         }
-        return new RenameProposals(ordered, refused, addresses, rows, held);
+        return new RenameProposals(ordered, refused, addresses, rows, byAddress);
     }
 
     /** Of two locomotives at one address, one named `stationName`: the other, when the station has no such name. */

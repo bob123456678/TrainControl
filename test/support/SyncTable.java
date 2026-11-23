@@ -1,6 +1,10 @@
 package support;
 
+import java.awt.AWTEvent;
+import java.awt.Toolkit;
 import java.awt.Window;
+import java.awt.event.AWTEventListener;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -8,7 +12,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import javax.swing.AbstractButton;
 import javax.swing.JDialog;
@@ -18,7 +21,7 @@ import javax.swing.SwingUtilities;
 import org.traincontrol.util.I18n;
 
 /**
- * Answers the manual Sync's table (FR-249) as the user would: a thread watches for it while open, picks each named
+ * Answers the manual Sync's table (FR-249) as the user would: each one that opens while this is open, it picks each named
  * locomotive's answer ("KEEP", "RENAME", "ADDRESS", "BOTH", "IGNORE" or "ASK"), then presses Continue Sync, or Cancel
  * when told to, and keeps what each table showed.  Found by its title and its controls' names, so a claim compiles
  * before the window exists.  Close it in a finally, or with try-with-resources.
@@ -57,33 +60,20 @@ public final class SyncTable implements AutoCloseable
     }
 
     private final List<Shown> shown = Collections.synchronizedList(new ArrayList<>());
-    private final AtomicBoolean going = new AtomicBoolean(true);
-    private final Thread watching;
+    private final AWTEventListener watching;
 
     private SyncTable(Map<String, String> answers, boolean cancel, Consumer<Shown> look)
     {
-        Set<Window> handled = Collections.newSetFromMap(new IdentityHashMap<>());
-        this.watching = new Thread(() ->
+        Set<Window> handled = Collections.synchronizedSet(Collections.newSetFromMap(new IdentityHashMap<>()));
+        // Told of each window as it opens, and answered once the opening is done
+        this.watching = e ->
         {
-            while (this.going.get())
-            {
-                for (Window w : Window.getWindows())
-                {
-                    if (w instanceof JDialog && w.isShowing() && I18n.t("sync.ui.title").equals(((JDialog) w)
-                        .getTitle()) && handled.add(w)) answer((JDialog) w, answers, cancel, look);
-                }
-                try
-                {
-                    Thread.sleep(50);
-                }
-                catch (InterruptedException stop)
-                {
-                    return;
-                }
-            }
-        }, "sync-table");
-        this.watching.setDaemon(true);
-        this.watching.start();
+            Window w = ((WindowEvent) e).getWindow();
+            if (e.getID() == WindowEvent.WINDOW_OPENED && w instanceof JDialog && I18n.t("sync.ui.title").equals(
+                ((JDialog) w).getTitle()) && handled.add(w)) SwingUtilities.invokeLater(() -> answer((JDialog) w,
+                answers, cancel, look));
+        };
+        Toolkit.getDefaultToolkit().addAWTEventListener(this.watching, AWTEvent.WINDOW_EVENT_MASK);
     }
 
     /** Answers every table so, rows not named left as they start, then presses Continue Sync. */
@@ -112,34 +102,29 @@ public final class SyncTable implements AutoCloseable
         return m;
     }
 
+    /** On the event thread. */
     private void answer(JDialog dialog, Map<String, String> answers, boolean cancel, Consumer<Shown> look)
     {
+        Shown s = new Shown(dialog);
+        this.shown.add(s);
         try
         {
-            SwingUtilities.invokeAndWait(() ->
-            {
-                Shown s = new Shown(dialog);
-                this.shown.add(s);
-                try
-                {
-                    if (look != null) look.accept(s);
-                }
-                finally
-                {
-                    // A look that closed the table leaves nothing to press
-                    for (Map.Entry<String, String> a : answers.entrySet())
-                    {
-                        AbstractButton b = s.in(a.getKey(), a.getValue(), AbstractButton.class);
-                        if (b != null && dialog.isDisplayable()) b.doClick();
-                    }
-                    if (dialog.isDisplayable())
-                        Components.withText(dialog, I18n.t(cancel ? "ui.cancel" : "sync.ui.continue")).doClick();
-                }
-            });
+            if (look != null) look.accept(s);
         }
-        catch (Exception e)
+        catch (RuntimeException e)
         {
             e.printStackTrace();
+        }
+        finally
+        {
+            // A look that closed the table leaves nothing to press
+            for (Map.Entry<String, String> a : answers.entrySet())
+            {
+                AbstractButton b = s.in(a.getKey(), a.getValue(), AbstractButton.class);
+                if (b != null && dialog.isDisplayable()) b.doClick();
+            }
+            if (dialog.isDisplayable())
+                Components.withText(dialog, I18n.t(cancel ? "ui.cancel" : "sync.ui.continue")).doClick();
         }
     }
 
@@ -155,7 +140,6 @@ public final class SyncTable implements AutoCloseable
     @Override
     public void close()
     {
-        this.going.set(false);
-        this.watching.interrupt();
+        Toolkit.getDefaultToolkit().removeAWTEventListener(this.watching);
     }
 }

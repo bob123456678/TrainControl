@@ -313,21 +313,29 @@ public class testARouteDrivenLocomotiveIsNotEdited
         }
     }
 
-    /** The Central Station's name proposal asks it too, of both names, before it renames. */
+    /**
+     * The Central Station's name proposal asks it too, of both names, before it renames: the row's reason (FR-249)
+     * covers the current name through whyLeftAsItIs and the proposed one directly, and Apply renames only without one.
+     */
     @Test
     public void testTheNameProposalAsksItFirst() throws Exception
     {
-        String source = SourceOf.declaration("private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)");
+        String source = SourceOf.declaration(
+            "private RenameProposals differences(List<MarklinLocomotive> parsedLocs, boolean partial, boolean log)");
 
-        int current = source.indexOf("if (RunGates.refuseWhileARouteDrivesIt(this, c, currentName)) continue;");
-        int proposed = source.indexOf("if (RunGates.refuseWhileARouteDrivesIt(this, c, newName)) continue;");
+        int current = source.indexOf("now = whyLeftAsItIs(here)");
+        int proposed = source.indexOf("this.runningRouteDriving(to)");
 
-        assertTrue(current > 0 && proposed > 0, "the Central Station's name proposal does not ask about both names"
+        boolean itself = SourceOf.declaration("private String whyLeftAsItIs(").contains("runningRouteDriving(here.getName())");
+
+        assertTrue(current > 0 && proposed > 0 && itself, "the Central Station's name proposal does not ask about both names"
             + " (CS3-B1, SVB-C2)");
 
-        int renames = source.indexOf("renameLoc(", proposed);
+        String apply = SourceOf.declaration("private int[] apply(Component c, RenameProposals asked, RenameProposals now,");
+        int asks = apply.indexOf("f.whyNot(true)");
+        int renames = apply.indexOf("renamed(c, r)", asks);
 
-        assertTrue(renames > proposed, "the name proposal renames before it asks (OB-287)");
+        assertTrue(asks > 0 && renames > asks, "the name proposal renames before it asks (OB-287)");
     }
 
     /** The locomotive and route of this claim. */
