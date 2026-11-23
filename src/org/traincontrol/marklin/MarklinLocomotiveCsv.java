@@ -110,8 +110,11 @@ public final class MarklinLocomotiveCsv
     /** What the user keeps of a possible duplicate: both, the locomotive here, or the file's in its place. */
     public enum Choice { BOTH, OLD, NEW }
 
-    /** Why Keep New may not rename the locomotive here: several hold the address, the file lists it, or it runs. */
-    public enum NotNew { SEVERAL, LISTED, RUNNING }
+    /**
+     * Why Keep New did not or may not rename the locomotive here: several hold the address, the file lists it, it runs,
+     * an earlier row took it, or the row was no longer a possible duplicate when the answer was carried out.
+     */
+    public enum NotNew { SEVERAL, LISTED, RUNNING, TAKEN, GONE }
 
     /** A possible duplicate (FR-249): a new row at a decoder address locomotives here hold after the plan's moves. */
     public static final class Duplicate
@@ -147,6 +150,10 @@ public final class MarklinLocomotiveCsv
         public int keptOld;
         /** The file's names that locomotives here took on Keep New. */
         public final List<String> renamed = new ArrayList<>();
+        /** Rows answered Keep New that were added beside the locomotive here instead, and why. */
+        public final Map<String, NotNew> notRenamed = new LinkedHashMap<>();
+        /** Rows answered Keep Old that were no longer possible duplicates, so were added. */
+        public final List<String> notLeftOut = new ArrayList<>();
         public final Map<Integer, Why> skipped = new TreeMap<>();
         /** For a skipped line, the cells that made it unreadable: {heading, value} each. */
         public final Map<Integer, List<String[]>> badCells = new TreeMap<>();
@@ -451,8 +458,12 @@ public final class MarklinLocomotiveCsv
             }
         }
 
-        // A possible duplicate is asked in its own table, so it alone names no shared address
-        for (Duplicate d : duplicates(model, plan)) touched.remove(d.row.name);
+        // A possible duplicate is asked in its own table, so no shared address names or counts it
+        for (Duplicate d : duplicates(model, plan))
+        {
+            touched.remove(d.row.name);
+            where.remove(d.row.name);
+        }
         Map<String, Shared> groups = new TreeMap<>();
 
         for (Map.Entry<String, String> e : where.entrySet())
@@ -491,7 +502,8 @@ public final class MarklinLocomotiveCsv
     /**
      * The same, each possible duplicate as `choices` has it (Keep Both where it has none).  Keep New renames the
      * locomotive here through `renameLoc`, so what follows its name follows, then merges the row into it; a Keep New
-     * that may not, or whose locomotive an earlier row took, is Keep Both.
+     * that may not, or whose locomotive an earlier row took, is Keep Both, and so is a Keep Old whose row is no longer
+     * a possible duplicate: the result says which.
      */
     public Result apply(ViewListener model, Plan plan, Map<Row, Choice> choices)
     {
@@ -511,14 +523,20 @@ public final class MarklinLocomotiveCsv
         for (Row row : this.rows)
         {
             Duplicate d = duplicates.get(row);
-            Choice choice = d == null ? Choice.BOTH : choices.getOrDefault(row, Choice.BOTH);
-            if (choice == Choice.OLD)
+            Choice choice = choices.getOrDefault(row, Choice.BOTH);
+            if (choice == Choice.OLD && d != null)
             {
                 result.keptOld++;
                 continue;
             }
-            if (choice == Choice.NEW && d.whyNotNew == null && taken.add(d.here.get(0))
-                && model.renameLoc(d.here.get(0).getName(), row.name)) result.renamed.add(row.name);
+            if (choice == Choice.OLD) result.notLeftOut.add(row.name);
+            if (choice == Choice.NEW)
+            {
+                NotNew why = d == null ? NotNew.GONE : d.whyNotNew != null ? d.whyNotNew
+                    : taken.add(d.here.get(0)) ? null : NotNew.TAKEN;
+                if (why == null && model.renameLoc(d.here.get(0).getName(), row.name)) result.renamed.add(row.name);
+                else result.notRenamed.put(row.name, why == null ? NotNew.GONE : why);
+            }
             Fate fate = fateOf(row, model);
 
             if (row.runtimeBad) result.badRuntime++;

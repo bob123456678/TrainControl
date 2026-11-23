@@ -107,12 +107,18 @@ final class LocomotiveCsvDoor
 
         for (MarklinLocomotiveCsv.Shared group : shared) sharing += group.names.size();
 
-        // Possible duplicates are counted in their table, not with the new ones
-        String question = I18n.f("loc.ui.confirmImportCsv", added - duplicates.size(), existing.size())
-            + (changing.isEmpty() ? "" : "\n\n" + I18n.f("loc.ui.confirmImportCsvReaddress", changing.size()))
-            + (plan.kept.isEmpty() ? "" : "\n\n" + I18n.f("loc.ui.confirmImportCsvKept", plan.kept.size()))
-            + (sharing == 0 ? "" : "\n\n" + I18n.f("loc.ui.confirmImportCsvShared", sharing))
-            + (skipped > 0 ? "\n\n" + I18n.f("loc.ui.confirmImportCsvUnreadable", skipped) : "");
+        // Possible duplicates are counted in their table, not with the new ones; a count of 0 says nothing
+        int fresh = added - duplicates.size();
+        List<String> asks = new ArrayList<>();
+        asks.add((fresh == 0 ? "" : count(fresh, "loc.ui.confirmImportCsvOne", "loc.ui.confirmImportCsv")) + (fresh == 0
+            || existing.isEmpty() ? "" : " ") + (existing.isEmpty() ? "" : count(existing.size(),
+            "loc.ui.confirmImportCsvMergeOne", "loc.ui.confirmImportCsvMerge")));
+        if (!changing.isEmpty()) asks.add(I18n.f("loc.ui.confirmImportCsvReaddress", changing.size()));
+        if (!plan.kept.isEmpty()) asks.add(I18n.f("loc.ui.confirmImportCsvKept", plan.kept.size()));
+        if (sharing > 0) asks.add(I18n.f("loc.ui.confirmImportCsvShared", sharing));
+        if (skipped > 0) asks.add(I18n.f("loc.ui.confirmImportCsvUnreadable", skipped));
+        asks.removeIf(String::isEmpty);
+        String question = String.join("\n\n", asks);
 
         // Every line, in order: the area scrolls
         List<String> lines = new ArrayList<>();
@@ -164,8 +170,10 @@ final class LocomotiveCsvDoor
         if (result.addedWithoutRuntime > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvNoRuntime", result.addedWithoutRuntime);
         if (result.badLastRun > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvBadLastRun", result.badLastRun);
         if (result.leftOutMultiUnit > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvLeftOutMultiUnit", result.leftOutMultiUnit);
-        if (!result.renamed.isEmpty()) said += "\n" + I18n.f("loc.ui.infoImportCsvRenamed", result.renamed.size());
-        if (result.keptOld > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvKeptOld", result.keptOld);
+        if (!result.renamed.isEmpty()) said += "\n" + count(result.renamed.size(), "loc.ui.infoImportCsvRenamedOne", "loc.ui.infoImportCsvRenamed");
+        if (result.keptOld > 0) said += "\n" + count(result.keptOld, "loc.ui.infoImportCsvKeptOldOne", "loc.ui.infoImportCsvKeptOld");
+        if (!result.notRenamed.isEmpty()) said += "\n" + I18n.f("loc.ui.infoImportCsvNotRenamed", notRenamed(result));
+        if (!result.notLeftOut.isEmpty()) said += "\n" + I18n.f("loc.ui.infoImportCsvNotLeftOut", String.join(", ", result.notLeftOut));
         List<String> lines = new ArrayList<>();
 
         for (MarklinLocomotiveCsv.Kept kept : result.kept) lines.add(keptLine(kept));
@@ -178,6 +186,23 @@ final class LocomotiveCsvDoor
         if (!result.skipped.isEmpty()) said += "\n\n" + I18n.f("loc.ui.infoImportCsvSkipped", result.skipped.size());
 
         JOptionPane.showMessageDialog(ui, lines.isEmpty() ? said : DetailsArea.message(said, lines));
+    }
+
+    /** `n` of something, in the singular key when it is 1. */
+    private static String count(int n, String one, String many)
+    {
+        return I18n.f(n == 1 ? one : many, n);
+    }
+
+    /** The file's names whose Keep New was not carried out, each with why. */
+    private static String notRenamed(MarklinLocomotiveCsv.Result result)
+    {
+        List<String> out = new ArrayList<>();
+        result.notRenamed.forEach((name, why) -> out.add(name + " (" + I18n.t(why == MarklinLocomotiveCsv.NotNew.SEVERAL
+            ? "loc.ui.importCsvNotSeveral" : why == MarklinLocomotiveCsv.NotNew.LISTED ? "loc.ui.importCsvNotListed"
+            : why == MarklinLocomotiveCsv.NotNew.RUNNING ? "loc.ui.importCsvNotRunning"
+            : why == MarklinLocomotiveCsv.NotNew.TAKEN ? "loc.ui.importCsvNotTaken" : "loc.ui.importCsvNotGone") + ")"));
+        return String.join(", ", out);
     }
 
     /** A locomotive that keeps its address, by name and why. */
@@ -262,7 +287,7 @@ final class LocomotiveCsvDoor
     private static final class Duplicates
     {
         private final Map<Duplicate, Map<Choice, JRadioButton>> choices = new LinkedHashMap<>();
-        /** "(can't apply)" on a Keep New another row's Keep New took. */
+        /** "(can't apply)" beside the file's name where another row's Keep New took the locomotive here. */
         private final Map<Duplicate, JLabel> taken = new HashMap<>();
         // A linked heading sets every row it can, as a row's own pick would
         final ChoiceTable table = new ChoiceTable(UiStyle.blackLabel(I18n.t("loc.ui.importCsvInFile")),
@@ -284,25 +309,29 @@ final class LocomotiveCsvDoor
             String why = d.whyNotNew == MarklinLocomotiveCsv.NotNew.SEVERAL ? I18n.f("loc.ui.importCsvWhySeveral",
                 d.address) : d.whyNotNew == MarklinLocomotiveCsv.NotNew.LISTED ? I18n.f("loc.ui.importCsvWhyListed", old)
                 : d.whyNotNew != null ? I18n.f("loc.ui.importCsvWhyRunning", old) : null;
-            JLabel took = SyncDifferencesWindow.text(I18n.t("sync.ui.cantApply"), SyncDifferencesWindow.GRAYED);
-            took.setName(name + ":taken");
-            took.setVisible(false);
-            this.taken.put(d, took);
+            JLabel took = null;
+            if (why == null)
+            {
+                // Always laid out, empty until taken, so the dialog is sized with its text
+                took = SyncDifferencesWindow.text(I18n.t("sync.ui.cantApply"), SyncDifferencesWindow.GRAYED);
+                took.setPreferredSize(took.getPreferredSize());
+                took.setText("");
+                took.setName(name + ":taken");
+                this.taken.put(d, took);
+            }
             List<JComponent> here = new ArrayList<>();
             for (Locomotive l : d.here) here.add(SyncDifferencesWindow.line(this.table, kName, l.getName()
-                + (l.hasLinkedLocomotives() ? " +" + l.getLinkedLocomotives().size() : ""), true, here.isEmpty() ? why
-                : null, here.isEmpty() ? took : null));
+                + (l.hasLinkedLocomotives() ? " +" + l.getLinkedLocomotives().size() : ""), true, null, null));
             here.add(address(d));
             ButtonGroup group = new ButtonGroup();
             Map<Choice, JRadioButton> radios = new EnumMap<>(Choice.class);
-            radio(d, radios, group, Choice.BOTH, I18n.f("sync.ui.keepBothSaid", old, name));
-            radio(d, radios, group, Choice.OLD, I18n.f("loc.ui.importCsvKeepOldSaid", name));
-            radio(d, radios, group, Choice.NEW, why != null ? why : I18n.f("loc.ui.importCsvKeepNewSaid", old, name))
-                .setEnabled(why == null);
+            radio(d, radios, group, Choice.BOTH, I18n.f("sync.ui.keepBothSaid", old, name), null);
+            radio(d, radios, group, Choice.OLD, I18n.f("loc.ui.importCsvKeepOldSaid", name), null);
+            radio(d, radios, group, Choice.NEW, I18n.f("loc.ui.importCsvKeepNewSaid", old, name), why);
             radios.get(Choice.BOTH).setSelected(true);
             radios.values().forEach(b -> b.addItemListener(e -> refresh()));
             this.choices.put(d, radios);
-            this.table.addRow(ChoiceTable.lines(SyncDifferencesWindow.line(this.table, kName, name, true, null, null),
+            this.table.addRow(ChoiceTable.lines(SyncDifferencesWindow.line(this.table, kName, name, true, why, took),
                 address(d)), ChoiceTable.lines(here.toArray(new JComponent[0])), radios.get(Choice.BOTH),
                 radios.get(Choice.OLD), radios.get(Choice.NEW));
         }
@@ -312,16 +341,10 @@ final class LocomotiveCsvDoor
             return SyncDifferencesWindow.line(this.table, I18n.t("sync.ui.address"), d.address, false, null, null);
         }
 
-        /** A row's radio, saying `said` on hover and to a screen reader. */
-        private JRadioButton radio(Duplicate d, Map<Choice, JRadioButton> radios, ButtonGroup group, Choice c,
-            String said)
+        private void radio(Duplicate d, Map<Choice, JRadioButton> radios, ButtonGroup group, Choice c, String said,
+            String whyNot)
         {
-            JRadioButton b = this.table.choice(group);
-            b.setName(d.row.name + ":" + c.name());
-            b.setToolTipText(said);
-            b.getAccessibleContext().setAccessibleName(said);
-            radios.put(c, b);
-            return b;
+            radios.put(c, SyncDifferencesWindow.choice(this.table, group, d.row.name + ":" + c.name(), said, whyNot));
         }
 
         /** One Keep New per locomotive here: another row's is grayed, saying which row took it. */
@@ -329,14 +352,13 @@ final class LocomotiveCsvDoor
         {
             Map<Locomotive, Duplicate> takers = new HashMap<>();
             this.choices.forEach((d, r) -> { if (r.get(Choice.NEW).isSelected()) takers.put(d.here.get(0), d); });
-            this.choices.forEach((d, r) ->
+            this.taken.forEach((d, mark) ->
             {
                 Duplicate taker = takers.get(d.here.get(0));
-                if (d.whyNotNew != null) return;
                 boolean free = taker == null || taker == d;
-                r.get(Choice.NEW).setEnabled(free);
-                this.taken.get(d).setVisible(!free);
-                this.taken.get(d).setToolTipText(free ? null : I18n.f("loc.ui.importCsvWhyTaken", taker.row.name,
+                this.choices.get(d).get(Choice.NEW).setEnabled(free);
+                mark.setText(free ? "" : I18n.t("sync.ui.cantApply"));
+                mark.setToolTipText(free ? null : I18n.f("loc.ui.importCsvWhyTaken", taker.row.name,
                     d.here.get(0).getName()));
             });
         }

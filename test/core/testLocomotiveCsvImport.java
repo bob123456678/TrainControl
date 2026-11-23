@@ -799,6 +799,57 @@ public class testLocomotiveCsvImport
     }
 
     /**
+     * A new name at an address held here is asked in the duplicates table, so a shared address names and counts only the
+     * others: a locomotive the file moves onto that address, and the one already there (FR-249).
+     *
+     * MUTATION: leave the possible duplicates in `sharedAddresses`'s locomotives, and this fails.
+     */
+    @Test
+    public void testAPossibleDuplicateIsNotNamedOnASharedAddress()
+    {
+        make("FR249 sits", decoderType.MFX, 15051);
+        make("FR249 moves", decoderType.MFX, 15052);
+        made.add("FR249 twin");
+
+        MarklinLocomotiveCsv csv = MarklinLocomotiveCsv.read(OLD + "FR249 moves,,MFX,15051,0,0:00:00,0,0,,\n"
+            + "FR249 twin,,MFX,15051,0,0:00:00,0,0,,\n");
+        List<List<String>> named = new ArrayList<>();
+
+        for (MarklinLocomotiveCsv.Shared shared : csv.sharedAddresses(model, csv.plan(model)))
+        {
+            List<String> names = new ArrayList<>(shared.names);
+
+            java.util.Collections.sort(names);
+            named.add(names);
+        }
+
+        assertEquals(named, Arrays.asList(Arrays.asList("FR249 moves", "FR249 sits")),
+            "the shared address names or counts the possible duplicate");
+    }
+
+    /**
+     * An answer that cannot be carried out is said: a Keep New or Keep Old on a row that is no longer a possible
+     * duplicate adds the file's locomotive instead, and the result names it (FR-249).
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.apply`, drop the row from `notRenamed` or `notLeftOut`, and this fails.
+     */
+    @Test
+    public void testAnAnswerThatCannotBeCarriedOutIsSaid()
+    {
+        made.addAll(Arrays.asList("FR249 gone new", "FR249 gone old"));
+
+        MarklinLocomotiveCsv csv = MarklinLocomotiveCsv.read(OLD + "FR249 gone new,,MFX,15061,0,0:00:00,0,0,,\n"
+            + "FR249 gone old,,MFX,15062,0,0:00:00,0,0,,\n");
+        MarklinLocomotiveCsv.Result result = answered(csv, "FR249 gone new", MarklinLocomotiveCsv.Choice.NEW,
+            "FR249 gone old", MarklinLocomotiveCsv.Choice.OLD);
+
+        assertEquals(result.notRenamed.toString(), "{FR249 gone new=GONE}", "a Keep New with nothing to rename is not said");
+        assertEquals(result.notLeftOut, Arrays.asList("FR249 gone old"), "a Keep Old that added the row is not said");
+        assertNotNull(model.getLocByName("FR249 gone new"), "the row was not added");
+        assertNotNull(model.getLocByName("FR249 gone old"), "the row was not added");
+    }
+
+    /**
      * A row that cannot be read is skipped and its line is named; the rows around it still come in.  Lines count the
      * physical lines of the file, so a quoted note over several lines moves the next row down.  A last run day nobody can
      * read is no reason to skip a row.
@@ -1305,6 +1356,8 @@ public class testLocomotiveCsvImport
                 "FR249 r new", keepNew, "FR249 t1", keepNew, "FR249 t2", keepNew);
 
             assertEquals(result.renamed, Arrays.asList("FR249 t1"), "a Keep New that may not was carried out");
+            assertEquals(result.notRenamed.toString(), "{FR249 s new=SEVERAL, FR249 l new=LISTED, FR249 r new=RUNNING,"
+                + " FR249 t2=TAKEN}", "a Keep New that was not carried out does not say why");
             assertTrue(model.getLocByName("FR249 t1") == held, "the first row did not take the locomotive here");
             assertTrue(model.getLocByName("FR249 listed") != null && model.getLocByName("FR249 rolling") == rolling,
                 "a locomotive here whose Keep New may not was renamed");

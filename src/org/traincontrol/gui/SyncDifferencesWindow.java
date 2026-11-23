@@ -205,13 +205,19 @@ public final class SyncDifferencesWindow
     private JRadioButton choice(Row r, Map<Answer, JRadioButton> radios, ButtonGroup group, Answer a, String said,
         String whyNot)
     {
-        JRadioButton b = this.table.choice(group);
-        b.setName(r.loco.getName() + ":" + a.name());
+        JRadioButton b = choice(this.table, group, r.loco.getName() + ":" + a.name(), said, whyNot);
+        radios.put(a, b);
+        return b;
+    }
+
+    /** A table's radio named `name`, saying `said` on hover and to a screen reader; grayed, it says `whyNot`. */
+    static JRadioButton choice(ChoiceTable table, ButtonGroup group, String name, String said, String whyNot)
+    {
+        JRadioButton b = table.choice(group);
+        b.setName(name);
         b.getAccessibleContext().setAccessibleName(whyNot != null ? whyNot : said);
         b.setToolTipText(whyNot != null ? whyNot : said);
-        // Asked again next Sync
         b.setEnabled(whyNot == null);
-        radios.put(a, b);
         return b;
     }
 
