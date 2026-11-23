@@ -12,6 +12,8 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -40,13 +42,14 @@ import org.traincontrol.gui.InfoMark;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.Listen;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 
 /**
  * The station and the track squares its track meets, as the track diagram draws them at 60 pixels (FR-111): the station
- * with a red arrow only at a side May depart shuts, and its ways in to stop, from `Layout.standingRulesAt`; the next
- * squares with the arrows in effect on them.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
+ * with the diagram's arrows, and its ways in to stop, from `Layout.standingRulesAt`; the next squares with the arrows in
+ * effect on them.  A click on a mark goes to the window, which presses the control that owns it.  Holds no rule.
  */
 final class StationPicture extends JPanel
 {
@@ -55,8 +58,7 @@ final class StationPicture extends JPanel
 
     /**
      * The station's icon is drawn smaller on a straight station, so the marks beside it are what the picture is read
-     * for, and whole on a curve, so the station's type still shows.  The station wears no green arrows, so a way it may
-     * be left by reads as plain track (OB-472).
+     * for, and whole on a curve, so the station's type still shows.
      */
     private static final float ICON = 0.85f;
 
@@ -80,12 +82,12 @@ final class StationPicture extends JPanel
         void press(Mark mark);
     }
 
-    /** One clickable mark: a station's way in at a side, or a next square's arrow at one of its sides. */
+    /** One clickable mark: a station's way in at a side, a next square's arrow at one of its sides, or the station. */
     static final class Mark
     {
         enum Kind
         {
-            IN, NEIGHBOR
+            IN, NEIGHBOR, DEPART
         }
 
         final Kind kind;
@@ -244,14 +246,7 @@ final class StationPicture extends JPanel
 
         if (square == null) return;
 
-        TileAnnotation diagram = session.staticAnnotations(Collections.singleton(tile), true, true).get(tile);
-
-        boolean curved = diagram != null && diagram.isCurved();
-
-        drawn = new TileAnnotation(session.directionMarks(tile), -1, false, diagram == null ? null : diagram.getBadge(), false,
-            curved, false, null, true).withSmallerIcon(curved ? 1f : ICON);
-
-        square.setAutonomyAnnotation(drawn);
+        drawStation();
 
         nextMarks.clear();
 
@@ -259,7 +254,7 @@ final class StationPicture extends JPanel
         {
             TileKey beside = tile.beside(side);
 
-            // In effect on the track that meets the station: the diagram draws a run's on its first square (MT-1061)
+            // Every road's arrows in effect, green too whatever the diagram's settings: they are the picture's controls (MT-1061)
             List<TileAnnotation.Mark> kept = new ArrayList<>();
 
             // A run pointing opposite ways is closed, as its first square draws it (OB-361)
@@ -268,8 +263,6 @@ final class StationPicture extends JPanel
 
             for (TileAnnotation.Mark road : session.directionMarks(beside))
             {
-                if (road.getA() != side.opposite() && road.getB() != side.opposite()) continue;
-
                 kept.add(shut ? new TileAnnotation.Mark(road.getA(), road.getB(), Direction.NONE) : road);
             }
 
@@ -280,6 +273,23 @@ final class StationPicture extends JPanel
             }
         }
 
+        block.repaint();
+    }
+
+    /** The station's square as the track diagram draws it, under the diagram's settings (OB-511); the ways in are ours. */
+    private void drawStation()
+    {
+        TileAnnotation diagram = session.staticAnnotations(Collections.singleton(showing),
+            TrainControlUI.diagramShowsRestrictionArrows(), TrainControlUI.diagramShowsAllowedDirections()).get(showing);
+        drawn = diagram == null ? null : diagram.withoutArrivals().withSmallerIcon(diagram.isCurved() ? 1f : ICON);
+        square.setAutonomyAnnotation(drawn);
+    }
+
+    /** Draws the station's square again under the diagram's settings, which the main window may have changed meanwhile. */
+    void refresh()
+    {
+        if (square == null || showing == null || session == null) return;
+        drawStation();
         block.repaint();
     }
 
@@ -372,6 +382,10 @@ final class StationPicture extends JPanel
             if (their != null) neighborMarks(out, cell(side), showing.beside(side), their);
         }
 
+        // A click on the station steps May depart (OB-511), around its ways in, so marks never overlap
+        Area station = new Area(middle);
+        for (Mark mark : out) if (mark.kind == Mark.Kind.IN) station.subtract(new Area(mark.shape));
+        out.add(new Mark(Mark.Kind.DEPART, showing, null, true, station));
         return out;
     }
 
@@ -557,6 +571,15 @@ final class StationPicture extends JPanel
 
                 if (mark != null) doors.press(mark);
             }));
+            addMouseMotionListener(new MouseMotionAdapter()
+            {
+                @Override
+                public void mouseMoved(MouseEvent e)
+                {
+                    Mark mark = doors == null ? null : at(e.getPoint());
+                    setCursor(mark != null && mark.kind == Mark.Kind.DEPART ? HandPointer.cursor() : null);
+                }
+            });
         }
 
         /**
