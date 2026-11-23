@@ -35,7 +35,7 @@ import org.traincontrol.util.I18n;
  * The manual Sync's table (FR-249): one row per locomotive the Central Station differs on, each answered before
  * anything changes.  Every row starts on Ask Again, an ignored locomotive's on Ignore.
  */
-public final class SyncDifferencesWindow extends JDialog
+public final class SyncDifferencesWindow
 {
     /** A row's answer; RENAME and ADDRESS are its two Apply choices. */
     public enum Answer { KEEP, RENAME, ADDRESS, BOTH, IGNORE, ASK }
@@ -45,15 +45,16 @@ public final class SyncDifferencesWindow extends JDialog
     /** "Deletes X" after a rename: a consequence to read before choosing it. */
     private static final Color DELETES = new Color(160, 0, 0);
 
-    private final transient RenameProposals proposals;
-    private final transient Map<Row, Map<Answer, JRadioButton>> choices = new LinkedHashMap<>();
-    private final transient Map<Row, JLabel> triangles = new LinkedHashMap<>();
-    private final transient Map<Row, JLabel> deleting = new LinkedHashMap<>();
+    private final JDialog dialog;
+    private final RenameProposals proposals;
+    private final Map<Row, Map<Answer, JRadioButton>> choices = new LinkedHashMap<>();
+    private final Map<Row, JLabel> triangles = new LinkedHashMap<>();
+    private final Map<Row, JLabel> deleting = new LinkedHashMap<>();
     private boolean continued;
 
     private SyncDifferencesWindow(Window owner, RenameProposals proposals, List<Row> rows)
     {
-        super(owner, I18n.t("sync.ui.title"), ModalityType.APPLICATION_MODAL);
+        this.dialog = new JDialog(owner, I18n.t("sync.ui.title"), JDialog.ModalityType.APPLICATION_MODAL);
         this.proposals = proposals;
         // Each answer's heading sets every row it can to it, as a row's own pick would; Ignore is never set so
         ChoiceTable table = new ChoiceTable(UiStyle.blackLabel(I18n.t("sync.ui.locomotive")),
@@ -71,11 +72,11 @@ public final class SyncDifferencesWindow extends JDialog
         top.add(InfoMark.label(I18n.t("sync.ui.info")));
         JButton cancel = UiStyle.button(new JButton(I18n.t("ui.cancel")));
         JButton go = UiStyle.button(new JButton(I18n.t("sync.ui.continue")));
-        cancel.addActionListener(e -> dispose());
+        cancel.addActionListener(e -> this.dialog.dispose());
         go.addActionListener(e ->
         {
             this.continued = true;
-            dispose();
+            this.dialog.dispose();
         });
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         buttons.setOpaque(false);
@@ -87,14 +88,14 @@ public final class SyncDifferencesWindow extends JDialog
         content.add(top, BorderLayout.NORTH);
         content.add(table, BorderLayout.CENTER);
         content.add(buttons, BorderLayout.SOUTH);
-        setContentPane(content);
+        this.dialog.setContentPane(content);
         // Closing is Cancel; Enter continues, which changes nothing until a row is answered
-        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        getRootPane().setDefaultButton(go);
-        getRootPane().registerKeyboardAction(e -> dispose(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+        this.dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        this.dialog.getRootPane().setDefaultButton(go);
+        this.dialog.getRootPane().registerKeyboardAction(e -> this.dialog.dispose(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
             JComponent.WHEN_IN_FOCUSED_WINDOW);
-        pack();
-        setLocationRelativeTo(owner);
+        this.dialog.pack();
+        this.dialog.setLocationRelativeTo(owner);
     }
 
     /**
@@ -107,7 +108,7 @@ public final class SyncDifferencesWindow extends JDialog
         for (Row r : proposals.getRows()) if (r.asksName() || r.asksAddress()) rows.add(r);
         if (rows.isEmpty()) return new LinkedHashMap<>();
         SyncDifferencesWindow w = new SyncDifferencesWindow(owner, proposals, rows);
-        w.setVisible(true);
+        w.dialog.setVisible(true);
         if (!w.continued) return null;
         Map<Row, Answer> answers = new LinkedHashMap<>();
         for (Map.Entry<Row, Map<Answer, JRadioButton>> each : w.choices.entrySet())
