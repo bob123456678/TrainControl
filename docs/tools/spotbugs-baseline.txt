@@ -723,7 +723,7 @@ SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorFrame$N	actOnRow
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorFrame$N	build		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteEditorFrame$N	greyWhatCannotBeEdited		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.RouteListPanel$N	lambda$refreshRouteList		1
-SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.TrainControlUI$N			4
+SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.TrainControlUI$N			3
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomy.AutoLocomotiveStatus$N	initComponents		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomy.AutonomyBanner$N	floatOver		1
 SIC_INNER_SHOULD_BE_STATIC_ANON	org.traincontrol.gui.autonomy.AutonomyBanner$N	floatOver	followingViewport	1

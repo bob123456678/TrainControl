@@ -69,12 +69,11 @@ final class LocMappingPages
     /** Puts "Show Page Numbers" after the page-tabs item (FR-128); a click re-words the tabs, label and name line. */
     JCheckBoxMenuItem installShowPageNumbersMenuItem()
     {
-        numbersItem = new JCheckBoxMenuItem(I18n.t("ui.main.toolbar.showPageNumbers"));
-        numbersItem.setToolTipText(
-            AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.showPageNumbers")));
-        numbersItem.addActionListener(event ->
+        JCheckBoxMenuItem item = new JCheckBoxMenuItem(I18n.t("ui.main.toolbar.showPageNumbers"));
+        item.setToolTipText(AutonomyEditorPanel.wrappedIfLong(I18n.t("ui.main.toolbar.tooltip.showPageNumbers")));
+        item.addActionListener(event ->
         {
-            TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_PAGE_NUMBERS, numbersItem.isSelected());
+            TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_PAGE_NUMBERS, item.isSelected());
 
             // Tabs and label are worded only when a page is named or chosen; the name line's render sees the change.
             retitlePages();
@@ -93,8 +92,9 @@ final class LocMappingPages
             }
         }
 
-        menu.insert(numbersItem, at);
-        return numbersItem;
+        numbersItem = item;
+        menu.insert(item, at);
+        return item;
     }
 
     /** Whether page numbers go before page names ("Show Page Numbers", FR-128); false before the item exists. */
