@@ -141,13 +141,11 @@ final class StationCaptions
     {
         AutonomySession session = this.ui.getAutonomySession();
 
-        if (session == null || square == null) return "";
-
         // Only a facing the track runs (OB-348); the icon cannot be drawn along any other
-        return arrow(session.recordedFacingAlongTheTrack(square));
+        return session == null || square == null ? "" : arrow(session.recordedFacingAlongTheTrack(square));
     }
 
-    /** One arrow for a side, or "" for none; the space before it belongs to the arrow, as callers append it to a name. */
+    /** A space and the side's arrow, or "" for none. */
     private static String arrow(TilePorts.Side facing)
     {
         if (facing == null) return "";
@@ -208,10 +206,8 @@ final class StationCaptions
         // A crowded square speaks for the copy handed in, not for the first occupied one.
         if (facing == null) facing = session.getStationIndex().facingsAt(square).get(at.getName());
 
-        // A copy with no facing of its own faces its only way out, as the icon does (OB-510)
+        // Else its only way out, as the icon has it (OB-510)
         if (facing == null) facing = session.getStationIndex().onlyWayOutAt(square);
-
-        // Else what a hand-placed train wrote there
         return facing == null ? facingArrow(square) : arrow(facing);
     }
 

@@ -96,11 +96,10 @@ public final class StationIndex
 
             arrivals.put(square, Collections.unmodifiableList(sides));
 
-            List<String> copies = grouped.get(square);
-            Side only = copies.size() == 1 && !facingByPoint.containsKey(copies.get(0)) ? builder.onlyWayOutFacing(square)
-                : null;
-
-            if (only != null) onlyWayOutBySquare.put(square, only);
+            if (grouped.get(square).size() == 1 && !facingByPoint.containsKey(grouped.get(square).get(0)))
+            {
+                onlyWayOutBySquare.put(square, builder.onlyWayOutFacing(square));
+            }
         }
 
         arrivalsBySquare = Collections.unmodifiableMap(arrivals);
