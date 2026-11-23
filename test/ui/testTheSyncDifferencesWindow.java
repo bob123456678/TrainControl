@@ -59,8 +59,9 @@ public class testTheSyncDifferencesWindow
     /**
      * Each row shows this computer's locomotive and the station's in one format, a line for the name ("+N" for a
      * multi-unit head here) and one for the decoder address, the kind in a gray label and the value that differs bold
-     * on both sides; Apply says the whole change, twice for a locomotive differing in both, and Keep Both is offered on
-     * name rows only.  The answers run Apply Change, Keep As Is, Keep Both, Ignore, Ask Again.  Rows are in name order
+     * on both sides; Apply's radio names the whole change to a screen reader, twice for a locomotive differing in both,
+     * and Keep Both is offered on name rows only.  The columns run This Computer (Keep As Is), Central Station (Apply
+     * Change), Keep Both, Ignore, Ask Again.  Rows are in name order
      * with the ignored last on Ignore, the rest on Ask Again, under a heading that counts them (E17, E18, E20, E26,
      * E29).
      *
@@ -99,8 +100,8 @@ public class testTheSyncDifferencesWindow
                     bold(t, "MM2 22"), bold(t, "SW Uri"), bold(t, "MM2 20")),
                     Arrays.asList(true, true, true, true, false, false), "bold where the sides differ");
                 List<Integer> across = new ArrayList<>();
-                for (String key : new String[] {"sync.ui.thisComputer", "sync.ui.centralStation", "sync.ui.apply",
-                    "sync.ui.keep", "sync.ui.keepBoth", "sync.ui.ignore", "sync.ui.askAgain"}) across.add(x(t, key));
+                for (String key : new String[] {"sync.ui.thisComputer", "sync.ui.centralStation", "sync.ui.keepBoth",
+                    "sync.ui.ignore", "sync.ui.askAgain"}) across.add(x(t, key));
                 List<Integer> sorted = new ArrayList<>(across);
                 java.util.Collections.sort(sorted);
                 check(problems, across, sorted, "the columns' order");
@@ -114,10 +115,10 @@ public class testTheSyncDifferencesWindow
     }
 
     /**
-     * Set all, an answer's heading clicked, to Apply picks only what needs no human pick: not a grayed, triangle or
-     * deleting Apply, not a row differing in both, never an ignored row; Keep As Is and Ask Again override every other
-     * row.  The headings are links the keyboard reaches, Enter pressing them.  The triangle follows the other rows'
-     * choices and names who else would answer that decoder (E34, E37, E45, E79, E80, E82).
+     * Set all, a linked heading clicked, to Apply (Central Station) picks only what needs no human pick: not a grayed,
+     * triangle or deleting Apply, not a row differing in both, never an ignored row; Keep As Is (This Computer) and Ask
+     * Again override every other row.  The headings are links the keyboard reaches, Enter pressing them.  The triangle
+     * follows the other rows' choices and names who else would answer that decoder (E34, E37, E45, E79, E80, E82).
      *
      * MUTATION: in `SyncDifferencesWindow`, Set all to Apply every row with an enabled Apply (drop `applicable`); or in
      * `refresh`, judge the triangle on the row alone.
@@ -140,7 +141,7 @@ public class testTheSyncDifferencesWindow
                 check(problems, visible(t, "SW A", "collision"), true, "A's triangle with B unmoved");
                 check(problems, t.in("SW A", "collision", JLabel.class).getToolTipText(), I18n.f("sync.ui.collision", 31,
                     "SW B"), "A's triangle names B");
-                AbstractButton apply = Components.withText(t.dialog, I18n.t("sync.ui.apply"));
+                AbstractButton apply = Components.withText(t.dialog, I18n.t("sync.ui.centralStation"));
                 check(problems, Arrays.asList(SwingUtilities.getAncestorOfClass(ChoiceTable.class, apply) != null,
                     HandPointer.isHand(apply.getCursor()), apply.isFocusable(), apply.getToolTipText()), Arrays.asList(
                     true, true, true, I18n.f("sync.ui.setAllTip", I18n.t("sync.ui.apply"))), "Apply's heading a link");
@@ -154,9 +155,9 @@ public class testTheSyncDifferencesWindow
                 check(problems, visible(t, "SW A", "collision"), false, "A's triangle with B moved");
                 t.in("SW B", "KEEP", AbstractButton.class).doClick();
                 check(problems, visible(t, "SW A", "collision"), true, "A's triangle once B is kept");
-                // Each Set all in turn, over the one before: Keep Both only where a row offers it
-                for (String[] each : new String[][] {{"sync.ui.keep", "KEEP KEEP KEEP KEEP KEEP KEEP KEEP KEEP KEEP"},
-                    {"sync.ui.keepBoth", "KEEP KEEP BOTH BOTH KEEP BOTH KEEP KEEP KEEP"},
+                // Each Set all in turn, over the one before
+                for (String[] each : new String[][] {{"sync.ui.thisComputer",
+                    "KEEP KEEP KEEP KEEP KEEP KEEP KEEP KEEP KEEP"},
                     {"sync.ui.askAgain", "ASK ASK ASK ASK ASK ASK ASK ASK ASK"}})
                 {
                     // Enter on the heading, as the keyboard would
@@ -497,7 +498,7 @@ public class testTheSyncDifferencesWindow
             AtomicInteger moved = new AtomicInteger();
             showing(ui, made(rig, 1000, true, ""), t ->
             {
-                for (String key : new String[] {"sync.ui.apply", "sync.ui.keep", "sync.ui.askAgain"})
+                for (String key : new String[] {"sync.ui.centralStation", "sync.ui.thisComputer", "sync.ui.askAgain"})
                 {
                     long started = System.nanoTime();
                     Components.withText(t.dialog, I18n.t(key)).doClick(0);
@@ -530,7 +531,7 @@ public class testTheSyncDifferencesWindow
             List<String> problems = new ArrayList<>();
             assertNotNull(pressSync(rig, ui, SyncTable.canceling(t ->
             {
-                AbstractButton apply = Components.withText(t.dialog, I18n.t("sync.ui.apply"));
+                AbstractButton apply = Components.withText(t.dialog, I18n.t("sync.ui.centralStation"));
                 apply.doClick();
                 check(problems, selected(t), Arrays.asList("SW X:ASK", "SW Y:ADDRESS"), "Set all with nothing picked");
                 Components.withText(t.dialog, I18n.t("sync.ui.askAgain")).doClick();
@@ -697,6 +698,122 @@ public class testTheSyncDifferencesWindow
         });
     }
 
+    /**
+     * Keep As Is is the radio before this computer's lines, Apply the one before the station's, and a row differing
+     * both ways has a radio before each station line it changes, exclusive with the row's other answers; each radio
+     * says its whole answer on hover and to a screen reader.  This Computer, Central Station and Ask Again head the
+     * columns as links, Keep Both and Ignore as plain labels.
+     *
+     * MUTATION: in `SyncDifferencesWindow.addRow`, lead the address line with Apply and the name line with room, or put
+     * Use the address in a group of its own.
+     */
+    @Test(timeOut = 180000)
+    public void testTheRadiosSitBesideTheValuesTheyChoose() throws Exception
+    {
+        List<String> problems = new ArrayList<>();
+        inAWindow((rig, ui, list) ->
+        {
+            here(rig, "SW Shunter", 20, "SW Uri", 21, "SW Both", 23);
+            list.set(station("SW V 60", 20, "SW Uri", 22, "SW Other", 23, "SW Both", 24));
+            assertNotNull(pressSync(rig, ui, SyncTable.canceling(t ->
+            {
+                int computer = x(t, "sync.ui.thisComputer"), station = x(t, "sync.ui.centralStation");
+                for (String row : new String[] {"SW Shunter", "SW Uri", "SW Both"})
+                {
+                    Rectangle keep = at(t, t.in(row, "KEEP", AbstractButton.class));
+                    check(problems, keep.x >= computer && keep.x + keep.width < station, true, row + "'s Keep under "
+                        + "This Computer");
+                }
+                // Each radio, its line's value: the radio left of it, their middles level
+                for (String[] each : new String[][] {{"SW Shunter", "KEEP", "SW Shunter"}, {"SW Shunter", "RENAME",
+                    "SW V 60"}, {"SW Uri", "KEEP", "SW Uri"}, {"SW Uri", "ADDRESS", "SW Uri", "1"},
+                    {"SW Both", "RENAME", "SW Other"}, {"SW Both", "ADDRESS", "MM2 24"}})
+                {
+                    Rectangle b = at(t, t.in(each[0], each[1], AbstractButton.class));
+                    List<JLabel> values = Components.all(t.dialog, JLabel.class, l -> each[2].equals(l.getText()));
+                    Rectangle v = at(t, values.get(each.length > 3 ? 1 : 0));
+                    check(problems, Arrays.asList(b.x + b.width <= v.x, Math.abs(b.getCenterY() - v.getCenterY()) <= 1),
+                        Arrays.asList(true, true), each[0] + ":" + each[1] + " beside " + each[2]);
+                    if (!"KEEP".equals(each[1])) check(problems, b.x >= station, true, each[0] + ":" + each[1]
+                        + " under Central Station");
+                }
+                check(problems, Arrays.asList(t.in("SW Shunter", "KEEP", AbstractButton.class).getToolTipText(),
+                    t.in("SW Shunter", "KEEP", AbstractButton.class).getAccessibleContext().getAccessibleName(),
+                    t.in("SW Both", "ADDRESS", AbstractButton.class).getToolTipText()), Arrays.asList(
+                    I18n.f("sync.ui.keepAsIs", "SW Shunter"), I18n.f("sync.ui.keepAsIs", "SW Shunter"),
+                    I18n.f("sync.ui.changeAddress", "SW Both", 24)), "what the radios say");
+                for (String[] each : new String[][] {{"RENAME", "RENAME"}, {"ADDRESS", "ADDRESS"}, {"KEEP", "KEEP"}})
+                {
+                    t.in("SW Both", each[0], AbstractButton.class).doClick();
+                    check(problems, selected(t).stream().filter(s -> s.startsWith("SW Both:")).collect(java.util.stream
+                        .Collectors.toList()), Arrays.asList("SW Both:" + each[1]), "the both-ways row");
+                }
+                List<Boolean> links = new ArrayList<>();
+                for (String key : new String[] {"sync.ui.thisComputer", "sync.ui.centralStation", "sync.ui.keepBoth",
+                    "sync.ui.ignore", "sync.ui.askAgain"})
+                    links.add(Components.withText(t.dialog, I18n.t(key)) != null);
+                check(problems, links, Arrays.asList(true, true, false, false, true), "the linked headings");
+            }), null), "the table did not open");
+        });
+        assertTrue(problems.isEmpty(), problems.toString());
+    }
+
+    /**
+     * Rows alternate: every other one a very light step off the table's background, a hairline rule over each row, and
+     * a stronger rule under the headings.
+     *
+     * MUTATION: in `ChoiceTable.paintRows`, leave out the fill; or leave out the rule.
+     */
+    @Test(timeOut = 180000)
+    public void testTheRowsAlternateWithARuleBetween() throws Exception
+    {
+        List<String> problems = new ArrayList<>();
+        inAWindow((rig, ui, list) -> showing(ui, made(rig, 4, false, ""), t ->
+            {
+                ChoiceTable table = Components.find(t.dialog, ChoiceTable.class, c -> true);
+                java.awt.Container grid = (java.awt.Container) ((java.awt.Container) table.getViewport().getView())
+                    .getComponent(0);
+                java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(grid.getWidth(), grid.getHeight(),
+                    java.awt.image.BufferedImage.TYPE_INT_RGB);
+                java.awt.Graphics2D g = img.createGraphics();
+                grid.printAll(g);
+                g.dispose();
+                // Down the right edge, clear of every cell: the middle of the headings and of each row
+                int edge = grid.getWidth() - 3;
+                AbstractButton head = Components.withText(t.dialog, I18n.t("sync.ui.askAgain"));
+                List<Integer> middles = new ArrayList<>(Arrays.asList(SwingUtilities.convertRectangle(head.getParent(),
+                    head.getBounds(), grid).y));
+                for (int i = 1; i <= 4; i++)
+                {
+                    AbstractButton keep = t.in("SW " + i, "KEEP", AbstractButton.class);
+                    middles.add((int) SwingUtilities.convertRectangle(keep.getParent(), keep.getBounds(), grid)
+                        .getCenterY());
+                }
+                List<Integer> rows = new ArrayList<>(), darkest = new ArrayList<>();
+                for (int i = 1; i <= 4; i++) rows.add(img.getRGB(edge, middles.get(i)) & 0xffffff);
+                for (int i = 0; i < 4; i++)
+                {
+                    int dark = 255;
+                    for (int y = middles.get(i); y < middles.get(i + 1); y++) dark = Math.min(dark, img.getRGB(edge, y)
+                        & 0xff);
+                    darkest.add(dark);
+                }
+                int bg = grid.getBackground().getRGB() & 0xffffff, stripe = rows.get(1);
+                check(problems, Arrays.asList(rows.get(0) == bg, stripe != bg, rows.get(2) == bg, rows.get(3) == stripe,
+                    (stripe & 0xff) >= 235), Arrays.asList(true, true, true, true, true), "the stripes " + rows);
+                check(problems, Arrays.asList(darkest.get(1) < (stripe & 0xff), darkest.get(2) < (stripe & 0xff),
+                    darkest.get(3) < (stripe & 0xff), darkest.get(0) < darkest.get(1)), Arrays.asList(true, true, true,
+                    true), "the rules' darkest " + darkest);
+            }));
+        assertTrue(problems.isEmpty(), problems.toString());
+    }
+
+    /** Where c is, in the dialog's coordinates. */
+    private static Rectangle at(SyncTable.Shown t, Component c)
+    {
+        return SwingUtilities.convertRectangle(c.getParent(), c.getBounds(), t.dialog);
+    }
+
     /** n DCC locomotives here, the first's name ending in `tail`, each differing by name, or by a free address. */
     private static RenameProposals made(StationRig rig, int n, boolean addressed, String tail)
     {
@@ -755,10 +872,11 @@ public class testTheSyncDifferencesWindow
         return out;
     }
 
+    /** What an answer's radio says to a screen reader. */
     private static String text(SyncTable.Shown t, String row, String what)
     {
         AbstractButton b = t.in(row, what, AbstractButton.class);
-        return b == null ? null : b.getText();
+        return b == null ? null : b.getAccessibleContext().getAccessibleName();
     }
 
     private static boolean visible(SyncTable.Shown t, String row, String what)

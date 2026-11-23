@@ -479,10 +479,11 @@ public class testTheSyncAsksAboutRenamedLocomotives
         return Arrays.asList(text(s, row, "RENAME"), text(s, row, "ADDRESS"));
     }
 
-    /** An answer's text in a table shown. */
+    /** What an answer's radio says to a screen reader, in a table shown. */
     private static String text(SyncTable.Shown s, String row, String answer) throws Exception
     {
-        return Components.onTheEventThread(() -> s.in(row, answer, javax.swing.AbstractButton.class).getText());
+        return Components.onTheEventThread(() -> s.in(row, answer, javax.swing.AbstractButton.class)
+            .getAccessibleContext().getAccessibleName());
     }
 
     /** The tables the last pressSync showed that had a row for this locomotive. */

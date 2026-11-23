@@ -3,6 +3,7 @@ package org.traincontrol.gui.widgets;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -10,7 +11,9 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.font.TextAttribute;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -29,11 +32,22 @@ import javax.swing.UIManager;
  * A list of rows under column headings, each row some cells and then its choices, that scrolls either way once it does
  * not fit: the manual Sync's table and the CSV import's duplicates are built on it (FR-249).  A column of bare choices
  * is centered under its heading, any other left-aligned; cells are built from lines one choice high, so a row's lines
- * align across it.
+ * align across it.  Every other row is a step off the background, with a hairline between rows.
  */
 public final class ChoiceTable extends JScrollPane
 {
-    private final JPanel grid = new JPanel(new GridBagLayout());
+    /** Each row's first cell, whose top is the row's top less {@link #PAD}. */
+    private final List<JComponent> firsts = new ArrayList<>();
+    private static final int PAD = 4;
+    private final JPanel grid = new JPanel(new GridBagLayout())
+    {
+        @Override
+        protected void paintComponent(Graphics g)
+        {
+            super.paintComponent(g);
+            paintRows(g);
+        }
+    };
     private final JComponent[] heads;
     private int rows;
     /** A choice's height with text, and the look it was measured in: on the event thread. */
@@ -64,10 +78,11 @@ public final class ChoiceTable extends JScrollPane
     {
         GridBagConstraints c = new GridBagConstraints();
         c.gridy = this.rows++;
-        c.insets = new Insets(c.gridy == 0 ? 6 : 4, 8, 4, 8);
+        c.insets = new Insets(c.gridy == 0 ? 6 : PAD, 8, PAD, 8);
         for (int i = 0; i < cells.length; i++)
         {
             if (cells[i] == null) continue;
+            if (this.firsts.size() == c.gridy) this.firsts.add(cells[i]);
             c.gridx = i;
             boolean centered = cells[i] instanceof JRadioButton;
             c.anchor = c.gridy == 0 ? GridBagConstraints.BASELINE_LEADING : centered ? GridBagConstraints.NORTH
@@ -82,10 +97,37 @@ public final class ChoiceTable extends JScrollPane
         }
     }
 
-    /** A choice in a row's group, `text` beside it (empty under a heading that says it all); one line high. */
-    public static JRadioButton choice(ButtonGroup group, String text)
+    /** Every other row a step off the background, a hairline over each row, and a stronger one under the headings. */
+    private void paintRows(Graphics g)
     {
-        JRadioButton b = new JRadioButton(text);
+        Color bg = this.grid.getBackground();
+        for (int i = 1; i < this.firsts.size(); i++)
+        {
+            int top = this.firsts.get(i).getY() - PAD;
+            int below = i + 1 < this.firsts.size() ? this.firsts.get(i + 1).getY() - PAD : this.grid.getHeight();
+            if (i % 2 == 0)
+            {
+                g.setColor(step(bg, 4));
+                g.fillRect(0, top, this.grid.getWidth(), below - top);
+            }
+            g.setColor(step(bg, i == 1 ? 30 : 12));
+            g.drawLine(0, top, this.grid.getWidth(), top);
+        }
+    }
+
+    /** `percent` of the way from bg toward black, or toward white on a dark background. */
+    private static Color step(Color bg, int percent)
+    {
+        int to = bg.getRed() + bg.getGreen() + bg.getBlue() > 3 * 127 ? 0 : 255;
+        int[] c = {bg.getRed(), bg.getGreen(), bg.getBlue()};
+        for (int i = 0; i < 3; i++) c[i] += (to - c[i]) * percent / 100;
+        return new Color(c[0], c[1], c[2]);
+    }
+
+    /** A bare choice in a row's group, one line high. */
+    public static JRadioButton choice(ButtonGroup group)
+    {
+        JRadioButton b = new JRadioButton();
         b.setOpaque(false);
         b.setFont(UiStyle.TEXT_FONT);
         b.setPreferredSize(new Dimension(b.getPreferredSize().width, high()));
@@ -133,7 +175,7 @@ public final class ChoiceTable extends JScrollPane
         return b;
     }
 
-    /** One line of a cell, one choice high, its parts side by side and centered on it; a hidden part takes no room. */
+    /** A cell's line, one choice high, its parts side by side, centered on it; null or hidden parts take no room. */
     public static JComponent line(JComponent... parts)
     {
         JPanel p = new JPanel();
@@ -141,10 +183,11 @@ public final class ChoiceTable extends JScrollPane
         p.setOpaque(false);
         p.setAlignmentX(0);
         p.add(Box.createRigidArea(new Dimension(0, high())));
-        for (int i = 0; i < parts.length; i++)
+        for (JComponent part : parts)
         {
-            if (i > 0) p.add(Box.createHorizontalStrut(4));
-            p.add(parts[i]);
+            if (part == null) continue;
+            if (p.getComponentCount() > 1) p.add(Box.createHorizontalStrut(4));
+            p.add(part);
         }
         return p;
     }
