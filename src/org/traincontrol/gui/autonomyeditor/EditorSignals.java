@@ -293,11 +293,16 @@ final class EditorSignals
             });
 
             // A left press and release on the same row's X, the first click only: the list rebuilds at once, and a
-            // double click's second click would land on the next row's X
-            addMouseListener(new java.awt.event.MouseAdapter()
+            // double click's second click would land on the next row's X.  A hand over an X, as over a link.
+            java.awt.event.MouseAdapter mouse = new java.awt.event.MouseAdapter()
             {
                 private int pressed = -1;
 
+                @Override
+                public void mouseMoved(MouseEvent e)
+                {
+                    setCursor(crossAt(e.getPoint()) >= 0 ? org.traincontrol.gui.widgets.HandPointer.cursor() : null);
+                }
                 @Override
                 public void mousePressed(MouseEvent e)
                 {
@@ -312,8 +317,11 @@ final class EditorSignals
                     pressed = -1;
 
                     if (at >= 0 && SwingUtilities.isLeftMouseButton(e) && crossAt(e.getPoint()) == at) remove.accept(at);
+                    mouseMoved(e);
                 }
-            });
+            };
+            addMouseListener(mouse);
+            addMouseMotionListener(mouse);
 
             // And from the keyboard, the row chosen
             javax.swing.Action removeChosen = new javax.swing.AbstractAction()
