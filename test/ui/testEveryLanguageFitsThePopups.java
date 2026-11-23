@@ -314,6 +314,33 @@ public class testEveryLanguageFitsThePopups
     }
 
     /**
+     * The CSV import's possible-duplicates table fits in every language: its headings, a row's gray "(can't apply)" and the
+     * one a click on Keep New puts on the row that wanted the same locomotive (FR-249).
+     *
+     * MUTATION: in `ChoiceTable.link`, fix a heading's preferred size at 20 by 20 pixels, and this fails in every language.
+     */
+    @Test(timeOut = 300000)
+    public void testTheCsvDuplicatesTableFitsInEveryLanguage() throws Exception
+    {
+        Locomotive held = railway.model.getLocomotives().stream().filter(l -> !l.hasLinkedLocomotives()
+            && l.getDecoderType() != Locomotive.decoderType.MULTI_UNIT).findFirst().get();
+        String row = ",,{0},{1},0,0:00:00,0,0,,\n";
+        File csv = new File(files, "duplicates.csv");
+
+        java.nio.file.Files.write(csv.toPath(), ("Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,"
+            + "Start Year,End Year,RailwayName,Notes,LastRun\n" + "Fit first" + row + "Fit second" + row).replace("{0}",
+            held.getDecoderType().name()).replace("{1}", String.valueOf(held.getAddress())).getBytes("UTF-8"));
+
+        java.lang.reflect.Method csvDoor = Reflect.method(Class.forName("org.traincontrol.gui.LocomotiveCsvDoor"), "open",
+            TrainControlUI.class, java.awt.Component.class);
+
+        LanguageFit.assertNothingClipped("csv duplicates", LanguageFit.everyLanguage(language -> popup("popup-csv-duplicates",
+            language, m -> Answering.pressAt(1), csv, later(() -> csvDoor.invoke(null, railway.ui, railway.ui)), null,
+            dialog -> Components.all(dialog, javax.swing.AbstractButton.class, b -> "Fit first:NEW".equals(b.getName())
+            && b.isEnabled()).forEach(javax.swing.AbstractButton::doClick))));
+    }
+
+    /**
      * The right-click menus 3.1.0 added or changed fit the menu bar's rule in every language: the diagram's menu over a
      * train and over an empty station, and the locomotive key's menu.
      *
@@ -366,6 +393,13 @@ public class testEveryLanguageFitsThePopups
     private static List<String> popup(String window, String language, Function<String, Answering.Answer> rule, File file,
         Callable<?> door, List<String> asked) throws Exception
     {
+        return popup(window, language, rule, file, door, asked, d -> { });
+    }
+
+    /** The same, running `first` on the event thread as the popup appears, before it is measured. */
+    private static List<String> popup(String window, String language, Function<String, Answering.Answer> rule, File file,
+        Callable<?> door, List<String> asked, java.util.function.Consumer<javax.swing.JDialog> first) throws Exception
+    {
         List<String> found = Collections.synchronizedList(new ArrayList<>());
         int[] count = {0};
 
@@ -373,6 +407,8 @@ public class testEveryLanguageFitsThePopups
         {
             String id = window + (++count[0] > 1 ? "-" + count[0] : "");
             int[] seen = {0};
+
+            first.accept(dialog);
 
             for (String each : LanguageFit.measurePopup(LEDGER, id, language, dialog, seen)) found.add(id + ": " + each);
 
