@@ -656,14 +656,14 @@ public class testLocomotiveIdentityPropagates
     @Test
     public void testRenamingALocomotiveRewritesTheStationLabels() throws Exception
     {
-        // EVERY renameLoc call site, not the first: there are two (the Locomotive Settings window's write, and accepting a name the Central
-        // Station proposes), near-copies, and a rule that stops at the first match would call the pair covered after
+        // EVERY renameLoc call site, not the first: there are three (the Locomotive Settings window's write, accepting a name
+        // the Central Station proposes, and the CSV import's Keep New), near-copies, and a rule that stops at the first match would call the pair covered after
         // fixing one.  Asked of the whole program, naming the doors that make the two calls.
         int found = SourceOf.occurrences("model.renameLoc(") + SourceOf.occurrences("getModel().renameLoc(");
 
-        assertEquals(found, 2,
-            "expected two renameLoc call sites in the window - the settings write and the Central "
-            + "Station proposal. Found " + found + ", so either a door has been added without "
+        assertEquals(found, 3,
+            "expected three renameLoc call sites - the settings write, the Central "
+            + "Station proposal and the CSV import's Keep New. Found " + found + ", so either a door has been added without "
             + "this rule being told, or one has gone and the rule is watching less than it says");
 
         List<String> doors = new ArrayList<>();
@@ -676,7 +676,18 @@ public class testLocomotiveIdentityPropagates
 
         for (String door : doors) counted += door.split("(?:model|getModel\\(\\))\\.renameLoc\\(", -1).length - 1;
 
-        assertEquals(counted, 2, "the two doors named here no longer hold both of the program's renameLoc calls");
+        assertEquals(counted, 2, "the two doors named here no longer hold two of the program's renameLoc calls");
+
+        // The CSV import renames in `apply`; its door's `refresh` is where the follow-up the other doors do must be
+        String csvApply = withoutComments(SourceOf.declaration(
+            "    public Result apply(ViewListener model, Plan plan, Map<Row, Choice> choices)"));
+        String csvRefresh = withoutComments(SourceOf.declaration("    private static void refresh(TrainControlUI ui, "
+            + "ViewListener model, MarklinLocomotiveCsv.Result result)"));
+
+        assertTrue(csvApply.contains("model.renameLoc("), "the CSV import's Keep New is no longer the third renameLoc call");
+        assertTrue(csvRefresh.contains("updateVisiblePoints") && csvRefresh.contains("repaintTimetable"),
+            "the CSV import renames locomotives but its door does not rewrite the station labels and repaint the "
+            + "timetable afterwards, as the other rename doors do (OB-081, MT-149): " + csvRefresh);
 
         // The refresh block that follows it, bounded by the catch that closes the method, or by the method's end; NOT
         // by the next javadoc, which `withoutComments` has already removed, so the window would become the rest of the

@@ -51,7 +51,7 @@ public final class DetailsArea
         return scroll;
     }
 
-    /** The sentence over the list, one item a line; it scrolls past {@link #ROWS} lines. */
+    /** The sentence over the list, one item a line, if any; it scrolls past {@link #ROWS} lines. */
     public static JComponent message(String sentence, List<String> lines)
     {
         JScrollPane scroll = scrolling(String.join("\n", lines), ROWS);
@@ -60,7 +60,7 @@ public final class DetailsArea
         JPanel panel = new JPanel(new BorderLayout(0, 8));
         panel.setOpaque(false);
         panel.add(wrapped(sentence), BorderLayout.NORTH);
-        panel.add(scroll, BorderLayout.CENTER);
+        if (!lines.isEmpty()) panel.add(scroll, BorderLayout.CENTER);
 
         return panel;
     }
