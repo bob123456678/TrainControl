@@ -3270,6 +3270,165 @@ public class testDiagramLooksRight
         }
     }
 
+    /**
+     * An address never widens its column: a DCC uncoupler's address (2048g) is wider than a square, and the editor
+     * and the Layout tab with Show Addresses on drew a blank column after it, shifting the rest of the row right.
+     *
+     * MUTATION: give the address label `gbc.gridwidth = 1` in LayoutGrid.
+     */
+    @Test
+    public void testAnAddressNeverWidensItsColumn() throws Exception
+    {
+        LayoutDiagram page = model.getLayout("1 - Main");
+
+        assertNotNull(page, "precondition: the fixture layout has no page \"1 - Main\"");
+
+        final boolean addressesWere = page.getShowAddress();
+
+        final Runnable restore = withAWideAddress(page);
+
+        page.setShowAddress(true);
+
+        try
+        {
+            for (int size : new int[] {45, 60})
+            {
+                final java.awt.Container box = laidOut(page, size);
+                final org.traincontrol.gui.LayoutGrid grid = org.traincontrol.gui.LayoutGrid.of(box);
+
+                // Only a page whose addresses are wider than a square can fail this.
+                int wide = 0;
+
+                for (java.awt.Component one : box.getComponents())
+                {
+                    if (!(one instanceof org.traincontrol.gui.widgets.AddressLabel) || one.getWidth() <= size) continue;
+
+                    wide++;
+
+                    assertTrue(one.getWidth() >= one.getPreferredSize().width, "the address \""
+                        + ((javax.swing.JLabel) one).getText() + "\" is cut short at size " + size);
+                }
+
+                assertTrue(wide > 0, "precondition: no address on " + page.getName() + " is wider than a square at size "
+                    + size + ", so nothing here could widen a column");
+
+                StringBuilder moved = new StringBuilder();
+
+                // The last column and row are the spacer (`LayoutLabel.markSpacer`), not squares.
+                for (int y = 0; grid.getValueAt(0, y + 1) != null; y++)
+                {
+                    for (int x = 1; grid.getValueAt(x + 1, y) != null; x++)
+                    {
+                        java.awt.Rectangle before = grid.getValueAt(x - 1, y).getBounds();
+                        java.awt.Rectangle here = grid.getValueAt(x, y).getBounds();
+
+                        if (here.x != before.x + before.width && moved.length() < 400)
+                        {
+                            moved.append("\n  column ").append(x).append(" row ").append(y).append(" starts at ")
+                                .append(here.x).append(", the square before it ends at ")
+                                .append(before.x + before.width);
+                        }
+                    }
+                }
+
+                assertEquals(moved.toString(), "", "at size " + size + " with addresses shown, a square does not"
+                    + " start where the one before it ends, so the diagram has a blank gap in it:" + moved);
+            }
+        }
+        finally
+        {
+            page.setShowAddress(addressesWere);
+            restore.run();
+        }
+    }
+
+    /**
+     * A wide address runs on over the squares to its right but takes no clicks there: the mouse lands on the square
+     * under it, whose own menu answers, where the address would take the click itself.
+     *
+     * MUTATION: drop `text.answerOnlyOver(outer)` in LayoutGrid, and the address takes the click.
+     */
+    @Test
+    public void testAnAddressTakesNoClicksBeyondItsSquare() throws Exception
+    {
+        final LayoutDiagram page = model.getLayout("1 - Main");
+        final boolean shown = page.getShowAddress();
+
+        final Runnable restore = withAWideAddress(page);
+
+        page.setShowAddress(true);
+
+        try
+        {
+            final java.awt.Container box = laidOut(page, 45);
+            final org.traincontrol.gui.LayoutGrid grid = org.traincontrol.gui.LayoutGrid.of(box);
+
+            StringBuilder taken = new StringBuilder();
+            int across = 0;
+
+            for (int y = 0; grid.getValueAt(0, y + 1) != null; y++)
+            {
+                for (int x = 0; grid.getValueAt(x + 2, y) != null; x++)
+                {
+                    java.awt.Rectangle square = grid.getValueAt(x, y).getBounds();
+                    java.awt.Rectangle next = grid.getValueAt(x + 1, y).getBounds();
+
+                    for (java.awt.Component one : box.getComponents())
+                    {
+                        java.awt.Rectangle over = one.getBounds().intersection(next);
+
+                        if (!(one instanceof org.traincontrol.gui.widgets.AddressLabel) || !square.contains(one.getLocation())
+                            || over.isEmpty()) continue;
+
+                        across++;
+
+                        // The label answers a click at the middle of the overlap, which is the next square's
+                        if (one.contains(over.x + over.width / 2 - one.getX(), over.y + over.height / 2 - one.getY()))
+                            taken.append("\n  \"").append(((javax.swing.JLabel) one).getText())
+                                .append("\" over square ").append(x + 1).append(',').append(y);
+                    }
+                }
+            }
+
+            assertTrue(across > 0, "precondition: no address on " + page.getName() + " runs on over the next square");
+            assertEquals(taken.toString(), "", "an address takes the clicks of the square to its right:" + taken);
+        }
+        finally
+        {
+            page.setShowAddress(shown);
+            restore.run();
+        }
+    }
+
+    /** Gives the page's first uncoupler the DCC address 2048, whose "2048g" is wider than a square; run the result to undo. */
+    private static Runnable withAWideAddress(LayoutDiagram page) throws Exception
+    {
+        for (org.traincontrol.base.LayoutDiagramComponent c : page.getAll())
+        {
+            if (!c.isUncoupler()) continue;
+
+            final int was = c.getAddress();
+            final org.traincontrol.base.Accessory.accessoryDecoderType protocol = c.getProtocol();
+            final boolean green = c.isLogicalGreen();
+
+            c.setLogicalAddress(2048, org.traincontrol.base.Accessory.accessoryDecoderType.DCC, true);
+
+            return () ->
+            {
+                try
+                {
+                    c.setLogicalAddress(was, protocol, green);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            };
+        }
+
+        throw new AssertionError("precondition: " + page.getName() + " has no uncoupler to give a wide address");
+    }
+
     /** Every address label under a component: a plain label, not a square's tile or a station's caption. */
     private static void collectAddresses(java.awt.Container under, java.util.List<javax.swing.JLabel> into)
     {
