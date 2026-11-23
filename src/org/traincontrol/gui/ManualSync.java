@@ -25,6 +25,8 @@ public final class ManualSync
 {
     private final TrainControlUI ui;
     private final ViewListener model;
+    /** askAndApply's answer when the table was canceled. */
+    private static final int[] CANCELED = {};
 
     ManualSync(TrainControlUI ui)
     {
@@ -73,7 +75,7 @@ public final class ManualSync
             try
             {
                 int[] n = askAndApply(c, taken);
-                if (n == null)
+                if (n == CANCELED)
                 {
                     model.logf("loc.syncCanceled");
                     return TrainControlUI.SYNC_REFUSED;
@@ -96,7 +98,7 @@ public final class ManualSync
     }
 
     /**
-     * Reads, asks over c and applies, re-addressed rows into `taken`: apply's counts, none with no table, null if canceled.
+     * Reads, asks over c and applies, re-addressed rows into `taken`: apply's counts, none with no table, CANCELED.
      */
     private int[] askAndApply(Component c, List<RenameProposals.Row> taken)
     {
@@ -113,7 +115,7 @@ public final class ManualSync
             SwingUtilities.invokeAndWait(() -> answers.add(SyncDifferencesWindow.ask(asking != null
                 && asking.isShowing() ? asking : ui, asked)));
             Map<RenameProposals.Row, Answer> a = answers.get(0);
-            if (a == null) return null;
+            if (a == null) return CANCELED;
             if (asked.getProposals().isEmpty() && !asked.hasRefusals()) model.logf("loc.ui.infoNoLocomotivesToRename");
             // Read again once anything was answered, so a row the station changed meanwhile is left; unread, the
             // locomotives alone are checked
