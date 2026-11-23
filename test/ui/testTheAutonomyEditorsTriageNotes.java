@@ -817,10 +817,10 @@ public class testTheAutonomyEditorsTriageNotes
 
     /**
      * The guard window is no wider than its buttons, at most `GUARD_WIDTH` and its border, its sentence wrapping; each
-     * row has a red X at its right end, Remove as its tooltip, which removes that signal; Remove Selected is gone
-     * (MT-948).
+     * row has a red X at its right end, Remove as its tooltip and a hand over it, which removes that signal; Remove
+     * Selected is gone (MT-948).
      *
-     * MUTATION: drop the `remove.accept` in `EditorSignals.RemovableList`'s click, and this fails.
+     * MUTATION: drop the `remove.accept` in `EditorSignals.RemovableList`'s click, or its `setCursor`, and this fails.
      */
     @Test(timeOut = 180000)
     public void testTheGuardWindowIsNarrowAndEachRowHasARemovingX() throws Exception
@@ -850,6 +850,19 @@ public class testTheAutonomyEditorsTriageNotes
             I18n.t("autosetup.ui.optionRemoveSignal"), "the X's tooltip");
         assertNull(Components.onTheEventThread(() -> list.getToolTipText(mouse(list, java.awt.event.MouseEvent.MOUSE_MOVED,
             new java.awt.Point(8, cross.y)))), "the row's text has the X's tooltip");
+
+        // A hand over the X, the usual pointer over the text
+        for (java.awt.Point at : new java.awt.Point[] {cross, new java.awt.Point(8, cross.y)})
+        {
+            int shown = Components.onTheEventThread(() ->
+            {
+                list.dispatchEvent(mouse(list, java.awt.event.MouseEvent.MOUSE_MOVED, at));
+
+                return list.getCursor().getType();
+            });
+
+            assertEquals(shown == java.awt.Cursor.HAND_CURSOR, at == cross, "the pointer over " + (at == cross ? "the X" : "the text"));
+        }
 
         for (int kind : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
             java.awt.event.MouseEvent.MOUSE_CLICKED})
