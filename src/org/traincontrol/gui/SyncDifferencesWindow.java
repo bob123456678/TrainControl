@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -62,11 +63,13 @@ public final class SyncDifferencesWindow
         this.dialog = new JDialog(owner, I18n.t("sync.ui.title"), JDialog.ModalityType.APPLICATION_MODAL);
         this.proposals = proposals;
         // A linked heading sets every row it can to its answer, as a row's own pick would
-        this.table = new ChoiceTable(setAllTo("sync.ui.thisComputer", "sync.ui.keep", (r, can) -> Answer.KEEP),
-            setAllTo("sync.ui.centralStation", "sync.ui.apply", (r, can) -> !can.contains(r) ? null : r.asksName()
-            ? Answer.RENAME : Answer.ADDRESS), UiStyle.blackLabel(I18n.t("sync.ui.keepBoth")),
-            UiStyle.blackLabel(I18n.t("sync.ui.ignore")), setAllTo("sync.ui.askAgain", "sync.ui.askAgain",
-            (r, can) -> Answer.ASK));
+        this.table = new ChoiceTable(
+            head(setAllTo("sync.ui.thisComputer", "sync.ui.keep", (r, can) -> Answer.KEEP), "sync.ui.tipKeep"),
+            head(setAllTo("sync.ui.centralStation", "sync.ui.apply", (r, can) -> !can.contains(r) ? null
+            : r.asksName() ? Answer.RENAME : Answer.ADDRESS), "sync.ui.tipApply"),
+            head(setAllTo("sync.ui.keepBoth", "sync.ui.keepBoth", (r, can) -> Answer.BOTH), "sync.ui.tipBoth"),
+            head(setAllTo("sync.ui.ignore", "sync.ui.ignore", (r, can) -> Answer.IGNORE), "sync.ui.tipIgnore"),
+            head(setAllTo("sync.ui.askAgain", "sync.ui.askAgain", (r, can) -> Answer.ASK), "sync.ui.tipAsk"));
         for (Row r : rows) this.table.addRow(addRow(r));
         // An mfx locomotive the station has under its name at another address starts on Apply, where Set all would
         List<Row> mfx = new ArrayList<>();
@@ -236,6 +239,18 @@ public final class SyncDifferencesWindow
         if (differs) v.setFont(UiStyle.TEXT_FONT.deriveFont(Font.BOLD));
         if (why != null) why.setToolTipText(whyNot);
         return this.table.line(k, v, why, mark);
+    }
+
+    /** A heading with its (i) after it, saying what a click does. */
+    private static JComponent head(JButton heading, String tip)
+    {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
+        p.setOpaque(false);
+        p.add(heading);
+        p.add(Box.createHorizontalStrut(4));
+        p.add(InfoMark.label(I18n.t(tip)));
+        return p;
     }
 
     /** A linked heading: each row not ignored gets what `to` gives it, from the rows Apply may take, if enabled. */

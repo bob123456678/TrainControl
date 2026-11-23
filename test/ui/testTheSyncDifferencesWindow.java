@@ -775,7 +775,7 @@ public class testTheSyncDifferencesWindow
                 for (String[] each : new String[][] {{"BOTH", "sync.ui.keepBoth"}, {"IGNORE", "sync.ui.ignore"},
                     {"ASK", "sync.ui.askAgain"}})
                 {
-                    double under = at(t, heading(t, each[1])).getCenterX();
+                    double under = at(t, heading(t, each[1]).getParent()).getCenterX();
                     for (String row : new String[] {"SW Shunter", "SW Uri"})
                     {
                         Rectangle r = at(t, t.in(row, each[0], AbstractButton.class));
@@ -799,11 +799,19 @@ public class testTheSyncDifferencesWindow
                     check(problems, selected(t).stream().filter(s -> s.startsWith("SW Uri:")).collect(java.util.stream
                         .Collectors.toList()), Arrays.asList("SW Uri:" + each), "one answer a row");
                 }
+                // Every heading is a link with an (i) after it saying what a click does
                 List<Boolean> links = new ArrayList<>();
                 for (String key : new String[] {"sync.ui.thisComputer", "sync.ui.centralStation", "sync.ui.keepBoth",
                     "sync.ui.ignore", "sync.ui.askAgain"})
-                    links.add(Components.withText(t.dialog, I18n.t(key)) != null);
-                check(problems, links, Arrays.asList(true, true, false, false, true), "the linked headings");
+                {
+                    AbstractButton link = Components.withText(t.dialog, I18n.t(key));
+                    JLabel mark = link == null ? null : (JLabel) link.getParent().getComponent(2);
+                    links.add(mark != null && mark.getToolTipText() != null && HandPointer.isHand(link.getCursor()));
+                }
+                check(problems, links, Arrays.asList(true, true, true, true, true), "the linked headings and their (i)");
+                ((AbstractButton) heading(t, "sync.ui.askAgain")).doClick();
+                ((AbstractButton) heading(t, "sync.ui.ignore")).doClick();
+                check(problems, selected(t), Arrays.asList("SW Shunter:IGNORE", "SW Uri:IGNORE"), "Ignore's heading");
             }), null), "the table did not open");
         });
         assertTrue(problems.isEmpty(), problems.toString());
@@ -996,6 +1004,9 @@ public class testTheSyncDifferencesWindow
                     picked.add(selected(t).stream().filter(n -> n.endsWith(":BOTH")).count());
                 }
                 check(problems, picked, Arrays.asList(0L, 0L, 0L, 0L), "Keep Both picked by a click or a Set all");
+                ((AbstractButton) heading(t, "sync.ui.keepBoth")).doClick();
+                check(problems, selected(t).stream().filter(n -> n.endsWith(":BOTH")).collect(java.util.stream
+                    .Collectors.toList()), Arrays.asList("SW Shunter:BOTH"), "Keep Both's heading, only where lit");
             }), null), "the table did not open");
             String none = I18n.t("sync.ui.bothNothingToAdd");
             showing(ui, made(rig, 1, false, ""), t -> check(problems, both(t, "SW 1"), Arrays.asList(false, none, none),
