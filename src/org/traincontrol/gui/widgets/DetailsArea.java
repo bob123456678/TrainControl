@@ -14,8 +14,6 @@ import org.traincontrol.util.I18n;
 
 /**
  * A popup's message at a readable width: a short sentence, with any long list under it in a scrolling Details area.
- * JOptionPane sizes a message to its longest line, so a list of names or a long path made a popup wider than the
- * screen.  The caller still shows the popup, hung off the window that asked.
  */
 public final class DetailsArea
 {
@@ -29,7 +27,6 @@ public final class DetailsArea
     {
     }
 
-    /** The text wrapped at {@link #WIDTH}; a word longer than a line, such as a path, breaks where it must. */
     private static JTextArea wrapped(String text)
     {
         JTextArea area = textArea(text);
@@ -44,16 +41,13 @@ public final class DetailsArea
     public static JScrollPane scrolling(String text, int rows)
     {
         JTextArea area = textArea(text);
-
         area.setSize(WIDTH, Short.MAX_VALUE);
         area.setCaretPosition(0);
 
         JScrollPane scroll = new JScrollPane(area, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
             ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-
         scroll.getViewport().setPreferredSize(new Dimension(WIDTH, Math.min(area.getPreferredSize().height,
             rows * area.getFontMetrics(area.getFont()).getHeight())));
-
         return scroll;
     }
 
@@ -61,11 +55,9 @@ public final class DetailsArea
     public static JComponent message(String sentence, List<String> lines)
     {
         JScrollPane scroll = scrolling(String.join("\n", lines), ROWS);
-
         scroll.setBorder(BorderFactory.createTitledBorder(I18n.t("ui.details")));
 
         JPanel panel = new JPanel(new BorderLayout(0, 8));
-
         panel.setOpaque(false);
         panel.add(wrapped(sentence), BorderLayout.NORTH);
         panel.add(scroll, BorderLayout.CENTER);

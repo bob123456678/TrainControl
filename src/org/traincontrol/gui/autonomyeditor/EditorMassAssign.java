@@ -58,8 +58,7 @@ final class EditorMassAssign
         {
             AutonomySession.Stretch piece = pieces.get(i);
 
-            // Asked again rather than trusted from the list made before the walk began: a walk that trusts a stale list
-            // ends up prompting about nothing.
+            // Asked again, not trusted from the list made before the walk began, or it prompts about nothing.
             if (!editor.session.needsALength(piece)) continue;
 
             editor.outlineAndReveal(piece.getTiles());

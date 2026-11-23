@@ -769,12 +769,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
 
         FlatLightLaf.setup();
+        UIManager.put("OptionPaneUI", org.traincontrol.gui.widgets.WrappingOptionPaneUI.class.getName());
         //FlatIntelliJLaf.setup();
 
         // Also as a UI default: a re-installed look and feel consults this key, not the system properties above.
         UIManager.put("TitlePane.menuBarEmbedded", MENUS_IN_THE_TITLE_BAR);
-
-        UIManager.put("OptionPaneUI", org.traincontrol.gui.widgets.WrappingOptionPaneUI.class.getName());
 
         // Makes tabs narrower
         UIManager.put("TabbedPane.tabWidthMode", "compact");

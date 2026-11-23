@@ -7,6 +7,7 @@ import java.awt.Container;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.GridBagConstraints;
+import java.util.StringJoiner;
 import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.UIManager;
@@ -35,58 +36,33 @@ public class WrappingOptionPaneUI extends FlatOptionPaneUI
             && !BasicHTML.isHTMLString(msg.toString()))
         {
             Font font = UIManager.getFont("OptionPane.messageFont");
-
             msg = wrap(msg.toString(), optionPane.getFontMetrics(font != null ? font : UIManager.getFont("Label.font")),
                 UIScale.scale(CAP));
             maxll = Integer.MAX_VALUE;
         }
-
         super.addMessageComponents(container, cons, msg, maxll, internallyCreated);
     }
 
-    /**
-     * The text with a line break wherever a line would be wider than `width`: after a space, after / or \ in a path, or
-     * inside a word that no line can hold.
-     */
-    static String wrap(String text, FontMetrics metrics, int width)
+    /** The text broken where a line would pass `width`: at a space, after / or \ in a path, else inside the word. */
+    private static String wrap(String text, FontMetrics metrics, int width)
     {
-        StringBuilder out = new StringBuilder();
-        String[] lines = text.split("\r?\n", -1);
-
-        for (int i = 0; i < lines.length; i++)
+        StringJoiner out = new StringJoiner("\n");
+        for (String line : text.split("\r?\n", -1))
         {
-            String line = lines[i];
+            StringBuilder wrapped = new StringBuilder();
             int start = 0;
-
-            if (i > 0) out.append('\n');
-
             while (metrics.stringWidth(line.substring(start)) > width)
             {
                 int end = start + 1;
-
-                while (end < line.length() && metrics.stringWidth(line.substring(start, end + 1)) <= width) end++;
-
-                int cut = end;
-
-                for (int at = end; at > start + 1; at--)
-                {
-                    if (line.charAt(at) == ' ' || "/\\ ".indexOf(line.charAt(at - 1)) >= 0)
-                    {
-                        cut = at;
-                        break;
-                    }
-                }
-
-                out.append(line.substring(start, cut).replaceAll(" +$", "")).append('\n');
-
-                start = cut;
-
-                while (start < line.length() && line.charAt(start) == ' ') start++;
+                while (metrics.stringWidth(line.substring(start, end + 1)) <= width) end++;
+                int cut = Math.max(line.lastIndexOf(' ', end),
+                    Math.max(line.lastIndexOf('/', end - 1), line.lastIndexOf('\\', end - 1)) + 1);
+                if (cut <= start) cut = end;
+                wrapped.append(line.substring(start, cut).replaceAll(" +$", "")).append('\n');
+                for (start = cut; start < line.length() && line.charAt(start) == ' '; ) start++;
             }
-
-            out.append(line.substring(start));
+            out.add(wrapped.append(line.substring(start)));
         }
-
         return out.toString();
     }
 }

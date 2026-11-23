@@ -149,8 +149,7 @@ final class EditorPrompts
             }
         });
 
-        // Nothing to offer, which means nothing is stored - the loop above puts every stored
-        // entry on the list. So returning here cannot hide anything.
+        // Nothing to offer means nothing is stored: the loop above lists every stored entry.
         if (choices.isEmpty())
         {
             // Grayed, because there is nothing a click could find (MT-376: "if there are no stations on the diagram
