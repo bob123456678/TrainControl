@@ -1,7 +1,6 @@
 package org.traincontrol.gui.autonomyeditor;
 
 import java.awt.BorderLayout;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
@@ -302,9 +301,8 @@ final class EditorSignals
                 @Override
                 public void mouseMoved(MouseEvent e)
                 {
-                    setCursor(crossAt(e.getPoint()) >= 0 ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : null);
+                    setCursor(crossAt(e.getPoint()) >= 0 ? org.traincontrol.gui.widgets.HandPointer.cursor() : null);
                 }
-
                 @Override
                 public void mousePressed(MouseEvent e)
                 {
@@ -319,11 +317,9 @@ final class EditorSignals
                     pressed = -1;
 
                     if (at >= 0 && SwingUtilities.isLeftMouseButton(e) && crossAt(e.getPoint()) == at) remove.accept(at);
-
                     mouseMoved(e);
                 }
             };
-
             addMouseListener(mouse);
             addMouseMotionListener(mouse);
 

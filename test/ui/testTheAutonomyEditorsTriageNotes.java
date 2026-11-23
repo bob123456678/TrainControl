@@ -854,14 +854,14 @@ public class testTheAutonomyEditorsTriageNotes
         // A hand over the X, the usual pointer over the text
         for (java.awt.Point at : new java.awt.Point[] {cross, new java.awt.Point(8, cross.y)})
         {
-            int shown = Components.onTheEventThread(() ->
+            boolean shown = Components.onTheEventThread(() ->
             {
                 list.dispatchEvent(mouse(list, java.awt.event.MouseEvent.MOUSE_MOVED, at));
 
-                return list.getCursor().getType();
+                return org.traincontrol.gui.widgets.HandPointer.isHand(list.getCursor());
             });
 
-            assertEquals(shown == java.awt.Cursor.HAND_CURSOR, at == cross, "the pointer over " + (at == cross ? "the X" : "the text"));
+            assertEquals(shown, at == cross, "the pointer over " + (at == cross ? "the X" : "the text"));
         }
 
         for (int kind : new int[] {java.awt.event.MouseEvent.MOUSE_PRESSED, java.awt.event.MouseEvent.MOUSE_RELEASED,
