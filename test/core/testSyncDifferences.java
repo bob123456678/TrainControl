@@ -154,8 +154,8 @@ public class testSyncDifferences
     }
 
     /**
-     * Renamed and re-addressed at the station: one row with both, which an automatic sync leaves alone, holding the
-     * station's name back and logging the other address; each Keep settles its own half.
+     * Renamed and re-addressed at the station: one by-hand row with both, asking nothing and left to answer, which an
+     * automatic sync leaves alone, holding the station's name back and logging the other address.
      *
      * MUTATION: in `MarklinControlStation.differences`, build a row for the rename alone.
      */
@@ -176,17 +176,8 @@ public class testSyncDifferences
             Row row = row(rig, d, "SD X");
 
             assertEquals(d.getRows(), Collections.singletonList(row), "not one row");
-            assertEquals(Arrays.asList(row.stationName, row.stationAddress, row.whyNot(true), row.whyNot(false)),
-                Arrays.asList("SD Y", 7, null, null));
-            assertEquals(d.getUnsettledCount(), 1);
-
-            x.setDeclinedStationName("SD Y");
-            assertTrue(row.isNameKept());
-            assertEquals(d.getUnsettledCount(), 1, "a kept name settled the address too");
-
-            x.setDeclinedStationAddress(7);
-            assertTrue(row.isSettled());
-            assertEquals(d.getUnsettledCount(), 0);
+            assertEquals(Arrays.asList(row.stationName, row.stationAddress, row.byHand, row.asksName(),
+                row.asksAddress()), Arrays.asList("SD Y", 7, true, false, false));
         }
     }
 
@@ -224,9 +215,9 @@ public class testSyncDifferences
 
     /**
      * The rows: one per locomotive here that differs, by name with ignored ones last; a swap's rows say to rename one by
-     * hand; two here at one address are no row; the count leaves out the ignored.  An empty station list has none.
+     * hand; two here at one address are no row.  An empty station list has none.
      *
-     * MUTATION: in `RenameProposals`, sort without `isSyncIgnored`; or count ignored rows in `getUnsettledCount`.
+     * MUTATION: in `RenameProposals`, sort without `isSyncIgnored`.
      */
     @Test(timeOut = 120000)
     public void testTheRowsAndWhatTheyCount() throws Exception
@@ -243,7 +234,6 @@ public class testSyncDifferences
 
             assertEquals(d.getRows().stream().map(r -> r.loco.getName()).collect(Collectors.toList()),
                 Arrays.asList("SD B", "SD C", "SD D", "SD A"), "the rows or their order");
-            assertEquals(d.getUnsettledCount(), 3, "the count");
             assertEquals(row(rig, d, "SD C").whyNot(true), I18n.f("loc.renameCycleRefused", "SD C", "SD D"),
                 "a swap's row does not say to rename one by hand");
             assertNull(row(rig, d, "SD B").whyNot(true));
@@ -252,7 +242,6 @@ public class testSyncDifferences
             d = rig.model.getRenameProposals(true);
 
             assertTrue(d.getRows().isEmpty(), "an empty station list has rows");
-            assertEquals(d.getUnsettledCount(), 0);
         }
     }
 

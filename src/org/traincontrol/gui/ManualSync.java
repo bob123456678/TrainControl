@@ -108,7 +108,11 @@ public final class ManualSync
             RenameProposals asked = readBehindTheSpinner(c, true);
             // Each row's locomotive by its name as asked, so one renamed or replaced meanwhile is left
             Map<Locomotive, String> names = new HashMap<>();
-            for (RenameProposals.Row r : asked.getRows()) names.put(r.loco, r.loco.getName());
+            for (RenameProposals.Row r : asked.getRows())
+            {
+                names.put(r.loco, r.loco.getName());
+                if (r.byHand) model.logf("loc.syncByHand", r.loco.getName(), SyncDifferencesWindow.whereByHand(r));
+            }
             Window asking = c instanceof Window ? (Window) c : SwingUtilities.getWindowAncestor(c);
             List<Map<RenameProposals.Row, Answer>> answers = new ArrayList<>();
             // Over the window that asked, or this one once that is gone
@@ -204,7 +208,7 @@ public final class ManualSync
             {
                 case KEEP:
                     if (r.asksName()) model.logf(keptAfterNo(r.loco, r.stationName), name, r.stationName);
-                    if (r.asksAddress()) r.loco.setDeclinedStationAddress(r.stationAddress);
+                    else r.loco.setDeclinedStationAddress(r.stationAddress);
                     n[2]++;
                     break;
                 case IGNORE:

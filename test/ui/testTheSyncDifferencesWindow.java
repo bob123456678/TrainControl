@@ -60,7 +60,7 @@ public class testTheSyncDifferencesWindow
      * Each row shows this computer's locomotive and the station's in one format, a line for the name ("+N" for a
      * multi-unit head here) and one for the decoder address, the kind in a gray label and the value that differs bold
      * on both sides, the station's decoder type its own (no "MU"); Apply's radio names the whole change to a screen
-     * reader, twice for a locomotive differing in both, and Keep Both is lit on name rows only.  The columns run This
+     * reader, a locomotive differing in both has none, and Keep Both is lit on name rows only.  The columns run This
      * Computer (Keep As Is), Central Station (Apply Change), Keep Both, Ignore, Ask Again.  Rows are in name order
      * with the ignored last on Ignore, the rest on Ask Again, under a heading that counts them, as far in as the
      * table (E17, E18, E20, E26, E29).
@@ -90,8 +90,7 @@ public class testTheSyncDifferencesWindow
                 check(problems, text(t, "SW Shunter", "RENAME"), I18n.f("sync.ui.rename", "SW Shunter", "SW V 60"), "rename");
                 check(problems, text(t, "SW Uri", "ADDRESS"), I18n.f("sync.ui.changeAddress", "SW Uri", 22), "address");
                 check(problems, Arrays.asList(text(t, "SW Both", "RENAME"), text(t, "SW Both", "ADDRESS")), Arrays.asList(
-                    I18n.f("sync.ui.rename", "SW Both", "SW Other"), I18n.f("sync.ui.changeAddress", "SW Both", 24)),
-                    "both-ways row");
+                    null, null), "the by-hand row's Apply");
                 check(problems, labels(t).contains("SW Head +1"), true, "head's +N");
                 check(problems, Arrays.asList(java.util.Collections.frequency(labels(t), I18n.f("loc.multiUnitLinked",
                     "MM2") + " 26"), labels(t).contains("MM2 26")), Arrays.asList(1, true), "the station's decoder type");
@@ -120,7 +119,7 @@ public class testTheSyncDifferencesWindow
 
     /**
      * Set all, a linked heading clicked, to Apply (Central Station) picks only what needs no human pick: not a grayed,
-     * triangle or deleting Apply, not a row differing in both, never an ignored row; Keep As Is (This Computer) and Ask
+     * triangle or deleting Apply, not a by-hand row, never an ignored row; Keep As Is (This Computer) and Ask
      * Again override every other row.  The headings are links the keyboard reaches, Enter pressing them.  The triangle
      * follows the other rows' choices and names who else would answer that decoder (E34, E37, E45, E79, E80, E82).
      *
@@ -135,8 +134,9 @@ public class testTheSyncDifferencesWindow
             here(rig, "SW A", 30, "SW B", 31, "SW T", 33, "SW Holder", 34, "SW C", 35, "SW D", 36, "SW Held", 36,
                 "SW E", 37, "SW Both", 38, "SW I", 39, "SW F", 41);
             rig.model.getLocByName("SW I").setSyncIgnored(true);
-            // A's address is B's, which the station renames and moves; T's is the Holder's, which it renames
-            list.set(station("SW A", 31, "SW B", 32, "SW T", 34, "SW C2", 35, "SW Held", 36, "SW E, 1", 37,
+            // A's address is B's, which the station moves (two there, so B is not renamed); T's is the Holder's, which
+            // it renames
+            list.set(station("SW A", 31, "SW Z", 31, "SW B", 32, "SW T", 34, "SW C2", 35, "SW Held", 36, "SW E, 1", 37,
                 "SW Other", 38, "SW Both", 40, "SW I2", 39, "SW F", 42));
 
             List<String> problems = new ArrayList<>();
@@ -152,17 +152,16 @@ public class testTheSyncDifferencesWindow
                 check(problems, t.in("SW D", "deletes", JLabel.class).getText(), I18n.f("sync.ui.deletes", "SW Held"),
                     "D's deleting mark");
                 apply.doClick();
-                check(problems, selected(t), rowsOn("ASK", "ASK", "ASK", "RENAME", "ASK", "ASK", "ADDRESS", "ASK", "ASK"),
-                    "Set all to Apply");
+                check(problems, selected(t), rowsOn("ADDRESS", "ADDRESS", "RENAME", "ASK", "ASK", "ADDRESS", "ASK",
+                    "ASK"), "Set all to Apply");
                 check(problems, visible(t, "SW T", "collision"), true, "T's triangle");
                 t.in("SW B", "ADDRESS", AbstractButton.class).doClick();
                 check(problems, visible(t, "SW A", "collision"), false, "A's triangle with B moved");
                 t.in("SW B", "KEEP", AbstractButton.class).doClick();
                 check(problems, visible(t, "SW A", "collision"), true, "A's triangle once B is kept");
                 // Each Set all in turn, over the one before
-                for (String[] each : new String[][] {{"sync.ui.thisComputer",
-                    "KEEP KEEP KEEP KEEP KEEP KEEP KEEP KEEP KEEP"},
-                    {"sync.ui.askAgain", "ASK ASK ASK ASK ASK ASK ASK ASK ASK"}})
+                for (String[] each : new String[][] {{"sync.ui.thisComputer", "KEEP KEEP KEEP KEEP KEEP KEEP KEEP"
+                    + " KEEP"}, {"sync.ui.askAgain", "ASK ASK ASK ASK ASK ASK ASK ASK"}})
                 {
                     // Enter on the heading, as the keyboard would
                     AbstractButton head = Components.withText(t.dialog, I18n.t(each[0]));
@@ -525,8 +524,8 @@ public class testTheSyncDifferencesWindow
     }
 
     /**
-     * Set all to Apply judges against the addresses already picked by hand: a row differing both ways, set by hand to
-     * the address the station lists twice, keeps Set all from giving that address to the other row it lists there.
+     * Set all to Apply judges against the addresses already picked by hand: an ignored row, which Set all leaves alone,
+     * set by hand to the address the station lists twice, keeps Set all from giving that address to the other row.
      *
      * MUTATION: in `SyncDifferencesWindow.setAllTo`, judge `applicable` against no picks (`Collections.emptyList()`).
      */
@@ -536,19 +535,20 @@ public class testTheSyncDifferencesWindow
         inAWindow((rig, ui, list) ->
         {
             here(rig, "SW X", 50, "SW Y", 51);
-            // The station has X renamed at 50, and both X and Y at 52
-            list.set(station("SW X2", 50, "SW X", 52, "SW Y", 52));
+            rig.model.getLocByName("SW X").setSyncIgnored(true);
+            // The station has both X and Y at 52
+            list.set(station("SW X", 52, "SW Y", 52));
 
             List<String> problems = new ArrayList<>();
             assertNotNull(pressSync(rig, ui, SyncTable.canceling(t ->
             {
                 AbstractButton apply = Components.withText(t.dialog, I18n.t("sync.ui.centralStation"));
                 apply.doClick();
-                check(problems, selected(t), Arrays.asList("SW X:ASK", "SW Y:ADDRESS"), "Set all with nothing picked");
+                check(problems, selected(t), Arrays.asList("SW Y:ADDRESS", "SW X:IGNORE"), "Set all, nothing picked");
                 Components.withText(t.dialog, I18n.t("sync.ui.askAgain")).doClick();
                 t.in("SW X", "ADDRESS", AbstractButton.class).doClick();
                 apply.doClick();
-                check(problems, selected(t), Arrays.asList("SW X:ADDRESS", "SW Y:ASK"), "Set all after X's by hand");
+                check(problems, selected(t), Arrays.asList("SW Y:ASK", "SW X:ADDRESS"), "Set all after X's by hand");
                 check(problems, visible(t, "SW X", "collision"), false, "X's triangle");
             }), null), "the table did not open");
             assertEquals(problems, new ArrayList<String>(), "Set all over a pick by hand");
@@ -569,13 +569,14 @@ public class testTheSyncDifferencesWindow
     {
         inAWindow((rig, ui, list) ->
         {
-            here(rig, "SW P", 80, "SW Q", 81, "SW D", 82, "SW Held", 83, "SW Member", 84);
+            here(rig, "SW Q", 81, "SW D", 82, "SW Held", 83, "SW Member", 84);
+            rig.model.newDCCLocomotive("SW P", 80);
             rig.model.getLocByName("SW Held").setLinkedLocomotives(
                 java.util.Collections.singletonMap("SW Member", 1.0));
             Locomotive p = rig.model.getLocByName("SW P"), q = rig.model.getLocByName("SW Q"),
                 d = rig.model.getLocByName("SW D"), held = rig.model.getLocByName("SW Held");
-            // The station renamed P to Q, Q to R and D to Held
-            list.set(station("SW Q", 80, "SW R", 81, "SW Held", 82, "SW Member", 84));
+            // The station renamed P to Q, Q to R and D to Held; P is DCC, so Q has no other address of its own there
+            list.set(station("SW Q", MarklinLocomotive.DCC_BASE + 80, "SW R", 81, "SW Held", 82, "SW Member", 84));
 
             List<String> problems = new ArrayList<>(), said = new ArrayList<>();
             assertNotNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW P", "RENAME", "SW Q", "RENAME",
@@ -710,12 +711,10 @@ public class testTheSyncDifferencesWindow
     }
 
     /**
-     * Keep As Is is the radio centered beside this computer's lines, Apply the one beside the station's, and a row
-     * differing both ways has a radio before each station line it changes, exclusive with the row's other answers; each
-     * radio
-     * says its whole answer on hover and to a screen reader, and Keep Both's, Ignore's and Ask Again's sit centered
-     * under their headings.  This Computer, Central Station and Ask Again head the columns as links, Keep Both and
-     * Ignore as plain labels.
+     * Keep As Is is the radio centered beside this computer's lines, Apply the one beside the station's, exclusive with
+     * the row's other answers; each radio says its whole answer on hover and to a screen reader, and Keep Both's,
+     * Ignore's and Ask Again's sit centered under their headings.  This Computer, Central Station and Ask Again head
+     * the columns as links, Keep Both and Ignore as plain labels.
      *
      * MUTATION: in `SyncDifferencesWindow.addRow`, lead a single Apply's Name line with its radio, or put Use the
      * address in a group of its own.
@@ -726,23 +725,21 @@ public class testTheSyncDifferencesWindow
         List<String> problems = new ArrayList<>();
         inAWindow((rig, ui, list) ->
         {
-            here(rig, "SW Shunter", 20, "SW Uri", 21, "SW Both", 23);
-            list.set(station("SW V 60", 20, "SW Uri", 22, "SW Other", 23, "SW Both", 24));
+            here(rig, "SW Shunter", 20, "SW Uri", 21);
+            list.set(station("SW V 60", 20, "SW Uri", 22));
             assertNotNull(pressSync(rig, ui, SyncTable.canceling(t ->
             {
                 int computer = x(t, "sync.ui.thisComputer"), station = x(t, "sync.ui.centralStation");
-                for (String row : new String[] {"SW Shunter", "SW Uri", "SW Both"})
+                for (String row : new String[] {"SW Shunter", "SW Uri"})
                 {
                     Rectangle keep = at(t, t.in(row, "KEEP", AbstractButton.class));
                     check(problems, keep.x >= computer && keep.x + keep.width < station, true, row + "'s Keep under "
                         + "This Computer");
                 }
-                // Each radio left of its values (text#occurrence): level with their middle, a block's or a line's
+                // Each radio left of its values (text#occurrence), level with their middle
                 for (String[] each : new String[][] {{"SW Shunter", "KEEP", "SW Shunter#0", "MM2 20#0"}, {"SW Shunter",
                     "RENAME", "SW V 60#0", "MM2 20#1"}, {"SW Uri", "KEEP", "SW Uri#0", "MM2 21#0"}, {"SW Uri", "ADDRESS",
-                    "SW Uri#1", "MM2 22#0"}, {"SW Both", "KEEP", "SW Both#0", "MM2 23#0"}, {"SW Both", "RENAME",
-                    I18n.f("sync.ui.renameTo", "SW Other") + "#0"}, {"SW Both", "ADDRESS", I18n.f("sync.ui.moveTo",
-                    "MM2 24") + "#0"}})
+                    "SW Uri#1", "MM2 22#0"}})
                 {
                     Rectangle b = at(t, t.in(each[0], each[1], AbstractButton.class));
                     List<Rectangle> v = new ArrayList<>();
@@ -760,14 +757,14 @@ public class testTheSyncDifferencesWindow
                 }
                 check(problems, Arrays.asList(t.in("SW Shunter", "KEEP", AbstractButton.class).getToolTipText(),
                     t.in("SW Shunter", "KEEP", AbstractButton.class).getAccessibleContext().getAccessibleName(),
-                    t.in("SW Both", "ADDRESS", AbstractButton.class).getToolTipText()), Arrays.asList(
+                    t.in("SW Uri", "ADDRESS", AbstractButton.class).getToolTipText()), Arrays.asList(
                     I18n.f("sync.ui.keepAsIs", "SW Shunter"), I18n.f("sync.ui.keepAsIs", "SW Shunter"),
-                    I18n.f("sync.ui.changeAddress", "SW Both", 24)), "what the radios say");
+                    I18n.f("sync.ui.changeAddress", "SW Uri", 22)), "what the radios say");
                 for (String[] each : new String[][] {{"BOTH", "sync.ui.keepBoth"}, {"IGNORE", "sync.ui.ignore"},
                     {"ASK", "sync.ui.askAgain"}})
                 {
                     double under = at(t, heading(t, each[1])).getCenterX();
-                    for (String row : new String[] {"SW Shunter", "SW Uri", "SW Both"})
+                    for (String row : new String[] {"SW Shunter", "SW Uri"})
                     {
                         Rectangle r = at(t, t.in(row, each[0], AbstractButton.class));
                         check(problems, Math.abs(r.getCenterX() - under) <= 1 && Math.abs(r.getCenterY() - at(t, t.in(
@@ -784,11 +781,11 @@ public class testTheSyncDifferencesWindow
                 String both = I18n.f("sync.ui.keepBothSaid", "SW Shunter", "SW V 60"), ignore = I18n.f(
                     "sync.ui.ignoreSaid", "SW Shunter"), ask = I18n.f("sync.ui.askAgainSaid", "SW Shunter");
                 check(problems, says, Arrays.asList(both, both, ignore, ignore, ask, ask), "what the other radios say");
-                for (String[] each : new String[][] {{"RENAME", "RENAME"}, {"ADDRESS", "ADDRESS"}, {"KEEP", "KEEP"}})
+                for (String each : new String[] {"ADDRESS", "KEEP", "IGNORE"})
                 {
-                    t.in("SW Both", each[0], AbstractButton.class).doClick();
-                    check(problems, selected(t).stream().filter(s -> s.startsWith("SW Both:")).collect(java.util.stream
-                        .Collectors.toList()), Arrays.asList("SW Both:" + each[1]), "the both-ways row");
+                    t.in("SW Uri", each, AbstractButton.class).doClick();
+                    check(problems, selected(t).stream().filter(s -> s.startsWith("SW Uri:")).collect(java.util.stream
+                        .Collectors.toList()), Arrays.asList("SW Uri:" + each), "one answer a row");
                 }
                 List<Boolean> links = new ArrayList<>();
                 for (String key : new String[] {"sync.ui.thisComputer", "sync.ui.centralStation", "sync.ui.keepBoth",
@@ -843,10 +840,10 @@ public class testTheSyncDifferencesWindow
     }
 
     /**
-     * Rows whose Apply is grayed (a name swap, a name the station lists twice, a moving locomotive) leave the table
-     * whole: every answer column is on screen without scrolling sideways and the last row shows in full, each reason a
-     * short gray mark saying it in full on hover, as the grayed radio does.  A row too wide for the screen scrolls
-     * sideways under a bar that hides none of the rows.
+     * Rows whose Apply is grayed (a name swap across decoder types, a name the station lists twice, a moving
+     * locomotive) leave the table whole: every answer column is on screen without scrolling sideways and the last row
+     * shows in full, each reason a short gray mark saying it in full on hover, as the grayed radio does.  A row too
+     * wide for the screen scrolls sideways under a bar that hides none of the rows.
      *
      * MUTATION: in `SyncDifferencesWindow.line`, show `whyNot` itself in place of the mark; or in
      * `ChoiceTable.getPreferredSize`, leave out the horizontal bar's height.
@@ -857,8 +854,10 @@ public class testTheSyncDifferencesWindow
         List<String> problems = new ArrayList<>();
         inAWindow((rig, ui, list) ->
         {
-            here(rig, "SW A", 20, "SW B", 21, "SW Moving", 24, "SW Twice", 22);
-            list.set(station("SW B", 20, "SW A", 21, "SW Mover", 24, "SW Dup", 22, "SW Dup", 26));
+            here(rig, "SW A", 20, "SW Moving", 24, "SW Twice", 22);
+            rig.model.newDCCLocomotive("SW B", 21);
+            list.set(station("SW B", 20, "SW A", MarklinLocomotive.DCC_BASE + 21, "SW Mover", 24, "SW Dup", 22,
+                "SW Dup", 26));
             Locomotive moving = rig.model.getLocByName("SW Moving");
             moving.setSpeed(40);
             try
@@ -891,44 +890,54 @@ public class testTheSyncDifferencesWindow
     }
 
     /**
-     * A row differing both ways names one whole Central Station locomotive on each line, with its own address: the one
-     * at this address it would be renamed to, and the one under this name whose address it would move to.  A grayed
-     * line has no Deletes note.  Here A and B have each other's names and addresses on the station.
+     * A locomotive two station locomotives answer to (here A and B swapped; X's name reused at 23, X at 25 there) is a
+     * row with no control, saying to fix it by hand and naming both with their addresses.  No heading picks for it,
+     * Continue Sync changes neither, the log names it and both once, and the closing message does not count it, while a
+     * one-to-one rename beside it applies.
      *
-     * MUTATION: in `SyncDifferencesWindow.addRow`, give Move to this computer's address.
+     * MUTATION: in the `RenameProposals.Row` constructor, set `byHand` false, and the rows offer Apply again.
      */
     @Test(timeOut = 180000)
-    public void testABothWaysRowNamesWholeStationLocomotives() throws Exception
+    public void testARowThatDiffersTwoWaysIsLeftToFixByHand() throws Exception
     {
-        List<String> problems = new ArrayList<>();
+        List<String> problems = new ArrayList<>(), said = new ArrayList<>();
         AtomicBoolean looked = new AtomicBoolean();
         inAWindow((rig, ui, list) ->
         {
-            here(rig, "SW A", 20, "SW B", 21);
-            list.set(station("SW B", 20, "SW A", 21));
-            assertNotNull(pressSync(rig, ui, SyncTable.canceling(t ->
+            here(rig, "SW A", 20, "SW B", 21, "SW X", 23, "SW Shunter", 27);
+            list.set(station("SW B", 20, "SW A", 21, "SW Y", 23, "SW X", 25, "SW V 60", 27));
+            // Each row, the station's locomotive at its address, and where the station has it by name
+            String[][] rows = {{"SW A", "SW B", "MM2 20", "MM2 21"}, {"SW B", "SW A", "MM2 21", "MM2 20"},
+                {"SW X", "SW Y", "MM2 23", "MM2 25"}};
+            assertNotNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW Shunter", "RENAME"), t ->
             {
-                // Row; the station's locomotive at the row's address, and it; the row's name and its station address
-                for (String[] each : new String[][] {{"SW A", "SW B", "MM2 20", "SW A", "MM2 21"}, {"SW B", "SW A",
-                    "MM2 21", "SW B", "MM2 20"}})
+                check(problems, t.rows, Arrays.asList("SW A", "SW B", "SW Shunter", "SW X"), "the rows");
+                ((AbstractButton) heading(t, "sync.ui.centralStation")).doClick();
+                check(problems, selected(t), Arrays.asList("SW Shunter:RENAME"), "Set all to Apply");
+                for (String[] each : rows)
                 {
-                    List<String> rename = lineOf(t, each[0], "RENAME"), move = lineOf(t, each[0], "ADDRESS");
-                    String r = String.join(" ", rename), m = String.join(" ", move);
-                    check(problems, Arrays.asList(r.contains(each[1]), r.contains(each[2]), r.contains(each[3]),
-                        r.contains(each[4]), m.contains(each[3]), m.contains(each[4]), m.contains(each[1]),
-                        m.contains(each[2])), Arrays.asList(true, true, false, false, true, true, false, false),
-                        each[0] + "'s lines " + rename + " " + move);
-                    JLabel deletes = t.in(each[0], "deletes", JLabel.class);
-                    check(problems, Arrays.asList(t.in(each[0], "RENAME", AbstractButton.class).isEnabled(), deletes
-                        != null && deletes.isVisible()), Arrays.asList(false, false), each[0] + "'s grayed rename");
-                    // Last, as a missing key throws and the table swallows it
-                    check(problems, Arrays.asList(rename, move), Arrays.asList(Arrays.asList(I18n.f("sync.ui.renameTo",
-                        each[1]), I18n.f("sync.ui.isAtThere", each[1], each[2]), I18n.t("sync.ui.cantApply")),
-                        Arrays.asList(I18n.f("sync.ui.moveTo", each[4]), I18n.f("sync.ui.isAtThere", each[3],
-                        each[4]))), each[0] + "'s wording");
+                    check(problems, Components.all(t.dialog, javax.swing.JComponent.class, c -> c.getName() != null
+                        && c.getName().startsWith(each[0] + ":") && !c.getName().endsWith(":byHand")).size(), 0,
+                        each[0] + "'s controls");
+                    check(problems, t.in(each[0], "byHand", JLabel.class).getText(), I18n.f("sync.ui.byHandWhere",
+                        each[1], each[2], each[0], each[3]), each[0] + "'s station locomotives");
                 }
+                check(problems, java.util.Collections.frequency(labels(t), I18n.t("sync.ui.byHand")), 3, "fix by hand");
                 looked.set(true);
-            }), null), "the table did not open");
+            }), said), "the table did not open");
+            List<String> log = rig.takeLog();
+            for (String[] each : rows)
+            {
+                Locomotive l = rig.model.getLocByName(each[0]);
+                check(problems, l == null ? null : l.getDecoderTypeLabel() + " " + l.getAddress(), each[2], each[0]
+                    + " changed");
+                check(problems, java.util.Collections.frequency(log, I18n.f("loc.syncByHand", each[0], I18n.f(
+                    "sync.ui.byHandWhere", each[1], each[2], each[0], each[3]))), 1, each[0] + "'s log line " + log);
+            }
+            check(problems, Arrays.asList(rig.model.getLocByName("SW Y"), rig.model.getLocByName("SW Shunter"),
+                rig.model.getLocByName("SW V 60") != null), Arrays.asList(null, null, true), "Y added, or no rename");
+            check(problems, said, Arrays.asList(I18n.t("ui.infoSyncComplete") + "\n\n" + I18n.f("ui.infoSyncRenamed",
+                1)), "the closing message");
         });
         assertTrue(problems.isEmpty(), problems.toString());
         assertTrue(looked.get(), "the look stopped short");
@@ -1097,10 +1106,10 @@ public class testTheSyncDifferencesWindow
         if (!java.util.Objects.equals(got, expected)) problems.add(what + ": " + got + " not " + expected);
     }
 
-    /** The rows of the Set all claim on these answers, top to bottom, the ignored one last on Ignore. */
+    /** The rows of the Set all claim on these answers, top to bottom, the ignored last on Ignore; SW Both has none. */
     private static List<String> rowsOn(String... answers)
     {
-        List<String> rows = Arrays.asList("SW A", "SW B", "SW Both", "SW C", "SW D", "SW E", "SW F", "SW Holder", "SW T");
+        List<String> rows = Arrays.asList("SW A", "SW B", "SW C", "SW D", "SW E", "SW F", "SW Holder", "SW T");
         List<String> out = new ArrayList<>();
         for (int i = 0; i < rows.size(); i++) out.add(rows.get(i) + ":" + answers[i]);
         out.add("SW I:IGNORE");
@@ -1112,15 +1121,6 @@ public class testTheSyncDifferencesWindow
     {
         AbstractButton b = t.in(row, what, AbstractButton.class);
         return b == null ? null : b.getAccessibleContext().getAccessibleName();
-    }
-
-    /** The texts showing on the line an answer's radio leads. */
-    private static List<String> lineOf(SyncTable.Shown t, String row, String what)
-    {
-        List<String> out = new ArrayList<>();
-        for (JLabel l : Components.all(t.in(row, what, AbstractButton.class).getParent(), JLabel.class,
-            l -> l.isVisible() && l.getText() != null)) out.add(l.getText());
-        return out;
     }
 
     private static boolean visible(SyncTable.Shown t, String row, String what)

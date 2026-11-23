@@ -36,7 +36,7 @@ import org.traincontrol.util.I18n;
 /**
  * The manual Sync's table (FR-249): one row per locomotive the Central Station differs on, each answered before
  * anything changes.  Every row starts on Ask Again, an ignored locomotive's on Ignore, and an mfx one differing only by
- * address on Apply where Set all would take it.
+ * address on Apply where Set all would take it.  A by-hand row has no answers: nothing applies to it.
  */
 public final class SyncDifferencesWindow
 {
@@ -119,26 +119,34 @@ public final class SyncDifferencesWindow
     public static Map<Row, Answer> ask(Window owner, RenameProposals proposals)
     {
         List<Row> rows = new ArrayList<>();
-        for (Row r : proposals.getRows()) if (r.asksName() || r.asksAddress()) rows.add(r);
+        for (Row r : proposals.getRows()) if (r.asksName() || r.asksAddress() || r.byHand) rows.add(r);
         if (rows.isEmpty()) return new LinkedHashMap<>();
         SyncDifferencesWindow w = new SyncDifferencesWindow(owner, proposals, rows);
         w.dialog.setVisible(true);
         return w.continued ? w.picks() : null;
     }
 
-    /** A row's cells, named for the tests: each side's radio beside its block, or a both-ways row's on each line. */
+    /** A row's cells, named for the tests: each side's radio beside its block; a by-hand row's text, no radios. */
     private JComponent[] addRow(Row r)
     {
         Locomotive l = r.loco;
-        String name = l.getName(), at = l.getDecoderTypeLabel() + " ";
-        // The station's side has the plain decoder type: a head's "MU" is this computer's
-        String there = l.hasLinkedLocomotives() ? l.getDecoderType().name() + " " : at;
+        String name = l.getName(), kName = I18n.t("sync.ui.name"), kAddress = I18n.t("sync.ui.address");
+        boolean byName = r.stationName != null, byAddress = r.stationAddress != null;
+        JComponent[] here = {line(kName, name + (l.hasLinkedLocomotives() ? " +" + l.getLinkedLocomotives().size()
+            : ""), byName, null, null), line(kAddress, l.getDecoderTypeLabel() + " " + l.getAddress(), byAddress, null,
+            null)};
+        if (r.byHand)
+        {
+            JLabel where = text(whereByHand(r), GRAYED);
+            where.setName(name + ":byHand");
+            return new JComponent[] {ChoiceTable.lines(here), ChoiceTable.lines(this.table.line(text(I18n.t(
+                "sync.ui.byHand"), GRAYED)), this.table.line(where))};
+        }
         ButtonGroup group = new ButtonGroup();
         Map<Answer, JRadioButton> radios = new EnumMap<>(Answer.class);
         JRadioButton keep = choice(r, radios, group, Answer.KEEP, I18n.f("sync.ui.keepAsIs", name), null);
         JRadioButton rename = null, use = null;
         JLabel deletes = null, triangle = null;
-        boolean twice = r.asksName() && r.asksAddress();
         if (r.asksName())
         {
             rename = choice(r, radios, group, Answer.RENAME, I18n.f("sync.ui.rename", name, r.stationName),
@@ -168,21 +176,24 @@ public final class SyncDifferencesWindow
         // A heading's Set all judges the marks once, after every row it sets
         for (JRadioButton b : radios.values()) b.addItemListener(e -> { if (!this.settingAll) refresh(); });
         this.choices.put(r, radios);
-        boolean byName = r.stationName != null, byAddress = r.stationAddress != null;
-        String kName = I18n.t("sync.ui.name"), kAddress = I18n.t("sync.ui.address");
-        JComponent here = ChoiceTable.beside(keep, line(null, kName, name + (l.hasLinkedLocomotives() ? " +"
-            + l.getLinkedLocomotives().size() : ""), byName, null, null), line(null, kAddress, at + l.getAddress(),
-            byAddress, null, null));
-        // Both ways, each line names one whole station locomotive: the one at this address, the one under this name
-        JComponent station = twice ? ChoiceTable.beside(null, line(rename, I18n.f("sync.ui.renameTo", r.stationName),
-            I18n.f("sync.ui.isAtThere", r.stationName, there + l.getAddress()), false, r.whyNot(true), deletes),
-            line(use, I18n.f("sync.ui.moveTo", there + r.stationAddress), I18n.f("sync.ui.isAtThere", name, there
-            + r.stationAddress), false, r.whyNot(false), triangle))
-            : ChoiceTable.beside(rename != null ? rename : use, line(null, kName, byName ? r.stationName : name,
-            byName, rename != null ? r.whyNot(true) : null, deletes), line(null, kAddress, there + (byAddress
+        JComponent station = ChoiceTable.beside(rename != null ? rename : use, line(kName, byName ? r.stationName
+            : name, byName, rename != null ? r.whyNot(true) : null, deletes), line(kAddress, there(l) + (byAddress
             ? r.stationAddress : l.getAddress()), byAddress, use != null ? r.whyNot(false) : null, triangle));
-        return new JComponent[] {here, station, radios.get(Answer.BOTH), radios.get(Answer.IGNORE),
-            radios.get(Answer.ASK)};
+        return new JComponent[] {ChoiceTable.beside(keep, here), station, radios.get(Answer.BOTH),
+            radios.get(Answer.IGNORE), radios.get(Answer.ASK)};
+    }
+
+    /** The station's decoder type and a space: plain, as a head's "MU" is this computer's. */
+    private static String there(Locomotive l)
+    {
+        return (l.hasLinkedLocomotives() ? l.getDecoderType().name() : l.getDecoderTypeLabel()) + " ";
+    }
+
+    /** Where the station has a by-hand row's two locomotives: the one at its address, then the one under its name. */
+    static String whereByHand(Row r)
+    {
+        return I18n.f("sync.ui.byHandWhere", r.stationName, there(r.loco) + r.loco.getAddress(), r.loco.getName(),
+            there(r.loco) + r.stationAddress);
     }
 
     /** A row's radio for answer a, saying `said` on hover and to a screen reader; grayed, they say `whyNot`. */
@@ -216,17 +227,15 @@ public final class SyncDifferencesWindow
         return m;
     }
 
-    /**
-     * A line: unled, a gray kind and the value (bold if it differs); led, what it does and who, in gray; the marks.
-     */
-    private JComponent line(JComponent lead, String first, String second, boolean differs, String whyNot, JLabel mark)
+    /** A line: a gray kind, the value (bold if it differs), and the marks. */
+    private JComponent line(String kind, String value, boolean differs, String whyNot, JLabel mark)
     {
-        JLabel f = lead == null ? UiStyle.blackLabel(first) : text(first, null), v = text(second, lead == null ? null
-            : Color.GRAY), why = whyNot == null ? null : text(I18n.t("sync.ui.cantApply"), GRAYED);
-        if (lead == null) f.setForeground(Color.GRAY);
+        JLabel k = UiStyle.blackLabel(kind), v = text(value, null), why = whyNot == null ? null : text(I18n.t(
+            "sync.ui.cantApply"), GRAYED);
+        k.setForeground(Color.GRAY);
         if (differs) v.setFont(UiStyle.TEXT_FONT.deriveFont(Font.BOLD));
         if (why != null) why.setToolTipText(whyNot);
-        return this.table.line(lead, f, v, why, mark);
+        return this.table.line(k, v, why, mark);
     }
 
     /** A linked heading: each row not ignored gets what `to` gives it, from the rows Apply may take, if enabled. */

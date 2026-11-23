@@ -44,15 +44,18 @@ public final class SyncTable implements AutoCloseable
             JLabel h = Components.find(dialog, JLabel.class, l -> l.getForeground().equals(
                 org.traincontrol.gui.widgets.UiStyle.BLUE));
             this.heading = h == null ? null : h.getText();
-            for (JRadioButton b : Components.all(dialog, JRadioButton.class, b -> b.getName() != null))
+            // A row by its radios, or a by-hand row by its text
+            for (javax.swing.JComponent b : Components.all(dialog, javax.swing.JComponent.class, b -> b.getName()
+                != null && (b instanceof JRadioButton || b.getName().endsWith(":byHand"))))
             {
                 String row = b.getName().substring(0, b.getName().lastIndexOf(':'));
                 if (!this.rows.contains(row)) this.rows.add(row);
-                if (b.isSelected()) this.startsOn.put(row, b.getName().substring(row.length() + 1));
+                if (b instanceof JRadioButton && ((JRadioButton) b).isSelected())
+                    this.startsOn.put(row, b.getName().substring(row.length() + 1));
             }
         }
 
-        /** The control named so in this row: an answer's radio, or "deletes" or "collision", a mark. */
+        /** The control named so in this row: an answer's radio, a mark ("deletes", "collision"), or "byHand". */
         public <T extends java.awt.Component> T in(String row, String what, Class<T> type)
         {
             return Components.named(this.dialog, row + ":" + what, type);

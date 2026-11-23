@@ -204,8 +204,8 @@ public class testEveryLanguageFitsThePopups
     }
 
     /**
-     * The manual Sync's table and its longer finishing message fit in every language: the linked headings, a row
-     * differing in both whose rename is grayed and whose address collides, and the counts the message adds (FR-249).
+     * The manual Sync's table and its longer finishing message fit in every language: the linked headings, a by-hand
+     * row, a grayed rename, an address that collides, and the counts the message adds (FR-249).
      *
      * MUTATION: in `ChoiceTable.link`, fix a heading's preferred size at 20 by 20 pixels, and this fails in every language.
      */
@@ -214,18 +214,21 @@ public class testEveryLanguageFitsThePopups
     {
         MarklinLocomotive asked = new MarklinLocomotive(railway.model, 23, Locomotive.decoderType.MM2, "BR 218");
         MarklinLocomotive holder = new MarklinLocomotive(railway.model, 24, Locomotive.decoderType.MM2, "BR 218 007");
+        MarklinLocomotive other = new MarklinLocomotive(railway.model, 25, Locomotive.decoderType.MM2, "BR 103");
         Map<Integer, List<MarklinLocomotive>> held = new HashMap<>();
-        held.put(asked.getIntUID(), Collections.singletonList(asked));
-        held.put(holder.getIntUID(), Collections.singletonList(holder));
+        for (MarklinLocomotive l : new MarklinLocomotive[] {asked, holder, other})
+            held.put(l.getIntUID(), Collections.singletonList(l));
 
         LanguageFit.assertNothingClipped("sync table", LanguageFit.everyLanguage(language ->
         {
             List<String> found = Collections.synchronizedList(new ArrayList<>());
-            RenameProposals.Row row = new RenameProposals.Row(asked, holder.getName(), holder.getAddress(),
-                I18n.f("loc.renameNameListedTwice", asked.getName(), holder.getName()), null, holder, null,
-                asked.getIntUID(), holder.getIntUID());
-            RenameProposals proposals = new RenameProposals(new ArrayList<>(), 0, new HashMap<>(),
-                Collections.singletonList(row), held);
+            // By hand; a rename grayed; an address held here
+            List<RenameProposals.Row> rows = java.util.Arrays.asList(new RenameProposals.Row(asked, holder.getName(),
+                25, null, null, holder, null, asked.getIntUID(), other.getIntUID()), new RenameProposals.Row(other,
+                holder.getName(), null, I18n.f("loc.renameNameListedTwice", other.getName(), holder.getName()), null,
+                holder, null, other.getIntUID(), other.getIntUID()), new RenameProposals.Row(holder, null, 23, null,
+                null, null, null, holder.getIntUID(), asked.getIntUID()));
+            RenameProposals proposals = new RenameProposals(new ArrayList<>(), 0, new HashMap<>(), rows, held);
 
             try (SyncTable table = SyncTable.canceling(t ->
             {

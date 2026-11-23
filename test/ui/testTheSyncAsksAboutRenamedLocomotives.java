@@ -472,12 +472,6 @@ public class testTheSyncAsksAboutRenamedLocomotives
         assertNull(rig.model.getLocByName(STATION_NAME), "Ask Again added a copy under the station's name");
     }
 
-    /** A row's two Apply choices' texts in a table shown. */
-    private static List<String> applies(SyncTable.Shown s, String row) throws Exception
-    {
-        return Arrays.asList(text(s, row, "RENAME"), text(s, row, "ADDRESS"));
-    }
-
     /** What an answer's radio says to a screen reader, in a table shown. */
     private static String text(SyncTable.Shown s, String row, String answer) throws Exception
     {
@@ -972,12 +966,11 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
-     * A locomotive held here at 10 that the station has at 3, while it calls the one at 10 another name, is one row with
-     * two Apply choices, each doing only what it says: the rename leaves the station's locomotive at 3 to be added, the
-     * address 3 frees 10 for the station's locomotive there in the same sync, Keep changes nothing and is not asked
-     * again (FR-246).
+     * A locomotive held here at 10 that the station has at 3, while it calls the one at 10 another name, is one row
+     * with no answer, and the Sync changes nothing about it, every time; renamed here by hand to the station's name at
+     * 10, the next Sync asks nothing and adds the station's locomotive at 3 (FR-249).
      *
-     * MUTATION: in `SyncDifferencesWindow.addRow`, leave out the address choice when the row also asks the name.
+     * MUTATION: in the `RenameProposals.Row` constructor, set `byHand` false, and the row offers the rename.
      */
     @Test(timeOut = 360000)
     public void testARenamedAndReAddressedLocomotiveIsOneQuestion() throws Exception
@@ -986,27 +979,19 @@ public class testTheSyncAsksAboutRenamedLocomotives
         {
             renamedAndMovedHere(rig);
 
-            assertEquals(applies(pressedOnce(rig, ui, "RENAME"), AT_3), Arrays.asList(I18n.f("sync.ui.rename", AT_3,
-                STATION_NAME), I18n.f("sync.ui.changeAddress", AT_3, 3)), "the row does not offer both changes");
+            for (String answer : new String[] {"RENAME", "ADDRESS"})
+            {
+                SyncTable.Shown s = pressedOnce(rig, ui, answer);
+                assertEquals(Arrays.asList(s.in(AT_3, "RENAME", javax.swing.AbstractButton.class), s.in(AT_3, "ADDRESS",
+                    javax.swing.AbstractButton.class)), Arrays.asList(null, null), "the row offers a change");
+                assertEquals(rig.model.getLocByName(AT_3).getAddress(), 10, "the Sync moved it");
+                assertNull(rig.model.getLocByName(STATION_NAME), "the Sync renamed it or added a copy");
+            }
 
-            assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 10, "the rename did not rename it");
+            rig.model.renameLoc(AT_3, STATION_NAME);
+
+            assertEquals(pressing(rig, ui, "KEEP").size(), 0, "asked again once fixed by hand");
             assertEquals(rig.model.getLocByName(AT_3).getAddress(), 3, "the station's locomotive at 3 was not added");
-
-            rig.model.deleteLoc(AT_3);
-            rig.model.renameLoc(STATION_NAME, AT_3);
-            renamedAndMovedHere(rig);
-
-            assertEquals(pressing(rig, ui, "ADDRESS").size(), 1, "precondition: the address was not asked");
-            assertEquals(rig.model.getLocByName(AT_3).getAddress(), 3, "the address did not move it");
-            assertNotNull(rig.model.getLocByName(STATION_NAME), "the sync did not add the station's locomotive at the"
-                + " address it left");
-
-            renamedAndMovedHere(rig);
-
-            assertEquals(pressing(rig, ui, "KEEP").size(), 1, "precondition: Keep was not asked");
-            assertEquals(rig.model.getLocByName(AT_3).getAddress(), 10, "Keep moved it");
-            assertNull(rig.model.getLocByName(STATION_NAME), "Keep renamed it or the sync added a copy");
-            assertEquals(pressing(rig, ui, "KEEP").size(), 0, "Keep was asked again");
         });
     }
 

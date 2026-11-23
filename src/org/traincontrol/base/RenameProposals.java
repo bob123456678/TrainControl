@@ -41,6 +41,8 @@ public class RenameProposals
         public final Locomotive nameHolder;
         /** The station's locomotive under stationName, which Keep Both adds; else null. */
         public final Locomotive station;
+        /** Whether two station locomotives answer to it, one at its address, one under its name: shown, never asked. */
+        public final boolean byHand;
         // Decoder type and address, as MarklinLocomotive.getIntUID, now and at stationAddress
         final int uid;
         final int stationUid;
@@ -55,6 +57,7 @@ public class RenameProposals
             this.whyNoAddress = whyNoAddress;
             this.nameHolder = nameHolder;
             this.station = station;
+            this.byHand = stationName != null && stationAddress != null;
             this.uid = uid;
             this.stationUid = stationUid;
         }
@@ -75,21 +78,15 @@ public class RenameProposals
             return this.stationAddress != null && this.stationAddress.equals(this.loco.getDeclinedStationAddress());
         }
 
-        /** Whether nothing is left to answer: ignored, or each difference kept. */
-        public boolean isSettled()
-        {
-            return this.loco.isSyncIgnored() || !asksName() && !asksAddress();
-        }
-
-        /** Whether the table asks about the name: it differs and is not kept, or the locomotive is ignored. */
+        /** Whether the table asks about the name: it alone differs and is not kept, or the locomotive is ignored. */
         public boolean asksName()
         {
-            return this.stationName != null && (this.loco.isSyncIgnored() || !isNameKept());
+            return this.stationName != null && !this.byHand && (this.loco.isSyncIgnored() || !isNameKept());
         }
 
         public boolean asksAddress()
         {
-            return this.stationAddress != null && (this.loco.isSyncIgnored() || !isAddressKept());
+            return this.stationAddress != null && !this.byHand && (this.loco.isSyncIgnored() || !isAddressKept());
         }
     }
 
@@ -144,12 +141,6 @@ public class RenameProposals
     public List<Row> getRows()
     {
         return Collections.unmodifiableList(this.rows);
-    }
-
-    /** How many locomotives differ with something left to answer. */
-    public int getUnsettledCount()
-    {
-        return (int) this.rows.stream().filter(r -> !r.isSettled()).count();
     }
 
     /**
