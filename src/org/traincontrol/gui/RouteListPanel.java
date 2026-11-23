@@ -549,7 +549,7 @@ final class RouteListPanel
 
             return (Route) list.getValueAt(list.rowAtPoint(evt.getPoint()), list.columnAtPoint(evt.getPoint()));
         }
-        catch (Exception e)
+        catch (RuntimeException e)
         {
             return null;
         }  
