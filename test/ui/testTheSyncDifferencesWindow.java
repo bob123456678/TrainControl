@@ -59,11 +59,11 @@ public class testTheSyncDifferencesWindow
     /**
      * Each row shows this computer's locomotive and the station's in one format, a line for the name ("+N" for a
      * multi-unit head here) and one for the decoder address, the kind in a gray label and the value that differs bold
-     * on both sides; Apply's radio names the whole change to a screen reader, twice for a locomotive differing in both,
-     * and Keep Both is offered on name rows only.  The columns run This Computer (Keep As Is), Central Station (Apply
-     * Change), Keep Both, Ignore, Ask Again.  Rows are in name order
-     * with the ignored last on Ignore, the rest on Ask Again, under a heading that counts them (E17, E18, E20, E26,
-     * E29).
+     * on both sides, the station's decoder type its own (no "MU"); Apply's radio names the whole change to a screen
+     * reader, twice for a locomotive differing in both, and Keep Both is lit on name rows only.  The columns run This
+     * Computer (Keep As Is), Central Station (Apply Change), Keep Both, Ignore, Ask Again.  Rows are in name order
+     * with the ignored last on Ignore, the rest on Ask Again, under a heading that counts them, as far in as the
+     * table (E17, E18, E20, E26, E29).
      *
      * MUTATION: in `SyncDifferencesWindow.addRow`, select Ask Again on an ignored row too; or in `kindAndValue`, never
      * bold.
@@ -92,9 +92,13 @@ public class testTheSyncDifferencesWindow
                 check(problems, Arrays.asList(text(t, "SW Both", "RENAME"), text(t, "SW Both", "ADDRESS")), Arrays.asList(
                     I18n.f("sync.ui.rename", "SW Both", "SW Other"), I18n.f("sync.ui.changeAddress", "SW Both", 24)),
                     "both-ways row");
-                check(problems, Arrays.asList(t.in("SW Shunter", "BOTH", AbstractButton.class) != null,
-                    t.in("SW Uri", "BOTH", AbstractButton.class) != null), Arrays.asList(true, false), "Keep Both offered");
+                check(problems, Arrays.asList(t.in("SW Shunter", "BOTH", AbstractButton.class).isEnabled(),
+                    t.in("SW Uri", "BOTH", AbstractButton.class).isEnabled()), Arrays.asList(true, false), "Keep Both lit");
                 check(problems, labels(t).contains("SW Head +1"), true, "head's +N");
+                check(problems, Arrays.asList(java.util.Collections.frequency(labels(t), I18n.f("loc.multiUnitLinked",
+                    "MM2") + " 26"), labels(t).contains("MM2 26")), Arrays.asList(1, true), "the station's decoder type");
+                check(problems, at(t, Components.find(t.dialog, JLabel.class, l -> t.heading.equals(l.getText()))).x,
+                    at(t, Components.find(t.dialog, ChoiceTable.class, c -> true)).x, "the heading's indent");
                 check(problems, labels(t).contains("MM2 20"), true, "decoder address");
                 check(problems, Arrays.asList(bold(t, "SW Shunter"), bold(t, "SW V 60"), bold(t, "MM2 21"),
                     bold(t, "MM2 22"), bold(t, "SW Uri"), bold(t, "MM2 20")),
@@ -450,7 +454,8 @@ public class testTheSyncDifferencesWindow
     }
 
     /**
-     * A thousand rows open in a bounded time inside the screen: the list scrolls, and the buttons stay in view (E129).
+     * A thousand rows open in a bounded time inside the screen: the list scrolls, and the buttons stay in view (E129),
+     * as do the headings at the end of the list.
      *
      * MUTATION: in `ChoiceTable`, leave out `getPreferredSize`, and the window grows past the screen.
      */
@@ -476,6 +481,10 @@ public class testTheSyncDifferencesWindow
                     check(problems, new Rectangle(t.dialog.getContentPane().getSize()).contains(SwingUtilities
                         .convertRectangle(c.getParent(), c.getBounds(), t.dialog.getContentPane())), true, "buttons in view");
                 }
+                scrolling.getVerticalScrollBar().setValue(scrolling.getVerticalScrollBar().getMaximum());
+                Component head = heading(t, "sync.ui.askAgain");
+                check(problems, new Rectangle(scrolling.getSize()).contains(SwingUtilities.convertRectangle(
+                    head.getParent(), head.getBounds(), scrolling)), true, "the headings in view at the end");
             });
             assertTrue(opened.get() < 20_000_000_000L, "a thousand rows took " + opened.get() / 1_000_000 + " ms to open");
             assertTrue(problems.isEmpty(), problems.toString());
@@ -701,8 +710,9 @@ public class testTheSyncDifferencesWindow
     /**
      * Keep As Is is the radio before this computer's lines, Apply the one before the station's, and a row differing
      * both ways has a radio before each station line it changes, exclusive with the row's other answers; each radio
-     * says its whole answer on hover and to a screen reader.  This Computer, Central Station and Ask Again head the
-     * columns as links, Keep Both and Ignore as plain labels.
+     * says its whole answer on hover and to a screen reader, and Keep Both's, Ignore's and Ask Again's sit centered
+     * under their headings.  This Computer, Central Station and Ask Again head the columns as links, Keep Both and
+     * Ignore as plain labels.
      *
      * MUTATION: in `SyncDifferencesWindow.addRow`, lead the address line with Apply and the name line with room, or put
      * Use the address in a group of its own.
@@ -742,6 +752,23 @@ public class testTheSyncDifferencesWindow
                     t.in("SW Both", "ADDRESS", AbstractButton.class).getToolTipText()), Arrays.asList(
                     I18n.f("sync.ui.keepAsIs", "SW Shunter"), I18n.f("sync.ui.keepAsIs", "SW Shunter"),
                     I18n.f("sync.ui.changeAddress", "SW Both", 24)), "what the radios say");
+                List<String> says = new ArrayList<>();
+                for (String a : new String[] {"BOTH", "IGNORE", "ASK"})
+                {
+                    AbstractButton b = t.in("SW Shunter", a, AbstractButton.class);
+                    says.addAll(Arrays.asList(b.getToolTipText(), b.getAccessibleContext().getAccessibleName()));
+                }
+                String both = I18n.f("sync.ui.keepBothSaid", "SW Shunter", "SW V 60"), ignore = I18n.f(
+                    "sync.ui.ignoreSaid", "SW Shunter"), ask = I18n.f("sync.ui.askAgainSaid", "SW Shunter");
+                check(problems, says, Arrays.asList(both, both, ignore, ignore, ask, ask), "what the other radios say");
+                for (String[] each : new String[][] {{"BOTH", "sync.ui.keepBoth"}, {"IGNORE", "sync.ui.ignore"},
+                    {"ASK", "sync.ui.askAgain"}})
+                {
+                    double under = at(t, heading(t, each[1])).getCenterX();
+                    for (String row : new String[] {"SW Shunter", "SW Uri", "SW Both"})
+                        check(problems, Math.abs(at(t, t.in(row, each[0], AbstractButton.class)).getCenterX() - under)
+                            <= 1, true, row + ":" + each[0] + " centered under its heading");
+                }
                 for (String[] each : new String[][] {{"RENAME", "RENAME"}, {"ADDRESS", "ADDRESS"}, {"KEEP", "KEEP"}})
                 {
                     t.in("SW Both", each[0], AbstractButton.class).doClick();
@@ -759,7 +786,7 @@ public class testTheSyncDifferencesWindow
     }
 
     /**
-     * Rows alternate: every other one a very light step off the table's background, a hairline rule over each row, and
+     * Rows alternate: every other one a very light step off the table's background, a hairline rule between rows, and
      * a stronger rule under the headings.
      *
      * MUTATION: in `ChoiceTable.paintRows`, leave out the fill; or leave out the rule.
@@ -773,31 +800,23 @@ public class testTheSyncDifferencesWindow
                 ChoiceTable table = Components.find(t.dialog, ChoiceTable.class, c -> true);
                 java.awt.Container grid = (java.awt.Container) ((java.awt.Container) table.getViewport().getView())
                     .getComponent(0);
-                java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(grid.getWidth(), grid.getHeight(),
-                    java.awt.image.BufferedImage.TYPE_INT_RGB);
-                java.awt.Graphics2D g = img.createGraphics();
-                grid.printAll(g);
-                g.dispose();
-                // Down the right edge, clear of every cell: the middle of the headings and of each row
+                Component top = table.getColumnHeader().getView();
+                java.awt.image.BufferedImage img = image(grid), heads = image(top);
+                // Down the right edge, clear of every cell: from the headings to their foot, and the middle of each row
                 int edge = grid.getWidth() - 3;
-                AbstractButton head = Components.withText(t.dialog, I18n.t("sync.ui.askAgain"));
-                List<Integer> middles = new ArrayList<>(Arrays.asList(SwingUtilities.convertRectangle(head.getParent(),
-                    head.getBounds(), grid).y));
+                Component head = heading(t, "sync.ui.askAgain");
+                List<Integer> middles = new ArrayList<>();
                 for (int i = 1; i <= 4; i++)
                 {
                     AbstractButton keep = t.in("SW " + i, "KEEP", AbstractButton.class);
                     middles.add((int) SwingUtilities.convertRectangle(keep.getParent(), keep.getBounds(), grid)
                         .getCenterY());
                 }
-                List<Integer> rows = new ArrayList<>(), darkest = new ArrayList<>();
-                for (int i = 1; i <= 4; i++) rows.add(img.getRGB(edge, middles.get(i)) & 0xffffff);
-                for (int i = 0; i < 4; i++)
-                {
-                    int dark = 255;
-                    for (int y = middles.get(i); y < middles.get(i + 1); y++) dark = Math.min(dark, img.getRGB(edge, y)
-                        & 0xff);
-                    darkest.add(dark);
-                }
+                List<Integer> rows = new ArrayList<>(), darkest = new ArrayList<>(Arrays.asList(darkest(heads,
+                    top.getWidth() - 3, SwingUtilities.convertRectangle(head.getParent(), head.getBounds(), top).y,
+                    top.getHeight())));
+                for (int i = 0; i < 4; i++) rows.add(img.getRGB(edge, middles.get(i)) & 0xffffff);
+                for (int i = 0; i < 3; i++) darkest.add(darkest(img, edge, middles.get(i), middles.get(i + 1)));
                 int bg = grid.getBackground().getRGB() & 0xffffff, stripe = rows.get(1);
                 check(problems, Arrays.asList(rows.get(0) == bg, stripe != bg, rows.get(2) == bg, rows.get(3) == stripe,
                     (stripe & 0xff) >= 235), Arrays.asList(true, true, true, true, true), "the stripes " + rows);
@@ -806,6 +825,112 @@ public class testTheSyncDifferencesWindow
                     true), "the rules' darkest " + darkest);
             }));
         assertTrue(problems.isEmpty(), problems.toString());
+    }
+
+    /**
+     * Rows whose Apply is grayed (a name swap, a name the station lists twice, a moving locomotive) leave the table
+     * whole: every answer column is on screen without scrolling sideways and the last row shows in full, each reason a
+     * short gray mark saying it in full on hover, as the grayed radio does.  A row too wide for the screen scrolls
+     * sideways under a bar that hides none of the rows.
+     *
+     * MUTATION: in `SyncDifferencesWindow.line`, show `whyNot` itself in place of the mark; or in
+     * `ChoiceTable.getPreferredSize`, leave out the horizontal bar's height.
+     */
+    @Test(timeOut = 240000)
+    public void testGrayedRowsKeepTheTableWhole() throws Exception
+    {
+        List<String> problems = new ArrayList<>();
+        inAWindow((rig, ui, list) ->
+        {
+            here(rig, "SW A", 20, "SW B", 21, "SW Moving", 24, "SW Twice", 22);
+            list.set(station("SW B", 20, "SW A", 21, "SW Mover", 24, "SW Dup", 22, "SW Dup", 26));
+            Locomotive moving = rig.model.getLocByName("SW Moving");
+            moving.setSpeed(40);
+            try
+            {
+                assertNotNull(pressSync(rig, ui, SyncTable.canceling(t ->
+                {
+                    fitsWhole(problems, t);
+                    List<String> why = new ArrayList<>(), marks = new ArrayList<>();
+                    for (AbstractButton b : Components.all(t.dialog, AbstractButton.class, b -> !b.isEnabled()
+                        && b.getName() != null && b.getName().matches(".*:(RENAME|ADDRESS)"))) why.add(b.getToolTipText());
+                    for (JLabel l : Components.all(t.dialog, JLabel.class, l -> I18n.t("sync.ui.cantApply").equals(
+                        l.getText()))) marks.add(l.getToolTipText());
+                    check(problems, why.size(), 4, "the grayed Applies " + why);
+                    check(problems, marks, why, "each grayed Apply's mark");
+                }), null), "the table did not open");
+            }
+            finally
+            {
+                moving.setSpeed(0);
+            }
+            showing(ui, made(rig, 3, false, String.join(" ", java.util.Collections.nCopies(150, "Wide"))), t ->
+            {
+                JScrollPane scrolling = Components.find(t.dialog, ChoiceTable.class, c -> true);
+                check(problems, Arrays.asList(scrolling.getHorizontalScrollBar().isVisible(),
+                    scrolling.getVerticalScrollBar().isVisible()), Arrays.asList(true, false),
+                    "a wide row: scrolling sideways, every row in view");
+            });
+        });
+        assertTrue(problems.isEmpty(), problems.toString());
+    }
+
+    /**
+     * Keep Both shows on every row, grayed and never picked where it cannot apply, its hover and screen reader saying
+     * why: a row differing by address only, a name another locomotive here holds, no station locomotive to add.  No
+     * heading's Set all picks it.
+     *
+     * MUTATION: in `SyncDifferencesWindow.addRow`, give Keep Both no reason (null), and it is lit on every row.
+     */
+    @Test(timeOut = 240000)
+    public void testKeepBothIsGrayedWhereItCannotApply() throws Exception
+    {
+        List<String> problems = new ArrayList<>();
+        inAWindow((rig, ui, list) ->
+        {
+            here(rig, "SW Shunter", 20, "SW Uri", 21, "SW D", 36, "SW Held", 36);
+            list.set(station("SW V 60", 20, "SW Uri", 22, "SW Held", 36));
+            assertNotNull(pressSync(rig, ui, SyncTable.canceling(t ->
+            {
+                String lit = I18n.f("sync.ui.keepBothSaid", "SW Shunter", "SW V 60"), address = I18n.t(
+                    "sync.ui.bothOnlyRenamed"), held = I18n.f("sync.ui.bothNameTaken", "SW Held");
+                check(problems, Arrays.asList(both(t, "SW Shunter"), both(t, "SW Uri"), both(t, "SW D")), Arrays.asList(
+                    Arrays.asList(true, lit, lit), Arrays.asList(false, address, address), Arrays.asList(false, held,
+                    held)), "Keep Both on a name row, an address row and a name held here");
+                List<Long> picked = new ArrayList<>();
+                for (String row : new String[] {"SW Uri", "SW D"}) t.in(row, "BOTH", AbstractButton.class).doClick();
+                picked.add(selected(t).stream().filter(n -> n.endsWith(":BOTH")).count());
+                for (String key : new String[] {"sync.ui.thisComputer", "sync.ui.centralStation", "sync.ui.askAgain"})
+                {
+                    ((AbstractButton) heading(t, key)).doClick();
+                    picked.add(selected(t).stream().filter(n -> n.endsWith(":BOTH")).count());
+                }
+                check(problems, picked, Arrays.asList(0L, 0L, 0L, 0L), "Keep Both picked by a click or a Set all");
+            }), null), "the table did not open");
+            String none = I18n.t("sync.ui.bothNothingToAdd");
+            showing(ui, made(rig, 1, false, ""), t -> check(problems, both(t, "SW 1"), Arrays.asList(false, none, none),
+                "Keep Both with no station locomotive to add"));
+        });
+        assertTrue(problems.isEmpty(), problems.toString());
+    }
+
+    /** c as it paints. */
+    private static java.awt.image.BufferedImage image(Component c)
+    {
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(c.getWidth(), c.getHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_RGB);
+        java.awt.Graphics2D g = img.createGraphics();
+        c.printAll(g);
+        g.dispose();
+        return img;
+    }
+
+    /** The darkest blue level down column x of img, from `from` to just above `to`. */
+    private static int darkest(java.awt.image.BufferedImage img, int x, int from, int to)
+    {
+        int dark = 255;
+        for (int y = from; y < to; y++) dark = Math.min(dark, img.getRGB(x, y) & 0xff);
+        return dark;
     }
 
     /** Where c is, in the dialog's coordinates. */
@@ -851,10 +976,37 @@ public class testTheSyncDifferencesWindow
     /** Where the heading reading key's text starts, across the window. */
     private static int x(SyncTable.Shown t, String key)
     {
-        javax.swing.JComponent h = Components.find(t.dialog, javax.swing.JComponent.class, c -> I18n.t(key).equals(
-            c instanceof JLabel ? ((JLabel) c).getText() : c instanceof AbstractButton ? ((AbstractButton) c).getText()
-            : null));
-        return SwingUtilities.convertPoint(h, 0, 0, t.dialog).x;
+        return at(t, heading(t, key)).x;
+    }
+
+    /** The heading reading key's text: a label, or a link. */
+    private static Component heading(SyncTable.Shown t, String key)
+    {
+        return Components.find(t.dialog, javax.swing.JComponent.class, c -> I18n.t(key).equals(c instanceof JLabel
+            ? ((JLabel) c).getText() : c instanceof AbstractButton ? ((AbstractButton) c).getText() : null));
+    }
+
+    /** Every row's Ask Again on screen without scrolling sideways, and the last row in full, as the table opens. */
+    private static void fitsWhole(List<String> problems, SyncTable.Shown t)
+    {
+        JScrollPane scrolling = Components.find(t.dialog, ChoiceTable.class, c -> true);
+        Component rows = scrolling.getViewport().getView();
+        Rectangle seen = scrolling.getViewport().getViewRect();
+        for (String row : t.rows)
+        {
+            AbstractButton ask = t.in(row, "ASK", AbstractButton.class);
+            check(problems, seen.contains(SwingUtilities.convertRectangle(ask.getParent(), ask.getBounds(), rows)), true,
+                row + "'s Ask Again on screen");
+        }
+        check(problems, rows.getPreferredSize().height <= seen.height, true, "the last row in full");
+    }
+
+    /** Whether a row's Keep Both is lit, what it says on hover, and to a screen reader. */
+    private static List<Object> both(SyncTable.Shown t, String row)
+    {
+        AbstractButton b = t.in(row, "BOTH", AbstractButton.class);
+        return b == null ? null : Arrays.asList(b.isEnabled(), b.getToolTipText(), b.getAccessibleContext()
+            .getAccessibleName());
     }
 
     private static void check(List<String> problems, Object got, Object expected, String what)
