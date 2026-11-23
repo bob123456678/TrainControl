@@ -1127,6 +1127,32 @@ public class testTheRouteListShowsWhatRuns
     }
 
     /**
+     * Change Route ID, answered with text that is no number, says the id must be a positive integer and leaves the
+     * route its own id.
+     *
+     * MUTATION: in `RouteListPanel.changeRouteId`, `route.ui.errorIdMustBePositiveInteger` to
+     * `route.ui.errorDuplicateRouteId`.
+     */
+    @Test
+    public void testChangeRouteIdToTextSaysItMustBeANumberAndKeepsTheId() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "keeps its id for text", 250);
+
+        final int was = model.getRouteId(route);
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.type("abc")))
+        {
+            SwingUtilities.invokeLater(() -> ui.changeRouteId(route));
+
+            assertTrue(answering.awaitAsked(2, 10000), "Change Route ID to text did not say so: " + answering.asked());
+
+            assertEquals(answering.asked().get(1), org.traincontrol.util.I18n.t("route.ui.errorIdMustBePositiveInteger"));
+        }
+
+        assertEquals(model.getRouteId(route), was, "the route lost its id to a non-numeric answer");
+    }
+
+    /**
      * Delete Route, answered Yes, removes the route and the commands of other routes that ran it, after a question
      * that says how many routes run it.
      *
@@ -1291,6 +1317,30 @@ public class testTheRouteListShowsWhatRuns
 
             disarm(route);
         }
+    }
+
+    /**
+     * Enable Auto Execution on a route with no sensor is refused, saying a sensor is required, and the route stays
+     * disabled.
+     *
+     * MUTATION: in `RouteListPanel.enableOrDisableRoute`, `if (!enable || r.hasS88())` to `if (true)`.
+     */
+    @Test
+    public void testEnableAutoExecutionWithoutASensorIsRefused() throws Exception
+    {
+        final String route = aQuickRoute(PREFIX + "no sensor to arm", 251);
+
+        try (support.Answering answering = support.Answering.start(message -> support.Answering.pressAt(0)))
+        {
+            ui.enableOrDisableRoute(route, true);
+
+            assertTrue(answering.awaitAsked(1, 10000), "Enable Auto Execution on a route with no sensor said nothing");
+
+            assertEquals(answering.asked().get(0), org.traincontrol.util.I18n.f("route.ui.errorS88RequiredForAutoFire",
+                route));
+        }
+
+        assertFalse(model.getRoute(route).isEnabled(), "a route with no sensor was armed");
     }
 
     /** An id no route has, among the ids this program hands out itself. */

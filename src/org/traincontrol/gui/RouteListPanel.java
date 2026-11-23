@@ -486,7 +486,7 @@ final class RouteListPanel
         }
     }
 
-    /** `TrainControlUI.changeRouteId`'s body. */
+    /** Prompts for a new route ID; the model refuses one already taken, and a non-numeric answer is said as such. */
     void changeRouteId(String routeName)
     {        
         try
