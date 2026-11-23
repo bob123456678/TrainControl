@@ -119,13 +119,15 @@ public final class SyncDifferencesWindow
     }
 
     /**
-     * Asks over owner about every row with something to answer, ignored ones included, and returns once it is closed:
-     * the answers by row, empty with nothing to ask, or null when canceled or closed.  On the event thread.
+     * Asks over owner about every row with something to answer, ignored ones included, or only's row unless null, and
+     * returns once it is closed: the answers by row, empty with nothing to ask, or null when canceled or closed.  On
+     * the event thread.
      */
-    public static Map<Row, Answer> ask(Window owner, RenameProposals proposals)
+    public static Map<Row, Answer> ask(Window owner, RenameProposals proposals, Locomotive only)
     {
         List<Row> rows = new ArrayList<>();
-        for (Row r : proposals.getRows()) if (r.asksName() || r.asksAddress() || r.byHand) rows.add(r);
+        for (Row r : proposals.getRows())
+            if ((only == null || r.loco == only) && (r.asksName() || r.asksAddress() || r.byHand)) rows.add(r);
         if (rows.isEmpty()) return new LinkedHashMap<>();
         SyncDifferencesWindow w = new SyncDifferencesWindow(owner, proposals, rows);
         w.dialog.setVisible(true);

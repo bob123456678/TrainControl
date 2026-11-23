@@ -333,7 +333,7 @@ public class testSyncDifferences
         {
             RenameProposals d = synced(rig, "SD X", 61, "SD Z", 63, "SD V", 66);
 
-            assertTrue(d.getAddresses().isEmpty(), "an address was offered: " + d.getAddresses());
+            assertTrue(d.getRows().stream().noneMatch(r -> r.stationAddress != null), "an address was offered");
             assertTrue(d.getRows().isEmpty(), "a row was made");
         }
     }

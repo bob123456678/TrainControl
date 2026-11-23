@@ -24,7 +24,6 @@ public class RenameProposals
 {
     private final List<String[]> proposals;
     private final int refused;
-    private final Map<String, Integer> addresses;
     private final List<Row> rows;
     private final Map<Integer, List<Locomotive>> held = new HashMap<>();
     /** Whether part of the station's list did not read, so a locomotive with no row may still differ. */
@@ -96,23 +95,16 @@ public class RenameProposals
     }
 
     /** @param held the locomotives here at each decoder address (as getIntUID) */
-    public RenameProposals(List<String[]> proposals, int refused, Map<String, Integer> addresses, List<Row> rows,
+    public RenameProposals(List<String[]> proposals, int refused, List<Row> rows,
         Map<Integer, ? extends List<? extends Locomotive>> held, boolean partial)
     {
         this.partial = partial;
         this.proposals = proposals;
         this.refused = refused;
-        this.addresses = new java.util.LinkedHashMap<>(addresses);
         this.rows = new ArrayList<>(rows);
         held.forEach((uid, here) -> this.held.put(uid, new ArrayList<>(here)));
         this.rows.sort(Comparator.comparing((Row r) -> r.loco.isSyncIgnored()).thenComparing(r -> r.loco.getName(),
             String.CASE_INSENSITIVE_ORDER));
-    }
-
-    /** By name, each locomotive the station has at another address, with that address (FR-246). */
-    public Map<String, Integer> getAddresses()
-    {
-        return Collections.unmodifiableMap(this.addresses);
     }
 
     /**

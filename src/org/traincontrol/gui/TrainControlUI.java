@@ -6357,25 +6357,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     public void syncLocomotiveFrom(Locomotive l, Component asked, Runnable after)
     {
         if (l == null) return;
+        LayoutDiagram before = shownDiagram();
         new Thread(() ->
         {
-            // A pressed Sync asks about this locomotive's address at the station first, as the main Sync does: read off
-            // the event thread behind the spinner, asked on it
-            Map<String, Integer> addresses = asked != null ? new ManualSync(this).stationAddresses(asked) : null;
+            // A pressed Sync is the main Sync asking about this locomotive's row alone (FR-249), off the event thread
+            int[] answered = new int[6];
+            int pressed = asked != null ? new ManualSync(this).asking(l).pressedSync(asked, answered) : 0;
             SwingUtilities.invokeLater(() -> {
-                LayoutDiagram before = shownDiagram();
-                int synced;
-
-                try
-                {
-                    ManualSync.askAboutItsAddress(asked, l, addresses);
-                    synced = this.syncWithCS2();
-                }
-                finally
-                {
-                    // The answer is for this sync alone
-                    l.setTakenStationAddress(null);
-                }
+                int synced = asked != null ? pressed : this.syncWithCS2();
                 this.model.syncLocomotive(l.getName());
                 repaintLoc(true, null);
                 redrawRouteSquaresOrRebuild(before);
@@ -6385,7 +6374,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (after != null && synced != SYNC_ALREADY_RUNNING) after.run();
 
                 if (asked != null && !saidTheSyncDidNotRun(asked, synced, () -> syncLocomotiveFrom(l, asked, after)))
-                    saidTheSyncWasPartial(asked, synced);
+                    new ManualSync(this).saySynced(asked, synced, answered);
             });
         }).start();
     }
@@ -14640,12 +14629,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         else if (synced == -1) offerSyncRetry(c, null, retry);
         return synced < 0;
-    }
-
-    /** Says on c that part of the station's data could not be read, when the sync that just ran left part as it was. */
-    private void saidTheSyncWasPartial(Component c, int synced)
-    {
-        if (this.model.wasLastSyncPartial()) new ManualSync(this).saySynced(c, synced);
     }
 
     public void doSync(Component c)

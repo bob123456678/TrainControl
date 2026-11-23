@@ -1129,7 +1129,7 @@ public class testTheSyncDifferencesWindow
             rows.add(new RenameProposals.Row(l, addressed ? null : "SW Station " + i, addressed ? i + 5000 : null, null,
                 null, null, null, l.getIntUID(), (addressed ? at : l).getIntUID()));
         }
-        return new RenameProposals(new ArrayList<>(), 0, new java.util.HashMap<>(), rows, held, false);
+        return new RenameProposals(new ArrayList<>(), 0, rows, held, false);
     }
 
     /** Opens the table on these rows over ui, hands it to `look`, cancels it and waits until that is done. */
@@ -1137,7 +1137,7 @@ public class testTheSyncDifferencesWindow
     {
         try (SyncTable table = SyncTable.canceling(look))
         {
-            SwingUtilities.invokeLater(() -> SyncDifferencesWindow.ask(ui, rows));
+            SwingUtilities.invokeLater(() -> SyncDifferencesWindow.ask(ui, rows, null));
             assertTrue(Components.waitFor(() -> !table.shown().isEmpty(), 60000), "the table did not open");
             Components.settle();
         }

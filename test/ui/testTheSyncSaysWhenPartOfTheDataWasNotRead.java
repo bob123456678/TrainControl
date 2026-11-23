@@ -231,10 +231,10 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
     }
 
     /**
-     * A locomotive's own Sync (Locomotive Settings) over a station whose route list cannot be read says on that window
-     * what the main Sync says: part was left as it was.
+     * A locomotive's own Sync (Locomotive Settings) says on that window what the main Sync says: that all matches, or,
+     * over a station whose route list cannot be read, that part was left as it was.
      *
-     * MUTATION: leave out the `saidTheSyncWasPartial` call of `TrainControlUI.syncLocomotiveFrom`, and it says nothing.
+     * MUTATION: leave out the `saySynced` call of `TrainControlUI.syncLocomotiveFrom`, and it says nothing.
      */
     @Test
     public void testALocomotiveSyncSaysWhenPartWasNotRead() throws Exception
@@ -251,23 +251,24 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
 
             try (Answering answering = Answering.start(message -> Answering.pressAt(0)))
             {
-                // Waited for by `after`: the sync starts only once a worker has read the station's addresses
+                // Waited for by `after`: the sync starts only once a worker has read the station
                 CountDownLatch first = new CountDownLatch(1);
                 CountDownLatch second = new CountDownLatch(1);
 
-                // Everything read: nothing to say
+                // Everything read: everything matches
                 ui.syncLocomotiveFrom(loc, window, first::countDown);
                 assertTrue(first.await(60, TimeUnit.SECONDS), "the first sync did not end; log " + logTail(rig));
-                assertFalse(answering.awaitAsked(1, 3000), "a sync that read everything said: " + answering.asked());
+                assertTrue(answering.awaitAsked(1, 60000), "a sync that read everything said nothing");
+                assertEquals(answering.asked().get(0), I18n.t("ui.infoSyncNothingDiffers"));
 
                 replaced.put("/app/api/automatics", "<html>not json</html>".getBytes(StandardCharsets.UTF_8));
                 ui.syncLocomotiveFrom(loc, window, second::countDown);
                 assertTrue(second.await(60, TimeUnit.SECONDS), "the second sync did not end; log " + logTail(rig));
-                assertTrue(answering.awaitAsked(1, 60000), "a sync that read part said nothing on the window; log "
+                assertTrue(answering.awaitAsked(2, 60000), "a sync that read part said nothing on the window; log "
                     + logTail(rig));
-                assertEquals(answering.asked().get(0), I18n.t("ui.infoSyncComplete") + "\n\n"
+                assertEquals(answering.asked().get(1), I18n.t("ui.infoSyncComplete") + "\n\n"
                     + I18n.t("ui.infoSyncPartial"));
-                assertSame(answering.questions().get(0).owner, window, "not on the window that asked");
+                assertSame(answering.questions().get(1).owner, window, "not on the window that asked");
             }
             finally
             {
