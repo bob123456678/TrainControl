@@ -309,6 +309,21 @@ public class testTheKeyboardPages
         assertEquals(ui.getNumLocMappings(), 2, "a page was deleted below two");
     }
 
+    /**
+     * The locomotive tab's icon wears the page showing as a blue badge from page 2 on; page 1 has the plain icon.
+     *
+     * MUTATION: return `icon` at once in `LocMappingPages.withPageBadge`, and page 3 wears no badge.
+     */
+    @Test
+    public void testThePageShowingIsBadgedOnTheLocomotiveTab() throws Exception
+    {
+        turnTo(3);
+        assertTrue(badgeInk() > 20, "page 3 is not badged on the locomotive tab: " + badgeInk() + " blue pixels");
+
+        turnTo(1);
+        assertEquals(badgeInk(), 0, "page 1 wears a badge on the locomotive tab");
+    }
+
     // Quick Find
 
     /**
@@ -1314,6 +1329,17 @@ public class testTheKeyboardPages
     private static Component keyboardOrNull()
     {
         return (Component) field0("KeyboardTab");
+    }
+
+    /** How many pixels of the locomotive tab's picture are the badge's blue, fully opaque. */
+    private static int badgeInk()
+    {
+        java.awt.Image tab = Components.onTheEventThread(
+            () -> ((javax.swing.ImageIcon) ((JTabbedPane) keyboardOrNull()).getIconAt(0)).getImage());
+
+        return support.Pixels.count(org.traincontrol.util.ImageUtil.toTransparentBufferedImage(tab),
+            argb -> (argb >>> 24) == 0xFF && Math.abs((argb >> 16 & 0xFF) - 0x26) < 16
+                && Math.abs((argb >> 8 & 0xFF) - 0x75) < 16 && Math.abs((argb & 0xFF) - 0xBF) < 16);
     }
 
     private static Component keyboard() throws Exception
