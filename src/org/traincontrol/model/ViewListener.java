@@ -101,6 +101,9 @@ public interface ViewListener
     public boolean wasLastSyncPartial();
     /** How many of the last sync's count are routes it added or replaced; the rest are locomotives. */
     public int getLastSyncRoutes();
+    /** How many locomotives the last sync left to answer or fix by hand (FR-249); never saved, -1 after an import. */
+    public int getUnsettledCount();
+    public void setUnsettledCount(int count);
     public String getLastSyncError();
     public List<String> getLayoutList();
     public List<String> getLayoutListByName();

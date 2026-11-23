@@ -135,6 +135,13 @@ public class RenameProposals
         return this.refused > 0;
     }
 
+    /** How many locomotives differ with something left to answer, or are left to fix by hand. */
+    public int getUnsettledCount()
+    {
+        return (int) this.rows.stream().filter(r -> r.byHand || !r.loco.isSyncIgnored() && (r.asksName()
+            || r.asksAddress())).count();
+    }
+
     /** Every locomotive here that differs, by name, ignored ones last. */
     public List<Row> getRows()
     {

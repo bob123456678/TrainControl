@@ -129,6 +129,7 @@ final class LocomotiveCsvDoor
         TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, chosen.getParent());
 
         refresh(ui, model, result);
+        ManualSync.imported(ui, result);
 
         tell(ui, result);
     }
