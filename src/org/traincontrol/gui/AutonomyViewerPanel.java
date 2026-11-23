@@ -773,6 +773,8 @@ public class AutonomyViewerPanel extends JPanel
             return;
         }
 
+        // The railway as found: once replaced it runs this configuration, which the store must go on naming (OB-510)
+        final Layout railway = ui.getModel().getAutoLayoutIfLoaded();
         try
         {
             ui.getModel().parseAuto(session().buildConfiguration());
@@ -796,7 +798,7 @@ public class AutonomyViewerPanel extends JPanel
             if (interactive) JOptionPane.showMessageDialog(ui, String.valueOf(e.getMessage()));
             else if (ui.getModel() != null) ui.getModel().log(String.valueOf(e.getMessage()));
 
-            revert(previous);
+            if (ui.getModel().getAutoLayoutIfLoaded() == railway) revert(previous);
         }
 
         refresh();

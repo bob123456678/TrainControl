@@ -15,6 +15,7 @@ import javax.swing.event.MenuListener;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import org.testng.SkipException;
@@ -176,6 +177,80 @@ public class testDeleteAsksWhichConfiguration
 
         answering.setDaemon(true);
         answering.start();
+    }
+
+    /**
+     * A load that fails after the railway was replaced leaves the store on the configuration the railway now runs
+     * (OB-510): the setup the captions read and the next start resumes is the one running.
+     *
+     * MUTATION: put the store back after every failure in `AutonomyViewerPanel.loadPrepared`, and this fails.
+     */
+    @Test
+    public void testALoadFailingAfterItsRailwayLeavesTheStoreOnIt() throws Exception
+    {
+        final String spare = "OB-510 spare";
+
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
+
+        final TrainControlUI[] ui = new TrainControlUI[1];
+        final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
+        final javax.swing.JTabbedPane[] tabs = new javax.swing.JTabbedPane[1];
+        final AtomicBoolean armed = new AtomicBoolean();
+
+        // Stands for any failure in what follows the parse: thrown as the load shows the diagram, after the railway and
+        // the window's record of it have changed
+        final javax.swing.event.ChangeListener failing = e ->
+        {
+            if (armed.getAndSet(false)) throw new IllegalStateException("OB-510 probe: a failure after the parse");
+        };
+
+        try
+        {
+            sandboxed.hold(support.LayoutSandbox.open(support.Scenario.folderFor("live-snapshot")));
+
+            ui[0] = sandboxed.hold(openTheWindow());
+
+            final AutonomySession session = ui[0].getAutonomySession();
+            final String running = ui[0].getActiveDiagramConfiguration();
+
+            assertNotNull(running, "precondition: nothing is loaded on the frozen railway");
+
+            session.getStore().createConfiguration(spare, running);
+            session.getStore().save();
+
+            final Object before = ui[0].getModel().getAutoLayoutIfLoaded();
+
+            tabs[0] = (javax.swing.JTabbedPane) Reflect.get(TrainControlUI.class, ui[0], "KeyboardTab");
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                tabs[0].setSelectedIndex(0);
+                tabs[0].addChangeListener(failing);
+                armed.set(true);
+            });
+
+            try
+            {
+                SwingUtilities.invokeAndWait(() -> ui[0].getAutonomyViewerPanel().load(spare, false));
+            }
+            finally
+            {
+                SwingUtilities.invokeAndWait(() -> tabs[0].removeChangeListener(failing));
+            }
+
+            assertFalse(armed.get(), "precondition: the load never showed the diagram, so nothing failed");
+            assertNotSame(ui[0].getModel().getAutoLayoutIfLoaded(), before, "precondition: the railway was not replaced");
+            assertEquals(ui[0].getActiveDiagramConfiguration(), spare, "precondition: the window does not record the"
+                + " railway as built from " + spare);
+
+            assertEquals(session.getStore().getActiveConfiguration(), spare, "a load that failed after its railway was"
+                + " built put the store back on " + running + " while the railway runs " + spare + ": the captions read"
+                + " the other configuration's setup and the next start resumes it (OB-510)");
+        }
+        finally
+        {
+            sandboxed.close();
+        }
     }
 
     /** Whatever stands in the menu bar's Autonomy slot. */
