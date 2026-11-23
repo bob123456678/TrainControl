@@ -739,7 +739,7 @@ public class testTheMenuBarIsWired
     public static Object[][] preferences() throws Exception
     {
         Object[][] rows = rows("preferences>winOnTop ONTOP_SETTING_PREF ONTOP_SETTING_DEFAULT;"
-            + " preferences>rememberWindowLoc REMEMBER_WINDOW_LOCATION false;"
+            + " preferences>rememberWindowLoc REMEMBER_WINDOW_LOCATION true;"
             + " preferences>hideRightClickTips RightClickTips.PREF false;"
             + " preferences>locControl>slidersChangeActiveLoc SLIDER_SETTING_PREF false;"
             + " preferences>locControl>showKeyboardControlHints SHOW_KEYBOARD_HINTS_PREF true;"

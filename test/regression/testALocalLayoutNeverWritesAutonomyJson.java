@@ -39,6 +39,7 @@ public class testALocalLayoutNeverWritesAutonomyJson
     private static MarklinControlStation model;
     private static TrainControlUI ui;
     private static String autoLoadWas;
+    private static String rememberWas;
 
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -59,6 +60,10 @@ public class testALocalLayoutNeverWritesAutonomyJson
 
         TrainControlUI.getPrefs().putBoolean(TrainControlUI.AUTO_LOAD_AUTONOMY, false);
 
+        // A fresh preferences node: Remember Window Locations never set (FR-252)
+        rememberWas = TrainControlUI.getPrefs().get(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, null);
+        TrainControlUI.getPrefs().remove(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
+
         model = support.TestStation.simulatedInDebug();
 
         SwingUtilities.invokeAndWait(() -> ui = new TrainControlUI());
@@ -73,6 +78,9 @@ public class testALocalLayoutNeverWritesAutonomyJson
     {
         try
         {
+            if (rememberWas == null) TrainControlUI.getPrefs().remove(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION);
+            else TrainControlUI.getPrefs().put(org.traincontrol.gui.widgets.PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberWas);
+
             if (autoLoadWas == null) TrainControlUI.getPrefs().remove(TrainControlUI.AUTO_LOAD_AUTONOMY);
             else TrainControlUI.getPrefs().put(TrainControlUI.AUTO_LOAD_AUTONOMY, autoLoadWas);
         }
@@ -89,6 +97,21 @@ public class testALocalLayoutNeverWritesAutonomyJson
     public static void putTheDataBack() throws Exception
     {
         FOUND.putBack();
+    }
+
+    /**
+     * On a fresh preferences node the main window's Remember Window Locations item shows ticked (FR-252).
+     *
+     * MUTATION: read the preference with default false in `TrainControlUI`'s constructor, and this fails.
+     */
+    @Test
+    public void testRememberWindowLocationsShowsTickedOnAFreshNode() throws Exception
+    {
+        boolean[] ticked = new boolean[1];
+        javax.swing.AbstractButton item = (javax.swing.AbstractButton) Reflect.get(TrainControlUI.class, ui, "rememberLocationMenuItem");
+        SwingUtilities.invokeAndWait(() -> ticked[0] = item.isSelected());
+
+        assertTrue(ticked[0], "with nothing stored, Remember Window Locations shows unticked");
     }
 
     private static List<String> backups(File folder)
