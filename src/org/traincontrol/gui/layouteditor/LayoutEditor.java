@@ -595,7 +595,7 @@ public class LayoutEditor extends PositionAwareJFrame
         super.dispose();
 
         // And Edit asked again
-        if (parent != null) parent.editorWindowClosed();
+        if (parent != null) parent.editorWindows().editorWindowClosed();
     }
 
     /**
@@ -1734,8 +1734,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
                     final String typed = currentFindingFilter();
 
-                    parent.autonomyEditorClosedFromTheEditor(
-                        () -> parent.openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(tile)));
+                    parent.editorWindows().autonomyEditorClosedFromTheEditor(() -> parent.editorWindows()
+                        .openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(tile)));
 
                     dispose();
                 }
@@ -1753,8 +1753,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
                 final String typed = currentFindingFilter();
 
-                parent.autonomyEditorClosedFromTheEditor(
-                    () -> parent.openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(at, named)));
+                parent.editorWindows().autonomyEditorClosedFromTheEditor(() -> parent.editorWindows()
+                    .openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(at, named)));
 
                 dispose();
             });
@@ -2000,7 +2000,7 @@ public class LayoutEditor extends PositionAwareJFrame
         layout.setEdit(false);
 
         // The main window puts back what opening this changed (always-on-top, Edit), which autonomy mode's path skips.
-        parent.autonomyEditorClosedFromTheEditor(null);
+        parent.editorWindows().autonomyEditorClosedFromTheEditor(null);
 
         dispose();
     }
@@ -4044,8 +4044,8 @@ public class LayoutEditor extends PositionAwareJFrame
 
         final String typed = currentFindingFilter();
 
-        parent.autonomyEditorClosedFromTheEditor(
-            () -> parent.openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(tile)));
+        parent.editorWindows().autonomyEditorClosedFromTheEditor(
+            () -> parent.editorWindows().openCarryingTheClick(clicked, typed, () -> parent.openAutonomyEditor(tile)));
 
         dispose();
     }
@@ -4341,7 +4341,7 @@ public class LayoutEditor extends PositionAwareJFrame
             boolean autonomy = wanted;
 
             // Still editable?  Asked again: it can change while a save dialog is up.
-            AutonomySession session = autonomy ? parent.editableAutonomySession() : null;
+            AutonomySession session = autonomy ? parent.editorWindows().editableAutonomySession() : null;
 
             if (autonomy && session == null)
             {
@@ -4356,7 +4356,7 @@ public class LayoutEditor extends PositionAwareJFrame
             }
 
             // The main window's idea of the page, which the editor takes from it.
-            parent.selectLayoutPage(page);
+            parent.editorWindows().selectLayoutPage(page);
 
             LayoutDiagram arriving = parent.getModel().getLayout(page);
 
@@ -4409,7 +4409,7 @@ public class LayoutEditor extends PositionAwareJFrame
             setTitle(titleFor(session != null));
 
             // Remembered only when arrived at as asked: a fallback is no choice.
-            if (autonomy == (session != null)) parent.rememberEditorChoice(session != null);
+            if (autonomy == (session != null)) parent.editorWindows().rememberEditorChoice(session != null);
 
             // The same entry (EDITOR_WINDOW_KEY): the window does not move, and only grows.
             setWindowIndex(EDITOR_WINDOW_KEY);
@@ -4419,7 +4419,7 @@ public class LayoutEditor extends PositionAwareJFrame
             saveWindowBounds();
 
             // Edit stays shut: both teardowns handed it back as if the editor had closed.
-            parent.setEditLayoutEnabled(false);
+            parent.editorWindows().setEditLayoutEnabled(false);
 
             // The undo point moves with the switch, both halves (`takeTheUndoPoint`): leaveFor settled the previous
             // page, so Cancel here puts back what this page found.
@@ -4449,7 +4449,7 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         layout.setEdit(false);
 
-        parent.setEditLayoutEnabled(true);
+        parent.editorWindows().setEditLayoutEnabled(true);
 
         // Every door out pairs setEditLayoutEnabled(true) with repaintLayout, which re-decides the Central Station
         // menus.
@@ -4600,7 +4600,7 @@ public class LayoutEditor extends PositionAwareJFrame
         JMenuItem sort = new JMenuItem(I18n.t("ui.main.toolbar.sortPages"));
 
         sort.setFocusable(false);
-        sort.addActionListener(e -> runPageAction(() -> parent.sortPagesFromTheEditor(this), false));
+        sort.addActionListener(e -> runPageAction(() -> parent.layoutFileActions().sortPagesByName(this), false));
 
         menu.add(sort);
         menu.addSeparator();
@@ -4729,7 +4729,7 @@ public class LayoutEditor extends PositionAwareJFrame
         if (parent.refuseWhileARunHoldsTheSetup(this)) return;
 
         // The handlers act on the main window's page, which may be another
-        if (onThisPage) parent.selectLayoutPage(layout.getName());
+        if (onThisPage) parent.editorWindows().selectLayoutPage(layout.getName());
 
         action.run();
     }
@@ -4762,10 +4762,10 @@ public class LayoutEditor extends PositionAwareJFrame
 
         strip.add(pageIcon(RowIcons.arrow(14, true), RowIcons.arrow(14, true, gray),
             I18n.t(first ? "layout.ui.tooltipPageIsFirst" : "layout.ui.tooltipMovePageUp"), !first,
-            () -> parent.movePageFromTheEditor(this, -1)));
+            () -> parent.layoutFileActions().movePage(-1, this)));
         strip.add(pageIcon(RowIcons.arrow(14, false), RowIcons.arrow(14, false, gray),
             I18n.t(last ? "layout.ui.tooltipPageIsLast" : "layout.ui.tooltipMovePageDown"), !last,
-            () -> parent.movePageFromTheEditor(this, 1)));
+            () -> parent.layoutFileActions().movePage(1, this)));
 
         strip.add(Box.createHorizontalGlue());
 
@@ -4804,7 +4804,8 @@ public class LayoutEditor extends PositionAwareJFrame
     {
         List<String> pages = parent.getModel() == null ? new ArrayList<String>() : parent.getModel().getLayoutList();
 
-        boolean offersModes = pages.size() > 1 || parent.editableAutonomySession() != null || isAutonomyMode();
+        boolean offersModes = pages.size() > 1 || parent.editorWindows().editableAutonomySession() != null
+            || isAutonomyMode();
 
         sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
@@ -4966,7 +4967,7 @@ public class LayoutEditor extends PositionAwareJFrame
         column.add(trackModeButton);
         column.add(autonomyModeButton);
 
-        if (parent.editableAutonomySession() == null)
+        if (parent.editorWindows().editableAutonomySession() == null)
         {
             autonomyModeButton.setEnabled(false);
             autonomyModeButton.setToolTipText(

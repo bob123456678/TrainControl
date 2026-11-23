@@ -933,7 +933,7 @@ public class testTheTailIsPickedOnTheDiagram
             {
                 javax.swing.SwingUtilities.invokeAndWait(() ->
                 {
-                    ui.resetAutonomySession();
+                    ui.autonomyLifecycle().resetAutonomySession();
                     ui.getAutonomyViewerPanel().load(active, false);
                 });
 

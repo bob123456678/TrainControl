@@ -253,11 +253,11 @@ public class testTheHomeLabelIsDrawnOnce
     {
         assertBuilt();
 
-        assertEquals(ui.autonomyCaptionAt(doubledOffset), doubled,
+        assertEquals(ui.stationCaptions().autonomyCaptionAt(doubledOffset), doubled,
             "the offset label stopped naming its station, so the caption moved onto the track "
             + "instead of staying where it was put");
 
-        assertNull(ui.autonomyCaptionAt(doubled),
+        assertNull(ui.stationCaptions().autonomyCaptionAt(doubled),
             "the station's own square is still drawing a caption of its own while another square is "
             + "already naming it");
     }
@@ -274,7 +274,7 @@ public class testTheHomeLabelIsDrawnOnce
         assertEquals(session.captionsFor(selfOnly).size(), 1,
             "precondition: " + selfOnly + " is captioned on " + session.captionsFor(selfOnly));
 
-        assertEquals(ui.autonomyCaptionAt(selfOnly), selfOnly,
+        assertEquals(ui.stationCaptions().autonomyCaptionAt(selfOnly), selfOnly,
             "a station captioned only on its own square lost its caption");
 
         assertEquals(times(caption(selfHome)), 1,
@@ -295,10 +295,10 @@ public class testTheHomeLabelIsDrawnOnce
         assertEquals(session.captionsFor(offsetOnly).size(), 1,
             "precondition: " + offsetOnly + " is captioned on " + session.captionsFor(offsetOnly));
 
-        assertEquals(ui.autonomyCaptionAt(offsetOnlyCaption), offsetOnly,
+        assertEquals(ui.stationCaptions().autonomyCaptionAt(offsetOnlyCaption), offsetOnly,
             "the offset label stopped naming its station");
 
-        assertNull(ui.autonomyCaptionAt(offsetOnly),
+        assertNull(ui.stationCaptions().autonomyCaptionAt(offsetOnly),
             "the station's own square started drawing a caption nobody asked it for");
 
         assertEquals(times(caption(offsetHome)), 1,
@@ -326,11 +326,11 @@ public class testTheHomeLabelIsDrawnOnce
             + " doubling is what Adam was looking at - and this snapshot captions it on "
             + session.captionsFor(OB193) + ". Nothing below is being tested");
 
-        assertNull(ui.autonomyCaptionAt(OB193),
+        assertNull(ui.stationCaptions().autonomyCaptionAt(OB193),
             "TopMainR2 is still drawing a caption on its own square while 1 - Main:6,5 is already"
             + " naming it, so the two labels Adam reported are both there (OB-193)");
 
-        assertEquals(ui.autonomyCaptionAt(new TileKey(PAGE, 6, 5)), OB193,
+        assertEquals(ui.stationCaptions().autonomyCaptionAt(new TileKey(PAGE, 6, 5)), OB193,
             "the label beside TopMainR2 stopped naming it, so the ONE label that survives is not the"
             + " one somebody placed - and with the self-caption suppressed as well the station would"
             + " have no name at all");

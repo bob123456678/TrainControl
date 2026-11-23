@@ -978,7 +978,7 @@ public class testTheGreyAppearsAtIdleToo
             + " something else asks (OB-307)");
 
         // AND UNLOADED THROUGH THE DOOR
-        SwingUtilities.invokeAndWait(() -> ui.resetAutonomySession());
+        SwingUtilities.invokeAndWait(() -> ui.autonomyLifecycle().resetAutonomySession());
 
         support.CoveredMarks.settle(ui);
 

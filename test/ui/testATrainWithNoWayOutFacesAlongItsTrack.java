@@ -272,7 +272,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
             SwingUtilities.invokeAndWait(() ->
             {
-                caption[0] = ui.autonomyCaptionTextAt(tunnel);
+                caption[0] = ui.stationCaptions().autonomyCaptionTextAt(tunnel);
                 editor[0].getAutonomyPanel().addFacingItems(menu, tunnel);
             });
 

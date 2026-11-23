@@ -13,7 +13,7 @@ import java.awt.Frame;
 import java.util.List;
 
 /** The window's editors: opening and closing the layout and autonomy editors, and whether the diagram may be edited. */
-final class EditorWindows
+public final class EditorWindows
 {
     private final TrainControlUI ui;
 
@@ -38,7 +38,7 @@ final class EditorWindows
     }
 
     /** Whether the route editor holds work the exit would throw away: `maySettleBeforeExit` without the dialog. */
-    boolean routeEditorHasUnsavedWork()
+    public boolean routeEditorHasUnsavedWork()
     {
         return ui.routeEditor != null && ui.routeEditor.isDisplayable() && ui.routeEditor.hasUnsavedWork();
     }
@@ -57,13 +57,13 @@ final class EditorWindows
     }
 
     /** Selects the page being edited before a window is built, since the editor edits one page. */
-    void selectLayoutPage(String page)
+    public void selectLayoutPage(String page)
     {
         if (page != null) ui.layoutList().setSelectedItem(page);
     }
 
     /** Whether the Edit button may be pressed; an editor switching page or mode does not close, so it restores it. */
-    void setEditLayoutEnabled(boolean enabled)
+    public void setEditLayoutEnabled(boolean enabled)
     {
         // Remembered, not applied: "an editor is open" and "a layout to edit" (OB-126) are re-asked separately
         ui.noEditorOpen = enabled;
@@ -141,7 +141,7 @@ final class EditorWindows
     }
 
     /** Remembers the editor the user last chose in the sidebar; not called for a mode forced back to the track. */
-    void rememberEditorChoice(boolean autonomy)
+    public void rememberEditorChoice(boolean autonomy)
     {
         TrainControlUI.getPrefs().putBoolean(LAST_EDITOR_AUTONOMY_PREF, autonomy);
     }
@@ -349,7 +349,7 @@ final class EditorWindows
      * The setup, if there is any point opening: a CHOSEN configuration even if it did not load; null if nothing to set
      * up.
      */
-    AutonomySession editableAutonomySession()
+    public AutonomySession editableAutonomySession()
     {
         AutonomySession session = ui.getAutonomySession();
 
@@ -385,7 +385,7 @@ final class EditorWindows
      * An editor window has gone: Edit and the doors beside it ask again, and a sync owed meanwhile runs.  From
      * `LayoutEditor.dispose`.
      */
-    void editorWindowClosed()
+    public void editorWindowClosed()
     {
         ui.editorGone();
 
@@ -443,16 +443,10 @@ final class EditorWindows
     private String filterCarried = null;
 
     /**
-     * Opens an editor in place of one that closed itself to change page, carrying a square-clicked flag; cleared
-     * whatever happens.
+     * Opens an editor in place of one that closed itself to change page, carrying a square-clicked flag and the
+     * findings filter's text (FR-073; null carries none); cleared whatever happens.
      */
-    void openCarryingTheClick(boolean clicked, Runnable open)
-    {
-        openCarryingTheClick(clicked, null, open);
-    }
-
-    /** As above, also carrying the findings filter's text to the editor that opens (FR-073); null carries none. */
-    void openCarryingTheClick(boolean clicked, String findingFilter, Runnable open)
+    public void openCarryingTheClick(boolean clicked, String findingFilter, Runnable open)
     {
         clickCarried = clicked;
         filterCarried = findingFilter;
@@ -472,7 +466,7 @@ final class EditorWindows
      * An autonomy editor closing: the refresh is counted before its window goes and taken over by the posted
      * `autonomyEditorClosed`.  @param then runs after it on the event thread, or null.
      */
-    void autonomyEditorClosedFromTheEditor(final Runnable then)
+    public void autonomyEditorClosedFromTheEditor(final Runnable then)
     {
         ui.refreshesUnderWay.incrementAndGet();
 

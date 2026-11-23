@@ -442,7 +442,7 @@ public class testTheEditorsFindingsCanBeFiltered
         {
             for (LayoutEditor each : opened) close(each);
 
-            SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+            SwingUtilities.invokeAndWait(() -> ui.editorWindows().setEditLayoutEnabled(true));
         }
     }
 
@@ -487,7 +487,7 @@ public class testTheEditorsFindingsCanBeFiltered
         {
             for (LayoutEditor each : opened) close(each);
 
-            SwingUtilities.invokeAndWait(() -> ui.setEditLayoutEnabled(true));
+            SwingUtilities.invokeAndWait(() -> ui.editorWindows().setEditLayoutEnabled(true));
         }
     }
 
@@ -857,7 +857,7 @@ public class testTheEditorsFindingsCanBeFiltered
     {
         support.Components.onTheEventThread(() ->
         {
-            ui.setEditLayoutEnabled(true);
+            ui.editorWindows().setEditLayoutEnabled(true);
             opening.run();
 
             return null;

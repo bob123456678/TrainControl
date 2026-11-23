@@ -40,7 +40,7 @@ import org.traincontrol.util.Util;
  *
  * The hover tools over the picture, and every field, stay on the window.
  */
-final class LocIconActions
+public final class LocIconActions
 {
     private final TrainControlUI ui;
 
@@ -761,7 +761,7 @@ final class LocIconActions
      *
      * @param url the URL of the file to remove
      */
-    void deleteLocIconFile(String url)
+    public void deleteLocIconFile(String url)
     {
         try
         {
