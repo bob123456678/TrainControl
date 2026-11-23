@@ -470,6 +470,7 @@ Tab icons provided by Freepik.
             - When the Central Station has a locomotive at another address than TrainControl, `Sync Database w/ Central Station` asks whether to keep this computer's address or use the station's, in the same question as a rename, and the `Sync` button in Locomotive Settings asks the same about its own locomotive.  A kept address is not asked about again until the station's changes, and the automatic syncs at start-up and on reconnecting no longer change an address.
         - Interface
             - While a Central Station answers, the lower right of the main window shows how quickly it answers, for example `12 ms`: in soft green, then yellow past 100 ms and red past 300 ms.  Hover over it to see the station and the connection.  The line right of `Primary Keyboard Controls` now names the Central Station instead, with its firmware when the station gives it, and the log shows its serial number once.
+            - Windows now remember where you left them, and page windows you had open reopen at start-up.  You can turn this off under `Preferences`, `Remember Window Locations`.
     - Bug Fixes
         - Locomotive Control
             - A locomotive that is already part of a multi-unit can no longer be made the head of another one.  If a saved database already has such a pair, the outer multi-unit keeps the locomotive, whatever the names, and the log says which list was not applied.
