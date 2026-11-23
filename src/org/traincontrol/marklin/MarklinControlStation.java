@@ -1551,6 +1551,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
 
     /** Whether the last sync left part of the Central Station's data as it was because it could not be read (FR-169). */
     private volatile boolean lastSyncPartial = false;
+    /** The routes the last sync added or replaced, which its count includes. */
+    private volatile int lastSyncRoutes;
+
+    @Override
+    public int getLastSyncRoutes()
+    {
+        return this.lastSyncRoutes;
+    }
 
     /** Whether the last sync could not read part of what the Central Station sent, and left that part as it was. */
     @Override
@@ -1708,6 +1716,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {        
         this.lastSyncError = null;
         this.lastSyncPartial = false;
+        this.lastSyncRoutes = 0;
 
         // Read remote config files, each one once for the whole sync (FR-207)
         final CS2File parser = new CS2File(cs2Address(), this);
@@ -1816,6 +1825,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 if (this.adoptCentralStationRoute(r)) num++;
             }
+            this.lastSyncRoutes = num;
             
             // Import locomotives
             List<MarklinLocomotive> parsedLocs;

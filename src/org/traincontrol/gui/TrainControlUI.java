@@ -14646,9 +14646,37 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** Says on c that part of the station's data could not be read, when the sync that just ran left part as it was. */
     private void saidTheSyncWasPartial(Component c, int synced)
     {
-        if (this.model.wasLastSyncPartial())
-            javax.swing.SwingUtilities.invokeLater(() ->
-                JOptionPane.showMessageDialog(c, I18n.f("ui.infoSyncCompletePartial", Integer.toString(synced))));
+        if (this.model.wasLastSyncPartial()) saySynced(c, synced);
+    }
+
+    /** Says on c, under the Sync's title, what the sync just ended added, the answers given that are not zero. */
+    private void saySynced(Component c, int synced, int... answers)
+    {
+        String text = syncSummary(synced - this.model.getLastSyncRoutes(), this.model.getLastSyncRoutes(),
+            this.model.wasLastSyncPartial(), answers);
+        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, text, I18n.t("sync.ui.title"),
+            JOptionPane.INFORMATION_MESSAGE));
+    }
+
+    /**
+     * A sync's closing message: the locomotives and routes it added, then of the table's answers (renamed, re-addressed,
+     * kept, ignored, waiting) those not zero, and the partial read's sentence; with none of these, that all matches.
+     */
+    public static String syncSummary(int locomotives, int routes, boolean partial, int... answers)
+    {
+        List<String> added = new ArrayList<>(), said = new ArrayList<>();
+        if (locomotives > 0) added.add(I18n.f(locomotives == 1 ? "ui.infoSyncLocomotiveAdded"
+            : "ui.infoSyncLocomotivesAdded", locomotives));
+        if (routes > 0) added.add(I18n.f(routes == 1 ? "ui.infoSyncRouteAdded" : "ui.infoSyncRoutesAdded", routes));
+        String[] kinds = {"ui.infoSyncRenamed", "ui.infoSyncMoved", "ui.infoSyncKept", "ui.infoSyncIgnored",
+            "ui.infoSyncWaiting"};
+        for (int i = 0; i < answers.length; i++) if (answers[i] > 0) said.add(I18n.f(kinds[i], answers[i]));
+        if (!partial && added.isEmpty() && said.isEmpty()) return I18n.t("ui.infoSyncNothingDiffers");
+        List<String> parts = new ArrayList<>(Arrays.asList(I18n.t("ui.infoSyncComplete")));
+        if (!added.isEmpty()) parts.add(String.join("\n", added));
+        if (!said.isEmpty()) parts.add(String.join("\n", said));
+        if (partial) parts.add(I18n.t("ui.infoSyncPartial"));
+        return String.join("\n\n", parts);
     }
 
     public void doSync(Component c)
@@ -14678,7 +14706,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // re-enabling pass below.  Reported as -1, the failure code this method already tells the user about;
                 // the log has the reason.
                 Integer syncResult;
-                final StringBuilder answered = new StringBuilder();
+                final int[] answered = new int[5];
                 try
                 {
                     syncResult = c == null ? this.runTheOwedSync() : this.pressedSync(c, answered);
@@ -14706,12 +14734,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 this.repaintLoc(true, null);
                 this.repaintLayout();
 
-                if (c != null && !saidTheSyncDidNotRun(c, r, () -> doSync(c)))
-                {
-                    final String done = I18n.f(this.model.wasLastSyncPartial() ? "ui.infoSyncCompletePartial"
-                        : "ui.infoSyncCompleteItemsAdded", r.toString()) + answered;
-                    javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, done));
-                }
+                if (c != null && !saidTheSyncDidNotRun(c, r, () -> doSync(c))) saySynced(c, r, answered);
             }).start();
         });
     }
@@ -14719,7 +14742,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /**
      * The pressed Sync (FR-249): read, table, answers and sync under one hold of the flag; SYNC_REFUSED when canceled.
      */
-    private int pressedSync(Component c, StringBuilder answered)
+    private int pressedSync(Component c, int[] answered)
     {
         return holdingTheSync(() ->
         {
@@ -14737,8 +14760,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 if (open != null) SwingUtilities.invokeLater(open::followTheSync);
                 if (n.length == 0 || synced < 0) return synced;
                 int moved = (int) taken.stream().filter(r -> r.loco.getAddress() == r.stationAddress).count();
-                answered.append("\n\n").append(I18n.f("ui.infoSyncAnswers", n[1], moved, n[2], n[3],
-                    n[4] + taken.size() - moved));
+                System.arraycopy(new int[] {n[1], moved, n[2], n[3], n[4] + taken.size() - moved}, 0, answered, 0, 5);
                 return synced + n[0];
             }
             finally

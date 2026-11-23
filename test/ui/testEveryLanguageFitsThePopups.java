@@ -241,8 +241,8 @@ public class testEveryLanguageFitsThePopups
             }
             found.addAll(popup("popup-sync-done", language, m -> null, null, later(() ->
             {
-                JOptionPane.showMessageDialog(railway.ui, I18n.f("ui.infoSyncCompleteItemsAdded", 12) + "\n\n"
-                    + I18n.f("ui.infoSyncAnswers", 3, 2, 4, 1, 5));
+                JOptionPane.showMessageDialog(railway.ui, TrainControlUI.syncSummary(12, 2, true, 3, 2, 4, 1,
+                    5));
                 return null;
             }), null));
             return found;

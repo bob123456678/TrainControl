@@ -250,8 +250,10 @@ public class testTheSyncDifferencesWindow
             assertEquals(rig.model.getLocByName("SW Move").getAddress(), 66, "Apply did not change the address: "
                 + said + rig.takeLog());
             assertNull(rig.model.getLocByName("SW Wait2"), "Ask Again added a copy");
-            assertEquals(said, Arrays.asList(I18n.f("ui.infoSyncCompleteItemsAdded", 1) + "\n\n"
-                + I18n.f("ui.infoSyncAnswers", 1, 1, 1, 1, 1)), "the finishing message");
+            assertEquals(said, Arrays.asList(I18n.t("ui.infoSyncComplete") + "\n\n" + I18n.f(
+                "ui.infoSyncLocomotiveAdded", 1) + "\n\n" + String.join("\n", I18n.f("ui.infoSyncRenamed", 1), I18n.f(
+                "ui.infoSyncMoved", 1), I18n.f("ui.infoSyncKept", 1), I18n.f("ui.infoSyncIgnored", 1), I18n.f(
+                "ui.infoSyncWaiting", 1))), "the finishing message");
 
             SyncTable.Shown next = pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW Ign", "ASK")), null);
             assertNotNull(next, "the next Sync showed no table");
@@ -586,8 +588,8 @@ public class testTheSyncDifferencesWindow
             assertFalse(rig.model.getLocomotives().contains(held), "Yes to the delete question did not delete SW Held");
             assertTrue(log.contains(I18n.f("loc.syncRowAnsweredAway", "SW Held"))
                 && !log.contains(I18n.f("loc.syncRowChanged", "SW Held")), "SW Held's row: " + log);
-            assertTrue(!said.isEmpty() && said.get(said.size() - 1).endsWith(I18n.f("ui.infoSyncAnswers", 3, 0, 0, 0,
-                0)), "the finishing message: " + said);
+            assertTrue(!said.isEmpty() && said.get(said.size() - 1).endsWith("\n\n" + I18n.f("ui.infoSyncRenamed",
+                3)), "the finishing message: " + said);
             assertTrue(problems.isEmpty(), problems.toString());
         });
     }
@@ -913,6 +915,29 @@ public class testTheSyncDifferencesWindow
                 "Keep Both with no station locomotive to add"));
         });
         assertTrue(problems.isEmpty(), problems.toString());
+    }
+
+    /**
+     * The finishing message says only what happened: with nothing different and nothing new, that everything matches;
+     * otherwise what was added, by kind, and only the answers that are not zero.
+     *
+     * MUTATION: in `TrainControlUI.syncSummary`, list every answer, zero or not; or leave out the everything-matches line.
+     */
+    @Test(timeOut = 240000)
+    public void testTheFinishingMessageSaysOnlyWhatHappened() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            list.set(station("SW Same", 70));
+            here(rig, "SW Same", 70, "SW Old", 71);
+            List<String> said = new ArrayList<>();
+            assertNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer()), said), "a table opened");
+            list.set(station("SW Same", 70, "SW New", 71, "SW Added", 72));
+            assertNotNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW Old", "RENAME")), said),
+                "the rename's table did not open");
+            assertEquals(said, Arrays.asList(I18n.t("ui.infoSyncNothingDiffers"), I18n.t("ui.infoSyncComplete") + "\n\n"
+                + I18n.f("ui.infoSyncLocomotiveAdded", 1) + "\n\n" + I18n.f("ui.infoSyncRenamed", 1)), "the messages");
+        });
     }
 
     /** c as it paints. */

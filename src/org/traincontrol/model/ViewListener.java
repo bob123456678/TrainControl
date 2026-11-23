@@ -99,6 +99,8 @@ public interface ViewListener
     public void stopAllLocs();
     public int syncWithCS2();
     public boolean wasLastSyncPartial();
+    /** How many of the last sync's count are routes it added or replaced; the rest are locomotives. */
+    public int getLastSyncRoutes();
     public String getLastSyncError();
     public List<String> getLayoutList();
     public List<String> getLayoutListByName();

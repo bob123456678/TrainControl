@@ -23,7 +23,7 @@ import org.traincontrol.util.I18n;
 /**
  * Answers the manual Sync's table (FR-249) as the user would: each one that opens while this is open, it picks each named
  * locomotive's answer ("KEEP", "RENAME", "ADDRESS", "BOTH", "IGNORE" or "ASK"), then presses Continue Sync, or Cancel
- * when told to, and keeps what each table showed.  Found by its title and its controls' names, so a claim compiles
+ * when told to, and keeps what each table showed.  Found by its title and its list (the closing message shares the title) and its controls' names, so a claim compiles
  * before the window exists.  Close it in a finally, or with try-with-resources.
  */
 public final class SyncTable implements AutoCloseable
@@ -70,8 +70,9 @@ public final class SyncTable implements AutoCloseable
         {
             Window w = ((WindowEvent) e).getWindow();
             if (e.getID() == WindowEvent.WINDOW_OPENED && w instanceof JDialog && I18n.t("sync.ui.title").equals(
-                ((JDialog) w).getTitle()) && handled.add(w)) SwingUtilities.invokeLater(() -> answer((JDialog) w,
-                answers, cancel, look));
+                ((JDialog) w).getTitle()) && Components.find((JDialog) w, org.traincontrol.gui.widgets.ChoiceTable.class,
+                c -> true) != null && handled.add(w)) SwingUtilities.invokeLater(() -> answer((JDialog) w, answers, cancel,
+                look));
         };
         Toolkit.getDefaultToolkit().addAWTEventListener(this.watching, AWTEvent.WINDOW_EVENT_MASK);
     }

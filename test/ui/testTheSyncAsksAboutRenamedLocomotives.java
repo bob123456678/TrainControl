@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.regex.Pattern;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
@@ -526,10 +525,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
     /** Whether the sync has said it is complete, with or without the table's account after. */
     private static boolean saidDone(Answering answering)
     {
-        Pattern done = Pattern.compile(Pattern.quote(I18n.t("ui.infoSyncCompleteItemsAdded")).replace("{0}",
-            "\\E\\d+\\Q"));
-
-        return answering.asked().stream().anyMatch(m -> done.matcher(m).lookingAt());
+        return answering.asked().stream().anyMatch(m -> m.startsWith(I18n.t("ui.infoSyncComplete"))
+            || m.equals(I18n.t("ui.infoSyncNothingDiffers")));
     }
 
     /**
