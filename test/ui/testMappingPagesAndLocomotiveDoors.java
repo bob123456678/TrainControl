@@ -366,6 +366,71 @@ public class testMappingPagesAndLocomotiveDoors
         assertSame(onKey(KeyEvent.VK_A), three, "Reset Mappings emptied another page as well");
     }
 
+    /**
+     * Reset Mappings lets go of the active locomotive only if it was on the page emptied: clearing a page the train
+     * is not on leaves it active, clearing the page it is on releases it.
+     *
+     * MUTATION: `if (false) ui.activeLoc = null;` or `ui.activeLoc = null;` for the test in
+     * `LocMappingPages.doClearCurrentPage`, and this fails.
+     */
+    @Test
+    public void testResetMappingsReleasesTheActiveLocomotiveOnlyFromItsOwnPage() throws Exception
+    {
+        turnTo(pageQ);
+
+        Reflect.set(TrainControlUI.class, ui, "activeLoc", one);
+
+        resetCurrentPage();
+
+        assertNull(onKey(KeyEvent.VK_A), "precondition: the page was not emptied");
+        assertSame(ui.getActiveLoc(), one, "emptying a page the train is not on took the keyboard from it");
+
+        turnTo(pageP);
+
+        Reflect.set(TrainControlUI.class, ui, "activeLoc", one);
+
+        resetCurrentPage();
+
+        assertTrue(waitFor(() -> ui.getActiveLoc() == null), "emptying the train's own page left it active");
+    }
+
+    /**
+     * Menus and dialogs word a page by "Page 5 (Example)", the name cut to MAX_PAGE_NAME_LENGTH_TOP letters and
+     * "..."; shown in the paste confirmation.
+     *
+     * MUTATION: cut at MAX_PAGE_NAME_LENGTH_TOP - 1 in `LocMappingPages.getPageName`, and this fails.
+     */
+    @Test
+    public void testThePasteQuestionCutsALongPageName() throws Exception
+    {
+        String name = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        int cut = TrainControlUI.MAX_PAGE_NAME_LENGTH_TOP;
+
+        assertTrue(name.length() > cut, "precondition: the name is not longer than the cut");
+
+        @SuppressWarnings("unchecked")
+        Map<Integer, String> names = (Map<Integer, String>) field("pageNames");
+
+        names.put(pageP, name);
+
+        try
+        {
+            copyMappingsAndTurnTo(pageQ);
+
+            AbstractButton paste = pageMenuItem(I18n.t("page.ui.menuPasteMappings"));
+
+            List<String> asked = answering(I18n.t("ui.no"), () -> SwingUtilities.invokeLater(paste::doClick));
+
+            assertTrue(asked.get(0).contains(I18n.f("page.ui.confirmReplaceMappings", I18n.f("page.ui.pageNo", pageQ),
+                I18n.f("page.ui.plainPageName", pageP, name.substring(0, cut) + "..."))),
+                "the question does not word the long name as cut, got: " + asked.get(0));
+        }
+        finally
+        {
+            names.remove(pageP);
+        }
+    }
+
     // The locomotive's doors
 
     /**
@@ -859,6 +924,16 @@ public class testMappingPagesAndLocomotiveDoors
         });
 
         turnTo(page);
+    }
+
+    /** Reset Mappings on the page showing, answered Yes. */
+    private static void resetCurrentPage() throws Exception
+    {
+        AbstractButton reset = pageMenuItem(I18n.t("page.ui.menuResetCurrentMappings"));
+
+        answering(I18n.t("ui.yes"), () -> SwingUtilities.invokeLater(reset::doClick));
+
+        Components.settle();
     }
 
     /** Turns to a page by its tab, as clicking the tab does. */
