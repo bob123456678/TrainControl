@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -177,9 +178,10 @@ public class RenameProposals
 
     /**
      * Of these rows, those Set all may Apply: not ignored, one difference asked, Apply allowed, and neither colliding
-     * nor deleting once all of them are applied together.
+     * nor deleting once all of them are applied together, beside the rows already told to take the station's address,
+     * `addressed`.
      */
-    public Set<Row> applicable(Collection<Row> rows)
+    public Set<Row> applicable(Collection<Row> rows, Collection<Row> addressed)
     {
         List<Row> names = new ArrayList<>(), moves = new ArrayList<>();
         for (Row r : rows)
@@ -191,7 +193,9 @@ public class RenameProposals
         boolean dropped;
         do
         {
-            boolean moved = moves.removeAll(collisions(moves));
+            Set<Row> all = new LinkedHashSet<>(addressed);
+            all.addAll(moves);
+            boolean moved = moves.removeAll(collisions(all));
             dropped = names.removeIf(r -> deletes(r, names) != null) || moved;
         }
         while (dropped);

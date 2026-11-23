@@ -22,10 +22,12 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
+import javax.swing.LookAndFeel;
+import javax.swing.UIManager;
 
 /**
- * A list of rows under column headings, each row some cells and then its choices, that scrolls once it would pass half
- * the screen: the manual Sync's table and the CSV import's duplicates are built on it (FR-249).  A column of bare choices
+ * A list of rows under column headings, each row some cells and then its choices, that scrolls either way once it does
+ * not fit: the manual Sync's table and the CSV import's duplicates are built on it (FR-249).  A column of bare choices
  * is centered under its heading, any other left-aligned; cells are built from lines one choice high, so a row's lines
  * align across it.
  */
@@ -34,6 +36,9 @@ public final class ChoiceTable extends JScrollPane
     private final JPanel grid = new JPanel(new GridBagLayout());
     private final JComponent[] heads;
     private int rows;
+    /** A choice's height with text, and the look it was measured in: on the event thread. */
+    private static int high;
+    private static LookAndFeel measuredIn;
 
     /** @param heads each column's heading, left to right: a label, or a {@link #link} that acts on every row */
     public ChoiceTable(JComponent... heads)
@@ -83,12 +88,22 @@ public final class ChoiceTable extends JScrollPane
         JRadioButton b = new JRadioButton(text);
         b.setOpaque(false);
         b.setFont(UiStyle.TEXT_FONT);
-        // As high as one with text, at the scale now
-        JRadioButton high = new JRadioButton("Xg");
-        high.setFont(UiStyle.TEXT_FONT);
-        b.setPreferredSize(new Dimension(b.getPreferredSize().width, high.getPreferredSize().height));
+        b.setPreferredSize(new Dimension(b.getPreferredSize().width, high()));
         group.add(b);
         return b;
+    }
+
+    /** As high as a choice with text, at the scale now; measured once for each look. */
+    private static int high()
+    {
+        if (measuredIn != UIManager.getLookAndFeel())
+        {
+            JRadioButton b = new JRadioButton("Xg");
+            b.setFont(UiStyle.TEXT_FONT);
+            high = b.getPreferredSize().height;
+            measuredIn = UIManager.getLookAndFeel();
+        }
+        return high;
     }
 
     /**
@@ -125,7 +140,7 @@ public final class ChoiceTable extends JScrollPane
         p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
         p.setOpaque(false);
         p.setAlignmentX(0);
-        p.add(Box.createRigidArea(new Dimension(0, choice(new ButtonGroup(), "").getPreferredSize().height)));
+        p.add(Box.createRigidArea(new Dimension(0, high())));
         for (int i = 0; i < parts.length; i++)
         {
             if (i > 0) p.add(Box.createHorizontalStrut(4));
@@ -144,12 +159,13 @@ public final class ChoiceTable extends JScrollPane
         return p;
     }
 
-    /** Every row up to half the screen's height; the rest scrolls. */
+    /** Every row up to half the screen's height and three quarters of its width; the rest scrolls. */
     @Override
     public Dimension getPreferredSize()
     {
-        Dimension d = super.getPreferredSize();
-        int most = Toolkit.getDefaultToolkit().getScreenSize().height / 2;
-        return d.height <= most ? d : new Dimension(d.width + getVerticalScrollBar().getPreferredSize().width, most);
+        Dimension d = super.getPreferredSize(), screen = Toolkit.getDefaultToolkit().getScreenSize();
+        int most = screen.height / 2;
+        if (d.height > most) d = new Dimension(d.width + getVerticalScrollBar().getPreferredSize().width, most);
+        return new Dimension(Math.min(d.width, screen.width * 3 / 4), d.height);
     }
 }

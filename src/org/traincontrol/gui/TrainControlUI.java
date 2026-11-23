@@ -7230,21 +7230,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private int syncNow()
     {
+        return holdingTheSync(this::syncHolding);
+    }
+
+    /** Runs `sync` holding the running flag, or turns it away while another holds it; one owed meanwhile runs after. */
+    private int holdingTheSync(java.util.function.IntSupplier sync)
+    {
         if (!syncInFlight.compareAndSet(false, true))
         {
             this.log(I18n.t("ui.infoSyncAlreadyRunning"));
-
             return SYNC_ALREADY_RUNNING;
         }
-
         try
         {
-            return syncHolding();
+            return sync.getAsInt();
         }
         finally
         {
             syncInFlight.set(false);
-
             if (syncOwed.get()) editorGone();
         }
     }
@@ -14718,36 +14721,32 @@ public class TrainControlUI extends PositionAwareJFrame implements View
      */
     private int pressedSync(Component c, StringBuilder answered)
     {
-        if (!syncInFlight.compareAndSet(false, true))
+        return holdingTheSync(() ->
         {
-            this.log(I18n.t("ui.infoSyncAlreadyRunning"));
-            return SYNC_ALREADY_RUNNING;
-        }
-        List<RenameProposals.Row> taken = new ArrayList<>();
-        try
-        {
-            int[] n = askAndApply(c, taken);
-            if (n == null)
+            List<RenameProposals.Row> taken = new ArrayList<>();
+            try
             {
-                this.model.logf("loc.syncCanceled");
-                return SYNC_REFUSED;
+                int[] n = askAndApply(c, taken);
+                if (n == null)
+                {
+                    this.model.logf("loc.syncCanceled");
+                    return SYNC_REFUSED;
+                }
+                int synced = RunGates.refuseALinkOrSyncWhileEditorOpen(this, null) ? SYNC_REFUSED : syncHolding();
+                final LocomotiveSettingsFrame open = this.locomotiveSettings;
+                if (open != null) SwingUtilities.invokeLater(open::followTheSync);
+                if (n.length == 0 || synced < 0) return synced;
+                int moved = (int) taken.stream().filter(r -> r.loco.getAddress() == r.stationAddress).count();
+                answered.append("\n\n").append(I18n.f("ui.infoSyncAnswers", n[1], moved, n[2], n[3],
+                    n[4] + taken.size() - moved));
+                return synced + n[0];
             }
-            int synced = RunGates.refuseALinkOrSyncWhileEditorOpen(this, null) ? SYNC_REFUSED : syncHolding();
-            final LocomotiveSettingsFrame open = this.locomotiveSettings;
-            if (open != null) SwingUtilities.invokeLater(open::followTheSync);
-            if (n.length == 0 || synced < 0) return synced;
-            int moved = (int) taken.stream().filter(r -> r.loco.getAddress() == r.stationAddress).count();
-            answered.append("\n\n").append(I18n.f("ui.infoSyncAnswers", n[1], moved, n[2], n[3],
-                n[4] + taken.size() - moved));
-            return synced + n[0];
-        }
-        finally
-        {
-            // A station's address this Sync was told to use is for this sync alone
-            for (RenameProposals.Row r : taken) r.loco.setTakenStationAddress(null);
-            syncInFlight.set(false);
-            if (syncOwed.get()) editorGone();
-        }
+            finally
+            {
+                // A station's address this Sync was told to use is for this sync alone
+                for (RenameProposals.Row r : taken) r.loco.setTakenStationAddress(null);
+            }
+        });
     }
 
     /**
@@ -14795,7 +14794,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             : SwingUtilities.getWindowAncestor(c), I18n.t("ui.busySyncingWithCS"));
         try
         {
-            return log ? this.model.getRenameProposals() : this.model.getRenameProposalsQuietly();
+            return this.model.getRenameProposals(log);
         }
         finally
         {
@@ -14833,14 +14832,24 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         rows.sort(java.util.Comparator.comparingInt(r -> answers.get(r) == SyncDifferencesWindow.Answer.RENAME
             ? order.indexOf(names.get(r.loco)) : answers.get(r) == SyncDifferencesWindow.Answer.BOTH ? order.size()
             : order.size() + 1));
+        // Each locomotive still under its name as asked, so one an earlier answer below takes it from is said so
+        Set<Locomotive> unchanged = new HashSet<>();
+        for (RenameProposals.Row r : rows)
+            if (this.model.getLocByName(names.get(r.loco)) == r.loco) unchanged.add(r.loco);
         int[] n = new int[5];
         for (RenameProposals.Row r : rows)
         {
             SyncDifferencesWindow.Answer a = answers.get(r);
             String name = names.get(r.loco);
             RenameProposals.Row f = current.get(r.loco);
+            boolean gone = this.model.getLocByName(name) != r.loco;
             if (a != SyncDifferencesWindow.Answer.IGNORE) r.loco.setSyncIgnored(false);
-            if (a == SyncDifferencesWindow.Answer.ASK || this.model.getLocByName(name) != r.loco || f == null
+            if (a != SyncDifferencesWindow.Answer.ASK && gone && unchanged.contains(r.loco))
+            {
+                this.model.logf("loc.syncRowAnsweredAway", name);
+                continue;
+            }
+            if (a == SyncDifferencesWindow.Answer.ASK || gone || f == null
                 || !java.util.Objects.equals(f.stationName, r.stationName)
                 || !java.util.Objects.equals(f.stationAddress, r.stationAddress))
             {
@@ -14887,6 +14896,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         String currentName = r.loco.getName(), newName = r.stationName;
         Locomotive l = r.loco;
+        // Like the other doors into `renameLoc`, asked of both names just before it: a route may have begun meanwhile
+        if (RunGates.refuseWhileARouteDrivesIt(this, c, currentName)
+            || RunGates.refuseWhileARouteDrivesIt(this, c, newName)) return "loc.renameNotApplied";
         if (model.getLocByName(newName) != null) this.locomotiveActions.deleteLocBecause(
             I18n.f("loc.ui.confirmRenameOntoLocomotive", currentName, newName), newName, c);
         if (model.getLocByName(newName) != null)

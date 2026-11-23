@@ -1303,35 +1303,28 @@ public class MarklinControlStation implements ViewListener, ModelListener
     @Override
     public List<String[]> getLocomotivesToRenameFromImport() throws Exception
     {
-        return getRenameProposals().getProposals();
+        return getRenameProposals(true).getProposals();
     }
 
     /**
      * The rename check proper: the station's locomotives read now, and what they differ on here (FR-249).
      *
+     * @param log whether to log; without, a second look within one Sync, a failed read is logged and gives null
      * @throws java.lang.Exception
      */
     @Override
-    public RenameProposals getRenameProposals() throws Exception
-    {
-        int unreadable = this.fileParser.getUnreadableRecords();
-        List<MarklinLocomotive> parsedLocs = this.isCS3 ? fileParser.parseLocomotivesCS3() : fileParser.parseLocomotives();
-        return differences(parsedLocs, this.fileParser.getUnreadableRecords() > unreadable, true);
-    }
-
-    /** The same read without its log lines, for a second look within one Sync; null, logged, when it fails. */
-    @Override
-    public RenameProposals getRenameProposalsQuietly()
+    public RenameProposals getRenameProposals(boolean log) throws Exception
     {
         int unreadable = this.fileParser.getUnreadableRecords();
         try
         {
             // The parse runs before the second count is taken
             return differences(this.isCS3 ? fileParser.parseLocomotivesCS3() : fileParser.parseLocomotives(),
-                this.fileParser.getUnreadableRecords() > unreadable, false);
+                this.fileParser.getUnreadableRecords() > unreadable, log);
         }
         catch (Exception e)
         {
+            if (log) throw e;
             this.log(e);
             return null;
         }

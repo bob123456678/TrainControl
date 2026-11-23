@@ -3,6 +3,7 @@ package org.traincontrol.gui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.Window;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
@@ -11,8 +12,8 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.Set;
+import java.util.function.BiFunction;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -51,18 +52,18 @@ public final class SyncDifferencesWindow
     private final Map<Row, JLabel> triangles = new LinkedHashMap<>();
     private final Map<Row, JLabel> deleting = new LinkedHashMap<>();
     private boolean continued;
+    private boolean settingAll;
 
     private SyncDifferencesWindow(Window owner, RenameProposals proposals, List<Row> rows)
     {
         this.dialog = new JDialog(owner, I18n.t("sync.ui.title"), JDialog.ModalityType.APPLICATION_MODAL);
         this.proposals = proposals;
         // Each answer's heading sets every row it can to it, as a row's own pick would; Ignore is never set so
-        ChoiceTable table = new ChoiceTable(UiStyle.blackLabel(I18n.t("sync.ui.locomotive")),
-            UiStyle.blackLabel(I18n.t("sync.ui.stationHas")), setAllTo("sync.ui.keep", r -> Answer.KEEP),
-            setAllTo("sync.ui.apply", r -> !proposals.applicable(this.choices.keySet()).contains(r) ? null
-                : r.asksName() ? Answer.RENAME : Answer.ADDRESS),
-            setAllTo("sync.ui.keepBoth", r -> Answer.BOTH), UiStyle.blackLabel(I18n.t("sync.ui.ignore")),
-            setAllTo("sync.ui.askAgain", r -> Answer.ASK));
+        ChoiceTable table = new ChoiceTable(UiStyle.blackLabel(I18n.t("sync.ui.thisComputer")),
+            UiStyle.blackLabel(I18n.t("sync.ui.centralStation")), setAllTo("sync.ui.apply", (r, can) ->
+            !can.contains(r) ? null : r.asksName() ? Answer.RENAME : Answer.ADDRESS),
+            setAllTo("sync.ui.keep", (r, can) -> Answer.KEEP), setAllTo("sync.ui.keepBoth", (r, can) -> Answer.BOTH),
+            UiStyle.blackLabel(I18n.t("sync.ui.ignore")), setAllTo("sync.ui.askAgain", (r, can) -> Answer.ASK));
         for (Row r : rows) table.addRow(addRow(r));
         refresh();
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
@@ -109,27 +110,19 @@ public final class SyncDifferencesWindow
         if (rows.isEmpty()) return new LinkedHashMap<>();
         SyncDifferencesWindow w = new SyncDifferencesWindow(owner, proposals, rows);
         w.dialog.setVisible(true);
-        if (!w.continued) return null;
-        Map<Row, Answer> answers = new LinkedHashMap<>();
-        for (Map.Entry<Row, Map<Answer, JRadioButton>> each : w.choices.entrySet())
-        {
-            for (Map.Entry<Answer, JRadioButton> c : each.getValue().entrySet())
-                if (c.getValue().isSelected()) answers.put(each.getKey(), c.getKey());
-        }
-        return answers;
+        return w.continued ? w.picks() : null;
     }
 
-    /** One row's cells: the locomotive, what the station has, and its choices, named for the tests. */
+    /** One row's cells: this computer's locomotive, the station's, and the choices, named for the tests. */
     private JComponent[] addRow(Row r)
     {
         Locomotive l = r.loco;
         String name = l.getName();
         ButtonGroup group = new ButtonGroup();
         Map<Answer, JRadioButton> radios = new EnumMap<>(Answer.class);
-        List<JComponent> has = new ArrayList<>(), apply = new ArrayList<>();
+        List<JComponent> apply = new ArrayList<>();
         if (r.asksName())
         {
-            has.add(kindAndValue("sync.ui.name", r.stationName));
             JLabel deletes = mark(name + ":deletes", null);
             deletes.setForeground(DELETES);
             deletes.setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 0));
@@ -139,7 +132,6 @@ public final class SyncDifferencesWindow
         }
         if (r.asksAddress())
         {
-            has.add(kindAndValue("sync.ui.address", r.stationAddress.toString()));
             JLabel triangle = mark(name + ":collision", RowIcons.warning(16));
             this.triangles.put(r, triangle);
             apply.add(applyChoice(r, radios, group, Answer.ADDRESS, I18n.f("sync.ui.changeAddress", name,
@@ -152,15 +144,22 @@ public final class SyncDifferencesWindow
                 radios.put(a, named(ChoiceTable.choice(group, ""), name, a));
         }
         radios.get(l.isSyncIgnored() ? Answer.IGNORE : Answer.ASK).setSelected(true);
-        for (JRadioButton b : radios.values()) b.addItemListener(e -> refresh());
+        // A heading's Set all judges the marks once, after every row it sets
+        for (JRadioButton b : radios.values()) b.addItemListener(e -> { if (!this.settingAll) refresh(); });
         this.choices.put(r, radios);
-        JLabel at = text(l.getDecoderTypeLabel() + " " + l.getAddress());
-        at.setForeground(Color.GRAY);
-        return new JComponent[] {ChoiceTable.lines(ChoiceTable.line(text(name + (l.hasLinkedLocomotives() ? " +"
-            + l.getLinkedLocomotives().size() : ""))), ChoiceTable.line(at)),
-            ChoiceTable.lines(has.toArray(new JComponent[0])), radios.get(Answer.KEEP),
-            ChoiceTable.lines(apply.toArray(new JComponent[0])), radios.get(Answer.BOTH), radios.get(Answer.IGNORE),
-            radios.get(Answer.ASK)};
+        String at = l.getDecoderTypeLabel() + " ";
+        return new JComponent[] {side(r, name + (l.hasLinkedLocomotives() ? " +" + l.getLinkedLocomotives().size()
+            : ""), at + l.getAddress()), side(r, r.stationName != null ? r.stationName : name, at
+            + (r.stationAddress != null ? r.stationAddress : l.getAddress())),
+            ChoiceTable.lines(apply.toArray(new JComponent[0])), radios.get(Answer.KEEP), radios.get(Answer.BOTH),
+            radios.get(Answer.IGNORE), radios.get(Answer.ASK)};
+    }
+
+    /** One side's name and address, a line each, the value that differs between the sides in bold. */
+    private static JComponent side(Row r, String name, String address)
+    {
+        return ChoiceTable.lines(kindAndValue("sync.ui.name", name, r.stationName != null),
+            kindAndValue("sync.ui.address", address, r.stationAddress != null));
     }
 
     /** One Apply choice on its line, its mark after it; grayed, its text stays readable and says why on hover. */
@@ -201,33 +200,36 @@ public final class SyncDifferencesWindow
         return m;
     }
 
-    /** "Name:" or "Address:" as a gray label, and the station's value as plain text, on one line. */
-    private static JComponent kindAndValue(String kind, String value)
+    /** "Name:" or "Address:" as a gray label, and the value as plain text, bold where it differs, on one line. */
+    private static JComponent kindAndValue(String kind, String value, boolean differs)
     {
-        JLabel k = UiStyle.blackLabel(I18n.t(kind));
+        JLabel k = UiStyle.blackLabel(I18n.t(kind)), v = text(value);
         k.setForeground(Color.GRAY);
-        return ChoiceTable.line(k, text(value));
+        if (differs) v.setFont(UiStyle.TEXT_FONT.deriveFont(Font.BOLD));
+        return ChoiceTable.line(k, v);
     }
 
-    /** An answer's heading: each row not ignored takes the answer `to` gives it, where it has that choice enabled. */
-    private JButton setAllTo(String key, Function<Row, Answer> to)
+    /** An answer's heading: each row not ignored takes the answer `to` gives it, and the rows Apply may take, if enabled. */
+    private JButton setAllTo(String key, BiFunction<Row, Set<Row>, Answer> to)
     {
         return ChoiceTable.link(I18n.t(key), I18n.f("sync.ui.setAllTip", I18n.t(key)), () ->
         {
-            Map<Row, Answer> picks = new LinkedHashMap<>();
-            for (Row r : this.choices.keySet()) if (!r.loco.isSyncIgnored()) picks.put(r, to.apply(r));
-            for (Map.Entry<Row, Answer> p : picks.entrySet())
+            Set<Row> can = this.proposals.applicable(this.choices.keySet(), chosen(Answer.ADDRESS));
+            this.settingAll = true;
+            for (Row r : this.choices.keySet())
             {
-                JRadioButton c = p.getValue() == null ? null : this.choices.get(p.getKey()).get(p.getValue());
+                JRadioButton c = r.loco.isSyncIgnored() ? null : this.choices.get(r).get(to.apply(r, can));
                 if (c != null && c.isEnabled()) c.setSelected(true);
             }
+            this.settingAll = false;
+            refresh();
         });
     }
 
     /** The marks, judged with every Apply chosen now: the triangle, naming who else has that address, and Deletes. */
     private void refresh()
     {
-        List<Row> moved = chosen(Answer.ADDRESS::equals), renamed = chosen(Answer.RENAME::equals);
+        List<Row> moved = chosen(Answer.ADDRESS), renamed = chosen(Answer.RENAME);
         for (Map.Entry<Row, JLabel> t : this.triangles.entrySet())
         {
             List<String> others = new ArrayList<>();
@@ -245,14 +247,18 @@ public final class SyncDifferencesWindow
         }
     }
 
-    private List<Row> chosen(Predicate<Answer> which)
+    /** Each row's selected answer, top to bottom. */
+    private Map<Row, Answer> picks()
+    {
+        Map<Row, Answer> out = new LinkedHashMap<>();
+        this.choices.forEach((r, radios) -> radios.forEach((a, b) -> { if (b.isSelected()) out.put(r, a); }));
+        return out;
+    }
+
+    private List<Row> chosen(Answer a)
     {
         List<Row> out = new ArrayList<>();
-        for (Map.Entry<Row, Map<Answer, JRadioButton>> each : this.choices.entrySet())
-        {
-            for (Map.Entry<Answer, JRadioButton> c : each.getValue().entrySet())
-                if (c.getValue().isSelected() && which.test(c.getKey())) out.add(each.getKey());
-        }
+        picks().forEach((r, p) -> { if (p == a) out.add(r); });
         return out;
     }
 

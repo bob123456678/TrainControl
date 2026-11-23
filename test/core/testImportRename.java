@@ -332,7 +332,7 @@ public class testImportRename
         installCleanly(CS_TWENTYONE, CS_TEN_ADDRESS);
         installCleanly(CS_TEN, CS_TWENTYONE_ADDRESS);
 
-        RenameProposals result = model.getRenameProposals();
+        RenameProposals result = model.getRenameProposals(true);
 
         assertTrue(result.hasRefusals(),
             "the swap was declined, and the caller must be able to tell that apart from there being "
@@ -475,7 +475,7 @@ public class testImportRename
             head.preSetLinkedLocomotives(links);
             head.setLinkedLocomotives();
 
-            assertEquals(model.getRenameProposals().getAddresses().get(CS_NAME), Integer.valueOf(CS_ADDRESS),
+            assertEquals(model.getRenameProposals(true).getAddresses().get(CS_NAME), Integer.valueOf(CS_ADDRESS),
                 "the head is offered the station's address like any locomotive");
 
             model.changeLocAddress(CS_NAME, CS_ADDRESS, head.getDecoderType());

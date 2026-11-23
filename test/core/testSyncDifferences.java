@@ -239,7 +239,7 @@ public class testSyncDifferences
             here(rig, "SD B", 21, "SD A", 22, "SD C", 23, "SD D", 24, "SD E1", 25, "SD E2", 25);
             rig.model.getLocByName("SD A").setSyncIgnored(true);
             sync(rig);
-            RenameProposals d = rig.model.getRenameProposals();
+            RenameProposals d = rig.model.getRenameProposals(true);
 
             assertEquals(d.getRows().stream().map(r -> r.loco.getName()).collect(Collectors.toList()),
                 Arrays.asList("SD B", "SD C", "SD D", "SD A"), "the rows or their order");
@@ -249,7 +249,7 @@ public class testSyncDifferences
             assertNull(row(rig, d, "SD B").whyNot(true));
 
             list.set("[]");
-            d = rig.model.getRenameProposals();
+            d = rig.model.getRenameProposals(true);
 
             assertTrue(d.getRows().isEmpty(), "an empty station list has rows");
             assertEquals(d.getUnsettledCount(), 0);
@@ -388,7 +388,7 @@ public class testSyncDifferences
             {
                 x.setSpeed(40);
                 m.setSpeed(40);
-                RenameProposals d = rig.model.getRenameProposals();
+                RenameProposals d = rig.model.getRenameProposals(true);
 
                 assertEquals(row(rig, d, "SD X").whyNot(true), I18n.f("loc.syncLeftMoving", "SD X"));
                 assertEquals(row(rig, d, "SD M").whyNot(false), I18n.f("loc.syncLeftMoving", "SD M"));
@@ -421,7 +421,7 @@ public class testSyncDifferences
             RenameProposals d = synced(rig, "SD A", 61, "SD T", 64, "SD H", 65, "SD C", 66, "SD D", 67,
                 "SD Held", 67, "SD E", 68, "SD Both", 69, "SD P", 72, "SD Q", 73);
 
-            assertEquals(d.applicable(d.getRows()).stream().map(r -> r.loco.getName()).sorted()
+            assertEquals(d.applicable(d.getRows(), Collections.emptyList()).stream().map(r -> r.loco.getName()).sorted()
                 .collect(Collectors.toList()), Arrays.asList("SD A", "SD C"), "what Set all applies");
         }
     }
@@ -465,7 +465,7 @@ public class testSyncDifferences
     {
         here(rig, namesAndAddresses);
         sync(rig);
-        return rig.model.getRenameProposals();
+        return rig.model.getRenameProposals(true);
     }
 
     /** The station's list: names each followed by an MM2 address, or CS3 records as written. */

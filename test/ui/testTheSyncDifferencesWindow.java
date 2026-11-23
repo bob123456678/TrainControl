@@ -33,6 +33,7 @@ import org.traincontrol.base.RenameProposals;
 import org.traincontrol.gui.LocomotiveSettingsFrame;
 import org.traincontrol.gui.SyncDifferencesWindow;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.locomotive.LocomotiveSelector;
 import org.traincontrol.gui.widgets.ChoiceTable;
 import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.marklin.MarklinLocomotive;
@@ -56,12 +57,15 @@ public class testTheSyncDifferencesWindow
     private static final String FUNCTION = "[{\"nr\":0,\"typ\":1,\"fs\":0,\"typ2\":1,\"dauer\":0,\"state\":0,\"isMoment\":false}]";
 
     /**
-     * Each row names the locomotive (decoder address, "+N" for a multi-unit head) and what the station has, the kind in a
-     * gray label; Apply says the whole change, twice for a locomotive differing in both, and Keep Both is offered on name
-     * rows only.  Rows are in name order with the ignored last on Ignore, the rest on Ask Again, under a heading that
-     * counts them (E17, E18, E20, E26, E29).
+     * Each row shows this computer's locomotive and the station's in one format, a line for the name ("+N" for a
+     * multi-unit head here) and one for the decoder address, the kind in a gray label and the value that differs bold
+     * on both sides; Apply says the whole change, twice for a locomotive differing in both, and Keep Both is offered on
+     * name rows only.  The answers run Apply Change, Keep As Is, Keep Both, Ignore, Ask Again.  Rows are in name order
+     * with the ignored last on Ignore, the rest on Ask Again, under a heading that counts them (E17, E18, E20, E26,
+     * E29).
      *
-     * MUTATION: in `SyncDifferencesWindow.addRow`, select Ask Again on an ignored row too.
+     * MUTATION: in `SyncDifferencesWindow.addRow`, select Ask Again on an ignored row too; or in `kindAndValue`, never
+     * bold.
      */
     @Test(timeOut = 180000)
     public void testARowNamesTheLocomotiveAndWhatTheStationHas() throws Exception
@@ -91,6 +95,15 @@ public class testTheSyncDifferencesWindow
                     t.in("SW Uri", "BOTH", AbstractButton.class) != null), Arrays.asList(true, false), "Keep Both offered");
                 check(problems, labels(t).contains("SW Head +1"), true, "head's +N");
                 check(problems, labels(t).contains("MM2 20"), true, "decoder address");
+                check(problems, Arrays.asList(bold(t, "SW Shunter"), bold(t, "SW V 60"), bold(t, "MM2 21"),
+                    bold(t, "MM2 22"), bold(t, "SW Uri"), bold(t, "MM2 20")),
+                    Arrays.asList(true, true, true, true, false, false), "bold where the sides differ");
+                List<Integer> across = new ArrayList<>();
+                for (String key : new String[] {"sync.ui.thisComputer", "sync.ui.centralStation", "sync.ui.apply",
+                    "sync.ui.keep", "sync.ui.keepBoth", "sync.ui.ignore", "sync.ui.askAgain"}) across.add(x(t, key));
+                List<Integer> sorted = new ArrayList<>(across);
+                java.util.Collections.sort(sorted);
+                check(problems, across, sorted, "the columns' order");
                 JLabel kind = Components.find(t.dialog, JLabel.class, l -> I18n.t("sync.ui.name").equals(l.getText()));
                 check(problems, kind != null && !java.awt.Color.BLACK.equals(kind.getForeground()), true, "gray kind");
             }), null);
@@ -445,19 +458,11 @@ public class testTheSyncDifferencesWindow
     {
         inAWindow((rig, ui, list) ->
         {
-            List<RenameProposals.Row> rows = new ArrayList<>();
-            for (int i = 1; i <= 1000; i++)
-            {
-                MarklinLocomotive l = new MarklinLocomotive(rig.model, i, Locomotive.decoderType.DCC, "SW " + i);
-                rows.add(new RenameProposals.Row(l, "SW Station " + i, null, null, null, null, null, l.getIntUID(),
-                    l.getIntUID()));
-            }
-            RenameProposals many = new RenameProposals(new ArrayList<>(), 0, new java.util.HashMap<>(), rows,
-                new java.util.HashMap<Integer, List<MarklinLocomotive>>());
+            RenameProposals many = made(rig, 1000, false, "");
             List<String> problems = new ArrayList<>();
             long started = System.nanoTime();
             AtomicReference<Long> opened = new AtomicReference<>();
-            try (SyncTable table = SyncTable.canceling(t ->
+            showing(ui, many, t ->
             {
                 opened.set(System.nanoTime() - started);
                 Rectangle screen = t.dialog.getGraphicsConfiguration().getBounds();
@@ -470,15 +475,237 @@ public class testTheSyncDifferencesWindow
                     check(problems, new Rectangle(t.dialog.getContentPane().getSize()).contains(SwingUtilities
                         .convertRectangle(c.getParent(), c.getBounds(), t.dialog.getContentPane())), true, "buttons in view");
                 }
-            }))
-            {
-                SwingUtilities.invokeLater(() -> SyncDifferencesWindow.ask(ui, many));
-                assertTrue(Components.waitFor(() -> !table.shown().isEmpty(), 60000), "the table did not open");
-                Components.settle();
-            }
+            });
             assertTrue(opened.get() < 20_000_000_000L, "a thousand rows took " + opened.get() / 1_000_000 + " ms to open");
             assertTrue(problems.isEmpty(), problems.toString());
         });
+    }
+
+    /**
+     * Set all on a thousand rows answers at once: a heading sets every row it can and judges the marks once, not once a
+     * row, so a click takes well under the two seconds allowed here, where it took 6 to 22 (E130).
+     *
+     * MUTATION: in `SyncDifferencesWindow.setAllTo`, judge `applicable` once for each row, and refresh the marks on
+     * every radio's change (leave out `settingAll`).
+     */
+    @Test(timeOut = 240000)
+    public void testSetAllOnAThousandRowsAnswersAtOnce() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            List<Long> took = new java.util.concurrent.CopyOnWriteArrayList<>();
+            AtomicInteger moved = new AtomicInteger();
+            showing(ui, made(rig, 1000, true, ""), t ->
+            {
+                for (String key : new String[] {"sync.ui.apply", "sync.ui.keep", "sync.ui.askAgain"})
+                {
+                    long started = System.nanoTime();
+                    Components.withText(t.dialog, I18n.t(key)).doClick(0);
+                    took.add((System.nanoTime() - started) / 1_000_000);
+                    if (moved.get() == 0)
+                        moved.set((int) selected(t).stream().filter(s -> s.endsWith(":ADDRESS")).count());
+                }
+            });
+            assertEquals(took.size(), 3, "the headings were not all clicked");
+            assertEquals(moved.get(), 1000, "Set all to Apply did not take every row's address");
+            assertTrue(took.stream().allMatch(ms -> ms < 2000), "Set all on a thousand rows took (ms) " + took);
+        });
+    }
+
+    /**
+     * Set all to Apply judges against the addresses already picked by hand: a row differing both ways, set by hand to
+     * the address the station lists twice, keeps Set all from giving that address to the other row it lists there.
+     *
+     * MUTATION: in `SyncDifferencesWindow.setAllTo`, judge `applicable` against no picks (`Collections.emptyList()`).
+     */
+    @Test(timeOut = 180000)
+    public void testSetAllApplyHonorsAnAddressPickedByHand() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            here(rig, "SW X", 50, "SW Y", 51);
+            // The station has X renamed at 50, and both X and Y at 52
+            list.set(station("SW X2", 50, "SW X", 52, "SW Y", 52));
+
+            List<String> problems = new ArrayList<>();
+            assertNotNull(pressSync(rig, ui, SyncTable.canceling(t ->
+            {
+                AbstractButton apply = Components.withText(t.dialog, I18n.t("sync.ui.apply"));
+                apply.doClick();
+                check(problems, selected(t), Arrays.asList("SW X:ASK", "SW Y:ADDRESS"), "Set all with nothing picked");
+                Components.withText(t.dialog, I18n.t("sync.ui.askAgain")).doClick();
+                t.in("SW X", "ADDRESS", AbstractButton.class).doClick();
+                apply.doClick();
+                check(problems, selected(t), Arrays.asList("SW X:ADDRESS", "SW Y:ASK"), "Set all after X's by hand");
+                check(problems, visible(t, "SW X", "collision"), false, "X's triangle");
+            }), null), "the table did not open");
+            assertEquals(problems, new ArrayList<String>(), "Set all over a pick by hand");
+        });
+    }
+
+    /**
+     * Apply renames in the safe order, so a chain asks no delete question, and a rename onto a held name goes through
+     * the delete question: its mark counts the multi-unit it deletes, Yes deletes it and renames, and the deleted
+     * locomotive's own row is left with a line saying an earlier answer took it, not counted as still to answer (E39,
+     * E49).
+     *
+     * MUTATION: in `TrainControlUI.apply`, leave out the sort, so P's rename deletes Q; or log every row left as
+     * changed meanwhile (leave out `loc.syncRowAnsweredAway`).
+     */
+    @Test(timeOut = 180000)
+    public void testAppliedRenamesFollowTheChainAndTheDeleteQuestion() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            here(rig, "SW P", 80, "SW Q", 81, "SW D", 82, "SW Held", 83, "SW Member", 84);
+            rig.model.getLocByName("SW Held").setLinkedLocomotives(
+                java.util.Collections.singletonMap("SW Member", 1.0));
+            Locomotive p = rig.model.getLocByName("SW P"), q = rig.model.getLocByName("SW Q"),
+                d = rig.model.getLocByName("SW D"), held = rig.model.getLocByName("SW Held");
+            // The station renamed P to Q, Q to R and D to Held
+            list.set(station("SW Q", 80, "SW R", 81, "SW Held", 82, "SW Member", 84));
+
+            List<String> problems = new ArrayList<>(), said = new ArrayList<>();
+            assertNotNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW P", "RENAME", "SW Q", "RENAME",
+                "SW D", "RENAME", "SW Held", "KEEP"), t -> check(problems, t.in("SW D", "deletes", JLabel.class)
+                .getText(), I18n.f("sync.ui.deletes", "SW Held +1"), "D's mark")), said), "the table did not open");
+
+            List<String> log = rig.takeLog();
+            assertEquals(Arrays.asList(p.getName(), q.getName(), d.getName()), Arrays.asList("SW Q", "SW R", "SW Held"),
+                "the renames: " + said);
+            assertFalse(rig.model.getLocomotives().contains(held), "Yes to the delete question did not delete SW Held");
+            assertTrue(log.contains(I18n.f("loc.syncRowAnsweredAway", "SW Held"))
+                && !log.contains(I18n.f("loc.syncRowChanged", "SW Held")), "SW Held's row: " + log);
+            assertTrue(!said.isEmpty() && said.get(said.size() - 1).endsWith(I18n.f("ui.infoSyncAnswers", 3, 0, 0, 0,
+                0)), "the finishing message: " + said);
+            assertTrue(problems.isEmpty(), problems.toString());
+        });
+    }
+
+    /**
+     * The list shows scroll bars wherever it does not fit: a row wider than the screen opens inside it, scrolling
+     * sideways; in a window resized smaller both bars show, and the list follows a larger window.
+     *
+     * MUTATION: in `ChoiceTable.getPreferredSize`, leave out the cap on the width, and the window opens wider than the
+     * screen.
+     */
+    @Test(timeOut = 180000)
+    public void testTheListScrollsWhereverItDoesNotFit() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            List<String> problems = new ArrayList<>();
+            showing(ui, made(rig, 10, false, String.join(" ", java.util.Collections.nCopies(150, "Wide"))), t ->
+            {
+                Rectangle screen = t.dialog.getGraphicsConfiguration().getBounds();
+                JScrollPane scrolling = Components.find(t.dialog, ChoiceTable.class, c -> true);
+                check(problems, Arrays.asList(screen.contains(t.dialog.getBounds()),
+                    scrolling.getHorizontalScrollBar().isVisible(), t.dialog.isResizable()),
+                    Arrays.asList(true, true, true), "a wide row: inside the screen, scrolling sideways, resizable");
+                t.dialog.setSize(420, 260);
+                t.dialog.validate();
+                check(problems, Arrays.asList(scrolling.getHorizontalScrollBar().isVisible(),
+                    scrolling.getVerticalScrollBar().isVisible()), Arrays.asList(true, true),
+                    "a small window's scroll bars");
+                int small = scrolling.getWidth();
+                t.dialog.setSize(820, 600);
+                t.dialog.validate();
+                check(problems, scrolling.getWidth() - small, 400, "the list's width following the window's");
+            });
+            assertTrue(problems.isEmpty(), problems.toString());
+        });
+    }
+
+    /**
+     * Only a press asks: a route edit's sync, the owed sync and the model's own sync, with the station differing on a
+     * name and an address, open no table and change neither, while the Locomotive Selector's Sync opens the table as
+     * the menu's does.
+     *
+     * MUTATION: in `TrainControlUI.doSync`, ask on every sync (`pressedSync(c != null ? c : this, answered)`); or in
+     * `LocomotiveSelector.SyncWithCSActionPerformed`, sync without asking (`doSync(null)`).
+     */
+    @Test(timeOut = 240000)
+    public void testOnlyAPressedSyncAsks() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            here(rig, "SW Auto", 90, "SW Far", 91);
+            list.set(station("SW Auto2", 90, "SW Far", 92));
+            rig.model.setNetworkCommState(true);
+            try (SyncTable watching = SyncTable.answering(SyncTable.answer()))
+            {
+                // As a route edit syncs after its write, off the event thread
+                assertTrue(ui.syncAfterAnEdit() >= 0, "precondition: the route edit's sync failed");
+                ((AtomicBoolean) support.Reflect.field(TrainControlUI.class, "syncOwed").get(ui)).set(true);
+                int syncs = rig.station.requests("/config/geraet.vrs");
+                SwingUtilities.invokeLater(() -> ui.doSync(null));
+                assertTrue(Components.waitFor(() -> rig.station.requests("/config/geraet.vrs") > syncs, 60000),
+                    "the owed sync never ran");
+                assertTrue(syncEnded(ui), "the owed sync never ended");
+                assertTrue(rig.model.syncWithCS2() >= 0, "precondition: the model's own sync failed");
+                Components.settle();
+                assertEquals(watching.shown().size(), 0, "a sync nobody pressed opened the table");
+            }
+            assertEquals(Arrays.asList(rig.model.getLocByName("SW Auto") != null, rig.model.getLocByName("SW Auto2"),
+                rig.model.getLocByName("SW Far").getAddress()), Arrays.asList(true, null, 91),
+                "a sync nobody pressed changed a name or an address");
+
+            try (Answering answering = Answering.start(m -> Answering.pressAt(0));
+                SyncTable table = SyncTable.canceling(null))
+            {
+                AbstractButton sync = (AbstractButton) support.Reflect.get(LocomotiveSelector.class,
+                    ui.getLocSelector(), "SyncWithCS");
+                SwingUtilities.invokeLater(sync::doClick);
+                assertTrue(Components.waitFor(() -> !table.shown().isEmpty(), 60000),
+                    "the Locomotive Selector's Sync opened no table");
+                assertTrue(syncEnded(ui), "the pressed sync never ended");
+                AskingWindows.awaitAnswered();
+                assertEquals(table.shown().get(0).rows, Arrays.asList("SW Auto", "SW Far"), "the selector's table");
+            }
+        });
+    }
+
+    /** n DCC locomotives here, the first's name ending in `tail`, each differing by name, or by a free address. */
+    private static RenameProposals made(StationRig rig, int n, boolean addressed, String tail)
+    {
+        List<RenameProposals.Row> rows = new ArrayList<>();
+        java.util.Map<Integer, List<MarklinLocomotive>> held = new java.util.HashMap<>();
+        for (int i = 1; i <= n; i++)
+        {
+            MarklinLocomotive l = new MarklinLocomotive(rig.model, i, Locomotive.decoderType.DCC, "SW " + i
+                + (i == 1 ? tail : ""));
+            MarklinLocomotive at = new MarklinLocomotive(rig.model, i + 5000, Locomotive.decoderType.DCC, "SW " + i);
+            held.put(l.getIntUID(), new ArrayList<>(Arrays.asList(l)));
+            rows.add(new RenameProposals.Row(l, addressed ? null : "SW Station " + i, addressed ? i + 5000 : null, null,
+                null, null, null, l.getIntUID(), (addressed ? at : l).getIntUID()));
+        }
+        return new RenameProposals(new ArrayList<>(), 0, new java.util.HashMap<>(), rows, held);
+    }
+
+    /** Opens the table on these rows over ui, hands it to `look`, cancels it and waits until that is done. */
+    private static void showing(TrainControlUI ui, RenameProposals rows, Consumer<SyncTable.Shown> look)
+    {
+        try (SyncTable table = SyncTable.canceling(look))
+        {
+            SwingUtilities.invokeLater(() -> SyncDifferencesWindow.ask(ui, rows));
+            assertTrue(Components.waitFor(() -> !table.shown().isEmpty(), 60000), "the table did not open");
+            Components.settle();
+        }
+    }
+
+    /** Whether the first label reading `text` is bold. */
+    private static boolean bold(SyncTable.Shown t, String text)
+    {
+        return Components.find(t.dialog, JLabel.class, l -> text.equals(l.getText())).getFont().isBold();
+    }
+
+    /** Where the heading reading key's text starts, across the window. */
+    private static int x(SyncTable.Shown t, String key)
+    {
+        javax.swing.JComponent h = Components.find(t.dialog, javax.swing.JComponent.class, c -> I18n.t(key).equals(
+            c instanceof JLabel ? ((JLabel) c).getText() : c instanceof AbstractButton ? ((AbstractButton) c).getText()
+            : null));
+        return SwingUtilities.convertPoint(h, 0, 0, t.dialog).x;
     }
 
     private static void check(List<String> problems, Object got, Object expected, String what)

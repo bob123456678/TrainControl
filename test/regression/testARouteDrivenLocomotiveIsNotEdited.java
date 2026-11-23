@@ -336,6 +336,12 @@ public class testARouteDrivenLocomotiveIsNotEdited
         int renames = apply.indexOf("renamed(c, r)", asks);
 
         assertTrue(asks > 0 && renames > asks, "the name proposal renames before it asks (OB-287)");
+
+        // And again of both names just before the rename, as a route may have begun since the second read
+        String renamed = SourceOf.declaration("private String renamed(Component c, RenameProposals.Row r)");
+        int again = renamed.indexOf("RunGates.refuseWhileARouteDrivesIt(this, c, newName)");
+        assertTrue(renamed.contains("RunGates.refuseWhileARouteDrivesIt(this, c, currentName)") && again > 0
+            && renamed.indexOf("renameLoc(", again) > again, "the rename does not ask of both names just before it");
     }
 
     /** The locomotive and route of this claim. */
