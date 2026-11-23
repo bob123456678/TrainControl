@@ -175,7 +175,7 @@ public final class ChoiceTable extends JScrollPane
      * A heading that acts on every row when clicked, drawn as a link: underlined, with the hand pointer.  It takes the
      * keyboard focus, and Enter presses it as Space does rather than the window's default button.
      */
-    public static JButton link(String text, String tip, Runnable action)
+    public static JButton link(String text, Runnable action)
     {
         JButton b = new JButton(text);
         b.setFont(UiStyle.LABEL_FONT.deriveFont(Collections.singletonMap(TextAttribute.UNDERLINE,
@@ -184,7 +184,6 @@ public final class ChoiceTable extends JScrollPane
         b.setContentAreaFilled(false);
         b.setBorder(BorderFactory.createEmptyBorder());
         b.setCursor(HandPointer.cursor());
-        b.setToolTipText(tip);
         b.addActionListener(e -> action.run());
         b.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "press");
         b.getActionMap().put("press", new AbstractAction()

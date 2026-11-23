@@ -64,12 +64,12 @@ public final class SyncDifferencesWindow
         this.proposals = proposals;
         // A linked heading sets every row it can to its answer, as a row's own pick would
         this.table = new ChoiceTable(
-            head(setAllTo("sync.ui.thisComputer", "sync.ui.keep", (r, can) -> Answer.KEEP), "sync.ui.tipKeep"),
-            head(setAllTo("sync.ui.centralStation", "sync.ui.apply", (r, can) -> !can.contains(r) ? null
+            head(setAllTo("sync.ui.thisComputer", (r, can) -> Answer.KEEP), "sync.ui.tipKeep"),
+            head(setAllTo("sync.ui.centralStation", (r, can) -> !can.contains(r) ? null
             : r.asksName() ? Answer.RENAME : Answer.ADDRESS), "sync.ui.tipApply"),
-            head(setAllTo("sync.ui.keepBoth", "sync.ui.keepBoth", (r, can) -> Answer.BOTH), "sync.ui.tipBoth"),
-            head(setAllTo("sync.ui.ignore", "sync.ui.ignore", (r, can) -> Answer.IGNORE), "sync.ui.tipIgnore"),
-            head(setAllTo("sync.ui.askAgain", "sync.ui.askAgain", (r, can) -> Answer.ASK), "sync.ui.tipAsk"));
+            head(setAllTo("sync.ui.keepBoth", (r, can) -> Answer.BOTH), "sync.ui.tipBoth"),
+            head(setAllTo("sync.ui.ignore", (r, can) -> Answer.IGNORE), "sync.ui.tipIgnore"),
+            head(setAllTo("sync.ui.askAgain", (r, can) -> Answer.ASK), "sync.ui.tipAsk"));
         for (Row r : rows) this.table.addRow(addRow(r));
         // An mfx locomotive the station has under its name at another address starts on Apply, where Set all would
         List<Row> mfx = new ArrayList<>();
@@ -183,7 +183,7 @@ public final class SyncDifferencesWindow
         // Keep Both adds the station's locomotive, so only where its name is free here; elsewhere it is grayed
         choice(r, radios, group, Answer.BOTH, I18n.f("sync.ui.keepBothSaid", name, r.stationName), !r.asksName()
             ? I18n.t("sync.ui.bothOnlyRenamed") : r.nameHolder != null ? I18n.f("sync.ui.bothNameTaken", r.stationName)
-            : r.station == null ? I18n.t("sync.ui.bothNothingToAdd") : null);
+            : null);
         choice(r, radios, group, Answer.IGNORE, I18n.f("sync.ui.ignoreSaid", name), null);
         choice(r, radios, group, Answer.ASK, I18n.f("sync.ui.askAgainSaid", name), null);
         radios.get(l.isSyncIgnored() ? Answer.IGNORE : Answer.ASK).setSelected(true);
@@ -258,9 +258,9 @@ public final class SyncDifferencesWindow
     }
 
     /** A linked heading: each row not ignored gets what `to` gives it, from the rows Apply may take, if enabled. */
-    private JButton setAllTo(String key, String answer, BiFunction<Row, Set<Row>, Answer> to)
+    private JButton setAllTo(String key, BiFunction<Row, Set<Row>, Answer> to)
     {
-        return ChoiceTable.link(I18n.t(key), I18n.f("sync.ui.setAllTip", I18n.t(answer)), () ->
+        return ChoiceTable.link(I18n.t(key), () ->
         {
             Set<Row> can = this.proposals.applicable(this.choices.keySet(), chosen(Answer.ADDRESS));
             this.settingAll = true;

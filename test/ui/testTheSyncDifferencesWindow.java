@@ -148,7 +148,7 @@ public class testTheSyncDifferencesWindow
                 AbstractButton apply = Components.withText(t.dialog, I18n.t("sync.ui.centralStation"));
                 check(problems, Arrays.asList(SwingUtilities.getAncestorOfClass(ChoiceTable.class, apply) != null,
                     HandPointer.isHand(apply.getCursor()), apply.isFocusable(), apply.getToolTipText()), Arrays.asList(
-                    true, true, true, I18n.f("sync.ui.setAllTip", I18n.t("sync.ui.apply"))), "Apply's heading a link");
+                    true, true, true, null), "Apply's heading a link, its (i) saying what a click does");
                 // Said only while D's Apply is picked: not on Ask Again, there after Apply, gone on Keep As Is
                 check(problems, visible(t, "SW D", "deletes"), false, "D's deleting mark on Ask Again");
                 apply.doClick();
@@ -975,8 +975,7 @@ public class testTheSyncDifferencesWindow
 
     /**
      * Keep Both shows on every row, grayed and never picked where it cannot apply, its hover and screen reader saying
-     * why: a row differing by address only, a name another locomotive here holds, no station locomotive to add.  No
-     * heading's Set all picks it.
+     * why: a row differing by address only, or a name another locomotive here holds.  No heading's Set all picks it.
      *
      * MUTATION: in `SyncDifferencesWindow.addRow`, give Keep Both no reason (null), and it is lit on every row.
      */
@@ -1009,9 +1008,6 @@ public class testTheSyncDifferencesWindow
                 check(problems, selected(t).stream().filter(n -> n.endsWith(":BOTH")).collect(java.util.stream
                     .Collectors.toList()), Arrays.asList("SW Shunter:BOTH"), "Keep Both's heading, only where lit");
             }), null), "the table did not open");
-            String none = I18n.t("sync.ui.bothNothingToAdd");
-            showing(ui, made(rig, 1, false, ""), t -> check(problems, both(t, "SW 1"), Arrays.asList(false, none, none),
-                "Keep Both with no station locomotive to add"));
         });
         assertTrue(problems.isEmpty(), problems.toString());
     }

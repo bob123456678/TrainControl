@@ -766,7 +766,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
             javax.swing.AbstractButton apply = rowsFor(old).get(0).in(old, "RENAME", javax.swing.AbstractButton.class);
             assertFalse(Components.onTheEventThread(apply::isEnabled), "Apply was not grayed");
             assertEquals(Components.onTheEventThread(apply::getToolTipText),
-                I18n.t("loc.ui.errorLocomotiveNameUnusable"), "the grayed Apply does not say why");
+                I18n.t("sync.ui.whyNameUnusable"), "the grayed Apply does not say why");
 
             notRenamed(rig, old, unusable, "loc.syncLeftToAsk");
         });

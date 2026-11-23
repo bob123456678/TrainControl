@@ -1401,21 +1401,24 @@ public class MarklinControlStation implements ViewListener, ModelListener
         }
 
         // Not offered: a name the station lists twice, which a second rename would delete the first onto, and after a
-        // partial read one that deletes, as the name held may be the station's in a record that would not read
-        Map<String[], String> whyNot = new java.util.LinkedHashMap<>();
+        // partial read one that deletes, as the name held may be the station's in a record that would not read; each
+        // with its log line's key and the table's shorter reason's
+        Map<String[], String[]> whyNot = new java.util.LinkedHashMap<>();
         List<String[]> offered = new ArrayList<>();
         for (String[] p : renameCandidates.values())
         {
-            String key = stationNames.get(p[1]) > 1 ? "loc.renameNameListedTwice"
-                : partial && this.locDB.hasName(p[1]) ? "loc.renameAfterPartialRead" : null;
-            if (key == null) offered.add(p);
-            else whyNot.put(p, I18n.f(key, p[0], p[1]));
+            String[] keys = stationNames.get(p[1]) > 1 ? new String[] {"loc.renameNameListedTwice",
+                "sync.ui.whyListedTwice"} : partial && this.locDB.hasName(p[1]) ? new String[] {
+                "loc.renameAfterPartialRead", "sync.ui.whyPartialRead"} : null;
+            if (keys == null) offered.add(p);
+            else whyNot.put(p, keys);
         }
         List<String[]> ordered = orderRenameProposals(offered);
         // Whatever ordering dropped was a cycle
-        for (String[] p : offered) if (!ordered.contains(p)) whyNot.put(p, I18n.f("loc.renameCycleRefused", p[0], p[1]));
+        for (String[] p : offered)
+            if (!ordered.contains(p)) whyNot.put(p, new String[] {"loc.renameCycleRefused", "sync.ui.whyCycle"});
         refused += whyNot.size();
-        if (log) for (String why : whyNot.values()) this.log(why);
+        if (log) whyNot.forEach((p, keys) -> this.logf(keys[0], p[0], p[1]));
         Set<MarklinLocomotive> differing = new HashSet<>(renameCandidates.keySet());
         differing.addAll(addressedAt.keySet());
         List<RenameProposals.Row> rows = new ArrayList<>();
@@ -1425,9 +1428,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             MarklinLocomotive at = addressedAt.get(here);
             String to = p == null ? null : p[1], now = whyLeftAsItIs(here);
             MarklinRoute driving = to == null ? null : this.runningRouteDriving(to);
-            String whyNoRename = to == null ? null : whyNot.containsKey(p) ? whyNot.get(p) : now != null ? now
-                : driving != null ? I18n.f("loc.ui.errorLocomotiveDrivenByARunningRoute", to, driving.getName())
-                : !RouteCommand.isNameUsable(to) ? I18n.t("loc.ui.errorLocomotiveNameUnusable") : null;
+            String whyNoRename = to == null ? null : whyNot.containsKey(p) ? I18n.f(whyNot.get(p)[1], p[0], p[1])
+                : now != null ? now : driving != null ? I18n.f("sync.ui.whyRouteDriving", to, driving.getName())
+                : !RouteCommand.isNameUsable(to) ? I18n.t("sync.ui.whyNameUnusable") : null;
             rows.add(new RenameProposals.Row(here, to, at == null ? null : at.getAddress(), whyNoRename,
                 at == null ? null : now, to == null ? null : this.locDB.getByName(to), stationOf.get(here), here.getIntUID(),
                 at == null ? here.getIntUID() : at.getIntUID()));
@@ -2198,7 +2201,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         MarklinRoute driving = this.runningRouteDriving(here.getName());
         return this.isAutonomyRunning() ? I18n.t("autolayout.ui.errorCannotEditLocomotivesWhileRunning")
-            : driving != null ? I18n.f("loc.ui.errorLocomotiveDrivenByARunningRoute", here.getName(), driving.getName())
+            : driving != null ? I18n.f("sync.ui.whyRouteDriving", here.getName(), driving.getName())
             : LocomotiveSettings.hasSpeed(this, here) ? I18n.f("loc.syncLeftMoving", here.getName()) : null;
     }
 
