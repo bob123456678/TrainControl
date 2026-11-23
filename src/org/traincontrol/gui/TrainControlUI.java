@@ -6360,14 +6360,14 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         {
             // A pressed Sync asks about this locomotive's address at the station first, as the main Sync does: read off
             // the event thread behind the spinner, asked on it
-            Map<String, Integer> addresses = asked != null ? stationAddresses(asked) : null;
+            Map<String, Integer> addresses = asked != null ? new ManualSync(this).stationAddresses(asked) : null;
             SwingUtilities.invokeLater(() -> {
                 LayoutDiagram before = shownDiagram();
                 int synced;
 
                 try
                 {
-                    askAboutItsAddress(asked, l, addresses);
+                    ManualSync.askAboutItsAddress(asked, l, addresses);
                     synced = this.syncWithCS2();
                 }
                 finally
@@ -7234,7 +7234,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Runs `sync` holding the running flag, or turns it away while another holds it; one owed meanwhile runs after. */
-    private int holdingTheSync(java.util.function.IntSupplier sync)
+    int holdingTheSync(java.util.function.IntSupplier sync)
     {
         if (!syncInFlight.compareAndSet(false, true))
         {
@@ -7253,7 +7253,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** The sync itself, the running flag held by the caller. */
-    private int syncHolding()
+    int syncHolding()
     {
         // A sync starting now reads every edit made so far; one owed while it runs is kept for the next
         syncOwed.set(false);
@@ -14618,7 +14618,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         final String why = reason != null ? reason : this.model.getLastSyncError();
         final Object[] options = { I18n.t("ui.syncFailedRetryButton"), I18n.t("ui.syncFailedCloseButton") };
-
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             if (choseFirst(c, I18n.f("ui.syncFailedRetry", why == null ? I18n.t("ui.errorSyncFailedSeeLog")
@@ -14639,44 +14638,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 JOptionPane.showMessageDialog(c, I18n.t("ui.infoSyncAlreadyRunning")));
         }
         else if (synced == -1) offerSyncRetry(c, null, retry);
-
         return synced < 0;
     }
 
     /** Says on c that part of the station's data could not be read, when the sync that just ran left part as it was. */
     private void saidTheSyncWasPartial(Component c, int synced)
     {
-        if (this.model.wasLastSyncPartial()) saySynced(c, synced);
-    }
-
-    /** Says on c, under the Sync's title, what the sync just ended added, the answers given that are not zero. */
-    private void saySynced(Component c, int synced, int... answers)
-    {
-        String text = syncSummary(synced - this.model.getLastSyncRoutes(), this.model.getLastSyncRoutes(),
-            this.model.wasLastSyncPartial(), answers);
-        javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(c, text, I18n.t("sync.ui.title"),
-            JOptionPane.INFORMATION_MESSAGE));
-    }
-
-    /**
-     * A sync's closing message: the locomotives and routes it added, then of the table's answers (renamed, re-addressed,
-     * kept, ignored, waiting) those not zero, and the partial read's sentence; with none of these, that all matches.
-     */
-    public static String syncSummary(int locomotives, int routes, boolean partial, int... answers)
-    {
-        List<String> added = new ArrayList<>(), said = new ArrayList<>();
-        if (locomotives > 0) added.add(I18n.f(locomotives == 1 ? "ui.infoSyncLocomotiveAdded"
-            : "ui.infoSyncLocomotivesAdded", locomotives));
-        if (routes > 0) added.add(I18n.f(routes == 1 ? "ui.infoSyncRouteAdded" : "ui.infoSyncRoutesAdded", routes));
-        String[] kinds = {"ui.infoSyncRenamed", "ui.infoSyncMoved", "ui.infoSyncKept", "ui.infoSyncIgnored",
-            "ui.infoSyncWaiting"};
-        for (int i = 0; i < answers.length; i++) if (answers[i] > 0) said.add(I18n.f(kinds[i], answers[i]));
-        if (!partial && added.isEmpty() && said.isEmpty()) return I18n.t("ui.infoSyncNothingDiffers");
-        List<String> parts = new ArrayList<>(Arrays.asList(I18n.t("ui.infoSyncComplete")));
-        if (!added.isEmpty()) parts.add(String.join("\n", added));
-        if (!said.isEmpty()) parts.add(String.join("\n", said));
-        if (partial) parts.add(I18n.t("ui.infoSyncPartial"));
-        return String.join("\n\n", parts);
+        if (this.model.wasLastSyncPartial()) new ManualSync(this).saySynced(c, synced);
     }
 
     public void doSync(Component c)
@@ -14709,7 +14677,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 final int[] answered = new int[5];
                 try
                 {
-                    syncResult = c == null ? this.runTheOwedSync() : this.pressedSync(c, answered);
+                    syncResult = c == null ? this.runTheOwedSync() : new ManualSync(this).pressedSync(c, answered);
                 }
                 catch (RuntimeException e)
                 {
@@ -14731,265 +14699,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // Left OUT of the pass: both go through their own renderer first.  See singlePass.
                 this.repaintLoc(true, null);
                 this.repaintLayout();
-                if (c != null && !saidTheSyncDidNotRun(c, r, () -> doSync(c))) saySynced(c, r, answered);
+                if (c != null && !saidTheSyncDidNotRun(c, r, () -> doSync(c)))
+                    new ManualSync(this).saySynced(c, r, answered);
             }).start();
         });
-    }
-
-    /**
-     * The pressed Sync (FR-249): read, table, answers and sync under one hold of the flag; SYNC_REFUSED when canceled.
-     */
-    private int pressedSync(Component c, int[] answered)
-    {
-        return holdingTheSync(() ->
-        {
-            List<RenameProposals.Row> taken = new ArrayList<>();
-            try
-            {
-                int[] n = askAndApply(c, taken);
-                if (n == null)
-                {
-                    this.model.logf("loc.syncCanceled");
-                    return SYNC_REFUSED;
-                }
-                int synced = RunGates.refuseALinkOrSyncWhileEditorOpen(this, null) ? SYNC_REFUSED : syncHolding();
-                final LocomotiveSettingsFrame open = this.locomotiveSettings;
-                if (open != null) SwingUtilities.invokeLater(open::followTheSync);
-                if (n.length == 0 || synced < 0) return synced;
-                int moved = (int) taken.stream().filter(r -> r.loco.getAddress() == r.stationAddress).count();
-                System.arraycopy(new int[] {n[1], moved, n[2], n[3], n[4] + taken.size() - moved}, 0, answered, 0, 5);
-                return synced + n[0];
-            }
-            finally
-            {
-                // A station's address this Sync was told to use is for this sync alone
-                for (RenameProposals.Row r : taken) r.loco.setTakenStationAddress(null);
-            }
-        });
-    }
-
-    /**
-     * Reads, asks over c and applies, re-addressed rows into `taken`: apply's counts, none with no table, null if canceled.
-     */
-    private int[] askAndApply(Component c, List<RenameProposals.Row> taken)
-    {
-        if (!this.model.getNetworkCommState()) return new int[0];
-        try
-        {
-            RenameProposals asked = readBehindTheSpinner(c, true);
-            // Each row's locomotive by its name as asked, so one renamed or replaced meanwhile is left
-            Map<Locomotive, String> names = new HashMap<>();
-            for (RenameProposals.Row r : asked.getRows()) names.put(r.loco, r.loco.getName());
-            Window asking = c instanceof Window ? (Window) c : SwingUtilities.getWindowAncestor(c);
-            List<Map<RenameProposals.Row, SyncDifferencesWindow.Answer>> answers = new ArrayList<>();
-            // Over the window that asked, or this one once that is gone
-            SwingUtilities.invokeAndWait(() -> answers.add(SyncDifferencesWindow.ask(asking != null
-                && asking.isShowing() ? asking : this, asked)));
-            Map<RenameProposals.Row, SyncDifferencesWindow.Answer> a = answers.get(0);
-            if (a == null) return null;
-            if (asked.getProposals().isEmpty() && !asked.hasRefusals())
-                this.model.logf("loc.ui.infoNoLocomotivesToRename");
-            // Read again once anything was answered, so a row the station changed meanwhile is left; unread, the
-            // locomotives alone are checked
-            RenameProposals again = a.values().stream().anyMatch(x -> x != SyncDifferencesWindow.Answer.ASK)
-                ? readBehindTheSpinner(c, false) : null;
-            RenameProposals current = again != null ? again : asked;
-            List<int[]> n = new ArrayList<>();
-            SwingUtilities.invokeAndWait(() -> n.add(apply(c, asked, current, a, names, taken)));
-            return a.isEmpty() ? new int[0] : n.get(0);
-        }
-        catch (Exception e)
-        {
-            // Answers applied before a throw stay, and the sync still runs
-            this.model.log(e);
-            return new int[0];
-        }
-    }
-
-    /** The station's rename proposals, read behind the spinner over c's window; quietly, null if unread, unless `log`. */
-    private RenameProposals readBehindTheSpinner(Component c, boolean log) throws Exception
-    {
-        BusyDialog.Closer busy = BusyDialog.showUntilClosed(c instanceof Window ? (Window) c
-            : SwingUtilities.getWindowAncestor(c), I18n.t("ui.busySyncingWithCS"));
-        try
-        {
-            return this.model.getRenameProposals(log);
-        }
-        finally
-        {
-            // Posted before the questions, so it is down before they come up
-            busy.close();
-        }
-    }
-
-    /**
-     * Applies the answers over c, renames first, and leaves a row changed since asked; the counts pressedSync reads.
-     */
-    private int[] apply(Component c, RenameProposals asked, RenameProposals now,
-        Map<RenameProposals.Row, SyncDifferencesWindow.Answer> answers, Map<Locomotive, String> names,
-        List<RenameProposals.Row> taken)
-    {
-        // A Keep the station no longer offers is forgotten, so nothing is left to hold back a later offer
-        Map<Locomotive, RenameProposals.Row> differing = new HashMap<>(), current = new HashMap<>();
-        for (RenameProposals.Row r : asked.getRows()) differing.put(r.loco, r);
-        for (RenameProposals.Row r : now.getRows()) current.put(r.loco, r);
-        for (Locomotive l : this.model.getLocomotives())
-        {
-            RenameProposals.Row r = differing.get(l);
-            String kept = l.getDeclinedStationName();
-            if (kept != null && (r == null || !kept.equals(r.stationName))) l.setDeclinedStationName(null);
-            else if (kept != null && !l.isSyncIgnored()) this.model.logf("loc.renameKeptAsAnswered", l.getName(), kept);
-            if (r == null || !java.util.Objects.equals(r.stationAddress, l.getDeclinedStationAddress()))
-                l.setDeclinedStationAddress(null);
-        }
-        // A run begun since the read refuses every rename, said once
-        boolean running = answers.containsValue(SyncDifferencesWindow.Answer.RENAME)
-            && RunGates.refuseWhileAutonomyRunning(this, c);
-        List<String> order = new ArrayList<>();
-        for (String[] p : asked.getProposals()) order.add(p[0]);
-        List<RenameProposals.Row> rows = new ArrayList<>(answers.keySet());
-        rows.sort(java.util.Comparator.comparingInt(r -> answers.get(r) == SyncDifferencesWindow.Answer.RENAME
-            ? order.indexOf(names.get(r.loco)) : answers.get(r) == SyncDifferencesWindow.Answer.BOTH ? order.size()
-            : order.size() + 1));
-        // Each locomotive still under its name as asked, so one an earlier answer below takes it from is said so
-        Set<Locomotive> unchanged = new HashSet<>();
-        for (RenameProposals.Row r : rows)
-            if (this.model.getLocByName(names.get(r.loco)) == r.loco) unchanged.add(r.loco);
-        int[] n = new int[5];
-        for (RenameProposals.Row r : rows)
-        {
-            SyncDifferencesWindow.Answer a = answers.get(r);
-            String name = names.get(r.loco);
-            RenameProposals.Row f = current.get(r.loco);
-            boolean gone = this.model.getLocByName(name) != r.loco;
-            if (a != SyncDifferencesWindow.Answer.IGNORE) r.loco.setSyncIgnored(false);
-            if (a != SyncDifferencesWindow.Answer.ASK && gone && unchanged.contains(r.loco))
-            {
-                this.model.logf("loc.syncRowAnsweredAway", name);
-                continue;
-            }
-            if (a == SyncDifferencesWindow.Answer.ASK || gone || f == null
-                || !java.util.Objects.equals(f.stationName, r.stationName)
-                || !java.util.Objects.equals(f.stationAddress, r.stationAddress))
-            {
-                this.model.logf(a == SyncDifferencesWindow.Answer.ASK ? "loc.syncLeftToAsk" : "loc.syncRowChanged", name);
-                n[4]++;
-                continue;
-            }
-            switch (a)
-            {
-                case KEEP:
-                    if (r.asksName()) this.model.logf(keptAfterNo(r.loco, r.stationName), name, r.stationName);
-                    if (r.asksAddress()) r.loco.setDeclinedStationAddress(r.stationAddress);
-                    n[2]++;
-                    break;
-                case IGNORE:
-                    r.loco.setSyncIgnored(true);
-                    this.model.logf("loc.syncIgnored", name);
-                    n[3]++;
-                    break;
-                case BOTH:
-                    // Its name kept, so the two at one address are not offered as a rename next time
-                    boolean added = this.model.addStationLocomotive(f.station) != null;
-                    if (added) r.loco.setDeclinedStationName(r.stationName);
-                    n[added ? 0 : 4]++;
-                    break;
-                case ADDRESS:
-                    r.loco.setDeclinedStationAddress(null);
-                    r.loco.setTakenStationAddress(r.stationAddress);
-                    taken.add(r);
-                    break;
-                default:
-                    String why = running ? I18n.f("loc.renameNotApplied", name, r.stationName) : f.whyNot(true);
-                    String outcome = why != null ? null : renamed(c, r);
-                    if (why != null) this.model.log(why);
-                    else this.model.logf(outcome, name, r.stationName);
-                    n["loc.renameApplied".equals(outcome) ? 1 : "loc.renameKept".equals(outcome) ? 2 : 4]++;
-            }
-        }
-        return n;
-    }
-
-    /** Renames r's locomotive to the station's name, through the delete question for a name held here; the log key. */
-    private String renamed(Component c, RenameProposals.Row r)
-    {
-        String currentName = r.loco.getName(), newName = r.stationName;
-        Locomotive l = r.loco;
-        // Like the other doors into `renameLoc`, asked of both names just before it: a route may have begun meanwhile
-        if (RunGates.refuseWhileARouteDrivesIt(this, c, currentName)
-            || RunGates.refuseWhileARouteDrivesIt(this, c, newName)) return "loc.renameNotApplied";
-        if (model.getLocByName(newName) != null) this.locomotiveActions.deleteLocBecause(
-            I18n.f("loc.ui.confirmRenameOntoLocomotive", currentName, newName), newName, c);
-        if (model.getLocByName(newName) != null)
-        {
-            // Only a No to the delete question is kept, never a refusal the user could not answer
-            int answer = this.locomotiveActions.answered;
-            return answer == JOptionPane.NO_OPTION ? keptAfterNo(l, newName)
-                : answer == JOptionPane.CLOSED_OPTION ? "loc.renameClosed" : "loc.renameNotApplied";
-        }
-        model.renameLoc(currentName, newName);
-        l.setDeclinedStationName(null);
-        clearCopyTarget();
-        repaintLoc(true, null);
-        repaintMappings(null, false);
-        this.refreshRouteList();
-        selector.refreshLocSelectorList();
-        if (this.model.hasAutoLayout())
-        {
-            this.model.getAutoLayout().sanitizeMultiUnits(l);
-            this.model.getAutoLayout().refreshUI();
-            // And the station labels, as the rename dialog does (OB-081)
-            this.updateVisiblePoints();
-            this.repaintAutoLocList(false);
-            this.repaintTimetable();
-        }
-        return "loc.renameApplied";
-    }
-
-    /** Asks over c: Keep (first) or Use the station's address, and marks l so. */
-    private static void askAboutAddress(Component c, Locomotive l, int address)
-    {
-        String keep = I18n.t("loc.ui.optionKeep"), use = I18n.f("loc.ui.optionUseAddress", address);
-        Object[] options = {keep, use};
-        int answer = JOptionPane.showOptionDialog(c, I18n.f("loc.ui.askStationAddress", l.getName(), address,
-            l.getAddress()), I18n.t("loc.ui.dialogStationAddress"), JOptionPane.DEFAULT_OPTION,
-            JOptionPane.PLAIN_MESSAGE, null, options, keep);
-        if (answer == 0) l.setDeclinedStationAddress(address);
-        if (answer == 1) l.setTakenStationAddress(address);
-    }
-
-    /** The station's addresses by name, read over c as `readBehindTheSpinner`; null when not connected or not read. */
-    private Map<String, Integer> stationAddresses(Component c)
-    {
-        if (!this.model.getNetworkCommState()) return null;
-        try
-        {
-            return readBehindTheSpinner(c, true).getAddresses();
-        }
-        catch (Exception e)
-        {
-            this.model.log(e);
-            return null;
-        }
-    }
-
-    /** Asks over c about l's address alone (FR-246). */
-    private static void askAboutItsAddress(Component c, Locomotive l, Map<String, Integer> addresses)
-    {
-        if (addresses == null) return;
-        Integer at = addresses.get(l.getName());
-        // A kept address is not asked again; one the station no longer has is forgotten
-        if (java.util.Objects.equals(at, l.getDeclinedStationAddress())) return;
-        l.setDeclinedStationAddress(null);
-        if (at != null) askAboutAddress(c, l, at);
-    }
-
-    /** A rename answered No, kept on the locomotive so the same offer is not asked again; its log line's key. */
-    private static String keptAfterNo(Locomotive l, String newName)
-    {
-        l.setDeclinedStationName(newName);
-
-        return "loc.renameKept";
     }
 
     /**

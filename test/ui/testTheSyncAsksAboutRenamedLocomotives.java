@@ -54,7 +54,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * the rename; Apply renames it, the sync adds no copy under the station's name, and no second sync follows (the
      * device file is read once per sync).
      *
-     * MUTATION: in `TrainControlUI.askAndApply`, return `new int[0]` before the table, and nothing is asked.
+     * MUTATION: in `ManualSync.askAndApply`, return `new int[0]` before the table, and nothing is asked.
      */
     @Test(timeOut = 180000)
     public void testASyncThatFindsARenameAsksOnceAndRenames() throws Exception
@@ -157,7 +157,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * the busy sign up over the window that asked, and once the list arrives the sync goes on and ends.
      *
      * MUTATION: in `TrainControlUI.doSync`, call `pressedSync(c, answered)` on the event thread, just before the worker
-     * starts, instead of inside it; or, in `readBehindTheSpinner`, show the busy sign over `this`.
+     * starts, instead of inside it; or, in `ManualSync.readBehindTheSpinner`, show the busy sign over `ui`.
      */
     @Test(timeOut = 180000)
     public void testTheRenameReadLeavesTheWindowFreeWhileTheStationIsSlow() throws Exception
@@ -215,7 +215,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * A rename read the station answers with something unreadable is logged and takes its busy sign down, and the sync
      * goes on and ends: a sign left up is a modal window nothing closes.
      *
-     * MUTATION: in `TrainControlUI.readBehindTheSpinner`, take out the `finally` that closes the busy sign.
+     * MUTATION: in `ManualSync.readBehindTheSpinner`, take out the `finally` that closes the busy sign.
      */
     @Test(timeOut = 180000)
     public void testAFailedRenameReadTakesItsBusySignDown() throws Exception

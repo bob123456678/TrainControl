@@ -180,7 +180,7 @@ public class testTheSyncDifferencesWindow
      * Cancel stops the whole Sync: nothing renamed, added or forgotten, the sync does not run and says nothing, and one
      * line is logged; closing the window is the same (E83, E84, E87).
      *
-     * MUTATION: in `TrainControlUI.pressedSync`, run the sync after a canceled table (`n = new int[0]`).
+     * MUTATION: in `ManualSync.pressedSync`, run the sync after a canceled table (`n = new int[0]`).
      */
     @Test(timeOut = 180000)
     public void testCancelOrClosingStopsTheWholeSync() throws Exception
@@ -268,7 +268,7 @@ public class testTheSyncDifferencesWindow
      * table is open is turned away with no second table, and a sync an edit owes meanwhile waits, the Sync's own read
      * after the table taking it (E85, E88, E89).
      *
-     * MUTATION: in `TrainControlUI.pressedSync`, take the flag only for the sync itself (`return syncNow()` in place of
+     * MUTATION: in `ManualSync.pressedSync`, take the flag only for the sync itself (`return syncNow()` in place of
      * `syncHolding()`, without the compareAndSet before the table).
      */
     @Test(timeOut = 180000)
@@ -343,7 +343,7 @@ public class testTheSyncDifferencesWindow
      * A station lost after the table: the local answers are applied (a Keep, a rename), then the sync fails with
      * today's Retry (E90).
      *
-     * MUTATION: in `TrainControlUI.askAndApply`, give up when the second read fails (`return new int[0]` in its catch).
+     * MUTATION: in `ManualSync.askAndApply`, give up when the second read fails (`return new int[0]` in its catch).
      */
     @Test(timeOut = 180000)
     public void testALostStationAfterTheTableKeepsTheAnswersAndOffersRetry() throws Exception
@@ -382,7 +382,7 @@ public class testTheSyncDifferencesWindow
      * The table hangs off the window that asked while it stands, and off the main window once that is gone, never off a
      * closed one (E96).
      *
-     * MUTATION: in `TrainControlUI.askAndApply`, open the table over `asking` whether or not it is showing.
+     * MUTATION: in `ManualSync.askAndApply`, open the table over `asking` whether or not it is showing.
      */
     @Test(timeOut = 180000)
     public void testATableForAClosedWindowHangsOffTheMainWindow() throws Exception
@@ -418,7 +418,7 @@ public class testTheSyncDifferencesWindow
      * An open Locomotive Settings window follows an Apply on its locomotive, so its Save cannot write the old address
      * back; one holding typing is left as typed, as the Sync does not ask about it (E66).
      *
-     * MUTATION: in `TrainControlUI.pressedSync`, leave out the `followTheSync` call.
+     * MUTATION: in `ManualSync.pressedSync`, leave out the `followTheSync` call.
      */
     @Test(timeOut = 240000)
     public void testAnOpenSettingsWindowFollowsAnAppliedAddress() throws Exception
@@ -933,7 +933,7 @@ public class testTheSyncDifferencesWindow
      * The finishing message says only what happened: with nothing different and nothing new, that everything matches;
      * otherwise what was added, by kind, and only the answers that are not zero.
      *
-     * MUTATION: in `TrainControlUI.syncSummary`, list every answer, zero or not; or leave out the everything-matches line.
+     * MUTATION: in `ManualSync.syncSummary`, list every answer, zero or not; or leave out the everything-matches line.
      */
     @Test(timeOut = 240000)
     public void testTheFinishingMessageSaysOnlyWhatHappened() throws Exception

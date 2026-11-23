@@ -26,7 +26,7 @@ import support.StationRig;
  * (FR-169): the dialog the Sync menu raises, and the notice a start-up raises.  The sync is made through the real window
  * against a stand-in CS3, and the questions the program asks are read as the user would see them.
  *
- * MUTATION: have TrainControlUI.saySynced always pass `partial` false, and the sync with an unreadable route list
+ * MUTATION: have ManualSync.saySynced always pass `partial` false, and the sync with an unreadable route list
  * says everything matches; drop the `view.showSyncPartial()` call of MarklinControlStation.init, and the start-up says
  * nothing.
  *

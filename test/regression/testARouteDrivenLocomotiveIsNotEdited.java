@@ -339,8 +339,8 @@ public class testARouteDrivenLocomotiveIsNotEdited
 
         // And again of both names just before the rename, as a route may have begun since the second read
         String renamed = SourceOf.declaration("private String renamed(Component c, RenameProposals.Row r)");
-        int again = renamed.indexOf("RunGates.refuseWhileARouteDrivesIt(this, c, newName)");
-        assertTrue(renamed.contains("RunGates.refuseWhileARouteDrivesIt(this, c, currentName)") && again > 0
+        int again = renamed.indexOf("RunGates.refuseWhileARouteDrivesIt(ui, c, newName)");
+        assertTrue(renamed.contains("RunGates.refuseWhileARouteDrivesIt(ui, c, currentName)") && again > 0
             && renamed.indexOf("renameLoc(", again) > again, "the rename does not ask of both names just before it");
     }
 
