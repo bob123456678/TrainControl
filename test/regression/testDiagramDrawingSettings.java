@@ -188,21 +188,23 @@ public class testDiagramDrawingSettings
             + "whole purpose is showing every side of every station has lost its answer");
 
         // The editor's code is not one file, so the claim asks the whole program: the accessor is named by its
-        // declaration, the drawing's own read in TrainControlUI and the session's static annotation, and nothing else.
-        // A fourth place is either legitimate (count it here) or the editor reading the viewer's setting.  Counted
-        // place by place (FR-136), so a read that goes and one the editor gains in the same change do not cancel.
+        // declaration, the drawing's own read in TrainControlUI, the session's static annotation and Station Settings'
+        // picture, a copy of the track diagram (OB-511), and nothing else.  A fifth place is either legitimate (count it
+        // here) or the editor reading the viewer's setting.  Counted place by place (FR-136), so a read that goes and one
+        // the editor gains in the same change do not cancel.
         String readers = "something else now reads the ordinary diagram's preference besides its accessor, the"
-            + " window's drawing and the session's static annotation - if it is the autonomy editor, that is exactly"
-            + " what Adam asked not to happen: the editor is where these are being decided, and it has its own control"
-            + " for them";
+            + " window's drawing, the session's static annotation and Station Settings' picture of the diagram (OB-511) -"
+            + " if it is the autonomy editor, that is exactly what Adam asked not to happen: the editor is where these are"
+            + " being decided, and it has its own control for them";
 
-        assertEquals(SourceOf.occurrences("diagramShowsRestrictionArrows"), 3, readers);
+        assertEquals(SourceOf.occurrences("diagramShowsRestrictionArrows"), 4, readers);
 
         assertEquals(countsIn("diagramShowsRestrictionArrows",
                 "public static boolean diagramShowsRestrictionArrows()",
                 "public void showStaticAutonomyLayer(boolean show)",
-                "public TileAnnotation staticAnnotationFor(TileKey tile)"),
-            java.util.Arrays.asList(1, 1, 1), readers);
+                "public TileAnnotation staticAnnotationFor(TileKey tile)",
+                "void show(AutonomySession session, TileKey tile, TrainControlUI main, Doors doors)"),
+            java.util.Arrays.asList(1, 1, 1, 1), readers);
 
         // The METHOD NAME is not the coupling; the STORED PREFERENCE is: reading DIAGRAM_RESTRICTION_ARROWS out of
         // Preferences directly would couple the two windows while leaving the check above satisfied.
