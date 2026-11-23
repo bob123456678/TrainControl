@@ -710,14 +710,15 @@ public class testTheSyncDifferencesWindow
     }
 
     /**
-     * Keep As Is is the radio before this computer's lines, Apply the one before the station's, and a row differing
-     * both ways has a radio before each station line it changes, exclusive with the row's other answers; each radio
+     * Keep As Is is the radio centered beside this computer's lines, Apply the one beside the station's, and a row
+     * differing both ways has a radio before each station line it changes, exclusive with the row's other answers; each
+     * radio
      * says its whole answer on hover and to a screen reader, and Keep Both's, Ignore's and Ask Again's sit centered
      * under their headings.  This Computer, Central Station and Ask Again head the columns as links, Keep Both and
      * Ignore as plain labels.
      *
-     * MUTATION: in `SyncDifferencesWindow.addRow`, lead the address line with Apply and the name line with room, or put
-     * Use the address in a group of its own.
+     * MUTATION: in `SyncDifferencesWindow.addRow`, lead a single Apply's Name line with its radio, or put Use the
+     * address in a group of its own.
      */
     @Test(timeOut = 180000)
     public void testTheRadiosSitBesideTheValuesTheyChoose() throws Exception
@@ -736,16 +737,23 @@ public class testTheSyncDifferencesWindow
                     check(problems, keep.x >= computer && keep.x + keep.width < station, true, row + "'s Keep under "
                         + "This Computer");
                 }
-                // Each radio, its line's value: the radio left of it, their middles level
-                for (String[] each : new String[][] {{"SW Shunter", "KEEP", "SW Shunter"}, {"SW Shunter", "RENAME",
-                    "SW V 60"}, {"SW Uri", "KEEP", "SW Uri"}, {"SW Uri", "ADDRESS", "SW Uri", "1"},
-                    {"SW Both", "RENAME", "SW Other"}, {"SW Both", "ADDRESS", "MM2 24"}})
+                // Each radio left of its values (text#occurrence): level with their middle, a block's or a line's
+                for (String[] each : new String[][] {{"SW Shunter", "KEEP", "SW Shunter#0", "MM2 20#0"}, {"SW Shunter",
+                    "RENAME", "SW V 60#0", "MM2 20#1"}, {"SW Uri", "KEEP", "SW Uri#0", "MM2 21#0"}, {"SW Uri", "ADDRESS",
+                    "SW Uri#1", "MM2 22#0"}, {"SW Both", "KEEP", "SW Both#0", "MM2 23#0"}, {"SW Both", "RENAME",
+                    "SW Other#0"}, {"SW Both", "ADDRESS", "MM2 24#0"}})
                 {
                     Rectangle b = at(t, t.in(each[0], each[1], AbstractButton.class));
-                    List<JLabel> values = Components.all(t.dialog, JLabel.class, l -> each[2].equals(l.getText()));
-                    Rectangle v = at(t, values.get(each.length > 3 ? 1 : 0));
-                    check(problems, Arrays.asList(b.x + b.width <= v.x, Math.abs(b.getCenterY() - v.getCenterY()) <= 1),
-                        Arrays.asList(true, true), each[0] + ":" + each[1] + " beside " + each[2]);
+                    List<Rectangle> v = new ArrayList<>();
+                    for (int i = 2; i < each.length; i++)
+                    {
+                        String[] value = each[i].split("#");
+                        v.add(at(t, Components.all(t.dialog, JLabel.class, l -> value[0].equals(l.getText())).get(
+                            Integer.parseInt(value[1]))));
+                    }
+                    double middle = (v.get(0).getCenterY() + v.get(v.size() - 1).getCenterY()) / 2;
+                    check(problems, Arrays.asList(b.x + b.width <= v.get(0).x, Math.abs(b.getCenterY() - middle) <= 1),
+                        Arrays.asList(true, true), each[0] + ":" + each[1] + " beside " + Arrays.toString(each));
                     if (!"KEEP".equals(each[1])) check(problems, b.x >= station, true, each[0] + ":" + each[1]
                         + " under Central Station");
                 }
@@ -759,8 +767,12 @@ public class testTheSyncDifferencesWindow
                 {
                     double under = at(t, heading(t, each[1])).getCenterX();
                     for (String row : new String[] {"SW Shunter", "SW Uri", "SW Both"})
-                        check(problems, Math.abs(at(t, t.in(row, each[0], AbstractButton.class)).getCenterX() - under)
-                            <= 1, true, row + ":" + each[0] + " centered under its heading");
+                    {
+                        Rectangle r = at(t, t.in(row, each[0], AbstractButton.class));
+                        check(problems, Math.abs(r.getCenterX() - under) <= 1 && Math.abs(r.getCenterY() - at(t, t.in(
+                            row, "KEEP", AbstractButton.class)).getCenterY()) <= 1, true, row + ":" + each[0]
+                            + " centered under its heading and in its row");
+                    }
                 }
                 List<String> says = new ArrayList<>();
                 for (String a : new String[] {"BOTH", "IGNORE", "ASK"})

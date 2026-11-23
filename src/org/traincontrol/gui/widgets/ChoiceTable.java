@@ -38,7 +38,7 @@ public final class ChoiceTable extends JScrollPane
 {
     /** Each row's first cell, whose top is the row's top less {@link #PAD}. */
     private final List<JComponent> firsts = new ArrayList<>();
-    private static final int PAD = 4;
+    private static final int PAD = 6;
     /** The headings, over a stronger rule, in columns as wide as the rows'. */
     private final JPanel head = new JPanel(new GridBagLayout())
     {
@@ -85,9 +85,9 @@ public final class ChoiceTable extends JScrollPane
         this.high = measure.getPreferredSize().height;
         // Each heading over room as wide as it in row 0, so its column is never narrower than it
         GridBagConstraints c = new GridBagConstraints(), room = new GridBagConstraints();
-        c.insets = new Insets(6, 8, PAD, 8);
+        c.insets = new Insets(PAD, PAD, PAD, PAD);
         c.anchor = GridBagConstraints.BASELINE_LEADING;
-        room.insets = new Insets(0, 8, 0, 8);
+        room.insets = new Insets(0, PAD, 0, PAD);
         for (int i = 0; i < heads.length; i++)
         {
             c.gridx = room.gridx = i;
@@ -114,19 +114,19 @@ public final class ChoiceTable extends JScrollPane
         getVerticalScrollBar().setUnitIncrement(16);
     }
 
-    /** Adds a row: one cell under each heading, top-aligned; a null cell leaves its place empty. */
+    /** Adds a row: one cell under each heading, a bare choice centered in it; a null cell leaves its place empty. */
     public void addRow(JComponent... cells)
     {
         GridBagConstraints c = new GridBagConstraints();
         c.gridy = this.rows++;
-        c.insets = new Insets(PAD, 8, PAD, 8);
+        c.insets = new Insets(PAD, PAD, PAD, PAD);
         for (int i = 0; i < cells.length; i++)
         {
             if (cells[i] == null) continue;
             if (this.firsts.size() < c.gridy) this.firsts.add(cells[i]);
             c.gridx = i;
             boolean centered = cells[i] instanceof JRadioButton;
-            c.anchor = centered ? GridBagConstraints.NORTH : GridBagConstraints.NORTHWEST;
+            c.anchor = centered ? GridBagConstraints.CENTER : GridBagConstraints.NORTHWEST;
             this.grid.add(cells[i], c);
             if (!centered) continue;
             // A heading sits as its column does
@@ -212,6 +212,18 @@ public final class ChoiceTable extends JScrollPane
             if (p.getComponentCount() > 1) p.add(Box.createHorizontalStrut(4));
             p.add(part);
         }
+        return p;
+    }
+
+    /** A cell of a choice centered beside a block of lines, or with no choice the block alone. */
+    public static JComponent beside(JRadioButton choice, JComponent... lines)
+    {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
+        p.setOpaque(false);
+        if (choice != null) p.add(choice);
+        if (choice != null) p.add(Box.createHorizontalStrut(4));
+        p.add(lines(lines));
         return p;
     }
 

@@ -2,7 +2,6 @@ package org.traincontrol.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Window;
@@ -127,14 +126,12 @@ public final class SyncDifferencesWindow
         return w.continued ? w.picks() : null;
     }
 
-    /**
-     * A row's cells, named for the tests: each side led by its radio, Apply's by each line it changes; the rest.  The
-     * station's side has the plain decoder type, as a head's "MU" is this computer's.
-     */
+    /** A row's cells, named for the tests: each side's radio beside its block, or a both-ways row's on each line. */
     private JComponent[] addRow(Row r)
     {
         Locomotive l = r.loco;
         String name = l.getName(), at = l.getDecoderTypeLabel() + " ";
+        // The station's side has the plain decoder type: a head's "MU" is this computer's
         String there = l.hasLinkedLocomotives() ? l.getDecoderType().name() + " " : at;
         ButtonGroup group = new ButtonGroup();
         Map<Answer, JRadioButton> radios = new EnumMap<>(Answer.class);
@@ -167,13 +164,14 @@ public final class SyncDifferencesWindow
         for (JRadioButton b : radios.values()) b.addItemListener(e -> { if (!this.settingAll) refresh(); });
         this.choices.put(r, radios);
         boolean byName = r.stationName != null, byAddress = r.stationAddress != null;
-        JComponent here = ChoiceTable.lines(line(keep, "sync.ui.name", name + (l.hasLinkedLocomotives() ? " +"
-            + l.getLinkedLocomotives().size() : ""), byName, null, null), line(room(keep), "sync.ui.address", at
+        JComponent here = ChoiceTable.beside(keep, line(null, "sync.ui.name", name + (l.hasLinkedLocomotives() ? " +"
+            + l.getLinkedLocomotives().size() : ""), byName, null, null), line(null, "sync.ui.address", at
             + l.getAddress(), byAddress, null, null));
-        JComponent station = ChoiceTable.lines(line(rename != null ? rename : use, "sync.ui.name", byName
-            ? r.stationName : name, byName, rename != null ? r.whyNot(true) : null, deletes), line(rename != null
-            && use != null ? use : room(keep), "sync.ui.address", there + (byAddress ? r.stationAddress
-            : l.getAddress()), byAddress, use != null ? r.whyNot(false) : null, triangle));
+        boolean twice = rename != null && use != null;
+        JComponent station = ChoiceTable.beside(twice ? null : rename != null ? rename : use, line(twice ? rename : null,
+            "sync.ui.name", byName ? r.stationName : name, byName, rename != null ? r.whyNot(true) : null, deletes),
+            line(twice ? use : null, "sync.ui.address", there + (byAddress ? r.stationAddress : l.getAddress()),
+            byAddress, use != null ? r.whyNot(false) : null, triangle));
         return new JComponent[] {here, station, radios.get(Answer.BOTH), radios.get(Answer.IGNORE),
             radios.get(Answer.ASK)};
     }
@@ -192,13 +190,6 @@ public final class SyncDifferencesWindow
         return b;
     }
 
-    /** Room as wide as that radio, so the line under the one it leads lines up. */
-    private static JComponent room(JComponent radio)
-    {
-        Dimension d = new Dimension(radio.getPreferredSize().width, 0);
-        return new Box.Filler(d, d, d);
-    }
-
     private static JLabel text(String text)
     {
         JLabel t = new JLabel(text);
@@ -215,10 +206,7 @@ public final class SyncDifferencesWindow
         return m;
     }
 
-    /**
-     * A line: lead, "Name:" or "Address:" in gray, the value (bold if it differs), then a short gray mark saying why
-     * Apply is grayed on hover where `whyNot` is given, and `mark`.
-     */
+    /** A line: lead, "Name:" or "Address:" in gray, the value (bold if it differs), "(can't apply)" saying `whyNot`, mark. */
     private JComponent line(JComponent lead, String kind, String value, boolean differs, String whyNot, JLabel mark)
     {
         JLabel k = UiStyle.blackLabel(I18n.t(kind)), v = text(value), why = null;
