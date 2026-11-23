@@ -299,6 +299,83 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         }
     }
 
+    /**
+     * On a square nothing arrives at, with one way out, the caption's arrow is the icon's: that way out, though the
+     * setup records the other way along the track (OB-510).
+     *
+     * MUTATION: let `StationCaptions.facingArrowOf` read the setup's record before the only way out, and this fails.
+     */
+    @Test
+    public void testWithOneWayOutTheCaptionPointsWhereTheIconDoes() throws Exception
+    {
+        final org.json.JSONObject asFound = session.snapshotSetup();
+
+        Point copy = null;
+
+        try
+        {
+            // 8,7 one-way away from TunnelLeftPark: trains leave it south and none arrive
+            for (java.util.Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> road
+                : session.getRoutes(BELOW).entrySet())
+            {
+                session.setDirection(BELOW, road.getKey(),
+                    road.getValue().getA() == Side.N ? Direction.TOWARD_B : Direction.TOWARD_A);
+            }
+
+            session.setFacing(PLATFORM, Side.N);
+
+            SwingUtilities.invokeAndWait(() -> ui.rebuildRunningLayoutFromSetup());
+
+            Components.drain(8);
+
+            List<String> names = session.getStationIndex().pointNamesAt(PLATFORM);
+
+            assertTrue(names.size() == 1 && session.getStationIndex().facingsAt(PLATFORM).isEmpty(), "precondition:"
+                + " TunnelLeftPark is not one copy with no facing: " + names);
+
+            copy = model.getAutoLayout().getPoint(names.get(0));
+
+            for (Point point : model.getAutoLayout().getPoints())
+            {
+                if (point.getCurrentLocomotive() != null && point.isSamePlaceAs(copy)) point.setLocomotive(null);
+            }
+
+            copy.setLocomotive(train);
+
+            final DiagramMonitorDriver driver = ui.getDiagramMonitorDriver();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                driver.bind(session);
+                driver.setEnabled(true);
+                driver.start();
+                ui.updateVisiblePoints();
+            });
+
+            assertEquals(look(Side.S).getFacing(), Side.S, "precondition: the icon does not face the only way out");
+
+            Components.drain(8);
+
+            final StringBuilder captions = new StringBuilder();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (javax.swing.JLabel caption : ui.getLayoutStations(PLATFORM)) captions.append(caption.getText());
+            });
+
+            assertTrue(captions.toString().contains(OUR_TRAIN.substring(0, 3)), "precondition: no caption on"
+                + " TunnelLeftPark names the train: " + captions);
+
+            assertTrue(captions.toString().contains(StationCaption.ARROW_S) && !captions.toString().contains(
+                StationCaption.ARROW_N), "the caption on TunnelLeftPark, whose only way out is south, points the way the"
+                + " setup records while the icon faces south (OB-510): " + captions);
+        }
+        finally
+        {
+            putBack(asFound, copy);
+        }
+    }
+
     /** The same on every square of the snapshot that offers one facing, for every way its track does not run. */
     @Test
     public void testEverySquareWithOneWayOutGuessesIt()
