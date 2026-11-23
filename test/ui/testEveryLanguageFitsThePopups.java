@@ -38,7 +38,7 @@ public class testEveryLanguageFitsThePopups
     private static final LanguageFit.Ledger LEDGER = new LanguageFit.Ledger();
 
     /** The widest line of a popup's text at 100%: `WrappingOptionPaneUI.CAP`, held here so the claim runs on old code. */
-    private static final int CAP = 480;
+    private static final int CAP = 440;
 
     /** An 80-character Windows path with no spaces, wider than the cap on one line. */
     private static final String PATH = "C:\\Users\\Wilhelmina\\Documents\\TrainControl\\Modellbahn-Wohnzimmer\\MOBA-26-WM.json";

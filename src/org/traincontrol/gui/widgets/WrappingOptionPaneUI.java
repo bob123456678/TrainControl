@@ -21,7 +21,7 @@ import javax.swing.plaf.basic.BasicHTML;
 public class WrappingOptionPaneUI extends FlatOptionPaneUI
 {
     /** The widest a line of a popup's text may be, in pixels at 100%; it grows with the UI scale. */
-    public static final int CAP = 480;
+    public static final int CAP = 440;
 
     public static ComponentUI createUI(JComponent pane)
     {
