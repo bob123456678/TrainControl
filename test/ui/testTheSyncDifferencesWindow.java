@@ -92,13 +92,13 @@ public class testTheSyncDifferencesWindow
                 check(problems, Arrays.asList(text(t, "SW Both", "RENAME"), text(t, "SW Both", "ADDRESS")), Arrays.asList(
                     I18n.f("sync.ui.rename", "SW Both", "SW Other"), I18n.f("sync.ui.changeAddress", "SW Both", 24)),
                     "both-ways row");
-                check(problems, Arrays.asList(t.in("SW Shunter", "BOTH", AbstractButton.class).isEnabled(),
-                    t.in("SW Uri", "BOTH", AbstractButton.class).isEnabled()), Arrays.asList(true, false), "Keep Both lit");
                 check(problems, labels(t).contains("SW Head +1"), true, "head's +N");
                 check(problems, Arrays.asList(java.util.Collections.frequency(labels(t), I18n.f("loc.multiUnitLinked",
                     "MM2") + " 26"), labels(t).contains("MM2 26")), Arrays.asList(1, true), "the station's decoder type");
                 check(problems, at(t, Components.find(t.dialog, JLabel.class, l -> t.heading.equals(l.getText()))).x,
                     at(t, Components.find(t.dialog, ChoiceTable.class, c -> true)).x, "the heading's indent");
+                check(problems, Arrays.asList(t.in("SW Shunter", "BOTH", AbstractButton.class).isEnabled(),
+                    t.in("SW Uri", "BOTH", AbstractButton.class).isEnabled()), Arrays.asList(true, false), "Keep Both lit");
                 check(problems, labels(t).contains("MM2 20"), true, "decoder address");
                 check(problems, Arrays.asList(bold(t, "SW Shunter"), bold(t, "SW V 60"), bold(t, "MM2 21"),
                     bold(t, "MM2 22"), bold(t, "SW Uri"), bold(t, "MM2 20")),
@@ -752,6 +752,14 @@ public class testTheSyncDifferencesWindow
                     t.in("SW Both", "ADDRESS", AbstractButton.class).getToolTipText()), Arrays.asList(
                     I18n.f("sync.ui.keepAsIs", "SW Shunter"), I18n.f("sync.ui.keepAsIs", "SW Shunter"),
                     I18n.f("sync.ui.changeAddress", "SW Both", 24)), "what the radios say");
+                for (String[] each : new String[][] {{"BOTH", "sync.ui.keepBoth"}, {"IGNORE", "sync.ui.ignore"},
+                    {"ASK", "sync.ui.askAgain"}})
+                {
+                    double under = at(t, heading(t, each[1])).getCenterX();
+                    for (String row : new String[] {"SW Shunter", "SW Uri", "SW Both"})
+                        check(problems, Math.abs(at(t, t.in(row, each[0], AbstractButton.class)).getCenterX() - under)
+                            <= 1, true, row + ":" + each[0] + " centered under its heading");
+                }
                 List<String> says = new ArrayList<>();
                 for (String a : new String[] {"BOTH", "IGNORE", "ASK"})
                 {
@@ -761,14 +769,6 @@ public class testTheSyncDifferencesWindow
                 String both = I18n.f("sync.ui.keepBothSaid", "SW Shunter", "SW V 60"), ignore = I18n.f(
                     "sync.ui.ignoreSaid", "SW Shunter"), ask = I18n.f("sync.ui.askAgainSaid", "SW Shunter");
                 check(problems, says, Arrays.asList(both, both, ignore, ignore, ask, ask), "what the other radios say");
-                for (String[] each : new String[][] {{"BOTH", "sync.ui.keepBoth"}, {"IGNORE", "sync.ui.ignore"},
-                    {"ASK", "sync.ui.askAgain"}})
-                {
-                    double under = at(t, heading(t, each[1])).getCenterX();
-                    for (String row : new String[] {"SW Shunter", "SW Uri", "SW Both"})
-                        check(problems, Math.abs(at(t, t.in(row, each[0], AbstractButton.class)).getCenterX() - under)
-                            <= 1, true, row + ":" + each[0] + " centered under its heading");
-                }
                 for (String[] each : new String[][] {{"RENAME", "RENAME"}, {"ADDRESS", "ADDRESS"}, {"KEEP", "KEEP"}})
                 {
                     t.in("SW Both", each[0], AbstractButton.class).doClick();
@@ -888,8 +888,9 @@ public class testTheSyncDifferencesWindow
         List<String> problems = new ArrayList<>();
         inAWindow((rig, ui, list) ->
         {
-            here(rig, "SW Shunter", 20, "SW Uri", 21, "SW D", 36, "SW Held", 36);
+            // The station renames Shunter, moves Uri, and renames D onto Held, which holds that name here
             list.set(station("SW V 60", 20, "SW Uri", 22, "SW Held", 36));
+            here(rig, "SW Shunter", 20, "SW Uri", 21, "SW D", 36, "SW Held", 36);
             assertNotNull(pressSync(rig, ui, SyncTable.canceling(t ->
             {
                 String lit = I18n.f("sync.ui.keepBothSaid", "SW Shunter", "SW V 60"), address = I18n.t(

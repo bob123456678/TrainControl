@@ -101,6 +101,8 @@ public final class ChoiceTable extends JScrollPane
         spare.weightx = 1;
         this.grid.add(Box.createHorizontalGlue(), spare);
         this.head.add(Box.createHorizontalGlue(), spare);
+        // White behind the corner beside the headings too
+        setBackground(Color.WHITE);
         this.grid.setBackground(Color.WHITE);
         this.head.setBackground(Color.WHITE);
         JPanel top = new JPanel(new BorderLayout());
