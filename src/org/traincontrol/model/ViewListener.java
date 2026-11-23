@@ -99,6 +99,8 @@ public interface ViewListener
     public void stopAllLocs();
     public int syncWithCS2();
     public boolean wasLastSyncPartial();
+    /** How many of the last sync's count are routes it added or replaced; the rest are locomotives. */
+    public int getLastSyncRoutes();
     public String getLastSyncError();
     public List<String> getLayoutList();
     public List<String> getLayoutListByName();
@@ -274,12 +276,11 @@ public interface ViewListener
     public void downloadLayout(File path) throws Exception;
     public List<String[]> getLocomotivesToRenameFromImport() throws Exception;
 
-    /**
-     * The rename check with its refusal count, so an empty proposal list can be told apart from
-     * everything having been declined
-     * @throws java.lang.Exception
-     */
-    public RenameProposals getRenameProposals() throws Exception;
+    /** The rename check (FR-249); without `log`, quietly, a failed read giving null. */
+    public RenameProposals getRenameProposals(boolean log) throws Exception;
+
+    /** Adds the Central Station's locomotive here beside any at its address (FR-249); null when its name is taken. */
+    public Locomotive addStationLocomotive(Locomotive station);
     public String exportLocsToCSV();
 
     /**

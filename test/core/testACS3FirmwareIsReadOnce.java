@@ -41,7 +41,7 @@ public class testACS3FirmwareIsReadOnce
 
             assertTrue(rig.model.syncWithCS2() >= 0, "the sync succeeds: " + rig.model.getLastSyncError());
             out += count(s) + ";";
-            rig.model.getRenameProposals();
+            rig.model.getRenameProposals(true);
             out += count(s) + ";";
             rig.model.downloadLayout(new File(root, "download"));
             return out + count(s);

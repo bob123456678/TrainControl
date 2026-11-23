@@ -819,6 +819,13 @@ public class LocomotiveSettingsFrame extends javax.swing.JFrame
         main.syncLocomotiveFrom(target, this, () -> afterSync(target));
     }
 
+    /** After the manual Sync renamed or re-addressed its locomotive, reloads unless typing waits to be saved (FR-249). */
+    void followTheSync()
+    {
+        if (loc != null && !adding && !isDirty() && (!loc.getName().equals(locomotiveTab.loadedName)
+            || !Integer.toString(loc.getAddress()).equals(locomotiveTab.loadedAddress))) afterSync(loc);
+    }
+
     private void afterSync(Locomotive synced)
     {
         if (loc != synced || adding || !isDisplayable()) return;

@@ -313,21 +313,35 @@ public class testARouteDrivenLocomotiveIsNotEdited
         }
     }
 
-    /** The Central Station's name proposal asks it too, of both names, before it renames. */
+    /**
+     * The Central Station's name proposal asks it too, of both names, before it renames: the row's reason (FR-249)
+     * covers the current name through whyLeftAsItIs and the proposed one directly, and Apply renames only without one.
+     */
     @Test
     public void testTheNameProposalAsksItFirst() throws Exception
     {
-        String source = SourceOf.declaration("private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)");
+        String source = SourceOf.declaration(
+            "private RenameProposals differences(List<MarklinLocomotive> parsedLocs, boolean partial, boolean log)");
 
-        int current = source.indexOf("if (RunGates.refuseWhileARouteDrivesIt(this, c, currentName)) continue;");
-        int proposed = source.indexOf("if (RunGates.refuseWhileARouteDrivesIt(this, c, newName)) continue;");
+        int current = source.indexOf("now = whyLeftAsItIs(here)");
+        int proposed = source.indexOf("this.runningRouteDriving(to)");
 
-        assertTrue(current > 0 && proposed > 0, "the Central Station's name proposal does not ask about both names"
+        boolean itself = SourceOf.declaration("private String whyLeftAsItIs(").contains("runningRouteDriving(here.getName())");
+
+        assertTrue(current > 0 && proposed > 0 && itself, "the Central Station's name proposal does not ask about both names"
             + " (CS3-B1, SVB-C2)");
 
-        int renames = source.indexOf("renameLoc(", proposed);
+        String apply = SourceOf.declaration("private int[] apply(Component c, RenameProposals asked, RenameProposals now,");
+        int asks = apply.indexOf("f.whyNot(true)");
+        int renames = apply.indexOf("renamed(c, r)", asks);
 
-        assertTrue(renames > proposed, "the name proposal renames before it asks (OB-287)");
+        assertTrue(asks > 0 && renames > asks, "the name proposal renames before it asks (OB-287)");
+
+        // And again of both names just before the rename, as a route may have begun since the second read
+        String renamed = SourceOf.declaration("private String renamed(Component c, RenameProposals.Row r)");
+        int again = renamed.indexOf("RunGates.refuseWhileARouteDrivesIt(ui, c, newName)");
+        assertTrue(renamed.contains("RunGates.refuseWhileARouteDrivesIt(ui, c, currentName)") && again > 0
+            && renamed.indexOf("renameLoc(", again) > again, "the rename does not ask of both names just before it");
     }
 
     /** The locomotive and route of this claim. */
@@ -339,8 +353,7 @@ public class testARouteDrivenLocomotiveIsNotEdited
      * commands by NAME with delays between them, so a sync landing part-way along would send the rest to a different
      * decoder.  The sync's address step is asked directly, since the whole sync needs a station on the network.
      *
-     * MUTATION: drop `|| this.runningRouteDriving(l.getName()) != null` from `adoptCentralStationAddress`, and this
-     * fails.
+     * MUTATION: drop the `runningRouteDriving` clause from `MarklinControlStation.whyLeftAsItIs`, and this fails.
      */
     @Test
     public void testASyncDoesNotReAddressALocomotiveARouteDrives() throws Exception

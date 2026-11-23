@@ -3,9 +3,12 @@ package ui;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
+import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
@@ -13,8 +16,13 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.base.Locomotive;
+import org.traincontrol.base.RenameProposals;
+import org.traincontrol.gui.ManualSync;
+import org.traincontrol.gui.SyncDifferencesWindow;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.gui.layouteditor.LayoutEditor;
+import org.traincontrol.marklin.MarklinLocomotive;
 import org.traincontrol.util.I18n;
 import support.Answering;
 import support.AskingWindows;
@@ -25,6 +33,7 @@ import support.Mouse;
 import support.Reflect;
 import support.SettingsWindow;
 import support.StationDoors;
+import support.SyncTable;
 
 /**
  * `testEveryLanguageFits` for the program's popups and right-click menus, on the frozen railway.  Each popup is shown by
@@ -192,6 +201,58 @@ public class testEveryLanguageFitsThePopups
 
         assertTrue(unnamed.isEmpty(), "the Cancel question named no train, so the question that names them was not "
             + "measured: " + unnamed);
+    }
+
+    /**
+     * The manual Sync's table and its longer finishing message fit in every language: the linked headings, a by-hand
+     * row, a grayed rename, an address that collides, and the counts the message adds (FR-249).
+     *
+     * MUTATION: in `ChoiceTable.link`, fix a heading's preferred size at 20 by 20 pixels, and this fails in every language.
+     */
+    @Test(timeOut = 300000)
+    public void testTheSyncTableAndItsMessageFitInEveryLanguage() throws Exception
+    {
+        MarklinLocomotive asked = new MarklinLocomotive(railway.model, 23, Locomotive.decoderType.MM2, "BR 218");
+        MarklinLocomotive holder = new MarklinLocomotive(railway.model, 24, Locomotive.decoderType.MM2, "BR 218 007");
+        MarklinLocomotive other = new MarklinLocomotive(railway.model, 25, Locomotive.decoderType.MM2, "BR 103");
+        MarklinLocomotive mover = new MarklinLocomotive(railway.model, 26, Locomotive.decoderType.MM2, "BR 218 old");
+        Map<Integer, List<MarklinLocomotive>> held = new HashMap<>();
+        for (MarklinLocomotive l : new MarklinLocomotive[] {asked, holder, other, mover})
+            held.put(l.getIntUID(), Collections.singletonList(l));
+
+        LanguageFit.assertNothingClipped("sync table", LanguageFit.everyLanguage(language ->
+        {
+            List<String> found = Collections.synchronizedList(new ArrayList<>());
+            // By hand; a rename grayed; an address held here; a rename onto a held name, Apply picked, saying what it deletes
+            List<RenameProposals.Row> rows = java.util.Arrays.asList(new RenameProposals.Row(asked, holder.getName(),
+                25, null, null, holder, null, asked.getIntUID(), other.getIntUID()), new RenameProposals.Row(other,
+                holder.getName(), null, I18n.f("sync.ui.whyListedTwice", other.getName(), holder.getName()), null,
+                holder, null, other.getIntUID(), other.getIntUID()), new RenameProposals.Row(holder, null, 23, null,
+                null, null, null, holder.getIntUID(), asked.getIntUID()), new RenameProposals.Row(mover, holder.getName(),
+                null, null, null, holder, null, mover.getIntUID(), mover.getIntUID()));
+            RenameProposals proposals = new RenameProposals(new ArrayList<>(), 0, new HashMap<>(), rows, held, false);
+
+            try (SyncTable table = SyncTable.canceling(t ->
+            {
+                int[] seen = {0};
+                t.in(mover.getName(), "RENAME", javax.swing.AbstractButton.class).doClick();
+                for (String each : LanguageFit.measurePopup(LEDGER, "popup-sync-table", language, t.dialog, seen))
+                    found.add("popup-sync-table: " + each);
+            }))
+            {
+                SwingUtilities.invokeLater(() -> SyncDifferencesWindow.ask(railway.ui, proposals));
+                assertTrue(Components.waitFor(() -> !table.shown().isEmpty(), 15000), "the Sync table showed nothing in "
+                    + language);
+                Components.settle();
+            }
+            found.addAll(popup("popup-sync-done", language, m -> null, null, later(() ->
+            {
+                JOptionPane.showMessageDialog(railway.ui, ManualSync.syncSummary(12, 2, true, 3, 2, 4, 1,
+                    5));
+                return null;
+            }), null));
+            return found;
+        }));
     }
 
     /**

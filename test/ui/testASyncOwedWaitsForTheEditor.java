@@ -308,8 +308,8 @@ public class testASyncOwedWaitsForTheEditor
      * Two disarms with the editor open owe one sync: one runs after Cancel, not two, and the next editor closing runs
      * none.
      *
-     * MUTATION: in `TrainControlUI.syncNow`, leave out `syncOwed.set(false)`, so the debt is never cleared, and the next
-     * Cancel syncs again.
+     * MUTATION: in `TrainControlUI.syncHolding`, leave out `syncOwed.set(false)`, so the debt is never cleared, and the
+     * next Cancel syncs again.
      */
     @Test(timeOut = 120000)
     public void testTwoEditsOweOneSync() throws Exception
@@ -376,8 +376,8 @@ public class testASyncOwedWaitsForTheEditor
      * An edit's sync asked for while another sync is running, which may have read the station before the edit, is kept
      * and runs once that sync ends, quietly: a sync that started after the edit is what pays for it.
      *
-     * MUTATION: in `TrainControlUI.syncNow`'s `finally`, leave out `if (syncOwed.get()) editorGone();`, and no second
-     * sync runs.
+     * MUTATION: in `TrainControlUI.holdingTheSync`'s `finally`, leave out `if (syncOwed.get()) editorGone();`, and no
+     * second sync runs.
      */
     @Test(timeOut = 120000)
     public void testAnEditsSyncIsKeptPastASyncAlreadyRunning() throws Exception

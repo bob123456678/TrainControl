@@ -332,7 +332,7 @@ public class testImportRename
         installCleanly(CS_TWENTYONE, CS_TEN_ADDRESS);
         installCleanly(CS_TEN, CS_TWENTYONE_ADDRESS);
 
-        RenameProposals result = model.getRenameProposals();
+        RenameProposals result = model.getRenameProposals(true);
 
         assertTrue(result.hasRefusals(),
             "the swap was declined, and the caller must be able to tell that apart from there being "
@@ -475,7 +475,7 @@ public class testImportRename
             head.preSetLinkedLocomotives(links);
             head.setLinkedLocomotives();
 
-            assertEquals(model.getRenameProposals().getAddresses().get(CS_NAME), Integer.valueOf(CS_ADDRESS),
+            assertEquals(model.getRenameProposals(true).getAddresses().get(CS_NAME), Integer.valueOf(CS_ADDRESS),
                 "the head is offered the station's address like any locomotive");
 
             model.changeLocAddress(CS_NAME, CS_ADDRESS, head.getDecoderType());
@@ -518,7 +518,7 @@ public class testImportRename
 
     /**
      * Two locomotives at one address, one under the Central Station's name and one under a name the station no longer
-     * has: the station renamed it (and the sync added the new name beside it), or it was renamed here (and the sync
+     * has: the station renamed it (and a sync before 3.1.2 added the new name beside it), or it was renamed here (and the sync
      * gave back the station's name).  The station's name wins: the other is proposed for renaming onto it, the tool's
      * rename deleting the holder.  Where both names are the station's, the pair stays ambiguous.
      *

@@ -88,7 +88,7 @@ public class testEditorSurfaceRules
                 "Add Locomotive"},
             {"    boolean writeNameAndAddress(Component source, Locomotive l, String newName, String newAddress,",
                 "the rename dialog and the Locomotive Settings window"},
-            {"private List<Locomotive> askAboutRenames(Component c, RenameProposals proposals)",
+            {"private RenameProposals differences(List<MarklinLocomotive> parsedLocs, boolean partial, boolean log)",
                 "the Central Station name"},
             {"private List<String> problemsWith(CommandRow row)", "the route editor"},
         };
@@ -1550,16 +1550,16 @@ public class testEditorSurfaceRules
     }
     /**
      * The Sync menu comes back even when the sync does not: doSync has no finally, so a RuntimeException out of
-     * `syncWithCS2` would leave both menus grayed.  Source-level: a test cannot make the Central Station misbehave.
+     * the pressed sync would leave both menus grayed.  Source-level: a test cannot make the Central Station misbehave.
      *
-     * MUTATION: removing the catch around syncWithCS2.
+     * MUTATION: removing the catch around pressedSync.
      */
     @Test
     public void testAFailedSyncGivesTheMenusBack() throws Exception
     {
         String sync = codeOf("public void doSync(Component c)");
 
-        int call = sync.indexOf("syncWithCS2()");
+        int call = sync.indexOf("pressedSync(c, answered)");
         int back = sync.indexOf("setLocomotiveWorkInFlight(false)");
 
         assertTrue(call >= 0 && back >= 0,

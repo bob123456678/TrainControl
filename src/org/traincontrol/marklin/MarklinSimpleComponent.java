@@ -42,6 +42,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
     private String notes;
     private String declinedStationName;
     private Integer declinedStationAddress;
+    private Boolean syncIgnored;
     private Map<String, Double> linkedLocomotives;
     private Map<String, Double> centralStationLinkedLocomotives;
  
@@ -145,6 +146,7 @@ public class MarklinSimpleComponent implements java.io.Serializable
         // The rename and the address Sync was told No to (FR-220, FR-246); null in a file saved before either
         this.declinedStationName = l.getDeclinedStationName();
         this.declinedStationAddress = l.getDeclinedStationAddress();
+        this.syncIgnored = l.isSyncIgnored();
 
         if (l.getDecoderType() == MarklinLocomotive.decoderType.MFX)
         {
@@ -329,6 +331,12 @@ public class MarklinSimpleComponent implements java.io.Serializable
     public Integer getDeclinedStationAddress()
     {
         return this.declinedStationAddress;
+    }
+
+    /** Whether Sync was told to Ignore it (FR-249); false in a file saved before 3.1.2. */
+    public boolean isSyncIgnored()
+    {
+        return Boolean.TRUE.equals(this.syncIgnored);
     }
     
     public String getLocalImageURL()

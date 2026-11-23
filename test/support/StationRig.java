@@ -127,7 +127,7 @@ public final class StationRig implements AutoCloseable
 
     private String renames(String title) throws Exception
     {
-        return this.station.recorded(title, () -> this.model.getRenameProposals().getProposals().size());
+        return this.station.recorded(title, () -> this.model.getRenameProposals(true).getProposals().size());
     }
 
     /** The names of the files a download wrote into the folder's config, sorted. */

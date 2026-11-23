@@ -26,9 +26,9 @@ import support.StationRig;
  * (FR-169): the dialog the Sync menu raises, and the notice a start-up raises.  The sync is made through the real window
  * against a stand-in CS3, and the questions the program asks are read as the user would see them.
  *
- * MUTATION: have TrainControlUI.doSync always pick "ui.infoSyncCompleteItemsAdded" for its text, and the sync with an
- * unreadable route list says "Sync complete. Items added: 0" and nothing more; drop the `view.showSyncPartial()` call
- * of MarklinControlStation.init, and the start-up says nothing.
+ * MUTATION: have ManualSync.saySynced always pass `partial` false, and the sync with an unreadable route list
+ * says everything matches; drop the `view.showSyncPartial()` call of MarklinControlStation.init, and the start-up says
+ * nothing.
  *
  * @author Adam
  */
@@ -74,10 +74,12 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
                     String partial = answering.asked().get(1);
                     String notice = answering.asked().get(2);
 
-                    assertEquals(plain, I18n.f("ui.infoSyncCompleteItemsAdded", "0"), "a sync that read everything says so");
-                    assertEquals(partial, I18n.f("ui.infoSyncCompletePartial", "0"));
+                    assertEquals(plain, I18n.t("ui.infoSyncNothingDiffers"), "a sync that read everything says so");
+                    assertEquals(answering.questions().get(0).title, I18n.t("sync.ui.title"), "the message's title");
+                    assertEquals(partial, I18n.t("ui.infoSyncComplete") + "\n\n" + I18n.t("ui.infoSyncPartial"));
                     assertTrue(partial.contains("could not be read") && partial.contains("log"), "it says part was not read: " + partial);
-                    assertTrue(partial.contains("Items added: 0"), "and still says what was added: " + partial);
+                    assertFalse(partial.contains(I18n.t("ui.infoSyncNothingDiffers")), "and never that all matches: "
+                        + partial);
                     assertEquals(notice, I18n.t("ui.startupSyncPartial"));
                     assertTrue(notice.contains("could not be read") && notice.contains("sync again"), "start-up says so: " + notice);
                 }
@@ -210,7 +212,7 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
                     I18n.t("ui.syncFailedCloseButton")));
                 assertEquals(failure.title, I18n.t("ui.syncFailedTitle"));
                 assertSame(failure.owner, ui, "on the main window");
-                assertEquals(answering.asked().get(1), I18n.f("ui.infoSyncCompleteItemsAdded", "0"),
+                assertEquals(answering.asked().get(1), I18n.t("ui.infoSyncNothingDiffers"),
                     "Retry synced again, and the station answered");
 
                 // Close: no further sync
@@ -263,7 +265,8 @@ public class testTheSyncSaysWhenPartOfTheDataWasNotRead
                 assertTrue(second.await(60, TimeUnit.SECONDS), "the second sync did not end; log " + logTail(rig));
                 assertTrue(answering.awaitAsked(1, 60000), "a sync that read part said nothing on the window; log "
                     + logTail(rig));
-                assertEquals(answering.asked().get(0), I18n.f("ui.infoSyncCompletePartial", "0"));
+                assertEquals(answering.asked().get(0), I18n.t("ui.infoSyncComplete") + "\n\n"
+                    + I18n.t("ui.infoSyncPartial"));
                 assertSame(answering.questions().get(0).owner, window, "not on the window that asked");
             }
             finally
