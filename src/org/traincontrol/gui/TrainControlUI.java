@@ -1157,7 +1157,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
         
         // Window location preference
-        this.rememberLocationMenuItem.setSelected(prefs.getBoolean(REMEMBER_WINDOW_LOCATION, false));
+        this.rememberLocationMenuItem.setSelected(PositionAwareJFrame.remembersWindowLocations());
         
         // Restore DCC/MM keyboard preference
         this.applyKeyboardType(TrainControlUI.KEYBOARD_TYPES[getSelectedKeyboardType() >= 0 ? getSelectedKeyboardType() : 0]);
@@ -15432,7 +15432,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         try
         {
-            if (prefs.getBoolean(REMEMBER_WINDOW_LOCATION, false))
+            if (PositionAwareJFrame.remembersWindowLocations())
             {
                 // Handle different layout sizes
                 for (Integer size : layoutSizes.values())
@@ -15473,7 +15473,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         try
         {
-            if (prefs.getBoolean(REMEMBER_WINDOW_LOCATION, false))
+            if (PositionAwareJFrame.remembersWindowLocations())
             {
                 Map<String, Set<String>> layoutTitlesMap = new HashMap<>();
                 ListIterator<LayoutPopupUI> iter = this.popups.listIterator();

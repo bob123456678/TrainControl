@@ -255,6 +255,34 @@ public class testShowAddressesWithAnEditorOpen
         return editor;
     }
 
+    /**
+     * A link has no accessory address: with Show Addresses on, a page window draws an address on every clickable
+     * square but its links, which showed their target page's name.
+     *
+     * MUTATION: in `LayoutGrid`, drop `!c.isLink()` from the address labels' condition, and the links get one.
+     */
+    @Test(timeOut = 200000)
+    public void testALinkShowsNoAddress() throws Exception
+    {
+        final LayoutPopupUI window = AskingWindows.openThePage(ui);
+
+        Components.settle();
+        Components.press(menu());
+        Settle.theDiagram(ui);
+        Components.settle();
+        Components.drain(10);
+
+        final int links = Components.onTheEventThread(() -> Components.all(window, LayoutLabel.class, each ->
+            each.getComponent() != null && each.getComponent().isLink() && each.getComponent().isClickable()).size());
+        final int others = Components.onTheEventThread(() -> Components.all(window, LayoutLabel.class, each ->
+            each.getComponent() != null && !each.getComponent().isLink() && !each.getComponent().isText()
+            && each.getComponent().isClickable()).size());
+
+        assertTrue(links > 0 && others > 0, "precondition: the page has " + links + " links and " + others
+            + " other squares to address");
+        assertEquals(addresses(window), others, "the page window's addresses are not one for each square but a link");
+    }
+
     private static void pickTheOtherPage() throws Exception
     {
         assertTrue(Components.onTheEventThread(pages()::isEnabled), "precondition: the page list is grayed out with an"
