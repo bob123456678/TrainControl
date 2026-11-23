@@ -147,7 +147,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         try
         {
-            copy = standItThere(Side.S);
+            copy = standItThere(Side.S, false);
 
             assertEquals(look(Side.S).getFacing(), Side.S, "precondition: the icon does not face the facing recorded");
 
@@ -179,7 +179,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         try
         {
-            copy = standItThere(Side.E);
+            copy = standItThere(Side.E, false);
 
             TileOverlay shown = look(Side.N);
 
@@ -296,6 +296,97 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             closeTheEditor(editor);
 
             putBack(asFound, null);
+        }
+    }
+
+    /**
+     * On a square nothing arrives at, with one way out, the caption's arrow is the icon's: that way out, though the
+     * setup records the other way along the track (OB-510).
+     *
+     * MUTATION: let `StationCaptions.facingArrowOf` read the setup's record before the only way out, and this fails.
+     */
+    @Test
+    public void testWithOneWayOutTheCaptionPointsWhereTheIconDoes() throws Exception
+    {
+        final org.json.JSONObject asFound = session.snapshotSetup();
+
+        Point copy = null;
+
+        try
+        {
+            // 8,7 one-way away from TunnelLeftPark: trains leave it south and none arrive
+            copy = standItThere(Side.N, true);
+
+            assertTrue(session.getStationIndex().facingsAt(PLATFORM).isEmpty(), "precondition: TunnelLeftPark's copy"
+                + " records a facing");
+
+            SwingUtilities.invokeAndWait(() -> ui.updateVisiblePoints());
+
+            assertEquals(look(Side.S).getFacing(), Side.S, "precondition: the icon does not face the only way out");
+
+            Components.drain(8);
+
+            final StringBuilder captions = new StringBuilder();
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                for (javax.swing.JLabel caption : ui.getLayoutStations(PLATFORM)) captions.append(caption.getText());
+            });
+
+            assertTrue(captions.toString().contains(OUR_TRAIN.substring(0, 3)), "precondition: no caption on"
+                + " TunnelLeftPark names the train: " + captions);
+
+            assertTrue(captions.toString().contains(StationCaption.ARROW_S) && !captions.toString().contains(
+                StationCaption.ARROW_N), "the caption on TunnelLeftPark, whose only way out is south, points the way the"
+                + " setup records while the icon faces south (OB-510): " + captions);
+        }
+        finally
+        {
+            putBack(asFound, copy);
+        }
+    }
+
+    /**
+     * On a square nothing arrives at, with one way out, Change Direction ticks that way out, where the caption and icon
+     * point, though the setup records the other way along the track, and offers nothing else to pick (OB-510).
+     *
+     * MUTATION: drop the only way out from `EditorTileMenus.facingFacts`, and this fails.
+     */
+    @Test
+    public void testWithOneWayOutChangeDirectionTicksIt() throws Exception
+    {
+        final org.json.JSONObject asFound = session.snapshotSetup();
+        final LayoutEditor[] editor = new LayoutEditor[1];
+
+        Point copy = null;
+
+        try
+        {
+            // 8,7 one-way away from TunnelLeftPark: trains leave it south and none arrive
+            copy = standItThere(Side.N, true);
+
+            openTheEditor(editor, model.getLayout(PAGE));
+
+            final javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+            SwingUtilities.invokeAndWait(() -> editor[0].getAutonomyPanel().addFacingItems(menu, PLATFORM));
+
+            assertTrue(menu.getComponentCount() > 0, "precondition: no Change Direction for the train on TunnelLeftPark");
+
+            final javax.swing.JMenuItem change = (javax.swing.JMenuItem) menu.getComponent(0);
+
+            assertEquals(change.getText(), I18n.f("autosetup.ui.menuChangeDirection", AutonomyEditorPanel.menuSide("S")),
+                "Change Direction on TunnelLeftPark, whose only way out is south, names another facing while the"
+                + " caption and icon point south (OB-510)");
+
+            assertFalse(change.isEnabled(), "Change Direction on TunnelLeftPark, which a train can leave only south,"
+                + " offers a choice (OB-510)");
+        }
+        finally
+        {
+            closeTheEditor(editor);
+
+            putBack(asFound, copy);
         }
     }
 
@@ -685,7 +776,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         session.placeLocomotive(PLATFORM, null);
 
-        closeOffTheWayOut(Side.S);
+        closeOffTheWayOut(Side.S, false);
 
         assertNull(session.getLocomotiveNameAt(PLATFORM), "precondition: the setup still places a train on"
             + " TunnelLeftPark");
@@ -800,7 +891,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
 
         try
         {
-            copy = standItThere(recorded);
+            copy = standItThere(recorded, false);
 
             return look(null);
         }
@@ -811,10 +902,10 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * The same as `standItThereAndLook`, then binds the diagram as a rebuild does; returns the copy the train stands
-     * on.
+     * The same as `standItThereAndLook` (8,7 one-way south instead where `leaveSouth`), then binds the diagram as a
+     * rebuild does; returns the copy the train stands on.
      */
-    private static Point standItThere(Side recorded) throws Exception
+    private static Point standItThere(Side recorded, boolean leaveSouth) throws Exception
     {
         if (!session.getRoutes(PLATFORM).values().iterator().next().touches(Side.N)
             || session.getRoutes(PLATFORM).values().iterator().next().touches(Side.E))
@@ -822,7 +913,7 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
             throw new AssertionError("TunnelLeftPark does not run north to south on this snapshot");
         }
 
-        closeOffTheWayOut(recorded);
+        closeOffTheWayOut(recorded, leaveSouth);
 
         assertEquals(session.getFacing(PLATFORM), recorded, "precondition: the setup does not record the facing given");
 
@@ -881,12 +972,17 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
     }
 
     /**
-     * Makes both arrows of 8,7 red, records TunnelLeftPark facing the way given, builds the railway from the setup and
-     * checks no way out is left.
+     * Makes both arrows of 8,7 red (only the northward one where `leaveSouth`), records TunnelLeftPark facing the way
+     * given, builds the railway from the setup and checks Change Direction offers no way out.
      */
-    private static void closeOffTheWayOut(Side recorded) throws Exception
+    private static void closeOffTheWayOut(Side recorded, boolean leaveSouth) throws Exception
     {
-        for (RouteId road : session.getRoutes(BELOW).keySet()) session.setDirection(BELOW, road, Direction.NONE);
+        for (java.util.Map.Entry<RouteId, org.traincontrol.automationui.TilePorts.Route> road
+            : session.getRoutes(BELOW).entrySet())
+        {
+            session.setDirection(BELOW, road.getKey(), !leaveSouth ? Direction.NONE
+                : road.getValue().getA() == Side.N ? Direction.TOWARD_B : Direction.TOWARD_A);
+        }
 
         session.setFacing(PLATFORM, recorded);
 

@@ -141,14 +141,15 @@ final class StationCaptions
     {
         AutonomySession session = this.ui.getAutonomySession();
 
-        if (session == null || square == null) return "";
-
         // Only a facing the track runs (OB-348); the icon cannot be drawn along any other
-        TilePorts.Side facing = session.recordedFacingAlongTheTrack(square);
+        return session == null || square == null ? "" : arrow(session.recordedFacingAlongTheTrack(square));
+    }
 
+    /** A space and the side's arrow, or "" for none. */
+    private static String arrow(TilePorts.Side facing)
+    {
         if (facing == null) return "";
 
-        // The space belongs to the arrow: callers append this straight onto a name just cut to length.
         switch (facing)
         {
             case N: return " " + StationCaption.ARROW_N;
@@ -205,17 +206,9 @@ final class StationCaptions
         // A crowded square speaks for the copy handed in, not for the first occupied one.
         if (facing == null) facing = session.getStationIndex().facingsAt(square).get(at.getName());
 
-        // A square that never splits has one copy and no facing of its own; use what a hand-placed train wrote there.
-        if (facing == null) return facingArrow(square);
-
-        switch (facing)
-        {
-            case N: return " " + StationCaption.ARROW_N;
-            case S: return " " + StationCaption.ARROW_S;
-            case E: return " " + StationCaption.ARROW_E;
-            case W: return " " + StationCaption.ARROW_W;
-            default: return "";
-        }
+        // Else its only way out, as the icon has it (OB-510)
+        if (facing == null) facing = session.getStationIndex().onlyWayOutAt(square);
+        return facing == null ? facingArrow(square) : arrow(facing);
     }
 
     /** Writes one Point's autonomy state onto the diagram's station labels; gated on a setup running, not a window. */

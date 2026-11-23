@@ -7805,7 +7805,8 @@ public class AutonomySession
 
     /**
      * The setup's recorded facing for the train here where the track runs that way, else null (OB-348); the record as
-     * it stands where the track cannot be asked.  The icon, caption and Change Direction menu all read this.
+     * it stands where the track cannot be asked.  What the icon and caption fall back to where neither a copy nor an
+     * only way out says (`StationIndex.onlyWayOutAt`), and what Change Direction ticks.
      */
     public Side recordedFacingAlongTheTrack(TileKey square)
     {
