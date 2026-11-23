@@ -143,8 +143,8 @@ public final class SyncDifferencesWindow
         {
             rename = choice(r, radios, group, Answer.RENAME, I18n.f("sync.ui.rename", name, r.stationName),
                 r.whyNot(true));
-            // A both-ways row's grayed rename has no Deletes note
-            if (!twice || r.whyNot(true) == null)
+            // A grayed rename deletes nothing, so it has no Deletes note
+            if (r.whyNot(true) == null)
             {
                 deletes = mark(name + ":deletes", null);
                 deletes.setForeground(DELETES);
