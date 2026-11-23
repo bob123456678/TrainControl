@@ -346,6 +346,50 @@ public class testATrainWithNoWayOutFacesAlongItsTrack
         }
     }
 
+    /**
+     * On a square nothing arrives at, with one way out, Change Direction ticks that way out, where the caption and icon
+     * point, though the setup records the other way along the track, and offers nothing else to pick (OB-510).
+     *
+     * MUTATION: drop the only way out from `EditorTileMenus.facingFacts`, and this fails.
+     */
+    @Test
+    public void testWithOneWayOutChangeDirectionTicksIt() throws Exception
+    {
+        final org.json.JSONObject asFound = session.snapshotSetup();
+        final LayoutEditor[] editor = new LayoutEditor[1];
+
+        Point copy = null;
+
+        try
+        {
+            // 8,7 one-way away from TunnelLeftPark: trains leave it south and none arrive
+            copy = standItThere(Side.N, true);
+
+            openTheEditor(editor, model.getLayout(PAGE));
+
+            final javax.swing.JPopupMenu menu = new javax.swing.JPopupMenu();
+
+            SwingUtilities.invokeAndWait(() -> editor[0].getAutonomyPanel().addFacingItems(menu, PLATFORM));
+
+            assertTrue(menu.getComponentCount() > 0, "precondition: no Change Direction for the train on TunnelLeftPark");
+
+            final javax.swing.JMenuItem change = (javax.swing.JMenuItem) menu.getComponent(0);
+
+            assertEquals(change.getText(), I18n.f("autosetup.ui.menuChangeDirection", AutonomyEditorPanel.menuSide("S")),
+                "Change Direction on TunnelLeftPark, whose only way out is south, names another facing while the"
+                + " caption and icon point south (OB-510)");
+
+            assertFalse(change.isEnabled(), "Change Direction on TunnelLeftPark, which a train can leave only south,"
+                + " offers a choice (OB-510)");
+        }
+        finally
+        {
+            closeTheEditor(editor);
+
+            putBack(asFound, copy);
+        }
+    }
+
     /** The same on every square of the snapshot that offers one facing, for every way its track does not run. */
     @Test
     public void testEverySquareWithOneWayOutGuessesIt()
