@@ -137,7 +137,8 @@ public final class SyncDifferencesWindow
             null)};
         if (r.byHand)
         {
-            JLabel where = text(whereByHand(r), GRAYED);
+            JLabel where = text(I18n.f("sync.ui.byHandWhere", r.stationName, there(l) + l.getAddress(), name, there(l)
+                + r.stationAddress), GRAYED);
             where.setName(name + ":byHand");
             return new JComponent[] {ChoiceTable.lines(here), ChoiceTable.lines(this.table.line(text(I18n.t(
                 "sync.ui.byHand"), GRAYED)), this.table.line(where))};
@@ -187,13 +188,6 @@ public final class SyncDifferencesWindow
     private static String there(Locomotive l)
     {
         return (l.hasLinkedLocomotives() ? l.getDecoderType().name() : l.getDecoderTypeLabel()) + " ";
-    }
-
-    /** Where the station has a by-hand row's two locomotives: the one at its address, then the one under its name. */
-    static String whereByHand(Row r)
-    {
-        return I18n.f("sync.ui.byHandWhere", r.stationName, there(r.loco) + r.loco.getAddress(), r.loco.getName(),
-            there(r.loco) + r.stationAddress);
     }
 
     /** A row's radio for answer a, saying `said` on hover and to a screen reader; grayed, they say `whyNot`. */

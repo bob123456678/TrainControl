@@ -931,8 +931,9 @@ public class testTheSyncDifferencesWindow
                 Locomotive l = rig.model.getLocByName(each[0]);
                 check(problems, l == null ? null : l.getDecoderTypeLabel() + " " + l.getAddress(), each[2], each[0]
                     + " changed");
-                check(problems, java.util.Collections.frequency(log, I18n.f("loc.syncByHand", each[0], I18n.f(
-                    "sync.ui.byHandWhere", each[1], each[2], each[0], each[3]))), 1, each[0] + "'s log line " + log);
+                check(problems, java.util.Collections.frequency(log, I18n.f("loc.syncByHand", each[0], each[1],
+                    Integer.valueOf(each[2].substring(4)), Integer.valueOf(each[3].substring(4)))), 1, each[0]
+                    + "'s log line " + log);
             }
             check(problems, Arrays.asList(rig.model.getLocByName("SW Y"), rig.model.getLocByName("SW Shunter"),
                 rig.model.getLocByName("SW V 60") != null), Arrays.asList(null, null, true), "Y added, or no rename");

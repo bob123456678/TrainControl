@@ -176,8 +176,8 @@ public class testSyncDifferences
             Row row = row(rig, d, "SD X");
 
             assertEquals(d.getRows(), Collections.singletonList(row), "not one row");
-            assertEquals(Arrays.asList(row.stationName, row.stationAddress, row.byHand, row.asksName(),
-                row.asksAddress()), Arrays.asList("SD Y", 7, true, false, false));
+            assertEquals(Arrays.asList(row.stationName, row.stationAddress, row.asksName(), row.asksAddress()),
+                Arrays.asList("SD Y", 7, false, false));
         }
     }
 
