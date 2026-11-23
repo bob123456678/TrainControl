@@ -158,14 +158,10 @@ public class testTheSyncDifferencesWindow
                 check(problems, Arrays.asList(visible(t, "SW D", "deletes"), t.in("SW D", "deletes", JLabel.class)
                     .getText()), Arrays.asList(true, I18n.f("sync.ui.deletes", "SW Held", "MM2 36")),
                     "D's deleting mark on Apply");
-                t.in("SW D", "KEEP", AbstractButton.class).doClick();
-                check(problems, visible(t, "SW D", "deletes"), false, "D's deleting mark on Keep As Is");
-                t.in("SW D", "ASK", AbstractButton.class).doClick();
-                check(problems, visible(t, "SW T", "collision"), true, "T's triangle");
-                t.in("SW B", "ADDRESS", AbstractButton.class).doClick();
-                check(problems, visible(t, "SW A", "collision"), false, "A's triangle with B moved");
-                t.in("SW B", "KEEP", AbstractButton.class).doClick();
-                check(problems, visible(t, "SW A", "collision"), true, "A's triangle once B is kept");
+                pick(t, problems, "SW D", "KEEP", "SW D", "deletes", false, "D's deleting mark on Keep As Is");
+                pick(t, problems, "SW D", "ASK", "SW T", "collision", true, "T's triangle");
+                pick(t, problems, "SW B", "ADDRESS", "SW A", "collision", false, "A's triangle with B moved");
+                pick(t, problems, "SW B", "KEEP", "SW A", "collision", true, "A's triangle once B is kept");
                 // Each Set all in turn, over the one before
                 for (String[] each : new String[][] {{"sync.ui.thisComputer", "KEEP KEEP KEEP KEEP KEEP KEEP KEEP"
                     + " KEEP"}, {"sync.ui.askAgain", "ASK ASK ASK ASK ASK ASK ASK ASK"}})
@@ -1187,6 +1183,14 @@ public class testTheSyncDifferencesWindow
         AbstractButton b = t.in(row, "BOTH", AbstractButton.class);
         return b == null ? null : Arrays.asList(b.isEnabled(), b.getToolTipText(), b.getAccessibleContext()
             .getAccessibleName());
+    }
+
+    /** Picks `choice` on `row`, then checks whether `markRow` shows `mark`. */
+    private static void pick(SyncTable.Shown t, List<String> problems, String row, String choice, String markRow,
+        String mark, boolean shown, String what)
+    {
+        t.in(row, choice, AbstractButton.class).doClick();
+        check(problems, visible(t, markRow, mark), shown, what);
     }
 
     private static void check(List<String> problems, Object got, Object expected, String what)
