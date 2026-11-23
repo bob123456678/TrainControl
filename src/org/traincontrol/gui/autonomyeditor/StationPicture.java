@@ -12,6 +12,8 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -40,6 +42,7 @@ import org.traincontrol.gui.InfoMark;
 import org.traincontrol.gui.LayoutLabel;
 import org.traincontrol.gui.Listen;
 import org.traincontrol.gui.TrainControlUI;
+import org.traincontrol.gui.widgets.HandPointer;
 import org.traincontrol.gui.widgets.UiStyle;
 import org.traincontrol.util.I18n;
 
@@ -79,12 +82,12 @@ final class StationPicture extends JPanel
         void press(Mark mark);
     }
 
-    /** One clickable mark: a station's way in at a side, or a next square's arrow at one of its sides. */
+    /** One clickable mark: a station's way in at a side, a next square's arrow at one of its sides, or the station. */
     static final class Mark
     {
         enum Kind
         {
-            IN, NEIGHBOR
+            IN, NEIGHBOR, DEPART
         }
 
         final Kind kind;
@@ -368,6 +371,10 @@ final class StationPicture extends JPanel
             if (their != null) neighborMarks(out, cell(side), showing.beside(side), their);
         }
 
+        // A click on the station steps May depart (OB-511), around its ways in, so marks never overlap
+        Area station = new Area(middle);
+        for (Mark mark : out) if (mark.kind == Mark.Kind.IN) station.subtract(new Area(mark.shape));
+        out.add(new Mark(Mark.Kind.DEPART, showing, null, true, station));
         return out;
     }
 
@@ -553,6 +560,15 @@ final class StationPicture extends JPanel
 
                 if (mark != null) doors.press(mark);
             }));
+            addMouseMotionListener(new MouseMotionAdapter()
+            {
+                @Override
+                public void mouseMoved(MouseEvent e)
+                {
+                    Mark mark = doors == null ? null : at(e.getPoint());
+                    setCursor(mark != null && mark.kind == Mark.Kind.DEPART ? HandPointer.cursor() : null);
+                }
+            });
         }
 
         /**

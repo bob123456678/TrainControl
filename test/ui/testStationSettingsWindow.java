@@ -4087,6 +4087,109 @@ public class testStationSettingsWindow
         }
     }
 
+    /**
+     * A click on the station in the picture steps May depart to its list's next answer, through the list, round every
+     * answer and back to the first, and the picture's red arrow follows each step (OB-511; Adam: "when clicking the
+     * arrows on the station in the station editor, can we get it to cycle the "can depart" dropdown options?").  The
+     * pointer over it is the hand, and its tooltip says what the click does.
+     *
+     * MUTATION: have `StationSettingsWindow.departNext` leave the list alone, and this fails.
+     */
+    @Test(timeOut = 180000)
+    public void testAClickOnTheStationStepsMayDepart() throws Exception
+    {
+        TileKey square = aStationWhereMayDepart();
+        RouteId road = onlyRoad(square);
+
+        org.traincontrol.automationui.TilePorts.Route route = Components.onTheEventThread(() -> session.getRoutes(square).get(road));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        try
+        {
+            javax.swing.JComponent block = StationDoors.part(window, "station.picture.ways", javax.swing.JComponent.class);
+
+            int answers = Components.onTheEventThread(() -> departList(window).getItemCount());
+            int first = Components.onTheEventThread(() -> departList(window).getSelectedIndex());
+
+            assertTrue(answers >= 3, "precondition: May depart offers " + answers + " answers");
+
+            for (int step = 1; step <= answers; step++)
+            {
+                String[] hover = new String[3];
+
+                routedClick(window, "DEPART", hover);
+                StationDoors.current(window);
+
+                assertTrue(hover[2] != null && hover[2].contains(I18n.t("autosetup.ui.stationPicDepart")), "the station's tooltip"
+                    + " is " + hover[2]);
+                assertTrue(Components.onTheEventThread(() -> HandPointer.isHand(block.getCursor())), "no hand over the station");
+
+                int now = (first + step) % answers;
+
+                assertEquals((int) Components.onTheEventThread(() -> departList(window).getSelectedIndex()), now, "click "
+                    + step + " did not step May depart to its next answer");
+
+                Direction way = wayOf(square, road);
+
+                assertEquals(way, meant(square, road, departShows(window)), "the station does not run as May depart says");
+
+                Set<String> shut = way == Direction.BOTH ? set() : set(String.valueOf(way == Direction.TOWARD_A ? route.getB()
+                    : route.getA()));
+
+                assertEquals(sidesDrawnIn(window, CLOSED_RED), shut, "the picture's red arrow after click " + step);
+            }
+        }
+        finally
+        {
+            StationDoors.close(window);
+        }
+    }
+
+    /**
+     * Where May depart is grayed, at a track end, a click on the station changes neither the list nor the setup, and its
+     * tooltip gives the (i)'s reason (OB-511).
+     *
+     * MUTATION: have `StationSettingsWindow.departNext` step a grayed list too, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testAGrayedMayDepartIsNotSteppedByAClick() throws Exception
+    {
+        TileKey square = aPlainStationWhere(each -> session.deadEndSide(each) != null && leavesBothWays(each),
+            "at the end of a line");
+
+        String end = Components.onTheEventThread(() -> String.valueOf(session.deadEndSide(square)));
+
+        StationSettingsWindow window = StationDoors.open(panel, square);
+
+        try
+        {
+            assertFalse(StationDoors.live(window, "station.depart.0"), "precondition: May depart is live at a track end");
+
+            Object shown = departShows(window);
+            String before = setup();
+            String[] hover = new String[3];
+
+            routedClick(window, "DEPART", hover);
+            StationDoors.current(window);
+
+            assertEquals(departShows(window), shown, "a click stepped a grayed May depart");
+            assertEquals(setup(), before, "a click on a station with May depart grayed changed the setup");
+            assertTrue(hover[2] != null && hover[2].contains(I18n.f("autosetup.ui.flyDepartForced", I18n.t("autosetup.ui.side"
+                + end))), "the tooltip does not say why: " + hover[2]);
+        }
+        finally
+        {
+            StationDoors.close(window);
+        }
+    }
+
+    /** May depart's first list. */
+    private static javax.swing.JComboBox<?> departList(StationSettingsWindow window)
+    {
+        return Components.named(window, "station.depart.0", javax.swing.JComboBox.class);
+    }
+
     /** Each picture square's arrows by side, as the picture draws them or as the diagram's pass does; a follower left out. */
     private static Map<String, String> arrowsIn(StationSettingsWindow window, TileKey station, boolean picture) throws Exception
     {
@@ -5691,10 +5794,14 @@ public class testStationSettingsWindow
     /** Whether a mark's tooltip gives the reason its click can change nothing. */
     private static boolean refusal(String tip, String key)
     {
-        String side = key.substring(key.length() - 1);
+        List<String> reasons = new java.util.ArrayList<>(Arrays.asList(I18n.t("autosetup.ui.stationPicInKept"),
+            I18n.t("autosetup.ui.stationPicCannot")));
 
-        for (String reason : new String[] {I18n.t("autosetup.ui.stationPicInKept"),
-            I18n.t("autosetup.ui.stationPicCannot"), I18n.f("autosetup.ui.hintOneWayIn", I18n.t("autosetup.ui.side" + side))})
+        // A mark at a side: the station's own ("DEPART") has none
+        if (key.contains(".")) reasons.add(I18n.f("autosetup.ui.hintOneWayIn",
+            I18n.t("autosetup.ui.side" + key.substring(key.length() - 1))));
+
+        for (String reason : reasons)
         {
             if (tip != null && tip.contains(reason)) return true;
         }

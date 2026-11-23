@@ -1609,12 +1609,14 @@ public final class StationSettingsWindow extends StationWindowBase
         }
 
         fly("depart", StationFlyovers.depart(said == null ? I18n.t("autosetup.ui.labelNone") : said, why));
+        departWhy = why;
 
         depart.revalidate();
     }
 
-    /** The roads, with their sides, the May depart lists were built for. */
+    /** The roads, with their sides, the May depart lists were built for; and why May depart is grayed, or null. */
     private List<Object> departShape;
+    private String departWhy;
 
     private String namesOf(List<TileKey> squares)
     {
@@ -1757,6 +1759,7 @@ public final class StationSettingsWindow extends StationWindowBase
         String held = whyHeld();
 
         String[] said = mark.kind == StationPicture.Mark.Kind.IN ? wayIn(mark, press && held == null)
+            : mark.kind == StationPicture.Mark.Kind.DEPART ? departNext(press && held == null)
             : nextSquare(mark, press && held == null);
 
         String then = held != null ? held : said[1];
@@ -1798,6 +1801,15 @@ public final class StationSettingsWindow extends StationWindowBase
         if (press) box.doClick();
 
         return said(means, I18n.t(barred ? "autosetup.ui.stationPicInShut" : "autosetup.ui.stationPicInOpen"));
+    }
+
+    /** The station's square steps May depart to its list's next answer, through the list and its refusals (OB-511). */
+    private String[] departNext(boolean press)
+    {
+        JComboBox<String> choice = departChoices.size() == 1 ? departChoices.values().iterator().next() : null;
+        if (choice == null || !choice.isEnabled()) return said(departWhy, I18n.t("autosetup.ui.stationPicCannot"));
+        if (press) choice.setSelectedIndex((choice.getSelectedIndex() + 1) % choice.getItemCount());
+        return said(null, I18n.t("autosetup.ui.stationPicDepart"));
     }
 
     /** A next square's arrow, set as its right-click menu's Trains May Depart sets it: its one track, or that arm. */
@@ -1904,8 +1916,9 @@ public final class StationSettingsWindow extends StationWindowBase
     }
 
     /**
-     * @return in the picture's block's pixels: "IN.N" (a station's way in), "AXIS.N" (that side's axis),
-     *     "NEXT.N.W" (the next square to the north's arrow at its west side), "SQUARE" and "SQUARE.N" (the squares)
+     * @return in the picture's block's pixels: "IN.N" (a station's way in), "DEPART" (the station), "AXIS.N" (that
+     *     side's axis), "NEXT.N.W" (the next square to the north's arrow at its west side), "SQUARE" and "SQUARE.N"
+     *     (the squares)
      */
     public Map<String, Shape> pictureMarksForTest()
     {
@@ -1946,6 +1959,7 @@ public final class StationSettingsWindow extends StationWindowBase
     {
         boolean next = mark.kind == StationPicture.Mark.Kind.NEIGHBOR;
 
+        if (mark.side == null) return mark.kind.name();
         return (next ? "NEXT." + sideOf(mark.square) : mark.kind.name()) + "." + mark.side.name();
     }
 
