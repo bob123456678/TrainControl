@@ -646,7 +646,13 @@ def in_live_layout(word, places):
 
 
 # Deletes outside the scratch folders ask, in every session.  Scratch is anything under the temp folder, Claude's
-# scratchpads and worktrees with it, spelled from the environment.
+# scratchpads and worktrees with it, spelled from the environment.  A plain delete of literal paths that recycle.py
+# would take is refused instead, pointing at recycle.py, so it lands in the Recycle Bin with no prompt for Adam.
+RECYCLE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'recycle.py')
+PLAIN_DELETES = {'rm', 'rmdir', 'unlink', 'remove-item', 'ri', 'del', 'erase', 'rd'}
+# Each delete reaching outside the scratch folders: its full path when recycle.py could take it in place of the
+# command, else None
+OUTSIDE = []
 
 def env_dir(name):
     v = os.environ.get(name) or ''
@@ -715,22 +721,23 @@ def in_scratch(path, root_too):
 
 
 def outside(word, place, names, dialect, root_too):
-    """Why deleting word from place may reach outside the scratch folders; None when it stays inside.  A pattern is
-    judged by its literal leading folder, and root_too lets that folder (or a find's) be a scratch folder itself."""
+    """Why deleting word from place may reach outside the scratch folders, whether that is sure, and the full path
+    when the word is a literal one; None when it stays inside.  A pattern is judged by its literal leading folder, and
+    root_too lets that folder (or a find's) be a scratch folder itself."""
     w = expand(word, names)
     if w is None:
-        return word + ', a path the guard cannot read,', False
+        return word + ', a path the guard cannot read,', False, None
     parts = re.split(r'[/\\]', w)
     at = next((k for k, s in enumerate(parts) if re.search(r'[*?\[{]' if dialect == 'bash' else r'[*?\[]', s)), None)
     if at is not None:
         if '..' in parts[at + 1:]:
-            return word + ', a pattern that climbs out with "..",', False
+            return word + ', a pattern that climbs out with "..",', False, None
         w = '/'.join(parts[:at]) or ('/' if w[:1] in '/\\' else '.')
         w, root_too = w + '/' if w.endswith(':') else w, True
     p = full_path(w, place, dialect)
     if p is None:
-        return word + ' in a folder the guard cannot place,', False
-    return None if in_scratch(p, root_too) else (word + ' (' + p + ')', True)
+        return word + ' in a folder the guard cannot place,', False, None
+    return None if in_scratch(p, root_too) else (word + ' (' + p + ')', True, None if at is not None else p)
 
 
 CDS = {'cd', 'pushd', 'chdir', 'set-location', 'sl', 'push-location'}
@@ -1098,20 +1105,28 @@ def follow(segs, cwd):
                     lost = True
                 else:
                     gone.append(os.path.normcase(full))
-        if why:
-            continue
         if what == 'input':
-            why = 'this deletes paths it reads from its input, which may be outside the scratch folders (under ' + \
-                TEMP_DIR + '); a delete there waits for Adam\'s go.'
+            OUTSIDE.append(None)
+            why = why or 'this deletes paths it reads from its input, which may be outside the scratch folders ' \
+                '(under ' + TEMP_DIR + '); a delete there waits for Adam\'s go.'
+        plain = verb == 'deletes ' and name in PLAIN_DELETES
         for word, root_too in (what if isinstance(what, list) else []):
-            if why or (dialect == 'ps' and re.match(r'^(env|variable|function|alias):', word, re.I)):
+            if dialect == 'ps' and re.match(r'^(env|variable|function|alias):', word, re.I):
                 continue  # a session's variable or function, not a file
             for p, value in [(p, v) for p in here for v in each_value(word, loops, names)]:
                 bad = outside(word, p, value, dialect, root_too)
                 if bad:
-                    why = 'this ' + verb + bad[0] + (', which is outside' if bad[1] else ' so it may be outside') + \
+                    # A relative path from a folder that is not sure is not one recycle.py can be given
+                    lit = expand(word, value) or ''
+                    sure = len(here) == 1 or bool(re.match(r'^([A-Za-z]:[\\/]|/[a-zA-Z](/|$))', lit))
+                    # Git Bash's /usr, /etc, /bin are Git's own folders, which the guard reads as C:\usr
+                    sure = sure and not (dialect == 'bash' and lit[:1] == '/' and
+                                         not re.match(r'^/[a-zA-Z](/|$)', lit))
+                    OUTSIDE.append(bad[2] if plain and not root_too and sure and
+                                   re.match(r'^[A-Za-z]:[\\/]', bad[2] or '') else None)
+                    why = why or 'this ' + verb + bad[0] + (', which is outside' if bad[1] else
+                                                            ' so it may be outside') + \
                         ' the scratch folders (under ' + TEMP_DIR + '); a delete there waits for Adam\'s go.'
-                    break
     return why, out
 
 
@@ -1320,7 +1335,26 @@ def judge_shell(cmd, cwd, ps):
                for k, (words, targets) in enumerate(segs)):
             answer('ask', 'this may write or remove Adam\'s live LocDB.data, UIState.data or autonomy.json.')
     if removal:
+        recycled = recyclable() if not ASKED else None
+        if recycled:
+            answer('deny', removal.replace('; a delete there waits for Adam\'s go.', '.') + '  Deletes there go to '
+                   'the Recycle Bin instead, with no prompt for Adam: run python "' + RECYCLE.replace('\\', '/') +
+                   '" ' + ' '.join('"' + p.replace('\\', '/') + '"' for p in recycled) + ' in place of the delete.')
         answer('ask', removal)
+
+
+def recyclable():
+    """The paths of this call's deletes outside the scratch folders, when recycle.py would take every one of them in
+    place of the call's deletes; None otherwise."""
+    if not OUTSIDE or None in OUTSIDE:
+        return None
+    try:
+        sys.path.insert(0, os.path.dirname(RECYCLE))
+        import recycle
+        paths = sorted(set(OUTSIDE), key=OUTSIDE.index)
+        return None if recycle.refusal(paths) else paths
+    except Exception:
+        return None
 
 
 def main():

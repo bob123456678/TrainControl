@@ -31,6 +31,7 @@ public class PositionAwareJFrame extends JFrame
 
     // The preference key
     public static final String REMEMBER_WINDOW_LOCATION = "WindowLocation" + Conversion.getFolderHash(10);
+    public static boolean remembersWindowLocations() { return TrainControlUI.getPrefs().getBoolean(REMEMBER_WINDOW_LOCATION, true); }
 
     // Preferences store - can be changed
     // TODO - could be replaced and de-coupled by an abstract method call
@@ -95,7 +96,7 @@ public class PositionAwareJFrame extends JFrame
         try
         {
             String windowName = this.getWindowName();
-            if (prefs.getBoolean(REMEMBER_WINDOW_LOCATION, false))
+            if (remembersWindowLocations())
             {
                 if (isVisible())
                 {
@@ -125,7 +126,7 @@ public class PositionAwareJFrame extends JFrame
         {
             this.loaded = true;
             
-            if (!prefs.getBoolean(TrainControlUI.REMEMBER_WINDOW_LOCATION, false)) return;
+            if (!remembersWindowLocations()) return;
 
             String windowName = this.getWindowName();
             if (prefs.get(windowName + "_x", null) != null && prefs.get(windowName + "_y", null) != null)

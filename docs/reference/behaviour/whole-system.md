@@ -306,9 +306,12 @@ reload after the import goes ahead; the imported one is loaded only where nothin
 configuration its trains went into and, where another is in use, where to choose it. It leaves Startup > Load Autonomy
 as the operator set it. `regression.testALegacyImportLeavesLoadAutonomyAlone`.
 
-**Once a configuration exists, New Configuration is the one door to another** (Adam: *"One door: do it"*): a copy of the
-one chosen, which asks whether where the trains stand and the timetable come too. Add a Configuration is offered only
-for the very first. `regression.testNoSetupEditDuringARun.testManageOffersOneDoorToANewConfiguration`.
+**Once a configuration exists, New Configuration and Save As are the doors to another** (Adam: *"One door: do it"*,
+then *"New should create a New, blank setup without locomotives"* and a Save As that duplicates).  New makes a blank
+configuration, the stations and settings only.  Save As duplicates the current one, and can replace another saved
+configuration after a warning whose default is No, never the one loaded or running.  Add a Configuration is offered
+only for the very first.  `regression.testNoSetupEditDuringARun.testManageOffersOneDoorToANewConfiguration`,
+`regression.testNoSetupEditDuringARun.testSaveAsReplacesAnotherConfigurationOnlyWhenConfirmed`.
 
 - **Into the configuration in use**: a bundle under that name is refused, and so is a configuration of the older, bare
   shape (the setup folder's own file, or an export from before bundles), with where to choose it once imported under
@@ -320,9 +323,9 @@ for the very first. `regression.testNoSetupEditDuringARun.testManageOffersOneDoo
 - **While autonomy runs every import is refused**, as Delete is, before it asks for a file: into the configuration in
   use the reload's capture would take back what the import brought, and into another the fold after a declined reload
   would read the running railway through names the import had changed. So is every export, before it asks where (MT-601;
-  Adam: *"Export should also only be allowed once we are stopped"*), and New Configuration, Rename and Add
-  Configuration, before they ask a name.
-- **At rest**, New Configuration and Export fold the running railway into the configuration first, so the copy and the
+  Adam: *"Export should also only be allowed once we are stopped"*), and New Configuration, Save As, Rename and
+  Add Configuration, before they ask a name, and with an editor open.
+- **At rest**, New Configuration, Save As and Export fold the running railway into the configuration first, so the copy and the
   file have the trains where they are and the settings and timetable as they now run, and the configuration running
   stays the one the next start resumes.
 - **No import folds the running layout into the setup while a setup edit a run declined waits for its rebuild**, neither
