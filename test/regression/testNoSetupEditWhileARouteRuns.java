@@ -2378,7 +2378,7 @@ public class testNoSetupEditWhileARouteRuns
         {
             try
             {
-                ui.diagramLocGestures().setHoveredDiagramTile(over.getPage(), over.getX(), over.getY());
+                ui.setHoveredDiagramTile(over.getPage(), over.getX(), over.getY());
 
                 handled[0] = door.invoke(ui, key, false);
             }

@@ -388,7 +388,7 @@ public final class StationDoors
     public static javax.swing.JPopupMenu diagramMenu(final org.traincontrol.gui.TrainControlUI ui, final TileKey square)
         throws Exception
     {
-        return diagramMenu(ui, square, Components.onTheEventThread(() -> ui.stationCaptions().getAutonomyPointForTile(square)));
+        return diagramMenu(ui, square, Components.onTheEventThread(() -> ui.getAutonomyPointForTile(square)));
     }
 
     /** The same, for the railway's Point the menu is about. */

@@ -3480,7 +3480,7 @@ public class testTheImportDoorReadsAnOldFile
                 {
                     labels.invoke(captions, at);
                     arrow.invoke(captions, at, square);
-                    ui.stationCaptions().getAutonomyPointForTile(square);
+                    ui.getAutonomyPointForTile(square);
                     ui.stationCaptions().getAutonomyOccupantsForTile(square);
                 }
                 catch (ReflectiveOperationException e)

@@ -174,7 +174,7 @@ public class testTheCaptionsComeWithTheirPage
         final TileKey from = aTrainStandingAlone();
         final Locomotive train = ui.stationCaptions().getAutonomyOccupantsForTile(from).get(0).getCurrentLocomotive();
 
-        final String fromPoint = ui.stationCaptions().getAutonomyPointForTile(from).getName();
+        final String fromPoint = ui.getAutonomyPointForTile(from).getName();
         final String saidFrom = captionText(from);
 
         TileKey to = null;
@@ -182,7 +182,7 @@ public class testTheCaptionsComeWithTheirPage
 
         for (TileKey square : captionedSquaresShown())
         {
-            Point empty = ui.stationCaptions().getAutonomyPointForTile(square);
+            Point empty = ui.getAutonomyPointForTile(square);
 
             if (empty == null || !ui.stationCaptions().getAutonomyOccupantsForTile(square).isEmpty()) continue;
 

@@ -305,7 +305,7 @@ public class testThePlaceDoorsKeepTheHeading
             TailCrossedPrompt.answerForTests(null);
 
             // THE EDITOR, as Autonomy > Edit Autonomy > 1 - Main opens it.
-            SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(tunnel.getPage()));
+            SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
 
             final java.awt.Window[] opened = new java.awt.Window[1];
 
@@ -452,7 +452,7 @@ public class testThePlaceDoorsKeepTheHeading
                 + ui.whyLayoutCannotBeEdited());
 
             // THE EDITOR, as Autonomy > Edit Autonomy opens it - and then minimized.
-            SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(tunnel.getPage()));
+            SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(tunnel.getPage()));
 
             for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
             {
@@ -780,7 +780,7 @@ public class testThePlaceDoorsKeepTheHeading
         {
             try
             {
-                ui.diagramLocGestures().setHoveredDiagramTile(over.getPage(), over.getX(), over.getY());
+                ui.setHoveredDiagramTile(over.getPage(), over.getX(), over.getY());
 
                 handled[0] = door.invoke(ui, key, true);
             }

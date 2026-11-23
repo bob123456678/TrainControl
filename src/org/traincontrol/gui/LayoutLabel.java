@@ -275,14 +275,14 @@ public final class LayoutLabel extends JLabel
                 {
                     // From the label's own square, not from what is drawn on it: a station's name sits on blank space
                     // beside the platform and must stay aimable.
-                    tcUI.diagramLocGestures.setHoveredDiagramTile(hovering.autonomyPage,
+                    tcUI.setHoveredDiagramTile(hovering.autonomyPage,
                         hovering.squareX, hovering.squareY);
                 }
 
                 @Override
                 public void mouseExited(MouseEvent e)
                 {
-                    tcUI.diagramLocGestures.setHoveredDiagramTile(null, -1, -1);
+                    tcUI.setHoveredDiagramTile(null, -1, -1);
                 }
             });
         }

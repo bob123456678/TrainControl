@@ -3271,6 +3271,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.stationCaptions.autonomyStationNameAt(station);
     }
 
+    public Point getAutonomyPointForTile(TileGraph.TileKey station)
+    {
+        return this.stationCaptions.getAutonomyPointForTile(station);
+    }
+
     final StationCaptions stationCaptions = new StationCaptions(this);
 
     public StationCaptions stationCaptions()
@@ -3816,6 +3821,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         this.editorWindows.autonomyEditorClosed();
     }
 
+    public void openAutonomyEditorOnPage(String page)
+    {
+        this.editorWindows.openAutonomyEditorOnPage(page);
+    }
+
     /** The window's editors: opening, closing, and whether the diagram may be edited. */
     final EditorWindows editorWindows = new EditorWindows(this);
 
@@ -3827,9 +3837,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     /** The diagram's keyboard gestures and the turns they write. */
     final DiagramLocGestures diagramLocGestures = new DiagramLocGestures(this);
 
-    public DiagramLocGestures diagramLocGestures()
+    public void setHoveredDiagramTile(String page, int x, int y)
     {
-        return this.diagramLocGestures;
+        this.diagramLocGestures.setHoveredDiagramTile(page, x, y);
     }
 
     /**
@@ -20977,7 +20987,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // The hovered square is cleared only when the pointer leaves one, so replacing the grid under a still pointer
         // left the OLD page's square remembered, and Control+X cut a locomotive from a platform on a page nobody was
         // looking at.
-        this.diagramLocGestures.setHoveredDiagramTile(null, -1, -1);
+        setHoveredDiagramTile(null, -1, -1);
         // Before a page window compares its page with what it drew, after any door that read the pages again
         ensureShowLayoutPreference(true);
 

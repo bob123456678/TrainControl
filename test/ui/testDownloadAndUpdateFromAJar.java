@@ -680,7 +680,7 @@ public class testDownloadAndUpdateFromAJar
 
         try (Answering answering = Answering.start(rule()))
         {
-            SwingUtilities.invokeLater(() -> ui.editorWindows().openAutonomyEditorOnPage(square[0].getPage()));
+            SwingUtilities.invokeLater(() -> ui.openAutonomyEditorOnPage(square[0].getPage()));
 
             for (long end = System.currentTimeMillis() + 60000; editor == null && System.currentTimeMillis() < end; )
             {

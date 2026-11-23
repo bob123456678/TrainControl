@@ -850,14 +850,13 @@ public class LayoutGrid
                             @Override
                             public void mouseEntered(MouseEvent e)
                             {
-                                ui.diagramLocGestures.setHoveredDiagramTile(station.getPage(), station.getX(),
-                                    station.getY());
+                                ui.setHoveredDiagramTile(station.getPage(), station.getX(), station.getY());
                             }
 
                             @Override
                             public void mouseExited(MouseEvent e)
                             {
-                                ui.diagramLocGestures.setHoveredDiagramTile(null, -1, -1);
+                                ui.setHoveredDiagramTile(null, -1, -1);
                             }
 
                             @Override

@@ -998,7 +998,7 @@ public class testStartingAutonomyFromTheWindow
 
         make.setAccessible(true);
 
-        final Point standing = Components.onTheEventThread(() -> ui.stationCaptions().getAutonomyPointForTile(square));
+        final Point standing = Components.onTheEventThread(() -> ui.getAutonomyPointForTile(square));
 
         final Object options = gather.invoke(null, ui, standing);
 

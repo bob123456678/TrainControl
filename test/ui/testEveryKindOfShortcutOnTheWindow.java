@@ -102,7 +102,7 @@ public class testEveryKindOfShortcutOnTheWindow
     @BeforeMethod
     public void standStill() throws Exception
     {
-        ui.diagramLocGestures().setHoveredDiagramTile(null, -1, -1);
+        ui.setHoveredDiagramTile(null, -1, -1);
 
         ui.clearCopyTarget();
 
@@ -510,13 +510,13 @@ public class testEveryKindOfShortcutOnTheWindow
 
         assertTrue(model.hasAutoLayout(), "precondition: no autonomy layout loaded");
 
-        ui.diagramLocGestures().setHoveredDiagramTile("no such page", 0, 0);
+        ui.setHoveredDiagramTile("no such page", 0, 0);
 
         Keys.press(keyboard(), KeyEvent.VK_DELETE);
 
         assertSame(locOn(KeyEvent.VK_A), one, "Delete over a diagram square reached the button instead of the gesture");
 
-        ui.diagramLocGestures().setHoveredDiagramTile(null, -1, -1);
+        ui.setHoveredDiagramTile(null, -1, -1);
 
         Keys.press(keyboard(), KeyEvent.VK_DELETE);
 

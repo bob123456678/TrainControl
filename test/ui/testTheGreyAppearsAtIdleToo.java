@@ -498,7 +498,7 @@ public class testTheGreyAppearsAtIdleToo
         {
             try
             {
-                ui.diagramLocGestures().setHoveredDiagramTile(square.getPage(), square.getX(), square.getY());
+                ui.setHoveredDiagramTile(square.getPage(), square.getX(), square.getY());
 
                 handled[0] = gesture.invoke(ui, KeyEvent.VK_DELETE, false);
             }

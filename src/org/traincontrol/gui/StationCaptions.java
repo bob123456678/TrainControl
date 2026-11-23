@@ -100,7 +100,7 @@ public final class StationCaptions
      * The running Point on a square, preferring one with a train on it (a square is several Points, only one holds the
      * locomotive).  By square, not caption text, which fails for a renamed or split station.  Null if nothing is there.
      */
-    public Point getAutonomyPointForTile(
+    Point getAutonomyPointForTile(
         TileGraph.TileKey station)
     {
         // Asked once, not built: asking whether there is a railway and then for it builds an empty one where Unload

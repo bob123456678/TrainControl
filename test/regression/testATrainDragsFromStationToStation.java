@@ -1290,7 +1290,7 @@ public class testATrainDragsFromStationToStation
 
             for (TileKey tile : session.getReducer().getPoints().keySet())
             {
-                if (PAGE.equals(tile.getPage()) && !session.getStore().isStation(tile) && ui.stationCaptions().getAutonomyPointForTile(tile) != null)
+                if (PAGE.equals(tile.getPage()) && !session.getStore().isStation(tile) && ui.getAutonomyPointForTile(tile) != null)
                 {
                     notAStation = tile;
                 }
@@ -2166,9 +2166,9 @@ public class testATrainDragsFromStationToStation
         onTheEventThread(() ->
         {
             selected.set(ui, train);
-            ui.diagramLocGestures().setHoveredDiagramTile(PAGE, from.getX(), from.getY());
+            ui.setHoveredDiagramTile(PAGE, from.getX(), from.getY());
             gesture.invoke(ui, KeyEvent.VK_X, true);
-            ui.diagramLocGestures().setHoveredDiagramTile(PAGE, to.getX(), to.getY());
+            ui.setHoveredDiagramTile(PAGE, to.getX(), to.getY());
             gesture.invoke(ui, KeyEvent.VK_V, true);
         });
 

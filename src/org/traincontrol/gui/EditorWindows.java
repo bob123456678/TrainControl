@@ -512,7 +512,7 @@ public final class EditorWindows
     }
 
     /** Opens the setup editor on a named page, switching the diagram to it first (a menu names no page). */
-    public void openAutonomyEditorOnPage(String page)
+    void openAutonomyEditorOnPage(String page)
     {
         // A menu item that names the setup editor is somebody saying which editor they want
         openLayoutEditor(page, Boolean.TRUE, null, true);

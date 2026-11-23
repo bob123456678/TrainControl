@@ -384,7 +384,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         java.lang.reflect.Method gather =
             Reflect.method(menu, "gatherPathOptions", TrainControlUI.class, org.traincontrol.automation.Point.class);
 
-        final Object answers = gather.invoke(null, ui, ui.stationCaptions().getAutonomyPointForTile(occupied));
+        final Object answers = gather.invoke(null, ui, ui.getAutonomyPointForTile(occupied));
 
         assertNotNull(answers,
             "the gather found nothing to offer for a square with a train standing on it, so the path"
@@ -891,7 +891,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
 
         for (org.traincontrol.automationui.TileGraph.TileKey square : squares)
         {
-            org.traincontrol.automation.Point at = ui.stationCaptions().getAutonomyPointForTile(square);
+            org.traincontrol.automation.Point at = ui.getAutonomyPointForTile(square);
 
             if (at != null && at.getCurrentLocomotive() != null) return square;
         }
@@ -899,7 +899,7 @@ public class testTheDiagramRefreshDoesNotWaitOnTheRailway
         // None standing, so one is put down: the first destination square, the first locomotive the setup means to run.
         for (org.traincontrol.automationui.TileGraph.TileKey square : squares)
         {
-            org.traincontrol.automation.Point at = ui.stationCaptions().getAutonomyPointForTile(square);
+            org.traincontrol.automation.Point at = ui.getAutonomyPointForTile(square);
 
             if (at == null || !at.isDestination()) continue;
 

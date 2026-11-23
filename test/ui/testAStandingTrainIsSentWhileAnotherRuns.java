@@ -315,7 +315,7 @@ public class testAStandingTrainIsSentWhileAnotherRuns
                 || squareOf(point) == null || !session.getStore().isStation(squareOf(point))
                 || railway().getPossiblePaths(train, true).isEmpty()) continue;
 
-            if (Components.onTheEventThread(() -> point.equals(ui.stationCaptions().getAutonomyPointForTile(squareOf(point)))))
+            if (Components.onTheEventThread(() -> point.equals(ui.getAutonomyPointForTile(squareOf(point)))))
             {
                 found.add(point);
             }
