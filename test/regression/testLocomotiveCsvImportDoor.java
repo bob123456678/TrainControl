@@ -41,12 +41,19 @@ public class testLocomotiveCsvImportDoor
     private static final String IMPORT = I18n.t("loc.ui.importCsvButton");
     private static final String CANCEL = I18n.t("ui.cancel");
 
+    /** The import question while it shows, for a claim's `whenAsked` to read and press. */
+    private static volatile JOptionPane asking;
+
     /** What the door showed and did. */
     private static final class Seen
     {
         volatile boolean chose;
         volatile String question;
+        /** The question was answered, after `whenAsked` ran. */
+        volatile boolean answered;
         volatile List<String> questionDetails = Collections.emptyList();
+        /** Every dialog's title, in the order they showed. */
+        final List<String> titles = Collections.synchronizedList(new ArrayList<>());
         final List<String> said = Collections.synchronizedList(new ArrayList<>());
         final List<support.PopupShape> saidShapes = Collections.synchronizedList(new ArrayList<>());
     }
@@ -82,8 +89,11 @@ public class testLocomotiveCsvImportDoor
         final boolean[] going = {true};
         final java.util.Set<Object> handled = Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
-        Thread answering = new Thread(() -> support.DialogWatch.until(() -> going[0], 150, dialog ->
+        // Stopped as it wakes, so a watcher left from an earlier press never answers the next press's question
+        Thread answering = new Thread(() -> support.DialogWatch.untilStillGoing(() -> going[0], 150, dialog ->
         {
+            if (handled.add(dialog)) seen.titles.add(dialog.getTitle());
+
             JFileChooser chooser = support.Components.inside(dialog.getContentPane(), JFileChooser.class);
 
             if (chooser != null)
@@ -118,8 +128,11 @@ public class testLocomotiveCsvImportDoor
             {
                 seen.question = shape.sentence;
                 seen.questionDetails = shape.details;
+                asking = pane;
 
                 if (whenAsked != null) whenAsked.run();
+
+                seen.answered = true;
 
                 SwingUtilities.invokeLater(() ->
                 {
@@ -1130,6 +1143,288 @@ public class testLocomotiveCsvImportDoor
             assertEquals(timed.getAddress(), 21, "the row's address was not taken because of its runtime");
             assertEquals(timed.getDecoderType(), Locomotive.decoderType.DCC);
             assertEquals(timed.getTotalRuntime(), 3600000L, "a runtime of 12:99:00 was filed");
+        });
+    }
+
+    /** Runs `look` while the question shows; a failure is kept in `failed`, so the question is still answered. */
+    private static Runnable safely(List<String> failed, Runnable look)
+    {
+        return () ->
+        {
+            try
+            {
+                look.run();
+            }
+            catch (Throwable t)
+            {
+                failed.add(String.valueOf(t));
+            }
+        };
+    }
+
+    /** The selected radios of the question's table, by name ("row:ANSWER"), top to bottom. */
+    private static List<String> picked()
+    {
+        List<String> out = new ArrayList<>();
+
+        for (javax.swing.JRadioButton b : support.Components.all(asking, javax.swing.JRadioButton.class,
+            javax.swing.JRadioButton::isSelected)) out.add(b.getName());
+
+        return out;
+    }
+
+    /** Clicks the question's control named `name`, or saying `text` when name is null, and waits for what it does. */
+    private static void click(String name, String text)
+    {
+        javax.swing.AbstractButton b = name != null ? support.Components.named(asking, name,
+            javax.swing.AbstractButton.class) : support.Components.withText(asking, text);
+
+        support.Components.onTheEventThread(() ->
+        {
+            b.doClick();
+            return null;
+        });
+    }
+
+    /** A file row for a new mfx locomotive. */
+    private static String mfx(String name, int address)
+    {
+        return name + ",,MFX," + address + ",0,0:00:00,0,0,,\n";
+    }
+
+    /**
+     * A new name at a decoder address a locomotive here holds is a possible duplicate (FR-249): the question shows it in
+     * a table, one row starting on Keep Both, and counts only the other new locomotive with the new ones.  A file with no
+     * possible duplicate has no table, and Cancel imports nothing.
+     *
+     * MUTATION: make `MarklinLocomotiveCsv.duplicates` find none, and this fails.
+     */
+    @Test
+    public void testAPossibleDuplicateIsAskedInATableAndCancelImportsNothing() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final String here = "FR249 door here", twin = "FR249 door twin", alone = "FR249 door alone";
+            final int held = freeAddress(model, 13000);
+
+            model.newMFXLocomotive(here, held);
+
+            final int free = freeAddress(model, held - 1);
+            File file = write(HEADER + mfx(twin, held) + mfx(alone, free));
+            File plain = write(HEADER + mfx(alone, free));
+            List<String> rows = new ArrayList<>(), none = new ArrayList<>(), failed = new ArrayList<>();
+
+            try
+            {
+                Map<String, String> before = everyLocomotive(model);
+                Seen seen = press(ui, file, CANCEL, s -> s.answered, safely(failed, () -> rows.addAll(picked())));
+
+                assertEquals(failed, Collections.emptyList());
+                assertEquals(rows, Collections.singletonList(twin + ":BOTH"),
+                    "the table is not one row for the possible duplicate, on Keep Both");
+                assertTrue(words(seen.question).startsWith(words(I18n.f("loc.ui.confirmImportCsv", 1, 0))),
+                    "the question counts the possible duplicate with the new ones: " + seen.question);
+                assertTrue(seen.question.contains(I18n.f("loc.ui.importCsvDuplicates", 1)),
+                    "the table has no heading: " + seen.question);
+                assertEquals(everyLocomotive(model), before, "Cancel imported something");
+                assertTrue(seen.said.isEmpty(), "Cancel went on to say something: " + seen.said);
+
+                press(ui, plain, CANCEL, s -> s.answered, safely(failed, () -> none.addAll(picked())));
+
+                assertEquals(failed, Collections.emptyList());
+                assertTrue(none.isEmpty(), "a file with no possible duplicate showed a table: " + none);
+            }
+            finally
+            {
+                file.delete();
+                plain.delete();
+                model.deleteLoc(here);
+            }
+        });
+    }
+
+    /**
+     * Each answer in the duplicates' table is carried out (FR-249): Keep Both adds the file's locomotive beside the one
+     * here, Keep Old leaves it out, and Keep New renames a train standing on the layout to the file's name, the same
+     * locomotive, so it stays where it stands and keeps its timetable entry.  The message counts them, and the import
+     * runs no Sync.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.apply`, add a Keep New row as Keep Both, and this fails.
+     */
+    @Test
+    public void testEachAnswerInTheDuplicatesTableIsCarriedOut() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            org.traincontrol.automation.Layout layout = model.getAutoLayout();
+            org.traincontrol.automation.Point standing = null;
+
+            // A train standing alone at its decoder address, so its Keep New is offered
+            for (org.traincontrol.automation.Point p : layout.getPoints())
+            {
+                Locomotive l = p.getCurrentLocomotive();
+                long sharing = l == null ? 0 : model.getLocomotives().stream().filter(o -> o.getAddress()
+                    == l.getAddress() && o.getDecoderType() == l.getDecoderType()).count();
+
+                if (standing == null && sharing == 1 && l.getDecoderType() != Locomotive.decoderType.MULTI_UNIT) standing = p;
+            }
+
+            assertNotNull(standing, "precondition: no train stands alone at its address in the snapshot");
+
+            final org.traincontrol.automation.Point stands = standing;
+            final Locomotive train = stands.getCurrentLocomotive();
+            final String was = train.getName(), both = "FR249 door both", left = "FR249 door left", taken = "FR249 door took";
+            final String bothHere = "FR249 door both here", leftHere = "FR249 door left here";
+            final int a = freeAddress(model, 13000);
+
+            model.newMFXLocomotive(bothHere, a);
+
+            final int b = freeAddress(model, a - 1);
+
+            model.newMFXLocomotive(leftHere, b);
+
+            org.traincontrol.automation.TimetablePath entry = new org.traincontrol.automation.TimetablePath(train,
+                Collections.singletonList(layout.getEdges().iterator().next()), 0);
+
+            layout.getTimetable().add(entry);
+
+            File file = write(HEADER + mfx(both, a) + mfx(left, b) + taken + ",," + train.getDecoderType() + ","
+                + train.getAddress() + ",0,0:00:00,0,0,,\n");
+            List<String> failed = new ArrayList<>();
+
+            try
+            {
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty(), safely(failed, () ->
+                {
+                    click(left + ":OLD", null);
+                    click(taken + ":NEW", null);
+                }));
+
+                assertEquals(failed, Collections.emptyList());
+                assertNotNull(model.getLocByName(both), "Keep Both did not add the file's locomotive");
+                assertNotNull(model.getLocByName(bothHere), "Keep Both lost the locomotive here");
+                assertNull(model.getLocByName(left), "Keep Old added the file's locomotive");
+                assertNotNull(model.getLocByName(leftHere), "Keep Old lost the locomotive here");
+                assertTrue(model.getLocByName(taken) == train, "Keep New did not rename the locomotive here");
+                assertNull(model.getLocByName(was), "Keep New left the old name behind");
+                assertTrue(stands.getCurrentLocomotive() == train, "the renamed train no longer stands where it stood");
+                assertTrue(layout.getTimetable().contains(entry) && entry.getLoc() == train,
+                    "the renamed train lost its timetable entry");
+                assertTrue(seen.said.get(0).contains(I18n.f("loc.ui.infoImportCsvRenamed", 1))
+                    && seen.said.get(0).contains(I18n.f("loc.ui.infoImportCsvKeptOld", 1)),
+                    "the message does not count the answers: " + seen.said);
+                assertFalse(seen.titles.contains(I18n.t("sync.ui.title")), "the import ran a Sync: " + seen.titles);
+            }
+            finally
+            {
+                layout.getTimetable().remove(entry);
+
+                if (model.getLocByName(taken) == train) model.renameLoc(taken, was);
+
+                file.delete();
+
+                for (String name : new String[] {both, left, bothHere, leftHere}) model.deleteLoc(name);
+            }
+        });
+    }
+
+    /**
+     * Keep New is grayed, with its reason on hover beside "(can't apply)", where several locomotives here share the
+     * address, where the file also lists the locomotive here, and where it is running; a second row for one locomotive
+     * here is grayed once the first takes it (FR-249).  The Keep New heading skips every grayed row; Keep Old's sets
+     * every row.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.duplicates`, leave out the RUNNING reason, and this fails.
+     */
+    @Test
+    public void testKeepNewIsGrayedWithItsReasonAndSetAllSkipsIt() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final String s1 = "FR249 door s1", s2 = "FR249 door s2", listed = "FR249 door listed", rolling = "FR249 door rolling";
+            final String held = "FR249 door held", sNew = "FR249 door s new", lNew = "FR249 door l new";
+            final String rNew = "FR249 door r new", t1 = "FR249 door t1", t2 = "FR249 door t2";
+            final int s = freeAddress(model, 13000);
+
+            model.newMFXLocomotive(s1, s);
+            model.newMFXLocomotive(s2, s);
+
+            final int l = freeAddress(model, s - 1);
+
+            model.newMFXLocomotive(listed, l);
+
+            final int r = freeAddress(model, l - 1);
+            Locomotive moving = model.newMFXLocomotive(rolling, r);
+            final int t = freeAddress(model, r - 1);
+
+            model.newMFXLocomotive(held, t);
+
+            File file = write(HEADER + mfx(sNew, s) + mfx(lNew, l) + mfx(listed, l) + mfx(rNew, r) + mfx(t1, t)
+                + mfx(t2, t));
+            List<String> failed = new ArrayList<>(), reasons = new ArrayList<>(), onNew = new ArrayList<>();
+            List<String> onOld = new ArrayList<>(), tookTip = new ArrayList<>();
+
+            try
+            {
+                model.go();
+                model.waitForPowerState(true);
+                moving.setSpeed(30);
+                moving.waitForSpeedAtOrAbove(1);
+
+                Map<String, String> before = everyLocomotive(model);
+
+                press(ui, file, CANCEL, seen -> seen.answered, safely(failed, () ->
+                {
+                    String cant = I18n.t("sync.ui.cantApply");
+
+                    for (javax.swing.JLabel mark : support.Components.all(asking, javax.swing.JLabel.class,
+                        x -> cant.equals(x.getText()) && x.isVisible())) reasons.add(mark.getToolTipText());
+
+                    for (String row : new String[] {sNew, lNew, rNew})
+                    {
+                        javax.swing.AbstractButton keepNew = support.Components.named(asking, row + ":NEW",
+                            javax.swing.AbstractButton.class);
+
+                        if (keepNew.isEnabled()) failed.add(row + "'s Keep New is not grayed");
+
+                        reasons.add(keepNew.getToolTipText());
+                    }
+
+                    click(null, I18n.t("loc.ui.importCsvKeepNew"));
+                    onNew.addAll(picked());
+
+                    javax.swing.JLabel took = support.Components.named(asking, t2 + ":taken", javax.swing.JLabel.class);
+
+                    tookTip.add(took.isVisible() + " " + took.getToolTipText());
+                    click(null, I18n.t("loc.ui.importCsvKeepOld"));
+                    onOld.addAll(picked());
+                }));
+
+                String several = I18n.f("loc.ui.importCsvWhySeveral", "MFX " + s);
+                String lists = I18n.f("loc.ui.importCsvWhyListed", listed);
+                String runs = I18n.f("loc.ui.importCsvWhyRunning", rolling);
+
+                assertEquals(failed, Collections.emptyList());
+                assertEquals(reasons, java.util.Arrays.asList(several, lists, runs, several, lists, runs),
+                    "each grayed Keep New does not say why, beside (can't apply) and on hover");
+                assertEquals(onNew, java.util.Arrays.asList(sNew + ":BOTH", lNew + ":BOTH", rNew + ":BOTH", t1 + ":NEW",
+                    t2 + ":BOTH"), "the Keep New heading did not skip the grayed rows and the one taken");
+                assertEquals(tookTip, Collections.singletonList("true " + I18n.f("loc.ui.importCsvWhyTaken", t1, held)),
+                    "the row whose locomotive another row took does not say so");
+                assertEquals(onOld, java.util.Arrays.asList(sNew + ":OLD", lNew + ":OLD", rNew + ":OLD", t1 + ":OLD",
+                    t2 + ":OLD"), "the Keep Old heading did not set every row");
+                assertEquals(everyLocomotive(model), before, "Cancel imported something");
+            }
+            finally
+            {
+                moving.setSpeed(0);
+                moving.waitForSpeedBelow(1);
+                model.stop();
+                model.waitForPowerState(false);
+                file.delete();
+
+                for (String name : new String[] {s1, s2, listed, rolling, held}) model.deleteLoc(name);
+            }
         });
     }
 }

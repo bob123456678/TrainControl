@@ -45,7 +45,7 @@ public final class SyncDifferencesWindow
     public enum Answer { KEEP, RENAME, ADDRESS, BOTH, IGNORE, ASK }
 
     /** A grayed Apply's mark: darker than a disabled control's, so it stays readable. */
-    private static final Color GRAYED = new Color(110, 110, 110);
+    static final Color GRAYED = new Color(110, 110, 110);
     /** "Deletes X" after a rename: a consequence to read before choosing it. */
     private static final Color DELETES = new Color(160, 0, 0);
 
@@ -80,13 +80,8 @@ public final class SyncDifferencesWindow
             this.choices.get(r).get(Answer.ADDRESS).setSelected(true);
         this.settingAll = false;
         refresh();
-        // The heading as far in as the table's border
-        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        top.setOpaque(false);
-        top.add(UiStyle.heading(rows.size() == 1 ? I18n.t("sync.ui.headingOne")
-            : I18n.f("sync.ui.heading", rows.size())));
-        top.add(Box.createHorizontalStrut(6));
-        top.add(InfoMark.label(I18n.t("sync.ui.info")));
+        JPanel top = headed(rows.size() == 1 ? I18n.t("sync.ui.headingOne") : I18n.f("sync.ui.heading", rows.size()),
+            I18n.t("sync.ui.info"));
         JButton cancel = UiStyle.button(new JButton(I18n.t("ui.cancel")));
         JButton go = UiStyle.button(new JButton(I18n.t("sync.ui.continue")));
         cancel.addActionListener(e -> this.dialog.dispose());
@@ -140,9 +135,9 @@ public final class SyncDifferencesWindow
         Locomotive l = r.loco;
         String name = l.getName(), kName = I18n.t("sync.ui.name"), kAddress = I18n.t("sync.ui.address");
         boolean byName = r.stationName != null, byAddress = r.stationAddress != null;
-        JComponent[] here = {line(kName, name + (l.hasLinkedLocomotives() ? " +" + l.getLinkedLocomotives().size()
-            : ""), byName, null, null), line(kAddress, l.getDecoderTypeLabel() + " " + l.getAddress(), byAddress, null,
-            null)};
+        JComponent[] here = {line(this.table, kName, name + (l.hasLinkedLocomotives() ? " +"
+            + l.getLinkedLocomotives().size() : ""), byName, null, null), line(this.table, kAddress,
+            l.getDecoderTypeLabel() + " " + l.getAddress(), byAddress, null, null)};
         if (r.byHand)
         {
             JLabel where = text(I18n.f("sync.ui.byHandWhere", r.stationName, there(l) + l.getAddress(), name, there(l)
@@ -192,9 +187,10 @@ public final class SyncDifferencesWindow
         // A heading's Set all judges the marks once, after every row it sets
         for (JRadioButton b : radios.values()) b.addItemListener(e -> { if (!this.settingAll) refresh(); });
         this.choices.put(r, radios);
-        JComponent station = ChoiceTable.beside(rename != null ? rename : use, line(kName, byName ? r.stationName
-            : name, byName, rename != null ? r.whyNot(true) : null, deletes), line(kAddress, there(l) + (byAddress
-            ? r.stationAddress : l.getAddress()), byAddress, use != null ? r.whyNot(false) : null, triangle));
+        JComponent station = ChoiceTable.beside(rename != null ? rename : use, line(this.table, kName, byName
+            ? r.stationName : name, byName, rename != null ? r.whyNot(true) : null, deletes), line(this.table, kAddress,
+            there(l) + (byAddress ? r.stationAddress : l.getAddress()), byAddress, use != null ? r.whyNot(false) : null,
+            triangle));
         return new JComponent[] {ChoiceTable.beside(keep, here), station, radios.get(Answer.BOTH),
             radios.get(Answer.IGNORE), radios.get(Answer.ASK)};
     }
@@ -219,7 +215,18 @@ public final class SyncDifferencesWindow
         return b;
     }
 
-    private static JLabel text(String text, Color color)
+    /** A blue heading with its (i) after it, as far in as a table's border. */
+    static JPanel headed(String heading, String info)
+    {
+        JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        top.setOpaque(false);
+        top.add(UiStyle.heading(heading));
+        top.add(Box.createHorizontalStrut(6));
+        top.add(InfoMark.label(info));
+        return top;
+    }
+
+    static JLabel text(String text, Color color)
     {
         JLabel t = new JLabel(text);
         t.setFont(UiStyle.TEXT_FONT);
@@ -236,19 +243,19 @@ public final class SyncDifferencesWindow
         return m;
     }
 
-    /** A line: a gray kind, the value (bold if it differs), and the marks. */
-    private JComponent line(String kind, String value, boolean differs, String whyNot, JLabel mark)
+    /** A line of `table`: a gray kind, the value (bold if it differs), "(can't apply)" saying `whyNot`, and the mark. */
+    static JComponent line(ChoiceTable table, String kind, String value, boolean differs, String whyNot, JLabel mark)
     {
         JLabel k = UiStyle.blackLabel(kind), v = text(value, null), why = whyNot == null ? null : text(I18n.t(
             "sync.ui.cantApply"), GRAYED);
         k.setForeground(Color.GRAY);
         if (differs) v.setFont(UiStyle.TEXT_FONT.deriveFont(Font.BOLD));
         if (why != null) why.setToolTipText(whyNot);
-        return this.table.line(k, v, why, mark);
+        return table.line(k, v, why, mark);
     }
 
     /** A heading with its (i) after it, saying what a click does. */
-    private static JComponent head(JButton heading, String tip)
+    static JComponent head(JButton heading, String tip)
     {
         JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
