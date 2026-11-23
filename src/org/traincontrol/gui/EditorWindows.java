@@ -443,15 +443,9 @@ public final class EditorWindows
     private String filterCarried = null;
 
     /**
-     * Opens an editor in place of one that closed itself to change page, carrying a square-clicked flag; cleared
-     * whatever happens.
+     * Opens an editor in place of one that closed itself to change page, carrying a square-clicked flag and the
+     * findings filter's text (FR-073; null carries none); cleared whatever happens.
      */
-    void openCarryingTheClick(boolean clicked, Runnable open)
-    {
-        openCarryingTheClick(clicked, null, open);
-    }
-
-    /** As above, also carrying the findings filter's text to the editor that opens (FR-073); null carries none. */
     public void openCarryingTheClick(boolean clicked, String findingFilter, Runnable open)
     {
         clickCarried = clicked;

@@ -57,7 +57,7 @@ src/org/traincontrol/gui/CoalescedAsk.java	552	2
 src/org/traincontrol/gui/ConnectingNotice.java	410	4
 src/org/traincontrol/gui/CoveredTrackView.java	511	4
 src/org/traincontrol/gui/DiagramLocGestures.java	367	7
-src/org/traincontrol/gui/EditorWindows.java	355	7
+src/org/traincontrol/gui/EditorWindows.java	355	6
 src/org/traincontrol/gui/HomeLocomotiveMenu.java	465	2
 src/org/traincontrol/gui/InfoMark.java	261	0
 src/org/traincontrol/gui/LayoutFileActions.java	304	9
