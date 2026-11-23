@@ -741,7 +741,8 @@ public class testTheSyncDifferencesWindow
                 for (String[] each : new String[][] {{"SW Shunter", "KEEP", "SW Shunter#0", "MM2 20#0"}, {"SW Shunter",
                     "RENAME", "SW V 60#0", "MM2 20#1"}, {"SW Uri", "KEEP", "SW Uri#0", "MM2 21#0"}, {"SW Uri", "ADDRESS",
                     "SW Uri#1", "MM2 22#0"}, {"SW Both", "KEEP", "SW Both#0", "MM2 23#0"}, {"SW Both", "RENAME",
-                    "SW Other#0"}, {"SW Both", "ADDRESS", "MM2 24#0"}})
+                    I18n.f("sync.ui.renameTo", "SW Other") + "#0"}, {"SW Both", "ADDRESS", I18n.f("sync.ui.moveTo",
+                    "MM2 24") + "#0"}})
                 {
                     Rectangle b = at(t, t.in(each[0], each[1], AbstractButton.class));
                     List<Rectangle> v = new ArrayList<>();
@@ -887,6 +888,50 @@ public class testTheSyncDifferencesWindow
             });
         });
         assertTrue(problems.isEmpty(), problems.toString());
+    }
+
+    /**
+     * A row differing both ways names one whole Central Station locomotive on each line, with its own address: the one
+     * at this address it would be renamed to, and the one under this name whose address it would move to.  A grayed
+     * line has no Deletes note.  Here A and B have each other's names and addresses on the station.
+     *
+     * MUTATION: in `SyncDifferencesWindow.addRow`, give Move to this computer's address.
+     */
+    @Test(timeOut = 180000)
+    public void testABothWaysRowNamesWholeStationLocomotives() throws Exception
+    {
+        List<String> problems = new ArrayList<>();
+        AtomicBoolean looked = new AtomicBoolean();
+        inAWindow((rig, ui, list) ->
+        {
+            here(rig, "SW A", 20, "SW B", 21);
+            list.set(station("SW B", 20, "SW A", 21));
+            assertNotNull(pressSync(rig, ui, SyncTable.canceling(t ->
+            {
+                // Row; the station's locomotive at the row's address, and it; the row's name and its station address
+                for (String[] each : new String[][] {{"SW A", "SW B", "MM2 20", "SW A", "MM2 21"}, {"SW B", "SW A",
+                    "MM2 21", "SW B", "MM2 20"}})
+                {
+                    List<String> rename = lineOf(t, each[0], "RENAME"), move = lineOf(t, each[0], "ADDRESS");
+                    String r = String.join(" ", rename), m = String.join(" ", move);
+                    check(problems, Arrays.asList(r.contains(each[1]), r.contains(each[2]), r.contains(each[3]),
+                        r.contains(each[4]), m.contains(each[3]), m.contains(each[4]), m.contains(each[1]),
+                        m.contains(each[2])), Arrays.asList(true, true, false, false, true, true, false, false),
+                        each[0] + "'s lines " + rename + " " + move);
+                    JLabel deletes = t.in(each[0], "deletes", JLabel.class);
+                    check(problems, Arrays.asList(t.in(each[0], "RENAME", AbstractButton.class).isEnabled(), deletes
+                        != null && deletes.isVisible()), Arrays.asList(false, false), each[0] + "'s grayed rename");
+                    // Last, as a missing key throws and the table swallows it
+                    check(problems, Arrays.asList(rename, move), Arrays.asList(Arrays.asList(I18n.f("sync.ui.renameTo",
+                        each[1]), I18n.f("sync.ui.isAtThere", each[1], each[2]), I18n.t("sync.ui.cantApply")),
+                        Arrays.asList(I18n.f("sync.ui.moveTo", each[4]), I18n.f("sync.ui.isAtThere", each[3],
+                        each[4]))), each[0] + "'s wording");
+                }
+                looked.set(true);
+            }), null), "the table did not open");
+        });
+        assertTrue(problems.isEmpty(), problems.toString());
+        assertTrue(looked.get(), "the look stopped short");
     }
 
     /**
@@ -1067,6 +1112,15 @@ public class testTheSyncDifferencesWindow
     {
         AbstractButton b = t.in(row, what, AbstractButton.class);
         return b == null ? null : b.getAccessibleContext().getAccessibleName();
+    }
+
+    /** The texts showing on the line an answer's radio leads. */
+    private static List<String> lineOf(SyncTable.Shown t, String row, String what)
+    {
+        List<String> out = new ArrayList<>();
+        for (JLabel l : Components.all(t.in(row, what, AbstractButton.class).getParent(), JLabel.class,
+            l -> l.isVisible() && l.getText() != null)) out.add(l.getText());
+        return out;
     }
 
     private static boolean visible(SyncTable.Shown t, String row, String what)

@@ -205,8 +205,7 @@ public class testEveryLanguageFitsThePopups
 
     /**
      * The manual Sync's table and its longer finishing message fit in every language: the linked headings, a row
-     * differing in both whose grayed rename deletes another locomotive and whose address collides, and the counts the
-     * message adds (FR-249).
+     * differing in both whose rename is grayed and whose address collides, and the counts the message adds (FR-249).
      *
      * MUTATION: in `ChoiceTable.link`, fix a heading's preferred size at 20 by 20 pixels, and this fails in every language.
      */

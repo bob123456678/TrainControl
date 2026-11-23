@@ -138,13 +138,18 @@ public final class SyncDifferencesWindow
         JRadioButton keep = choice(r, radios, group, Answer.KEEP, I18n.f("sync.ui.keepAsIs", name), null);
         JRadioButton rename = null, use = null;
         JLabel deletes = null, triangle = null;
+        boolean twice = r.asksName() && r.asksAddress();
         if (r.asksName())
         {
             rename = choice(r, radios, group, Answer.RENAME, I18n.f("sync.ui.rename", name, r.stationName),
                 r.whyNot(true));
-            deletes = mark(name + ":deletes", null);
-            deletes.setForeground(DELETES);
-            this.deleting.put(r, deletes);
+            // A both-ways row's grayed rename has no Deletes note
+            if (!twice || r.whyNot(true) == null)
+            {
+                deletes = mark(name + ":deletes", null);
+                deletes.setForeground(DELETES);
+                this.deleting.put(r, deletes);
+            }
         }
         if (r.asksAddress())
         {
@@ -164,14 +169,18 @@ public final class SyncDifferencesWindow
         for (JRadioButton b : radios.values()) b.addItemListener(e -> { if (!this.settingAll) refresh(); });
         this.choices.put(r, radios);
         boolean byName = r.stationName != null, byAddress = r.stationAddress != null;
-        JComponent here = ChoiceTable.beside(keep, line(null, "sync.ui.name", name + (l.hasLinkedLocomotives() ? " +"
-            + l.getLinkedLocomotives().size() : ""), byName, null, null), line(null, "sync.ui.address", at
-            + l.getAddress(), byAddress, null, null));
-        boolean twice = rename != null && use != null;
-        JComponent station = ChoiceTable.beside(twice ? null : rename != null ? rename : use, line(twice ? rename : null,
-            "sync.ui.name", byName ? r.stationName : name, byName, rename != null ? r.whyNot(true) : null, deletes),
-            line(twice ? use : null, "sync.ui.address", there + (byAddress ? r.stationAddress : l.getAddress()),
-            byAddress, use != null ? r.whyNot(false) : null, triangle));
+        String kName = I18n.t("sync.ui.name"), kAddress = I18n.t("sync.ui.address");
+        JComponent here = ChoiceTable.beside(keep, line(null, kName, name + (l.hasLinkedLocomotives() ? " +"
+            + l.getLinkedLocomotives().size() : ""), byName, null, null), line(null, kAddress, at + l.getAddress(),
+            byAddress, null, null));
+        // Both ways, each line names one whole station locomotive: the one at this address, the one under this name
+        JComponent station = twice ? ChoiceTable.beside(null, line(rename, I18n.f("sync.ui.renameTo", r.stationName),
+            I18n.f("sync.ui.isAtThere", r.stationName, there + l.getAddress()), false, r.whyNot(true), deletes),
+            line(use, I18n.f("sync.ui.moveTo", there + r.stationAddress), I18n.f("sync.ui.isAtThere", name, there
+            + r.stationAddress), false, r.whyNot(false), triangle))
+            : ChoiceTable.beside(rename != null ? rename : use, line(null, kName, byName ? r.stationName : name,
+            byName, rename != null ? r.whyNot(true) : null, deletes), line(null, kAddress, there + (byAddress
+            ? r.stationAddress : l.getAddress()), byAddress, use != null ? r.whyNot(false) : null, triangle));
         return new JComponent[] {here, station, radios.get(Answer.BOTH), radios.get(Answer.IGNORE),
             radios.get(Answer.ASK)};
     }
@@ -190,35 +199,34 @@ public final class SyncDifferencesWindow
         return b;
     }
 
-    private static JLabel text(String text)
+    private static JLabel text(String text, Color color)
     {
         JLabel t = new JLabel(text);
         t.setFont(UiStyle.TEXT_FONT);
+        if (color != null) t.setForeground(color);
         return t;
     }
 
     private static JLabel mark(String name, javax.swing.Icon icon)
     {
-        JLabel m = text(null);
+        JLabel m = text(null, null);
         m.setIcon(icon);
         m.setName(name);
         m.setVisible(false);
         return m;
     }
 
-    /** A line: lead, "Name:" or "Address:" in gray, the value (bold if it differs), "(can't apply)" saying `whyNot`, mark. */
-    private JComponent line(JComponent lead, String kind, String value, boolean differs, String whyNot, JLabel mark)
+    /**
+     * A line: unled, a gray kind and the value (bold if it differs); led, what it does and who, in gray; the marks.
+     */
+    private JComponent line(JComponent lead, String first, String second, boolean differs, String whyNot, JLabel mark)
     {
-        JLabel k = UiStyle.blackLabel(I18n.t(kind)), v = text(value), why = null;
-        k.setForeground(Color.GRAY);
+        JLabel f = lead == null ? UiStyle.blackLabel(first) : text(first, null), v = text(second, lead == null ? null
+            : Color.GRAY), why = whyNot == null ? null : text(I18n.t("sync.ui.cantApply"), GRAYED);
+        if (lead == null) f.setForeground(Color.GRAY);
         if (differs) v.setFont(UiStyle.TEXT_FONT.deriveFont(Font.BOLD));
-        if (whyNot != null)
-        {
-            why = text(I18n.t("sync.ui.cantApply"));
-            why.setForeground(GRAYED);
-            why.setToolTipText(whyNot);
-        }
-        return this.table.line(lead, k, v, why, mark);
+        if (why != null) why.setToolTipText(whyNot);
+        return this.table.line(lead, f, v, why, mark);
     }
 
     /** A linked heading: each row not ignored gets what `to` gives it, from the rows Apply may take, if enabled. */
