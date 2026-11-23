@@ -1051,7 +1051,7 @@ public class testTheRouteListShowsWhatRuns
     /**
      * The right-click menu's Change Route ID, answered with an id no route has, gives the route that id.
      *
-     * MUTATION: in `TrainControlUI.changeRouteId`, `if (newId != currentRoute.getId())` to `if (false)`.
+     * MUTATION: in `RouteListPanel.changeRouteId`, `if (newId != currentRoute.getId())` to `if (false)`.
      */
     @Test
     public void testChangeRouteIdGivesTheRouteTheTypedId() throws Exception
@@ -1090,8 +1090,8 @@ public class testTheRouteListShowsWhatRuns
     /**
      * Change Route ID, answered with the id another route has, says so and leaves the route its own id.
      *
-     * MUTATION: in `TrainControlUI.changeRouteId`, `if (!this.model.changeRouteId(routeName, newId))` to
-     * `if (!this.model.changeRouteId(routeName, newId) && false)`.
+     * MUTATION: in `RouteListPanel.changeRouteId`, `if (!this.ui.getModel().changeRouteId(routeName, newId))` to
+     * `if (!this.ui.getModel().changeRouteId(routeName, newId) && false)`.
      */
     @Test
     public void testChangeRouteIdToATakenIdSaysSoAndKeepsTheId() throws Exception
@@ -1130,8 +1130,8 @@ public class testTheRouteListShowsWhatRuns
      * Delete Route, answered Yes, removes the route and the commands of other routes that ran it, after a question
      * that says how many routes run it.
      *
-     * MUTATION: in `TrainControlUI.deleteRoute`, `this.model.deleteRouteAndItsCalls(route.getName())` to
-     * `this.model.deleteRoute(route.getName())`.
+     * MUTATION: in `RouteListPanel.deleteRoute`, `this.ui.getModel().deleteRouteAndItsCalls(route.getName())` to
+     * `this.ui.getModel().deleteRoute(route.getName())`.
      */
     @Test
     public void testDeleteRouteAnsweredYesRemovesItAndTheCommandsThatRunIt() throws Exception
@@ -1175,7 +1175,7 @@ public class testTheRouteListShowsWhatRuns
     /**
      * Delete Route, answered No, removes nothing.
      *
-     * MUTATION: in `TrainControlUI.deleteRoute`, `if (dialogResult == JOptionPane.YES_OPTION)` to `if (true)`.
+     * MUTATION: in `RouteListPanel.deleteRoute`, `if (dialogResult == JOptionPane.YES_OPTION)` to `if (true)`.
      */
     @Test
     public void testDeleteRouteAnsweredNoKeepsIt() throws Exception
@@ -1212,7 +1212,7 @@ public class testTheRouteListShowsWhatRuns
      * Enable Auto Execution from the right-click menu arms the route, and the station reporting its sensor clear then
      * made then fires it: its accessories switch.
      *
-     * MUTATION: in `TrainControlUI.enableOrDisableRoute`, `writeRouteEnabledState(r, enable);` to
+     * MUTATION: in `RouteListPanel.enableOrDisableRoute`, `writeRouteEnabledState(r, enable);` to
      * `writeRouteEnabledState(r, false);`.
      */
     @Test
@@ -1255,7 +1255,7 @@ public class testTheRouteListShowsWhatRuns
      * Disable Auto Execution from the right-click menu disarms the route: the station reporting its sensor clear then
      * made runs nothing.
      *
-     * MUTATION: in `TrainControlUI.enableOrDisableRoute`, `writeRouteEnabledState(r, enable);` to
+     * MUTATION: in `RouteListPanel.enableOrDisableRoute`, `writeRouteEnabledState(r, enable);` to
      * `writeRouteEnabledState(r, true);`.
      */
     @Test
@@ -1677,6 +1677,40 @@ public class testTheRouteListShowsWhatRuns
         throws Exception
     {
         support.RouteListDoors.click(ui, route, onThePlayButton, kind, popup);
+    }
+
+    /**
+     * The route under the pointer in the route list is the route of the cell there, whichever row it is, and nothing is
+     * under a pointer off the rows.
+     *
+     * MUTATION: in `RouteListPanel.getRouteAtCursor`, ask the row for `0` in place of the point's row, and this fails.
+     */
+    @Test
+    public void testThePointerPicksTheRouteUnderIt() throws Exception
+    {
+        String first = aSlowRoute(PREFIX + "pick one", 1);
+        String second = aSlowRoute(PREFIX + "pick two", 1);
+
+        for (String name : new String[] {first, second})
+        {
+            Rectangle cell = cellOf(name);
+
+            assertNotNull(cell, "precondition: " + name + " is not in the route list");
+
+            Object picked = pointerOver(cell.x + 6, (int) cell.getCenterY());
+
+            assertNotNull(picked, "the pointer is on the cell of " + name + " and no route is under it");
+            assertEquals(((org.traincontrol.base.Route) picked).getName(), name,
+                "the pointer is on the cell of " + name + " and another route is under it");
+        }
+
+        assertNull(pointerOver(-5, -5), "the pointer is off the list and a route is under it");
+    }
+
+    private static Object pointerOver(final int x, final int y)
+    {
+        return Components.onTheEventThread(() -> ui.getRouteAtCursor(new java.awt.event.MouseEvent(routeTable(),
+            java.awt.event.MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, x, y, 0, false)));
     }
 
     /**
