@@ -112,9 +112,9 @@ public final class MarklinLocomotiveCsv
 
     /**
      * Why Keep New did not or may not rename the locomotive here: several hold the address, the file lists it, it runs,
-     * an earlier row took it, or the row was no longer a possible duplicate when the answer was carried out.
+     * an earlier row took it, the row was no longer a possible duplicate, or the rename was refused.
      */
-    public enum NotNew { SEVERAL, LISTED, RUNNING, TAKEN, GONE }
+    public enum NotNew { SEVERAL, LISTED, RUNNING, TAKEN, GONE, REFUSED }
 
     /** A possible duplicate (FR-249): a new row at a decoder address locomotives here hold after the plan's moves. */
     public static final class Duplicate
@@ -535,7 +535,7 @@ public final class MarklinLocomotiveCsv
                 NotNew why = d == null ? NotNew.GONE : d.whyNotNew != null ? d.whyNotNew
                     : taken.add(d.here.get(0)) ? null : NotNew.TAKEN;
                 if (why == null && model.renameLoc(d.here.get(0).getName(), row.name)) result.renamed.add(row.name);
-                else result.notRenamed.put(row.name, why == null ? NotNew.GONE : why);
+                else result.notRenamed.put(row.name, why == null ? NotNew.REFUSED : why);
             }
             Fate fate = fateOf(row, model);
 

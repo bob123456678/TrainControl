@@ -201,7 +201,8 @@ final class LocomotiveCsvDoor
         result.notRenamed.forEach((name, why) -> out.add(name + " (" + I18n.t(why == MarklinLocomotiveCsv.NotNew.SEVERAL
             ? "loc.ui.importCsvNotSeveral" : why == MarklinLocomotiveCsv.NotNew.LISTED ? "loc.ui.importCsvNotListed"
             : why == MarklinLocomotiveCsv.NotNew.RUNNING ? "loc.ui.importCsvNotRunning"
-            : why == MarklinLocomotiveCsv.NotNew.TAKEN ? "loc.ui.importCsvNotTaken" : "loc.ui.importCsvNotGone") + ")"));
+            : why == MarklinLocomotiveCsv.NotNew.TAKEN ? "loc.ui.importCsvNotTaken"
+            : why == MarklinLocomotiveCsv.NotNew.REFUSED ? "loc.ui.importCsvNotRefused" : "loc.ui.importCsvNotGone") + ")"));
         return String.join(", ", out);
     }
 
