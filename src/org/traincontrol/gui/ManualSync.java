@@ -69,10 +69,7 @@ public final class ManualSync
         return String.join("\n\n", parts);
     }
 
-    /**
-     * Ends the Locomotives menu and its Sync item in " *" while the last sync left something unsettled or an import
-     * changed an address, the item's tooltip saying which, unless it already gives a refusal.
-     */
+    /** " *" on the Locomotives menu and its Sync item while something is unsettled, its tooltip saying what. */
     static void mark(ViewListener model, JMenu menu, JMenuItem sync)
     {
         int n = model == null ? 0 : model.getUnsettledCount();

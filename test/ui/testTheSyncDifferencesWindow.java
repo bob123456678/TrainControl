@@ -1270,19 +1270,21 @@ public class testTheSyncDifferencesWindow
 
     /**
      * An address typed in Locomotive Settings and saved does not mark the menu, though the station now differs; the next
-     * sync does.
+     * sync does.  Import from CSV that changes an existing locomotive's address marks it, the tooltip saying the import
+     * may differ from the station, until the next sync works it out.
      *
-     * MUTATION: in `TrainControlUI.holdingTheSync`, leave out the `greyWhatARunRefuses` post, and no sync marks it.
+     * MUTATION: in `TrainControlUI.holdingTheSync`, leave out the `greyWhatARunRefuses` post, or in
+     * `LocomotiveCsvDoor.open`, leave out `ManualSync.imported`, and this fails.
      */
     @Test(timeOut = 240000)
-    public void testAnAddressTypedInSettingsIsMarkedByTheNextSync() throws Exception
+    public void testATypedAddressWaitsForTheNextSyncAndAnImportMarksAtOnce() throws Exception
     {
         inAWindow((rig, ui, list) ->
         {
-            here(rig, "SW Typed", 45);
-            list.set(station("SW Typed", 45));
-            autoSync(ui);
+            list.set(station("SW Typed", 45, "SW Csv", 50));
+            here(rig, "SW Typed", 45, "SW Csv", 50);
             Locomotive typed = rig.model.getLocByName("SW Typed");
+            autoSync(ui);
             try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
             {
                 assertTrue(SettingsWindow.open(ui, typed, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
@@ -1299,24 +1301,8 @@ public class testTheSyncDifferencesWindow
                 SettingsWindow.closeIfOpen();
             }
             autoSync(ui);
-            assertEquals(mark(ui), mark(1), "the next sync");
-        });
-    }
+            assertEquals(mark(ui), mark(1), "the sync after the typed address");
 
-    /**
-     * Import from CSV that changes an existing locomotive's address marks the menu, the tooltip saying the import may
-     * differ from the station, until the next sync works it out.
-     *
-     * MUTATION: in `LocomotiveCsvDoor.open`, leave out `ManualSync.imported`, and this fails.
-     */
-    @Test(timeOut = 240000)
-    public void testACsvImportThatMovesALocomotiveMarksTheMenu() throws Exception
-    {
-        inAWindow((rig, ui, list) ->
-        {
-            here(rig, "SW Csv", 50);
-            list.set(station("SW Csv", 50));
-            autoSync(ui);
             java.io.File file = java.io.File.createTempFile("tc-mark", ".csv");
             Files.write(file.toPath(), ("Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,Start Year,"
                 + "End Year,RailwayName,Notes\nSW Csv,,MM2,51,0,0:00:00,0,0,,\n").getBytes(StandardCharsets.UTF_8));
@@ -1336,7 +1322,7 @@ public class testTheSyncDifferencesWindow
             assertEquals(mark(ui), Arrays.asList(mark(1).get(0), mark(1).get(1), I18n.t("sync.ui.markImported")),
                 "after the import");
             autoSync(ui);
-            assertEquals(mark(ui), mark(1), "the next sync");
+            assertEquals(mark(ui), mark(2), "the sync after the import");
         });
     }
 
