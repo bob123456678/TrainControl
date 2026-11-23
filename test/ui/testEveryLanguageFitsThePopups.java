@@ -120,6 +120,13 @@ public class testEveryLanguageFitsThePopups
                 "the message's own line break was not kept: " + linesOf(pane));
             assertEquals(String.join("", linesOf(pane)).replace(" ", ""), text.replace("\n", "").replace(" ", ""),
                 "the wrapped lines do not hold the whole message: " + linesOf(pane));
+            assertTrue(linesOf(pane).stream().anyMatch(l -> l.endsWith("\\")), "the long path was not broken after a "
+                + "separator: " + linesOf(pane));
+            java.awt.FontMetrics fm = pane.getFontMetrics(pane.getFont());
+            assertEquals(org.traincontrol.gui.widgets.WrappingOptionPaneUI.wrap("😀😀", fm, 1),
+                "😀\n😀", "an emoji was split, or a width under one character failed");
+            assertFalse(java.util.Arrays.asList(org.traincontrol.gui.widgets.WrappingOptionPaneUI.wrap("  abcdefghij", fm,
+                fm.stringWidth("abc")).split("\n", -1)).contains(""), "an indent made an empty line");
 
             assertEquals(linesOf(new javax.swing.JOptionPane("Saved.")), Collections.singletonList("Saved."),
                 "a short message was not left on one line");

@@ -46,7 +46,7 @@ public final class WrappingOptionPaneUI
     }
 
     /** The text broken where a line would pass `width`: at a space, after / or \ in a path, else inside the word. */
-    private static String wrap(String text, FontMetrics metrics, int width)
+    public static String wrap(String text, FontMetrics metrics, int width)
     {
         StringJoiner out = new StringJoiner("\n");
         for (String line : text.split("\r?\n", -1))
@@ -55,11 +55,15 @@ public final class WrappingOptionPaneUI
             int start = 0;
             while (metrics.stringWidth(line.substring(start)) > width)
             {
-                int end = start + 1;
-                while (metrics.stringWidth(line.substring(start, end + 1)) <= width) end++;
+                int end = start + 1, word = start;
+                while (end < line.length() && metrics.stringWidth(line.substring(start, end + 1)) <= width) end++;
+                if (end < line.length() && Character.isLowSurrogate(line.charAt(end))
+                    && Character.isHighSurrogate(line.charAt(end - 1))) end += end - 1 > start ? -1 : 1;
+                while (line.charAt(word) == ' ') word++;
                 int cut = Math.max(line.lastIndexOf(' ', end),
                     Math.max(line.lastIndexOf('/', end - 1), line.lastIndexOf('\\', end - 1)) + 1);
-                if (cut <= start) cut = end;
+                if (cut <= word) cut = end;
+                if (cut >= line.length()) break;
                 wrapped.append(line.substring(start, cut).replaceAll(" +$", "")).append('\n');
                 for (start = cut; start < line.length() && line.charAt(start) == ' '; ) start++;
             }
