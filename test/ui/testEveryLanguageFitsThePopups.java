@@ -230,7 +230,7 @@ public class testEveryLanguageFitsThePopups
                 holder, null, other.getIntUID(), other.getIntUID()), new RenameProposals.Row(holder, null, 23, null,
                 null, null, null, holder.getIntUID(), asked.getIntUID()), new RenameProposals.Row(mover, holder.getName(),
                 null, null, null, holder, null, mover.getIntUID(), mover.getIntUID()));
-            RenameProposals proposals = new RenameProposals(new ArrayList<>(), 0, new HashMap<>(), rows, held, false);
+            RenameProposals proposals = new RenameProposals(new ArrayList<>(), 0, rows, held, false);
 
             try (SyncTable table = SyncTable.canceling(t ->
             {
@@ -240,7 +240,7 @@ public class testEveryLanguageFitsThePopups
                     found.add("popup-sync-table: " + each);
             }))
             {
-                SwingUtilities.invokeLater(() -> SyncDifferencesWindow.ask(railway.ui, proposals));
+                SwingUtilities.invokeLater(() -> SyncDifferencesWindow.ask(railway.ui, proposals, null));
                 assertTrue(Components.waitFor(() -> !table.shown().isEmpty(), 15000), "the Sync table showed nothing in "
                     + language);
                 Components.settle();

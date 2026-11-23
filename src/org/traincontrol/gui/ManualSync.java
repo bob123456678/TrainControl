@@ -27,6 +27,8 @@ public final class ManualSync
     private final ViewListener model;
     /** askAndApply's answer when the table was canceled. */
     private static final int[] CANCELED = {};
+    /** The locomotive whose row alone the table asks about, or null for every row. */
+    private Locomotive only;
 
     ManualSync(TrainControlUI ui)
     {
@@ -62,6 +64,13 @@ public final class ManualSync
         if (!said.isEmpty()) parts.add(String.join("\n", said));
         if (partial) parts.add(I18n.t("ui.infoSyncPartial"));
         return String.join("\n\n", parts);
+    }
+
+    /** Asks the table about l's row alone (Locomotive Settings' Sync); the rest get an automatic sync's treatment. */
+    ManualSync asking(Locomotive l)
+    {
+        this.only = l;
+        return this;
     }
 
     /**
@@ -114,7 +123,7 @@ public final class ManualSync
             List<Map<RenameProposals.Row, Answer>> answers = new ArrayList<>();
             // Over the window that asked, or this one once that is gone
             SwingUtilities.invokeAndWait(() -> answers.add(SyncDifferencesWindow.ask(asking != null
-                && asking.isShowing() ? asking : ui, asked)));
+                && asking.isShowing() ? asking : ui, asked, only)));
             Map<RenameProposals.Row, Answer> a = answers.get(0);
             if (a == null) return CANCELED;
             if (asked.getRows().isEmpty() && !asked.hasRefusals()) model.logf("loc.ui.infoNoLocomotivesToRename");
@@ -183,7 +192,8 @@ public final class ManualSync
         Set<Locomotive> unchanged = new HashSet<>();
         for (RenameProposals.Row r : rows)
             if (model.getLocByName(names.get(r.loco)) == r.loco) unchanged.add(r.loco);
-        int[] n = {0, 0, 0, 0, 0, (int) asked.getRows().stream().filter(r -> r.byHand).count()};
+        int[] n = {0, 0, 0, 0, 0, (int) asked.getRows().stream().filter(r -> r.byHand && (only == null
+            || r.loco == only)).count()};
         for (RenameProposals.Row r : rows)
         {
             Answer a = answers.get(r);
@@ -271,48 +281,6 @@ public final class ManualSync
             ui.repaintTimetable();
         }
         return "loc.renameApplied";
-    }
-
-    /** Asks over c: Keep (first) or Use the station's address, and marks l so. */
-    private static void askAboutAddress(Component c, Locomotive l, int address)
-    {
-        String keep = I18n.t("loc.ui.optionKeep"), use = I18n.f("loc.ui.optionUseAddress", address);
-        Object[] options = {keep, use};
-        int answer = JOptionPane.showOptionDialog(c, I18n.f("loc.ui.askStationAddress", l.getName(), address,
-            l.getAddress()), I18n.t("loc.ui.dialogStationAddress"), JOptionPane.DEFAULT_OPTION,
-            JOptionPane.PLAIN_MESSAGE, null, options, keep);
-        if (answer == 0) l.setDeclinedStationAddress(address);
-        if (answer == 1) l.setTakenStationAddress(address);
-    }
-
-    /** The station's addresses by name, read over c as `readBehindTheSpinner`; null when not connected or not read. */
-    Map<String, Integer> stationAddresses(Component c)
-    {
-        if (!model.getNetworkCommState()) return null;
-        try
-        {
-            RenameProposals read = readBehindTheSpinner(c, true);
-            Map<String, Integer> addresses = new java.util.HashMap<>(read.getAddresses());
-            // A locomotive the table leaves to fix by hand is asked nothing here either
-            for (RenameProposals.Row r : read.getRows()) if (r.byHand) addresses.remove(r.loco.getName());
-            return addresses;
-        }
-        catch (Exception e)
-        {
-            model.log(e);
-            return null;
-        }
-    }
-
-    /** Asks over c about l's address alone (FR-246). */
-    static void askAboutItsAddress(Component c, Locomotive l, Map<String, Integer> addresses)
-    {
-        if (addresses == null) return;
-        Integer at = addresses.get(l.getName());
-        // A kept address is not asked again; one the station no longer has is forgotten
-        if (Objects.equals(at, l.getDeclinedStationAddress())) return;
-        l.setDeclinedStationAddress(null);
-        if (at != null) askAboutAddress(c, l, at);
     }
 
     /** A rename answered No, kept on the locomotive so the same offer is not asked again; its log line's key. */

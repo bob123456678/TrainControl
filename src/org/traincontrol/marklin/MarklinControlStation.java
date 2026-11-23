@@ -1335,7 +1335,6 @@ public class MarklinControlStation implements ViewListener, ModelListener
     {
         Map<MarklinLocomotive, String[]> renameCandidates = new java.util.LinkedHashMap<>();
         Map<MarklinLocomotive, MarklinLocomotive> stationOf = new HashMap<>();
-        Map<String, Integer> addresses = new java.util.LinkedHashMap<>();
         Map<MarklinLocomotive, MarklinLocomotive> addressedAt = new HashMap<>();
         int refused = 0;
         // Indexed once, not rebuilt for every parsed locomotive.
@@ -1357,11 +1356,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
         {
             // A name the station lists twice is offered no address: either may be this one
             MarklinLocomotive elsewhere = addressedElsewhere(l);
-            if (elsewhere != null && stationNames.get(l.getName()) == 1)
-            {
-                addresses.put(l.getName(), l.getAddress());
-                addressedAt.put(elsewhere, l);
-            }
+            if (elsewhere != null && stationNames.get(l.getName()) == 1) addressedAt.put(elsewhere, l);
             List<MarklinLocomotive> matches = byAddress.get(l.getIntUID());
             if (matches == null) continue;
             // Checked after the match lookup so a Central Station duplicate with no local counterpart
@@ -1435,7 +1430,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 at == null ? null : now, to == null ? null : this.locDB.getByName(to), stationOf.get(here), here.getIntUID(),
                 at == null ? here.getIntUID() : at.getIntUID()));
         }
-        return new RenameProposals(ordered, refused, addresses, rows, byAddress, partial);
+        return new RenameProposals(ordered, refused, rows, byAddress, partial);
     }
 
     /** Of two locomotives at one address, one named `stationName`: the other, when the station has no such name. */

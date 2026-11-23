@@ -1021,58 +1021,144 @@ public class testTheSyncAsksAboutRenamedLocomotives
     }
 
     /**
-     * Locomotive Settings' Sync asks the same about its own locomotive, over that window, Keep first, and Use address
-     * gives it the station's for this sync alone; nothing else is asked (FR-246).
+     * Locomotive Settings' Sync shows its own locomotive's row alone, over that window, and Apply renames it; another
+     * locomotive's address difference is left as an automatic sync leaves it (FR-249).
      *
-     * MUTATION: in `TrainControlUI.syncLocomotiveFrom`, leave out `askAboutItsAddress`, and nothing is asked; or its
-     * `setTakenStationAddress(null)`, and the sync's answer outlives it.
+     * MUTATION: in `SyncDifferencesWindow.ask`, leave out the `only` test, and the table shows both rows.
      */
     @Test(timeOut = 180000)
-    public void testLocomotiveSettingsSyncAsksAboutItsAddress() throws Exception
+    public void testLocomotiveSettingsSyncShowsItsOwnRowAndApplyRenamesIt() throws Exception
     {
-        final String use = I18n.f("loc.ui.optionUseAddress", 10);
+        final String old = "BR 10 here";
 
         inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
         {
-            movedHere(rig);
-            rig.model.setNetworkCommState(true);
+            renamedHere(rig, old);
+            rig.model.changeLocAddress(AT_3, 4, MarklinLocomotive.decoderType.MM2);
 
+            List<SyncTable.Shown> shown = settingsSync(rig, ui, rig.model.getLocByName(old),
+                SyncTable.answer(old, "RENAME", AT_3, "ADDRESS"));
+
+            assertEquals(shown.size(), 1, "not asked in one table");
+            assertEquals(shown.get(0).rows, Collections.singletonList(old), "not its own row alone");
+            assertEquals(shown.get(0).heading, I18n.t("sync.ui.headingOne"));
+            assertTrue(shown.get(0).dialog.getOwner() instanceof org.traincontrol.gui.LocomotiveSettingsFrame,
+                "not asked over Locomotive Settings");
+            assertNull(rig.model.getLocByName(old), "Apply did not rename it");
+            assertNotNull(rig.model.getLocByName(STATION_NAME), "Apply did not rename it to the station's name");
+            assertEquals(rig.model.getLocByName(AT_3).getAddress(), 4, "the other locomotive took the station's address");
+        });
+    }
+
+    /**
+     * Locomotive Settings' Sync of a locomotive the station has at another address: Keep As Is records the decline,
+     * and Apply gives it the station's address for this sync alone (FR-249).
+     *
+     * MUTATION: in `ManualSync.apply`, leave out `setDeclinedStationAddress(r.stationAddress)` under KEEP.
+     */
+    @Test(timeOut = 240000)
+    public void testLocomotiveSettingsSyncAsksAboutItsAddress() throws Exception
+    {
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            movedHere(rig);
             final org.traincontrol.base.Locomotive loc = rig.model.getLocByName(STATION_NAME);
 
-            assertTrue(askedOnce(settingsSync(ui, loc, m -> m != null && m.contains(STATION_NAME)
-                ? Answering.press(use) : Answering.pressAt(0)), I18n.f("loc.ui.askStationAddress", STATION_NAME, 10, 70),
-                I18n.t("loc.ui.optionKeep"), use).owner instanceof org.traincontrol.gui.LocomotiveSettingsFrame,
-                "not asked over Locomotive Settings");
-            assertEquals(loc.getAddress(), 10, "Use address did not give it the station's address");
+            List<SyncTable.Shown> shown = settingsSync(rig, ui, loc, SyncTable.answer(STATION_NAME, "KEEP"));
+
+            assertEquals(shown.size(), 1, "not asked in one table");
+            assertEquals(shown.get(0).rows, Collections.singletonList(STATION_NAME), "not its own row alone");
+            assertEquals(loc.getDeclinedStationAddress(), Integer.valueOf(10), "Keep As Is was not recorded");
+            assertEquals(loc.getAddress(), 70, "Keep As Is changed its address");
+
+            loc.setDeclinedStationAddress(null);
+            assertEquals(settingsSync(rig, ui, loc, SyncTable.answer(STATION_NAME, "ADDRESS")).size(), 1,
+                "not asked again once the Keep was forgotten");
+            assertEquals(loc.getAddress(), 10, "Apply did not give it the station's address");
             assertFalse(loc.takesStationAddress(10), "the answer outlived its sync");
         });
     }
 
     /**
-     * Locomotive Settings' Sync of a locomotive the table leaves to fix by hand asks nothing and changes nothing (FR-249).
+     * Locomotive Settings' Sync of an ignored locomotive shows its row on Ignore, and Ask Again un-ignores it without
+     * renaming it or adding the station's copy (FR-249).
      *
-     * MUTATION: in `ManualSync.stationAddresses`, leave out the by-hand removal, and its address is asked.
+     * MUTATION: in `ManualSync.apply`, leave out `r.loco.setSyncIgnored(false)`, and it stays ignored.
      */
     @Test(timeOut = 180000)
-    public void testLocomotiveSettingsSyncOfALocomotiveFixedByHandAsksNothing() throws Exception
+    public void testLocomotiveSettingsSyncOfAnIgnoredLocomotiveCanUnIgnoreIt() throws Exception
     {
+        final String old = "BR 10 ignored";
+
         inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
         {
-            renamedAndMovedHere(rig);
-            rig.model.setNetworkCommState(true);
+            renamedHere(rig, old);
+            final org.traincontrol.base.Locomotive loc = rig.model.getLocByName(old);
+            loc.setSyncIgnored(true);
 
-            List<Answering.Question> asked = settingsSync(ui, rig.model.getLocByName(AT_3), m -> Answering.pressAt(0));
+            List<SyncTable.Shown> shown = settingsSync(rig, ui, loc, SyncTable.answer(old, "ASK"));
 
-            assertEquals(asked.size(), 0, "asked " + asked);
-            assertEquals(rig.model.getLocByName(AT_3).getAddress(), 10, "the Sync moved it");
+            assertEquals(shown.size(), 1, "not asked in one table");
+            assertEquals(shown.get(0).rows, Collections.singletonList(old), "not its own row alone");
+            assertEquals(shown.get(0).startsOn.get(old), "IGNORE", "its row does not start on Ignore");
+            assertFalse(loc.isSyncIgnored(), "Ask Again left it ignored");
+            assertSame(rig.model.getLocByName(old), loc, "Ask Again renamed it");
+            assertNull(rig.model.getLocByName(STATION_NAME), "the sync added a copy under the station's name");
         });
     }
 
     /**
-     * Locomotive Settings' Sync reads the station's addresses off the event thread: while the station holds back its
-     * locomotive list (up to 5 s), the program still answers, and the question still comes (FR-246).
+     * Locomotive Settings' Sync of a locomotive that matches the station asks nothing, leaves another locomotive's
+     * rename to the next manual Sync (no rename, no copy), and says the sync is done (FR-249).
      *
-     * MUTATION: in `TrainControlUI.syncLocomotiveFrom`, call `stationAddresses` inside the `invokeLater`, and the event
+     * MUTATION: in `TrainControlUI.syncLocomotiveFrom`, leave out the `saySynced` call, and nothing is said.
+     */
+    @Test(timeOut = 180000)
+    public void testLocomotiveSettingsSyncOfAMatchingLocomotiveAsksNothing() throws Exception
+    {
+        final String old = "BR 10 elsewhere";
+
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            renamedHere(rig, old);
+
+            List<SyncTable.Shown> shown = settingsSync(rig, ui, rig.model.getLocByName(AT_3),
+                SyncTable.answer(old, "RENAME"));
+
+            assertEquals(shown.size(), 0, "a table was shown");
+            assertNotNull(rig.model.getLocByName(old), "the other locomotive was renamed");
+            assertNull(rig.model.getLocByName(STATION_NAME), "the sync added a copy under the station's name");
+        });
+    }
+
+    /**
+     * Locomotive Settings' Sync of a locomotive the table leaves to fix by hand shows its gray row alone and changes
+     * nothing (FR-249).
+     *
+     * MUTATION: in `SyncDifferencesWindow.ask`, leave out `|| r.byHand`, and no table is shown.
+     */
+    @Test(timeOut = 180000)
+    public void testLocomotiveSettingsSyncOfALocomotiveFixedByHandShowsItsGrayRow() throws Exception
+    {
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            renamedAndMovedHere(rig);
+
+            List<SyncTable.Shown> shown = settingsSync(rig, ui, rig.model.getLocByName(AT_3), SyncTable.answer());
+
+            assertEquals(shown.size(), 1, "not shown in one table");
+            assertEquals(shown.get(0).rows, Collections.singletonList(AT_3), "not its own row alone");
+            assertNotNull(shown.get(0).in(AT_3, "byHand", javax.swing.JLabel.class), "its row is not the gray one");
+            assertEquals(rig.model.getLocByName(AT_3).getAddress(), 10, "the Sync moved it");
+            assertNull(rig.model.getLocByName(STATION_NAME), "the sync added a copy under the station's name");
+        });
+    }
+
+    /**
+     * Locomotive Settings' Sync reads the station off the event thread: while the station holds back its locomotive
+     * list (up to 5 s), the program still answers, and the table still comes (FR-249).
+     *
+     * MUTATION: in `TrainControlUI.syncLocomotiveFrom`, call `pressedSync` inside the `invokeLater`, and the event
      * thread waits out the station.
      */
     @Test(timeOut = 180000)
@@ -1111,7 +1197,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
             assertTrue(SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
                 "precondition: Locomotive Settings did not open");
 
-            try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
+            try (Answering answering = Answering.start(m -> Answering.pressAt(0));
+                SyncTable table = SyncTable.answering(SyncTable.answer()))
             {
                 slow.set(true);
                 SwingUtilities.invokeLater(() -> ui.syncLocomotiveFrom(loc, SettingsWindow.showing(), synced::countDown));
@@ -1123,10 +1210,11 @@ public class testTheSyncAsksAboutRenamedLocomotives
                 measured.countDown();
 
                 assertTrue(synced.await(90, TimeUnit.SECONDS), "the sync never ended");
+                assertTrue(Components.waitFor(() -> saidDone(answering), 60000), "the sync did not say it was done");
                 AskingWindows.awaitAnswered();
 
-                askedOnce(answering.questions(), I18n.f("loc.ui.askStationAddress", STATION_NAME, 10, 70),
-                    I18n.t("loc.ui.optionKeep"), I18n.f("loc.ui.optionUseAddress", 10));
+                assertEquals(table.shown().size(), 1, "not asked in one table");
+                assertEquals(table.shown().get(0).rows, Collections.singletonList(STATION_NAME));
             }
             finally
             {
@@ -1139,23 +1227,30 @@ public class testTheSyncAsksAboutRenamedLocomotives
         });
     }
 
-    /** Presses Sync in Locomotive Settings of loc, answers by `rule`, and returns the questions asked over the sync. */
-    private static List<Answering.Question> settingsSync(TrainControlUI ui, org.traincontrol.base.Locomotive loc,
-        java.util.function.Function<String, Answering.Answer> rule) throws Exception
+    /**
+     * Presses Sync in Locomotive Settings of loc with a station connected, answers its table as `table` says and OK to
+     * the rest until the sync says it is done; the tables shown.
+     */
+    private static List<SyncTable.Shown> settingsSync(StationRig rig, TrainControlUI ui,
+        org.traincontrol.base.Locomotive loc, java.util.Map<String, String> table) throws Exception
     {
         final CountDownLatch synced = new CountDownLatch(1);
 
+        rig.model.setNetworkCommState(true);
         assertTrue(SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
             "precondition: Locomotive Settings did not open");
 
-        try (Answering answering = Answering.start(rule))
+        try (Answering answering = Answering.start(m -> Answering.pressAt(0));
+            SyncTable answers = SyncTable.answering(table))
         {
             SwingUtilities.invokeLater(() -> ui.syncLocomotiveFrom(loc, SettingsWindow.showing(), synced::countDown));
 
             assertTrue(synced.await(60, TimeUnit.SECONDS), "the sync never ended");
+            assertTrue(Components.waitFor(() -> saidDone(answering), 60000), "the sync did not say it was done: "
+                + answering.asked());
             AskingWindows.awaitAnswered();
 
-            return new ArrayList<>(answering.questions());
+            return answers.shown();
         }
         finally
         {
@@ -1203,16 +1298,6 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
             return all.toString();
         });
-    }
-
-    /** The one question asked is `message` with these buttons, and starts on the first. */
-    private static Answering.Question askedOnce(List<Answering.Question> asked, String message, String... buttons)
-    {
-        assertEquals(asked.size(), 1, "not asked once: " + asked.size());
-        assertEquals(asked.get(0).message, message);
-        assertEquals(asked.get(0).buttons, Arrays.asList(buttons));
-        assertEquals(asked.get(0).startsOn, buttons[0], "the question does not start on " + buttons[0]);
-        return asked.get(0);
     }
 
     /** As `pressing`, where exactly one table must have shown them. */

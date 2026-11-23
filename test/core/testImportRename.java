@@ -459,7 +459,7 @@ public class testImportRename
      * A consist head carrying the station's name at another address is asked about its address, and taking the
      * station's address keeps its members and multipliers.
      *
-     * MUTATION: restore `!elsewhere.hasLinkedLocomotives()` on the `addresses.put` line and the offer is gone.
+     * MUTATION: restore `!elsewhere.hasLinkedLocomotives()` on the `addressedAt.put` line and the offer is gone.
      */
     @Test
     public void testConsistHeadIsAskedAboutItsAddress() throws Exception
@@ -475,7 +475,8 @@ public class testImportRename
             head.preSetLinkedLocomotives(links);
             head.setLinkedLocomotives();
 
-            assertEquals(model.getRenameProposals(true).getAddresses().get(CS_NAME), Integer.valueOf(CS_ADDRESS),
+            assertEquals(model.getRenameProposals(true).getRows().stream().filter(r -> r.loco == head)
+                .map(r -> r.stationAddress).findFirst().orElse(null), Integer.valueOf(CS_ADDRESS),
                 "the head is offered the station's address like any locomotive");
 
             model.changeLocAddress(CS_NAME, CS_ADDRESS, head.getDecoderType());
