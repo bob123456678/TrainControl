@@ -1340,7 +1340,7 @@ public class testLocomotiveCsvImportDoor
      * Keep New is grayed, with its reason on hover beside "(can't apply)", where several locomotives here share the
      * address, where the file also lists the locomotive here, and where it is running; a second row for one locomotive
      * here is grayed once the first takes it, or a route drives it (FR-249).  The Keep New heading skips every grayed
-     * row; Keep Old's sets every row.  The "(can't apply)" that appears on a taken row leaves every Keep New in view.
+     * row; Keep Old's sets every row.
      *
      * MUTATION: in `MarklinLocomotiveCsv.duplicates`, leave out the RUNNING reason, and this fails.
      */
@@ -1379,7 +1379,7 @@ public class testLocomotiveCsvImportDoor
             File file = write(HEADER + mfx(sNew, s) + mfx(lNew, l) + mfx(listed, l) + mfx(rNew, r) + mfx(dNew, d)
                 + mfx(t1, t) + mfx(t2, t));
             List<String> failed = new ArrayList<>(), reasons = new ArrayList<>(), onNew = new ArrayList<>();
-            List<String> onOld = new ArrayList<>(), tookTip = new ArrayList<>(), inView = new ArrayList<>();
+            List<String> onOld = new ArrayList<>(), tookTip = new ArrayList<>();
 
             try
             {
@@ -1415,22 +1415,6 @@ public class testLocomotiveCsvImportDoor
                     javax.swing.JLabel took = support.Components.named(asking, t2 + ":taken", javax.swing.JLabel.class);
 
                     tookTip.add(took.getText().equals(cant) + " " + took.getToolTipText());
-                    support.Components.settle();
-
-                    org.traincontrol.gui.widgets.ChoiceTable table = support.Components.inside(asking,
-                        org.traincontrol.gui.widgets.ChoiceTable.class);
-
-                    inView.add(String.valueOf(table.getHorizontalScrollBar().isVisible()));
-
-                    for (javax.swing.AbstractButton b : support.Components.all(asking, javax.swing.AbstractButton.class,
-                        x -> x.getName() != null && x.getName().endsWith(":NEW")))
-                    {
-                        java.awt.Rectangle at = javax.swing.SwingUtilities.convertRectangle(b.getParent(), b.getBounds(),
-                            table.getViewport().getView());
-
-                        if (!table.getViewport().getViewRect().contains(at)) inView.add(b.getName() + " is out of view");
-                    }
-
                     click(null, I18n.t("loc.ui.importCsvKeepOld"));
                     onOld.addAll(picked());
                 }));
@@ -1447,7 +1431,6 @@ public class testLocomotiveCsvImportDoor
                     t1 + ":NEW", t2 + ":BOTH"), "the Keep New heading did not skip the grayed rows and the one taken");
                 assertEquals(tookTip, Collections.singletonList("true " + I18n.f("loc.ui.importCsvWhyTaken", t1, held)),
                     "the row whose locomotive another row took does not say so");
-                assertEquals(inView, Collections.singletonList("false"), "the taken mark pushed a Keep New out of view");
                 assertEquals(onOld, java.util.Arrays.asList(sNew + ":OLD", lNew + ":OLD", rNew + ":OLD", dNew + ":OLD",
                     t1 + ":OLD", t2 + ":OLD"), "the Keep Old heading did not set every row");
                 assertEquals(everyLocomotive(model), before, "Cancel imported something");
@@ -1462,6 +1445,61 @@ public class testLocomotiveCsvImportDoor
                 model.deleteRoute(route);
 
                 for (String name : new String[] {s1, s2, listed, rolling, held, driven}) model.deleteLoc(name);
+            }
+        });
+    }
+
+    /**
+     * "(can't apply)" appearing beside a row's file name, on a click that takes its locomotive, leaves every Keep New in
+     * view: no scroll bar shows, as the dialog was sized with the mark (FR-249).
+     *
+     * MUTATION: in `LocomotiveCsvDoor.Duplicates.addRow`, leave out the mark's reserved width, and this fails.
+     */
+    @Test
+    public void testATakenMarkLeavesEveryKeepNewInView() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final String here = "FR249 door holder", first = "FR249 door first", second = "FR249 door second";
+            final int address = freeAddress(model, 13000);
+
+            model.newMFXLocomotive(here, address);
+
+            File file = write(HEADER + mfx(first, address) + mfx(second, address));
+            List<String> failed = new ArrayList<>(), out = new ArrayList<>();
+
+            try
+            {
+                press(ui, file, CANCEL, s -> s.answered, safely(failed, () ->
+                {
+                    click(first + ":NEW", null);
+                    support.Components.settle();
+                    out.addAll(support.Components.onTheEventThread(() ->
+                    {
+                        List<String> bad = new ArrayList<>();
+                        org.traincontrol.gui.widgets.ChoiceTable table = support.Components.inside(asking,
+                            org.traincontrol.gui.widgets.ChoiceTable.class);
+
+                        if (table.getHorizontalScrollBar().isVisible()) bad.add("a scroll bar shows");
+
+                        for (javax.swing.AbstractButton b : support.Components.all(asking, javax.swing.AbstractButton.class,
+                            x -> x.getName() != null && x.getName().endsWith(":NEW")))
+                        {
+                            if (!table.getViewport().getViewRect().contains(javax.swing.SwingUtilities.convertRectangle(
+                                b.getParent(), b.getBounds(), table.getViewport().getView()))) bad.add(b.getName());
+                        }
+
+                        return bad;
+                    }));
+                }));
+
+                assertEquals(failed, Collections.emptyList());
+                assertEquals(out, Collections.emptyList(), "the taken mark pushed a Keep New out of view");
+            }
+            finally
+            {
+                file.delete();
+                model.deleteLoc(here);
             }
         });
     }
