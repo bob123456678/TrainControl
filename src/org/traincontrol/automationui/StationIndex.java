@@ -77,6 +77,11 @@ public final class StationIndex
         for (Map.Entry<TileKey, List<String>> entry : grouped.entrySet())
         {
             entry.setValue(Collections.unmodifiableList(entry.getValue()));
+
+            if (entry.getValue().size() == 1 && !facingByPoint.containsKey(entry.getValue().get(0)))
+            {
+                onlyWayOutBySquare.put(entry.getKey(), builder.onlyWayOutFacing(entry.getKey()));
+            }
         }
 
         pointsBySquare = Collections.unmodifiableMap(grouped);
@@ -95,11 +100,6 @@ public final class StationIndex
             }
 
             arrivals.put(square, Collections.unmodifiableList(sides));
-
-            if (grouped.get(square).size() == 1 && !facingByPoint.containsKey(grouped.get(square).get(0)))
-            {
-                onlyWayOutBySquare.put(square, builder.onlyWayOutFacing(square));
-            }
         }
 
         arrivalsBySquare = Collections.unmodifiableMap(arrivals);
