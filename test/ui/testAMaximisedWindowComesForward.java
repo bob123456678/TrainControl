@@ -155,4 +155,56 @@ public class testAMaximisedWindowComesForward
             else prefs.put(PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, was);
         }
     }
+
+    /**
+     * A window saved minimized comes back not minimized, one saved maximized still comes back maximized, and a stored
+     * state already holding the minimized bit is ignored (OB-513).
+     *
+     * MUTATION: store or restore the state with the minimized bit in `PositionAwareJFrame`, and this fails.
+     */
+    @Test
+    public void testAMinimisedWindowIsNeverRemembered() throws Exception
+    {
+        if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("a window needs a display");
+
+        final Preferences prefs = TrainControlUI.getPrefs();
+        final String key = Remembering.class.getSimpleName() + "_OB-513_state";
+        final boolean rememberWas = prefs.getBoolean(PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, false);
+        final int[] seen = new int[3];
+        prefs.putBoolean(PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, true);
+
+        try
+        {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                Remembering f = new Remembering();
+                f.setWindowIndex("OB-513");
+                f.setBounds(80, 80, 400, 300);
+                f.setVisible(true);
+                f.setExtendedState(java.awt.Frame.ICONIFIED);
+                f.saveBounds();
+                seen[0] = prefs.getInt(key, -1);
+                f.setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
+                f.saveBounds();
+                seen[1] = prefs.getInt(key, -1);
+                f.dispose();
+
+                prefs.putInt(key, java.awt.Frame.ICONIFIED);
+                f = new Remembering();
+                f.setWindowIndex("OB-513");
+                f.takeTheRememberedBounds();
+                seen[2] = f.getExtendedState();
+            });
+
+            assertTrue((seen[0] & java.awt.Frame.ICONIFIED) == 0, "a minimized window was saved minimized: " + seen[0]);
+            assertTrue(seen[1] == java.awt.Frame.MAXIMIZED_BOTH, "a maximized window was not saved maximized: " + seen[1]);
+            assertTrue((seen[2] & java.awt.Frame.ICONIFIED) == 0, "a stored minimized state was restored: " + seen[2]);
+        }
+        finally
+        {
+            for (String k : new String[] {"_x", "_y", "_width", "_height", "_state"}) prefs.remove(key.replace("_state", k));
+
+            prefs.putBoolean(PositionAwareJFrame.REMEMBER_WINDOW_LOCATION, rememberWas);
+        }
+    }
 }

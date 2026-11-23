@@ -104,7 +104,7 @@ public class PositionAwareJFrame extends JFrame
                     prefs.putInt(windowName + "_y", this.getY());
                     prefs.putInt(windowName + "_width", this.getWidth());
                     prefs.putInt(windowName + "_height", this.getHeight());
-                    prefs.putInt(windowName + "_state", this.getExtendedState());
+                    prefs.putInt(windowName + "_state", this.getExtendedState() & ~java.awt.Frame.ICONIFIED);
                 }
             }
         }
@@ -164,7 +164,7 @@ public class PositionAwareJFrame extends JFrame
                     {
                         int width = prefs.getInt(windowName + "_width", this.getWidth());
                         int height = prefs.getInt(windowName + "_height", this.getHeight());
-                        int state = prefs.getInt(windowName + "_state", this.getExtendedState());
+                        int state = prefs.getInt(windowName + "_state", this.getExtendedState()) & ~java.awt.Frame.ICONIFIED;
                         this.setSize(width, height);
 
                         // Maximized once it is on screen, not before (OB-328): the diagram's windows and the editor are
