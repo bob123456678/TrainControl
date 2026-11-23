@@ -491,7 +491,7 @@ public class AutonomyMenu extends JMenu
 
         forget.setToolTipText(AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.hintDeleteSetup")));
 
-        for (Component part : new Component[] {copy, saveAs, rename, deleteOne,
+        for (Component part : new Component[] {copy, new JPopupMenu.Separator(), saveAs, rename, deleteOne,
             new JPopupMenu.Separator(), importItem, exportItem, new JPopupMenu.Separator(),
             unload, forget})
         {

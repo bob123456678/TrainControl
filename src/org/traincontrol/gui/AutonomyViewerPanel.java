@@ -1570,9 +1570,9 @@ public class AutonomyViewerPanel extends JPanel
         {
             // as a copy, so a variant that differs only in where the locomotives start does not mean
             // re-entering every decision that has nothing to do with that
-            if (replacing) session().getStore().deleteConfiguration(name);
-
-            session().getStore().createConfiguration(name, from, withTrains || from == null);
+            // A replaced configuration is swapped for its copy in one step, so nothing is lost if the copy fails
+            if (replacing) session().getStore().replaceConfiguration(name, from);
+            else session().getStore().createConfiguration(name, from, withTrains || from == null);
         }
         catch (IOException e)
         {

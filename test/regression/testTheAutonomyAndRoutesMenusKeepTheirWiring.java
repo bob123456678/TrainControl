@@ -113,7 +113,7 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
     {
         onItsOwnWindow(ui ->
         {
-            List<String> list = Arrays.asList(t("autosetup.ui.menuNewConfiguration"),
+            List<String> list = Arrays.asList(t("autosetup.ui.menuNewConfiguration"), DIVIDER,
                 t("autosetup.ui.menuSaveAsConfiguration"), t("autosetup.ui.menuRenameConfiguration"), t("autosetup.ui.menuDeleteConfiguration"), DIVIDER,
                 t("autosetup.ui.btnImportConfiguration"), t("autosetup.ui.btnExportConfiguration"), DIVIDER,
                 t("autosetup.ui.menuUnloadAutonomy"), t("autosetup.ui.menuDeleteSetup"));
@@ -194,7 +194,10 @@ public class testTheAutonomyAndRoutesMenusKeepTheirWiring
                     assertTrue(Components.waitFor(() -> ui.getActiveDiagramConfiguration() == null, 30000),
                         said + "Stop Using Autonomy did not unload " + loaded);
 
-                    // WITH NONE LOADED, Save As is grayed and says why
+                    // WITH NONE LOADED, Save As is grayed and says why; the tab's button is back after its rebuild
+                    assertTrue(Components.waitFor(() -> Components.withText(ui.getAutonomyViewerPanel(),
+                        t("autosetup.ui.btnManage")) != null, 30000), said + "the Manage button did not come back");
+
                     JMenuItem saveAs = manageItem(ui, where, "autosetup.ui.menuSaveAsConfiguration");
 
                     assertFalse(saveAs.isEnabled(), said + "Save As... is enabled with no configuration loaded");

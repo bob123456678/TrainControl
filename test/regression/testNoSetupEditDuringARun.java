@@ -3237,6 +3237,22 @@ public class testNoSetupEditDuringARun
 
             assertTrue(globals == null || !globals.has("timetable"), "New Configuration still has the timetable");
 
+            // A PAUSED LOCOMOTIVE names a locomotive, so the blank copy must not carry it either
+            org.json.JSONObject live = session.getStore().getConfiguration(running);
+
+            if (live.optJSONObject("globals") == null) live.put("globals", new org.json.JSONObject());
+
+            live.getJSONObject("globals").put(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES,
+                new org.json.JSONArray(Arrays.asList("R34 paused")));
+
+            session.getStore().createConfiguration("R34 blank", running, false);
+
+            assertFalse(session.getStore().getConfiguration("R34 blank").getJSONObject("globals")
+                .has(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES), "New Configuration still names paused"
+                + " locomotives");
+
+            live.getJSONObject("globals").remove(org.traincontrol.automation.Layout.PAUSED_LOCOMOTIVES);
+
             // EVERYTHING ELSE AS IT WAS
             org.json.JSONObject points = original.optJSONObject("points");
 
