@@ -911,12 +911,13 @@ public class testTheSyncDifferencesWindow
 
     /**
      * A locomotive two station locomotives answer to (here A and B swapped; X's name reused at 23, X at 25 there) is a
-     * row with no control, saying to fix it by hand and naming both with their addresses.  No heading picks for it,
-     * Continue Sync changes neither, the log names it and both once, and the closing message does not count it, while a
-     * one-to-one rename beside it applies.
+     * row with no control, saying to fix it by hand and naming both with their addresses, a red triangle after them
+     * saying why.  No heading picks for it, Continue Sync changes neither, the log names it and both once, and the
+     * closing message counts it as to fix by hand, while a one-to-one rename beside it applies.
      *
      * MUTATION: in the `RenameProposals.Row` constructor, set `byHand` false, and the rows offer Apply again; or drop
-     * the gaps in `SyncDifferencesWindow.addRow`, and the by-hand rows' blocks start flush left.
+     * the gaps in `SyncDifferencesWindow.addRow`, and the by-hand rows' blocks start flush left; or paint its triangle
+     * yellow (`warning(16, false)`).
      */
     @Test(timeOut = 180000)
     public void testARowThatDiffersTwoWaysIsLeftToFixByHand() throws Exception
@@ -944,6 +945,9 @@ public class testTheSyncDifferencesWindow
                         each[1], each[2], each[0], each[3]), each[0] + "'s station locomotives");
                 }
                 check(problems, java.util.Collections.frequency(labels(t), I18n.t("sync.ui.byHand")), 3, "fix by hand");
+                JLabel x = t.in("SW X", "byHand", JLabel.class);
+                check(problems, Arrays.asList(x.getHorizontalTextPosition(), x.getToolTipText(), red(x)), Arrays.asList(
+                    JLabel.LEADING, I18n.t("sync.ui.byHandTip"), true), "X's red triangle after its text");
                 // The by-hand rows' blocks start where the other row's radios leave room: two Name columns, no more
                 java.util.Set<Integer> names = new java.util.TreeSet<>();
                 for (JLabel l : Components.all(t.dialog, JLabel.class, l -> I18n.t("sync.ui.name").equals(l.getText())))
@@ -966,7 +970,7 @@ public class testTheSyncDifferencesWindow
             check(problems, Arrays.asList(rig.model.getLocByName("SW Y"), rig.model.getLocByName("SW Shunter"),
                 rig.model.getLocByName("SW V 60") != null), Arrays.asList(null, null, true), "Y added, or no rename");
             check(problems, said, Arrays.asList(I18n.t("ui.infoSyncComplete") + "\n\n" + I18n.f("ui.infoSyncRenamed",
-                1)), "the closing message");
+                1) + "\n" + I18n.f("ui.infoSyncByHand", 3)), "the closing message");
         });
         assertTrue(problems.isEmpty(), problems.toString());
         assertTrue(looked.get(), "the look stopped short");
@@ -1017,9 +1021,11 @@ public class testTheSyncDifferencesWindow
 
     /**
      * The finishing message says only what happened: with nothing different and nothing new, that everything matches;
-     * otherwise what was added, by kind, and only the answers that are not zero.
+     * otherwise what was added, by kind, and only the answers that are not zero; a table of by-hand rows alone counts
+     * them, never saying everything matches.
      *
-     * MUTATION: in `ManualSync.syncSummary`, list every answer, zero or not; or leave out the everything-matches line.
+     * MUTATION: in `ManualSync.syncSummary`, list every answer, zero or not; or leave out the everything-matches line;
+     * or in `ManualSync.apply`, count no by-hand rows.
      */
     @Test(timeOut = 240000)
     public void testTheFinishingMessageSaysOnlyWhatHappened() throws Exception
@@ -1033,9 +1039,33 @@ public class testTheSyncDifferencesWindow
             list.set(station("SW Same", 70, "SW New", 71, "SW Added", 72));
             assertNotNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW Old", "RENAME")), said),
                 "the rename's table did not open");
+            // X's name reused at its address, X itself at another: a by-hand row alone
+            here(rig, "SW X", 73);
+            list.set(station("SW Same", 70, "SW New", 71, "SW Added", 72, "SW Y", 73, "SW X", 75));
+            assertNotNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer()), said), "X's table did not open");
             assertEquals(said, Arrays.asList(I18n.t("ui.infoSyncNothingDiffers"), I18n.t("ui.infoSyncComplete") + "\n\n"
-                + I18n.f("ui.infoSyncLocomotiveAdded", 1) + "\n\n" + I18n.f("ui.infoSyncRenamed", 1)), "the messages");
+                + I18n.f("ui.infoSyncLocomotiveAdded", 1) + "\n\n" + I18n.f("ui.infoSyncRenamed", 1), I18n.t(
+                "ui.infoSyncComplete") + "\n\n" + I18n.f("ui.infoSyncByHand", 1)), "the messages");
         });
+    }
+
+    /** Whether l's icon paints a strongly red pixel. */
+    private static boolean red(JLabel l)
+    {
+        javax.swing.Icon icon = l.getIcon();
+        if (icon == null) return false;
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(icon.getIconWidth(), icon.getIconHeight(),
+            java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = img.createGraphics();
+        icon.paintIcon(l, g, 0, 0);
+        g.dispose();
+        for (int x = 0; x < img.getWidth(); x++)
+            for (int y = 0; y < img.getHeight(); y++)
+            {
+                java.awt.Color c = new java.awt.Color(img.getRGB(x, y), true);
+                if (c.getAlpha() > 200 && c.getRed() > 180 && c.getGreen() < 80 && c.getBlue() < 80) return true;
+            }
+        return false;
     }
 
     /** c as it paints. */

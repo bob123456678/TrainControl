@@ -146,6 +146,10 @@ public final class SyncDifferencesWindow
             JLabel where = text(I18n.f("sync.ui.byHandWhere", r.stationName, there(l) + l.getAddress(), name, there(l)
                 + r.stationAddress), GRAYED);
             where.setName(name + ":byHand");
+            // A red triangle after the text, saying why
+            where.setIcon(RowIcons.warning(16, true));
+            where.setHorizontalTextPosition(JLabel.LEADING);
+            where.setToolTipText(I18n.t("sync.ui.byHandTip"));
             // Where a radio sits in the other rows, a gap as wide
             int radio = new JRadioButton().getPreferredSize().width;
             return new JComponent[] {ChoiceTable.beside(Box.createHorizontalStrut(radio), here), ChoiceTable.beside(

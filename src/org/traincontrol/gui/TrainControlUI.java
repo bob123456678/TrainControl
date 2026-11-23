@@ -14674,7 +14674,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 // re-enabling pass below.  Reported as -1, the failure code this method already tells the user about;
                 // the log has the reason.
                 Integer syncResult;
-                final int[] answered = new int[5];
+                final int[] answered = new int[6];
                 try
                 {
                     syncResult = c == null ? this.runTheOwedSync() : new ManualSync(this).pressedSync(c, answered);

@@ -54,7 +54,7 @@ public final class ManualSync
             : "ui.infoSyncLocomotivesAdded", locomotives));
         if (routes > 0) added.add(I18n.f(routes == 1 ? "ui.infoSyncRouteAdded" : "ui.infoSyncRoutesAdded", routes));
         String[] kinds = {"ui.infoSyncRenamed", "ui.infoSyncMoved", "ui.infoSyncKept", "ui.infoSyncIgnored",
-            "ui.infoSyncWaiting"};
+            "ui.infoSyncWaiting", "ui.infoSyncByHand"};
         for (int i = 0; i < answers.length; i++) if (answers[i] > 0) said.add(I18n.f(kinds[i], answers[i]));
         if (!partial && added.isEmpty() && said.isEmpty()) return I18n.t("ui.infoSyncNothingDiffers");
         List<String> parts = new ArrayList<>(Arrays.asList(I18n.t("ui.infoSyncComplete")));
@@ -86,7 +86,8 @@ public final class ManualSync
                 if (open != null) SwingUtilities.invokeLater(open::followTheSync);
                 if (n.length == 0 || synced < 0) return synced;
                 int moved = (int) taken.stream().filter(r -> r.loco.getAddress() == r.stationAddress).count();
-                System.arraycopy(new int[] {n[1], moved, n[2], n[3], n[4] + taken.size() - moved}, 0, answered, 0, 5);
+                System.arraycopy(new int[] {n[1], moved, n[2], n[3], n[4] + taken.size() - moved, n[5]}, 0, answered,
+                    0, 6);
                 return synced + n[0];
             }
             finally
@@ -98,7 +99,7 @@ public final class ManualSync
     }
 
     /**
-     * Reads, asks over c and applies, re-addressed rows into `taken`: apply's counts, none with no table, CANCELED.
+     * Reads, asks over c and applies, re-addressed rows into `taken`: apply's counts, none unconnected, or CANCELED.
      */
     private int[] askAndApply(Component c, List<RenameProposals.Row> taken)
     {
@@ -127,7 +128,7 @@ public final class ManualSync
             RenameProposals current = again != null ? again : asked;
             List<int[]> n = new ArrayList<>();
             SwingUtilities.invokeAndWait(() -> n.add(apply(c, asked, current, a, names, taken)));
-            return a.isEmpty() ? new int[0] : n.get(0);
+            return n.get(0);
         }
         catch (Exception e)
         {
@@ -183,7 +184,7 @@ public final class ManualSync
         Set<Locomotive> unchanged = new HashSet<>();
         for (RenameProposals.Row r : rows)
             if (model.getLocByName(names.get(r.loco)) == r.loco) unchanged.add(r.loco);
-        int[] n = new int[5];
+        int[] n = {0, 0, 0, 0, 0, (int) asked.getRows().stream().filter(r -> r.byHand).count()};
         for (RenameProposals.Row r : rows)
         {
             Answer a = answers.get(r);
