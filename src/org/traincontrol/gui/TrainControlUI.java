@@ -14718,7 +14718,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 }
 
                 final Integer r = syncResult;
-
                 // One event-thread pass for everything cheap enough to share one.
                 singlePass(() ->
                 {
@@ -14729,11 +14728,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View
                 });
 
                 followIfReadAgain(before);
-
                 // Left OUT of the pass: both go through their own renderer first.  See singlePass.
                 this.repaintLoc(true, null);
                 this.repaintLayout();
-
                 if (c != null && !saidTheSyncDidNotRun(c, r, () -> doSync(c))) saySynced(c, r, answered);
             }).start();
         });
