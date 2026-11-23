@@ -1124,7 +1124,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * Locomotive Settings' Sync of a locomotive the table leaves to fix by hand shows its gray row alone and changes
      * nothing (FR-249).
      *
-     * MUTATION: in `SyncDifferencesWindow.ask`, leave out `|| r.byHand`, and no table is shown.
+     * MUTATION: in `SyncDifferencesWindow.ask`, leave out `|| r.byHand`, and no table is shown; or in
+     * `ManualSync.apply`, count `r.byHand` alone, and the other locomotive's row is counted too.
      */
     @Test(timeOut = 180000)
     public void testLocomotiveSettingsSyncOfALocomotiveFixedByHandShowsItsGrayRow() throws Exception
@@ -1132,12 +1133,16 @@ public class testTheSyncAsksAboutRenamedLocomotives
         inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
         {
             renamedAndMovedHere(rig);
+            // The station's two names swapped here: another locomotive left to fix by hand
+            rig.model.newMM2Locomotive(STATION_NAME, 3);
 
             SyncTable.Shown shown = settingsSync(rig, ui, AT_3, SyncTable.answer());
 
             assertNotNull(shown.in(AT_3, "byHand", javax.swing.JLabel.class), "its row is not the gray one");
             assertEquals(rig.model.getLocByName(AT_3).getAddress(), 10, "the Sync moved it");
-            assertNull(rig.model.getLocByName(STATION_NAME), "the sync added a copy under the station's name");
+            assertEquals(rig.model.getLocByName(STATION_NAME).getAddress(), 3, "the Sync moved the other locomotive");
+            assertEquals(closing, I18n.t("ui.infoSyncComplete") + "\n\n" + I18n.f("ui.infoSyncByHand", 1),
+                "the closing message counts the locomotive alone, not the other one to fix by hand");
         });
     }
 
@@ -1240,6 +1245,8 @@ public class testTheSyncAsksAboutRenamedLocomotives
             assertTrue(Components.waitFor(() -> saidDone(answering), 60000), "the sync did not say it was done: "
                 + answering.asked());
             AskingWindows.awaitAnswered();
+            closing = answering.asked().stream().filter(m -> m.startsWith(I18n.t("ui.infoSyncComplete"))).findFirst()
+                .orElse(null);
 
             return table == null ? null : shown.get(0);
         }
@@ -1340,6 +1347,9 @@ public class testTheSyncAsksAboutRenamedLocomotives
             }
         }
     }
+
+    /** What the last settingsSync said when it was done. */
+    private static String closing;
 
     /** The tables the last pressSync showed. */
     private static List<SyncTable.Shown> tables = new ArrayList<>();
