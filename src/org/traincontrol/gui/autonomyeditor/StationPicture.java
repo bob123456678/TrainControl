@@ -246,13 +246,7 @@ final class StationPicture extends JPanel
 
         if (square == null) return;
 
-        // The station's square as the track diagram draws it, under the diagram's settings (OB-511); the ways in are ours
-        TileAnnotation diagram = session.staticAnnotations(Collections.singleton(tile),
-            TrainControlUI.diagramShowsRestrictionArrows(), TrainControlUI.diagramShowsAllowedDirections()).get(tile);
-
-        drawn = diagram == null ? null : diagram.withoutArrivals().withSmallerIcon(diagram.isCurved() ? 1f : ICON);
-
-        square.setAutonomyAnnotation(drawn);
+        drawStation();
 
         nextMarks.clear();
 
@@ -279,6 +273,23 @@ final class StationPicture extends JPanel
             }
         }
 
+        block.repaint();
+    }
+
+    /** The station's square as the track diagram draws it, under the diagram's settings (OB-511); the ways in are ours. */
+    private void drawStation()
+    {
+        TileAnnotation diagram = session.staticAnnotations(Collections.singleton(showing),
+            TrainControlUI.diagramShowsRestrictionArrows(), TrainControlUI.diagramShowsAllowedDirections()).get(showing);
+        drawn = diagram == null ? null : diagram.withoutArrivals().withSmallerIcon(diagram.isCurved() ? 1f : ICON);
+        square.setAutonomyAnnotation(drawn);
+    }
+
+    /** Draws the station's square again under the diagram's settings, which the main window may have changed meanwhile. */
+    void refresh()
+    {
+        if (square == null || showing == null || session == null) return;
+        drawStation();
         block.repaint();
     }
 

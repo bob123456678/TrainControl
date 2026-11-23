@@ -4088,6 +4088,62 @@ public class testStationSettingsWindow
     }
 
     /**
+     * The picture takes up a change of the diagram's arrow options made in the main window while Station Settings is open,
+     * when the window is activated again (OB-511).
+     *
+     * MUTATION: drop `picture.refresh()` from the window's `windowActivated`, and this fails.
+     */
+    @Test(timeOut = 120000)
+    public void testThePictureFollowsTheOptionsWhenTheWindowIsActivated() throws Exception
+    {
+        java.util.prefs.Preferences prefs = TrainControlUI.getPrefs();
+
+        String restricted = prefs.get(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, null);
+        String allowed = prefs.get(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, null);
+
+        TileKey station = Components.onTheEventThread(() -> support.AskingWindows.stationNamed(session, "TopMainR1"));
+
+        restrictAsAFileWould(station, Direction.TOWARD_A);
+
+        prefs.putBoolean(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, true);
+        prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, false);
+
+        StationSettingsWindow window = StationDoors.open(panel, station);
+
+        try
+        {
+            prefs.putBoolean(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, true);
+
+            assertNotEquals(arrowsIn(window, station, true), arrowsIn(window, station, false),
+                "precondition: the option changes the diagram's station");
+
+            Components.onTheEventThread(() ->
+            {
+                java.awt.event.WindowEvent activated = new java.awt.event.WindowEvent(window,
+                    java.awt.event.WindowEvent.WINDOW_ACTIVATED);
+
+                for (java.awt.event.WindowListener each : window.getWindowListeners()) each.windowActivated(activated);
+
+                return null;
+            });
+            Components.settle();
+
+            assertEquals(arrowsIn(window, station, true), arrowsIn(window, station, false),
+                "the picture kept the old option after the window was activated");
+        }
+        finally
+        {
+            StationDoors.close(window);
+
+            if (restricted == null) prefs.remove(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS);
+            else prefs.put(TrainControlUI.DIAGRAM_RESTRICTION_ARROWS, restricted);
+
+            if (allowed == null) prefs.remove(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS);
+            else prefs.put(TrainControlUI.DIAGRAM_ALLOWED_DIRECTIONS, allowed);
+        }
+    }
+
+    /**
      * A click on the station in the picture steps May depart to its list's next answer, through the list, round every
      * answer and back to the first, and the picture's red arrow follows each step (OB-511; Adam: "when clicking the
      * arrows on the station in the station editor, can we get it to cycle the "can depart" dropdown options?").  The
@@ -4150,7 +4206,7 @@ public class testStationSettingsWindow
      * Where May depart is grayed, at a track end, a click on the station changes neither the list nor the setup, and its
      * tooltip gives the (i)'s reason (OB-511).
      *
-     * MUTATION: have `StationSettingsWindow.departNext` step a grayed list too, and this fails.
+     * MUTATION: have `StationSettingsWindow.departNext` step a grayed list too, and this fails on the tooltip: the grayed list puts a step back before the click returns, so only the tooltip shows it.
      */
     @Test(timeOut = 120000)
     public void testAGrayedMayDepartIsNotSteppedByAClick() throws Exception
@@ -4171,6 +4227,7 @@ public class testStationSettingsWindow
             String[] hover = new String[3];
 
             routedClick(window, "DEPART", hover);
+
             StationDoors.current(window);
 
             assertEquals(departShows(window), shown, "a click stepped a grayed May depart");

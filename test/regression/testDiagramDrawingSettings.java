@@ -203,7 +203,7 @@ public class testDiagramDrawingSettings
                 "public static boolean diagramShowsRestrictionArrows()",
                 "public void showStaticAutonomyLayer(boolean show)",
                 "public TileAnnotation staticAnnotationFor(TileKey tile)",
-                "void show(AutonomySession session, TileKey tile, TrainControlUI main, Doors doors)"),
+                "private void drawStation()"),
             java.util.Arrays.asList(1, 1, 1, 1), readers);
 
         // The METHOD NAME is not the coupling; the STORED PREFERENCE is: reading DIAGRAM_RESTRICTION_ARROWS out of
