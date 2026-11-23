@@ -34,7 +34,8 @@ import org.traincontrol.util.I18n;
 
 /**
  * The manual Sync's table (FR-249): one row per locomotive the Central Station differs on, each answered before
- * anything changes.  Every row starts on Ask Again, an ignored locomotive's on Ignore.
+ * anything changes.  Every row starts on Ask Again, an ignored locomotive's on Ignore, and an mfx one differing only by
+ * address on Apply where Set all would take it.
  */
 public final class SyncDifferencesWindow
 {
@@ -65,6 +66,14 @@ public final class SyncDifferencesWindow
             setAllTo("sync.ui.keep", (r, can) -> Answer.KEEP), setAllTo("sync.ui.keepBoth", (r, can) -> Answer.BOTH),
             UiStyle.blackLabel(I18n.t("sync.ui.ignore")), setAllTo("sync.ui.askAgain", (r, can) -> Answer.ASK));
         for (Row r : rows) table.addRow(addRow(r));
+        // An mfx locomotive the station has under its name at another address starts on Apply, where Set all would
+        List<Row> mfx = new ArrayList<>();
+        for (Row r : rows)
+            if (r.stationName == null && r.loco.getDecoderType() == Locomotive.decoderType.MFX) mfx.add(r);
+        this.settingAll = true;
+        for (Row r : proposals.applicable(mfx, new ArrayList<>()))
+            this.choices.get(r).get(Answer.ADDRESS).setSelected(true);
+        this.settingAll = false;
         refresh();
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         top.setOpaque(false);
@@ -216,9 +225,10 @@ public final class SyncDifferencesWindow
         {
             Set<Row> can = this.proposals.applicable(this.choices.keySet(), chosen(Answer.ADDRESS));
             this.settingAll = true;
-            for (Row r : this.choices.keySet())
+            for (Map.Entry<Row, Map<Answer, JRadioButton>> each : this.choices.entrySet())
             {
-                JRadioButton c = r.loco.isSyncIgnored() ? null : this.choices.get(r).get(to.apply(r, can));
+                Row r = each.getKey();
+                JRadioButton c = r.loco.isSyncIgnored() ? null : each.getValue().get(to.apply(r, can));
                 if (c != null && c.isEnabled()) c.setSelected(true);
             }
             this.settingAll = false;

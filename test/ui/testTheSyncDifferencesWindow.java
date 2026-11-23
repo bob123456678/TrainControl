@@ -617,6 +617,38 @@ public class testTheSyncDifferencesWindow
     }
 
     /**
+     * An mfx locomotive the station has under the same name at another address starts on Apply Change; not a DCC one,
+     * not an ignored one (on Ignore, last), and not one whose address another locomotive here keeps (Ask Again, with
+     * its triangle).
+     *
+     * MUTATION: in `SyncDifferencesWindow`, leave out the mfx preselection; or preselect without `applicable`.
+     */
+    @Test(timeOut = 180000)
+    public void testAnMfxAddressStartsOnApplyWhereSetAllWould() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            for (Object[] l : new Object[][] {{"SW Mfx", 40}, {"SW Ign", 42}, {"SW Col", 46}, {"SW Holder", 47}})
+                rig.model.newMFXLocomotive((String) l[0], (Integer) l[1]);
+            rig.model.newDCCLocomotive("SW Dcc", 44);
+            rig.model.getLocByName("SW Ign").setSyncIgnored(true);
+            int mfx = MarklinLocomotive.MFX_BASE;
+            // The Holder keeps 47, which the station gives Col
+            list.set(station("SW Mfx", mfx + 41, "SW Ign", mfx + 43, "SW Col", mfx + 47, "SW Dcc",
+                MarklinLocomotive.DCC_BASE + 45));
+
+            List<String> problems = new ArrayList<>();
+            SyncTable.Shown s = pressSync(rig, ui, SyncTable.canceling(t -> check(problems, visible(t, "SW Col",
+                "collision"), true, "Col's triangle")), null);
+            assertNotNull(s, "the table did not open");
+            assertEquals(s.rows, Arrays.asList("SW Col", "SW Dcc", "SW Holder", "SW Mfx", "SW Ign"), "the rows");
+            assertEquals(s.startsOn.toString(),
+                "{SW Col=ASK, SW Dcc=ASK, SW Holder=ASK, SW Mfx=ADDRESS, SW Ign=IGNORE}", "what each row starts on");
+            assertEquals(problems, new ArrayList<String>(), "the marks");
+        });
+    }
+
+    /**
      * Only a press asks: a route edit's sync, the owed sync and the model's own sync, with the station differing on a
      * name and an address, open no table and change neither, while the Locomotive Selector's Sync opens the table as
      * the menu's does.
@@ -758,16 +790,18 @@ public class testTheSyncDifferencesWindow
         rig.takeLog();
     }
 
-    /** The station's locomotive list: names each followed by an MM2 address. */
+    /** The station's locomotive list: names each followed by an MM2 address, or an mfx or DCC one as its UID. */
     private static String station(Object... entries)
     {
         List<String> records = new ArrayList<>();
         for (int i = 0; i < entries.length; i += 2)
         {
             String name = (String) entries[i];
+            int uid = (Integer) entries[i + 1];
+            String type = uid >= MarklinLocomotive.DCC_BASE ? "dcc"
+                : uid >= MarklinLocomotive.MFX_BASE ? "mfx" : "mm2_prg";
             records.add("{\"name\":\"" + name + "\",\"internname\":\"" + name + "\",\"uid\":\"0x"
-                + Integer.toHexString((Integer) entries[i + 1]) + "\",\"dectyp\":\"mm2_prg\",\"funktionen\":" + FUNCTION
-                + "}");
+                + Integer.toHexString(uid) + "\",\"dectyp\":\"" + type + "\",\"funktionen\":" + FUNCTION + "}");
         }
         return "[" + String.join(",", records) + "]";
     }
