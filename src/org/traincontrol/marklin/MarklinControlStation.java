@@ -1876,8 +1876,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // but never clear it, as the station's name may be in what did not read (FR-249)
             if (!this.lastSyncPartial) for (MarklinLocomotive here : this.locDB.getItems()) here.setHeldBackStationName(null);
             RenameProposals left = differences(parsedLocs, this.lastSyncPartial, false);
-            // The menu's mark likewise: a partial read can turn it on, never off
-            if (!this.lastSyncPartial || left.getUnsettledCount() > 0) this.unsettled = left.getUnsettledCount();
+            // The menu's count likewise: a partial read can raise it, never lower it
+            this.unsettled = this.lastSyncPartial ? Math.max(this.unsettled, left.getUnsettledCount())
+                : left.getUnsettledCount();
             for (RenameProposals.Row row : left.getRows())
             {
                 if (row.stationName == null) continue;
