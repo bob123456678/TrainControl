@@ -313,7 +313,7 @@ public class TileAnnotation
      * Which sides a train may come in by and STOP, where restricted; the arrows say which way traffic FLOWS.  Empty on
      * almost every square: the default is arrival from anywhere.
      */
-    private final List<Arrival> arrivals;
+    private List<Arrival> arrivals;
 
     /** One side of a station, and whether trains may arrive by it. */
     public static class Arrival
@@ -502,6 +502,13 @@ public class TileAnnotation
     }
 
     private float iconShare = 1f;
+
+    /** Draws no ways in, for a picture that draws its own (FR-111). */
+    public TileAnnotation withoutArrivals()
+    {
+        this.arrivals = Collections.emptyList();
+        return this;
+    }
 
     /**
      * Grays the square as one autonomy takes no notice of, but still draws its length and outline (OB-353); no arrows.
