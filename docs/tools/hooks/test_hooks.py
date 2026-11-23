@@ -248,9 +248,9 @@ check('cd into the repo, then reset --hard', sh('cd /tmp && cd ' + MSYS + ' && g
 check('cmd /c cd /d into the repo', ps('cmd /c "cd /d ' + R + ' && git reset --hard"', cwd='C:/elsewhere'), 'deny')
 
 # From a session outside the checkout: a path the guard cannot read, Push-Location, a bare drive, env -C
-HOME_REPO = '~/OneDrive/Documents/NetBeansProjects/TrainControl'
+HOME_REPO = '~/' + os.path.relpath(ROOT, os.path.expanduser('~')).replace('\\', '/')
 for cmd in ['git -C ' + HOME_REPO + ' reset --hard', 'cd ' + HOME_REPO + ' && git reset --hard',
-            'cd $HOME/OneDrive/Documents/NetBeansProjects/TrainControl && git stash',
+            'cd $HOME' + HOME_REPO[1:] + ' && git stash',
             'cd ' + HOME_REPO + ' && echo x > cs2_sample_layout/a.cs2',
             'cd /c && cd ' + R[3:] + ' && git reset --hard', 'env -C ' + MSYS + ' git reset --hard']:
     check(cmd, sh(cmd, cwd='C:/elsewhere'), 'deny')

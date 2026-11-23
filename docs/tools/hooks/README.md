@@ -67,7 +67,7 @@ It also prints a note, without stopping the commit, when `cs2_sample_layout` has
 
 ## Setting them up again
 
-1. **The Claude Code hook** is in the user settings, `C:\Users\adamo\.claude\settings.json`, so every session sees it whatever folder it starts in:
+1. **The Claude Code hook** is in the user settings, `%USERPROFILE%\.claude\settings.json`, so every session sees it whatever folder it starts in:
 
    ```json
    "hooks": {
@@ -77,7 +77,7 @@ It also prints a note, without stopping the commit, when `cs2_sample_layout` has
          "hooks": [
            {
              "type": "command",
-             "command": "f=\"C:/Users/adamo/OneDrive/Documents/NetBeansProjects/TrainControl/docs/tools/hooks/claude_guard.py\"; if [ -f \"$f\" ]; then python \"$f\"; fi; exit 0",
+             "command": "f=\"C:/path/to/TrainControl/docs/tools/hooks/claude_guard.py\"; if [ -f \"$f\" ]; then python \"$f\"; fi; exit 0",
              "timeout": 15
            }
          ]
