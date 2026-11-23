@@ -36,10 +36,7 @@ final class LocMappingPages
         this.ui = ui;
     }
 
-    /**
-     * Whether the page showing now could be deleted: it must be EMPTY, since later pages shift up and a full one would
-     * lose mappings that are not on screen, and the count must stay above the minimum.
-     */
+    /** Whether the page showing could be deleted: only an EMPTY one (later pages shift up), above the minimum. */
     boolean canDeleteCurrentPage()
     {
         if (ui.getNumLocMappings() <= MIN_LOC_MAPPINGS) return false;
@@ -52,10 +49,7 @@ final class LocMappingPages
         return true;
     }
 
-    /**
-     * The caption on a locomotive mapping page's tab, worded by `CurrentKeyRow.pageWords` like the line over the
-     * locomotive's name and the page label (FR-128); only the NAME is cut, to `MAX_PAGE_NAME_LENGTH_TAB` letters.
-     */
+    /** A page tab's caption by `CurrentKeyRow.pageWords` (FR-128); the name cut to MAX_PAGE_NAME_LENGTH_TAB. */
     String getLocMappingPageTabTitle(int tabNumber)
     {
         return CurrentKeyRow.pageWords(tabNumber, getPageName(tabNumber, true), pageNumbersShown(),
@@ -72,10 +66,7 @@ final class LocMappingPages
         ui.repaintLoc(true, null);
     }
 
-    /**
-     * "Show Page Numbers" in the Preferences menu's Locomotive submenu (FR-128), built here as the form is generated.
-     * It is the setting for the page tabs and label as well as the line over the name, so a click re-words them all.
-     */
+    /** Puts "Show Page Numbers" after the page-tabs item (FR-128); a click re-words the tabs, label and name line. */
     JCheckBoxMenuItem installShowPageNumbersMenuItem()
     {
         numbersItem = new JCheckBoxMenuItem(I18n.t("ui.main.toolbar.showPageNumbers"));
@@ -85,10 +76,8 @@ final class LocMappingPages
         {
             TrainControlUI.getPrefs().putBoolean(TrainControlUI.SHOW_PAGE_NUMBERS, numbersItem.isSelected());
 
-            // The page tabs and label are set when a page is named or chosen, so neither would notice this change.
+            // Tabs and label are worded only when a page is named or chosen; the name line's render sees the change.
             retitlePages();
-
-            // The line over the name: what it says includes this setting, so the render's check finds it changed.
             ui.repaintLoc();
         });
 
@@ -114,10 +103,7 @@ final class LocMappingPages
         return numbersItem != null && numbersItem.isSelected();
     }
 
-    /**
-     * Words every page tab and label again as the setting now has it (FR-128), since they are set when a page is
-     * named or chosen.  The label is left alone when it shows nothing.  On the event thread.
-     */
+    /** Re-words every page tab, and the label unless it is empty, as the setting now has it (FR-128); event thread. */
     void retitlePages()
     {
         JTabbedPane tabs = ui.locKeyTabs();
@@ -132,11 +118,7 @@ final class LocMappingPages
         }
     }
 
-    /**
-     * Gets the name of the specified mapping page in the program's own words: "Page 5 (Example)" (the name cut to
-     * `MAX_PAGE_NAME_LENGTH_TOP` letters), or "Page 5" with no name.  Menus and dialogs ignore "Show Page Numbers".
-     * @param raw - the name as typed, or empty for none, without the program's words round it
-     */
+    /** A page's name as typed (`raw`, empty for none), or for menus and dialogs: "Page 5 (Example)" or "Page 5". */
     String getPageName(int mappingNumber, boolean raw)
     {
         if (ui.pageNames.containsKey(mappingNumber))
@@ -155,10 +137,7 @@ final class LocMappingPages
         return raw ? "" : I18n.f("page.ui.pageNo", mappingNumber);
     }
 
-    /**
-     * The words on the page label by the arrows, by `CurrentKeyRow.pageWords` (FR-128), the rule the page tabs and the
-     * line over the name follow.  One line, as the label is one line high; the name is cut to `MAX_PAGE_NAME_LENGTH`.
-     */
+    /** The page label by the arrows, by `CurrentKeyRow.pageWords` (FR-128); the name cut to MAX_PAGE_NAME_LENGTH. */
     String getPageLabelText(int mappingNumber)
     {
         return CurrentKeyRow.pageWords(mappingNumber, getPageName(mappingNumber, true), pageNumbersShown(),
@@ -189,7 +168,6 @@ final class LocMappingPages
         if (input != null)
         {
             input = input.trim();
-            // The page names only: `pageNames` also holds the active page and button key code under keys -1 and -2.
             if (namesOfPages().contains(input) && !input.equals(getPageName(page, true).trim()))
             {
                 JOptionPane.showMessageDialog(ui, I18n.t("page.ui.errorDuplicatePageName"));
@@ -204,7 +182,6 @@ final class LocMappingPages
     /** Resets the mappings on the current page, once the user says Yes. */
     void clearCurrentPage()
     {
-        // The dialog and the mappings it clears both belong on the event thread
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             int dialogResult = JOptionPane.showOptionDialog(
@@ -225,9 +202,7 @@ final class LocMappingPages
     /** Resets the mappings on the current page without asking. */
     void doClearCurrentPage()
     {
-        // The active locomotive is let go only if it was on this page: clearing page 3 must not take the keyboard from
-        // a train selected on page 1.  Asked of the buttons: this page's mapping IS the list of what is about to be let
-        // go.
+        // Lets the active locomotive go only if it is on this page, not one chosen on another.
         Map<JButton, Locomotive> page = ui.currentLocMapping();
         if (ui.activeLoc != null && page.containsValue(ui.activeLoc)) ui.activeLoc = null;
 
@@ -240,10 +215,7 @@ final class LocMappingPages
         ui.repaintLoc();
     }
 
-    /**
-     * Draws the page number as a blue circle centered on the locomotive tab icon (nothing for page 1, a capsule for
-     * more digits), onto a COPY since the tab icon is a shared static.
-     */
+    /** The page number as a blue badge centered on a COPY of the shared tab icon; none for page 1. */
     static BufferedImage withPageBadge(BufferedImage icon, int page)
     {
         if (icon == null || page <= 1) return icon;
@@ -262,8 +234,7 @@ final class LocMappingPages
         g.scale(scale, scale);
         g.setFont(new Font("Segoe UI", Font.BOLD, 10));
 
-        // Center on the digits' ink, not font metrics: getHeight() includes leading and stringWidth the side bearings,
-        // which put the digits a pixel off.
+        // Centered on the digits' ink: font metrics' leading and side bearings put them a pixel off
         java.awt.font.GlyphVector glyphs = g.getFont().createGlyphVector(g.getFontRenderContext(), text);
         java.awt.geom.Rectangle2D ink = glyphs.getVisualBounds();
 
