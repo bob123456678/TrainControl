@@ -153,7 +153,7 @@ final class EditorMassAssign
 
             while (maximum != null && maximum >= 0 && !editor.session.assignMaxTrainLength(station, maximum))
             {
-                JOptionPane.showMessageDialog(editor.owner(), AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.errorMaxTrainLengthZero")));
+                JOptionPane.showMessageDialog(editor.owner(), I18n.t("autosetup.ui.errorMaxTrainLengthZero"));
 
                 maximum = askForWholeLength(question, AutonomyEditorPanel.MAXIMA_TITLE);
             }
@@ -239,9 +239,9 @@ final class EditorMassAssign
 
             while (units != null && units >= 0 && !AutonomyEditorPanel.acceptsATrainLength(units))
             {
-                JOptionPane.showMessageDialog(editor.owner(), AutonomyEditorPanel.wrapped(I18n.f(known != null
+                JOptionPane.showMessageDialog(editor.owner(), I18n.f(known != null
                     ? "autosetup.ui.errorTrainLengthOutOfRangeKnown" : "autosetup.ui.errorTrainLengthOutOfRange",
-                    TrainControlUI.ROUTE_TRAIN_LENGTH_MAX)));
+                    TrainControlUI.ROUTE_TRAIN_LENGTH_MAX));
 
                 units = askForWholeLength(question, AutonomyEditorPanel.TRAINS_TITLE, prefill);
             }

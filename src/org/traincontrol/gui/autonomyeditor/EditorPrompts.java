@@ -47,7 +47,7 @@ final class EditorPrompts
 
         String refused = applyNumber(tile, key, entered, unset);
 
-        if (refused != null) JOptionPane.showMessageDialog(editor.owner(), AutonomyEditorPanel.wrapped(refused));
+        if (refused != null) JOptionPane.showMessageDialog(editor.owner(), refused);
     }
 
     /**
@@ -161,7 +161,7 @@ final class EditorPrompts
             final JButton close = new JButton(UIManager.getString("OptionPane.cancelButtonText"));
 
             final JOptionPane pane = new JOptionPane(
-                AutonomyEditorPanel.wrapped(I18n.t("autosetup.ui.infoNoOtherPointsToBlockWith")),
+                I18n.t("autosetup.ui.infoNoOtherPointsToBlockWith"),
                 JOptionPane.PLAIN_MESSAGE, JOptionPane.DEFAULT_OPTION, null,
                 new Object[] { pickNow, close }, close);
 

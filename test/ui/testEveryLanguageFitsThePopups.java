@@ -37,6 +37,9 @@ public class testEveryLanguageFitsThePopups
 
     private static final LanguageFit.Ledger LEDGER = new LanguageFit.Ledger();
 
+    /** The widest line of a popup's text at 100%: `WrappingOptionPaneUI.CAP`, held here so the claim runs on old code. */
+    private static final int CAP = 480;
+
     private static LanguageFit.Railway railway;
     private static File files;
 
@@ -85,6 +88,47 @@ public class testEveryLanguageFitsThePopups
     }
 
     /**
+     * A long message wraps at the cap, a long path included: several sentences and an 80-character path with no spaces
+     * lay out no wider than the cap plus the pane's insets, keeping the message's own line break, while short text stays
+     * one line and HTML is shown as given (FR-254).
+     *
+     * MUTATION: have `WrappingOptionPaneUI.addMessageComponents` pass the text on unwrapped, and the first assertion fails.
+     */
+    @Test(timeOut = 60000)
+    public void testALongMessageWrapsAtTheCap()
+    {
+        String path = "C:\\Users\\Wilhelmina\\Documents\\TrainControl\\Modellbahn-Wohnzimmer\\MOBA-26-WM.json";
+        String text = "Backup saved to the folder you chose, but some of the files could not be copied. Check that "
+            + "nothing else has them open, and try again. The file that failed was " + path + "\nNothing else was changed.";
+        String html = "<html>" + text.replace("\n", " ") + "</html>";
+
+        Components.onTheEventThread(() ->
+        {
+            javax.swing.JOptionPane pane = new javax.swing.JOptionPane(text, javax.swing.JOptionPane.PLAIN_MESSAGE);
+            java.awt.Insets insets = pane.getInsets();
+            int cap = com.formdev.flatlaf.util.UIScale.scale(CAP);
+
+            assertEquals(path.length(), 80, "precondition: the path is not 80 characters");
+            assertTrue(pane.getFontMetrics(javax.swing.UIManager.getFont("Label.font")).stringWidth(path) > cap,
+                "precondition: the path alone fits within the cap, so it proves nothing about breaking one");
+
+            assertTrue(pane.getPreferredSize().width <= cap + insets.left + insets.right, "the popup is "
+                + pane.getPreferredSize().width + " px wide, over the " + cap + " px cap and its insets: " + linesOf(pane));
+            assertEquals(linesOf(pane).get(linesOf(pane).size() - 1), "Nothing else was changed.",
+                "the message's own line break was not kept: " + linesOf(pane));
+            assertEquals(String.join("", linesOf(pane)).replace(" ", ""), text.replace("\n", "").replace(" ", ""),
+                "the wrapped lines do not hold the whole message: " + linesOf(pane));
+
+            assertEquals(linesOf(new javax.swing.JOptionPane("Saved.")), Collections.singletonList("Saved."),
+                "a short message was not left on one line");
+            assertEquals(linesOf(new javax.swing.JOptionPane(html)), Collections.singletonList(html),
+                "an HTML message was not shown as given");
+
+            return null;
+        });
+    }
+
+    /**
      * The rule reaches a table's column headings, which no component of their own draws: a long heading over a narrow
      * column is found, a short one is not.
      *
@@ -103,6 +147,7 @@ public class testEveryLanguageFitsThePopups
      * The popups 3.1.0 added or changed, and those the menus open, fit in every language: the failed sync with Retry
      * and Close, About, the update question, the backup question, the restore refusal, the CSV nothing-to-import
      * message, the editor-open refusals, Clear All's question and the Cancel question that names the trains going back.
+     * No line of their text is wider than the cap (FR-254).
      *
      * MUTATION: put a label of fixed preferred width 20 pixels into `About`'s form, and this fails in every language.
      */
@@ -258,6 +303,15 @@ public class testEveryLanguageFitsThePopups
             for (String each : LanguageFit.measurePopup(LEDGER, id, language, dialog, seen)) found.add(id + ": " + each);
 
             if (seen[0] == 0) found.add(id + ": nothing with text was measured, so the dialog was not laid out");
+
+            int cap = com.formdev.flatlaf.util.UIScale.scale(CAP);
+
+            for (javax.swing.JLabel line : Components.all(dialog, javax.swing.JLabel.class,
+                l -> "OptionPane.label".equals(l.getName()) && l.getPreferredSize().width > cap))
+            {
+                found.add(id + ": \"" + line.getText() + "\" is " + line.getPreferredSize().width + " px, over the "
+                    + cap + " px cap");
+            }
         }))
         {
             door.call();
@@ -272,6 +326,17 @@ public class testEveryLanguageFitsThePopups
         assertEquals(count[0] > 0, true, window + " was asked but never measured");
 
         return found;
+    }
+
+    /** The lines a popup's text is laid out on, one label each. */
+    private static List<String> linesOf(javax.swing.JOptionPane pane)
+    {
+        List<String> lines = new ArrayList<>();
+
+        for (javax.swing.JLabel line : Components.all(pane, javax.swing.JLabel.class,
+            l -> "OptionPane.label".equals(l.getName()))) lines.add(line.getText());
+
+        return lines;
     }
 
     /** A door that does this on the event thread later, as a click does, so its modal dialog does not hold the caller. */

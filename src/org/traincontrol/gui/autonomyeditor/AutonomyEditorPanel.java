@@ -3023,7 +3023,7 @@ public class AutonomyEditorPanel extends JPanel
 
     /** Asks for a new station's name (FR-120): message and text so far to the answer, null for Cancel. */
     private java.util.function.BiFunction<String, String, String> askForAName =
-        (message, typed) -> JOptionPane.showInputDialog(owner(), wrapped(message), typed);
+        (message, typed) -> JOptionPane.showInputDialog(owner(), message, typed);
 
     private boolean hasAName(TileKey tile)
     {
@@ -4229,7 +4229,7 @@ public class AutonomyEditorPanel extends JPanel
         // A name ending like a builder copy's, or another square's, is refused, and said.
         String refused = applyName(tile, name);
 
-        if (refused != null) JOptionPane.showMessageDialog(owner(), wrapped(refused));
+        if (refused != null) JOptionPane.showMessageDialog(owner(), refused);
     }
 
     /**
@@ -4472,7 +4472,7 @@ public class AutonomyEditorPanel extends JPanel
     {
         say(hint, why);
 
-        JOptionPane.showMessageDialog(owner(), wrapped(why));
+        JOptionPane.showMessageDialog(owner(), why);
     }
 
     private String addGuardSignal(Guard guard, TileKey station, TileKey signal, boolean redraw)
@@ -6706,7 +6706,7 @@ public class AutonomyEditorPanel extends JPanel
             // Asked again on a refusal; a name given earlier in this walk is already stored, so it counts as taken.
             while (name != null && !name.trim().isEmpty() && (refused = whyNotNamed(tile, name)) != null)
             {
-                JOptionPane.showMessageDialog(owner(), wrapped(refused));
+                JOptionPane.showMessageDialog(owner(), refused);
 
                 name = askForName(question);
             }

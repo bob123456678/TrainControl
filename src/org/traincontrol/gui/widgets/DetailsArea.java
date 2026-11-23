@@ -30,7 +30,7 @@ public final class DetailsArea
     }
 
     /** The text wrapped at {@link #WIDTH}; a word longer than a line, such as a path, breaks where it must. */
-    public static JTextArea wrapped(String text)
+    private static JTextArea wrapped(String text)
     {
         JTextArea area = textArea(text);
 
@@ -40,23 +40,29 @@ public final class DetailsArea
         return area;
     }
 
+    /** The text wrapped at {@link #WIDTH} in a box that scrolls past `rows` lines, for a list or a long help page. */
+    public static JScrollPane scrolling(String text, int rows)
+    {
+        JTextArea area = textArea(text);
+
+        area.setSize(WIDTH, Short.MAX_VALUE);
+        area.setCaretPosition(0);
+
+        JScrollPane scroll = new JScrollPane(area, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        scroll.getViewport().setPreferredSize(new Dimension(WIDTH, Math.min(area.getPreferredSize().height,
+            rows * area.getFontMetrics(area.getFont()).getHeight())));
+
+        return scroll;
+    }
+
     /** The sentence over the list, one item a line; it scrolls past {@link #ROWS} lines. */
     public static JComponent message(String sentence, List<String> lines)
     {
-        JTextArea list = textArea(String.join("\n", lines));
-
-        list.setSize(WIDTH, Short.MAX_VALUE);
-
-        int shown = Math.min(list.getPreferredSize().height,
-            ROWS * list.getFontMetrics(list.getFont()).getHeight());
-
-        JScrollPane scroll = new JScrollPane(list, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-            ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        JScrollPane scroll = scrolling(String.join("\n", lines), ROWS);
 
         scroll.setBorder(BorderFactory.createTitledBorder(I18n.t("ui.details")));
-        scroll.getViewport().setPreferredSize(new Dimension(WIDTH, shown));
-
-        list.setCaretPosition(0);
 
         JPanel panel = new JPanel(new BorderLayout(0, 8));
 
