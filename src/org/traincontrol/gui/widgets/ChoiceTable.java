@@ -100,28 +100,18 @@ public final class ChoiceTable extends JScrollPane
     /** Every other row a step off the background, a hairline over each row, and a stronger one under the headings. */
     private void paintRows(Graphics g)
     {
+        // A step is translucent black over a light background, white over a dark one
         Color bg = this.grid.getBackground();
+        int to = bg.getRed() + bg.getGreen() + bg.getBlue() > 3 * 127 ? 0 : 255, wide = this.grid.getWidth();
         for (int i = 1; i < this.firsts.size(); i++)
         {
             int top = this.firsts.get(i).getY() - PAD;
             int below = i + 1 < this.firsts.size() ? this.firsts.get(i + 1).getY() - PAD : this.grid.getHeight();
-            if (i % 2 == 0)
-            {
-                g.setColor(step(bg, 4));
-                g.fillRect(0, top, this.grid.getWidth(), below - top);
-            }
-            g.setColor(step(bg, i == 1 ? 30 : 12));
-            g.drawLine(0, top, this.grid.getWidth(), top);
+            g.setColor(new Color(to, to, to, 10));
+            if (i % 2 == 0) g.fillRect(0, top, wide, below - top);
+            g.setColor(new Color(to, to, to, i == 1 ? 77 : 31));
+            g.drawLine(0, top, wide, top);
         }
-    }
-
-    /** `percent` of the way from bg toward black, or toward white on a dark background. */
-    private static Color step(Color bg, int percent)
-    {
-        int to = bg.getRed() + bg.getGreen() + bg.getBlue() > 3 * 127 ? 0 : 255;
-        int[] c = {bg.getRed(), bg.getGreen(), bg.getBlue()};
-        for (int i = 0; i < 3; i++) c[i] += (to - c[i]) * percent / 100;
-        return new Color(c[0], c[1], c[2]);
     }
 
     /** A bare choice in a row's group, one line high. */
