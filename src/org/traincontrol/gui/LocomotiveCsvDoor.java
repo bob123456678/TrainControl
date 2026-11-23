@@ -129,7 +129,6 @@ final class LocomotiveCsvDoor
             : ChoiceTable.lines(DetailsArea.message(question, lines), (JComponent) Box.createVerticalStrut(12),
             SyncDifferencesWindow.headed(I18n.f("loc.ui.importCsvDuplicates", duplicates.size()),
             I18n.t("loc.ui.importCsvDuplicatesInfo")), (JComponent) Box.createVerticalStrut(6), table.table);
-
         if (JOptionPane.showOptionDialog(ui, asked, I18n.t("loc.ui.importCsvTitle"), JOptionPane.YES_NO_OPTION,
             JOptionPane.QUESTION_MESSAGE, null, options, options[0]) != JOptionPane.YES_OPTION)
         {
@@ -159,23 +158,14 @@ final class LocomotiveCsvDoor
         String said = I18n.f("loc.ui.infoImportCsvDone", result.added, result.merged);
 
         if (!result.readdressed.isEmpty()) said += "\n" + I18n.f("loc.ui.infoImportCsvReaddressed", result.readdressed.size());
-
         if (!result.kept.isEmpty()) said += "\n" + I18n.f("loc.ui.infoImportCsvReaddressRefused", result.kept.size());
-
         if (result.badRuntime > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvBadRuntime", result.badRuntime);
-
         if (result.addressInvalid > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvAddressInvalid", result.addressInvalid);
-
         if (result.addedWithoutRuntime > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvNoRuntime", result.addedWithoutRuntime);
-
         if (result.badLastRun > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvBadLastRun", result.badLastRun);
-
         if (result.leftOutMultiUnit > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvLeftOutMultiUnit", result.leftOutMultiUnit);
-
         if (!result.renamed.isEmpty()) said += "\n" + I18n.f("loc.ui.infoImportCsvRenamed", result.renamed.size());
-
         if (result.keptOld > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvKeptOld", result.keptOld);
-
         List<String> lines = new ArrayList<>();
 
         for (MarklinLocomotiveCsv.Kept kept : result.kept) lines.add(keptLine(kept));
@@ -248,7 +238,6 @@ final class LocomotiveCsvDoor
     private static void refresh(TrainControlUI ui, ViewListener model, MarklinLocomotiveCsv.Result result)
     {
         boolean changed = !result.readdressed.isEmpty() || !result.renamed.isEmpty();
-
         if (changed)
         {
             ui.clearCopyTarget();
@@ -262,7 +251,6 @@ final class LocomotiveCsvDoor
         if (changed && model.hasAutoLayout())
         {
             for (String name : result.renamed) model.getAutoLayout().sanitizeMultiUnits(model.getLocByName(name));
-
             model.getAutoLayout().refreshUI();
             ui.updateVisiblePoints();
             ui.repaintAutoLocList(false);

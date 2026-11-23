@@ -406,11 +406,8 @@ public final class MarklinLocomotiveCsv
     private static Map<String, String> after(ViewListener model, Plan plan)
     {
         Map<String, String> where = new LinkedHashMap<>();
-
         for (Locomotive loc : model.getLocomotives()) where.put(loc.getName(), label(loc.getDecoderType(), loc.getAddress()));
-
         for (Move move : plan.moves) where.put(move.name, move.to);
-
         return where;
     }
 
@@ -420,31 +417,22 @@ public final class MarklinLocomotiveCsv
         Map<String, String> where = after(model, plan);
         Set<String> listed = new HashSet<>();
         List<Duplicate> out = new ArrayList<>();
-
         for (Row row : this.rows) listed.add(row.name);
-
         for (Row row : this.rows)
         {
             if (fateOf(row, model) != Fate.NEW) continue;
-
             Duplicate d = new Duplicate();
-
             d.row = row;
             d.address = label(row.type, row.address);
             where.forEach((name, address) -> { if (address.equals(d.address)) d.here.add(model.getLocByName(name)); });
-
             if (d.here.isEmpty()) continue;
-
             d.here.sort((a, b) -> a.getName().compareTo(b.getName()));
-
             Locomotive old = d.here.get(0);
-
             d.whyNotNew = d.here.size() > 1 ? NotNew.SEVERAL : listed.contains(old.getName()) ? NotNew.LISTED
                 : LocomotiveSettings.hasSpeed(model, old) || model.runningRouteDriving(old.getName()) != null
                 ? NotNew.RUNNING : null;
             out.add(d);
         }
-
         return out;
     }
 
@@ -453,9 +441,7 @@ public final class MarklinLocomotiveCsv
     {
         Map<String, String> where = after(model, plan);
         Set<String> touched = new HashSet<>();
-
         for (Move move : plan.moves) touched.add(move.name);
-
         for (Row row : this.rows)
         {
             if (fateOf(row, model) == Fate.NEW)
@@ -467,7 +453,6 @@ public final class MarklinLocomotiveCsv
 
         // A possible duplicate is asked in its own table, so it alone names no shared address
         for (Duplicate d : duplicates(model, plan)) touched.remove(d.row.name);
-
         Map<String, Shared> groups = new TreeMap<>();
 
         for (Map.Entry<String, String> e : where.entrySet())
@@ -519,7 +504,6 @@ public final class MarklinLocomotiveCsv
         for (Move move : plan.moves) moves.put(move.name, move);
 
         for (Duplicate d : duplicates(model, plan)) duplicates.put(d.row, d);
-
         result.skipped.putAll(this.unreadable);
         result.badCells.putAll(this.badCells);
         result.kept.addAll(plan.kept);
@@ -528,16 +512,13 @@ public final class MarklinLocomotiveCsv
         {
             Duplicate d = duplicates.get(row);
             Choice choice = d == null ? Choice.BOTH : choices.getOrDefault(row, Choice.BOTH);
-
             if (choice == Choice.OLD)
             {
                 result.keptOld++;
                 continue;
             }
-
             if (choice == Choice.NEW && d.whyNotNew == null && taken.add(d.here.get(0))
                 && model.renameLoc(d.here.get(0).getName(), row.name)) result.renamed.add(row.name);
-
             Fate fate = fateOf(row, model);
 
             if (row.runtimeBad) result.badRuntime++;
