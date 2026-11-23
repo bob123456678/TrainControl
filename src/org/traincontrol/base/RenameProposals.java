@@ -27,8 +27,13 @@ public class RenameProposals
     private final Map<String, Integer> addresses;
     private final List<Row> rows;
     private final Map<Integer, List<Locomotive>> held = new HashMap<>();
+    /** Whether part of the station's list did not read, so a locomotive with no row may still differ. */
+    public final boolean partial;
 
-    /** One locomotive here the station differs from: by name at its decoder address, by address under its name, or both. */
+    /**
+     * One locomotive here the station differs from: by name at its decoder address or by address under its name; one
+     * that two station locomotives answer to, one each way, is left to fix by hand.
+     */
     public static final class Row
     {
         public final Locomotive loco;
@@ -92,8 +97,9 @@ public class RenameProposals
 
     /** @param held the locomotives here at each decoder address (as getIntUID) */
     public RenameProposals(List<String[]> proposals, int refused, Map<String, Integer> addresses, List<Row> rows,
-        Map<Integer, ? extends List<? extends Locomotive>> held)
+        Map<Integer, ? extends List<? extends Locomotive>> held, boolean partial)
     {
+        this.partial = partial;
         this.proposals = proposals;
         this.refused = refused;
         this.addresses = new java.util.LinkedHashMap<>(addresses);
@@ -177,7 +183,7 @@ public class RenameProposals
         List<Row> names = new ArrayList<>(), moves = new ArrayList<>();
         for (Row r : rows)
         {
-            if (!r.loco.isSyncIgnored() && r.asksName() != r.asksAddress() && r.whyNot(r.asksName()) == null)
+            if (!r.loco.isSyncIgnored() && (r.asksName() || r.asksAddress()) && r.whyNot(r.asksName()) == null)
                 (r.asksName() ? names : moves).add(r);
         }
         // Each one left out can change what the rest collide with or delete

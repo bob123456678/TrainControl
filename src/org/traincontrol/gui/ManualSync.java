@@ -110,9 +110,6 @@ public final class ManualSync
             // Each row's locomotive by its name as asked, so one renamed or replaced meanwhile is left
             Map<Locomotive, String> names = new HashMap<>();
             for (RenameProposals.Row r : asked.getRows()) names.put(r.loco, r.loco.getName());
-            for (RenameProposals.Row r : asked.getRows())
-                if (r.byHand) model.logf("loc.syncByHand", r.loco.getName(), r.stationName, r.loco.getAddress(),
-                    r.stationAddress);
             Window asking = c instanceof Window ? (Window) c : SwingUtilities.getWindowAncestor(c);
             List<Map<RenameProposals.Row, Answer>> answers = new ArrayList<>();
             // Over the window that asked, or this one once that is gone
@@ -120,7 +117,7 @@ public final class ManualSync
                 && asking.isShowing() ? asking : ui, asked)));
             Map<RenameProposals.Row, Answer> a = answers.get(0);
             if (a == null) return CANCELED;
-            if (asked.getProposals().isEmpty() && !asked.hasRefusals()) model.logf("loc.ui.infoNoLocomotivesToRename");
+            if (asked.getRows().isEmpty() && !asked.hasRefusals()) model.logf("loc.ui.infoNoLocomotivesToRename");
             // Read again once anything was answered, so a row the station changed meanwhile is left; unread, the
             // locomotives alone are checked
             RenameProposals again = a.values().stream().anyMatch(x -> x != Answer.ASK)
@@ -160,13 +157,15 @@ public final class ManualSync
     private int[] apply(Component c, RenameProposals asked, RenameProposals now,
         Map<RenameProposals.Row, Answer> answers, Map<Locomotive, String> names, List<RenameProposals.Row> taken)
     {
-        // A Keep the station no longer offers is forgotten, so nothing is left to hold back a later offer
+        // A Keep the station no longer offers is forgotten, so nothing is left to hold back a later offer; on a partial
+        // read, one with no row is kept, as its record may be what did not read
         Map<Locomotive, RenameProposals.Row> differing = new HashMap<>(), current = new HashMap<>();
         for (RenameProposals.Row r : asked.getRows()) differing.put(r.loco, r);
         for (RenameProposals.Row r : now.getRows()) current.put(r.loco, r);
         for (Locomotive l : model.getLocomotives())
         {
             RenameProposals.Row r = differing.get(l);
+            if (r == null && asked.partial) continue;
             String kept = l.getDeclinedStationName();
             if (kept != null && (r == null || !kept.equals(r.stationName))) l.setDeclinedStationName(null);
             else if (kept != null && !l.isSyncIgnored()) model.logf("loc.renameKeptAsAnswered", l.getName(), kept);
@@ -295,9 +294,7 @@ public final class ManualSync
             RenameProposals read = readBehindTheSpinner(c, true);
             Map<String, Integer> addresses = new java.util.HashMap<>(read.getAddresses());
             // A locomotive the table leaves to fix by hand is asked nothing here either
-            for (RenameProposals.Row r : read.getRows())
-                if (r.byHand && addresses.remove(r.loco.getName()) != null) model.logf("loc.syncByHand", r.loco.getName(),
-                    r.stationName, r.loco.getAddress(), r.stationAddress);
+            for (RenameProposals.Row r : read.getRows()) if (r.byHand) addresses.remove(r.loco.getName());
             return addresses;
         }
         catch (Exception e)

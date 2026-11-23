@@ -229,7 +229,7 @@ public class testTheSyncDifferencesWindow
      * The next Sync shows only what is left: the waiting row, and the ignored one last on Ignore, which Ask Again
      * un-ignores (E19, E24, E69, E73, E136, Keep Both).
      *
-     * MUTATION: in `TrainControlUI.apply`, leave out Keep Both's `addStationLocomotive`, or Keep Both's
+     * MUTATION: in `ManualSync.apply`, leave out Keep Both's `addStationLocomotive`, or Keep Both's
      * `setDeclinedStationName`, and the next Sync offers the pair as a deleting rename.
      */
     @Test(timeOut = 240000)
@@ -267,6 +267,39 @@ public class testTheSyncDifferencesWindow
             assertEquals(next.startsOn.get("SW Ign"), "IGNORE");
             assertFalse(rig.model.getLocByName("SW Ign").isSyncIgnored(), "Ask Again did not un-ignore");
         });
+    }
+
+    /**
+     * A Keep As Is outlives a Sync whose read leaves that locomotive's station record unread: the kept name and the kept
+     * address stay kept, as the record may still differ.
+     *
+     * MUTATION: in `ManualSync.apply`, leave out the `asked.partial` skip, and both Keeps are forgotten.
+     */
+    @Test(timeOut = 240000)
+    public void testAKeepOutlivesARecordThatDidNotRead() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            here(rig, "SW Kept", 90, "SW Moved", 91, "SW Other", 92);
+            Locomotive kept = rig.model.getLocByName("SW Kept"), moved = rig.model.getLocByName("SW Moved");
+            // As Keep As Is left them; then their records no longer read, and Other's row is answered
+            kept.setDeclinedStationName("SW Kept2");
+            moved.setDeclinedStationAddress(93);
+            list.set("[" + unreadable("SW Kept2", 90) + "," + unreadable("SW Moved", 93) + ","
+                + station("SW Other2", 92).substring(1));
+            assertNotNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW Other", "KEEP")), null),
+                "the table did not open");
+            assertTrue(rig.model.wasLastSyncPartial(), "precondition: the read was not partial");
+            assertEquals(Arrays.asList(kept.getDeclinedStationName(), moved.getDeclinedStationAddress()), Arrays.asList(
+                "SW Kept2", 93), "a Keep was forgotten");
+        });
+    }
+
+    /** An MM2 locomotive's station record that does not read: its functions are not a list of objects. */
+    private static String unreadable(String name, int address)
+    {
+        return "{\"name\":\"" + name + "\",\"internname\":\"" + name + "\",\"uid\":\"0x" + Integer.toHexString(address)
+            + "\",\"dectyp\":\"mm2_prg\",\"funktionen\":[1]}";
     }
 
     /**
@@ -318,7 +351,7 @@ public class testTheSyncDifferencesWindow
      * A row whose locomotive or station value changed while the table was open is left, logged: one deleted here, one
      * the station renamed again, one the station moved again (E64, E91, E93).
      *
-     * MUTATION: in `TrainControlUI.apply`, leave out the comparison with the rows read again (`f.stationName`,
+     * MUTATION: in `ManualSync.apply`, leave out the comparison with the rows read again (`f.stationName`,
      * `f.stationAddress`).
      */
     @Test(timeOut = 180000)
@@ -568,7 +601,7 @@ public class testTheSyncDifferencesWindow
      * locomotive's own row is left with a line saying an earlier answer took it, not counted as still to answer (E39,
      * E49).
      *
-     * MUTATION: in `TrainControlUI.apply`, leave out the sort, so P's rename deletes Q; or log every row left as
+     * MUTATION: in `ManualSync.apply`, leave out the sort, so P's rename deletes Q; or log every row left as
      * changed meanwhile (leave out `loc.syncRowAnsweredAway`).
      */
     @Test(timeOut = 180000)
@@ -1100,7 +1133,7 @@ public class testTheSyncDifferencesWindow
             rows.add(new RenameProposals.Row(l, addressed ? null : "SW Station " + i, addressed ? i + 5000 : null, null,
                 null, null, null, l.getIntUID(), (addressed ? at : l).getIntUID()));
         }
-        return new RenameProposals(new ArrayList<>(), 0, new java.util.HashMap<>(), rows, held);
+        return new RenameProposals(new ArrayList<>(), 0, new java.util.HashMap<>(), rows, held, false);
     }
 
     /** Opens the table on these rows over ui, hands it to `look`, cancels it and waits until that is done. */

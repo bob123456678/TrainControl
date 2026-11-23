@@ -1435,7 +1435,7 @@ public class MarklinControlStation implements ViewListener, ModelListener
                 at == null ? null : now, to == null ? null : this.locDB.getByName(to), stationOf.get(here), here.getIntUID(),
                 at == null ? here.getIntUID() : at.getIntUID()));
         }
-        return new RenameProposals(ordered, refused, addresses, rows, byAddress);
+        return new RenameProposals(ordered, refused, addresses, rows, byAddress, partial);
     }
 
     /** Of two locomotives at one address, one named `stationName`: the other, when the station has no such name. */
@@ -1853,8 +1853,14 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 parsedLocs = fileParser.parseLocomotives();
             }
+            // A locomotive left to fix by hand says so in one line of its own, below, and nothing more
+            Set<Locomotive> byHand = new HashSet<>();
+            for (RenameProposals.Row row : differences(parsedLocs, this.lastSyncPartial, false).getRows())
+                if (row.byHand) byHand.add(row.loco);
             // Addresses first, so a locomotive moved off an address frees it for the station's locomotive there
-            for (MarklinLocomotive l : parsedLocs) this.adoptCentralStationAddress(l, sweptAfterTheSync);
+            for (MarklinLocomotive l : parsedLocs)
+                if (!byHand.contains(this.locDB.getByName(l.getName()))) this.adoptCentralStationAddress(l,
+                    sweptAfterTheSync);
 
             // A station locomotive at the address of one here under another name is not added beside it, and the one
             // here stands for it as a multi-unit member, until a pressed Sync answers; a partial read can set the mark
@@ -1864,7 +1870,9 @@ public class MarklinControlStation implements ViewListener, ModelListener
             {
                 if (row.stationName == null) continue;
                 row.loco.setHeldBackStationName(row.stationName);
-                if (!this.locDB.hasName(row.stationName) && !row.isNameKept() && !row.loco.isSyncIgnored())
+                if (row.byHand) this.logf("loc.syncByHand", row.loco.getName(), row.stationName,
+                    row.loco.getAddress(), row.stationAddress);
+                else if (!this.locDB.hasName(row.stationName) && !row.isNameKept() && !row.loco.isSyncIgnored())
                 {
                     this.logf("loc.renamePendingNotAdded", row.stationName, row.loco.getName(),
                         row.loco.getDecoderTypeLabel(), row.loco.getAddress());

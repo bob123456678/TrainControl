@@ -91,7 +91,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * door's own question led by the rename it is for: it counts the routes that lose their commands and starts on No,
      * and No keeps both locomotives and the route's command.
      *
-     * MUTATION: in `TrainControlUI.renamed`, delete without the question (`deleteLocAlreadyAsked`), or keep nothing
+     * MUTATION: in `ManualSync.renamed`, delete without the question (`deleteLocAlreadyAsked`), or keep nothing
      * after the delete question's No.
      */
     @Test(timeOut = 180000)
@@ -299,7 +299,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * logged.  The same name is then not shown again, only logged as answered before, until the station gives the
      * locomotive another name, which is shown.
      *
-     * MUTATION: in `RenameProposals.Row.asksName`, leave out `!isNameKept()`; or in `TrainControlUI.apply`, leave out the
+     * MUTATION: in `RenameProposals.Row.asksName`, leave out `!isNameKept()`; or in `ManualSync.apply`, leave out the
      * `loc.renameKeptAsAnswered` line; in `MarklinControlStation.syncThroughTheNewParser`, leave out `!nameTurnedDown(l)`.
      */
     @Test(timeOut = 240000)
@@ -528,7 +528,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * the power on, Apply's rename onto it is refused without a question, logged as not renamed and kept nowhere, and
      * once it stops the next Sync's Apply asks the delete question.
      *
-     * MUTATION: in `TrainControlUI.renamed`, keep a Keep whenever the holder is still there (drop the
+     * MUTATION: in `ManualSync.renamed`, keep a Keep whenever the holder is still there (drop the
      * `answer == JOptionPane.NO_OPTION` test); or, in `LocomotiveActions.deleteLoc`, leave out the `answered` reset, and
      * an earlier No to another delete is kept.
      */
@@ -586,7 +586,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * A row left on Ask Again renames nothing and keeps nothing: it is logged as left to ask, the sync adds no copy
      * under the station's name, and the next Sync shows the row again.
      *
-     * MUTATION: in `TrainControlUI.apply`, treat Ask Again as Keep; or in
+     * MUTATION: in `ManualSync.apply`, treat Ask Again as Keep; or in
      * `MarklinControlStation.syncThroughTheNewParser`, leave out `setHeldBackStationName`.
      */
     @Test(timeOut = 240000)
@@ -642,7 +642,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * but by rule: the sync an edit owes next still adds no copy of the other row's station locomotive, a rename still
      * pending (FR-249).
      *
-     * MUTATION: in `TrainControlUI.apply`, leave out the `getLocByName(name) != r.loco` check, and the rename of the
+     * MUTATION: in `ManualSync.apply`, leave out the `getLocByName(name) != r.loco` check, and the rename of the
      * locomotive gone throws; or in `MarklinControlStation.syncThroughTheNewParser`, leave out `setHeldBackStationName`.
      */
     @Test(timeOut = 240000)
@@ -719,7 +719,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
     /**
      * Closing the delete question Apply's rename onto a held name asks is logged as closed, and keeps nothing.
      *
-     * MUTATION: in `TrainControlUI.renamed`, leave out the `loc.renameClosed` outcome of the delete question.
+     * MUTATION: in `ManualSync.renamed`, leave out the `loc.renameClosed` outcome of the delete question.
      */
     @Test(timeOut = 180000)
     public void testAClosedDeleteQuestionIsLoggedAsClosed() throws Exception
@@ -776,7 +776,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * A run that begins while the table is open stops Apply's rename: the refusal is said once, nothing is renamed,
      * kept or copied, and it is logged as not renamed.
      *
-     * MUTATION: in `TrainControlUI.apply`, leave out `RunGates.refuseWhileAutonomyRunning`.
+     * MUTATION: in `ManualSync.apply`, leave out `RunGates.refuseWhileAutonomyRunning`.
      */
     @Test(timeOut = 240000)
     public void testARunBegunMeanwhileStopsTheRename() throws Exception
@@ -824,7 +824,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * Apply to a new name forgets the Keep for the old one and is logged as renamed: when the station later gives the
      * locomotive the name kept against before, that is asked about again.
      *
-     * MUTATION: in `TrainControlUI.renamed`, leave out `l.setDeclinedStationName(null)` after the rename, or return
+     * MUTATION: in `ManualSync.renamed`, leave out `l.setDeclinedStationName(null)` after the rename, or return
      * `loc.renameNotApplied` in place of `loc.renameApplied`.
      */
     @Test(timeOut = 240000)
@@ -858,7 +858,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * A Keep is forgotten once the station no longer offers the name: the station giving the locomotive its name here
      * logs "No locomotives to rename", and when it then offers the name kept against again, that is asked again.
      *
-     * MUTATION: in `TrainControlUI.apply`, keep the Keep of a locomotive the station no longer offers a name for (leave
+     * MUTATION: in `ManualSync.apply`, keep the Keep of a locomotive the station no longer offers a name for (leave
      * out its `setDeclinedStationName(null)`), or in `askAndApply` leave out the "nothing to rename" line.
      */
     @Test(timeOut = 240000)
@@ -930,7 +930,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * Keep leaves the address and is not asked again, across a restart, until the station's address for the
      * locomotive changes, which is asked about (FR-246).
      *
-     * MUTATION: in `TrainControlUI.apply`, leave out Keep's `setDeclinedStationAddress`, or in
+     * MUTATION: in `ManualSync.apply`, leave out Keep's `setDeclinedStationAddress`, or in
      * `MarklinControlStation.newLocomotive(MarklinSimpleComponent)` leave out `setDeclinedStationAddress`.
      */
     @Test(timeOut = 300000)

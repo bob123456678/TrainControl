@@ -226,11 +226,11 @@ public class testEveryLanguageFitsThePopups
             // By hand; a rename grayed; an address held here; a rename onto a held name, Apply picked, saying what it deletes
             List<RenameProposals.Row> rows = java.util.Arrays.asList(new RenameProposals.Row(asked, holder.getName(),
                 25, null, null, holder, null, asked.getIntUID(), other.getIntUID()), new RenameProposals.Row(other,
-                holder.getName(), null, I18n.f("loc.renameNameListedTwice", other.getName(), holder.getName()), null,
+                holder.getName(), null, I18n.f("sync.ui.whyListedTwice", other.getName(), holder.getName()), null,
                 holder, null, other.getIntUID(), other.getIntUID()), new RenameProposals.Row(holder, null, 23, null,
                 null, null, null, holder.getIntUID(), asked.getIntUID()), new RenameProposals.Row(mover, holder.getName(),
                 null, null, null, holder, null, mover.getIntUID(), mover.getIntUID()));
-            RenameProposals proposals = new RenameProposals(new ArrayList<>(), 0, new HashMap<>(), rows, held);
+            RenameProposals proposals = new RenameProposals(new ArrayList<>(), 0, new HashMap<>(), rows, held, false);
 
             try (SyncTable table = SyncTable.canceling(t ->
             {

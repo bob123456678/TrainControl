@@ -155,9 +155,11 @@ public class testSyncDifferences
 
     /**
      * Renamed and re-addressed at the station: one by-hand row with both, asking nothing and left to answer, which an
-     * automatic sync leaves alone, holding the station's name back and logging the other address.
+     * automatic sync leaves alone, holding the station's name back and logging it once as left to fix by hand, with no
+     * hold-back or address line.
      *
-     * MUTATION: in `MarklinControlStation.differences`, build a row for the rename alone.
+     * MUTATION: in `MarklinControlStation.differences`, build a row for the rename alone; or in `syncWithCS2`, log a
+     * by-hand row's hold-back line too.
      */
     @Test(timeOut = 120000)
     public void testARenamedAndReAddressedLocomotiveIsOneRowLeftAloneAutomatically() throws Exception
@@ -170,8 +172,10 @@ public class testSyncDifferences
 
             assertNull(rig.model.getLocByName("SD Y"), "the station's name was added beside it");
             assertEquals(x.getAddress(), 5, "an automatic sync took the station's address");
-            assertTrue(log.contains(pending(rig, "SD Y", "SD X")), "the hold-back was not logged: " + log);
-            assertTrue(log.contains(I18n.f("loc.addressDiffersAtStation", "SD X", 7, 5)), "no address line: " + log);
+            assertEquals(Collections.frequency(log, I18n.f("loc.syncByHand", "SD X", "SD Y", 5, 7)), 1,
+                "the by-hand line: " + log);
+            assertFalse(log.contains(pending(rig, "SD Y", "SD X")) || log.contains(I18n.f("loc.addressDiffersAtStation",
+                "SD X", 7, 5)), "a hold-back or address line: " + log);
 
             Row row = row(rig, d, "SD X");
 
@@ -396,7 +400,7 @@ public class testSyncDifferences
      * rename; not a collision (with a locomotive here or between two picks), a deleting rename, a grayed Apply, a
      * row differing in both, or an ignored row (E80, E81).
      *
-     * MUTATION: in `RenameProposals.applicable`, leave out the `collisions` or the `deletes` pass, or `asksName() !=
+     * MUTATION: in `RenameProposals.applicable`, leave out the `collisions` or the `deletes` pass, or `asksName() ||
      * asksAddress()`.
      */
     @Test(timeOut = 120000)
