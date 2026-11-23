@@ -1,5 +1,6 @@
 package org.traincontrol.gui;
 
+import java.awt.HeadlessException;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -431,6 +432,169 @@ final class RouteListPanel
     {
         this.ui.getModel().editRoute(r.getName(), r.getName(), r.getRoute(), r.getS88(), r.getTriggerType(), enable,
                 r.getConditions());
+    }
+
+    /** `TrainControlUI.deleteRoute`'s body. */
+    void deleteRoute(String routeName)
+    {
+        Route route = this.ui.getModel().getRoute(routeName);
+        
+        if (route != null)
+        {            
+            // Counted before the delete, as afterwards nothing is left to count: deleting a route removes the other
+            // routes' commands that run it, and the question says how many routes call it.
+            int calledBy = this.ui.getModel().routesCalling(route.getName()).size();
+
+            int dialogResult = JOptionPane.showOptionDialog(
+                this.ui.routePanel(),
+                calledBy > 0
+                    ? I18n.f("route.ui.confirmDeleteRouteWithCallers", route.getName(), calledBy)
+                    : I18n.f("route.ui.confirmDeleteRoute", route.getName()),
+                I18n.t("route.ui.dialogDeleteRoute"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                TrainControlUI.YES_NO_OPTS,
+                // Default to No: Enter should not delete a route by accident.
+                TrainControlUI.YES_NO_OPTS[1]
+            );
+            
+            if (dialogResult == JOptionPane.YES_OPTION)
+            {
+                // Read before the delete, the only moment the lock exists (OB-155).  The lock, not the id, says whether
+                // the station carried the route; see enableOrDisableRoute.
+                boolean wasLocal = !route.isLocked();
+
+                LayoutDiagram before = this.ui.shownDiagram();
+
+                // Not the model's `deleteRoute`, which `editRoute` uses to delete and re-add and which keeps callers:
+                // this takes the route out of every route that runs it.
+                this.ui.getModel().deleteRouteAndItsCalls(route.getName());
+                refreshRouteList();
+
+                // Only when the station could have known the route: one with no lock never came from the station, so a
+                // sync (the whole database, behind a modal spinner) can bring back nothing about it.
+                if (!wasLocal) this.ui.syncAfterAnEdit();
+
+                // Again after the sync, as `duplicateRoute` does: the sync re-adds routes, so the table would point at
+                // replaced instances.
+                if (!wasLocal) refreshRouteList();
+
+                this.ui.redrawRouteSquaresOrRebuild(before);
+                this.ui.repaintLoc();
+            }
+        }
+    }
+
+    /** Prompts for a new route ID; the model refuses one already taken, and a non-numeric answer is said as such. */
+    void changeRouteId(String routeName)
+    {        
+        try
+        {
+            Route currentRoute = this.ui.getModel().getRoute(routeName);
+            
+            if (currentRoute != null)
+            {
+                String input = JOptionPane.showInputDialog(
+                    this.ui,
+                    I18n.t("route.ui.promptEnterNewRouteId"),
+                    currentRoute.getId()
+                );
+
+                if (input != null)
+                {
+                    int newId = Math.abs(Integer.parseInt(input));
+
+                    if (newId != currentRoute.getId())
+                    {
+                        LayoutDiagram before = this.ui.shownDiagram();
+
+                        if (!this.ui.getModel().changeRouteId(routeName, newId))
+                        {
+                            JOptionPane.showMessageDialog(
+                                this.ui,
+                                I18n.t("route.ui.errorDuplicateRouteId")
+                            );
+                        }
+
+                        // Both ends, because either could be the station's (OB-155): the old route's lock says whether
+                        // it carried the route, the new id's range whether it could have issued the id.
+                        if (!org.traincontrol.marklin.MarklinControlStation.isLocalRouteId(newId)
+                            || currentRoute.isLocked())
+                        {
+                            this.ui.syncAfterAnEdit();
+                        }
+
+                        this.ui.redrawRouteSquaresOrRebuild(before);
+                        refreshRouteList();
+                    }
+                }
+            }
+        }
+        catch (HeadlessException | NumberFormatException e)
+        {
+            JOptionPane.showMessageDialog(
+                this.ui,
+                I18n.t("route.ui.errorIdMustBePositiveInteger")
+            );
+        }
+    }
+
+    /** `TrainControlUI.getRouteAtCursor`'s body. */
+    Route getRouteAtCursor(MouseEvent evt)
+    {
+        try
+        {
+            javax.swing.JTable list = this.ui.routeList();
+
+            return (Route) list.getValueAt(list.rowAtPoint(evt.getPoint()), list.columnAtPoint(evt.getPoint()));
+        }
+        catch (RuntimeException e)
+        {
+            return null;
+        }  
+    }
+
+    /** `TrainControlUI.enableOrDisableRoute`'s body. */
+    void enableOrDisableRoute(String routeName, boolean enable)
+    {
+        new Thread(() ->
+        {
+            Route r = this.ui.getModel().getRoute(routeName);
+
+            // A name from a list is not a route: `editRoute` and a sync's re-read of a station route both delete and
+            // re-add, so a route can be absent between choosing the name and this lookup, and on a worker with no
+            // handler that fails silently.
+            if (r == null) return;
+
+            // Only enabling needs an s88, which is what lets a route FIRE itself; a route enabled with no s88 (Bulk's
+            // filter allows it) must still be disableable from its own right-click item.
+            if (!enable || r.hasS88())
+            {
+                // Sync only when the station carried the route (OB-155): the write below is a delete-and-re-add in the
+                // LOCAL database and tells the station nothing, so for any other route the round trip (the whole
+                // database, behind a modal spinner) brings back nothing.  The route's LOCK says it (only the sync's
+                // import sets it), the id does not: most of Adam's own routes predate `isLocalRouteId`'s cutover.  Read
+                // before the write, which replaces the route object.
+                final boolean stationCarriedIt = r.isLocked();
+                final LayoutDiagram before = this.ui.shownDiagram();
+
+                writeRouteEnabledState(r, enable);
+
+                if (stationCarriedIt) this.ui.syncAfterAnEdit();
+
+                this.ui.redrawRouteSquaresOrRebuild(before);
+
+                refreshRouteList();
+            }
+            else
+            {
+                javax.swing.SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                    this.ui,
+                    I18n.f("route.ui.errorS88RequiredForAutoFire", r.getName())
+                ));
+            }
+        }).start();
     }
 
     /**
