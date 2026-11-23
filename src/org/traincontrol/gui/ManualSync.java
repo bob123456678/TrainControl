@@ -291,7 +291,13 @@ public final class ManualSync
         if (!model.getNetworkCommState()) return null;
         try
         {
-            return readBehindTheSpinner(c, true).getAddresses();
+            RenameProposals read = readBehindTheSpinner(c, true);
+            Map<String, Integer> addresses = new java.util.HashMap<>(read.getAddresses());
+            // A locomotive the table leaves to fix by hand is asked nothing here either
+            for (RenameProposals.Row r : read.getRows())
+                if (r.byHand && addresses.remove(r.loco.getName()) != null) model.logf("loc.syncByHand", r.loco.getName(),
+                    r.stationName, r.loco.getAddress(), r.stationAddress);
+            return addresses;
         }
         catch (Exception e)
         {

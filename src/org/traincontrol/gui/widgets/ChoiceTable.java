@@ -215,8 +215,8 @@ public final class ChoiceTable extends JScrollPane
         return p;
     }
 
-    /** A cell of a choice centered beside a block of lines. */
-    public static JComponent beside(JRadioButton choice, JComponent... lines)
+    /** A cell of a choice (or a gap standing for one) centered beside a block of lines. */
+    public static JComponent beside(java.awt.Component choice, JComponent... lines)
     {
         JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));

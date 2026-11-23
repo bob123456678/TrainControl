@@ -149,11 +149,18 @@ public class testTheSyncDifferencesWindow
                 check(problems, Arrays.asList(SwingUtilities.getAncestorOfClass(ChoiceTable.class, apply) != null,
                     HandPointer.isHand(apply.getCursor()), apply.isFocusable(), apply.getToolTipText()), Arrays.asList(
                     true, true, true, I18n.f("sync.ui.setAllTip", I18n.t("sync.ui.apply"))), "Apply's heading a link");
-                check(problems, t.in("SW D", "deletes", JLabel.class).getText(), I18n.f("sync.ui.deletes", "SW Held"),
-                    "D's deleting mark");
+                // Said only while D's Apply is picked: not on Ask Again, there after Apply, gone on Keep As Is
+                check(problems, visible(t, "SW D", "deletes"), false, "D's deleting mark on Ask Again");
                 apply.doClick();
                 check(problems, selected(t), rowsOn("ADDRESS", "ADDRESS", "RENAME", "ASK", "ASK", "ADDRESS", "ASK",
                     "ASK"), "Set all to Apply");
+                t.in("SW D", "RENAME", AbstractButton.class).doClick();
+                check(problems, Arrays.asList(visible(t, "SW D", "deletes"), t.in("SW D", "deletes", JLabel.class)
+                    .getText()), Arrays.asList(true, I18n.f("sync.ui.deletes", "SW Held", "MM2 36")),
+                    "D's deleting mark on Apply");
+                t.in("SW D", "KEEP", AbstractButton.class).doClick();
+                check(problems, visible(t, "SW D", "deletes"), false, "D's deleting mark on Keep As Is");
+                t.in("SW D", "ASK", AbstractButton.class).doClick();
                 check(problems, visible(t, "SW T", "collision"), true, "T's triangle");
                 t.in("SW B", "ADDRESS", AbstractButton.class).doClick();
                 check(problems, visible(t, "SW A", "collision"), false, "A's triangle with B moved");
@@ -580,8 +587,13 @@ public class testTheSyncDifferencesWindow
 
             List<String> problems = new ArrayList<>(), said = new ArrayList<>();
             assertNotNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW P", "RENAME", "SW Q", "RENAME",
-                "SW D", "RENAME", "SW Held", "KEEP"), t -> check(problems, t.in("SW D", "deletes", JLabel.class)
-                .getText(), I18n.f("sync.ui.deletes", "SW Held +1"), "D's mark")), said), "the table did not open");
+                "SW D", "RENAME", "SW Held", "KEEP"), t ->
+                {
+                    check(problems, visible(t, "SW D", "deletes"), false, "D's mark before its Apply");
+                    t.in("SW D", "RENAME", AbstractButton.class).doClick();
+                    check(problems, t.in("SW D", "deletes", JLabel.class).getText(), I18n.f("sync.ui.deletes",
+                        "SW Held +1", "MM2 83"), "D's mark");
+                }), said), "the table did not open");
 
             List<String> log = rig.takeLog();
             assertEquals(Arrays.asList(p.getName(), q.getName(), d.getName()), Arrays.asList("SW Q", "SW R", "SW Held"),
@@ -895,7 +907,8 @@ public class testTheSyncDifferencesWindow
      * Continue Sync changes neither, the log names it and both once, and the closing message does not count it, while a
      * one-to-one rename beside it applies.
      *
-     * MUTATION: in the `RenameProposals.Row` constructor, set `byHand` false, and the rows offer Apply again.
+     * MUTATION: in the `RenameProposals.Row` constructor, set `byHand` false, and the rows offer Apply again; or drop
+     * the gaps in `SyncDifferencesWindow.addRow`, and the by-hand rows' blocks start flush left.
      */
     @Test(timeOut = 180000)
     public void testARowThatDiffersTwoWaysIsLeftToFixByHand() throws Exception
@@ -923,6 +936,13 @@ public class testTheSyncDifferencesWindow
                         each[1], each[2], each[0], each[3]), each[0] + "'s station locomotives");
                 }
                 check(problems, java.util.Collections.frequency(labels(t), I18n.t("sync.ui.byHand")), 3, "fix by hand");
+                // The by-hand rows' blocks start where the other row's radios leave room: two Name columns, no more
+                java.util.Set<Integer> names = new java.util.TreeSet<>();
+                for (JLabel l : Components.all(t.dialog, JLabel.class, l -> I18n.t("sync.ui.name").equals(l.getText())))
+                    names.add(at(t, l).x);
+                check(problems, names.size(), 2, "Name labels' columns " + names);
+                check(problems, at(t, Components.find(t.dialog, JLabel.class, l -> I18n.t("sync.ui.byHand").equals(
+                    l.getText()))).x, java.util.Collections.max(names), "the by-hand text under the station's Name");
                 looked.set(true);
             }), said), "the table did not open");
             List<String> log = rig.takeLog();

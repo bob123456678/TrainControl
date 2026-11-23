@@ -108,7 +108,10 @@ public final class SyncDifferencesWindow
         this.dialog.getRootPane().setDefaultButton(go);
         this.dialog.getRootPane().registerKeyboardAction(e -> this.dialog.dispose(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
             JComponent.WHEN_IN_FOCUSED_WINDOW);
+        // Sized with every Deletes note showing, so one appearing on a click has its room
+        this.deleting.values().forEach(d -> d.setVisible(true));
         this.dialog.pack();
+        refresh();
         this.dialog.setLocationRelativeTo(owner);
     }
 
@@ -140,8 +143,11 @@ public final class SyncDifferencesWindow
             JLabel where = text(I18n.f("sync.ui.byHandWhere", r.stationName, there(l) + l.getAddress(), name, there(l)
                 + r.stationAddress), GRAYED);
             where.setName(name + ":byHand");
-            return new JComponent[] {ChoiceTable.lines(here), ChoiceTable.lines(this.table.line(text(I18n.t(
-                "sync.ui.byHand"), GRAYED)), this.table.line(where))};
+            // Where a radio sits in the other rows, a gap as wide
+            int radio = new JRadioButton().getPreferredSize().width;
+            return new JComponent[] {ChoiceTable.beside(Box.createHorizontalStrut(radio), here), ChoiceTable.beside(
+                Box.createHorizontalStrut(radio), this.table.line(text(I18n.t("sync.ui.byHand"), GRAYED)),
+                this.table.line(where))};
         }
         ButtonGroup group = new ButtonGroup();
         Map<Answer, JRadioButton> radios = new EnumMap<>(Answer.class);
@@ -265,9 +271,11 @@ public final class SyncDifferencesWindow
         for (Map.Entry<Row, JLabel> d : this.deleting.entrySet())
         {
             Locomotive gone = this.proposals.deletes(d.getKey(), with(renamed, d.getKey()));
-            d.getValue().setVisible(gone != null);
+            // Said only while this row's Apply is picked
+            d.getValue().setVisible(gone != null && renamed.contains(d.getKey()));
             if (gone != null) d.getValue().setText(I18n.f("sync.ui.deletes", gone.getName()
-                + (gone.hasLinkedLocomotives() ? " +" + gone.getLinkedLocomotives().size() : "")));
+                + (gone.hasLinkedLocomotives() ? " +" + gone.getLinkedLocomotives().size() : ""),
+                there(gone) + gone.getAddress()));
         }
     }
 

@@ -129,7 +129,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
             assertEquals(asked.size(), 1, "renaming onto a held name asked other than once: " + asked.size());
             assertEquals(Components.onTheEventThread(() -> rowsFor(old).get(0).in(old, "deletes", javax.swing.JLabel.class)
-                .getText()), I18n.f("sync.ui.deletes", STATION_NAME), "the row does not say what the rename deletes");
+                .getText()), I18n.f("sync.ui.deletes", STATION_NAME, "MM2 10"), "the row does not say what the rename deletes");
 
             assertTrue(asked.get(0).message.contains(I18n.f("ui.confirmDeleteFromDatabaseWithRoutesOne",
                 STATION_NAME, 1)), "the question does not count the route that loses its command: "
@@ -1038,30 +1038,33 @@ public class testTheSyncAsksAboutRenamedLocomotives
             rig.model.setNetworkCommState(true);
 
             final org.traincontrol.base.Locomotive loc = rig.model.getLocByName(STATION_NAME);
-            final CountDownLatch synced = new CountDownLatch(1);
 
-            assertTrue(SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
-                "precondition: Locomotive Settings did not open");
-
-            try (Answering answering = Answering.start(m -> m != null && m.contains(STATION_NAME)
-                ? Answering.press(use) : Answering.pressAt(0)))
-            {
-                SwingUtilities.invokeLater(() -> ui.syncLocomotiveFrom(loc, SettingsWindow.showing(), synced::countDown));
-
-                assertTrue(synced.await(60, TimeUnit.SECONDS), "the sync never ended");
-                AskingWindows.awaitAnswered();
-
-                assertTrue(askedOnce(answering.questions(), I18n.f("loc.ui.askStationAddress", STATION_NAME, 10, 70),
-                    I18n.t("loc.ui.optionKeep"), use).owner instanceof org.traincontrol.gui.LocomotiveSettingsFrame,
-                    "not asked over Locomotive Settings");
-            }
-            finally
-            {
-                SettingsWindow.closeIfOpen();
-            }
-
+            assertTrue(askedOnce(settingsSync(ui, loc, m -> m != null && m.contains(STATION_NAME)
+                ? Answering.press(use) : Answering.pressAt(0)), I18n.f("loc.ui.askStationAddress", STATION_NAME, 10, 70),
+                I18n.t("loc.ui.optionKeep"), use).owner instanceof org.traincontrol.gui.LocomotiveSettingsFrame,
+                "not asked over Locomotive Settings");
             assertEquals(loc.getAddress(), 10, "Use address did not give it the station's address");
             assertFalse(loc.takesStationAddress(10), "the answer outlived its sync");
+        });
+    }
+
+    /**
+     * Locomotive Settings' Sync of a locomotive the table leaves to fix by hand asks nothing and changes nothing (FR-249).
+     *
+     * MUTATION: in `ManualSync.stationAddresses`, leave out the by-hand removal, and its address is asked.
+     */
+    @Test(timeOut = 180000)
+    public void testLocomotiveSettingsSyncOfALocomotiveFixedByHandAsksNothing() throws Exception
+    {
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            renamedAndMovedHere(rig);
+            rig.model.setNetworkCommState(true);
+
+            List<Answering.Question> asked = settingsSync(ui, rig.model.getLocByName(AT_3), m -> Answering.pressAt(0));
+
+            assertEquals(asked.size(), 0, "asked " + asked);
+            assertEquals(rig.model.getLocByName(AT_3).getAddress(), 10, "the Sync moved it");
         });
     }
 
@@ -1134,6 +1137,30 @@ public class testTheSyncAsksAboutRenamedLocomotives
 
             assertTrue(blocked < 1500, "the event thread waited " + blocked + " ms for the station");
         });
+    }
+
+    /** Presses Sync in Locomotive Settings of loc, answers by `rule`, and returns the questions asked over the sync. */
+    private static List<Answering.Question> settingsSync(TrainControlUI ui, org.traincontrol.base.Locomotive loc,
+        java.util.function.Function<String, Answering.Answer> rule) throws Exception
+    {
+        final CountDownLatch synced = new CountDownLatch(1);
+
+        assertTrue(SettingsWindow.open(ui, loc, org.traincontrol.gui.LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+            "precondition: Locomotive Settings did not open");
+
+        try (Answering answering = Answering.start(rule))
+        {
+            SwingUtilities.invokeLater(() -> ui.syncLocomotiveFrom(loc, SettingsWindow.showing(), synced::countDown));
+
+            assertTrue(synced.await(60, TimeUnit.SECONDS), "the sync never ended");
+            AskingWindows.awaitAnswered();
+
+            return new ArrayList<>(answering.questions());
+        }
+        finally
+        {
+            SettingsWindow.closeIfOpen();
+        }
     }
 
     /** BR 10 001 held here at address 70, the station's at 10, as though its address was changed here since. */

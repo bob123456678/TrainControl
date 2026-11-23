@@ -215,24 +215,27 @@ public class testEveryLanguageFitsThePopups
         MarklinLocomotive asked = new MarklinLocomotive(railway.model, 23, Locomotive.decoderType.MM2, "BR 218");
         MarklinLocomotive holder = new MarklinLocomotive(railway.model, 24, Locomotive.decoderType.MM2, "BR 218 007");
         MarklinLocomotive other = new MarklinLocomotive(railway.model, 25, Locomotive.decoderType.MM2, "BR 103");
+        MarklinLocomotive mover = new MarklinLocomotive(railway.model, 26, Locomotive.decoderType.MM2, "BR 218 old");
         Map<Integer, List<MarklinLocomotive>> held = new HashMap<>();
-        for (MarklinLocomotive l : new MarklinLocomotive[] {asked, holder, other})
+        for (MarklinLocomotive l : new MarklinLocomotive[] {asked, holder, other, mover})
             held.put(l.getIntUID(), Collections.singletonList(l));
 
         LanguageFit.assertNothingClipped("sync table", LanguageFit.everyLanguage(language ->
         {
             List<String> found = Collections.synchronizedList(new ArrayList<>());
-            // By hand; a rename grayed; an address held here
+            // By hand; a rename grayed; an address held here; a rename onto a held name, Apply picked, saying what it deletes
             List<RenameProposals.Row> rows = java.util.Arrays.asList(new RenameProposals.Row(asked, holder.getName(),
                 25, null, null, holder, null, asked.getIntUID(), other.getIntUID()), new RenameProposals.Row(other,
                 holder.getName(), null, I18n.f("loc.renameNameListedTwice", other.getName(), holder.getName()), null,
                 holder, null, other.getIntUID(), other.getIntUID()), new RenameProposals.Row(holder, null, 23, null,
-                null, null, null, holder.getIntUID(), asked.getIntUID()));
+                null, null, null, holder.getIntUID(), asked.getIntUID()), new RenameProposals.Row(mover, holder.getName(),
+                null, null, null, holder, null, mover.getIntUID(), mover.getIntUID()));
             RenameProposals proposals = new RenameProposals(new ArrayList<>(), 0, new HashMap<>(), rows, held);
 
             try (SyncTable table = SyncTable.canceling(t ->
             {
                 int[] seen = {0};
+                t.in(mover.getName(), "RENAME", javax.swing.AbstractButton.class).doClick();
                 for (String each : LanguageFit.measurePopup(LEDGER, "popup-sync-table", language, t.dialog, seen))
                     found.add("popup-sync-table: " + each);
             }))
