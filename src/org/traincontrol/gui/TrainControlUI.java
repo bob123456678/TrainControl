@@ -901,8 +901,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         // on a single line.  Before the hand-built items join the bar; they wrap their own.
         AutonomyEditorPanel.wrapTheTooltips(this.mainMenuBar);
 
-        // Set internationalized options
-
         arrangeMainMenus();
 
         installPopUpAllButton();
@@ -4513,14 +4511,16 @@ public class TrainControlUI extends PositionAwareJFrame implements View
 
     /**
      * Grays the File and Locomotives items a run would refuse, with the refusal's own sentence, and those that wait
-     * for work in flight.  The one writer of their state, asked afresh on each menu open and each change of the work.
+     * for work in flight, and the sync's mark.  The one writer of their state, asked afresh on each menu open, each
+     * change of the work and each sync's end.
      */
-    private void greyWhatARunRefuses()
+    void greyWhatARunRefuses()
     {
         String locomotives = RunGates.whyAutonomyRunningRefuses(this);
         boolean busy = this.locomotiveWorkInFlight;
 
         waitFor(this.syncMenuItem, locomotives, null, busy);
+        ManualSync.mark(this.model, this.locomotiveMenu, this.syncMenuItem);
         waitFor(this.addLocomotiveMenuItem, locomotives, null, false);
         waitFor(this.importLocsFromCSVMenuItem, locomotives, null, false);
         waitFor(this.syncFullLocStateMenuItem, locomotives, null, busy);
@@ -5366,6 +5366,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         refreshAutonomyTabState();
 
         SwingUtilities.invokeLater(() -> refreshAutonomyPrompt());
+        // The start-up sync's mark on the Locomotives menu
+        greyWhatARunRefuses();
 
         // Load autonomy if requested
         if (this.AutoLoadAutonomyMenuItem.isSelected())
@@ -7178,6 +7180,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         finally
         {
             syncInFlight.set(false);
+            SwingUtilities.invokeLater(this::greyWhatARunRefuses);
             if (syncOwed.get()) editorGone();
         }
     }
@@ -7187,37 +7190,27 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         // A sync starting now reads every edit made so far; one owed while it runs is kept for the next
         syncOwed.set(false);
-
+        // this.model, NOT this: the wrapper calling itself would overflow the stack.  Behind the spinner either way
+        // (OB-140), with the work HERE because the caller wants the answer.  Every play button comes back (FR-043).
+        resetRouteSpinners();
+        if (!SwingUtilities.isEventDispatchThread())
         {
-            // this.model, NOT this: the wrapper calling itself would overflow the stack.  Behind the spinner either way
-            // (OB-140), with the work HERE because the caller wants the answer.  Every play button comes back (FR-043).
-            resetRouteSpinners();
-
-            if (!SwingUtilities.isEventDispatchThread())
+            BusyDialog.Closer busy = BusyDialog.showUntilClosed(this, I18n.t("ui.busySyncingWithCS"));
+            try
             {
-                BusyDialog.Closer busy =
-                    BusyDialog.showUntilClosed(this, I18n.t("ui.busySyncingWithCS"));
-
-                try
-                {
-                    return this.model.syncWithCS2();
-                }
-                finally
-                {
-                    // In a finally: work that throws would otherwise leave a modal window with no close button.
-                    busy.close();
-                }
+                return this.model.syncWithCS2();
             }
-
-            // Held in an array because a lambda cannot assign a local, and read after the dialog
-            // closes - BusyDialog.run does not return until the worker has disposed it
-            final int[] result = {-1};
-
-            BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"),
-                () -> result[0] = this.model.syncWithCS2(), null);
-
-            return result[0];
+            finally
+            {
+                // In a finally: work that throws would otherwise leave a modal window with no close button.
+                busy.close();
+            }
         }
+        // Held in an array because a lambda cannot assign a local, and read after the dialog
+        // closes - BusyDialog.run does not return until the worker has disposed it
+        final int[] result = {-1};
+        BusyDialog.run(this, I18n.t("ui.busySyncingWithCS"), () -> result[0] = this.model.syncWithCS2(), null);
+        return result[0];
     }
 
     JMenuItem exportDiagramItem;

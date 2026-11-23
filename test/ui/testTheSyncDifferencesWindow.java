@@ -1236,6 +1236,120 @@ public class testTheSyncDifferencesWindow
         return out;
     }
 
+    /**
+     * After every sync, pressed or automatic, the Locomotives menu and its Sync item end in " *" while a locomotive
+     * differs with something left to answer or to fix by hand, the item's tooltip counting them; a partial read can turn
+     * it on but never off, and a sync that finds everything answered, kept or ignored takes it off.
+     *
+     * MUTATION: in `MarklinControlStation.syncThroughTheNewParser`, set `unsettled` on a partial read that found none,
+     * or drop `byHand` from `RenameProposals.getUnsettledCount`, and this fails.
+     */
+    @Test(timeOut = 240000)
+    public void testTheMenuMarksWhatASyncLeavesUnsettled() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            here(rig, "SW Mark", 30, "SW Kept", 31, "SW Ign", 32, "SW A", 20, "SW B", 21);
+            assertEquals(mark(ui), mark(0), "marked at start-up");
+            list.set("[" + unreadable("SW Zed", 40) + "," + station("SW Mark2", 30).substring(1));
+            autoSync(ui);
+            assertEquals(mark(ui), mark(1), "a partial read that found a rename");
+            String all = station("SW Mark2", 30, "SW Kept", 33, "SW Ign2", 32, "SW B", 20, "SW A", 21);
+            list.set(all);
+            assertNotNull(pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW Kept", "KEEP", "SW Ign",
+                "IGNORE")), null), "the table did not open");
+            assertEquals(mark(ui), mark(3), "one left to answer and two to fix by hand");
+            list.set("[" + unreadable("SW Zed", 40) + "]");
+            autoSync(ui);
+            assertEquals(mark(ui), mark(3), "a partial read that found nothing cleared the mark");
+            list.set(station("SW Mark2", 30, "SW Kept", 33, "SW Ign2", 32, "SW A", 20, "SW B", 21));
+            pressSync(rig, ui, SyncTable.answering(SyncTable.answer("SW Mark", "KEEP")), null);
+            assertEquals(mark(ui), mark(0), "everything answered, kept or ignored");
+        });
+    }
+
+    /**
+     * An address typed in Locomotive Settings and saved does not mark the menu, though the station now differs; the next
+     * sync does.  Import from CSV that changes an existing locomotive's address marks it, the tooltip saying the import
+     * may differ from the station, until the next sync works it out.
+     *
+     * MUTATION: in `TrainControlUI.holdingTheSync`, leave out the `greyWhatARunRefuses` post, or in
+     * `LocomotiveCsvDoor.open`, leave out `ManualSync.imported`, and this fails.
+     */
+    @Test(timeOut = 240000)
+    public void testATypedAddressWaitsForTheNextSyncAndAnImportMarksAtOnce() throws Exception
+    {
+        inAWindow((rig, ui, list) ->
+        {
+            list.set(station("SW Typed", 45, "SW Csv", 50));
+            here(rig, "SW Typed", 45, "SW Csv", 50);
+            Locomotive typed = rig.model.getLocByName("SW Typed");
+            autoSync(ui);
+            try (Answering answering = Answering.start(m -> Answering.pressAt(0)))
+            {
+                assertTrue(SettingsWindow.open(ui, typed, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null),
+                    "precondition: Locomotive Settings did not open");
+                SettingsWindow.awaited();
+                SettingsWindow.type("settings.address", "46");
+                SettingsWindow.press(SettingsWindow.save());
+                assertTrue(Components.waitFor(() -> typed.getAddress() == 46, 10000), "the typed address was not saved");
+                Components.settle();
+                assertEquals(mark(ui), mark(0), "the typed address marked the menu");
+            }
+            finally
+            {
+                SettingsWindow.closeIfOpen();
+            }
+            autoSync(ui);
+            assertEquals(mark(ui), mark(1), "the sync after the typed address");
+
+            java.io.File file = java.io.File.createTempFile("tc-mark", ".csv");
+            Files.write(file.toPath(), ("Name,ButtonMappings,DecoderType,Address,PreferredSpeed,TotalRuntime,Start Year,"
+                + "End Year,RailwayName,Notes\nSW Csv,,MM2,51,0,0:00:00,0,0,,\n").getBytes(StandardCharsets.UTF_8));
+            try (Answering answering = Answering.start(m -> Answering.pressAt(0)).choosing(file))
+            {
+                javax.swing.JMenuItem door = (javax.swing.JMenuItem) support.Reflect.get(TrainControlUI.class, ui,
+                    "importLocsFromCSVMenuItem");
+                SwingUtilities.invokeLater(door::doClick);
+                assertTrue(answering.awaitAsked(2, 60000), "the import did not ask and tell: " + answering.asked());
+                Components.settle();
+            }
+            finally
+            {
+                file.delete();
+            }
+            assertEquals(rig.model.getLocByName("SW Csv").getAddress(), 51, "precondition: the import kept the address");
+            assertEquals(mark(ui), Arrays.asList(mark(1).get(0), mark(1).get(1), I18n.t("sync.ui.markImported")),
+                "after the import");
+            autoSync(ui);
+            assertEquals(mark(ui), mark(2), "the sync after the import");
+        });
+    }
+
+    /** The Locomotives menu's title, its Sync item's and the item's tooltip. */
+    private static List<String> mark(TrainControlUI ui)
+    {
+        return Components.onTheEventThread(() -> Arrays.asList(((javax.swing.JMenu) support.Reflect.get(
+            TrainControlUI.class, ui, "locomotiveMenu")).getText(), ((javax.swing.JMenuItem) support.Reflect.get(
+            TrainControlUI.class, ui, "syncMenuItem")).getText(), ((javax.swing.JMenuItem) support.Reflect.get(
+            TrainControlUI.class, ui, "syncMenuItem")).getToolTipText()));
+    }
+
+    /** What `mark` reads with this many locomotives unsettled. */
+    private static List<String> mark(int unsettled)
+    {
+        String star = unsettled == 0 ? "" : " *";
+        return Arrays.asList(I18n.t("ui.main.toolbar.locomotives") + star, I18n.t("ui.main.toolbar.syncDBWithCS") + star,
+            unsettled == 0 ? null : unsettled == 1 ? I18n.t("sync.ui.markOne") : I18n.f("sync.ui.markMany", unsettled));
+    }
+
+    /** An automatic sync, as a door's own edit runs, until it has ended. */
+    private static void autoSync(TrainControlUI ui) throws Exception
+    {
+        assertTrue(ui.syncWithCS2() >= 0, "the sync failed");
+        assertTrue(syncEnded(ui), "a sync never ended");
+    }
+
     /** Adds locomotives here, by name and MM2 address. */
     private static void here(StationRig rig, Object... namesAndAddresses)
     {

@@ -1255,9 +1255,10 @@ public class testLocomotiveCsvImportDoor
      * Each answer in the duplicates' table is carried out (FR-249): Keep Both adds the file's locomotive beside the one
      * here, Keep Old leaves it out, and Keep New renames a train standing on the layout to the file's name, the same
      * locomotive, so it stays where it stands and keeps its timetable entry.  The message counts them, and the import
-     * runs no Sync.
+     * runs no Sync, but the rename marks the menu as the station may now differ.
      *
-     * MUTATION: in `MarklinLocomotiveCsv.apply`, add a Keep New row as Keep Both, and this fails.
+     * MUTATION: in `MarklinLocomotiveCsv.apply`, add a Keep New row as Keep Both, or in `ManualSync.imported`, mark
+     * only re-addressed locomotives, and this fails.
      */
     @Test
     public void testEachAnswerInTheDuplicatesTableIsCarriedOut() throws Exception
@@ -1299,6 +1300,7 @@ public class testLocomotiveCsvImportDoor
             File file = write(HEADER + mfx(both, a) + mfx(left, b) + taken + ",," + train.getDecoderType() + ","
                 + train.getAddress() + ",0,0:00:00,0,0,,\n");
             List<String> failed = new ArrayList<>();
+            final int unsettled = model.getUnsettledCount();
 
             try
             {
@@ -1322,9 +1324,11 @@ public class testLocomotiveCsvImportDoor
                     && seen.said.get(0).contains(I18n.t("loc.ui.infoImportCsvKeptOldOne")),
                     "the message does not count the answers: " + seen.said);
                 assertFalse(seen.titles.contains(I18n.t("sync.ui.title")), "the import ran a Sync: " + seen.titles);
+                assertEquals(model.getUnsettledCount(), -1, "the rename did not mark the menu");
             }
             finally
             {
+                model.setUnsettledCount(unsettled);
                 layout.getTimetable().remove(entry);
 
                 if (model.getLocByName(taken) == train) model.renameLoc(taken, was);

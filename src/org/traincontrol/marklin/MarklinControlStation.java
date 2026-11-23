@@ -1558,6 +1558,20 @@ public class MarklinControlStation implements ViewListener, ModelListener
         return this.lastSyncRoutes;
     }
 
+    private volatile int unsettled;
+
+    @Override
+    public int getUnsettledCount()
+    {
+        return this.unsettled;
+    }
+
+    @Override
+    public void setUnsettledCount(int count)
+    {
+        this.unsettled = count;
+    }
+
     /** Whether the last sync could not read part of what the Central Station sent, and left that part as it was. */
     @Override
     public boolean wasLastSyncPartial()
@@ -1861,7 +1875,11 @@ public class MarklinControlStation implements ViewListener, ModelListener
             // here stands for it as a multi-unit member, until a pressed Sync answers; a partial read can set the mark
             // but never clear it, as the station's name may be in what did not read (FR-249)
             if (!this.lastSyncPartial) for (MarklinLocomotive here : this.locDB.getItems()) here.setHeldBackStationName(null);
-            for (RenameProposals.Row row : differences(parsedLocs, this.lastSyncPartial, false).getRows())
+            RenameProposals left = differences(parsedLocs, this.lastSyncPartial, false);
+            // The menu's count likewise: a partial read can raise it, never lower it
+            this.unsettled = this.lastSyncPartial ? Math.max(this.unsettled, left.getUnsettledCount())
+                : left.getUnsettledCount();
+            for (RenameProposals.Row row : left.getRows())
             {
                 if (row.stationName == null) continue;
                 row.loco.setHeldBackStationName(row.stationName);

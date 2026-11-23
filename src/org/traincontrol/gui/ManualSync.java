@@ -11,12 +11,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.RenameProposals;
 import org.traincontrol.gui.SyncDifferencesWindow.Answer;
 import org.traincontrol.gui.widgets.BusyDialog;
+import org.traincontrol.marklin.MarklinLocomotiveCsv;
 import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 
@@ -64,6 +67,24 @@ public final class ManualSync
         if (!said.isEmpty()) parts.add(String.join("\n", said));
         if (partial) parts.add(I18n.t("ui.infoSyncPartial"));
         return String.join("\n\n", parts);
+    }
+
+    /** " *" on the Locomotives menu and its Sync item while something is unsettled, its tooltip saying what. */
+    static void mark(ViewListener model, JMenu menu, JMenuItem sync)
+    {
+        int n = model == null ? 0 : model.getUnsettledCount();
+        menu.setText(I18n.t("ui.main.toolbar.locomotives") + (n != 0 ? " *" : ""));
+        sync.setText(I18n.t("ui.main.toolbar.syncDBWithCS") + (n != 0 ? " *" : ""));
+        if (n != 0 && sync.getToolTipText() == null) sync.setToolTipText(n < 0 ? I18n.t("sync.ui.markImported")
+            : n == 1 ? I18n.t("sync.ui.markOne") : I18n.f("sync.ui.markMany", n));
+    }
+
+    /** An import that changed an existing locomotive's address marks the menu until the next sync works it out. */
+    static void imported(TrainControlUI ui, MarklinLocomotiveCsv.Result result)
+    {
+        if (result.readdressed.isEmpty() && result.renamed.isEmpty()) return;
+        ui.getModel().setUnsettledCount(-1);
+        ui.greyWhatARunRefuses();
     }
 
     /** Asks the table about l's row alone (Locomotive Settings' Sync); the rest get an automatic sync's treatment. */
