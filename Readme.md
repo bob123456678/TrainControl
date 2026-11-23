@@ -466,6 +466,7 @@ Tab icons provided by Freepik.
     - New Features
         - Autonomy
             - In `Station Settings`, clicking the arrow of the track beside the station so trains can go a new way now offers to set the track further along the line as well, up to the next station, so trains can keep going.  Every square that would change is highlighted while it asks, and `This Run Alone` changes only the track you clicked.
+            - `Manage Configurations` has a new `Save As...` that duplicates the current configuration, with its trains and timetable, and can replace another configuration after a warning and a confirmation, and `New Configuration...` now makes a blank one without locomotives or a timetable.
         - Locomotive Control
             - When the Central Station has a locomotive at another address than TrainControl, `Sync Database w/ Central Station` asks whether to keep this computer's address or use the station's, in the same question as a rename, and the `Sync` button in Locomotive Settings asks the same about its own locomotive.  A kept address is not asked about again until the station's changes, and the automatic syncs at start-up and on reconnecting no longer change an address.
         - Interface
