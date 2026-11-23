@@ -1108,10 +1108,10 @@ public class LayoutGrid
                     gbc.gridy = y;
                 }
                 
-                // Show address labels
+                // Show address labels: a link has no accessory address
                 if (c != null &&
                         layout.getShowAddress() &&
-                        !c.isText() && c.isClickable())
+                        !c.isText() && !c.isLink() && c.isClickable())
                 {
                     AddressLabel text = new AddressLabel();
                     
@@ -1195,11 +1195,9 @@ public class LayoutGrid
                         protocol = c.getProtocol().toString().toLowerCase();
                     }
                     
-                    text.setLines(c.isLink() && c.getLinkPageName() != null ? c.getLinkPageName()
-                        : c.getLogicalAddress() + redOrGreen, protocol);
+                    text.setLines(c.getLogicalAddress() + redOrGreen, protocol);
 
-                    // To the row's end, as text labels are: an arrow's page name is wider than a square and would
-                    // widen its column, leaving a blank gap in the diagram.
+                    // To the row's end, as text labels are, so a wide address never widens its column.
                     gbc.gridwidth = GridBagConstraints.REMAINDER;
 
                     // The squares its text runs on over keep their clicks
