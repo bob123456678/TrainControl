@@ -140,7 +140,7 @@ public final class LayoutFileActions
 
             arriving = true;
         }
-        catch (Exception ex)
+        catch (IOException | java.net.URISyntaxException | RuntimeException ex)
         {
             JOptionPane.showMessageDialog(
                 over,
