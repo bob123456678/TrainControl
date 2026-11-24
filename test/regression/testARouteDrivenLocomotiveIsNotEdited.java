@@ -331,14 +331,14 @@ public class testARouteDrivenLocomotiveIsNotEdited
         assertTrue(current > 0 && proposed > 0 && itself, "the Central Station's name proposal does not ask about both names"
             + " (CS3-B1, SVB-C2)");
 
-        String apply = SourceOf.declaration("private int[] apply(Component c, RenameProposals asked, RenameProposals now,");
+        String apply = SourceOf.declaration("static int[] apply(Main ui, Locomotive only, Component c, RenameProposals asked,");
         int asks = apply.indexOf("f.whyNot(true)");
-        int renames = apply.indexOf("renamed(c, r)", asks);
+        int renames = apply.indexOf("ui.renameAsTheStation(c, r)", asks);
 
         assertTrue(asks > 0 && renames > asks, "the name proposal renames before it asks (OB-287)");
 
         // And again of both names just before the rename, as a route may have begun since the second read
-        String renamed = SourceOf.declaration("private String renamed(Component c, RenameProposals.Row r)");
+        String renamed = SourceOf.declaration("static String renamed(TrainControlUI ui, Component c, RenameProposals.Row r)");
         int again = renamed.indexOf("RunGates.refuseWhileARouteDrivesIt(ui, c, newName)");
         assertTrue(renamed.contains("RunGates.refuseWhileARouteDrivesIt(ui, c, currentName)") && again > 0
             && renamed.indexOf("renameLoc(", again) > again, "the rename does not ask of both names just before it");

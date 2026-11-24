@@ -334,19 +334,24 @@ public class testMappingPagesAndLocomotiveDoors
     }
 
     /**
-     * Reset Mappings answered Yes empties the page showing and no other; answered No it empties nothing.
+     * Reset Mappings, asked over the main window, answered Yes empties the page showing and no other; answered No it
+     * empties nothing.
      *
      * MUTATION: clear whatever the answer in `clearCurrentPage`, and the No half fails; take `doClearCurrentPage()`
-     * out, and the Yes half fails.
+     * out, and the Yes half fails; ask over null, and the question hangs off no window.
      */
     @Test
     public void testResetMappingsEmptiesOnlyThisPageAndOnlyOnYes() throws Exception
     {
         AbstractButton reset = pageMenuItem(I18n.t("page.ui.menuResetCurrentMappings"));
 
-        List<String> no = answering(I18n.t("ui.no"), () -> SwingUtilities.invokeLater(reset::doClick));
+        try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.no"))))
+        {
+            SwingUtilities.invokeLater(reset::doClick);
 
-        assertEquals(no.size(), 1, "Reset Mappings asked nothing: " + no);
+            assertTrue(answering.awaitAsked(1, WAIT), "Reset Mappings asked nothing");
+            assertSame(answering.questions().get(0).owner, ui, "Reset Mappings asks over another window");
+        }
 
         Components.settle();
 
@@ -370,7 +375,7 @@ public class testMappingPagesAndLocomotiveDoors
      * Reset Mappings lets go of the active locomotive only if it was on the page emptied: clearing a page the train
      * is not on leaves it active, clearing the page it is on releases it.
      *
-     * MUTATION: `if (false) ui.activeLoc = null;` or `ui.activeLoc = null;` for the test in
+     * MUTATION: `if (false) ui.releaseActiveLoc();` or `ui.releaseActiveLoc();` for the test in
      * `LocMappingPages.doClearCurrentPage`, and this fails.
      */
     @Test
@@ -428,6 +433,41 @@ public class testMappingPagesAndLocomotiveDoors
         finally
         {
             names.remove(pageP);
+        }
+    }
+
+    /**
+     * Rename Page asks, over the main window, for the page's name and names it, trimmed, in the label too; its own name
+     * is taken again, and a name another page has is refused with a message and the page keeps its name.
+     *
+     * MUTATION: in `LocMappingPages.renameCurrentPage`, leave out the `namesOfPages().contains(input)` test, and the
+     * other page's name is taken.
+     */
+    @Test
+    public void testRenamePageNamesThePageAndRefusesATakenName() throws Exception
+    {
+        @SuppressWarnings("unchecked")
+        Map<Integer, String> names = (Map<Integer, String>) field("pageNames");
+        String prompt = I18n.f("page.ui.promptEnterPageName", pageQ);
+
+        names.put(pageP, "P6 taken");
+        turnTo(pageQ);
+
+        try
+        {
+            assertEquals(renamePage("  P6 yard ", 1), Arrays.asList(prompt), "Rename Page asked");
+            assertEquals(Arrays.asList(names.get(pageQ), ((JLabel) field("LocMappingNumberLabel")).getText()),
+                Arrays.asList("P6 yard", "P6 yard"), "the name, then the label");
+
+            assertEquals(renamePage("P6 yard", 1), Arrays.asList(prompt), "its own name");
+            assertEquals(renamePage("P6 taken ", 2), Arrays.asList(prompt, I18n.t("page.ui.errorDuplicatePageName")),
+                "a taken name");
+            assertEquals(names.get(pageQ), "P6 yard", "a taken name was given to the page");
+        }
+        finally
+        {
+            names.remove(pageP);
+            names.remove(pageQ);
         }
     }
 
@@ -1004,6 +1044,28 @@ public class testMappingPagesAndLocomotiveDoors
         assertNotNull(chosen, "the page menu has no \"" + item + "\"");
 
         return chosen;
+    }
+
+    /** Rename Page from the page menu, typed in answer and every message after it closed; what was asked. */
+    private static List<String> renamePage(String typed, int questions) throws Exception
+    {
+        int page = ui.getLocMappingNumber();
+        AbstractButton rename = pageMenuItem(I18n.f("page.ui.menuRenamePage", page));
+        String prompt = I18n.f("page.ui.promptEnterPageName", page);
+
+        try (Answering answering = Answering.start(message -> message.equals(prompt) ? Answering.type(typed) : null))
+        {
+            SwingUtilities.invokeLater(rename::doClick);
+
+            assertTrue(answering.awaitAsked(questions, WAIT), "Rename Page asked " + answering.asked());
+
+            Components.settle();
+
+            for (Answering.Question q : answering.questions())
+                assertSame(q.owner, ui, "\"" + q.message + "\" hangs off another window");
+
+            return answering.asked();
+        }
     }
 
     /**

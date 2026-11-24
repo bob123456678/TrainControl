@@ -1,13 +1,16 @@
 package org.traincontrol.gui;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
@@ -26,12 +29,40 @@ final class LocMappingPages
     /** FlatLightLaf's accent blue, written down because the UIManager key has changed name between FlatLaf releases. */
     private static final Color PAGE_BADGE_BLUE = new Color(0x26, 0x75, 0xBF);
 
-    private final TrainControlUI ui;
+    /** What the pages read and change of the main window. */
+    interface Keyboard
+    {
+        /** How many pages there are. */
+        int getNumLocMappings();
+        /** The page showing, from 1. */
+        int getLocMappingNumber();
+        /** The page showing: each key's locomotive or null. */
+        Map<JButton, Locomotive> currentLocMapping();
+        /** The pages' names by number. */
+        Map<Integer, String> pageNames();
+        /** The locomotive the keyboard drives, or null. */
+        Locomotive getActiveLoc();
+        /** Lets go of the locomotive the keyboard drives. */
+        void releaseActiveLoc();
+        /** The page label by the arrows. */
+        JLabel locMappingNumberLabel();
+        /** The page tabs. */
+        JTabbedPane locKeyTabs();
+        /** The menu holding the page items. */
+        JMenu locomotiveControlMenu();
+        /** "Show Page Tabs", which "Show Page Numbers" follows. */
+        JCheckBoxMenuItem showPageTabsPreference();
+        /** Redraws the active locomotive's controls. */
+        void repaintLoc(boolean force, List<Locomotive> updatedLocs);
+        /** Redraws the keys. */
+        void repaintMappings();
+    }
 
+    private final Keyboard ui;
     /** "Show Page Numbers"; null until `installShowPageNumbersMenuItem` builds it. */
     private JCheckBoxMenuItem numbersItem;
 
-    LocMappingPages(TrainControlUI ui)
+    LocMappingPages(Keyboard ui)
     {
         this.ui = ui;
     }
@@ -40,9 +71,8 @@ final class LocMappingPages
     boolean canDeleteCurrentPage()
     {
         if (ui.getNumLocMappings() <= MIN_LOC_MAPPINGS) return false;
-
         // Empty means no locomotive on it: clearing a page nulls the values but keeps the keys, so isEmpty() is false.
-        for (Locomotive on : ui.locMapping.get(ui.getLocMappingNumber() - 1).values())
+        for (Locomotive on : ui.currentLocMapping().values())
         {
             if (on != null) return false;
         }
@@ -60,8 +90,8 @@ final class LocMappingPages
     /** Sets the name of the currently active mapping page. */
     void setPageName(String name)
     {
-        if (name == null || "".equals(name.trim())) ui.pageNames.remove(ui.getLocMappingNumber());
-        else ui.pageNames.put(ui.getLocMappingNumber(), name.trim());
+        if (name == null || "".equals(name.trim())) ui.pageNames().remove(ui.getLocMappingNumber());
+        else ui.pageNames().put(ui.getLocMappingNumber(), name.trim());
         ui.locMappingNumberLabel().setText(getPageLabelText(ui.getLocMappingNumber()));
         ui.repaintLoc(true, null);
     }
@@ -77,12 +107,11 @@ final class LocMappingPages
 
             // Tabs and label are worded only when a page is named or chosen; the name line's render sees the change.
             retitlePages();
-            ui.repaintLoc();
+            ui.repaintLoc(false, null);
         });
 
         JMenu menu = ui.locomotiveControlMenu();
         int at = menu.getMenuComponentCount();
-
         for (int i = 0; i < menu.getMenuComponentCount(); i++)
         {
             if (menu.getMenuComponent(i) == ui.showPageTabsPreference())
@@ -121,9 +150,9 @@ final class LocMappingPages
     /** A page's name as typed (`raw`, empty for none), or for menus and dialogs: "Page 5 (Example)" or "Page 5". */
     String getPageName(int mappingNumber, boolean raw)
     {
-        if (ui.pageNames.containsKey(mappingNumber))
+        if (ui.pageNames().containsKey(mappingNumber))
         {
-            String name = ui.pageNames.get(mappingNumber);
+            String name = ui.pageNames().get(mappingNumber);
             if (!raw)
             {
                 if (name.length() > TrainControlUI.MAX_PAGE_NAME_LENGTH_TOP)
@@ -149,8 +178,7 @@ final class LocMappingPages
     Set<String> namesOfPages()
     {
         Set<String> names = new HashSet<>();
-
-        for (Map.Entry<Integer, String> page : ui.pageNames.entrySet())
+        for (Map.Entry<Integer, String> page : ui.pageNames().entrySet())
         {
             if (page.getKey() == null || page.getKey() < 1) continue;
             if (page.getValue() != null) names.add(page.getValue().trim());
@@ -158,11 +186,11 @@ final class LocMappingPages
         return names;
     }
 
-    /** Prompts the user for the name of the current page. */
-    void renameCurrentPage()
+    /** Asks over `over` for the current page's name. */
+    void renameCurrentPage(Component over)
     {
         int page = ui.getLocMappingNumber();
-        String input = JOptionPane.showInputDialog(ui, I18n.f("page.ui.promptEnterPageName", page),
+        String input = JOptionPane.showInputDialog(over, I18n.f("page.ui.promptEnterPageName", page),
             getPageName(page, true));
 
         if (input != null)
@@ -170,7 +198,7 @@ final class LocMappingPages
             input = input.trim();
             if (namesOfPages().contains(input) && !input.equals(getPageName(page, true).trim()))
             {
-                JOptionPane.showMessageDialog(ui, I18n.t("page.ui.errorDuplicatePageName"));
+                JOptionPane.showMessageDialog(over, I18n.t("page.ui.errorDuplicatePageName"));
             }
             else
             {
@@ -179,13 +207,13 @@ final class LocMappingPages
         }
     }
 
-    /** Resets the mappings on the current page, once the user says Yes. */
-    void clearCurrentPage()
+    /** Empties the current page once the user says Yes over `over`. */
+    void clearCurrentPage(Component over)
     {
         javax.swing.SwingUtilities.invokeLater(() ->
         {
             int dialogResult = JOptionPane.showOptionDialog(
-                ui,
+                over,
                 I18n.f("page.ui.confirmClearKeyMappings", ui.getLocMappingNumber()),
                 I18n.t("page.ui.dialogResetKeyboardMappings"),
                 JOptionPane.YES_NO_OPTION,
@@ -204,7 +232,7 @@ final class LocMappingPages
     {
         // Lets the active locomotive go only if it is on this page, not one chosen on another.
         Map<JButton, Locomotive> page = ui.currentLocMapping();
-        if (ui.activeLoc != null && page.containsValue(ui.activeLoc)) ui.activeLoc = null;
+        if (ui.getActiveLoc() != null && page.containsValue(ui.getActiveLoc())) ui.releaseActiveLoc();
 
         for (JButton key : page.keySet())
         {
@@ -212,7 +240,7 @@ final class LocMappingPages
         }
 
         ui.repaintMappings();
-        ui.repaintLoc();
+        ui.repaintLoc(false, null);
     }
 
     /** The page number as a blue badge centered on a COPY of the shared tab icon; none for page 1. */
@@ -223,7 +251,6 @@ final class LocMappingPages
         String text = Integer.toString(page);
         BufferedImage out = new BufferedImage(icon.getWidth(), icon.getHeight(), BufferedImage.TYPE_INT_ARGB);
         java.awt.Graphics2D g = out.createGraphics();
-
         ImageUtil.antialias(g);
         g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
             java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -252,7 +279,6 @@ final class LocMappingPages
             (float) (x + (wide - ink.getWidth()) / 2 - ink.getX()),
             (float) (y + (tall - ink.getHeight()) / 2 - ink.getY()));
         g.dispose();
-
         return out;
     }
 }

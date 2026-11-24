@@ -204,7 +204,8 @@ import org.traincontrol.marklin.file.CS2File;
 /**
  * UI for controlling trains and switches using the keyboard
  */
-public class TrainControlUI extends PositionAwareJFrame implements View, DiagramHighlights.Diagrams
+public class TrainControlUI extends PositionAwareJFrame implements View, DiagramHighlights.Diagrams,
+    LocMappingPages.Keyboard, ManualSync.Main
 {
     // Data save file name
     public static final String DATA_FILE_NAME = "UIState.data";
@@ -1497,7 +1498,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return this.locMappingPages.getLocMappingPageTabTitle(tabNumber);
     }
 
-    javax.swing.JTabbedPane locKeyTabs()
+    public javax.swing.JTabbedPane locKeyTabs()
     {
         return this.locKeyTabs;
     }
@@ -4475,7 +4476,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      * for work in flight, and the sync's mark.  The one writer of their state, asked afresh on each menu open, each
      * change of the work and each sync's end.
      */
-    void greyWhatARunRefuses()
+    public void greyWhatARunRefuses()
     {
         String locomotives = RunGates.whyAutonomyRunningRefuses(this);
         boolean busy = this.locomotiveWorkInFlight;
@@ -4703,7 +4704,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         this.locMappingPages.setPageName(name);
     }
 
-    javax.swing.JLabel locMappingNumberLabel()
+    public javax.swing.JLabel locMappingNumberLabel()
     {
         return this.LocMappingNumberLabel;
     }
@@ -4730,7 +4731,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             this.locomotiveMenu.getPopupMenu().getComponentIndex(this.exportLocsToCSVMenuItem) + 1);
     }
 
-    javax.swing.JMenu locomotiveControlMenu()
+    public javax.swing.JMenu locomotiveControlMenu()
     {
         return this.locomotiveControlMenu;
     }
@@ -4765,14 +4766,34 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return locMappingNumber;
     }
 
-    javax.swing.JCheckBoxMenuItem showPageTabsPreference()
+    public javax.swing.JCheckBoxMenuItem showPageTabsPreference()
     {
         return this.showPageTabsPreference;
     }
-    
+
+    public Map<Integer, String> pageNames()
+    {
+        return this.pageNames;
+    }
+
+    public void releaseActiveLoc()
+    {
+        this.activeLoc = null;
+    }
+
+    public boolean refuseWhileAutonomyRunning(Component c)
+    {
+        return RunGates.refuseWhileAutonomyRunning(this, c);
+    }
+
+    public String renameAsTheStation(Component c, RenameProposals.Row r)
+    {
+        return ManualSync.renamed(this, c, r);
+    }
+
     public void renameCurrentPage()
     {
-        this.locMappingPages.renameCurrentPage();
+        this.locMappingPages.renameCurrentPage(this);
     }
 
     private void switchKeyboard(int keyboardNum)
@@ -6238,7 +6259,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      * Synchronized on the window, so no caller may hold the railway's monitor (`Layout.getEdges` has the deadlock); it
      * only queues work.
      */
-    synchronized void repaintMappings()
+    synchronized public void repaintMappings()
     {
         repaintMappings(null, false);
     }
@@ -7445,8 +7466,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return this.locMapping.get(Math.floorMod(this.locMappingNumber - 2, this.numLocMappings));
     }
         
-    /** The mapping page on screen; package-private for `LocomotiveActions.findSimilarLocs` (event thread, no lock). */
-    Map<JButton, Locomotive> currentLocMapping()
+    /** The mapping page on screen, for `LocomotiveActions.findSimilarLocs` and the pages (event thread, no lock). */
+    public Map<JButton, Locomotive> currentLocMapping()
     {
         return this.locMapping.get(this.locMappingNumber - 1);
     }
@@ -14269,7 +14290,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     
     public void clearCurrentPage()
     {
-        this.locMappingPages.clearCurrentPage();
+        this.locMappingPages.clearCurrentPage(this);
     }
 
     private void doClearCurrentPage()

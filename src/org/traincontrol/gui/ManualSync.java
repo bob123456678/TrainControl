@@ -26,6 +26,19 @@ import org.traincontrol.util.I18n;
 /** The pressed Sync (FR-249): reads the station, asks in the Sync table, applies the answers, syncs and says so. */
 public final class ManualSync
 {
+    /** What the answers and an import's mark need of the main window: the railway, the menus, a run, the rename. */
+    interface Main
+    {
+        /** The railway the answers change. */
+        ViewListener getModel();
+        /** Grays what a run refuses and marks the Sync while something is unsettled. */
+        void greyWhatARunRefuses();
+        /** Whether a run refuses the renames now, said over c. */
+        boolean refuseWhileAutonomyRunning(Component c);
+        /** Renames r's locomotive to the station's name over c (`renamed`); the outcome's log key. */
+        String renameAsTheStation(Component c, RenameProposals.Row r);
+    }
+
     private final TrainControlUI ui;
     private final ViewListener model;
     /** askAndApply's answer when the table was canceled. */
@@ -80,7 +93,7 @@ public final class ManualSync
     }
 
     /** An import that changed an existing locomotive's address marks the menu until the next sync works it out. */
-    static void imported(TrainControlUI ui, MarklinLocomotiveCsv.Result result)
+    static void imported(Main ui, MarklinLocomotiveCsv.Result result)
     {
         if (result.readdressed.isEmpty() && result.renamed.isEmpty()) return;
         ui.getModel().setUnsettledCount(-1);
@@ -154,7 +167,7 @@ public final class ManualSync
                 ? readBehindTheSpinner(c, false) : null;
             RenameProposals current = again != null ? again : asked;
             List<int[]> n = new ArrayList<>();
-            SwingUtilities.invokeAndWait(() -> n.add(apply(c, asked, current, a, names, taken)));
+            SwingUtilities.invokeAndWait(() -> n.add(apply(ui, only, c, asked, current, a, names, taken)));
             return n.get(0);
         }
         catch (Exception e)
@@ -184,9 +197,10 @@ public final class ManualSync
     /**
      * Applies the answers over c, renames first, and leaves a row changed since asked; the counts pressedSync reads.
      */
-    private int[] apply(Component c, RenameProposals asked, RenameProposals now,
+    static int[] apply(Main ui, Locomotive only, Component c, RenameProposals asked, RenameProposals now,
         Map<RenameProposals.Row, Answer> answers, Map<Locomotive, String> names, List<RenameProposals.Row> taken)
     {
+        ViewListener model = ui.getModel();
         // A Keep the station no longer offers is forgotten, so nothing is left to hold back a later offer; on a partial
         // read, one with no row is kept, as its record may be what did not read
         Map<Locomotive, RenameProposals.Row> differing = new HashMap<>(), current = new HashMap<>();
@@ -203,7 +217,7 @@ public final class ManualSync
                 l.setDeclinedStationAddress(null);
         }
         // A run begun since the read refuses every rename, said once
-        boolean running = answers.containsValue(Answer.RENAME) && RunGates.refuseWhileAutonomyRunning(ui, c);
+        boolean running = answers.containsValue(Answer.RENAME) && ui.refuseWhileAutonomyRunning(c);
         List<String> order = new ArrayList<>();
         for (String[] p : asked.getProposals()) order.add(p[0]);
         List<RenameProposals.Row> rows = new ArrayList<>(answers.keySet());
@@ -259,7 +273,7 @@ public final class ManualSync
                     break;
                 default:
                     String why = running ? I18n.f("loc.renameNotApplied", name, r.stationName) : f.whyNot(true);
-                    String outcome = why != null ? null : renamed(c, r);
+                    String outcome = why != null ? null : ui.renameAsTheStation(c, r);
                     if (why != null) model.log(why);
                     else model.logf(outcome, name, r.stationName);
                     n["loc.renameApplied".equals(outcome) ? 1 : "loc.renameKept".equals(outcome) ? 2 : 4]++;
@@ -269,8 +283,9 @@ public final class ManualSync
     }
 
     /** Renames r's locomotive to the station's name, through the delete question for a name held here; the log key. */
-    private String renamed(Component c, RenameProposals.Row r)
+    static String renamed(TrainControlUI ui, Component c, RenameProposals.Row r)
     {
+        ViewListener model = ui.getModel();
         String currentName = r.loco.getName(), newName = r.stationName;
         Locomotive l = r.loco;
         // Like the other doors into `renameLoc`, asked of both names just before it: a route may have begun meanwhile
