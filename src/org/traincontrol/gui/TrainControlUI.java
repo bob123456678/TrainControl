@@ -17062,98 +17062,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
             if (dialogResult == JOptionPane.YES_OPTION)
             {
-                if (from == null) deleteConfirmedPage(going, null);
-                else from.stepOutFor(() -> deleteConfirmedPage(going, from));
+                if (from == null) this.layoutFileActions.deleteConfirmedPage(going, null);
+                else from.stepOutFor(() -> this.layoutFileActions.deleteConfirmedPage(going, from));
             }
         });
     }//GEN-LAST:event_deleteLayoutMenuItemActionPerformed
-
-    /**
-     * Delete Current Page's work once the page is confirmed.  `from` is the layout editor that asked, or null: it is
-     * told which page to show however this ends.
-     */
-    private void deleteConfirmedPage(String going, LayoutEditor from)
-    {
-        final Component over = from == null ? this : from;
-
-        boolean arriving = false;
-
-        try
-        {
-            List<String> layoutList = this.model.getLayoutList();
-
-            // Any other missing page is asked about BEFORE the file goes: everything below is irreversible
-            // (FR-018).
-            // The page being deleted counts as a deliberate removal, so it is not asked about.
-            java.util.Collection<String> keepAbsent = settleAbsentPages(layoutList, null,
-                java.util.Arrays.asList(going), over);
-
-            if (keepAbsent == null) return;
-
-            // The page FIRST, then the setup: deleteLayoutFile can fail (a file held open by a sync client,
-            // say), and done the other way round a failure leaves the setup forgotten for a page that still
-            // exists.
-            this.model.getLayout(going).deleteLayoutFile();
-
-            // Only a session already built and a setup already there, as in the rename above:
-            // saveWithoutReconciling ends in store.save(), which creates the folder and the file.
-            org.traincontrol.automationui.AutonomySession session = this.autonomySession;
-
-            try
-            {
-                if (session == null)
-                {
-                    org.traincontrol.automationui.AutonomyCompanionStore.deletePageOnDisk(
-                        new java.io.File(this.getLocalLayoutPath()), going);
-                }
-                else
-                {
-                    // Before forgetting the page, as in the rename: the capture that runs afterwards works its
-                    // keys out from a session whose pages still include this one and would write the deleted
-                    // page's settings back.
-                    captureRunningLayout();
-
-                    // The session's own page list must lose it too: the fold behind the reset below would write
-                    // the page back.
-                    int forgotten = session.deletePage(going);
-
-                    if (forgotten > 0)
-                    {
-                        this.model.logf("layout.infoPageSetupForgotten", forgotten, going);
-                    }
-
-                    if (session.exists()) session.saveWithoutReconciling();
-                }
-            }
-            catch (java.io.IOException e)
-            {
-                // The page is going either way; only the record of it is at risk
-                this.model.log(e);
-            }
-
-            layoutList.remove(going);
-
-            // No rename map: the deleted page's id is retired and every surviving page keeps its own.
-            writeIndexAndKeepLinksAimed(layoutList, null, keepAbsent);
-
-            this.layoutEditingComplete(from == null ? null
-                : () -> from.arriveOn(String.valueOf(this.LayoutList.getSelectedItem())));
-
-            arriving = true;
-        }
-        catch (Exception ex)
-        {
-            JOptionPane.showMessageDialog(
-                over,
-                I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())
-            );
-            this.model.log(ex);
-        }
-        finally
-        {
-            if (from != null && !arriving) from.arriveOn(null);
-        }
-    }
 
     private void addBlankPageMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addBlankPageMenuItemActionPerformed
 

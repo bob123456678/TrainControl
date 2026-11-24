@@ -78,6 +78,82 @@ public final class LayoutFileActions
         }
     }
 
+    /** Delete Current Page once confirmed; `from` (the editor that asked, or null) is told which page to show. */
+    void deleteConfirmedPage(String going, LayoutEditor from)
+    {
+        final Component over = from == null ? this.ui : from;
+
+        boolean arriving = false;
+
+        try
+        {
+            List<String> layoutList = this.ui.getModel().getLayoutList();
+
+            // Other missing pages are asked about BEFORE the file goes (FR-018); the deleted page is not.
+            java.util.Collection<String> keepAbsent = this.ui.settleTheAbsentPages(layoutList, null,
+                java.util.Arrays.asList(going), over);
+
+            if (keepAbsent == null) return;
+
+            // The page FIRST: deleteLayoutFile can fail, and then the setup must not be forgotten.
+            this.ui.getModel().getLayout(going).deleteLayoutFile();
+
+            // Only a session already built and a setup already there: a save would create the folder and file.
+            org.traincontrol.automationui.AutonomySession session = this.ui.autonomySession();
+
+            try
+            {
+                if (session == null)
+                {
+                    org.traincontrol.automationui.AutonomyCompanionStore.deletePageOnDisk(
+                        new java.io.File(this.ui.localLayoutPath()), going);
+                }
+                else
+                {
+                    // Before forgetting the page, or the capture would write its settings back.
+                    this.ui.captureRunningLayout();
+
+                    // The session's page list loses it too, or the reset below would write it back.
+                    int forgotten = session.deletePage(going);
+
+                    if (forgotten > 0)
+                    {
+                        this.ui.getModel().logf("layout.infoPageSetupForgotten", forgotten, going);
+                    }
+
+                    if (session.exists()) session.saveWithoutReconciling();
+                }
+            }
+            catch (java.io.IOException e)
+            {
+                // The page is going either way; only the record of it is at risk
+                this.ui.getModel().log(e);
+            }
+
+            layoutList.remove(going);
+
+            // No rename map: the deleted page's id is retired.
+            this.writeIndexAndKeepLinksAimed(layoutList, null, keepAbsent);
+
+            this.ui.layoutEditingComplete(from == null ? null
+                : () -> from.arriveOn(String.valueOf(this.ui.layoutList().getSelectedItem())));
+
+            arriving = true;
+        }
+        catch (Exception ex)
+        {
+            JOptionPane.showMessageDialog(
+                over,
+                I18n.f("layout.ui.errorSavingLayoutWithMessage", ex.getMessage())
+            );
+            this.ui.getModel().log(ex);
+        }
+        finally
+        {
+            if (from != null && !arriving) from.arriveOn(null);
+        }
+    }
+
     /** Unzips an empty layout to the current folder and returns the path. */
     String initializeEmptyLayout(String folderName)
     {
