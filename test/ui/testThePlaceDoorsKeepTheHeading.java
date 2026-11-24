@@ -780,7 +780,7 @@ public class testThePlaceDoorsKeepTheHeading
         {
             try
             {
-                ui.setHoveredDiagramTile(over.getPage(), over.getX(), over.getY());
+                ui.diagramLocGestures().setHoveredDiagramTile(over.getPage(), over.getX(), over.getY());
 
                 handled[0] = door.invoke(ui, key, true);
             }

@@ -82,7 +82,7 @@ public class testADirectionChangeIsNotSwallowed
     @Test
     public void testTheBaselineIsLevelledWhenTheRailwayGoesIdle() throws Exception
     {
-        assertTrue(SourceOf.occurrences("    void reconcileFacingWhenIdle()") == 1,
+        assertTrue(SourceOf.occurrences("    public void reconcileFacingWhenIdle()") == 1,
             "reconcileFacingWhenIdle has gone. The ordering guard above then passes while the backlog"
             + " it half-prevents is back: the pre-run direction stays in the baseline and the first"
             + " echo after the run re-follows a reversal the railway already made (REG8-C4)");
@@ -90,7 +90,7 @@ public class testADirectionChangeIsNotSwallowed
         // INSIDE THE METHOD, not across the file: `takeReversalsOnArrival()` appears twice in TrainControlUI.java (also
         // in `takeThePendingTurns`), so an `indexOf` over the whole file compared lines in two different methods.
         // Scoped as `testTheRunningGuardComesBeforeTheRecording` below scopes its own.
-        String body = SourceOf.declaration("    void reconcileFacingWhenIdle()");
+        String body = SourceOf.declaration("    public void reconcileFacingWhenIdle()");
 
         int levels = body.indexOf("lastSeenDirection.put(loc.getName(), loc.goingForward())");
 

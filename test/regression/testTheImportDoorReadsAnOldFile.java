@@ -2429,7 +2429,7 @@ public class testTheImportDoorReadsAnOldFile
 
             railway.restoreReversalsOnArrival(owed);
 
-            SwingUtilities.invokeAndWait(() -> ui[0].reconcileFacingWhenIdle());
+            SwingUtilities.invokeAndWait(() -> ui[0].diagramLocGestures().reconcileFacingWhenIdle());
 
             assertEquals(railway.turnedOnArrivalAt(turned), at.getName(), "precondition: the turn was written while "
                 + dispatched[0] + " was under way");

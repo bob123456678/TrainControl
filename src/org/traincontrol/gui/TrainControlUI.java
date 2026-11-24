@@ -3685,9 +3685,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     /** The diagram's keyboard gestures and the turns they write. */
     final DiagramLocGestures diagramLocGestures = new DiagramLocGestures(this);
 
-    public void setHoveredDiagramTile(String page, int x, int y)
+    public DiagramLocGestures diagramLocGestures()
     {
-        this.diagramLocGestures.setHoveredDiagramTile(page, x, y);
+        return this.diagramLocGestures;
     }
 
     /**
@@ -3746,11 +3746,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     private boolean locomotiveGestureOnDiagram(int keyCode, boolean controlPressed)
     {
         return this.diagramLocGestures.locomotiveGestureOnDiagram(keyCode, controlPressed);
-    }
-
-    public void reconcileFacingWhenIdle()
-    {
-        this.diagramLocGestures.reconcileFacingWhenIdle();
     }
 
     /**
@@ -17948,7 +17943,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
         // And the direction baseline, so a reversal the RUN made is never followed a second
         // time once it is over (Adam: "only count reversals when nothing is running").
-        reconcileFacingWhenIdle();
+        this.diagramLocGestures.reconcileFacingWhenIdle();
 
         for (Point p : this.model.getAutoLayout().getPoints())
         {
@@ -19704,7 +19699,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // The hovered square is cleared only when the pointer leaves one, so replacing the grid under a still pointer
         // left the OLD page's square remembered, and Control+X cut a locomotive from a platform on a page nobody was
         // looking at.
-        setHoveredDiagramTile(null, -1, -1);
+        this.diagramLocGestures.setHoveredDiagramTile(null, -1, -1);
         // Before a page window compares its page with what it drew, after any door that read the pages again
         ensureShowLayoutPreference(true);
 

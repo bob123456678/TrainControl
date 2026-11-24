@@ -117,7 +117,7 @@ public class testAPendingTurnSurvivesTheRebuild
 
             // The precondition, measured: the drain declines this one and puts it back; if it could be written the
             // final assertion would be a race.
-            ui.reconcileFacingWhenIdle();
+            ui.diagramLocGestures().reconcileFacingWhenIdle();
 
             Components.drain(1);
 
@@ -1532,7 +1532,7 @@ public class testAPendingTurnSurvivesTheRebuild
             before.restoreReversalsOnArrival(Collections.singletonMap(PENDING_LOC, at.getName()));
 
             // THE PRECONDITION, MEASURED: nobody can write it, so it is still owed at the rename
-            ui.reconcileFacingWhenIdle();
+            ui.diagramLocGestures().reconcileFacingWhenIdle();
 
             Components.drain(1);
 

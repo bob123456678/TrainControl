@@ -5836,7 +5836,7 @@ public class testTheTrainWindow
                 model.getAutoLayout().restoreReversalsOnArrival(java.util.Collections.singletonMap(train.name,
                     copyOf(train.name)));
 
-                ui.reconcileFacingWhenIdle();
+                ui.diagramLocGestures().reconcileFacingWhenIdle();
 
                 return null;
             });
