@@ -16243,7 +16243,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         // The item's questions, which the door does not ask, in the log; then the door's own gate, on screen.
         if (keysAsking > 0 || refusedByKey(isAutonomyBusy() ? this.returnHomeController.describeStagingOutcome(
-            HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null) : isReturnHomeOffered() ? null : this.returnHomeReason, false)
+            HomeStaging.Outcome.LOCOMOTIVES_RUNNING, null) : isReturnHomeOffered() ? null : this.returnHomeController.reason(), false)
             || !isReturnHomeOffered() || refusedByKey(whyNoTrainMayBeSent(false), true)) return;
 
         askedByKey(() ->
@@ -16320,85 +16320,22 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         return this.returnHomeButton == null ? null : this.returnHomeButton.getToolTipText();
     }
 
-    /**
-     * Why the trains cannot be put on their homes now, or null (FR-129): the one question that grays the menu item and
-     * refuses the press.  Not while anything runs, an editor holds the setup or the diagram reloads, nor without a
-     * local setup or a home to put a train on.
-     */
+    /** Why the trains cannot be put on their homes now, or null (FR-129); the one question behind the menu item. */
     public String whyTheTrainsCannotBePlacedAtTheirHomes()
     {
-        String unavailable = whyAutonomyIsUnavailable();
-
-        if (unavailable != null) return unavailable;
-
-        if (anEditorIsOpenOrOnItsWay()) return I18n.t("autosetup.ui.menuEditorOpen");
-
-        if (refreshesUnderWay.get() > 0) return I18n.t("autosetup.ui.errorDiagramRefreshing");
-
-        if (aRunHoldsTheSetup()) return I18n.t("ui.main.tooltip.placeAtHomesWhileRunning");
-
-        if (!isLocalLayout()) return I18n.t("layout.ui.errorEditingOnlySupportedForLocalFiles");
-
-        org.traincontrol.automationui.AutonomySession session = getAutonomySession();
-
-        if (session == null)
-        {
-            return this.editorWindows.sayWhyAutonomyEditorCannotOpen(whyTheSetupCannotBeRead() != null
-                ? "autosetup.ui.errorSetupUnreadable" : "autosetup.ui.errorNoSetupToEdit");
-        }
-
-        return session.homesToPlace().isEmpty() ? I18n.t("autosetup.ui.infoNoHomesToPlace") : null;
+        return this.returnHomeController.whyTheTrainsCannotBePlacedAtTheirHomes();
     }
-
-    private javax.swing.JPopupMenu returnHomePopup;
 
     /** Right-click on Return Home opens its menu even when grayed, so the click can say why (FR-129). */
     private void installReturnHomeMenu()
     {
-        this.returnHomeButton.addMouseListener(Listen.pressed(e ->
-        {
-            if (!SwingUtilities.isRightMouseButton(e)) return;
-
-            returnHomePopup = this.returnHomeController.buildReturnHomeMenu();
-
-            // A button that is not on screen has nowhere to open it
-            if (returnHomeButton.isShowing()) returnHomePopup.show(returnHomeButton, e.getX(), e.getY());
-        }));
-    }
-
-    /**
-     * Puts every train with a home on it and takes the rest off the layout, after confirming that the user will move
-     * the real trains by hand (FR-129).  The guard is asked again after the confirmation: the dialog can stay up while
-     * the railway changes.  Package-private for `ReturnHomeController`.
-     */
-    void placeEveryTrainAtItsHome()
-    {
-        String why = whyTheTrainsCannotBePlacedAtTheirHomes();
-
-        if (why != null)
-        {
-            JOptionPane.showMessageDialog(this, why);
-
-            return;
-        }
-
-        AutonomyEditorPanel panel = this.autonomyLifecycle.liveSetupPanel();
-
-        if (panel == null)
-        {
-            JOptionPane.showMessageDialog(this, I18n.t("autosetup.ui.menuEditorOpen"));
-
-            return;
-        }
-
-        panel.placeEveryTrainAtHome("autolayout.ui.confirmPlaceEveryTrainAtHomeByHand",
-            this::whyTheTrainsCannotBePlacedAtTheirHomes, said -> this.model.log(said));
+        this.returnHomeController.installMenu(this.returnHomeButton);
     }
 
     /** For tests: the popup the last right-click on Return Home opened, or null when none was opened. */
     public javax.swing.JPopupMenu returnHomePopupForTest()
     {
-        return this.returnHomePopup;
+        return this.returnHomeController.popup();
     }
 
     /** What the railway last said about sending trains home; null means there is work to do. */
@@ -16437,7 +16374,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.returnHomeButton != null)
         {
-            this.returnHomeSpinner = turningMark(this.returnHomeButton, this.returnHomeSpinner, working, null);
+            this.returnHomeSpinner = this.returnHomeController.turningMark(this.returnHomeButton, this.returnHomeSpinner, working, null);
         }
     }
 
@@ -16456,58 +16393,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     {
         if (this.startAutonomy == null) return;
 
-        this.runningSpinner = turningMark(this.startAutonomy, this.runningSpinner, running, () ->
+        this.runningSpinner = this.returnHomeController.turningMark(this.startAutonomy, this.runningSpinner, running, () ->
         {
             if (this.autonomyOverlayToggle != null) this.autonomyOverlayToggle.repaintRunningMark();
         });
-    }
-
-    /**
-     * Puts a turning mark on a button, its disabled icon too, or takes it off; returns the timer turning it, or null.
-     * One already turning is kept, and the timer stops with this window.  `alsoRepaint` is any other surface showing the
-     * same mark, or null.
-     */
-    private javax.swing.Timer turningMark(javax.swing.JButton button, javax.swing.Timer timer, boolean on,
-        Runnable alsoRepaint)
-    {
-        if (!on)
-        {
-            if (timer != null) timer.stop();
-
-            // Only when shown: setting no icon over none still tells the strip's listener, which lays the strip out
-            // again on every sensor event.
-            if (button.getIcon() != null) button.setIcon(null);
-            if (button.getDisabledIcon() != null) button.setDisabledIcon(null);
-
-            return null;
-        }
-
-        if (timer != null) return timer;
-
-        final TurningArc arc = new TurningArc(Math.max(10, button.getFontMetrics(button.getFont()).getAscent()));
-
-        button.setIcon(arc);
-        button.setDisabledIcon(arc);
-
-        timer = new javax.swing.Timer(60, e ->
-        {
-            if (!isDisplayable())
-            {
-                ((javax.swing.Timer) e.getSource()).stop();
-
-                return;
-            }
-
-            arc.advance();
-
-            button.repaint();
-
-            if (alsoRepaint != null) alsoRepaint.run();
-        });
-
-        timer.start();
-
-        return timer;
     }
 
     public boolean isShowingSomethingRuns()
@@ -16572,25 +16461,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /**
-     * Grays the Return Home button and says why (a stale reason is worse than none).  Package-private for
-     * `ReturnHomeController`.
-     */
+    /** Grays the Return Home button and says why.  Package-private for `ReturnHomeController`. */
     void disableReturnHome(String reason)
     {
-        this.returnHomeButton.setEnabled(false);
-        tipReturnHome(reason);
-    }
-
-    /** The plain sentence behind Return Home's tooltip, for Control+H's log line; null while it is offered. */
-    private String returnHomeReason;
-
-    /** Return Home's tooltip: why it is not offered, or with `reason` null what it does. */
-    void tipReturnHome(String reason)
-    {
-        this.returnHomeReason = reason;
-        this.returnHomeButton.setToolTipText(AutonomyEditorPanel.wrapped(reason != null ? reason
-            : I18n.t("ui.main.tooltip.returnHome")));
+        this.returnHomeController.disable(reason);
     }
 
     /**

@@ -102,12 +102,48 @@ public class testReturnHomeShowsItIsWorking
     }
 
     /**
+     * The button is grayed for the whole wait, so the mark is its disabled drawing too; taking it off clears both.
+     *
+     * MUTATION: leave `setDisabledIcon(arc)` out of `turningMark` and this fails.
+     */
+    @Test(dependsOnMethods = "testTheButtonTurnsWhileThePlanIsWorkedOut")
+    public void testTheGrayedButtonTurnsToo() throws Exception
+    {
+        java.lang.reflect.Method show = TrainControlUI.class.getDeclaredMethod("showReturnHomeWorking", boolean.class);
+        java.lang.reflect.Field button = TrainControlUI.class.getDeclaredField("returnHomeButton");
+
+        show.setAccessible(true);
+        button.setAccessible(true);
+
+        final javax.swing.JButton returnHome = (javax.swing.JButton) button.get(ui);
+        final javax.swing.Icon[][] icons = new javax.swing.Icon[2][];
+
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                show.invoke(ui, true);
+                icons[0] = new javax.swing.Icon[] {returnHome.getIcon(), returnHome.getDisabledIcon()};
+                show.invoke(ui, false);
+                icons[1] = new javax.swing.Icon[] {returnHome.getIcon(), returnHome.getDisabledIcon()};
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+
+        assertTrue(icons[0][0] != null && icons[0][0] == icons[0][1], "the grayed button does not show the turning mark");
+        assertTrue(icons[1][0] == null && icons[1][1] == null, "the mark, or its grayed drawing, is still on the button");
+    }
+
+    /**
      * And the mark stops with its window, as Start's does: a window closed while the plan is worked out leaves no timer
      * repainting it.  Last, since it closes the window.
      *
      * MUTATION: drop the `isDisplayable()` check from `showReturnHomeWorking`'s timer and this fails.
      */
-    @Test(dependsOnMethods = "testTheButtonTurnsWhileThePlanIsWorkedOut", alwaysRun = true)
+    @Test(dependsOnMethods = "testTheGrayedButtonTurnsToo", alwaysRun = true)
     public void testTheMarkStopsWithItsWindow() throws Exception
     {
         java.lang.reflect.Method show = TrainControlUI.class.getDeclaredMethod("showReturnHomeWorking", boolean.class);

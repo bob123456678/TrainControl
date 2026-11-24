@@ -295,6 +295,21 @@ public class testReturnHomeRightClickPlacesTheTrainsAtHome
             {
                 closeTheEditor(ui);
             }
+
+            // A DIAGRAM RELOAD UNDER WAY
+            java.util.concurrent.atomic.AtomicInteger reloads
+                = (java.util.concurrent.atomic.AtomicInteger) Reflect.get(TrainControlUI.class, ui, "refreshesUnderWay");
+
+            reloads.incrementAndGet();
+
+            try
+            {
+                greyedWith(ui, I18n.t("autosetup.ui.errorDiagramRefreshing"), "a diagram reload");
+            }
+            finally
+            {
+                reloads.decrementAndGet();
+            }
         }
         finally
         {
