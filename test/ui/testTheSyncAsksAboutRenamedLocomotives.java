@@ -1,3 +1,11 @@
+    /**
+     * Apply's rename on a loaded railway reaches the autonomy locomotive list and the layout's own watchers: the card
+     * of the locomotive in the list names it by the new name, and the layout tells what watches it that something
+     * changed.  The station caption it stands at is read too, though the setup's own repair also posts that refresh.
+     *
+     * MUTATION: in `ManualSync.renamed`, leave out `ui.repaintAutoLocList(false)` or `model.getAutoLayout().refreshUI()`;
+     * each fails its own assertion.
+     */
 package ui;
 
 import java.nio.charset.StandardCharsets;
@@ -12,9 +20,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
+import org.traincontrol.automationui.TileGraph.TileKey;
+import org.traincontrol.base.Locomotive;
 import org.traincontrol.base.RouteCommand;
 import org.traincontrol.gui.TrainControlUI;
 import org.traincontrol.marklin.MarklinControlStation;
@@ -24,6 +36,8 @@ import org.traincontrol.util.I18n;
 import support.Answering;
 import support.AskingWindows;
 import support.Components;
+import support.Reflect;
+import support.Scenario;
 import support.SettingsWindow;
 import support.Settle;
 import support.SyncTable;
@@ -1321,6 +1335,171 @@ public class testTheSyncAsksAboutRenamedLocomotives
         void run(StationRig rig, TrainControlUI ui) throws Exception;
     }
 
+    /**
+     * Apply's rename puts down the key a locomotive was copied from: the copy target is the old name's, and pasting it
+     * would put a locomotive the database no longer holds under that name on a key.
+     *
+     * MUTATION: in `ManualSync.renamed`, leave out `ui.clearCopyTarget()`.
+     */
+    @Test(timeOut = 240000)
+    public void testARenameFromTheTableEndsTheCopyOfItsKey() throws Exception
+    {
+        inAWindow(StandInStation.cs3("260", INFO), (rig, ui) ->
+        {
+            JButton key = onAKey(ui, heldHere(rig));
+
+            SwingUtilities.invokeAndWait(() -> ui.setCopyTarget(key, false));
+
+            assertTrue(ui.hasCopyTarget(), "precondition: the key was not picked up");
+
+            appliedRename(rig, ui);
+
+            assertFalse(ui.hasCopyTarget(), "the key is still picked up after its locomotive was renamed");
+        });
+    }
+
+    /**
+     * Apply's rename on a loaded railway reaches the track diagram, the autonomy locomotive list and the layout's own
+     * watchers: the station the locomotive stands at names it by the new name, its card in the list names it, and the
+     * layout told what watches it that something changed.
+     *
+     * MUTATION: in `ManualSync.renamed`, leave out `ui.updateVisiblePoints()`, `ui.repaintAutoLocList(false)` or
+     * `model.getAutoLayout().refreshUI()`; each fails its own assertion.
+     */
+    @Test(timeOut = 300000)
+    public void testARenameFromTheTableReachesTheDiagramAndTheAutonomyList() throws Exception
+    {
+        onTheRailway((rig, ui) ->
+        {
+            Locomotive train = heldHere(rig);
+            TileKey station = new TileKey("1 - Junction", 7, 3);
+
+            SwingUtilities.invokeAndWait(() ->
+            {
+                ui.getAutonomySession().setCaption(station, station);
+                ui.getAutonomySession().placeLocomotive(station, train.getName());
+                rig.model.getAutoLayout().moveLocomotive(train.getName(),
+                    ui.getAutonomySession().facingsFor(station).keySet().iterator().next(), false);
+                ui.showLayoutTab();
+                ui.autonomySetupChanged();
+                ui.rebuildRunningLayoutFromSetup();
+            });
+            Components.settle();
+
+            assertTrue(Settle.until(() -> captionAt(ui, station).contains(BEFORE) && cardOf(ui, train) != null
+                && BEFORE.equals(cardName(ui, train)), 15000), "precondition: the station says " + captionAt(ui, station)
+                + " and the list has " + cardName(ui, train));
+
+            AtomicInteger told = new AtomicInteger();
+
+            rig.model.getAutoLayout().setCallback("probe", (edges, loc, locked) ->
+            {
+                told.incrementAndGet();
+
+                return null;
+            });
+
+            // The station's own locomotive list is read, not the folder's: the railway is already loaded
+            StationRig.layoutFolder("");
+            ((org.traincontrol.marklin.file.CS2File) Reflect.get(MarklinControlStation.class, rig.model, "fileParser"))
+                .setDefaultLayoutDataLoc();
+            rig.model.syncWithCS2();
+
+            appliedRename(rig, ui);
+
+            assertTrue(told.get() > 0, "the layout's watchers were not told of the rename");
+            assertTrue(Settle.until(() -> captionAt(ui, station).contains(STATION_NAME), 15000),
+                "the station still says " + captionAt(ui, station) + " after the rename");
+            assertTrue(Settle.until(() -> STATION_NAME.equals(cardName(ui, train)), 15000),
+                "the autonomy list still names the locomotive " + cardName(ui, train));
+        });
+    }
+
+    private static final String BEFORE = "SR old";
+
+    /** BEFORE at address 10, held here; the station's own locomotive there, if the start-up sync read it, renamed. */
+    private static Locomotive heldHere(StationRig rig)
+    {
+        if (rig.model.getLocByName(STATION_NAME) == null) rig.model.newMM2Locomotive(BEFORE, 10);
+        else rig.model.renameLoc(STATION_NAME, BEFORE);
+
+        return rig.model.getLocByName(BEFORE);
+    }
+
+    /** A press of Sync whose table answers Apply to BEFORE's rename, to its end. */
+    private static void appliedRename(StationRig rig, TrainControlUI ui) throws Exception
+    {
+        pressSync(rig, ui, SyncTable.answer(BEFORE, "RENAME"), m -> Answering.pressAt(0),
+            testTheSyncAsksAboutRenamedLocomotives::saidDone);
+
+        assertNotNull(rig.model.getLocByName(STATION_NAME), "precondition: Apply did not rename " + BEFORE);
+        Components.settle();
+    }
+
+    /** Puts the locomotive on the first key of the first page and gives the key. */
+    @SuppressWarnings("unchecked")
+    private static JButton onAKey(TrainControlUI ui, Locomotive loc) throws Exception
+    {
+        JButton key = ((java.util.Map<JButton, ?>) Reflect.get(TrainControlUI.class, ui, "labelMapping")).keySet()
+            .iterator().next();
+
+        ((List<java.util.HashMap<JButton, Locomotive>>) Reflect.get(TrainControlUI.class, ui, "locMapping")).get(0)
+            .put(key, loc);
+
+        return key;
+    }
+
+    private static String captionAt(TrainControlUI ui, TileKey station)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            StringBuilder out = new StringBuilder();
+
+            for (JLabel label : ui.getLayoutStations(station)) out.append(label.getText()).append('|');
+
+            return out.toString();
+        });
+    }
+
+    private static org.traincontrol.gui.autonomy.AutoLocomotiveStatus cardOf(TrainControlUI ui, Locomotive train)
+    {
+        return Components.onTheEventThread(() ->
+        {
+            for (org.traincontrol.gui.autonomy.AutoLocomotiveStatus card : Components.all(ui.getContentPane(),
+                org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class, c -> true))
+            {
+                if (card.getLocomotive() == train) return card;
+            }
+
+            return null;
+        });
+    }
+
+    private static String cardName(TrainControlUI ui, Locomotive train)
+    {
+        org.traincontrol.gui.autonomy.AutoLocomotiveStatus card = cardOf(ui, train);
+
+        return card == null ? "(no card)" : Components.onTheEventThread(() ->
+        {
+            try
+            {
+                return ((JLabel) Reflect.get(org.traincontrol.gui.autonomy.AutoLocomotiveStatus.class, card, "locName"))
+                    .getText();
+            }
+            catch (ReflectiveOperationException e)
+            {
+                throw new IllegalStateException(e);
+            }
+        });
+    }
+
+    /** The claim in the real window over the single-switch railway, against the stand-in answering as a CS3 does. */
+    private static void onTheRailway(Claim claim) throws Exception
+    {
+        inAWindow(Files.createTempDirectory("tc-sync-renames").toFile(), StandInStation.cs3("260", INFO),
+            Scenario.folderFor("single-switch"), claim);
+    }
+
     /** The claim in the real window against a stand-in answering so, once the window's start-up sync has ended. */
     private static void inAWindow(BiFunction<String, Integer, byte[]> answer, Claim claim) throws Exception
     {
@@ -1331,7 +1510,14 @@ public class testTheSyncAsksAboutRenamedLocomotives
     private static void inAWindow(java.io.File root, BiFunction<String, Integer, byte[]> answer, Claim claim)
         throws Exception
     {
-        try (StationRig rig = new StationRig(root, answer, true))
+        inAWindow(root, answer, null, claim);
+    }
+
+    /** The same over a copy of the layout folder `railway`, which the window reads its autonomy railway from. */
+    private static void inAWindow(java.io.File root, BiFunction<String, Integer, byte[]> answer, java.io.File railway,
+        Claim claim) throws Exception
+    {
+        try (StationRig rig = new StationRig(root, answer, true, false, railway))
         {
             TrainControlUI ui = (TrainControlUI) rig.model.getGUI();
 
