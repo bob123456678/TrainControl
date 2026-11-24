@@ -664,7 +664,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             // The window loads its settings after setViewListener; wait for that load (bounded) so it cannot undo a claim.
             long until = System.currentTimeMillis() + 10000;
 
-            while (!model.hasAutoLayout() && System.currentTimeMillis() < until) Thread.sleep(50);
+            while (!model.hasAutoLayout() && System.currentTimeMillis() < until) settle();
 
             model.getAutoLayout();
 
@@ -980,7 +980,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             while (!said && System.currentTimeMillis() < until)
             {
-                Thread.sleep(50);
+                settle();
 
                 for (java.awt.Window w : java.awt.Window.getWindows())
                 {
