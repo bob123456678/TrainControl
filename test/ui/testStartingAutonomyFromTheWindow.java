@@ -529,15 +529,16 @@ public class testStartingAutonomyFromTheWindow
 
     /**
      * Control+H where Return Home is not offered says the button's reason in the log in plain words, not its tooltip's
-     * markup.  Grayed through the door Return Home's triage uses, with every train home.
+     * markup.  Grayed through the door Return Home's triage uses, with every train home: the button, offered first,
+     * ends grayed with the reason as its tooltip.
      *
-     * MUTATION: have `returnHomeByKey` log `whyReturnHomeIsNotOffered()`, the tooltip, and the line is HTML.
+     * MUTATION: have `returnHomeByKey` log `whyReturnHomeIsNotOffered()`, the tooltip, and the line is HTML; drop
+     * `setEnabled(false)` in `ReturnHomeController.disable`, and the button stays offered.
      */
     @Test
     public void testControlHNotOfferedSaysWhyInPlainWords() throws Exception
     {
-        assertTrue((Boolean) Reflect.method(TrainControlUI.class, "awaitReturnHomeTriage", long.class).invoke(ui, 30000L),
-            "precondition: the Return Home triage did not settle");
+        offerReturnHome();
 
         Components.settle();
 
@@ -548,6 +549,13 @@ public class testStartingAutonomyFromTheWindow
         final java.lang.reflect.Method gray = Reflect.method(TrainControlUI.class, "disableReturnHome", String.class);
 
         Components.onTheEventThread(() -> gray.invoke(ui, home));
+
+        final JButton button = field("returnHomeButton");
+
+        assertFalse(button.isEnabled(), "Return Home refused left the button offered");
+
+        assertTrue(button.getToolTipText().contains(home), "the grayed button does not give the reason: "
+            + button.getToolTipText());
 
         List<String> asked = new ArrayList<>();
 
