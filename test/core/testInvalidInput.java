@@ -348,7 +348,7 @@ public class testInvalidInput
      * OB-505, D214: a maxActiveTrains that is not a number is refused as not a number; a negative one loads as 0 (no
      * limit) and the log says so once.
      *
-     * MUTATION: skip a negative value again, and the value stays at its old one and nothing is logged.
+     * MUTATION: skip a negative value again, and the value stays at its old one and nothing is logged; or warn on 0.
      */
     @Test
     public void testAMaxActiveTrainsThatIsNotANumberSaysSo()
@@ -367,6 +367,11 @@ public class testInvalidInput
         {
             layout = Layout.fromJSON(config(POINT_A, "", ", 'maxActiveTrains': 4"), model);
             assertEquals(layout.getMaxActiveTrains(), 4);
+            assertEquals(java.util.Collections.frequency(said, I18n.f("autolayout.infoSetMaxActiveTrains", 4)), 1);
+            assertFalse(said.contains(I18n.f("autolayout.warnMaxActiveTrainsNegative", 4)), "4 was warned about");
+            said.clear();
+            layout = Layout.fromJSON(config(POINT_A, "", ", 'maxActiveTrains': 0"), model);
+            assertFalse(said.contains(I18n.f("autolayout.warnMaxActiveTrainsNegative", 0)), "0 was warned about");
             layout.setMaxActiveTrains(3);
             assertEquals(layout.getMaxActiveTrains(), 3, "the setter must still take a value");
             layout.setMaxActiveTrains(-1);
