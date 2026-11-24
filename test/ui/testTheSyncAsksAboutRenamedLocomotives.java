@@ -776,7 +776,7 @@ public class testTheSyncAsksAboutRenamedLocomotives
      * A run that begins while the table is open stops Apply's rename: the refusal is said once, nothing is renamed,
      * kept or copied, and it is logged as not renamed.
      *
-     * MUTATION: in `ManualSync.apply`, leave out `RunGates.refuseWhileAutonomyRunning`.
+     * MUTATION: in `ManualSync.apply`, leave out `ui.refuseWhileAutonomyRunning(c)`.
      */
     @Test(timeOut = 240000)
     public void testARunBegunMeanwhileStopsTheRename() throws Exception
