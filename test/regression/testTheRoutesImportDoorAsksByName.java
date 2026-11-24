@@ -376,6 +376,38 @@ public class testTheRoutesImportDoorAsksByName
     }
 
     /**
+     * A file that reads but is not a routes export fails inside the import: one failure message over the main window,
+     * every route kept, the menu item back on.
+     *
+     * MUTATION: empty the catch around `importRoutes` in `RouteListPanel.importRoutes`, and this fails.
+     */
+    @Test
+    public void testAFileTheImportCannotParseSaysSoAndKeepsTheRoutes() throws Exception
+    {
+        Imported run = importHisRoutes(true, null, true, -1, GARBAGE);
+
+        assertEquals(run.said, Collections.singletonList(I18n.t("route.ui.errorFailedToImportRoutesCheckLog")),
+            "a file the import cannot parse was not reported as one failed import");
+        assertEquals(run.routesAfter, run.routesBefore, "a file the import cannot parse changed the routes");
+        assertTrue(run.menuItemEnabled, "after a failed import Routes > Import was left off");
+        assertEquals(run.saidOver, "TrainControlUI", "the failure message was not asked over the main window");
+    }
+
+    /**
+     * A successful import remembers the folder of its file for the next chooser.
+     *
+     * MUTATION: drop the `LAST_USED_FOLDER` put from `RouteListPanel.importRoutes`, and this fails.
+     */
+    @Test
+    public void testAnImportRemembersTheFolderOfItsFile() throws Exception
+    {
+        Imported run = importHisRoutes(false, null);
+
+        assertEquals(run.lastFolder, run.fileFolder,
+            "an import did not remember the folder of the file it read");
+    }
+
+    /**
      * With no routes there is nothing to replace, so Import does not ask, and the file's routes arrive.
      *
      * MUTATION: ask whatever the count, and this fails.
@@ -439,6 +471,7 @@ public class testTheRoutesImportDoorAsksByName
 
     private static final String CANCEL = "cancel";
     private static final String MISSING = "missing";
+    private static final String GARBAGE = "garbage";
 
     /** What one import through the door did. */
     private static final class Imported
@@ -457,6 +490,9 @@ public class testTheRoutesImportDoorAsksByName
         String replaceStartsOn;
         String replaceTitle;
         boolean menuItemEnabled;
+        String lastFolder;
+        String fileFolder;
+        String saidOver;
     }
 
     /** A change made to the exported file before it is imported, as a person editing it would make it. */
@@ -489,7 +525,7 @@ public class testTheRoutesImportDoorAsksByName
         return importHisRoutes(yes, edit, replace, keep, "");
     }
 
-    /** The same, the file chooser answered as `chooser` says: "" picks the file, CANCEL backs out, MISSING picks no file. */
+    /** The same, the file chooser answered as `chooser` says: "" picks the file, CANCEL backs out, MISSING picks no file, GARBAGE a file no model can parse. */
     private static Imported importHisRoutes(boolean yes, Edit edit, boolean replace, int keep, String chooser)
         throws Exception
     {
@@ -506,6 +542,8 @@ public class testTheRoutesImportDoorAsksByName
         final support.SandboxedWindow sandboxed = new support.SandboxedWindow();
 
         File file = File.createTempFile("tc-routes-export", ".json");
+
+        final String oldFolder = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
 
         Answerer answerer = null;
 
@@ -551,9 +589,13 @@ public class testTheRoutesImportDoorAsksByName
 
             if (edit != null) json = edit.to(json);
 
+            if (GARBAGE.equals(chooser)) json = "{\"routes\": [{\"name\": ";
+
             Files.write(file.toPath(), json.getBytes(StandardCharsets.UTF_8));
 
-            run.savedArmed = model.routesSavedArmed(json);
+            TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, System.getProperty("user.home"));
+
+            run.savedArmed = GARBAGE.equals(chooser) ? Collections.<String>emptyList() : model.routesSavedArmed(json);
 
             if (keep >= 0)
             {
@@ -603,8 +645,11 @@ public class testTheRoutesImportDoorAsksByName
             run.replaceTitle = answerer.replaceTitle;
 
             run.menuItemEnabled = importRoutes.isEnabled();
+            run.fileFolder = file.getParent();
+            run.saidOver = answerer.saidOver;
+            run.lastFolder = TrainControlUI.getPrefs().get(TrainControlUI.LAST_USED_FOLDER, null);
 
-            if (replace && "".equals(chooser))
+            if (replace && !CANCEL.equals(chooser) && !MISSING.equals(chooser) && !GARBAGE.equals(chooser))
             {
                 assertNotNull(answerer.question, "Routes > Import never asked about automatic firing, over a file with"
                     + " routes saved with it on");
@@ -623,6 +668,9 @@ public class testTheRoutesImportDoorAsksByName
         finally
         {
             if (answerer != null) answerer.running = false;
+
+            if (oldFolder == null) TrainControlUI.getPrefs().remove(TrainControlUI.LAST_USED_FOLDER);
+            else TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, oldFolder);
 
             sandboxed.close();
 
@@ -678,6 +726,7 @@ public class testTheRoutesImportDoorAsksByName
         private volatile support.PopupShape questionShape;
         private final List<support.PopupShape> saidShapes = Collections.synchronizedList(new ArrayList<>());
         private volatile String initial;
+        private volatile String saidOver;
         private final String replaceQuestion;
         private final boolean replace;
         private final String chooser;
@@ -757,6 +806,7 @@ public class testTheRoutesImportDoorAsksByName
 
                 saidShapes.add(shown);
                 said.add(textOf(shown));
+                saidOver = dialog.getOwner() == null ? null : dialog.getOwner().getClass().getSimpleName();
 
                 SwingUtilities.invokeLater(() -> pane.setValue(Integer.valueOf(JOptionPane.OK_OPTION)));
             });
