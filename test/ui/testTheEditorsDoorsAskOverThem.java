@@ -333,7 +333,8 @@ public class testTheEditorsDoorsAskOverThem
     /**
      * Delete Current Page from the track editor, with the index unreadable, says so over the editor.
      *
-     * MUTATION: `this` for `over` at `settleAbsentPages` in `deleteConfirmedPage`, and it hangs off the main window.
+     * MUTATION: `this` for `over` at `settleTheAbsentPages` in `LayoutFileActions.deleteConfirmedPage`, and it hangs off
+     * the main window.
      */
     @Test
     public void testAnUnreadableIndexIsSaidOverTheEditor() throws Exception
