@@ -319,7 +319,7 @@ public class testTheRoutesImportDoorAsksByName
      * Once the file is picked, Import asks "This replaces all N routes. Continue?" with the count of routes there are,
      * starting on No; No leaves every route as it was, armed or not, and asks and says nothing more.
      *
-     * MUTATION: drop the question from `importRoutesMenuItemActionPerformed`, start it on Yes, or go on after No, and this
+     * MUTATION: drop the question from `RouteListPanel.importRoutes`, start it on Yes, or go on after No, and this
      * fails.
      */
     @Test
@@ -339,6 +339,40 @@ public class testTheRoutesImportDoorAsksByName
         assertEquals(run.question, null, "answered No, Import went on to ask about automatic firing");
 
         assertEquals(run.said, Collections.emptyList(), "answered No, Import went on and said: " + run.said);
+    }
+
+    /**
+     * Backing out of the file chooser starts nothing: no question, no message, every route as it was.
+     *
+     * MUTATION: take the return after the chooser out of `RouteListPanel.importRoutes`, and this fails.
+     */
+    @Test
+    public void testBackingOutOfTheChooserChangesNothing() throws Exception
+    {
+        Imported run = importHisRoutes(true, null, true, -1, CANCEL);
+
+        assertEquals(run.replaceAsked, Collections.emptyList(), "backed out of the chooser, Import asked about replacing");
+        assertEquals(run.question, null, "backed out of the chooser, Import asked about automatic firing");
+        assertEquals(run.said, Collections.emptyList(), "backed out of the chooser, Import said: " + run.said);
+        assertEquals(run.routesAfter, run.routesBefore, "backed out of the chooser, the routes changed");
+        assertTrue(run.menuItemEnabled, "backed out of the chooser, Routes > Import was left off");
+    }
+
+    /**
+     * A file that cannot be read says so in one message and leaves the routes alone, with the menu item back on.
+     *
+     * MUTATION: drop the failure message from `RouteListPanel.importRoutes`, or leave the item off, and this fails.
+     */
+    @Test
+    public void testAFileThatCannotBeReadSaysSoAndKeepsTheRoutes() throws Exception
+    {
+        Imported run = importHisRoutes(true, null, true, -1, MISSING);
+
+        assertEquals(run.said, Collections.singletonList(I18n.t("route.ui.errorFailedToImportRoutesCheckLog")),
+            "an unreadable file was not reported as one failed import");
+        assertEquals(run.question, null, "an unreadable file went on to ask about automatic firing");
+        assertEquals(run.routesAfter, run.routesBefore, "an unreadable file changed the routes");
+        assertTrue(run.menuItemEnabled, "after a failed import Routes > Import was left off");
     }
 
     /**
@@ -403,6 +437,9 @@ public class testTheRoutesImportDoorAsksByName
 
     // ---------------------------------------------------------------- the door
 
+    private static final String CANCEL = "cancel";
+    private static final String MISSING = "missing";
+
     /** What one import through the door did. */
     private static final class Imported
     {
@@ -419,6 +456,7 @@ public class testTheRoutesImportDoorAsksByName
         List<String> replaceAsked;
         String replaceStartsOn;
         String replaceTitle;
+        boolean menuItemEnabled;
     }
 
     /** A change made to the exported file before it is imported, as a person editing it would make it. */
@@ -446,6 +484,13 @@ public class testTheRoutesImportDoorAsksByName
      * deleting all but that many routes after the export (-1 keeps them all).
      */
     private static Imported importHisRoutes(boolean yes, Edit edit, boolean replace, int keep)
+        throws Exception
+    {
+        return importHisRoutes(yes, edit, replace, keep, "");
+    }
+
+    /** The same, the file chooser answered as `chooser` says: "" picks the file, CANCEL backs out, MISSING picks no file. */
+    private static Imported importHisRoutes(boolean yes, Edit edit, boolean replace, int keep, String chooser)
         throws Exception
     {
         if (java.awt.GraphicsEnvironment.isHeadless()) throw new SkipException("the window needs a display");
@@ -525,7 +570,7 @@ public class testTheRoutesImportDoorAsksByName
                 assertEquals(model.getRouteList().size(), keep, "precondition: the routes could not be deleted");
             }
 
-            answerer = new Answerer(file, yes, replacing(model.getRouteList().size()), replace);
+            answerer = new Answerer(file, yes, replacing(model.getRouteList().size()), replace, chooser);
 
             Thread answering = new Thread(answerer, "routes import answerer");
 
@@ -544,10 +589,10 @@ public class testTheRoutesImportDoorAsksByName
             final boolean yesToReplace = replace;
 
             support.Components.waitFor(() -> !asked.said.isEmpty()
-                || (!yesToReplace && !asked.replaceAsked.isEmpty()), 180000);
+                || (!yesToReplace && !asked.replaceAsked.isEmpty()) || CANCEL.equals(chooser) && asked.chose, 180000);
 
-            // Answered No: give it the moment in which a door that went on anyway would have said so
-            if (!replace) support.Components.waitFor(() -> !asked.said.isEmpty(), 2000);
+            // Answered No or backed out: give it the moment in which a door that went on anyway would have said so
+            if (!replace || CANCEL.equals(chooser)) support.Components.waitFor(() -> !asked.said.isEmpty(), 2000);
 
             for (int turn = 0; turn < 6; turn++) SwingUtilities.invokeAndWait(() -> { });
 
@@ -557,7 +602,9 @@ public class testTheRoutesImportDoorAsksByName
             run.replaceStartsOn = answerer.replaceStartsOn;
             run.replaceTitle = answerer.replaceTitle;
 
-            if (replace)
+            run.menuItemEnabled = importRoutes.isEnabled();
+
+            if (replace && "".equals(chooser))
             {
                 assertNotNull(answerer.question, "Routes > Import never asked about automatic firing, over a file with"
                     + " routes saved with it on");
@@ -633,12 +680,14 @@ public class testTheRoutesImportDoorAsksByName
         private volatile String initial;
         private final String replaceQuestion;
         private final boolean replace;
+        private final String chooser;
         private final List<String> replaceAsked = Collections.synchronizedList(new ArrayList<>());
         private volatile String replaceStartsOn;
         private volatile String replaceTitle;
 
-        Answerer(File file, boolean yes, String replaceQuestion, boolean replace)
+        Answerer(File file, boolean yes, String replaceQuestion, boolean replace, String chooser)
         {
+            this.chooser = chooser;
             this.file = file;
             this.yes = yes;
             this.replaceQuestion = replaceQuestion;
@@ -660,7 +709,14 @@ public class testTheRoutesImportDoorAsksByName
 
                     SwingUtilities.invokeLater(() ->
                     {
-                        chooser.setSelectedFile(file);
+                        if (CANCEL.equals(this.chooser))
+                        {
+                            chooser.cancelSelection();
+
+                            return;
+                        }
+
+                        chooser.setSelectedFile(MISSING.equals(this.chooser) ? new File(file.getPath() + ".gone") : file);
                         chooser.approveSelection();
                     });
 
