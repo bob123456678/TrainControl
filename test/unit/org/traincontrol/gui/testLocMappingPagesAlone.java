@@ -396,6 +396,30 @@ public class testLocMappingPagesAlone
             + "what the window was told");
     }
 
+    /**
+     * A confirmed paste (the dialog's Yes is `pasteConfirmed`, which a unit can reach where it cannot answer a modal
+     * dialog) puts the copied page's trains on the page showing, empties the clipboard, redraws the keys and shows
+     * the current key's locomotive again.
+     *
+     * MUTATION: in `LocMappingPages.pasteConfirmed`, take out `ui.redisplayCurrentKey()`, and the key keeps showing
+     * what it did before the paste; take out `ui.replacePage(...)`, and the page is not replaced.
+     */
+    @Test(timeOut = 30000)
+    public void testAConfirmedPasteReplacesThePageAndShowsTheCurrentKey()
+    {
+        Fake ui = new Fake(3);
+        Locomotive copied = train("Copied");
+        ui.put(1, copied);
+        LocMappingPages pages = new LocMappingPages(ui);
+        pages.copyCurrentPage();
+        ui.showing = 2;
+        pages.pasteConfirmed();
+
+        assertSame(ui.pages.get(1).get(ui.keys.get(0)), copied, "the page showing did not get the copied page's train");
+        assertFalse(pages.pageCopied(), "the clipboard still holds the page");
+        assertEquals(ui.did, Arrays.asList("repaintMappings", "redisplay"), "what the window was told");
+    }
+
     /** A locomotive with no station behind it, at an address of its own. */
     private static Locomotive train(String name)
     {

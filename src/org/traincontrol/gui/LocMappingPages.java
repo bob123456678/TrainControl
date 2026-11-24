@@ -203,15 +203,18 @@ public final class LocMappingPages
                 // Default to No: this replaces a page of mappings
                 TrainControlUI.YES_NO_OPTS[1]
             );
-            if (dialogResult == JOptionPane.YES_OPTION)
-            {
-                ui.replacePage(ui.getLocMappingNumber(), this.pageToCopy);
-                this.pageToCopy = null;
-                ui.repaintMappings();
-
-                ui.redisplayCurrentKey();
-            }
+            if (dialogResult == JOptionPane.YES_OPTION) pasteConfirmed();
         }
+    }
+
+    /** The Yes of the paste question: copies the copied page onto the page showing and empties the clipboard. */
+    void pasteConfirmed()
+    {
+        ui.replacePage(ui.getLocMappingNumber(), this.pageToCopy);
+        this.pageToCopy = null;
+        ui.repaintMappings();
+
+        ui.redisplayCurrentKey();
     }
 
     /** Fills the free keys of the page showing with the locomotives mapped nowhere, A to Z; event thread, later. */

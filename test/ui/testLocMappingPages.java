@@ -16,8 +16,8 @@ import static support.SandboxedWindow.build;
 
 /**
  * A ceiling of fifty locomotive mapping pages, with an error message if exceeded.  The predicate is tested, and so is
- * the menu that offers the action, which must actually gray.  The refusal inside `LocMappingPages.addLocMappingPage` is a modal
- * dialog (a hang in a test), so that one is read rather than run.
+ * the menu that offers the action, which must actually gray.  The refusal inside `LocMappingPages.addLocMappingPage`
+ * is a modal dialog (a hang in a test), so that one is read rather than run.
  *
  * @author Adam
  */
