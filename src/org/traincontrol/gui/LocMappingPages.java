@@ -77,9 +77,15 @@ public final class LocMappingPages
         List<String> getAllLocButtonMappings(Locomotive l);
         /** Shows the locomotive on the Q key, the first. */
         void showQKey();
+        /** Makes page `to` a copy of page `from`. */
+        void replacePage(int to, int from);
+        /** Shows the locomotive of the current key again when the key is on the page showing. */
+        void redisplayCurrentKey();
     }
 
     private final Keyboard ui;
+    /** The page on the page clipboard, or null. */
+    private Integer pageToCopy = null;
     /** "Show Page Numbers"; null until `installShowPageNumbersMenuItem` builds it. */
     private JCheckBoxMenuItem numbersItem;
 
@@ -170,6 +176,47 @@ public final class LocMappingPages
         ui.switchLocMapping(Math.min(going, count - 1));
 
         ui.repaintMappings();
+    }
+
+    /** Puts the page showing on the page clipboard. */
+    void copyCurrentPage()
+    {
+        this.pageToCopy = ui.getLocMappingNumber();
+    }
+
+    /** Whether anything is on the page clipboard. */
+    boolean pageCopied()
+    {
+        return this.pageToCopy != null;
+    }
+
+    /** Replaces the page showing with the copied one once the user says Yes over `over`; not on the copied page. */
+    void pasteCopiedPage(Component over)
+    {
+        if (pageCopied() && ui.getLocMappingNumber() != this.pageToCopy)
+        {
+            int dialogResult = JOptionPane.showOptionDialog(
+                over,
+                I18n.f("page.ui.confirmReplaceMappings", getPageName(ui.getLocMappingNumber(), false),
+                    getPageName(this.pageToCopy, false)),
+                I18n.t("page.ui.dialogPasteMappings"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                TrainControlUI.YES_NO_OPTS,
+                // NOT [0]: this replaces a page of mappings, and its twin was fixed and this one was not
+                TrainControlUI.YES_NO_OPTS[1]
+            );
+            if (dialogResult == JOptionPane.YES_OPTION)
+            {
+                ui.replacePage(ui.getLocMappingNumber(), this.pageToCopy);
+                this.pageToCopy = null;
+                ui.repaintMappings();
+
+                // We need to repaint the locomotive if a button on this page was active
+                ui.redisplayCurrentKey();
+            }
+        }
     }
 
     /** Fills the free keys of the page showing with the locomotives mapped nowhere, A to Z; event thread, later. */

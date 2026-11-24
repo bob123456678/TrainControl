@@ -366,6 +366,36 @@ public class testLocMappingPagesAlone
         assertEquals(ui.did, Arrays.asList("repaintMappings"), "what the window was told");
     }
 
+    /**
+     * Copy Mappings puts the page showing on the clipboard; Paste asks nothing and changes nothing with nothing on it,
+     * and on the page that was copied.  The Yes and No answers are `ui.testMappingPagesAndLocomotiveDoors`'s.
+     *
+     * MUTATION: in `LocMappingPages.pasteCopiedPage`, take out `pageCopied() &&` and pasting with nothing copied
+     * throws; take out `ui.getLocMappingNumber() != this.pageToCopy &&` and the copied page is asked about.
+     */
+    @Test(timeOut = 30000)
+    public void testAPageIsCopiedAndNotPastedOntoItself()
+    {
+        List<String> said = onTheEventThread(() ->
+        {
+            Fake ui = new Fake(3);
+            ui.showing = 2;
+            LocMappingPages pages = new LocMappingPages(ui);
+            List<String> out = new ArrayList<>();
+            out.add(String.valueOf(pages.pageCopied()));
+            pages.pasteCopiedPage(null);
+            pages.copyCurrentPage();
+            out.add(String.valueOf(pages.pageCopied()));
+            pages.pasteCopiedPage(null);
+            out.add(String.valueOf(pages.pageCopied()));
+            out.add(String.valueOf(ui.did));
+            return out;
+        });
+
+        assertEquals(said, Arrays.asList("false", "true", "true", "[]"), "before, after Copy, after pasting onto it, "
+            + "what the window was told");
+    }
+
     /** A locomotive with no station behind it, at an address of its own. */
     private static Locomotive train(String name)
     {
@@ -550,6 +580,18 @@ public class testLocMappingPagesAlone
             for (Map<JButton, Locomotive> page : this.pages)
                 for (Locomotive held : page.values()) if (held == l) on.add(l.getName());
             return on;
+        }
+
+        @Override
+        public void replacePage(int to, int from)
+        {
+            this.pages.set(to - 1, new LinkedHashMap<>(this.pages.get(from - 1)));
+        }
+
+        @Override
+        public void redisplayCurrentKey()
+        {
+            this.did.add("redisplay");
         }
 
         @Override

@@ -529,9 +529,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     private JButton copyTargetButton = null;
     private int copyTargetPage = 0;
     
-    // Page clipboard
-    private Integer pageToCopy = null;
-    
     // Other UIs
     private LocomotiveSelector selector;
     private LocomotiveStats stats;
@@ -14058,7 +14055,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     public void copyCurrentPage()
     {
-        this.pageToCopy = this.locMappingNumber;
+        this.locMappingPages.copyCurrentPage();
     }
     
     /**
@@ -14066,35 +14063,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     public void pasteCopiedPage()
     {
-        if (pageCopied() && this.locMappingNumber != this.pageToCopy)
-        {
-            int dialogResult = JOptionPane.showOptionDialog(
-                this,
-                I18n.f(
-                    "page.ui.confirmReplaceMappings",
-                    this.locMappingPages.getPageName(this.locMappingNumber, false),
-                    this.locMappingPages.getPageName(this.pageToCopy, false)
-                ),
-                I18n.t("page.ui.dialogPasteMappings"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                YES_NO_OPTS,
-                YES_NO_OPTS[1] // NOT [0]: this replaces a page of mappings, and its twin was fixed and this one was not
-            );
-            if (dialogResult == JOptionPane.YES_OPTION)
-            {
-                this.locMapping.set(this.locMappingNumber - 1, new HashMap<>(this.locMapping.get(this.pageToCopy - 1)));
-                this.pageToCopy = null;
-                this.repaintMappings();
-                
-                // We need to repaint the locomotive if a button on this page was active
-                if (currentButtonlocMappingNumber == this.locMappingNumber)
-                {
-                    this.displayCurrentButtonLoc(this.currentButton);
-                }
-            }
-        }
+        this.locMappingPages.pasteCopiedPage(this);
     }
     
     /**
@@ -14102,7 +14071,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     public boolean pageCopied()
     {
-        return this.pageToCopy != null;
+        return this.locMappingPages.pageCopied();
+    }
+
+    /** Makes page `to` a copy of page `from`. */
+    @Override
+    public void replacePage(int to, int from)
+    {
+        this.locMapping.set(to - 1, new HashMap<>(this.locMapping.get(from - 1)));
+    }
+
+    /** Shows the locomotive of the current key again when the key is on the page showing. */
+    @Override
+    public void redisplayCurrentKey()
+    {
+        if (currentButtonlocMappingNumber == this.locMappingNumber) this.displayCurrentButtonLoc(this.currentButton);
     }
     
     public void clearCurrentPage()
