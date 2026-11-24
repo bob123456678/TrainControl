@@ -369,7 +369,7 @@ public final class LayoutLabel extends JLabel
                                 {
                                     javax.swing.SwingUtilities.invokeLater(() -> 
                                     {
-                                        tcUI.editRoute(component.getRoute().getName());
+                                        tcUI.routeListPanel.editRoute(component.getRoute().getName());
                                     });
                                     
                                     return;

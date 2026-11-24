@@ -2028,7 +2028,7 @@ public class testTheRouteListShowsWhatRuns
 
     private static void refresh() throws Exception
     {
-        SwingUtilities.invokeAndWait(() -> ui.refreshRouteList());
+        SwingUtilities.invokeAndWait(() -> ui.routeListPanel().refreshRouteList());
 
         for (int turn = 0; turn < 4; turn++) SwingUtilities.invokeAndWait(() -> { });
     }

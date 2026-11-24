@@ -35,7 +35,7 @@ import org.traincontrol.base.RouteCommand;
  *
  * Every field stays on `TrainControlUI`; the dialogs are owned by the clicked component or the window.
  */
-final class LocomotiveActions
+public final class LocomotiveActions
 {
     private final TrainControlUI ui;
 
@@ -153,7 +153,7 @@ final class LocomotiveActions
             this.ui.clearCopyTarget();
             this.ui.repaintLoc(true, null);
             this.ui.repaintMappings(null, false);
-            this.ui.refreshRouteList();
+            this.ui.routeListPanel.refreshRouteList();
             this.ui.getLocSelector().refreshLocSelectorList();
 
             // Update locomotive on graph
@@ -170,7 +170,7 @@ final class LocomotiveActions
 
                 // And the timetable, which names locomotives too: the guard inside `repaintTimetable` is keyed
                 // on a hash a rename cannot move (MT-149).
-                this.ui.repaintTimetable();
+                this.ui.timetableTab().repaintTimetable();
             }
 
             return true;
@@ -575,7 +575,7 @@ final class LocomotiveActions
         }
     }
 
-    void deleteLoc(String value, MouseEvent evt)
+    public void deleteLoc(String value, MouseEvent evt)
     {
         deleteLoc(value, evt != null ? (Component) evt.getSource() : this.ui.dialogParent());
     }
@@ -699,7 +699,7 @@ final class LocomotiveActions
                 // on the track diagram (OB-081), and `repaintTimetable()` is MT-149.  A locomotive leaving the database
                 // changes which name is right, as a rename does.
                 this.ui.updateVisiblePoints();
-                this.ui.repaintTimetable();
+                this.ui.timetableTab().repaintTimetable();
                 
                 // Remove locomotive from graph
                 if (this.ui.getModel().hasAutoLayout())

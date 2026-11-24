@@ -73,7 +73,7 @@ public class RightClickRouteMenu extends PopupListener
                 addSeparator();
 
                 menuItem = new JMenuItem(I18n.t("route.ui.menuExecute"));
-                menuItem.addActionListener(event -> ui.executeRoute(routeName));
+                menuItem.addActionListener(event -> ui.routeListPanel.executeRoute(routeName));
                 add(menuItem);
                 addSeparator();
 
@@ -82,13 +82,13 @@ public class RightClickRouteMenu extends PopupListener
                         ? I18n.t("route.ui.menuViewRouteDetails")
                         : I18n.t("route.ui.menuEditRoute")
                 );
-                menuItem.addActionListener(event -> ui.editRoute(routeName));
+                menuItem.addActionListener(event -> ui.routeListPanel.editRoute(routeName));
                 add(menuItem);
 
                 menuItem = new JMenuItem(
                     I18n.t("route.ui.menuDuplicateRoute")
                 );
-                menuItem.addActionListener(event -> ui.duplicateRoute(routeName));
+                menuItem.addActionListener(event -> ui.routeListPanel.duplicateRoute(routeName));
                 add(menuItem);
 
                 // The predicate `BulkEnableOrDisable` uses: offering DISABLE on an enabled route always works, ENABLE

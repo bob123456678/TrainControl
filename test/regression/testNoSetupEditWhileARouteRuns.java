@@ -697,10 +697,10 @@ public class testNoSetupEditWhileARouteRuns
 
                     List<Runnable> timetableDoors = new ArrayList<>();
 
-                    timetableDoors.add(() -> window.updateTimetableDelay(null));
-                    timetableDoors.add(() -> window.deleteTimetableEntry(null));
-                    timetableDoors.add(window::restartTimetable);
-                    timetableDoors.add(window::clearTimetable);
+                    timetableDoors.add(() -> window.timetableTab().updateTimetableDelay(null));
+                    timetableDoors.add(() -> window.timetableTab().deleteTimetableEntry(null));
+                    timetableDoors.add(window.timetableTab()::restartTimetable);
+                    timetableDoors.add(window.timetableTab()::clearTimetable);
 
                     assertEquals(timetable.size(), timetableDoors.size(), "the timetable's menu changed its items");
 
@@ -716,8 +716,7 @@ public class testNoSetupEditWhileARouteRuns
 
                     layoutDoors.put("chooseLocalDataFolderMenuItem", () -> callUi(window,
                         "chooseLocalDataFolderMenuItemActionPerformed", anEvent, (Object) null));
-                    layoutDoors.put("modifyLocalLayoutMenu", () -> callUi(window, "duplicateOrRenameCurrentLayout",
-                        new Class<?>[] {String.class, boolean.class, boolean.class, boolean.class}, "renamed", true, false,
+                    layoutDoors.put("modifyLocalLayoutMenu", () -> renameThroughTheFile(window, "renamed", true, false,
                         false));
                     layoutDoors.put("initializeLocalLayoutMenuItem", () -> callUi(window,
                         "initializeLocalLayoutMenuItemActionPerformed", anEvent, (Object) null));
@@ -935,8 +934,7 @@ public class testNoSetupEditWhileARouteRuns
             }
 
             // Rename by its door: its item, like Add Blank Page's, asks the new name before it refuses.
-            doors.put("Layout: Rename Page", new Object[] {noEdits, (Runnable) () -> callUi(window,
-                "duplicateOrRenameCurrentLayout", new Class<?>[] {String.class, boolean.class, boolean.class, boolean.class},
+            doors.put("Layout: Rename Page", new Object[] {noEdits, (Runnable) () -> renameThroughTheFile(window,
                 "renamed while a route runs", true, false, false)});
 
             // By its door: the item is live only while a Central Station is connected, and no test connects one.
@@ -1377,7 +1375,7 @@ public class testNoSetupEditWhileARouteRuns
             edits.put("AutonomyViewerPanel: Rename", () -> call(panel, "rename"));
             edits.put("AutonomyViewerPanel: Import", () -> call(panel, "importConfiguration"));
             edits.put("AutonomyMenu: Delete Everything", () -> invoke(deleteEverything, autonomyMenu, window, session));
-            edits.put("TimetableTab: Clear Timetable", window::clearTimetable);
+            edits.put("TimetableTab: Clear Timetable", window.timetableTab()::clearTimetable);
             edits.put("AutonomySettingsTab: Activate Routes", () -> callUi(window, "toggleSpecifiedRoutesMouseReleased",
                 new Class<?>[] {java.awt.event.MouseEvent.class}, (Object) null));
             edits.put("TrainControlUI: Timetable Capture", () -> callUi(window, "timetableCaptureActionPerformed",
@@ -1523,10 +1521,10 @@ public class testNoSetupEditWhileARouteRuns
             doors.put("the timetable capture box", () -> callUi(window, "timetableCaptureActionPerformed",
                 new Class<?>[] {java.awt.event.ActionEvent.class}, (Object) null));
 
-            doors.put("Clear Timetable", window::clearTimetable);
-            doors.put("Restart Timetable", window::restartTimetable);
-            doors.put("Delete Entry", () -> window.deleteTimetableEntry(null));
-            doors.put("Change Delay", () -> window.updateTimetableDelay(null));
+            doors.put("Clear Timetable", window.timetableTab()::clearTimetable);
+            doors.put("Restart Timetable", window.timetableTab()::restartTimetable);
+            doors.put("Delete Entry", () -> window.timetableTab().deleteTimetableEntry(null));
+            doors.put("Change Delay", () -> window.timetableTab().updateTimetableDelay(null));
 
             answering.start();
 
@@ -2521,6 +2519,23 @@ public class testNoSetupEditWhileARouteRuns
         try
         {
             method.invoke(on, args);
+        }
+        catch (ReflectiveOperationException failed)
+        {
+            throw new IllegalStateException(failed);
+        }
+    }
+
+    /** The Layout file actions' rename or duplicate, as the window's page menu calls it outside any editor. */
+    private static void renameThroughTheFile(TrainControlUI ui, String name, boolean rename, boolean duplicate,
+        boolean blank)
+    {
+        try
+        {
+            Object actions = ui.layoutFileActions();
+            Reflect.method(actions.getClass(), "duplicateOrRenameCurrentLayout", String.class, boolean.class,
+                boolean.class, boolean.class, org.traincontrol.gui.layouteditor.LayoutEditor.class)
+                .invoke(actions, name, rename, duplicate, blank, null);
         }
         catch (ReflectiveOperationException failed)
         {

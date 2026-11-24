@@ -470,7 +470,7 @@ public class testChangingARouteByHand
 
         Components.onTheEventThread(() ->
         {
-            ui.refreshRouteList();
+            ui.routeListPanel().refreshRouteList();
 
             return null;
         });

@@ -47,7 +47,7 @@ final class AutonomySettingsTab
                         // Push back into the model
                         this.ui.getModel().getAutoLayout().setActivateRouteIDs(activateRouteIDs);
                         this.ui.getModel().applyAutonomyRouteActivations();
-                        this.ui.refreshRouteList();
+                        this.ui.routeListPanel.refreshRouteList();
                     }
                 }
             });

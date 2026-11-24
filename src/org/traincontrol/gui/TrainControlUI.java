@@ -2537,7 +2537,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     {
         org.traincontrol.automationui.AutonomyRefreshCallback.attach(layout, () ->
         {
-            this.repaintTimetable();
+            this.timetableTab.repaintTimetable();
             this.repaintAutoLocListLite();
 
             // And the graph when a run ends: `updateVisiblePoints()` is the only route to `reconcileFacingWhenIdle`,
@@ -2682,7 +2682,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     public void autonomyLoadedFromDiagram(String name, boolean resumed)
     {
-        this.refreshRouteList();
+        this.routeListPanel.refreshRouteList();
 
         // Interactive loads only: the stop is for choosing a different railway, not for an edit to the running setup,
         // which also comes through here.  Closing the track diagram editor does not stop the trains.
@@ -3280,7 +3280,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             this.model.logf("autolayout.warnAtomicRoutesKeptOnTrains", trains.size(), someOf(trains));
         }
 
-        loadAutoLayoutSettings();
+        this.autonomySettingsTab.loadAutoLayoutSettings();
     }
 
     public boolean refuseWhileARunHoldsTheSetup(Component source)
@@ -4866,7 +4866,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         selector.setLocationRelativeTo(this);
         
         // Add list of routes to tab
-        refreshRouteList();
+        this.routeListPanel.refreshRouteList();
                 
         // Add list of layouts to tab
         this.LayoutList.setModel(new DefaultComboBoxModel(listener.getLayoutList().toArray()));
@@ -5656,7 +5656,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                 {
                     this.model.logf("layout.ui.infoInitializingDemoLayout");
 
-                    String path = this.initializeEmptyLayout(folderName);
+                    String path = this.layoutFileActions.initializeEmptyLayout(folderName);
 
                     if (path != null)
                     {
@@ -13412,7 +13412,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                 key -> key.ui.setCopyTarget(key.ui.currentButton, false));
             row("choose a locomotive", Held.CONTROL.on(KeyEvent.VK_A),
                 key -> key.ui.selectLocomotiveActivated(key.ui.currentButton));
-            row("find a locomotive", Held.CONTROL.on(KeyEvent.VK_F), key -> key.ui.quickLocSearch());
+            row("find a locomotive", Held.CONTROL.on(KeyEvent.VK_F), key -> key.ui.locomotiveActions.quickLocSearch());
             // The menu item's own door, so the key asks what grays the item.
             row("add a locomotive", Held.CONTROL.on(KeyEvent.VK_D), key -> key.ui.addLocomotiveMenuItemActionPerformed(null));
             // The locomotive keys open the Locomotive Settings window, whose one rule covers them (FR-048).
@@ -13911,11 +13911,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return this.routeListPanel.askAboutRouteConflict(route, over, known);
     }
 
-    public void executeRoute(String route)
-    {
-        this.routeListPanel.executeRoute(route);
-    }
-
     public void childWindowKeyEvent(java.awt.event.KeyEvent evt)
     {
         final Component on = evt.getComponent();
@@ -14034,7 +14029,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
                 // One event-thread pass for everything cheap enough to share one.
                 singlePass(() ->
                 {
-                    refreshRouteList();
+                    this.routeListPanel.refreshRouteList();
                     this.selector.refreshLocSelectorList();
 
                     setLocomotiveWorkInFlight(false);
@@ -14098,39 +14093,23 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         this.locMappingPages.doClearCurrentPage();
     }
 
-    /**
-     * Prompts for a locomotive name, and activates that locomotive if found
-     */
-    public void quickLocSearch()
-    {
-        this.locomotiveActions.quickLocSearch();
-    }
-    
     public void changeRouteId(String routeName)
     {
         this.routeListPanel.changeRouteId(routeName);
     }
     
-    /**
-     * Shows the user locomotives similar to searchLoc, and maps them to a page if requested
-     */ 
-    public void findSimilarLocs(Locomotive searchLoc, MouseEvent evt)
-    {
-        this.locomotiveActions.findSimilarLocs(searchLoc, evt);
-    }
-    
     public void deleteLoc(String value)
     {
-        deleteLoc(value, null);
+        this.locomotiveActions.deleteLoc(value, (MouseEvent) null);
     }
     
-    public void deleteLoc(String value, MouseEvent evt)
-    {
-        this.locomotiveActions.deleteLoc(value, evt);
-    }
-
     /** The locomotive operations: find by name, rename or re-address, notes, find similar, and delete. */
     final LocomotiveActions locomotiveActions = new LocomotiveActions(this);
+
+    public LocomotiveActions locomotiveActions()
+    {
+        return this.locomotiveActions;
+    }
     
     private void ActiveLocLabelMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ActiveLocLabelMouseReleased
         
@@ -14270,11 +14249,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         };
     }
          
-    public void editRoute(String routeName)
-    {
-        this.routeListPanel.editRoute(routeName);
-    }
-    
     public Route getRouteAtCursor(MouseEvent evt)
     {
         return this.routeListPanel.getRouteAtCursor(evt);
@@ -14306,16 +14280,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         }  
     }
     
-    public void duplicateRoute(String routeName)
-    {
-        this.routeListPanel.duplicateRoute(routeName);
-    }
-        
-    private void BulkEnableOrDisable(boolean enable)
-    {
-        this.routeListPanel.BulkEnableOrDisable(enable);
-    }
-
     public void enableOrDisableMatching(String search, boolean enable)
     {
         this.routeListPanel.enableOrDisableMatching(search, enable);
@@ -14341,11 +14305,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     private boolean isWindows()
     {
         return System.getProperty("os.name").startsWith("Windows");
-    }
-    
-    private String initializeEmptyLayout(String folderName)
-    {
-        return this.layoutFileActions.initializeEmptyLayout(folderName);
     }
     
     /**
@@ -14476,15 +14435,10 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // With the power off only, as the picture's tools
         if (SwingUtilities.isRightMouseButton(evt) && offersTheIconTools())
         {
-            this.setLocIcon(this.activeLoc);
+            this.locIconActions.setLocIcon(this.activeLoc, null);
         }
     }//GEN-LAST:event_locIconMouseReleased
 
-    public void clearTimetable()
-    {
-        this.timetableTab.clearTimetable();
-    }
-        
     private void syncFullLocStateMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_syncFullLocStateMenuItemActionPerformed
         // The read rewrites what is held of every locomotive a run is driving (MT-141)
         if (RunGates.refuseWhileAutonomyRunning(this, evt == null ? this : (Component) evt.getSource())) return;
@@ -14981,19 +14935,19 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
     private void BulkDisableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkDisableActionPerformed
 
-        BulkEnableOrDisable(false);
+        this.routeListPanel.BulkEnableOrDisable(false);
     }//GEN-LAST:event_BulkDisableActionPerformed
 
     private void BulkEnableActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BulkEnableActionPerformed
 
-        BulkEnableOrDisable(true);
+        this.routeListPanel.BulkEnableOrDisable(true);
     }//GEN-LAST:event_BulkEnableActionPerformed
 
     private void sortByIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sortByIDActionPerformed
         new Thread(()->
             {
                 prefs.putBoolean(ROUTE_SORT_PREF, false);
-                this.refreshRouteList();
+                this.routeListPanel.refreshRouteList();
             }).start();
     }//GEN-LAST:event_sortByIDActionPerformed
 
@@ -15001,7 +14955,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         new Thread(()->
             {
                 prefs.putBoolean(ROUTE_SORT_PREF, true);
-                this.refreshRouteList();
+                this.routeListPanel.refreshRouteList();
             }).start();
     }//GEN-LAST:event_sortByNameActionPerformed
 
@@ -16280,7 +16234,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     private void quickFindMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_quickFindMenuItemActionPerformed
         if (!this.model.getLocomotives().isEmpty())
         {
-            quickLocSearch(); 
+            this.locomotiveActions.quickLocSearch(); 
         }
         else
         {
@@ -16772,7 +16726,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
         if (editorBehind(evt) == null) showLayoutTab();
 
-        duplicateOrRenameCurrentLayout(newName, false, true, false);
+        this.layoutFileActions.duplicateOrRenameCurrentLayout(newName, false, true, false, pageActionFrom);
     }//GEN-LAST:event_duplicateLayoutMenuItemActionPerformed
 
     private void combineLinkedPages()
@@ -16780,11 +16734,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         this.layoutFileActions.combineLinkedPages(pageActionFrom);
     }
 
-    private void duplicateOrRenameCurrentLayout(String newLayoutName, boolean rename, boolean duplicate, boolean blank)
-    {
-        this.layoutFileActions.duplicateOrRenameCurrentLayout(newLayoutName, rename, duplicate, blank, pageActionFrom);
-    }
-    
     private void deleteLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteLayoutMenuItemActionPerformed
 
         final LayoutEditor from = editorBehind(evt);
@@ -17481,26 +17430,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return Accessory.stringToAccessoryDecoderType(this.MM2.getText());
     }
     
-    public void deleteTimetableEntry(MouseEvent evt)
-    {
-        this.timetableTab.deleteTimetableEntry(evt);
-    }
-    
-    public void updateTimetableDelay(MouseEvent evt)
-    {
-        this.timetableTab.updateTimetableDelay(evt);
-    }
-    
-    /**
-     * Restarts timetable execution from the top
-     */
-    public void restartTimetable()
-    {
-        this.timetableTab.restartTimetable();
-    }
-
     /** The timetable's repaint and entry-menu actions. */
     private final TimetableTab timetableTab = new TimetableTab(this);
+
+    public TimetableTab timetableTab()
+    {
+        return this.timetableTab;
+    }
 
     javax.swing.JTable timetable()
     {
@@ -17555,7 +17491,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
             if (activeLoc == null) return;
 
             if (SwingUtilities.isLeftMouseButton(evt)) openLocomotiveSettings(activeLoc, LocomotiveSettingsFrame.Tab.LOCOMOTIVE, null);
-            else if (SwingUtilities.isRightMouseButton(evt) && offersTheIconTools()) setLocIcon(activeLoc);
+            else if (SwingUtilities.isRightMouseButton(evt) && offersTheIconTools()) locIconActions.setLocIcon(activeLoc, null);
         }));
 
         // Hard in the upper left corner with no gap, as any inset spends picture rather than margin.
@@ -17615,6 +17551,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
     /** The route list: running, editing, duplicating, bulk arming, finding and refreshing routes. */
     final RouteListPanel routeListPanel = new RouteListPanel(this);
+
+    public RouteListPanel routeListPanel()
+    {
+        return this.routeListPanel;
+    }
 
     javax.swing.JTable routeList()
     {
@@ -17871,17 +17812,9 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     
     public void setLocIcon(Locomotive l)
     {
-        setLocIcon(l, null);
+        this.locIconActions.setLocIcon(l, null);
     }
     
-    /**
-     * Allows a local image to be set for a locomotive
-     */
-    public void setLocIcon(Locomotive l, MouseEvent evt)
-    {
-        this.locIconActions.setLocIcon(l, evt);
-    }
-
     /** The folder inside the icon folder where the Central Station's pictures are kept to crop from (FR-104). */
     static final String CENTRAL_STATION_PICTURES = "central-station";
 
@@ -17921,16 +17854,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         // While autonomy is busy, not only while the railway runs: Return Home plans before any train moves.
         if (!refuseWhileARunHoldsTheSetup(this)) return false;
 
-        loadAutoLayoutSettings();
+        this.autonomySettingsTab.loadAutoLayoutSettings();
 
         return true;
     }
     
-    private void loadAutoLayoutSettings()
-    {
-        this.autonomySettingsTab.loadAutoLayoutSettings();
-    }
-
     /** The Auto tab's settings; the accessors below hand its controls to it. */
     final AutonomySettingsTab autonomySettingsTab = new AutonomySettingsTab(this);
 
@@ -18153,11 +18081,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         }
 
         return out.toString();
-    }
-
-    void repaintTimetable()
-    {
-        this.timetableTab.repaintTimetable();
     }
 
     /** The status panels' worker, which the timetable shares rather than a thread per route event. */
@@ -18950,11 +18873,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         }
     }
 
-    public void refreshRouteList()
-    {   
-        this.routeListPanel.refreshRouteList();
-    }
-        
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AButton;
     private javax.swing.JTextField ALabel;

@@ -18,7 +18,7 @@ import org.traincontrol.util.I18n;
  *
  * The table and every field stay on `TrainControlUI`.
  */
-final class TimetableTab
+public final class TimetableTab
 {
     private final TrainControlUI ui;
 
@@ -44,7 +44,7 @@ final class TimetableTab
         return base == null ? String.valueOf(name) : base;
     }
 
-    void repaintTimetable()
+    public void repaintTimetable()
     {
         // Not on the EDT: getTimetableSnapshot holds the Layout monitor, which configureAndLockPath holds across its
         // per-command sleeps (half a second to two seconds a path, because locking a path has to be atomic), so taken
@@ -96,7 +96,7 @@ final class TimetableTab
         });
     }
 
-    void clearTimetable()
+    public void clearTimetable()
     {
         SwingUtilities.invokeLater(() -> 
         {
@@ -154,7 +154,7 @@ final class TimetableTab
         });
     }
 
-    void deleteTimetableEntry(MouseEvent evt)
+    public void deleteTimetableEntry(MouseEvent evt)
     {
         try
         {
@@ -213,7 +213,7 @@ final class TimetableTab
         }    
     }
 
-    void updateTimetableDelay(MouseEvent evt)
+    public void updateTimetableDelay(MouseEvent evt)
     {
         try
         {
@@ -251,7 +251,7 @@ final class TimetableTab
     /**
      * Restarts timetable execution from the top
      */
-    void restartTimetable()
+    public void restartTimetable()
     {
         SwingUtilities.invokeLater(() -> 
         {
