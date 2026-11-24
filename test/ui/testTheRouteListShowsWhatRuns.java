@@ -806,7 +806,7 @@ public class testTheRouteListShowsWhatRuns
 
             assertNotEquals(backgroundOf(first), atRest, "precondition: a running route's cell is not gray");
 
-            SwingUtilities.invokeAndWait(ui::resetRouteSpinners);
+            SwingUtilities.invokeAndWait(ui.routeListPanel()::resetRouteSpinners);
 
             refresh();
 

@@ -3064,7 +3064,7 @@ public class RouteEditorFrame extends JFrame
             }
 
             // A finished edit puts every play button back (FR-043).
-            parent.resetRouteSpinners();
+            parent.routeListPanel.resetRouteSpinners();
 
             parent.routeListPanel.refreshRouteList();
             parent.repaintLayout();

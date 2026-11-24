@@ -254,8 +254,12 @@ public final class RouteListPanel
         SwingUtilities.invokeLater(() -> refreshRouteList());
     }
 
-    /** `TrainControlUI.resetRouteSpinners`'s body. */
-    void resetRouteSpinners()
+    /**
+     * Puts every play button back; called by a database sync, an import and a completed route edit, not by
+     * `refreshRouteList`, which a route finishing also reaches, so the first route to complete would wipe the spinner
+     * off every other running one.
+     */
+    public void resetRouteSpinners()
     {
         this.ui.routesExecuting.clear();
         this.ui.startedRunningAt.clear();
@@ -396,7 +400,7 @@ public final class RouteListPanel
     }
 
     /** Sets automatic execution for each route whose name contains `search` ("*" for all), past the prompt (MT-467). */
-    void enableOrDisableMatching(String search, boolean enable)
+    public void enableOrDisableMatching(String search, boolean enable)
     {
         new Thread(()->
         {

@@ -6666,7 +6666,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         syncOwed.set(false);
         // this.model, NOT this: the wrapper calling itself would overflow the stack.  Behind the spinner either way
         // (OB-140), with the work HERE because the caller wants the answer.  Every play button comes back (FR-043).
-        resetRouteSpinners();
+        this.routeListPanel.resetRouteSpinners();
         if (!SwingUtilities.isEventDispatchThread())
         {
             BusyDialog.Closer busy = BusyDialog.showUntilClosed(this, I18n.t("ui.busySyncingWithCS"));
@@ -14280,11 +14280,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         }  
     }
     
-    public void enableOrDisableMatching(String search, boolean enable)
-    {
-        this.routeListPanel.enableOrDisableMatching(search, enable);
-    }
-
     public void enableOrDisableRoute(String routeName, boolean enable)
     {
         this.routeListPanel.enableOrDisableRoute(routeName, enable);
@@ -18553,16 +18548,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      * enough not to gate firing several routes in a row.
      */
     static final int ROUTE_MINIMUM_VISIBLE_MS = 600;
-
-    /**
-     * Puts every play button back; called by a database sync, an import and a completed route edit, not by
-     * `refreshRouteList`, which a route finishing also reaches, so the first route to complete would wipe the spinner
-     * off every other running one.
-     */
-    public void resetRouteSpinners()
-    {
-        this.routeListPanel.resetRouteSpinners();
-    }
 
     /**
      * Where the play button sits inside a cell; one answer for the renderer that draws it and the click that hits it,
