@@ -124,7 +124,7 @@ public class testMappingPagesAndLocomotiveDoors
         {
             Components.onTheEventThread(() ->
             {
-                ui.addLocMappingPage();
+                ui.locMappingPages().addLocMappingPage(ui);
 
                 return null;
             });

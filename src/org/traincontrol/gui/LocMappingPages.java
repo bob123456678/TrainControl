@@ -12,6 +12,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
+import javax.swing.JPanel;
 import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
 import org.traincontrol.base.Locomotive;
@@ -21,7 +22,7 @@ import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 
 /** The locomotive keyboard's pages: their names and how the tabs and label word them, clearing one, the tab badge. */
-final class LocMappingPages
+public final class LocMappingPages
 {
     /** The fewest pages: next/previous, the tab strip and copying between pages mean nothing with one. */
     static final int MIN_LOC_MAPPINGS = 2;
@@ -56,6 +57,14 @@ final class LocMappingPages
         void repaintLoc(boolean force, List<Locomotive> updatedLocs);
         /** Redraws the keys. */
         void repaintMappings();
+        /** Whether another page may be added. */
+        boolean canAddLocMappingPage();
+        /** Adds an empty page at the end and stores the new count. */
+        void appendPage();
+        /** Takes page `number` out and stores the new count. */
+        void removePage(int number);
+        /** Shows page `number`, its tab, label and arrows. */
+        void switchLocMapping(int number);
     }
 
     private final Keyboard ui;
@@ -77,6 +86,78 @@ final class LocMappingPages
             if (on != null) return false;
         }
         return true;
+    }
+
+    /**
+     * Adds a page at the end and goes to it: pages are reached by NUMBER (the digit keys), so inserting in the middle
+     * would renumber the rest.  Capped HERE ONLY: `setViewListener` grows the count past MAX_LOC_MAPPINGS, as clamping
+     * on load would throw away the mappings on every page past the fiftieth.  Refusals are asked over `over`.
+     */
+    public void addLocMappingPage(Component over)
+    {
+        // Refused here too, not only grayed in the menu: the next caller of this public method lacks the menu's guard.
+        if (!ui.canAddLocMappingPage())
+        {
+            JOptionPane.showMessageDialog(over, I18n.f("page.ui.errorTooManyPages", TrainControlUI.MAX_LOC_MAPPINGS));
+
+            return;
+        }
+
+        ui.appendPage();
+
+        ui.locKeyTabs().add(getLocMappingPageTabTitle(ui.getNumLocMappings()), new JPanel());
+
+        TrainControlUI.adjustTabbedPaneHeight(ui.locKeyTabs());
+
+        ui.switchLocMapping(ui.getNumLocMappings());
+
+        ui.repaintMappings();
+    }
+
+    /**
+     * Deletes the page showing now, if it is empty and not the last one that may be deleted.  Its NAME goes with it and
+     * the later names move up: they are stored by page number.  Refusals are asked over `over`.
+     */
+    public void deleteCurrentLocMappingPage(Component over)
+    {
+        int count = ui.getNumLocMappings();
+
+        if (!canDeleteCurrentPage())
+        {
+            JOptionPane.showMessageDialog(over, count <= MIN_LOC_MAPPINGS
+                ? I18n.f("page.ui.errorNeedAtLeast", MIN_LOC_MAPPINGS)
+                : I18n.t("page.ui.errorPageNotEmpty"));
+
+            return;
+        }
+
+        int going = ui.getLocMappingNumber();
+        Map<Integer, String> names = ui.pageNames();
+
+        for (int at = going; at < count; at++)
+        {
+            String next = names.get(at + 1);
+
+            if (next == null) names.remove(at);
+            else names.put(at, next);
+        }
+
+        names.remove(count);
+
+        ui.removePage(going);
+
+        ui.locKeyTabs().remove(count - 1);
+
+        for (int at = 0; at < count - 1; at++)
+        {
+            ui.locKeyTabs().setTitleAt(at, getLocMappingPageTabTitle(at + 1));
+        }
+
+        TrainControlUI.adjustTabbedPaneHeight(ui.locKeyTabs());
+
+        ui.switchLocMapping(Math.min(going, count - 1));
+
+        ui.repaintMappings();
     }
 
     /** A page tab's caption by `CurrentKeyRow.pageWords` (FR-128); the name cut to MAX_PAGE_NAME_LENGTH_TAB. */

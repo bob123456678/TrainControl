@@ -193,7 +193,7 @@ public class testTheKeyboardPages
      * Delete Page, from the page menu, takes away an empty page: the pages after it move up with their trains and
      * their names, the page number that was deleted now shows what followed it, and the new count is what is stored.
      *
-     * MUTATION: loop `at < going` instead of `at < this.numLocMappings` where `deleteCurrentLocMappingPage` moves
+     * MUTATION: loop `at < going` instead of `at < count` where `LocMappingPages.deleteCurrentLocMappingPage` moves
      * the names up, and the names stay on the wrong pages.
      */
     @Test
@@ -235,7 +235,7 @@ public class testTheKeyboardPages
     /**
      * Deleting the last page leaves the others as they were, shows the page that is last now, and Next is grayed on it.
      *
-     * MUTATION: `this.locMapping.remove(0)` in place of `remove(going - 1)` in `deleteCurrentLocMappingPage`, and the
+     * MUTATION: `this.locMapping.remove(0)` in place of `remove(number - 1)` in `TrainControlUI.removePage`, and the
      * trains move up a page.
      */
     @Test
@@ -974,7 +974,7 @@ public class testTheKeyboardPages
 
             Components.onTheEventThread(() ->
             {
-                ui.deleteCurrentLocMappingPage();
+                ui.locMappingPages().deleteCurrentLocMappingPage(ui);
 
                 return null;
             });
@@ -984,7 +984,7 @@ public class testTheKeyboardPages
         {
             Components.onTheEventThread(() ->
             {
-                ui.addLocMappingPage();
+                ui.locMappingPages().addLocMappingPage(ui);
 
                 return null;
             });
@@ -1134,7 +1134,7 @@ public class testTheKeyboardPages
     {
         try (Answering answering = Answering.start(message -> Answering.press(I18n.t("ui.ok"))))
         {
-            Thread asking = new Thread(() -> ui.deleteCurrentLocMappingPage());
+            Thread asking = new Thread(() -> ui.locMappingPages().deleteCurrentLocMappingPage(ui));
 
             asking.setDaemon(true);
             asking.start();

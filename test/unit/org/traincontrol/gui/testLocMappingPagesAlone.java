@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JLabel;
@@ -254,6 +255,62 @@ public class testLocMappingPagesAlone
         assertTrue(painted(twelve, true) > painted(three, true) + 2, "page 12's badge is no longer than page 3's");
     }
 
+    /**
+     * Adding a page appends it, gives it a tab named by the pages and goes to it, redrawing the keys.
+     *
+     * MUTATION: in `LocMappingPages.addLocMappingPage`, take out `ui.switchLocMapping(...)`, and the new page is not
+     * shown; or take out `ui.appendPage()`, and there is a tab with no page.
+     */
+    @Test
+    public void testAddingAPageAppendsItAndGoesToIt()
+    {
+        List<String> said = onTheEventThread(() ->
+        {
+            Fake ui = new Fake(3);
+            ui.names.put(4, "Yard");
+            new LocMappingPages(ui).addLocMappingPage(null);
+            return Arrays.asList(String.valueOf(ui.pages.size()), String.valueOf(ui.tabs.getTabCount()),
+                ui.tabs.getTitleAt(3), String.join(",", ui.did));
+        });
+
+        assertEquals(said, Arrays.asList("4", "4", "Yard", "switch 4,repaintMappings"), "pages, tabs, the new tab, "
+            + "what the window was told");
+    }
+
+    /**
+     * Deleting the page showing takes its name and its tab, moves the later names up by one (a page with no name
+     * leaves its successor's gap), and shows the page now in its place, or the last when it was the last.
+     *
+     * MUTATION: in `LocMappingPages.deleteCurrentLocMappingPage`, loop `at < going` in place of `at < count`, and
+     * the names stay on the wrong pages; or show page `going` in place of `Math.min(going, count - 1)`, and deleting
+     * the last page shows one that is gone.
+     */
+    @Test
+    public void testDeletingAPageMovesTheLaterNamesUp()
+    {
+        List<String> said = onTheEventThread(() ->
+        {
+            Fake ui = new Fake(4);
+            ui.showing = 2;
+            ui.names.put(2, "Two");
+            ui.names.put(4, "Four");
+            LocMappingPages pages = new LocMappingPages(ui);
+            pages.deleteCurrentLocMappingPage(null);
+            List<String> out = new ArrayList<>(Arrays.asList(String.valueOf(new TreeMap<>(ui.names)),
+                String.valueOf(ui.pages.size()), String.valueOf(ui.tabs.getTabCount()), ui.tabs.getTitleAt(2),
+                String.join(",", ui.did)));
+
+            ui.did.clear();
+            ui.showing = 3;
+            pages.deleteCurrentLocMappingPage(null);
+            out.add(String.join(",", ui.did));
+            return out;
+        });
+
+        assertEquals(said, Arrays.asList("{3=Four}", "3", "3", "Four", "switch 2,repaintMappings",
+            "switch 2,repaintMappings"), "names, pages, tabs, the third tab, then deleting the last page");
+    }
+
     /** A locomotive with no station behind it, at an address of its own. */
     private static Locomotive train(String name)
     {
@@ -392,6 +449,31 @@ public class testLocMappingPagesAlone
         public void repaintMappings()
         {
             this.did.add("repaintMappings");
+        }
+
+        @Override
+        public boolean canAddLocMappingPage()
+        {
+            return this.pages.size() < 50;
+        }
+
+        @Override
+        public void appendPage()
+        {
+            this.pages.add(new LinkedHashMap<>());
+        }
+
+        @Override
+        public void removePage(int number)
+        {
+            this.pages.remove(number - 1);
+        }
+
+        @Override
+        public void switchLocMapping(int number)
+        {
+            this.showing = number;
+            this.did.add("switch " + number);
         }
     }
 }

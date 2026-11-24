@@ -106,7 +106,7 @@ public class RightClickPageMenu extends PopupListener
             // Grayed at the ceiling, with the reason on it, as Delete does below.
             if (ui.canAddLocMappingPage())
             {
-                menuItem.addActionListener(event -> ui.addLocMappingPage());
+                menuItem.addActionListener(event -> ui.locMappingPages().addLocMappingPage(ui));
                 menuItem.setToolTipText(I18n.t("page.ui.tooltipAddPage"));
             }
             else
@@ -126,7 +126,7 @@ public class RightClickPageMenu extends PopupListener
 
             if (ui.canDeleteCurrentPage())
             {
-                menuItem.addActionListener(event -> ui.deleteCurrentLocMappingPage());
+                menuItem.addActionListener(event -> ui.locMappingPages().deleteCurrentLocMappingPage(ui));
             }
             else
             {

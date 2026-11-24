@@ -1384,6 +1384,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
     private final LocMappingPages locMappingPages = new LocMappingPages(this);
 
+    /** The pages' window, from `LocMappingPages`: the menu's and the tests' door to add and delete pages. */
+    public LocMappingPages locMappingPages()
+    {
+        return this.locMappingPages;
+    }
+
     public boolean canDeleteCurrentPage()
     {
         return this.locMappingPages.canDeleteCurrentPage();
@@ -1395,88 +1401,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return this.numLocMappings < MAX_LOC_MAPPINGS;
     }
 
-    /**
-     * Adds a page at the end and goes to it: pages are reached by NUMBER (the digit keys), so inserting in the middle
-     * would renumber the rest.  Capped HERE ONLY: `setViewListener` grows the count past MAX_LOC_MAPPINGS, as clamping
-     * on load would throw away the mappings on every page past the fiftieth.
-     */
-    public void addLocMappingPage()
+    /** Adds an empty page at the end and stores the new count. */
+    @Override
+    public void appendPage()
     {
-        // Refused here too, not only grayed in the menu: the next caller of this public method lacks the menu's guard.
-        if (!canAddLocMappingPage())
-        {
-            JOptionPane.showMessageDialog(this,
-                I18n.f("page.ui.errorTooManyPages", MAX_LOC_MAPPINGS));
-
-            return;
-        }
-
         this.numLocMappings++;
 
         this.locMapping.add(new HashMap<>());
 
         prefs.putInt(LOC_MAPPING_PAGES_PREF, this.numLocMappings);
-
-        this.locKeyTabs.add(getLocMappingPageTabTitle(this.numLocMappings), new JPanel());
-
-        adjustTabbedPaneHeight(locKeyTabs);
-
-        this.switchLocMapping(this.numLocMappings);
-
-        repaintMappings();
     }
 
-    /**
-     * Deletes the page showing now, if it is empty and not the last one that may be deleted.  Its NAME goes with it and
-     * the later names move up: they are stored by page number.
-     */
-    public void deleteCurrentLocMappingPage()
+    /** Takes page `number` out and stores the new count. */
+    @Override
+    public void removePage(int number)
     {
-        if (!canDeleteCurrentPage())
-        {
-            JOptionPane.showMessageDialog(this, this.numLocMappings <= LocMappingPages.MIN_LOC_MAPPINGS
-                ? I18n.f("page.ui.errorNeedAtLeast", LocMappingPages.MIN_LOC_MAPPINGS)
-                : I18n.t("page.ui.errorPageNotEmpty"));
-
-            return;
-        }
-
-        int going = this.locMappingNumber;
-
-        this.locMapping.remove(going - 1);
-
-        for (int at = going; at < this.numLocMappings; at++)
-        {
-            String next = this.pageNames.get(at + 1);
-
-            if (next == null)
-            {
-                this.pageNames.remove(at);
-            }
-            else
-            {
-                this.pageNames.put(at, next);
-            }
-        }
-
-        this.pageNames.remove(this.numLocMappings);
+        this.locMapping.remove(number - 1);
 
         this.numLocMappings--;
 
         prefs.putInt(LOC_MAPPING_PAGES_PREF, this.numLocMappings);
-
-        this.locKeyTabs.remove(this.numLocMappings);
-
-        for (int at = 0; at < this.numLocMappings; at++)
-        {
-            this.locKeyTabs.setTitleAt(at, getLocMappingPageTabTitle(at + 1));
-        }
-
-        adjustTabbedPaneHeight(locKeyTabs);
-
-        this.switchLocMapping(Math.min(going, this.numLocMappings));
-
-        repaintMappings();
     }
 
     private String getLocMappingPageTabTitle(int tabNumber)
@@ -4556,7 +4500,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return (this.keyboardNumber - 1) * TrainControlUI.KEYBOARD_KEYS;
     }
     
-    private void switchLocMapping(int locPageNum)
+    @Override
+    public void switchLocMapping(int locPageNum)
     {
         if (locPageNum <= this.numLocMappings && locPageNum >= 1)
         {
