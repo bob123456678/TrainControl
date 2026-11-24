@@ -289,7 +289,8 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
      * folder".  A real window and its Autonomy menu, on a sandboxed copy whose setup.json is not JSON; nothing is
      * pressed, and the file is as it was (an unreadable setup may not be written over).
      *
-     * MUTATION: forget the reason in `getAutonomySession`'s catch.
+     * MUTATION: forget the reason in `getAutonomySession`'s catch, or take either session-null reason out of
+     * `whyTheTrainsCannotBePlacedAtTheirHomes`.
      */
     @Test
     public void testASetupThatWillNotReadIsNotCalledMissing() throws Exception
@@ -327,7 +328,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             settled.await(30, java.util.concurrent.TimeUnit.SECONDS);
 
-            final String[] said = new String[4];
+            final String[] said = new String[5];
 
             final java.util.List<String> items = new java.util.ArrayList<>();
 
@@ -336,6 +337,7 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
                 said[0] = String.valueOf(ui[0].getAutonomySession());
                 said[1] = String.valueOf(ui[0].whyAutonomyEditorCannotOpen());
                 said[2] = String.valueOf(ui[0].whyTheSetupCannotBeRead());
+                said[4] = ui[0].whyTheTrainsCannotBePlacedAtTheirHomes();
 
                 // THE AUTONOMY MENU, built as it is when it is opened
                 org.traincontrol.gui.AutonomyMenu menu = new org.traincontrol.gui.AutonomyMenu(ui[0]);
@@ -365,6 +367,29 @@ public class testAHandSendIsRefusedWhileTheSetupIsBroken
 
             assertNotEquals(said[2], "null", "the reason the setup would not read was not kept, so no door can say it"
                 + " (GSP-B2)");
+
+            assertEquals(said[4], I18n.f("autosetup.ui.errorSetupUnreadable", said[2]), "Place All Trains at Their Homes"
+                + " does not say why the setup would not read");
+
+            // A layout folder that is gone has no setup to edit, and is not an unreadable one
+            File folder = sandbox.getFolder();
+            File away = new File(folder.getParentFile(), folder.getName() + "-away");
+
+            assertTrue(folder.renameTo(away), "precondition: the sandbox folder would not move");
+
+            try
+            {
+                final String[] gone = new String[1];
+
+                javax.swing.SwingUtilities.invokeAndWait(() -> gone[0] = ui[0].whyTheTrainsCannotBePlacedAtTheirHomes());
+
+                assertEquals(gone[0], I18n.t("autosetup.ui.errorNoSetupToEdit"), "with no folder to keep a setup in,"
+                    + " Place All Trains at Their Homes does not say there is no setup to edit");
+            }
+            finally
+            {
+                assertTrue(away.renameTo(folder), "the sandbox folder would not move back");
+            }
 
             assertFalse(items.contains(I18n.t("autosetup.ui.menuNoSetupPossible")), "the Autonomy menu says autonomy"
                 + " needs a layout stored on this computer, on one that is (GSP-B2): " + items);
