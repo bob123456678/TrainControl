@@ -107,13 +107,12 @@ public final class LocMappingPages
     }
 
     /**
-     * Adds a page at the end and goes to it: pages are reached by NUMBER (the digit keys), so inserting in the middle
-     * would renumber the rest.  Capped HERE ONLY: `setViewListener` grows the count past MAX_LOC_MAPPINGS, as clamping
-     * on load would throw away the mappings on every page past the fiftieth.  Refusals are asked over `over`.
+     * Adds a page at the end (the digit keys reach pages by number) and goes to it.  Capped here only: loading may
+     * grow the count past MAX_LOC_MAPPINGS.  Refusals are asked over `over`.
      */
     public void addLocMappingPage(Component over)
     {
-        // Refused here too, not only grayed in the menu: the next caller of this public method lacks the menu's guard.
+        // Refused here too, not only grayed in the menu.
         if (!ui.canAddLocMappingPage())
         {
             JOptionPane.showMessageDialog(over, I18n.f("page.ui.errorTooManyPages", TrainControlUI.MAX_LOC_MAPPINGS));
@@ -132,10 +131,7 @@ public final class LocMappingPages
         ui.repaintMappings();
     }
 
-    /**
-     * Deletes the page showing now, if it is empty and not the last one that may be deleted.  Its NAME goes with it and
-     * the later names move up: they are stored by page number.  Refusals are asked over `over`.
-     */
+    /** Deletes the empty page showing, above the minimum; later names move up.  Refusals are asked over `over`. */
     public void deleteCurrentLocMappingPage(Component over)
     {
         int count = ui.getNumLocMappings();
@@ -204,7 +200,7 @@ public final class LocMappingPages
                 JOptionPane.PLAIN_MESSAGE,
                 null,
                 TrainControlUI.YES_NO_OPTS,
-                // NOT [0]: this replaces a page of mappings, and its twin was fixed and this one was not
+                // Default to No: this replaces a page of mappings
                 TrainControlUI.YES_NO_OPTS[1]
             );
             if (dialogResult == JOptionPane.YES_OPTION)
@@ -213,7 +209,6 @@ public final class LocMappingPages
                 this.pageToCopy = null;
                 ui.repaintMappings();
 
-                // We need to repaint the locomotive if a button on this page was active
                 ui.redisplayCurrentKey();
             }
         }
@@ -251,7 +246,7 @@ public final class LocMappingPages
         });
     }
 
-    /** Clears page `pageNumber` and puts `locs` on its keys in keyboard order, skipping nulls; shows the Q key. */
+    /** Clears page `pageNumber`, puts `locs` on its keys in keyboard order, skipping nulls; shows the Q key. */
     void mapLocomotivesToPage(int pageNumber, List<Locomotive> locs)
     {
         SwingUtilities.invokeLater(() ->
@@ -267,7 +262,6 @@ public final class LocMappingPages
 
                 Locomotive l = iterator.next();
 
-                // Only assign if locomotive is valid
                 if (l != null && ui.currentLocMapping().get(key) == null) ui.currentLocMapping().put(key, l);
             }
 
