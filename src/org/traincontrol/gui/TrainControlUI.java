@@ -1069,7 +1069,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
             .put(KeyStroke.getKeyStroke("RIGHT"), "none");
            
         // Restore UI component state
-        mountRoutingLogic();
+        autonomySettingsTab.mountRoutingLogic();
         layoutMenus.buildDiagramDrawingMenu();
         layoutMenus.buildDiagramExportMenu();
         layoutMenus.mountRightClickTipsMenu();
@@ -6710,146 +6710,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         }
     }
 
-    /**
-     * Whether the routing dropdown is being put back by us: setSelectedIndex fires an ActionEvent that would re-enter
-     * the listener.  Event thread only.
-     */
-    private boolean restoringRoutingLogic = false;
+    /** Set while the routing dropdown is put back by us, so its ActionEvent does not re-enter the listener. */
+    boolean restoringRoutingLogic = false;
 
-    /**
-     * Puts what the chosen routing rule DOES onto its control, where ten similar options must be told apart (OB-163).
-     */
     private void refreshRoutingLogicTooltip()
     {
-        if (algorithmType == null) return;
-
-        String general = I18n.t("ui.main.tooltip.routingLogic");
-
-        int at = algorithmType.getSelectedIndex();
-
-        if (at < 0 || at >= ROUTING_ORDER.length)
-        {
-            setToolTipAtRest(algorithmType, general);
-
-            return;
-        }
-
-        // HTML so the two paragraphs wrap.
-        setToolTipAtRest(algorithmType, "<html><p width=\"420\">" + general + "<br><br>"
-            + I18n.t("autolayout.ui.tooltip.pathPreference" + ROUTING_ORDER[at].name())
-            + "</p></html>");
+        autonomySettingsTab.refreshRoutingLogicTooltip();
     }
 
-    /**
-     * Puts the routing dropdown back to the rule in force, holding the flag so the listener does not run; a rule
-     * ROUTING_ORDER cannot find leaves it alone.
-     */
     void restoreRoutingLogicSelection()
     {
-        if (algorithmType == null || this.model == null || !this.model.hasAutoLayout()) return;
-
-        Layout.PathPreference now = this.model.getAutoLayout().getPathPreference();
-
-        this.restoringRoutingLogic = true;
-
-        try
-        {
-            for (int at = 0; at < ROUTING_ORDER.length; at++)
-            {
-                if (ROUTING_ORDER[at] == now)
-                {
-                    algorithmType.setSelectedIndex(at);
-
-                    // Inside the flag the listener is suppressed, so ask for the tooltip here too.
-                    refreshRoutingLogicTooltip();
-
-                    return;
-                }
-            }
-        }
-        finally
-        {
-            this.restoringRoutingLogic = false;
-        }
-    }
-
-    /**
-     * Fills in the routing-logic dropdown from the designer (MT-226) without touching the layout: a GroupLayout.replace
-     * in the wrong order stops the application starting.
-     */
-    private void mountRoutingLogic()
-    {
-        if (algorithmType == null) return;
-
-        // Translated at runtime: the form's English label is not ours to edit.
-        if (jLabel2 != null)
-        {
-            jLabel2.setText(I18n.t("ui.main.routingLogic"));
-            jLabel2.setToolTipText(I18n.t("ui.main.tooltip.routingLogic"));
-        }
-
-        algorithmType.removeAllItems();
-
-        for (Layout.PathPreference option : ROUTING_ORDER)
-        {
-            algorithmType.addItem(I18n.t("autolayout.ui.pathPreference" + option.name()));
-        }
-
-        // Capped at 230 px, the width it is aligned to in the editor; set here because the width follows the language.
-        Dimension capped = new Dimension(230, algorithmType.getPreferredSize().height);
-
-        algorithmType.setPreferredSize(capped);
-        algorithmType.setMaximumSize(capped);
-
-        refreshRoutingLogicTooltip();
-
-        algorithmType.addActionListener(event ->
-        {
-            // Our own restore, not a person; checked here because setSelectedIndex delivers this synchronously.
-            if (this.restoringRoutingLogic) return;
-
-            if (this.model == null || !this.model.hasAutoLayout()
-                || this.model.getAutoLayout() == null) return;
-
-            SwingUtilities.invokeLater(() ->
-            {
-                if (this.model.hasAutoLayout())
-                {
-                    // Back before the modal message: a changed rule mid-run would leave two in force.
-                    if (!refuseWhileARunHoldsTheSetup(this, () ->
-                        {
-                            this.applyAutoRouteListSelections();
-                            restoreRoutingLogicSelection();
-                        }))
-                    {
-                        int at = algorithmType.getSelectedIndex();
-
-                        if (at < 0 || at >= ROUTING_ORDER.length) return;
-
-                        Layout.PathPreference option = ROUTING_ORDER[at];
-
-                        // Nothing to do, and saying so would write the setup on every refresh.
-                        if (this.model.getAutoLayout().getPathPreference() == option) return;
-
-                        this.model.getAutoLayout().setPathPreference(option);
-
-                        refreshRoutingLogicTooltip();
-
-                        // Said out loud when it cannot be kept: a rule reverting at restart looks like "it did not
-                        // save".  true: a person just chose this.
-                        if (!persistPathPreference(option, true))
-                        {
-                            this.model.log(I18n.f("autolayout.warnRoutingRuleNotStored",
-                                I18n.t("autolayout.ui.pathPreference" + option.name())));
-                        }
-                    }
-                }
-            });
-        });
+        autonomySettingsTab.restoreRoutingLogicSelection();
     }
 
     /** The order the routing rules are offered in, which is also the index the dropdown speaks. */
-    private static final Layout.PathPreference[] ROUTING_ORDER =
+    static final Layout.PathPreference[] ROUTING_ORDER =
     {
         Layout.PathPreference.RANDOM,
         Layout.PathPreference.RANDOM_ANY_STATION,
@@ -6862,86 +6737,13 @@ public class TrainControlUI extends PositionAwareJFrame implements View
         Layout.PathPreference.LEAST_RECENTLY_VISITED,
         Layout.PathPreference.BALANCED_PRIORITY
     };
-    /**
-     * Writes the routing rule into its configuration; true when stored.  `mayBuildSession` only when a person just
-     * clicked: the session getter is a lazy builder that can raise a dialog, so a settings refresh passes false.
-     */
-    private boolean persistPathPreference(Layout.PathPreference option,
-        boolean mayBuildSession)
-    {
-        try
-        {
-            // The field when nobody clicked, the builder when they did: a refresh must not run the lazy builder.
-            AutonomySession session = mayBuildSession ? getAutonomySession() : autonomySession;
 
-            return session != null && session.setGlobal("pathPreference", option.name());
-        }
-        catch (Exception e)
-        {
-            if (this.model != null) this.model.log(e);
-
-            return false;
-        }
-    }
     /** Whether this session has already carried the pre-3.0.0 routing preference across; the state cannot say. */
-    private boolean pathPreferenceCarried = false;
+    boolean pathPreferenceCarried = false;
 
-    /**
-     * Carries a pre-configuration routing choice (a java Preference nothing reads any more) across once and deletes the
-     * old key, only when the configuration carries none.  `live` is the loaded layout or null.
-     */
     void migrateStoredPathPreference(Layout live)
     {
-        if (live == null) return;
-
-        // The pre-move spelling, written out because the constant is gone.
-        final String legacy = "AutonomyPathPreference";
-
-        String was = prefs.get(legacy, null);
-
-        if (was == null) return;
-
-        // Already carried this session.  The flag exists because a second call cannot tell the user's own rule from the
-        // one this method just wrote.
-        if (this.pathPreferenceCarried) return;
-
-        // The stored answer, not live.getPathPreference() alone, which reads back what this method wrote.  The field,
-        // not getAutonomySession(): this runs from a refresh.
-        AutonomySession stored = this.autonomySession;
-
-        // The loaded layout's own answer counts too: a legacy autonomy.json can carry a rule getGlobal cannot see.
-        if (live.getPathPreference() != Layout.PathPreference.RANDOM)
-        {
-            prefs.remove(legacy);
-
-            return;
-        }
-
-        if (stored != null && stored.getGlobal("pathPreference") != null)
-        {
-            // The configuration has its own answer, so the old one is stale and may go.
-            prefs.remove(legacy);
-
-            return;
-        }
-
-        try
-        {
-            Layout.PathPreference option = Layout.PathPreference.valueOf(was);
-
-            live.setPathPreference(option);
-
-            // Before the persist: the carry has happened either way; persist only says if it is durable.
-            this.pathPreferenceCarried = true;
-
-            // The old key goes only once the new home has it, so a migration that cannot run today runs tomorrow.
-            if (persistPathPreference(option, false)) prefs.remove(legacy);
-        }
-        catch (Exception e)
-        {
-            // A choice this build does not have, or a setup that would not save; the key stays so it can be retried.
-            if (this.model != null) this.model.log(e);
-        }
+        autonomySettingsTab.migrateStoredPathPreference(live);
     }
 
     /**
@@ -16086,7 +15888,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     }
 
     /** Sets a control's own tooltip, or the one it gets back while grayed (a load can set it mid-run). */
-    private static void setToolTipAtRest(javax.swing.JComponent control, String text)
+    static void setToolTipAtRest(javax.swing.JComponent control, String text)
     {
         Object[] atRest = (Object[]) control.getClientProperty(TOOLTIP_AT_REST);
 
@@ -18577,6 +18379,11 @@ public class TrainControlUI extends PositionAwareJFrame implements View
     javax.swing.JComboBox<String> algorithmType()
     {
         return this.algorithmType;
+    }
+
+    javax.swing.JLabel jLabel2()
+    {
+        return this.jLabel2;
     }
 
     javax.swing.JCheckBox atomicRoutes()
