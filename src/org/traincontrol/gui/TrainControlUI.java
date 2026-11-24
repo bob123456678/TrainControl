@@ -16724,11 +16724,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         this.layoutFileActions.duplicateOrRenameCurrentLayout(newName, false, true, false, pageActionFrom);
     }//GEN-LAST:event_duplicateLayoutMenuItemActionPerformed
 
-    private void combineLinkedPages()
-    {
-        this.layoutFileActions.combineLinkedPages(pageActionFrom);
-    }
-
     private void deleteLayoutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteLayoutMenuItemActionPerformed
 
         final LayoutEditor from = editorBehind(evt);
@@ -17406,7 +17401,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     }//GEN-LAST:event_mediumButtonActionPerformed
 
     private void combineMenuPressed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_combineMenuPressed
-        combineLinkedPages();
+        this.layoutFileActions.combineLinkedPages(pageActionFrom);
     }//GEN-LAST:event_combineMenuPressed
 
     public final void displayKeyboardHints(boolean visibility)

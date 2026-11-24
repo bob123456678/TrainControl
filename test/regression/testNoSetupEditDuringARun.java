@@ -3716,13 +3716,14 @@ public class testNoSetupEditDuringARun
 
             SwingUtilities.invokeAndWait(() -> pages.setSelectedItem("1 - Main"));
 
-            final java.lang.reflect.Method combine = Reflect.method(TrainControlUI.class, "combineLinkedPages");
+            final java.lang.reflect.Method combine = Reflect.method(ui[0].layoutFileActions().getClass(), "combineLinkedPages",
+                org.traincontrol.gui.layouteditor.LayoutEditor.class);
 
             SwingUtilities.invokeAndWait(() ->
             {
                 try
                 {
-                    combine.invoke(ui[0]);
+                    combine.invoke(ui[0].layoutFileActions(), (Object) null);
 
                     said[0] = gate.invoke(ui[0], true);
                 }
