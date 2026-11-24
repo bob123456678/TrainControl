@@ -59,7 +59,6 @@ final class LocMappingPages
     }
 
     private final Keyboard ui;
-
     /** "Show Page Numbers"; null until `installShowPageNumbersMenuItem` builds it. */
     private JCheckBoxMenuItem numbersItem;
 
