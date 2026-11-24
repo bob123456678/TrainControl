@@ -49,7 +49,8 @@ public final class SyncDifferencesWindow
     /** "Deletes X" after a rename: a consequence to read before choosing it. */
     private static final Color DELETES = new Color(160, 0, 0);
 
-    private final JDialog dialog;
+    /** The window; `ask` shows it. */
+    final JDialog dialog;
     private final RenameProposals proposals;
     private final ChoiceTable table;
     private final Map<Row, Map<Answer, JRadioButton>> choices = new LinkedHashMap<>();
@@ -120,13 +121,25 @@ public final class SyncDifferencesWindow
      */
     public static Map<Row, Answer> ask(Window owner, RenameProposals proposals, Locomotive only)
     {
+        SyncDifferencesWindow w = over(owner, proposals, only);
+        if (w == null) return new LinkedHashMap<>();
+        w.dialog.setVisible(true);
+        return w.answers();
+    }
+
+    /** The table `ask` shows, built and not shown; null with nothing to ask. */
+    static SyncDifferencesWindow over(Window owner, RenameProposals proposals, Locomotive only)
+    {
         List<Row> rows = new ArrayList<>();
         for (Row r : proposals.getRows())
             if ((only == null || r.loco == only) && (r.asksName() || r.asksAddress() || r.byHand)) rows.add(r);
-        if (rows.isEmpty()) return new LinkedHashMap<>();
-        SyncDifferencesWindow w = new SyncDifferencesWindow(owner, proposals, rows);
-        w.dialog.setVisible(true);
-        return w.continued ? w.picks() : null;
+        return rows.isEmpty() ? null : new SyncDifferencesWindow(owner, proposals, rows);
+    }
+
+    /** The answers by row once Continue is pressed; null before that, or once canceled or closed. */
+    Map<Row, Answer> answers()
+    {
+        return this.continued ? picks() : null;
     }
 
     /** A row's cells, named for the tests: each side's radio beside its block; a by-hand row's text, no radios. */
