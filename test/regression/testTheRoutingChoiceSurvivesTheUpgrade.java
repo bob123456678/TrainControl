@@ -737,21 +737,11 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
     {
         final int at = java.util.Arrays.asList(routingOrder()).indexOf(rule);
 
-        javax.swing.SwingUtilities.invokeAndWait(() -> dropdownOf0(ui).setSelectedIndex(at));
+        final javax.swing.JComboBox<?> dropdown = dropdownOf(ui);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> dropdown.setSelectedIndex(at));
 
         settle();
-    }
-
-    private static javax.swing.JComboBox<?> dropdownOf0(org.traincontrol.gui.TrainControlUI ui)
-    {
-        try
-        {
-            return dropdownOf(ui);
-        }
-        catch (Exception e)
-        {
-            throw new IllegalStateException(e);
-        }
     }
 
     /** A chosen rule is written to the layout and the setup, explained on the control, and not said to have failed. */
@@ -793,7 +783,9 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             assertEquals(session.getGlobal("pathPreference"), "MOST_POINTS", "choosing the rule in force wrote the setup");
 
-            javax.swing.SwingUtilities.invokeAndWait(() -> dropdownOf0(ui).setSelectedIndex(-1));
+            final javax.swing.JComboBox<?> none = dropdownOf(ui);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> none.setSelectedIndex(-1));
 
             settle();
 
@@ -1084,5 +1076,134 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
                 org.traincontrol.util.I18n.t("autolayout.ui.tooltip.pathPreference" + order[dropdown.getSelectedIndex()].name())),
                 "the dropdown starts with no explanation of the rule it shows");
         });
+    }
+
+    /**
+     * A window explains the rule it starts on as soon as it is built, before any layout is loaded.
+     *
+     * The model is null at that point and the restore returns early until an Auto layout exists, so the mount's own
+     * refresh is the only thing that gives the dropdown its rule text then.
+     *
+     * MUTATION this catches: removing the `refreshRoutingLogicTooltip()` call from `AutonomySettingsTab.mountRoutingLogic`.
+     */
+    @Test
+    public void testTheDropdownExplainsItsRuleOnceBuilt() throws Exception
+    {
+        Display.needed("the routing dropdown lives on a window");
+
+        support.LayoutSandbox sandbox = null;
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+
+        try
+        {
+            sandbox = support.LayoutSandbox.open();
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> ui[0] = new org.traincontrol.gui.TrainControlUI());
+
+            javax.swing.JComboBox<?> dropdown = dropdownOf(ui[0]);
+
+            assertEquals(dropdown.getSelectedIndex(), 0, "the window does not start on the first rule");
+
+            assertTrue(dropdown.getToolTipText().contains(org.traincontrol.util.I18n.t(
+                "autolayout.ui.tooltip.pathPreference" + routingOrder()[0].name())),
+                "a window just built does not explain the rule it shows");
+        }
+        finally
+        {
+            if (ui[0] != null) javax.swing.SwingUtilities.invokeAndWait(() -> ui[0].dispose());
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /**
+     * A refused pick puts the Auto route list back to the routes the layout activates, not only the dropdown.
+     *
+     * The list's selection can drift from the layout by keyboard (arrow keys, Ctrl-A fire no mouse release), and the
+     * refusal is the one place that is put right again.
+     *
+     * MUTATION this catches: dropping `this.ui.applyAutoRouteListSelections()` from the putBack in `AutonomySettingsTab.mountRoutingLogic`.
+     */
+    @Test
+    public void testARefusedPickPutsTheRouteListBack() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            for (int id : new int[] { 9831, 9832 })
+            {
+                model.newRoute("RL route " + id, id,
+                    java.util.Collections.singletonList(org.traincontrol.base.RouteCommand.RouteCommandStop()),
+                    8800 + id % 10, org.traincontrol.marklin.MarklinRoute.s88Triggers.CLEAR_THEN_OCCUPIED, false, null);
+            }
+
+            final int a = model.getRoute("RL route 9831").getId();
+            final int b = model.getRoute("RL route 9832").getId();
+
+            model.getAutoLayout().setActivateRouteIDs(java.util.Collections.singletonList(a));
+
+            support.Components.onTheEventThread(() -> Reflect.method(org.traincontrol.gui.TrainControlUI.class,
+                "updateAutoRouteList").invoke(ui));
+
+            final javax.swing.JList<?> list = (javax.swing.JList<?>) Reflect.get(org.traincontrol.gui.TrainControlUI.class,
+                ui, "autoRouteList");
+
+            final int atA = indexOfRoute(list, a);
+            final int atB = indexOfRoute(list, b);
+
+            assertTrue(atA >= 0 && atB >= 0 && atA != atB, "the route list does not hold both routes");
+
+            giveTheWindowThisSession(ui, aSessionWithRoom());
+
+            final javax.swing.JComboBox<?> dropdown = dropdownOf(ui);
+
+            final int inForceAt = dropdown.getSelectedIndex();
+
+            Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui, "stagingFlowActive", true);
+
+            // The selection drifts to B with no event the layout hears.
+            javax.swing.SwingUtilities.invokeAndWait(() -> list.setSelectedIndex(atB));
+
+            assertEquals(list.getSelectedIndices(), new int[] { atB }, "the drift was not set up");
+
+            // Not invokeAndWait: the refusal is a modal question that holds the event thread until it is closed.
+            javax.swing.SwingUtilities.invokeLater(() -> dropdown.setSelectedIndex(inForceAt == 0 ? 1 : 0));
+
+            boolean said = false;
+            long until = System.currentTimeMillis() + 10000;
+
+            while (!said && System.currentTimeMillis() < until)
+            {
+                settle();
+
+                for (java.awt.Window w : java.awt.Window.getWindows())
+                {
+                    if (w instanceof javax.swing.JDialog && w.isShowing())
+                    {
+                        final java.awt.Window question = w;
+
+                        said = true;
+
+                        javax.swing.SwingUtilities.invokeLater(question::dispose);
+                    }
+                }
+            }
+
+            assertTrue(said, "the refused pick was not said");
+
+            settle();
+
+            assertEquals(list.getSelectedIndices(), new int[] { atA }, "a refused pick left the route list off the layout's routes");
+            assertEquals(model.getAutoLayout().getActivateRouteIDs(), java.util.Collections.singletonList(a));
+        });
+    }
+
+    private static int indexOfRoute(javax.swing.JList<?> list, int id)
+    {
+        for (int i = 0; i < list.getModel().getSize(); i++)
+        {
+            if (((org.traincontrol.marklin.MarklinRoute) list.getModel().getElementAt(i)).getId() == id) return i;
+        }
+
+        return -1;
     }
 }
