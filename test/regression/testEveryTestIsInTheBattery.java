@@ -46,7 +46,8 @@ public class testEveryTestIsInTheBattery
 
         for (File folder : new File("test").listFiles())
         {
-            if (!folder.isDirectory()) continue;
+            // test/unit runs as one suite, `ant test-unit`, with no line per class
+            if (!folder.isDirectory() || folder.getName().equals("unit")) continue;
 
             File[] files = folder.listFiles();
 
@@ -106,6 +107,57 @@ public class testEveryTestIsInTheBattery
                 + "this file, so a rename would leave the exemption pointing at nothing and the real "
                 + "class silently unchecked");
         }
+    }
+
+    /** What a unit test never builds or opens: the window, a station, its port, or a railway (test/README.md). */
+    private static final java.util.regex.Pattern NOT_A_UNIT = java.util.regex.Pattern.compile(
+        "\\b(TrainControlUI|MarklinControlStation|NetworkProxy|DatagramSocket|LayoutSandbox|Scenario)\\b");
+
+    /** The only support helpers a unit test may use: each builds no window, station or sandbox, and opens no layout. */
+    private static final List<String> UNIT_SUPPORT = java.util.Arrays.asList("Components", "Pixels");
+
+    private static final java.util.regex.Pattern SUPPORT_USE = java.util.regex.Pattern.compile("\\bsupport\\.(\\w+)");
+
+    /**
+     * The unit suite is test/unit, run in one JVM by `ant test-unit` and class by class by the battery: every file there
+     * is `package unit;` and a test, its code (comments stripped) names nothing that builds the window, a station or a
+     * railway, and it uses only the `support` helpers in UNIT_SUPPORT.
+     *
+     * MUTATION: put `Class<?> c = org.traincontrol.marklin.MarklinControlStation.class;` or `support.StationRig.class`
+     * in a unit class, even after a one-line block comment, and this fails naming it.
+     */
+    @Test
+    public void testTheUnitSuiteBuildsNoWindowOrStation() throws Exception
+    {
+        assertTrue(withoutXmlComments(new String(Files.readAllBytes(new File("build.xml").toPath()),
+            StandardCharsets.UTF_8)).contains("testincludes=\"unit/*.java\""), "build.xml no longer runs test/unit");
+
+        List<String> wrong = new ArrayList<>();
+
+        for (File file : new File("test/unit").listFiles())
+        {
+            List<String> lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
+
+            if (!file.getName().endsWith(".java") || !lines.contains("package unit;")
+                || !lines.toString().contains("@Test")) wrong.add(file.getName() + " (not a unit test class)");
+
+            for (String line : String.join("\n", lines).replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "")
+                .split("\n"))
+            {
+                String code = line.trim();
+
+                if (NOT_A_UNIT.matcher(code).find()) wrong.add(file.getName() + ": " + code);
+
+                for (java.util.regex.Matcher use = SUPPORT_USE.matcher(code); use.find(); )
+                {
+                    if (!UNIT_SUPPORT.contains(use.group(1))) wrong.add(file.getName() + ": support." + use.group(1));
+                }
+            }
+        }
+
+        assertEquals(wrong, new ArrayList<String>(), "test/unit holds unit tests only: one class, through its own API, "
+            + "in a JVM shared with the others, so no window, station, port or railway. Move these to core/, ui/ or "
+            + "regression/ (support helpers allowed: " + UNIT_SUPPORT + "): " + wrong);
     }
 
     /**
@@ -327,7 +379,7 @@ public class testEveryTestIsInTheBattery
 
         List<String> unlisted = new ArrayList<>();
 
-        for (String folder : new String[] {"core", "ui", "regression", "support"})
+        for (String folder : new String[] {"core", "ui", "regression", "support", "unit"})
         {
             for (File file : new File("test/" + folder).listFiles())
             {
@@ -374,7 +426,7 @@ public class testEveryTestIsInTheBattery
 
     private boolean exists(String name)
     {
-        for (String folder : new String[] {"core", "ui", "regression", "support"})
+        for (String folder : new String[] {"core", "ui", "regression", "support", "unit"})
         {
             if (new File("test/" + folder + "/" + name + ".java").exists()) return true;
         }

@@ -139,7 +139,17 @@
       a run for a class that reported only skips.
     -->
     <property name="test-sys-prop.traincontrol.anyReceivePort" value="true"/>
-    <target depends="init,compile-test,-init-test-run-module-properties,-pre-test-run" if="have.tests" name="-do-test-run">
+    <!-- THE UNIT SUITE: test/unit builds no station and binds no port (test/README.md), so its classes share one JVM
+         and need no line each.  `ant test-unit` runs them alone in seconds; `ant test` runs them first, and a unit failure there
+         still lets the per-class list run: the build fails at the end. -->
+    <target depends="init,compile-test,-init-test-run-module-properties,-pre-test-run" if="have.tests" name="-do-test-unit">
+        <echo message="---------- unit/* ----------"/>
+        <j2seproject3:test includes="${includes}" testincludes="unit/*.java"/>
+    </target>
+    <target depends="-do-test-unit" if="have.tests" name="test-unit" description="Run the unit tests (test/unit) in one JVM.">
+        <fail if="tests.failed" unless="ignore.failing.tests">Some unit tests failed; see details above.</fail>
+    </target>
+    <target depends="init,compile-test,-init-test-run-module-properties,-pre-test-run,-do-test-unit" if="have.tests" name="-do-test-run">
         <!-- The tests live in test/core, test/ui, test/regression and test/support since 2026-08-22 -
              see test/README.md for which folder a new one belongs in.  These entries do not name the
              folder, because testincludes below is a FILE pattern and **/ already spans it. -->
