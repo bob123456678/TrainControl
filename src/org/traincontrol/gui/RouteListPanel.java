@@ -3,15 +3,23 @@ package org.traincontrol.gui;
 import java.awt.HeadlessException;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import org.traincontrol.base.LayoutDiagram;
 import org.traincontrol.base.Route;
+import org.traincontrol.gui.widgets.BusyDialog;
+import org.traincontrol.gui.widgets.DetailsArea;
+import org.traincontrol.marklin.MarklinControlStation;
 import org.traincontrol.marklin.MarklinRoute;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.Util;
@@ -840,5 +848,129 @@ final class RouteListPanel
 
             // this.RouteList.setToolTipText("Left click route to execute, right click to edit");
         });
+    }
+
+    /** Routes > Import Routes: the file, the replace question, the re-arm question, then the import under BusyDialog. */
+    void importRoutes()
+    {
+        // The chooser stays on the event thread (OB-137): a modal JFileChooser shown from another thread is painted
+        // from two threads at once.  The slow half (parsing, the Central Station sync) runs off it under BusyDialog.
+        JFileChooser fc = this.ui.getFileChooser(JFileChooser.OPEN_DIALOG, "json");
+
+        if (fc.showOpenDialog(this.ui) != JFileChooser.APPROVE_OPTION) return;
+
+        final File chosen = fc.getSelectedFile();
+
+        // Every route there is goes (`importRoutes`), so it asks first, saying how many; No is the default.
+        int existing = this.ui.getModel().getRouteList().size();
+
+        String replaces = existing == 1 ? I18n.t("route.ui.confirmReplaceTheOneRoute")
+            : I18n.f("route.ui.confirmReplaceAllRoutes", existing);
+
+        if (existing > 0 && JOptionPane.showOptionDialog(this.ui, replaces, I18n.t("route.ui.titleImportRoutes"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, TrainControlUI.YES_NO_OPTS,
+            TrainControlUI.YES_NO_OPTS[1])
+            != JOptionPane.YES_OPTION) return;
+
+        // Held rather than thrown: the work half must not raise a dialog.
+        final Exception[] failed = new Exception[1];
+        final int[] added = new int[1];
+        final int[] rearmed = new int[1];
+
+        // Read and asked about here, before anything is replaced: routes saved armed come back armed only if the user
+        // says so.  A file this cannot read is reported by the import below.
+        String read = null;
+
+        try
+        {
+            read = new String(Files.readAllBytes(Paths.get(chosen.getPath())), StandardCharsets.UTF_8);
+        }
+        catch (Exception unreadable)
+        {
+            failed[0] = unreadable;
+        }
+
+        final String json = read;
+
+        final List<String> savedArmed = json == null
+            ? Collections.<String>emptyList() : this.ui.getModel().routesSavedArmed(json);
+
+        // No is the default: an import that starts nothing cannot surprise anybody.  Routes by name (MT-496), in a
+        // Details list under the question.
+        final boolean arm = !savedArmed.isEmpty() && JOptionPane.showOptionDialog(this.ui,
+            DetailsArea.message(I18n.f("route.ui.confirmRearmImported", savedArmed.size()), savedArmed),
+            I18n.t("route.ui.confirmRearmImportedTitle"),
+            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, TrainControlUI.YES_NO_OPTS,
+            TrainControlUI.YES_NO_OPTS[1])
+            == JOptionPane.YES_OPTION;
+
+        final LayoutDiagram before = this.ui.shownDiagram();
+
+        this.ui.importRoutesMenuItem().setEnabled(false);
+
+        BusyDialog.run(this.ui, I18n.t("ui.busySyncingWithCS"),
+            () ->
+            {
+                if (failed[0] != null) return;
+
+                try
+                {
+                    added[0] = this.ui.getModel().importRoutes(json, arm);
+
+                    // Counted from what the import armed, as the log counts it (MT-497): a route with no sensor is not
+                    // armed.
+                    for (String name : savedArmed)
+                    {
+                        Route imported = this.ui.getModel().getRoute(name);
+
+                        if (arm && imported != null && imported.isEnabled()) rearmed[0]++;
+                    }
+
+                    TrainControlUI.getPrefs().put(TrainControlUI.LAST_USED_FOLDER, chosen.getParent());
+
+                    this.ui.syncAfterAnEdit();
+                }
+                catch (Exception e)
+                {
+                    failed[0] = e;
+                }
+            },
+            () ->
+            {
+                this.ui.importRoutesMenuItem().setEnabled(true);
+
+                if (failed[0] != null)
+                {
+                    JOptionPane.showMessageDialog(this.ui,
+                        I18n.t("route.ui.errorFailedToImportRoutesCheckLog"));
+
+                    this.ui.getModel().logf("route.errorImportFailedWithMessage", failed[0].getMessage());
+
+                    this.ui.getModel().log(failed[0]);
+
+                    return;
+                }
+
+                this.ui.redrawRouteSquaresOrRebuild(before);
+                this.ui.repaintLoc();
+
+                resetRouteSpinners();
+                refreshRouteList();
+
+                // The routes arrive off and the door says so, or, asked, the ones saved armed come back armed.  A route
+                // with an emergency stop among other commands is split into a stop-only route, named too.
+                List<String> split = new ArrayList<>();
+
+                for (String[] pair : this.ui.getModel().getRoutesSplitByLastImport()) split.add(pair[0]);
+
+                String notice = rearmed[0] > 0
+                    ? I18n.f(MarklinControlStation.IMPORTED_ROUTES_REARMED, added[0],
+                        rearmed[0])
+                    : I18n.f(MarklinControlStation.IMPORTED_ROUTES_NOTICE, added[0],
+                        I18n.t("ui.main.bulkEnable"), I18n.t("route.ui.menuEnableAutoExecution"));
+
+                JOptionPane.showMessageDialog(this.ui, split.isEmpty() ? notice
+                    : DetailsArea.message(notice + "\n\n" + I18n.t("route.ui.infoImportSplitStopRoutes"), split));
+            });
     }
 }
