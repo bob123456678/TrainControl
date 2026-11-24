@@ -315,7 +315,7 @@ public class testEveryLanguageFitsThePopups
 
     /**
      * The CSV import's possible-duplicates table fits in every language: its headings, a row's gray "(can't apply)" and the
-     * one a click on Keep New puts on the row that wanted the same locomotive (FR-249).
+     * one a Merge or Replace puts on the row that wanted the same locomotive (FR-249).
      *
      * MUTATION: in `ChoiceTable.link`, fix a heading's preferred size at 20 by 20 pixels, and this fails in every language.
      */
@@ -336,7 +336,7 @@ public class testEveryLanguageFitsThePopups
 
         LanguageFit.assertNothingClipped("csv duplicates", LanguageFit.everyLanguage(language -> popup("popup-csv-duplicates",
             language, m -> Answering.pressAt(1), csv, later(() -> csvDoor.invoke(null, railway.ui, railway.ui)), null,
-            dialog -> Components.all(dialog, javax.swing.AbstractButton.class, b -> "Fit first:NEW".equals(b.getName())
+            dialog -> Components.all(dialog, javax.swing.AbstractButton.class, b -> "Fit first:REPLACE".equals(b.getName())
             && b.isEnabled()).forEach(javax.swing.AbstractButton::doClick))));
     }
 

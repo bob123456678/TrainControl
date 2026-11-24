@@ -107,12 +107,12 @@ public final class MarklinLocomotiveCsv
         public List<String> names = new ArrayList<>();
     }
 
-    /** What the user keeps of a possible duplicate: both, the locomotive here, or the file's in its place. */
-    public enum Choice { BOTH, OLD, NEW }
+    /** What to do with a possible duplicate: merge it into the one here or replace that, add both, or leave it out. */
+    public enum Choice { MERGE, REPLACE, BOTH, IGNORE }
 
     /**
-     * Why Keep New did not or may not rename the locomotive here: several hold the address, the file lists it, it runs,
-     * an earlier row took it, the row was no longer a possible duplicate, or the rename was refused.
+     * Why Merge or Replace did not or may not rename the locomotive here: several hold the address, the file lists it,
+     * it runs, an earlier row took it, the row was no longer a possible duplicate, or the rename was refused.
      */
     public enum NotNew { SEVERAL, LISTED, RUNNING, TAKEN, GONE, REFUSED }
 
@@ -123,7 +123,7 @@ public final class MarklinLocomotiveCsv
         /** Its decoder address, as "MFX 5". */
         public String address;
         public final List<Locomotive> here = new ArrayList<>();
-        /** Why Keep New may not rename here's one; null where it may. */
+        /** Why Merge and Replace may not rename here's one; null where they may. */
         public NotNew whyNotNew;
     }
 
@@ -146,13 +146,15 @@ public final class MarklinLocomotiveCsv
         public int addressInvalid;
         /** Multi-unit and linked rows left out. */
         public int leftOutMultiUnit;
-        /** Possible duplicates answered Keep Old, so not added. */
-        public int keptOld;
-        /** The file's names that locomotives here took on Keep New. */
+        /** Possible duplicates answered Ignore, so not added. */
+        public int ignored;
+        /** The file's names that locomotives here took on Merge or Replace. */
         public final List<String> renamed = new ArrayList<>();
-        /** Rows answered Keep New that were added beside the locomotive here instead, and why. */
+        /** Of those, the ones that took every detail from the file (Replace); `merged` counts the others. */
+        public int replaced;
+        /** Rows answered Merge or Replace that were added beside the locomotive here instead, and why. */
         public final Map<String, NotNew> notRenamed = new LinkedHashMap<>();
-        /** Rows answered Keep Old that were no longer possible duplicates, so were added. */
+        /** Rows answered Ignore that were no longer possible duplicates, so were added. */
         public final List<String> notLeftOut = new ArrayList<>();
         public final Map<Integer, Why> skipped = new TreeMap<>();
         /** For a skipped line, the cells that made it unreadable: {heading, value} each. */
@@ -418,7 +420,7 @@ public final class MarklinLocomotiveCsv
         return where;
     }
 
-    /** The possible duplicates, in file order, each with the locomotives here at its address and why not Keep New. */
+    /** The possible duplicates, in file order, each with the locomotives here at its address and why not Merge. */
     public List<Duplicate> duplicates(ViewListener model, Plan plan)
     {
         Map<String, String> where = after(model, plan);
@@ -500,10 +502,10 @@ public final class MarklinLocomotiveCsv
     }
 
     /**
-     * The same, each possible duplicate as `choices` has it (Keep Both where it has none).  Keep New renames the
-     * locomotive here through `renameLoc`, so what follows its name follows, then merges the row into it; a Keep New
-     * that may not, or whose locomotive an earlier row took, is Keep Both, and so is a Keep Old whose row is no longer
-     * a possible duplicate: the result says which.
+     * The same, each possible duplicate as `choices` has it (Keep Both where it has none).  Merge and Replace rename the
+     * locomotive here through `renameLoc`, so what follows its name follows, then merge the row into it, Replace once
+     * its own details are cleared; one that may not, or whose locomotive an earlier row took, is Keep Both, and so is an
+     * Ignore whose row is no longer a possible duplicate: the result says which.
      */
     public Result apply(ViewListener model, Plan plan, Map<Row, Choice> choices)
     {
@@ -524,21 +526,24 @@ public final class MarklinLocomotiveCsv
         {
             Duplicate d = duplicates.get(row);
             Choice choice = choices.getOrDefault(row, Choice.BOTH);
-            if (choice == Choice.OLD && d != null)
+            if (choice == Choice.IGNORE && d != null)
             {
-                result.keptOld++;
+                result.ignored++;
                 continue;
             }
-            if (choice == Choice.OLD) result.notLeftOut.add(row.name);
-            if (choice == Choice.NEW)
+            if (choice == Choice.IGNORE) result.notLeftOut.add(row.name);
+            boolean replacing = false;
+            if (choice == Choice.MERGE || choice == Choice.REPLACE)
             {
                 NotNew why = d == null ? NotNew.GONE : d.whyNotNew != null ? d.whyNotNew
                     : taken.add(d.here.get(0)) ? null : NotNew.TAKEN;
-                if (why == null && model.renameLoc(d.here.get(0).getName(), row.name)) result.renamed.add(row.name);
+                boolean renamed = why == null && model.renameLoc(d.here.get(0).getName(), row.name);
+                if (renamed) result.renamed.add(row.name);
                 else result.notRenamed.put(row.name, why == null ? NotNew.REFUSED : why);
+                replacing = renamed && choice == Choice.REPLACE;
+                if (replacing) clear(d.here.get(0));
             }
             Fate fate = fateOf(row, model);
-
             if (row.runtimeBad) result.badRuntime++;
 
             if (fate == Fate.SKIP)
@@ -552,7 +557,8 @@ public final class MarklinLocomotiveCsv
             else if (fate == Fate.MERGE)
             {
                 merge(model, model.getLocByName(row.name), row, moves.get(row.name), held, result);
-                result.merged++;
+                if (replacing) result.replaced++;
+                else result.merged++;
             }
             else
             {
@@ -642,6 +648,22 @@ public final class MarklinLocomotiveCsv
                 result.kept.add(late);
             }
         }
+    }
+
+    /** Replace: empties what a new locomotive has empty, so the merge that follows takes every detail from the file. */
+    static void clear(Locomotive loc)
+    {
+        loc.setFunctionTypes(new int[loc.getNumF()], new int[loc.getNumF()]);
+        loc.unsetLocalFunctionImageURLs();
+        loc.setCustomFunctions(false);
+        loc.setPreferredFunctions(new boolean[loc.getNumF()]);
+        loc.setDepartureFunc(null);
+        loc.setArrivalFunc(null);
+        loc.setReversible(false);
+        loc.setTrainLength(0);
+        loc.setLocalImageURL(null);
+        loc.setPreferredSpeed(0);
+        loc.setStructuredNotes(0, 0, "", "");
     }
 
     /** Fills what is empty on `loc` from the row. */
