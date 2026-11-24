@@ -850,10 +850,7 @@ final class RouteListPanel
         });
     }
 
-    /**
-     * Routes > Import Routes: the file chooser, the question about replacing every route, the one about re-arming those
-     * saved armed, then the import itself under BusyDialog.
-     */
+    /** Routes > Import Routes: the file, the replace question, the re-arm question, then the import under BusyDialog. */
     void importRoutes()
     {
         // The chooser stays on the event thread (OB-137): a modal JFileChooser shown from another thread is painted
