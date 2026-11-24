@@ -2859,17 +2859,17 @@ public class RouteEditorFrame extends JFrame
 
         int lit = parent.highlightAccessories(commanded, ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
-        lit += parent.highlightAddresses(commandedRoutes, TrainControlUI.AddressedAs.ROUTE,
+        lit += parent.highlightAddresses(commandedRoutes, DiagramHighlights.AddressedAs.ROUTE,
             ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
         // And not a square already lit as commanded (OB-286): a three-way is commanded under one address and checked
         // under the other.
         lit += parent.highlightAccessories(checked, ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS, commanded);
 
-        lit += parent.highlightAddresses(checkedSensors, TrainControlUI.AddressedAs.FEEDBACK,
+        lit += parent.highlightAddresses(checkedSensors, DiagramHighlights.AddressedAs.FEEDBACK,
             ImageUtil.HIGHLIGHT_CONDITION, HIGHLIGHT_HOLD_MS);
 
-        lit += parent.highlightAddresses(commandedSensors, TrainControlUI.AddressedAs.FEEDBACK,
+        lit += parent.highlightAddresses(commandedSensors, DiagramHighlights.AddressedAs.FEEDBACK,
             ImageUtil.HIGHLIGHT, HIGHLIGHT_HOLD_MS);
 
         // Nothing lit is an answer too: a route can name accessories that are not drawn anywhere on the diagram.
