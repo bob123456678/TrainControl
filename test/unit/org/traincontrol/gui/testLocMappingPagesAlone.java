@@ -1,14 +1,17 @@
 package org.traincontrol.gui;
 
 import java.awt.image.BufferedImage;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JLabel;
@@ -18,6 +21,7 @@ import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.marklin.MarklinLocomotive;
+import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
@@ -254,6 +258,168 @@ public class testLocMappingPagesAlone
         assertTrue(painted(twelve, true) > painted(three, true) + 2, "page 12's badge is no longer than page 3's");
     }
 
+    /**
+     * Adding a page appends it, gives it a tab named by the pages and goes to it, redrawing the keys.
+     *
+     * MUTATION: in `LocMappingPages.addLocMappingPage`, take out `ui.switchLocMapping(...)`, and the new page is not
+     * shown; or take out `ui.appendPage()`, and there is a tab with no page.
+     */
+    @Test
+    public void testAddingAPageAppendsItAndGoesToIt()
+    {
+        List<String> said = onTheEventThread(() ->
+        {
+            Fake ui = new Fake(3);
+            ui.names.put(4, "Yard");
+            new LocMappingPages(ui).addLocMappingPage(null);
+            return Arrays.asList(String.valueOf(ui.pages.size()), String.valueOf(ui.tabs.getTabCount()),
+                ui.tabs.getTitleAt(3), String.join(",", ui.did));
+        });
+
+        assertEquals(said, Arrays.asList("4", "4", "Yard", "switch 4,repaintMappings"), "pages, tabs, the new tab, "
+            + "what the window was told");
+    }
+
+    /**
+     * Deleting the page showing takes its name and its tab, moves the later names up by one (a page with no name
+     * leaves its successor's gap), and shows the page now in its place, or the last when it was the last.
+     *
+     * MUTATION: in `LocMappingPages.deleteCurrentLocMappingPage`, loop `at < going` in place of `at < count`, and
+     * the names stay on the wrong pages; or show page `going` in place of `Math.min(going, count - 1)`, and deleting
+     * the last page shows one that is gone.
+     */
+    @Test
+    public void testDeletingAPageMovesTheLaterNamesUp()
+    {
+        List<String> said = onTheEventThread(() ->
+        {
+            Fake ui = new Fake(4);
+            ui.showing = 2;
+            ui.names.put(2, "Two");
+            ui.names.put(4, "Four");
+            LocMappingPages pages = new LocMappingPages(ui);
+            pages.deleteCurrentLocMappingPage(null);
+            List<String> out = new ArrayList<>(Arrays.asList(String.valueOf(new TreeMap<>(ui.names)),
+                String.valueOf(ui.pages.size()), String.valueOf(ui.tabs.getTabCount()), ui.tabs.getTitleAt(2),
+                String.join(",", ui.did)));
+
+            ui.did.clear();
+            ui.showing = 3;
+            pages.deleteCurrentLocMappingPage(null);
+            out.add(String.join(",", ui.did));
+            return out;
+        });
+
+        assertEquals(said, Arrays.asList("{3=Four}", "3", "3", "Four", "switch 2,repaintMappings",
+            "switch 2,repaintMappings"), "names, pages, tabs, the third tab, then deleting the last page");
+    }
+
+    /**
+     * Mapping locomotives to a page switches to it, empties it, puts them on its keys in keyboard order (a null takes
+     * its key's turn but is not put; those beyond the last key are dropped), redraws and shows the Q key.
+     *
+     * MUTATION: in `LocMappingPages.mapLocomotivesToPage`, take out `doClearCurrentPage()`, and the page keeps its old
+     * train; test `l != null` away, and the null is put.
+     */
+    @Test
+    public void testLocomotivesAreMappedToAPageInKeyboardOrder() throws Exception
+    {
+        Fake ui = new Fake(3);
+        ui.put(3, train("Old"));
+        Locomotive first = train("A1"), second = train("B2");
+        onTheEventThread(() ->
+        {
+            new LocMappingPages(ui).mapLocomotivesToPage(3, Arrays.asList(first, null, second, train("C3")));
+            return null;
+        });
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        assertEquals(Arrays.asList(name(ui.pages.get(2).get(ui.keys.get(0))), name(ui.pages.get(2).get(ui.keys.get(1))),
+            name(ui.pages.get(2).get(ui.keys.get(2)))), Arrays.asList("A1", "null", "B2"), "the page's three keys");
+        assertEquals(ui.showing + " " + ui.did, "3 [switch 3, repaintMappings, repaintLoc false, repaintMappings, showQ]",
+            "the page shown, and what the window was told");
+    }
+
+    /**
+     * Map Unassigned fills the free keys of the page showing, in keyboard order, with the locomotives mapped nowhere,
+     * A to Z; a key holding a locomotive the model no longer knows counts as free, one on another page is skipped.
+     *
+     * MUTATION: in `LocMappingPages.mapUnassignedLocomotives`, take out `Collections.sort(locs)`, and the first free
+     * key gets "Zed"; or the `isEmpty()` test, and "Mid", on page 2, is put on this page too.
+     */
+    @Test
+    public void testUnassignedLocomotivesFillTheFreeKeysAToZ() throws Exception
+    {
+        Fake ui = new Fake(2);
+        for (String name : new String[] {"Zed", "Alpha", "Mid"}) ui.known.put(name, train(name));
+        ui.put(2, ui.known.get("Mid"));
+        ui.put(1, train("Deleted"));
+        onTheEventThread(() ->
+        {
+            new LocMappingPages(ui).mapUnassignedLocomotives();
+            return null;
+        });
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+
+        assertEquals(Arrays.asList(name(ui.pages.get(0).get(ui.keys.get(0))), name(ui.pages.get(0).get(ui.keys.get(1))),
+            name(ui.pages.get(0).get(ui.keys.get(2)))), Arrays.asList("Alpha", "Zed", "null"), "the page's three keys");
+        assertEquals(ui.did, Arrays.asList("repaintMappings"), "what the window was told");
+    }
+
+    /**
+     * Copy Mappings puts the page showing on the clipboard; Paste asks nothing and changes nothing with nothing on it,
+     * and on the page that was copied.  The Yes and No answers are `ui.testMappingPagesAndLocomotiveDoors`'s.
+     *
+     * MUTATION: in `LocMappingPages.pasteCopiedPage`, take out `pageCopied() &&` and pasting with nothing copied
+     * throws; take out `ui.getLocMappingNumber() != this.pageToCopy &&` and the copied page is asked about.
+     */
+    @Test(timeOut = 30000)
+    public void testAPageIsCopiedAndNotPastedOntoItself()
+    {
+        List<String> said = onTheEventThread(() ->
+        {
+            Fake ui = new Fake(3);
+            ui.showing = 2;
+            LocMappingPages pages = new LocMappingPages(ui);
+            List<String> out = new ArrayList<>();
+            out.add(String.valueOf(pages.pageCopied()));
+            pages.pasteCopiedPage(null);
+            pages.copyCurrentPage();
+            out.add(String.valueOf(pages.pageCopied()));
+            pages.pasteCopiedPage(null);
+            out.add(String.valueOf(pages.pageCopied()));
+            out.add(String.valueOf(ui.did));
+            return out;
+        });
+
+        assertEquals(said, Arrays.asList("false", "true", "true", "[]"), "before, after Copy, after pasting onto it, "
+            + "what the window was told");
+    }
+
+    /**
+     * A confirmed paste (the dialog's Yes is `pasteConfirmed`, which a unit can reach where it cannot answer a modal
+     * dialog) puts the copied page's trains on the page showing, empties the clipboard, redraws the keys and shows
+     * the current key's locomotive again.
+     *
+     * MUTATION: in `LocMappingPages.pasteConfirmed`, take out `ui.redisplayCurrentKey()`, and the key keeps showing
+     * what it did before the paste; take out `ui.replacePage(...)`, and the page is not replaced.
+     */
+    @Test(timeOut = 30000)
+    public void testAConfirmedPasteReplacesThePageAndShowsTheCurrentKey()
+    {
+        Fake ui = new Fake(3);
+        Locomotive copied = train("Copied");
+        ui.put(1, copied);
+        LocMappingPages pages = new LocMappingPages(ui);
+        pages.copyCurrentPage();
+        ui.showing = 2;
+        pages.pasteConfirmed();
+
+        assertSame(ui.pages.get(1).get(ui.keys.get(0)), copied, "the page showing did not get the copied page's train");
+        assertFalse(pages.pageCopied(), "the clipboard still holds the page");
+        assertEquals(ui.did, Arrays.asList("repaintMappings", "redisplay"), "what the window was told");
+    }
+
     /** A locomotive with no station behind it, at an address of its own. */
     private static Locomotive train(String name)
     {
@@ -302,16 +468,18 @@ public class testLocMappingPagesAlone
         final JMenu menu = new JMenu();
         final JCheckBoxMenuItem showTabs = new JCheckBoxMenuItem("Show Page Tabs");
         final List<String> did = new ArrayList<>();
+        final List<JButton> keys = new ArrayList<>();
+        /** The locomotives the railway's model knows, by name, in the order its list gives them. */
+        final Map<String, Locomotive> known = new LinkedHashMap<>();
         int showing = 1;
         Locomotive active;
 
         Fake(int count)
         {
+            for (String key : new String[] {"A", "S", "D"}) this.keys.add(new JButton(key));
             for (int page = 0; page < count; page++)
             {
-                Map<JButton, Locomotive> keys = new LinkedHashMap<>();
-                for (String key : new String[] {"A", "S", "D"}) keys.put(new JButton(key), null);
-                this.pages.add(keys);
+                this.appendPage();
                 this.tabs.addTab("?", new JPanel());
             }
         }
@@ -392,6 +560,75 @@ public class testLocMappingPagesAlone
         public void repaintMappings()
         {
             this.did.add("repaintMappings");
+        }
+
+        @Override
+        public boolean canAddLocMappingPage()
+        {
+            return this.pages.size() < 50;
+        }
+
+        @Override
+        public void appendPage()
+        {
+            Map<JButton, Locomotive> keys = new LinkedHashMap<>();
+            for (JButton key : this.keys) keys.put(key, null);
+            this.pages.add(keys);
+        }
+
+        @Override
+        public void removePage(int number)
+        {
+            this.pages.remove(number - 1);
+        }
+
+        @Override
+        public Set<JButton> keyButtons()
+        {
+            return new LinkedHashSet<>(this.keys);
+        }
+
+        @Override
+        public ViewListener getModel()
+        {
+            return (ViewListener) Proxy.newProxyInstance(ViewListener.class.getClassLoader(),
+                new Class<?>[] {ViewListener.class}, (proxy, method, args) ->
+                    method.getName().equals("getLocList") ? new ArrayList<>(this.known.keySet())
+                        : this.known.get((String) args[0]));
+        }
+
+        @Override
+        public List<String> getAllLocButtonMappings(Locomotive l)
+        {
+            List<String> on = new ArrayList<>();
+            for (Map<JButton, Locomotive> page : this.pages)
+                for (Locomotive held : page.values()) if (held == l) on.add(l.getName());
+            return on;
+        }
+
+        @Override
+        public void replacePage(int to, int from)
+        {
+            this.pages.set(to - 1, new LinkedHashMap<>(this.pages.get(from - 1)));
+        }
+
+        @Override
+        public void redisplayCurrentKey()
+        {
+            this.did.add("redisplay");
+        }
+
+        @Override
+        public void showQKey()
+        {
+            this.did.add("showQ");
+        }
+
+        @Override
+        public void switchLocMapping(int number)
+        {
+            this.showing = number;
+            this.did.add("switch " + number);
         }
     }
 }

@@ -529,9 +529,6 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     private JButton copyTargetButton = null;
     private int copyTargetPage = 0;
     
-    // Page clipboard
-    private Integer pageToCopy = null;
-    
     // Other UIs
     private LocomotiveSelector selector;
     private LocomotiveStats stats;
@@ -1384,6 +1381,12 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
 
     private final LocMappingPages locMappingPages = new LocMappingPages(this);
 
+    /** The pages' window, from `LocMappingPages`: the menu's and the tests' door to add and delete pages. */
+    public LocMappingPages locMappingPages()
+    {
+        return this.locMappingPages;
+    }
+
     public boolean canDeleteCurrentPage()
     {
         return this.locMappingPages.canDeleteCurrentPage();
@@ -1395,88 +1398,26 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return this.numLocMappings < MAX_LOC_MAPPINGS;
     }
 
-    /**
-     * Adds a page at the end and goes to it: pages are reached by NUMBER (the digit keys), so inserting in the middle
-     * would renumber the rest.  Capped HERE ONLY: `setViewListener` grows the count past MAX_LOC_MAPPINGS, as clamping
-     * on load would throw away the mappings on every page past the fiftieth.
-     */
-    public void addLocMappingPage()
+    /** Adds an empty page at the end and stores the new count. */
+    @Override
+    public void appendPage()
     {
-        // Refused here too, not only grayed in the menu: the next caller of this public method lacks the menu's guard.
-        if (!canAddLocMappingPage())
-        {
-            JOptionPane.showMessageDialog(this,
-                I18n.f("page.ui.errorTooManyPages", MAX_LOC_MAPPINGS));
-
-            return;
-        }
-
         this.numLocMappings++;
 
         this.locMapping.add(new HashMap<>());
 
         prefs.putInt(LOC_MAPPING_PAGES_PREF, this.numLocMappings);
-
-        this.locKeyTabs.add(getLocMappingPageTabTitle(this.numLocMappings), new JPanel());
-
-        adjustTabbedPaneHeight(locKeyTabs);
-
-        this.switchLocMapping(this.numLocMappings);
-
-        repaintMappings();
     }
 
-    /**
-     * Deletes the page showing now, if it is empty and not the last one that may be deleted.  Its NAME goes with it and
-     * the later names move up: they are stored by page number.
-     */
-    public void deleteCurrentLocMappingPage()
+    /** Takes page `number` out and stores the new count. */
+    @Override
+    public void removePage(int number)
     {
-        if (!canDeleteCurrentPage())
-        {
-            JOptionPane.showMessageDialog(this, this.numLocMappings <= LocMappingPages.MIN_LOC_MAPPINGS
-                ? I18n.f("page.ui.errorNeedAtLeast", LocMappingPages.MIN_LOC_MAPPINGS)
-                : I18n.t("page.ui.errorPageNotEmpty"));
-
-            return;
-        }
-
-        int going = this.locMappingNumber;
-
-        this.locMapping.remove(going - 1);
-
-        for (int at = going; at < this.numLocMappings; at++)
-        {
-            String next = this.pageNames.get(at + 1);
-
-            if (next == null)
-            {
-                this.pageNames.remove(at);
-            }
-            else
-            {
-                this.pageNames.put(at, next);
-            }
-        }
-
-        this.pageNames.remove(this.numLocMappings);
+        this.locMapping.remove(number - 1);
 
         this.numLocMappings--;
 
         prefs.putInt(LOC_MAPPING_PAGES_PREF, this.numLocMappings);
-
-        this.locKeyTabs.remove(this.numLocMappings);
-
-        for (int at = 0; at < this.numLocMappings; at++)
-        {
-            this.locKeyTabs.setTitleAt(at, getLocMappingPageTabTitle(at + 1));
-        }
-
-        adjustTabbedPaneHeight(locKeyTabs);
-
-        this.switchLocMapping(Math.min(going, this.numLocMappings));
-
-        repaintMappings();
     }
 
     private String getLocMappingPageTabTitle(int tabNumber)
@@ -4556,7 +4497,8 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
         return (this.keyboardNumber - 1) * TrainControlUI.KEYBOARD_KEYS;
     }
     
-    private void switchLocMapping(int locPageNum)
+    @Override
+    public void switchLocMapping(int locPageNum)
     {
         if (locPageNum <= this.numLocMappings && locPageNum >= 1)
         {
@@ -6336,68 +6278,31 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
     
     public void mapUnassignedLocomotives()
     {
-        SwingUtilities.invokeLater(() -> 
-        {
-            for (JButton key : this.labelMapping.keySet())
-            {
-                // Is the key free?
-                if (this.currentLocMapping().get(key) == null || this.model.getLocByName(this.currentLocMapping().get(key).getName()) == null)
-                {
-                    List<String> locs = this.model.getLocList();
-                    Collections.sort(locs);
-                    
-                    for (String s : locs)
-                    {
-                        Locomotive l = this.model.getLocByName(s);
-                        
-                        // Is the locomotive mapped anywhere?
-                        if (l != null && this.getAllLocButtonMappings(l).isEmpty())
-                        {
-                            this.currentLocMapping().put(key, l);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            repaintMappings();
-        });
+        this.locMappingPages.mapUnassignedLocomotives();
     }
-    
+
     /**
      * Maps a specific list of locomotives to a page
      */
     public void mapLocomotivesToPage(int pageNumber, List<Locomotive> locs)
     {
-        SwingUtilities.invokeLater(() ->
-        {
-            // Switch to the target page and clear it
-            this.switchLocMapping(pageNumber);
-            this.doClearCurrentPage();
-
-            Iterator<Locomotive> iterator = locs.iterator();
-
-            for (JButton key : this.labelMapping.keySet())
-            {
-                if (!iterator.hasNext())
-                {
-                    break; // no more locomotives to assign
-                }
-
-                Locomotive l = iterator.next();
-
-                // Only assign if locomotive is valid
-                if (l != null && this.currentLocMapping().get(key) == null)
-                {
-                    this.currentLocMapping().put(key, l);
-                }
-            }
-
-            repaintMappings();
-            displayCurrentButtonLoc(QButton);
-        });
+        this.locMappingPages.mapLocomotivesToPage(pageNumber, locs);
     }
-    
+
+    /** The keys of the locomotive keyboard, in the order they lie on it. */
+    @Override
+    public Set<JButton> keyButtons()
+    {
+        return this.labelMapping.keySet();
+    }
+
+    /** Shows the locomotive on the Q key. */
+    @Override
+    public void showQKey()
+    {
+        displayCurrentButtonLoc(QButton);
+    }
+
     @Override
     public void repaintSwitches()
     {
@@ -14150,7 +14055,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     public void copyCurrentPage()
     {
-        this.pageToCopy = this.locMappingNumber;
+        this.locMappingPages.copyCurrentPage();
     }
     
     /**
@@ -14158,35 +14063,7 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     public void pasteCopiedPage()
     {
-        if (pageCopied() && this.locMappingNumber != this.pageToCopy)
-        {
-            int dialogResult = JOptionPane.showOptionDialog(
-                this,
-                I18n.f(
-                    "page.ui.confirmReplaceMappings",
-                    this.locMappingPages.getPageName(this.locMappingNumber, false),
-                    this.locMappingPages.getPageName(this.pageToCopy, false)
-                ),
-                I18n.t("page.ui.dialogPasteMappings"),
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                YES_NO_OPTS,
-                YES_NO_OPTS[1] // NOT [0]: this replaces a page of mappings, and its twin was fixed and this one was not
-            );
-            if (dialogResult == JOptionPane.YES_OPTION)
-            {
-                this.locMapping.set(this.locMappingNumber - 1, new HashMap<>(this.locMapping.get(this.pageToCopy - 1)));
-                this.pageToCopy = null;
-                this.repaintMappings();
-                
-                // We need to repaint the locomotive if a button on this page was active
-                if (currentButtonlocMappingNumber == this.locMappingNumber)
-                {
-                    this.displayCurrentButtonLoc(this.currentButton);
-                }
-            }
-        }
+        this.locMappingPages.pasteCopiedPage(this);
     }
     
     /**
@@ -14194,7 +14071,21 @@ public class TrainControlUI extends PositionAwareJFrame implements View, Diagram
      */
     public boolean pageCopied()
     {
-        return this.pageToCopy != null;
+        return this.locMappingPages.pageCopied();
+    }
+
+    /** Makes page `to` a copy of page `from`. */
+    @Override
+    public void replacePage(int to, int from)
+    {
+        this.locMapping.set(to - 1, new HashMap<>(this.locMapping.get(from - 1)));
+    }
+
+    /** Shows the locomotive of the current key again when the key is on the page showing. */
+    @Override
+    public void redisplayCurrentKey()
+    {
+        if (currentButtonlocMappingNumber == this.locMappingNumber) this.displayCurrentButtonLoc(this.currentButton);
     }
     
     public void clearCurrentPage()

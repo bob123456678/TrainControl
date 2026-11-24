@@ -16,8 +16,8 @@ import static support.SandboxedWindow.build;
 
 /**
  * A ceiling of fifty locomotive mapping pages, with an error message if exceeded.  The predicate is tested, and so is
- * the menu that offers the action, which must actually gray.  The refusal inside `addLocMappingPage` is a modal
- * dialog (a hang in a test), so that one is read rather than run.
+ * the menu that offers the action, which must actually gray.  The refusal inside `LocMappingPages.addLocMappingPage`
+ * is a modal dialog (a hang in a test), so that one is read rather than run.
  *
  * @author Adam
  */
@@ -107,7 +107,7 @@ public class testLocMappingPages
     @Test
     public void testAddingRefusesWithoutBeingAsked() throws Exception
     {
-        String add = SourceOf.withoutComments(SourceOf.declaration("public void addLocMappingPage()"));
+        String add = SourceOf.withoutComments(SourceOf.declaration("public void addLocMappingPage(Component over)"));
 
         assertTrue(add.contains("canAddLocMappingPage()"),
             "addLocMappingPage no longer asks whether it may, so anything that calls it other than "
@@ -117,7 +117,7 @@ public class testLocMappingPages
             "adding is refused at the ceiling without saying why, which is a menu item that does "
             + "nothing when clicked");
 
-        assertTrue(add.indexOf("canAddLocMappingPage()") < add.indexOf("numLocMappings++"),
+        assertTrue(add.indexOf("canAddLocMappingPage()") < add.indexOf("ui.appendPage()"),
             "the guard sits after the increment, so the page is added and then complained about");
     }
 

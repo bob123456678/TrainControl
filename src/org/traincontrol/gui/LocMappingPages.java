@@ -4,7 +4,9 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.image.BufferedImage;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -12,16 +14,19 @@ import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
+import javax.swing.JPanel;
 import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingUtilities;
 import org.traincontrol.base.Locomotive;
 import org.traincontrol.gui.autonomyeditor.AutonomyEditorPanel;
 import org.traincontrol.gui.locomotive.CurrentKeyRow;
+import org.traincontrol.model.ViewListener;
 import org.traincontrol.util.I18n;
 import org.traincontrol.util.ImageUtil;
 
 /** The locomotive keyboard's pages: their names and how the tabs and label word them, clearing one, the tab badge. */
-final class LocMappingPages
+public final class LocMappingPages
 {
     /** The fewest pages: next/previous, the tab strip and copying between pages mean nothing with one. */
     static final int MIN_LOC_MAPPINGS = 2;
@@ -56,9 +61,31 @@ final class LocMappingPages
         void repaintLoc(boolean force, List<Locomotive> updatedLocs);
         /** Redraws the keys. */
         void repaintMappings();
+        /** Whether another page may be added. */
+        boolean canAddLocMappingPage();
+        /** Adds an empty page at the end and stores the new count. */
+        void appendPage();
+        /** Takes page `number` out and stores the new count. */
+        void removePage(int number);
+        /** Shows page `number`, its tab, label and arrows. */
+        void switchLocMapping(int number);
+        /** The keys of the keyboard, in the order they lie on it. */
+        Set<JButton> keyButtons();
+        /** The railway's model: the locomotives by name. */
+        ViewListener getModel();
+        /** The keys, on any page, that hold `l`. */
+        List<String> getAllLocButtonMappings(Locomotive l);
+        /** Shows the locomotive on the Q key, the first. */
+        void showQKey();
+        /** Makes page `to` a copy of page `from`. */
+        void replacePage(int to, int from);
+        /** Shows the locomotive of the current key again when the key is on the page showing. */
+        void redisplayCurrentKey();
     }
 
     private final Keyboard ui;
+    /** The page on the page clipboard, or null. */
+    private Integer pageToCopy = null;
     /** "Show Page Numbers"; null until `installShowPageNumbersMenuItem` builds it. */
     private JCheckBoxMenuItem numbersItem;
 
@@ -77,6 +104,173 @@ final class LocMappingPages
             if (on != null) return false;
         }
         return true;
+    }
+
+    /**
+     * Adds a page at the end (the digit keys reach pages by number) and goes to it.  Capped here only: loading may
+     * grow the count past MAX_LOC_MAPPINGS.  Refusals are asked over `over`.
+     */
+    public void addLocMappingPage(Component over)
+    {
+        // Refused here too, not only grayed in the menu.
+        if (!ui.canAddLocMappingPage())
+        {
+            JOptionPane.showMessageDialog(over, I18n.f("page.ui.errorTooManyPages", TrainControlUI.MAX_LOC_MAPPINGS));
+
+            return;
+        }
+
+        ui.appendPage();
+
+        ui.locKeyTabs().add(getLocMappingPageTabTitle(ui.getNumLocMappings()), new JPanel());
+
+        TrainControlUI.adjustTabbedPaneHeight(ui.locKeyTabs());
+
+        ui.switchLocMapping(ui.getNumLocMappings());
+
+        ui.repaintMappings();
+    }
+
+    /** Deletes the empty page showing, above the minimum; later names move up.  Refusals are asked over `over`. */
+    public void deleteCurrentLocMappingPage(Component over)
+    {
+        int count = ui.getNumLocMappings();
+
+        if (!canDeleteCurrentPage())
+        {
+            JOptionPane.showMessageDialog(over, count <= MIN_LOC_MAPPINGS
+                ? I18n.f("page.ui.errorNeedAtLeast", MIN_LOC_MAPPINGS)
+                : I18n.t("page.ui.errorPageNotEmpty"));
+
+            return;
+        }
+
+        int going = ui.getLocMappingNumber();
+        Map<Integer, String> names = ui.pageNames();
+
+        for (int at = going; at < count; at++)
+        {
+            String next = names.get(at + 1);
+
+            if (next == null) names.remove(at);
+            else names.put(at, next);
+        }
+
+        names.remove(count);
+
+        ui.removePage(going);
+
+        ui.locKeyTabs().remove(count - 1);
+
+        for (int at = 0; at < count - 1; at++)
+        {
+            ui.locKeyTabs().setTitleAt(at, getLocMappingPageTabTitle(at + 1));
+        }
+
+        TrainControlUI.adjustTabbedPaneHeight(ui.locKeyTabs());
+
+        ui.switchLocMapping(Math.min(going, count - 1));
+
+        ui.repaintMappings();
+    }
+
+    /** Puts the page showing on the page clipboard. */
+    void copyCurrentPage()
+    {
+        this.pageToCopy = ui.getLocMappingNumber();
+    }
+
+    /** Whether anything is on the page clipboard. */
+    boolean pageCopied()
+    {
+        return this.pageToCopy != null;
+    }
+
+    /** Replaces the page showing with the copied one once the user says Yes over `over`; not on the copied page. */
+    void pasteCopiedPage(Component over)
+    {
+        if (pageCopied() && ui.getLocMappingNumber() != this.pageToCopy)
+        {
+            int dialogResult = JOptionPane.showOptionDialog(
+                over,
+                I18n.f("page.ui.confirmReplaceMappings", getPageName(ui.getLocMappingNumber(), false),
+                    getPageName(this.pageToCopy, false)),
+                I18n.t("page.ui.dialogPasteMappings"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                TrainControlUI.YES_NO_OPTS,
+                // Default to No: this replaces a page of mappings
+                TrainControlUI.YES_NO_OPTS[1]
+            );
+            if (dialogResult == JOptionPane.YES_OPTION) pasteConfirmed();
+        }
+    }
+
+    /** The Yes of the paste question: copies the copied page onto the page showing and empties the clipboard. */
+    void pasteConfirmed()
+    {
+        ui.replacePage(ui.getLocMappingNumber(), this.pageToCopy);
+        this.pageToCopy = null;
+        ui.repaintMappings();
+
+        ui.redisplayCurrentKey();
+    }
+
+    /** Fills the free keys of the page showing with the locomotives mapped nowhere, A to Z; event thread, later. */
+    void mapUnassignedLocomotives()
+    {
+        SwingUtilities.invokeLater(() ->
+        {
+            for (JButton key : ui.keyButtons())
+            {
+                // Is the key free?
+                if (ui.currentLocMapping().get(key) == null
+                    || ui.getModel().getLocByName(ui.currentLocMapping().get(key).getName()) == null)
+                {
+                    List<String> locs = ui.getModel().getLocList();
+                    Collections.sort(locs);
+
+                    for (String s : locs)
+                    {
+                        Locomotive l = ui.getModel().getLocByName(s);
+
+                        // Is the locomotive mapped anywhere?
+                        if (l != null && ui.getAllLocButtonMappings(l).isEmpty())
+                        {
+                            ui.currentLocMapping().put(key, l);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            ui.repaintMappings();
+        });
+    }
+
+    /** Clears page `pageNumber`, puts `locs` on its keys in keyboard order, skipping nulls; shows the Q key. */
+    void mapLocomotivesToPage(int pageNumber, List<Locomotive> locs)
+    {
+        SwingUtilities.invokeLater(() ->
+        {
+            ui.switchLocMapping(pageNumber);
+            doClearCurrentPage();
+
+            Iterator<Locomotive> iterator = locs.iterator();
+
+            for (JButton key : ui.keyButtons())
+            {
+                if (!iterator.hasNext()) break;
+
+                Locomotive l = iterator.next();
+
+                if (l != null && ui.currentLocMapping().get(key) == null) ui.currentLocMapping().put(key, l);
+            }
+
+            ui.repaintMappings();
+            ui.showQKey();
+        });
     }
 
     /** A page tab's caption by `CurrentKeyRow.pageWords` (FR-128); the name cut to MAX_PAGE_NAME_LENGTH_TAB. */
