@@ -1202,10 +1202,11 @@ public class testLocomotiveCsvImportDoor
 
     /**
      * A new name at a decoder address a locomotive here holds is a possible duplicate (FR-249): the question shows it in
-     * a table, one row starting on Keep Both, and counts only the other new locomotive with the new ones.  A file with no
+     * a table, one row starting on Merge, and counts only the other new locomotive with the new ones.  A file with no
      * possible duplicate has no table, and Cancel imports nothing.
      *
-     * MUTATION: make `MarklinLocomotiveCsv.duplicates` find none, and this fails.
+     * MUTATION: make `MarklinLocomotiveCsv.duplicates` find none, or leave out `setAll(Choice.MERGE)` in the
+     * `LocomotiveCsvDoor.Duplicates` constructor, and this fails.
      */
     @Test
     public void testAPossibleDuplicateIsAskedInATableAndCancelImportsNothing() throws Exception
@@ -1228,8 +1229,8 @@ public class testLocomotiveCsvImportDoor
                 Seen seen = press(ui, file, CANCEL, s -> s.answered, safely(failed, () -> rows.addAll(picked())));
 
                 assertEquals(failed, Collections.emptyList());
-                assertEquals(rows, Collections.singletonList(twin + ":BOTH"),
-                    "the table is not one row for the possible duplicate, on Keep Both");
+                assertEquals(rows, Collections.singletonList(twin + ":MERGE"),
+                    "the table is not one row for the possible duplicate, on Merge");
                 assertTrue(words(seen.question).startsWith(words(counts(1, 0))),
                     "the question counts the possible duplicate with the new ones: " + seen.question);
                 assertTrue(seen.question.contains(I18n.f("loc.ui.importCsvDuplicates", 1)),
@@ -1253,12 +1254,12 @@ public class testLocomotiveCsvImportDoor
 
     /**
      * Each answer in the duplicates' table is carried out (FR-249): Keep Both adds the file's locomotive beside the one
-     * here, Keep Old leaves it out, and Keep New renames a train standing on the layout to the file's name, the same
+     * here, Ignore leaves it out, and Merge renames a train standing on the layout to the file's name, the same
      * locomotive, so it stays where it stands and keeps its timetable entry.  The message counts them, and the import
      * runs no Sync, but the rename marks the menu as the station may now differ.
      *
-     * MUTATION: in `MarklinLocomotiveCsv.apply`, add a Keep New row as Keep Both, or in `ManualSync.imported`, mark
-     * only re-addressed locomotives, and this fails.
+     * MUTATION: in `MarklinLocomotiveCsv.apply`, add a Merge row as Keep Both or an Ignore row as Keep Both, or in
+     * `ManualSync.imported`, mark only re-addressed locomotives, and this fails.
      */
     @Test
     public void testEachAnswerInTheDuplicatesTableIsCarriedOut() throws Exception
@@ -1268,7 +1269,7 @@ public class testLocomotiveCsvImportDoor
             org.traincontrol.automation.Layout layout = model.getAutoLayout();
             org.traincontrol.automation.Point standing = null;
 
-            // A train standing alone at its decoder address, so its Keep New is offered
+            // A train standing alone at its decoder address, so its Merge is offered
             for (org.traincontrol.automation.Point p : layout.getPoints())
             {
                 Locomotive l = p.getCurrentLocomotive();
@@ -1306,22 +1307,23 @@ public class testLocomotiveCsvImportDoor
             {
                 Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty(), safely(failed, () ->
                 {
-                    click(left + ":OLD", null);
-                    click(taken + ":NEW", null);
+                    click(both + ":BOTH", null);
+                    click(left + ":IGNORE", null);
+                    click(taken + ":MERGE", null);
                 }));
 
                 assertEquals(failed, Collections.emptyList());
                 assertNotNull(model.getLocByName(both), "Keep Both did not add the file's locomotive");
                 assertNotNull(model.getLocByName(bothHere), "Keep Both lost the locomotive here");
-                assertNull(model.getLocByName(left), "Keep Old added the file's locomotive");
-                assertNotNull(model.getLocByName(leftHere), "Keep Old lost the locomotive here");
-                assertTrue(model.getLocByName(taken) == train, "Keep New did not rename the locomotive here");
-                assertNull(model.getLocByName(was), "Keep New left the old name behind");
+                assertNull(model.getLocByName(left), "Ignore added the file's locomotive");
+                assertNotNull(model.getLocByName(leftHere), "Ignore lost the locomotive here");
+                assertTrue(model.getLocByName(taken) == train, "Merge did not rename the locomotive here");
+                assertNull(model.getLocByName(was), "Merge left the old name behind");
                 assertTrue(stands.getCurrentLocomotive() == train, "the renamed train no longer stands where it stood");
                 assertTrue(layout.getTimetable().contains(entry) && entry.getLoc() == train,
                     "the renamed train lost its timetable entry");
                 assertTrue(seen.said.get(0).contains(I18n.t("loc.ui.infoImportCsvRenamedOne"))
-                    && seen.said.get(0).contains(I18n.t("loc.ui.infoImportCsvKeptOldOne")),
+                    && seen.said.get(0).contains(I18n.t("loc.ui.infoImportCsvIgnoredOne")),
                     "the message does not count the answers: " + seen.said);
                 assertFalse(seen.titles.contains(I18n.t("sync.ui.title")), "the import ran a Sync: " + seen.titles);
                 assertEquals(model.getUnsettledCount(), -1, "the rename did not mark the menu");
@@ -1341,15 +1343,71 @@ public class testLocomotiveCsvImportDoor
     }
 
     /**
-     * Keep New is grayed, with its reason on hover beside "(can't apply)", where several locomotives here share the
-     * address, where the file also lists the locomotive here, and where it is running; a second row for one locomotive
-     * here is grayed once the first takes it, or a route drives it (FR-249).  The Keep New heading skips every grayed
-     * row; Keep Old's sets every row.
+     * Replace renames the locomotive here to the file's name and takes the file's details, its functions as a new
+     * locomotive has them, keeping its running time (FR-249).  The finishing message counts it apart from a Merge, and
+     * its rename marks the menu, as the station may now differ.
      *
-     * MUTATION: in `MarklinLocomotiveCsv.duplicates`, leave out the RUNNING reason, and this fails.
+     * MUTATION: in `MarklinLocomotiveCsv.apply`, leave out `clear` for a Replace row, or leave Replace's rename out of
+     * `result.renamed`; in `LocomotiveCsvDoor.tell`, leave out the Replace line, and this fails.
      */
     @Test
-    public void testKeepNewIsGrayedWithItsReasonAndSetAllSkipsIt() throws Exception
+    public void testReplaceTakesTheFilesDetailsIsCountedAndMarksTheMenu() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final String was = "FR249 door replaced here", name = "FR249 door replaced";
+            final int address = freeAddress(model, 13000);
+            Locomotive here = model.newMFXLocomotive(was, address);
+
+            here.setFunctionType(2, 9, 0);
+            here.setPreferredSpeed(40);
+            here.setStructuredNotes(1900, 0, "DR", "kept here");
+            here.raiseTotalRuntimeTo(3600000L, "2026-01-02");
+
+            File file = write(HEADER + name + ",,MFX," + address + ",25,0:00:00,1960,0,DB,\n");
+            List<String> failed = new ArrayList<>();
+            final int unsettled = model.getUnsettledCount();
+
+            try
+            {
+                Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty(), safely(failed, () -> click(name + ":REPLACE",
+                    null)));
+
+                assertEquals(failed, Collections.emptyList());
+                assertTrue(model.getLocByName(name) == here && model.getLocByName(was) == null,
+                    "Replace did not rename the locomotive here");
+                assertEquals(here.getFunctionTypes(), new int[here.getNumF()], "Replace kept the functions");
+                assertEquals(here.getPreferredSpeed() + " " + here.getStructuredNotes().getStartYear() + " "
+                    + here.getStructuredNotes().getRailway() + " [" + here.getStructuredNotes().getNotes() + "]",
+                    "25 1960 DB []", "Replace did not take the file's details");
+                assertEquals(here.getTotalRuntime(), 3600000L, "Replace lost the running time");
+                assertTrue(seen.said.get(0).contains(I18n.t("loc.ui.infoImportCsvReplacedOne"))
+                    && !seen.said.get(0).contains(I18n.t("loc.ui.infoImportCsvRenamedOne"))
+                    && seen.said.get(0).contains(I18n.f("loc.ui.infoImportCsvDone", 0, 0)),
+                    "the message does not count the Replace apart from a Merge: " + seen.said);
+                assertEquals(model.getUnsettledCount(), -1, "the Replace's rename did not mark the menu");
+            }
+            finally
+            {
+                model.setUnsettledCount(unsettled);
+                file.delete();
+                model.deleteLoc(name);
+                model.deleteLoc(was);
+            }
+        });
+    }
+
+    /**
+     * Merge and Replace are grayed, with the reason on hover beside "(can't apply)", where several locomotives here share
+     * the address, where the file also lists the locomotive here, and where it is running or a route drives it; a second
+     * row for one locomotive here is grayed once the first takes it (FR-249).  A row whose Merge is grayed starts on
+     * Keep Both.  The Replace heading skips every grayed row; Ignore's sets every row.
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.duplicates`, leave out the RUNNING reason; in `LocomotiveCsvDoor.Duplicates`,
+     * give Replace no reason, or let `setAll` pick a grayed choice, and this fails.
+     */
+    @Test
+    public void testMergeAndReplaceAreGrayedWithTheirReasonAndFallBackToKeepBoth() throws Exception
     {
         inAWindow((ui, model) ->
         {
@@ -1382,8 +1440,8 @@ public class testLocomotiveCsvImportDoor
 
             File file = write(HEADER + mfx(sNew, s) + mfx(lNew, l) + mfx(listed, l) + mfx(rNew, r) + mfx(dNew, d)
                 + mfx(t1, t) + mfx(t2, t));
-            List<String> failed = new ArrayList<>(), reasons = new ArrayList<>(), onNew = new ArrayList<>();
-            List<String> onOld = new ArrayList<>(), tookTip = new ArrayList<>();
+            List<String> failed = new ArrayList<>(), reasons = new ArrayList<>(), onReplace = new ArrayList<>();
+            List<String> onIgnore = new ArrayList<>(), tookTip = new ArrayList<>(), start = new ArrayList<>();
 
             try
             {
@@ -1400,27 +1458,30 @@ public class testLocomotiveCsvImportDoor
                 {
                     String cant = I18n.t("sync.ui.cantApply");
 
+                    start.addAll(picked());
+
                     for (javax.swing.JLabel mark : support.Components.all(asking, javax.swing.JLabel.class,
-                        x -> cant.equals(x.getText()) && x.isVisible())) reasons.add(mark.getToolTipText());
+                        x -> cant.equals(x.getText()) && x.isVisible() && x.getName() == null)) reasons.add(mark.getToolTipText());
 
-                    for (String row : new String[] {sNew, lNew, rNew, dNew})
+                    for (String row : new String[] {sNew, lNew, rNew, dNew, t2})
                     {
-                        javax.swing.AbstractButton keepNew = support.Components.named(asking, row + ":NEW",
-                            javax.swing.AbstractButton.class);
+                        for (String answer : new String[] {":MERGE", ":REPLACE"})
+                        {
+                            javax.swing.AbstractButton b = support.Components.named(asking, row + answer,
+                                javax.swing.AbstractButton.class);
 
-                        if (keepNew.isEnabled()) failed.add(row + "'s Keep New is not grayed");
-
-                        reasons.add(keepNew.getToolTipText());
+                            if (b == null || b.isEnabled()) failed.add(row + answer + " is not grayed");
+                            else if (row != t2) reasons.add(b.getToolTipText());
+                        }
                     }
-
-                    click(null, I18n.t("loc.ui.importCsvKeepNew"));
-                    onNew.addAll(picked());
 
                     javax.swing.JLabel took = support.Components.named(asking, t2 + ":taken", javax.swing.JLabel.class);
 
                     tookTip.add(took.getText().equals(cant) + " " + took.getToolTipText());
-                    click(null, I18n.t("loc.ui.importCsvKeepOld"));
-                    onOld.addAll(picked());
+                    click(null, I18n.t("loc.ui.importCsvReplace"));
+                    onReplace.addAll(picked());
+                    click(null, I18n.t("sync.ui.ignore"));
+                    onIgnore.addAll(picked());
                 }));
 
                 String several = I18n.f("loc.ui.importCsvWhySeveral", "MFX " + s);
@@ -1429,14 +1490,18 @@ public class testLocomotiveCsvImportDoor
                 String drives = I18n.f("loc.ui.importCsvWhyRunning", driven);
 
                 assertEquals(failed, Collections.emptyList());
-                assertEquals(reasons, java.util.Arrays.asList(several, lists, runs, drives, several, lists, runs, drives),
-                    "each grayed Keep New does not say why, beside (can't apply) and on hover");
-                assertEquals(onNew, java.util.Arrays.asList(sNew + ":BOTH", lNew + ":BOTH", rNew + ":BOTH", dNew + ":BOTH",
-                    t1 + ":NEW", t2 + ":BOTH"), "the Keep New heading did not skip the grayed rows and the one taken");
+                assertEquals(start, java.util.Arrays.asList(sNew + ":BOTH", lNew + ":BOTH", rNew + ":BOTH", dNew + ":BOTH",
+                    t1 + ":MERGE", t2 + ":BOTH"), "a row whose Merge is grayed or taken does not start on Keep Both");
+                assertEquals(reasons, java.util.Arrays.asList(several, lists, runs, drives, several, several, lists, lists,
+                    runs, runs, drives, drives), "each grayed Merge and Replace does not say why, beside (can't apply) and "
+                    + "on hover");
+                assertEquals(onReplace, java.util.Arrays.asList(sNew + ":BOTH", lNew + ":BOTH", rNew + ":BOTH",
+                    dNew + ":BOTH", t1 + ":REPLACE", t2 + ":BOTH"),
+                    "the Replace heading did not skip the grayed rows and the one taken");
                 assertEquals(tookTip, Collections.singletonList("true " + I18n.f("loc.ui.importCsvWhyTaken", t1, held)),
                     "the row whose locomotive another row took does not say so");
-                assertEquals(onOld, java.util.Arrays.asList(sNew + ":OLD", lNew + ":OLD", rNew + ":OLD", dNew + ":OLD",
-                    t1 + ":OLD", t2 + ":OLD"), "the Keep Old heading did not set every row");
+                assertEquals(onIgnore, java.util.Arrays.asList(sNew + ":IGNORE", lNew + ":IGNORE", rNew + ":IGNORE",
+                    dNew + ":IGNORE", t1 + ":IGNORE", t2 + ":IGNORE"), "the Ignore heading did not set every row");
                 assertEquals(everyLocomotive(model), before, "Cancel imported something");
             }
             finally
@@ -1454,8 +1519,8 @@ public class testLocomotiveCsvImportDoor
     }
 
     /**
-     * "(can't apply)" appearing beside a row's file name, on a click that takes its locomotive, leaves every Keep New in
-     * view: no scroll bar shows, as the dialog was sized with the mark (FR-249).
+     * "(can't apply)" beside a row's file name, where another row takes its locomotive, leaves every Merge and Replace
+     * in view: no scroll bar shows, as the dialog was sized with the mark (FR-249).
      *
      * MUTATION: in `LocomotiveCsvDoor.Duplicates.addRow`, leave out the mark's reserved width, and this fails.
      */
@@ -1476,7 +1541,7 @@ public class testLocomotiveCsvImportDoor
             {
                 press(ui, file, CANCEL, s -> s.answered, safely(failed, () ->
                 {
-                    click(first + ":NEW", null);
+                    click(first + ":REPLACE", null);
                     support.Components.settle();
                     out.addAll(support.Components.onTheEventThread(() ->
                     {
@@ -1487,7 +1552,7 @@ public class testLocomotiveCsvImportDoor
                         if (table.getHorizontalScrollBar().isVisible()) bad.add("a scroll bar shows");
 
                         for (javax.swing.AbstractButton b : support.Components.all(asking, javax.swing.AbstractButton.class,
-                            x -> x.getName() != null && x.getName().endsWith(":NEW")))
+                            x -> x.getName() != null && x.getName().matches(".*:(MERGE|REPLACE)")))
                         {
                             if (!table.getViewport().getViewRect().contains(javax.swing.SwingUtilities.convertRectangle(
                                 b.getParent(), b.getBounds(), table.getViewport().getView()))) bad.add(b.getName());
@@ -1498,7 +1563,7 @@ public class testLocomotiveCsvImportDoor
                 }));
 
                 assertEquals(failed, Collections.emptyList());
-                assertEquals(out, Collections.emptyList(), "the taken mark pushed a Keep New out of view");
+                assertEquals(out, Collections.emptyList(), "the taken mark pushed a Merge or Replace out of view");
             }
             finally
             {
@@ -1509,8 +1574,8 @@ public class testLocomotiveCsvImportDoor
     }
 
     /**
-     * An answer that can no longer be carried out is said in the finishing message: a Keep New with nothing left to
-     * rename is added beside it, and a Keep Old on a row no longer a duplicate is added, each named with why (FR-249).
+     * An answer that can no longer be carried out is said in the finishing message: a Merge with nothing left to rename
+     * is added beside it, and an Ignore on a row no longer a duplicate is added, each named with why (FR-249).
      *
      * MUTATION: in `LocomotiveCsvDoor.tell`, leave out the two lines, and this fails.
      */
@@ -1536,8 +1601,8 @@ public class testLocomotiveCsvImportDoor
             {
                 Seen seen = press(ui, file, IMPORT, s -> !s.said.isEmpty(), safely(failed, () ->
                 {
-                    click(keepNew + ":NEW", null);
-                    click(keepOld + ":OLD", null);
+                    click(keepNew + ":MERGE", null);
+                    click(keepOld + ":IGNORE", null);
 
                     // Behind the question, both rows stop being possible duplicates
                     model.deleteLoc(holdsNew);
@@ -1545,8 +1610,8 @@ public class testLocomotiveCsvImportDoor
                 }));
 
                 assertEquals(failed, Collections.emptyList());
-                assertNotNull(model.getLocByName(keepNew), "the Keep New row was not added");
-                assertNotNull(model.getLocByName(keepOld), "the Keep Old row was not added");
+                assertNotNull(model.getLocByName(keepNew), "the Merge row was not added");
+                assertNotNull(model.getLocByName(keepOld), "the Ignore row was not added");
                 assertTrue(seen.said.get(0).contains(I18n.f("loc.ui.infoImportCsvNotRenamed", keepNew + " ("
                     + I18n.t("loc.ui.importCsvNotGone") + ")")), "the message does not say the rename was not made: "
                     + seen.said);

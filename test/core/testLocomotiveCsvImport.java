@@ -828,7 +828,7 @@ public class testLocomotiveCsvImport
     }
 
     /**
-     * An answer that cannot be carried out is said: a Keep New or Keep Old on a row that is no longer a possible
+     * An answer that cannot be carried out is said: a Merge, Replace or Ignore on a row that is no longer a possible
      * duplicate adds the file's locomotive instead, and the result names it (FR-249).
      *
      * MUTATION: in `MarklinLocomotiveCsv.apply`, drop the row from `notRenamed` or `notLeftOut`, and this fails.
@@ -836,17 +836,19 @@ public class testLocomotiveCsvImport
     @Test
     public void testAnAnswerThatCannotBeCarriedOutIsSaid()
     {
-        made.addAll(Arrays.asList("FR249 gone new", "FR249 gone old"));
+        made.addAll(Arrays.asList("FR249 gone new", "FR249 gone old", "FR249 gone replace"));
 
         MarklinLocomotiveCsv csv = MarklinLocomotiveCsv.read(OLD + "FR249 gone new,,MFX,15061,0,0:00:00,0,0,,\n"
-            + "FR249 gone old,,MFX,15062,0,0:00:00,0,0,,\n");
-        MarklinLocomotiveCsv.Result result = answered(csv, "FR249 gone new", MarklinLocomotiveCsv.Choice.NEW,
-            "FR249 gone old", MarklinLocomotiveCsv.Choice.OLD);
+            + "FR249 gone old,,MFX,15062,0,0:00:00,0,0,,\nFR249 gone replace,,MFX,15063,0,0:00:00,0,0,,\n");
+        MarklinLocomotiveCsv.Result result = answered(csv, "FR249 gone new", MarklinLocomotiveCsv.Choice.MERGE,
+            "FR249 gone old", MarklinLocomotiveCsv.Choice.IGNORE, "FR249 gone replace", MarklinLocomotiveCsv.Choice.REPLACE);
 
-        assertEquals(result.notRenamed.toString(), "{FR249 gone new=GONE}", "a Keep New with nothing to rename is not said");
-        assertEquals(result.notLeftOut, Arrays.asList("FR249 gone old"), "a Keep Old that added the row is not said");
+        assertEquals(result.notRenamed.toString(), "{FR249 gone new=GONE, FR249 gone replace=GONE}",
+            "a Merge or Replace with nothing to rename is not said");
+        assertEquals(result.notLeftOut, Arrays.asList("FR249 gone old"), "an Ignore that added the row is not said");
         assertNotNull(model.getLocByName("FR249 gone new"), "the row was not added");
         assertNotNull(model.getLocByName("FR249 gone old"), "the row was not added");
+        assertNotNull(model.getLocByName("FR249 gone replace"), "the row was not added");
     }
 
     /**
@@ -1276,11 +1278,11 @@ public class testLocomotiveCsvImport
     }
 
     /**
-     * Each answer does what it says (FR-249): Keep Both adds the file's locomotive beside the one here, Keep Old leaves
-     * it out, and Keep New renames the one here to the file's name and merges the row into it: the same locomotive, so
-     * it keeps its functions, running time and its place in a multi-unit, and fills its empty details from the file.
+     * Each answer does what it says (FR-249): Keep Both adds the file's locomotive beside the one here, Ignore leaves it
+     * out, and Merge renames the one here to the file's name and merges the row into it: the same locomotive, so it
+     * keeps its functions, running time and its place in a multi-unit, and fills its empty details from the file.
      *
-     * MUTATION: in `MarklinLocomotiveCsv.apply`, add a Keep New row as Keep Both, and this fails.
+     * MUTATION: in `MarklinLocomotiveCsv.apply`, add a Merge row as Keep Both, and this fails.
      */
     @Test
     public void testEachAnswerToAPossibleDuplicateDoesWhatItSays()
@@ -1300,31 +1302,79 @@ public class testLocomotiveCsvImport
         int[] functions = renamed.getFunctionTypes().clone();
         MarklinLocomotiveCsv csv = MarklinLocomotiveCsv.read(HEADER + "FR249 both,,MFX,15011,0,0:00:00,0,0,,,\n"
             + "FR249 old,,MFX,15012,0,0:00:00,0,0,,,\nFR249 new,,MFX,15013,0,0:00:00,1950,0,DB,,\n");
-        MarklinLocomotiveCsv.Result result = answered(csv, "FR249 old", MarklinLocomotiveCsv.Choice.OLD, "FR249 new",
-            MarklinLocomotiveCsv.Choice.NEW);
+        MarklinLocomotiveCsv.Result result = answered(csv, "FR249 old", MarklinLocomotiveCsv.Choice.IGNORE, "FR249 new",
+            MarklinLocomotiveCsv.Choice.MERGE);
 
         assertNotNull(model.getLocByName("FR249 both"), "Keep Both did not add the file's locomotive");
-        assertNull(model.getLocByName("FR249 old"), "Keep Old added the file's locomotive");
+        assertNull(model.getLocByName("FR249 old"), "Ignore added the file's locomotive");
         assertTrue(model.getLocByName("FR249 both here") == both, "Keep Both changed the locomotive here");
-        assertTrue(model.getLocByName("FR249 old here") == old, "Keep Old changed the locomotive here");
-        assertTrue(model.getLocByName("FR249 new") == renamed, "Keep New did not rename the locomotive here");
-        assertNull(model.getLocByName("FR249 renamed here"), "Keep New left the old name");
-        assertTrue(Arrays.equals(renamed.getFunctionTypes(), functions), "Keep New lost the functions");
-        assertEquals(renamed.getTotalRuntime(), 3600000L, "Keep New lost the running time");
+        assertTrue(model.getLocByName("FR249 old here") == old, "Ignore changed the locomotive here");
+        assertTrue(model.getLocByName("FR249 new") == renamed, "Merge did not rename the locomotive here");
+        assertNull(model.getLocByName("FR249 renamed here"), "Merge left the old name");
+        assertTrue(Arrays.equals(renamed.getFunctionTypes(), functions), "Merge lost the functions");
+        assertEquals(renamed.getTotalRuntime(), 3600000L, "Merge lost the running time");
         assertEquals(head.getLinkedLocomotiveNames().keySet(), new TreeSet<>(Arrays.asList("FR249 new")),
-            "Keep New took the locomotive out of its multi-unit");
-        assertEquals(renamed.getStructuredNotes().getRailway(), "DB", "Keep New did not merge the file's details");
+            "Merge took the locomotive out of its multi-unit");
+        assertEquals(renamed.getStructuredNotes().getRailway(), "DB", "Merge did not merge the file's details");
         assertEquals(renamed.getAddress(), 15013);
         assertEquals(result.renamed, Arrays.asList("FR249 new"));
-        assertEquals(result.added + " added, " + result.keptOld + " kept old", "1 added, 1 kept old");
+        assertEquals(result.added + " added, " + result.ignored + " ignored, " + result.merged + " merged",
+            "1 added, 1 ignored, 1 merged");
     }
 
     /**
-     * Keep New may not rename where several locomotives here share the address, where the file also lists the one
-     * here, or where it is running, and says which; such a Keep New, or a second one for the same locomotive here, is
+     * Replace renames the locomotive here to the file's name, as Merge does, but takes every detail from the file, its
+     * functions as a new locomotive has them: it keeps only its running time and its place in a multi-unit (FR-249).
+     *
+     * MUTATION: in `MarklinLocomotiveCsv.apply`, leave out `clear` for a Replace row, and this fails.
+     */
+    @Test
+    public void testReplaceTakesEveryDetailFromTheFile()
+    {
+        MarklinLocomotive here = make("FR249 replaced here", decoderType.MFX, 15015);
+        MarklinLocomotive head = make("FR249 replace head", decoderType.MFX, 15016);
+
+        here.setFunctionType(3, 7, 0);
+        here.setLocalFunctionImageURL(3, "icon.png");
+        here.setPreferredFunctions(new boolean[] {true, true});
+        here.setDepartureFunc(2);
+        here.setArrivalFunc(1);
+        here.setReversible(true);
+        here.setTrainLength(5);
+        here.setLocalImageURL("picture.png");
+        here.setPreferredSpeed(40);
+        here.setStructuredNotes(1900, 1950, "DR", "kept here");
+        here.raiseTotalRuntimeTo(3600000L, "2026-01-02");
+        head.setLinkedLocomotives(java.util.Collections.singletonMap(here.getName(), 1.0));
+        made.add("FR249 replaced");
+
+        MarklinLocomotiveCsv.Result result = answered(MarklinLocomotiveCsv.read(HEADER
+            + "FR249 replaced,,MFX,15015,25,0:00:00,1960,0,,,\n"), "FR249 replaced", MarklinLocomotiveCsv.Choice.REPLACE);
+
+        assertTrue(model.getLocByName("FR249 replaced") == here, "Replace did not rename the locomotive here");
+        assertEquals(here.getFunctionTypes(), new int[here.getNumF()], "Replace kept the function types");
+        assertTrue(!here.isCustomFunctions() && here.getLocalFunctionImageURLs().isEmpty(), "Replace kept the icons");
+        assertEquals(here.getPreferredFunctions(), new boolean[here.getNumF()], "Replace kept the function preset");
+        assertEquals(here.getDepartureFunc() + " " + here.getArrivalFunc() + " " + here.isReversible() + " "
+            + here.getTrainLength() + " " + here.getLocalImageURL(), "null null false 0 null",
+            "Replace kept the locomotive's own settings");
+        assertEquals(here.getPreferredSpeed() + " " + here.getStructuredNotes().getStartYear() + " "
+            + here.getStructuredNotes().getEndYear() + " [" + here.getStructuredNotes().getRailway() + "] ["
+            + here.getStructuredNotes().getNotes() + "]", "25 1960 0 [] []", "Replace did not take the file's details");
+        assertEquals(here.getTotalRuntime(), 3600000L, "Replace lost the running time");
+        assertEquals(head.getLinkedLocomotiveNames().keySet(), new TreeSet<>(Arrays.asList("FR249 replaced")),
+            "Replace took the locomotive out of its multi-unit");
+        assertEquals(result.renamed + " " + result.replaced + " replaced, " + result.merged + " merged",
+            "[FR249 replaced] 1 replaced, 0 merged");
+    }
+
+    /**
+     * Merge and Replace may not rename where several locomotives here share the address, where the file also lists the
+     * one here, or where it is running, and say which; such an answer, or a second one for the same locomotive here, is
      * carried out as Keep Both (FR-249).
      *
-     * MUTATION: in `MarklinLocomotiveCsv.apply`, let a second row's Keep New rename the same locomotive, and this fails.
+     * MUTATION: in `MarklinLocomotiveCsv.apply`, let a second row's Merge rename the same locomotive, or carry out a
+     * Replace as Keep Both, and this fails.
      */
     @Test
     public void testKeepNewSaysWhyNotAndOnlyOneRowTakesALocomotive() throws Exception
@@ -1341,7 +1391,7 @@ public class testLocomotiveCsvImport
             + "FR249 l new,,MFX,15022,0,0:00:00,0,0,,\nFR249 listed,,MFX,15022,0,0:00:00,0,0,,\n"
             + "FR249 r new,,MFX,15023,0,0:00:00,0,0,,\nFR249 t1,,MFX,15024,0,0:00:00,0,0,,\n"
             + "FR249 t2,,MFX,15024,0,0:00:00,0,0,,\n");
-        MarklinLocomotiveCsv.Choice keepNew = MarklinLocomotiveCsv.Choice.NEW;
+        MarklinLocomotiveCsv.Choice merge = MarklinLocomotiveCsv.Choice.MERGE, replace = MarklinLocomotiveCsv.Choice.REPLACE;
 
         try
         {
@@ -1352,15 +1402,15 @@ public class testLocomotiveCsvImport
                 "FR249 l new MFX 15022 > FR249 listed: LISTED", "FR249 r new MFX 15023 > FR249 rolling: RUNNING",
                 "FR249 t1 MFX 15024 > FR249 held once: null", "FR249 t2 MFX 15024 > FR249 held once: null"));
 
-            MarklinLocomotiveCsv.Result result = answered(csv, "FR249 s new", keepNew, "FR249 l new", keepNew,
-                "FR249 r new", keepNew, "FR249 t1", keepNew, "FR249 t2", keepNew);
+            MarklinLocomotiveCsv.Result result = answered(csv, "FR249 s new", replace, "FR249 l new", merge,
+                "FR249 r new", replace, "FR249 t1", merge, "FR249 t2", replace);
 
-            assertEquals(result.renamed, Arrays.asList("FR249 t1"), "a Keep New that may not was carried out");
+            assertEquals(result.renamed, Arrays.asList("FR249 t1"), "a Merge or Replace that may not was carried out");
             assertEquals(result.notRenamed.toString(), "{FR249 s new=SEVERAL, FR249 l new=LISTED, FR249 r new=RUNNING,"
-                + " FR249 t2=TAKEN}", "a Keep New that was not carried out does not say why");
+                + " FR249 t2=TAKEN}", "a Merge or Replace that was not carried out does not say why");
             assertTrue(model.getLocByName("FR249 t1") == held, "the first row did not take the locomotive here");
             assertTrue(model.getLocByName("FR249 listed") != null && model.getLocByName("FR249 rolling") == rolling,
-                "a locomotive here whose Keep New may not was renamed");
+                "a locomotive here whose Merge or Replace may not was renamed");
 
             for (String added : new String[] {"FR249 s new", "FR249 l new", "FR249 r new", "FR249 t2"})
             {

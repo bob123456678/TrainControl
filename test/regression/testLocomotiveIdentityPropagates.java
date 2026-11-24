@@ -657,13 +657,13 @@ public class testLocomotiveIdentityPropagates
     public void testRenamingALocomotiveRewritesTheStationLabels() throws Exception
     {
         // EVERY renameLoc call site, not the first: there are three (the Locomotive Settings window's write, accepting a name
-        // the Central Station proposes, and the CSV import's Keep New), near-copies, and a rule that stops at the first match would call the pair covered after
+        // the Central Station proposes, and the CSV import's Merge and Replace), near-copies, and a rule that stops at the first match would call the pair covered after
         // fixing one.  Asked of the whole program, naming the doors that make the two calls.
         int found = SourceOf.occurrences("model.renameLoc(") + SourceOf.occurrences("getModel().renameLoc(");
 
         assertEquals(found, 3,
             "expected three renameLoc call sites - the settings write, the Central "
-            + "Station proposal and the CSV import's Keep New. Found " + found + ", so either a door has been added without "
+            + "Station proposal and the CSV import's Merge and Replace. Found " + found + ", so either a door has been added without "
             + "this rule being told, or one has gone and the rule is watching less than it says");
 
         List<String> doors = new ArrayList<>();
@@ -684,7 +684,7 @@ public class testLocomotiveIdentityPropagates
         String csvRefresh = withoutComments(SourceOf.declaration("    private static void refresh(TrainControlUI ui, "
             + "ViewListener model, MarklinLocomotiveCsv.Result result)"));
 
-        assertTrue(csvApply.contains("model.renameLoc("), "the CSV import's Keep New is no longer the third renameLoc call");
+        assertTrue(csvApply.contains("model.renameLoc("), "the CSV import's Merge and Replace are no longer the third renameLoc call");
         assertTrue(csvRefresh.contains("updateVisiblePoints") && csvRefresh.contains("repaintTimetable"),
             "the CSV import renames locomotives but its door does not rewrite the station labels and repaint the "
             + "timetable afterwards, as the other rename doors do (OB-081, MT-149): " + csvRefresh);

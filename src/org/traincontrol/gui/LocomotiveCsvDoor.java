@@ -171,8 +171,10 @@ final class LocomotiveCsvDoor
         if (result.addedWithoutRuntime > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvNoRuntime", result.addedWithoutRuntime);
         if (result.badLastRun > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvBadLastRun", result.badLastRun);
         if (result.leftOutMultiUnit > 0) said += "\n" + I18n.f("loc.ui.infoImportCsvLeftOutMultiUnit", result.leftOutMultiUnit);
-        if (!result.renamed.isEmpty()) said += "\n" + count(result.renamed.size(), "loc.ui.infoImportCsvRenamedOne", "loc.ui.infoImportCsvRenamed");
-        if (result.keptOld > 0) said += "\n" + count(result.keptOld, "loc.ui.infoImportCsvKeptOldOne", "loc.ui.infoImportCsvKeptOld");
+        int merged = result.renamed.size() - result.replaced;
+        if (merged > 0) said += "\n" + count(merged, "loc.ui.infoImportCsvRenamedOne", "loc.ui.infoImportCsvRenamed");
+        if (result.replaced > 0) said += "\n" + count(result.replaced, "loc.ui.infoImportCsvReplacedOne", "loc.ui.infoImportCsvReplaced");
+        if (result.ignored > 0) said += "\n" + count(result.ignored, "loc.ui.infoImportCsvIgnoredOne", "loc.ui.infoImportCsvIgnored");
         if (!result.notRenamed.isEmpty()) said += "\n" + I18n.f("loc.ui.infoImportCsvNotRenamed", notRenamed(result));
         if (!result.notLeftOut.isEmpty()) said += "\n" + I18n.f("loc.ui.infoImportCsvNotLeftOut", String.join(", ", result.notLeftOut));
         List<String> lines = new ArrayList<>();
@@ -195,7 +197,7 @@ final class LocomotiveCsvDoor
         return I18n.f(n == 1 ? one : many, n);
     }
 
-    /** The file's names whose Keep New was not carried out, each with why. */
+    /** The file's names whose Merge or Replace was not carried out, each with why. */
     private static String notRenamed(MarklinLocomotiveCsv.Result result)
     {
         List<String> out = new ArrayList<>();
@@ -285,26 +287,28 @@ final class LocomotiveCsvDoor
         }
     }
 
-    /** The possible duplicates' table (FR-249): one row per file row, each starting on Keep Both. */
+    /** The possible duplicates' table (FR-249): one row per file row, on Merge where it can be, else Keep Both. */
     private static final class Duplicates
     {
         private final Map<Duplicate, Map<Choice, JRadioButton>> choices = new LinkedHashMap<>();
-        /** "(can't apply)" beside the file's name where another row's Keep New took the locomotive here. */
+        /** "(can't apply)" beside the file's name where another row's Merge or Replace took the locomotive here. */
         private final Map<Duplicate, JLabel> taken = new HashMap<>();
         // A linked heading sets every row it can, as a row's own pick would
         final ChoiceTable table = new ChoiceTable(UiStyle.blackLabel(I18n.t("loc.ui.importCsvInFile")),
             UiStyle.blackLabel(I18n.t("sync.ui.thisComputer")),
+            SyncDifferencesWindow.head(setAllTo("loc.ui.importCsvMerge", Choice.MERGE), "loc.ui.importCsvTipMerge"),
+            SyncDifferencesWindow.head(setAllTo("loc.ui.importCsvReplace", Choice.REPLACE), "loc.ui.importCsvTipReplace"),
             SyncDifferencesWindow.head(setAllTo("sync.ui.keepBoth", Choice.BOTH), "loc.ui.importCsvTipBoth"),
-            SyncDifferencesWindow.head(setAllTo("loc.ui.importCsvKeepOld", Choice.OLD), "loc.ui.importCsvTipOld"),
-            SyncDifferencesWindow.head(setAllTo("loc.ui.importCsvKeepNew", Choice.NEW), "loc.ui.importCsvTipNew"));
+            SyncDifferencesWindow.head(setAllTo("sync.ui.ignore", Choice.IGNORE), "loc.ui.importCsvTipIgnore"));
 
+        /** Every row starts as the Merge heading leaves it: a grayed or taken Merge stays on Keep Both. */
         Duplicates(List<Duplicate> rows)
         {
             for (Duplicate d : rows) addRow(d);
-            refresh();
+            setAll(Choice.MERGE);
         }
 
-        /** A row, named for the tests by the file's name: each side's Name and Address lines, then the three radios. */
+        /** A row, named for the tests by the file's name: each side's Name and Address lines, then the four radios. */
         private void addRow(Duplicate d)
         {
             String name = d.row.name, old = d.here.get(0).getName(), kName = I18n.t("sync.ui.name");
@@ -327,15 +331,16 @@ final class LocomotiveCsvDoor
             here.add(address(d));
             ButtonGroup group = new ButtonGroup();
             Map<Choice, JRadioButton> radios = new EnumMap<>(Choice.class);
+            radio(d, radios, group, Choice.MERGE, I18n.f("loc.ui.importCsvMergeSaid", old, name), why);
+            radio(d, radios, group, Choice.REPLACE, I18n.f("loc.ui.importCsvReplaceSaid", old, name), why);
             radio(d, radios, group, Choice.BOTH, I18n.f("sync.ui.keepBothSaid", old, name), null);
-            radio(d, radios, group, Choice.OLD, I18n.f("loc.ui.importCsvKeepOldSaid", name), null);
-            radio(d, radios, group, Choice.NEW, I18n.f("loc.ui.importCsvKeepNewSaid", old, name), why);
+            radio(d, radios, group, Choice.IGNORE, I18n.f("loc.ui.importCsvIgnoreSaid", name), null);
             radios.get(Choice.BOTH).setSelected(true);
             radios.values().forEach(b -> b.addItemListener(e -> refresh()));
             this.choices.put(d, radios);
             this.table.addRow(ChoiceTable.lines(SyncDifferencesWindow.line(this.table, kName, name, true, why, took),
-                address(d)), ChoiceTable.lines(here.toArray(new JComponent[0])), radios.get(Choice.BOTH),
-                radios.get(Choice.OLD), radios.get(Choice.NEW));
+                address(d)), ChoiceTable.lines(here.toArray(new JComponent[0])), radios.get(Choice.MERGE),
+                radios.get(Choice.REPLACE), radios.get(Choice.BOTH), radios.get(Choice.IGNORE));
         }
 
         private JComponent address(Duplicate d)
@@ -349,16 +354,20 @@ final class LocomotiveCsvDoor
             radios.put(c, SyncDifferencesWindow.choice(this.table, group, d.row.name + ":" + c.name(), said, whyNot));
         }
 
-        /** One Keep New per locomotive here: another row's is grayed, saying which row took it. */
+        /** One Merge or Replace per locomotive here: another row's are grayed, saying which row took it. */
         private void refresh()
         {
             Map<Locomotive, Duplicate> takers = new HashMap<>();
-            this.choices.forEach((d, r) -> { if (r.get(Choice.NEW).isSelected()) takers.put(d.here.get(0), d); });
+            this.choices.forEach((d, r) ->
+            {
+                if (r.get(Choice.MERGE).isSelected() || r.get(Choice.REPLACE).isSelected()) takers.put(d.here.get(0), d);
+            });
             this.taken.forEach((d, mark) ->
             {
                 Duplicate taker = takers.get(d.here.get(0));
                 boolean free = taker == null || taker == d;
-                this.choices.get(d).get(Choice.NEW).setEnabled(free);
+                this.choices.get(d).get(Choice.MERGE).setEnabled(free);
+                this.choices.get(d).get(Choice.REPLACE).setEnabled(free);
                 mark.setText(free ? "" : I18n.t("sync.ui.cantApply"));
                 mark.setToolTipText(free ? null : I18n.f("loc.ui.importCsvWhyTaken", taker.row.name,
                     d.here.get(0).getName()));
@@ -367,10 +376,12 @@ final class LocomotiveCsvDoor
 
         private JButton setAllTo(String key, Choice to)
         {
-            return ChoiceTable.link(I18n.t(key), () -> this.choices.values().forEach(r ->
-            {
-                if (r.get(to).isEnabled()) r.get(to).setSelected(true);
-            }));
+            return ChoiceTable.link(I18n.t(key), () -> setAll(to));
+        }
+
+        private void setAll(Choice to)
+        {
+            this.choices.values().forEach(r -> { if (r.get(to).isEnabled()) r.get(to).setSelected(true); });
         }
 
         /** Each file row's answer. */
