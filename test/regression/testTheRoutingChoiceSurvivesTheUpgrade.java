@@ -88,20 +88,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             model = support.TestStation.simulatedInDebug();
 
-            final org.traincontrol.marklin.MarklinControlStation finalModel = model;
-
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    ui[0] = new org.traincontrol.gui.TrainControlUI();
-                    ui[0].setViewListener(finalModel, new java.util.concurrent.CountDownLatch(1));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
+            ui[0] = newWindow(model);
 
             // The rule the railway is actually following; getAutoLayout builds one if there is none.
             model.getAutoLayout().setPathPreference(
@@ -229,20 +216,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             model = support.TestStation.simulatedInDebug();
 
-            final org.traincontrol.marklin.MarklinControlStation finalModel = model;
-
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    ui[0] = new org.traincontrol.gui.TrainControlUI();
-                    ui[0].setViewListener(finalModel, new java.util.concurrent.CountDownLatch(1));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
+            ui[0] = newWindow(model);
 
         // No session, so there is nowhere to put the answer.
             giveTheWindowThisSession(ui[0], null);
@@ -289,7 +263,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
      * A configuration that exists and has NOT answered gets the old choice written into it: a session with an active
      * configuration carrying no pathPreference, the migration working end to end.
      *
-     * MUTATION THIS CATCHES: in `TrainControlUI`'s migration, take any stored configuration as having answered (drop
+     * MUTATION THIS CATCHES: in `AutonomySettingsTab`'s migration, take any stored configuration as having answered (drop
      * `stored.getGlobal("pathPreference") != null`): the legacy key is deleted and nothing is ever stored.
      */
     @Test
@@ -314,20 +288,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             model = support.TestStation.simulatedInDebug();
 
-            final org.traincontrol.marklin.MarklinControlStation finalModel = model;
-
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    ui[0] = new org.traincontrol.gui.TrainControlUI();
-                    ui[0].setViewListener(finalModel, new java.util.concurrent.CountDownLatch(1));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
+            ui[0] = newWindow(model);
 
             java.io.File folder = java.nio.file.Files.createTempDirectory("tc-routing-blank").toFile();
 
@@ -404,20 +365,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             model = support.TestStation.simulatedInDebug();
 
-            final org.traincontrol.marklin.MarklinControlStation finalModel = model;
-
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    ui[0] = new org.traincontrol.gui.TrainControlUI();
-                    ui[0].setViewListener(finalModel, new java.util.concurrent.CountDownLatch(1));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
+            ui[0] = newWindow(model);
 
             // No session at all, which is the legacy user exactly.
             giveTheWindowThisSession(ui[0], null);
@@ -483,20 +431,7 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
 
             model = support.TestStation.simulatedInDebug();
 
-            final org.traincontrol.marklin.MarklinControlStation finalModel = model;
-
-            javax.swing.SwingUtilities.invokeAndWait(() ->
-            {
-                try
-                {
-                    ui[0] = new org.traincontrol.gui.TrainControlUI();
-                    ui[0].setViewListener(finalModel, new java.util.concurrent.CountDownLatch(1));
-                }
-                catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            });
+            ui[0] = newWindow(model);
 
             java.io.File folder = java.nio.file.Files.createTempDirectory("tc-routing-choice").toFile();
 
@@ -669,5 +604,485 @@ public class testTheRoutingChoiceSurvivesTheUpgrade
             "migrateStoredPathPreference", org.traincontrol.automation.Layout.class);
 
         migrate.invoke(ui, live);
+    }
+
+    /** A window on `model`, built on the event thread. */
+    private static org.traincontrol.gui.TrainControlUI newWindow(final org.traincontrol.marklin.MarklinControlStation model)
+        throws Exception
+    {
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+
+        javax.swing.SwingUtilities.invokeAndWait(() ->
+        {
+            try
+            {
+                ui[0] = new org.traincontrol.gui.TrainControlUI();
+                ui[0].setViewListener(model, new java.util.concurrent.CountDownLatch(1));
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return ui[0];
+    }
+
+    /** What a claim does with a window, a simulated station and a sandboxed layout. */
+    private interface Body
+    {
+        void run(org.traincontrol.gui.TrainControlUI ui, org.traincontrol.marklin.MarklinControlStation model)
+            throws Exception;
+    }
+
+    /** Runs `body` on a fresh window; the legacy key is put back and everything is closed after. */
+    private static void inAWindow(Body body) throws Exception
+    {
+        Display.needed("the routing dropdown lives on a window");
+
+        java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
+
+        String was = prefs.get(LEGACY, null);
+
+        support.LayoutSandbox sandbox = null;
+        org.traincontrol.marklin.MarklinControlStation model = null;
+        final org.traincontrol.gui.TrainControlUI[] ui = new org.traincontrol.gui.TrainControlUI[1];
+
+        try
+        {
+            prefs.remove(LEGACY);
+
+            sandbox = support.LayoutSandbox.open();
+
+            model = support.TestStation.simulatedInDebug();
+
+            ui[0] = newWindow(model);
+
+            // The station was started with no view; the log reaches the window only through this.
+            Reflect.set(org.traincontrol.marklin.MarklinControlStation.class, model, "view", ui[0]);
+
+            // The window loads its settings after setViewListener; wait for that load (bounded) so it cannot undo a claim.
+            long until = System.currentTimeMillis() + 10000;
+
+            while (!model.hasAutoLayout() && System.currentTimeMillis() < until) Thread.sleep(50);
+
+            model.getAutoLayout();
+
+            settle();
+            settle();
+
+            body.run(ui[0], model);
+        }
+        finally
+        {
+            if (was == null) prefs.remove(LEGACY); else prefs.put(LEGACY, was);
+
+            if (ui[0] != null)
+            {
+                javax.swing.SwingUtilities.invokeAndWait(() -> ui[0].dispose());
+            }
+
+            if (model != null) model.stop();
+
+            if (sandbox != null) sandbox.close();
+        }
+    }
+
+    /** A setup with one configuration, so it has room for the answer. */
+    private static org.traincontrol.automationui.AutonomySession aSessionWithRoom() throws Exception
+    {
+        return aSessionWithRoom(java.nio.file.Files.createTempDirectory("tc-routing-room").toFile());
+    }
+
+    private static org.traincontrol.automationui.AutonomySession aSessionWithRoom(java.io.File folder) throws Exception
+    {
+        org.traincontrol.automationui.AutonomySession session = new org.traincontrol.automationui.AutonomySession(folder);
+
+        org.traincontrol.base.LayoutDiagram page = new org.traincontrol.base.LayoutDiagram("Routing Page", 8, 4, null, null);
+
+        Diagrams.feedback(page, 1, 1, 5, 11);
+
+        page.setEdit(true);
+        page.checkBounds();
+
+        session.open(java.util.Arrays.asList(page));
+        session.initialize("Default");
+
+        return session;
+    }
+
+    private static javax.swing.JComboBox<?> dropdownOf(org.traincontrol.gui.TrainControlUI ui) throws Exception
+    {
+        return (javax.swing.JComboBox<?>) Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "algorithmType");
+    }
+
+    /** What the window's log shows, after what is queued has run. */
+    private static String logOf(org.traincontrol.gui.TrainControlUI ui) throws Exception
+    {
+        settle();
+
+        return ((javax.swing.JTextArea) Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "debugArea")).getText();
+    }
+
+    /** Lets the event thread finish what is queued, twice: the dropdown's listener queues its work. */
+    private static void settle() throws Exception
+    {
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+        javax.swing.SwingUtilities.invokeAndWait(() -> { });
+    }
+
+    /** Picks `rule` in the dropdown as a person would. */
+    private static void pick(org.traincontrol.gui.TrainControlUI ui, org.traincontrol.automation.Layout.PathPreference rule)
+        throws Exception
+    {
+        final int at = java.util.Arrays.asList(routingOrder()).indexOf(rule);
+
+        javax.swing.SwingUtilities.invokeAndWait(() -> dropdownOf0(ui).setSelectedIndex(at));
+
+        settle();
+    }
+
+    private static javax.swing.JComboBox<?> dropdownOf0(org.traincontrol.gui.TrainControlUI ui)
+    {
+        try
+        {
+            return dropdownOf(ui);
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** A chosen rule is written to the layout and the setup, explained on the control, and not said to have failed. */
+    @Test
+    public void testAChosenRuleIsKeptShownAndExplained() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            org.traincontrol.automation.Layout.PathPreference rule = org.traincontrol.automation.Layout.PathPreference.FEWEST_POINTS;
+
+            org.traincontrol.automationui.AutonomySession session = aSessionWithRoom();
+
+            giveTheWindowThisSession(ui, session);
+
+            model.getAutoLayout().setPathPreference(org.traincontrol.automation.Layout.PathPreference.RANDOM);
+
+            pick(ui, rule);
+
+            assertEquals(model.getAutoLayout().getPathPreference(), rule, "the chosen rule is not the layout's");
+            assertEquals(session.getGlobal("pathPreference"), rule.name(), "the chosen rule did not reach the setup");
+
+            assertTrue(dropdownOf(ui).getToolTipText().contains(
+                org.traincontrol.util.I18n.t("autolayout.ui.tooltip.pathPreference" + rule.name())),
+                "the control does not explain the rule just chosen");
+
+            assertFalse(logOf(ui).contains(org.traincontrol.util.I18n.f("autolayout.warnRoutingRuleNotStored",
+                org.traincontrol.util.I18n.t("autolayout.ui.pathPreference" + rule.name()))),
+                "a rule that was stored was reported as not stored");
+
+            // A pick equal to the layout's rule writes nothing, and no pick at all changes nothing.
+            org.traincontrol.automation.Layout.PathPreference inForce =
+                org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH;
+
+            model.getAutoLayout().setPathPreference(inForce);
+
+            session.setGlobal("pathPreference", "MOST_POINTS");
+
+            pick(ui, inForce);
+
+            assertEquals(session.getGlobal("pathPreference"), "MOST_POINTS", "choosing the rule in force wrote the setup");
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> dropdownOf0(ui).setSelectedIndex(-1));
+
+            settle();
+
+            assertEquals(model.getAutoLayout().getPathPreference(), inForce, "choosing nothing changed the rule");
+        });
+    }
+
+    /** A rule the setup cannot keep is said aloud, and still used. */
+    @Test
+    public void testARuleThatCannotBeStoredIsSaidAloud() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            org.traincontrol.automation.Layout.PathPreference rule = org.traincontrol.automation.Layout.PathPreference.MOST_STATIONS;
+
+            // Opened with no configuration: setGlobal has nowhere to write and says so.
+            org.traincontrol.automationui.AutonomySession bare = new org.traincontrol.automationui.AutonomySession(
+                java.nio.file.Files.createTempDirectory("tc-routing-bare").toFile());
+
+            giveTheWindowThisSession(ui, bare);
+
+            model.getAutoLayout().setPathPreference(org.traincontrol.automation.Layout.PathPreference.RANDOM);
+
+            pick(ui, rule);
+
+            assertEquals(model.getAutoLayout().getPathPreference(), rule, "the rule was not used");
+
+            assertTrue(logOf(ui).contains(org.traincontrol.util.I18n.f("autolayout.warnRoutingRuleNotStored",
+                org.traincontrol.util.I18n.t("autolayout.ui.pathPreference" + rule.name()))),
+                "a rule that could not be kept was not said to be");
+        });
+    }
+
+    /** A pick with no setup yet builds it for the layout (a person clicked); a refresh never does. */
+    @Test
+    public void testAPickBuildsTheSetupButARefreshDoesNot() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
+
+            prefs.put(LEGACY, "SHORTEST_LENGTH");
+
+            giveTheWindowThisSession(ui, null);
+
+            migrateTheStoredChoice(ui, new org.traincontrol.automation.Layout(model));
+
+            assertNull(Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "autonomySession"),
+                "a settings refresh built the setup");
+
+            model.getAutoLayout().setPathPreference(org.traincontrol.automation.Layout.PathPreference.RANDOM);
+
+            pick(ui, org.traincontrol.automation.Layout.PathPreference.MOST_POINTS);
+
+            assertNotNull(Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "autonomySession"),
+                "a person's pick did not build the setup that keeps the rule");
+        });
+    }
+
+    /** Putting the dropdown back holds the flag while the selection event is delivered, shows the rule, and explains it. */
+    @Test
+    public void testRestoringTheDropdownHoldsTheFlagAndExplainsTheRule() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            org.traincontrol.automation.Layout.PathPreference rule = org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH;
+
+            model.getAutoLayout().setPathPreference(rule);
+
+            final javax.swing.JComboBox<?> dropdown = dropdownOf(ui);
+
+            final java.util.List<Object> flagSeen = new java.util.ArrayList<>();
+
+            final java.lang.reflect.Field flag =
+                Reflect.field(org.traincontrol.gui.TrainControlUI.class, "restoringRoutingLogic");
+
+            flag.setAccessible(true);
+
+            dropdown.addActionListener(e ->
+            {
+                try
+                {
+                    flagSeen.add(flag.get(ui));
+                }
+                catch (ReflectiveOperationException x)
+                {
+                    throw new IllegalStateException(x);
+                }
+            });
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                try
+                {
+                    flag.set(ui, true);
+                    dropdown.setSelectedIndex(0);
+                    flag.set(ui, false);
+                    flagSeen.clear();
+
+                    Reflect.method(org.traincontrol.gui.TrainControlUI.class, "restoreRoutingLogicSelection").invoke(ui);
+                }
+                catch (ReflectiveOperationException x)
+                {
+                    throw new IllegalStateException(x);
+                }
+            });
+
+            assertEquals(flagSeen, java.util.Arrays.asList(true), "the selection event was not delivered under the flag");
+            assertEquals(flag.get(ui), false, "the flag was left held");
+            assertEquals(dropdown.getSelectedIndex(), java.util.Arrays.asList(routingOrder()).indexOf(rule));
+
+            assertTrue(dropdown.getToolTipText().contains(
+                org.traincontrol.util.I18n.t("autolayout.ui.tooltip.pathPreference" + rule.name())),
+                "the restored control does not explain the rule shown");
+        });
+    }
+
+    /** Nothing to carry: no layout, a stored choice this build does not have, or no stored choice. */
+    @Test
+    public void testNothingToCarryLeavesEverythingAlone() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            java.util.prefs.Preferences prefs = org.traincontrol.gui.TrainControlUI.getPrefs();
+
+            giveTheWindowThisSession(ui, aSessionWithRoom());
+
+            org.traincontrol.automation.Layout live = new org.traincontrol.automation.Layout(model);
+
+            // No loaded layout: nothing to carry it onto, and the key is kept.
+            prefs.put(LEGACY, "SHORTEST_LENGTH");
+
+            migrateTheStoredChoice(ui, null);
+
+            assertEquals(prefs.get(LEGACY, null), "SHORTEST_LENGTH", "a migration with no layout deleted the key");
+
+            // A choice this build does not have: kept so it can be retried, the layout unchanged.
+            prefs.put(LEGACY, "NO_SUCH_RULE");
+
+            migrateTheStoredChoice(ui, live);
+
+            assertEquals(prefs.get(LEGACY, null), "NO_SUCH_RULE", "an unknown stored choice was deleted");
+            assertEquals(live.getPathPreference(), org.traincontrol.automation.Layout.PathPreference.RANDOM);
+
+            // Nothing stored: nothing changes and nothing is reported.
+            prefs.remove(LEGACY);
+
+            String before = logOf(ui);
+
+            migrateTheStoredChoice(ui, live);
+
+            assertEquals(logOf(ui), before, "a migration with nothing stored reported something");
+            assertEquals(live.getPathPreference(), org.traincontrol.automation.Layout.PathPreference.RANDOM);
+        });
+    }
+
+    /** A pick refused because a run holds the setup is put back before the refusal is said, and changes nothing. */
+    @Test
+    public void testARefusedPickIsPutBackBeforeItIsSaid() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            org.traincontrol.automation.Layout.PathPreference inForce = org.traincontrol.automation.Layout.PathPreference.LONGEST_LENGTH;
+
+            model.getAutoLayout().setPathPreference(inForce);
+
+            giveTheWindowThisSession(ui, aSessionWithRoom());
+
+            final javax.swing.JComboBox<?> dropdown = dropdownOf(ui);
+
+            final int inForceAt = java.util.Arrays.asList(routingOrder()).indexOf(inForce);
+
+            javax.swing.SwingUtilities.invokeAndWait(() -> dropdown.setSelectedIndex(inForceAt));
+
+            settle();
+
+            Reflect.set(org.traincontrol.gui.TrainControlUI.class, ui, "stagingFlowActive", true);
+
+            // Not invokeAndWait: the refusal is a modal question that holds the event thread until it is closed.
+            javax.swing.SwingUtilities.invokeLater(() -> dropdown.setSelectedIndex(inForceAt == 0 ? 1 : 0));
+
+            boolean said = false;
+            long until = System.currentTimeMillis() + 10000;
+
+            while (!said && System.currentTimeMillis() < until)
+            {
+                Thread.sleep(50);
+
+                for (java.awt.Window w : java.awt.Window.getWindows())
+                {
+                    if (w instanceof javax.swing.JDialog && w.isShowing())
+                    {
+                        // The question is up: the dropdown has already been put back behind it.
+                        final java.awt.Window question = w;
+
+                        said = true;
+
+                        javax.swing.SwingUtilities.invokeLater(question::dispose);
+                    }
+                }
+            }
+
+            assertTrue(said, "the refused pick was not said");
+
+            settle();
+
+            assertEquals(dropdown.getSelectedIndex(), inForceAt, "a refused pick was left showing on the control");
+            assertEquals(model.getAutoLayout().getPathPreference(), inForce, "a refused pick changed the rule");
+        });
+    }
+
+    /** A pick whose layout is gone by the time it is handled does nothing, and does not build another. */
+    @Test
+    public void testAPickWhoseLayoutIsGoneDoesNothing() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            final javax.swing.JComboBox<?> dropdown = dropdownOf(ui);
+
+            javax.swing.SwingUtilities.invokeAndWait(() ->
+            {
+                dropdown.setSelectedIndex(4);
+                model.clearAutoLayout();
+            });
+
+            settle();
+
+            assertFalse(model.hasAutoLayout(), "a pick handled after the layout went built a layout");
+        });
+    }
+
+    /** A rule whose setup cannot be written to is said aloud, whatever the cause. */
+    @Test
+    public void testARuleTheSetupFailsToWriteIsSaidAloud() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            org.traincontrol.automation.Layout.PathPreference rule = org.traincontrol.automation.Layout.PathPreference.MOST_POINTS;
+
+            java.io.File folder = java.nio.file.Files.createTempDirectory("tc-routing-gone").toFile();
+
+            giveTheWindowThisSession(ui, aSessionWithRoom(folder));
+
+            model.getAutoLayout().setPathPreference(org.traincontrol.automation.Layout.PathPreference.RANDOM);
+
+            // The folder the setup saves into goes away: the save throws.
+
+            java.nio.file.Files.walk(folder.toPath()).sorted(java.util.Comparator.reverseOrder())
+                .forEach(p -> p.toFile().delete());
+
+            folder.createNewFile();
+
+            pick(ui, rule);
+
+            assertTrue(logOf(ui).contains(org.traincontrol.util.I18n.f("autolayout.warnRoutingRuleNotStored",
+                org.traincontrol.util.I18n.t("autolayout.ui.pathPreference" + rule.name()))),
+                "a rule whose save threw was not said to be unkept");
+        });
+    }
+
+    /** The dropdown and its label are built from the designer's controls: one item per rule, in the language, capped. */
+    @Test
+    public void testTheDropdownIsMountedFromTheDesigner() throws Exception
+    {
+        inAWindow((ui, model) ->
+        {
+            javax.swing.JComboBox<?> dropdown = dropdownOf(ui);
+
+            org.traincontrol.automation.Layout.PathPreference[] order = routingOrder();
+
+            assertEquals(dropdown.getItemCount(), order.length, "the designer's own items were kept, or a rule is missing");
+
+            for (int at = 0; at < order.length; at++)
+            {
+                assertEquals(dropdown.getItemAt(at),
+                    org.traincontrol.util.I18n.t("autolayout.ui.pathPreference" + order[at].name()), "item " + at);
+            }
+
+            javax.swing.JLabel label = (javax.swing.JLabel) Reflect.get(org.traincontrol.gui.TrainControlUI.class, ui, "jLabel2");
+
+            assertEquals(label.getText(), org.traincontrol.util.I18n.t("ui.main.routingLogic"), "the label is not in the language");
+            assertEquals(label.getToolTipText(), org.traincontrol.util.I18n.t("ui.main.tooltip.routingLogic"));
+
+            assertEquals(dropdown.getPreferredSize().width, 230, "the dropdown's preferred width is not the capped one");
+            assertEquals(dropdown.getMaximumSize().width, 230, "the dropdown's maximum width is not the capped one");
+
+            assertTrue(dropdown.getToolTipText().contains(
+                org.traincontrol.util.I18n.t("autolayout.ui.tooltip.pathPreference" + order[dropdown.getSelectedIndex()].name())),
+                "the dropdown starts with no explanation of the rule it shows");
+        });
     }
 }

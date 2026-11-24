@@ -79,6 +79,31 @@ public class testRoutingRuleTooltips
         }
     }
 
+    /** With no rule chosen the control says only what it is for, and every rule the layout can hold is offered. */
+    @Test
+    public void testNoRuleChosenSaysOnlyWhatTheControlIsFor() throws Exception
+    {
+        Display.needed("the dropdown is a control in a window");
+
+        TrainControlUI ui = build();
+
+        PathPreference[] rules = (PathPreference[]) Reflect.get(TrainControlUI.class, null, "ROUTING_ORDER");
+
+        assertEquals(java.util.EnumSet.copyOf(java.util.Arrays.asList(rules)),
+            java.util.EnumSet.allOf(PathPreference.class), "a rule of the layout is not offered, or one is offered twice");
+
+        assertEquals(new java.util.HashSet<>(java.util.Arrays.asList(rules)).size(), rules.length, "a rule is offered twice");
+
+        javax.swing.JComboBox<?> dropdown = dropdownOf(ui);
+
+        dropdown.setSelectedIndex(-1);
+
+        Reflect.method(TrainControlUI.class, "refreshRoutingLogicTooltip").invoke(ui);
+
+        assertEquals(dropdown.getToolTipText(), I18n.t("ui.main.tooltip.routingLogic"),
+            "with no rule chosen the control said more than what it is for");
+    }
+
     /**
      * The routing dropdown, which is a generated field and so has no accessor.
      */
